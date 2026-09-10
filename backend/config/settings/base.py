@@ -205,7 +205,17 @@ REST_FRAMEWORK = {
         "user": "100/min",
         "anon": "20/min",
         "login": "5/min",
-        "otp": "3/10min",
+        # DRF's rate-string parser (SimpleRateThrottle.parse_rate) only reads
+        # the FIRST CHARACTER of the period ("s"/"m"/"h"/"d") — "10min" isn't
+        # a valid period, its first char "1" isn't in that lookup table, and
+        # every request crashes with KeyError: '1'. DRF has no native syntax
+        # for "N per 10 minutes"; "5/min" approximates the originally
+        # intended "3 per 10 min" while staying valid. The precise 3-per-
+        # 10-minutes business rule (SCD §3.3) is enforced separately and
+        # correctly in apps.accounts.services.generate_email_otp via a
+        # Redis-backed counter (OTP_EMAIL_MAX_PER_10MIN) — this scope is
+        # just a coarser API-abuse safety net on top of that.
+        "otp": "5/min",
         "justificatif_upload": "10/hour",
     },
     "EXCEPTION_HANDLER": "apps.accounts.exceptions.cid_exception_handler",
