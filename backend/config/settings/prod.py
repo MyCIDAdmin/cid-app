@@ -34,7 +34,16 @@ MIDDLEWARE.insert(  # noqa: F405
     "whitenoise.middleware.WhiteNoiseMiddleware",
 )
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# Tant qu'EMAIL_HOST_USER n'est pas configuré (SMTP réel), on écrit les
+# emails dans les logs du service au lieu d'échouer silencieusement à chaque
+# tentative d'envoi (OTP, bienvenue, etc.) — utile pour un premier déploiement
+# de test. À retirer dès qu'un vrai fournisseur SMTP est branché (voir
+# docs/RAILWAY.md §4 et la checklist §9 avant l'ouverture aux membres).
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST_USER  # noqa: F405
+    else "django.core.mail.backends.console.EmailBackend"
+)
 
 if SENTRY_DSN:  # noqa: F405
     import sentry_sdk
