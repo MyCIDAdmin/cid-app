@@ -5,6 +5,7 @@ django-cors-headers==4.4.0
 django-filter==24.3
 python-dotenv==1.0.1
 dj-database-url==2.2.0
+psycopg[binary]==3.2.3
 
 # --- Auth / 2FA / RBAC ---
 djangorestframework-simplejwt==5.3.1
