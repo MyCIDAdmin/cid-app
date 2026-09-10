@@ -265,3 +265,30 @@ def test_import_non_authentifie_401(api_client):
         reverse("membres:membre-import"), {"fichier": fichier}, format="multipart"
     )
     assert resp.status_code == 401
+
+
+# --- Téléchargement du template (RICEFW W-008/F-019) ---
+
+
+def test_telechargement_template_comme_rh_ok(api_client, rh_user):
+    _auth(api_client, rh_user)
+    resp = api_client.get(reverse("membres:membre-import-template"))
+
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == XLSX_MIME
+    assert "template_import_membres.xlsx" in resp["Content-Disposition"]
+
+    classeur = openpyxl.load_workbook(io.BytesIO(resp.content))
+    en_tetes = next(classeur.active.iter_rows(values_only=True))
+    assert set(DEFAULT_HEADERS) <= set(en_tetes)
+
+
+def test_telechargement_template_comme_membre_refuse_403(api_client, membre_user):
+    _auth(api_client, membre_user)
+    resp = api_client.get(reverse("membres:membre-import-template"))
+    assert resp.status_code == 403
+
+
+def test_telechargement_template_non_authentifie_401(api_client):
+    resp = api_client.get(reverse("membres:membre-import-template"))
+    assert resp.status_code == 401

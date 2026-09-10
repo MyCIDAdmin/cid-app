@@ -57,12 +57,20 @@ export default function MembresListPage() {
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-text-primary">{t("liste.titre")}</h1>
         {peutGerer && (
-          <Link
-            to="/membres/nouveau"
-            className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
-          >
-            + {t("liste.ajouter")}
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              to="/membres/import"
+              className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+            >
+              {t("liste.importer")}
+            </Link>
+            <Link
+              to="/membres/nouveau"
+              className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
+            >
+              + {t("liste.ajouter")}
+            </Link>
+          </div>
         )}
       </div>
 

@@ -63,3 +63,11 @@ export function useChangerStatutMembre(id: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
   });
 }
+
+export function useImporterMembres() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (fichier: File) => membresApi.importerMembres(fichier),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
+  });
+}

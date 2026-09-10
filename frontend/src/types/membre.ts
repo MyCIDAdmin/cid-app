@@ -77,6 +77,19 @@ export interface CursorPage<T> {
   results: T[];
 }
 
+/** Réponse de POST /membres/import/ (voir apps.membres.imports.ResultatImport.as_dict). */
+export interface LigneErreurImport {
+  ligne: number;
+  message: string;
+}
+
+export interface ResultatImportMembres {
+  total: number;
+  importes: number;
+  ignores: number;
+  erreurs: LigneErreurImport[];
+}
+
 // 16 Länder — doit rester synchronisé avec apps.membres.models.Bundesland.
 export const BUNDESLANDER: { value: string; label: string }[] = [
   { value: "BW", label: "Baden-Württemberg" },

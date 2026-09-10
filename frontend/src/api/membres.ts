@@ -7,6 +7,7 @@ import type {
   Membre,
   MembreFormValues,
   MembreListItem,
+  ResultatImportMembres,
   StatutMembre,
 } from "../types/membre";
 
@@ -63,5 +64,21 @@ export async function deleteMembre(id: string): Promise<void> {
 
 export async function changerStatutMembre(id: string, statut: StatutMembre): Promise<Membre> {
   const { data } = await apiClient.post<Membre>(`/membres/${id}/changer_statut/`, { statut });
+  return data;
+}
+
+/** POST /membres/import/ (RICEFW W-008/F-019, réservé RH+) — champ multipart `fichier`. */
+export async function importerMembres(fichier: File): Promise<ResultatImportMembres> {
+  const formData = new FormData();
+  formData.append("fichier", fichier);
+  const { data } = await apiClient.post<ResultatImportMembres>("/membres/import/", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+/** GET /membres/import/template/ — classeur vierge à compléter avant import. */
+export async function telechargerTemplateImportMembres(): Promise<Blob> {
+  const { data } = await apiClient.get("/membres/import/template/", { responseType: "blob" });
   return data;
 }

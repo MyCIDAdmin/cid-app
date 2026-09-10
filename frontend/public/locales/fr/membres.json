@@ -45,6 +45,7 @@
   "liste": {
     "titre": "Membres",
     "ajouter": "Ajouter un membre",
+    "importer": "Importer",
     "filtre_statut": "Statut",
     "tous_statuts": "Tous les statuts",
     "filtre_ville": "Ville",
@@ -93,5 +94,26 @@
     "erreur_soumission": "Une erreur est survenue lors de l'enregistrement.",
     "annuler": "Annuler",
     "enregistrer": "Enregistrer"
+  },
+  "import": {
+    "titre": "Importer des membres",
+    "template_titre": "Template Excel",
+    "template_description": "Téléchargez le classeur vierge, complétez-le puis importez-le ci-dessous.",
+    "template_bouton": "Télécharger le template",
+    "erreur_template": "Impossible de télécharger le template.",
+    "upload_titre": "Importer un fichier",
+    "choisir_fichier": "Choisir un fichier .xlsx",
+    "aucun_fichier": "Aucun fichier sélectionné.",
+    "importer": "Importer",
+    "import_en_cours": "Import en cours…",
+    "erreur_import": "Une erreur est survenue lors de l'import.",
+    "resultat_titre": "Résultat de l'import",
+    "resultat_total": "Lignes lues",
+    "resultat_importes": "Importés",
+    "resultat_ignores": "Ignorés",
+    "resultat_erreurs_titre": "Erreurs",
+    "resultat_aucune_erreur": "Aucune erreur.",
+    "col_ligne": "Ligne",
+    "col_message": "Message"
   }
 }

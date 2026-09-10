@@ -7,6 +7,7 @@ import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import MembreDetailPage from "./pages/membres/MembreDetailPage";
 import MembreFormPage from "./pages/membres/MembreFormPage";
+import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
 import { ROLE_LEVELS } from "./store/authStore";
 
@@ -41,6 +42,16 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
               <MembreFormPage />
+            </RequireRole>
+          }
+        />
+        {/* Import Excel (RICEFW W-008/F-019) — même gate RH+ que
+            MembreImportView côté API. */}
+        <Route
+          path="/membres/import"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <MembreImportPage />
             </RequireRole>
           }
         />

@@ -53,6 +53,73 @@ OPTIONAL_COLUMNS = {
 }
 ALL_COLUMNS = {**REQUIRED_COLUMNS, **OPTIONAL_COLUMNS}
 
+# En-tête "canonique" à écrire dans le template (1er alias déclaré par colonne) + exemple de
+# valeur (ligne 2) pour guider la saisie — utilisé à la fois par la commande manage.py
+# generer_template_import_membres et par MembreImportTemplateView (téléchargement HTTP,
+# RICEFW W-008/F-019) : une seule source pour ne pas dupliquer les en-têtes/exemples.
+_EXEMPLE_TEMPLATE = {
+    "prenom": "Riadh",
+    "nom": "Bchini",
+    "date_naissance": "15/03/1985",
+    "sexe": "Homme",
+    "email": "riadh.bchini@example.de",
+    "telephone": "+49 170 1234567",
+    "cin": "12345678",
+    "passeport": "",
+    "adresse_de": "Musterstr. 1",
+    "code_postal_de": "10115",
+    "ville_de": "Berlin",
+    "land_de": "Berlin",
+    "ville_origine_tn": "Tunis",
+    "gouvernorat_tn": "Tunis",
+    "statut": "actif",
+    "date_adhesion": "01/09/2019",
+}
+
+
+def construire_classeur_template():
+    """
+    Construit (sans l'enregistrer) le classeur .xlsx vide utilisé pour l'import — en-têtes
+    REQUIRED_COLUMNS + OPTIONAL_COLUMNS avec exemple de saisie, feuille "Notes" avec la
+    légende. Ne dépend pas du système de fichiers : appelable aussi bien depuis la commande
+    manage.py (sauvegarde disque) que depuis une vue HTTP (réponse en mémoire).
+    """
+    from openpyxl import Workbook
+    from openpyxl.comments import Comment
+    from openpyxl.styles import Font, PatternFill
+
+    classeur = Workbook()
+    feuille = classeur.active
+    feuille.title = "Membres"
+
+    champs = list(REQUIRED_COLUMNS) + list(OPTIONAL_COLUMNS)
+    en_tete_style = Font(bold=True, color="FFFFFF")
+    remplissage = PatternFill(start_color="CC0000", end_color="CC0000", fill_type="solid")
+
+    for col_idx, champ in enumerate(champs, start=1):
+        cellule = feuille.cell(row=1, column=col_idx, value=champ)
+        cellule.font = en_tete_style
+        cellule.fill = remplissage
+        if champ not in REQUIRED_COLUMNS:
+            cellule.comment = Comment("Optionnel", "CID")
+        feuille.cell(row=2, column=col_idx, value=_EXEMPLE_TEMPLATE.get(champ, ""))
+        feuille.column_dimensions[cellule.column_letter].width = max(len(champ) + 2, 14)
+
+    notes = classeur.create_sheet("Notes")
+    notes["A1"] = "Colonnes obligatoires : " + ", ".join(REQUIRED_COLUMNS)
+    notes["A2"] = "Colonnes optionnelles : " + ", ".join(OPTIONAL_COLUMNS)
+    notes["A3"] = "sexe : Homme / Femme (laisser vide si non renseigné)"
+    notes["A4"] = "statut : actif / en_attente / inactif (défaut si vide : actif)"
+    notes["A5"] = (
+        "land_de : code à 2 lettres (BE, BY, ...) ou nom complet — Länder valides : "
+        + ", ".join(f"{code} ({label})" for code, label in Bundesland.choices)
+    )
+    notes["A6"] = "Dates au format JJ/MM/AAAA."
+    notes.column_dimensions["A"].width = 100
+
+    return classeur
+
+
 _SEXE_ALIASES = {"homme": Sexe.HOMME, "h": Sexe.HOMME, "femme": Sexe.FEMME, "f": Sexe.FEMME}
 _STATUT_ALIASES = {
     "actif": StatutMembre.ACTIF,

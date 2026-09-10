@@ -45,6 +45,7 @@
   "liste": {
     "titre": "Mitglieder",
     "ajouter": "Mitglied hinzufügen",
+    "importer": "Importieren",
     "filtre_statut": "Status",
     "tous_statuts": "Alle Status",
     "filtre_ville": "Stadt",
@@ -93,5 +94,26 @@
     "erreur_soumission": "Beim Speichern ist ein Fehler aufgetreten.",
     "annuler": "Abbrechen",
     "enregistrer": "Speichern"
+  },
+  "import": {
+    "titre": "Mitglieder importieren",
+    "template_titre": "Excel-Vorlage",
+    "template_description": "Laden Sie die leere Vorlage herunter, füllen Sie sie aus und importieren Sie sie anschließend hier.",
+    "template_bouton": "Vorlage herunterladen",
+    "erreur_template": "Die Vorlage konnte nicht heruntergeladen werden.",
+    "upload_titre": "Datei importieren",
+    "choisir_fichier": "Eine .xlsx-Datei auswählen",
+    "aucun_fichier": "Keine Datei ausgewählt.",
+    "importer": "Importieren",
+    "import_en_cours": "Import läuft…",
+    "erreur_import": "Beim Import ist ein Fehler aufgetreten.",
+    "resultat_titre": "Import-Ergebnis",
+    "resultat_total": "Gelesene Zeilen",
+    "resultat_importes": "Importiert",
+    "resultat_ignores": "Übersprungen",
+    "resultat_erreurs_titre": "Fehler",
+    "resultat_aucune_erreur": "Keine Fehler.",
+    "col_ligne": "Zeile",
+    "col_message": "Meldung"
   }
 }
