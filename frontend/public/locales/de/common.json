@@ -1,0 +1,11 @@
+{
+  "nav": {
+    "dashboard": "Übersicht",
+    "mon_adhesion": "Meine Mitgliedschaft",
+    "cotisation": "Mitgliedsbeitrag"
+  },
+  "dashboard": {
+    "title": "Übersicht",
+    "welcome": "Willkommen, {{email}}"
+  }
+}

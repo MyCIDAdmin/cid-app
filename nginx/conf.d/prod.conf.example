@@ -1,0 +1,68 @@
+# nginx — reverse proxy production (référence — utilisé pour un déploiement
+# VPS auto-hébergé type Hetzner ; sur Railway, chaque service est exposé
+# directement et ce fichier n'est PAS utilisé, voir docs/RAILWAY.md).
+#
+# Remplacer app.clubistes.de par le domaine réel avant usage.
+
+server {
+    listen 80;
+    server_name app.clubistes.de;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name app.clubistes.de;
+
+    ssl_certificate     /etc/letsencrypt/live/app.clubistes.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/app.clubistes.de/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-CHACHA20-POLY1305;
+
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss://app.clubistes.de; font-src 'self'" always;
+    server_tokens off;
+
+    client_max_body_size 50M;
+
+    limit_req_zone $binary_remote_addr zone=login_limit:10m rate=5r/m;
+
+    location /api/v1/auth/login/ {
+        limit_req zone=login_limit burst=3 nodelay;
+        proxy_pass http://backend:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/ {
+        proxy_pass http://backend:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /ws/ {
+        proxy_pass http://backend:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;
+    }
+
+    location /static/ {
+        alias /app/staticfiles/;
+        expires 1y;
+    }
+
+    location / {
+        root /app/frontend_dist;
+        try_files $uri $uri/ /index.html;
+    }
+}

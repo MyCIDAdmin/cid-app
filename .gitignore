@@ -1,0 +1,55 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+backend/staticfiles/
+backend/mediafiles/
+*.db
+dump.rdb
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+npm-debug.log*
+
+# Docker volumes (bind-mounted local data)
+postgres_data/
+redis_data/
+minio_data/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Secrets / keys — never commit
+*.pem
+*.key
+secrets/
+
+# Logs
+*.log
+
+# Uploaded / generated content that shouldn't be versioned
+*.xlsx
+*.pdf
+*.png
+*.jpg
+*.jpeg
+!frontend/public/**/*.png
+!frontend/public/**/*.jpg
+!docs/**/*.png

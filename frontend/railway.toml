@@ -1,0 +1,12 @@
+# Config Railway pour le service frontend (SPA React buildée, servie par nginx).
+# Root Directory du service Railway = "frontend" ; Dockerfile Path = "Dockerfile.prod".
+# Build args VITE_API_BASE_URL / VITE_WS_BASE_URL à définir en variables du service
+# (Railway les passe automatiquement comme build args si déclarées côté build).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.prod"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

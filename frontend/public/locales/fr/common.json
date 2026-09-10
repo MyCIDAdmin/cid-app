@@ -1,0 +1,11 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "mon_adhesion": "Mon Adhésion",
+    "cotisation": "Cotisation"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue, {{email}}"
+  }
+}

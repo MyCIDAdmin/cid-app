@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+body {
+  @apply bg-bg-tertiary text-text-primary;
+}
