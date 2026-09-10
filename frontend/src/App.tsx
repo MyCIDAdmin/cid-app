@@ -10,12 +10,17 @@ import MembreDetailPage from "./pages/membres/MembreDetailPage";
 import MembreFormPage from "./pages/membres/MembreFormPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
+import RegisterPage from "./pages/RegisterPage";
 import { ROLE_LEVELS } from "./store/authStore";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* Inscription libre-service (mockup #sc-register, FDD §3.1/F-002,
+          AHM-47) — compte créé inactif, activation décidée ensuite par
+          RH/Admin (AHM-48). */}
+      <Route path="/register" element={<RegisterPage />} />
       <Route
         element={
           <RequireAuth>

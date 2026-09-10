@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { login, verify2FA, sendOtp } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
@@ -115,6 +115,12 @@ export default function LoginPage() {
             >
               {loading ? t("login.loading") : t("login.submit")}
             </button>
+            <p className="text-center text-xs text-text-tertiary">
+              {t("register.pas_de_compte")}{" "}
+              <Link to="/register" className="font-medium text-ca hover:underline">
+                {t("register.creer_compte")}
+              </Link>
+            </p>
           </form>
         ) : (
           <form onSubmit={handleVerify} className="flex flex-col gap-3">

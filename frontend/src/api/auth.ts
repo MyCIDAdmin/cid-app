@@ -36,3 +36,19 @@ export async function fetchMe(): Promise<CidUser> {
   const { data } = await apiClient.get<CidUser>("/auth/me/");
   return data;
 }
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  langue_preferee: "fr" | "de" | "ar";
+  consentement_rgpd: true;
+}
+
+/**
+ * POST /auth/register/ (FDD §3.1, F-002). Le compte créé est inactif —
+ * l'activation (et la décision de créer une fiche Membre) revient à un
+ * rôle RH/Admin (AHM-48), pas à ce endpoint.
+ */
+export async function register(payload: RegisterPayload): Promise<void> {
+  await apiClient.post("/auth/register/", payload);
+}
