@@ -1,11 +1,16 @@
 {
   "nav": {
     "dashboard": "Übersicht",
+    "membres": "Mitglieder",
     "mon_adhesion": "Meine Mitgliedschaft",
     "cotisation": "Mitgliedsbeitrag"
   },
   "dashboard": {
     "title": "Übersicht",
     "welcome": "Willkommen, {{email}}"
+  },
+  "action": {
+    "annuler": "Abbrechen",
+    "confirmer": "Bestätigen"
   }
 }

@@ -1,11 +1,16 @@
 {
   "nav": {
     "dashboard": "Tableau de bord",
+    "membres": "Membres",
     "mon_adhesion": "Mon Adhésion",
     "cotisation": "Cotisation"
   },
   "dashboard": {
     "title": "Tableau de bord",
     "welcome": "Bienvenue, {{email}}"
+  },
+  "action": {
+    "annuler": "Annuler",
+    "confirmer": "Confirmer"
   }
 }

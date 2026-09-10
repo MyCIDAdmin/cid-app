@@ -1,0 +1,83 @@
+{
+  "statut": {
+    "actif": "Aktiv",
+    "en_attente": "Ausstehend",
+    "inactif": "Inaktiv"
+  },
+  "sexe": {
+    "homme": "Männlich",
+    "femme": "Weiblich",
+    "non_renseigne": "Nicht angegeben"
+  },
+  "champ": {
+    "prenom": "Vorname",
+    "nom": "Nachname",
+    "date_naissance": "Geburtsdatum",
+    "sexe": "Geschlecht",
+    "email": "E-Mail",
+    "telephone": "Telefon",
+    "cin": "Personalausweisnr. (CIN)",
+    "passeport": "Reisepass",
+    "adresse_de": "Adresse (Deutschland)",
+    "code_postal_de": "Postleitzahl",
+    "ville_de": "Stadt (Deutschland)",
+    "land_de": "Bundesland",
+    "ville_origine_tn": "Herkunftsstadt (Tunesien)",
+    "gouvernorat_tn": "Gouvernorat (Tunesien)",
+    "numero_membre": "Mitgliedsnummer",
+    "date_adhesion": "Beitrittsdatum",
+    "statut": "Status"
+  },
+  "liste": {
+    "titre": "Mitglieder",
+    "ajouter": "Mitglied hinzufügen",
+    "filtre_statut": "Status",
+    "tous_statuts": "Alle Status",
+    "filtre_ville": "Stadt",
+    "filtre_ville_placeholder": "z. B. Berlin",
+    "recherche": "Suche",
+    "recherche_placeholder": "Name, Vorname, E-Mail…",
+    "filtrer": "Filtern",
+    "reinitialiser": "Zurücksetzen",
+    "col_membre": "Mitglied",
+    "col_ville": "Stadt",
+    "col_cin": "CIN",
+    "col_email": "E-Mail",
+    "col_statut": "Status",
+    "col_actions": "Aktionen",
+    "chargement": "Wird geladen…",
+    "erreur": "Fehler beim Laden der Mitglieder.",
+    "aucun_resultat": "Kein Mitglied entspricht diesen Kriterien.",
+    "voir": "Ansehen",
+    "modifier": "Bearbeiten",
+    "supprimer": "Löschen",
+    "precedent": "Zurück",
+    "suivant": "Weiter",
+    "confirmer_suppression_titre": "Mitglied löschen?",
+    "confirmer_suppression_message": "Diese Aktion ist unwiderruflich. Möchten Sie {{nom}} wirklich löschen?"
+  },
+  "fiche": {
+    "retour": "Zurück zur Liste",
+    "modifier": "Bearbeiten",
+    "supprimer": "Löschen",
+    "section_personnelles": "Persönliche Daten",
+    "section_adresse": "Adresse und Standort",
+    "section_associatives": "Vereinsdaten",
+    "changer_statut_titre": "Status ändern",
+    "choisir_statut": "Neuen Status wählen…",
+    "appliquer": "Anwenden",
+    "confirmer_suppression_titre": "Mitglied löschen?",
+    "confirmer_suppression_message": "Diese Aktion ist unwiderruflich. Möchten Sie {{nom}} wirklich löschen?",
+    "erreur_statut": "Statusänderung fehlgeschlagen.",
+    "erreur_chargement": "Diese Mitgliederkarte konnte nicht geladen werden."
+  },
+  "formulaire": {
+    "titre_creer": "Mitglied hinzufügen",
+    "titre_modifier": "Mitglied bearbeiten",
+    "champ_requis": "Dieses Feld ist erforderlich.",
+    "erreur_email": "Ungültige E-Mail-Adresse.",
+    "erreur_soumission": "Beim Speichern ist ein Fehler aufgetreten.",
+    "annuler": "Abbrechen",
+    "enregistrer": "Speichern"
+  }
+}

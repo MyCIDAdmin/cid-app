@@ -1,0 +1,83 @@
+{
+  "statut": {
+    "actif": "Actif",
+    "en_attente": "En attente",
+    "inactif": "Inactif"
+  },
+  "sexe": {
+    "homme": "Homme",
+    "femme": "Femme",
+    "non_renseigne": "Non renseigné"
+  },
+  "champ": {
+    "prenom": "Prénom",
+    "nom": "Nom",
+    "date_naissance": "Date de naissance",
+    "sexe": "Sexe",
+    "email": "Email",
+    "telephone": "Téléphone",
+    "cin": "CIN",
+    "passeport": "Passeport",
+    "adresse_de": "Adresse (Allemagne)",
+    "code_postal_de": "Code postal",
+    "ville_de": "Ville (Allemagne)",
+    "land_de": "Land",
+    "ville_origine_tn": "Ville d'origine (Tunisie)",
+    "gouvernorat_tn": "Gouvernorat (Tunisie)",
+    "numero_membre": "Numéro de membre",
+    "date_adhesion": "Date d'adhésion",
+    "statut": "Statut"
+  },
+  "liste": {
+    "titre": "Membres",
+    "ajouter": "Ajouter un membre",
+    "filtre_statut": "Statut",
+    "tous_statuts": "Tous les statuts",
+    "filtre_ville": "Ville",
+    "filtre_ville_placeholder": "Ex. Berlin",
+    "recherche": "Recherche",
+    "recherche_placeholder": "Nom, prénom, email…",
+    "filtrer": "Filtrer",
+    "reinitialiser": "Réinitialiser",
+    "col_membre": "Membre",
+    "col_ville": "Ville",
+    "col_cin": "CIN",
+    "col_email": "Email",
+    "col_statut": "Statut",
+    "col_actions": "Actions",
+    "chargement": "Chargement…",
+    "erreur": "Erreur lors du chargement des membres.",
+    "aucun_resultat": "Aucun membre ne correspond à ces critères.",
+    "voir": "Voir",
+    "modifier": "Modifier",
+    "supprimer": "Supprimer",
+    "precedent": "Précédent",
+    "suivant": "Suivant",
+    "confirmer_suppression_titre": "Supprimer ce membre ?",
+    "confirmer_suppression_message": "Cette action est irréversible. Confirmez-vous la suppression de {{nom}} ?"
+  },
+  "fiche": {
+    "retour": "Retour à la liste",
+    "modifier": "Modifier",
+    "supprimer": "Supprimer",
+    "section_personnelles": "Informations personnelles",
+    "section_adresse": "Adresse et localisation",
+    "section_associatives": "Informations associatives",
+    "changer_statut_titre": "Changer le statut",
+    "choisir_statut": "Choisir un nouveau statut…",
+    "appliquer": "Appliquer",
+    "confirmer_suppression_titre": "Supprimer ce membre ?",
+    "confirmer_suppression_message": "Cette action est irréversible. Confirmez-vous la suppression de {{nom}} ?",
+    "erreur_statut": "Impossible de changer le statut.",
+    "erreur_chargement": "Impossible de charger cette fiche membre."
+  },
+  "formulaire": {
+    "titre_creer": "Ajouter un membre",
+    "titre_modifier": "Modifier le membre",
+    "champ_requis": "Ce champ est requis.",
+    "erreur_email": "Adresse email invalide.",
+    "erreur_soumission": "Une erreur est survenue lors de l'enregistrement.",
+    "annuler": "Annuler",
+    "enregistrer": "Enregistrer"
+  }
+}

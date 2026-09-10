@@ -15,6 +15,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", labelKey: "nav.dashboard" },
+  // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
+  // voit que sa propre fiche), inutile de dupliquer cette règle ici.
+  { to: "/membres", labelKey: "nav.membres" },
   { to: "/mon-adhesion", labelKey: "nav.mon_adhesion" },
   { to: "/cotisation", labelKey: "nav.cotisation" },
 ];

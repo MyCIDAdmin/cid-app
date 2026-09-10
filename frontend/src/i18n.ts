@@ -18,7 +18,7 @@ i18n
   .init({
     fallbackLng: "fr",
     supportedLngs: SUPPORTED_LANGUAGES,
-    ns: ["common", "auth"],
+    ns: ["common", "auth", "membres"],
     defaultNS: "common",
     backend: {
       loadPath: "/locales/{{lng}}/{{ns}}.json",
