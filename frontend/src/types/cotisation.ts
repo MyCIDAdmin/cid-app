@@ -1,0 +1,55 @@
+/**
+ * Types partagés — module cotisations (miroir de apps.cotisations.models /
+ * serializers côté backend, AHM-15). Garder synchronisé en cas de
+ * changement de schéma.
+ */
+
+// Sous-ensemble exposé par le stepper (AHM-16) : "evenement" est exclu tant
+// que apps.evenements n'existe pas (pas d'événement à sélectionner — voir
+// MONTANTS_CATALOGUE côté backend, qui ne couvre de toute façon que ces
+// deux tarifs fixes).
+export type TypeArticleStepper = "cotisation" | "adhesion" | "don";
+export type TypeArticle = TypeArticleStepper | "evenement";
+
+export type ModePaiement = "carte" | "virement_sepa" | "paypal";
+
+export type StatutCotisation = "en_attente" | "payee" | "echouee" | "remboursee" | "annulee";
+
+export interface Cotisation {
+  id: string;
+  membre: string;
+  type_article: TypeArticle;
+  libelle: string;
+  montant: string;
+  mode_paiement: ModePaiement | "";
+  statut: StatutCotisation;
+  reference_transaction: string | null;
+  annee: number | null;
+  saisie_par: string | null;
+  date_paiement: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Payload de POST /cotisations/ en libre-service (AHM-16) : `membre` est
+ * résolu côté vue (CotisationViewSet.perform_create) à partir du compte
+ * authentifié, jamais transmis par le client. `libelle`/`montant` ne sont
+ * envoyés que pour "don" — pour cotisation/adhesion le serializer impose le
+ * tarif catalogue côté serveur et ignore toute valeur transmise.
+ */
+export interface CotisationCreatePayload {
+  type_article: TypeArticleStepper;
+  mode_paiement: ModePaiement;
+  statut: "payee";
+  libelle?: string;
+  montant?: string;
+}
+
+// Tarifs catalogue affichés côté client à titre indicatif (récapitulatif) —
+// le montant réellement enregistré est toujours recalculé par le serveur
+// (CLAUDE.md §8, apps.cotisations.serializers.CotisationSerializer.validate).
+export const MONTANTS_CATALOGUE: Record<"cotisation" | "adhesion", number> = {
+  cotisation: 45,
+  adhesion: 15,
+};

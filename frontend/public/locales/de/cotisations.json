@@ -1,0 +1,65 @@
+{
+  "statut": {
+    "en_attente": "Ausstehend",
+    "payee": "Bezahlt",
+    "echouee": "Fehlgeschlagen",
+    "remboursee": "Erstattet",
+    "annulee": "Storniert"
+  },
+  "etape": {
+    "choisir": "Auswählen",
+    "paiement": "Zahlung",
+    "confirmation": "Bestätigung"
+  },
+  "article": {
+    "titre": "Artikel auswählen",
+    "cotisation_titre": "Jahresbeitrag {{annee}}",
+    "cotisation_description": "Voller Zugang · 1 Jahr gültig",
+    "adhesion_titre": "Beitrittsgebühr",
+    "adhesion_description": "Einmalzahlung · Erstanmeldung",
+    "don_titre": "Spende an den Verein",
+    "don_description": "Freier Betrag",
+    "don_montant_label": "Spendenbetrag (€)",
+    "don_montant_erreur": "Geben Sie einen Betrag größer als 0 an."
+  },
+  "recap": {
+    "titre": "Zusammenfassung",
+    "article": "Artikel",
+    "montant": "Betrag",
+    "mode": "Methode"
+  },
+  "continuer": "Weiter zur Zahlung",
+  "paiement": {
+    "titre": "Zahlungsmethode wählen",
+    "carte_titre": "Kreditkarte",
+    "carte_description": "Visa, Mastercard, Amex",
+    "sepa_titre": "SEPA-Überweisung",
+    "sepa_description": "Bearbeitung innerhalb von 2 Werktagen",
+    "paypal_titre": "PayPal",
+    "paypal_description": "Schnell und sicher bezahlen",
+    "note": "Hier werden keine Zahlungsdaten erfasst: Diese Auswahl dient nur dazu, Ihre Zahlung im Vereinsregister zu erfassen.",
+    "payer": "{{montant}} € sicher bezahlen",
+    "retour": "Zurück",
+    "erreur": "Die Zahlung konnte nicht gespeichert werden."
+  },
+  "confirmation": {
+    "titre": "Zahlung bestätigt!",
+    "sous_titre": "Ihre Zahlung wurde erfolgreich gespeichert.",
+    "reference": "Referenz",
+    "article": "Artikel",
+    "montant": "Betrag",
+    "date": "Datum",
+    "nouveau_paiement": "Neue Zahlung",
+    "accueil": "Startseite"
+  },
+  "historique": {
+    "titre": "Zahlungsverlauf",
+    "chargement": "Wird geladen…",
+    "erreur": "Der Verlauf konnte nicht geladen werden.",
+    "aucun": "Keine Zahlung erfasst.",
+    "col_date": "Datum",
+    "col_libelle": "Bezeichnung",
+    "col_montant": "Betrag",
+    "col_statut": "Status"
+  }
+}

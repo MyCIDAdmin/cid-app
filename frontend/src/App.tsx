@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
+import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import MembreDetailPage from "./pages/membres/MembreDetailPage";
@@ -55,8 +56,12 @@ export default function App() {
             </RequireRole>
           }
         />
+        {/* Paiement libre-service (mockup #pg-cotisation, RICEFW F-004, AHM-16) —
+            ouvert à tout authentifié : le backend scope déjà le queryset et
+            résout le membre courant à la création (CotisationViewSet). */}
+        <Route path="/cotisation" element={<CotisationStepperPage />} />
         {/* Les routes suivantes sont ajoutées au fil des phases :
-            /cotisation, /evenements, /boutique, /vote, /stats, /admin/* */}
+            /evenements, /boutique, /vote, /stats, /admin/* */}
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

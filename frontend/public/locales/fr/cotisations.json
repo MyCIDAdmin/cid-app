@@ -1,0 +1,65 @@
+{
+  "statut": {
+    "en_attente": "En attente",
+    "payee": "Payé",
+    "echouee": "Échoué",
+    "remboursee": "Remboursé",
+    "annulee": "Annulé"
+  },
+  "etape": {
+    "choisir": "Choisir",
+    "paiement": "Paiement",
+    "confirmation": "Confirmation"
+  },
+  "article": {
+    "titre": "Choisir un article",
+    "cotisation_titre": "Cotisation annuelle {{annee}}",
+    "cotisation_description": "Accès complet · valide 1 an",
+    "adhesion_titre": "Frais d'adhésion",
+    "adhesion_description": "Paiement unique · inscription initiale",
+    "don_titre": "Don à l'association",
+    "don_description": "Montant libre",
+    "don_montant_label": "Montant du don (€)",
+    "don_montant_erreur": "Indiquez un montant supérieur à 0."
+  },
+  "recap": {
+    "titre": "Récapitulatif",
+    "article": "Article",
+    "montant": "Montant",
+    "mode": "Mode"
+  },
+  "continuer": "Continuer vers le paiement",
+  "paiement": {
+    "titre": "Choisir le mode de paiement",
+    "carte_titre": "Carte bancaire",
+    "carte_description": "Visa, Mastercard, Amex",
+    "sepa_titre": "Virement SEPA",
+    "sepa_description": "Traitement sous 2 jours ouvrés",
+    "paypal_titre": "PayPal",
+    "paypal_description": "Paiement rapide et sécurisé",
+    "note": "Aucune donnée bancaire n'est saisie ici : ce mode sert uniquement à enregistrer votre paiement dans le registre de l'association.",
+    "payer": "Payer {{montant}} € en sécurité",
+    "retour": "Retour",
+    "erreur": "Le paiement n'a pas pu être enregistré."
+  },
+  "confirmation": {
+    "titre": "Paiement confirmé !",
+    "sous_titre": "Votre paiement a bien été enregistré.",
+    "reference": "Référence",
+    "article": "Article",
+    "montant": "Montant",
+    "date": "Date",
+    "nouveau_paiement": "Nouveau paiement",
+    "accueil": "Accueil"
+  },
+  "historique": {
+    "titre": "Historique des paiements",
+    "chargement": "Chargement…",
+    "erreur": "Impossible de charger l'historique.",
+    "aucun": "Aucun paiement enregistré.",
+    "col_date": "Date",
+    "col_libelle": "Libellé",
+    "col_montant": "Montant",
+    "col_statut": "Statut"
+  }
+}
