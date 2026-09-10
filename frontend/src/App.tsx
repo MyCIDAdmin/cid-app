@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
+import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
@@ -71,6 +72,16 @@ export default function App() {
             ouvert à tout authentifié : le backend scope déjà le queryset et
             résout le membre courant à la création (CotisationViewSet). */}
         <Route path="/cotisation" element={<CotisationStepperPage />} />
+        {/* Validation des inscriptions libre-service (FDD §3.1, AHM-48) —
+            RH+ uniquement, même gate que PendingRegistrationsView côté API. */}
+        <Route
+          path="/inscriptions"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <InscriptionsEnAttentePage />
+            </RequireRole>
+          }
+        />
         {/* Les routes suivantes sont ajoutées au fil des phases :
             /evenements, /boutique, /vote, /stats, /admin/* */}
       </Route>

@@ -9,6 +9,9 @@ Vues API — app accounts (TDD §2.4) :
   POST /auth/logout/                 — blackliste le refresh token
   POST /auth/password-reset/         — demande un lien de réinitialisation
   POST /auth/password-reset/confirm/ — consomme le lien, fixe le nouveau mdp
+  GET  /auth/pending-registrations/          — liste des inscriptions en attente (RH+)
+  POST /auth/pending-registrations/{id}/approve/ — active le compte (RH+)
+  POST /auth/pending-registrations/{id}/refuse/  — refuse l'inscription (RH+)
 """
 
 import base64
@@ -21,6 +24,7 @@ from django.core.signing import BadSignature, SignatureExpired
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import generics, status
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
+from rest_framework.pagination import CursorPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -29,10 +33,13 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import services
+from .models import RegistrationDecision
+from .permissions import IsRHOrAbove
 from .serializers import (
     LoginSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
+    PendingRegistrationSerializer,
     RegisterSerializer,
     SendOTPSerializer,
     TOTPSetupConfirmSerializer,
@@ -44,6 +51,8 @@ from .tasks import (
     send_new_ip_alert_email,
     send_otp_email,
     send_password_reset_email,
+    send_registration_approved_email,
+    send_registration_refused_email,
     send_welcome_email,
 )
 
@@ -325,6 +334,84 @@ class PasswordResetConfirmView(APIView):
             "password_reset_confirmed", user=user, ip_address=_client_ip(request)
         )
         return Response({"message": "Mot de passe réinitialisé avec succès."})
+
+
+class PendingRegistrationsCursorPagination(CursorPagination):
+    page_size = 20
+    ordering = ("created_at", "id")
+
+
+class PendingRegistrationsView(generics.ListAPIView):
+    """
+    Liste des inscriptions libre-service en attente de décision (AHM-48).
+    Le décompte `is_active=False` seul est ambigu (un compte peut aussi
+    être désactivé manuellement) — on filtre donc aussi sur
+    `registration_decision=EN_ATTENTE`.
+    """
+
+    permission_classes = [IsRHOrAbove]
+    serializer_class = PendingRegistrationSerializer
+    pagination_class = PendingRegistrationsCursorPagination
+
+    def get_queryset(self):
+        return User.objects.filter(
+            is_active=False, registration_decision=RegistrationDecision.EN_ATTENTE
+        ).order_by("created_at", "id")
+
+
+class ApproveRegistrationView(APIView):
+    """
+    Active le compte (FDD §3.1). Ne crée pas la fiche Membre : RH/Admin la
+    crée/lie séparément via le flux existant (POST /membres/, champ `user`
+    déjà éditable — cf MembreSerializer) — hors périmètre de ce ticket.
+    """
+
+    permission_classes = [IsRHOrAbove]
+
+    def post(self, request, pk):
+        target = User.objects.filter(
+            pk=pk, is_active=False, registration_decision=RegistrationDecision.EN_ATTENTE
+        ).first()
+        if target is None:
+            raise ValidationError("Inscription introuvable ou déjà traitée.")
+
+        target.is_active = True
+        target.registration_decision = RegistrationDecision.APPROUVE
+        target.save(update_fields=["is_active", "registration_decision"])
+
+        send_registration_approved_email.delay(str(target.id))
+        services.log_audit_event(
+            "registration_approved",
+            user=target,
+            ip_address=_client_ip(request),
+            decided_by=str(request.user.id),
+        )
+        return Response(UserSerializer(target).data)
+
+
+class RefuseRegistrationView(APIView):
+    """Refuse l'inscription (FDD §3.1) — le compte reste inactif."""
+
+    permission_classes = [IsRHOrAbove]
+
+    def post(self, request, pk):
+        target = User.objects.filter(
+            pk=pk, is_active=False, registration_decision=RegistrationDecision.EN_ATTENTE
+        ).first()
+        if target is None:
+            raise ValidationError("Inscription introuvable ou déjà traitée.")
+
+        target.registration_decision = RegistrationDecision.REFUSE
+        target.save(update_fields=["registration_decision"])
+
+        send_registration_refused_email.delay(str(target.id))
+        services.log_audit_event(
+            "registration_refused",
+            user=target,
+            ip_address=_client_ip(request),
+            decided_by=str(request.user.id),
+        )
+        return Response(UserSerializer(target).data)
 
 
 class LogoutView(APIView):

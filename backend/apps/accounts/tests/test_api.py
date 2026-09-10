@@ -2,7 +2,7 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.accounts.models import Role, User
+from apps.accounts.models import RegistrationDecision, Role, User
 
 pytestmark = pytest.mark.django_db
 
@@ -155,4 +155,76 @@ def test_password_reset_confirm_jeton_deja_utilise_echoue(api_client, membre_act
     assert premier.status_code == 200
 
     second = api_client.post(url, {"token": token, "new_password": "AutreMdp789!"}, format="json")
+    assert second.status_code == 400
+
+
+# --- AHM-48 : validation des inscriptions par RH/Admin ---
+
+
+@pytest.fixture
+def rh_user():
+    return User.objects.create_user(
+        email="rh@example.com", password="Password123!", role=Role.RH, is_active=True
+    )
+
+
+@pytest.fixture
+def inscription_en_attente():
+    return User.objects.create_user(email="candidat@example.com", password="Password123!")
+
+
+def test_pending_registrations_visible_a_rh(api_client, rh_user, inscription_en_attente):
+    api_client.force_authenticate(user=rh_user)
+    resp = api_client.get(reverse("accounts:pending-registrations"))
+    assert resp.status_code == 200
+    emails = [row["email"] for row in resp.data["results"]]
+    assert "candidat@example.com" in emails
+
+
+def test_pending_registrations_refuse_a_membre_normal(api_client, inscription_en_attente):
+    membre = User.objects.create_user(
+        email="membre-normal@example.com", password="Password123!", is_active=True
+    )
+    api_client.force_authenticate(user=membre)
+    resp = api_client.get(reverse("accounts:pending-registrations"))
+    assert resp.status_code == 403
+
+
+def test_approve_registration_active_le_compte(api_client, rh_user, inscription_en_attente):
+    api_client.force_authenticate(user=rh_user)
+    url = reverse("accounts:pending-registration-approve", args=[inscription_en_attente.id])
+    resp = api_client.post(url)
+    assert resp.status_code == 200
+
+    inscription_en_attente.refresh_from_db()
+    assert inscription_en_attente.is_active is True
+    assert inscription_en_attente.registration_decision == RegistrationDecision.APPROUVE
+
+    # Le compte peut désormais se connecter.
+    login_resp = api_client.post(
+        reverse("accounts:login"),
+        {"email": "candidat@example.com", "password": "Password123!"},
+        format="json",
+    )
+    assert login_resp.status_code == 200
+
+
+def test_refuse_registration_laisse_le_compte_inactif(api_client, rh_user, inscription_en_attente):
+    api_client.force_authenticate(user=rh_user)
+    url = reverse("accounts:pending-registration-refuse", args=[inscription_en_attente.id])
+    resp = api_client.post(url)
+    assert resp.status_code == 200
+
+    inscription_en_attente.refresh_from_db()
+    assert inscription_en_attente.is_active is False
+    assert inscription_en_attente.registration_decision == RegistrationDecision.REFUSE
+
+
+def test_approve_registration_deja_traitee_echoue(api_client, rh_user, inscription_en_attente):
+    api_client.force_authenticate(user=rh_user)
+    url = reverse("accounts:pending-registration-approve", args=[inscription_en_attente.id])
+    premier = api_client.post(url)
+    assert premier.status_code == 200
+
+    second = api_client.post(url)
     assert second.status_code == 400

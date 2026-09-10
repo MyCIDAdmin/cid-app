@@ -89,6 +89,54 @@ def send_password_reset_email(user_id, token):
 
 
 @shared_task
+def send_registration_approved_email(user_id):
+    """AHM-48 — le compte vient d'être activé par RH/Admin."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return
+
+    send_mail(
+        subject="Votre compte CID a été activé",
+        message=(
+            "Bonne nouvelle : votre inscription a été validée par un membre du "
+            "bureau ou des RH. Vous pouvez désormais vous connecter à la "
+            "plateforme CID."
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+
+
+@shared_task
+def send_registration_refused_email(user_id):
+    """AHM-48 — l'inscription a été refusée par RH/Admin."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return
+
+    send_mail(
+        subject="Votre inscription CID n'a pas été validée",
+        message=(
+            "Votre demande d'inscription à la plateforme CID n'a pas été "
+            "validée par le bureau ou les RH. Si vous pensez qu'il s'agit "
+            "d'une erreur, contactez l'association."
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+
+
+@shared_task
 def send_new_ip_alert_email(user_id, ip_address):
     """W-010 — alerte connexion depuis IP/device inconnu."""
     from django.contrib.auth import get_user_model

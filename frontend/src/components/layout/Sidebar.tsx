@@ -5,7 +5,7 @@
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import { hasRoleAtLeast, useAuthStore } from "../../store/authStore";
+import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 
 interface NavItem {
   to: string;
@@ -20,6 +20,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/membres", labelKey: "nav.membres" },
   { to: "/mon-adhesion", labelKey: "nav.mon_adhesion" },
   { to: "/cotisation", labelKey: "nav.cotisation" },
+  // Validation des inscriptions (AHM-48) — visible RH+ seulement, la route
+  // elle-même est aussi gated côté App.tsx (RequireRole).
+  { to: "/inscriptions", labelKey: "nav.inscriptions", minRoleLevel: ROLE_LEVELS.rh },
 ];
 
 export default function Sidebar() {

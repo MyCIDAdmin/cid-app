@@ -16,6 +16,21 @@ urlpatterns = [
         views.PasswordResetConfirmView.as_view(),
         name="password-reset-confirm",
     ),
+    path(
+        "pending-registrations/",
+        views.PendingRegistrationsView.as_view(),
+        name="pending-registrations",
+    ),
+    path(
+        "pending-registrations/<uuid:pk>/approve/",
+        views.ApproveRegistrationView.as_view(),
+        name="pending-registration-approve",
+    ),
+    path(
+        "pending-registrations/<uuid:pk>/refuse/",
+        views.RefuseRegistrationView.as_view(),
+        name="pending-registration-refuse",
+    ),
     path("me/", views.MeView.as_view(), name="me"),
     path("2fa/send-otp/", views.SendOTPView.as_view(), name="2fa-send-otp"),
     path("2fa/verify/", views.Verify2FAView.as_view(), name="2fa-verify"),

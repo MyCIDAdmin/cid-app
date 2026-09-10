@@ -78,3 +78,12 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 class PasswordResetConfirmSerializer(serializers.Serializer):
     token = serializers.CharField()
     new_password = serializers.CharField(write_only=True, validators=[validate_password])
+
+
+class PendingRegistrationSerializer(serializers.ModelSerializer):
+    """Inscription libre-service en attente de décision RH/Admin (AHM-48)."""
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "langue_preferee", "created_at"]
+        read_only_fields = fields

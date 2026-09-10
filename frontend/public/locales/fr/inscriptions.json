@@ -1,0 +1,24 @@
+{
+  "liste": {
+    "titre": "Inscriptions en attente",
+    "description": "Validez ou refusez les demandes d'inscription reçues via la page d'inscription libre-service.",
+    "col_email": "Email",
+    "col_langue": "Langue",
+    "col_date": "Date d'inscription",
+    "col_actions": "Actions",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les inscriptions en attente.",
+    "aucune_inscription": "Aucune inscription en attente.",
+    "accepter": "Accepter",
+    "refuser": "Refuser",
+    "precedent": "Précédent",
+    "suivant": "Suivant",
+    "confirmer_accepter_titre": "Accepter cette inscription ?",
+    "confirmer_accepter_message": "Le compte {{email}} sera activé et pourra se connecter.",
+    "confirmer_refuser_titre": "Refuser cette inscription ?",
+    "confirmer_refuser_message": "Le compte {{email}} restera désactivé.",
+    "accepte_message": "Le compte {{email}} a été activé.",
+    "creer_fiche_membre": "Créer sa fiche Membre →",
+    "erreur_action": "Une erreur est survenue, veuillez réessayer."
+  }
+}

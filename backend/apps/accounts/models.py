@@ -40,6 +40,18 @@ ROLE_LEVELS = {
 ROLE_2FA_MANDATORY_MIN_LEVEL = 3
 
 
+class RegistrationDecision(models.TextChoices):
+    """
+    Décision RH/Admin sur une inscription libre-service (FDD §3.1, AHM-48).
+    Distinct de `is_active` : un compte peut être inactif pour d'autres
+    raisons (désactivation manuelle) sans être une inscription en attente.
+    """
+
+    EN_ATTENTE = "en_attente", _("En attente")
+    APPROUVE = "approuve", _("Approuvée")
+    REFUSE = "refuse", _("Refusée")
+
+
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -64,6 +76,8 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
         extra_fields.setdefault("role", Role.SUPER_ADMIN)
+        # Un superuser n'est pas une inscription libre-service à valider.
+        extra_fields.setdefault("registration_decision", RegistrationDecision.APPROUVE)
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Un superuser doit avoir is_staff=True.")
@@ -90,6 +104,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text=_("Un membre inscrit doit être activé par RH ou Admin (FDD §3.1)."),
     )
     is_staff = models.BooleanField(default=False)
+
+    # --- Validation des inscriptions libre-service par RH/Admin (AHM-48) ---
+    registration_decision = models.CharField(
+        max_length=20,
+        choices=RegistrationDecision.choices,
+        default=RegistrationDecision.EN_ATTENTE,
+        help_text=_(
+            "Décision RH/Admin sur cette inscription — distinct de is_active "
+            "qui peut aussi être False pour d'autres raisons."
+        ),
+    )
 
     # --- Préférence linguistique persistante (FDD §3.1) ---
     langue_preferee = models.CharField(
