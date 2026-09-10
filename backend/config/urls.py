@@ -14,8 +14,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/membres/", include("apps.membres.urls")),
+    path("api/v1/cotisations/", include("apps.cotisations.urls")),
     # Les routes suivantes sont ajoutées au fur et à mesure de leur implémentation :
-    # path("api/v1/cotisations/", include("apps.cotisations.urls")),
     # path("api/v1/adhesions/", include("apps.adhesions.urls")),
     # path("api/v1/evenements/", include("apps.evenements.urls")),
     # path("api/v1/boutique/", include("apps.boutique.urls")),

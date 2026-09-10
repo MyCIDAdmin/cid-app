@@ -1,0 +1,267 @@
+"""
+Tests API — app cotisations (TDD §2.4, SCD §2.3 A01 : IDOR sur les endpoints financiers).
+"""
+
+import pytest
+from django.urls import reverse
+from rest_framework.test import APIClient
+
+from apps.accounts.models import Role, User
+from apps.cotisations.models import StatutCotisation, TypeArticle
+from apps.cotisations.tests.factories import CotisationFactory
+from apps.membres.tests.factories import MembreFactory
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def api_client():
+    return APIClient()
+
+
+def _user_avec_membre(role, email):
+    user = User.objects.create_user(email=email, password="Password123!", role=role, is_active=True)
+    membre = MembreFactory(user=user)
+    return user, membre
+
+
+def _auth(api_client, user):
+    api_client.force_authenticate(user=user)
+    return api_client
+
+
+LIST_URL = "cotisations:cotisation-list"
+
+
+def _detail_url(cotisation):
+    return reverse("cotisations:cotisation-detail", args=[cotisation.id])
+
+
+# --- Authentification ---
+
+
+def test_list_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(LIST_URL))
+    assert resp.status_code == 401
+
+
+# --- Libre-service (F-004 stepper) ---
+
+
+def test_membre_peut_payer_sa_propre_cotisation(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {"type_article": TypeArticle.COTISATION, "mode_paiement": "carte", "statut": "payee"},
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert str(resp.data["membre"]) == str(membre.id)
+    assert resp.data["saisie_par"] is None
+    assert str(resp.data["montant"]) == "45.00"  # tarif catalogue, pas de montant du client
+    assert resp.data["libelle"] == f"Cotisation annuelle {resp.data['annee']}"
+    assert resp.data["reference_transaction"].startswith("TXN-")
+
+
+def test_montant_catalogue_impose_meme_si_client_en_envoie_un_autre(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.COTISATION,
+            "montant": "1.00",  # doit être ignoré — tarif catalogue imposé côté serveur
+            "mode_paiement": "carte",
+            "statut": "payee",
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert str(resp.data["montant"]) == "45.00"
+
+
+def test_don_libre_conserve_le_montant_transmis(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "donateur@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.DON,
+            "libelle": "Don libre — soutien projet",
+            "montant": "20.00",
+            "mode_paiement": "paypal",
+            "statut": "payee",
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert str(resp.data["montant"]) == "20.00"
+
+
+def test_don_sans_libelle_refuse(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "donateur@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(LIST_URL), {"type_article": TypeArticle.DON, "montant": "20.00"})
+
+    assert resp.status_code == 400
+    assert "libelle" in resp.data["details"]
+
+
+def test_evenement_sans_montant_refuse(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {"type_article": TypeArticle.EVENEMENT, "libelle": "Sortie Dortmund"},
+    )
+
+    assert resp.status_code == 400
+    assert "montant" in resp.data["details"]
+
+
+def test_creation_sans_fiche_membre_liee_refusee(api_client):
+    user = User.objects.create_user(
+        email="sans-fiche@example.de", password="Password123!", role=Role.MEMBRE, is_active=True
+    )
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(LIST_URL), {"type_article": TypeArticle.COTISATION})
+    assert resp.status_code == 400
+
+
+# --- Saisie pour autrui (F-015) ---
+
+
+def test_membre_ne_peut_pas_saisir_pour_un_autre_membre(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    autre = MembreFactory()
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.COTISATION, "membre": str(autre.id)}
+    )
+    assert resp.status_code == 403
+
+
+def test_directeur_financier_peut_saisir_pour_un_autre_membre(api_client):
+    user, _membre_dg = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    autre = MembreFactory()
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.ADHESION,
+            "mode_paiement": "virement_sepa",
+            "statut": "payee",
+            "membre": str(autre.id),
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert str(resp.data["membre"]) == str(autre.id)
+    assert str(resp.data["saisie_par"]) == str(_membre_dg.id)
+
+
+# --- Scope liste / IDOR (SCD §2.3 A01) ---
+
+
+def test_membre_ne_voit_que_ses_propres_cotisations(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    CotisationFactory(membre=membre)
+    CotisationFactory()  # une autre fiche, non liée à ce compte
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert str(resp.data["results"][0]["membre"]) == str(membre.id)
+
+
+def test_membre_peut_recuperer_sa_propre_cotisation(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    cotisation = CotisationFactory(membre=membre)
+
+    _auth(api_client, user)
+    resp = api_client.get(_detail_url(cotisation))
+
+    assert resp.status_code == 200
+    assert str(resp.data["id"]) == str(cotisation.id)
+
+
+def test_membre_ne_peut_pas_recuperer_la_cotisation_dun_autre(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    cotisation_autrui = CotisationFactory()
+
+    _auth(api_client, user)
+    resp = api_client.get(_detail_url(cotisation_autrui))
+
+    assert resp.status_code == 404
+
+
+def test_rh_peut_recuperer_le_detail_dune_cotisation_dautrui(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    cotisation = CotisationFactory()
+
+    _auth(api_client, user)
+    resp = api_client.get(_detail_url(cotisation))
+
+    assert resp.status_code == 200
+    assert str(resp.data["id"]) == str(cotisation.id)
+
+
+def test_rh_liste_toutes_les_cotisations(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    CotisationFactory.create_batch(3)
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 3
+
+
+# --- Registre append-only ---
+
+
+def test_update_non_autorise(api_client):
+    user, membre = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    cotisation = CotisationFactory(membre=membre)
+
+    _auth(api_client, user)
+    resp = api_client.patch(_detail_url(cotisation), {"statut": StatutCotisation.ANNULEE})
+
+    assert resp.status_code == 405
+
+
+def test_delete_non_autorise(api_client):
+    user, membre = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    cotisation = CotisationFactory(membre=membre)
+
+    _auth(api_client, user)
+    resp = api_client.delete(_detail_url(cotisation))
+
+    assert resp.status_code == 405
+
+
+# --- Filtres ---
+
+
+def test_filtre_par_statut(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    CotisationFactory(statut=StatutCotisation.PAYEE)
+    CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL), {"statut": StatutCotisation.EN_ATTENTE})
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert resp.data["results"][0]["statut"] == StatutCotisation.EN_ATTENTE
