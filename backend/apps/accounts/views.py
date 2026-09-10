@@ -7,6 +7,8 @@ Vues API — app accounts (TDD §2.4) :
   GET/PATCH /auth/me/                — profil de l'utilisateur connecté
   GET/POST/DELETE /auth/2fa/totp/    — setup / statut / désactivation TOTP
   POST /auth/logout/                 — blackliste le refresh token
+  POST /auth/password-reset/         — demande un lien de réinitialisation
+  POST /auth/password-reset/confirm/ — consomme le lien, fixe le nouveau mdp
 """
 
 import base64
@@ -29,6 +31,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from . import services
 from .serializers import (
     LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     RegisterSerializer,
     SendOTPSerializer,
     TOTPSetupConfirmSerializer,
@@ -36,7 +40,12 @@ from .serializers import (
     UserSerializer,
     Verify2FASerializer,
 )
-from .tasks import send_new_ip_alert_email, send_otp_email, send_welcome_email
+from .tasks import (
+    send_new_ip_alert_email,
+    send_otp_email,
+    send_password_reset_email,
+    send_welcome_email,
+)
 
 LOGIN_TICKET_SALT = "cid.accounts.login_ticket"
 LOGIN_TICKET_MAX_AGE = 300  # 5 minutes
@@ -264,6 +273,58 @@ class TOTPConfirmView(APIView):
         device.save(update_fields=["confirmed"])
         services.log_audit_event("totp_enabled", user=request.user, ip_address=_client_ip(request))
         return Response({"message": "2FA TOTP activé avec succès."})
+
+
+class PasswordResetRequestView(APIView):
+    """
+    Demande de réinitialisation (FDD §3.1). La réponse est volontairement
+    identique que l'email corresponde à un compte ou non — ne pas
+    permettre l'énumération des adresses inscrites (SCD).
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset"
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.filter(email__iexact=serializer.validated_data["email"]).first()
+        if user is not None:
+            token = services.generate_password_reset_token(user)
+            send_password_reset_email.delay(str(user.id), token)
+            services.log_audit_event(
+                "password_reset_requested", user=user, ip_address=_client_ip(request)
+            )
+
+        return Response(
+            {
+                "message": (
+                    "Si un compte existe avec cet email, un lien de réinitialisation "
+                    "vient d'être envoyé."
+                )
+            }
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    """Consomme le jeton reçu par email et fixe le nouveau mot de passe."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = services.verify_password_reset_token(data["token"])
+        user.set_password(data["new_password"])
+        user.save(update_fields=["password"])
+        services.log_audit_event(
+            "password_reset_confirmed", user=user, ip_address=_client_ip(request)
+        )
+        return Response({"message": "Mot de passe réinitialisé avec succès."})
 
 
 class LogoutView(APIView):

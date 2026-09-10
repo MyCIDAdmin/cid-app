@@ -10,6 +10,12 @@ urlpatterns = [
     path("logout/", views.LogoutView.as_view(), name="logout"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("register/", views.RegisterView.as_view(), name="register"),
+    path("password-reset/", views.PasswordResetRequestView.as_view(), name="password-reset"),
+    path(
+        "password-reset/confirm/",
+        views.PasswordResetConfirmView.as_view(),
+        name="password-reset-confirm",
+    ),
     path("me/", views.MeView.as_view(), name="me"),
     path("2fa/send-otp/", views.SendOTPView.as_view(), name="2fa-send-otp"),
     path("2fa/verify/", views.Verify2FAView.as_view(), name="2fa-verify"),

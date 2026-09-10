@@ -9,12 +9,24 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import signing
+from django.core.signing import BadSignature, SignatureExpired
 from django.utils import timezone
 from django_otp.plugins.otp_totp.models import TOTPDevice
+from rest_framework.exceptions import ValidationError
 
 from .models import AuditLogEntry, EmailOTP
 
 User = get_user_model()
+
+# Réinitialisation de mot de passe (FDD §3.1 : "lien email sécurisé, valide
+# 1h, usage unique"). Même mécanisme que le login_ticket (apps.accounts.views)
+# — un jeton signé et daté par django.core.signing, sans table dédiée. Le
+# caractère "usage unique" est obtenu en liant le jeton à une empreinte du
+# hash de mot de passe courant : dès que le mot de passe change (par ce
+# jeton ou par un autre moyen), tout jeton émis avant devient invalide.
+PASSWORD_RESET_SALT = "cid.accounts.password_reset"
+PASSWORD_RESET_MAX_AGE_SECONDS = 3600
 
 
 def log_audit_event(action: str, user=None, ip_address=None, user_agent="", **metadata):
@@ -108,3 +120,40 @@ def verify_email_otp(user, code: str, purpose: str = "login_2fa") -> bool:
 
 def fingerprint_hash(raw_fingerprint: str) -> str:
     return hashlib.sha256(raw_fingerprint.encode()).hexdigest()
+
+
+def _password_fingerprint(user) -> str:
+    """
+    Empreinte à sens unique du hash de mot de passe courant — jamais le hash
+    lui-même (SCD §10.1 : pas de secret exposé, même signé) — sert juste à
+    détecter qu'un lien de réinitialisation a déjà été consommé.
+    """
+    return hashlib.sha256(user.password.encode()).hexdigest()[:16]
+
+
+def generate_password_reset_token(user) -> str:
+    return signing.dumps(
+        {"user_id": str(user.id), "pwd_fp": _password_fingerprint(user)},
+        salt=PASSWORD_RESET_SALT,
+    )
+
+
+def verify_password_reset_token(token: str):
+    """
+    Retourne l'utilisateur si le jeton est valide ; lève ValidationError sinon
+    (signature invalide, expiré, ou déjà consommé — mot de passe changé
+    depuis l'émission du jeton).
+    """
+    try:
+        payload = signing.loads(
+            token, salt=PASSWORD_RESET_SALT, max_age=PASSWORD_RESET_MAX_AGE_SECONDS
+        )
+    except SignatureExpired:
+        raise ValidationError("Ce lien de réinitialisation a expiré.")
+    except BadSignature:
+        raise ValidationError("Ce lien de réinitialisation est invalide.")
+
+    user = User.objects.filter(id=payload.get("user_id")).first()
+    if user is None or _password_fingerprint(user) != payload.get("pwd_fp"):
+        raise ValidationError("Ce lien de réinitialisation est invalide ou a déjà été utilisé.")
+    return user

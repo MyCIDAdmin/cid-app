@@ -10,7 +10,9 @@ import MembreDetailPage from "./pages/membres/MembreDetailPage";
 import MembreFormPage from "./pages/membres/MembreFormPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import RegisterPage from "./pages/RegisterPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import { ROLE_LEVELS } from "./store/authStore";
 
 export default function App() {
@@ -21,6 +23,10 @@ export default function App() {
           AHM-47) — compte créé inactif, activation décidée ensuite par
           RH/Admin (AHM-48). */}
       <Route path="/register" element={<RegisterPage />} />
+      {/* Réinitialisation de mot de passe (mockup #sc-login, FDD §3.1) —
+          demande d'email puis confirmation via le lien reçu (?token=). */}
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         element={
           <RequireAuth>

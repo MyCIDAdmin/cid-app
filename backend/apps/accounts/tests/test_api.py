@@ -96,3 +96,63 @@ def test_register_without_rgpd_consent_fails(api_client):
         format="json",
     )
     assert resp.status_code == 400
+
+
+def test_password_reset_request_existant_renvoie_message_generique(api_client, membre_actif):
+    url = reverse("accounts:password-reset")
+    resp = api_client.post(url, {"email": membre_actif.email}, format="json")
+    assert resp.status_code == 200
+    assert "message" in resp.data
+
+
+def test_password_reset_request_inexistant_renvoie_le_meme_message(api_client, membre_actif):
+    """Anti-énumération (SCD) : même réponse qu'un email existe ou non."""
+    url = reverse("accounts:password-reset")
+    resp_existant = api_client.post(url, {"email": membre_actif.email}, format="json")
+    resp_inexistant = api_client.post(url, {"email": "ne-existe-pas@example.com"}, format="json")
+    assert resp_existant.status_code == resp_inexistant.status_code == 200
+    assert resp_existant.data["message"] == resp_inexistant.data["message"]
+
+
+def test_password_reset_confirm_avec_jeton_valide_change_le_mot_de_passe(api_client, membre_actif):
+    from apps.accounts import services
+
+    token = services.generate_password_reset_token(membre_actif)
+    url = reverse("accounts:password-reset-confirm")
+    resp = api_client.post(url, {"token": token, "new_password": "NouveauMdp456!"}, format="json")
+    assert resp.status_code == 200
+
+    membre_actif.refresh_from_db()
+    assert membre_actif.check_password("NouveauMdp456!")
+
+    # Connexion possible avec le nouveau mot de passe.
+    login_resp = api_client.post(
+        reverse("accounts:login"),
+        {"email": membre_actif.email, "password": "NouveauMdp456!"},
+        format="json",
+    )
+    assert login_resp.status_code == 200
+
+
+def test_password_reset_confirm_avec_jeton_invalide_echoue(api_client):
+    url = reverse("accounts:password-reset-confirm")
+    resp = api_client.post(
+        url, {"token": "jeton-invalide", "new_password": "NouveauMdp456!"}, format="json"
+    )
+    assert resp.status_code == 400
+
+
+def test_password_reset_confirm_jeton_deja_utilise_echoue(api_client, membre_actif):
+    """Le jeton devient invalide dès que le mot de passe a changé (usage unique)."""
+    from apps.accounts import services
+
+    token = services.generate_password_reset_token(membre_actif)
+    url = reverse("accounts:password-reset-confirm")
+
+    premier = api_client.post(
+        url, {"token": token, "new_password": "NouveauMdp456!"}, format="json"
+    )
+    assert premier.status_code == 200
+
+    second = api_client.post(url, {"token": token, "new_password": "AutreMdp789!"}, format="json")
+    assert second.status_code == 400

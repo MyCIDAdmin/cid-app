@@ -107,6 +107,9 @@ export default function LoginPage() {
                 className="mt-1 w-full rounded-cid border border-black/10 px-3 py-2 text-sm outline-none focus:border-ca"
               />
             </label>
+            <Link to="/forgot-password" className="-mt-1 text-right text-xs text-ca hover:underline">
+              {t("login.mot_de_passe_oublie")}
+            </Link>
             {error && <p className="text-sm text-status-dangerText">{error}</p>}
             <button
               type="submit"

@@ -52,3 +52,25 @@ export interface RegisterPayload {
 export async function register(payload: RegisterPayload): Promise<void> {
   await apiClient.post("/auth/register/", payload);
 }
+
+/**
+ * POST /auth/password-reset/ (FDD §3.1). Répond 200 avec un message
+ * générique que l'email corresponde à un compte ou non (anti-énumération
+ * côté backend) — rien à distinguer ici non plus.
+ */
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>("/auth/password-reset/", { email });
+  return data;
+}
+
+/** POST /auth/password-reset/confirm/ — jeton reçu par email, valide 1h, usage unique. */
+export async function confirmPasswordReset(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>("/auth/password-reset/confirm/", {
+    token,
+    new_password: newPassword,
+  });
+  return data;
+}

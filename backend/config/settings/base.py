@@ -216,6 +216,7 @@ REST_FRAMEWORK = {
         # Redis-backed counter (OTP_EMAIL_MAX_PER_10MIN) — this scope is
         # just a coarser API-abuse safety net on top of that.
         "otp": "5/min",
+        "password_reset": "5/min",
         "justificatif_upload": "10/hour",
     },
     "EXCEPTION_HANDLER": "apps.accounts.exceptions.cid_exception_handler",

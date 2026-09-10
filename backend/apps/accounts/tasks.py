@@ -62,6 +62,33 @@ def send_welcome_email(user_id):
 
 
 @shared_task
+def send_password_reset_email(user_id, token):
+    """FDD §3.1 — lien de réinitialisation, valide 1h (services.PASSWORD_RESET_MAX_AGE_SECONDS)."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return
+
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+    send_mail(
+        subject="Réinitialisation de votre mot de passe CID",
+        message=(
+            "Vous avez demandé la réinitialisation de votre mot de passe.\n\n"
+            f"Cliquez sur ce lien pour choisir un nouveau mot de passe (valide 1 heure) "
+            f"et à usage unique :\n{reset_url}\n\n"
+            "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email — votre "
+            "mot de passe actuel reste inchangé."
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+
+
+@shared_task
 def send_new_ip_alert_email(user_id, ip_address):
     """W-010 — alerte connexion depuis IP/device inconnu."""
     from django.contrib.auth import get_user_model

@@ -69,3 +69,12 @@ class Verify2FASerializer(serializers.Serializer):
 
 class TOTPSetupConfirmSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=6, min_length=6)
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, validators=[validate_password])
