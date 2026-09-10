@@ -62,6 +62,18 @@ def membre_photo_upload_path(instance, filename):
     return f"membres/{instance.id}/photo_{filename}"
 
 
+def _aujourd_hui():
+    """
+    default= pour date_adhesion (DateField). `default=timezone.now` (un
+    DateTimeField-aware datetime) paraît fonctionner à l'écriture — Django
+    le convertit silencieusement lors du save() — mais l'attribut Python
+    reste un datetime tant que l'instance n'est pas rechargée depuis la BDD,
+    ce qui casse la sérialisation DRF (DateField refuse explicitement un
+    datetime en entrée). On force ici un vrai `date`.
+    """
+    return timezone.now().date()
+
+
 class Membre(models.Model):
     """Fiche membre — voir mockup #pg-admin-fiche-membre / #pg-admin-nouveau-membre."""
 
@@ -125,7 +137,7 @@ class Membre(models.Model):
     statut = models.CharField(
         max_length=20, choices=StatutMembre.choices, default=StatutMembre.EN_ATTENTE
     )
-    date_adhesion = models.DateField(default=timezone.now)
+    date_adhesion = models.DateField(default=_aujourd_hui)
 
     photo = models.ImageField(upload_to=membre_photo_upload_path, null=True, blank=True)
 
