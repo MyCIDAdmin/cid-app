@@ -81,6 +81,10 @@ export default function LoginPage() {
           </h1>
         </div>
 
+        <p className="mb-4 rounded-cid border border-amber-300 bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-800">
+          {t("notice.under_construction")}
+        </p>
+
         {step === "credentials" ? (
           <form onSubmit={handleCredentialsSubmit} className="flex flex-col gap-3">
             <label className="text-sm font-medium text-text-secondary">
