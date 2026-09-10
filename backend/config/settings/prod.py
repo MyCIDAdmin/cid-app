@@ -21,9 +21,12 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
-STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+# "default" (S3-compatible, MinIO ou tout autre fournisseur S3) est hérité de
+# base.py tel quel — c'est la base de la portabilité du stockage fichiers :
+# migrer de MinIO à un autre fournisseur S3-compatible (ou à un autre hébergeur
+# que Railway) ne nécessite qu'un changement de variables d'environnement.
+STORAGES["staticfiles"] = {  # noqa: F405
+    "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
 }
 
 MIDDLEWARE.insert(  # noqa: F405

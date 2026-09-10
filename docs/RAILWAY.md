@@ -2,8 +2,11 @@
 
 Ce document décrit comment déployer l'application CID sur Railway à partir
 de ce repository GitHub. Railway est utilisé comme solution de déploiement
-initiale ("erstmal") ; l'architecture Hetzner/Docker Compose autonome décrite
-dans le SDD (CID-SDD-001 §6) reste l'option de repli en production si besoin.
+initiale ("erstmal") pour lancer rapidement le développement et les tests ;
+l'architecture Hetzner/Docker Compose autonome décrite dans le SDD
+(CID-SDD-001 §6) reste l'option de repli en production, et **toute
+l'architecture de ce repo est conçue pour rendre cette bascule triviale** —
+voir §10 "Portabilité & migration" ci-dessous, à lire avant le Go-Live.
 
 ## 1. Prérequis
 
@@ -114,12 +117,16 @@ Docker officielle :
 5. Exposer le port 9000 en interne (pas de domaine public nécessaire — accès
    uniquement depuis `backend` via l'URL interne Railway)
 6. Sur le service `backend`, définir `MINIO_ENDPOINT=<minio-service>.railway.internal:9000`
+7. Créer les buckets nécessaires (`cid-media`, `justificatifs`, `produits`,
+   `exports` — voir noms exacts dans `.env.example`) via la console MinIO
+   (`:9001`) ou `mc mb` — à automatiser par un script d'init en Phase 1B.
 
-> Alternative plus simple à court terme : commencer sans MinIO et stocker les
-> fichiers (justificatifs, photos produits) sur un volume Railway attaché
-> directement au service `backend` (`FileSystemStorage` Django standard).
-> À basculer vers MinIO/S3 dès que la Phase 1B (module Adhésions, justificatifs)
-> est prête pour la production — pre-signed URLs nécessitent un vrai backend S3.
+`STORAGES["default"]` (`backend/config/settings/base.py`) pointe vers ce
+service MinIO **exclusivement via les variables d'environnement** `AWS_*` /
+`MINIO_*` — aucun code ne référence Railway ou MinIO en dur. C'est ce qui
+permet la portabilité décrite en §10 : remplacer MinIO par n'importe quel
+stockage S3-compatible (voir §10) ne demande qu'un changement de variables,
+jamais une modification de code.
 
 ## 8. CI/CD — comportement avec GitHub Actions
 
@@ -146,3 +153,85 @@ en particulier :
 - 2FA activé sur le compte Administrateur App
 - Backup PostgreSQL configuré (Railway propose des backups automatiques sur
   les plans payants — vérifier la rétention et tester une restauration)
+
+## 10. Portabilité & migration
+
+Deux exigences explicites du projet, appliquées dans toute l'architecture :
+(a) le nom de domaine doit être facilement changeable, (b) l'app doit pouvoir
+migrer de Railway vers une autre plateforme sans réécriture de code.
+
+### 10.1 Domaine facilement changeable
+
+Aucun nom de domaine n'est en dur dans le code. Le domaine ne vit que dans
+des variables d'environnement, à modifier aux 3 endroits suivants (jamais de
+redéploiement de code requis) :
+
+| Variable | Service | Rôle |
+| --- | --- | --- |
+| `ALLOWED_HOSTS` | backend | domaine(s) autorisés par Django |
+| `CORS_ALLOWED_ORIGINS`, `FRONTEND_URL` | backend | origine autorisée / liens dans les emails |
+| `VITE_API_BASE_URL`, `VITE_WS_BASE_URL` | frontend (build arg) | où le frontend appelle l'API — **nécessite un rebuild** du service frontend (valeurs injectées à la compilation Vite), pas juste un redémarrage |
+
+`nginx/conf.d/prod.conf.example` (déploiement VPS hors Railway) contient un
+exemple de domaine (`app.clubistes.de`) à remplacer — c'est un fichier de
+référence, non utilisé par Railway, qui n'a pas d'équivalent nginx (son
+routing de domaine est géré dans les Settings de chaque service).
+
+Changer de domaine = mettre à jour ces variables + pointer le DNS (CNAME) sur
+la nouvelle URL Railway ou le nouveau serveur — aucune ligne de code à toucher.
+
+### 10.2 Migrer hors de Railway
+
+Rien dans le code applicatif ne dépend de Railway. Ce qui rend la bascule
+possible :
+
+- **Conteneurs standard** : `backend/Dockerfile.prod` et
+  `frontend/Dockerfile.prod` sont des images Docker ordinaires, sans API
+  Railway. Elles tournent identiquement sur Hetzner + Docker Compose (voir
+  SDD §6), Render, Fly.io, ou tout hébergeur Docker.
+- **Config 12-factor** : toute la configuration (secrets, URLs, ports)
+  vient de variables d'environnement (`.env.example` en dev, Settings du
+  service en prod) — jamais de valeur en dur dépendant de la plateforme,
+  hormis `SECURE_PROXY_SSL_HEADER` qui suppose un proxy TLS-terminating en
+  amont (vrai sur Railway, Render, Fly.io ; à adapter avec un nginx/Caddy en
+  frontal si self-hosted, déjà prévu par `nginx/conf.d/prod.conf.example`).
+- **Base de données** : PostgreSQL standard — `pg_dump` / `pg_restore`
+  (ou `railway db` export) fonctionnent vers n'importe quel Postgres 15.
+- **Stockage fichiers** : `STORAGES["default"]` utilise
+  `storages.backends.s3boto3.S3Boto3Storage`, configuré uniquement via les
+  variables `AWS_*`/`MINIO_*` (voir §7). MinIO aujourd'hui, mais n'importe
+  quel stockage S3-compatible (Scaleway Object Storage, Hetzner Object
+  Storage, OVH, AWS S3 lui-même) fonctionne en changeant uniquement
+  `AWS_S3_ENDPOINT_URL` + les clés — **zéro changement de code**.
+- **Pas de service Railway-only utilisé** : ni cron Railway propriétaire
+  (Celery Beat gère la planification), ni add-on propriétaire (Postgres/Redis
+  sont des plugins Railway standards, remplaçables par n'importe quel
+  Postgres/Redis managé ou auto-hébergé).
+
+Étapes de bascule (résumé) : provisionner Postgres + Redis + stockage
+S3-compatible sur la nouvelle plateforme → `pg_dump`/`pg_restore` la base →
+`mc mirror` (ou équivalent) les buckets MinIO → redéployer les 4 images
+Docker avec les mêmes variables d'environnement (endpoints mis à jour) →
+basculer le DNS. Downtime typique : le temps du dump/restore + propagation
+DNS (souvent < 1h pour une base de cette taille).
+
+### 10.3 Railway en production — évaluation (septembre 2026)
+
+Points à connaître avant le Go-Live R1 (voir réponse détaillée dans la
+conversation projet) :
+
+- Une seule région EU (Amsterdam) ; pas de garantie de résidence des
+  données publiée noir sur blanc au-delà de cette localisation.
+- Limite dure de 5 minutes par requête HTTP (non configurable) — sans
+  impact pour cette app (pas d'endpoint long-running prévu), à garder en
+  tête pour les exports Excel/PDF volumineux (§ Stats).
+- Pas d'auto-scaling horizontal natif — scaling manuel.
+- Retours d'expérience mitigés sur la fiabilité en usage intensif
+  (déploiements bloqués, temps de réponse support variable) — acceptable
+  pour la taille et la charge de CID (association, pas de trafic massif),
+  à réévaluer si la base de membres croît significativement.
+
+Ces éléments ne remettent pas en cause Railway comme point de départ, mais
+justifient l'architecture 100% portable ci-dessus : elle garde la bascule
+vers Hetzner/Docker Compose (déjà documentée dans le SDD) ouverte à tout
+moment, sans coût de réécriture.

@@ -247,10 +247,25 @@ AWS_S3_ENDPOINT_URL = (
 AWS_S3_ADDRESSING_STYLE = "path"
 AWS_DEFAULT_ACL = None
 AWS_QUERYSTRING_AUTH = True  # nécessaire pour les URLs pré-signées (justificatifs)
+# Bucket "défaut" du STORAGES["default"] ci-dessous. Les modules avec des
+# exigences de rétention/accès distinctes (Adhésions → justificatifs, Boutique
+# → produits, Stats → exports) définiront leurs propres classes de storage
+# (sous-classes de S3Boto3Storage avec bucket_name=MINIO_BUCKET_*) en Phase 1B/2B
+# plutôt que d'utiliser ce bucket par défaut.
+AWS_STORAGE_BUCKET_NAME = os.environ.get("MINIO_BUCKET_DEFAULT", "cid-media")
 
 MINIO_BUCKET_JUSTIFICATIFS = os.environ.get("MINIO_BUCKET_JUSTIFICATIFS", "justificatifs")
 MINIO_BUCKET_PRODUITS = os.environ.get("MINIO_BUCKET_PRODUITS", "produits")
 MINIO_BUCKET_EXPORTS = os.environ.get("MINIO_BUCKET_EXPORTS", "exports")
+
+# STORAGES["default"] pointe vers MinIO (dev, via docker-compose) ou n'importe
+# quel endpoint S3-compatible (prod) grâce aux variables d'env AWS_*/MINIO_*
+# ci-dessus — aucune modification de code nécessaire pour changer de fournisseur
+# de stockage (portabilité). staticfiles est redéfini par prod.py (whitenoise).
+STORAGES = {
+    "default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
