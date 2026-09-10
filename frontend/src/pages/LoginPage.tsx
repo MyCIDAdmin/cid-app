@@ -8,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { login, verify2FA, sendOtp } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
+import { extractApiErrorMessage } from "../utils/apiError";
 
 type Step = "credentials" | "twofa";
 
@@ -44,8 +45,13 @@ export default function LoginPage() {
         loginSuccess(res.access, res.refresh, res.user);
         navigate("/dashboard");
       }
-    } catch {
-      setError(t("login.error_invalid"));
+    } catch (err) {
+      // Le backend distingue "identifiants invalides" (401) de "compte pas
+      // encore activé par RH/Admin" (403 account_inactive) avec un message
+      // clair pour chaque cas (LoginView) — on l'affiche tel quel plutôt que
+      // de toujours renvoyer le message générique, qui masquait la vraie
+      // raison et laissait croire à un mot de passe incorrect.
+      setError(extractApiErrorMessage(err, t("login.error_invalid")));
     } finally {
       setLoading(false);
     }
