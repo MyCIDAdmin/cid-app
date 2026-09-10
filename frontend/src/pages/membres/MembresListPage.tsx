@@ -12,6 +12,7 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import StatutBadge from "../../components/ui/StatutBadge";
 import { useDeleteMembre, useMembresList } from "../../hooks/useMembres";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
+import { PAYS_ALLEMAGNE } from "../../types/membre";
 import type { StatutMembre } from "../../types/membre";
 
 function initiales(prenom: string, nom: string): string {
@@ -170,7 +171,9 @@ export default function MembresListPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-2">{membre.ville_de}</td>
+                <td className="px-4 py-2">
+                  {membre.pays === PAYS_ALLEMAGNE ? membre.ville_de : t(`pays.${membre.pays}`)}
+                </td>
                 <td className="px-4 py-2">{membre.cin_masque}</td>
                 <td className="px-4 py-2">{membre.email}</td>
                 <td className="px-4 py-2">

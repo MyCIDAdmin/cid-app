@@ -28,6 +28,7 @@ const membreCree: Membre = {
   telephone: "+49 176 1111111",
   cin: "87654321",
   passeport: null,
+  pays: "DE",
   adresse_de: "Beispielweg 2",
   code_postal_de: "10117",
   ville_de: "Hambourg",
@@ -114,5 +115,48 @@ describe("MembreFormPage (création)", () => {
     });
 
     await waitFor(() => expect(screen.getByTestId("route-fallback")).toBeInTheDocument());
+  });
+
+  it("masque les champs d'adresse allemande et les rend non requis pour un pays étranger", async () => {
+    const mutateAsync = vi.fn().mockResolvedValue(membreCree);
+    vi.mocked(useMembresHooks.useCreateMembre).mockReturnValue({
+      mutateAsync,
+    } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
+
+    renderWithProviders(<MembreFormPage />, { route: "/membres/nouveau", path: "/membres/nouveau" });
+
+    fireEvent.change(screen.getByLabelText("champ.pays", { exact: false }), {
+      target: { value: "FR" },
+    });
+
+    expect(screen.queryByLabelText("champ.adresse_de", { exact: false })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("champ.ville_de", { exact: false })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("champ.prenom", { exact: false }), {
+      target: { value: "Ines" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.nom", { exact: false }), {
+      target: { value: "Trabelsi" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.date_naissance", { exact: false }), {
+      target: { value: "1995-03-02" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.email", { exact: false }), {
+      target: { value: "ines@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.telephone", { exact: false }), {
+      target: { value: "+33 6 11 11 11 11" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.cin", { exact: false }), {
+      target: { value: "87654321" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.date_adhesion", { exact: false }), {
+      target: { value: "2024-02-01" },
+    });
+
+    fireEvent.click(screen.getByText("formulaire.enregistrer"));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({ pays: "FR" });
   });
 });

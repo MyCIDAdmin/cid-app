@@ -58,6 +58,26 @@ class Bundesland(models.TextChoices):
     THUERINGEN = "TH", _("Thüringen")
 
 
+class Pays(models.TextChoices):
+    """Pays de résidence du membre — liste volontairement curatée (pas l'ISO 3166 complet) :
+    l'association regroupe des supporters tunisiens principalement établis en Allemagne, avec
+    une diaspora ponctuellement présente ailleurs en Europe (retour d'expérience terrain,
+    2026-09). ALLEMAGNE reste la valeur par défaut : les fiches existantes et l'import Excel
+    historique (RICEFW C-001) supposent toutes un membre résidant en Allemagne."""
+
+    ALLEMAGNE = "DE", _("Allemagne")
+    TUNISIE = "TN", _("Tunisie")
+    FRANCE = "FR", _("France")
+    AUTRICHE = "AT", _("Autriche")
+    SUISSE = "CH", _("Suisse")
+    BELGIQUE = "BE", _("Belgique")
+    PAYS_BAS = "NL", _("Pays-Bas")
+    ITALIE = "IT", _("Italie")
+    ESPAGNE = "ES", _("Espagne")
+    ROYAUME_UNI = "GB", _("Royaume-Uni")
+    AUTRE = "XX", _("Autre")
+
+
 def membre_photo_upload_path(instance, filename):
     return f"membres/{instance.id}/photo_{filename}"
 
@@ -119,10 +139,22 @@ class Membre(models.Model):
     cin = EncryptedCharField(max_length=50)
     passeport = EncryptedCharField(max_length=50, blank=True, null=True)
 
-    # --- Adresse en Allemagne ---
-    adresse_de = models.CharField(max_length=255, verbose_name=_("Adresse (Allemagne)"))
+    # --- Pays de résidence + adresse ---
+    pays = models.CharField(
+        max_length=2,
+        choices=Pays.choices,
+        default=Pays.ALLEMAGNE,
+        verbose_name=_("Pays de résidence"),
+        help_text=_(
+            "Si différent de l'Allemagne, l'adresse allemande détaillée "
+            "(rue, ville, Bundesland) n'est pas requise — seul le pays compte."
+        ),
+    )
+    # adresse_de/ville_de : blank=True au niveau modèle (validation stricte déplacée dans
+    # MembreSerializer.validate — requis seulement si pays == ALLEMAGNE, voir serializers.py).
+    adresse_de = models.CharField(max_length=255, blank=True, verbose_name=_("Adresse (Allemagne)"))
     code_postal_de = models.CharField(max_length=10, blank=True)
-    ville_de = models.CharField(max_length=100, verbose_name=_("Ville (Allemagne)"))
+    ville_de = models.CharField(max_length=100, blank=True, verbose_name=_("Ville (Allemagne)"))
     land_de = models.CharField(max_length=2, choices=Bundesland.choices, blank=True)
 
     # --- Origine Tunisie (facultatif) ---

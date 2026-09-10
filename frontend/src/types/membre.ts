@@ -6,6 +6,8 @@
 
 export type StatutMembre = "actif" | "en_attente" | "inactif";
 export type Sexe = "homme" | "femme" | "non_renseigne";
+// Doit rester synchronisé avec apps.membres.models.Pays.
+export type Pays = "DE" | "TN" | "FR" | "AT" | "CH" | "BE" | "NL" | "IT" | "ES" | "GB" | "XX";
 
 export interface MembreListItem {
   id: string;
@@ -13,6 +15,7 @@ export interface MembreListItem {
   prenom: string;
   nom: string;
   email: string;
+  pays: Pays;
   ville_de: string;
   land_de: string;
   statut: StatutMembre;
@@ -32,6 +35,7 @@ export interface Membre {
   telephone: string;
   cin: string;
   passeport: string | null;
+  pays: Pays;
   adresse_de: string;
   code_postal_de: string;
   ville_de: string;
@@ -55,9 +59,10 @@ export interface MembreFormValues {
   telephone: string;
   cin: string;
   passeport?: string;
-  adresse_de: string;
+  pays: Pays;
+  adresse_de?: string;
   code_postal_de?: string;
-  ville_de: string;
+  ville_de?: string;
   land_de?: string;
   ville_origine_tn?: string;
   gouvernorat_tn?: string;
@@ -97,3 +102,20 @@ export const STATUTS_MEMBRE: { value: StatutMembre; labelKey: string }[] = [
   { value: "en_attente", labelKey: "statut.en_attente" },
   { value: "inactif", labelKey: "statut.inactif" },
 ];
+
+// Doit rester synchronisé avec apps.membres.models.Pays.
+export const PAYS_MEMBRE: { value: Pays; labelKey: string }[] = [
+  { value: "DE", labelKey: "pays.DE" },
+  { value: "TN", labelKey: "pays.TN" },
+  { value: "FR", labelKey: "pays.FR" },
+  { value: "AT", labelKey: "pays.AT" },
+  { value: "CH", labelKey: "pays.CH" },
+  { value: "BE", labelKey: "pays.BE" },
+  { value: "NL", labelKey: "pays.NL" },
+  { value: "IT", labelKey: "pays.IT" },
+  { value: "ES", labelKey: "pays.ES" },
+  { value: "GB", labelKey: "pays.GB" },
+  { value: "XX", labelKey: "pays.XX" },
+];
+
+export const PAYS_ALLEMAGNE: Pays = "DE";

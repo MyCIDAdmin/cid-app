@@ -9,6 +9,19 @@
     "femme": "Femme",
     "non_renseigne": "Non renseigné"
   },
+  "pays": {
+    "DE": "Allemagne",
+    "TN": "Tunisie",
+    "FR": "France",
+    "AT": "Autriche",
+    "CH": "Suisse",
+    "BE": "Belgique",
+    "NL": "Pays-Bas",
+    "IT": "Italie",
+    "ES": "Espagne",
+    "GB": "Royaume-Uni",
+    "XX": "Autre"
+  },
   "champ": {
     "prenom": "Prénom",
     "nom": "Nom",
@@ -18,10 +31,11 @@
     "telephone": "Téléphone",
     "cin": "CIN",
     "passeport": "Passeport",
+    "pays": "Pays de résidence",
     "adresse_de": "Adresse (Allemagne)",
     "code_postal_de": "Code postal",
     "ville_de": "Ville (Allemagne)",
-    "land_de": "Land",
+    "land_de": "Bundesland",
     "ville_origine_tn": "Ville d'origine (Tunisie)",
     "gouvernorat_tn": "Gouvernorat (Tunisie)",
     "numero_membre": "Numéro de membre",

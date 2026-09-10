@@ -13,7 +13,7 @@ from rest_framework import serializers
 
 from apps.accounts.models import ROLE_LEVELS, Role
 
-from .models import Membre
+from .models import Membre, Pays
 
 
 def _mask(value):
@@ -44,6 +44,7 @@ class MembreListSerializer(serializers.ModelSerializer):
             "prenom",
             "nom",
             "email",
+            "pays",
             "ville_de",
             "land_de",
             "statut",
@@ -75,6 +76,7 @@ class MembreSerializer(serializers.ModelSerializer):
             "telephone",
             "cin",
             "passeport",
+            "pays",
             "adresse_de",
             "code_postal_de",
             "ville_de",
@@ -100,6 +102,20 @@ class MembreSerializer(serializers.ModelSerializer):
                 "Ce compte utilisateur est déjà associé à un autre membre."
             )
         return value
+
+    def validate(self, attrs):
+        pays = attrs.get("pays", getattr(self.instance, "pays", Pays.ALLEMAGNE))
+        if pays == Pays.ALLEMAGNE:
+            adresse_de = attrs.get("adresse_de", getattr(self.instance, "adresse_de", ""))
+            ville_de = attrs.get("ville_de", getattr(self.instance, "ville_de", ""))
+            erreurs = {}
+            if not (adresse_de or "").strip():
+                erreurs["adresse_de"] = "Ce champ est requis pour un membre résidant en Allemagne."
+            if not (ville_de or "").strip():
+                erreurs["ville_de"] = "Ce champ est requis pour un membre résidant en Allemagne."
+            if erreurs:
+                raise serializers.ValidationError(erreurs)
+        return attrs
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

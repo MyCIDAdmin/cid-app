@@ -9,6 +9,19 @@
     "femme": "Weiblich",
     "non_renseigne": "Nicht angegeben"
   },
+  "pays": {
+    "DE": "Deutschland",
+    "TN": "Tunesien",
+    "FR": "Frankreich",
+    "AT": "Österreich",
+    "CH": "Schweiz",
+    "BE": "Belgien",
+    "NL": "Niederlande",
+    "IT": "Italien",
+    "ES": "Spanien",
+    "GB": "Vereinigtes Königreich",
+    "XX": "Andere"
+  },
   "champ": {
     "prenom": "Vorname",
     "nom": "Nachname",
@@ -18,6 +31,7 @@
     "telephone": "Telefon",
     "cin": "Personalausweisnr. (CIN)",
     "passeport": "Reisepass",
+    "pays": "Wohnsitzland",
     "adresse_de": "Adresse (Deutschland)",
     "code_postal_de": "Postleitzahl",
     "ville_de": "Stadt (Deutschland)",

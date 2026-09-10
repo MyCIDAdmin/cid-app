@@ -9,13 +9,14 @@ class MembreAdmin(admin.ModelAdmin):
         "numero_membre",
         "prenom",
         "nom",
+        "pays",
         "ville_de",
         "cin_masque",
         "statut",
         "date_adhesion",
         "user",
     )
-    list_filter = ("statut", "land_de", "sexe")
+    list_filter = ("statut", "pays", "land_de", "sexe")
     search_fields = ("numero_membre", "prenom", "nom", "email", "ville_de", "user__email")
     readonly_fields = ("numero_membre", "created_at", "updated_at")
     ordering = ("nom", "prenom")
@@ -27,8 +28,8 @@ class MembreAdmin(admin.ModelAdmin):
         ("Contact", {"fields": ("email", "telephone")}),
         ("Pièces d'identité (chiffrées)", {"fields": ("cin", "passeport")}),
         (
-            "Adresse — Allemagne",
-            {"fields": ("adresse_de", "code_postal_de", "ville_de", "land_de")},
+            "Pays et adresse",
+            {"fields": ("pays", "adresse_de", "code_postal_de", "ville_de", "land_de")},
         ),
         ("Origine — Tunisie", {"fields": ("ville_origine_tn", "gouvernorat_tn")}),
         ("Métadonnées", {"fields": ("date_adhesion", "created_at", "updated_at")}),

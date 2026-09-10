@@ -22,6 +22,7 @@ const membre: MembreListItem = {
   prenom: "Sami",
   nom: "Ben Salah",
   email: "sami@example.com",
+  pays: "DE",
   ville_de: "Berlin",
   land_de: "BE",
   statut: "actif",

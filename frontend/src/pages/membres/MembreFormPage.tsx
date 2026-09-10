@@ -7,33 +7,49 @@
  */
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 
 import { useCreateMembre, useMembre, useUpdateMembre } from "../../hooks/useMembres";
-import { BUNDESLANDER, STATUTS_MEMBRE } from "../../types/membre";
+import { BUNDESLANDER, PAYS_ALLEMAGNE, PAYS_MEMBRE, STATUTS_MEMBRE } from "../../types/membre";
+import type { Pays } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
-const membreSchema = z.object({
-  prenom: z.string().min(1),
-  nom: z.string().min(1),
-  date_naissance: z.string().min(1),
-  sexe: z.enum(["homme", "femme", "non_renseigne"]),
-  email: z.string().min(1).email(),
-  telephone: z.string().min(1),
-  cin: z.string().min(1),
-  passeport: z.string().optional(),
-  adresse_de: z.string().min(1),
-  code_postal_de: z.string().optional(),
-  ville_de: z.string().min(1),
-  land_de: z.string().optional(),
-  ville_origine_tn: z.string().optional(),
-  gouvernorat_tn: z.string().optional(),
-  statut: z.enum(["actif", "en_attente", "inactif"]),
-  date_adhesion: z.string().min(1),
-});
+const PAYS_VALEURS = PAYS_MEMBRE.map((p) => p.value) as [Pays, ...Pays[]];
+
+const membreSchema = z
+  .object({
+    prenom: z.string().min(1),
+    nom: z.string().min(1),
+    date_naissance: z.string().min(1),
+    sexe: z.enum(["homme", "femme", "non_renseigne"]),
+    email: z.string().min(1).email(),
+    telephone: z.string().min(1),
+    cin: z.string().min(1),
+    passeport: z.string().optional(),
+    pays: z.enum(PAYS_VALEURS),
+    adresse_de: z.string().optional(),
+    code_postal_de: z.string().optional(),
+    ville_de: z.string().optional(),
+    land_de: z.string().optional(),
+    ville_origine_tn: z.string().optional(),
+    gouvernorat_tn: z.string().optional(),
+    statut: z.enum(["actif", "en_attente", "inactif"]),
+    date_adhesion: z.string().min(1),
+  })
+  // adresse_de/ville_de ne sont requis que pour un membre résidant en Allemagne
+  // (voir MembreSerializer.validate côté backend, qui applique la même règle).
+  .superRefine((values, ctx) => {
+    if (values.pays !== PAYS_ALLEMAGNE) return;
+    if (!values.adresse_de?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adresse_de"], message: "requis" });
+    }
+    if (!values.ville_de?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ville_de"], message: "requis" });
+    }
+  });
 
 type FormValues = z.infer<typeof membreSchema>;
 
@@ -46,6 +62,7 @@ const VALEURS_PAR_DEFAUT: FormValues = {
   telephone: "",
   cin: "",
   passeport: "",
+  pays: PAYS_ALLEMAGNE,
   adresse_de: "",
   code_postal_de: "",
   ville_de: "",
@@ -99,11 +116,15 @@ export default function MembreFormPage() {
     handleSubmit,
     reset,
     setError,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(membreSchema),
     defaultValues: VALEURS_PAR_DEFAUT,
   });
+
+  const paysSelectionne = useWatch({ control, name: "pays" });
+  const resideEnAllemagne = paysSelectionne === PAYS_ALLEMAGNE;
 
   useEffect(() => {
     if (modeEdition && membre) {
@@ -116,6 +137,7 @@ export default function MembreFormPage() {
         telephone: membre.telephone,
         cin: membre.cin,
         passeport: membre.passeport ?? "",
+        pays: membre.pays,
         adresse_de: membre.adresse_de,
         code_postal_de: membre.code_postal_de,
         ville_de: membre.ville_de,
@@ -236,35 +258,56 @@ export default function MembreFormPage() {
             {t("fiche.section_adresse")}
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
-            <Champ
-              label={t("champ.adresse_de")}
-              htmlFor="adresse_de"
-              requis
-              erreur={errors.adresse_de && t("formulaire.champ_requis")}
-            >
-              <input id="adresse_de" {...register("adresse_de")} className={champClasses} />
-            </Champ>
-            <Champ label={t("champ.code_postal_de")} htmlFor="code_postal_de">
-              <input id="code_postal_de" {...register("code_postal_de")} className={champClasses} />
-            </Champ>
-            <Champ
-              label={t("champ.ville_de")}
-              htmlFor="ville_de"
-              requis
-              erreur={errors.ville_de && t("formulaire.champ_requis")}
-            >
-              <input id="ville_de" {...register("ville_de")} className={champClasses} />
-            </Champ>
-            <Champ label={t("champ.land_de")} htmlFor="land_de">
-              <select id="land_de" {...register("land_de")} className={champClasses}>
-                <option value="">—</option>
-                {BUNDESLANDER.map((l) => (
-                  <option key={l.value} value={l.value}>
-                    {l.label}
+            <Champ label={t("champ.pays")} htmlFor="pays" requis>
+              <select id="pays" {...register("pays")} className={champClasses}>
+                {PAYS_MEMBRE.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {t(p.labelKey)}
                   </option>
                 ))}
               </select>
             </Champ>
+            {/* Le reste de la section n'a de sens que pour un membre résidant en Allemagne :
+                l'adresse allemande détaillée (rue, ville, Bundesland) n'est pas pertinente
+                pour un membre résidant ailleurs, où seul le pays compte (voir MembreSerializer
+                côté backend, qui applique la même règle de requis conditionnel). */}
+            {resideEnAllemagne && (
+              <>
+                <Champ
+                  label={t("champ.adresse_de")}
+                  htmlFor="adresse_de"
+                  requis
+                  erreur={errors.adresse_de && t("formulaire.champ_requis")}
+                >
+                  <input id="adresse_de" {...register("adresse_de")} className={champClasses} />
+                </Champ>
+                <Champ label={t("champ.code_postal_de")} htmlFor="code_postal_de">
+                  <input
+                    id="code_postal_de"
+                    {...register("code_postal_de")}
+                    className={champClasses}
+                  />
+                </Champ>
+                <Champ
+                  label={t("champ.ville_de")}
+                  htmlFor="ville_de"
+                  requis
+                  erreur={errors.ville_de && t("formulaire.champ_requis")}
+                >
+                  <input id="ville_de" {...register("ville_de")} className={champClasses} />
+                </Champ>
+                <Champ label={t("champ.land_de")} htmlFor="land_de">
+                  <select id="land_de" {...register("land_de")} className={champClasses}>
+                    <option value="">—</option>
+                    {BUNDESLANDER.map((l) => (
+                      <option key={l.value} value={l.value}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </select>
+                </Champ>
+              </>
+            )}
             <Champ label={t("champ.ville_origine_tn")} htmlFor="ville_origine_tn">
               <input id="ville_origine_tn" {...register("ville_origine_tn")} className={champClasses} />
             </Champ>

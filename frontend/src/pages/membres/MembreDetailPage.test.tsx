@@ -29,6 +29,7 @@ const membre: Membre = {
   telephone: "+49 176 0000000",
   cin: "12345678",
   passeport: null,
+  pays: "DE",
   adresse_de: "Musterstr. 1",
   code_postal_de: "10115",
   ville_de: "Berlin",

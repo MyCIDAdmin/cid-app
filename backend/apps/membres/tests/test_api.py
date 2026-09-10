@@ -164,6 +164,38 @@ def test_create_user_deja_lie_refuse_400(api_client, rh_user, membre_user):
     assert resp.status_code == 400
 
 
+def test_create_sans_adresse_allemande_refuse_si_pays_allemagne(api_client, rh_user):
+    _auth(api_client, rh_user)
+    payload = _payload(email="autre@example.de", cin="99999999")
+    del payload["adresse_de"]
+    del payload["ville_de"]
+    resp = api_client.post(reverse("membres:membre-list"), payload, format="json")
+    assert resp.status_code == 400
+    assert "adresse_de" in resp.data["details"]
+    assert "ville_de" in resp.data["details"]
+
+
+def test_create_membre_residant_a_letranger_sans_adresse_allemande_ok(api_client, rh_user):
+    _auth(api_client, rh_user)
+    resp = api_client.post(
+        reverse("membres:membre-list"),
+        {
+            "prenom": "Sana",
+            "nom": "Werfelli",
+            "date_naissance": "1992-04-01",
+            "email": "sana.werfelli@example.fr",
+            "telephone": "+33 6 12 34 56 78",
+            "cin": "55667788",
+            "pays": "FR",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert resp.data["pays"] == "FR"
+    assert resp.data["adresse_de"] == ""
+    assert resp.data["ville_de"] == ""
+
+
 def test_update_comme_rh_ok(api_client, rh_user):
     membre = MembreFactory(ville_de="Hambourg")
     _auth(api_client, rh_user)

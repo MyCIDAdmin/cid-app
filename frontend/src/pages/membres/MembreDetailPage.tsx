@@ -12,7 +12,7 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import StatutBadge from "../../components/ui/StatutBadge";
 import { useChangerStatutMembre, useDeleteMembre, useMembre } from "../../hooks/useMembres";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
-import { STATUTS_MEMBRE } from "../../types/membre";
+import { PAYS_ALLEMAGNE, STATUTS_MEMBRE } from "../../types/membre";
 import type { StatutMembre } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -132,10 +132,15 @@ export default function MembreDetailPage() {
             {t("fiche.section_adresse")}
           </h2>
           <dl className="grid grid-cols-2 gap-4">
-            <Champ label={t("champ.adresse_de")} valeur={membre.adresse_de} />
-            <Champ label={t("champ.code_postal_de")} valeur={membre.code_postal_de} />
-            <Champ label={t("champ.ville_de")} valeur={membre.ville_de} />
-            <Champ label={t("champ.land_de")} valeur={membre.land_de} />
+            <Champ label={t("champ.pays")} valeur={t(`pays.${membre.pays}`)} />
+            {membre.pays === PAYS_ALLEMAGNE && (
+              <>
+                <Champ label={t("champ.adresse_de")} valeur={membre.adresse_de} />
+                <Champ label={t("champ.code_postal_de")} valeur={membre.code_postal_de} />
+                <Champ label={t("champ.ville_de")} valeur={membre.ville_de} />
+                <Champ label={t("champ.land_de")} valeur={membre.land_de} />
+              </>
+            )}
             <Champ label={t("champ.ville_origine_tn")} valeur={membre.ville_origine_tn} />
             <Champ label={t("champ.gouvernorat_tn")} valeur={membre.gouvernorat_tn} />
           </dl>
