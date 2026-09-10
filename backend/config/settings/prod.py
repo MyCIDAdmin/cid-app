@@ -21,6 +21,16 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
+# Le probe de healthcheck de Railway atteint le conteneur directement via son
+# réseau privé (IP source dans 100.64.0.0/10), sans passer par le proxy
+# TLS-terminating public : la requête n'a donc pas d'en-tête
+# X-Forwarded-Proto. Avec SECURE_SSL_REDIRECT=True ci-dessus, Django
+# répondrait par un 301 vers https:// sur /health/, ce que le probe (qui ne
+# suit pas les redirections) interprète comme un échec — alors même que
+# l'app tourne correctement. On exempte donc explicitement ce endpoint de la
+# redirection HTTPS (tout le reste du trafic continue d'être redirigé).
+SECURE_REDIRECT_EXEMPT = [r"^health/$"]
+
 # "default" (S3-compatible, MinIO ou tout autre fournisseur S3) est hérité de
 # base.py tel quel — c'est la base de la portabilité du stockage fichiers :
 # migrer de MinIO à un autre fournisseur S3-compatible (ou à un autre hébergeur
