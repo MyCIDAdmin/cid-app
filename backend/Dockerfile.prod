@@ -12,10 +12,13 @@ RUN pip install --no-cache-dir --user -r requirements/prod.txt
 # --- Stage 2 : image finale minimale ---
 FROM python:3.12-slim
 
+# Dépendances runtime WeasyPrint 62.x (wheels) : Pango + Harfbuzz suffisent
+# depuis l'abandon du backend cairo par WeasyPrint — plus besoin de
+# libcairo2/libgdk-pixbuf2.0-0 (ce dernier n'existe d'ailleurs plus sous ce
+# nom sur Debian trixie). Voir doc.courtbouillon.org/weasyprint/stable/install.html
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
-    libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 \
-    libcairo2 \
+    libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 \
     libmagic1 \
     curl \
     && rm -rf /var/lib/apt/lists/* \
