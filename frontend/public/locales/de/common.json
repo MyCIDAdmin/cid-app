@@ -6,7 +6,8 @@
     "cotisation": "Mitgliedsbeitrag",
     "inscriptions": "Registrierungen",
     "admin_adhesions": "Mitgliedschaftskampagnen",
-    "admin_justificatifs": "Nachweise"
+    "admin_justificatifs": "Nachweise",
+    "cotisations_en_attente": "Ausstehende Zahlungen"
   },
   "dashboard": {
     "title": "Übersicht",

@@ -6,7 +6,8 @@
     "cotisation": "Cotisation",
     "inscriptions": "Inscriptions",
     "admin_adhesions": "Campagnes d'adhésion",
-    "admin_justificatifs": "Justificatifs"
+    "admin_justificatifs": "Justificatifs",
+    "cotisations_en_attente": "Paiements en attente"
   },
   "dashboard": {
     "title": "Tableau de bord",

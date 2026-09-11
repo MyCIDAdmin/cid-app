@@ -5,11 +5,15 @@ R1 P0 — Cotisations & Paiements (FDD §3.2, RICEFW F-004/F-015/F-016/W-001/W-0
 
 Périmètre de ce module (AHM-15) :
   - Cotisation est un registre d'écritures financières « append-only » : une fois créée, elle
-    n'est plus modifiée par l'API (pas de PUT/PATCH/DELETE exposés — voir views.py). Le stepper
-    de paiement (mockup #pg-cotisation, RICEFW F-004) simule les étapes 1 (article) et 2 (mode de
-    paiement) uniquement côté client ; l'étape 3 (confirmation) envoie un unique POST qui
-    enregistre directement le paiement effectué (W-002 : "POST /cotisations/ avec statut=paye").
-    Il n'existe donc pas de flux "créer en attente puis confirmer" côté API pour ce MVP.
+    n'est plus modifiée par l'API (pas de PUT/PATCH/DELETE exposés — voir views.py), à une
+    exception volontaire près : l'action `marquer_payee` (AHM-53) permet au Directeur
+    Financier/Admin de confirmer manuellement un paiement reçu hors ligne (virement SEPA,
+    chèque, espèces) pour une cotisation restée en_attente/echouee — il n'y a toujours pas de
+    passerelle de paiement réelle (AHM-46) pour déclencher cette confirmation automatiquement.
+    Le stepper de paiement (mockup #pg-cotisation, RICEFW F-004) simule les étapes 1 (article) et
+    2 (mode de paiement) uniquement côté client ; l'étape 3 (confirmation) envoie un unique POST
+    qui enregistre directement le paiement effectué (W-002 : "POST /cotisations/ avec
+    statut=paye").
   - Le montant final n'est jamais fait confiance au frontend (CLAUDE.md §8) : pour les types
     d'article au tarif fixe de l'association (cotisation annuelle, frais d'adhésion), le serializer
     recalcule le montant et le libellé côté serveur — voir MONTANTS_CATALOGUE ci-dessous.

@@ -3,9 +3,12 @@ Vues API — app cotisations (TDD §2.4) :
   GET   /cotisations/           — liste (scope selon rôle, RH+ voit tout)
   POST  /cotisations/           — enregistrer un paiement (libre-service, ou pour autrui si DG+)
   GET   /cotisations/{id}/      — détail (scope selon rôle)
-  GET   /cotisations/{id}/receipt/  — reçu PDF (AHM-17, RICEFW R-010/W-002)
+  GET   /cotisations/{id}/receipt/       — reçu PDF (AHM-17, RICEFW R-010/W-002)
+  POST  /cotisations/{id}/marquer-payee/ — confirmer manuellement un paiement reçu hors ligne
+                                            (AHM-53, DF/Admin uniquement)
 
-Pas de PUT/PATCH/DELETE : registre financier append-only (voir models.py).
+Pas de PUT/PATCH/DELETE : registre financier append-only (voir models.py) — seule exception
+volontaire, l'action `marquer_payee` ci-dessous, réservée au Directeur Financier/Admin.
 """
 
 from django.http import HttpResponse
@@ -13,15 +16,20 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
 
 from .filters import CotisationFilter
-from .models import Cotisation, StatutCotisation
+from .models import Cotisation, ModePaiement, StatutCotisation
 from .pdf import generate_receipt_pdf
 from .permissions import READ_ALL_MIN_LEVEL, SAISIE_POUR_AUTRUI_MIN_LEVEL, CotisationPermission
 from .serializers import CotisationSerializer
+
+# Statuts depuis lesquels une confirmation manuelle de paiement (marquer_payee) est autorisée.
+# "payee" (déjà fait), "remboursee" et "annulee" sont des statuts terminaux qu'on ne réécrit pas.
+STATUTS_CONFIRMABLES_EN_PAYEE = {StatutCotisation.EN_ATTENTE, StatutCotisation.ECHOUEE}
 
 
 class CotisationCursorPagination(CursorPagination):
@@ -89,3 +97,47 @@ class CotisationViewSet(ModelViewSet):
             f'attachment; filename="recu-{cotisation.reference_transaction}.pdf"'
         )
         return response
+
+    @action(detail=True, methods=["post"], url_path="marquer-payee")
+    def marquer_payee(self, request, pk=None):
+        """
+        POST /cotisations/{id}/marquer-payee/ — confirme la réception d'un paiement effectué hors
+        ligne (virement SEPA en attente de réconciliation, chèque, espèces...), AHM-53. get_object()
+        applique le même scope IDOR que list/retrieve (propriétaire ou RH+), mais l'exécution de
+        l'action elle-même est réservée au Directeur Financier et à l'Administrateur App
+        (SAISIE_POUR_AUTRUI_MIN_LEVEL) : le RH garde un accès en lecture seule sur ce module.
+        """
+        cotisation = self.get_object()
+
+        if ROLE_LEVELS.get(request.user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+            raise PermissionDenied(
+                "Seuls le Directeur Financier ou l'Administrateur peuvent marquer un paiement "
+                "comme reçu."
+            )
+
+        if cotisation.statut not in STATUTS_CONFIRMABLES_EN_PAYEE:
+            raise ValidationError(
+                "Seule une cotisation en attente ou échouée peut être marquée comme payée "
+                f"(statut actuel : {cotisation.get_statut_display()})."
+            )
+
+        mode_paiement = request.data.get("mode_paiement", "")
+        if mode_paiement:
+            if mode_paiement not in ModePaiement.values:
+                raise ValidationError({"mode_paiement": "Mode de paiement invalide."})
+            cotisation.mode_paiement = mode_paiement
+        elif not cotisation.mode_paiement:
+            raise ValidationError(
+                {
+                    "mode_paiement": (
+                        "Le mode de paiement doit être précisé pour confirmer ce paiement."
+                    )
+                }
+            )
+
+        cotisation.statut = StatutCotisation.PAYEE
+        # save() (voir models.py) génère la référence de transaction et la date de paiement
+        # puisque le statut passe à "payee" sans référence existante.
+        cotisation.save()
+
+        return Response(CotisationSerializer(cotisation).data)

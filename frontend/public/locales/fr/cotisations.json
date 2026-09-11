@@ -67,5 +67,26 @@
     "telecharger": "Télécharger le reçu",
     "en_cours": "Téléchargement…",
     "erreur": "Impossible de télécharger le reçu."
+  },
+  "en_attente_paiement": {
+    "titre": "Paiements en attente",
+    "sous_titre": "Cotisations en attente d'un paiement reçu hors ligne (virement SEPA, chèque, espèces…) — confirmez la réception pour les marquer comme payées.",
+    "col_date": "Date",
+    "col_membre": "Membre",
+    "col_libelle": "Article",
+    "col_montant": "Montant",
+    "col_mode": "Mode de paiement",
+    "col_actions": "Actions",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger la file des paiements en attente.",
+    "aucun": "Aucun paiement en attente.",
+    "mode": {
+      "carte": "Carte bancaire",
+      "virement_sepa": "Virement SEPA",
+      "paypal": "PayPal"
+    },
+    "confirmer": "Marquer comme payée",
+    "en_cours": "Confirmation…",
+    "erreur_action": "Le paiement n'a pas pu être confirmé."
   }
 }

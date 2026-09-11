@@ -33,6 +33,13 @@ const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.admin_adhesions",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
+  // Confirmation manuelle des paiements en attente (AHM-53) — Directeur Financier/Admin
+  // seulement, même niveau que marquer_payee côté API.
+  {
+    to: "/cotisations/en-attente",
+    labelKey: "nav.cotisations_en_attente",
+    minRoleLevel: ROLE_LEVELS.dir_financier,
+  },
 ];
 
 export default function Sidebar() {

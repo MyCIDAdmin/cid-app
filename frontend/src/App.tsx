@@ -7,6 +7,7 @@ import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
+import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
 import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
@@ -74,6 +75,17 @@ export default function App() {
             ouvert à tout authentifié : le backend scope déjà le queryset et
             résout le membre courant à la création (CotisationViewSet). */}
         <Route path="/cotisation" element={<CotisationStepperPage />} />
+        {/* Confirmation manuelle des paiements en attente (virement SEPA en cours de
+            réconciliation, etc., AHM-53) — Directeur Financier/Admin uniquement, même niveau
+            que SAISIE_POUR_AUTRUI_MIN_LEVEL / marquer_payee côté API. */}
+        <Route
+          path="/cotisations/en-attente"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.dir_financier}>
+              <CotisationsEnAttentePage />
+            </RequireRole>
+          }
+        />
         {/* Adhésions (mockup #pg-mon-adhesion / #pg-admin-adhesion, AHM-21) —
             page membre ouverte à tout authentifié (campagne active, offres,
             souscription, historique) ; gestion des campagnes réservée

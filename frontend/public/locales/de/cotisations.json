@@ -67,5 +67,26 @@
     "telecharger": "Beleg herunterladen",
     "en_cours": "Wird heruntergeladen…",
     "erreur": "Der Beleg konnte nicht heruntergeladen werden."
+  },
+  "en_attente_paiement": {
+    "titre": "Ausstehende Zahlungen",
+    "sous_titre": "Mitgliedsbeiträge, die auf eine offline erhaltene Zahlung warten (SEPA-Überweisung, Scheck, Bar) — bestätigen Sie den Erhalt, um sie als bezahlt zu markieren.",
+    "col_date": "Datum",
+    "col_membre": "Mitglied",
+    "col_libelle": "Artikel",
+    "col_montant": "Betrag",
+    "col_mode": "Zahlungsmethode",
+    "col_actions": "Aktionen",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Liste der ausstehenden Zahlungen konnte nicht geladen werden.",
+    "aucun": "Keine ausstehende Zahlung.",
+    "mode": {
+      "carte": "Kreditkarte",
+      "virement_sepa": "SEPA-Überweisung",
+      "paypal": "PayPal"
+    },
+    "confirmer": "Als bezahlt markieren",
+    "en_cours": "Wird bestätigt…",
+    "erreur_action": "Die Zahlung konnte nicht bestätigt werden."
   }
 }

@@ -326,3 +326,139 @@ def test_receipt_refuse_si_cotisation_pas_encore_payee(api_client):
     resp = api_client.get(_receipt_url(cotisation))
 
     assert resp.status_code == 400
+
+
+# --- Confirmation manuelle de paiement (AHM-53) ---
+
+
+def _marquer_payee_url(cotisation):
+    return reverse("cotisations:cotisation-marquer-payee", args=[cotisation.id])
+
+
+def test_marquer_payee_non_authentifie_refuse(api_client):
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+    resp = api_client.post(_marquer_payee_url(cotisation))
+    assert resp.status_code == 401
+
+
+def test_directeur_financier_peut_marquer_payee(api_client):
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    cotisation = CotisationFactory(
+        statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutCotisation.PAYEE
+    assert resp.data["mode_paiement"] == "virement_sepa"
+    assert resp.data["reference_transaction"].startswith("TXN-")
+    assert resp.data["date_paiement"] is not None
+
+
+def test_admin_peut_marquer_payee(api_client):
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin@example.de")
+    cotisation = CotisationFactory(
+        statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutCotisation.PAYEE
+
+
+def test_marquer_payee_conserve_le_mode_de_paiement_existant_si_non_precise(api_client):
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    cotisation = CotisationFactory(
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="virement_sepa",
+        reference_transaction=None,
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation))
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["mode_paiement"] == "virement_sepa"
+
+
+def test_marquer_payee_refuse_si_mode_de_paiement_absent(api_client):
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    cotisation = CotisationFactory(
+        statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation))
+
+    assert resp.status_code == 400
+    assert "mode_paiement" in resp.data["details"]
+
+
+def test_rh_ne_peut_pas_marquer_payee(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+
+    assert resp.status_code == 403
+
+
+def test_membre_ne_peut_pas_marquer_sa_propre_cotisation_payee(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    cotisation = CotisationFactory(
+        membre=membre, statut=StatutCotisation.EN_ATTENTE, reference_transaction=None
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+
+    assert resp.status_code == 403
+
+
+def test_marquer_payee_refuse_pour_la_cotisation_dun_autre_membre_hors_scope(api_client):
+    # IDOR : un Membre normal (rôle < RH) ne peut même pas voir la ressource d'un autre membre —
+    # get_object() renvoie 404 avant que la vérification de rôle DF/Admin ne soit atteinte.
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    cotisation_autrui = CotisationFactory(
+        statut=StatutCotisation.EN_ATTENTE, reference_transaction=None
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation_autrui), {"mode_paiement": "carte"})
+
+    assert resp.status_code == 404
+
+
+def test_marquer_payee_refuse_si_deja_payee(api_client):
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "carte"})
+
+    assert resp.status_code == 400
+
+
+def test_marquer_payee_refuse_si_annulee(api_client):
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.ANNULEE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "carte"})
+
+    assert resp.status_code == 400
+
+
+def test_marquer_payee_refuse_mode_de_paiement_invalide(api_client):
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "bitcoin"})
+
+    assert resp.status_code == 400
