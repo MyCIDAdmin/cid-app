@@ -10,6 +10,15 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Représentation du User renvoyée par /auth/login/, /auth/2fa/verify/ et
+    /auth/me/. prenom/nom (AHM-52) viennent de la fiche Membre liée quand
+    elle existe — un compte sans fiche (superuser, RH créé hors
+    auto-inscription) renvoie simplement des chaînes vides, à charge du
+    frontend de retomber sur l'email dans ce cas (cf DashboardPage)."""
+
+    prenom = serializers.SerializerMethodField()
+    nom = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
@@ -20,8 +29,24 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "require_2fa",
             "created_at",
+            "prenom",
+            "nom",
         ]
-        read_only_fields = ["id", "role", "is_active", "require_2fa", "created_at"]
+        read_only_fields = [
+            "id",
+            "role",
+            "is_active",
+            "require_2fa",
+            "created_at",
+            "prenom",
+            "nom",
+        ]
+
+    def get_prenom(self, obj):
+        return obj.membre.prenom if hasattr(obj, "membre") else ""
+
+    def get_nom(self, obj):
+        return obj.membre.nom if hasattr(obj, "membre") else ""
 
 
 class RegisterSerializer(serializers.Serializer):

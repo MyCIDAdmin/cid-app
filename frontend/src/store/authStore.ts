@@ -75,6 +75,11 @@ export interface CidUser {
   email: string;
   role: "membre" | "rh" | "bureau_admin" | "dir_financier" | "super_admin";
   langue_preferee: "fr" | "de" | "ar";
+  // AHM-52 : vides pour un compte sans fiche Membre liée (superuser, RH créé
+  // hors auto-inscription) — voir UserSerializer.get_prenom/get_nom côté
+  // backend. Le frontend doit retomber sur l'email dans ce cas.
+  prenom?: string;
+  nom?: string;
 }
 
 interface AuthState {

@@ -49,6 +49,38 @@ def test_login_success_no_2fa(api_client, membre_actif):
     assert "refresh" in resp.data
 
 
+def test_login_sans_fiche_membre_renvoie_prenom_nom_vides(api_client, membre_actif):
+    """Un compte sans fiche Membre (ex. superuser, RH créé hors
+    auto-inscription) ne doit pas faire planter la sérialisation — voir
+    UserSerializer.get_prenom/get_nom (AHM-52)."""
+    url = reverse("accounts:login")
+    resp = api_client.post(
+        url, {"email": "membre@example.com", "password": "Password123!"}, format="json"
+    )
+    assert resp.status_code == 200
+    assert resp.data["user"]["prenom"] == ""
+    assert resp.data["user"]["nom"] == ""
+
+
+def test_login_avec_fiche_membre_renvoie_prenom_nom(api_client):
+    """AHM-52 : le nom de famille est affiché en accueil frontend plutôt que
+    l'email — il doit donc être disponible dès la réponse de login."""
+    from apps.membres.tests.factories import MembreFactory
+
+    user = User.objects.create_user(
+        email="sami.bensalah@example.com", password="Password123!", is_active=True
+    )
+    MembreFactory(user=user, prenom="Sami", nom="Ben Salah")
+
+    url = reverse("accounts:login")
+    resp = api_client.post(
+        url, {"email": "sami.bensalah@example.com", "password": "Password123!"}, format="json"
+    )
+    assert resp.status_code == 200
+    assert resp.data["user"]["prenom"] == "Sami"
+    assert resp.data["user"]["nom"] == "Ben Salah"
+
+
 def test_login_wrong_password(api_client, membre_actif):
     url = reverse("accounts:login")
     resp = api_client.post(url, {"email": "membre@example.com", "password": "wrong"}, format="json")
