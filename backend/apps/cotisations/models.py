@@ -27,6 +27,12 @@ Périmètre de ce module (AHM-15, révisé par AHM-53) :
   - `saisie_par` distingue une écriture en libre-service (le membre paie sa propre cotisation,
     `saisie_par` vide) d'une transaction ajoutée manuellement par le Directeur Financier/Admin
     pour le compte d'un autre membre (RICEFW F-015 "Ajouter une transaction (DG)").
+  - RelanceCotisation (AHM-18, RICEFW W-001) journalise les relances email envoyées aux membres
+    actifs sans cotisation payée pour l'année N — voir apps.cotisations.tasks pour le pipeline
+    Celery Beat. Sert aussi de verrou d'idempotence (contrainte unique) : un même membre ne peut
+    pas recevoir deux fois la même relance pour la même année, même si la tâche est rejouée. La
+    notification in-app prévue par W-001 (étape 5) est différée à la Phase 2B avec le reste de
+    apps.notifications (CLAUDE.md §7) — ce module ne couvre que l'email.
 """
 
 import uuid
@@ -149,3 +155,48 @@ class Cotisation(models.Model):
         annee = (self.date_paiement or timezone.now()).year
         suffixe = uuid.uuid4().hex[:8].upper()
         return f"TXN-{annee}-{suffixe}"
+
+
+class CheckpointRelance(models.TextChoices):
+    """
+    Les 3 échéances du pipeline de relance (RICEFW W-001 "Filtrer J-30/J-7/J+1"), ancrées sur le
+    1er janvier de l'année de cotisation N — décision actée avec l'utilisateur (AHM-18) en
+    l'absence d'une date d'échéance individuelle par membre dans le FDD/RICEFW d'origine :
+      J_MOINS_30 -> 2 décembre N-1
+      J_MOINS_7  -> 25 décembre N-1
+      J_PLUS_1   -> 2 janvier N (cotisation en retard)
+    Voir apps.cotisations.tasks._checkpoint_du_jour pour le calcul.
+    """
+
+    J_MOINS_30 = "j_moins_30", _("J-30")
+    J_MOINS_7 = "j_moins_7", _("J-7")
+    J_PLUS_1 = "j_plus_1", _("J+1")
+
+
+class RelanceCotisation(models.Model):
+    """Journal des relances email envoyées — voir docstring de module ci-dessus et tasks.py."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.CASCADE,
+        related_name="relances_cotisation",
+    )
+    annee = models.PositiveSmallIntegerField()
+    checkpoint = models.CharField(max_length=20, choices=CheckpointRelance.choices)
+    envoyee_le = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "relances_cotisation"
+        verbose_name = _("Relance cotisation")
+        verbose_name_plural = _("Relances cotisation")
+        ordering = ["-envoyee_le"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["membre", "annee", "checkpoint"],
+                name="unique_relance_par_membre_annee_checkpoint",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.get_checkpoint_display()} {self.annee} — {self.membre}"
