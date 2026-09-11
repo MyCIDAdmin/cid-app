@@ -197,8 +197,13 @@ class Membre(models.Model):
         Ajouté pour AHM-19 (adhésions) : les offres peuvent porter une condition d'âge
         (ex. tarif "moins de 26 ans") évaluée dynamiquement — jamais stockée, pour rester
         exacte au fil du temps (FDD §6.1).
+
+        Utilise `timezone.localdate()` (date du jour dans settings.TIME_ZONE) plutôt que
+        `timezone.now().date()` (qui donnerait la date UTC) : les deux divergent d'un jour
+        pendant la fenêtre de décalage horaire (ex. 23h-minuit UTC en horaire d'été
+        Europe/Berlin), ce qui rendait ce calcul incohérent selon l'heure d'exécution.
         """
-        aujourd_hui = timezone.now().date()
+        aujourd_hui = timezone.localdate()
         annees = aujourd_hui.year - self.date_naissance.year
         anniversaire_pas_encore_passe = (aujourd_hui.month, aujourd_hui.day) < (
             self.date_naissance.month,
