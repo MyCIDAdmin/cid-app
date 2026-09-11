@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import { useAuthStore } from "../../store/authStore";
 import type { Membre } from "../../types/membre";
 import * as useMembresHooks from "../../hooks/useMembres";
 import MembreFormPage from "./MembreFormPage";
@@ -44,6 +45,11 @@ const membreCree: Membre = {
 
 describe("MembreFormPage (création)", () => {
   beforeEach(() => {
+    // La route /membres/nouveau est de toute façon gated RH+ (App.tsx) —
+    // un utilisateur RH ici reflète les conditions réelles d'accès.
+    useAuthStore.setState({
+      user: { id: "rh1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+    });
     vi.mocked(useMembresHooks.useMembre).mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -158,5 +164,112 @@ describe("MembreFormPage (création)", () => {
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     expect(mutateAsync.mock.calls[0][0]).toMatchObject({ pays: "FR" });
+  });
+});
+
+describe("MembreFormPage (édition, AHM-51 — un Membre modifie sa propre fiche)", () => {
+  const maFiche: Membre = { ...membreCree, id: "m1", user: "u2" };
+
+  beforeEach(() => {
+    vi.mocked(useMembresHooks.useCreateMembre).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
+  });
+
+  it("masque les champs administratifs (statut, date d'adhésion) pour un Membre", () => {
+    useAuthStore.setState({
+      user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembre).mockReturnValue({
+      data: maFiche,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembre>);
+    vi.mocked(useMembresHooks.useUpdateMembre).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof useMembresHooks.useUpdateMembre>);
+
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/m1/modifier",
+      path: "/membres/:id/modifier",
+    });
+
+    expect(screen.queryByLabelText("champ.statut", { exact: false })).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("champ.date_adhesion", { exact: false }),
+    ).not.toBeInTheDocument();
+    // Les champs personnels restent modifiables.
+    expect(screen.getByLabelText("champ.telephone", { exact: false })).toBeInTheDocument();
+  });
+
+  it("un Membre peut soumettre la modification de ses propres champs personnels", async () => {
+    useAuthStore.setState({
+      user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembre).mockReturnValue({
+      data: maFiche,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembre>);
+    const mutateAsync = vi.fn().mockResolvedValue({ ...maFiche, telephone: "+49 30 9999999" });
+    vi.mocked(useMembresHooks.useUpdateMembre).mockReturnValue({
+      mutateAsync,
+    } as unknown as ReturnType<typeof useMembresHooks.useUpdateMembre>);
+
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/m1/modifier",
+      path: "/membres/:id/modifier",
+    });
+
+    fireEvent.change(screen.getByLabelText("champ.telephone", { exact: false }), {
+      target: { value: "+49 30 9999999" },
+    });
+    fireEvent.click(screen.getByText("formulaire.enregistrer"));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({ telephone: "+49 30 9999999" });
+  });
+
+  it("affiche les champs administratifs pour RH+ en édition", () => {
+    useAuthStore.setState({
+      user: { id: "rh1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembre).mockReturnValue({
+      data: maFiche,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembre>);
+    vi.mocked(useMembresHooks.useUpdateMembre).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof useMembresHooks.useUpdateMembre>);
+
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/m1/modifier",
+      path: "/membres/:id/modifier",
+    });
+
+    expect(screen.getByLabelText("champ.statut", { exact: false })).toBeInTheDocument();
+    expect(screen.getByLabelText("champ.date_adhesion", { exact: false })).toBeInTheDocument();
+  });
+
+  it("affiche une erreur si la fiche n'est pas accessible (ex. fiche d'un autre Membre)", () => {
+    useAuthStore.setState({
+      user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembre).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembre>);
+    vi.mocked(useMembresHooks.useUpdateMembre).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof useMembresHooks.useUpdateMembre>);
+
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/autre-id/modifier",
+      path: "/membres/:id/modifier",
+    });
+
+    expect(screen.getByText("fiche.erreur_chargement")).toBeInTheDocument();
   });
 });

@@ -86,6 +86,34 @@ describe("MembreDetailPage", () => {
     expect(screen.getByText("liste.chargement")).toBeInTheDocument();
   });
 
+  it("propose 'modifier' à un Membre sur sa propre fiche (AHM-51)", () => {
+    useAuthStore.setState({
+      user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembre).mockReturnValue({
+      data: { ...membre, user: "u2" },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembre>);
+
+    renderWithProviders(<MembreDetailPage />, { route: "/membres/m1", path: "/membres/:id" });
+    expect(screen.getByText("fiche.modifier")).toBeInTheDocument();
+  });
+
+  it("ne propose pas 'modifier' à un Membre sur la fiche d'un autre", () => {
+    useAuthStore.setState({
+      user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembre).mockReturnValue({
+      data: { ...membre, user: "un-autre-id" },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembre>);
+
+    renderWithProviders(<MembreDetailPage />, { route: "/membres/m1", path: "/membres/:id" });
+    expect(screen.queryByText("fiche.modifier")).not.toBeInTheDocument();
+  });
+
   it("affiche une erreur si le chargement échoue", () => {
     useAuthStore.setState({
       user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },

@@ -62,7 +62,7 @@ describe("MembresListPage", () => {
     expect(screen.getByText("Berlin")).toBeInTheDocument();
   });
 
-  it("masque les actions de gestion pour un rôle membre", () => {
+  it("masque les actions RH+/Bureau Admin mais garde 'modifier' pour un rôle membre (AHM-51)", () => {
     useAuthStore.setState({
       user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
     });
@@ -70,7 +70,9 @@ describe("MembresListPage", () => {
 
     renderWithProviders(<MembresListPage />);
 
-    expect(screen.queryByText("liste.modifier")).not.toBeInTheDocument();
+    // Un Membre ne voit ici que sa propre fiche (scope backend) — "modifier"
+    // pointe donc toujours vers la sienne, désormais autorisé (AHM-51).
+    expect(screen.getByText("liste.modifier")).toBeInTheDocument();
     expect(screen.queryByText("liste.supprimer")).not.toBeInTheDocument();
     expect(screen.queryByText(/liste.ajouter/)).not.toBeInTheDocument();
   });

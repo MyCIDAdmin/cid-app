@@ -1,8 +1,11 @@
 /**
  * Fiche membre (mockup #pg-admin-fiche-membre). Lecture ouverte à tout
  * authentifié (le backend scope déjà le queryset) ; les actions de gestion
- * (modifier, changer le statut, supprimer) restent gated par rôle ici en
- * plus du contrôle serveur, pour ne pas afficher des boutons inopérants.
+ * (changer le statut, supprimer) restent gated RH+/Bureau Admin ici en plus
+ * du contrôle serveur, pour ne pas afficher des boutons inopérants. Le lien
+ * "modifier" est aussi proposé au Membre sur sa propre fiche (AHM-51) — le
+ * formulaire cible (MembreFormPage) lui masque ensuite les champs
+ * administratifs.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -38,6 +41,7 @@ export default function MembreDetailPage() {
   const peutSupprimer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
 
   const { data: membre, isLoading, isError } = useMembre(id);
+  const peutModifier = peutGerer || (Boolean(membre) && membre?.user === user?.id);
   const changerStatutMutation = useChangerStatutMembre(id ?? "");
   const deleteMutation = useDeleteMembre();
 
@@ -90,7 +94,7 @@ export default function MembreDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          {peutGerer && (
+          {peutModifier && (
             <Link
               to={`/membres/${membre.id}/modifier`}
               className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"

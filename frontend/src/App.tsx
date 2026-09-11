@@ -40,8 +40,8 @@ export default function App() {
             queryset par rôle (apps.membres.views.MembreViewSet). */}
         <Route path="/membres" element={<MembresListPage />} />
         <Route path="/membres/:id" element={<MembreDetailPage />} />
-        {/* Créer/modifier reste RH+ côté API — gated ici pour ne pas
-            afficher un formulaire inopérant. */}
+        {/* Créer reste RH+ côté API — gated ici pour ne pas afficher un
+            formulaire inopérant. */}
         <Route
           path="/membres/nouveau"
           element={
@@ -50,14 +50,13 @@ export default function App() {
             </RequireRole>
           }
         />
-        <Route
-          path="/membres/:id/modifier"
-          element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
-              <MembreFormPage />
-            </RequireRole>
-          }
-        />
+        {/* Modifier : RH+ sur n'importe quelle fiche, ou un Membre sur la
+            sienne uniquement (AHM-51) — l'appartenance ne peut se vérifier
+            qu'après chargement de la fiche, donc pas de RequireRole ici ;
+            MembreFormPage gère elle-même l'accès (champs administratifs
+            masqués, erreur si la fiche n'est pas la sienne) et le backend
+            reste de toute façon la source de vérité (MembrePermission). */}
+        <Route path="/membres/:id/modifier" element={<MembreFormPage />} />
         {/* Import Excel (RICEFW W-008/F-019) — même gate RH+ que
             MembreImportView côté API. */}
         <Route

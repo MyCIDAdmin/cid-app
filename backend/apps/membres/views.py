@@ -1,9 +1,14 @@
 """
-Vues API — app membres (TDD §2.4) :
+Vues API — app membres (TDD §2.4, complété AHM-51) :
   GET            /membres/                      — liste (scope selon rôle)
   POST           /membres/                      — créer (RH+)
   GET            /membres/{id}/                 — détail (scope selon rôle)
-  PATCH/PUT      /membres/{id}/                 — modifier (RH+)
+  PATCH/PUT      /membres/{id}/                 — modifier (RH+ : toute
+                                                    fiche ; Membre : sa propre
+                                                    fiche, champs personnels
+                                                    uniquement — voir
+                                                    MembrePermission /
+                                                    MembreSerializer)
   DELETE         /membres/{id}/                 — supprimer (Bureau Admin+)
   POST           /membres/{id}/changer_statut/  — changer le statut (RH+)
 """

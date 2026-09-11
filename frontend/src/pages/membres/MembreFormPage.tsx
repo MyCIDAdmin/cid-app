@@ -1,9 +1,15 @@
 /**
  * Formulaire créer/modifier un membre (mockup #pg-admin-nouveau-membre),
  * partagé entre /membres/nouveau et /membres/:id/modifier — le mode est
- * déduit de la présence d'un :id dans l'URL. Route déjà gated RH+ par
- * RequireRole ; la validation finale reste de toute façon côté serveur
- * (MembreSerializer).
+ * déduit de la présence d'un :id dans l'URL.
+ *
+ * /membres/nouveau reste gated RH+ par RequireRole (App.tsx). En édition,
+ * un Membre peut désormais accéder à ce formulaire pour sa propre fiche
+ * (AHM-51) : les champs administratifs (statut, date d'adhésion) sont
+ * masqués pour lui — le backend les ignorerait de toute façon en écriture
+ * (MembreSerializer._CHAMPS_ADMINISTRATIFS), mais les cacher évite de
+ * laisser croire qu'ils sont modifiables. La validation finale reste dans
+ * tous les cas côté serveur.
  */
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +19,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 
 import { useCreateMembre, useMembre, useUpdateMembre } from "../../hooks/useMembres";
+import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { BUNDESLANDER, PAYS_ALLEMAGNE, PAYS_MEMBRE, STATUTS_MEMBRE } from "../../types/membre";
 import type { Pays } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -106,8 +113,14 @@ export default function MembreFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const modeEdition = Boolean(id);
+  const utilisateur = useAuthStore((s) => s.user);
+  const gestionComplete = hasRoleAtLeast(utilisateur, ROLE_LEVELS.rh);
 
-  const { data: membre, isLoading: chargementMembre } = useMembre(id);
+  const {
+    data: membre,
+    isLoading: chargementMembre,
+    isError: erreurChargementMembre,
+  } = useMembre(id);
   const createMutation = useCreateMembre();
   const updateMutation = useUpdateMembre(id ?? "");
 
@@ -166,6 +179,12 @@ export default function MembreFormPage() {
 
   if (modeEdition && chargementMembre) {
     return <p className="text-text-tertiary">{t("liste.chargement")}</p>;
+  }
+
+  // Fiche introuvable ou inaccessible (ex. un Membre qui tente de modifier
+  // la fiche d'un autre — le backend renvoie 404, cf MembreViewSet).
+  if (modeEdition && (erreurChargementMembre || !membre)) {
+    return <p className="text-status-dangerText">{t("fiche.erreur_chargement")}</p>;
   }
 
   return (
@@ -317,35 +336,43 @@ export default function MembreFormPage() {
           </div>
         </section>
 
-        <section className="rounded-cid-lg bg-bg-primary p-5 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-text-primary">
-            {t("fiche.section_associatives")}
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Champ label={t("champ.statut")} htmlFor="statut" requis>
-              <select id="statut" {...register("statut")} className={champClasses}>
-                {STATUTS_MEMBRE.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {t(s.labelKey)}
-                  </option>
-                ))}
-              </select>
-            </Champ>
-            <Champ
-              label={t("champ.date_adhesion")}
-              htmlFor="date_adhesion"
-              requis
-              erreur={errors.date_adhesion && t("formulaire.champ_requis")}
-            >
-              <input
-                id="date_adhesion"
-                type="date"
-                {...register("date_adhesion")}
-                className={champClasses}
-              />
-            </Champ>
-          </div>
-        </section>
+        {/* Statut et date d'adhésion sont des champs administratifs (AHM-51) :
+            le backend les ignore en écriture pour un Membre (voir
+            MembreSerializer._CHAMPS_ADMINISTRATIFS) — on ne les affiche donc
+            que pour RH+, pour ne pas laisser croire qu'ils sont modifiables.
+            Leurs valeurs restent dans le formulaire (chargées par reset() au
+            montage) et sont réenvoyées telles quelles à la soumission. */}
+        {gestionComplete && (
+          <section className="rounded-cid-lg bg-bg-primary p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-text-primary">
+              {t("fiche.section_associatives")}
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Champ label={t("champ.statut")} htmlFor="statut" requis>
+                <select id="statut" {...register("statut")} className={champClasses}>
+                  {STATUTS_MEMBRE.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {t(s.labelKey)}
+                    </option>
+                  ))}
+                </select>
+              </Champ>
+              <Champ
+                label={t("champ.date_adhesion")}
+                htmlFor="date_adhesion"
+                requis
+                erreur={errors.date_adhesion && t("formulaire.champ_requis")}
+              >
+                <input
+                  id="date_adhesion"
+                  type="date"
+                  {...register("date_adhesion")}
+                  className={champClasses}
+                />
+              </Champ>
+            </div>
+          </section>
+        )}
 
         {errors.root && <p className="text-sm text-status-dangerText">{errors.root.message}</p>}
 

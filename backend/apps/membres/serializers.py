@@ -60,7 +60,17 @@ class MembreSerializer(serializers.ModelSerializer):
     """Vue détail (retrieve/create/update). cin/passeport sont acceptés en
     écriture par tout appelant autorisé à créer/modifier (RH+, voir
     MembrePermission), mais démasqués en lecture uniquement pour RH+ ou le
-    propriétaire de la fiche — voir to_representation."""
+    propriétaire de la fiche — voir to_representation.
+
+    AHM-51 : un Membre peut désormais modifier sa propre fiche (voir
+    MembrePermission), mais uniquement ses champs personnels — les champs
+    administratifs listés ci-dessous restent lisibles mais verrouillés en
+    écriture pour lui (__init__ les repasse en read_only). "statut" a de
+    toute façon sa propre action dédiée RH+ (changer_statut) ; l'ouvrir ici
+    en écriture pour un Membre contournerait cette règle.
+    """
+
+    _CHAMPS_ADMINISTRATIFS = ("user", "statut", "date_adhesion")
 
     class Meta:
         model = Membre
@@ -90,6 +100,15 @@ class MembreSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "numero_membre", "created_at", "updated_at"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if user is not None and getattr(user, "is_authenticated", False):
+            if ROLE_LEVELS.get(user.role, 0) < ROLE_LEVELS[Role.RH]:
+                for champ in self._CHAMPS_ADMINISTRATIFS:
+                    self.fields[champ].read_only = True
 
     def validate_user(self, value):
         if value is None:

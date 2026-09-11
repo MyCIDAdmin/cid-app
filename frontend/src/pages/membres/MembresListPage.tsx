@@ -196,14 +196,17 @@ export default function MembresListPage() {
                     >
                       {t("liste.voir")}
                     </Link>
-                    {peutGerer && (
-                      <Link
-                        to={`/membres/${membre.id}/modifier`}
-                        className="rounded-cid px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
-                      >
-                        {t("liste.modifier")}
-                      </Link>
-                    )}
+                    {/* RH+ modifie n'importe quelle fiche ; pour un rôle
+                        inférieur, la seule fiche que cette liste peut
+                        contenir est de toute façon la sienne (le backend
+                        scope déjà le queryset — voir get_queryset), donc ce
+                        lien pointe toujours vers sa propre fiche (AHM-51). */}
+                    <Link
+                      to={`/membres/${membre.id}/modifier`}
+                      className="rounded-cid px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+                    >
+                      {t("liste.modifier")}
+                    </Link>
                     {peutSupprimer && (
                       <button
                         type="button"

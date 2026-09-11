@@ -206,6 +206,84 @@ def test_update_comme_rh_ok(api_client, rh_user):
     assert resp.data["ville_de"] == "Munich"
 
 
+def test_update_comme_rh_peut_changer_champs_administratifs(api_client, rh_user):
+    membre = MembreFactory(statut=StatutMembre.EN_ATTENTE)
+    _auth(api_client, rh_user)
+    resp = api_client.patch(
+        reverse("membres:membre-detail", args=[membre.id]),
+        {"statut": StatutMembre.ACTIF, "date_adhesion": "2024-01-15"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["statut"] == StatutMembre.ACTIF
+    assert resp.data["date_adhesion"] == "2024-01-15"
+
+
+# --- Modification par le Membre de sa propre fiche (AHM-51) ---
+
+
+def test_update_comme_membre_sa_propre_fiche_ok(api_client, membre_user):
+    ma_fiche = MembreFactory(user=membre_user, telephone="+49 30 0000000")
+    _auth(api_client, membre_user)
+    resp = api_client.patch(
+        reverse("membres:membre-detail", args=[ma_fiche.id]),
+        {"telephone": "+49 30 1111111", "ville_de": "Leipzig"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["telephone"] == "+49 30 1111111"
+    assert resp.data["ville_de"] == "Leipzig"
+
+
+def test_update_comme_membre_fiche_d_un_autre_refuse(api_client, membre_user):
+    autre = MembreFactory()
+    _auth(api_client, membre_user)
+    resp = api_client.patch(
+        reverse("membres:membre-detail", args=[autre.id]), {"telephone": "+49 1"}, format="json"
+    )
+    assert resp.status_code == 404
+
+
+def test_update_comme_membre_champs_administratifs_ignores(api_client, membre_user, rh_user):
+    ma_fiche = MembreFactory(user=membre_user, statut=StatutMembre.EN_ATTENTE)
+    ancien_statut = ma_fiche.statut
+    ancienne_date_adhesion = ma_fiche.date_adhesion
+    _auth(api_client, membre_user)
+    resp = api_client.patch(
+        reverse("membres:membre-detail", args=[ma_fiche.id]),
+        {
+            "statut": StatutMembre.ACTIF,
+            "date_adhesion": "2020-01-01",
+            "user": str(rh_user.id),
+            "telephone": "+49 89 9999999",
+        },
+        format="json",
+    )
+    assert resp.status_code == 200
+    # Les champs administratifs sont silencieusement ignorés (read_only côté
+    # serializer pour ce rôle) — seul le champ personnel est appliqué.
+    assert resp.data["telephone"] == "+49 89 9999999"
+    ma_fiche.refresh_from_db()
+    assert ma_fiche.statut == ancien_statut
+    assert ma_fiche.date_adhesion == ancienne_date_adhesion
+    assert ma_fiche.user_id == membre_user.id
+
+
+def test_changer_statut_reste_le_seul_moyen_meme_pour_sa_propre_fiche(api_client, membre_user):
+    """L'action dédiée changer_statut (RH+) reste le seul chemin pour changer
+    un statut — un Membre ne doit jamais pouvoir l'atteindre, même sur sa
+    propre fiche (cf test_changer_statut_comme_membre_refuse_403 déjà
+    existant, reformulé ici pour documenter le lien avec AHM-51)."""
+    ma_fiche = MembreFactory(user=membre_user)
+    _auth(api_client, membre_user)
+    resp = api_client.post(
+        reverse("membres:membre-changer-statut", args=[ma_fiche.id]),
+        {"statut": StatutMembre.ACTIF},
+        format="json",
+    )
+    assert resp.status_code == 403
+
+
 # --- Suppression (Bureau Admin+) ---
 
 
