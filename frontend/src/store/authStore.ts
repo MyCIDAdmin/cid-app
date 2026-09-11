@@ -9,6 +9,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 
+import { queryClient } from "../queryClient";
+
 const AUTH_STORAGE_KEY = "cid-auth";
 const REMEMBER_ME_KEY = "cid-remember-me";
 
@@ -96,10 +98,19 @@ export const useAuthStore = create<AuthState>()(
       setTokens: (access, refresh) =>
         set({ accessToken: access, refreshToken: refresh, isAuthenticated: true }),
       setUser: (user) => set({ user }),
-      loginSuccess: (access, refresh, user) =>
-        set({ accessToken: access, refreshToken: refresh, user, isAuthenticated: true }),
-      logout: () =>
-        set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false }),
+      loginSuccess: (access, refresh, user) => {
+        // Vide le cache React Query avant d'installer la nouvelle identité :
+        // sans ça, des données (listes/fiches Membre, etc.) chargées par un
+        // compte précédent dans le même onglet restent visibles — via le
+        // cache — au compte qui vient de se connecter, le temps que
+        // staleTime expire. Voir queryClient.ts pour le détail du bug.
+        queryClient.clear();
+        set({ accessToken: access, refreshToken: refresh, user, isAuthenticated: true });
+      },
+      logout: () => {
+        queryClient.clear();
+        set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false });
+      },
     }),
     { name: AUTH_STORAGE_KEY, storage: createJSONStorage(() => dynamicAuthStorage) },
   ),

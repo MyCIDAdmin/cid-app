@@ -12,6 +12,7 @@
   },
   "action": {
     "annuler": "Annuler",
-    "confirmer": "Confirmer"
+    "confirmer": "Confirmer",
+    "deconnexion": "Se déconnecter"
   }
 }

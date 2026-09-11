@@ -12,6 +12,7 @@
   },
   "action": {
     "annuler": "Abbrechen",
-    "confirmer": "Bestätigen"
+    "confirmer": "Bestätigen",
+    "deconnexion": "Abmelden"
   }
 }

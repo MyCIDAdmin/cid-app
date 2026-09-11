@@ -3,7 +3,7 @@
  * La liste de navigation s'enrichit au fil des phases d'implémentation.
  */
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 
@@ -28,6 +28,16 @@ const NAV_ITEMS: NavItem[] = [
 export default function Sidebar() {
   const { t } = useTranslation("common");
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    // logout() vide aussi le cache React Query (cf queryClient.ts) — sans
+    // quoi les données du compte qui se déconnecte resteraient visibles au
+    // prochain compte connecté dans le même onglet.
+    logout();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <aside className="flex h-screen w-60 flex-col bg-sb text-white/90">
@@ -53,8 +63,15 @@ export default function Sidebar() {
         ))}
       </nav>
       {user && (
-        <div className="border-t border-white/10 px-4 py-3 text-xs text-white/60">
-          {user.email}
+        <div className="border-t border-white/10 px-4 py-3">
+          <div className="mb-2 truncate text-xs text-white/60">{user.email}</div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full rounded-cid px-2 py-1.5 text-left text-xs text-white/70 transition hover:bg-white/5"
+          >
+            {t("action.deconnexion")}
+          </button>
         </div>
       )}
     </aside>
