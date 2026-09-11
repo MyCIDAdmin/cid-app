@@ -3,17 +3,24 @@ Modèles — app cotisations.
 
 R1 P0 — Cotisations & Paiements (FDD §3.2, RICEFW F-004/F-015/F-016/W-001/W-002).
 
-Périmètre de ce module (AHM-15) :
+Périmètre de ce module (AHM-15, révisé par AHM-53) :
   - Cotisation est un registre d'écritures financières « append-only » : une fois créée, elle
     n'est plus modifiée par l'API (pas de PUT/PATCH/DELETE exposés — voir views.py), à une
     exception volontaire près : l'action `marquer_payee` (AHM-53) permet au Directeur
     Financier/Admin de confirmer manuellement un paiement reçu hors ligne (virement SEPA,
     chèque, espèces) pour une cotisation restée en_attente/echouee — il n'y a toujours pas de
     passerelle de paiement réelle (AHM-46) pour déclencher cette confirmation automatiquement.
-    Le stepper de paiement (mockup #pg-cotisation, RICEFW F-004) simule les étapes 1 (article) et
+  - Le stepper de paiement (mockup #pg-cotisation, RICEFW F-004) simule les étapes 1 (article) et
     2 (mode de paiement) uniquement côté client ; l'étape 3 (confirmation) envoie un unique POST
-    qui enregistre directement le paiement effectué (W-002 : "POST /cotisations/ avec
-    statut=paye").
+    (W-002 : "POST /cotisations/ avec statut=paye"). Depuis AHM-53, ce statut transmis par le
+    client n'est plus jamais fait confiance pour ce flux en libre-service : quel que soit le mode
+    de paiement choisi (carte, virement SEPA, PayPal), CotisationViewSet.perform_create impose
+    statut=en_attente à la création, aucune passerelle réelle ne pouvant confirmer le paiement.
+    Le paiement doit ensuite être confirmé par le Directeur Financier/Admin via `marquer_payee`
+    avant qu'une référence de transaction ou un reçu PDF (AHM-17) n'existent. Exception : la
+    saisie pour le compte d'un AUTRE membre par le Directeur Financier/Admin (F-015, un membre du
+    staff qui constate une transaction déjà reçue, ex. espèces en main propre) conserve le statut
+    transmis par le client.
   - Le montant final n'est jamais fait confiance au frontend (CLAUDE.md §8) : pour les types
     d'article au tarif fixe de l'association (cotisation annuelle, frais d'adhésion), le serializer
     recalcule le montant et le libellé côté serveur — voir MONTANTS_CATALOGUE ci-dessous.

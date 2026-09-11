@@ -37,7 +37,7 @@
     "sepa_description": "Bearbeitung innerhalb von 2 Werktagen",
     "paypal_titre": "PayPal",
     "paypal_description": "Schnell und sicher bezahlen",
-    "note": "Hier werden keine Zahlungsdaten erfasst: Diese Auswahl dient nur dazu, Ihre Zahlung im Vereinsregister zu erfassen.",
+    "note": "Hier werden keine Zahlungsdaten erfasst: Diese Auswahl gibt nur an, wie Sie bezahlen. Der Finanzverantwortliche bestätigt den Zahlungseingang, bevor die Zahlung als bezahlt gilt.",
     "payer": "{{montant}} € sicher bezahlen",
     "retour": "Zurück",
     "erreur": "Die Zahlung konnte nicht gespeichert werden."
@@ -45,10 +45,13 @@
   "confirmation": {
     "titre": "Zahlung bestätigt!",
     "sous_titre": "Ihre Zahlung wurde erfolgreich gespeichert.",
+    "titre_attente": "Zahlung erfasst — wartet auf Bestätigung",
+    "sous_titre_attente": "Der Finanzverantwortliche bestätigt den Eingang Ihrer Zahlung. Sobald sie bestätigt ist, können Sie Ihren Beleg herunterladen.",
     "reference": "Referenz",
     "article": "Artikel",
     "montant": "Betrag",
     "date": "Datum",
+    "statut": "Status",
     "nouveau_paiement": "Neue Zahlung",
     "accueil": "Startseite"
   },

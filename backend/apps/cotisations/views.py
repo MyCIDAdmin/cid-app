@@ -9,6 +9,14 @@ Vues API — app cotisations (TDD §2.4) :
 
 Pas de PUT/PATCH/DELETE : registre financier append-only (voir models.py) — seule exception
 volontaire, l'action `marquer_payee` ci-dessous, réservée au Directeur Financier/Admin.
+
+Règle AHM-53 (retour utilisateur : recevoir une quittance immédiate pour un virement SEPA non
+encore réglé est trompeur) : `perform_create` impose toujours statut=en_attente pour un paiement
+en libre-service (le membre paie pour lui-même), quel que soit le mode de paiement choisi et quel
+que soit le statut transmis par le client — il n'existe pas de passerelle de paiement réelle
+(AHM-46) capable de le vérifier. Seule la saisie pour le compte d'un AUTRE membre par le
+Directeur Financier/Admin (F-015, staff qui constate une transaction déjà reçue) conserve le
+statut transmis par le client.
 """
 
 from django.http import HttpResponse
@@ -75,7 +83,10 @@ class CotisationViewSet(ModelViewSet):
             raise ValidationError(
                 {"membre": "Aucune fiche membre associée à ce compte utilisateur."}
             )
-        serializer.save(membre=membre_self, saisie_par=None)
+        # AHM-53 : jamais fait confiance au statut transmis par le client en libre-service — voir
+        # docstring de ce module. Le paiement reste en_attente jusqu'à confirmation manuelle
+        # (marquer_payee ci-dessous) ; aucune référence de transaction/reçu tant qu'il ne l'est pas.
+        serializer.save(membre=membre_self, saisie_par=None, statut=StatutCotisation.EN_ATTENTE)
 
     @action(detail=True, methods=["get"])
     def receipt(self, request, pk=None):

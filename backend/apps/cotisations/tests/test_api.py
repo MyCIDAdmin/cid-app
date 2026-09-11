@@ -62,7 +62,32 @@ def test_membre_peut_payer_sa_propre_cotisation(api_client):
     assert resp.data["saisie_par"] is None
     assert str(resp.data["montant"]) == "45.00"  # tarif catalogue, pas de montant du client
     assert resp.data["libelle"] == f"Cotisation annuelle {resp.data['annee']}"
-    assert resp.data["reference_transaction"].startswith("TXN-")
+    # AHM-53 : jamais fait confiance au statut envoyé par le client en libre-service — reste
+    # en_attente tant que le Directeur Financier/Admin ne l'a pas confirmé (marquer_payee).
+    assert resp.data["statut"] == StatutCotisation.EN_ATTENTE
+    assert resp.data["reference_transaction"] is None
+    assert resp.data["date_paiement"] is None
+
+
+def test_statut_libre_service_toujours_en_attente_quel_que_soit_le_mode_de_paiement(api_client):
+    # AHM-53 : "je reçois une quittance immédiate pour un virement SEPA" — plus vrai pour aucun
+    # mode de paiement en libre-service, aucune passerelle réelle ne pouvant le vérifier.
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    for mode in ("carte", "virement_sepa", "paypal"):
+        resp = api_client.post(
+            reverse(LIST_URL),
+            {
+                "type_article": TypeArticle.ADHESION,
+                "mode_paiement": mode,
+                "statut": "payee",  # ignoré côté serveur
+            },
+        )
+        assert resp.status_code == 201, resp.data
+        assert resp.data["statut"] == StatutCotisation.EN_ATTENTE, mode
+        assert resp.data["mode_paiement"] == mode
+        assert resp.data["reference_transaction"] is None
 
 
 def test_montant_catalogue_impose_meme_si_client_en_envoie_un_autre(api_client):

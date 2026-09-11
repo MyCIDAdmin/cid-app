@@ -37,7 +37,7 @@
     "sepa_description": "Traitement sous 2 jours ouvrés",
     "paypal_titre": "PayPal",
     "paypal_description": "Paiement rapide et sécurisé",
-    "note": "Aucune donnée bancaire n'est saisie ici : ce mode sert uniquement à enregistrer votre paiement dans le registre de l'association.",
+    "note": "Aucune donnée bancaire n'est saisie ici : ce mode sert uniquement à indiquer comment vous réglez votre paiement. Le Directeur Financier confirmera sa bonne réception avant qu'il ne soit considéré comme payé.",
     "payer": "Payer {{montant}} € en sécurité",
     "retour": "Retour",
     "erreur": "Le paiement n'a pas pu être enregistré."
@@ -45,10 +45,13 @@
   "confirmation": {
     "titre": "Paiement confirmé !",
     "sous_titre": "Votre paiement a bien été enregistré.",
+    "titre_attente": "Paiement enregistré — en attente de confirmation",
+    "sous_titre_attente": "Le Directeur Financier confirmera la bonne réception de votre paiement. Vous pourrez télécharger votre reçu dès qu'il sera confirmé.",
     "reference": "Référence",
     "article": "Article",
     "montant": "Montant",
     "date": "Date",
+    "statut": "Statut",
     "nouveau_paiement": "Nouveau paiement",
     "accueil": "Accueil"
   },

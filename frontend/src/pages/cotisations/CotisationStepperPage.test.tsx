@@ -91,10 +91,15 @@ describe("CotisationStepperPage", () => {
     expect(screen.getByText("article.don_montant_erreur")).toBeInTheDocument();
   });
 
-  it("enregistre le paiement d'une cotisation et affiche la confirmation", async () => {
+  it("enregistre le paiement d'une cotisation et affiche la confirmation en attente (AHM-53)", async () => {
+    // AHM-53 : le serveur ne renvoie jamais statut=payee pour un paiement en libre-service, quel
+    // que soit le mode choisi — voir docstring de CotisationStepperPage et perform_create côté
+    // backend. Le mock reflète donc la réalité de l'API : en_attente, pas de référence.
     const mutate = vi.fn(
       (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
-        opts?.onSuccess?.(cotisation({ reference_transaction: "TXN-2025-XYZ99999" })),
+        opts?.onSuccess?.(
+          cotisation({ statut: "en_attente", reference_transaction: null, date_paiement: null }),
+        ),
     );
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
       mutate,
@@ -111,14 +116,18 @@ describe("CotisationStepperPage", () => {
     fireEvent.click(screen.getByText(/paiement\.payer/));
 
     expect(mutate).toHaveBeenCalledTimes(1);
+    // Pas de champ `statut` envoyé : le serveur l'impose toujours lui-même (AHM-53).
     expect(mutate.mock.calls[0][0]).toEqual({
       type_article: "cotisation",
       mode_paiement: "carte",
-      statut: "payee",
     });
 
-    await waitFor(() => expect(screen.getByText("confirmation.titre")).toBeInTheDocument());
-    expect(screen.getByText("TXN-2025-XYZ99999")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument(),
+    );
+    // Pas de référence de transaction ni de bouton de reçu tant que ce n'est pas confirmé.
+    expect(screen.queryByText(/TXN-/)).not.toBeInTheDocument();
+    expect(screen.queryByText("recu.telecharger")).not.toBeInTheDocument();
   });
 
   it("télécharge le reçu depuis l'historique pour une ligne payée (AHM-17)", async () => {
@@ -160,7 +169,10 @@ describe("CotisationStepperPage", () => {
     expect(screen.queryByText("recu.telecharger")).not.toBeInTheDocument();
   });
 
-  it("propose le téléchargement du reçu dès la confirmation du paiement", async () => {
+  it("propose le téléchargement du reçu si la confirmation renvoie déjà un paiement payé", async () => {
+    // Cas défensif : si le serveur renvoyait un jour statut=payee dès la création (ex. saisie
+    // DF pour un autre membre, F-015 — hors scope du stepper libre-service mais même type de
+    // réponse), l'écran de confirmation doit quand même proposer le reçu immédiatement.
     const mutate = vi.fn(
       (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
         opts?.onSuccess?.(cotisation({ id: "c-nouveau", reference_transaction: "TXN-2025-XYZ99999" })),
@@ -180,9 +192,7 @@ describe("CotisationStepperPage", () => {
     fireEvent.click(screen.getByText(/paiement\.payer/));
     await waitFor(() => expect(screen.getByText("confirmation.titre")).toBeInTheDocument());
 
-    // Deux boutons "recu.telecharger" existent maintenant (confirmation + historique) : le
-    // premier est celui de la confirmation, testé ici.
-    fireEvent.click(screen.getAllByText("recu.telecharger")[0]);
+    fireEvent.click(screen.getByText("recu.telecharger"));
 
     await waitFor(() =>
       expect(cotisationsApi.telechargerRecuCotisation).toHaveBeenCalledWith("c-nouveau"),

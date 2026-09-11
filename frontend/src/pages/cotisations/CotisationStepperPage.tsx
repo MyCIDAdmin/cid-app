@@ -11,11 +11,19 @@
  *    pas (aucun événement à sélectionner).
  *  - Aucune donnée bancaire (numéro de carte, IBAN/BIC) n'est saisie : il
  *    n'existe pas de passerelle de paiement réelle (aucun SDK Stripe/PayPal
- *    dans requirements/base.txt), et l'API se contente d'un libellé de mode
- *    de paiement avec statut=payee directement. Collecter ces champs sans
- *    les transmettre nulle part serait un anti-pattern de sécurité (risque
- *    de confusion pour l'utilisateur). Le choix du mode reste affiché pour
- *    la fidélité au mockup, mais sans champ carte/IBAN.
+ *    dans requirements/base.txt). Collecter ces champs sans les transmettre
+ *    nulle part serait un anti-pattern de sécurité (risque de confusion pour
+ *    l'utilisateur). Le choix du mode reste affiché pour la fidélité au
+ *    mockup, mais sans champ carte/IBAN.
+ *
+ * AHM-53 (retour utilisateur : recevoir une quittance immédiate pour un virement SEPA non
+ * encore réglé est trompeur) : quel que soit le mode de paiement choisi à l'étape 2, le POST de
+ * l'étape 3 n'obtient jamais statut=payee en retour — CotisationViewSet.perform_create impose
+ * toujours en_attente pour ce flux (voir models.py), aucune passerelle réelle ne pouvant le
+ * vérifier. L'écran de confirmation ci-dessous reflète donc un paiement "en attente de
+ * confirmation par le Directeur Financier/Admin", pas un paiement déjà réglé — ni référence de
+ * transaction, ni reçu PDF tant que ce n'est pas fait (AHM-17 exige statut=payee, voir
+ * apps.cotisations.views.receipt).
  *
  * Le reçu PDF (bouton "Télécharger le reçu" du mockup) est disponible depuis AHM-17 —
  * GET /cotisations/{id}/receipt/, téléchargé en Blob puis déclenché côté navigateur, même
@@ -167,14 +175,12 @@ export default function CotisationStepperPage() {
         ? {
             type_article: "don" as const,
             mode_paiement: modePaiement,
-            statut: "payee" as const,
             libelle: DON_LIBELLE,
             montant: donMontantNombre.toFixed(2),
           }
         : {
             type_article: articleChoisi,
             mode_paiement: modePaiement,
-            statut: "payee" as const,
           };
 
     creerMutation.mutate(payload, {
@@ -410,17 +416,35 @@ export default function CotisationStepperPage() {
 
       {etape === 3 && resultat && (
         <div className="rounded-cid-lg bg-bg-primary p-8 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-status-successBg text-2xl text-status-successText">
-            ✓
-          </div>
-          <div className="mb-1 text-lg font-bold text-text-primary">{t("confirmation.titre")}</div>
-          <div className="mb-4 text-sm text-text-tertiary">{t("confirmation.sous_titre")}</div>
+          {resultat.statut === "payee" ? (
+            <>
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-status-successBg text-2xl text-status-successText">
+                ✓
+              </div>
+              <div className="mb-1 text-lg font-bold text-text-primary">{t("confirmation.titre")}</div>
+              <div className="mb-4 text-sm text-text-tertiary">{t("confirmation.sous_titre")}</div>
+            </>
+          ) : (
+            <>
+              {/* AHM-53 : aucun mode de paiement en libre-service n'est confirmé à la création —
+                  voir docstring en tête de fichier. */}
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-status-warningBg text-2xl text-status-warningText">
+                ⏳
+              </div>
+              <div className="mb-1 text-lg font-bold text-text-primary">
+                {t("confirmation.titre_attente")}
+              </div>
+              <div className="mb-4 text-sm text-text-tertiary">{t("confirmation.sous_titre_attente")}</div>
+            </>
+          )}
 
           <dl className="mx-auto mb-5 max-w-sm space-y-1.5 rounded-cid border border-text-tertiary/10 p-4 text-left text-sm">
-            <div className="flex justify-between">
-              <dt className="text-text-secondary">{t("confirmation.reference")}</dt>
-              <dd className="font-mono text-text-primary">{resultat.reference_transaction}</dd>
-            </div>
+            {resultat.reference_transaction && (
+              <div className="flex justify-between">
+                <dt className="text-text-secondary">{t("confirmation.reference")}</dt>
+                <dd className="font-mono text-text-primary">{resultat.reference_transaction}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-text-secondary">{t("confirmation.article")}</dt>
               <dd className="text-text-primary">{resultat.libelle}</dd>
@@ -430,22 +454,30 @@ export default function CotisationStepperPage() {
               <dd className="font-bold text-ca">{formatMontant(Number(resultat.montant))}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-text-secondary">{t("confirmation.date")}</dt>
-              <dd className="text-text-primary">{formatDate(resultat.date_paiement)}</dd>
+              <dt className="text-text-secondary">
+                {resultat.statut === "payee" ? t("confirmation.date") : t("confirmation.statut")}
+              </dt>
+              <dd className="text-text-primary">
+                {resultat.statut === "payee"
+                  ? formatDate(resultat.date_paiement)
+                  : t(`statut.${resultat.statut}`)}
+              </dd>
             </div>
           </dl>
 
           {erreurRecu && <p className="mb-3 text-sm text-status-dangerText">{erreurRecu}</p>}
 
           <div className="flex justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => telechargerRecu(resultat)}
-              disabled={recuEnCours === resultat.id}
-              className="rounded-cid border border-ca px-3 py-1.5 text-sm font-medium text-ca hover:bg-cal/20 disabled:opacity-40"
-            >
-              {recuEnCours === resultat.id ? t("recu.en_cours") : t("recu.telecharger")}
-            </button>
+            {resultat.statut === "payee" && (
+              <button
+                type="button"
+                onClick={() => telechargerRecu(resultat)}
+                disabled={recuEnCours === resultat.id}
+                className="rounded-cid border border-ca px-3 py-1.5 text-sm font-medium text-ca hover:bg-cal/20 disabled:opacity-40"
+              >
+                {recuEnCours === resultat.id ? t("recu.en_cours") : t("recu.telecharger")}
+              </button>
+            )}
             <button
               type="button"
               onClick={nouveauPaiement}

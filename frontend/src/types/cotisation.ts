@@ -37,11 +37,14 @@ export interface Cotisation {
  * authentifié, jamais transmis par le client. `libelle`/`montant` ne sont
  * envoyés que pour "don" — pour cotisation/adhesion le serializer impose le
  * tarif catalogue côté serveur et ignore toute valeur transmise.
+ *
+ * Pas de champ `statut` (AHM-53) : quel que soit le mode de paiement choisi, le serveur impose
+ * toujours statut=en_attente pour ce flux — aucune passerelle de paiement réelle ne pouvant le
+ * confirmer (AHM-46). Le paiement attend une confirmation manuelle du Directeur Financier/Admin.
  */
 export interface CotisationCreatePayload {
   type_article: TypeArticleStepper;
   mode_paiement: ModePaiement;
-  statut: "payee";
   libelle?: string;
   montant?: string;
 }
