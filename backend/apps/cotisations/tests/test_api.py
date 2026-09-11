@@ -265,3 +265,64 @@ def test_filtre_par_statut(api_client):
     assert resp.status_code == 200
     assert len(resp.data["results"]) == 1
     assert resp.data["results"][0]["statut"] == StatutCotisation.EN_ATTENTE
+
+
+# --- Reçu PDF (AHM-17, RICEFW R-010) ---
+
+
+def _receipt_url(cotisation):
+    return reverse("cotisations:cotisation-receipt", args=[cotisation.id])
+
+
+def test_receipt_non_authentifie_refuse(api_client):
+    cotisation = CotisationFactory()
+    resp = api_client.get(_receipt_url(cotisation))
+    assert resp.status_code == 401
+
+
+def test_receipt_disponible_pour_le_proprietaire(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    cotisation = CotisationFactory(membre=membre, statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.get(_receipt_url(cotisation))
+
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert resp["Content-Disposition"] == (
+        f'attachment; filename="recu-{cotisation.reference_transaction}.pdf"'
+    )
+    assert resp.content.startswith(b"%PDF-")
+
+
+def test_receipt_refuse_pour_la_cotisation_dun_autre_membre(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    cotisation_autrui = CotisationFactory(statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.get(_receipt_url(cotisation_autrui))
+
+    assert resp.status_code == 404  # IDOR : ne révèle même pas l'existence de la ressource
+
+
+def test_rh_peut_telecharger_le_recu_dun_autre_membre(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.get(_receipt_url(cotisation))
+
+    assert resp.status_code == 200
+    assert resp.content.startswith(b"%PDF-")
+
+
+def test_receipt_refuse_si_cotisation_pas_encore_payee(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    cotisation = CotisationFactory(
+        membre=membre, statut=StatutCotisation.EN_ATTENTE, reference_transaction=None
+    )
+
+    _auth(api_client, user)
+    resp = api_client.get(_receipt_url(cotisation))
+
+    assert resp.status_code == 400

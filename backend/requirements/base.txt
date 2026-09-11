@@ -35,6 +35,12 @@ boto3==1.35.24
 
 # --- PDF / exports ---
 weasyprint==62.3
+# pydyf n'est pas fixé par weasyprint 62.3 (aucune borne dans ses métadonnées) : sans pin
+# explicite, pip installe la dernière version (0.12.x) dont l'API Stream (pdf/stream.py) n'est
+# plus compatible avec ce que weasyprint 62.3 attend — AttributeError: 'super' object has no
+# attribute 'transform' au premier write_pdf() (constaté en préparant AHM-17). 0.11.0 est la
+# dernière version compatible.
+pydyf==0.11.0
 reportlab==4.2.2
 openpyxl==3.1.5
 

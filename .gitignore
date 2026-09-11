@@ -53,3 +53,4 @@ secrets/
 !frontend/public/**/*.png
 !frontend/public/**/*.jpg
 !docs/**/*.png
+!backend/apps/cotisations/assets/*.jpg

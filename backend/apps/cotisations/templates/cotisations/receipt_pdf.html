@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="{{ langue }}">
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: A4;
+        margin: 2.2cm 2cm;
+        @bottom-center {
+            content: "{{ t.footer_page }}";
+            font-size: 8px;
+            color: #8a8a8a;
+        }
+    }
+    * { box-sizing: border-box; }
+    body {
+        font-family: "DejaVu Sans", "Helvetica Neue", Arial, sans-serif;
+        color: #1a1a1a;
+        font-size: 11px;
+        line-height: 1.5;
+    }
+    .header {
+        display: flex;
+        align-items: center;
+        border-bottom: 2px solid #CC0000;
+        padding-bottom: 14px;
+        margin-bottom: 24px;
+    }
+    .header img {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        margin-right: 14px;
+    }
+    .header .assoc-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #8B0000;
+    }
+    .header .assoc-tagline {
+        font-size: 10px;
+        color: #555;
+        margin-top: 2px;
+    }
+    h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 4px 0;
+    }
+    .subtitle {
+        font-size: 10px;
+        color: #666;
+        margin-bottom: 22px;
+    }
+    .meta-grid {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 22px;
+    }
+    .meta-block .meta-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #888;
+        margin-bottom: 3px;
+    }
+    .meta-block .meta-value {
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .meta-block.right { text-align: right; }
+    table.receipt {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 22px;
+    }
+    table.receipt th {
+        text-align: left;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #888;
+        border-bottom: 1px solid #ddd;
+        padding: 6px 8px;
+    }
+    table.receipt td {
+        padding: 9px 8px;
+        border-bottom: 1px solid #eee;
+        font-size: 11px;
+    }
+    table.receipt .num { text-align: right; }
+    .totals {
+        width: 100%;
+        margin-top: 4px;
+    }
+    .totals td {
+        padding: 5px 8px;
+        font-size: 11px;
+    }
+    .totals .num { text-align: right; }
+    .totals tr.total td {
+        border-top: 2px solid #1a1a1a;
+        font-size: 13px;
+        font-weight: 700;
+        padding-top: 9px;
+    }
+    .totals tr.total .num { color: #CC0000; }
+    .paid-stamp {
+        display: inline-block;
+        margin-top: 26px;
+        padding: 6px 14px;
+        border: 1.5px solid #1a7a3c;
+        color: #1a7a3c;
+        font-weight: 700;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-radius: 4px;
+    }
+    .footer-note {
+        margin-top: 34px;
+        padding-top: 12px;
+        border-top: 1px solid #ddd;
+        font-size: 9px;
+        color: #888;
+    }
+</style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="{{ logo_data_uri }}" alt="CID">
+        <div>
+            <div class="assoc-name">{{ t.assoc_name }}</div>
+            <div class="assoc-tagline">{{ t.assoc_tagline }}</div>
+        </div>
+    </div>
+
+    <h1>{{ t.title }}</h1>
+    <div class="subtitle">{{ t.subtitle }}</div>
+
+    <div class="meta-grid">
+        <div class="meta-block">
+            <div class="meta-label">{{ t.reference }}</div>
+            <div class="meta-value">{{ cotisation.reference_transaction }}</div>
+        </div>
+        <div class="meta-block right">
+            <div class="meta-label">{{ t.date_paiement }}</div>
+            <div class="meta-value">{{ date_paiement_formatee }}</div>
+        </div>
+    </div>
+
+    <table class="receipt">
+        <thead>
+            <tr>
+                <th>{{ t.membre }}</th>
+                <th>{{ t.numero_membre }}</th>
+                <th>{{ t.mode_paiement }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ membre_nom_complet }}</td>
+                <td>{{ cotisation.membre.numero_membre }}</td>
+                <td>{{ mode_paiement_affiche }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="receipt">
+        <thead>
+            <tr><th>{{ t.article }}</th><th class="num">{{ t.montant }}</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ cotisation.libelle }}</td>
+                <td class="num">{{ montant_formate }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td>{{ t.montant_ht }}</td>
+            <td class="num">{{ montant_formate }}</td>
+        </tr>
+        <tr>
+            <td>{{ t.tva }}</td>
+            <td class="num">{{ tva_formatee }}</td>
+        </tr>
+        <tr class="total">
+            <td>{{ t.total }}</td>
+            <td class="num">{{ montant_formate }}</td>
+        </tr>
+    </table>
+
+    <div class="paid-stamp">{{ t.paid_stamp }}</div>
+
+    <div class="footer-note">{{ t.footer_note }}</div>
+
+</body>
+</html>
