@@ -2,7 +2,9 @@
   "liste": {
     "titre": "Inscriptions en attente",
     "description": "Validez ou refusez les demandes d'inscription reçues via la page d'inscription libre-service.",
+    "col_nom": "Nom",
     "col_email": "Email",
+    "col_ville": "Ville",
     "col_langue": "Langue",
     "col_date": "Date d'inscription",
     "col_actions": "Actions",
@@ -14,11 +16,10 @@
     "precedent": "Précédent",
     "suivant": "Suivant",
     "confirmer_accepter_titre": "Accepter cette inscription ?",
-    "confirmer_accepter_message": "Le compte {{email}} sera activé et pourra se connecter.",
+    "confirmer_accepter_message": "Le compte {{email}} sera activé et sa fiche Membre passera au statut Actif.",
     "confirmer_refuser_titre": "Refuser cette inscription ?",
-    "confirmer_refuser_message": "Le compte {{email}} restera désactivé.",
-    "accepte_message": "Le compte {{email}} a été activé.",
-    "creer_fiche_membre": "Créer sa fiche Membre →",
+    "confirmer_refuser_message": "Le compte {{email}} restera désactivé, sa fiche Membre passera au statut Inactif.",
+    "accepte_message": "Le compte {{email}} a été activé et apparaît maintenant dans la liste des Membres.",
     "erreur_action": "Une erreur est survenue, veuillez réessayer."
   }
 }

@@ -3,7 +3,9 @@ Vues API — app accounts (TDD §2.4) :
   POST /auth/login/                 — étape 1 : email+mdp -> ticket ou tokens
   POST /auth/2fa/send-otp/          — envoie un code email (méthode de secours)
   POST /auth/2fa/verify/            — étape 2 : code TOTP/email -> tokens JWT
-  POST /auth/register/              — inscription membre (compte inactif)
+  POST /auth/register/              — inscription membre (compte + fiche Membre inactifs)
+  POST /auth/register/confirm/      — confirme le code reçu par email (AHM-50)
+  POST /auth/register/resend-code/  — renvoie un nouveau code de confirmation
   GET/PATCH /auth/me/                — profil de l'utilisateur connecté
   GET/POST/DELETE /auth/2fa/totp/    — setup / statut / désactivation TOTP
   POST /auth/logout/                 — blackliste le refresh token
@@ -21,6 +23,7 @@ import qrcode
 from django.contrib.auth import authenticate
 from django.core import signing
 from django.core.signing import BadSignature, SignatureExpired
+from django.db import transaction
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import generics, status
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
@@ -32,6 +35,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.membres.models import StatutMembre
+
 from . import services
 from .models import RegistrationDecision
 from .permissions import IsRHOrAbove
@@ -40,6 +45,8 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     PendingRegistrationSerializer,
+    RegisterConfirmSerializer,
+    RegisterResendCodeSerializer,
     RegisterSerializer,
     SendOTPSerializer,
     TOTPSetupConfirmSerializer,
@@ -48,6 +55,7 @@ from .serializers import (
     Verify2FASerializer,
 )
 from .tasks import (
+    send_email_verification_code,
     send_new_ip_alert_email,
     send_otp_email,
     send_password_reset_email,
@@ -209,7 +217,12 @@ class Verify2FAView(APIView):
 
 
 class RegisterView(generics.CreateAPIView):
-    """Inscription membre (FDD §3.1, F-002) — compte créé inactif."""
+    """
+    Inscription membre (FDD §3.1, F-002, AHM-50) — crée le compte ET la
+    fiche Membre (statut en_attente), tous deux inactifs. La prochaine
+    étape est la confirmation du code reçu par email (RegisterConfirmView)
+    — RH ne voit la demande qu'une fois l'email confirmé.
+    """
 
     permission_classes = [AllowAny]
     serializer_class = RegisterSerializer
@@ -217,12 +230,84 @@ class RegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        send_welcome_email.delay(str(user.id))
+        with transaction.atomic():
+            user = serializer.save()
+        code = services.generate_email_otp(user, purpose="email_verification")
+        send_email_verification_code.delay(str(user.id), code)
         services.log_audit_event("register", user=user, ip_address=_client_ip(request))
         return Response(
-            {"message": "Inscription reçue. Votre compte doit être activé par un administrateur."},
+            {
+                "message": (
+                    "Inscription reçue. Un code de vérification vient d'être envoyé à "
+                    "votre adresse email."
+                )
+            },
             status=status.HTTP_201_CREATED,
+        )
+
+
+class RegisterConfirmView(APIView):
+    """Confirme le code à 6 chiffres reçu par email après l'inscription (AHM-50)."""
+
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "otp"
+
+    def post(self, request):
+        serializer = RegisterConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = User.objects.filter(email__iexact=data["email"]).first()
+        if user is None or not services.verify_email_otp(
+            user, data["code"], purpose="email_verification"
+        ):
+            raise ValidationError("Code invalide ou expiré.")
+
+        user.email_verifie = True
+        user.save(update_fields=["email_verifie"])
+        # Ancien message "bienvenue" (send_welcome_email) : désormais exact
+        # uniquement après confirmation de l'email — c'est ici, pas à
+        # l'inscription, que la demande devient visible par RH (AHM-48).
+        send_welcome_email.delay(str(user.id))
+        services.log_audit_event("email_verified", user=user, ip_address=_client_ip(request))
+        return Response(
+            {
+                "message": "Email confirmé. Votre inscription doit maintenant être validée par un administrateur."
+            }
+        )
+
+
+class RegisterResendCodeView(APIView):
+    """
+    Renvoie un nouveau code de confirmation (AHM-50). Réponse volontairement
+    identique que l'email corresponde à un compte non confirmé ou non —
+    anti-énumération, même principe que PasswordResetRequestView.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "otp"
+
+    def post(self, request):
+        serializer = RegisterResendCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.filter(
+            email__iexact=serializer.validated_data["email"], email_verifie=False
+        ).first()
+        if user is not None:
+            try:
+                code = services.generate_email_otp(user, purpose="email_verification")
+            except ValueError:
+                pass  # limite anti-spam atteinte (OTP_EMAIL_MAX_PER_10MIN) — réponse générique quand même
+            else:
+                send_email_verification_code.delay(str(user.id), code)
+
+        return Response(
+            {
+                "message": "Si un compte en attente de confirmation existe, un nouveau code vient d'être envoyé."
+            }
         )
 
 
@@ -354,23 +439,35 @@ class PendingRegistrationsView(generics.ListAPIView):
     pagination_class = PendingRegistrationsCursorPagination
 
     def get_queryset(self):
-        return User.objects.filter(
-            is_active=False, registration_decision=RegistrationDecision.EN_ATTENTE
-        ).order_by("created_at", "id")
+        # email_verifie=True (AHM-50) : une inscription dont l'email n'est
+        # pas encore confirmé n'est pas une vraie demande à traiter par RH.
+        return (
+            User.objects.filter(
+                is_active=False,
+                registration_decision=RegistrationDecision.EN_ATTENTE,
+                email_verifie=True,
+            )
+            .select_related("membre")
+            .order_by("created_at", "id")
+        )
 
 
 class ApproveRegistrationView(APIView):
     """
-    Active le compte (FDD §3.1). Ne crée pas la fiche Membre : RH/Admin la
-    crée/lie séparément via le flux existant (POST /membres/, champ `user`
-    déjà éditable — cf MembreSerializer) — hors périmètre de ce ticket.
+    Active le compte ET la fiche Membre créée à l'inscription (FDD §3.1,
+    AHM-50 — la fiche existe déjà, statut `en_attente`, depuis
+    RegisterSerializer.create ; il n'y a donc plus de création/liaison
+    manuelle séparée à faire ici).
     """
 
     permission_classes = [IsRHOrAbove]
 
     def post(self, request, pk):
         target = User.objects.filter(
-            pk=pk, is_active=False, registration_decision=RegistrationDecision.EN_ATTENTE
+            pk=pk,
+            is_active=False,
+            registration_decision=RegistrationDecision.EN_ATTENTE,
+            email_verifie=True,
         ).first()
         if target is None:
             raise ValidationError("Inscription introuvable ou déjà traitée.")
@@ -378,6 +475,11 @@ class ApproveRegistrationView(APIView):
         target.is_active = True
         target.registration_decision = RegistrationDecision.APPROUVE
         target.save(update_fields=["is_active", "registration_decision"])
+
+        membre = getattr(target, "membre", None)
+        if membre is not None:
+            membre.statut = StatutMembre.ACTIF
+            membre.save(update_fields=["statut"])
 
         send_registration_approved_email.delay(str(target.id))
         services.log_audit_event(
@@ -390,19 +492,33 @@ class ApproveRegistrationView(APIView):
 
 
 class RefuseRegistrationView(APIView):
-    """Refuse l'inscription (FDD §3.1) — le compte reste inactif."""
+    """
+    Refuse l'inscription (FDD §3.1) — le compte reste inactif. La fiche
+    Membre créée à l'inscription est conservée avec le statut `inactif`
+    plutôt que supprimée (décision utilisateur, 2026-09-11) : RH garde une
+    trace de la demande et peut la supprimer manuellement si besoin
+    (DELETE /membres/{id}/, déjà réservé Bureau Admin+).
+    """
 
     permission_classes = [IsRHOrAbove]
 
     def post(self, request, pk):
         target = User.objects.filter(
-            pk=pk, is_active=False, registration_decision=RegistrationDecision.EN_ATTENTE
+            pk=pk,
+            is_active=False,
+            registration_decision=RegistrationDecision.EN_ATTENTE,
+            email_verifie=True,
         ).first()
         if target is None:
             raise ValidationError("Inscription introuvable ou déjà traitée.")
 
         target.registration_decision = RegistrationDecision.REFUSE
         target.save(update_fields=["registration_decision"])
+
+        membre = getattr(target, "membre", None)
+        if membre is not None:
+            membre.statut = StatutMembre.INACTIF
+            membre.save(update_fields=["statut"])
 
         send_registration_refused_email.delay(str(target.id))
         services.log_audit_event(

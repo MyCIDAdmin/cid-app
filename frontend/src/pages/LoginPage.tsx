@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import { login, verify2FA, sendOtp } from "../api/auth";
-import { useAuthStore } from "../store/authStore";
+import { setRememberMe, useAuthStore } from "../store/authStore";
 import { extractApiErrorMessage } from "../utils/apiError";
 
 type Step = "credentials" | "twofa";
@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMeChecked] = useState(true);
   const [code, setCode] = useState("");
   const [loginTicket, setLoginTicket] = useState<string | null>(null);
   const [totpAvailable, setTotpAvailable] = useState(false);
@@ -32,6 +33,9 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
+      // Doit être appelé avant tout loginSuccess() (ici ou après l'étape 2FA
+      // éventuelle) — détermine où le store persistant va écrire.
+      setRememberMe(rememberMe);
       const res = await login(email, password);
       if (res.requires_2fa && res.login_ticket) {
         setLoginTicket(res.login_ticket);
@@ -113,9 +117,20 @@ export default function LoginPage() {
                 className="mt-1 w-full rounded-cid border border-black/10 px-3 py-2 text-sm outline-none focus:border-ca"
               />
             </label>
-            <Link to="/forgot-password" className="-mt-1 text-right text-xs text-ca hover:underline">
-              {t("login.mot_de_passe_oublie")}
-            </Link>
+            <div className="-mt-1 flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs text-text-secondary">
+                <input
+                  type="checkbox"
+                  className="accent-ca"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMeChecked(e.target.checked)}
+                />
+                {t("login.rester_connecte")}
+              </label>
+              <Link to="/forgot-password" className="text-xs text-ca hover:underline">
+                {t("login.mot_de_passe_oublie")}
+              </Link>
+            </div>
             {error && <p className="text-sm text-status-dangerText">{error}</p>}
             <button
               type="submit"

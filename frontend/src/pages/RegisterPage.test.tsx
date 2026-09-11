@@ -10,39 +10,62 @@ vi.mock("../api/auth", async () => {
   return {
     ...actual,
     register: vi.fn(),
+    confirmRegistration: vi.fn(),
+    resendRegistrationCode: vi.fn(),
   };
 });
 
-function remplirFormulaireValide() {
-  fireEvent.input(screen.getByLabelText("register.email"), {
+// { exact: false } : les champs requis ajoutent un "*" dans le même <label>
+// (voir Champ dans RegisterPage.tsx), donc le texte accessible complet est
+// "register.xxx *", pas juste la clé de traduction.
+function remplirChampsTexte() {
+  fireEvent.input(screen.getByLabelText("register.prenom", { exact: false }), {
+    target: { value: "Sami" },
+  });
+  fireEvent.input(screen.getByLabelText("register.nom", { exact: false }), {
+    target: { value: "Ben Salah" },
+  });
+  fireEvent.input(screen.getByLabelText("register.date_naissance", { exact: false }), {
+    target: { value: "1990-05-12" },
+  });
+  fireEvent.input(screen.getByLabelText("register.cin", { exact: false }), {
+    target: { value: "12345678" },
+  });
+  fireEvent.input(screen.getByLabelText("register.email", { exact: false }), {
     target: { value: "nouveau@example.com" },
   });
-  fireEvent.input(screen.getByLabelText("register.password"), {
+  fireEvent.input(screen.getByLabelText("register.telephone", { exact: false }), {
+    target: { value: "+49123456789" },
+  });
+  fireEvent.input(screen.getByLabelText("register.adresse_de", { exact: false }), {
+    target: { value: "Friedrichstr. 42" },
+  });
+  fireEvent.input(screen.getByLabelText("register.ville_de", { exact: false }), {
+    target: { value: "Berlin" },
+  });
+  fireEvent.input(screen.getByLabelText("register.password", { exact: false }), {
     target: { value: "Password123!" },
   });
-  fireEvent.input(screen.getByLabelText("register.confirm_password"), {
+  fireEvent.input(screen.getByLabelText("register.confirm_password", { exact: false }), {
     target: { value: "Password123!" },
   });
+}
+
+function remplirFormulaireValide() {
+  remplirChampsTexte();
   fireEvent.click(screen.getByLabelText("register.consentement_rgpd"));
 }
 
 describe("RegisterPage", () => {
   beforeEach(() => {
     vi.mocked(authApi.register).mockReset();
+    vi.mocked(authApi.confirmRegistration).mockReset();
+    vi.mocked(authApi.resendRegistrationCode).mockReset();
   });
 
   it("affiche une erreur si le consentement RGPD n'est pas coché", async () => {
     renderWithProviders(<RegisterPage />);
-
-    fireEvent.input(screen.getByLabelText("register.email"), {
-      target: { value: "nouveau@example.com" },
-    });
-    fireEvent.input(screen.getByLabelText("register.password"), {
-      target: { value: "Password123!" },
-    });
-    fireEvent.input(screen.getByLabelText("register.confirm_password"), {
-      target: { value: "Password123!" },
-    });
+    remplirChampsTexte();
 
     fireEvent.click(screen.getByText("register.submit"));
 
@@ -52,17 +75,10 @@ describe("RegisterPage", () => {
 
   it("affiche une erreur si les mots de passe ne correspondent pas", async () => {
     renderWithProviders(<RegisterPage />);
-
-    fireEvent.input(screen.getByLabelText("register.email"), {
-      target: { value: "nouveau@example.com" },
-    });
-    fireEvent.input(screen.getByLabelText("register.password"), {
-      target: { value: "Password123!" },
-    });
-    fireEvent.input(screen.getByLabelText("register.confirm_password"), {
+    remplirFormulaireValide();
+    fireEvent.input(screen.getByLabelText("register.confirm_password", { exact: false }), {
       target: { value: "Autrechose123!" },
     });
-    fireEvent.click(screen.getByLabelText("register.consentement_rgpd"));
 
     fireEvent.click(screen.getByText("register.submit"));
 
@@ -70,12 +86,12 @@ describe("RegisterPage", () => {
     expect(authApi.register).not.toHaveBeenCalled();
   });
 
-  it("crée le compte et affiche la confirmation de succès", async () => {
+  it("envoie le formulaire complet puis confirme le code reçu par email", async () => {
     vi.mocked(authApi.register).mockResolvedValue(undefined);
+    vi.mocked(authApi.confirmRegistration).mockResolvedValue({ message: "ok" });
 
     renderWithProviders(<RegisterPage />);
     remplirFormulaireValide();
-
     fireEvent.click(screen.getByText("register.submit"));
 
     await waitFor(() =>
@@ -84,9 +100,32 @@ describe("RegisterPage", () => {
         password: "Password123!",
         langue_preferee: "fr",
         consentement_rgpd: true,
+        prenom: "Sami",
+        nom: "Ben Salah",
+        date_naissance: "1990-05-12",
+        sexe: "non_renseigne",
+        cin: "12345678",
+        passeport: undefined,
+        telephone: "+49123456789",
+        adresse_de: "Friedrichstr. 42",
+        code_postal_de: undefined,
+        ville_de: "Berlin",
+        land_de: undefined,
+        ville_origine_tn: undefined,
+        gouvernorat_tn: undefined,
       }),
     );
 
+    // Étape 2 : saisie du code de confirmation.
+    expect(await screen.findByText(/confirm_message/)).toBeInTheDocument();
+    fireEvent.input(screen.getByLabelText("register.confirm_code"), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByText("register.confirm_submit"));
+
+    await waitFor(() =>
+      expect(authApi.confirmRegistration).toHaveBeenCalledWith("nouveau@example.com", "123456"),
+    );
     expect(await screen.findByText("register.succes_titre")).toBeInTheDocument();
     expect(screen.getByText("register.succes_retour_connexion")).toBeInTheDocument();
   });
@@ -103,5 +142,40 @@ describe("RegisterPage", () => {
     fireEvent.click(screen.getByText("register.submit"));
 
     expect(await screen.findByText("Cet email est déjà utilisé.")).toBeInTheDocument();
+  });
+
+  it("affiche une erreur si le code de confirmation est invalide", async () => {
+    vi.mocked(authApi.register).mockResolvedValue(undefined);
+    vi.mocked(authApi.confirmRegistration).mockRejectedValue({
+      isAxiosError: true,
+      response: { data: { message: "Code invalide ou expiré." } },
+    });
+
+    renderWithProviders(<RegisterPage />);
+    remplirFormulaireValide();
+    fireEvent.click(screen.getByText("register.submit"));
+
+    await screen.findByText(/confirm_message/);
+    fireEvent.input(screen.getByLabelText("register.confirm_code"), {
+      target: { value: "000000" },
+    });
+    fireEvent.click(screen.getByText("register.confirm_submit"));
+
+    expect(await screen.findByText("Code invalide ou expiré.")).toBeInTheDocument();
+  });
+
+  it("permet de renvoyer le code de confirmation", async () => {
+    vi.mocked(authApi.register).mockResolvedValue(undefined);
+    vi.mocked(authApi.resendRegistrationCode).mockResolvedValue({ message: "Nouveau code envoyé." });
+
+    renderWithProviders(<RegisterPage />);
+    remplirFormulaireValide();
+    fireEvent.click(screen.getByText("register.submit"));
+
+    await screen.findByText(/confirm_message/);
+    fireEvent.click(screen.getByText("register.confirm_renvoyer"));
+
+    await waitFor(() => expect(authApi.resendRegistrationCode).toHaveBeenCalledWith("nouveau@example.com"));
+    expect(await screen.findByText("Nouveau code envoyé.")).toBeInTheDocument();
   });
 });

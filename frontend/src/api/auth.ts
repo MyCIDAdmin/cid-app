@@ -37,20 +37,56 @@ export async function fetchMe(): Promise<CidUser> {
   return data;
 }
 
+/**
+ * Payload complet AHM-50 (mockup #sc-register) — au-delà du compte de
+ * connexion, la fiche Membre (identité, CIN, contact, adresse en
+ * Allemagne) est saisie dès l'inscription ; voir RegisterSerializer.
+ */
 export interface RegisterPayload {
   email: string;
   password: string;
   langue_preferee: "fr" | "de" | "ar";
   consentement_rgpd: true;
+  prenom: string;
+  nom: string;
+  date_naissance: string;
+  sexe?: "homme" | "femme" | "non_renseigne";
+  cin: string;
+  passeport?: string;
+  telephone: string;
+  adresse_de: string;
+  code_postal_de?: string;
+  ville_de: string;
+  land_de?: string;
+  ville_origine_tn?: string;
+  gouvernorat_tn?: string;
 }
 
 /**
- * POST /auth/register/ (FDD §3.1, F-002). Le compte créé est inactif —
- * l'activation (et la décision de créer une fiche Membre) revient à un
- * rôle RH/Admin (AHM-48), pas à ce endpoint.
+ * POST /auth/register/ (FDD §3.1, F-002, AHM-50). Crée le compte ET la
+ * fiche Membre (statut en_attente), tous deux inactifs. L'étape suivante
+ * est la confirmation du code reçu par email (confirmRegistration) — RH ne
+ * voit la demande qu'ensuite (AHM-48).
  */
 export async function register(payload: RegisterPayload): Promise<void> {
   await apiClient.post("/auth/register/", payload);
+}
+
+/** POST /auth/register/confirm/ — code à 6 chiffres reçu par email. */
+export async function confirmRegistration(email: string, code: string): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>("/auth/register/confirm/", {
+    email,
+    code,
+  });
+  return data;
+}
+
+/** POST /auth/register/resend-code/ — réponse toujours générique (anti-énumération). */
+export async function resendRegistrationCode(email: string): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>("/auth/register/resend-code/", {
+    email,
+  });
+  return data;
 }
 
 /**

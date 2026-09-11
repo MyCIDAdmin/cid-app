@@ -39,6 +39,30 @@ def send_otp_email(user_id, code):
 
 
 @shared_task
+def send_email_verification_code(user_id, code):
+    """AHM-50 — code à 6 chiffres à confirmer juste après l'inscription."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return
+
+    send_mail(
+        subject="Confirmez votre email — CID",
+        message=(
+            f"Votre code de confirmation est : {code}\n\n"
+            f"Ce code expire dans {settings.OTP_EMAIL_TTL_MIN} minutes.\n"
+            "Saisissez-le sur la page d'inscription pour finaliser votre demande."
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+
+
+@shared_task
 def send_welcome_email(user_id):
     from django.contrib.auth import get_user_model
 

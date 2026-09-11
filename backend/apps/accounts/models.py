@@ -78,6 +78,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("role", Role.SUPER_ADMIN)
         # Un superuser n'est pas une inscription libre-service à valider.
         extra_fields.setdefault("registration_decision", RegistrationDecision.APPROUVE)
+        extra_fields.setdefault("email_verifie", True)
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Un superuser doit avoir is_staff=True.")
@@ -113,6 +114,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text=_(
             "Décision RH/Admin sur cette inscription — distinct de is_active "
             "qui peut aussi être False pour d'autres raisons."
+        ),
+    )
+
+    # --- Vérification de l'email à l'inscription (AHM-50) — distinct de la
+    # décision RH : un email non confirmé n'est même pas montré à RH. ---
+    email_verifie = models.BooleanField(
+        default=False,
+        help_text=_(
+            "Code à 6 chiffres confirmé après inscription. Un superuser ou un "
+            "compte créé par import (create_user hors self-registration) n'a "
+            "pas besoin de ce garde-fou — voir UserManager."
         ),
     )
 
@@ -204,7 +216,11 @@ class EmailOTP(models.Model):
     code_hash = models.CharField(max_length=128)
     purpose = models.CharField(
         max_length=20,
-        choices=[("login_2fa", "Connexion 2FA"), ("password_reset", "Réinitialisation MDP")],
+        choices=[
+            ("login_2fa", "Connexion 2FA"),
+            ("password_reset", "Réinitialisation MDP"),
+            ("email_verification", "Vérification email inscription"),
+        ],
         default="login_2fa",
     )
     created_at = models.DateTimeField(auto_now_add=True)

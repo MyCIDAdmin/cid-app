@@ -2,7 +2,9 @@
   "liste": {
     "titre": "Ausstehende Registrierungen",
     "description": "Bestätigen oder lehnen Sie Registrierungsanfragen ab, die über die Selbstregistrierungsseite eingegangen sind.",
+    "col_nom": "Name",
     "col_email": "E-Mail",
+    "col_ville": "Stadt",
     "col_langue": "Sprache",
     "col_date": "Registrierungsdatum",
     "col_actions": "Aktionen",
@@ -14,11 +16,10 @@
     "precedent": "Zurück",
     "suivant": "Weiter",
     "confirmer_accepter_titre": "Diese Registrierung annehmen?",
-    "confirmer_accepter_message": "Das Konto {{email}} wird aktiviert und kann sich anmelden.",
+    "confirmer_accepter_message": "Das Konto {{email}} wird aktiviert und die Mitgliederkarte auf Aktiv gesetzt.",
     "confirmer_refuser_titre": "Diese Registrierung ablehnen?",
-    "confirmer_refuser_message": "Das Konto {{email}} bleibt deaktiviert.",
-    "accepte_message": "Das Konto {{email}} wurde aktiviert.",
-    "creer_fiche_membre": "Mitgliederkarte anlegen →",
+    "confirmer_refuser_message": "Das Konto {{email}} bleibt deaktiviert, die Mitgliederkarte wird auf Inaktiv gesetzt.",
+    "accepte_message": "Das Konto {{email}} wurde aktiviert und erscheint jetzt in der Mitgliederliste.",
     "erreur_action": "Ein Fehler ist aufgetreten, bitte versuchen Sie es erneut."
   }
 }

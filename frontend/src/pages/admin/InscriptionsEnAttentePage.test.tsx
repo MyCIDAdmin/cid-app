@@ -22,6 +22,9 @@ const inscription = {
   email: "candidat@example.com",
   langue_preferee: "fr" as const,
   created_at: "2026-01-15T10:00:00Z",
+  prenom: "Amine",
+  nom: "Trabelsi",
+  ville: "Hamburg",
 };
 
 const page: PendingRegistrationsPage = { next: null, previous: null, results: [inscription] };
@@ -57,6 +60,8 @@ describe("InscriptionsEnAttentePage", () => {
     renderWithProviders(<InscriptionsEnAttentePage />);
 
     expect(screen.getByText("candidat@example.com")).toBeInTheDocument();
+    expect(screen.getByText("Amine Trabelsi")).toBeInTheDocument();
+    expect(screen.getByText("Hamburg")).toBeInTheDocument();
   });
 
   it("affiche un message si aucune inscription n'est en attente", () => {

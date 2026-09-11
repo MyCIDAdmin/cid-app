@@ -1,14 +1,13 @@
 /**
  * Validation des inscriptions libre-service par RH/Admin (AHM-48, FDD §3.1).
  * Route gated RH+ par RequireRole (même niveau que PendingRegistrationsView
- * côté backend). Accepter active le compte immédiatement ; la création/
- * liaison de la fiche Membre reste un geste séparé via /membres/nouveau
- * (MembreSerializer expose déjà un champ `user` éditable) — hors périmètre
- * de ce ticket.
+ * côté backend). Depuis AHM-50, la fiche Membre est déjà créée (statut
+ * en_attente) au moment de l'inscription — Accepter active le compte ET
+ * fait passer la fiche à "actif" (elle apparaît alors dans /membres) ;
+ * Refuser la laisse "inactif", conservée.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
@@ -57,10 +56,7 @@ export default function InscriptionsEnAttentePage() {
 
       {messageAccepte && (
         <div className="mb-4 rounded-cid border border-status-successText/30 bg-status-successBg px-3 py-2 text-sm text-status-successText">
-          {messageAccepte}{" "}
-          <Link to="/membres/nouveau" className="font-medium underline">
-            {t("liste.creer_fiche_membre")}
-          </Link>
+          {messageAccepte}
         </div>
       )}
       {erreur && (
@@ -73,7 +69,9 @@ export default function InscriptionsEnAttentePage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
+              <th className="px-4 py-2">{t("liste.col_nom")}</th>
               <th className="px-4 py-2">{t("liste.col_email")}</th>
+              <th className="px-4 py-2">{t("liste.col_ville")}</th>
               <th className="px-4 py-2">{t("liste.col_langue")}</th>
               <th className="px-4 py-2">{t("liste.col_date")}</th>
               <th className="px-4 py-2">{t("liste.col_actions")}</th>
@@ -82,28 +80,32 @@ export default function InscriptionsEnAttentePage() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-text-tertiary">
+                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
                   {t("liste.chargement")}
                 </td>
               </tr>
             )}
             {isError && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-status-dangerText">
+                <td colSpan={6} className="px-4 py-6 text-center text-status-dangerText">
                   {t("liste.erreur_chargement")}
                 </td>
               </tr>
             )}
             {!isLoading && !isError && data?.results.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-text-tertiary">
+                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
                   {t("liste.aucune_inscription")}
                 </td>
               </tr>
             )}
             {data?.results.map((inscription) => (
               <tr key={inscription.id} className="border-b border-text-tertiary/10 last:border-0">
-                <td className="px-4 py-2 font-medium text-text-primary">{inscription.email}</td>
+                <td className="px-4 py-2 font-medium text-text-primary">
+                  {inscription.prenom} {inscription.nom}
+                </td>
+                <td className="px-4 py-2 text-text-secondary">{inscription.email}</td>
+                <td className="px-4 py-2 text-text-secondary">{inscription.ville}</td>
                 <td className="px-4 py-2 uppercase text-text-secondary">
                   {inscription.langue_preferee}
                 </td>
