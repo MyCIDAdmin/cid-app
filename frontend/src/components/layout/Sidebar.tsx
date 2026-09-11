@@ -23,6 +23,13 @@ const NAV_ITEMS: NavItem[] = [
   // Validation des inscriptions (AHM-48) — visible RH+ seulement, la route
   // elle-même est aussi gated côté App.tsx (RequireRole).
   { to: "/inscriptions", labelKey: "nav.inscriptions", minRoleLevel: ROLE_LEVELS.rh },
+  // Gestion des campagnes d'adhésion (AHM-21) — Bureau Admin+ seulement,
+  // même niveau que CataloguePermission côté API.
+  {
+    to: "/admin/campagnes-adhesion",
+    labelKey: "nav.admin_adhesions",
+    minRoleLevel: ROLE_LEVELS.bureau_admin,
+  },
 ];
 
 export default function Sidebar() {

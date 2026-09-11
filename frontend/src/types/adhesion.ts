@@ -1,0 +1,106 @@
+/**
+ * Types partagés — module adhesions (miroir de apps.adhesions.models /
+ * serializers côté backend, AHM-19). Garder synchronisé en cas de
+ * changement de schéma.
+ */
+
+export type StatutCampagne = "brouillon" | "publiee" | "cloturee";
+
+export type StatutSouscription =
+  | "brouillon"
+  | "en_attente_justificatif"
+  | "en_attente_paiement"
+  | "payee"
+  | "rabais_refuse"
+  | "annulee"
+  | "expiree";
+
+export type TypeRabais = "etudiant" | "famille" | "senior" | "autre";
+
+export interface AvantageOffre {
+  ordre: number;
+  texte_fr: string;
+  texte_de?: string;
+  texte_ar?: string;
+}
+
+export interface RabaisOffre {
+  id: string;
+  offre: string;
+  type_rabais: TypeRabais;
+  label_fr: string;
+  label_de: string;
+  label_ar: string;
+  montant_reduction: string | null;
+  pct_reduction: string | null;
+  justificatif_requis: boolean;
+  instructions_fr: string;
+  instructions_de: string;
+  instructions_ar: string;
+}
+
+export interface OffreAdhesion {
+  id: string;
+  campagne: string;
+  nom: string;
+  prix_plein: string;
+  description: string;
+  avantages: AvantageOffre[];
+  condition_age_min: number | null;
+  condition_age_max: number | null;
+  visible: boolean;
+  ordre: number;
+  rabais: RabaisOffre[];
+}
+
+export interface CampagneAdhesion {
+  id: string;
+  nom: string;
+  annee: number;
+  date_debut: string;
+  date_fin: string;
+  description: string;
+  statut: StatutCampagne;
+  created_by: string;
+  created_at: string;
+  offres: OffreAdhesion[];
+}
+
+/**
+ * Payload accepté par POST /adhesions/campagnes/ (voir
+ * CampagneAdhesionSerializer.Meta.read_only_fields — statut/created_by ne
+ * sont jamais transmis par le client : une campagne naît toujours en
+ * brouillon, publier/cloturer passent par leurs actions dédiées).
+ */
+export interface CampagneCreatePayload {
+  nom: string;
+  annee: number;
+  date_debut: string;
+  date_fin: string;
+  description?: string;
+}
+
+export interface Souscription {
+  id: string;
+  membre: string;
+  offre: string;
+  campagne: string;
+  date_souscription: string;
+  prix_paye: string;
+  rabais: string | null;
+  statut: StatutSouscription;
+  cotisation: string | null;
+  snapshot_avantages: AvantageOffre[];
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Payload de POST /adhesions/souscriptions/souscrire/ (voir
+ * SouscrireSerializer) — ni prix ni statut ne sont envoyés : entièrement
+ * recalculés côté serveur (CLAUDE.md §8, voir SouscriptionViewSet.souscrire).
+ */
+export interface SouscrirePayload {
+  offre: string;
+  rabais?: string;
+}

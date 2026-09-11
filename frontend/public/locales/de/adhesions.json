@@ -1,0 +1,76 @@
+{
+  "page": {
+    "titre": "Meine Mitgliedschaft"
+  },
+  "hero": {
+    "titre": "Meine aktive Mitgliedschaft",
+    "campagne": "Kampagne {{nom}}",
+    "expire_le": "Gültig bis {{date}}",
+    "prix_paye": "Bezahlter Preis",
+    "souscrit_le": "Abgeschlossen am {{date}}",
+    "avantages_titre": "Enthaltene Vorteile"
+  },
+  "statut": {
+    "brouillon": "Entwurf",
+    "en_attente_justificatif": "Nachweis ausstehend",
+    "en_attente_paiement": "Zahlung ausstehend",
+    "payee": "Bezahlt",
+    "rabais_refuse": "Rabatt abgelehnt",
+    "annulee": "Storniert",
+    "expiree": "Abgelaufen"
+  },
+  "statut_campagne": {
+    "brouillon": "Entwurf",
+    "publiee": "Veröffentlicht",
+    "cloturee": "Geschlossen"
+  },
+  "offres": {
+    "titre": "Angebote — Kampagne {{annee}}",
+    "titre_sans_campagne": "Angebote",
+    "chargement": "Wird geladen…",
+    "aucune_campagne": "Derzeit ist keine Mitgliedschaftskampagne veröffentlicht.",
+    "prix_plein": "Vollpreis",
+    "rabais_label": "Anwendbarer Rabatt",
+    "rabais_aucun": "Kein Rabatt",
+    "souscrire": "Dieses Angebot wählen",
+    "changer": "Zu diesem Angebot wechseln",
+    "deja_payee": "Ihre Mitgliedschaft ist bereits bezahlt und kann nicht mehr geändert werden.",
+    "erreur": "Die Anmeldung konnte nicht gespeichert werden."
+  },
+  "historique": {
+    "titre": "Mitgliedschaftsverlauf",
+    "chargement": "Wird geladen…",
+    "erreur": "Verlauf konnte nicht geladen werden.",
+    "aucun": "Keine Anmeldung erfasst.",
+    "col_campagne": "Kampagne",
+    "col_offre": "Angebot",
+    "col_prix": "Bezahlter Preis",
+    "col_statut": "Status",
+    "col_date": "Datum"
+  },
+  "admin": {
+    "titre": "Verwaltung der Mitgliedschaftskampagnen",
+    "nouvelle_campagne": "Neue Kampagne",
+    "nom_label": "Name",
+    "annee_label": "Jahr",
+    "date_debut_label": "Startdatum",
+    "date_fin_label": "Enddatum",
+    "description_label": "Beschreibung",
+    "creer": "Kampagne erstellen",
+    "erreur_creation": "Die Kampagne konnte nicht erstellt werden.",
+    "liste_titre": "Kampagnen",
+    "col_nom": "Name",
+    "col_annee": "Jahr",
+    "col_statut": "Status",
+    "col_periode": "Zeitraum",
+    "col_actions": "Aktionen",
+    "publier": "Veröffentlichen",
+    "cloturer": "Schließen",
+    "confirmer_cloturer_titre": "Kampagne schließen?",
+    "confirmer_cloturer_message": "Die Kampagne \"{{nom}}\" wird für neue Anmeldungen nicht mehr offen sein.",
+    "erreur_action": "Die Aktion konnte nicht ausgeführt werden.",
+    "aucune_campagne": "Noch keine Kampagne erstellt.",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Kampagnen konnten nicht geladen werden."
+  }
+}

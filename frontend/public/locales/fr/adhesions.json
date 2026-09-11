@@ -1,0 +1,76 @@
+{
+  "page": {
+    "titre": "Mon adhésion"
+  },
+  "hero": {
+    "titre": "Mon adhésion active",
+    "campagne": "Campagne {{nom}}",
+    "expire_le": "Valable jusqu'au {{date}}",
+    "prix_paye": "Prix payé",
+    "souscrit_le": "Souscrit le {{date}}",
+    "avantages_titre": "Avantages inclus"
+  },
+  "statut": {
+    "brouillon": "Brouillon",
+    "en_attente_justificatif": "En attente de justificatif",
+    "en_attente_paiement": "En attente de paiement",
+    "payee": "Payée",
+    "rabais_refuse": "Rabais refusé",
+    "annulee": "Annulée",
+    "expiree": "Expirée"
+  },
+  "statut_campagne": {
+    "brouillon": "Brouillon",
+    "publiee": "Publiée",
+    "cloturee": "Clôturée"
+  },
+  "offres": {
+    "titre": "Offres — Campagne {{annee}}",
+    "titre_sans_campagne": "Offres",
+    "chargement": "Chargement…",
+    "aucune_campagne": "Aucune campagne d'adhésion n'est actuellement publiée.",
+    "prix_plein": "Prix plein",
+    "rabais_label": "Rabais applicable",
+    "rabais_aucun": "Aucun rabais",
+    "souscrire": "Souscrire à cette offre",
+    "changer": "Changer pour cette offre",
+    "deja_payee": "Votre adhésion est déjà payée et ne peut plus être modifiée.",
+    "erreur": "La souscription n'a pas pu être enregistrée."
+  },
+  "historique": {
+    "titre": "Historique d'adhésion",
+    "chargement": "Chargement…",
+    "erreur": "Impossible de charger l'historique.",
+    "aucun": "Aucune souscription enregistrée.",
+    "col_campagne": "Campagne",
+    "col_offre": "Offre",
+    "col_prix": "Prix payé",
+    "col_statut": "Statut",
+    "col_date": "Date"
+  },
+  "admin": {
+    "titre": "Gestion des campagnes d'adhésion",
+    "nouvelle_campagne": "Nouvelle campagne",
+    "nom_label": "Nom",
+    "annee_label": "Année",
+    "date_debut_label": "Date de début",
+    "date_fin_label": "Date de fin",
+    "description_label": "Description",
+    "creer": "Créer la campagne",
+    "erreur_creation": "La campagne n'a pas pu être créée.",
+    "liste_titre": "Campagnes",
+    "col_nom": "Nom",
+    "col_annee": "Année",
+    "col_statut": "Statut",
+    "col_periode": "Période",
+    "col_actions": "Actions",
+    "publier": "Publier",
+    "cloturer": "Clôturer",
+    "confirmer_cloturer_titre": "Clôturer la campagne ?",
+    "confirmer_cloturer_message": "La campagne \"{{nom}}\" ne sera plus ouverte aux nouvelles souscriptions.",
+    "erreur_action": "L'action n'a pas pu être effectuée.",
+    "aucune_campagne": "Aucune campagne créée pour le moment.",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les campagnes."
+  }
+}

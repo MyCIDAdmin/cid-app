@@ -4,6 +4,8 @@ import AppLayout from "./components/layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
+import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
+import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
 import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
@@ -71,6 +73,19 @@ export default function App() {
             ouvert à tout authentifié : le backend scope déjà le queryset et
             résout le membre courant à la création (CotisationViewSet). */}
         <Route path="/cotisation" element={<CotisationStepperPage />} />
+        {/* Adhésions (mockup #pg-mon-adhesion / #pg-admin-adhesion, AHM-21) —
+            page membre ouverte à tout authentifié (campagne active, offres,
+            souscription, historique) ; gestion des campagnes réservée
+            Bureau Admin+ (même niveau que CataloguePermission côté API). */}
+        <Route path="/mon-adhesion" element={<MonAdhesionPage />} />
+        <Route
+          path="/admin/campagnes-adhesion"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <AdminCampagnesPage />
+            </RequireRole>
+          }
+        />
         {/* Validation des inscriptions libre-service (FDD §3.1, AHM-48) —
             RH+ uniquement, même gate que PendingRegistrationsView côté API. */}
         <Route

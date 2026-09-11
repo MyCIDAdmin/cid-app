@@ -4,7 +4,8 @@
     "membres": "Mitglieder",
     "mon_adhesion": "Meine Mitgliedschaft",
     "cotisation": "Mitgliedsbeitrag",
-    "inscriptions": "Registrierungen"
+    "inscriptions": "Registrierungen",
+    "admin_adhesions": "Mitgliedschaftskampagnen"
   },
   "dashboard": {
     "title": "Übersicht",
