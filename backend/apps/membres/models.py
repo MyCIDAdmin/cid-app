@@ -190,6 +190,24 @@ class Membre(models.Model):
     def __str__(self):
         return f"{self.numero_membre} — {self.prenom} {self.nom}"
 
+    @property
+    def age(self) -> int:
+        """
+        Âge en années révolues à la date du jour, calculé depuis date_naissance.
+        Ajouté pour AHM-19 (adhésions) : les offres peuvent porter une condition d'âge
+        (ex. tarif "moins de 26 ans") évaluée dynamiquement — jamais stockée, pour rester
+        exacte au fil du temps (FDD §6.1).
+        """
+        aujourd_hui = timezone.now().date()
+        annees = aujourd_hui.year - self.date_naissance.year
+        anniversaire_pas_encore_passe = (aujourd_hui.month, aujourd_hui.day) < (
+            self.date_naissance.month,
+            self.date_naissance.day,
+        )
+        if anniversaire_pas_encore_passe:
+            annees -= 1
+        return annees
+
     def save(self, *args, **kwargs):
         if not self.numero_membre:
             self.numero_membre = self._generate_numero_membre()

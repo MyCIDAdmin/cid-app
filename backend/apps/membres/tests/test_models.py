@@ -104,3 +104,27 @@ def test_ordering_par_nom_prenom():
     MembreFactory(nom="Bchini", prenom="Riadh")
     noms = list(Membre.objects.values_list("nom", flat=True))
     assert noms == sorted(noms)
+
+
+# --- age() (AHM-19 : éligibilité d'âge des offres d'adhésion) ---
+
+
+def test_age_anniversaire_deja_passe_cette_annee():
+    aujourd_hui = datetime.date.today()
+    naissance = aujourd_hui.replace(year=aujourd_hui.year - 25) - datetime.timedelta(days=10)
+    membre = MembreFactory(date_naissance=naissance)
+    assert membre.age == 25
+
+
+def test_age_anniversaire_pas_encore_passe_cette_annee():
+    aujourd_hui = datetime.date.today()
+    naissance = aujourd_hui.replace(year=aujourd_hui.year - 25) + datetime.timedelta(days=10)
+    membre = MembreFactory(date_naissance=naissance)
+    assert membre.age == 24
+
+
+def test_age_jour_anniversaire_exact():
+    aujourd_hui = datetime.date.today()
+    naissance = aujourd_hui.replace(year=aujourd_hui.year - 30)
+    membre = MembreFactory(date_naissance=naissance)
+    assert membre.age == 30

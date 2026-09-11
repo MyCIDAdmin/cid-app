@@ -1,0 +1,487 @@
+"""
+Tests API — app adhesions (FDD §6.1, SCD §2.3 A01 : IDOR sur les endpoints de souscription).
+"""
+
+import datetime
+from decimal import Decimal
+
+import pytest
+from django.urls import reverse
+from rest_framework.test import APIClient
+
+from apps.accounts.models import Role, User
+from apps.adhesions.models import StatutCampagne, StatutSouscription
+from apps.adhesions.tests.factories import (
+    CampagneAdhesionFactory,
+    OffreAdhesionFactory,
+    RabaisOffreFactory,
+    SouscriptionFactory,
+)
+from apps.membres.tests.factories import MembreFactory
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def api_client():
+    return APIClient()
+
+
+def _user_avec_membre(role, email, **membre_kwargs):
+    user = User.objects.create_user(email=email, password="Password123!", role=role, is_active=True)
+    membre = MembreFactory(user=user, **membre_kwargs)
+    return user, membre
+
+
+def _auth(api_client, user):
+    api_client.force_authenticate(user=user)
+    return api_client
+
+
+CAMPAGNE_LIST_URL = "adhesions:campagne-list"
+OFFRE_LIST_URL = "adhesions:offre-list"
+SOUSCRIPTION_LIST_URL = "adhesions:souscription-list"
+
+
+def _campagne_detail_url(campagne):
+    return reverse("adhesions:campagne-detail", args=[campagne.id])
+
+
+def _campagne_publier_url(campagne):
+    return reverse("adhesions:campagne-publier", args=[campagne.id])
+
+
+def _campagne_cloturer_url(campagne):
+    return reverse("adhesions:campagne-cloturer", args=[campagne.id])
+
+
+def _souscription_detail_url(souscription):
+    return reverse("adhesions:souscription-detail", args=[souscription.id])
+
+
+SOUSCRIRE_URL = "adhesions:souscription-souscrire"
+MES_SOUSCRIPTIONS_URL = "adhesions:souscription-mes-souscriptions"
+
+
+# --- Authentification ---
+
+
+def test_list_campagnes_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(CAMPAGNE_LIST_URL))
+    assert resp.status_code == 401
+
+
+def test_souscrire_non_authentifie_refuse(api_client):
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {})
+    assert resp.status_code == 401
+
+
+# --- Catalogue : lecture ouverte, écriture Bureau Admin+ ---
+
+
+def test_membre_peut_lister_les_campagnes(api_client):
+    CampagneAdhesionFactory.create_batch(2)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(CAMPAGNE_LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 2
+
+
+def test_membre_ne_peut_pas_creer_de_campagne(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(CAMPAGNE_LIST_URL),
+        {
+            "nom": "Adhésion 2027",
+            "annee": 2027,
+            "date_debut": "2027-01-01",
+            "date_fin": "2027-12-31",
+        },
+    )
+
+    assert resp.status_code == 403
+
+
+def test_bureau_admin_peut_creer_une_campagne(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(CAMPAGNE_LIST_URL),
+        {
+            "nom": "Adhésion 2027",
+            "annee": 2027,
+            "date_debut": "2027-01-01",
+            "date_fin": "2027-12-31",
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert str(resp.data["created_by"]) == str(membre.id)
+    assert resp.data["statut"] == StatutCampagne.BROUILLON  # jamais publiée directement
+
+
+def test_membre_ne_peut_pas_creer_d_offre(api_client):
+    campagne = CampagneAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(OFFRE_LIST_URL),
+        {"campagne": str(campagne.id), "nom": "Basic", "prix_plein": "50.00"},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_offres_masquees_invisibles_pour_un_membre(api_client):
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.PUBLIEE)
+    OffreAdhesionFactory(campagne=campagne, visible=True)
+    OffreAdhesionFactory(campagne=campagne, visible=False)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(OFFRE_LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+
+
+def test_offres_masquees_visibles_pour_bureau_admin(api_client):
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.PUBLIEE)
+    OffreAdhesionFactory(campagne=campagne, visible=True)
+    OffreAdhesionFactory(campagne=campagne, visible=False)
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(OFFRE_LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 2
+
+
+# --- Cycle de vie d'une campagne ---
+
+
+def test_active_renvoie_la_campagne_publiee(api_client):
+    CampagneAdhesionFactory(statut=StatutCampagne.BROUILLON, annee=2025)
+    publiee = CampagneAdhesionFactory(statut=StatutCampagne.PUBLIEE, annee=2026)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse("adhesions:campagne-active"))
+
+    assert resp.status_code == 200
+    assert resp.data["id"] == str(publiee.id)
+
+
+def test_active_404_si_aucune_campagne_publiee(api_client):
+    CampagneAdhesionFactory(statut=StatutCampagne.BROUILLON)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse("adhesions:campagne-active"))
+
+    assert resp.status_code == 404
+
+
+def test_publier_brouillon(api_client):
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.BROUILLON, annee=2030)
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(_campagne_publier_url(campagne))
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutCampagne.PUBLIEE
+
+
+def test_publier_refuse_pour_un_membre(api_client):
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.BROUILLON, annee=2030)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(_campagne_publier_url(campagne))
+
+    assert resp.status_code == 403
+
+
+def test_publier_refuse_si_deja_publiee_ou_cloturee(api_client):
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.CLOTUREE, annee=2030)
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(_campagne_publier_url(campagne))
+
+    assert resp.status_code == 400
+
+
+def test_publier_refuse_si_une_autre_campagne_deja_publiee_cette_annee(api_client):
+    CampagneAdhesionFactory(statut=StatutCampagne.PUBLIEE, annee=2031)
+    brouillon = CampagneAdhesionFactory(statut=StatutCampagne.BROUILLON, annee=2031)
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(_campagne_publier_url(brouillon))
+
+    assert resp.status_code == 400
+    brouillon.refresh_from_db()
+    assert brouillon.statut == StatutCampagne.BROUILLON  # inchangée
+
+
+def test_cloturer_campagne_publiee(api_client):
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.PUBLIEE, annee=2032)
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(_campagne_cloturer_url(campagne))
+
+    assert resp.status_code == 200
+    assert resp.data["statut"] == StatutCampagne.CLOTUREE
+
+
+def test_cloturer_refuse_si_pas_publiee(api_client):
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.BROUILLON, annee=2032)
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(_campagne_cloturer_url(campagne))
+
+    assert resp.status_code == 400
+
+
+# --- Souscrire (prix/statut calculés côté serveur, CLAUDE.md §8) ---
+
+
+def test_souscrire_sans_fiche_membre_refuse(api_client):
+    user = User.objects.create_user(
+        email="sans-fiche@example.de", password="Password123!", role=Role.MEMBRE, is_active=True
+    )
+    offre = OffreAdhesionFactory()
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+
+    assert resp.status_code == 400
+
+
+def test_souscrire_offre_masquee_refuse(api_client):
+    offre = OffreAdhesionFactory(visible=False)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+
+    assert resp.status_code == 400
+
+
+def test_souscrire_campagne_non_publiee_refuse(api_client):
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.BROUILLON)
+    offre = OffreAdhesionFactory(campagne=campagne, visible=True)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+
+    assert resp.status_code == 400
+
+
+def test_souscrire_sans_rabais(api_client):
+    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"))
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+
+    assert resp.status_code == 200, resp.data
+    assert str(resp.data["membre"]) == str(membre.id)
+    assert resp.data["statut"] == StatutSouscription.EN_ATTENTE_PAIEMENT
+    assert str(resp.data["prix_paye"]) == "50.00"
+    assert resp.data["snapshot_avantages"] == offre.avantages
+
+
+def test_souscrire_prix_toujours_recalcule_cote_serveur(api_client):
+    """Le client ne peut pas transmettre son propre prix — seul offre/rabais sont acceptés."""
+    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"))
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "prix_paye": "0.01"})
+
+    assert resp.status_code == 200, resp.data
+    assert str(resp.data["prix_paye"]) == "50.00"
+
+
+def test_souscrire_avec_rabais_sans_justificatif(api_client):
+    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"))
+    rabais = RabaisOffreFactory(
+        offre=offre,
+        montant_reduction=Decimal("10.00"),
+        pct_reduction=None,
+        justificatif_requis=False,
+    )
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)}
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutSouscription.EN_ATTENTE_PAIEMENT
+    assert str(resp.data["prix_paye"]) == "40.00"
+
+
+def test_souscrire_avec_rabais_necessitant_justificatif(api_client):
+    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"))
+    rabais = RabaisOffreFactory(
+        offre=offre,
+        montant_reduction=Decimal("10.00"),
+        pct_reduction=None,
+        justificatif_requis=True,
+    )
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)}
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutSouscription.EN_ATTENTE_JUSTIFICATIF
+
+
+def test_souscrire_rabais_d_une_autre_offre_refuse(api_client):
+    offre = OffreAdhesionFactory()
+    rabais_autre_offre = RabaisOffreFactory()  # rattaché à une autre offre
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais_autre_offre.id)}
+    )
+
+    assert resp.status_code == 400
+
+
+def test_souscrire_hors_condition_age_refuse(api_client):
+    offre = OffreAdhesionFactory(condition_age_min=18, condition_age_max=25)
+    naissance = datetime.date.today().replace(year=datetime.date.today().year - 40)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de", date_naissance=naissance)
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+
+    assert resp.status_code == 400
+
+
+def test_souscrire_deux_fois_met_a_jour_la_meme_ligne_pas_une_nouvelle(api_client):
+    campagne = CampagneAdhesionFactory()
+    offre1 = OffreAdhesionFactory(campagne=campagne, prix_plein=Decimal("50.00"))
+    offre2 = OffreAdhesionFactory(campagne=campagne, prix_plein=Decimal("80.00"))
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp1 = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre1.id)})
+    resp2 = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre2.id)})
+
+    assert resp1.status_code == 200
+    assert resp2.status_code == 200, resp2.data
+    assert resp1.data["id"] == resp2.data["id"]  # même souscription, mise à jour
+    assert str(resp2.data["prix_paye"]) == "80.00"
+
+    from apps.adhesions.models import Souscription
+
+    assert Souscription.objects.filter(membre=membre, campagne=campagne).count() == 1
+
+
+def test_souscription_deja_payee_ne_peut_plus_etre_modifiee(api_client):
+    campagne = CampagneAdhesionFactory()
+    offre = OffreAdhesionFactory(campagne=campagne)
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    SouscriptionFactory(
+        membre=membre, offre=offre, campagne=campagne, statut=StatutSouscription.PAYEE
+    )
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+
+    assert resp.status_code == 403
+
+
+# --- Liste / IDOR (SCD §2.3 A01) ---
+
+
+def test_membre_ne_voit_que_ses_propres_souscriptions(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    SouscriptionFactory(membre=membre)
+    SouscriptionFactory()  # une autre fiche
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(SOUSCRIPTION_LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert str(resp.data["results"][0]["membre"]) == str(membre.id)
+
+
+def test_membre_ne_peut_pas_recuperer_la_souscription_dun_autre(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    souscription_autrui = SouscriptionFactory()
+    _auth(api_client, user)
+
+    resp = api_client.get(_souscription_detail_url(souscription_autrui))
+
+    assert resp.status_code == 404
+
+
+def test_rh_liste_toutes_les_souscriptions(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    SouscriptionFactory.create_batch(3)
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(SOUSCRIPTION_LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 3
+
+
+def test_mes_souscriptions_toujours_scope_a_soi_meme_meme_pour_rh(api_client):
+    user, membre = _user_avec_membre(Role.RH, "rh@example.de")
+    SouscriptionFactory(membre=membre)
+    SouscriptionFactory.create_batch(2)  # d'autres membres — la RH les voit via /souscriptions/
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(MES_SOUSCRIPTIONS_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert str(resp.data["results"][0]["membre"]) == str(membre.id)
+
+
+# --- Registre quasi append-only : pas d'update/destroy exposés ---
+
+
+def test_update_souscription_non_autorise(api_client):
+    user, membre = _user_avec_membre(Role.RH, "rh@example.de")
+    souscription = SouscriptionFactory(membre=membre)
+    _auth(api_client, user)
+
+    resp = api_client.patch(_souscription_detail_url(souscription), {"statut": "payee"})
+
+    assert resp.status_code == 405
+
+
+def test_delete_souscription_non_autorise(api_client):
+    user, membre = _user_avec_membre(Role.RH, "rh@example.de")
+    souscription = SouscriptionFactory(membre=membre)
+    _auth(api_client, user)
+
+    resp = api_client.delete(_souscription_detail_url(souscription))
+
+    assert resp.status_code == 405
