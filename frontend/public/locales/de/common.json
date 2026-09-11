@@ -8,7 +8,7 @@
   },
   "dashboard": {
     "title": "Übersicht",
-    "welcome": "Willkommen, {{nom}}"
+    "welcome": "Willkommen, {{prenom}}"
   },
   "action": {
     "annuler": "Abbrechen",

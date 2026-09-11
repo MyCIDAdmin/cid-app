@@ -25,7 +25,7 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("heading")).toBeInTheDocument();
   });
 
-  it("passe le nom de famille à la traduction d'accueil, pas l'email (AHM-52)", () => {
+  it("passe le prénom à la traduction d'accueil, pas l'email (AHM-52)", () => {
     useAuthStore.setState({
       user: {
         id: "u1",
@@ -39,7 +39,7 @@ describe("DashboardPage", () => {
 
     render(<DashboardPage />);
 
-    expect(tMock).toHaveBeenCalledWith("dashboard.welcome", { nom: "Ben Salah" });
+    expect(tMock).toHaveBeenCalledWith("dashboard.welcome", { prenom: "Sami" });
   });
 
   it("retombe sur l'email si le compte n'a pas de fiche Membre liée", () => {
@@ -56,6 +56,6 @@ describe("DashboardPage", () => {
 
     render(<DashboardPage />);
 
-    expect(tMock).toHaveBeenCalledWith("dashboard.welcome", { nom: "admin@example.com" });
+    expect(tMock).toHaveBeenCalledWith("dashboard.welcome", { prenom: "admin@example.com" });
   });
 });
