@@ -13,6 +13,12 @@ Permissions API — app adhesions (FDD §2.2 matrice des permissions / §6.1) :
   - Pas d'update/destroy exposés sur Souscription : une fois créée, elle évolue uniquement via
     son statut (paiement, validation de justificatif — AHM-20/AHM-46), jamais réécrite
     librement par l'API ; une souscription payée ne peut jamais être supprimée.
+  - JustificatifRabais (AHM-20) : create (upload) — authentifié, toujours pour sa propre
+    souscription (vérifié dans le serializer, qui a accès aux données du payload — has_
+    permission ne les a pas encore). list (file RH) et valider — RH et au-dessus uniquement.
+    retrieve/telecharger — RH+ ou membre propriétaire (même principe IsRHOrAbove |
+    IsJustificatifOwner que le TDD, ici en une seule classe pour rester cohérent avec
+    SouscriptionPermission ci-dessus).
 """
 
 from rest_framework.permissions import SAFE_METHODS, BasePermission
@@ -56,3 +62,24 @@ class SouscriptionPermission(BasePermission):
             return True
         membre = getattr(user, "membre", None)
         return membre is not None and obj.membre_id == membre.id
+
+
+class JustificatifPermission(BasePermission):
+    """JustificatifRabais — voir le docstring du module pour la matrice par action."""
+
+    RH_ONLY_ACTIONS = ("list", "valider")
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if getattr(view, "action", None) in self.RH_ONLY_ACTIONS:
+            return ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL:
+            return True
+        membre = getattr(user, "membre", None)
+        return membre is not None and obj.souscription.membre_id == membre.id

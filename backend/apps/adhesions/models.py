@@ -12,11 +12,13 @@ Périmètre de ce module (AHM-19) :
     du prix (CLAUDE.md §8) et un instantané (snapshot_avantages) des avantages de l'offre au
     moment de la souscription — pour que l'historique reste exact même si l'offre évolue par
     la suite (FDD §6.1 : "l'avantage souscrit ne doit jamais changer rétroactivement").
-  - JustificatifRabais (upload MinIO, validation RH, URLs pré-signées) est volontairement HORS
-    périmètre de ce ticket — voir AHM-20. De même, la génération de reçu PDF, les tâches Celery
-    Beat de relance/clôture automatique, les endpoints stats/export et les emails de
-    notification sont différés à des tickets ultérieurs (mêmes principes que la scission
-    cotisations AHM-15 → AHM-17/AHM-18).
+  - JustificatifRabais (upload MinIO, validation RH, URLs pré-signées — AHM-20) complète le
+    cycle "rabais avec justificatif" amorcé par Souscription.statut = en_attente_justificatif :
+    un membre uploade un document, un rôle RH+ l'approuve ou le rejette, ce qui fait avancer la
+    souscription vers en_attente_paiement ou rabais_refuse (FDD §4.2).
+  - La génération de reçu PDF, les tâches Celery Beat de relance/clôture automatique, les
+    endpoints stats/export et les emails de notification restent différés à des tickets
+    ultérieurs (mêmes principes que la scission cotisations AHM-15 → AHM-17/AHM-18).
 """
 
 import uuid
@@ -27,6 +29,8 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+from .storage import JustificatifsStorage
 
 
 class StatutCampagne(models.TextChoices):
@@ -270,3 +274,71 @@ class Souscription(models.Model):
 
     def __str__(self):
         return f"{self.membre} — {self.offre.nom} ({self.get_statut_display()})"
+
+
+class StatutJustificatif(models.TextChoices):
+    """FDD §4.2 : Justificatif en attente / Approuvé / Rejeté (motif obligatoire)."""
+
+    EN_ATTENTE = "en_attente", _("En attente")
+    APPROUVE = "approuve", _("Approuvé")
+    REJETE = "rejete", _("Rejeté")
+
+
+def justificatif_upload_path(instance, filename):
+    """
+    `filename` n'est PAS le nom fourni par le client : JustificatifRabaisUploadSerializer.
+    validate_fichier le réécrit déjà en `<uuid>.<extension détectée côté serveur>` avant
+    l'appel à .save() (SCD §7.4 — ne jamais faire confiance à un nom/une extension fournis
+    par le client). Ici on ne fait que préfixer par la souscription pour grouper les
+    fichiers d'un même dossier dans le bucket.
+    """
+    return f"{instance.souscription_id}/{filename}"
+
+
+class JustificatifRabais(models.Model):
+    """
+    Document justifiant l'éligibilité à un rabais (ex. carte étudiante) — FDD §6.1/§9, AHM-20.
+
+    OneToOneField (et non ForeignKey comme suggéré par le TDD) : le parcours métier documenté
+    (FDD §4.2) ne prévoit pas de nouvelle tentative après une décision RH (le membre paie plein
+    tarif ou annule) — un seul justificatif actif par souscription simplifie la file RH et
+    évite l'ambiguïté "lequel fait foi ?". Un ré-upload avant décision RH remplace le fichier
+    sur ce même enregistrement (voir JustificatifRabaisViewSet.create). Si le rabais choisi
+    change en cours de souscription, l'ancien justificatif est supprimé (voir
+    views.SouscriptionViewSet.souscrire) pour ne jamais laisser une décision RH s'appliquer à
+    un rabais différent de celui réellement demandé.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    souscription = models.OneToOneField(
+        Souscription, on_delete=models.CASCADE, related_name="justificatif"
+    )
+    fichier = models.FileField(upload_to=justificatif_upload_path, storage=JustificatifsStorage())
+    type_justificatif = models.CharField(max_length=100, blank=True)
+    statut = models.CharField(
+        max_length=20, choices=StatutJustificatif.choices, default=StatutJustificatif.EN_ATTENTE
+    )
+
+    valide_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="justificatifs_valides",
+        help_text=_("Membre du rôle RH+ ayant approuvé ou rejeté ce justificatif."),
+    )
+    date_decision = models.DateTimeField(null=True, blank=True)
+    motif_rejet = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "adhesions_justificatifs"
+        verbose_name = _("Justificatif de rabais")
+        verbose_name_plural = _("Justificatifs de rabais")
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["statut"])]
+
+    def __str__(self):
+        return f"Justificatif {self.souscription} — {self.get_statut_display()}"

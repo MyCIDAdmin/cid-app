@@ -6,9 +6,32 @@ reçoit qu'une offre (et, optionnellement, un rabais) ; le prix et le statut de 
 sont entièrement recalculés côté serveur dans SouscriptionViewSet.souscrire (voir views.py).
 """
 
+import uuid
+
+import magic
 from rest_framework import serializers
 
-from .models import CampagneAdhesion, OffreAdhesion, RabaisOffre, Souscription, StatutCampagne
+from .models import (
+    CampagneAdhesion,
+    JustificatifRabais,
+    OffreAdhesion,
+    RabaisOffre,
+    Souscription,
+    StatutCampagne,
+    StatutJustificatif,
+    StatutSouscription,
+)
+
+# FDD §4.2/§9 : "PDF ou image, max 5 Mo" — validation MIME réelle (magic bytes, jamais
+# l'extension/Content-Type déclarés par le client), même principe que
+# apps.membres.import_views.ALLOWED_MIME_TYPES. La map mime -> extension sert aussi à
+# reconstruire un nom de fichier serveur sûr (voir validate_fichier ci-dessous).
+ALLOWED_JUSTIFICATIF_MIME_TYPES = {
+    "application/pdf": "pdf",
+    "image/jpeg": "jpg",
+    "image/png": "png",
+}
+MAX_JUSTIFICATIF_SIZE_BYTES = 5 * 1024 * 1024
 
 
 class RabaisOffreSerializer(serializers.ModelSerializer):
@@ -91,7 +114,37 @@ class CampagneAdhesionSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class JustificatifRabaisSerializer(serializers.ModelSerializer):
+    """
+    Vue complète (RH+/propriétaire — voir permissions.JustificatifPermission), et forme
+    nichée en lecture seule sur SouscriptionSerializer (champ `justificatif` ci-dessous) :
+    volontairement SANS `fichier` — un chemin d'objet MinIO brut ne doit jamais transiter
+    par une réponse JSON générique (FDD §9 "jamais d'URL publique permanente"). Le fichier
+    ne s'obtient que via l'action dédiée `telecharger`, qui renvoie une URL pré-signée à
+    courte durée de vie (voir views.py, storage.py).
+    """
+
+    class Meta:
+        model = JustificatifRabais
+        fields = [
+            "id",
+            "souscription",
+            "type_justificatif",
+            "statut",
+            "valide_par",
+            "date_decision",
+            "motif_rejet",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
 class SouscriptionSerializer(serializers.ModelSerializer):
+    # Lecture seule : permet au membre de connaître le statut/motif de rejet de son
+    # justificatif directement depuis mes-souscriptions/, sans appel séparé (AHM-20).
+    # None tant qu'aucun justificatif n'a été uploadé pour cette souscription.
+    justificatif = JustificatifRabaisSerializer(read_only=True)
+
     class Meta:
         model = Souscription
         fields = [
@@ -105,6 +158,7 @@ class SouscriptionSerializer(serializers.ModelSerializer):
             "statut",
             "cotisation",
             "snapshot_avantages",
+            "justificatif",
             "created_at",
             "updated_at",
         ]
@@ -141,4 +195,77 @@ class SouscrireSerializer(serializers.Serializer):
                 {"rabais": "Ce rabais ne correspond pas à l'offre sélectionnée."}
             )
 
+        return attrs
+
+
+class JustificatifRabaisUploadSerializer(serializers.ModelSerializer):
+    """
+    Entrée de POST /adhesions/justificatifs/ (multipart/form-data) — voir
+    JustificatifRabaisViewSet.create pour la logique de remplacement d'un justificatif
+    déjà uploadé mais pas encore tranché (souscription <-> justificatif est en
+    OneToOneField, voir models.py).
+    """
+
+    class Meta:
+        model = JustificatifRabais
+        fields = ["souscription", "fichier", "type_justificatif"]
+        # `souscription` est un OneToOneField -> DRF y ajoute par défaut un
+        # UniqueValidator qui rejetterait TOUT ré-upload, y compris le cas légitime
+        # (justificatif existant encore "en_attente") géré explicitement par validate()
+        # ci-dessous et par la logique de remplacement dans JustificatifRabaisViewSet.
+        # create. On désactive ce validateur générique au profit du contrôle métier.
+        extra_kwargs = {"souscription": {"validators": []}}
+
+    def validate_fichier(self, fichier):
+        if fichier.size > MAX_JUSTIFICATIF_SIZE_BYTES:
+            raise serializers.ValidationError(
+                f"Fichier trop volumineux (max {MAX_JUSTIFICATIF_SIZE_BYTES // (1024 * 1024)} Mo)."
+            )
+        # Lecture complète nécessaire pour une détection fiable des magic bytes (même
+        # raisonnement que apps.membres.import_views pour les .xlsx) — bornée par la
+        # vérification de taille ci-dessus.
+        contenu = fichier.read()
+        fichier.seek(0)
+        mime_reel = magic.from_buffer(contenu, mime=True)
+        extension = ALLOWED_JUSTIFICATIF_MIME_TYPES.get(mime_reel)
+        if extension is None:
+            raise serializers.ValidationError(
+                f"Format non supporté (détecté : {mime_reel}). PDF, JPEG ou PNG uniquement."
+            )
+        # Nom de fichier reconstruit côté serveur à partir du type réellement détecté —
+        # jamais le nom/l'extension fournis par le client (SCD §7.4, path traversal /
+        # extension trompeuse). Voir models.justificatif_upload_path pour le préfixe.
+        fichier.name = f"{uuid.uuid4()}.{extension}"
+        return fichier
+
+    def validate_souscription(self, souscription):
+        membre = self.context["membre"]
+        if souscription.membre_id != membre.id:
+            raise serializers.ValidationError("Cette souscription ne vous appartient pas.")
+        if souscription.statut != StatutSouscription.EN_ATTENTE_JUSTIFICATIF:
+            raise serializers.ValidationError(
+                "Cette souscription n'est pas en attente de justificatif."
+            )
+        return souscription
+
+    def validate(self, attrs):
+        existant = getattr(attrs["souscription"], "justificatif", None)
+        if existant is not None and existant.statut != StatutJustificatif.EN_ATTENTE:
+            raise serializers.ValidationError(
+                {"souscription": "Un justificatif a déjà été traité pour cette souscription."}
+            )
+        return attrs
+
+
+class ValiderJustificatifSerializer(serializers.Serializer):
+    """Entrée de POST /adhesions/justificatifs/{id}/valider/ — RH+ (voir permissions.py)."""
+
+    decision = serializers.ChoiceField(choices=["approuve", "rejete"])
+    motif_rejet = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        if attrs["decision"] == "rejete" and not attrs["motif_rejet"].strip():
+            raise serializers.ValidationError(
+                {"motif_rejet": "Un motif de rejet est obligatoire en cas de refus (FDD §4.2)."}
+            )
         return attrs

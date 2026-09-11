@@ -6,10 +6,12 @@ from factory.django import DjangoModelFactory
 
 from apps.adhesions.models import (
     CampagneAdhesion,
+    JustificatifRabais,
     OffreAdhesion,
     RabaisOffre,
     Souscription,
     StatutCampagne,
+    StatutJustificatif,
     StatutSouscription,
     TypeRabais,
 )
@@ -67,3 +69,21 @@ class SouscriptionFactory(DjangoModelFactory):
     prix_paye = Decimal("50.00")
     statut = StatutSouscription.EN_ATTENTE_PAIEMENT
     snapshot_avantages = factory.LazyAttribute(lambda o: o.offre.avantages)
+
+
+class JustificatifRabaisFactory(DjangoModelFactory):
+    """
+    Contourne délibérément l'upload API (voir test_justificatifs.py pour les tests qui
+    exercent réellement JustificatifRabaisUploadSerializer.validate_fichier) : sert
+    uniquement à préparer l'état pour les tests de liste/détail/téléchargement/validation,
+    qui ne portent pas sur la validation MIME elle-même.
+    """
+
+    class Meta:
+        model = JustificatifRabais
+
+    souscription = factory.SubFactory(
+        SouscriptionFactory, statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF
+    )
+    fichier = factory.django.FileField(filename="justificatif.pdf", data=b"%PDF-1.4 factory stub")
+    statut = StatutJustificatif.EN_ATTENTE

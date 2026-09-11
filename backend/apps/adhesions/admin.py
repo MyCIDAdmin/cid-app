@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CampagneAdhesion, OffreAdhesion, RabaisOffre, Souscription
+from .models import CampagneAdhesion, JustificatifRabais, OffreAdhesion, RabaisOffre, Souscription
 
 
 class OffreAdhesionInline(admin.TabularInline):
@@ -53,3 +53,16 @@ class SouscriptionAdmin(admin.ModelAdmin):
     search_fields = ("membre__nom", "membre__prenom", "offre__nom")
     autocomplete_fields = ("membre", "offre", "campagne", "rabais", "cotisation")
     readonly_fields = ("id", "created_at", "updated_at")
+
+
+@admin.register(JustificatifRabais)
+class JustificatifRabaisAdmin(admin.ModelAdmin):
+    list_display = ("souscription", "statut", "valide_par", "date_decision", "created_at")
+    list_filter = ("statut",)
+    search_fields = ("souscription__membre__nom", "souscription__membre__prenom")
+    autocomplete_fields = ("souscription", "valide_par")
+    # fichier volontairement exclu de readonly_fields plutôt que masqué : un Admin App
+    # doit pouvoir l'ouvrir depuis l'admin Django en cas d'investigation, la restriction
+    # d'accès normale (RH+/propriétaire) étant appliquée côté API (JustificatifPermission),
+    # pas côté admin Django (déjà réservé aux staff/superuser par construction).
+    readonly_fields = ("id", "created_at")

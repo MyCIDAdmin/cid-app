@@ -4,9 +4,11 @@ import django_filters
 
 from .models import (
     CampagneAdhesion,
+    JustificatifRabais,
     OffreAdhesion,
     Souscription,
     StatutCampagne,
+    StatutJustificatif,
     StatutSouscription,
 )
 
@@ -37,3 +39,12 @@ class SouscriptionFilter(django_filters.FilterSet):
     class Meta:
         model = Souscription
         fields = ["statut", "campagne", "membre"]
+
+
+class JustificatifRabaisFilter(django_filters.FilterSet):
+    statut = django_filters.ChoiceFilter(choices=StatutJustificatif.choices)
+    souscription = django_filters.UUIDFilter(field_name="souscription_id")
+
+    class Meta:
+        model = JustificatifRabais
+        fields = ["statut", "souscription"]

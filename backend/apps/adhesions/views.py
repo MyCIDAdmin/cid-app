@@ -13,48 +13,67 @@ Vues API — app adhesions (FDD §6.1, TDD §4) :
   GET       /adhesions/souscriptions/{id}/
   POST      /adhesions/souscriptions/souscrire/         — souscrire/modifier sa souscription
   GET       /adhesions/souscriptions/mes-souscriptions/ — mes souscriptions (toujours les siennes)
+  POST      /adhesions/justificatifs/                — uploader un justificatif (multipart)
+  GET       /adhesions/justificatifs/                — file d'attente de validation (RH+)
+  GET       /adhesions/justificatifs/{id}/           — détail (RH+ ou membre propriétaire)
+  GET       /adhesions/justificatifs/{id}/telecharger/ — URL MinIO pré-signée, TTL 15 min
+  POST      /adhesions/justificatifs/{id}/valider/   — approuver/rejeter (RH+, motif si rejet)
 
 Pas de PUT/PATCH/DELETE sur Souscription : une fois créée, elle n'évolue que via son statut
 (paiement, justificatif — AHM-20/AHM-46) ; une souscription payée ne peut jamais être
 supprimée. Le prix et le statut de souscription sont entièrement recalculés côté serveur
 (CLAUDE.md §8) — voir SouscrireSerializer.validate et souscrire() ci-dessous.
 
-Périmètre AHM-19 : reçu PDF, tâches Celery Beat (relance/clôture auto), stats/export et
-JustificatifRabais sont différés — voir models.py.
+Périmètre AHM-19/AHM-20 restant hors champ : reçu PDF, tâches Celery Beat (relance/clôture
+auto), notifications (email/in-app), stats/export — voir models.py.
 """
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
 
-from .filters import CampagneAdhesionFilter, OffreAdhesionFilter, SouscriptionFilter
+from .filters import (
+    CampagneAdhesionFilter,
+    JustificatifRabaisFilter,
+    OffreAdhesionFilter,
+    SouscriptionFilter,
+)
 from .models import (
     CampagneAdhesion,
+    JustificatifRabais,
     OffreAdhesion,
     RabaisOffre,
     Souscription,
     StatutCampagne,
+    StatutJustificatif,
     StatutSouscription,
 )
 from .permissions import (
     GESTION_CATALOGUE_MIN_LEVEL,
     READ_ALL_SOUSCRIPTIONS_MIN_LEVEL,
     CataloguePermission,
+    JustificatifPermission,
     SouscriptionPermission,
 )
 from .serializers import (
     CampagneAdhesionSerializer,
+    JustificatifRabaisSerializer,
+    JustificatifRabaisUploadSerializer,
     OffreAdhesionSerializer,
     RabaisOffreSerializer,
     SouscrireSerializer,
     SouscriptionSerializer,
+    ValiderJustificatifSerializer,
 )
 
 
@@ -170,7 +189,7 @@ class SouscriptionViewSet(ModelViewSet):
 
     def get_queryset(self):
         queryset = Souscription.objects.select_related(
-            "membre", "offre", "campagne", "rabais", "cotisation"
+            "membre", "offre", "campagne", "rabais", "cotisation", "justificatif"
         ).all()
         user = self.request.user
         if not user or not user.is_authenticated:
@@ -204,6 +223,18 @@ class SouscriptionViewSet(ModelViewSet):
                 "Cette souscription est déjà payée et ne peut plus être modifiée."
             )
 
+        # Un justificatif déjà uploadé (ou déjà tranché par RH+) ne correspond plus à rien
+        # si le membre change de rabais : JustificatifRabais n'a pas de FK propre vers
+        # RabaisOffre (il hérite du rabais courant de la souscription), donc le conserver
+        # laisserait soit une décision RH s'appliquer au nouveau rabais sans nouvelle
+        # validation, soit un justificatif "en attente" bloquer tout ré-upload (contrainte
+        # OneToOneField, voir models.py) pour un rabais qui n'est plus le bon. On le
+        # supprime dès que le rabais change — un nouvel upload sera nécessaire si le
+        # nouveau choix en requiert un.
+        nouveau_rabais_id = rabais.id if rabais else None
+        if not _created and souscription.rabais_id != nouveau_rabais_id:
+            JustificatifRabais.objects.filter(souscription=souscription).delete()
+
         prix = rabais.calculer_prix(offre.prix_plein) if rabais else offre.prix_plein
         statut = (
             StatutSouscription.EN_ATTENTE_JUSTIFICATIF
@@ -225,9 +256,9 @@ class SouscriptionViewSet(ModelViewSet):
     def mes_souscriptions(self, request):
         membre = getattr(request.user, "membre", None)
         queryset = (
-            Souscription.objects.select_related("offre", "campagne", "rabais", "cotisation").filter(
-                membre=membre
-            )
+            Souscription.objects.select_related(
+                "offre", "campagne", "rabais", "cotisation", "justificatif"
+            ).filter(membre=membre)
             if membre
             else Souscription.objects.none()
         )
@@ -236,3 +267,114 @@ class SouscriptionViewSet(ModelViewSet):
         if page is not None:
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
+
+
+class JustificatifRabaisViewSet(ModelViewSet):
+    """Justificatifs de rabais (AHM-20) — voir permissions.JustificatifPermission pour la
+    matrice d'accès détaillée par action."""
+
+    http_method_names = ["get", "post", "head", "options"]
+    permission_classes = [JustificatifPermission]
+    serializer_class = (
+        JustificatifRabaisSerializer  # list/retrieve — create/valider s'en écartent explicitement
+    )
+    pagination_class = AdhesionsCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = JustificatifRabaisFilter
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        queryset = JustificatifRabais.objects.select_related(
+            "souscription", "souscription__membre", "valide_par"
+        ).all()
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return queryset.none()
+        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL:
+            return queryset
+        membre = getattr(user, "membre", None)
+        return queryset.filter(souscription__membre=membre) if membre else queryset.none()
+
+    def get_throttles(self):
+        # Limite dédiée (settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["justificatif_
+        # upload"] = "10/hour") — uniquement sur l'upload, pas sur la consultation/validation.
+        if self.action == "create":
+            self.throttle_scope = "justificatif_upload"
+            return [ScopedRateThrottle()]
+        return super().get_throttles()
+
+    def create(self, request, *args, **kwargs):
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            raise ValidationError(
+                {"membre": "Aucune fiche membre associée à ce compte utilisateur."}
+            )
+
+        serializer = JustificatifRabaisUploadSerializer(
+            data=request.data, context={"membre": membre}
+        )
+        serializer.is_valid(raise_exception=True)
+        souscription = serializer.validated_data["souscription"]
+
+        # Ré-upload avant décision RH (validate() ci-dessus bloque déjà le cas "déjà
+        # tranché") : on remplace le fichier sur l'enregistrement existant plutôt que
+        # d'en créer un second, la souscription <-> justificatif étant en OneToOneField.
+        existant = getattr(souscription, "justificatif", None)
+        if existant is not None:
+            existant.fichier = serializer.validated_data["fichier"]
+            existant.type_justificatif = serializer.validated_data.get("type_justificatif", "")
+            existant.save(update_fields=["fichier", "type_justificatif"])
+            instance = existant
+        else:
+            instance = serializer.save()
+
+        return Response(JustificatifRabaisSerializer(instance).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get"])
+    def telecharger(self, request, pk=None):
+        # URL MinIO pré-signée, TTL 15 min (FDD §9, storage.JustificatifsStorage) — jamais
+        # d'URL publique permanente ; get_object() applique déjà has_object_permission
+        # (RH+ ou membre propriétaire).
+        justificatif = self.get_object()
+        return Response({"url": justificatif.fichier.url, "expires_in": 900})
+
+    @action(detail=True, methods=["post"])
+    def valider(self, request, pk=None):
+        justificatif = self.get_object()
+        if justificatif.statut != StatutJustificatif.EN_ATTENTE:
+            raise ValidationError({"statut": "Ce justificatif a déjà été traité."})
+
+        souscription = justificatif.souscription
+        if souscription.statut != StatutSouscription.EN_ATTENTE_JUSTIFICATIF:
+            # Défense en profondeur : ne devrait pas arriver (souscrire() supprime le
+            # justificatif dès que le rabais change), mais évite qu'une décision RH ne
+            # fasse régresser une souscription déjà payée/annulée entre-temps.
+            raise ValidationError(
+                {"statut": "La souscription n'est plus en attente de validation de justificatif."}
+            )
+
+        decision_serializer = ValiderJustificatifSerializer(data=request.data)
+        decision_serializer.is_valid(raise_exception=True)
+        decision = decision_serializer.validated_data["decision"]
+        motif_rejet = decision_serializer.validated_data["motif_rejet"]
+
+        valideur = getattr(request.user, "membre", None)
+        justificatif.statut = (
+            StatutJustificatif.APPROUVE if decision == "approuve" else StatutJustificatif.REJETE
+        )
+        justificatif.motif_rejet = motif_rejet if decision == "rejete" else ""
+        justificatif.valide_par = valideur
+        justificatif.date_decision = timezone.now()
+        justificatif.save(update_fields=["statut", "motif_rejet", "valide_par", "date_decision"])
+
+        # FDD §4.2, étapes 4a/4b : approuvé -> prêt pour le paiement (au prix déjà réduit,
+        # calculé au moment de souscrire()) ; rejeté -> le membre choisit prix plein ou
+        # annulation.
+        souscription.statut = (
+            StatutSouscription.EN_ATTENTE_PAIEMENT
+            if decision == "approuve"
+            else StatutSouscription.RABAIS_REFUSE
+        )
+        souscription.save(update_fields=["statut"])
+
+        return Response(JustificatifRabaisSerializer(justificatif).data)
