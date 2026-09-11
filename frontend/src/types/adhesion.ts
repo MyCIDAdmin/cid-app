@@ -80,6 +80,30 @@ export interface CampagneCreatePayload {
   description?: string;
 }
 
+export type StatutJustificatif = "en_attente" | "approuve" | "rejete";
+
+/**
+ * Miroir de JustificatifRabaisSerializer (AHM-20) — volontairement sans `fichier` : le fichier
+ * ne se récupère que via GET /adhesions/justificatifs/{id}/telecharger/ (URL MinIO pré-signée,
+ * TTL 15 min), jamais en clair dans cette réponse (voir le docstring backend correspondant).
+ */
+export interface JustificatifRabais {
+  id: string;
+  souscription: string;
+  type_justificatif: string;
+  statut: StatutJustificatif;
+  valide_par: string | null;
+  date_decision: string | null;
+  motif_rejet: string;
+  created_at: string;
+}
+
+/** Entrée de POST /adhesions/justificatifs/{id}/valider/ (RH+, AHM-20). */
+export interface ValiderJustificatifPayload {
+  decision: "approuve" | "rejete";
+  motif_rejet?: string;
+}
+
 export interface Souscription {
   id: string;
   membre: string;
@@ -91,6 +115,9 @@ export interface Souscription {
   statut: StatutSouscription;
   cotisation: string | null;
   snapshot_avantages: AvantageOffre[];
+  // Nichée en lecture seule par SouscriptionSerializer (AHM-20) — null tant qu'aucun
+  // justificatif n'a été uploadé pour cette souscription.
+  justificatif: JustificatifRabais | null;
   created_at: string;
   updated_at: string;
 }

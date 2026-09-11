@@ -3,18 +3,31 @@
  *
  * Portée actée avec l'utilisateur : campagne active + offres, souscription
  * (avec rabais optionnel), historique des souscriptions passées — sans le
- * reçu PDF téléchargeable du mockup (pas d'endpoint backend, différé) ni le
- * flux d'upload de justificatif (AHM-20, hors périmètre de ce ticket).
+ * reçu PDF téléchargeable du mockup (pas d'endpoint backend, différé).
+ *
+ * Flux justificatif (AHM-20, ajouté après coup) : quand la souscription est
+ * en_attente_justificatif, un formulaire d'upload apparaît (FDD §4.2 étape
+ * 3). Le fichier ne transite jamais en clair — seule la file de validation
+ * RH+ (AdminJustificatifsPage) télécharge le document, via une URL MinIO
+ * pré-signée à courte durée de vie. Si le rabais est refusé, le motif du RH
+ * est affiché : le membre garde la main pour payer plein tarif ou changer
+ * d'offre via la liste ci-dessous (déjà ouverte puisque dejaPayee est faux).
  *
  * Le prix affiché en aperçu (offre.prix_plein / rabais) n'est qu'indicatif :
  * comme pour le stepper de cotisations, le prix réellement enregistré est
  * toujours recalculé par le serveur (CLAUDE.md §8, voir
  * SouscriptionViewSet.souscrire côté backend).
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useCampagneActive, useCampagnes, useMesSouscriptions, useSouscrire } from "../../hooks/useAdhesions";
+import {
+  useCampagneActive,
+  useCampagnes,
+  useMesSouscriptions,
+  useSouscrire,
+  useUploaderJustificatif,
+} from "../../hooks/useAdhesions";
 import type { CampagneAdhesion, OffreAdhesion, Souscription, StatutSouscription } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -49,9 +62,12 @@ export default function MonAdhesionPage() {
   const campagnesQuery = useCampagnes();
   const mesSouscriptions = useMesSouscriptions();
   const souscrireMutation = useSouscrire();
+  const uploaderJustificatifMutation = useUploaderJustificatif();
 
   const [offreSelectionneeId, setOffreSelectionneeId] = useState<string | null>(null);
   const [rabaisSelectionneId, setRabaisSelectionneId] = useState<string | null>(null);
+  const [fichierJustificatif, setFichierJustificatif] = useState<File | null>(null);
+  const fichierInputRef = useRef<HTMLInputElement>(null);
 
   const campagne = campagneActive.data;
 
@@ -78,9 +94,27 @@ export default function MonAdhesionPage() {
       )
     : undefined;
 
+  // Rabais choisi pour la souscription en cours — sert à afficher les instructions membre
+  // (RabaisOffre.instructions_fr) au-dessus du formulaire d'upload.
+  const rabaisActuel = offreActuelle?.rabais.find((r) => r.id === souscriptionActuelle?.rabais);
+  const justificatifActuel = souscriptionActuelle?.justificatif ?? null;
+
   function choisirOffre(offreId: string) {
     setOffreSelectionneeId((cur) => (cur === offreId ? null : offreId));
     setRabaisSelectionneId(null);
+  }
+
+  function envoyerJustificatif() {
+    if (!souscriptionActuelle || !fichierJustificatif) return;
+    uploaderJustificatifMutation.mutate(
+      { souscriptionId: souscriptionActuelle.id, fichier: fichierJustificatif },
+      {
+        onSuccess: () => {
+          setFichierJustificatif(null);
+          if (fichierInputRef.current) fichierInputRef.current.value = "";
+        },
+      },
+    );
   }
 
   function handleSouscrire() {
@@ -141,6 +175,54 @@ export default function MonAdhesionPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {souscriptionActuelle?.statut === "en_attente_justificatif" && (
+        <div className="mb-5 rounded-cid-lg border border-status-warningText/30 bg-status-warningBg p-4">
+          <h2 className="mb-1 text-sm font-bold text-text-primary">{t("justificatif.titre")}</h2>
+          {rabaisActuel && (
+            <p className="mb-3 text-xs text-text-secondary">{rabaisActuel.instructions_fr}</p>
+          )}
+
+          {justificatifActuel && justificatifActuel.statut === "en_attente" ? (
+            <p className="mb-3 text-sm text-status-warningText">
+              {t("justificatif.en_attente_validation")}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fichierInputRef}
+              type="file"
+              aria-label={t("justificatif.fichier_label")}
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => setFichierJustificatif(e.target.files?.[0] ?? null)}
+              className="text-xs"
+            />
+            <button
+              type="button"
+              onClick={envoyerJustificatif}
+              disabled={!fichierJustificatif || uploaderJustificatifMutation.isPending}
+              className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+            >
+              {justificatifActuel
+                ? t("justificatif.remplacer")
+                : t("justificatif.envoyer")}
+            </button>
+          </div>
+          {uploaderJustificatifMutation.isError && (
+            <p className="mt-2 text-xs text-status-dangerText">
+              {extractApiErrorMessage(uploaderJustificatifMutation.error, t("justificatif.erreur"))}
+            </p>
+          )}
+        </div>
+      )}
+
+      {souscriptionActuelle?.statut === "rabais_refuse" && justificatifActuel?.motif_rejet && (
+        <div className="mb-5 rounded-cid-lg border border-status-dangerText/30 bg-status-dangerBg p-4 text-sm text-status-dangerText">
+          <span className="font-semibold">{t("justificatif.rejete_titre")}</span>{" "}
+          {justificatifActuel.motif_rejet}
         </div>
       )}
 

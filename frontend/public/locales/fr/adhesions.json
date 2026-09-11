@@ -48,6 +48,37 @@
     "col_statut": "Statut",
     "col_date": "Date"
   },
+  "justificatif": {
+    "titre": "Justificatif requis pour votre rabais",
+    "fichier_label": "Fichier justificatif",
+    "envoyer": "Envoyer le justificatif",
+    "remplacer": "Remplacer le fichier",
+    "en_attente_validation": "Votre justificatif a été envoyé et est en attente de validation par le RH.",
+    "erreur": "Le justificatif n'a pas pu être envoyé.",
+    "rejete_titre": "Rabais refusé :"
+  },
+  "admin_justificatifs": {
+    "titre": "Justificatifs de rabais",
+    "sous_titre": "Souscriptions en attente de justificatif — consultez le document et approuvez ou rejetez la demande de rabais.",
+    "col_date": "Date",
+    "col_membre": "Membre",
+    "col_offre": "Offre",
+    "col_rabais": "Rabais demandé",
+    "col_document": "Document",
+    "col_actions": "Actions",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger la file de validation.",
+    "aucun": "Aucun justificatif en attente.",
+    "pas_encore_uploade": "Pas encore envoyé",
+    "voir": "Voir le document",
+    "telechargement_en_cours": "Ouverture…",
+    "erreur_voir": "Impossible d'ouvrir le document.",
+    "approuver": "Approuver",
+    "rejeter": "Rejeter",
+    "motif_placeholder": "Motif du rejet (obligatoire)",
+    "confirmer_rejet": "Confirmer le rejet",
+    "erreur_action": "L'action n'a pas pu être effectuée."
+  },
   "admin": {
     "titre": "Gestion des campagnes d'adhésion",
     "nouvelle_campagne": "Nouvelle campagne",

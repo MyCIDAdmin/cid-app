@@ -5,7 +5,8 @@
     "mon_adhesion": "Mon Adhésion",
     "cotisation": "Cotisation",
     "inscriptions": "Inscriptions",
-    "admin_adhesions": "Campagnes d'adhésion"
+    "admin_adhesions": "Campagnes d'adhésion",
+    "admin_justificatifs": "Justificatifs"
   },
   "dashboard": {
     "title": "Tableau de bord",

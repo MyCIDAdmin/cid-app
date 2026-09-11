@@ -23,6 +23,9 @@ const NAV_ITEMS: NavItem[] = [
   // Validation des inscriptions (AHM-48) — visible RH+ seulement, la route
   // elle-même est aussi gated côté App.tsx (RequireRole).
   { to: "/inscriptions", labelKey: "nav.inscriptions", minRoleLevel: ROLE_LEVELS.rh },
+  // File de validation des justificatifs de rabais (AHM-20) — RH+ seulement, même niveau que
+  // JustificatifPermission.RH_ONLY_ACTIONS côté API.
+  { to: "/admin/justificatifs", labelKey: "nav.admin_justificatifs", minRoleLevel: ROLE_LEVELS.rh },
   // Gestion des campagnes d'adhésion (AHM-21) — Bureau Admin+ seulement,
   // même niveau que CataloguePermission côté API.
   {

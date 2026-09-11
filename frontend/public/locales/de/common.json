@@ -5,7 +5,8 @@
     "mon_adhesion": "Meine Mitgliedschaft",
     "cotisation": "Mitgliedsbeitrag",
     "inscriptions": "Registrierungen",
-    "admin_adhesions": "Mitgliedschaftskampagnen"
+    "admin_adhesions": "Mitgliedschaftskampagnen",
+    "admin_justificatifs": "Nachweise"
   },
   "dashboard": {
     "title": "Übersicht",

@@ -14,6 +14,7 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useCampagnes: vi.fn(),
     useMesSouscriptions: vi.fn(),
     useSouscrire: vi.fn(),
+    useUploaderJustificatif: vi.fn(),
   };
 });
 
@@ -77,6 +78,7 @@ function souscription(overrides: Partial<Souscription> = {}): Souscription {
     statut: "en_attente_paiement",
     cotisation: null,
     snapshot_avantages: [{ ordre: 1, texte_fr: "Accès complet" }],
+    justificatif: null,
     created_at: "2026-02-01T10:00:00Z",
     updated_at: "2026-02-01T10:00:00Z",
     ...overrides,
@@ -88,6 +90,11 @@ describe("MonAdhesionPage", () => {
     vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
       data: { next: null, previous: null, results: [campagne()] },
     } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
+    vi.mocked(useAdhesionsHooks.useUploaderJustificatif).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useUploaderJustificatif>);
   });
 
   it("affiche un message quand aucune campagne n'est publiée", () => {
@@ -167,5 +174,85 @@ describe("MonAdhesionPage", () => {
 
     expect(mutate).toHaveBeenCalledTimes(1);
     expect(mutate.mock.calls[0][0]).toEqual({ offre: "o1", rabais: "r1" });
+  });
+
+  it("affiche le formulaire d'upload de justificatif et l'envoie (AHM-20)", () => {
+    const mutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useUploaderJustificatif).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useUploaderJustificatif>);
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [souscription({ statut: "en_attente_justificatif" })],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.getByText("justificatif.titre")).toBeInTheDocument();
+    const fichierInput = screen.getByLabelText("justificatif.fichier_label") as HTMLInputElement;
+    const fichier = new File(["contenu"], "carte-etudiante.pdf", { type: "application/pdf" });
+    fireEvent.change(fichierInput, { target: { files: [fichier] } });
+
+    fireEvent.click(screen.getByText("justificatif.envoyer"));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate.mock.calls[0][0]).toEqual({ souscriptionId: "s1", fichier });
+  });
+
+  it("affiche le motif de rejet quand le rabais a été refusé (AHM-20)", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          souscription({
+            statut: "rabais_refuse",
+            justificatif: {
+              id: "j1",
+              souscription: "s1",
+              type_justificatif: "",
+              statut: "rejete",
+              valide_par: "m-rh",
+              date_decision: "2026-02-02T10:00:00Z",
+              motif_rejet: "Carte étudiante expirée.",
+              created_at: "2026-02-01T10:00:00Z",
+            },
+          }),
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.getByText("Carte étudiante expirée.")).toBeInTheDocument();
   });
 });

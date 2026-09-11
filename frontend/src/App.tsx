@@ -5,6 +5,7 @@ import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
+import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
 import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -83,6 +84,16 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
               <AdminCampagnesPage />
+            </RequireRole>
+          }
+        />
+        {/* File de validation des justificatifs (FDD §4.5, RICEFW R-ADH-05, AHM-20) — RH+,
+            même niveau que JustificatifPermission.RH_ONLY_ACTIONS côté API. */}
+        <Route
+          path="/admin/justificatifs"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <AdminJustificatifsPage />
             </RequireRole>
           }
         />

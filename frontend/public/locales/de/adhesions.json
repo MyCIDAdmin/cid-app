@@ -48,6 +48,37 @@
     "col_statut": "Status",
     "col_date": "Datum"
   },
+  "justificatif": {
+    "titre": "Nachweis für Ihren Rabatt erforderlich",
+    "fichier_label": "Nachweisdatei",
+    "envoyer": "Nachweis senden",
+    "remplacer": "Datei ersetzen",
+    "en_attente_validation": "Ihr Nachweis wurde gesendet und wartet auf die Prüfung durch die Personalabteilung.",
+    "erreur": "Der Nachweis konnte nicht gesendet werden.",
+    "rejete_titre": "Rabatt abgelehnt:"
+  },
+  "admin_justificatifs": {
+    "titre": "Rabatt-Nachweise",
+    "sous_titre": "Anträge, die auf einen Nachweis warten — Dokument prüfen und den Rabatt genehmigen oder ablehnen.",
+    "col_date": "Datum",
+    "col_membre": "Mitglied",
+    "col_offre": "Angebot",
+    "col_rabais": "Beantragter Rabatt",
+    "col_document": "Dokument",
+    "col_actions": "Aktionen",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Prüfliste konnte nicht geladen werden.",
+    "aucun": "Keine ausstehenden Nachweise.",
+    "pas_encore_uploade": "Noch nicht gesendet",
+    "voir": "Dokument ansehen",
+    "telechargement_en_cours": "Wird geöffnet…",
+    "erreur_voir": "Das Dokument konnte nicht geöffnet werden.",
+    "approuver": "Genehmigen",
+    "rejeter": "Ablehnen",
+    "motif_placeholder": "Ablehnungsgrund (erforderlich)",
+    "confirmer_rejet": "Ablehnung bestätigen",
+    "erreur_action": "Die Aktion konnte nicht ausgeführt werden."
+  },
   "admin": {
     "titre": "Verwaltung der Mitgliedschaftskampagnen",
     "nouvelle_campagne": "Neue Kampagne",
