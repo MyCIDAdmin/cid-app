@@ -75,3 +75,12 @@ export interface ConfigurationRelancePayload {
   annee: number;
   date_echeance: string;
 }
+
+/**
+ * Réponse de POST /cotisations/{id}/initier-paiement-en-ligne/ (AHM-46) — l'URL de redirection
+ * Stripe Checkout ou PayPal Checkout vers laquelle le navigateur doit naviguer
+ * (window.location.href), voir apps.cotisations.gateways/views.
+ */
+export interface PaiementEnLigneResponse {
+  redirect_url: string;
+}

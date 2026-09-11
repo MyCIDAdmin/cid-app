@@ -38,9 +38,13 @@
     "paypal_titre": "PayPal",
     "paypal_description": "Schnell und sicher bezahlen",
     "note": "Hier werden keine Zahlungsdaten erfasst: Diese Auswahl gibt nur an, wie Sie bezahlen. Der Finanzverantwortliche bestätigt den Zahlungseingang, bevor die Zahlung als bezahlt gilt.",
+    "note_gateway": "Sie werden zu einer sicheren Zahlungsseite (Stripe oder PayPal) weitergeleitet. Es werden keine Zahlungsdaten über unsere Server übertragen.",
     "payer": "{{montant}} € sicher bezahlen",
     "retour": "Zurück",
-    "erreur": "Die Zahlung konnte nicht gespeichert werden."
+    "erreur": "Die Zahlung konnte nicht gespeichert werden.",
+    "redirection_en_cours": "Weiterleitung zur sicheren Zahlung…",
+    "reessayer_gateway": "Erneut versuchen",
+    "erreur_gateway": "Die Online-Zahlung konnte nicht gestartet werden. Die Zahlung bleibt als ausstehend gespeichert — Sie können es erneut versuchen oder auf die manuelle Bestätigung durch den Finanzverantwortlichen warten."
   },
   "confirmation": {
     "titre": "Zahlung bestätigt!",
@@ -111,5 +115,23 @@
     "erreur_action": "Der Fälligkeitstermin konnte nicht gespeichert werden.",
     "confirmer_suppression": "Fälligkeitstermin {{annee}} löschen? Dieses Jahr verwendet danach wieder den 1. Januar.",
     "note_repli": "Ein Jahr ohne oben konfigurierten Fälligkeitstermin verwendet automatisch den 1. Januar dieses Jahres (Standardverhalten)."
+  },
+  "retour": {
+    "chargement": "Zahlung wird überprüft…",
+    "introuvable": "Diese Zahlung konnte nicht gefunden werden.",
+    "titre_payee": "Zahlung bestätigt!",
+    "sous_titre_payee": "Ihre Zahlung wurde erfolgreich empfangen und bestätigt.",
+    "titre_echouee": "Die Zahlung ist fehlgeschlagen",
+    "sous_titre_echouee": "Der Zahlungsanbieter hat einen Fehler gemeldet. Sie können es unten erneut versuchen.",
+    "titre_annule": "Zahlung abgebrochen",
+    "sous_titre_annule": "Sie haben die Zahlung abgebrochen, bevor sie abgeschlossen wurde — es wurde kein Betrag abgebucht.",
+    "titre_attente": "Zahlung wird bestätigt",
+    "sous_titre_attente": "Wir warten auf die Bestätigung des Zahlungsanbieters. Das kann einen Moment dauern — versuchen Sie es gleich noch einmal.",
+    "verifier": "Erneut prüfen",
+    "verification_en_cours": "Wird geprüft…",
+    "reessayer": "Online-Zahlung erneut versuchen",
+    "reessai_en_cours": "Weiterleitung…",
+    "erreur_reessai": "Die neue Zahlung konnte nicht gestartet werden.",
+    "retour_accueil": "Zurück zu den Zahlungen"
   }
 }

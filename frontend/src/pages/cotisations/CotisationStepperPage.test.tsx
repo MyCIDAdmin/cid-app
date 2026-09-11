@@ -13,6 +13,7 @@ vi.mock("../../hooks/useCotisations", async () => {
     ...actual,
     useMesCotisations: vi.fn(),
     useCreerCotisation: vi.fn(),
+    useInitierPaiementEnLigne: vi.fn(),
   };
 });
 
@@ -53,6 +54,19 @@ describe("CotisationStepperPage", () => {
 
     window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
     window.URL.revokeObjectURL = vi.fn();
+
+    // Défaut neutre (no-op) : les tests qui n'exercent pas explicitement la passerelle AHM-46
+    // n'ont pas besoin d'un vrai appel réseau (non mocké côté api/cotisations.ts) juste pour ne
+    // pas planter au rendu de l'étape 3.
+    vi.mocked(useCotisationsHooks.useInitierPaiementEnLigne).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
+
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { ...window.location, href: "" },
+    });
   });
 
   it("affiche l'étape 1 avec la cotisation sélectionnée par défaut", () => {
@@ -128,6 +142,111 @@ describe("CotisationStepperPage", () => {
     // Pas de référence de transaction ni de bouton de reçu tant que ce n'est pas confirmé.
     expect(screen.queryByText(/TXN-/)).not.toBeInTheDocument();
     expect(screen.queryByText("recu.telecharger")).not.toBeInTheDocument();
+  });
+
+  it("redirige vers la passerelle de paiement pour un règlement par carte (AHM-46)", async () => {
+    const mutateCreer = vi.fn(
+      (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
+        opts?.onSuccess?.(
+          cotisation({ id: "c-carte", statut: "en_attente", reference_transaction: null }),
+        ),
+    );
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: mutateCreer,
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+    const mutateInitier = vi.fn(
+      (
+        _cotisationId,
+        opts?: { onSuccess?: (r: { redirect_url: string }) => void },
+      ) => opts?.onSuccess?.({ redirect_url: "https://checkout.stripe.com/session/abc" }),
+    );
+    vi.mocked(useCotisationsHooks.useInitierPaiementEnLigne).mockReturnValue({
+      mutate: mutateInitier,
+      isPending: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
+
+    renderWithProviders(<CotisationStepperPage />);
+
+    fireEvent.click(screen.getByText("continuer"));
+    fireEvent.click(screen.getByText(/paiement\.payer/));
+
+    await waitFor(() => expect(mutateInitier).toHaveBeenCalledWith("c-carte", expect.anything()));
+    expect(window.location.href).toBe("https://checkout.stripe.com/session/abc");
+  });
+
+  it("affiche une erreur et un bouton pour réessayer si l'initiation du paiement en ligne échoue (AHM-46)", async () => {
+    const mutateCreer = vi.fn(
+      (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
+        opts?.onSuccess?.(
+          cotisation({ id: "c-paypal", statut: "en_attente", mode_paiement: "paypal" }),
+        ),
+    );
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: mutateCreer,
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+    const mutateInitier = vi.fn(
+      (_cotisationId, opts?: { onError?: (e: unknown) => void }) =>
+        opts?.onError?.(new Error("boom")),
+    );
+    vi.mocked(useCotisationsHooks.useInitierPaiementEnLigne).mockReturnValue({
+      mutate: mutateInitier,
+      isPending: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
+
+    renderWithProviders(<CotisationStepperPage />);
+
+    fireEvent.click(screen.getByText("continuer"));
+    // Choisir PayPal explicitement (le mode par défaut est carte).
+    fireEvent.click(screen.getByText("paiement.paypal_titre"));
+    fireEvent.click(screen.getByText(/paiement\.payer/));
+
+    await waitFor(() =>
+      expect(screen.getByText("paiement.erreur_gateway")).toBeInTheDocument(),
+    );
+    expect(window.location.href).toBe("");
+
+    mutateInitier.mockClear();
+    fireEvent.click(screen.getByText("paiement.reessayer_gateway"));
+    expect(mutateInitier).toHaveBeenCalledWith("c-paypal", expect.anything());
+  });
+
+  it("n'appelle jamais la passerelle pour un virement SEPA (AHM-46)", async () => {
+    const mutateCreer = vi.fn(
+      (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
+        opts?.onSuccess?.(
+          cotisation({ statut: "en_attente", mode_paiement: "virement_sepa" }),
+        ),
+    );
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: mutateCreer,
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+    const mutateInitier = vi.fn();
+    vi.mocked(useCotisationsHooks.useInitierPaiementEnLigne).mockReturnValue({
+      mutate: mutateInitier,
+      isPending: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
+
+    renderWithProviders(<CotisationStepperPage />);
+
+    fireEvent.click(screen.getByText("continuer"));
+    fireEvent.click(screen.getByText("paiement.sepa_titre"));
+    fireEvent.click(screen.getByText(/paiement\.payer/));
+
+    await waitFor(() =>
+      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument(),
+    );
+    expect(mutateInitier).not.toHaveBeenCalled();
   });
 
   it("télécharge le reçu depuis l'historique pour une ligne payée (AHM-17)", async () => {

@@ -8,6 +8,7 @@ import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
+import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
 import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -76,6 +77,10 @@ export default function App() {
             ouvert à tout authentifié : le backend scope déjà le queryset et
             résout le membre courant à la création (CotisationViewSet). */}
         <Route path="/cotisation" element={<CotisationStepperPage />} />
+        {/* Retour depuis Stripe Checkout/PayPal Checkout (AHM-46, success_url/return_url et
+            cancel_url — voir apps.cotisations.gateways) — ouvert à tout authentifié, même scope
+            IDOR que le reste de CotisationViewSet (get_queryset). */}
+        <Route path="/cotisation/retour" element={<CotisationRetourPage />} />
         {/* Confirmation manuelle des paiements en attente (virement SEPA en cours de
             réconciliation, etc., AHM-53) — Directeur Financier/Admin uniquement, même niveau
             que SAISIE_POUR_AUTRUI_MIN_LEVEL / marquer_payee côté API. */}

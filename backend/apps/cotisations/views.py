@@ -6,6 +6,8 @@ Vues API — app cotisations (TDD §2.4) :
   GET   /cotisations/{id}/receipt/       — reçu PDF (AHM-17, RICEFW R-010/W-002)
   POST  /cotisations/{id}/marquer-payee/ — confirmer manuellement un paiement reçu hors ligne
                                             (AHM-53, DF/Admin uniquement)
+  POST  /cotisations/{id}/initier-paiement-en-ligne/ — créer une session/commande Stripe ou
+                                            PayPal (AHM-46, propriétaire uniquement)
 
   GET/POST/PATCH/DELETE /configurations-relance/ — échéance des relances par année de cotisation
                                             (AHM-54, DF/Admin uniquement — voir
@@ -19,10 +21,19 @@ paramétrage, donc CRUD complet, mais réservé au même niveau de rôle.
 Règle AHM-53 (retour utilisateur : recevoir une quittance immédiate pour un virement SEPA non
 encore réglé est trompeur) : `perform_create` impose toujours statut=en_attente pour un paiement
 en libre-service (le membre paie pour lui-même), quel que soit le mode de paiement choisi et quel
-que soit le statut transmis par le client — il n'existe pas de passerelle de paiement réelle
-(AHM-46) capable de le vérifier. Seule la saisie pour le compte d'un AUTRE membre par le
+que soit le statut transmis par le client. Seule la saisie pour le compte d'un AUTRE membre par le
 Directeur Financier/Admin (F-015, staff qui constate une transaction déjà reçue) conserve le
 statut transmis par le client.
+
+AHM-46 (passerelles de paiement réelles, écart assumé avec le FDD §1.3 qui plaçait ceci hors
+périmètre Phase 1 — décision explicite avec l'utilisateur le 2026-09-11, voir le ticket Linear) :
+`initier_paiement_en_ligne` crée une session Stripe Checkout ou une commande PayPal Checkout
+(apps.cotisations.gateways) pour les modes carte/paypal uniquement — le virement SEPA reste
+exclusivement une confirmation manuelle (`marquer_payee`), une automatisation SEPA réelle étant
+hors de proportion pour une association de cette taille. Le passage à `payee` n'est jamais décidé
+ici ni par le client : c'est le webhook (apps.cotisations.webhooks), signé par le PSP, qui décide
+— même principe que `marquer_payee` (le statut final n'est jamais fait confiance au frontend,
+CLAUDE.md §8).
 """
 
 from django.http import HttpResponse
@@ -37,10 +48,15 @@ from rest_framework.viewsets import ModelViewSet
 from apps.accounts.models import ROLE_LEVELS
 
 from .filters import CotisationFilter
+from .gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 from .models import ConfigurationRelance, Cotisation, ModePaiement, StatutCotisation
 from .pdf import generate_receipt_pdf
 from .permissions import READ_ALL_MIN_LEVEL, SAISIE_POUR_AUTRUI_MIN_LEVEL, CotisationPermission
 from .serializers import ConfigurationRelanceSerializer, CotisationSerializer
+
+# Modes de paiement pris en charge par initier_paiement_en_ligne (AHM-46) — le virement SEPA n'a
+# volontairement pas d'équivalent en ligne, voir docstring de module.
+MODES_PAIEMENT_EN_LIGNE = {ModePaiement.CARTE, ModePaiement.PAYPAL}
 
 # Statuts depuis lesquels une confirmation manuelle de paiement (marquer_payee) est autorisée.
 # "payee" (déjà fait), "remboursee" et "annulee" sont des statuts terminaux qu'on ne réécrit pas.
@@ -159,6 +175,64 @@ class CotisationViewSet(ModelViewSet):
         cotisation.save()
 
         return Response(CotisationSerializer(cotisation).data)
+
+    @action(detail=True, methods=["post"], url_path="initier-paiement-en-ligne")
+    def initier_paiement_en_ligne(self, request, pk=None):
+        """
+        POST /cotisations/{id}/initier-paiement-en-ligne/ (AHM-46) — crée une session Stripe
+        Checkout ou une commande PayPal Checkout pour cette cotisation et renvoie son URL de
+        redirection. Réservé au propriétaire de la cotisation (paiement en libre-service
+        uniquement — une écriture saisie par le DF pour un autre membre, F-015, n'a pas vocation
+        à être payée en ligne par ce dernier depuis cette action).
+        """
+        cotisation = self.get_object()
+        membre_self = getattr(request.user, "membre", None)
+
+        if membre_self is None or cotisation.membre_id != membre_self.id:
+            raise PermissionDenied(
+                "Seul le titulaire de cette cotisation peut initier un paiement en ligne."
+            )
+
+        if cotisation.statut not in STATUTS_CONFIRMABLES_EN_PAYEE:
+            raise ValidationError(
+                "Seule une cotisation en attente ou échouée peut être payée en ligne "
+                f"(statut actuel : {cotisation.get_statut_display()})."
+            )
+
+        if cotisation.mode_paiement not in MODES_PAIEMENT_EN_LIGNE:
+            raise ValidationError(
+                {
+                    "mode_paiement": (
+                        "Le paiement en ligne n'est disponible que pour les modes carte et "
+                        "PayPal — le virement SEPA reste confirmé manuellement par le "
+                        "Directeur Financier."
+                    )
+                }
+            )
+
+        try:
+            # Appelées par leur nom de module (pas via un dict construit à l'import) pour rester
+            # patchables individuellement dans les tests (unittest.mock.patch sur
+            # apps.cotisations.views.creer_session_stripe / creer_commande_paypal).
+            if cotisation.mode_paiement == ModePaiement.CARTE:
+                redirect_url = creer_session_stripe(cotisation)
+            else:
+                redirect_url = creer_commande_paypal(cotisation)
+        except GatewayError as exc:
+            # Message volontairement générique côté client (jamais de détail interne PSP) — voir
+            # GatewayError. Le paiement reste en_attente : le membre peut réessayer plus tard, ou
+            # le Directeur Financier peut le confirmer manuellement (marquer_payee) s'il reçoit
+            # le paiement par un autre biais.
+            raise ValidationError(
+                {
+                    "gateway": (
+                        "Le paiement en ligne n'est pas disponible pour le moment. "
+                        "Contactez le Directeur Financier."
+                    )
+                }
+            ) from exc
+
+        return Response({"redirect_url": redirect_url})
 
 
 class ConfigurationRelancePermission(BasePermission):

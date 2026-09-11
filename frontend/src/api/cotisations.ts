@@ -8,6 +8,7 @@ import type {
   Cotisation,
   CotisationCreatePayload,
   ModePaiement,
+  PaiementEnLigneResponse,
 } from "../types/cotisation";
 import type { CursorPage } from "../types/membre";
 
@@ -26,6 +27,30 @@ export async function listMesCotisations(): Promise<CursorPage<Cotisation>> {
 
 export async function creerCotisation(payload: CotisationCreatePayload): Promise<Cotisation> {
   const { data } = await apiClient.post<Cotisation>("/cotisations/", payload);
+  return data;
+}
+
+/**
+ * GET /cotisations/{id}/ (AHM-46, page de retour de paiement) — même scope IDOR que le reste du
+ * ViewSet : propriétaire ou RH+ uniquement (CotisationViewSet.get_queryset).
+ */
+export async function getCotisation(cotisationId: string): Promise<Cotisation> {
+  const { data } = await apiClient.get<Cotisation>(`/cotisations/${cotisationId}/`);
+  return data;
+}
+
+/**
+ * POST /cotisations/{id}/initier-paiement-en-ligne/ (AHM-46) — crée une session Stripe Checkout
+ * ou une commande PayPal Checkout (selon `mode_paiement` déjà enregistré sur la cotisation) et
+ * renvoie son URL de redirection. Réservé au titulaire de la cotisation, modes carte/paypal
+ * uniquement — voir apps.cotisations.views.CotisationViewSet.initier_paiement_en_ligne.
+ */
+export async function initierPaiementEnLigne(
+  cotisationId: string,
+): Promise<PaiementEnLigneResponse> {
+  const { data } = await apiClient.post<PaiementEnLigneResponse>(
+    `/cotisations/${cotisationId}/initier-paiement-en-ligne/`,
+  );
   return data;
 }
 

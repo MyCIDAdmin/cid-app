@@ -5,16 +5,15 @@
  * en libre-service, au-dessus de l'API déjà construite par AHM-15
  * (POST /cotisations/ avec statut=payee, cf. apps.cotisations.views).
  *
- * Deux choix de périmètre actés avec l'utilisateur :
+ * Choix de périmètre actés avec l'utilisateur :
  *  - Seuls les types d'article "cotisation", "adhesion" et "don" sont
  *    proposés — "evenement" est exclu tant que apps.evenements n'existe
  *    pas (aucun événement à sélectionner).
- *  - Aucune donnée bancaire (numéro de carte, IBAN/BIC) n'est saisie : il
- *    n'existe pas de passerelle de paiement réelle (aucun SDK Stripe/PayPal
- *    dans requirements/base.txt). Collecter ces champs sans les transmettre
- *    nulle part serait un anti-pattern de sécurité (risque de confusion pour
- *    l'utilisateur). Le choix du mode reste affiché pour la fidélité au
- *    mockup, mais sans champ carte/IBAN.
+ *  - Aucune donnée bancaire (numéro de carte, IBAN/BIC) n'est saisie sur CETTE page, quel que soit
+ *    le mode : pour carte/paypal, la saisie a lieu entièrement sur la page hébergée par le PSP
+ *    (Stripe Checkout/PayPal Checkout, AHM-46 ci-dessous) — jamais dans ce formulaire, qui reste
+ *    un simple choix de mode. Le virement SEPA n'a toujours pas d'équivalent en ligne (confirmation
+ *    manuelle uniquement).
  *
  * AHM-53 (retour utilisateur : recevoir une quittance immédiate pour un virement SEPA non
  * encore réglé est trompeur) : quel que soit le mode de paiement choisi à l'étape 2, le POST de
@@ -29,18 +28,35 @@
  * GET /cotisations/{id}/receipt/, téléchargé en Blob puis déclenché côté navigateur, même
  * schéma que MembreImportPage.telechargerTemplate (pas de mutation React Query : c'est un
  * side-effect ponctuel, pas une donnée mise en cache).
+ *
+ * AHM-46 (passerelles de paiement réelles, écart assumé avec le FDD — voir docstring
+ * apps.cotisations.views) : dès que le paiement en_attente ci-dessus est créé, si le mode choisi
+ * est carte ou paypal, le stepper enchaîne automatiquement sur
+ * POST /cotisations/{id}/initier-paiement-en-ligne/ et redirige le navigateur
+ * (window.location.href) vers la page Stripe/PayPal — le virement SEPA reste inchangé (aucune
+ * passerelle, confirmation manuelle par le Directeur Financier). Si l'initiation échoue (PSP non
+ * configuré, réseau...), le paiement reste simplement en_attente et l'écran de confirmation
+ * propose de réessayer, sans bloquer l'utilisateur.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { telechargerRecuCotisation } from "../../api/cotisations";
-import { useCreerCotisation, useMesCotisations } from "../../hooks/useCotisations";
+import {
+  useCreerCotisation,
+  useInitierPaiementEnLigne,
+  useMesCotisations,
+} from "../../hooks/useCotisations";
 import { MONTANTS_CATALOGUE } from "../../types/cotisation";
 import type { Cotisation, ModePaiement, TypeArticleStepper } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 const DON_LIBELLE = "Don libre à l'association";
+
+// Modes redirigés vers une passerelle réelle (AHM-46) — le virement SEPA reste hors ligne, voir
+// docstring de module et MODES_PAIEMENT_EN_LIGNE côté backend (apps.cotisations.views).
+const MODES_GATEWAY: ModePaiement[] = ["carte", "paypal"];
 
 const STATUT_STYLES: Record<Cotisation["statut"], string> = {
   en_attente: "bg-status-warningBg text-status-warningText",
@@ -96,9 +112,26 @@ export default function CotisationStepperPage() {
   const [resultat, setResultat] = useState<Cotisation | null>(null);
   const [recuEnCours, setRecuEnCours] = useState<string | null>(null);
   const [erreurRecu, setErreurRecu] = useState<string | null>(null);
+  const [redirectionEnCours, setRedirectionEnCours] = useState(false);
+  const [erreurGateway, setErreurGateway] = useState<string | null>(null);
 
   const historique = useMesCotisations();
   const creerMutation = useCreerCotisation();
+  const initierPaiementMutation = useInitierPaiementEnLigne();
+
+  function redirigerVersGateway(cotisationId: string) {
+    setErreurGateway(null);
+    setRedirectionEnCours(true);
+    initierPaiementMutation.mutate(cotisationId, {
+      onSuccess: ({ redirect_url }) => {
+        window.location.href = redirect_url;
+      },
+      onError: (error) => {
+        setRedirectionEnCours(false);
+        setErreurGateway(extractApiErrorMessage(error, t("paiement.erreur_gateway")));
+      },
+    });
+  }
 
   async function telechargerRecu(c: Cotisation) {
     setErreurRecu(null);
@@ -187,6 +220,13 @@ export default function CotisationStepperPage() {
       onSuccess: (cotisation) => {
         setResultat(cotisation);
         setEtape(3);
+        // AHM-46 : carte/paypal enchaînent immédiatement sur la passerelle réelle — la cotisation
+        // reste en_attente jusqu'au webhook, quel que soit le résultat de cette redirection (voir
+        // docstring de module). "payee" ne peut en pratique pas arriver ici pour ce flux
+        // libre-service (AHM-53), mais on ne redirige jamais une cotisation déjà réglée.
+        if (cotisation.statut !== "payee" && MODES_GATEWAY.includes(modePaiement)) {
+          redirigerVersGateway(cotisation.id);
+        }
       },
     });
   }
@@ -197,6 +237,8 @@ export default function CotisationStepperPage() {
     setDonErreur(null);
     setModePaiement("carte");
     setResultat(null);
+    setRedirectionEnCours(false);
+    setErreurGateway(null);
     creerMutation.reset();
     setEtape(1);
   }
@@ -373,7 +415,9 @@ export default function CotisationStepperPage() {
                 </label>
               ))}
             </div>
-            <p className="mt-3 text-xs text-text-tertiary">{t("paiement.note")}</p>
+            <p className="mt-3 text-xs text-text-tertiary">
+              {MODES_GATEWAY.includes(modePaiement) ? t("paiement.note_gateway") : t("paiement.note")}
+            </p>
           </div>
 
           <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
@@ -435,6 +479,28 @@ export default function CotisationStepperPage() {
                 {t("confirmation.titre_attente")}
               </div>
               <div className="mb-4 text-sm text-text-tertiary">{t("confirmation.sous_titre_attente")}</div>
+
+              {MODES_GATEWAY.includes(resultat.mode_paiement as ModePaiement) && (
+                <div className="mx-auto mb-4 max-w-sm">
+                  {erreurGateway ? (
+                    <>
+                      <p className="mb-2 text-sm text-status-dangerText">{erreurGateway}</p>
+                      <button
+                        type="button"
+                        onClick={() => redirigerVersGateway(resultat.id)}
+                        disabled={initierPaiementMutation.isPending}
+                        className="w-full rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+                      >
+                        {t("paiement.reessayer_gateway")}
+                      </button>
+                    </>
+                  ) : (
+                    redirectionEnCours && (
+                      <p className="text-sm text-text-tertiary">{t("paiement.redirection_en_cours")}</p>
+                    )
+                  )}
+                </div>
+              )}
             </>
           )}
 

@@ -309,6 +309,23 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@clubistes.de"
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
 # =============================================================================
+# Passerelles de paiement (AHM-46) — Stripe Checkout et PayPal Checkout, tous deux hébergés
+# (voir apps.cotisations.gateways). Aucune valeur par défaut utilisable en production : tant que
+# ces variables ne sont pas positionnées, GatewayError est levée à l'initiation d'un paiement en
+# ligne (voir CotisationViewSet.initier_paiement_en_ligne) — le virement SEPA (confirmation
+# manuelle DF/Admin, AHM-53) continue de fonctionner sans elles. Ne jamais committer de vraie
+# valeur ici (CLAUDE.md §5) : à définir dans .env (dev) ou les Settings Railway (prod).
+# =============================================================================
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
+PAYPAL_MODE = os.environ.get("PAYPAL_MODE", "sandbox")  # "sandbox" ou "live"
+PAYPAL_CLIENT_ID = os.environ.get("PAYPAL_CLIENT_ID", "")
+PAYPAL_CLIENT_SECRET = os.environ.get("PAYPAL_CLIENT_SECRET", "")
+PAYPAL_WEBHOOK_ID = os.environ.get("PAYPAL_WEBHOOK_ID", "")
+
+# =============================================================================
 # Upload — taille max (SCD §7.4)
 # =============================================================================
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50 Mo

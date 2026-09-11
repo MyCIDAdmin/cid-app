@@ -38,9 +38,13 @@
     "paypal_titre": "PayPal",
     "paypal_description": "Paiement rapide et sécurisé",
     "note": "Aucune donnée bancaire n'est saisie ici : ce mode sert uniquement à indiquer comment vous réglez votre paiement. Le Directeur Financier confirmera sa bonne réception avant qu'il ne soit considéré comme payé.",
+    "note_gateway": "Vous allez être redirigé(e) vers une page de paiement sécurisée (Stripe ou PayPal). Aucune donnée bancaire ne transite par nos serveurs.",
     "payer": "Payer {{montant}} € en sécurité",
     "retour": "Retour",
-    "erreur": "Le paiement n'a pas pu être enregistré."
+    "erreur": "Le paiement n'a pas pu être enregistré.",
+    "redirection_en_cours": "Redirection vers le paiement sécurisé…",
+    "reessayer_gateway": "Réessayer",
+    "erreur_gateway": "Le paiement en ligne n'a pas pu être initié. Le paiement reste enregistré en attente : vous pouvez réessayer, ou attendre la confirmation manuelle du Directeur Financier."
   },
   "confirmation": {
     "titre": "Paiement confirmé !",
@@ -111,5 +115,23 @@
     "erreur_action": "L'échéance n'a pas pu être enregistrée.",
     "confirmer_suppression": "Supprimer l'échéance {{annee}} ? Cette année reviendra au 1er janvier par défaut.",
     "note_repli": "Une année sans échéance configurée ci-dessus utilise automatiquement le 1er janvier de cette année (comportement par défaut)."
+  },
+  "retour": {
+    "chargement": "Vérification du paiement…",
+    "introuvable": "Impossible de retrouver ce paiement.",
+    "titre_payee": "Paiement confirmé !",
+    "sous_titre_payee": "Votre paiement a bien été reçu et confirmé.",
+    "titre_echouee": "Le paiement n'a pas abouti",
+    "sous_titre_echouee": "La passerelle de paiement a signalé un échec. Vous pouvez réessayer ci-dessous.",
+    "titre_annule": "Paiement annulé",
+    "sous_titre_annule": "Vous avez annulé le paiement avant de le finaliser — aucune somme n'a été débitée.",
+    "titre_attente": "Paiement en cours de confirmation",
+    "sous_titre_attente": "Nous attendons la confirmation de la passerelle de paiement. Cela peut prendre quelques instants — vérifiez à nouveau dans un moment.",
+    "verifier": "Vérifier à nouveau",
+    "verification_en_cours": "Vérification…",
+    "reessayer": "Réessayer le paiement en ligne",
+    "reessai_en_cours": "Redirection…",
+    "erreur_reessai": "Le nouveau paiement n'a pas pu être initié.",
+    "retour_accueil": "Retour aux paiements"
   }
 }

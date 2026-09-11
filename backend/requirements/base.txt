@@ -47,6 +47,13 @@ openpyxl==3.1.5
 # --- Validation fichiers uploadés ---
 python-magic==0.4.27
 
+# --- Passerelles de paiement (AHM-46) ---
+# Stripe Checkout hébergé (carte) — PayPal Checkout hébergé (v2 Orders API) implémenté directement
+# via `requests` (pas de SDK officiel Python maintenu pour PayPal Checkout v2 REST au même niveau
+# de qualité que le SDK Stripe — l'API REST elle-même est simple : OAuth2 + 2 endpoints JSON).
+stripe==11.1.0
+requests==2.32.3
+
 # --- Utilitaires ---
 Pillow==10.4.0
 gunicorn==23.0.0
