@@ -60,6 +60,12 @@
     "col_date": "Date",
     "col_libelle": "Libellé",
     "col_montant": "Montant",
-    "col_statut": "Statut"
+    "col_statut": "Statut",
+    "col_recu": "Reçu"
+  },
+  "recu": {
+    "telecharger": "Télécharger le reçu",
+    "en_cours": "Téléchargement…",
+    "erreur": "Impossible de télécharger le reçu."
   }
 }

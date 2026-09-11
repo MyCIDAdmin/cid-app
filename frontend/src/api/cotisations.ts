@@ -22,3 +22,15 @@ export async function creerCotisation(payload: CotisationCreatePayload): Promise
   const { data } = await apiClient.post<Cotisation>("/cotisations/", payload);
   return data;
 }
+
+/**
+ * GET /cotisations/{id}/receipt/ (AHM-17) — reçu PDF. 400 côté backend si la cotisation n'est
+ * pas payée ; le bouton associé (CotisationStepperPage) n'est de toute façon affiché que pour
+ * les lignes statut=payee, voir onSuccess du stepper et le rendu de l'historique.
+ */
+export async function telechargerRecuCotisation(cotisationId: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/cotisations/${cotisationId}/receipt/`, {
+    responseType: "blob",
+  });
+  return data;
+}

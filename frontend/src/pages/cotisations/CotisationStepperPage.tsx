@@ -17,13 +17,16 @@
  *    de confusion pour l'utilisateur). Le choix du mode reste affiché pour
  *    la fidélité au mockup, mais sans champ carte/IBAN.
  *
- * Le reçu PDF (bouton "Télécharger le reçu" du mockup) est hors périmètre —
- * voir AHM-17.
+ * Le reçu PDF (bouton "Télécharger le reçu" du mockup) est disponible depuis AHM-17 —
+ * GET /cotisations/{id}/receipt/, téléchargé en Blob puis déclenché côté navigateur, même
+ * schéma que MembreImportPage.telechargerTemplate (pas de mutation React Query : c'est un
+ * side-effect ponctuel, pas une donnée mise en cache).
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { telechargerRecuCotisation } from "../../api/cotisations";
 import { useCreerCotisation, useMesCotisations } from "../../hooks/useCotisations";
 import { MONTANTS_CATALOGUE } from "../../types/cotisation";
 import type { Cotisation, ModePaiement, TypeArticleStepper } from "../../types/cotisation";
@@ -83,9 +86,31 @@ export default function CotisationStepperPage() {
   const [donErreur, setDonErreur] = useState<string | null>(null);
   const [modePaiement, setModePaiement] = useState<ModePaiement>("carte");
   const [resultat, setResultat] = useState<Cotisation | null>(null);
+  const [recuEnCours, setRecuEnCours] = useState<string | null>(null);
+  const [erreurRecu, setErreurRecu] = useState<string | null>(null);
 
   const historique = useMesCotisations();
   const creerMutation = useCreerCotisation();
+
+  async function telechargerRecu(c: Cotisation) {
+    setErreurRecu(null);
+    setRecuEnCours(c.id);
+    try {
+      const blob = await telechargerRecuCotisation(c.id);
+      const url = window.URL.createObjectURL(blob);
+      const lien = document.createElement("a");
+      lien.href = url;
+      lien.download = `recu-${c.reference_transaction ?? c.id}.pdf`;
+      document.body.appendChild(lien);
+      lien.click();
+      lien.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setErreurRecu(extractApiErrorMessage(error, t("recu.erreur")));
+    } finally {
+      setRecuEnCours(null);
+    }
+  }
 
   const ARTICLES: {
     type: TypeArticleStepper;
@@ -264,6 +289,7 @@ export default function CotisationStepperPage() {
               {historique.data && historique.data.results.length === 0 && (
                 <p className="text-sm text-text-tertiary">{t("historique.aucun")}</p>
               )}
+              {erreurRecu && <p className="mb-2 text-xs text-status-dangerText">{erreurRecu}</p>}
               {historique.data && historique.data.results.length > 0 && (
                 <table className="w-full text-xs">
                   <thead>
@@ -272,6 +298,7 @@ export default function CotisationStepperPage() {
                       <th className="py-1">{t("historique.col_libelle")}</th>
                       <th className="py-1">{t("historique.col_montant")}</th>
                       <th className="py-1">{t("historique.col_statut")}</th>
+                      <th className="py-1">{t("historique.col_recu")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -286,6 +313,18 @@ export default function CotisationStepperPage() {
                           >
                             {t(`statut.${c.statut}`)}
                           </span>
+                        </td>
+                        <td className="py-1">
+                          {c.statut === "payee" && (
+                            <button
+                              type="button"
+                              onClick={() => telechargerRecu(c)}
+                              disabled={recuEnCours === c.id}
+                              className="font-medium text-ca hover:underline disabled:opacity-40"
+                            >
+                              {recuEnCours === c.id ? t("recu.en_cours") : t("recu.telecharger")}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -396,7 +435,17 @@ export default function CotisationStepperPage() {
             </div>
           </dl>
 
+          {erreurRecu && <p className="mb-3 text-sm text-status-dangerText">{erreurRecu}</p>}
+
           <div className="flex justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => telechargerRecu(resultat)}
+              disabled={recuEnCours === resultat.id}
+              className="rounded-cid border border-ca px-3 py-1.5 text-sm font-medium text-ca hover:bg-cal/20 disabled:opacity-40"
+            >
+              {recuEnCours === resultat.id ? t("recu.en_cours") : t("recu.telecharger")}
+            </button>
             <button
               type="button"
               onClick={nouveauPaiement}

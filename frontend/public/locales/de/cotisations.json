@@ -60,6 +60,12 @@
     "col_date": "Datum",
     "col_libelle": "Bezeichnung",
     "col_montant": "Betrag",
-    "col_statut": "Status"
+    "col_statut": "Status",
+    "col_recu": "Beleg"
+  },
+  "recu": {
+    "telecharger": "Beleg herunterladen",
+    "en_cours": "Wird heruntergeladen…",
+    "erreur": "Der Beleg konnte nicht heruntergeladen werden."
   }
 }
