@@ -7,6 +7,7 @@ import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
+import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
 import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -83,6 +84,17 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.dir_financier}>
               <CotisationsEnAttentePage />
+            </RequireRole>
+          }
+        />
+        {/* Échéances des relances par année (AHM-54, suite retour utilisateur sur AHM-18) —
+            Directeur Financier/Admin uniquement, même niveau que ConfigurationRelancePermission
+            côté API. */}
+        <Route
+          path="/cotisations/relances"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.dir_financier}>
+              <ConfigurationRelancePage />
             </RequireRole>
           }
         />

@@ -56,3 +56,22 @@ export const MONTANTS_CATALOGUE: Record<"cotisation" | "adhesion", number> = {
   cotisation: 45,
   adhesion: 15,
 };
+
+/**
+ * Échéance des relances de cotisation, configurable par année (AHM-54, suite retour
+ * utilisateur sur AHM-18) — voir apps.cotisations.models.ConfigurationRelance. `modifie_par` est
+ * résolu côté serveur (l'utilisateur courant), jamais transmis par le client.
+ */
+export interface ConfigurationRelance {
+  id: string;
+  annee: number;
+  date_echeance: string; // format YYYY-MM-DD
+  modifie_par: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConfigurationRelancePayload {
+  annee: number;
+  date_echeance: string;
+}

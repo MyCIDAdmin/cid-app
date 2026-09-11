@@ -7,7 +7,8 @@
     "inscriptions": "Registrierungen",
     "admin_adhesions": "Mitgliedschaftskampagnen",
     "admin_justificatifs": "Nachweise",
-    "cotisations_en_attente": "Ausstehende Zahlungen"
+    "cotisations_en_attente": "Ausstehende Zahlungen",
+    "configuration_relance": "Fälligkeitstermine"
   },
   "dashboard": {
     "title": "Übersicht",

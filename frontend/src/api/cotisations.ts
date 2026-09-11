@@ -2,7 +2,13 @@
  * Client API — module cotisations (TDD §2.4, backend/apps/cotisations/views.py).
  */
 import { apiClient } from "./client";
-import type { Cotisation, CotisationCreatePayload, ModePaiement } from "../types/cotisation";
+import type {
+  ConfigurationRelance,
+  ConfigurationRelancePayload,
+  Cotisation,
+  CotisationCreatePayload,
+  ModePaiement,
+} from "../types/cotisation";
 import type { CursorPage } from "../types/membre";
 
 /**
@@ -64,4 +70,41 @@ export async function marquerCotisationPayee(
     payload,
   );
   return data;
+}
+
+/**
+ * Échéances des relances par année (AHM-54) — Directeur Financier/Admin uniquement côté backend
+ * (ConfigurationRelanceViewSet). Petite liste (une ligne par année) : première page suffit,
+ * même choix que listCotisationsEnAttenteDePaiement.
+ */
+export async function listConfigurationsRelance(): Promise<CursorPage<ConfigurationRelance>> {
+  const { data } = await apiClient.get<CursorPage<ConfigurationRelance>>(
+    "/cotisations/configurations-relance/",
+  );
+  return data;
+}
+
+export async function creerConfigurationRelance(
+  payload: ConfigurationRelancePayload,
+): Promise<ConfigurationRelance> {
+  const { data } = await apiClient.post<ConfigurationRelance>(
+    "/cotisations/configurations-relance/",
+    payload,
+  );
+  return data;
+}
+
+export async function modifierConfigurationRelance(
+  id: string,
+  payload: { date_echeance: string },
+): Promise<ConfigurationRelance> {
+  const { data } = await apiClient.patch<ConfigurationRelance>(
+    `/cotisations/configurations-relance/${id}/`,
+    payload,
+  );
+  return data;
+}
+
+export async function supprimerConfigurationRelance(id: string): Promise<void> {
+  await apiClient.delete(`/cotisations/configurations-relance/${id}/`);
 }

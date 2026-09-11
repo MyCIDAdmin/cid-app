@@ -1,5 +1,5 @@
 """
-Tests — apps.cotisations.tasks (AHM-18, RICEFW W-001).
+Tests — apps.cotisations.tasks (AHM-18/AHM-54, RICEFW W-001).
 
 `mailoutbox` (fixture pytest-django) bascule automatiquement EMAIL_BACKEND sur le backend
 locmem pour la durée du test : les settings dev pointent normalement vers un vrai serveur SMTP
@@ -13,11 +13,12 @@ import pytest
 from apps.accounts.models import Role, User
 from apps.cotisations.models import (
     CheckpointRelance,
+    ConfigurationRelance,
     RelanceCotisation,
     StatutCotisation,
     TypeArticle,
 )
-from apps.cotisations.tasks import _checkpoint_du_jour, envoyer_relances_cotisation
+from apps.cotisations.tasks import _checkpoints_du_jour, envoyer_relances_cotisation
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.membres.models import StatutMembre
 from apps.membres.tests.factories import MembreFactory
@@ -36,22 +37,59 @@ def _membre_avec_compte(langue="fr", statut=StatutMembre.ACTIF, email="membre@ex
     return MembreFactory(user=user, statut=statut)
 
 
-# --- _checkpoint_du_jour ---
+# --- _checkpoints_du_jour (comportement par défaut, sans ConfigurationRelance) ---
 
 
 @pytest.mark.parametrize(
     "jour,attendu",
     [
-        (date(2026, 12, 2), (CheckpointRelance.J_MOINS_30, 2027)),
-        (date(2026, 12, 25), (CheckpointRelance.J_MOINS_7, 2027)),
-        (date(2027, 1, 2), (CheckpointRelance.J_PLUS_1, 2027)),
-        (date(2026, 6, 15), None),
-        (date(2026, 12, 1), None),
-        (date(2027, 1, 3), None),
+        (date(2026, 12, 2), [(CheckpointRelance.J_MOINS_30, 2027)]),
+        (date(2026, 12, 25), [(CheckpointRelance.J_MOINS_7, 2027)]),
+        (date(2027, 1, 2), [(CheckpointRelance.J_PLUS_1, 2027)]),
+        (date(2026, 6, 15), []),
+        (date(2026, 12, 1), []),
+        (date(2027, 1, 3), []),
     ],
 )
-def test_checkpoint_du_jour(jour, attendu):
-    assert _checkpoint_du_jour(jour) == attendu
+def test_checkpoints_du_jour_par_defaut(jour, attendu):
+    assert _checkpoints_du_jour(jour) == attendu
+
+
+# --- _checkpoints_du_jour avec ConfigurationRelance (AHM-54) ---
+
+
+def test_echeance_configuree_remplace_le_1er_janvier():
+    # Échéance 2027 déplacée au 15 mars 2027 : plus aucun checkpoint sur les dates par défaut
+    # (2 déc./25 déc. 2026, 2 janv. 2027), mais bien sur les nouvelles dates.
+    ConfigurationRelance.objects.create(annee=2027, date_echeance=date(2027, 3, 15))
+
+    assert _checkpoints_du_jour(date(2026, 12, 2)) == []
+    assert _checkpoints_du_jour(date(2026, 12, 25)) == []
+    assert _checkpoints_du_jour(date(2027, 1, 2)) == []
+
+    assert _checkpoints_du_jour(date(2027, 2, 13)) == [(CheckpointRelance.J_MOINS_30, 2027)]
+    assert _checkpoints_du_jour(date(2027, 3, 8)) == [(CheckpointRelance.J_MOINS_7, 2027)]
+    assert _checkpoints_du_jour(date(2027, 3, 16)) == [(CheckpointRelance.J_PLUS_1, 2027)]
+
+
+def test_annee_non_configuree_retombe_sur_le_1er_janvier():
+    # Une configuration pour 2028 ne doit pas affecter le calcul de 2027 (repli par défaut).
+    ConfigurationRelance.objects.create(annee=2028, date_echeance=date(2028, 6, 1))
+
+    assert _checkpoints_du_jour(date(2026, 12, 2)) == [(CheckpointRelance.J_MOINS_30, 2027)]
+
+
+def test_deux_annees_peuvent_matcher_le_meme_jour():
+    # Échéance 2027 réglée de sorte que son J+1 coïncide avec le J-30 par défaut de 2029
+    # (2 décembre 2028) : les deux doivent être retournés.
+    ConfigurationRelance.objects.create(annee=2027, date_echeance=date(2028, 12, 1))
+
+    resultats = _checkpoints_du_jour(date(2028, 12, 2))
+
+    assert set(resultats) == {
+        (CheckpointRelance.J_PLUS_1, 2027),
+        (CheckpointRelance.J_MOINS_30, 2029),
+    }
 
 
 # --- envoyer_relances_cotisation ---
@@ -62,7 +100,7 @@ def test_jour_sans_checkpoint_ne_fait_rien(mailoutbox):
 
     resultat = envoyer_relances_cotisation(today=date(2026, 6, 15))
 
-    assert resultat == {"checkpoint": None, "annee": None, "envoyes": 0}
+    assert resultat == {"details": [], "envoyes": 0}
     assert len(mailoutbox) == 0
     assert RelanceCotisation.objects.count() == 0
 
@@ -73,6 +111,9 @@ def test_membre_actif_sans_cotisation_payee_est_relance(mailoutbox):
     resultat = envoyer_relances_cotisation(today=date(2026, 12, 2))
 
     assert resultat["envoyes"] == 1
+    assert resultat["details"] == [
+        {"checkpoint": CheckpointRelance.J_MOINS_30, "annee": 2027, "envoyes": 1}
+    ]
     assert len(mailoutbox) == 1
     assert mailoutbox[0].to == [membre.user.email]
     assert "2027" in mailoutbox[0].subject
@@ -177,3 +218,19 @@ def test_cotisation_payee_pour_une_autre_annee_ne_bloque_pas_la_relance(mailoutb
 
     assert resultat["envoyes"] == 1
     assert len(mailoutbox) == 1
+
+
+def test_echeance_configuree_est_utilisee_pour_lenvoi(mailoutbox):
+    # Bout en bout AHM-54 : une échéance 2027 décalée au 15 mars 2027 déclenche bien la relance
+    # à la date recalculée, et pas au 1er janvier par défaut.
+    membre = _membre_avec_compte()
+    ConfigurationRelance.objects.create(annee=2027, date_echeance=date(2027, 3, 15))
+
+    resultat_date_historique = envoyer_relances_cotisation(today=date(2026, 12, 2))
+    assert resultat_date_historique["envoyes"] == 0
+    assert len(mailoutbox) == 0
+
+    resultat_date_configuree = envoyer_relances_cotisation(today=date(2027, 2, 13))
+    assert resultat_date_configuree["envoyes"] == 1
+    assert len(mailoutbox) == 1
+    assert mailoutbox[0].to == [membre.user.email]

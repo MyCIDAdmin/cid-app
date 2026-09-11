@@ -10,7 +10,7 @@ pas par le client : un membre normal ne peut créer une cotisation que pour lui-
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import MONTANTS_CATALOGUE, Cotisation, TypeArticle
+from .models import MONTANTS_CATALOGUE, ConfigurationRelance, Cotisation, TypeArticle
 
 
 class CotisationSerializer(serializers.ModelSerializer):
@@ -68,3 +68,12 @@ class CotisationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(erreurs)
 
         return attrs
+
+
+class ConfigurationRelanceSerializer(serializers.ModelSerializer):
+    """AHM-54 — `modifie_par` est résolu par la vue (l'utilisateur courant), pas par le client."""
+
+    class Meta:
+        model = ConfigurationRelance
+        fields = ["id", "annee", "date_echeance", "modifie_par", "created_at", "updated_at"]
+        read_only_fields = ["id", "modifie_par", "created_at", "updated_at"]

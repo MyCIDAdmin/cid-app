@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Cotisation, RelanceCotisation
+from .models import ConfigurationRelance, Cotisation, RelanceCotisation
 
 
 @admin.register(Cotisation)
@@ -35,3 +35,13 @@ class RelanceCotisationAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+@admin.register(ConfigurationRelance)
+class ConfigurationRelanceAdmin(admin.ModelAdmin):
+    """Complète la page frontend dédiée (AHM-54) — même donnée, vue admin technique."""
+
+    list_display = ("annee", "date_echeance", "modifie_par", "updated_at")
+    ordering = ("-annee",)
+    autocomplete_fields = ("modifie_par",)
+    readonly_fields = ("id", "created_at", "updated_at")

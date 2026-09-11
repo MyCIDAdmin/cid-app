@@ -91,5 +91,25 @@
     "confirmer": "Marquer comme payée",
     "en_cours": "Confirmation…",
     "erreur_action": "Le paiement n'a pas pu être confirmé."
+  },
+  "configuration_relance": {
+    "titre": "Échéances des relances",
+    "sous_titre": "Définissez, année par année, la date à partir de laquelle une cotisation impayée est considérée en retard. Les 3 relances (30 jours avant, 7 jours avant, 1 jour après) sont recalculées automatiquement par rapport à cette date. Une année non listée ici utilise le 1er janvier par défaut.",
+    "champ_annee": "Année de cotisation",
+    "champ_date_echeance": "Date d'échéance",
+    "ajouter": "Ajouter",
+    "col_annee": "Année",
+    "col_date_echeance": "Date d'échéance",
+    "col_modifie_par": "Dernière modification",
+    "col_actions": "Actions",
+    "enregistrer": "Enregistrer",
+    "supprimer": "Supprimer",
+    "en_cours": "Enregistrement…",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les échéances configurées.",
+    "aucune": "Aucune échéance configurée — toutes les années utilisent le 1er janvier par défaut.",
+    "erreur_action": "L'échéance n'a pas pu être enregistrée.",
+    "confirmer_suppression": "Supprimer l'échéance {{annee}} ? Cette année reviendra au 1er janvier par défaut.",
+    "note_repli": "Une année sans échéance configurée ci-dessus utilise automatiquement le 1er janvier de cette année (comportement par défaut)."
   }
 }

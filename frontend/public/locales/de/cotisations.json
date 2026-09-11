@@ -91,5 +91,25 @@
     "confirmer": "Als bezahlt markieren",
     "en_cours": "Wird bestätigt…",
     "erreur_action": "Die Zahlung konnte nicht bestätigt werden."
+  },
+  "configuration_relance": {
+    "titre": "Fälligkeitstermine",
+    "sous_titre": "Legen Sie für jedes Jahr fest, ab wann ein unbezahlter Mitgliedsbeitrag als überfällig gilt. Die 3 Erinnerungen (30 Tage vorher, 7 Tage vorher, 1 Tag danach) werden automatisch relativ zu diesem Datum berechnet. Ein hier nicht aufgeführtes Jahr verwendet standardmäßig den 1. Januar.",
+    "champ_annee": "Beitragsjahr",
+    "champ_date_echeance": "Fälligkeitsdatum",
+    "ajouter": "Hinzufügen",
+    "col_annee": "Jahr",
+    "col_date_echeance": "Fälligkeitsdatum",
+    "col_modifie_par": "Zuletzt geändert von",
+    "col_actions": "Aktionen",
+    "enregistrer": "Speichern",
+    "supprimer": "Löschen",
+    "en_cours": "Wird gespeichert…",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die konfigurierten Fälligkeitstermine konnten nicht geladen werden.",
+    "aucune": "Kein Fälligkeitstermin konfiguriert — alle Jahre verwenden standardmäßig den 1. Januar.",
+    "erreur_action": "Der Fälligkeitstermin konnte nicht gespeichert werden.",
+    "confirmer_suppression": "Fälligkeitstermin {{annee}} löschen? Dieses Jahr verwendet danach wieder den 1. Januar.",
+    "note_repli": "Ein Jahr ohne oben konfigurierten Fälligkeitstermin verwendet automatisch den 1. Januar dieses Jahres (Standardverhalten)."
   }
 }

@@ -40,6 +40,13 @@ const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.cotisations_en_attente",
     minRoleLevel: ROLE_LEVELS.dir_financier,
   },
+  // Échéances des relances par année (AHM-54) — Directeur Financier/Admin seulement, même
+  // niveau que ConfigurationRelancePermission côté API.
+  {
+    to: "/cotisations/relances",
+    labelKey: "nav.configuration_relance",
+    minRoleLevel: ROLE_LEVELS.dir_financier,
+  },
 ];
 
 export default function Sidebar() {

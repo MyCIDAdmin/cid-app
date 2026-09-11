@@ -33,6 +33,13 @@ Périmètre de ce module (AHM-15, révisé par AHM-53) :
     pas recevoir deux fois la même relance pour la même année, même si la tâche est rejouée. La
     notification in-app prévue par W-001 (étape 5) est différée à la Phase 2B avec le reste de
     apps.notifications (CLAUDE.md §7) — ce module ne couvre que l'email.
+  - ConfigurationRelance (AHM-54, suite retour utilisateur sur AHM-18) permet au Directeur
+    Financier/Admin de définir, année de cotisation par année de cotisation, la date d'échéance
+    utilisée pour calculer les 3 checkpoints (J-30/J-7/J+1) — voir
+    apps.cotisations.tasks._checkpoints_du_jour. Seule la date pivot est configurable, pas les
+    décalages eux-mêmes. Une année sans ligne ici retombe sur le comportement historique
+    (échéance au 1er janvier de cette année), pour ne rien casser en production tant que le
+    Directeur Financier n'a pas explicitement configuré l'année en cours.
 """
 
 import uuid
@@ -200,3 +207,42 @@ class RelanceCotisation(models.Model):
 
     def __str__(self):
         return f"{self.get_checkpoint_display()} {self.annee} — {self.membre}"
+
+
+class ConfigurationRelance(models.Model):
+    """
+    Date d'échéance de la cotisation annuelle, configurable par année par le Directeur
+    Financier/Admin (AHM-54). Remplace l'ancrage fixe au 1er janvier introduit par AHM-18 : les 3
+    checkpoints (J-30/J-7/J+1, voir CheckpointRelance) restent calculés relativement à cette date,
+    seule la date pivot elle-même est configurable. Une année de cotisation sans ligne ici
+    retombe sur le comportement historique (échéance au 1er janvier de cette année) — voir
+    apps.cotisations.tasks._checkpoints_du_jour.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    annee = models.PositiveSmallIntegerField(
+        unique=True,
+        help_text=_("Année de cotisation à laquelle s'applique cette échéance."),
+    )
+    date_echeance = models.DateField(
+        help_text=_("Date à partir de laquelle la cotisation de cette année est en retard.")
+    )
+    modifie_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Directeur Financier/Admin ayant défini ou modifié cette échéance en dernier."),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "configurations_relance"
+        verbose_name = _("Configuration de relance")
+        verbose_name_plural = _("Configurations de relance")
+        ordering = ["-annee"]
+
+    def __str__(self):
+        return f"Échéance {self.annee} : {self.date_echeance:%d/%m/%Y}"

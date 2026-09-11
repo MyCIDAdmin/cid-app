@@ -7,8 +7,14 @@ Vues API — app cotisations (TDD §2.4) :
   POST  /cotisations/{id}/marquer-payee/ — confirmer manuellement un paiement reçu hors ligne
                                             (AHM-53, DF/Admin uniquement)
 
-Pas de PUT/PATCH/DELETE : registre financier append-only (voir models.py) — seule exception
-volontaire, l'action `marquer_payee` ci-dessous, réservée au Directeur Financier/Admin.
+  GET/POST/PATCH/DELETE /configurations-relance/ — échéance des relances par année de cotisation
+                                            (AHM-54, DF/Admin uniquement — voir
+                                            ConfigurationRelanceViewSet ci-dessous)
+
+Pas de PUT/PATCH/DELETE sur /cotisations/ : registre financier append-only (voir models.py) —
+seule exception volontaire, l'action `marquer_payee` ci-dessous, réservée au Directeur
+Financier/Admin. ConfigurationRelance (AHM-54) n'est pas un registre financier — c'est un
+paramétrage, donc CRUD complet, mais réservé au même niveau de rôle.
 
 Règle AHM-53 (retour utilisateur : recevoir une quittance immédiate pour un virement SEPA non
 encore réglé est trompeur) : `perform_create` impose toujours statut=en_attente pour un paiement
@@ -24,16 +30,17 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
+from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
 
 from .filters import CotisationFilter
-from .models import Cotisation, ModePaiement, StatutCotisation
+from .models import ConfigurationRelance, Cotisation, ModePaiement, StatutCotisation
 from .pdf import generate_receipt_pdf
 from .permissions import READ_ALL_MIN_LEVEL, SAISIE_POUR_AUTRUI_MIN_LEVEL, CotisationPermission
-from .serializers import CotisationSerializer
+from .serializers import ConfigurationRelanceSerializer, CotisationSerializer
 
 # Statuts depuis lesquels une confirmation manuelle de paiement (marquer_payee) est autorisée.
 # "payee" (déjà fait), "remboursee" et "annulee" sont des statuts terminaux qu'on ne réécrit pas.
@@ -152,3 +159,44 @@ class CotisationViewSet(ModelViewSet):
         cotisation.save()
 
         return Response(CotisationSerializer(cotisation).data)
+
+
+class ConfigurationRelancePermission(BasePermission):
+    """AHM-54 — même niveau que marquer_payee : Directeur Financier et Administrateur App."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and ROLE_LEVELS.get(user.role, 0) >= SAISIE_POUR_AUTRUI_MIN_LEVEL
+        )
+
+
+class ConfigurationRelanceCursorPagination(CursorPagination):
+    # "annee" est unique (voir models.py) : ordre monotone valable pour un curseur, et cohérent
+    # avec le tri déjà appliqué par le Meta.ordering du modèle.
+    page_size = 20
+    ordering = ("-annee",)
+
+
+class ConfigurationRelanceViewSet(ModelViewSet):
+    """
+    AHM-54 (suite retour utilisateur sur AHM-18) — CRUD de l'échéance des relances par année de
+    cotisation. Contrairement à Cotisation (registre financier append-only), il ne s'agit que
+    d'un paramétrage : PATCH/DELETE sont exposés, mais réservés au Directeur Financier/Admin
+    (même niveau que `marquer_payee`) puisqu'une échéance mal réglée impacte directement les
+    relances envoyées aux membres.
+    """
+
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    permission_classes = [ConfigurationRelancePermission]
+    serializer_class = ConfigurationRelanceSerializer
+    pagination_class = ConfigurationRelanceCursorPagination
+    queryset = ConfigurationRelance.objects.select_related("modifie_par").all()
+
+    def perform_create(self, serializer):
+        serializer.save(modifie_par=getattr(self.request.user, "membre", None))
+
+    def perform_update(self, serializer):
+        serializer.save(modifie_par=getattr(self.request.user, "membre", None))
