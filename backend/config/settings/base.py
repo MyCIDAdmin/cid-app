@@ -269,6 +269,18 @@ MINIO_BUCKET_JUSTIFICATIFS = os.environ.get("MINIO_BUCKET_JUSTIFICATIFS", "justi
 MINIO_BUCKET_PRODUITS = os.environ.get("MINIO_BUCKET_PRODUITS", "produits")
 MINIO_BUCKET_EXPORTS = os.environ.get("MINIO_BUCKET_EXPORTS", "exports")
 
+# Endpoint PUBLIC (navigateur) du bucket produits — distinct de MINIO_ENDPOINT ci-dessus,
+# qui reste l'endpoint INTERNE utilisé par le backend pour parler à MinIO (ex. déploiement
+# Railway : MINIO_ENDPOINT=<service>.railway.internal:9000, jamais résolvable hors du
+# réseau privé Railway — voir docs/RAILWAY.md §7). Sans cette variable, les URLs générées
+# pour Produit.image utilisent l'endpoint interne et sont cassées dans le navigateur
+# (icône d'image manquante) même quand le fichier existe bien sur MinIO. Voir
+# apps.boutique.storage.ProduitsStorage pour l'utilisation (custom_domain).
+MINIO_PUBLIC_ENDPOINT = os.environ.get("MINIO_PUBLIC_ENDPOINT", "")
+MINIO_PUBLIC_USE_SSL = (
+    os.environ.get("MINIO_PUBLIC_USE_SSL", os.environ.get("MINIO_USE_SSL", "False")) == "True"
+)
+
 # STORAGES["default"] pointe vers MinIO (dev, via docker-compose) ou n'importe
 # quel endpoint S3-compatible (prod) grâce aux variables d'env AWS_*/MINIO_*
 # ci-dessus — aucune modification de code nécessaire pour changer de fournisseur

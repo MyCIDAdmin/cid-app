@@ -114,12 +114,24 @@ Docker officielle :
 2. Start Command : `server /data --console-address ":9001"`
 3. Ajouter un **Volume** monté sur `/data` (persistance)
 4. Variables : `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`
-5. Exposer le port 9000 en interne (pas de domaine public nécessaire — accès
-   uniquement depuis `backend` via l'URL interne Railway)
+5. Exposer le port 9000 en interne (pas de domaine public nécessaire pour le
+   trafic backend → MinIO — accès depuis `backend` via l'URL interne Railway)
 6. Sur le service `backend`, définir `MINIO_ENDPOINT=<minio-service>.railway.internal:9000`
 7. Créer les buckets nécessaires (`cid-media`, `justificatifs`, `produits`,
    `exports` — voir noms exacts dans `.env.example`) via la console MinIO
    (`:9001`) ou `mc mb` — à automatiser par un script d'init en Phase 1B.
+8. Configurer le bucket `produits` en lecture publique (politique `mc anonymous
+   set download <alias>/produits`, ou via la console MinIO :9001) — ses
+   photos sont montrées dans le catalogue public (voir
+   `apps.boutique.storage.ProduitsStorage`), à la différence de
+   `justificatifs` qui doit rester privé.
+9. **Attacher un domaine public Railway au service MinIO** (Settings →
+   Networking → Generate Domain, port 9000) et définir sur `backend`
+   `MINIO_PUBLIC_ENDPOINT=<ce domaine public>` + `MINIO_PUBLIC_USE_SSL=True`.
+   **Sans cette étape, les images produit ne s'afficheront pas** dans le
+   navigateur des membres (icône d'image cassée) : `MINIO_ENDPOINT` (étape 6)
+   est l'URL interne Railway, jamais routable depuis l'extérieur — voir le
+   commentaire dans `.env.example` et la docstring de `ProduitsStorage`.
 
 `STORAGES["default"]` (`backend/config/settings/base.py`) pointe vers ce
 service MinIO **exclusivement via les variables d'environnement** `AWS_*` /
