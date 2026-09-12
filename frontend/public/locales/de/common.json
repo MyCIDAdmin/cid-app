@@ -11,7 +11,8 @@
     "configuration_relance": "Fälligkeitstermine",
     "boutique": "Shop",
     "admin_boutique": "Shop-Verwaltung",
-    "stats": "Statistiken & KPIs"
+    "stats": "Statistiken & KPIs",
+    "votes": "Abstimmungen & Wahlen"
   },
   "dashboard": {
     "title": "Übersicht",

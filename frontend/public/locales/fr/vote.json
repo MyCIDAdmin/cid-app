@@ -1,0 +1,117 @@
+{
+  "page": {
+    "titre": "Votes & Élections en direct",
+    "creer_session": "Créer une session de vote",
+    "bandeau_admin": "Mode Administrateur — vous pouvez créer, ouvrir et clôturer des sessions de vote."
+  },
+  "onglets": {
+    "actif": "Vote en cours",
+    "historique": "Votes passés"
+  },
+  "vide": {
+    "titre": "Aucun vote en cours",
+    "description": "Les sessions de vote actives apparaîtront ici."
+  },
+  "statut": {
+    "ouverte": "Session ouverte",
+    "cloturee": "Session clôturée"
+  },
+  "anonymat": {
+    "anonyme": "Anonyme",
+    "nominatif": "Nominatif"
+  },
+  "session": {
+    "temps_restant": "Temps restant",
+    "participants": "Participants",
+    "membres": "membres",
+    "cloturer": "Clôturer le vote",
+    "cloture_en_cours": "Clôture en cours…",
+    "erreur_cloture": "La clôture de cette session a échoué."
+  },
+  "bulletin": {
+    "instructions_unique": "Sélectionnez 1 candidat.",
+    "instructions_multiple": "Sélectionnez jusqu'à {{max}} options.",
+    "anonymat_note": "Votre vote est {{mode}} et irréversible une fois confirmé.",
+    "anonyme": "anonyme",
+    "nominatif": "nominatif",
+    "confirmer": "Confirmer mon vote",
+    "envoi_en_cours": "Envoi en cours…",
+    "chiffre_anonyme": "Chiffré & Anonyme",
+    "vote_enregistre": "Vote enregistré !",
+    "vote_enregistre_note": "Votre vote est anonyme et sécurisé. Les résultats seront affichés à la clôture de la session.",
+    "resultats_a_la_cloture": "Les résultats détaillés seront révélés uniquement à la clôture de la session."
+  },
+  "resultats": {
+    "titre": "Résultats officiels",
+    "total_participants": "{{count}} / {{total}} membres ont voté",
+    "taux_participation": "{{taux}}% de participation",
+    "quorum_atteint": "quorum de {{pct}}% atteint",
+    "quorum_non_atteint": "quorum de {{pct}}% non atteint",
+    "pas_de_quorum": "pas de quorum requis",
+    "nombre_voix": "{{count}} voix",
+    "elu": "Élu(e)",
+    "footer_certifie": "Votes anonymes · Chiffrement de bout en bout · Rapport certifié"
+  },
+  "historique": {
+    "chargement": "Chargement…",
+    "aucun": "Aucun vote clôturé pour le moment.",
+    "cloture_le": "Clôturé le {{date}}"
+  },
+  "wizard": {
+    "titre_page": "Créer une session de vote",
+    "etape_parametres": "Paramètres",
+    "etape_options": "Options de vote",
+    "etape_confirmer": "Confirmer",
+    "erreur_titre_requis": "Le titre et la description sont obligatoires.",
+    "erreur_options_min": "Un vote doit comporter au moins 2 options.",
+    "erreur_creation": "La création de la session a échoué.",
+    "titre_session": "Titre de la session",
+    "titre_placeholder": "Ex : Élection Bureau Directeur 2025–2027",
+    "description_session": "Description / Instructions pour les votants",
+    "description_placeholder": "Expliquez l'objet du vote, les règles, les candidats éligibles…",
+    "type_vote": "Type de vote",
+    "type_unique": "Choix unique (1 gagnant)",
+    "type_multiple": "Choix multiple (ex : bureau à 3 postes)",
+    "type_oui_non": "Oui / Non (approbation)",
+    "type_preferentiel": "Vote préférentiel (classement)",
+    "nb_choix_max": "Nb. max de sélections (si multiple)",
+    "duree": "Durée",
+    "duree_10": "10 minutes",
+    "duree_20": "20 minutes",
+    "duree_30": "30 minutes",
+    "duree_60": "1 heure",
+    "duree_360": "6 heures",
+    "duree_1440": "24 heures",
+    "duree_4320": "3 jours",
+    "duree_10080": "7 jours",
+    "confidentialite": "Confidentialité & accès",
+    "anonyme": "Anonyme",
+    "nominatif": "Nominatif",
+    "anonyme_description": "Vote anonyme — Aucun lien entre le votant et son choix. Résultats agrégés uniquement. Recommandé pour les élections.",
+    "nominatif_description": "Vote nominatif — Les administrateurs peuvent voir qui a voté (pas le choix). Utile pour vérifier le quorum.",
+    "membres_eligibles": "Membres éligibles",
+    "eligibilite_tous_actifs": "Tous les membres actifs",
+    "eligibilite_cotisants": "Membres cotisants de l'année en cours",
+    "eligibilite_bureau": "Bureau et modérateurs",
+    "quorum": "Quorum requis",
+    "quorum_placeholder": "Ex : 50 (en %)",
+    "notifier_membres_auto": "Les membres éligibles seront notifiés (notification + email) dès le lancement.",
+    "hint_unique": "Ajoutez les candidats (un seul gagnant) :",
+    "hint_multiple": "Ajoutez les options (plusieurs sélections possibles) :",
+    "hint_oui_non": "Vote Oui / Non — options prédéfinies :",
+    "hint_preferentiel": "Ajoutez les options (les membres les classeront par préférence) :",
+    "option_placeholder": "Option {{n}} / nom du candidat…",
+    "option_description_placeholder": "Description courte (optionnel)",
+    "ajouter_option": "Ajouter une option / candidat",
+    "info_presentation": "Pour chaque candidat ou option, vous pouvez ajouter une courte biographie ou un programme — ces informations seront visibles par les membres avant de voter.",
+    "recap_titre": "Récapitulatif de la session",
+    "recap_titre_label": "Titre",
+    "recap_options": "Options / candidats",
+    "avertissement_immuable": "Une fois lancée, la session ne peut pas être modifiée. Vous pourrez uniquement la clôturer manuellement avant l'échéance.",
+    "annuler": "Annuler",
+    "retour": "Retour",
+    "suivant": "Suivant",
+    "lancer": "Lancer le vote",
+    "lancement_en_cours": "Lancement en cours…"
+  }
+}

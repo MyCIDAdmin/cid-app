@@ -24,6 +24,11 @@ const NAV_ITEMS: NavItem[] = [
   // /mon-adhesion : le backend scope déjà le queryset (produits publiés uniquement en dessous
   // de Bureau Admin, voir ProduitViewSet.get_queryset).
   { to: "/boutique", labelKey: "nav.boutique" },
+  // Votes & Élections (mockup #pg-vote, FDD §3.5/F-008) — ouvert à tout authentifié, même
+  // principe que /mon-adhesion et /boutique : le backend scope déjà la visibilité (résultats
+  // masqués tant que non clôturé, voir VoteSessionViewSet.resultats) ; la création/clôture de
+  // session reste gérée par la page elle-même pour l'exception Dir. Financier (voir VotePage).
+  { to: "/votes", labelKey: "nav.votes" },
   // Gestion boutique (mockup #pg-admin-boutique) — Bureau Admin+ seulement, même niveau que
   // CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API.
   { to: "/admin/boutique", labelKey: "nav.admin_boutique", minRoleLevel: ROLE_LEVELS.bureau_admin },

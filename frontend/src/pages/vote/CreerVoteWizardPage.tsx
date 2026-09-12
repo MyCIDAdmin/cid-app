@@ -1,0 +1,461 @@
+/**
+ * Wizard admin — création d'une session de vote en 3 étapes (mockup #m-create-vote, FDD F-008,
+ * RICEFW W-006 : lancement immédiat, pas de brouillon). Le mockup présente ce flux en modal ;
+ * il est repris ici comme page pleine dédiée (`/votes/creer`), cohérent avec le reste de
+ * l'application où les parcours multi-étapes (paiement, adhésion) sont des pages, pas des
+ * fenêtres modales (voir CotisationStepperPage).
+ *
+ * Les 3 étapes sont soumises en un seul POST /votes/ à la confirmation de l'étape 3 —
+ * VoteSessionCreateSerializer accepte les options en écriture imbriquée (voir docstring
+ * backend).
+ */
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Navigate, useNavigate } from "react-router-dom";
+
+import { useCreerVoteSession } from "../../hooks/useVote";
+import { useAuthStore } from "../../store/authStore";
+import type { EligibiliteVote, ModeAnonymat, TypeVote, VoteOptionInput } from "../../types/vote";
+import { extractApiErrorMessage } from "../../utils/apiError";
+
+const DUREES_MINUTES = [10, 20, 30, 60, 360, 1440, 4320, 10080];
+
+// Ensemble de rôles exact autorisé à créer une session (voir même constante et son
+// commentaire dans VotePage.tsx — Dir. Financier explicitement exclu malgré un niveau
+// numérique supérieur à Bureau Admin, SCD §4.2 / apps.vote.permissions.ROLES_GESTION_VOTE).
+const ROLES_GESTION_VOTE = ["super_admin", "bureau_admin"] as const;
+
+function optionsParDefaut(type: TypeVote): VoteOptionInput[] {
+  if (type === "oui_non") {
+    return [{ label: "Oui" }, { label: "Non" }, { label: "Abstention" }];
+  }
+  return [{ label: "" }, { label: "" }];
+}
+
+export default function CreerVoteWizardPage() {
+  const { t } = useTranslation("vote");
+  const navigate = useNavigate();
+  const creerMutation = useCreerVoteSession();
+  const user = useAuthStore((s) => s.user);
+  const autorise = Boolean(
+    user && ROLES_GESTION_VOTE.includes(user.role as (typeof ROLES_GESTION_VOTE)[number]),
+  );
+
+  const [etape, setEtape] = useState<1 | 2 | 3>(1);
+  const [erreurEtape, setErreurEtape] = useState<string | null>(null);
+
+  // Étape 1 — paramètres
+  const [titre, setTitre] = useState("");
+  const [description, setDescription] = useState("");
+  const [typeVote, setTypeVote] = useState<TypeVote>("unique");
+  const [nbChoixMax, setNbChoixMax] = useState(2);
+  const [dureeMinutes, setDureeMinutes] = useState(30);
+  const [modeAnonymat, setModeAnonymat] = useState<ModeAnonymat>("anonyme");
+  const [eligibilite, setEligibilite] = useState<EligibiliteVote>("tous_actifs");
+  const [quorumPct, setQuorumPct] = useState<string>("");
+
+  // Étape 2 — options
+  const [options, setOptions] = useState<VoteOptionInput[]>(optionsParDefaut("unique"));
+
+  function changerType(type: TypeVote) {
+    setTypeVote(type);
+    setOptions(optionsParDefaut(type));
+  }
+
+  function ajouterOption() {
+    setOptions((prev) => [...prev, { label: "" }]);
+  }
+
+  function supprimerOption(index: number) {
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function modifierOption(index: number, champ: keyof VoteOptionInput, valeur: string) {
+    setOptions((prev) => prev.map((o, i) => (i === index ? { ...o, [champ]: valeur } : o)));
+  }
+
+  function allerEtape2() {
+    if (!titre.trim() || !description.trim()) {
+      setErreurEtape(t("wizard.erreur_titre_requis"));
+      return;
+    }
+    setErreurEtape(null);
+    setEtape(2);
+  }
+
+  function allerEtape3() {
+    const optionsValides = options.filter((o) => o.label.trim());
+    if (optionsValides.length < 2) {
+      setErreurEtape(t("wizard.erreur_options_min"));
+      return;
+    }
+    setErreurEtape(null);
+    setEtape(3);
+  }
+
+  function lancerVote() {
+    const optionsValides = options.filter((o) => o.label.trim());
+    creerMutation.mutate(
+      {
+        titre: titre.trim(),
+        description: description.trim(),
+        type_vote: typeVote,
+        mode_anonymat: modeAnonymat,
+        nb_choix_max: typeVote === "multiple" ? nbChoixMax : 1,
+        eligibilite,
+        duree_minutes: dureeMinutes,
+        quorum_pct: quorumPct ? Number(quorumPct) : null,
+        resultats_visibles_avant_cloture: false,
+        options: optionsValides,
+      },
+      {
+        onSuccess: () => navigate("/votes"),
+      },
+    );
+  }
+
+  const optionsValides = options.filter((o) => o.label.trim());
+  const optionsModifiables = typeVote !== "oui_non";
+
+  if (!autorise) {
+    return <Navigate to="/votes" replace />;
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <h1 className="mb-4 text-xl font-bold text-text-primary">{t("wizard.titre_page")}</h1>
+
+      <div className="mb-5 flex items-center gap-3">
+        {(
+          [
+            { n: 1, label: t("wizard.etape_parametres") },
+            { n: 2, label: t("wizard.etape_options") },
+            { n: 3, label: t("wizard.etape_confirmer") },
+          ] as const
+        ).map((s, i) => (
+          <div key={s.n} className="flex items-center gap-3">
+            {i > 0 && <div className="h-px w-6 bg-text-tertiary/30" />}
+            <div className="flex items-center gap-2">
+              <div
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                  etape >= s.n ? "bg-ca text-white" : "bg-bg-tertiary text-text-tertiary"
+                }`}
+              >
+                {s.n}
+              </div>
+              <span
+                className={`text-xs font-medium ${etape === s.n ? "text-text-primary" : "text-text-tertiary"}`}
+              >
+                {s.label}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {erreurEtape && (
+        <p className="mb-3 rounded-cid bg-status-dangerBg px-3 py-2 text-xs text-status-dangerText">
+          {erreurEtape}
+        </p>
+      )}
+      {creerMutation.isError && (
+        <p className="mb-3 rounded-cid bg-status-dangerBg px-3 py-2 text-xs text-status-dangerText">
+          {extractApiErrorMessage(creerMutation.error, t("wizard.erreur_creation"))}
+        </p>
+      )}
+
+      <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+        {etape === 1 && (
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-text-secondary">
+                {t("wizard.titre_session")} <span className="text-ca">*</span>
+              </label>
+              <input
+                value={titre}
+                onChange={(e) => setTitre(e.target.value)}
+                placeholder={t("wizard.titre_placeholder")}
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-text-secondary">
+                {t("wizard.description_session")} <span className="text-ca">*</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder={t("wizard.description_placeholder")}
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  {t("wizard.type_vote")}
+                </label>
+                <select
+                  value={typeVote}
+                  onChange={(e) => changerType(e.target.value as TypeVote)}
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                >
+                  <option value="unique">{t("wizard.type_unique")}</option>
+                  <option value="multiple">{t("wizard.type_multiple")}</option>
+                  <option value="oui_non">{t("wizard.type_oui_non")}</option>
+                  <option value="preferentiel">{t("wizard.type_preferentiel")}</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  {t("wizard.nb_choix_max")}
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  disabled={typeVote !== "multiple"}
+                  value={nbChoixMax}
+                  onChange={(e) => setNbChoixMax(Number(e.target.value))}
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-40"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-text-secondary">
+                {t("wizard.duree")}
+              </label>
+              <select
+                value={dureeMinutes}
+                onChange={(e) => setDureeMinutes(Number(e.target.value))}
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              >
+                {DUREES_MINUTES.map((d) => (
+                  <option key={d} value={d}>
+                    {t(`wizard.duree_${d}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-text-secondary">
+                {t("wizard.confidentialite")}
+              </label>
+              <div className="space-y-2">
+                <label
+                  className={`flex cursor-pointer items-start gap-2 rounded-cid border px-3 py-2 ${
+                    modeAnonymat === "anonyme" ? "border-ca bg-cal/20" : "border-text-tertiary/20"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    checked={modeAnonymat === "anonyme"}
+                    onChange={() => setModeAnonymat("anonyme")}
+                    className="mt-0.5"
+                  />
+                  <span className="text-xs text-text-secondary">
+                    🔒 {t("wizard.anonyme_description")}
+                  </span>
+                </label>
+                <label
+                  className={`flex cursor-pointer items-start gap-2 rounded-cid border px-3 py-2 ${
+                    modeAnonymat === "nominatif" ? "border-ca bg-cal/20" : "border-text-tertiary/20"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    checked={modeAnonymat === "nominatif"}
+                    onChange={() => setModeAnonymat("nominatif")}
+                    className="mt-0.5"
+                  />
+                  <span className="text-xs text-text-secondary">
+                    👁 {t("wizard.nominatif_description")}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  {t("wizard.membres_eligibles")}
+                </label>
+                {/* "Sélection manuelle" (EligibiliteVote.SELECTION_MANUELLE côté backend) est
+                    volontairement omise ici : elle exige un sélecteur de membres dédié
+                    (membres_selectionnes), hors périmètre de cette première itération du
+                    wizard — les 3 options ci-dessous couvrent les cas d'usage FDD §5.2
+                    principaux (élections générales, AG réservée au Bureau). */}
+                <select
+                  value={eligibilite}
+                  onChange={(e) => setEligibilite(e.target.value as EligibiliteVote)}
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                >
+                  <option value="tous_actifs">{t("wizard.eligibilite_tous_actifs")}</option>
+                  <option value="cotisants">{t("wizard.eligibilite_cotisants")}</option>
+                  <option value="bureau">{t("wizard.eligibilite_bureau")}</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  {t("wizard.quorum")}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={quorumPct}
+                  onChange={(e) => setQuorumPct(e.target.value)}
+                  placeholder={t("wizard.quorum_placeholder")}
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+            </div>
+
+            <p className="text-[11px] text-text-tertiary">ℹ {t("wizard.notifier_membres_auto")}</p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate("/votes")}
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("wizard.annuler")}
+              </button>
+              <button
+                type="button"
+                onClick={allerEtape2}
+                className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
+              >
+                {t("wizard.suivant")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {etape === 2 && (
+          <div className="space-y-3">
+            <p className="text-xs text-text-secondary">{t(`wizard.hint_${typeVote}`)}</p>
+            <div className="space-y-2">
+              {options.map((option, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-xs font-bold text-text-secondary">
+                    {index + 1}
+                  </span>
+                  <input
+                    value={option.label}
+                    disabled={!optionsModifiables}
+                    onChange={(e) => modifierOption(index, "label", e.target.value)}
+                    placeholder={t("wizard.option_placeholder", { n: index + 1 })}
+                    className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:bg-bg-tertiary disabled:opacity-70"
+                  />
+                  <input
+                    value={option.description ?? ""}
+                    disabled={!optionsModifiables}
+                    onChange={(e) => modifierOption(index, "description", e.target.value)}
+                    placeholder={t("wizard.option_description_placeholder")}
+                    className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:bg-bg-tertiary disabled:opacity-70"
+                  />
+                  {optionsModifiables && options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => supprimerOption(index)}
+                      className="shrink-0 rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {optionsModifiables && (
+              <button
+                type="button"
+                onClick={ajouterOption}
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary"
+              >
+                + {t("wizard.ajouter_option")}
+              </button>
+            )}
+            <p className="rounded-cid bg-status-infoBg px-3 py-2 text-[11px] text-status-infoText">
+              {t("wizard.info_presentation")}
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setEtape(1)}
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("wizard.retour")}
+              </button>
+              <button
+                type="button"
+                onClick={allerEtape3}
+                className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
+              >
+                {t("wizard.suivant")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {etape === 3 && (
+          <div className="space-y-3">
+            <h2 className="text-xs font-bold uppercase text-text-primary">
+              {t("wizard.recap_titre")}
+            </h2>
+            <dl className="space-y-1.5 rounded-cid border border-text-tertiary/15 p-3 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-text-secondary">{t("wizard.recap_titre_label")}</dt>
+                <dd className="font-medium text-text-primary">{titre}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-text-secondary">{t("wizard.type_vote")}</dt>
+                <dd className="text-text-primary">{t(`wizard.type_${typeVote}`)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-text-secondary">{t("wizard.duree")}</dt>
+                <dd className="text-text-primary">{t(`wizard.duree_${dureeMinutes}`)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-text-secondary">{t("wizard.confidentialite")}</dt>
+                <dd className="text-text-primary">
+                  {modeAnonymat === "anonyme" ? t("wizard.anonyme") : t("wizard.nominatif")}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-text-secondary">{t("wizard.recap_options")}</dt>
+                <dd className="text-text-primary">{optionsValides.length}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-text-secondary">{t("wizard.membres_eligibles")}</dt>
+                <dd className="text-text-primary">{t(`wizard.eligibilite_${eligibilite}`)}</dd>
+              </div>
+            </dl>
+            <p className="rounded-cid bg-status-warningBg px-3 py-2 text-[11px] text-status-warningText">
+              ⚠ {t("wizard.avertissement_immuable")}
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setEtape(2)}
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("wizard.retour")}
+              </button>
+              <button
+                type="button"
+                onClick={lancerVote}
+                disabled={creerMutation.isPending}
+                className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+              >
+                {creerMutation.isPending ? t("wizard.lancement_en_cours") : t("wizard.lancer")}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

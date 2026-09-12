@@ -28,6 +28,7 @@ i18n
       "boutique",
       "stats",
       "notifications",
+      "vote",
     ],
     defaultNS: "common",
     backend: {

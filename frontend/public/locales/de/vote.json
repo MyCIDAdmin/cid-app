@@ -1,0 +1,117 @@
+{
+  "page": {
+    "titre": "Live-Abstimmungen & Wahlen",
+    "creer_session": "Abstimmungssitzung erstellen",
+    "bandeau_admin": "Administratormodus — Sie können Abstimmungssitzungen erstellen, öffnen und schließen."
+  },
+  "onglets": {
+    "actif": "Laufende Abstimmung",
+    "historique": "Vergangene Abstimmungen"
+  },
+  "vide": {
+    "titre": "Keine laufende Abstimmung",
+    "description": "Aktive Abstimmungssitzungen werden hier angezeigt."
+  },
+  "statut": {
+    "ouverte": "Sitzung geöffnet",
+    "cloturee": "Sitzung geschlossen"
+  },
+  "anonymat": {
+    "anonyme": "Anonym",
+    "nominatif": "Namentlich"
+  },
+  "session": {
+    "temps_restant": "Verbleibende Zeit",
+    "participants": "Teilnehmer",
+    "membres": "Mitglieder",
+    "cloturer": "Abstimmung schließen",
+    "cloture_en_cours": "Wird geschlossen…",
+    "erreur_cloture": "Diese Sitzung konnte nicht geschlossen werden."
+  },
+  "bulletin": {
+    "instructions_unique": "Wählen Sie 1 Kandidat(in) aus.",
+    "instructions_multiple": "Wählen Sie bis zu {{max}} Optionen aus.",
+    "anonymat_note": "Ihre Stimme ist {{mode}} und nach der Bestätigung unwiderruflich.",
+    "anonyme": "anonym",
+    "nominatif": "namentlich",
+    "confirmer": "Meine Stimme bestätigen",
+    "envoi_en_cours": "Wird gesendet…",
+    "chiffre_anonyme": "Verschlüsselt & Anonym",
+    "vote_enregistre": "Stimme erfasst!",
+    "vote_enregistre_note": "Ihre Stimme ist anonym und gesichert. Die Ergebnisse werden nach Abschluss der Sitzung angezeigt.",
+    "resultats_a_la_cloture": "Die detaillierten Ergebnisse werden erst nach Abschluss der Sitzung bekannt gegeben."
+  },
+  "resultats": {
+    "titre": "Offizielle Ergebnisse",
+    "total_participants": "{{count}} / {{total}} Mitglieder haben abgestimmt",
+    "taux_participation": "{{taux}}% Beteiligung",
+    "quorum_atteint": "Quorum von {{pct}}% erreicht",
+    "quorum_non_atteint": "Quorum von {{pct}}% nicht erreicht",
+    "pas_de_quorum": "kein Quorum erforderlich",
+    "nombre_voix": "{{count}} Stimmen",
+    "elu": "Gewählt",
+    "footer_certifie": "Anonyme Stimmen · Ende-zu-Ende-Verschlüsselung · Zertifizierter Bericht"
+  },
+  "historique": {
+    "chargement": "Wird geladen…",
+    "aucun": "Noch keine abgeschlossene Abstimmung.",
+    "cloture_le": "Geschlossen am {{date}}"
+  },
+  "wizard": {
+    "titre_page": "Abstimmungssitzung erstellen",
+    "etape_parametres": "Einstellungen",
+    "etape_options": "Abstimmungsoptionen",
+    "etape_confirmer": "Bestätigen",
+    "erreur_titre_requis": "Titel und Beschreibung sind erforderlich.",
+    "erreur_options_min": "Eine Abstimmung muss mindestens 2 Optionen enthalten.",
+    "erreur_creation": "Die Sitzung konnte nicht erstellt werden.",
+    "titre_session": "Titel der Sitzung",
+    "titre_placeholder": "Z. B.: Vorstandswahl 2025–2027",
+    "description_session": "Beschreibung / Anweisungen für die Wähler",
+    "description_placeholder": "Erklären Sie den Zweck der Abstimmung, die Regeln, die zugelassenen Kandidaten…",
+    "type_vote": "Abstimmungstyp",
+    "type_unique": "Einfachauswahl (1 Gewinner)",
+    "type_multiple": "Mehrfachauswahl (z. B. Vorstand mit 3 Posten)",
+    "type_oui_non": "Ja / Nein (Genehmigung)",
+    "type_preferentiel": "Präferenzwahl (Rangfolge)",
+    "nb_choix_max": "Max. Anzahl Auswahlen (bei Mehrfachauswahl)",
+    "duree": "Dauer",
+    "duree_10": "10 Minuten",
+    "duree_20": "20 Minuten",
+    "duree_30": "30 Minuten",
+    "duree_60": "1 Stunde",
+    "duree_360": "6 Stunden",
+    "duree_1440": "24 Stunden",
+    "duree_4320": "3 Tage",
+    "duree_10080": "7 Tage",
+    "confidentialite": "Vertraulichkeit & Zugang",
+    "anonyme": "Anonym",
+    "nominatif": "Namentlich",
+    "anonyme_description": "Anonyme Abstimmung — Keine Verbindung zwischen Wähler und Auswahl. Nur aggregierte Ergebnisse. Empfohlen für Wahlen.",
+    "nominatif_description": "Namentliche Abstimmung — Administratoren können sehen, wer abgestimmt hat (nicht die Wahl). Nützlich zur Quorumsprüfung.",
+    "membres_eligibles": "Wahlberechtigte Mitglieder",
+    "eligibilite_tous_actifs": "Alle aktiven Mitglieder",
+    "eligibilite_cotisants": "Beitragszahlende Mitglieder des laufenden Jahres",
+    "eligibilite_bureau": "Vorstand und Moderatoren",
+    "quorum": "Erforderliches Quorum",
+    "quorum_placeholder": "Z. B.: 50 (in %)",
+    "notifier_membres_auto": "Wahlberechtigte Mitglieder werden bei Start benachrichtigt (Benachrichtigung + E-Mail).",
+    "hint_unique": "Fügen Sie die Kandidaten hinzu (nur ein Gewinner):",
+    "hint_multiple": "Fügen Sie die Optionen hinzu (mehrere Auswahlen möglich):",
+    "hint_oui_non": "Ja/Nein-Abstimmung — vordefinierte Optionen:",
+    "hint_preferentiel": "Fügen Sie die Optionen hinzu (Mitglieder ordnen sie nach Präferenz):",
+    "option_placeholder": "Option {{n}} / Name des Kandidaten…",
+    "option_description_placeholder": "Kurzbeschreibung (optional)",
+    "ajouter_option": "Option / Kandidat hinzufügen",
+    "info_presentation": "Für jeden Kandidaten oder jede Option können Sie eine kurze Biografie oder ein Programm hinzufügen — diese Informationen sind für die Mitglieder vor der Abstimmung sichtbar.",
+    "recap_titre": "Zusammenfassung der Sitzung",
+    "recap_titre_label": "Titel",
+    "recap_options": "Optionen / Kandidaten",
+    "avertissement_immuable": "Nach dem Start kann die Sitzung nicht mehr geändert werden. Sie können sie vor Ablauf nur manuell schließen.",
+    "annuler": "Abbrechen",
+    "retour": "Zurück",
+    "suivant": "Weiter",
+    "lancer": "Abstimmung starten",
+    "lancement_en_cours": "Wird gestartet…"
+  }
+}

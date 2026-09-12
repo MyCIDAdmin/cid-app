@@ -24,6 +24,8 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import StatsPage from "./pages/stats/StatsPage";
+import CreerVoteWizardPage from "./pages/vote/CreerVoteWizardPage";
+import VotePage from "./pages/vote/VotePage";
 import { ROLE_LEVELS } from "./store/authStore";
 
 export default function App() {
@@ -165,8 +167,19 @@ export default function App() {
             </RequireRole>
           }
         />
+        {/* Votes & Élections (mockup #pg-vote/#m-create-vote, FDD §3.5/F-008, Phase 3) —
+            lecture (liste + résultats post-clôture) ouverte à tout authentifié, même niveau
+            que VoteSessionPermission côté API. Création/clôture réservées à l'ensemble de
+            rôles explicite {Super Admin, Bureau Admin} — PAS un simple minRoleLevel : le
+            Directeur Financier a un niveau numérique supérieur (ROLE_LEVELS.dir_financier=4 >
+            bureau_admin=3) mais est explicitement exclu de la gestion des votes (voir
+            ROLES_GESTION_VOTE côté backend, apps.vote.permissions). RequireRole (basé sur
+            ROLE_LEVELS) laisserait donc passer le Dir. Financier à tort — la page gère elle-
+            même cet accès (voir CreerVoteWizardPage), même principe que MembreFormPage. */}
+        <Route path="/votes" element={<VotePage />} />
+        <Route path="/votes/creer" element={<CreerVoteWizardPage />} />
         {/* Les routes suivantes sont ajoutées au fil des phases :
-            /evenements, /vote, /admin/* */}
+            /evenements, /admin/* */}
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

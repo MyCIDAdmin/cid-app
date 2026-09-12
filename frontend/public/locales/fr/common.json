@@ -11,7 +11,8 @@
     "configuration_relance": "Échéances des relances",
     "boutique": "Boutique",
     "admin_boutique": "Gestion boutique",
-    "stats": "Statistiques & KPIs"
+    "stats": "Statistiques & KPIs",
+    "votes": "Votes & Élections"
   },
   "dashboard": {
     "title": "Tableau de bord",
