@@ -17,11 +17,11 @@
  * livraison à une adresse différente) ; seul le nom du destinataire est préremployé depuis le
  * compte connecté.
  */
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { usePasserCommande } from "../../hooks/useBoutique";
+import { usePasserCommande, useVariantesParIds } from "../../hooks/useBoutique";
 import { totalPanier, usePanierStore } from "../../store/panierStore";
 import { useAuthStore } from "../../store/authStore";
 import type { PasserCommandePayload } from "../../types/boutique";
@@ -75,6 +75,7 @@ export default function PanierCommandePage() {
   const changerQuantite = usePanierStore((s) => s.changerQuantite);
   const retirer = usePanierStore((s) => s.retirer);
   const vider = usePanierStore((s) => s.vider);
+  const synchroniserStocks = usePanierStore((s) => s.synchroniserStocks);
   const passerCommandeMutation = usePasserCommande();
 
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
@@ -84,6 +85,24 @@ export default function PanierCommandePage() {
   const [commandeConfirmee, setCommandeConfirmee] = useState<string | null>(null);
 
   const total = totalPanier(articles);
+
+  // Revalidation live du stock (le panier ne conserve qu'un instantané figé pris à l'ajout) :
+  // détecte dès l'ouverture du panier les articles devenus "ausverkauft" entre-temps (commandés
+  // par quelqu'un d'autre, ou produit dépublié — voir docstring panierStore.synchroniserStocks).
+  const varianteIds = articles.map((a) => a.varianteId);
+  const stocksQuery = useVariantesParIds(varianteIds);
+  useEffect(() => {
+    if (!stocksQuery.data) return;
+    const stocksParId: Record<string, number> = {};
+    for (const variante of stocksQuery.data) {
+      stocksParId[variante.id] = variante.stock;
+    }
+    synchroniserStocks(stocksParId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stocksQuery.data]);
+
+  const articlesIndisponibles = articles.filter((a) => a.stockDisponible <= 0 || a.quantite <= 0);
+  const panierBloque = articlesIndisponibles.length > 0;
 
   function handleValiderLivraison(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -170,53 +189,70 @@ export default function PanierCommandePage() {
           <h2 className="mb-3 text-xs font-bold text-text-primary">
             {t("commande.mon_panier", { count: articles.length })}
           </h2>
+          {stocksQuery.isLoading && (
+            <p className="mb-2 text-xs text-text-tertiary">{t("commande.verification_stock")}</p>
+          )}
+          {panierBloque && (
+            <p className="mb-2 rounded-cid bg-status-dangerBg px-3 py-2 text-xs text-status-dangerText">
+              {t("commande.articles_indisponibles")}
+            </p>
+          )}
           <div className="space-y-2">
-            {articles.map((a) => (
-              <div
-                key={a.varianteId}
-                className="flex items-center gap-3 border-b border-text-tertiary/10 pb-2 last:border-0"
-              >
-                <div className="flex-1">
-                  <div className="text-sm font-semibold text-text-primary">{a.nom}</div>
-                  {(a.taille || a.couleur) && (
-                    <div className="text-xs text-text-tertiary">
-                      {[a.taille, a.couleur].filter(Boolean).join(" / ")}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label={t("commande.diminuer")}
-                    onClick={() => changerQuantite(a.varianteId, a.quantite - 1)}
-                    className="flex h-6 w-6 items-center justify-center rounded-cid bg-bg-tertiary text-text-secondary"
-                  >
-                    −
-                  </button>
-                  <span className="min-w-[16px] text-center text-sm">{a.quantite}</span>
-                  <button
-                    type="button"
-                    aria-label={t("commande.augmenter")}
-                    disabled={a.quantite >= a.stockDisponible}
-                    onClick={() => changerQuantite(a.varianteId, a.quantite + 1)}
-                    className="flex h-6 w-6 items-center justify-center rounded-cid bg-bg-tertiary text-text-secondary disabled:opacity-40"
-                  >
-                    +
-                  </button>
-                </div>
-                <span className="min-w-[60px] text-right text-sm font-bold text-ca">
-                  {formatMontant(Number(a.prixUnitaire) * a.quantite)}
-                </span>
-                <button
-                  type="button"
-                  aria-label={t("commande.retirer")}
-                  onClick={() => retirer(a.varianteId)}
-                  className="text-text-tertiary hover:text-status-dangerText"
+            {articles.map((a) => {
+              const estEpuise = a.stockDisponible <= 0 || a.quantite <= 0;
+              return (
+                <div
+                  key={a.varianteId}
+                  className="flex items-center gap-3 border-b border-text-tertiary/10 pb-2 last:border-0"
                 >
-                  ✕
-                </button>
-              </div>
-            ))}
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-text-primary">{a.nom}</div>
+                    {(a.taille || a.couleur) && (
+                      <div className="text-xs text-text-tertiary">
+                        {[a.taille, a.couleur].filter(Boolean).join(" / ")}
+                      </div>
+                    )}
+                    {estEpuise && (
+                      <div className="mt-0.5 text-[11px] font-medium text-status-dangerText">
+                        {t("commande.article_ausverkauft")}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label={t("commande.diminuer")}
+                      disabled={estEpuise}
+                      onClick={() => changerQuantite(a.varianteId, a.quantite - 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-cid bg-bg-tertiary text-text-secondary disabled:opacity-40"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[16px] text-center text-sm">{a.quantite}</span>
+                    <button
+                      type="button"
+                      aria-label={t("commande.augmenter")}
+                      disabled={estEpuise || a.quantite >= a.stockDisponible}
+                      onClick={() => changerQuantite(a.varianteId, a.quantite + 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-cid bg-bg-tertiary text-text-secondary disabled:opacity-40"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="min-w-[60px] text-right text-sm font-bold text-ca">
+                    {formatMontant(Number(a.prixUnitaire) * a.quantite)}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={t("commande.retirer")}
+                    onClick={() => retirer(a.varianteId)}
+                    className="text-text-tertiary hover:text-status-dangerText"
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-text-tertiary/20 pt-3">
             <span className="text-sm font-semibold text-text-primary">{t("commande.total")}</span>
@@ -224,8 +260,9 @@ export default function PanierCommandePage() {
           </div>
           <button
             type="button"
+            disabled={panierBloque}
             onClick={() => setEtape(2)}
-            className="mt-4 w-full rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad"
+            className="mt-4 w-full rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
           >
             {t("commande.continuer_livraison")}
           </button>
@@ -371,7 +408,7 @@ export default function PanierCommandePage() {
             <button
               type="button"
               onClick={handlePasserCommande}
-              disabled={passerCommandeMutation.isPending}
+              disabled={passerCommandeMutation.isPending || panierBloque}
               className="flex-1 rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
             >
               {t("commande.confirmer_commande")}

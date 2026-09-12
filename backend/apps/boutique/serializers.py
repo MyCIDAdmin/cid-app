@@ -24,6 +24,13 @@ class ProduitSerializer(serializers.ModelSerializer):
     stock_total = serializers.IntegerField(read_only=True)
     stock_faible = serializers.BooleanField(read_only=True)
     en_rupture = serializers.BooleanField(read_only=True)
+    prix_final = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
+    # Écriture uniquement — pratique pour saisir le stock disponible dès la création du
+    # produit (mockup #m-newprod) sans passer par le panneau "gérer les variantes" : crée
+    # automatiquement une VarianteProduit "unique" (taille/couleur vides, voir docstring
+    # module) portant ce stock. Ignoré en modification (`update`) pour ne pas perturber la
+    # gestion fine des variantes existantes.
+    stock_initial = serializers.IntegerField(write_only=True, required=False, min_value=0)
 
     class Meta:
         model = Produit
@@ -33,10 +40,13 @@ class ProduitSerializer(serializers.ModelSerializer):
             "categorie",
             "description",
             "prix",
+            "pourcentage_reduction",
+            "prix_final",
             "image",
             "statut",
             "nouveaute",
             "seuil_alerte_stock",
+            "stock_initial",
             "variantes",
             "stock_total",
             "stock_faible",
@@ -45,6 +55,20 @@ class ProduitSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def create(self, validated_data):
+        stock_initial = validated_data.pop("stock_initial", None)
+        produit = super().create(validated_data)
+        if stock_initial is not None:
+            VarianteProduit.objects.create(
+                produit=produit, taille="", couleur="", stock=stock_initial
+            )
+        return produit
+
+    def update(self, instance, validated_data):
+        # stock_initial n'a de sens qu'à la création — voir commentaire du champ ci-dessus.
+        validated_data.pop("stock_initial", None)
+        return super().update(instance, validated_data)
 
 
 class LigneCommandeSerializer(serializers.ModelSerializer):

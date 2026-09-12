@@ -69,6 +69,28 @@ describe("panierStore", () => {
     expect(usePanierStore.getState().articles).toEqual([]);
   });
 
+  it("synchroniserStocks met à jour stockDisponible et plafonne la quantité au stock live", () => {
+    usePanierStore.getState().ajouter(article({ varianteId: "v1", stockDisponible: 10 }), 5);
+    usePanierStore.getState().synchroniserStocks({ v1: 2 });
+    const [a] = usePanierStore.getState().articles;
+    expect(a.stockDisponible).toBe(2);
+    expect(a.quantite).toBe(2);
+  });
+
+  it("synchroniserStocks traite une variante absente de la réponse comme épuisée (stock 0)", () => {
+    usePanierStore.getState().ajouter(article({ varianteId: "v1" }), 3);
+    usePanierStore.getState().synchroniserStocks({});
+    const [a] = usePanierStore.getState().articles;
+    expect(a.stockDisponible).toBe(0);
+    expect(a.quantite).toBe(0);
+  });
+
+  it("synchroniserStocks ne retire jamais un article automatiquement", () => {
+    usePanierStore.getState().ajouter(article({ varianteId: "v1" }), 1);
+    usePanierStore.getState().synchroniserStocks({ v1: 0 });
+    expect(usePanierStore.getState().articles).toHaveLength(1);
+  });
+
   it("totalPanier et nombreArticlesPanier agrègent correctement plusieurs articles", () => {
     const articles = [
       { ...article({ varianteId: "v1", prixUnitaire: "45.00" }), quantite: 2 },

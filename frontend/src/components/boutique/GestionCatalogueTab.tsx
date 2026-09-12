@@ -2,15 +2,29 @@
  * Onglet "Catalogue" de la page Admin — Boutique (mockup #pg-admin-boutique, tab-pane
  * btq-catalog) : création/édition de produits, panneau variantes dépliable par produit.
  *
- * Volontairement sans gestion d'image (Produit.image, upload MinIO) dans cette itération —
- * ajouter un upload multipart cohérent avec le reste du formulaire (validation MIME côté
- * backend, CLAUDE.md §8) mérite son propre ticket plutôt qu'un champ fichier ajouté à la hâte
- * ici ; les produits sans image affichent un pictogramme de substitution (voir CataloguePage).
+ * Stock initial : un champ "Stock initial" à la création crée automatiquement, côté backend,
+ * une VarianteProduit "unique" (taille/couleur vides, voir ProduitSerializer.stock_initial) —
+ * évite d'avoir à ouvrir le panneau "gérer les variantes" juste après création pour les
+ * produits sans déclinaison réelle. La gestion fine (plusieurs tailles/couleurs) reste dans
+ * VariantesManager, inchangée.
+ *
+ * Rabais : `pourcentage_reduction` (1-90 %) est éditable en création et en modification
+ * inline ; l'affichage du prix soldé (`prix_final`) se fait dans CataloguePage/CataloguePage
+ * côté membre, jamais recalculé ici (CLAUDE.md §8 — le backend reste seul juge du prix final).
+ *
+ * Image produit : upload multipart (validation MIME côté backend, CLAUDE.md §8) une fois le
+ * produit créé — voir useTeleverserImageProduit / storage.py (MinIO). Les produits sans image
+ * continuent d'afficher un pictogramme de substitution (voir CataloguePage).
  */
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useCreerProduit, useModifierProduit, useProduits } from "../../hooks/useBoutique";
+import {
+  useCreerProduit,
+  useModifierProduit,
+  useProduits,
+  useTeleverserImageProduit,
+} from "../../hooks/useBoutique";
 import type {
   CategorieProduit,
   Produit,
@@ -41,9 +55,11 @@ function formulaireInitial(): ProduitPayload {
     categorie: "vetements",
     description: "",
     prix: "0.00",
+    pourcentage_reduction: null,
     statut: "brouillon",
     nouveaute: false,
     seuil_alerte_stock: 5,
+    stock_initial: 0,
   };
 }
 
@@ -52,9 +68,16 @@ export default function GestionCatalogueTab() {
   const produitsQuery = useProduits();
   const creerMutation = useCreerProduit();
   const modifierMutation = useModifierProduit();
+  const televerserImageMutation = useTeleverserImageProduit();
 
   const [form, setForm] = useState<ProduitPayload>(formulaireInitial);
   const [produitDeplie, setProduitDeplie] = useState<string | null>(null);
+  const [produitImageEnCours, setProduitImageEnCours] = useState<string | null>(null);
+  const [produitImageErreur, setProduitImageErreur] = useState<{
+    produitId: string;
+    message: string;
+  } | null>(null);
+  const inputsFichierImage = useRef<Record<string, HTMLInputElement | null>>({});
 
   function handleCreer(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -63,6 +86,30 @@ export default function GestionCatalogueTab() {
 
   function toggleStatut(produit: Produit, statut: StatutProduit) {
     modifierMutation.mutate({ id: produit.id, payload: { statut } });
+  }
+
+  function modifierRabais(produit: Produit, valeur: string) {
+    const pourcentage = valeur === "" ? null : Number(valeur);
+    modifierMutation.mutate({ id: produit.id, payload: { pourcentage_reduction: pourcentage } });
+  }
+
+  function handleImageChoisie(produit: Produit, e: ChangeEvent<HTMLInputElement>) {
+    const fichier = e.target.files?.[0];
+    e.target.value = "";
+    if (!fichier) return;
+    setProduitImageEnCours(produit.id);
+    setProduitImageErreur(null);
+    televerserImageMutation.mutate(
+      { id: produit.id, fichier },
+      {
+        onError: (err) =>
+          setProduitImageErreur({
+            produitId: produit.id,
+            message: extractApiErrorMessage(err, t("catalogue_admin.image_erreur")),
+          }),
+        onSettled: () => setProduitImageEnCours(null),
+      },
+    );
   }
 
   return (
@@ -141,6 +188,45 @@ export default function GestionCatalogueTab() {
               className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             />
           </div>
+          <div>
+            <label
+              htmlFor="prod-stock-initial"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("catalogue_admin.stock_initial_label")}
+            </label>
+            <input
+              id="prod-stock-initial"
+              type="number"
+              min="0"
+              value={form.stock_initial ?? 0}
+              onChange={(e) => setForm({ ...form, stock_initial: Number(e.target.value) })}
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="prod-rabais"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("catalogue_admin.rabais_label")}
+            </label>
+            <input
+              id="prod-rabais"
+              type="number"
+              min="1"
+              max="90"
+              placeholder={t("catalogue_admin.rabais_placeholder")}
+              value={form.pourcentage_reduction ?? ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  pourcentage_reduction: e.target.value === "" ? null : Number(e.target.value),
+                })
+              }
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            />
+          </div>
           <div className="md:col-span-2">
             <label
               htmlFor="prod-desc"
@@ -196,15 +282,33 @@ export default function GestionCatalogueTab() {
           {produitsQuery.data?.results.map((produit) => (
             <div key={produit.id} className="rounded-cid border border-text-tertiary/20 p-3">
               <div className="flex flex-wrap items-center gap-2">
+                {produit.image ? (
+                  <img src={produit.image} alt="" className="h-10 w-10 rounded-cid object-cover" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-cid bg-bg-tertiary text-text-tertiary">
+                    🛍️
+                  </div>
+                )}
                 <span className="flex-1 text-sm font-semibold text-text-primary">
                   {produit.nom}
                 </span>
                 <span className="text-xs text-text-tertiary">
                   {t(`categorie.${produit.categorie}`)}
                 </span>
-                <span className="text-sm font-bold text-ca">
-                  {Number(produit.prix).toFixed(2).replace(".", ",")} €
-                </span>
+                {produit.pourcentage_reduction ? (
+                  <span className="text-right text-xs">
+                    <span className="mr-1 text-text-tertiary line-through">
+                      {Number(produit.prix).toFixed(2).replace(".", ",")} €
+                    </span>
+                    <span className="font-bold text-status-dangerText">
+                      {Number(produit.prix_final).toFixed(2).replace(".", ",")} €
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-sm font-bold text-ca">
+                    {Number(produit.prix).toFixed(2).replace(".", ",")} €
+                  </span>
+                )}
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[produit.statut]}`}
                 >
@@ -220,6 +324,18 @@ export default function GestionCatalogueTab() {
                     {t("catalogue.rupture")}
                   </span>
                 )}
+                <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                  {t("catalogue_admin.rabais_label")}
+                  <input
+                    type="number"
+                    min="1"
+                    max="90"
+                    aria-label={`${t("catalogue_admin.rabais_label")} — ${produit.nom}`}
+                    defaultValue={produit.pourcentage_reduction ?? ""}
+                    onBlur={(e) => modifierRabais(produit, e.target.value)}
+                    className="w-14 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs"
+                  />
+                </label>
                 <select
                   aria-label={t("catalogue_admin.changer_statut")}
                   value={produit.statut}
@@ -232,6 +348,25 @@ export default function GestionCatalogueTab() {
                     </option>
                   ))}
                 </select>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={(el) => {
+                    inputsFichierImage.current[produit.id] = el;
+                  }}
+                  onChange={(e) => handleImageChoisie(produit, e)}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => inputsFichierImage.current[produit.id]?.click()}
+                  disabled={produitImageEnCours === produit.id}
+                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
+                >
+                  {produitImageEnCours === produit.id
+                    ? t("catalogue_admin.image_en_cours")
+                    : t("catalogue_admin.image_televerser")}
+                </button>
                 <button
                   type="button"
                   onClick={() =>
@@ -244,6 +379,11 @@ export default function GestionCatalogueTab() {
                     : t("catalogue_admin.gerer_variantes")}
                 </button>
               </div>
+              {produitImageErreur?.produitId === produit.id && (
+                <p className="mt-1 text-[11px] text-status-dangerText">
+                  {produitImageErreur.message}
+                </p>
+              )}
               {produitDeplie === produit.id && <VariantesManager produit={produit} />}
             </div>
           ))}

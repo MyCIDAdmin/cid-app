@@ -16,6 +16,8 @@ const boutiqueKeys = {
   produits: (filtres: boutiqueApi.ProduitsFiltres = {}) =>
     [...boutiqueKeys.all, "produits", filtres] as const,
   variantes: (produitId: string) => [...boutiqueKeys.all, "variantes", produitId] as const,
+  variantesParIds: (ids: string[]) =>
+    [...boutiqueKeys.all, "variantes-par-ids", [...ids].sort()] as const,
   commandes: (filtres: boutiqueApi.CommandesFiltres = {}) =>
     [...boutiqueKeys.all, "commandes", filtres] as const,
 };
@@ -32,6 +34,21 @@ export function useVariantes(produitId: string) {
     queryKey: boutiqueKeys.variantes(produitId),
     queryFn: () => boutiqueApi.listVariantes(produitId),
     enabled: !!produitId,
+  });
+}
+
+/**
+ * Revalidation live du stock panier — voir listVariantesParIds. `refetchOnMount: "always"`
+ * car c'est justement à l'ouverture/retour sur le panier qu'un stock devenu insuffisant
+ * (commandé entre-temps par quelqu'un d'autre) doit être détecté ; le cache par défaut de
+ * React Query masquerait sinon un changement récent.
+ */
+export function useVariantesParIds(ids: string[]) {
+  return useQuery({
+    queryKey: boutiqueKeys.variantesParIds(ids),
+    queryFn: () => boutiqueApi.listVariantesParIds(ids),
+    enabled: ids.length > 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -59,6 +76,15 @@ export function useModifierProduit() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: Partial<ProduitPayload> }) =>
       boutiqueApi.modifierProduit(id, payload),
+    onSuccess: () => invalidateProduits(queryClient),
+  });
+}
+
+export function useTeleverserImageProduit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, fichier }: { id: string; fichier: File }) =>
+      boutiqueApi.televerserImageProduit(id, fichier),
     onSuccess: () => invalidateProduits(queryClient),
   });
 }

@@ -67,6 +67,17 @@ class BoutiqueCursorPagination(CursorPagination):
     ordering = ("-created_at", "id")
 
 
+class VarianteCursorPagination(CursorPagination):
+    """Bug préexistant corrigé au passage : VarianteProduit ne porte pas de `created_at`
+    (contrairement à Produit/Commande), donc `BoutiqueCursorPagination` (ordering sur
+    `-created_at`) faisait échouer en 500 tout listing de /boutique/variantes/ — y compris
+    l'appel `?id__in=...` ajouté ici pour la revalidation du stock panier. `id` (UUID,
+    toujours présent et unique) est un tri stable suffisant pour ce endpoint."""
+
+    page_size = 20
+    ordering = ("id",)
+
+
 class ProduitViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     permission_classes = [CatalogueBoutiquePermission]
@@ -91,8 +102,11 @@ class VarianteProduitViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     permission_classes = [CatalogueBoutiquePermission]
     serializer_class = VarianteProduitSerializer
-    pagination_class = BoutiqueCursorPagination
-    filterset_fields = ["produit"]
+    pagination_class = VarianteCursorPagination
+    # Forme dict pour exposer `?id__in=uuid1,uuid2,...` — utilisé par le panier frontend pour
+    # revalider en un seul appel le stock courant de toutes les variantes qu'il contient
+    # (détection "ausverkauft" / rupture de stock survenue depuis l'ajout au panier).
+    filterset_fields = {"produit": ["exact"], "id": ["in"]}
 
     def get_queryset(self):
         queryset = VarianteProduit.objects.select_related("produit").all()
@@ -195,7 +209,9 @@ class CommandeViewSet(ModelViewSet):
             for ligne in lignes_demandees:
                 variante = variantes[ligne["variante"].id]
                 quantite = ligne["quantite"]
-                prix_unitaire = variante.produit.prix
+                # prix_final (jamais prix seul) : applique un éventuel rabais actif au
+                # moment de la commande, gelé sur la ligne (CLAUDE.md §8).
+                prix_unitaire = variante.produit.prix_final
                 LigneCommande.objects.create(
                     commande=commande,
                     variante=variante,

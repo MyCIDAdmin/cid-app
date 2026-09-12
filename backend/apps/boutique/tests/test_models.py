@@ -45,3 +45,19 @@ def test_numero_commande_genere_automatiquement_et_unique():
 def test_ligne_commande_sous_total():
     ligne = LigneCommandeFactory(quantite=3, prix_unitaire=Decimal("12.50"))
     assert ligne.sous_total == Decimal("37.50")
+
+
+def test_prix_final_egal_au_prix_sans_reduction():
+    produit = ProduitFactory(prix=Decimal("25.00"), pourcentage_reduction=None)
+    assert produit.prix_final == Decimal("25.00")
+
+
+def test_prix_final_applique_le_pourcentage_de_reduction():
+    produit = ProduitFactory(prix=Decimal("50.00"), pourcentage_reduction=20)
+    assert produit.prix_final == Decimal("40.00")
+
+
+def test_prix_final_arrondi_a_deux_decimales():
+    produit = ProduitFactory(prix=Decimal("9.99"), pourcentage_reduction=33)
+    # 9.99 * 0.67 = 6.6933 -> arrondi à 6.69
+    assert produit.prix_final == Decimal("6.69")

@@ -13,6 +13,7 @@ vi.mock("../../hooks/useBoutique", async () => {
     useProduits: vi.fn(),
     useCreerProduit: vi.fn(),
     useModifierProduit: vi.fn(),
+    useTeleverserImageProduit: vi.fn(),
     useVariantes: vi.fn(),
     useCreerVariante: vi.fn(),
     useModifierVariante: vi.fn(),
@@ -27,6 +28,8 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     categorie: "articles_club",
     description: "",
     prix: "18.00",
+    pourcentage_reduction: null,
+    prix_final: "18.00",
     image: null,
     statut: "publie",
     nouveaute: false,
@@ -62,6 +65,11 @@ describe("GestionCatalogueTab", () => {
       mutate: modifierMock,
       isPending: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.useModifierProduit>);
+    vi.mocked(useBoutiqueHooks.useTeleverserImageProduit).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useTeleverserImageProduit>);
     vi.mocked(useBoutiqueHooks.useVariantes).mockReturnValue({
       data: { next: null, previous: null, results: [] },
     } as unknown as ReturnType<typeof useBoutiqueHooks.useVariantes>);
@@ -112,5 +120,46 @@ describe("GestionCatalogueTab", () => {
     renderWithProviders(<GestionCatalogueTab />);
     fireEvent.click(screen.getByText("catalogue_admin.gerer_variantes"));
     expect(screen.getByText("catalogue_admin.variantes_titre")).toBeInTheDocument();
+  });
+
+  it("inclut le stock initial saisi à la création", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+
+    fireEvent.change(screen.getByLabelText("catalogue_admin.nom_label"), {
+      target: { value: "Écharpe CA" },
+    });
+    fireEvent.change(screen.getByLabelText("catalogue_admin.stock_initial_label"), {
+      target: { value: "12" },
+    });
+    fireEvent.click(screen.getByText("catalogue_admin.creer"));
+
+    expect(creerMock).toHaveBeenCalledWith(
+      expect.objectContaining({ nom: "Écharpe CA", stock_initial: 12 }),
+      expect.anything(),
+    );
+  });
+
+  it("modifie le rabais d'un produit existant", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+    const champRabais = screen.getByLabelText("catalogue_admin.rabais_label — Mug CA 1920");
+    fireEvent.change(champRabais, { target: { value: "20" } });
+    fireEvent.blur(champRabais);
+    expect(modifierMock).toHaveBeenCalledWith({
+      id: "p1",
+      payload: { pourcentage_reduction: 20 },
+    });
+  });
+
+  it("affiche le prix soldé et le prix barré quand un rabais est actif", () => {
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [produit({ prix: "18.00", pourcentage_reduction: 20, prix_final: "14.40" })],
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+    renderWithProviders(<GestionCatalogueTab />);
+    expect(screen.getByText("14,40 €")).toBeInTheDocument();
   });
 });

@@ -23,7 +23,7 @@ Périmètre de ce module (Phase 2A, CLAUDE.md §7 — modèles + API uniquement)
 import uuid
 from decimal import Decimal
 
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -77,6 +77,12 @@ class Produit(models.Model):
     seuil_alerte_stock = models.PositiveIntegerField(
         default=5, help_text=_("Alerte admin quand le stock total d'une variante passe en dessous.")
     )
+    pourcentage_reduction = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(90)],
+        help_text=_("Rabais optionnel (1 à 90 %) appliqué au prix catalogue — voir prix_final."),
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -105,6 +111,16 @@ class Produit(models.Model):
     @property
     def en_rupture(self) -> bool:
         return self.stock_total <= 0
+
+    @property
+    def prix_final(self) -> Decimal:
+        """Prix effectivement facturé — applique `pourcentage_reduction` s'il est défini
+        (CLAUDE.md §8 : c'est CETTE valeur, jamais `prix` seul, qui doit être recalculée
+        côté serveur et gelée sur LigneCommande.prix_unitaire — voir CommandeViewSet.passer)."""
+        if not self.pourcentage_reduction:
+            return self.prix
+        facteur = Decimal(100 - self.pourcentage_reduction) / Decimal(100)
+        return (self.prix * facteur).quantize(Decimal("0.01"))
 
 
 class VarianteProduit(models.Model):

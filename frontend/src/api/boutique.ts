@@ -51,11 +51,38 @@ export async function supprimerProduit(id: string): Promise<void> {
   await apiClient.delete(`/boutique/produits/${id}/`);
 }
 
+/**
+ * Upload de l'image produit — appel distinct de `modifierProduit` (JSON) car il envoie du
+ * `multipart/form-data` (axios détecte FormData et fixe lui-même le Content-Type/boundary,
+ * aucune config client supplémentaire nécessaire). Validation MIME + stockage MinIO déjà en
+ * place côté backend (Produit.image, storage.py) — voir CLAUDE.md §8.
+ */
+export async function televerserImageProduit(id: string, fichier: File): Promise<Produit> {
+  const formData = new FormData();
+  formData.append("image", fichier);
+  const { data } = await apiClient.patch<Produit>(`/boutique/produits/${id}/`, formData);
+  return data;
+}
+
 export async function listVariantes(produitId: string): Promise<CursorPage<VarianteProduit>> {
   const { data } = await apiClient.get<CursorPage<VarianteProduit>>("/boutique/variantes/", {
     params: { produit: produitId },
   });
   return data;
+}
+
+/**
+ * Revalidation live du stock panier (`VarianteProduitViewSet.filterset_fields` expose
+ * `id__in`) — utilisée à l'ouverture du panier pour détecter les articles devenus
+ * "ausverkauft" depuis leur ajout (le panier ne conserve qu'un instantané figé du stock,
+ * voir store/panierStore.ts). Retourne un tableau vide sans appel réseau si `ids` est vide.
+ */
+export async function listVariantesParIds(ids: string[]): Promise<VarianteProduit[]> {
+  if (ids.length === 0) return [];
+  const { data } = await apiClient.get<CursorPage<VarianteProduit>>("/boutique/variantes/", {
+    params: { id__in: ids.join(",") },
+  });
+  return data.results;
 }
 
 export async function creerVariante(payload: VariantePayload): Promise<VarianteProduit> {

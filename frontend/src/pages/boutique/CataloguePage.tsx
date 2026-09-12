@@ -51,7 +51,9 @@ function ProduitCarte({ produit }: { produit: Produit }) {
       nom: produit.nom,
       taille: varianteSelectionnee.taille,
       couleur: varianteSelectionnee.couleur,
-      prixUnitaire: produit.prix,
+      // prix_final (jamais prix seul) : reflète un éventuel rabais actif (CLAUDE.md §8 —
+      // simple indicatif ici, le montant réel est de toute façon recalculé côté serveur).
+      prixUnitaire: produit.prix_final,
       stockDisponible: varianteSelectionnee.stock,
     });
   }
@@ -62,6 +64,11 @@ function ProduitCarte({ produit }: { produit: Produit }) {
         {produit.nouveaute && (
           <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-ca">
             {t("catalogue.badge_nouveaute")}
+          </span>
+        )}
+        {produit.pourcentage_reduction && (
+          <span className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-status-dangerText">
+            {t("catalogue.badge_rabais", { pct: produit.pourcentage_reduction })}
           </span>
         )}
         {produit.image ? (
@@ -90,7 +97,18 @@ function ProduitCarte({ produit }: { produit: Produit }) {
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-ca">{formatMontant(produit.prix)}</span>
+          {produit.pourcentage_reduction ? (
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-xs text-text-tertiary line-through">
+                {formatMontant(produit.prix)}
+              </span>
+              <span className="text-base font-bold text-status-dangerText">
+                {formatMontant(produit.prix_final)}
+              </span>
+            </span>
+          ) : (
+            <span className="text-base font-bold text-ca">{formatMontant(produit.prix)}</span>
+          )}
           <button
             type="button"
             onClick={handleAjouter}

@@ -10,7 +10,7 @@ import PanierCommandePage from "./PanierCommandePage";
 
 vi.mock("../../hooks/useBoutique", async () => {
   const actual = await vi.importActual<typeof useBoutiqueHooks>("../../hooks/useBoutique");
-  return { ...actual, usePasserCommande: vi.fn() };
+  return { ...actual, usePasserCommande: vi.fn(), useVariantesParIds: vi.fn() };
 });
 
 function articleTest(overrides: Partial<ArticlePanier> = {}): ArticlePanier {
@@ -67,6 +67,12 @@ describe("PanierCommandePage", () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.usePasserCommande>);
+    // Par défaut : le stock live confirme le stock du panier (5 dispo pour "v1"), pas de
+    // changement — les tests dédiés à la revalidation ("ausverkauft") le redéfinissent.
+    vi.mocked(useBoutiqueHooks.useVariantesParIds).mockReturnValue({
+      data: [{ id: "v1", produit: "p1", taille: "M", couleur: "", stock: 5 }],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVariantesParIds>);
   });
 
   it("affiche un message quand le panier est vide", () => {
@@ -107,6 +113,31 @@ describe("PanierCommandePage", () => {
       }),
       expect.anything(),
     );
+  });
+
+  it("marque un article ausverkauft quand le stock live est à 0 et bloque la suite", () => {
+    usePanierStore.setState({ articles: [articleTest()] });
+    vi.mocked(useBoutiqueHooks.useVariantesParIds).mockReturnValue({
+      data: [{ id: "v1", produit: "p1", taille: "M", couleur: "", stock: 0 }],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVariantesParIds>);
+
+    renderWithProviders(<PanierCommandePage />);
+
+    expect(screen.getByText("commande.article_ausverkauft")).toBeInTheDocument();
+    expect(screen.getByText("commande.continuer_livraison")).toBeDisabled();
+  });
+
+  it("marque un article ausverkauft quand la variante n'est plus renvoyée par le serveur (produit dépublié)", () => {
+    usePanierStore.setState({ articles: [articleTest()] });
+    vi.mocked(useBoutiqueHooks.useVariantesParIds).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVariantesParIds>);
+
+    renderWithProviders(<PanierCommandePage />);
+
+    expect(screen.getByText("commande.article_ausverkauft")).toBeInTheDocument();
   });
 
   it("affiche le numéro de commande et vide le panier après succès", () => {

@@ -26,6 +26,11 @@ export interface Produit {
   categorie: CategorieProduit;
   description: string;
   prix: string;
+  /** Rabais optionnel en % (1-90), voir Produit.pourcentage_reduction / prix_final côté backend. */
+  pourcentage_reduction: number | null;
+  /** Prix effectivement facturé (lecture seule) — prix avec le rabais appliqué s'il y en a un ;
+   * c'est TOUJOURS cette valeur qui doit être affichée/utilisée, jamais `prix` seul. */
+  prix_final: string;
   image: string | null;
   statut: StatutProduit;
   nouveaute: boolean;
@@ -44,9 +49,13 @@ export interface ProduitPayload {
   categorie: CategorieProduit;
   description?: string;
   prix: string;
+  pourcentage_reduction?: number | null;
   statut?: StatutProduit;
   nouveaute?: boolean;
   seuil_alerte_stock?: number;
+  /** Écriture seule, à la création uniquement — crée une variante "unique" (taille/couleur
+   * vides) avec ce stock. Ignoré par le backend en modification (PATCH). */
+  stock_initial?: number;
 }
 
 /** Payload de POST/PATCH /boutique/variantes/ (Bureau Admin+). */

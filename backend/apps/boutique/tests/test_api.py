@@ -38,6 +38,7 @@ def _auth(api_client, user):
 PRODUIT_LIST_URL = "boutique:produit-list"
 COMMANDE_LIST_URL = "boutique:commande-list"
 PASSER_URL = "boutique:commande-passer"
+VARIANTE_LIST_URL = "boutique:variante-list"
 
 
 def _produit_detail_url(produit):
@@ -119,6 +120,90 @@ def test_rh_ne_peut_pas_modifier_produit(api_client):
     assert resp.status_code == 403
 
 
+def test_creer_produit_avec_stock_initial_cree_une_variante_unique(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau10@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL),
+        {"nom": "Écharpe", "categorie": "accessoires", "prix": "15.00", "stock_initial": 8},
+    )
+    assert resp.status_code == 201
+    assert resp.data["stock_total"] == 8
+    assert len(resp.data["variantes"]) == 1
+    assert resp.data["variantes"][0]["taille"] == ""
+    assert resp.data["variantes"][0]["couleur"] == ""
+
+
+def test_creer_produit_sans_stock_initial_ne_cree_pas_de_variante(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau11@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL),
+        {"nom": "Casquette", "categorie": "accessoires", "prix": "12.00"},
+    )
+    assert resp.status_code == 201
+    assert resp.data["stock_total"] == 0
+    assert len(resp.data["variantes"]) == 0
+
+
+def test_modifier_produit_ignore_stock_initial(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau12@example.de")
+    produit = ProduitFactory()
+    VarianteProduitFactory(produit=produit, stock=5)
+    resp = _auth(api_client, user).patch(_produit_detail_url(produit), {"stock_initial": 999})
+    assert resp.status_code == 200
+    produit.refresh_from_db()
+    assert produit.stock_total == 5  # inchangé, aucune variante fantôme créée
+
+
+def test_prix_final_expose_par_lapi_avec_reduction(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "m25@example.de")
+    produit = ProduitFactory(prix=Decimal("40.00"), pourcentage_reduction=25)
+    resp = _auth(api_client, user).get(_produit_detail_url(produit))
+    assert resp.status_code == 200
+    assert Decimal(resp.data["prix_final"]) == Decimal("30.00")
+
+
+def test_pourcentage_reduction_hors_bornes_refuse(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau13@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL),
+        {
+            "nom": "Sweat",
+            "categorie": "vetements",
+            "prix": "45.00",
+            "pourcentage_reduction": 95,
+        },
+    )
+    assert resp.status_code == 400
+    assert "pourcentage_reduction" in resp.data["details"]
+
+
+# --- variantes : filtre id__in (revalidation du stock panier côté frontend) ---
+
+
+def test_list_variantes_ne_leve_pas_malgre_labsence_de_created_at(api_client):
+    # Régression : VarianteProduit n'a pas de champ `created_at`, contrairement à
+    # Produit/Commande — utiliser BoutiqueCursorPagination (tri sur `-created_at`) pour ce
+    # viewset faisait échouer TOUT listing de /boutique/variantes/ en 500.
+    user, _ = _user_avec_membre(Role.MEMBRE, "m28@example.de")
+    VarianteProduitFactory(stock=1)
+    resp = _auth(api_client, user).get(reverse(VARIANTE_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_variantes_filtre_id_in_ne_retourne_que_les_ids_demandes(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "m27@example.de")
+    v1 = VarianteProduitFactory(stock=3)
+    v2 = VarianteProduitFactory(stock=0)
+    VarianteProduitFactory(stock=9)  # non demandée, ne doit pas apparaître
+
+    resp = _auth(api_client, user).get(reverse(VARIANTE_LIST_URL), {"id__in": f"{v1.id},{v2.id}"})
+    assert resp.status_code == 200
+    ids_retournes = {r["id"] for r in resp.data["results"]}
+    assert ids_retournes == {str(v1.id), str(v2.id)}
+    stocks = {r["id"]: r["stock"] for r in resp.data["results"]}
+    assert stocks[str(v2.id)] == 0
+
+
 # --- passer commande : stock atomique, prix serveur, panier ---
 
 
@@ -160,6 +245,26 @@ def test_passer_commande_ignore_le_prix_envoye_par_le_client(api_client):
     assert resp.status_code == 201
     assert Decimal(resp.data["montant_total"]) == Decimal("20.00")
     assert Decimal(resp.data["lignes"][0]["prix_unitaire"]) == Decimal("20.00")
+
+
+def test_passer_commande_applique_le_prix_solde(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "m26@example.de")
+    variante = VarianteProduitFactory(stock=5)
+    variante.produit.prix = Decimal("40.00")
+    variante.produit.pourcentage_reduction = 25
+    variante.produit.save(update_fields=["prix", "pourcentage_reduction"])
+
+    resp = _auth(api_client, user).post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 2}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+    assert Decimal(resp.data["lignes"][0]["prix_unitaire"]) == Decimal("30.00")
+    assert Decimal(resp.data["montant_total"]) == Decimal("60.00")
 
 
 def test_passer_commande_refuse_si_stock_insuffisant(api_client):

@@ -16,6 +16,7 @@ vi.mock("../../hooks/useBoutique", async () => {
     useAnnulerCommande: vi.fn(),
     useCreerProduit: vi.fn(),
     useModifierProduit: vi.fn(),
+    useTeleverserImageProduit: vi.fn(),
     useVariantes: vi.fn(),
     useCreerVariante: vi.fn(),
     useModifierVariante: vi.fn(),
@@ -30,6 +31,8 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     categorie: "vetements",
     description: "",
     prix: "45.00",
+    pourcentage_reduction: null,
+    prix_final: "45.00",
     image: null,
     statut: "publie",
     nouveaute: false,
@@ -70,7 +73,11 @@ describe("AdminBoutiquePage", () => {
       data: { next: null, previous: null, results: [commande()] },
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
     vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
-      data: { next: null, previous: null, results: [produit(), produit({ id: "p2", statut: "brouillon" })] },
+      data: {
+        next: null,
+        previous: null,
+        results: [produit(), produit({ id: "p2", statut: "brouillon" })],
+      },
       isLoading: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
     vi.mocked(useBoutiqueHooks.useChangerStatutCommande).mockReturnValue({
@@ -90,6 +97,11 @@ describe("AdminBoutiquePage", () => {
       mutate: vi.fn(),
       isPending: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.useModifierProduit>);
+    vi.mocked(useBoutiqueHooks.useTeleverserImageProduit).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useTeleverserImageProduit>);
     vi.mocked(useBoutiqueHooks.useVariantes).mockReturnValue({
       data: { next: null, previous: null, results: [] },
     } as unknown as ReturnType<typeof useBoutiqueHooks.useVariantes>);

@@ -27,6 +27,7 @@
     "erreur": "Impossible de charger le catalogue.",
     "aucun_produit": "Aucun produit disponible pour le moment.",
     "badge_nouveaute": "NOUVEAUTÉ",
+    "badge_rabais": "-{{pct}}%",
     "variante_label": "Choisir une variante",
     "ajouter": "Ajouter",
     "rupture": "Rupture de stock",
@@ -60,7 +61,10 @@
     "erreur": "La commande n'a pas pu être enregistrée.",
     "confirmee_titre": "Commande confirmée !",
     "confirmee_numero": "Numéro de commande : {{numero}}",
-    "confirmee_email": "Un email de confirmation vous a été envoyé."
+    "confirmee_email": "Un email de confirmation vous a été envoyé.",
+    "verification_stock": "Vérification du stock disponible…",
+    "articles_indisponibles": "Un ou plusieurs articles ne sont plus disponibles en quantité suffisante. Retirez-les ou ajustez la quantité pour continuer.",
+    "article_ausverkauft": "Épuisé — retirez cet article pour continuer."
   },
   "admin": {
     "titre": "Boutique — Administration",
@@ -93,6 +97,12 @@
     "categorie_label": "Catégorie",
     "prix_label": "Prix (€)",
     "seuil_label": "Seuil d'alerte stock",
+    "stock_initial_label": "Stock initial",
+    "rabais_label": "Rabais (%)",
+    "rabais_placeholder": "Aucun",
+    "image_televerser": "Téléverser une image",
+    "image_en_cours": "Téléversement…",
+    "image_erreur": "L'image n'a pas pu être téléversée.",
     "description_label": "Description",
     "nouveaute_label": "Marquer comme nouveauté",
     "erreur_creation": "Le produit n'a pas pu être créé.",

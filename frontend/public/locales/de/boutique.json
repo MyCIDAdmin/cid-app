@@ -27,6 +27,7 @@
     "erreur": "Der Katalog konnte nicht geladen werden.",
     "aucun_produit": "Derzeit sind keine Produkte verfügbar.",
     "badge_nouveaute": "NEU",
+    "badge_rabais": "-{{pct}}%",
     "variante_label": "Variante wählen",
     "ajouter": "Hinzufügen",
     "rupture": "Nicht auf Lager",
@@ -60,7 +61,10 @@
     "erreur": "Die Bestellung konnte nicht gespeichert werden.",
     "confirmee_titre": "Bestellung bestätigt!",
     "confirmee_numero": "Bestellnummer: {{numero}}",
-    "confirmee_email": "Eine Bestätigungs-E-Mail wurde Ihnen zugesandt."
+    "confirmee_email": "Eine Bestätigungs-E-Mail wurde Ihnen zugesandt.",
+    "verification_stock": "Verfügbarer Bestand wird geprüft…",
+    "articles_indisponibles": "Ein oder mehrere Artikel sind nicht mehr in ausreichender Menge verfügbar. Entfernen Sie sie oder passen Sie die Menge an, um fortzufahren.",
+    "article_ausverkauft": "Ausverkauft — bitte entfernen Sie diesen Artikel, um fortzufahren."
   },
   "admin": {
     "titre": "Shop — Verwaltung",
@@ -93,6 +97,12 @@
     "categorie_label": "Kategorie",
     "prix_label": "Preis (€)",
     "seuil_label": "Bestandswarnschwelle",
+    "stock_initial_label": "Anfangsbestand",
+    "rabais_label": "Rabatt (%)",
+    "rabais_placeholder": "Kein",
+    "image_televerser": "Bild hochladen",
+    "image_en_cours": "Wird hochgeladen…",
+    "image_erreur": "Das Bild konnte nicht hochgeladen werden.",
     "description_label": "Beschreibung",
     "nouveaute_label": "Als Neuheit markieren",
     "erreur_creation": "Das Produkt konnte nicht erstellt werden.",

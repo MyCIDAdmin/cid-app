@@ -31,6 +31,16 @@ interface PanierState {
   changerQuantite: (varianteId: string, quantite: number) => void;
   retirer: (varianteId: string) => void;
   vider: () => void;
+  /**
+   * Revalide `stockDisponible` contre le stock serveur ACTUEL (voir
+   * useVariantesParIds / PanierCommandePage) : le panier ne contient qu'un instantané figé
+   * au moment de l'ajout, donc un article commandé entre-temps par quelqu'un d'autre doit
+   * être détecté ici plutôt qu'à l'échec de `passer` seulement. Toute variante du panier
+   * absente de `stocksParVarianteId` (produit dépublié ou variante supprimée depuis) est
+   * traitée comme épuisée (stock 0) — jamais retirée automatiquement : c'est à l'utilisateur
+   * de décider de retirer un article devenu indisponible ("ausverkauft").
+   */
+  synchroniserStocks: (stocksParVarianteId: Record<string, number>) => void;
 }
 
 export const usePanierStore = create<PanierState>()(
@@ -74,6 +84,17 @@ export const usePanierStore = create<PanierState>()(
       retirer: (varianteId) =>
         set((state) => ({ articles: state.articles.filter((a) => a.varianteId !== varianteId) })),
       vider: () => set({ articles: [] }),
+      synchroniserStocks: (stocksParVarianteId) =>
+        set((state) => ({
+          articles: state.articles.map((a) => {
+            const stockActuel = stocksParVarianteId[a.varianteId] ?? 0;
+            return {
+              ...a,
+              stockDisponible: stockActuel,
+              quantite: Math.min(a.quantite, stockActuel),
+            };
+          }),
+        })),
     }),
     { name: "cid-panier", storage: createJSONStorage(() => sessionStorage) },
   ),

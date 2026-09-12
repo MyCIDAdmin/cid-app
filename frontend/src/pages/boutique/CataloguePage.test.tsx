@@ -19,6 +19,8 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     categorie: "vetements",
     description: "Maillot officiel",
     prix: "45.00",
+    pourcentage_reduction: null,
+    prix_final: "45.00",
     image: null,
     statut: "publie",
     nouveaute: true,
@@ -76,6 +78,38 @@ describe("CataloguePage", () => {
 
     renderWithProviders(<CataloguePage />);
     expect(screen.getByText("catalogue.ajouter")).toBeDisabled();
+  });
+
+  it("affiche le prix soldé (barré + réduit) quand un rabais est actif", () => {
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [produit({ prix: "50.00", pourcentage_reduction: 20, prix_final: "40.00" })],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+
+    renderWithProviders(<CataloguePage />);
+    expect(screen.getByText("50,00 €")).toBeInTheDocument();
+    expect(screen.getByText("40,00 €")).toBeInTheDocument();
+  });
+
+  it("ajoute au panier le prix soldé (prix_final), pas le prix catalogue", () => {
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [produit({ prix: "50.00", pourcentage_reduction: 20, prix_final: "40.00" })],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+
+    renderWithProviders(<CataloguePage />);
+    fireEvent.click(screen.getByText("catalogue.ajouter"));
+    expect(usePanierStore.getState().articles[0].prixUnitaire).toBe("40.00");
   });
 
   it("affiche un message quand le catalogue est vide", () => {
