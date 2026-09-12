@@ -53,6 +53,7 @@
     "pas_de_quorum": "pas de quorum requis",
     "nombre_voix": "{{count}} voix",
     "elu": "Élu(e)",
+    "egalite": "Égalité : {{count}} options sont à égalité en tête avec le même nombre de voix.",
     "composition_liste": "Candidats :",
     "footer_certifie": "Votes anonymes · Chiffrement de bout en bout · Rapport certifié"
   },

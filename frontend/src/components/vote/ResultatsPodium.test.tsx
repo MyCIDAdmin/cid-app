@@ -58,4 +58,29 @@ describe("ResultatsPodium", () => {
     );
     expect(screen.getByText("Khaled Test, Abir Test", { exact: false })).toBeInTheDocument();
   });
+
+  it("marque toutes les options à égalité comme gagnantes (régression : Liste2 seule élue à tort alors que Liste1 avait le même nombre de voix)", () => {
+    const egalite: Resultats = {
+      ...resultats,
+      resultats: [
+        { option_id: "o2", label: "Liste2", nombre_voix: 1, pct: 100, candidats: [] },
+        { option_id: "o1", label: "Liste1", nombre_voix: 1, pct: 100, candidats: [] },
+        { option_id: "o3", label: "Liste3", nombre_voix: 0, pct: 0, candidats: [] },
+      ],
+    };
+    renderWithProviders(<ResultatsPodium resultats={egalite} />);
+
+    const liste1 = screen.getByText("Liste1").closest("div.rounded-cid");
+    const liste2 = screen.getByText("Liste2").closest("div.rounded-cid");
+    const liste3 = screen.getByText("Liste3").closest("div.rounded-cid");
+    expect(liste1).toHaveTextContent("resultats.elu");
+    expect(liste2).toHaveTextContent("resultats.elu");
+    expect(liste3).not.toHaveTextContent("resultats.elu");
+    expect(screen.getByText("resultats.egalite", { exact: false })).toBeInTheDocument();
+  });
+
+  it("n'affiche pas la mention d'égalité quand un seul gagnant se dégage", () => {
+    renderWithProviders(<ResultatsPodium resultats={resultats} />);
+    expect(screen.queryByText("resultats.egalite", { exact: false })).not.toBeInTheDocument();
+  });
 });
