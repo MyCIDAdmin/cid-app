@@ -105,7 +105,7 @@ Timeline v1.2 (`CID-PTL-001`) :
 | Phase 1B (S5-6) | `apps.membres`, `apps.cotisations`, `apps.adhesions` | ✅ fait |
 | Phase 2A (S7-8) | `apps.evenements`, `apps.boutique` (modèles + API) | ✅ fait |
 | Phase 2B (S9-10) | Boutique admin React, adhésions React, `apps.stats` (3 onglets), `apps.notifications` (11 types) | ✅ fait |
-| Phase 3 — Vote (S11-12) | `apps.vote` — Django Channels, WebSocket, anonymat HMAC | à faire |
+| Phase 3 — Vote (S11-12) | `apps.vote` — Django Channels, WebSocket, anonymat HMAC (backend fait ; frontend React à suivre) | 🟡 backend fait |
 | Go-Live R1 (fin S12) | Smoke tests R1, déploiement Railway production | à faire |
 | Phase 4A/4B (S13-15, R2) | `apps.communaute` — forum, messagerie, live, albums, quiz | à faire |
 | Phase 5 (S16-17) | i18n arabe RTL complet, tests E2E, Locust 1000 users, OWASP ZAP | à faire |
