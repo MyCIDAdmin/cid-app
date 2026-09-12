@@ -1,12 +1,10 @@
 """
 Modèles — app stats.
 
-R1 P1 — KPIs Financier/Membres/Événements + R2 Engagement/Projets, exports PDF/Excel (FDD §3.6).
-
-Ce module sera implémenté dans une phase ultérieure du planning (voir
-CID-PTL-001 v1.2 et CID-RPL-001 v1.1). Le squelette d'app est en place dès
-la Phase 0 pour que les migrations et INSTALLED_APPS soient stables dès le
-départ.
+Ce module n'a délibérément aucun modèle : les 3 onglets R1 (Financier/Membres/Événements,
+FDD §5.3) sont des agrégations en lecture seule sur les modèles d'autres apps (cotisations,
+adhesions, boutique, evenements, membres) — voir services.py. Rien à persister ici tant qu'aucun
+export planifié (R-001, Celery Beat) ni cache de KPI n'est introduit.
 """
 
 from django.db import models  # noqa: F401

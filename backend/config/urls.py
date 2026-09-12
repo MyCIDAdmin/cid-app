@@ -19,9 +19,9 @@ urlpatterns = [
     path("api/v1/evenements/", include("apps.evenements.urls")),
     path("api/v1/boutique/", include("apps.boutique.urls")),
     path("api/v1/notifications/", include("apps.notifications.urls")),
+    path("api/v1/stats/", include("apps.stats.urls")),
     # Les routes suivantes sont ajoutées au fur et à mesure de leur implémentation :
     # path("api/v1/votes/", include("apps.vote.urls")),
-    # path("api/v1/stats/", include("apps.stats.urls")),
 ]
 
 if settings.DEBUG:
