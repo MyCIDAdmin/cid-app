@@ -211,4 +211,41 @@ describe("VotePage", () => {
     fireEvent.click(screen.getByText("Élection du Bureau"));
     expect(screen.getByText("Candidat A")).toBeInTheDocument();
   });
+
+  it("affiche un état de connexion (et jamais un bouton bloqué) tant que le socket n'est pas ouvert", () => {
+    // Régression : le bouton de vote restait affiché en permanence sur "envoi en cours" quand
+    // la connexion WebSocket n'atteignait jamais l'état "ouvert" (bug de production — voir
+    // useVoteSocket.test.ts). Le bulletin ne doit apparaître qu'une fois réellement connecté.
+    vi.mocked(useVoteHooks.useSessionVoteActive).mockReturnValue({
+      data: page([sessionOuverte]),
+      isLoading: false,
+    } as unknown as ReturnType<typeof useVoteHooks.useSessionVoteActive>);
+    vi.mocked(useVoteHooks.useVoteSession).mockReturnValue({
+      data: sessionOuverte,
+    } as unknown as ReturnType<typeof useVoteHooks.useVoteSession>);
+    vi.mocked(useVoteSocketModule.useVoteSocket).mockReturnValue(
+      socketDefaut({ statut: "connexion" }),
+    );
+
+    renderWithProviders(<VotePage />);
+    expect(screen.getByText("bulletin.connexion_en_cours")).toBeInTheDocument();
+    expect(screen.queryByText("bulletin.confirmer")).not.toBeInTheDocument();
+    expect(screen.queryByText("bulletin.envoi_en_cours")).not.toBeInTheDocument();
+  });
+
+  it("affiche un message d'indisponibilité si la connexion échoue", () => {
+    vi.mocked(useVoteHooks.useSessionVoteActive).mockReturnValue({
+      data: page([sessionOuverte]),
+      isLoading: false,
+    } as unknown as ReturnType<typeof useVoteHooks.useSessionVoteActive>);
+    vi.mocked(useVoteHooks.useVoteSession).mockReturnValue({
+      data: sessionOuverte,
+    } as unknown as ReturnType<typeof useVoteHooks.useVoteSession>);
+    vi.mocked(useVoteSocketModule.useVoteSocket).mockReturnValue(
+      socketDefaut({ statut: "erreur" }),
+    );
+
+    renderWithProviders(<VotePage />);
+    expect(screen.getByText("bulletin.connexion_indisponible")).toBeInTheDocument();
+  });
 });

@@ -1,12 +1,19 @@
 /**
  * Hook WebSocket temps réel — module vote (SDD §2.3, apps.vote.consumers.VoteConsumer).
  *
- * ws://.../ws/votes/{session_id}/?token=<JWT> — authentification par apps.accounts.ws_auth
- * (JWT en query string, PAS de header). Le backend parle WebSocket brut via Django Channels,
- * PAS le protocole Socket.IO : bien que `socket.io-client` figure dans package.json (prévu au
- * départ pour un futur module communaute temps réel), il est incompatible avec ce endpoint et
- * n'est donc volontairement pas utilisé ici — ce hook s'appuie sur l'API `WebSocket` native du
- * navigateur.
+ * {VITE_WS_BASE_URL}/votes/{session_id}/?token=<JWT> — authentification par
+ * apps.accounts.ws_auth (JWT en query string, PAS de header). Le backend parle WebSocket brut
+ * via Django Channels, PAS le protocole Socket.IO : bien que `socket.io-client` figure dans
+ * package.json (prévu au départ pour un futur module communaute temps réel), il est
+ * incompatible avec ce endpoint et n'est donc volontairement pas utilisé ici — ce hook s'appuie
+ * sur l'API `WebSocket` native du navigateur.
+ *
+ * ATTENTION à la forme de `VITE_WS_BASE_URL` (docs/RAILWAY.md §6/§10.1) : la variable inclut
+ * DÉJÀ le préfixe `/ws` (ex. `wss://<domaine-backend>/ws`), c'est pourquoi on n'ajoute ici que
+ * `/votes/{id}/` — ajouter un second `/ws/` produirait `.../ws/ws/votes/{id}/`, une URL qui ne
+ * correspond à aucune route de `config/ws_urls.py` (la connexion échoue silencieusement côté
+ * navigateur : `onerror`/`onclose` sans jamais atteindre `onopen`, et `statut` reste bloqué hors
+ * de "ouvert" indéfiniment — c'était le bug initial de ce hook).
  *
  * La soumission du bulletin (mockup #vote-submit-btn "Confirmer mon vote") passe exclusivement
  * par ce canal — jamais par un POST REST, afin que l'accusé de réception et la diffusion du
@@ -17,7 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import type { ParticipationUpdate, Resultats, VoteSocketMessage } from "../types/vote";
 
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000";
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000/ws";
 
 type StatutConnexion = "connexion" | "ouvert" | "ferme" | "erreur";
 
@@ -46,7 +53,7 @@ export function useVoteSocket(sessionId: string | undefined): UseVoteSocketResul
     setErreur(null);
     setVoteEnregistre(false);
 
-    const url = `${WS_BASE_URL}/ws/votes/${sessionId}/?token=${encodeURIComponent(accessToken)}`;
+    const url = `${WS_BASE_URL}/votes/${sessionId}/?token=${encodeURIComponent(accessToken)}`;
     const ws = new WebSocket(url);
     wsRef.current = ws;
 

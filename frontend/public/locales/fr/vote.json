@@ -39,7 +39,9 @@
     "chiffre_anonyme": "Chiffré & Anonyme",
     "vote_enregistre": "Vote enregistré !",
     "vote_enregistre_note": "Votre vote est anonyme et sécurisé. Les résultats seront affichés à la clôture de la session.",
-    "resultats_a_la_cloture": "Les résultats détaillés seront révélés uniquement à la clôture de la session."
+    "resultats_a_la_cloture": "Les résultats détaillés seront révélés uniquement à la clôture de la session.",
+    "connexion_en_cours": "Connexion au vote en direct…",
+    "connexion_indisponible": "Connexion au vote indisponible pour le moment. Rechargez la page pour réessayer."
   },
   "resultats": {
     "titre": "Résultats officiels",
@@ -63,6 +65,7 @@
     "etape_options": "Options de vote",
     "etape_confirmer": "Confirmer",
     "erreur_titre_requis": "Le titre et la description sont obligatoires.",
+    "erreur_membres_requis": "Sélectionnez au moins un membre pour ce groupe.",
     "erreur_options_min": "Un vote doit comporter au moins 2 options.",
     "erreur_creation": "La création de la session a échoué.",
     "titre_session": "Titre de la session",
@@ -93,6 +96,11 @@
     "eligibilite_tous_actifs": "Tous les membres actifs",
     "eligibilite_cotisants": "Membres cotisants de l'année en cours",
     "eligibilite_bureau": "Bureau et modérateurs",
+    "eligibilite_selection_manuelle": "Sélection manuelle (un groupe précis)",
+    "rechercher_membres": "Rechercher des membres",
+    "rechercher_membres_placeholder": "Nom, prénom…",
+    "aucun_membre": "Aucun membre actif trouvé.",
+    "membres_selectionnes_count": "{{count}} membre(s) sélectionné(s)",
     "quorum": "Quorum requis",
     "quorum_placeholder": "Ex : 50 (en %)",
     "notifier_membres_auto": "Les membres éligibles seront notifiés (notification + email) dès le lancement.",

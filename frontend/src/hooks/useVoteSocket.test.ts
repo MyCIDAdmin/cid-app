@@ -66,6 +66,14 @@ describe("useVoteSocket", () => {
     expect(FakeWebSocket.instances[0].url).toContain("/ws/votes/session-1/?token=jwt-token");
   });
 
+  it("ne duplique jamais le segment /ws/ (régression : VITE_WS_BASE_URL inclut déjà /ws)", () => {
+    // docs/RAILWAY.md prescrit VITE_WS_BASE_URL=wss://<domaine>/ws — le hook ne doit ajouter
+    // que "/votes/{id}/", jamais un second "/ws/" (sinon la connexion échoue silencieusement
+    // en production : onerror/onclose sans jamais atteindre onopen, bouton de vote bloqué).
+    renderHook(() => useVoteSocket("session-1"));
+    expect(FakeWebSocket.instances[0].url).not.toMatch(/\/ws\/ws\//);
+  });
+
   it("ne se connecte pas sans sessionId", () => {
     renderHook(() => useVoteSocket(undefined));
     expect(FakeWebSocket.instances).toHaveLength(0);

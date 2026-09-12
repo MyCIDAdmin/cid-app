@@ -66,11 +66,22 @@ export default function VotePage() {
     Boolean(historiqueOuvert),
   );
 
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  // Repasse à false dès qu'une réponse arrive côté WebSocket (accusé de réception ou erreur) —
+  // AUCUN lien avec l'état de connexion du socket lui-même (bug corrigé : le bouton restait
+  // bloqué sur "Wird gesendet…" tant que la connexion n'était pas encore "ouverte", ce qui
+  // pouvait sembler figé indéfiniment si la connexion tardait ou échouait).
+  useEffect(() => {
+    if (socket.voteEnregistre || socket.erreur) setEnvoiEnCours(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket.voteEnregistre, socket.erreur]);
+
   const resultats = socket.resultats;
   const sessionCloturee = session?.statut === "cloturee" || Boolean(resultats);
   const aDejaVote = socket.voteEnregistre;
 
   function handleVoter(choix: string[]) {
+    setEnvoiEnCours(true);
     socket.voter(choix);
   }
 
@@ -208,11 +219,23 @@ export default function VotePage() {
                       {socket.erreur}
                     </p>
                   )}
-                  <BulletinVote
-                    session={session}
-                    onSubmit={handleVoter}
-                    envoiEnCours={socket.statut !== "ouvert"}
-                  />
+                  {socket.statut === "ouvert" && (
+                    <BulletinVote
+                      session={session}
+                      onSubmit={handleVoter}
+                      envoiEnCours={envoiEnCours}
+                    />
+                  )}
+                  {socket.statut === "connexion" && (
+                    <p className="text-center text-xs text-text-tertiary">
+                      {t("bulletin.connexion_en_cours")}
+                    </p>
+                  )}
+                  {(socket.statut === "erreur" || socket.statut === "ferme") && (
+                    <p className="rounded-cid bg-status-warningBg px-3 py-2 text-center text-xs text-status-warningText">
+                      {t("bulletin.connexion_indisponible")}
+                    </p>
+                  )}
                 </div>
               )}
 

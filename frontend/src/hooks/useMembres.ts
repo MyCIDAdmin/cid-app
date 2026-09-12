@@ -16,11 +16,16 @@ const membresKeys = {
   detail: (id: string) => [...membresKeys.all, "detail", id] as const,
 };
 
-export function useMembresList(filters: MembresListFilters, pageUrl: string | null) {
+export function useMembresList(
+  filters: MembresListFilters,
+  pageUrl: string | null,
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: membresKeys.list(filters, pageUrl),
     queryFn: () => (pageUrl ? membresApi.getMembresPage(pageUrl) : membresApi.listMembres(filters)),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 }
 

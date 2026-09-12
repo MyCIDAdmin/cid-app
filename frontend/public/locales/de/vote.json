@@ -39,7 +39,9 @@
     "chiffre_anonyme": "Verschlüsselt & Anonym",
     "vote_enregistre": "Stimme erfasst!",
     "vote_enregistre_note": "Ihre Stimme ist anonym und gesichert. Die Ergebnisse werden nach Abschluss der Sitzung angezeigt.",
-    "resultats_a_la_cloture": "Die detaillierten Ergebnisse werden erst nach Abschluss der Sitzung bekannt gegeben."
+    "resultats_a_la_cloture": "Die detaillierten Ergebnisse werden erst nach Abschluss der Sitzung bekannt gegeben.",
+    "connexion_en_cours": "Verbindung zur Live-Abstimmung wird hergestellt…",
+    "connexion_indisponible": "Verbindung zur Abstimmung derzeit nicht möglich. Laden Sie die Seite neu, um es erneut zu versuchen."
   },
   "resultats": {
     "titre": "Offizielle Ergebnisse",
@@ -63,6 +65,7 @@
     "etape_options": "Abstimmungsoptionen",
     "etape_confirmer": "Bestätigen",
     "erreur_titre_requis": "Titel und Beschreibung sind erforderlich.",
+    "erreur_membres_requis": "Wählen Sie mindestens ein Mitglied für diese Gruppe aus.",
     "erreur_options_min": "Eine Abstimmung muss mindestens 2 Optionen enthalten.",
     "erreur_creation": "Die Sitzung konnte nicht erstellt werden.",
     "titre_session": "Titel der Sitzung",
@@ -93,6 +96,11 @@
     "eligibilite_tous_actifs": "Alle aktiven Mitglieder",
     "eligibilite_cotisants": "Beitragszahlende Mitglieder des laufenden Jahres",
     "eligibilite_bureau": "Vorstand und Moderatoren",
+    "eligibilite_selection_manuelle": "Manuelle Auswahl (eine bestimmte Gruppe)",
+    "rechercher_membres": "Mitglieder suchen",
+    "rechercher_membres_placeholder": "Name, Vorname…",
+    "aucun_membre": "Kein aktives Mitglied gefunden.",
+    "membres_selectionnes_count": "{{count}} Mitglied(er) ausgewählt",
     "quorum": "Erforderliches Quorum",
     "quorum_placeholder": "Z. B.: 50 (in %)",
     "notifier_membres_auto": "Wahlberechtigte Mitglieder werden bei Start benachrichtigt (Benachrichtigung + E-Mail).",

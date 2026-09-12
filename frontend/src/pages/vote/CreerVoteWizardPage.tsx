@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate } from "react-router-dom";
 
+import { useMembresList } from "../../hooks/useMembres";
 import { useCreerVoteSession } from "../../hooks/useVote";
 import { useAuthStore } from "../../store/authStore";
 import type { EligibiliteVote, ModeAnonymat, TypeVote, VoteOptionInput } from "../../types/vote";
@@ -53,6 +54,20 @@ export default function CreerVoteWizardPage() {
   const [modeAnonymat, setModeAnonymat] = useState<ModeAnonymat>("anonyme");
   const [eligibilite, setEligibilite] = useState<EligibiliteVote>("tous_actifs");
   const [quorumPct, setQuorumPct] = useState<string>("");
+  // Sélection manuelle (FDD §5.2 "Sélection manuelle…") — un vote peut aussi être réservé à un
+  // groupe précis de membres (un comité, une commission…), pas seulement aux 3 catégories
+  // génériques ci-dessus ou à un unique membre à la fois.
+  const [membresSelectionnes, setMembresSelectionnes] = useState<string[]>([]);
+  const [rechercheMembre, setRechercheMembre] = useState("");
+  const membresQuery = useMembresList({ statut: "actif", q: rechercheMembre }, null, {
+    enabled: eligibilite === "selection_manuelle",
+  });
+
+  function toggleMembreSelectionne(id: string) {
+    setMembresSelectionnes((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
+    );
+  }
 
   // Étape 2 — options
   const [options, setOptions] = useState<VoteOptionInput[]>(optionsParDefaut("unique"));
@@ -79,6 +94,10 @@ export default function CreerVoteWizardPage() {
       setErreurEtape(t("wizard.erreur_titre_requis"));
       return;
     }
+    if (eligibilite === "selection_manuelle" && membresSelectionnes.length === 0) {
+      setErreurEtape(t("wizard.erreur_membres_requis"));
+      return;
+    }
     setErreurEtape(null);
     setEtape(2);
   }
@@ -103,6 +122,8 @@ export default function CreerVoteWizardPage() {
         mode_anonymat: modeAnonymat,
         nb_choix_max: typeVote === "multiple" ? nbChoixMax : 1,
         eligibilite,
+        membres_selectionnes:
+          eligibilite === "selection_manuelle" ? membresSelectionnes : undefined,
         duree_minutes: dureeMinutes,
         quorum_pct: quorumPct ? Number(quorumPct) : null,
         resultats_visibles_avant_cloture: false,
@@ -280,11 +301,6 @@ export default function CreerVoteWizardPage() {
                 <label className="mb-1 block text-xs font-medium text-text-secondary">
                   {t("wizard.membres_eligibles")}
                 </label>
-                {/* "Sélection manuelle" (EligibiliteVote.SELECTION_MANUELLE côté backend) est
-                    volontairement omise ici : elle exige un sélecteur de membres dédié
-                    (membres_selectionnes), hors périmètre de cette première itération du
-                    wizard — les 3 options ci-dessous couvrent les cas d'usage FDD §5.2
-                    principaux (élections générales, AG réservée au Bureau). */}
                 <select
                   value={eligibilite}
                   onChange={(e) => setEligibilite(e.target.value as EligibiliteVote)}
@@ -293,6 +309,9 @@ export default function CreerVoteWizardPage() {
                   <option value="tous_actifs">{t("wizard.eligibilite_tous_actifs")}</option>
                   <option value="cotisants">{t("wizard.eligibilite_cotisants")}</option>
                   <option value="bureau">{t("wizard.eligibilite_bureau")}</option>
+                  <option value="selection_manuelle">
+                    {t("wizard.eligibilite_selection_manuelle")}
+                  </option>
                 </select>
               </div>
               <div>
@@ -310,6 +329,52 @@ export default function CreerVoteWizardPage() {
                 />
               </div>
             </div>
+
+            {/* Sélection manuelle — un vote peut cibler un groupe précis de membres (une
+                commission, un comité...), pas seulement un individu à la fois : la recherche
+                filtre parmi les membres actifs et chaque coche ajoute/retire ce membre du
+                groupe visé par cette session (membres_selectionnes, requis côté backend
+                lorsque eligibilite=selection_manuelle — voir VoteSessionCreateSerializer). */}
+            {eligibilite === "selection_manuelle" && (
+              <div className="rounded-cid border border-text-tertiary/20 p-3">
+                <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  {t("wizard.rechercher_membres")}
+                </label>
+                <input
+                  value={rechercheMembre}
+                  onChange={(e) => setRechercheMembre(e.target.value)}
+                  placeholder={t("wizard.rechercher_membres_placeholder")}
+                  className="mb-2 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+                <div className="max-h-48 space-y-1 overflow-y-auto">
+                  {membresQuery.isLoading && (
+                    <p className="text-xs text-text-tertiary">{t("historique.chargement")}</p>
+                  )}
+                  {membresQuery.data?.results.length === 0 && (
+                    <p className="text-xs text-text-tertiary">{t("wizard.aucun_membre")}</p>
+                  )}
+                  {membresQuery.data?.results.map((m) => (
+                    <label
+                      key={m.id}
+                      className="flex cursor-pointer items-center gap-2 rounded-cid px-2 py-1 text-sm hover:bg-bg-tertiary"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={membresSelectionnes.includes(m.id)}
+                        onChange={() => toggleMembreSelectionne(m.id)}
+                      />
+                      <span className="text-text-primary">
+                        {m.prenom} {m.nom}
+                      </span>
+                      <span className="text-xs text-text-tertiary">{m.ville_de}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] text-text-tertiary">
+                  {t("wizard.membres_selectionnes_count", { count: membresSelectionnes.length })}
+                </p>
+              </div>
+            )}
 
             <p className="text-[11px] text-text-tertiary">ℹ {t("wizard.notifier_membres_auto")}</p>
 
@@ -429,7 +494,11 @@ export default function CreerVoteWizardPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-text-secondary">{t("wizard.membres_eligibles")}</dt>
-                <dd className="text-text-primary">{t(`wizard.eligibilite_${eligibilite}`)}</dd>
+                <dd className="text-text-primary">
+                  {eligibilite === "selection_manuelle"
+                    ? t("wizard.membres_selectionnes_count", { count: membresSelectionnes.length })
+                    : t(`wizard.eligibilite_${eligibilite}`)}
+                </dd>
               </div>
             </dl>
             <p className="rounded-cid bg-status-warningBg px-3 py-2 text-[11px] text-status-warningText">
