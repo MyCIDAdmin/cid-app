@@ -24,7 +24,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from .filters import VoteSessionFilter
-from .models import StatutSession, VoteOption, VoteSession
+from .models import StatutSession, VoteOption, VoteOptionCandidat, VoteSession
 from .permissions import VoteSessionPermission
 from .security import generer_anonymat_sel
 from .serializers import VoteSessionCreateSerializer, VoteSessionSerializer
@@ -42,7 +42,9 @@ class VoteSessionViewSet(ModelViewSet):
     pagination_class = VoteSessionPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = VoteSessionFilter
-    queryset = VoteSession.objects.prefetch_related("options").select_related("created_by")
+    queryset = VoteSession.objects.prefetch_related("options", "options__candidats").select_related(
+        "created_by"
+    )
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -72,9 +74,24 @@ class VoteSessionViewSet(ModelViewSet):
         )
         if membres_selectionnes:
             session.membres_selectionnes.set(membres_selectionnes)
-        VoteOption.objects.bulk_create(
-            [VoteOption(session=session, ordre=i, **opt) for i, opt in enumerate(options_data)]
-        )
+
+        options = []
+        candidats = []
+        for i, opt in enumerate(options_data):
+            candidats_data = opt.pop("candidats", [])
+            option = VoteOption(session=session, ordre=i, **opt)
+            options.append(option)
+            candidats.extend(
+                VoteOptionCandidat(option=option, ordre=j, **cand)
+                for j, cand in enumerate(candidats_data)
+            )
+        VoteOption.objects.bulk_create(options)
+        if candidats:
+            # Les VoteOption ci-dessus ont déjà leur PK (UUIDField à défaut généré côté
+            # Python) au moment de l'INSERT : les candidats peuvent donc référencer leur
+            # `option_id` dans ce second bulk_create, exécuté juste après dans la même
+            # transaction atomique.
+            VoteOptionCandidat.objects.bulk_create(candidats)
         return session
 
     @action(detail=True, methods=["post"])

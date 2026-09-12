@@ -46,8 +46,8 @@ const sessionOuverte: VoteSession = {
   date_fin: new Date(Date.now() + 60_000).toISOString(),
   date_cloture: null,
   options: [
-    { id: "o1", label: "Candidat A", description: "", ordre: 0 },
-    { id: "o2", label: "Candidat B", description: "", ordre: 1 },
+    { id: "o1", label: "Candidat A", description: "", ordre: 0, candidats: [] },
+    { id: "o2", label: "Candidat B", description: "", ordre: 1, candidats: [] },
   ],
   total_participants: 3,
   total_eligibles: 10,
@@ -162,7 +162,7 @@ describe("VotePage", () => {
       taux_participation: 50,
       quorum_requis: null,
       quorum_atteint: true,
-      resultats: [{ option_id: "o1", label: "Candidat A", nombre_voix: 5, pct: 100 }],
+      resultats: [{ option_id: "o1", label: "Candidat A", nombre_voix: 5, pct: 100, candidats: [] }],
     };
     vi.mocked(useVoteHooks.useSessionVoteActive).mockReturnValue({
       data: page([sessionOuverte]),
@@ -201,7 +201,7 @@ describe("VotePage", () => {
         taux_participation: 20,
         quorum_requis: null,
         quorum_atteint: true,
-        resultats: [{ option_id: "o1", label: "Candidat A", nombre_voix: 2, pct: 100 }],
+        resultats: [{ option_id: "o1", label: "Candidat A", nombre_voix: 2, pct: 100, candidats: [] }],
       },
       isLoading: false,
     } as unknown as ReturnType<typeof useVoteHooks.useResultatsVote>);

@@ -41,7 +41,8 @@
     "vote_enregistre_note": "Ihre Stimme ist anonym und gesichert. Die Ergebnisse werden nach Abschluss der Sitzung angezeigt.",
     "resultats_a_la_cloture": "Die detaillierten Ergebnisse werden erst nach Abschluss der Sitzung bekannt gegeben.",
     "connexion_en_cours": "Verbindung zur Live-Abstimmung wird hergestellt…",
-    "connexion_indisponible": "Verbindung zur Abstimmung derzeit nicht möglich. Laden Sie die Seite neu, um es erneut zu versuchen."
+    "connexion_indisponible": "Verbindung zur Abstimmung derzeit nicht möglich. Laden Sie die Seite neu, um es erneut zu versuchen.",
+    "composition_liste": "Kandidaten der Liste:"
   },
   "resultats": {
     "titre": "Offizielle Ergebnisse",
@@ -52,6 +53,7 @@
     "pas_de_quorum": "kein Quorum erforderlich",
     "nombre_voix": "{{count}} Stimmen",
     "elu": "Gewählt",
+    "composition_liste": "Kandidaten:",
     "footer_certifie": "Anonyme Stimmen · Ende-zu-Ende-Verschlüsselung · Zertifizierter Bericht"
   },
   "historique": {
@@ -112,9 +114,19 @@
     "option_description_placeholder": "Kurzbeschreibung (optional)",
     "ajouter_option": "Option / Kandidat hinzufügen",
     "info_presentation": "Für jeden Kandidaten oder jede Option können Sie eine kurze Biografie oder ein Programm hinzufügen — diese Informationen sind für die Mitglieder vor der Abstimmung sichtbar.",
+    "mode_candidature": "Kandidaturmodus",
+    "mode_candidature_individuel": "Einzelkandidaten",
+    "mode_candidature_liste": "Kandidatenlisten",
+    "mode_candidature_liste_description": "Jede Option wird zu einer Liste mit mehreren Kandidaten — die Mitglieder stimmen für eine ganze Liste, nicht für einen einzelnen Kandidaten (z. B. Vorstandswahl mit mehreren konkurrierenden Listen).",
+    "nom_liste_placeholder": "Name der Liste {{n}}…",
+    "candidat_placeholder": "Kandidat {{n}}…",
+    "ajouter_candidat": "+ Kandidat zu dieser Liste hinzufügen",
+    "ajouter_liste": "Liste hinzufügen",
+    "erreur_candidats_min": "Jede Liste muss mindestens 1 Kandidaten enthalten.",
     "recap_titre": "Zusammenfassung der Sitzung",
     "recap_titre_label": "Titel",
     "recap_options": "Optionen / Kandidaten",
+    "recap_mode_candidature": "Kandidaturmodus",
     "avertissement_immuable": "Nach dem Start kann die Sitzung nicht mehr geändert werden. Sie können sie vor Ablauf nur manuell schließen.",
     "annuler": "Abbrechen",
     "retour": "Zurück",

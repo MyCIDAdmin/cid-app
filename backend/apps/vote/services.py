@@ -5,7 +5,14 @@ Logique métier partagée — app vote (utilisée par views.py, consumers.py et 
 
 from django.utils import timezone
 
-from .models import ChoixExprime, EligibiliteVote, StatutSession, TypeVote, VoteExprime
+from .models import (
+    ChoixExprime,
+    EligibiliteVote,
+    StatutSession,
+    TypeVote,
+    VoteExprime,
+    VoteOptionCandidat,
+)
 
 
 def membres_eligibles_qs(session):
@@ -66,6 +73,13 @@ def calculer_resultats(session) -> dict:
     ]
     comptages.sort(key=lambda c: c["nombre"], reverse=True)
 
+    # Composition de chaque liste (voir VoteOptionCandidat) — permet au frontend d'afficher
+    # les candidats d'une liste sur le podium des résultats ; vide pour une option "candidat
+    # individuel" classique (rétrocompatible).
+    candidats_par_option: dict[str, list[str]] = {}
+    for c in VoteOptionCandidat.objects.filter(option__session=session).values("option_id", "nom"):
+        candidats_par_option.setdefault(str(c["option_id"]), []).append(c["nom"])
+
     taux_participation = (
         round(100 * total_participants / total_eligibles, 1) if total_eligibles else 0.0
     )
@@ -84,6 +98,7 @@ def calculer_resultats(session) -> dict:
                 "option_id": str(c["option_id"]),
                 "label": c["option__label"],
                 "nombre_voix": c["nombre"],
+                "candidats": candidats_par_option.get(str(c["option_id"]), []),
                 "pct": (
                     round(100 * c["nombre"] / total_participants, 1) if total_participants else 0.0
                 ),

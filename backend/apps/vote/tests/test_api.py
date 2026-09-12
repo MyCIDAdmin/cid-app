@@ -102,6 +102,60 @@ def test_oui_non_exige_exactement_trois_options(api_client):
     assert resp.status_code == 400
 
 
+# --- Listes de candidats (FDD §5.2 : "plusieurs listes peuvent se présenter", ex. élection
+# du bureau directeur — chaque VoteOption reste l'unité de vote/comptage, mais peut porter
+# la composition d'une liste via VoteOptionCandidat) ---
+
+
+def test_bureau_admin_peut_creer_une_election_par_listes(api_client):
+    user = _user(Role.BUREAU_ADMIN, "bureau6@example.de")
+    payload = {
+        **PAYLOAD_MINIMAL,
+        "titre": "Élection du Bureau Directeur",
+        "options": [
+            {
+                "label": "Liste Renouveau",
+                "candidats": [{"nom": "Khaled Test"}, {"nom": "Abir Test"}],
+            },
+            {
+                "label": "Liste Continuité",
+                "candidats": [{"nom": "Sami Test"}, {"nom": "Nour Test"}],
+            },
+        ],
+    }
+    resp = _auth(api_client, user).post(reverse(LIST_URL), payload, format="json")
+    assert resp.status_code == 201
+    options = resp.data["options"]
+    assert len(options) == 2
+    noms_par_liste = {o["label"]: [c["nom"] for c in o["candidats"]] for o in options}
+    assert noms_par_liste["Liste Renouveau"] == ["Khaled Test", "Abir Test"]
+    assert noms_par_liste["Liste Continuité"] == ["Sami Test", "Nour Test"]
+
+
+def test_option_sans_candidats_reste_un_candidat_individuel(api_client):
+    """Rétrocompatibilité : une option sans `candidats` se comporte exactement comme avant
+    (candidat individuel classique)."""
+    user = _user(Role.BUREAU_ADMIN, "bureau7@example.de")
+    resp = _auth(api_client, user).post(reverse(LIST_URL), PAYLOAD_MINIMAL, format="json")
+    assert resp.status_code == 201
+    assert all(o["candidats"] == [] for o in resp.data["options"])
+
+
+def test_listes_incompatibles_avec_vote_oui_non(api_client):
+    user = _user(Role.BUREAU_ADMIN, "bureau8@example.de")
+    payload = {
+        **PAYLOAD_MINIMAL,
+        "type_vote": "oui_non",
+        "options": [
+            {"label": "Oui", "candidats": [{"nom": "X"}]},
+            {"label": "Non"},
+            {"label": "Abstention"},
+        ],
+    }
+    resp = _auth(api_client, user).post(reverse(LIST_URL), payload, format="json")
+    assert resp.status_code == 400
+
+
 def test_membre_normal_ne_peut_pas_cloturer(api_client):
     session = VoteSessionFactory()
     VoteOptionFactory(session=session)

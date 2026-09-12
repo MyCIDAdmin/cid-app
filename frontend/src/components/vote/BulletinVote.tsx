@@ -98,6 +98,11 @@ export default function BulletinVote({ session, onSubmit, envoiEnCours }: Bullet
           {option.description && (
             <div className="mt-0.5 text-xs text-text-tertiary">{option.description}</div>
           )}
+          {option.candidats.length > 0 && (
+            <div className="mt-1 text-xs text-text-tertiary">
+              {t("bulletin.composition_liste")} {option.candidats.map((c) => c.nom).join(", ")}
+            </div>
+          )}
         </div>
       </label>
     );

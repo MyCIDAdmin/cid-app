@@ -7,7 +7,7 @@ from factory.django import DjangoModelFactory
 
 from apps.accounts.models import Role, User
 from apps.membres.tests.factories import MembreFactory
-from apps.vote.models import ModeAnonymat, TypeVote, VoteOption, VoteSession
+from apps.vote.models import ModeAnonymat, TypeVote, VoteOption, VoteOptionCandidat, VoteSession
 from apps.vote.security import generer_anonymat_sel
 
 _bureau_admin_seq = itertools.count()
@@ -49,4 +49,13 @@ class VoteOptionFactory(DjangoModelFactory):
 
     session = factory.SubFactory(VoteSessionFactory)
     label = factory.Sequence(lambda n: f"Option {n}")
+    ordre = 0
+
+
+class VoteOptionCandidatFactory(DjangoModelFactory):
+    class Meta:
+        model = VoteOptionCandidat
+
+    option = factory.SubFactory(VoteOptionFactory)
+    nom = factory.Sequence(lambda n: f"Candidat {n}")
     ordre = 0

@@ -14,9 +14,9 @@ const resultats: Resultats = {
   quorum_requis: 25,
   quorum_atteint: true,
   resultats: [
-    { option_id: "o1", label: "Riadh Bchini", nombre_voix: 38, pct: 40.4 },
-    { option_id: "o2", label: "Sana Werfelli", nombre_voix: 29, pct: 30.9 },
-    { option_id: "o3", label: "Hamza Meddeb", nombre_voix: 27, pct: 28.7 },
+    { option_id: "o1", label: "Riadh Bchini", nombre_voix: 38, pct: 40.4, candidats: [] },
+    { option_id: "o2", label: "Sana Werfelli", nombre_voix: 29, pct: 30.9, candidats: [] },
+    { option_id: "o3", label: "Hamza Meddeb", nombre_voix: 27, pct: 28.7, candidats: [] },
   ],
 };
 
@@ -37,5 +37,25 @@ describe("ResultatsPodium", () => {
       <ResultatsPodium resultats={{ ...resultats, quorum_atteint: false }} />,
     );
     expect(screen.getByText("resultats.quorum_non_atteint", { exact: false })).toBeInTheDocument();
+  });
+
+  it("affiche la composition d'une liste gagnante", () => {
+    renderWithProviders(
+      <ResultatsPodium
+        resultats={{
+          ...resultats,
+          resultats: [
+            {
+              option_id: "o1",
+              label: "Liste Renouveau",
+              nombre_voix: 38,
+              pct: 40.4,
+              candidats: ["Khaled Test", "Abir Test"],
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("Khaled Test, Abir Test", { exact: false })).toBeInTheDocument();
   });
 });

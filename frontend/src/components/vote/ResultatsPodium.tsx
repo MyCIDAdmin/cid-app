@@ -59,9 +59,16 @@ export default function ResultatsPodium({ resultats }: ResultatsPodiumProps) {
                 >
                   {index + 1}
                 </div>
-                <div className="flex-1 text-sm font-semibold text-text-primary">
-                  {r.label}
-                  {estGagnant && <span className="ml-1.5 text-ca">★ {t("resultats.elu")}</span>}
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-text-primary">
+                    {r.label}
+                    {estGagnant && <span className="ml-1.5 text-ca">★ {t("resultats.elu")}</span>}
+                  </div>
+                  {r.candidats.length > 0 && (
+                    <div className="mt-0.5 text-[11px] text-text-tertiary">
+                      {t("resultats.composition_liste")} {r.candidats.join(", ")}
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
                   <div

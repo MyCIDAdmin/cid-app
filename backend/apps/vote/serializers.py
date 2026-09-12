@@ -8,14 +8,34 @@ imbriquée (mockup wizard step 1+2 soumis en une seule requête, cf FDD F-008 "w
 
 from rest_framework import serializers
 
-from .models import TypeVote, VoteOption, VoteSession
+from .models import TypeVote, VoteOption, VoteOptionCandidat, VoteSession
 from .services import membres_eligibles_qs, nombre_participants
 
 
+class VoteOptionCandidatSerializer(serializers.ModelSerializer):
+    """Composition d'une liste (voir docstring VoteOptionCandidat). Champ imbriqué de
+    VoteOptionSerializer, en lecture comme en écriture — sa création est gérée manuellement
+    par VoteSessionViewSet._creer_session (comme pour "options" lui-même, DRF ne construit
+    pas automatiquement les objets imbriqués sur un ModelSerializer dont le .create() est
+    déjà surchargé côté vue)."""
+
+    class Meta:
+        model = VoteOptionCandidat
+        fields = ["id", "nom", "ordre"]
+        read_only_fields = ["id"]
+
+
 class VoteOptionSerializer(serializers.ModelSerializer):
+    # "Sélection manuelle" au sens listes : une option peut représenter soit un candidat
+    # individuel (candidats vide, comportement historique), soit une liste de candidats
+    # (ex. élection du bureau directeur, FDD §5.2 — plusieurs listes peuvent se présenter).
+    # Le bulletin continue de porter un choix par VoteOption, jamais par candidat individuel
+    # au sein d'une liste (voir services.calculer_resultats).
+    candidats = VoteOptionCandidatSerializer(many=True, required=False)
+
     class Meta:
         model = VoteOption
-        fields = ["id", "label", "description", "ordre"]
+        fields = ["id", "label", "description", "ordre", "candidats"]
         read_only_fields = ["id"]
 
 
@@ -99,6 +119,10 @@ class VoteSessionCreateSerializer(serializers.ModelSerializer):
             # cohérent avec le modèle de comptage (chaque option est une VoteOption réelle).
             raise serializers.ValidationError(
                 {"options": "Un vote Oui/Non attend exactement 3 options (Oui, Non, Abstention)."}
+            )
+        if type_vote == TypeVote.OUI_NON and any(opt.get("candidats") for opt in options):
+            raise serializers.ValidationError(
+                {"options": "Les listes de candidats ne sont pas compatibles avec un vote Oui/Non."}
             )
         eligibilite = attrs.get("eligibilite")
         if eligibilite == "selection_manuelle" and not attrs.get("membres_selectionnes"):

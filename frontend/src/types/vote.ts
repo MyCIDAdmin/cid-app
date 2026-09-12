@@ -21,16 +21,31 @@ export interface VotePage<T> {
   results: T[];
 }
 
+export interface VoteOptionCandidat {
+  id: string;
+  nom: string;
+  ordre: number;
+}
+
+/** Composition d'une liste (FDD §5.2 : "plusieurs listes de candidats peuvent se
+ * présenter", ex. élection du bureau directeur). Une VoteOption reste l'unité de vote —
+ * `candidats` est vide pour un candidat individuel classique (rétrocompatible). */
 export interface VoteOption {
   id: string;
   label: string;
   description: string;
   ordre: number;
+  candidats: VoteOptionCandidat[];
+}
+
+export interface VoteOptionCandidatInput {
+  nom: string;
 }
 
 export interface VoteOptionInput {
   label: string;
   description?: string;
+  candidats?: VoteOptionCandidatInput[];
 }
 
 export interface VoteSession {
@@ -75,6 +90,8 @@ export interface ResultatOption {
   label: string;
   nombre_voix: number;
   pct: number;
+  /** Composition de la liste (noms), vide pour un candidat individuel — voir VoteOption. */
+  candidats: string[];
 }
 
 /** Miroir de services.calculer_resultats — résultats agrégés, jamais de token. */

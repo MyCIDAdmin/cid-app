@@ -116,6 +116,73 @@ describe("CreerVoteWizardPage", () => {
     );
   });
 
+  it("permet de créer une élection par listes de candidats", () => {
+    renderWithProviders(<CreerVoteWizardPage />);
+
+    fireEvent.change(screen.getByPlaceholderText("wizard.titre_placeholder"), {
+      target: { value: "Élection du Bureau Directeur" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("wizard.description_placeholder"), {
+      target: { value: "Plusieurs listes se présentent." },
+    });
+    fireEvent.click(screen.getByText("wizard.suivant"));
+
+    // Bascule en mode "listes" (étape 2) — les 2 options par défaut portent chacune 2
+    // candidats vides à compléter.
+    fireEvent.click(screen.getByText("wizard.mode_candidature_liste"));
+
+    const nomsListe = screen.getAllByPlaceholderText(/wizard.nom_liste_placeholder/);
+    fireEvent.change(nomsListe[0], { target: { value: "Liste Renouveau" } });
+    fireEvent.change(nomsListe[1], { target: { value: "Liste Continuité" } });
+
+    const candidatInputs = screen.getAllByPlaceholderText(/wizard.candidat_placeholder/);
+    fireEvent.change(candidatInputs[0], { target: { value: "Khaled Test" } });
+    fireEvent.change(candidatInputs[1], { target: { value: "Abir Test" } });
+    fireEvent.change(candidatInputs[2], { target: { value: "Sami Test" } });
+    fireEvent.change(candidatInputs[3], { target: { value: "Nour Test" } });
+
+    fireEvent.click(screen.getByText("wizard.suivant"));
+    fireEvent.click(screen.getByText("wizard.lancer"));
+
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: [
+          {
+            label: "Liste Renouveau",
+            candidats: [{ nom: "Khaled Test" }, { nom: "Abir Test" }],
+          },
+          {
+            label: "Liste Continuité",
+            candidats: [{ nom: "Sami Test" }, { nom: "Nour Test" }],
+          },
+        ],
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("bloque le passage à l'étape suivante si une liste n'a aucun candidat", () => {
+    renderWithProviders(<CreerVoteWizardPage />);
+
+    fireEvent.change(screen.getByPlaceholderText("wizard.titre_placeholder"), {
+      target: { value: "Élection du Bureau Directeur" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("wizard.description_placeholder"), {
+      target: { value: "Plusieurs listes se présentent." },
+    });
+    fireEvent.click(screen.getByText("wizard.suivant"));
+
+    fireEvent.click(screen.getByText("wizard.mode_candidature_liste"));
+
+    const nomsListe = screen.getAllByPlaceholderText(/wizard.nom_liste_placeholder/);
+    fireEvent.change(nomsListe[0], { target: { value: "Liste Renouveau" } });
+    fireEvent.change(nomsListe[1], { target: { value: "Liste Continuité" } });
+    // Aucun candidat renseigné dans les listes : le passage à l'étape 3 doit être bloqué.
+
+    fireEvent.click(screen.getByText("wizard.suivant"));
+    expect(screen.getByText("wizard.erreur_candidats_min")).toBeInTheDocument();
+  });
+
   it("permet de cibler un groupe précis de membres (sélection manuelle)", () => {
     renderWithProviders(<CreerVoteWizardPage />);
 

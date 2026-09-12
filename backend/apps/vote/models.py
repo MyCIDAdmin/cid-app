@@ -180,6 +180,30 @@ class VoteOption(models.Model):
         return f"{self.label} ({self.session_id})"
 
 
+class VoteOptionCandidat(models.Model):
+    """Candidat au sein d'une liste (FDD/RICEFW : "plusieurs listes de candidats peuvent se
+    présenter", ex. élection du bureau directeur — un électeur choisit une liste entière,
+    pas un candidat individuel au sein de celle-ci). Une VoteOption reste l'unique unité de
+    vote/comptage : ce modèle ne fait qu'afficher la composition de chaque liste et n'est
+    jamais utilisé par services.calculer_resultats, qui continue de compter par VoteOption.
+    Une VoteOption sans candidat associé reste un candidat individuel "classique" — les deux
+    usages coexistent au sein d'une même session (rétrocompatible avec les votes existants)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    option = models.ForeignKey(VoteOption, on_delete=models.CASCADE, related_name="candidats")
+    nom = models.CharField(max_length=200)
+    ordre = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "vote_option_candidats"
+        verbose_name = _("Candidat de liste")
+        verbose_name_plural = _("Candidats de liste")
+        ordering = ["ordre", "nom"]
+
+    def __str__(self):
+        return f"{self.nom} ({self.option_id})"
+
+
 class VoteExprime(models.Model):
     """Un bulletin soumis — ne contient JAMAIS de référence au membre votant (SCD §7.5) :
     seul `voter_token_hash` (irréversible) permet de détecter un doublon. Le choix

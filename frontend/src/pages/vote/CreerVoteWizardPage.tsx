@@ -26,9 +26,22 @@ const DUREES_MINUTES = [10, 20, 30, 60, 360, 1440, 4320, 10080];
 // numérique supérieur à Bureau Admin, SCD §4.2 / apps.vote.permissions.ROLES_GESTION_VOTE).
 const ROLES_GESTION_VOTE = ["super_admin", "bureau_admin"] as const;
 
-function optionsParDefaut(type: TypeVote): VoteOptionInput[] {
+// FDD §5.2 : "plusieurs listes de candidats peuvent se présenter" (ex. élection du bureau
+// directeur) — une VoteOption reste l'unité de vote, mais représente soit un candidat
+// individuel (mode historique), soit une liste portant plusieurs candidats (voir backend
+// VoteOptionCandidat). Ce mode ne change que la forme des options créées ici, pas le
+// type_vote lui-même (une élection par listes reste typiquement un choix unique).
+type ModeCandidature = "individuel" | "liste";
+
+function optionsParDefaut(type: TypeVote, mode: ModeCandidature): VoteOptionInput[] {
   if (type === "oui_non") {
     return [{ label: "Oui" }, { label: "Non" }, { label: "Abstention" }];
+  }
+  if (mode === "liste") {
+    return [
+      { label: "", candidats: [{ nom: "" }, { nom: "" }] },
+      { label: "", candidats: [{ nom: "" }, { nom: "" }] },
+    ];
   }
   return [{ label: "" }, { label: "" }];
 }
@@ -70,15 +83,24 @@ export default function CreerVoteWizardPage() {
   }
 
   // Étape 2 — options
-  const [options, setOptions] = useState<VoteOptionInput[]>(optionsParDefaut("unique"));
+  const [modeCandidature, setModeCandidature] = useState<ModeCandidature>("individuel");
+  const [options, setOptions] = useState<VoteOptionInput[]>(optionsParDefaut("unique", "individuel"));
 
   function changerType(type: TypeVote) {
     setTypeVote(type);
-    setOptions(optionsParDefaut(type));
+    setOptions(optionsParDefaut(type, modeCandidature));
+  }
+
+  function changerModeCandidature(mode: ModeCandidature) {
+    setModeCandidature(mode);
+    setOptions(optionsParDefaut(typeVote, mode));
   }
 
   function ajouterOption() {
-    setOptions((prev) => [...prev, { label: "" }]);
+    setOptions((prev) => [
+      ...prev,
+      modeCandidature === "liste" ? { label: "", candidats: [{ nom: "" }, { nom: "" }] } : { label: "" },
+    ]);
   }
 
   function supprimerOption(index: number) {
@@ -87,6 +109,40 @@ export default function CreerVoteWizardPage() {
 
   function modifierOption(index: number, champ: keyof VoteOptionInput, valeur: string) {
     setOptions((prev) => prev.map((o, i) => (i === index ? { ...o, [champ]: valeur } : o)));
+  }
+
+  // Composition d'une liste (mode "liste" uniquement) — chaque option porte ses propres
+  // candidats, saisis comme des noms libres (cohérent avec les options elles-mêmes, qui
+  // sont déjà des labels libres, pas des membres liés).
+  function ajouterCandidat(indexOption: number) {
+    setOptions((prev) =>
+      prev.map((o, i) =>
+        i === indexOption ? { ...o, candidats: [...(o.candidats ?? []), { nom: "" }] } : o,
+      ),
+    );
+  }
+
+  function supprimerCandidat(indexOption: number, indexCandidat: number) {
+    setOptions((prev) =>
+      prev.map((o, i) =>
+        i === indexOption
+          ? { ...o, candidats: (o.candidats ?? []).filter((_, j) => j !== indexCandidat) }
+          : o,
+      ),
+    );
+  }
+
+  function modifierCandidat(indexOption: number, indexCandidat: number, nom: string) {
+    setOptions((prev) =>
+      prev.map((o, i) =>
+        i === indexOption
+          ? {
+              ...o,
+              candidats: (o.candidats ?? []).map((c, j) => (j === indexCandidat ? { nom } : c)),
+            }
+          : o,
+      ),
+    );
   }
 
   function allerEtape2() {
@@ -102,10 +158,33 @@ export default function CreerVoteWizardPage() {
     setEtape(2);
   }
 
+  // Nettoie les options avant validation/soumission : labels/noms de candidats vidés de
+  // leurs espaces, candidats vides retirés — pour le mode "liste", `candidats` reste un
+  // tableau (éventuellement vide) ; pour le mode "individuel", il est omis (comportement
+  // historique, rétrocompatible avec le payload backend existant).
+  function optionsPreparees(): VoteOptionInput[] {
+    return options
+      .filter((o) => o.label.trim())
+      .map((o) => {
+        const base = { label: o.label.trim(), description: o.description };
+        if (modeCandidature !== "liste") return base;
+        return {
+          ...base,
+          candidats: (o.candidats ?? [])
+            .map((c) => ({ nom: c.nom.trim() }))
+            .filter((c) => c.nom),
+        };
+      });
+  }
+
   function allerEtape3() {
-    const optionsValides = options.filter((o) => o.label.trim());
+    const optionsValides = optionsPreparees();
     if (optionsValides.length < 2) {
       setErreurEtape(t("wizard.erreur_options_min"));
+      return;
+    }
+    if (modeCandidature === "liste" && optionsValides.some((o) => !o.candidats?.length)) {
+      setErreurEtape(t("wizard.erreur_candidats_min"));
       return;
     }
     setErreurEtape(null);
@@ -113,7 +192,6 @@ export default function CreerVoteWizardPage() {
   }
 
   function lancerVote() {
-    const optionsValides = options.filter((o) => o.label.trim());
     creerMutation.mutate(
       {
         titre: titre.trim(),
@@ -127,7 +205,7 @@ export default function CreerVoteWizardPage() {
         duree_minutes: dureeMinutes,
         quorum_pct: quorumPct ? Number(quorumPct) : null,
         resultats_visibles_avant_cloture: false,
-        options: optionsValides,
+        options: optionsPreparees(),
       },
       {
         onSuccess: () => navigate("/votes"),
@@ -135,7 +213,7 @@ export default function CreerVoteWizardPage() {
     );
   }
 
-  const optionsValides = options.filter((o) => o.label.trim());
+  const optionsValides = optionsPreparees();
   const optionsModifiables = typeVote !== "oui_non";
 
   if (!autorise) {
@@ -399,38 +477,120 @@ export default function CreerVoteWizardPage() {
 
         {etape === 2 && (
           <div className="space-y-3">
+            {optionsModifiables && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-text-secondary">
+                  {t("wizard.mode_candidature")}
+                </label>
+                <div className="flex gap-2">
+                  {(["individuel", "liste"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => changerModeCandidature(mode)}
+                      className={`flex-1 rounded-cid border px-3 py-1.5 text-xs font-medium ${
+                        modeCandidature === mode
+                          ? "border-ca bg-cal/20 text-text-primary"
+                          : "border-text-tertiary/30 text-text-secondary hover:bg-bg-tertiary"
+                      }`}
+                    >
+                      {t(`wizard.mode_candidature_${mode}`)}
+                    </button>
+                  ))}
+                </div>
+                {modeCandidature === "liste" && (
+                  <p className="mt-1.5 text-[11px] text-text-tertiary">
+                    ℹ {t("wizard.mode_candidature_liste_description")}
+                  </p>
+                )}
+              </div>
+            )}
+
             <p className="text-xs text-text-secondary">{t(`wizard.hint_${typeVote}`)}</p>
             <div className="space-y-2">
-              {options.map((option, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-xs font-bold text-text-secondary">
-                    {index + 1}
-                  </span>
-                  <input
-                    value={option.label}
-                    disabled={!optionsModifiables}
-                    onChange={(e) => modifierOption(index, "label", e.target.value)}
-                    placeholder={t("wizard.option_placeholder", { n: index + 1 })}
-                    className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:bg-bg-tertiary disabled:opacity-70"
-                  />
-                  <input
-                    value={option.description ?? ""}
-                    disabled={!optionsModifiables}
-                    onChange={(e) => modifierOption(index, "description", e.target.value)}
-                    placeholder={t("wizard.option_description_placeholder")}
-                    className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:bg-bg-tertiary disabled:opacity-70"
-                  />
-                  {optionsModifiables && options.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => supprimerOption(index)}
-                      className="shrink-0 rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
+              {options.map((option, index) =>
+                modeCandidature === "liste" && optionsModifiables ? (
+                  <div key={index} className="rounded-cid border border-text-tertiary/20 p-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-xs font-bold text-text-secondary">
+                        {index + 1}
+                      </span>
+                      <input
+                        value={option.label}
+                        onChange={(e) => modifierOption(index, "label", e.target.value)}
+                        placeholder={t("wizard.nom_liste_placeholder", { n: index + 1 })}
+                        className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm font-semibold"
+                      />
+                      {options.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => supprimerOption(index)}
+                          className="shrink-0 rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2 space-y-1.5 pl-8">
+                      {(option.candidats ?? []).map((candidat, indexCandidat) => (
+                        <div key={indexCandidat} className="flex items-center gap-2">
+                          <input
+                            value={candidat.nom}
+                            onChange={(e) => modifierCandidat(index, indexCandidat, e.target.value)}
+                            placeholder={t("wizard.candidat_placeholder", { n: indexCandidat + 1 })}
+                            className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm"
+                          />
+                          {(option.candidats?.length ?? 0) > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => supprimerCandidat(index, indexCandidat)}
+                              className="shrink-0 rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => ajouterCandidat(index)}
+                        className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary"
+                      >
+                        {t("wizard.ajouter_candidat")}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bg-tertiary text-xs font-bold text-text-secondary">
+                      {index + 1}
+                    </span>
+                    <input
+                      value={option.label}
+                      disabled={!optionsModifiables}
+                      onChange={(e) => modifierOption(index, "label", e.target.value)}
+                      placeholder={t("wizard.option_placeholder", { n: index + 1 })}
+                      className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:bg-bg-tertiary disabled:opacity-70"
+                    />
+                    <input
+                      value={option.description ?? ""}
+                      disabled={!optionsModifiables}
+                      onChange={(e) => modifierOption(index, "description", e.target.value)}
+                      placeholder={t("wizard.option_description_placeholder")}
+                      className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:bg-bg-tertiary disabled:opacity-70"
+                    />
+                    {optionsModifiables && options.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => supprimerOption(index)}
+                        className="shrink-0 rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ),
+              )}
             </div>
             {optionsModifiables && (
               <button
@@ -438,7 +598,7 @@ export default function CreerVoteWizardPage() {
                 onClick={ajouterOption}
                 className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary"
               >
-                + {t("wizard.ajouter_option")}
+                + {t(modeCandidature === "liste" ? "wizard.ajouter_liste" : "wizard.ajouter_option")}
               </button>
             )}
             <p className="rounded-cid bg-status-infoBg px-3 py-2 text-[11px] text-status-infoText">
@@ -492,6 +652,14 @@ export default function CreerVoteWizardPage() {
                 <dt className="text-text-secondary">{t("wizard.recap_options")}</dt>
                 <dd className="text-text-primary">{optionsValides.length}</dd>
               </div>
+              {typeVote !== "oui_non" && (
+                <div className="flex justify-between">
+                  <dt className="text-text-secondary">{t("wizard.recap_mode_candidature")}</dt>
+                  <dd className="text-text-primary">
+                    {t(`wizard.mode_candidature_${modeCandidature}`)}
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-text-secondary">{t("wizard.membres_eligibles")}</dt>
                 <dd className="text-text-primary">

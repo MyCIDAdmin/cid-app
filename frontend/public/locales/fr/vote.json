@@ -41,7 +41,8 @@
     "vote_enregistre_note": "Votre vote est anonyme et sécurisé. Les résultats seront affichés à la clôture de la session.",
     "resultats_a_la_cloture": "Les résultats détaillés seront révélés uniquement à la clôture de la session.",
     "connexion_en_cours": "Connexion au vote en direct…",
-    "connexion_indisponible": "Connexion au vote indisponible pour le moment. Rechargez la page pour réessayer."
+    "connexion_indisponible": "Connexion au vote indisponible pour le moment. Rechargez la page pour réessayer.",
+    "composition_liste": "Candidats de la liste :"
   },
   "resultats": {
     "titre": "Résultats officiels",
@@ -52,6 +53,7 @@
     "pas_de_quorum": "pas de quorum requis",
     "nombre_voix": "{{count}} voix",
     "elu": "Élu(e)",
+    "composition_liste": "Candidats :",
     "footer_certifie": "Votes anonymes · Chiffrement de bout en bout · Rapport certifié"
   },
   "historique": {
@@ -112,9 +114,19 @@
     "option_description_placeholder": "Description courte (optionnel)",
     "ajouter_option": "Ajouter une option / candidat",
     "info_presentation": "Pour chaque candidat ou option, vous pouvez ajouter une courte biographie ou un programme — ces informations seront visibles par les membres avant de voter.",
+    "mode_candidature": "Mode de candidature",
+    "mode_candidature_individuel": "Candidats individuels",
+    "mode_candidature_liste": "Listes de candidats",
+    "mode_candidature_liste_description": "Chaque option devient une liste portant plusieurs candidats — les membres votent pour une liste entière, pas pour un candidat isolé (ex. élection du bureau directeur avec plusieurs listes concurrentes).",
+    "nom_liste_placeholder": "Nom de la liste {{n}}…",
+    "candidat_placeholder": "Candidat {{n}}…",
+    "ajouter_candidat": "+ Ajouter un candidat à cette liste",
+    "ajouter_liste": "Ajouter une liste",
+    "erreur_candidats_min": "Chaque liste doit comporter au moins 1 candidat.",
     "recap_titre": "Récapitulatif de la session",
     "recap_titre_label": "Titre",
     "recap_options": "Options / candidats",
+    "recap_mode_candidature": "Mode de candidature",
     "avertissement_immuable": "Une fois lancée, la session ne peut pas être modifiée. Vous pourrez uniquement la clôturer manuellement avant l'échéance.",
     "annuler": "Annuler",
     "retour": "Retour",

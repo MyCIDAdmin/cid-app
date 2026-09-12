@@ -21,8 +21,8 @@ function session(overrides: Partial<VoteSession> = {}): VoteSession {
     date_fin: "2026-01-01T10:30:00Z",
     date_cloture: null,
     options: [
-      { id: "o1", label: "Candidat A", description: "", ordre: 0 },
-      { id: "o2", label: "Candidat B", description: "", ordre: 1 },
+      { id: "o1", label: "Candidat A", description: "", ordre: 0, candidats: [] },
+      { id: "o2", label: "Candidat B", description: "", ordre: 1, candidats: [] },
     ],
     total_participants: 0,
     total_eligibles: 10,
@@ -54,8 +54,8 @@ describe("BulletinVote", () => {
       type_vote: "multiple",
       nb_choix_max: 1,
       options: [
-        { id: "o1", label: "Option A", description: "", ordre: 0 },
-        { id: "o2", label: "Option B", description: "", ordre: 1 },
+        { id: "o1", label: "Option A", description: "", ordre: 0, candidats: [] },
+        { id: "o2", label: "Option B", description: "", ordre: 1, candidats: [] },
       ],
     });
     renderWithProviders(<BulletinVote session={s} onSubmit={onSubmit} envoiEnCours={false} />);
@@ -72,15 +72,36 @@ describe("BulletinVote", () => {
       type_vote: "oui_non",
       nb_choix_max: 1,
       options: [
-        { id: "o1", label: "Oui", description: "", ordre: 0 },
-        { id: "o2", label: "Non", description: "", ordre: 1 },
-        { id: "o3", label: "Abstention", description: "", ordre: 2 },
+        { id: "o1", label: "Oui", description: "", ordre: 0, candidats: [] },
+        { id: "o2", label: "Non", description: "", ordre: 1, candidats: [] },
+        { id: "o3", label: "Abstention", description: "", ordre: 2, candidats: [] },
       ],
     });
     renderWithProviders(<BulletinVote session={s} onSubmit={onSubmit} envoiEnCours={false} />);
     expect(screen.getByText("Oui")).toBeInTheDocument();
     expect(screen.getByText("Non")).toBeInTheDocument();
     expect(screen.getByText("Abstention")).toBeInTheDocument();
+  });
+
+  it("affiche la composition d'une liste de candidats sous son label", () => {
+    const onSubmit = vi.fn();
+    const s = session({
+      options: [
+        {
+          id: "o1",
+          label: "Liste Renouveau",
+          description: "",
+          ordre: 0,
+          candidats: [
+            { id: "c1", nom: "Khaled Test", ordre: 0 },
+            { id: "c2", nom: "Abir Test", ordre: 1 },
+          ],
+        },
+        { id: "o2", label: "Liste Continuité", description: "", ordre: 1, candidats: [] },
+      ],
+    });
+    renderWithProviders(<BulletinVote session={s} onSubmit={onSubmit} envoiEnCours={false} />);
+    expect(screen.getByText("Khaled Test, Abir Test", { exact: false })).toBeInTheDocument();
   });
 
   it("désactive le bouton de soumission pendant l'envoi", () => {
