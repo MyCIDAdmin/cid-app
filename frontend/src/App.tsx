@@ -7,6 +7,9 @@ import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
+import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
+import CataloguePage from "./pages/boutique/CataloguePage";
+import PanierCommandePage from "./pages/boutique/PanierCommandePage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
@@ -20,6 +23,7 @@ import MembresListPage from "./pages/membres/MembresListPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import StatsPage from "./pages/stats/StatsPage";
 import { ROLE_LEVELS } from "./store/authStore";
 
 export default function App() {
@@ -136,8 +140,33 @@ export default function App() {
             </RequireRole>
           }
         />
+        {/* Boutique (mockup #pg-boutique/#pg-boutique-panier/#pg-admin-boutique, FDD §3.4) —
+            catalogue et panier/commande ouverts à tout authentifié (le backend ne renvoie de
+            toute façon que les produits publiés à un rôle < Bureau Admin, voir
+            ProduitViewSet.get_queryset) ; gestion catalogue/commandes réservée Bureau Admin+,
+            même niveau que CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API. */}
+        <Route path="/boutique" element={<CataloguePage />} />
+        <Route path="/boutique/panier" element={<PanierCommandePage />} />
+        <Route
+          path="/admin/boutique"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <AdminBoutiquePage />
+            </RequireRole>
+          }
+        />
+        {/* Statistiques & KPIs (mockup #pg-stats, FDD §5.3) — Admin/DG/Bureau Admin
+            uniquement, même niveau que StatsPermission (STATS_MIN_LEVEL) côté API. */}
+        <Route
+          path="/stats"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <StatsPage />
+            </RequireRole>
+          }
+        />
         {/* Les routes suivantes sont ajoutées au fil des phases :
-            /evenements, /boutique, /vote, /stats, /admin/* */}
+            /evenements, /vote, /admin/* */}
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

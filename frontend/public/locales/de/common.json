@@ -8,7 +8,10 @@
     "admin_adhesions": "Mitgliedschaftskampagnen",
     "admin_justificatifs": "Nachweise",
     "cotisations_en_attente": "Ausstehende Zahlungen",
-    "configuration_relance": "Fälligkeitstermine"
+    "configuration_relance": "Fälligkeitstermine",
+    "boutique": "Shop",
+    "admin_boutique": "Shop-Verwaltung",
+    "stats": "Statistiken & KPIs"
   },
   "dashboard": {
     "title": "Übersicht",

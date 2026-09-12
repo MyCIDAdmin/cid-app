@@ -8,7 +8,10 @@
     "admin_adhesions": "Campagnes d'adhésion",
     "admin_justificatifs": "Justificatifs",
     "cotisations_en_attente": "Paiements en attente",
-    "configuration_relance": "Échéances des relances"
+    "configuration_relance": "Échéances des relances",
+    "boutique": "Boutique",
+    "admin_boutique": "Gestion boutique",
+    "stats": "Statistiques & KPIs"
   },
   "dashboard": {
     "title": "Tableau de bord",

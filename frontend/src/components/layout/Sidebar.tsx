@@ -20,6 +20,16 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/membres", labelKey: "nav.membres" },
   { to: "/mon-adhesion", labelKey: "nav.mon_adhesion" },
   { to: "/cotisation", labelKey: "nav.cotisation" },
+  // Catalogue boutique (mockup #pg-boutique) — ouvert à tout authentifié, même principe que
+  // /mon-adhesion : le backend scope déjà le queryset (produits publiés uniquement en dessous
+  // de Bureau Admin, voir ProduitViewSet.get_queryset).
+  { to: "/boutique", labelKey: "nav.boutique" },
+  // Gestion boutique (mockup #pg-admin-boutique) — Bureau Admin+ seulement, même niveau que
+  // CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API.
+  { to: "/admin/boutique", labelKey: "nav.admin_boutique", minRoleLevel: ROLE_LEVELS.bureau_admin },
+  // Statistiques & KPIs (mockup #pg-stats, FDD §5.3) — Admin/DG/Bureau Admin seulement, même
+  // niveau que StatsPermission côté API.
+  { to: "/stats", labelKey: "nav.stats", minRoleLevel: ROLE_LEVELS.bureau_admin },
   // Validation des inscriptions (AHM-48) — visible RH+ seulement, la route
   // elle-même est aussi gated côté App.tsx (RequireRole).
   { to: "/inscriptions", labelKey: "nav.inscriptions", minRoleLevel: ROLE_LEVELS.rh },

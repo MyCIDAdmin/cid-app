@@ -1,0 +1,12 @@
+{
+  "cloche": {
+    "aria_label": "Notifications",
+    "titre": "Notifications",
+    "tout_lire": "Tout lire",
+    "chargement": "Chargement…",
+    "aucune": "Aucune notification.",
+    "a_instant": "à l'instant",
+    "il_y_a_minutes": "il y a {{count}} min",
+    "il_y_a_heures": "il y a {{count}} h"
+  }
+}

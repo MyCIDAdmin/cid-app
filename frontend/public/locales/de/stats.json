@@ -1,0 +1,54 @@
+{
+  "page": { "titre": "Statistiken & KPIs" },
+  "chargement": "Wird geladen…",
+  "erreur": "Diese Statistiken konnten nicht geladen werden.",
+  "filtres": {
+    "annee": "Jahr",
+    "ville": "Stadt (DE)",
+    "ville_placeholder": "z. B. Berlin",
+    "statut": "Mitgliedsstatus",
+    "statut_tous": "Alle",
+    "statut_actif": "Aktiv",
+    "statut_en_attente": "Ausstehend",
+    "statut_inactif": "Inaktiv"
+  },
+  "onglets": {
+    "financier": "Finanzen",
+    "membres": "Mitglieder",
+    "evenements": "Veranstaltungen"
+  },
+  "financier": {
+    "solde": "Saldo",
+    "recettes": "Einnahmen",
+    "depenses": "Ausgaben",
+    "taux_collecte": "Einzugsquote",
+    "cotisations_en_attente": "Ausstehende Beiträge",
+    "revenus_par_source": "Einnahmen nach Quelle",
+    "revenus_boutique": "Shop",
+    "revenus_adhesions": "Mitgliedschaften",
+    "revenus_evenements": "Veranstaltungen",
+    "top_contributeurs": "Top-Beitragende",
+    "aucun_contributeur": "Keine Beitragenden in diesem Zeitraum.",
+    "col_membre": "Mitglied",
+    "col_total": "Gesamt"
+  },
+  "membres": {
+    "total": "Mitglieder gesamt",
+    "actifs": "Aktiv",
+    "inactifs": "Inaktiv",
+    "par_ville": "Verteilung nach Stadt",
+    "pyramide_ages": "Alterspyramide",
+    "aucune_donnee": "Keine Daten verfügbar."
+  },
+  "evenements": {
+    "nombre": "Veranstaltungen",
+    "taux_remplissage": "Durchschnittliche Auslastung",
+    "inscriptions": "Anmeldungen",
+    "revenus": "Einnahmen",
+    "par_type": "Verteilung nach Typ",
+    "participation": "Teilnahme pro Veranstaltung",
+    "aucune_donnee": "Keine Daten verfügbar.",
+    "col_titre": "Veranstaltung",
+    "col_places": "Reservierte Plätze"
+  }
+}

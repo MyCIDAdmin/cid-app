@@ -1,0 +1,54 @@
+{
+  "page": { "titre": "Statistiques & KPIs" },
+  "chargement": "Chargement…",
+  "erreur": "Impossible de charger ces statistiques.",
+  "filtres": {
+    "annee": "Année",
+    "ville": "Ville (DE)",
+    "ville_placeholder": "ex. Berlin",
+    "statut": "Statut membre",
+    "statut_tous": "Tous",
+    "statut_actif": "Actif",
+    "statut_en_attente": "En attente",
+    "statut_inactif": "Inactif"
+  },
+  "onglets": {
+    "financier": "Financier",
+    "membres": "Membres",
+    "evenements": "Événements"
+  },
+  "financier": {
+    "solde": "Solde",
+    "recettes": "Recettes",
+    "depenses": "Dépenses",
+    "taux_collecte": "Taux de collecte",
+    "cotisations_en_attente": "Cotisations en attente",
+    "revenus_par_source": "Revenus par source",
+    "revenus_boutique": "Boutique",
+    "revenus_adhesions": "Adhésions",
+    "revenus_evenements": "Événements",
+    "top_contributeurs": "Top contributeurs",
+    "aucun_contributeur": "Aucun contributeur pour cette période.",
+    "col_membre": "Membre",
+    "col_total": "Total"
+  },
+  "membres": {
+    "total": "Total membres",
+    "actifs": "Actifs",
+    "inactifs": "Inactifs",
+    "par_ville": "Répartition par ville",
+    "pyramide_ages": "Pyramide des âges",
+    "aucune_donnee": "Aucune donnée disponible."
+  },
+  "evenements": {
+    "nombre": "Événements",
+    "taux_remplissage": "Taux de remplissage moyen",
+    "inscriptions": "Inscriptions",
+    "revenus": "Revenus",
+    "par_type": "Répartition par type",
+    "participation": "Participation par événement",
+    "aucune_donnee": "Aucune donnée disponible.",
+    "col_titre": "Événement",
+    "col_places": "Places réservées"
+  }
+}
