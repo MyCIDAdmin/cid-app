@@ -61,6 +61,7 @@ from .serializers import (
     RejoindreTrajetSerializer,
     ReservationCovoiturageSerializer,
 )
+from .tasks import envoyer_invitations_evenement
 
 
 class EvenementsCursorPagination(CursorPagination):
@@ -104,6 +105,8 @@ class EvenementViewSet(ModelViewSet):
             raise ValidationError({"statut": "Seul un événement en brouillon peut être publié."})
         evenement.statut = StatutEvenement.PUBLIE
         evenement.save(update_fields=["statut"])
+        # W-004 (Phase 2B) : invitation email + notification in-app à tous les membres actifs.
+        envoyer_invitations_evenement.delay(str(evenement.id))
         return Response(self.get_serializer(evenement).data)
 
     @action(detail=True, methods=["post"])

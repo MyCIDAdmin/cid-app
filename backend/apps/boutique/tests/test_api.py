@@ -180,6 +180,26 @@ def test_passer_commande_refuse_si_stock_insuffisant(api_client):
     assert variante.stock == 1
 
 
+def test_passer_commande_cree_une_notification_in_app(api_client):
+    from apps.notifications.models import Notification, TypeNotification
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "m22@example.de")
+    variante = VarianteProduitFactory(stock=5)
+
+    resp = _auth(api_client, user).post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+
+    notification = Notification.objects.get(destinataire=user)
+    assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE
+
+
 def test_passer_commande_panier_vide_refuse(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "m6@example.de")
     resp = _auth(api_client, user).post(
@@ -330,6 +350,36 @@ def test_changer_statut_vers_annulee_restitue_le_stock(api_client):
 
     variante.refresh_from_db()
     assert variante.stock == 5
+
+
+def test_changer_statut_vers_expediee_cree_une_notification_in_app(api_client):
+    from apps.notifications.models import Notification, TypeNotification
+
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau8@example.de")
+    user, membre = _user_avec_membre(Role.MEMBRE, "m23@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_PREPARATION)
+
+    resp = _auth(api_client, admin).post(
+        _changer_statut_url(commande), {"statut": StatutCommande.EXPEDIEE}
+    )
+    assert resp.status_code == 200
+
+    notification = Notification.objects.get(destinataire=user)
+    assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE
+
+
+def test_changer_statut_vers_confirmee_ne_cree_pas_de_notification_expedition(api_client):
+    from apps.notifications.models import Notification
+
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau9@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m24@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, admin).post(
+        _changer_statut_url(commande), {"statut": StatutCommande.CONFIRMEE}
+    )
+    assert resp.status_code == 200
+    assert Notification.objects.count() == 0
 
 
 def test_changer_statut_sur_commande_terminale_refuse(api_client):

@@ -73,6 +73,35 @@ def test_stripe_checkout_session_completed_confirme_le_paiement(client):
     assert cotisation.date_paiement is not None
 
 
+def test_stripe_checkout_session_completed_cree_une_notification_in_app(client):
+    from apps.accounts.models import User
+    from apps.membres.tests.factories import MembreFactory
+    from apps.notifications.models import Notification, TypeNotification
+
+    user = User.objects.create_user(
+        email="stripe-payeur@example.de", password="Password123!", is_active=True
+    )
+    membre = MembreFactory(user=user)
+    cotisation = _cotisation_en_attente(membre=membre, mode_paiement="")
+    event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "client_reference_id": str(cotisation.id),
+                "payment_intent": "pi_456",
+                "id": "cs_456",
+            }
+        },
+    }
+
+    with patch("stripe.Webhook.construct_event", return_value=event):
+        resp = _post_json(client, STRIPE_WEBHOOK_URL, {})
+
+    assert resp.status_code == 200
+    notification = Notification.objects.get(destinataire=user)
+    assert notification.type_notification == TypeNotification.PAIEMENT_CONFIRME
+
+
 def test_stripe_rejeu_idempotent(client):
     cotisation = _cotisation_en_attente()
     event = {

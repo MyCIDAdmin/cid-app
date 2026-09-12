@@ -25,10 +25,11 @@ peuvent en théorie avoir un checkpoint le même jour calendaire (ex. échéance
 tardivement au point de coïncider avec le J+1 par défaut de 2028) : `_checkpoints_du_jour`
 retourne donc une liste, et la tâche envoie les relances pour chaque (checkpoint, année) trouvé.
 
-Notification in-app (RICEFW W-001 étape 5) : différée à la Phase 2B avec le reste de
-apps.notifications (encore un module vide à ce stade, voir CLAUDE.md §7 et son propre
-models.py) — ce ticket ne couvre que l'email. `RelanceCotisation` (models.py) journalise chaque
-envoi réussi (étape 6 "Logger résultat") et sert de verrou d'idempotence : si la tâche est
+Notification in-app (RICEFW W-001 étape 5) : implémentée en Phase 2B via
+`notifications.notifier_relance_cotisation`, appelée juste après la création de l'entrée
+`RelanceCotisation` (donc uniquement pour un envoi réussi, jamais pour un envoi qui a échoué —
+cohérent avec le verrou d'idempotence ci-dessous). `RelanceCotisation` (models.py) journalise
+chaque envoi réussi (étape 6 "Logger résultat") et sert de verrou d'idempotence : si la tâche est
 rejouée le même jour (double déclenchement Beat, retry manuel...), un membre déjà relancé pour ce
 (annee, checkpoint) n'est pas recontacté.
 """
@@ -52,6 +53,7 @@ from .models import (
     StatutCotisation,
     TypeArticle,
 )
+from .notifications import notifier_relance_cotisation
 
 logger = logging.getLogger(__name__)
 
@@ -227,6 +229,7 @@ def _envoyer_relances_pour(checkpoint: str, annee: int) -> int:
         )
         if resultat:
             RelanceCotisation.objects.create(membre=membre, annee=annee, checkpoint=checkpoint)
+            notifier_relance_cotisation(membre, annee, checkpoint)
             envoyes += 1
         else:
             logger.warning(

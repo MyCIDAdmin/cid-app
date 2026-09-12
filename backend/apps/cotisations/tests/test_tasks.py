@@ -123,6 +123,18 @@ def test_membre_actif_sans_cotisation_payee_est_relance(mailoutbox):
     assert log.checkpoint == CheckpointRelance.J_MOINS_30
 
 
+def test_relance_cree_une_notification_in_app(mailoutbox):
+    from apps.notifications.models import Notification, TypeNotification
+
+    membre = _membre_avec_compte()
+
+    envoyer_relances_cotisation(today=date(2026, 12, 2))
+
+    notification = Notification.objects.get(destinataire=membre.user)
+    assert notification.type_notification == TypeNotification.RELANCE_COTISATION
+    assert "2027" in notification.message
+
+
 def test_membre_ayant_deja_paye_nest_pas_relance(mailoutbox):
     membre = _membre_avec_compte()
     CotisationFactory(

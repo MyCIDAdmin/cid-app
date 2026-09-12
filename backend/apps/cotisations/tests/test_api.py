@@ -382,6 +382,29 @@ def test_directeur_financier_peut_marquer_payee(api_client):
     assert resp.data["date_paiement"] is not None
 
 
+def test_marquer_payee_cree_une_notification_in_app_pour_le_membre(api_client):
+    from apps.notifications.models import Notification, TypeNotification
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg2@example.de")
+    user_paye = User.objects.create_user(
+        email="paye@example.de", password="Password123!", is_active=True
+    )
+    membre_paye = MembreFactory(user=user_paye)
+    cotisation = CotisationFactory(
+        membre=membre_paye,
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="",
+        reference_transaction=None,
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 200, resp.data
+
+    notification = Notification.objects.get(destinataire=user_paye)
+    assert notification.type_notification == TypeNotification.PAIEMENT_CONFIRME
+
+
 def test_admin_peut_marquer_payee(api_client):
     user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin@example.de")
     cotisation = CotisationFactory(

@@ -114,8 +114,18 @@ def send_password_reset_email(user_id, token):
 
 @shared_task
 def send_registration_approved_email(user_id):
-    """AHM-48 — le compte vient d'être activé par RH/Admin."""
+    """
+    AHM-48 — le compte vient d'être activé par RH/Admin.
+
+    C'est aussi le point d'intégration du type "bienvenue" (Phase 2B, CID-RPL-001 §2.2, 1 des 11
+    types R1) : créer la notification in-app dès l'inscription (send_welcome_email) n'aurait pas
+    de sens, le compte n'étant pas encore actif — l'utilisateur ne peut pas se connecter pour la
+    voir. C'est ici, quand le compte devient utilisable, que "bienvenue" s'applique réellement.
+    """
     from django.contrib.auth import get_user_model
+
+    from apps.notifications.models import TypeNotification
+    from apps.notifications.services import notifier
 
     User = get_user_model()
     try:
@@ -133,6 +143,13 @@ def send_registration_approved_email(user_id):
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[user.email],
         fail_silently=False,
+    )
+    notifier(
+        user,
+        TypeNotification.BIENVENUE,
+        titre="Bienvenue sur CID",
+        message="Votre compte a été activé, vous pouvez désormais vous connecter.",
+        lien="/dashboard",
     )
 
 

@@ -50,6 +50,7 @@ from apps.accounts.models import ROLE_LEVELS
 from .filters import CotisationFilter
 from .gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 from .models import ConfigurationRelance, Cotisation, ModePaiement, StatutCotisation
+from .notifications import notifier_paiement_confirme as _notifier_paiement_confirme
 from .pdf import generate_receipt_pdf
 from .permissions import READ_ALL_MIN_LEVEL, SAISIE_POUR_AUTRUI_MIN_LEVEL, CotisationPermission
 from .serializers import ConfigurationRelanceSerializer, CotisationSerializer
@@ -173,6 +174,7 @@ class CotisationViewSet(ModelViewSet):
         # save() (voir models.py) génère la référence de transaction et la date de paiement
         # puisque le statut passe à "payee" sans référence existante.
         cotisation.save()
+        _notifier_paiement_confirme(cotisation)
 
         return Response(CotisationSerializer(cotisation).data)
 

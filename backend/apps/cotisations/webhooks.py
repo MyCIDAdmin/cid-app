@@ -25,6 +25,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .gateways import GatewayError, capturer_commande_paypal, verifier_signature_webhook_paypal
 from .models import Cotisation, ModePaiement, StatutCotisation
+from .notifications import notifier_paiement_confirme
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ def _confirmer_paiement_gateway(cotisation: Cotisation, mode_paiement: str, refe
     cotisation.date_paiement = timezone.now()
     cotisation.statut = StatutCotisation.PAYEE
     cotisation.save()
+    notifier_paiement_confirme(cotisation)
 
 
 def _echouer_paiement_gateway(cotisation: Cotisation) -> None:

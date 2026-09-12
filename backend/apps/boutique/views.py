@@ -19,6 +19,10 @@ Vues API — app boutique (FDD §3.4) :
 Pas de create/update/destroy génériques exposés sur Commande : une fois créée (via
 `passer`), elle n'évolue que par ses actions dédiées — registre append-only, même
 convention que Cotisation/Souscription.
+
+Notifications (Phase 2B, voir notifications.py) : `passer` et `changer_statut` (transition vers
+`expediee`) déclenchent chacun un email + une notification in-app — voir
+apps.notifications.models.TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE/EXPEDIEE.
 """
 
 from django.db import transaction
@@ -42,6 +46,7 @@ from .models import (
     StatutProduit,
     VarianteProduit,
 )
+from .notifications import notifier_commande_confirmee, notifier_commande_expediee
 from .permissions import (
     GESTION_CATALOGUE_MIN_LEVEL,
     ORDER_VISIBILITY_MIN_LEVEL,
@@ -204,6 +209,7 @@ class CommandeViewSet(ModelViewSet):
             commande.montant_total = montant_total
             commande.save(update_fields=["montant_total"])
 
+        notifier_commande_confirmee(commande)
         return Response(self.get_serializer(commande).data, status=201)
 
     @action(detail=True, methods=["post"])
@@ -242,5 +248,8 @@ class CommandeViewSet(ModelViewSet):
                 _restituer_stock(commande)
             commande.statut = nouveau_statut
             commande.save(update_fields=["statut"])
+
+        if nouveau_statut == StatutCommande.EXPEDIEE:
+            notifier_commande_expediee(commande)
 
         return Response(self.get_serializer(commande).data)

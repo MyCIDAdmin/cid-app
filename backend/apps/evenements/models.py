@@ -15,9 +15,9 @@ Périmètre de ce module (Phase 2A, CLAUDE.md §7 — modèles + API uniquement)
   - Covoiturage / ReservationCovoiturage : un membre propose un trajet (éventuellement
     rattaché à un événement), d'autres le rejoignent — places disponibles décrémentées
     du même principe atomique.
-  - Rappels Celery Beat J-3/J-1 (W-005), emails d'invitation (W-004), rapport d'activité
-    (R-004) et pages React restent hors périmètre de ce ticket (Phase 2B, voir CLAUDE.md
-    §7) — mêmes principes de scission que cotisations (AHM-15 → AHM-17/AHM-18).
+  - Rappels Celery Beat J-3/J-1 (W-005) et emails d'invitation (W-004) sont implémentés en
+    Phase 2B — voir tasks.py. Rapport d'activité (R-004) et pages React restent hors
+    périmètre (Phase 2B suite/apps.stats pour R-004, voir CLAUDE.md §7).
 """
 
 import uuid
