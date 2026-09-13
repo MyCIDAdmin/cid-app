@@ -21,6 +21,7 @@ urlpatterns = [
     path("api/v1/notifications/", include("apps.notifications.urls")),
     path("api/v1/stats/", include("apps.stats.urls")),
     path("api/v1/votes/", include("apps.vote.urls")),
+    path("api/v1/communaute/", include("apps.communaute.urls")),
 ]
 
 if settings.DEBUG:

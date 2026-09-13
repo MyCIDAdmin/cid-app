@@ -12,7 +12,9 @@
     "boutique": "Boutique",
     "admin_boutique": "Gestion boutique",
     "stats": "Statistiques & KPIs",
-    "votes": "Votes & Élections"
+    "votes": "Votes & Élections",
+    "fil": "Fil d'actualité",
+    "forum": "Forum"
   },
   "dashboard": {
     "title": "Tableau de bord",

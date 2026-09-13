@@ -10,6 +10,9 @@ import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
 import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
 import CataloguePage from "./pages/boutique/CataloguePage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
+import FilPage from "./pages/communaute/FilPage";
+import ForumPage from "./pages/communaute/ForumPage";
+import ForumSujetPage from "./pages/communaute/ForumSujetPage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
@@ -178,6 +181,14 @@ export default function App() {
             même cet accès (voir CreerVoteWizardPage), même principe que MembreFormPage. */}
         <Route path="/votes" element={<VotePage />} />
         <Route path="/votes/creer" element={<CreerVoteWizardPage />} />
+        {/* Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) —
+            ouverts à tout authentifié, même principe que /boutique et /votes : le backend
+            scope déjà la visibilité (publications/sujets masqués visibles Bureau Admin+
+            seulement, voir PublicationViewSet/SujetViewSet.get_queryset) et les actions de
+            modération (masquer/épingler/verrouiller, voir ContenuCommunautePermission). */}
+        <Route path="/fil" element={<FilPage />} />
+        <Route path="/forum" element={<ForumPage />} />
+        <Route path="/forum/:id" element={<ForumSujetPage />} />
         {/* Les routes suivantes sont ajoutées au fil des phases :
             /evenements, /admin/* */}
       </Route>

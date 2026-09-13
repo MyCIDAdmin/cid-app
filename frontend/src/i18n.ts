@@ -29,6 +29,7 @@ i18n
       "stats",
       "notifications",
       "vote",
+      "communaute",
     ],
     defaultNS: "common",
     backend: {

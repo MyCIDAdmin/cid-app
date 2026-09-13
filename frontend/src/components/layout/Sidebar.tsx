@@ -29,6 +29,11 @@ const NAV_ITEMS: NavItem[] = [
   // masqués tant que non clôturé, voir VoteSessionViewSet.resultats) ; la création/clôture de
   // session reste gérée par la page elle-même pour l'exception Dir. Financier (voir VotePage).
   { to: "/votes", labelKey: "nav.votes" },
+  // Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) — ouverts à
+  // tout authentifié, même principe que /votes : le backend scope déjà la visibilité (voir
+  // PublicationViewSet/SujetViewSet.get_queryset).
+  { to: "/fil", labelKey: "nav.fil" },
+  { to: "/forum", labelKey: "nav.forum" },
   // Gestion boutique (mockup #pg-admin-boutique) — Bureau Admin+ seulement, même niveau que
   // CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API.
   { to: "/admin/boutique", labelKey: "nav.admin_boutique", minRoleLevel: ROLE_LEVELS.bureau_admin },
