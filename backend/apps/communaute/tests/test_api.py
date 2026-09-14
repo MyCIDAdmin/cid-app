@@ -6,9 +6,14 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.communaute.models import CategorieForum, Commentaire
+from apps.communaute.models import CategorieForum, Commentaire, Conversation, MembreGroupe
 from apps.communaute.tests.factories import (
     CommentaireFactory,
+    ConversationFactory,
+    GroupeChatFactory,
+    MembreGroupeFactory,
+    MessageGroupeFactory,
+    MessagePriveFactory,
     PublicationFactory,
     ReponseForumFactory,
     SujetFactory,
@@ -366,3 +371,188 @@ def test_regression_pagination_ne_leve_pas_malgre_lordre_multi_champs(api_client
     resp = _auth(api_client, user).get(reverse(SUJET_LIST_URL))
     assert resp.status_code == 200
     assert len(resp.data["results"]) == 3
+
+
+# --- Messagerie privée : conversations + historique (REST = lecture seule, voir consumers.py) ---
+
+CONVERSATION_LIST_URL = "communaute:conversation-list"
+MESSAGE_PRIVE_LIST_URL = "communaute:message-prive-list"
+
+
+def test_conversation_list_ne_montre_que_mes_conversations(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "c1@example.de")
+    ma_conversation = ConversationFactory(membre_a=membre)
+    ConversationFactory()  # conversation d'autrui
+
+    resp = _auth(api_client, user).get(reverse(CONVERSATION_LIST_URL))
+    assert resp.status_code == 200
+    ids = [c["id"] for c in resp.data["results"]]
+    assert ids == [str(ma_conversation.id)]
+
+
+def test_creer_une_conversation_avec_un_destinataire(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "c2@example.de")
+    destinataire = MembreFactory()
+    resp = _auth(api_client, user).post(
+        reverse(CONVERSATION_LIST_URL), {"destinataire": str(destinataire.id)}
+    )
+    assert resp.status_code == 201
+    assert resp.data["autre_participant"]["id"] == str(destinataire.id)
+    assert Conversation.objects.count() == 1
+
+
+def test_creer_une_conversation_existante_ne_la_duplique_pas(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "c3@example.de")
+    destinataire = MembreFactory()
+    Conversation.get_or_create_entre(membre, destinataire)
+
+    resp = _auth(api_client, user).post(
+        reverse(CONVERSATION_LIST_URL), {"destinataire": str(destinataire.id)}
+    )
+    assert resp.status_code == 201
+    assert Conversation.objects.count() == 1
+
+
+def test_conversation_retrieve_refuse_a_un_non_participant(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "c4@example.de")
+    conversation = ConversationFactory()  # ni membre_a ni membre_b n'est notre membre
+    resp = _auth(api_client, user).get(
+        reverse("communaute:conversation-detail", args=[conversation.id])
+    )
+    assert resp.status_code in (403, 404)
+
+
+def test_messages_prives_necessite_le_parametre_conversation(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "c5@example.de")
+    resp = _auth(api_client, user).get(reverse(MESSAGE_PRIVE_LIST_URL))
+    assert resp.status_code == 400
+
+
+def test_messages_prives_refuse_a_un_non_participant(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "c6@example.de")
+    conversation = ConversationFactory()
+    resp = _auth(api_client, user).get(
+        reverse(MESSAGE_PRIVE_LIST_URL), {"conversation": str(conversation.id)}
+    )
+    assert resp.status_code == 403
+
+
+def test_messages_prives_liste_pour_un_participant_et_dechiffre_le_contenu(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "c7@example.de")
+    conversation = ConversationFactory(membre_a=membre)
+    MessagePriveFactory(conversation=conversation, expediteur=membre, contenu="Salut !")
+
+    resp = _auth(api_client, user).get(
+        reverse(MESSAGE_PRIVE_LIST_URL), {"conversation": str(conversation.id)}
+    )
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["contenu"] == "Salut !"
+    assert resp.data["results"][0]["est_expediteur"] is True
+
+
+# --- Groupes de chat ---
+
+GROUPE_LIST_URL = "communaute:groupe-chat-list"
+MESSAGE_GROUPE_LIST_URL = "communaute:message-groupe-list"
+
+
+def test_groupe_public_visible_par_tous_les_membres(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "g1@example.de")
+    GroupeChatFactory(nom="Supporters Berlin")
+    resp = _auth(api_client, user).get(reverse(GROUPE_LIST_URL))
+    noms = [g["nom"] for g in resp.data["results"]]
+    assert "Supporters Berlin" in noms
+
+
+def test_groupe_prive_invisible_a_un_non_membre(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "g2@example.de")
+    GroupeChatFactory(nom="Bureau restreint", type_groupe="prive")
+    resp = _auth(api_client, user).get(reverse(GROUPE_LIST_URL))
+    noms = [g["nom"] for g in resp.data["results"]]
+    assert "Bureau restreint" not in noms
+
+
+def test_creer_un_groupe_prive_avec_invitations_ajoute_les_membres(api_client):
+    user, createur = _user_avec_membre(Role.MEMBRE, "g3@example.de")
+    invite = MembreFactory()
+    resp = _auth(api_client, user).post(
+        reverse(GROUPE_LIST_URL),
+        {
+            "nom": "Groupe privé",
+            "type_groupe": "prive",
+            "membres_invites": [str(invite.id)],
+        },
+    )
+    assert resp.status_code == 201, resp.data
+    groupe_id = resp.data["id"]
+    assert MembreGroupe.objects.filter(groupe_id=groupe_id, membre=createur).exists()
+    assert MembreGroupe.objects.filter(groupe_id=groupe_id, membre=invite).exists()
+
+
+def test_rejoindre_un_groupe_public(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "g4@example.de")
+    groupe = GroupeChatFactory()
+    resp = _auth(api_client, user).post(
+        reverse("communaute:groupe-chat-rejoindre", args=[groupe.id])
+    )
+    assert resp.status_code == 200
+    assert MembreGroupe.objects.filter(groupe=groupe, membre=membre).exists()
+
+
+def test_rejoindre_un_groupe_prive_refuse(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "g5@example.de")
+    groupe = GroupeChatFactory(type_groupe="prive")
+    resp = _auth(api_client, user).post(
+        reverse("communaute:groupe-chat-rejoindre", args=[groupe.id])
+    )
+    assert resp.status_code == 404  # invisible dans le queryset (ni public, ni déjà membre)
+
+
+def test_quitter_un_groupe(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "g6@example.de")
+    groupe = GroupeChatFactory()
+    MembreGroupeFactory(groupe=groupe, membre=membre)
+    resp = _auth(api_client, user).post(reverse("communaute:groupe-chat-quitter", args=[groupe.id]))
+    assert resp.status_code == 200
+    assert not MembreGroupe.objects.filter(groupe=groupe, membre=membre).exists()
+
+
+def test_inviter_reserve_au_createur_ou_bureau_admin(api_client):
+    createur_user, createur = _user_avec_membre(Role.MEMBRE, "g7@example.de")
+    groupe = GroupeChatFactory(createur=createur, type_groupe="prive")
+    MembreGroupeFactory(groupe=groupe, membre=createur)
+    invite = MembreFactory()
+
+    autre_user, _ = _user_avec_membre(Role.MEMBRE, "g8@example.de")
+    resp = _auth(api_client, autre_user).post(
+        reverse("communaute:groupe-chat-inviter", args=[groupe.id]), {"membres": [str(invite.id)]}
+    )
+    assert resp.status_code == 404  # groupe privé invisible pour un non-membre
+
+    resp = _auth(api_client, createur_user).post(
+        reverse("communaute:groupe-chat-inviter", args=[groupe.id]), {"membres": [str(invite.id)]}
+    )
+    assert resp.status_code == 200
+    assert MembreGroupe.objects.filter(groupe=groupe, membre=invite).exists()
+
+
+def test_messages_groupe_necessite_le_parametre_groupe(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "g9@example.de")
+    resp = _auth(api_client, user).get(reverse(MESSAGE_GROUPE_LIST_URL))
+    assert resp.status_code == 400
+
+
+def test_messages_groupe_prive_refuse_a_un_non_membre(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "g10@example.de")
+    groupe = GroupeChatFactory(type_groupe="prive")
+    resp = _auth(api_client, user).get(reverse(MESSAGE_GROUPE_LIST_URL), {"groupe": str(groupe.id)})
+    assert resp.status_code == 403
+
+
+def test_messages_groupe_liste_pour_un_groupe_public(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "g11@example.de")
+    groupe = GroupeChatFactory()
+    MessageGroupeFactory(groupe=groupe, contenu="Bienvenue !")
+    resp = _auth(api_client, user).get(reverse(MESSAGE_GROUPE_LIST_URL), {"groupe": str(groupe.id)})
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["contenu"] == "Bienvenue !"

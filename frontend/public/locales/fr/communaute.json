@@ -54,5 +54,38 @@
     "repondre": "Répondre",
     "erreur_reponse": "L'envoi de la réponse a échoué.",
     "sujet_verrouille_message": "Ce sujet est verrouillé — les nouvelles réponses ne sont plus acceptées."
+  },
+  "messagerie": {
+    "titre": "Messagerie",
+    "rechercher_membre": "Rechercher un membre pour démarrer une conversation…",
+    "aucun_membre_trouve": "Aucun membre trouvé.",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger vos conversations.",
+    "aucune_conversation": "Aucune conversation pour le moment.",
+    "membre_inconnu": "Membre",
+    "retour_liste": "← Retour à la messagerie",
+    "placeholder_message": "Écrire un message…",
+    "envoyer": "Envoyer"
+  },
+  "groupes": {
+    "titre": "Groupes de chat",
+    "nouveau_groupe": "Nouveau groupe",
+    "nom_placeholder": "Nom du groupe",
+    "description_placeholder": "Description (optionnelle)…",
+    "type_public": "Public",
+    "type_prive": "Privé",
+    "inviter_membres": "Inviter des membres…",
+    "creer": "Créer le groupe",
+    "erreur_creation": "La création du groupe a échoué.",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les groupes.",
+    "aucun_groupe": "Aucun groupe pour le moment.",
+    "nombre_membres": "{{count}} membre(s)",
+    "rejoindre": "Rejoindre",
+    "ouvrir": "Ouvrir",
+    "quitter": "Quitter le groupe",
+    "retour_liste": "← Retour aux groupes",
+    "placeholder_message": "Écrire un message…",
+    "envoyer": "Envoyer"
   }
 }

@@ -4,7 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as communauteApi from "../api/communaute";
-import type { PublicationPayload, SujetPayload } from "../types/communaute";
+import type { GroupeChatPayload, PublicationPayload, SujetPayload } from "../types/communaute";
 
 const communauteKeys = {
   all: ["communaute"] as const,
@@ -13,6 +13,14 @@ const communauteKeys = {
   sujets: (filtres: communauteApi.SujetsFiltres = {}) =>
     [...communauteKeys.all, "sujets", filtres] as const,
   sujet: (id: string) => [...communauteKeys.all, "sujet", id] as const,
+  conversations: () => [...communauteKeys.all, "conversations"] as const,
+  messagesPrives: (conversationId: string) =>
+    [...communauteKeys.all, "messages-prives", conversationId] as const,
+  groupes: (filtres: communauteApi.GroupesFiltres = {}) =>
+    [...communauteKeys.all, "groupes", filtres] as const,
+  groupe: (id: string) => [...communauteKeys.all, "groupe", id] as const,
+  messagesGroupe: (groupeId: string) =>
+    [...communauteKeys.all, "messages-groupe", groupeId] as const,
 };
 
 function invalidatePublications(queryClient: ReturnType<typeof useQueryClient>) {
@@ -191,5 +199,98 @@ export function useMasquerReponseForum() {
   return useMutation({
     mutationFn: ({ id }: { id: string; sujetId: string }) => communauteApi.masquerReponseForum(id),
     onSuccess: (_data, variables) => invalidateSujet(queryClient, variables.sujetId),
+  });
+}
+
+// --- Messagerie privée (REST = historique seul, voir hooks/useMessagerieSocket.ts) ---
+
+export function useConversations() {
+  return useQuery({
+    queryKey: communauteKeys.conversations(),
+    queryFn: () => communauteApi.listConversations(),
+  });
+}
+
+export function useCreerConversation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (destinataire: string) => communauteApi.creerConversation(destinataire),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: communauteKeys.conversations() }),
+  });
+}
+
+export function useMessagesPrives(conversationId: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.messagesPrives(conversationId ?? ""),
+    queryFn: () => communauteApi.listMessagesPrives(conversationId as string),
+    enabled: !!conversationId,
+  });
+}
+
+// --- Groupes de chat (REST = liste/gestion, voir hooks/useGroupeChatSocket.ts pour l'envoi) ---
+
+function invalidateGroupes(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "groupes"] });
+}
+
+export function useGroupes(filtres: communauteApi.GroupesFiltres = {}) {
+  return useQuery({
+    queryKey: communauteKeys.groupes(filtres),
+    queryFn: () => communauteApi.listGroupes(filtres),
+  });
+}
+
+export function useGroupe(id: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.groupe(id ?? ""),
+    queryFn: () => communauteApi.getGroupe(id as string),
+    enabled: !!id,
+  });
+}
+
+export function useCreerGroupe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: GroupeChatPayload) => communauteApi.creerGroupe(payload),
+    onSuccess: () => invalidateGroupes(queryClient),
+  });
+}
+
+function invalidateGroupe(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  queryClient.invalidateQueries({ queryKey: communauteKeys.groupe(id) });
+  invalidateGroupes(queryClient);
+}
+
+export function useRejoindreGroupe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.rejoindreGroupe(id),
+    onSuccess: (_data, id) => invalidateGroupe(queryClient, id),
+  });
+}
+
+export function useQuitterGroupe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.quitterGroupe(id),
+    onSuccess: (_data, id) => invalidateGroupe(queryClient, id),
+  });
+}
+
+export function useInviterAuGroupe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, membres }: { id: string; membres: string[] }) =>
+      communauteApi.inviterAuGroupe(id, membres),
+    onSuccess: (_data, variables) => invalidateGroupe(queryClient, variables.id),
+  });
+}
+
+export function useMessagesGroupe(groupeId: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.messagesGroupe(groupeId ?? ""),
+    queryFn: () => communauteApi.listMessagesGroupe(groupeId as string),
+    enabled: !!groupeId,
   });
 }

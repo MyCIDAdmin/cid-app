@@ -83,3 +83,74 @@ export interface SujetPayload {
   titre: string;
   contenu: string;
 }
+
+// --- Messagerie privée + Groupes de chat ---
+// REST = historique/liste uniquement — envoyer un message passe exclusivement par
+// WebSocket (voir hooks/useMessagerieSocket.ts, hooks/useGroupeChatSocket.ts), miroir
+// exact du découpage backend (apps.communaute.consumers).
+
+export type TypeGroupe = "public" | "prive";
+
+export interface DernierMessage {
+  contenu: string;
+  expediteur: string;
+  created_at: string;
+  est_lu: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  autre_participant: Auteur | null;
+  dernier_message: DernierMessage | null;
+  nombre_non_lus: number;
+  created_at: string;
+}
+
+export interface MessagePrive {
+  id: string;
+  conversation: string;
+  expediteur: string;
+  contenu: string;
+  est_lu: boolean;
+  lu_le: string | null;
+  created_at: string;
+  est_expediteur: boolean;
+}
+
+export interface GroupeChat {
+  id: string;
+  nom: string;
+  description: string;
+  type_groupe: TypeGroupe;
+  createur: Auteur;
+  created_at: string;
+  nombre_membres: number;
+  est_membre: boolean;
+}
+
+export interface GroupeChatPayload {
+  nom: string;
+  description?: string;
+  type_groupe: TypeGroupe;
+  membres_invites?: string[];
+}
+
+export interface MessageGroupe {
+  id: string;
+  groupe: string;
+  auteur: Auteur;
+  contenu: string;
+  created_at: string;
+  est_auteur: boolean;
+}
+
+// --- Messages WebSocket (miroir de apps.communaute.consumers) ---
+
+export type MessagerieSocketMessage =
+  | { type: "message"; id: string; conversation: string; expediteur: string; contenu: string; est_lu: boolean; created_at: string }
+  | { type: "lu"; conversation: string; lu_par: string }
+  | { type: "erreur"; message: string };
+
+export type GroupeChatSocketMessage =
+  | { type: "message"; id: string; groupe: string; auteur: Auteur; contenu: string; created_at: string }
+  | { type: "erreur"; message: string };

@@ -14,7 +14,9 @@
     "stats": "Statistiques & KPIs",
     "votes": "Votes & Élections",
     "fil": "Fil d'actualité",
-    "forum": "Forum"
+    "forum": "Forum",
+    "messagerie": "Messagerie",
+    "groupes": "Groupes de chat"
   },
   "dashboard": {
     "title": "Tableau de bord",

@@ -40,6 +40,7 @@ class TypeNotification(models.TextChoices):
     BOUTIQUE_COMMANDE_EXPEDIEE = "boutique_commande_expediee", _("Commande expédiée")
     VOTE_OUVERTURE = "vote_ouverture", _("Ouverture d'un vote")
     VOTE_RESULTATS = "vote_resultats", _("Résultats d'un vote")
+    MESSAGE_PRIVE_RECU = "message_prive_recu", _("Nouveau message privé")
 
 
 class Notification(models.Model):

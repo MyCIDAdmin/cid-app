@@ -13,6 +13,10 @@ import PanierCommandePage from "./pages/boutique/PanierCommandePage";
 import FilPage from "./pages/communaute/FilPage";
 import ForumPage from "./pages/communaute/ForumPage";
 import ForumSujetPage from "./pages/communaute/ForumSujetPage";
+import GroupeChatPage from "./pages/communaute/GroupeChatPage";
+import GroupesPage from "./pages/communaute/GroupesPage";
+import MessagerieConversationPage from "./pages/communaute/MessagerieConversationPage";
+import MessageriePage from "./pages/communaute/MessageriePage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
@@ -189,6 +193,17 @@ export default function App() {
         <Route path="/fil" element={<FilPage />} />
         <Route path="/forum" element={<ForumPage />} />
         <Route path="/forum/:id" element={<ForumSujetPage />} />
+        {/* Messagerie privée + Groupes de chat (mockup #pg-messagerie/#pg-groupes, Release
+            Plan §3.2, Phase 4A/4B) — ouverts à tout authentifié ; l'IDOR sur une conversation
+            (participants uniquement) et la visibilité des groupes privés sont imposés côté
+            backend (ConversationPermission/GroupeChatPermission), ces routes n'ajoutent donc
+            pas de RequireRole, même principe que /fil et /forum. L'envoi de messages ne passe
+            jamais par ces pages REST mais par les hooks WebSocket dédiés (voir
+            useMessagerieSocket/useGroupeChatSocket). */}
+        <Route path="/messagerie" element={<MessageriePage />} />
+        <Route path="/messagerie/:id" element={<MessagerieConversationPage />} />
+        <Route path="/groupes" element={<GroupesPage />} />
+        <Route path="/groupes/:id" element={<GroupeChatPage />} />
         {/* Les routes suivantes sont ajoutées au fil des phases :
             /evenements, /admin/* */}
       </Route>

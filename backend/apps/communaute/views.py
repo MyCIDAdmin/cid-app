@@ -33,29 +33,47 @@ normaux ne sont volontairement PAS audités (pas plus que pour la Boutique), pou
 journaliser l'activité sociale ordinaire des membres (minimisation RGPD, même doc §résumé).
 """
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
+from apps.membres.models import Membre
 
 from .filters import PublicationFilter, SujetFilter
 from .models import (
     Commentaire,
+    Conversation,
+    GroupeChat,
+    MembreGroupe,
+    MessageGroupe,
+    MessagePrive,
     Publication,
     PublicationLike,
     PublicationPartage,
     ReponseForum,
     Sujet,
 )
-from .permissions import MODERATION_MIN_LEVEL, ContenuCommunautePermission
+from .permissions import (
+    MODERATION_MIN_LEVEL,
+    ContenuCommunautePermission,
+    ConversationPermission,
+    GroupeChatPermission,
+    MessagePrivePermission,
+)
 from .serializers import (
     CommentaireSerializer,
+    ConversationSerializer,
+    GroupeChatSerializer,
+    MessageGroupeSerializer,
+    MessagePriveSerializer,
     PublicationSerializer,
     ReponseForumSerializer,
     SujetSerializer,
@@ -78,6 +96,22 @@ class SujetCursorPagination(CursorPagination):
     # un tri strictement déterministe, requis par CursorPagination (même correctif que
     # apps.boutique.views.VarianteCursorPagination pour VarianteProduit).
     ordering = ("-est_epingle", "-created_at", "id")
+
+
+class ConversationCursorPagination(CursorPagination):
+    ordering = ("-created_at", "id")
+
+
+class MessagePriveCursorPagination(CursorPagination):
+    ordering = ("created_at", "id")
+
+
+class GroupeChatCursorPagination(CursorPagination):
+    ordering = ("-created_at", "id")
+
+
+class MessageGroupeCursorPagination(CursorPagination):
+    ordering = ("created_at", "id")
 
 
 class PublicationViewSet(viewsets.ModelViewSet):
@@ -269,3 +303,160 @@ class ReponseForumViewSet(
             reponse_id=str(reponse.id),
         )
         return Response(self.get_serializer(reponse).data)
+
+
+# ---------------------------------------------------------------------------
+# Messagerie privée + Groupes de chat (deuxième lot) :
+#
+#   GET        /communaute/conversations/                 — mes conversations (aperçu +
+#                                                             non-lus)
+#   POST       /communaute/conversations/                 — {"destinataire": <membre_id>}
+#                                                             démarre/retrouve la conversation
+#   GET        /communaute/conversations/{id}/             — participant uniquement (IDOR)
+#   GET        /communaute/messages-prives/?conversation=  — historique (participant
+#                                                             uniquement) ; ENVOYER un
+#                                                             message passe UNIQUEMENT par
+#                                                             MessagerieConsumer (WebSocket)
+#
+#   GET/POST   /communaute/groupes/                        — liste (publics + les miens) /
+#                                                             création
+#   GET/DELETE /communaute/groupes/{id}/                   — createur/Bureau Admin+ pour
+#                                                             DELETE
+#   POST       /communaute/groupes/{id}/rejoindre/         — groupes publics uniquement
+#   POST       /communaute/groupes/{id}/quitter/           — tout membre actuel
+#   POST       /communaute/groupes/{id}/inviter/           — créateur/Bureau Admin+, ajoute
+#                                                             des membres à un groupe privé
+#   GET        /communaute/messages-groupe/?groupe=        — historique ; ENVOYER un message
+#                                                             passe UNIQUEMENT par
+#                                                             GroupeChatConsumer (WebSocket)
+# ---------------------------------------------------------------------------
+
+
+class ConversationViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    serializer_class = ConversationSerializer
+    permission_classes = [ConversationPermission]
+    pagination_class = ConversationCursorPagination
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_queryset(self):
+        membre = getattr(self.request.user, "membre", None)
+        if membre is None:
+            return Conversation.objects.none()
+        return Conversation.objects.filter(Q(membre_a=membre) | Q(membre_b=membre)).select_related(
+            "membre_a", "membre_b"
+        )
+
+    def create(self, request, *args, **kwargs):
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            raise PermissionDenied("Aucune fiche membre associée à ce compte.")
+        destinataire_id = request.data.get("destinataire")
+        if not destinataire_id:
+            raise ValidationError({"destinataire": "Ce champ est requis."})
+        destinataire = get_object_or_404(Membre, pk=destinataire_id)
+        if destinataire.id == membre.id:
+            raise ValidationError(
+                {"destinataire": "Impossible de démarrer une conversation avec soi-même."}
+            )
+        conversation = Conversation.get_or_create_entre(membre, destinataire)
+        serializer = self.get_serializer(conversation)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class MessagePriveViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Liste seule — l'envoi d'un message passe exclusivement par `MessagerieConsumer`
+    (voir docstring de tête de consumers.py). `?conversation=<id>` est obligatoire."""
+
+    serializer_class = MessagePriveSerializer
+    permission_classes = [MessagePrivePermission]
+    pagination_class = MessagePriveCursorPagination
+
+    def get_queryset(self):
+        conversation_id = self.request.query_params.get("conversation")
+        if not conversation_id:
+            raise ValidationError({"conversation": "Ce paramètre est requis."})
+        membre = getattr(self.request.user, "membre", None)
+        conversation = Conversation.objects.filter(id=conversation_id).first()
+        if conversation is None or membre is None or not conversation.participant(membre):
+            # 403 explicite plutôt qu'une liste vide silencieuse (voir docstring
+            # permissions.MessagePrivePermission) — ne pas laisser un membre deviner
+            # l'existence d'une conversation à laquelle il n'appartient pas.
+            raise PermissionDenied("Vous n'êtes pas participant de cette conversation.")
+        return MessagePrive.objects.filter(conversation=conversation).select_related("expediteur")
+
+
+class GroupeChatViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    serializer_class = GroupeChatSerializer
+    permission_classes = [GroupeChatPermission]
+    pagination_class = GroupeChatCursorPagination
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        qs = GroupeChat.objects.select_related("createur").prefetch_related("membres_groupe")
+        membre = getattr(self.request.user, "membre", None)
+        if membre is None:
+            return qs.filter(type_groupe="public")
+        return qs.filter(Q(type_groupe="public") | Q(membres_groupe__membre=membre)).distinct()
+
+    @action(detail=True, methods=["post"])
+    def rejoindre(self, request, pk=None):
+        groupe = self.get_object()
+        membre = request.user.membre
+        MembreGroupe.objects.get_or_create(groupe=groupe, membre=membre)
+        return Response(self.get_serializer(groupe).data)
+
+    @action(detail=True, methods=["post"])
+    def quitter(self, request, pk=None):
+        groupe = self.get_object()
+        membre = request.user.membre
+        MembreGroupe.objects.filter(groupe=groupe, membre=membre).delete()
+        return Response(self.get_serializer(groupe).data)
+
+    @action(detail=True, methods=["post"])
+    def inviter(self, request, pk=None):
+        groupe = self.get_object()
+        # `request.data` est un QueryDict pour un POST multipart/form (pas JSON) : `.get()`
+        # n'y renvoie que la DERNIÈRE valeur d'une clé répétée, jamais une liste — même une
+        # liste à un seul élément redevient alors une simple chaîne, et itérer dessus
+        # itérerait caractère par caractère. `.getlist()` est la lecture correcte dans ce
+        # cas (mêmes symptômes que membres_invites, géré nativement par DRF côté
+        # PrimaryKeyRelatedField many=True — ici geré à la main car hors serializer).
+        if hasattr(request.data, "getlist"):
+            membre_ids = request.data.getlist("membres")
+        else:
+            membre_ids = request.data.get("membres", [])
+        for membre_id in membre_ids:
+            MembreGroupe.objects.get_or_create(groupe=groupe, membre_id=membre_id)
+        return Response(self.get_serializer(groupe).data)
+
+
+class MessageGroupeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Liste seule — l'envoi d'un message passe exclusivement par `GroupeChatConsumer`.
+    `?groupe=<id>` est obligatoire."""
+
+    serializer_class = MessageGroupeSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = MessageGroupeCursorPagination
+
+    def get_queryset(self):
+        groupe_id = self.request.query_params.get("groupe")
+        if not groupe_id:
+            raise ValidationError({"groupe": "Ce paramètre est requis."})
+        groupe = get_object_or_404(GroupeChat, pk=groupe_id)
+        membre = getattr(self.request.user, "membre", None)
+        if groupe.type_groupe != "public":
+            if membre is None or not groupe.membres_groupe.filter(membre=membre).exists():
+                raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
+        return MessageGroupe.objects.filter(groupe=groupe).select_related("auteur")

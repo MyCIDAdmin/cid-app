@@ -34,6 +34,10 @@ const NAV_ITEMS: NavItem[] = [
   // PublicationViewSet/SujetViewSet.get_queryset).
   { to: "/fil", labelKey: "nav.fil" },
   { to: "/forum", labelKey: "nav.forum" },
+  // Messagerie privée + Groupes de chat (mockup #pg-messagerie/#pg-groupes, Release Plan
+  // §3.2, Phase 4A/4B) — ouverts à tout authentifié, même principe que /fil et /forum.
+  { to: "/messagerie", labelKey: "nav.messagerie" },
+  { to: "/groupes", labelKey: "nav.groupes" },
   // Gestion boutique (mockup #pg-admin-boutique) — Bureau Admin+ seulement, même niveau que
   // CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API.
   { to: "/admin/boutique", labelKey: "nav.admin_boutique", minRoleLevel: ROLE_LEVELS.bureau_admin },

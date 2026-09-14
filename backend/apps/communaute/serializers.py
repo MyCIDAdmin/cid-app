@@ -6,6 +6,11 @@ from apps.membres.models import Membre
 
 from .models import (
     Commentaire,
+    Conversation,
+    GroupeChat,
+    MembreGroupe,
+    MessageGroupe,
+    MessagePrive,
     Publication,
     PublicationLike,
     PublicationPartage,
@@ -176,6 +181,162 @@ class ReponseForumSerializer(serializers.ModelSerializer):
         membre = self.context["request"].user.membre
         validated_data["auteur"] = membre
         return super().create(validated_data)
+
+
+# ---------------------------------------------------------------------------
+# Messagerie privée + Groupes de chat
+# ---------------------------------------------------------------------------
+
+
+class ConversationSerializer(serializers.ModelSerializer):
+    """REST = historique uniquement (liste des conversations + aperçu) ; l'envoi d'un
+    message passe exclusivement par `MessagerieConsumer` (voir docstring modèle)."""
+
+    autre_participant = serializers.SerializerMethodField()
+    dernier_message = serializers.SerializerMethodField()
+    nombre_non_lus = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Conversation
+        fields = [
+            "id",
+            "autre_participant",
+            "dernier_message",
+            "nombre_non_lus",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def _membre_courant(self):
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return None
+        return getattr(request.user, "membre", None)
+
+    def get_autre_participant(self, obj):
+        membre = self._membre_courant()
+        if membre is None:
+            return None
+        return AuteurSerializer(obj.autre_participant(membre)).data
+
+    def get_dernier_message(self, obj):
+        dernier = obj.messages.order_by("-created_at").first()
+        if dernier is None:
+            return None
+        return {
+            "contenu": dernier.contenu,
+            "expediteur": dernier.expediteur_id,
+            "created_at": dernier.created_at,
+            "est_lu": dernier.est_lu,
+        }
+
+    def get_nombre_non_lus(self, obj) -> int:
+        membre = self._membre_courant()
+        if membre is None:
+            return 0
+        return obj.messages.filter(est_lu=False).exclude(expediteur_id=membre.id).count()
+
+
+class MessagePriveSerializer(serializers.ModelSerializer):
+    """Liste seule (voir vue) — l'envoi passe par le WebSocket. `contenu` est déchiffré
+    automatiquement à la lecture par `EncryptedTextField` (transparent pour DRF, comme
+    `Membre.cin` — voir apps.membres.serializers)."""
+
+    est_expediteur = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MessagePrive
+        fields = [
+            "id",
+            "conversation",
+            "expediteur",
+            "contenu",
+            "est_lu",
+            "lu_le",
+            "created_at",
+            "est_expediteur",
+        ]
+        read_only_fields = fields
+
+    def get_est_expediteur(self, obj) -> bool:
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        membre = getattr(request.user, "membre", None)
+        return membre is not None and obj.expediteur_id == membre.id
+
+
+class MembreGroupeSerializer(serializers.ModelSerializer):
+    membre = AuteurSerializer(read_only=True)
+
+    class Meta:
+        model = MembreGroupe
+        fields = ["id", "groupe", "membre", "created_at"]
+        read_only_fields = fields
+
+
+class GroupeChatSerializer(serializers.ModelSerializer):
+    createur = AuteurSerializer(read_only=True)
+    nombre_membres = serializers.IntegerField(source="membres_groupe.count", read_only=True)
+    est_membre = serializers.SerializerMethodField()
+    # Écriture seule, utilisé uniquement à la création d'un groupe privé (voir mockup
+    # "Créer un groupe de chat" — cases "Membres à inviter") ; ignoré pour un groupe public.
+    membres_invites = serializers.PrimaryKeyRelatedField(
+        queryset=Membre.objects.all(), many=True, write_only=True, required=False
+    )
+
+    class Meta:
+        model = GroupeChat
+        fields = [
+            "id",
+            "nom",
+            "description",
+            "type_groupe",
+            "createur",
+            "created_at",
+            "nombre_membres",
+            "est_membre",
+            "membres_invites",
+        ]
+        read_only_fields = ["id", "createur", "created_at", "nombre_membres", "est_membre"]
+
+    def get_est_membre(self, obj) -> bool:
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        membre = getattr(request.user, "membre", None)
+        return membre is not None and obj.membres_groupe.filter(membre=membre).exists()
+
+    def create(self, validated_data):
+        membres_invites = validated_data.pop("membres_invites", [])
+        createur = self.context["request"].user.membre
+        validated_data["createur"] = createur
+        groupe = super().create(validated_data)
+        MembreGroupe.objects.create(groupe=groupe, membre=createur)
+        if groupe.type_groupe == "prive":
+            for membre in membres_invites:
+                if membre.id != createur.id:
+                    MembreGroupe.objects.get_or_create(groupe=groupe, membre=membre)
+        return groupe
+
+
+class MessageGroupeSerializer(serializers.ModelSerializer):
+    """Liste seule (voir vue) — l'envoi passe par le WebSocket (`GroupeChatConsumer`)."""
+
+    auteur = AuteurSerializer(read_only=True)
+    est_auteur = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MessageGroupe
+        fields = ["id", "groupe", "auteur", "contenu", "created_at", "est_auteur"]
+        read_only_fields = fields
+
+    def get_est_auteur(self, obj) -> bool:
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        membre = getattr(request.user, "membre", None)
+        return membre is not None and obj.auteur_id == membre.id
 
 
 class SujetSerializer(serializers.ModelSerializer):

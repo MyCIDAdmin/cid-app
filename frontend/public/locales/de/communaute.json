@@ -54,5 +54,38 @@
     "repondre": "Antworten",
     "erreur_reponse": "Die Antwort konnte nicht gesendet werden.",
     "sujet_verrouille_message": "Dieses Thema ist gesperrt — neue Antworten werden nicht mehr angenommen."
+  },
+  "messagerie": {
+    "titre": "Nachrichten",
+    "rechercher_membre": "Mitglied suchen, um ein Gespräch zu starten…",
+    "aucun_membre_trouve": "Kein Mitglied gefunden.",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Ihre Unterhaltungen konnten nicht geladen werden.",
+    "aucune_conversation": "Noch keine Unterhaltung.",
+    "membre_inconnu": "Mitglied",
+    "retour_liste": "← Zurück zu den Nachrichten",
+    "placeholder_message": "Nachricht schreiben…",
+    "envoyer": "Senden"
+  },
+  "groupes": {
+    "titre": "Chatgruppen",
+    "nouveau_groupe": "Neue Gruppe",
+    "nom_placeholder": "Gruppenname",
+    "description_placeholder": "Beschreibung (optional)…",
+    "type_public": "Öffentlich",
+    "type_prive": "Privat",
+    "inviter_membres": "Mitglieder einladen…",
+    "creer": "Gruppe erstellen",
+    "erreur_creation": "Die Gruppe konnte nicht erstellt werden.",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Gruppen konnten nicht geladen werden.",
+    "aucun_groupe": "Noch keine Gruppe.",
+    "nombre_membres": "{{count}} Mitglied(er)",
+    "rejoindre": "Beitreten",
+    "ouvrir": "Öffnen",
+    "quitter": "Gruppe verlassen",
+    "retour_liste": "← Zurück zu den Gruppen",
+    "placeholder_message": "Nachricht schreiben…",
+    "envoyer": "Senden"
   }
 }

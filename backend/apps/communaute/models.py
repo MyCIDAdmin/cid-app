@@ -2,10 +2,18 @@
 Modèles — app communaute (Phase 4A, R2).
 
 Premier lot du module Communauté (Release Plan §3.2) : **Fil d'actualité** et **Forum**,
-choisis comme point de départ de la Phase 4 car purement REST/CRUD — sans WebSocket ni
-chiffrement — à la différence de Messagerie privée / Groupes de chat (qui nécessitent
-Django Channels + AES-256, voir apps.vote pour l'infra WebSocket déjà en place) et Live
-Match. Ce second lot suivra dans une phase ultérieure (voir CLAUDE.md §7, Phase 4A/4B).
+purement REST/CRUD — sans WebSocket ni chiffrement.
+
+Deuxième lot (même fichier, ajouté ensuite) : **Messagerie privée** et **Groupes de
+chat** — tous deux réutilisent l'infrastructure Django Channels installée dès la Phase 3
+(apps.vote, voir CID-RPL-001 §4.2 "L'infrastructure WebSocket est déjà opérationnelle et
+testée au moment d'attaquer R2") : mêmes briques (JWTAuthMiddlewareStack, Redis channel
+layer), même découpage WS/REST que apps.vote.VoteConsumer — la mutation en temps réel
+(envoyer un message) passe UNIQUEMENT par le WebSocket (`receive_json`), jamais par un
+endpoint REST équivalent, pour ne pas dupliquer la logique métier sur deux chemins ; REST
+ne sert qu'à l'historique (liste des conversations/groupes, pagination des messages) —
+voir consumers.py/views.py. Live Match (aussi WebSocket, Phase 4B) reste pour une phase
+ultérieure (voir CLAUDE.md §7).
 
 Niveau de sécurité "Moyenne" (CID-SCD-001 §résumé "Forum / Fil") : RBAC seulement (pas de
 chiffrement — contenu non sensible), 100 req/min (DEFAULT_THROTTLE_RATES["user"], pas de
@@ -55,6 +63,7 @@ import uuid
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from encrypted_model_fields.fields import EncryptedTextField
 
 from .storage import PublicationsStorage
 
@@ -293,3 +302,177 @@ class ReponseForum(models.Model):
 
     def __str__(self):
         return f"{self.auteur} — {(self.contenu or '')[:30]}"
+
+
+# ---------------------------------------------------------------------------
+# Messagerie privée + Groupes de chat (deuxième lot — voir docstring de tête)
+# ---------------------------------------------------------------------------
+
+
+class Conversation(models.Model):
+    """Conversation 1-to-1 entre deux membres (Messagerie privée, Release Plan §3.2).
+
+    La paire (membre_a, membre_b) est canonicalisée à la création (ordre déterministe par
+    UUID croissant, indépendant de qui a lancé la conversation) afin qu'une contrainte
+    d'unicité simple empêche deux conversations distinctes pour la même paire — voir
+    `get_or_create_entre()`, seul point d'entrée prévu pour la création.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    membre_a = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="conversations_a"
+    )
+    membre_b = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="conversations_b"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_conversations"
+        verbose_name = _("Conversation")
+        verbose_name_plural = _("Conversations")
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["membre_a", "membre_b"], name="conversation_paire_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.membre_a} <-> {self.membre_b}"
+
+    @classmethod
+    def get_or_create_entre(cls, membre_1, membre_2):
+        """Retourne (en la créant si besoin) la conversation entre deux membres.
+
+        Canonicalise l'ordre de la paire par UUID croissant pour garantir l'unicité
+        indépendamment du membre qui initie la conversation.
+        """
+        if str(membre_1.id) <= str(membre_2.id):
+            membre_a, membre_b = membre_1, membre_2
+        else:
+            membre_a, membre_b = membre_2, membre_1
+        conversation, _created = cls.objects.get_or_create(membre_a=membre_a, membre_b=membre_b)
+        return conversation
+
+    def participant(self, membre) -> bool:
+        return membre.id in (self.membre_a_id, self.membre_b_id)
+
+    def autre_participant(self, membre):
+        return self.membre_b if membre.id == self.membre_a_id else self.membre_a
+
+
+class MessagePrive(models.Model):
+    """Message d'une conversation privée — contenu chiffré AES-256 (CID-SCD-001 §résumé
+    "Messagerie privée" : "Conversations 1-to-1 chiffrées AES-256, indicateur 'lu',
+    notification email si hors ligne"), via `EncryptedTextField` (même mécanisme que
+    `Membre.cin`/`Membre.passeport`, clé `FIELD_ENCRYPTION_KEY`/`SECRET_FIELD_KEY`)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name="messages"
+    )
+    expediteur = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="messages_prives_envoyes"
+    )
+    contenu = EncryptedTextField()
+
+    est_lu = models.BooleanField(default=False)
+    lu_le = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_messages_prives"
+        verbose_name = _("Message privé")
+        verbose_name_plural = _("Messages privés")
+        ordering = ["created_at"]
+        indexes = [models.Index(fields=["conversation", "created_at"])]
+
+    def __str__(self):
+        return f"{self.expediteur} @ {self.conversation_id}"
+
+
+class TypeGroupe(models.TextChoices):
+    PUBLIC = "public", _("Public")
+    PRIVE = "prive", _("Privé")
+
+
+class GroupeChat(models.Model):
+    """Groupe de chat temps réel (Release Plan §3.2 "Groupes public ou privé, chat temps
+    réel WebSocket, créer/rejoindre"). Pas de chiffrement — contenu non individualisé,
+    même niveau de sécurité que Forum/Fil (RBAC standard, voir CID-SCD-001)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    nom = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    type_groupe = models.CharField(
+        max_length=10, choices=TypeGroupe.choices, default=TypeGroupe.PUBLIC
+    )
+
+    createur = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="groupes_crees"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_groupes_chat"
+        verbose_name = _("Groupe de chat")
+        verbose_name_plural = _("Groupes de chat")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.nom
+
+
+class MembreGroupe(models.Model):
+    """Appartenance d'un membre à un groupe de chat (table de liaison avec date d'entrée)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    groupe = models.ForeignKey(GroupeChat, on_delete=models.CASCADE, related_name="membres_groupe")
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="groupes_rejoints"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_membres_groupe"
+        verbose_name = _("Membre de groupe")
+        verbose_name_plural = _("Membres de groupe")
+        constraints = [
+            models.UniqueConstraint(fields=["groupe", "membre"], name="membre_groupe_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.membre} @ {self.groupe}"
+
+
+class MessageGroupe(models.Model):
+    """Message d'un groupe de chat — contenu en clair (voir docstring de `GroupeChat`)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    groupe = models.ForeignKey(GroupeChat, on_delete=models.CASCADE, related_name="messages")
+    auteur = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="messages_groupe"
+    )
+    contenu = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_messages_groupe"
+        verbose_name = _("Message de groupe")
+        verbose_name_plural = _("Messages de groupe")
+        ordering = ["created_at"]
+        indexes = [models.Index(fields=["groupe", "created_at"])]
+
+    def __str__(self):
+        return f"{self.auteur} @ {self.groupe_id}"

@@ -7,6 +7,11 @@ import type { CursorPage } from "../types/membre";
 import type {
   CategorieForum,
   Commentaire,
+  Conversation,
+  GroupeChat,
+  GroupeChatPayload,
+  MessageGroupe,
+  MessagePrive,
   Publication,
   PublicationPayload,
   ReponseForum,
@@ -146,5 +151,84 @@ export async function supprimerReponseForum(id: string): Promise<void> {
 
 export async function masquerReponseForum(id: string): Promise<ReponseForum> {
   const { data } = await apiClient.post<ReponseForum>(`/communaute/reponses-forum/${id}/masquer/`);
+  return data;
+}
+
+// --- Messagerie privée (REST = historique seul, voir hooks/useMessagerieSocket.ts) ---
+
+export async function listConversations(
+  cursor?: string,
+): Promise<CursorPage<Conversation>> {
+  const { data } = await apiClient.get<CursorPage<Conversation>>("/communaute/conversations/", {
+    params: { cursor },
+  });
+  return data;
+}
+
+export async function creerConversation(destinataire: string): Promise<Conversation> {
+  const { data } = await apiClient.post<Conversation>("/communaute/conversations/", {
+    destinataire,
+  });
+  return data;
+}
+
+export async function listMessagesPrives(
+  conversationId: string,
+  cursor?: string,
+): Promise<CursorPage<MessagePrive>> {
+  const { data } = await apiClient.get<CursorPage<MessagePrive>>("/communaute/messages-prives/", {
+    params: { conversation: conversationId, cursor },
+  });
+  return data;
+}
+
+// --- Groupes de chat (REST = liste/gestion, voir hooks/useGroupeChatSocket.ts pour l'envoi) ---
+
+export interface GroupesFiltres {
+  cursor?: string;
+}
+
+export async function listGroupes(filtres: GroupesFiltres = {}): Promise<CursorPage<GroupeChat>> {
+  const { data } = await apiClient.get<CursorPage<GroupeChat>>("/communaute/groupes/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function getGroupe(id: string): Promise<GroupeChat> {
+  const { data } = await apiClient.get<GroupeChat>(`/communaute/groupes/${id}/`);
+  return data;
+}
+
+export async function creerGroupe(payload: GroupeChatPayload): Promise<GroupeChat> {
+  const { data } = await apiClient.post<GroupeChat>("/communaute/groupes/", payload);
+  return data;
+}
+
+export async function rejoindreGroupe(id: string): Promise<GroupeChat> {
+  const { data } = await apiClient.post<GroupeChat>(`/communaute/groupes/${id}/rejoindre/`);
+  return data;
+}
+
+export async function quitterGroupe(id: string): Promise<GroupeChat> {
+  const { data } = await apiClient.post<GroupeChat>(`/communaute/groupes/${id}/quitter/`);
+  return data;
+}
+
+export async function inviterAuGroupe(id: string, membres: string[]): Promise<GroupeChat> {
+  const { data } = await apiClient.post<GroupeChat>(`/communaute/groupes/${id}/inviter/`, {
+    membres,
+  });
+  return data;
+}
+
+export async function listMessagesGroupe(
+  groupeId: string,
+  cursor?: string,
+): Promise<CursorPage<MessageGroupe>> {
+  const { data } = await apiClient.get<CursorPage<MessageGroupe>>(
+    "/communaute/messages-groupe/",
+    { params: { groupe: groupeId, cursor } },
+  );
   return data;
 }
