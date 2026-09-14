@@ -16,10 +16,15 @@
  * découpage (adapté aux modules réellement construits) via son champ `group`. Dépliée, la
  * sidebar affiche donc des en-têtes de groupe cliquables ; repliés, ils masquent leurs items et
  * réduisent d'autant la hauteur nécessaire (voir uiStore.collapsedGroups pour les valeurs par
- * défaut, notamment "Administration" replié d'entrée). Le groupe contenant la page active est
- * toujours déplié, indépendamment de la préférence mémorisée, pour ne jamais perdre l'item en
- * cours de route. En mode rail (sidebar entière repliée), les groupes n'ont plus de sens (pas
- * de place pour un en-tête) : tous les items s'affichent alors à plat, comme avant.
+ * défaut, notamment "Administration" replié d'entrée).
+ *
+ * Le clic sur l'en-tête est la seule source de vérité pour replier/déplier un groupe (bug
+ * corrigé : une première version forçait aussi le dépli du groupe contenant la page active, ce
+ * qui rendait "Général" impossible à replier en pratique — il contient le tableau de bord, donc
+ * quasiment toujours actif). Un groupe replié qui contient quand même la page active se contente
+ * d'un en-tête mis en évidence (texte plus clair), sans forcer l'ouverture — la préférence de
+ * l'utilisateur passe toujours avant. En mode rail (sidebar entière repliée), les groupes n'ont
+ * plus de sens (pas de place pour un en-tête) : tous les items s'affichent alors à plat.
  */
 import {
   IconBellRinging,
@@ -221,7 +226,8 @@ export default function Sidebar() {
   }
 
   // Groupes non vides, dans l'ordre fixe GROUP_ORDER, chacun sachant s'il contient la page
-  // active (auquel cas il reste déplié même si l'utilisateur l'a replié — voir docstring).
+  // active — sert uniquement à mettre l'en-tête en évidence, jamais à forcer le dépli (voir
+  // docstring : la préférence de repli de l'utilisateur reste toujours prioritaire).
   const groups = GROUP_ORDER.map((key) => {
     const items = visibleItems.filter((item) => item.group === key);
     return { key, items, hasActiveItem: items.some(isItemActive) };
@@ -284,13 +290,17 @@ export default function Sidebar() {
           ? // Rail étroit : pas de place pour un en-tête de groupe, tout à plat (voir docstring).
             visibleItems.map(renderItem)
           : groups.map((group) => {
-              const expanded = group.hasActiveItem || !collapsedGroups[group.key];
+              const expanded = !collapsedGroups[group.key];
               return (
                 <div key={group.key} className="pt-1 first:pt-0">
                   <button
                     type="button"
                     onClick={() => toggleGroup(group.key)}
-                    className="flex w-full items-center justify-between rounded-cid px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/40 transition hover:text-white/70"
+                    className={`flex w-full items-center justify-between rounded-cid px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition hover:text-white/70 ${
+                      // Repliée mais contenant la page active : en-tête mis en évidence plutôt
+                      // que forcer l'ouverture (voir docstring) — reste un simple repère visuel.
+                      group.hasActiveItem ? "text-white/70" : "text-white/40"
+                    }`}
                   >
                     <span className="truncate">{t(GROUP_LABEL_KEYS[group.key])}</span>
                     <IconChevronDown

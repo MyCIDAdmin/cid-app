@@ -8,9 +8,10 @@
  * (trop de modules pour tenir à l'écran, même avec le défilement ajouté d'abord) :
  * - le repli de la sidebar entière en rail étroit (icônes seules) ;
  * - le repli par groupe (accordéon) une fois la sidebar dépliée, cf Sidebar.tsx — les groupes
- *   par défaut peu consultés (Administration) démarrent repliés, les autres ouverts. La page
- *   active force l'ouverture de son propre groupe indépendamment de cette préférence (voir
- *   Sidebar.tsx), donc seul l'état "préféré" est stocké ici, jamais l'état visuel forcé.
+ *   par défaut peu consultés (Administration) démarrent repliés, les autres ouverts. Ce choix
+ *   est la seule source de vérité pour l'état déplié/replié d'un groupe (bug corrigé : une
+ *   première version forçait aussi l'ouverture du groupe contenant la page active, ce qui
+ *   rendait "Général" — qui contient le tableau de bord — impossible à replier en pratique).
  */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";

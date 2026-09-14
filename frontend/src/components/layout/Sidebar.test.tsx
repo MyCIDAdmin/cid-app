@@ -92,14 +92,19 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
     expect(screen.getByText("nav.admin_events")).toBeInTheDocument();
   });
 
-  it("déplie automatiquement le groupe de la page active, même replié par préférence", () => {
-    useAuthStore.setState({ user: administrateur });
+  it("permet de replier le groupe Général même quand sa page (tableau de bord) est active", () => {
+    // Bug corrigé : une première version forçait l'ouverture du groupe contenant la page
+    // active, ce qui rendait "Général" impossible à replier en pratique (il contient le
+    // tableau de bord, donc quasiment toujours actif) — le clic sur l'en-tête doit primer.
+    renderWithProviders(<Sidebar />, { route: "/dashboard", path: "/dashboard" });
 
-    // "Administration" reste replié dans la préférence stockée, mais la page active
-    // (/admin/events) en fait partie : elle doit rester visible et atteignable malgré tout.
-    renderWithProviders(<Sidebar />, { route: "/admin/events", path: "/admin/events" });
+    expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
 
-    expect(useUiStore.getState().collapsedGroups.administration).toBe(true);
-    expect(screen.getByText("nav.admin_events")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("nav_groupe.general"));
+
+    expect(useUiStore.getState().collapsedGroups.general).toBe(true);
+    expect(screen.queryByText("nav.dashboard")).not.toBeInTheDocument();
+    // L'en-tête reste néanmoins mis en évidence pour indiquer que la page active s'y trouve.
+    expect(screen.getByText("nav_groupe.general").closest("button")).toHaveClass("text-white/70");
   });
 });
