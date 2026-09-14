@@ -45,7 +45,7 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
   });
 
   it("se replie et se déplie au clic sur le bouton dédié (persisté via uiStore)", () => {
-    renderWithProviders(<Sidebar />);
+    const { container } = renderWithProviders(<Sidebar />);
 
     expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
 
@@ -53,6 +53,10 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
 
     expect(useUiStore.getState().sidebarCollapsed).toBe(true);
     expect(screen.queryByText("nav.dashboard")).not.toBeInTheDocument();
+    // Repliée, les items restent identifiables : icône toujours affichée (cf
+    // NAV_ITEMS.icon) + libellé exposé en `title` natif à la place du texte.
+    expect(container.querySelectorAll("nav svg").length).toBeGreaterThan(0);
+    expect(screen.getByTitle("nav.dashboard")).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("action.deplier_sidebar"));
 
