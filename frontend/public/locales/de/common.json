@@ -31,10 +31,6 @@
     "contenu": "Inhalte",
     "administration": "Verwaltung"
   },
-  "dashboard": {
-    "title": "Übersicht",
-    "welcome": "Willkommen, {{prenom}}"
-  },
   "action": {
     "annuler": "Abbrechen",
     "confirmer": "Bestätigen",

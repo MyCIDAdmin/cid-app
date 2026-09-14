@@ -20,6 +20,7 @@ i18n
     supportedLngs: SUPPORTED_LANGUAGES,
     ns: [
       "common",
+      "dashboard",
       "auth",
       "membres",
       "cotisations",

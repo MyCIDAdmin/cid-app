@@ -14,17 +14,24 @@ const statsKeys = {
   evenements: (filtres: StatsFiltres) => [...statsKeys.all, "evenements", filtres] as const,
 };
 
-export function useStatsFinancier(filtres: StatsFiltres = {}) {
+export function useStatsFinancier(filtres: StatsFiltres = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: statsKeys.financier(filtres),
     queryFn: () => statsApi.getStatsFinancier(filtres),
+    // `enabled` (utilisé par DashboardPage) : StatsPermission réserve ces endpoints à Bureau
+    // Admin+ côté API (403 sinon) — un rôle en dessous ne doit même pas déclencher la requête.
+    enabled: options.enabled,
   });
 }
 
-export function useStatsMembres(filtres: Pick<StatsFiltres, "ville" | "statut"> = {}) {
+export function useStatsMembres(
+  filtres: Pick<StatsFiltres, "ville" | "statut"> = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: statsKeys.membres(filtres),
     queryFn: () => statsApi.getStatsMembres(filtres),
+    enabled: options.enabled,
   });
 }
 

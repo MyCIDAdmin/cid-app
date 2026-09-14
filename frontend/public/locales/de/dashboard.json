@@ -1,0 +1,42 @@
+{
+  "titre": "Übersicht",
+  "bienvenue": "Willkommen, {{prenom}}",
+  "bandeau_admin": "Administrator-Ansicht — voller Zugriff auf alle Funktionen",
+  "bandeau_membre_a_jour": "Mitgliedsbeitrag {{annee}} bezahlt ✓",
+  "bandeau_membre_en_attente": "Mitgliedsbeitrag {{annee}} — Zahlung ausstehend",
+  "bandeau_membre_non_reglee": "Mitgliedsbeitrag {{annee}} noch nicht bezahlt",
+  "kpi": {
+    "membres_actifs": "Aktive Mitglieder",
+    "taux_collecte": "Beitragsquote",
+    "cotisations_en_attente": "{{montant}} ausstehend",
+    "evenements_a_venir": "Kommende Veranstaltungen",
+    "aucun_evenement_prevu": "Keine Veranstaltung geplant",
+    "votes_en_cours": "Laufende Abstimmungen",
+    "vote_ouvert": "Sitzung offen",
+    "aucun_vote": "Keine laufende Abstimmung",
+    "mes_inscriptions_attente": "Ausstehende Anmeldungen"
+  },
+  "prochains_evenements": {
+    "titre": "Kommende Veranstaltungen",
+    "voir_tout": "Alle anzeigen",
+    "aucun": "Keine kommenden Veranstaltungen."
+  },
+  "ma_situation": {
+    "titre": "Meine Finanzen",
+    "cotisation_annuelle": "Jahresbeitrag {{annee}}",
+    "frais_adhesion": "Mitgliedschaftsgebühr {{annee}}",
+    "statut_payee": "Bezahlt ✓",
+    "statut_en_attente": "Ausstehend",
+    "statut_echouee": "Zahlung fehlgeschlagen",
+    "statut_remboursee": "Erstattet",
+    "statut_annulee": "Storniert",
+    "statut_non_reglee": "Noch nicht bezahlt",
+    "gerer_paiements": "Zahlungen verwalten",
+    "aucune_donnee": "Noch keine Zahlungsinformationen."
+  },
+  "dernieres_publications": {
+    "titre": "Neueste Beiträge",
+    "voir_tout": "Alle anzeigen",
+    "aucune": "Noch keine Beiträge."
+  }
+}

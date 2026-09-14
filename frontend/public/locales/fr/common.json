@@ -31,10 +31,6 @@
     "contenu": "Contenu",
     "administration": "Administration"
   },
-  "dashboard": {
-    "title": "Tableau de bord",
-    "welcome": "Bienvenue, {{prenom}}"
-  },
   "action": {
     "annuler": "Annuler",
     "confirmer": "Confirmer",
