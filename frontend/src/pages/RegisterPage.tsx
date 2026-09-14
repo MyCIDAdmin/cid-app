@@ -21,6 +21,7 @@ import {
   register as registerCompte,
   resendRegistrationCode,
 } from "../api/auth";
+import BrandLogo from "../components/ui/BrandLogo";
 import { BUNDESLANDER } from "../types/membre";
 import { extractApiErrorMessage } from "../utils/apiError";
 
@@ -190,9 +191,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sb to-ca p-4">
       <div className="w-full max-w-[560px] rounded-cid-lg bg-white p-8 shadow-2xl">
         <div className="mb-6 flex flex-col items-center gap-2.5">
-          <div className="flex h-[54px] w-[54px] items-center justify-center rounded-cid bg-ca shadow-lg shadow-ca/50">
-            <span className="text-xl font-bold text-white">CID</span>
-          </div>
+          <BrandLogo className="h-[54px] w-[54px] shadow-lg shadow-ca/50" />
           <h1 className="text-center text-lg font-bold text-text-primary">{t("register.title")}</h1>
           <p className="text-center text-xs text-text-tertiary">{t("register.subtitle")}</p>
         </div>
@@ -216,7 +215,10 @@ export default function RegisterPage() {
         )}
 
         {step === "confirm" && (
-          <form onSubmit={handleSubmitCode(onSubmitCode)} className="flex flex-col gap-3 text-center">
+          <form
+            onSubmit={handleSubmitCode(onSubmitCode)}
+            className="flex flex-col gap-3 text-center"
+          >
             <p className="text-sm text-text-secondary">
               {t("register.confirm_message", { email: emailInscrit })}
             </p>
@@ -242,11 +244,7 @@ export default function RegisterPage() {
             >
               {envoiEnCours ? t("register.loading") : t("register.confirm_submit")}
             </button>
-            <button
-              type="button"
-              onClick={renvoyerCode}
-              className="text-xs text-ca underline"
-            >
+            <button type="button" onClick={renvoyerCode} className="text-xs text-ca underline">
               {t("register.confirm_renvoyer")}
             </button>
             {messageRenvoi && <p className="text-xs text-text-tertiary">{messageRenvoi}</p>}
@@ -260,10 +258,20 @@ export default function RegisterPage() {
                 {t("register.section_personnelles")}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Champ label={t("register.prenom")} htmlFor="prenom" requis erreur={errors.prenom && t("register.error_champ_requis")}>
+                <Champ
+                  label={t("register.prenom")}
+                  htmlFor="prenom"
+                  requis
+                  erreur={errors.prenom && t("register.error_champ_requis")}
+                >
                   <input id="prenom" {...register("prenom")} className={champClasses} />
                 </Champ>
-                <Champ label={t("register.nom")} htmlFor="nom" requis erreur={errors.nom && t("register.error_champ_requis")}>
+                <Champ
+                  label={t("register.nom")}
+                  htmlFor="nom"
+                  requis
+                  erreur={errors.nom && t("register.error_champ_requis")}
+                >
                   <input id="nom" {...register("nom")} className={champClasses} />
                 </Champ>
                 <Champ
@@ -272,7 +280,12 @@ export default function RegisterPage() {
                   requis
                   erreur={errors.date_naissance && t("register.error_champ_requis")}
                 >
-                  <input id="date_naissance" type="date" {...register("date_naissance")} className={champClasses} />
+                  <input
+                    id="date_naissance"
+                    type="date"
+                    {...register("date_naissance")}
+                    className={champClasses}
+                  />
                 </Champ>
                 <Champ label={t("register.sexe")} htmlFor="sexe">
                   <select id="sexe" {...register("sexe")} className={champClasses}>
@@ -281,7 +294,12 @@ export default function RegisterPage() {
                     <option value="femme">{t("register.sexe_femme")}</option>
                   </select>
                 </Champ>
-                <Champ label={t("register.cin")} htmlFor="cin" requis erreur={errors.cin && t("register.error_champ_requis")}>
+                <Champ
+                  label={t("register.cin")}
+                  htmlFor="cin"
+                  requis
+                  erreur={errors.cin && t("register.error_champ_requis")}
+                >
                   <input id="cin" {...register("cin")} className={champClasses} />
                 </Champ>
                 <Champ label={t("register.passeport")} htmlFor="passeport">
@@ -295,7 +313,12 @@ export default function RegisterPage() {
                 {t("register.section_contact")}
               </h2>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Champ label={t("register.email")} htmlFor="email" requis erreur={errors.email && t("register.error_generique")}>
+                <Champ
+                  label={t("register.email")}
+                  htmlFor="email"
+                  requis
+                  erreur={errors.email && t("register.error_generique")}
+                >
                   <input id="email" type="email" {...register("email")} className={champClasses} />
                 </Champ>
                 <Champ
@@ -323,7 +346,11 @@ export default function RegisterPage() {
                   <input id="adresse_de" {...register("adresse_de")} className={champClasses} />
                 </Champ>
                 <Champ label={t("register.code_postal_de")} htmlFor="code_postal_de">
-                  <input id="code_postal_de" {...register("code_postal_de")} className={champClasses} />
+                  <input
+                    id="code_postal_de"
+                    {...register("code_postal_de")}
+                    className={champClasses}
+                  />
                 </Champ>
                 <Champ
                   label={t("register.ville_de")}
@@ -344,10 +371,18 @@ export default function RegisterPage() {
                   </select>
                 </Champ>
                 <Champ label={t("register.ville_origine_tn")} htmlFor="ville_origine_tn">
-                  <input id="ville_origine_tn" {...register("ville_origine_tn")} className={champClasses} />
+                  <input
+                    id="ville_origine_tn"
+                    {...register("ville_origine_tn")}
+                    className={champClasses}
+                  />
                 </Champ>
                 <Champ label={t("register.gouvernorat_tn")} htmlFor="gouvernorat_tn">
-                  <input id="gouvernorat_tn" {...register("gouvernorat_tn")} className={champClasses} />
+                  <input
+                    id="gouvernorat_tn"
+                    {...register("gouvernorat_tn")}
+                    className={champClasses}
+                  />
                 </Champ>
               </div>
             </section>
@@ -363,7 +398,12 @@ export default function RegisterPage() {
                   requis
                   erreur={errors.password && t("register.error_password_min")}
                 >
-                  <input id="password" type="password" {...register("password")} className={champClasses} />
+                  <input
+                    id="password"
+                    type="password"
+                    {...register("password")}
+                    className={champClasses}
+                  />
                 </Champ>
                 <Champ
                   label={t("register.confirm_password")}
@@ -379,7 +419,11 @@ export default function RegisterPage() {
                   />
                 </Champ>
                 <Champ label={t("register.langue_preferee")} htmlFor="langue_preferee">
-                  <select id="langue_preferee" {...register("langue_preferee")} className={champClasses}>
+                  <select
+                    id="langue_preferee"
+                    {...register("langue_preferee")}
+                    className={champClasses}
+                  >
                     <option value="fr">Français</option>
                     <option value="de">Deutsch</option>
                     <option value="ar">العربية</option>
@@ -388,7 +432,11 @@ export default function RegisterPage() {
               </div>
 
               <label className="mt-3 flex items-start gap-2 text-xs text-text-secondary">
-                <input type="checkbox" className="mt-0.5 accent-ca" {...register("consentement_rgpd")} />
+                <input
+                  type="checkbox"
+                  className="mt-0.5 accent-ca"
+                  {...register("consentement_rgpd")}
+                />
                 {t("register.consentement_rgpd")}
               </label>
               {errors.consentement_rgpd && (

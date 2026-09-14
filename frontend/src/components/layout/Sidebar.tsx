@@ -62,6 +62,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { type SidebarGroupKey, useUiStore } from "../../store/uiStore";
+import BrandLogo from "../ui/BrandLogo";
 
 type NavIcon = ComponentType<{ size?: number | string; className?: string }>;
 
@@ -261,9 +262,7 @@ export default function Sidebar() {
       <div className="flex items-center gap-2 px-4 py-5">
         {!collapsed && (
           <>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-cid bg-ca text-sm font-bold">
-              CID
-            </div>
+            <BrandLogo className="h-9 w-9" />
             <span className="flex-1 truncate text-sm font-semibold">Clubistes in DE</span>
           </>
         )}

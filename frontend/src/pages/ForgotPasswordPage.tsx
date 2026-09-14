@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { requestPasswordReset } from "../api/auth";
+import BrandLogo from "../components/ui/BrandLogo";
 import { extractApiErrorMessage } from "../utils/apiError";
 
 export default function ForgotPasswordPage() {
@@ -38,15 +39,11 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sb to-ca p-4">
       <div className="w-full max-w-[360px] rounded-cid-lg bg-white p-8 shadow-2xl">
         <div className="mb-6 flex flex-col items-center gap-2.5">
-          <div className="flex h-[54px] w-[54px] items-center justify-center rounded-cid bg-ca shadow-lg shadow-ca/50">
-            <span className="text-xl font-bold text-white">CID</span>
-          </div>
+          <BrandLogo className="h-[54px] w-[54px] shadow-lg shadow-ca/50" />
           <h1 className="text-center text-lg font-bold text-text-primary">
             {t("forgot_password.title")}
           </h1>
-          <p className="text-center text-xs text-text-tertiary">
-            {t("forgot_password.subtitle")}
-          </p>
+          <p className="text-center text-xs text-text-tertiary">{t("forgot_password.subtitle")}</p>
         </div>
 
         {succes ? (

@@ -12,6 +12,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
 import { confirmPasswordReset } from "../api/auth";
+import BrandLogo from "../components/ui/BrandLogo";
 import { extractApiErrorMessage } from "../utils/apiError";
 
 const resetSchema = z
@@ -62,15 +63,11 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sb to-ca p-4">
       <div className="w-full max-w-[360px] rounded-cid-lg bg-white p-8 shadow-2xl">
         <div className="mb-6 flex flex-col items-center gap-2.5">
-          <div className="flex h-[54px] w-[54px] items-center justify-center rounded-cid bg-ca shadow-lg shadow-ca/50">
-            <span className="text-xl font-bold text-white">CID</span>
-          </div>
+          <BrandLogo className="h-[54px] w-[54px] shadow-lg shadow-ca/50" />
           <h1 className="text-center text-lg font-bold text-text-primary">
             {t("reset_password.title")}
           </h1>
-          <p className="text-center text-xs text-text-tertiary">
-            {t("reset_password.subtitle")}
-          </p>
+          <p className="text-center text-xs text-text-tertiary">{t("reset_password.subtitle")}</p>
         </div>
 
         {!token ? (
@@ -93,9 +90,7 @@ export default function ResetPasswordPage() {
             <p className="mb-1 text-sm font-semibold text-text-primary">
               {t("reset_password.succes_titre")}
             </p>
-            <p className="mb-5 text-sm text-text-secondary">
-              {t("reset_password.succes_message")}
-            </p>
+            <p className="mb-5 text-sm text-text-secondary">{t("reset_password.succes_message")}</p>
             <Link
               to="/login"
               className="inline-block rounded-cid bg-ca px-4 py-2 text-sm font-semibold text-white hover:bg-cad"
