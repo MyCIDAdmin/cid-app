@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { queryClient } from "../../queryClient";
 import { useAuthStore } from "../../store/authStore";
-import { useUiStore } from "../../store/uiStore";
+import { DEFAULT_COLLAPSED_GROUPS, useUiStore } from "../../store/uiStore";
 import Sidebar from "./Sidebar";
 
 const utilisateur = {
@@ -12,6 +12,15 @@ const utilisateur = {
   email: "membre@example.com",
   role: "membre" as const,
   langue_preferee: "fr" as const,
+};
+
+// Rôle le plus élevé (cf ROLE_LEVELS dans authStore) : seul lui voit le groupe "Administration"
+// dans les tests ci-dessous qui en ont besoin.
+const administrateur = {
+  ...utilisateur,
+  id: "u2",
+  email: "admin@example.com",
+  role: "super_admin" as const,
 };
 
 describe("Sidebar — déconnexion (AHM-51)", () => {
@@ -22,7 +31,7 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
       user: utilisateur,
       isAuthenticated: true,
     });
-    useUiStore.setState({ sidebarCollapsed: false });
+    useUiStore.setState({ sidebarCollapsed: false, collapsedGroups: DEFAULT_COLLAPSED_GROUPS });
   });
 
   it("affiche un bouton de déconnexion pour un utilisateur connecté", () => {
@@ -62,5 +71,35 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
 
     expect(useUiStore.getState().sidebarCollapsed).toBe(false);
     expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
+  });
+
+  it("regroupe les modules par catégorie, le groupe Administration replié par défaut", () => {
+    useAuthStore.setState({ user: administrateur });
+    renderWithProviders(<Sidebar />);
+
+    // Groupe "Général" (toujours ouvert par défaut) : ses items sont visibles directement.
+    expect(screen.getByText("nav_groupe.general")).toBeInTheDocument();
+    expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
+
+    // Groupe "Administration" (replié par défaut, cf uiStore.DEFAULT_COLLAPSED_GROUPS) : l'en-tête
+    // est là mais pas ses items — sans ça, super_admin verrait toujours ses 9 modules admin.
+    expect(screen.getByText("nav_groupe.administration")).toBeInTheDocument();
+    expect(screen.queryByText("nav.admin_events")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("nav_groupe.administration"));
+
+    expect(useUiStore.getState().collapsedGroups.administration).toBe(false);
+    expect(screen.getByText("nav.admin_events")).toBeInTheDocument();
+  });
+
+  it("déplie automatiquement le groupe de la page active, même replié par préférence", () => {
+    useAuthStore.setState({ user: administrateur });
+
+    // "Administration" reste replié dans la préférence stockée, mais la page active
+    // (/admin/events) en fait partie : elle doit rester visible et atteignable malgré tout.
+    renderWithProviders(<Sidebar />, { route: "/admin/events", path: "/admin/events" });
+
+    expect(useUiStore.getState().collapsedGroups.administration).toBe(true);
+    expect(screen.getByText("nav.admin_events")).toBeInTheDocument();
   });
 });

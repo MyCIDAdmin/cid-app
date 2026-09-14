@@ -9,6 +9,17 @@
  * que le mockup HTML de référence (webfont Tabler via CDN, ex. `ti ti-shopping-bag`), afin de
  * rester visuellement cohérent avec lui sans dépendre d'un CDN externe dans l'app React. La
  * préférence de repli est persistée (voir uiStore) et survit donc à un rechargement de page.
+ *
+ * Groupes en accordéon ("Kann man die Module clustern ?", pour se passer du défilement) : le
+ * mockup de référence organise déjà sa nav en groupes nommés (sbg/sbl : Général, Communauté,
+ * Contenu, Administration...) plutôt qu'en une seule liste plate — NAV_ITEMS reprend ce
+ * découpage (adapté aux modules réellement construits) via son champ `group`. Dépliée, la
+ * sidebar affiche donc des en-têtes de groupe cliquables ; repliés, ils masquent leurs items et
+ * réduisent d'autant la hauteur nécessaire (voir uiStore.collapsedGroups pour les valeurs par
+ * défaut, notamment "Administration" replié d'entrée). Le groupe contenant la page active est
+ * toujours déplié, indépendamment de la préférence mémorisée, pour ne jamais perdre l'item en
+ * cours de route. En mode rail (sidebar entière repliée), les groupes n'ont plus de sens (pas
+ * de place pour un en-tête) : tous les items s'affichent alors à plat, comme avant.
  */
 import {
   IconBellRinging,
@@ -18,6 +29,7 @@ import {
   IconCalendarPlus,
   IconCar,
   IconChartArea,
+  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconClipboardCheck,
@@ -41,10 +53,10 @@ import {
 } from "@tabler/icons-react";
 import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
-import { useUiStore } from "../../store/uiStore";
+import { type SidebarGroupKey, useUiStore } from "../../store/uiStore";
 
 type NavIcon = ComponentType<{ size?: number | string; className?: string }>;
 
@@ -52,50 +64,61 @@ interface NavItem {
   to: string;
   labelKey: string;
   icon: NavIcon;
+  group: SidebarGroupKey;
   minRoleLevel?: number;
 }
 
+// Ordre d'affichage des groupes + libellé i18n de leur en-tête (nav_groupe.* dans common.json).
+const GROUP_ORDER: SidebarGroupKey[] = ["general", "communaute", "contenu", "administration"];
+const GROUP_LABEL_KEYS: Record<SidebarGroupKey, string> = {
+  general: "nav_groupe.general",
+  communaute: "nav_groupe.communaute",
+  contenu: "nav_groupe.contenu",
+  administration: "nav_groupe.administration",
+};
+
 const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", labelKey: "nav.dashboard", icon: IconLayoutDashboard },
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: IconLayoutDashboard, group: "general" },
   // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
   // voit que sa propre fiche), inutile de dupliquer cette règle ici.
-  { to: "/membres", labelKey: "nav.membres", icon: IconUsers },
-  { to: "/mon-adhesion", labelKey: "nav.mon_adhesion", icon: IconIdBadge },
-  { to: "/cotisation", labelKey: "nav.cotisation", icon: IconCreditCard },
+  { to: "/membres", labelKey: "nav.membres", icon: IconUsers, group: "general" },
+  { to: "/mon-adhesion", labelKey: "nav.mon_adhesion", icon: IconIdBadge, group: "general" },
+  { to: "/cotisation", labelKey: "nav.cotisation", icon: IconCreditCard, group: "general" },
   // Événements + Covoiturage (mockup #pg-evenements/#pg-covoiturage, FDD §3.4) — ouverts à tout
   // authentifié, même principe que /mon-adhesion : le backend scope déjà le queryset (événements
   // publiés uniquement en dessous de Bureau Admin, voir EvenementViewSet.get_queryset).
-  { to: "/evenements", labelKey: "nav.evenements", icon: IconCalendarEvent },
-  { to: "/covoiturage", labelKey: "nav.covoiturage", icon: IconCar },
+  { to: "/evenements", labelKey: "nav.evenements", icon: IconCalendarEvent, group: "general" },
+  { to: "/covoiturage", labelKey: "nav.covoiturage", icon: IconCar, group: "general" },
   // Catalogue boutique (mockup #pg-boutique) — ouvert à tout authentifié, même principe que
   // /mon-adhesion : le backend scope déjà le queryset (produits publiés uniquement en dessous
   // de Bureau Admin, voir ProduitViewSet.get_queryset).
-  { to: "/boutique", labelKey: "nav.boutique", icon: IconShoppingBag },
-  // Votes & Élections (mockup #pg-vote, FDD §3.5/F-008) — ouvert à tout authentifié, même
-  // principe que /mon-adhesion et /boutique : le backend scope déjà la visibilité (résultats
-  // masqués tant que non clôturé, voir VoteSessionViewSet.resultats) ; la création/clôture de
-  // session reste gérée par la page elle-même pour l'exception Dir. Financier (voir VotePage).
-  { to: "/votes", labelKey: "nav.votes", icon: IconGavel },
+  { to: "/boutique", labelKey: "nav.boutique", icon: IconShoppingBag, group: "general" },
   // Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) — ouverts à
-  // tout authentifié, même principe que /votes : le backend scope déjà la visibilité (voir
+  // tout authentifié, même principe que /mon-adhesion : le backend scope déjà la visibilité (voir
   // PublicationViewSet/SujetViewSet.get_queryset).
-  { to: "/fil", labelKey: "nav.fil", icon: IconNews },
-  { to: "/forum", labelKey: "nav.forum", icon: IconMessageCircle2 },
+  { to: "/fil", labelKey: "nav.fil", icon: IconNews, group: "communaute" },
+  { to: "/forum", labelKey: "nav.forum", icon: IconMessageCircle2, group: "communaute" },
   // Messagerie privée + Groupes de chat (mockup #pg-messagerie/#pg-groupes, Release Plan
   // §3.2, Phase 4A/4B) — ouverts à tout authentifié, même principe que /fil et /forum.
-  { to: "/messagerie", labelKey: "nav.messagerie", icon: IconMail },
-  { to: "/groupes", labelKey: "nav.groupes", icon: IconUsersGroup },
-  // Live Match, Albums photos, Quiz (mockup #pg-live/#pg-albums/#pg-quiz, Release Plan §3.2,
-  // troisième lot Phase 4B) — ouverts à tout authentifié, même principe que /fil et /groupes.
-  { to: "/live", labelKey: "nav.live", icon: IconBroadcast },
-  { to: "/albums", labelKey: "nav.albums", icon: IconPhoto },
-  { to: "/quiz", labelKey: "nav.quiz", icon: IconHelpCircle },
+  { to: "/messagerie", labelKey: "nav.messagerie", icon: IconMail, group: "communaute" },
+  { to: "/groupes", labelKey: "nav.groupes", icon: IconUsersGroup, group: "communaute" },
+  // Live Match (mockup #pg-live, Release Plan §3.2, troisième lot Phase 4B) — ouvert à tout
+  // authentifié, même principe que /fil et /groupes.
+  { to: "/live", labelKey: "nav.live", icon: IconBroadcast, group: "communaute" },
+  // Albums photos, Quiz (mockup #pg-albums/#pg-quiz) + Votes & Élections (mockup #pg-vote, FDD
+  // §3.5/F-008) — ouverts à tout authentifié : le backend scope déjà la visibilité (résultats de
+  // vote masqués tant que non clôturé, voir VoteSessionViewSet.resultats ; la création/clôture de
+  // session reste gérée par la page elle-même pour l'exception Dir. Financier, voir VotePage).
+  { to: "/albums", labelKey: "nav.albums", icon: IconPhoto, group: "contenu" },
+  { to: "/quiz", labelKey: "nav.quiz", icon: IconHelpCircle, group: "contenu" },
+  { to: "/votes", labelKey: "nav.votes", icon: IconGavel, group: "contenu" },
   // Gestion des quiz (mockup #pg-quiz) — Bureau Admin+ seulement, même niveau que
   // GestionQuizPermission côté API.
   {
     to: "/admin/quiz",
     labelKey: "nav.admin_quiz",
     icon: IconSettings,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
   // Gestion boutique (mockup #pg-admin-boutique) — Bureau Admin+ seulement, même niveau que
@@ -104,6 +127,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/admin/boutique",
     labelKey: "nav.admin_boutique",
     icon: IconBuildingStore,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
   // Gestion des événements (mockup #pg-admin-events) — Bureau Admin+ seulement, même niveau que
@@ -112,6 +136,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/admin/events",
     labelKey: "nav.admin_events",
     icon: IconCalendarPlus,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
   // Statistiques & KPIs (mockup #pg-stats, FDD §5.3) — Admin/DG/Bureau Admin seulement, même
@@ -120,6 +145,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/stats",
     labelKey: "nav.stats",
     icon: IconChartArea,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
   // Validation des inscriptions (AHM-48) — visible RH+ seulement, la route
@@ -128,6 +154,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/inscriptions",
     labelKey: "nav.inscriptions",
     icon: IconClipboardCheck,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.rh,
   },
   // File de validation des justificatifs de rabais (AHM-20) — RH+ seulement, même niveau que
@@ -136,6 +163,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/admin/justificatifs",
     labelKey: "nav.admin_justificatifs",
     icon: IconFileCheck,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.rh,
   },
   // Gestion des campagnes d'adhésion (AHM-21) — Bureau Admin+ seulement,
@@ -144,6 +172,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/admin/campagnes-adhesion",
     labelKey: "nav.admin_adhesions",
     icon: IconIdBadge2,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
   // Confirmation manuelle des paiements en attente (AHM-53) — Directeur Financier/Admin
@@ -152,6 +181,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/cotisations/en-attente",
     labelKey: "nav.cotisations_en_attente",
     icon: IconClockDollar,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.dir_financier,
   },
   // Échéances des relances par année (AHM-54) — Directeur Financier/Admin seulement, même
@@ -160,6 +190,7 @@ const NAV_ITEMS: NavItem[] = [
     to: "/cotisations/relances",
     labelKey: "nav.configuration_relance",
     icon: IconBellRinging,
+    group: "administration",
     minRoleLevel: ROLE_LEVELS.dir_financier,
   },
 ];
@@ -170,7 +201,10 @@ export default function Sidebar() {
   const logout = useAuthStore((s) => s.logout);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const collapsedGroups = useUiStore((s) => s.collapsedGroups);
+  const toggleGroup = useUiStore((s) => s.toggleGroup);
   const navigate = useNavigate();
+  const location = useLocation();
 
   function handleLogout() {
     // logout() vide aussi le cache React Query (cf queryClient.ts) — sans
@@ -178,6 +212,38 @@ export default function Sidebar() {
     // prochain compte connecté dans le même onglet.
     logout();
     navigate("/login", { replace: true });
+  }
+
+  const visibleItems = NAV_ITEMS.filter((item) => hasRoleAtLeast(user, item.minRoleLevel ?? 1));
+
+  function isItemActive(item: NavItem): boolean {
+    return location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+  }
+
+  // Groupes non vides, dans l'ordre fixe GROUP_ORDER, chacun sachant s'il contient la page
+  // active (auquel cas il reste déplié même si l'utilisateur l'a replié — voir docstring).
+  const groups = GROUP_ORDER.map((key) => {
+    const items = visibleItems.filter((item) => item.group === key);
+    return { key, items, hasActiveItem: items.some(isItemActive) };
+  }).filter((group) => group.items.length > 0);
+
+  function renderItem(item: NavItem) {
+    const Icon = item.icon;
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        title={collapsed ? t(item.labelKey) : undefined}
+        className={({ isActive }) =>
+          `flex items-center gap-3 rounded-cid px-3 py-2 text-sm transition ${
+            collapsed ? "justify-center px-0" : ""
+          } ${isActive ? "bg-ca font-semibold text-white" : "text-white/70 hover:bg-white/5"}`
+        }
+      >
+        <Icon size={18} className="shrink-0" />
+        {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+      </NavLink>
+    );
   }
 
   return (
@@ -210,28 +276,32 @@ export default function Sidebar() {
           l'écran (bug remonté en test manuel — la sidebar sombre s'arrêtait avant la fin des
           items, qui continuaient sur le fond clair de la page). Sans min-h-0, un enfant flex-1
           ne se contracte jamais en dessous de son contenu, donc le overflow-y-auto n'avait
-          aucun effet (l'aside h-screen débordait silencieusement). Repliée, chaque item garde
-          son icône (voir docstring du composant) — seul le libellé texte est masqué, avec un
-          `title` natif en repli pour rester identifiable. */}
+          aucun effet (l'aside h-screen débordait silencieusement). Le groupement en accordéon
+          (voir docstring) réduit maintenant la hauteur nécessaire en amont ; ce défilement reste
+          le filet de sécurité si un groupe entièrement déplié dépasse quand même l'écran. */}
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2">
-        {NAV_ITEMS.filter((item) => hasRoleAtLeast(user, item.minRoleLevel ?? 1)).map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              title={collapsed ? t(item.labelKey) : undefined}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-cid px-3 py-2 text-sm transition ${
-                  collapsed ? "justify-center px-0" : ""
-                } ${isActive ? "bg-ca font-semibold text-white" : "text-white/70 hover:bg-white/5"}`
-              }
-            >
-              <Icon size={18} className="shrink-0" />
-              {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
-            </NavLink>
-          );
-        })}
+        {collapsed
+          ? // Rail étroit : pas de place pour un en-tête de groupe, tout à plat (voir docstring).
+            visibleItems.map(renderItem)
+          : groups.map((group) => {
+              const expanded = group.hasActiveItem || !collapsedGroups[group.key];
+              return (
+                <div key={group.key} className="pt-1 first:pt-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.key)}
+                    className="flex w-full items-center justify-between rounded-cid px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/40 transition hover:text-white/70"
+                  >
+                    <span className="truncate">{t(GROUP_LABEL_KEYS[group.key])}</span>
+                    <IconChevronDown
+                      size={14}
+                      className={`shrink-0 transition-transform ${expanded ? "" : "-rotate-90"}`}
+                    />
+                  </button>
+                  {expanded && <div className="space-y-1">{group.items.map(renderItem)}</div>}
+                </div>
+              );
+            })}
       </nav>
       {user && (
         <div className={`border-t border-white/10 py-3 ${collapsed ? "px-2" : "px-4"}`}>

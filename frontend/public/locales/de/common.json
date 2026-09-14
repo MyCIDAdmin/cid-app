@@ -25,6 +25,12 @@
     "quiz": "Quiz",
     "admin_quiz": "Quiz-Verwaltung"
   },
+  "nav_groupe": {
+    "general": "Allgemein",
+    "communaute": "Community",
+    "contenu": "Inhalte",
+    "administration": "Verwaltung"
+  },
   "dashboard": {
     "title": "Übersicht",
     "welcome": "Willkommen, {{prenom}}"

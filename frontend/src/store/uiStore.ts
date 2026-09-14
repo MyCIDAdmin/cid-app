@@ -4,16 +4,34 @@
  * survit donc volontairement à un changement de compte dans le même navigateur, contrairement
  * au panier qui est lui limité à la session, voir panierStore.ts).
  *
- * Pour l'instant, uniquement le repli de la sidebar (bug remonté en test manuel : trop de
- * modules pour tenir à l'écran même avec le défilement ajouté, l'utilisateur veut pouvoir la
- * réduire pour gagner de la place).
+ * Deux préférences pour l'instant, toutes deux nées du même problème remonté en test manuel
+ * (trop de modules pour tenir à l'écran, même avec le défilement ajouté d'abord) :
+ * - le repli de la sidebar entière en rail étroit (icônes seules) ;
+ * - le repli par groupe (accordéon) une fois la sidebar dépliée, cf Sidebar.tsx — les groupes
+ *   par défaut peu consultés (Administration) démarrent repliés, les autres ouverts. La page
+ *   active force l'ouverture de son propre groupe indépendamment de cette préférence (voir
+ *   Sidebar.tsx), donc seul l'état "préféré" est stocké ici, jamais l'état visuel forcé.
  */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+export type SidebarGroupKey = "general" | "communaute" | "contenu" | "administration";
+
+export const DEFAULT_COLLAPSED_GROUPS: Record<SidebarGroupKey, boolean> = {
+  general: false,
+  communaute: false,
+  contenu: false,
+  // Repliée par défaut : réservée aux rôles Bureau Admin/RH/Directeur Financier, et déjà la
+  // plus grande grappe (9 modules) — la replier d'entrée est ce qui évite le plus de défilement
+  // pour ces rôles sans rien cacher de définitif (un clic la rouvre, préférence mémorisée).
+  administration: true,
+};
+
 interface UiState {
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
+  collapsedGroups: Record<SidebarGroupKey, boolean>;
+  toggleGroup: (key: SidebarGroupKey) => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -21,6 +39,11 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       sidebarCollapsed: false,
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+      collapsedGroups: DEFAULT_COLLAPSED_GROUPS,
+      toggleGroup: (key) =>
+        set((state) => ({
+          collapsedGroups: { ...state.collapsedGroups, [key]: !state.collapsedGroups[key] },
+        })),
     }),
     { name: "cid-ui", storage: createJSONStorage(() => localStorage) },
   ),
