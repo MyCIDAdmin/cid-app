@@ -1,22 +1,39 @@
-"""Serializers — app communaute, lot Fil d'actualité + Forum."""
+"""Serializers — app communaute, tous les lots (Fil d'actualité + Forum ; Messagerie +
+Groupes ; Live Match + Albums + Quiz — Phase 4B, voir docstring de tête models.py)."""
 
+from django.db.models import Count
 from rest_framework import serializers
 
+from apps.accounts.models import ROLE_LEVELS
 from apps.membres.models import Membre
 
 from .models import (
+    Album,
+    ChoixQuestion,
     Commentaire,
     Conversation,
     GroupeChat,
+    Match,
+    MatchCommentaire,
     MembreGroupe,
     MessageGroupe,
     MessagePrive,
+    ParticipationQuiz,
+    Photo,
+    PhotoCommentaire,
+    PhotoLike,
     Publication,
     PublicationLike,
     PublicationPartage,
+    Quiz,
+    QuestionQuiz,
     ReponseForum,
+    ReponseQuiz,
     Sujet,
+    TypeReactionMatch,
 )
+from .permissions import MODERATION_MIN_LEVEL
+from .validators import valider_et_reencoder_photo
 
 
 class AuteurSerializer(serializers.ModelSerializer):
@@ -391,4 +408,261 @@ class SujetSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         membre = self.context["request"].user.membre
         validated_data["auteur"] = membre
+        return super().create(validated_data)
+
+
+# ---------------------------------------------------------------------------
+# Live Match (troisième lot — Phase 4B)
+# ---------------------------------------------------------------------------
+
+
+class MatchSerializer(serializers.ModelSerializer):
+    reactions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Match
+        fields = [
+            "id",
+            "adversaire",
+            "competition",
+            "lieu",
+            "date_heure",
+            "statut",
+            "score_ca",
+            "score_adversaire",
+            "minute_chrono",
+            "created_at",
+            "updated_at",
+            "reactions",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_reactions(self, obj) -> dict:
+        # Agrégat par emoji — toutes les clés de TypeReactionMatch sont présentes même à 0,
+        # pour un affichage stable côté frontend (les boutons de réaction n'apparaissent pas
+        # seulement après le premier clic d'un membre).
+        compteurs = {valeur: 0 for valeur, _label in TypeReactionMatch.choices}
+        for ligne in obj.reactions.values("emoji").annotate(total=Count("id")):
+            compteurs[ligne["emoji"]] = ligne["total"]
+        return compteurs
+
+    def create(self, validated_data):
+        validated_data["created_by"] = self.context["request"].user
+        return super().create(validated_data)
+
+
+class MatchCommentaireSerializer(serializers.ModelSerializer):
+    """Liste seule (voir vue) — l'envoi passe exclusivement par `LiveMatchConsumer`."""
+
+    auteur = AuteurSerializer(read_only=True)
+
+    class Meta:
+        model = MatchCommentaire
+        fields = ["id", "match", "auteur", "contenu", "created_at"]
+        read_only_fields = fields
+
+
+# ---------------------------------------------------------------------------
+# Albums photos (troisième lot — Phase 4B)
+# ---------------------------------------------------------------------------
+
+
+class AlbumSerializer(serializers.ModelSerializer):
+    createur = AuteurSerializer(read_only=True)
+    nombre_photos = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Album
+        fields = [
+            "id",
+            "nom",
+            "description",
+            "evenement",
+            "createur",
+            "created_at",
+            "nombre_photos",
+        ]
+        read_only_fields = ["id", "createur", "created_at", "nombre_photos"]
+
+    def create(self, validated_data):
+        validated_data["createur"] = self.context["request"].user.membre
+        return super().create(validated_data)
+
+
+class PhotoCommentaireSerializer(serializers.ModelSerializer):
+    auteur = AuteurSerializer(read_only=True)
+
+    class Meta:
+        model = PhotoCommentaire
+        fields = ["id", "photo", "auteur", "contenu", "created_at"]
+        read_only_fields = ["id", "auteur", "created_at"]
+
+    def create(self, validated_data):
+        validated_data["auteur"] = self.context["request"].user.membre
+        return super().create(validated_data)
+
+
+class PhotoLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PhotoLike
+        fields = ["id", "photo", "membre", "created_at"]
+        read_only_fields = fields
+
+
+class PhotoSerializer(serializers.ModelSerializer):
+    membre = AuteurSerializer(read_only=True)
+    nombre_likes = serializers.IntegerField(source="likes.count", read_only=True)
+    jaime = serializers.SerializerMethodField()
+    est_proprietaire = serializers.SerializerMethodField()
+    commentaires = PhotoCommentaireSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Photo
+        fields = [
+            "id",
+            "album",
+            "membre",
+            "image",
+            "legende",
+            "est_masquee",
+            "created_at",
+            "nombre_likes",
+            "jaime",
+            "est_proprietaire",
+            "commentaires",
+        ]
+        read_only_fields = ["id", "membre", "est_masquee", "created_at"]
+
+    def _membre_courant(self):
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return None
+        return getattr(request.user, "membre", None)
+
+    def get_jaime(self, obj) -> bool:
+        membre = self._membre_courant()
+        return membre is not None and obj.likes.filter(membre=membre).exists()
+
+    def get_est_proprietaire(self, obj) -> bool:
+        membre = self._membre_courant()
+        return membre is not None and obj.membre_id == membre.id
+
+    def validate_image(self, image):
+        # Validation MIME réelle + ré-encodage Pillow (bombe de décompression, EXIF) — voir
+        # docstring de `valider_et_reencoder_photo` (CID-SCD-001 §7.4).
+        return valider_et_reencoder_photo(image)
+
+    def create(self, validated_data):
+        validated_data["membre"] = self.context["request"].user.membre
+        return super().create(validated_data)
+
+
+# ---------------------------------------------------------------------------
+# Quiz (troisième lot — Phase 4B)
+# ---------------------------------------------------------------------------
+
+
+class ChoixQuestionSerializer(serializers.ModelSerializer):
+    """`est_correct` est retiré de la représentation en lecture pour tout membre qui n'est
+    pas Bureau Admin+ (voir `to_representation`) — jamais exposé avant réponse, pour ne pas
+    permettre de deviner la bonne réponse en inspectant la requête réseau (voir docstring de
+    tête models.py). Le champ reste accepté en ÉCRITURE (création/édition d'une question par
+    un admin, seul cas où `QuizPermission` autorise ces actions)."""
+
+    class Meta:
+        model = ChoixQuestion
+        fields = ["id", "question", "texte", "est_correct"]
+        read_only_fields = ["id"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        est_admin = bool(
+            user and user.is_authenticated and ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        )
+        if not est_admin:
+            data.pop("est_correct", None)
+        return data
+
+
+class QuestionQuizSerializer(serializers.ModelSerializer):
+    choix = ChoixQuestionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = QuestionQuiz
+        fields = ["id", "quiz", "texte", "ordre", "points", "choix"]
+        read_only_fields = ["id"]
+
+
+class ParticipationQuizSerializer(serializers.ModelSerializer):
+    membre = AuteurSerializer(read_only=True)
+    temps_total_secondes = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = ParticipationQuiz
+        fields = [
+            "id",
+            "quiz",
+            "membre",
+            "score",
+            "demarree_le",
+            "terminee_le",
+            "temps_total_secondes",
+        ]
+        read_only_fields = fields
+
+
+class ReponseQuizSerializer(serializers.ModelSerializer):
+    """Réponse déjà tranchée par le serveur (voir `QuizViewSet.repondre`) — purement en
+    lecture, jamais créée directement via ce serializer (`est_correct`/`points_obtenus` ne
+    doivent jamais être acceptés depuis le client, voir docstring de tête models.py)."""
+
+    class Meta:
+        model = ReponseQuiz
+        fields = [
+            "id",
+            "participation",
+            "question",
+            "choix",
+            "est_correct",
+            "points_obtenus",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class QuizSerializer(serializers.ModelSerializer):
+    questions = QuestionQuizSerializer(many=True, read_only=True)
+    nombre_questions = serializers.IntegerField(source="questions.count", read_only=True)
+    ma_participation = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Quiz
+        fields = [
+            "id",
+            "titre",
+            "description",
+            "est_actif",
+            "created_at",
+            "questions",
+            "nombre_questions",
+            "ma_participation",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def get_ma_participation(self, obj):
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return None
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            return None
+        participation = obj.participations.filter(membre=membre).first()
+        if participation is None:
+            return None
+        return ParticipationQuizSerializer(participation, context=self.context).data
+
+    def create(self, validated_data):
+        validated_data["created_by"] = self.context["request"].user
         return super().create(validated_data)

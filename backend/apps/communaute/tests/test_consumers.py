@@ -1,6 +1,7 @@
 """
-Tests — MessagerieConsumer / GroupeChatConsumer (WebSocket). Même principe que
-apps.vote.tests.test_consumer (voir son docstring) : pas de pytest-asyncio dans ce projet,
+Tests — MessagerieConsumer / GroupeChatConsumer / LiveMatchConsumer (WebSocket, Phase 4B
+pour ce dernier). Même principe que apps.vote.tests.test_consumer (voir son docstring) :
+pas de pytest-asyncio dans ce projet,
 chaque test synchrone pilote sa propre coroutine via `asyncio.run(...)`, et
 `django_db(transaction=True)` est nécessaire car `database_sync_to_async` exécute l'ORM
 dans un thread séparé, qui a besoin d'une transaction réellement validée en base."""
@@ -14,10 +15,18 @@ from django.core.cache import cache
 from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.accounts.ws_auth import JWTAuthMiddlewareStack
-from apps.communaute.models import Conversation, MembreGroupe, MessageGroupe, MessagePrive
+from apps.communaute.models import (
+    Conversation,
+    MatchCommentaire,
+    MatchReaction,
+    MembreGroupe,
+    MessageGroupe,
+    MessagePrive,
+)
 from apps.communaute.routing import websocket_urlpatterns
 from apps.communaute.tests.factories import (
     GroupeChatFactory,
+    MatchFactory,
     MembreGroupeFactory,
     user_membre_avec_fiche,
 )
@@ -211,3 +220,177 @@ def test_rejoindre_ne_cree_aucune_appartenance_via_le_websocket():
 
     asyncio.run(run())
     assert not MembreGroupe.objects.filter(groupe=groupe, membre=m1).exists()
+
+
+# --- LiveMatchConsumer (Phase 4B) ---
+
+
+def test_connexion_live_refusee_sans_authentification():
+    async def run():
+        communicator = WebsocketCommunicator(
+            _application(), "/ws/live/00000000-0000-0000-0000-000000000000/"
+        )
+        connected, _ = await communicator.connect()
+        assert connected is False
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
+def test_connexion_live_refusee_si_match_introuvable():
+    _, m1 = user_membre_avec_fiche(email="live1@example.de")
+
+    async def run():
+        communicator, connected = await _connect(
+            "/ws/live/00000000-0000-0000-0000-000000000000/", m1.user
+        )
+        assert connected is False
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
+def test_connexion_live_acceptee_pour_tout_membre_authentifie():
+    # Pas de contrôle d'appartenance (contrairement à GroupeChatConsumer) — Live Match est
+    # ouvert à tout membre authentifié, voir docstring de tête models.py.
+    _, m1 = user_membre_avec_fiche(email="live2@example.de")
+    match = MatchFactory()
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/live/{match.id}/", m1.user)
+        assert connected is True
+        recu = await communicator.receive_json_from()  # présence à la connexion
+        assert recu == {"type": "presence", "connectes": 1}
+        await communicator.disconnect()
+
+    asyncio.run(run())
+    cache.clear()
+
+
+def test_envoi_dun_commentaire_live_est_enregistre_et_diffuse():
+    _, m1 = user_membre_avec_fiche(email="live3@example.de")
+    match = MatchFactory()
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/live/{match.id}/", m1.user)
+        assert connected is True
+        await communicator.receive_json_from()  # présence
+
+        await communicator.send_json_to({"type": "commentaire", "contenu": "Allez le CA !"})
+        recu = await communicator.receive_json_from()
+        assert recu["type"] == "commentaire"
+        assert recu["contenu"] == "Allez le CA !"
+        assert recu["auteur"]["id"] == str(m1.id)
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+    assert MatchCommentaire.objects.filter(match=match).count() == 1
+    cache.clear()
+
+
+def test_envoi_dune_reaction_diffuse_les_compteurs_agreges():
+    _, m1 = user_membre_avec_fiche(email="live4@example.de")
+    match = MatchFactory()
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/live/{match.id}/", m1.user)
+        assert connected is True
+        await communicator.receive_json_from()  # présence
+
+        await communicator.send_json_to({"type": "reaction", "emoji": "coeur"})
+        recu = await communicator.receive_json_from()
+        assert recu["type"] == "reaction"
+        assert recu["reactions"]["coeur"] == 1
+        assert recu["reactions"]["feu"] == 0
+
+        await communicator.send_json_to({"type": "reaction", "emoji": "coeur"})
+        recu = await communicator.receive_json_from()
+        assert recu["reactions"]["coeur"] == 2
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+    assert MatchReaction.objects.filter(match=match, emoji="coeur").count() == 2
+    cache.clear()
+
+
+def test_reaction_avec_emoji_invalide_est_rejetee():
+    _, m1 = user_membre_avec_fiche(email="live5@example.de")
+    match = MatchFactory()
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/live/{match.id}/", m1.user)
+        assert connected is True
+        await communicator.receive_json_from()  # présence
+
+        await communicator.send_json_to({"type": "reaction", "emoji": "licorne"})
+        recu = await communicator.receive_json_from()
+        assert recu["type"] == "erreur"
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+    assert MatchReaction.objects.filter(match=match).count() == 0
+    cache.clear()
+
+
+def test_compteur_de_presence_incremente_et_decremente_avec_les_connexions():
+    _, m1 = user_membre_avec_fiche(email="live6@example.de")
+    _, m2 = user_membre_avec_fiche(email="live7@example.de")
+    match = MatchFactory()
+
+    async def run():
+        com1, connected1 = await _connect(f"/ws/live/{match.id}/", m1.user)
+        assert connected1 is True
+        recu1 = await com1.receive_json_from()
+        assert recu1 == {"type": "presence", "connectes": 1}
+
+        com2, connected2 = await _connect(f"/ws/live/{match.id}/", m2.user)
+        assert connected2 is True
+        # com1 est aussi notifié de l'arrivée du deuxième membre connecté.
+        recu1_bis = await com1.receive_json_from()
+        assert recu1_bis == {"type": "presence", "connectes": 2}
+        recu2 = await com2.receive_json_from()
+        assert recu2 == {"type": "presence", "connectes": 2}
+
+        await com2.disconnect()
+        recu1_ter = await com1.receive_json_from()
+        assert recu1_ter == {"type": "presence", "connectes": 1}
+
+        await com1.disconnect()
+
+    asyncio.run(run())
+    cache.clear()
+
+
+def test_mise_a_jour_du_score_par_lapi_rest_est_diffusee_au_websocket():
+    """Le score/chrono/statut sont modifiés via MatchViewSet (REST, Bureau Admin+), jamais
+    par le WebSocket lui-même — voir docstring de tête models.py. Ce test appelle
+    directement `MatchViewSet._broadcast_match_update` (plutôt que de passer par
+    APIClient, non disponible dans ce fichier orienté Channels) pour vérifier que le
+    mécanisme de diffusion REST -> WS fonctionne réellement."""
+    _, m1 = user_membre_avec_fiche(email="live8@example.de")
+    match = MatchFactory(score_ca=0, score_adversaire=0)
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/live/{match.id}/", m1.user)
+        assert connected is True
+        await communicator.receive_json_from()  # présence
+
+        from channels.db import database_sync_to_async
+
+        from apps.communaute.views import MatchViewSet
+
+        match.score_ca = 1
+        await database_sync_to_async(match.save)(update_fields=["score_ca"])
+        await database_sync_to_async(MatchViewSet._broadcast_match_update)(match)
+
+        recu = await communicator.receive_json_from()
+        assert recu["type"] == "match"
+        assert recu["score_ca"] == 1
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+    cache.clear()

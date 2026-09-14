@@ -5,16 +5,29 @@
 import { apiClient } from "./client";
 import type { CursorPage } from "../types/membre";
 import type {
+  Album,
+  AlbumPayload,
   CategorieForum,
   Commentaire,
   Conversation,
   GroupeChat,
   GroupeChatPayload,
+  Match,
+  MatchCommentaire,
+  MatchMiseAJourPayload,
+  MatchPayload,
   MessageGroupe,
   MessagePrive,
+  ParticipationQuiz,
+  Photo,
+  PhotoCommentaire,
+  PhotoUploadPayload,
   Publication,
   PublicationPayload,
+  Quiz,
+  QuizClassement,
   ReponseForum,
+  ReponseQuiz,
   Sujet,
   SujetPayload,
 } from "../types/communaute";
@@ -230,5 +243,151 @@ export async function listMessagesGroupe(
     "/communaute/messages-groupe/",
     { params: { groupe: groupeId, cursor } },
   );
+  return data;
+}
+
+// --- Live Match (REST = gestion/historique, voir hooks/useLiveMatchSocket.ts pour les
+// commentaires/réactions temps réel — troisième lot, Phase 4B) ---
+
+export interface MatchsFiltres {
+  cursor?: string;
+}
+
+export async function listMatchs(filtres: MatchsFiltres = {}): Promise<CursorPage<Match>> {
+  const { data } = await apiClient.get<CursorPage<Match>>("/communaute/matchs/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function getMatch(id: string): Promise<Match> {
+  const { data } = await apiClient.get<Match>(`/communaute/matchs/${id}/`);
+  return data;
+}
+
+export async function creerMatch(payload: MatchPayload): Promise<Match> {
+  const { data } = await apiClient.post<Match>("/communaute/matchs/", payload);
+  return data;
+}
+
+export async function modifierMatch(id: string, payload: MatchMiseAJourPayload): Promise<Match> {
+  const { data } = await apiClient.patch<Match>(`/communaute/matchs/${id}/`, payload);
+  return data;
+}
+
+export async function listMatchCommentaires(
+  matchId: string,
+  cursor?: string,
+): Promise<CursorPage<MatchCommentaire>> {
+  const { data } = await apiClient.get<CursorPage<MatchCommentaire>>(
+    "/communaute/match-commentaires/",
+    { params: { match: matchId, cursor } },
+  );
+  return data;
+}
+
+// --- Albums photos (troisième lot, Phase 4B) ---
+
+export interface AlbumsFiltres {
+  cursor?: string;
+}
+
+export async function listAlbums(filtres: AlbumsFiltres = {}): Promise<CursorPage<Album>> {
+  const { data } = await apiClient.get<CursorPage<Album>>("/communaute/albums/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function getAlbum(id: string): Promise<Album> {
+  const { data } = await apiClient.get<Album>(`/communaute/albums/${id}/`);
+  return data;
+}
+
+export async function creerAlbum(payload: AlbumPayload): Promise<Album> {
+  const { data } = await apiClient.post<Album>("/communaute/albums/", payload);
+  return data;
+}
+
+export interface PhotosFiltres {
+  album?: string;
+  cursor?: string;
+}
+
+export async function listPhotos(filtres: PhotosFiltres = {}): Promise<CursorPage<Photo>> {
+  const { data } = await apiClient.get<CursorPage<Photo>>("/communaute/photos/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function uploaderPhoto(payload: PhotoUploadPayload): Promise<Photo> {
+  const formData = new FormData();
+  formData.append("album", payload.album);
+  formData.append("image", payload.image);
+  if (payload.legende) formData.append("legende", payload.legende);
+  const { data } = await apiClient.post<Photo>("/communaute/photos/", formData);
+  return data;
+}
+
+export async function supprimerPhoto(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/photos/${id}/`);
+}
+
+export async function likerPhoto(id: string): Promise<Photo> {
+  const { data } = await apiClient.post<Photo>(`/communaute/photos/${id}/liker/`);
+  return data;
+}
+
+export async function masquerPhoto(id: string): Promise<Photo> {
+  const { data } = await apiClient.post<Photo>(`/communaute/photos/${id}/masquer/`);
+  return data;
+}
+
+export async function commenterPhoto(photoId: string, contenu: string): Promise<PhotoCommentaire> {
+  const { data } = await apiClient.post<PhotoCommentaire>("/communaute/photo-commentaires/", {
+    photo: photoId,
+    contenu,
+  });
+  return data;
+}
+
+// --- Quiz (troisième lot, Phase 4B) ---
+
+export interface QuizFiltres {
+  cursor?: string;
+}
+
+export async function listQuiz(filtres: QuizFiltres = {}): Promise<CursorPage<Quiz>> {
+  const { data } = await apiClient.get<CursorPage<Quiz>>("/communaute/quiz/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function getQuiz(id: string): Promise<Quiz> {
+  const { data } = await apiClient.get<Quiz>(`/communaute/quiz/${id}/`);
+  return data;
+}
+
+export async function demarrerQuiz(id: string): Promise<ParticipationQuiz> {
+  const { data } = await apiClient.post<ParticipationQuiz>(`/communaute/quiz/${id}/demarrer/`);
+  return data;
+}
+
+export async function repondreQuiz(
+  quizId: string,
+  question: string,
+  choix: string,
+): Promise<ReponseQuiz> {
+  const { data } = await apiClient.post<ReponseQuiz>(`/communaute/quiz/${quizId}/repondre/`, {
+    question,
+    choix,
+  });
+  return data;
+}
+
+export async function classementQuiz(id: string): Promise<QuizClassement> {
+  const { data } = await apiClient.get<QuizClassement>(`/communaute/quiz/${id}/classement/`);
   return data;
 }

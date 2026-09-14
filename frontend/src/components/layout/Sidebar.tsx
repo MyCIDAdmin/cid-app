@@ -38,6 +38,11 @@ const NAV_ITEMS: NavItem[] = [
   // §3.2, Phase 4A/4B) — ouverts à tout authentifié, même principe que /fil et /forum.
   { to: "/messagerie", labelKey: "nav.messagerie" },
   { to: "/groupes", labelKey: "nav.groupes" },
+  // Live Match, Albums photos, Quiz (mockup #pg-live/#pg-albums/#pg-quiz, Release Plan §3.2,
+  // troisième lot Phase 4B) — ouverts à tout authentifié, même principe que /fil et /groupes.
+  { to: "/live", labelKey: "nav.live" },
+  { to: "/albums", labelKey: "nav.albums" },
+  { to: "/quiz", labelKey: "nav.quiz" },
   // Gestion boutique (mockup #pg-admin-boutique) — Bureau Admin+ seulement, même niveau que
   // CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API.
   { to: "/admin/boutique", labelKey: "nav.admin_boutique", minRoleLevel: ROLE_LEVELS.bureau_admin },

@@ -10,13 +10,19 @@ import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
 import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
 import CataloguePage from "./pages/boutique/CataloguePage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
+import AlbumDetailPage from "./pages/communaute/AlbumDetailPage";
+import AlbumsPage from "./pages/communaute/AlbumsPage";
 import FilPage from "./pages/communaute/FilPage";
 import ForumPage from "./pages/communaute/ForumPage";
 import ForumSujetPage from "./pages/communaute/ForumSujetPage";
 import GroupeChatPage from "./pages/communaute/GroupeChatPage";
 import GroupesPage from "./pages/communaute/GroupesPage";
+import LiveMatchDetailPage from "./pages/communaute/LiveMatchDetailPage";
+import LiveMatchPage from "./pages/communaute/LiveMatchPage";
 import MessagerieConversationPage from "./pages/communaute/MessagerieConversationPage";
 import MessageriePage from "./pages/communaute/MessageriePage";
+import QuizDetailPage from "./pages/communaute/QuizDetailPage";
+import QuizPage from "./pages/communaute/QuizPage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
@@ -204,6 +210,20 @@ export default function App() {
         <Route path="/messagerie/:id" element={<MessagerieConversationPage />} />
         <Route path="/groupes" element={<GroupesPage />} />
         <Route path="/groupes/:id" element={<GroupeChatPage />} />
+        {/* Live Match, Albums photos, Quiz (mockup #pg-live/#pg-albums/#pg-quiz, Release Plan
+            §3.2, troisième lot Phase 4B) — ouverts à tout authentifié, même principe que /fil
+            et /groupes : le backend scope déjà la visibilité et réserve la gestion (piloter un
+            match, modérer une photo, gérer un quiz) à Bureau Admin+ (voir MatchPermission/
+            AlbumPermission/PhotoPermission/QuizPermission côté API) ; ces routes n'ajoutent
+            donc pas de RequireRole, les pages elles-mêmes masquent les actions de gestion.
+            L'envoi des commentaires/réactions du Live Match ne passe jamais par REST mais par
+            useLiveMatchSocket, même principe que /groupes/:id. */}
+        <Route path="/live" element={<LiveMatchPage />} />
+        <Route path="/live/:id" element={<LiveMatchDetailPage />} />
+        <Route path="/albums" element={<AlbumsPage />} />
+        <Route path="/albums/:id" element={<AlbumDetailPage />} />
+        <Route path="/quiz" element={<QuizPage />} />
+        <Route path="/quiz/:id" element={<QuizDetailPage />} />
         {/* Les routes suivantes sont ajoutées au fil des phases :
             /evenements, /admin/* */}
       </Route>

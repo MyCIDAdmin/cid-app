@@ -4,7 +4,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as communauteApi from "../api/communaute";
-import type { GroupeChatPayload, PublicationPayload, SujetPayload } from "../types/communaute";
+import type {
+  AlbumPayload,
+  GroupeChatPayload,
+  MatchMiseAJourPayload,
+  MatchPayload,
+  PhotoUploadPayload,
+  PublicationPayload,
+  SujetPayload,
+} from "../types/communaute";
 
 const communauteKeys = {
   all: ["communaute"] as const,
@@ -21,6 +29,20 @@ const communauteKeys = {
   groupe: (id: string) => [...communauteKeys.all, "groupe", id] as const,
   messagesGroupe: (groupeId: string) =>
     [...communauteKeys.all, "messages-groupe", groupeId] as const,
+  matchs: (filtres: communauteApi.MatchsFiltres = {}) =>
+    [...communauteKeys.all, "matchs", filtres] as const,
+  match: (id: string) => [...communauteKeys.all, "match", id] as const,
+  matchCommentaires: (matchId: string) =>
+    [...communauteKeys.all, "match-commentaires", matchId] as const,
+  albums: (filtres: communauteApi.AlbumsFiltres = {}) =>
+    [...communauteKeys.all, "albums", filtres] as const,
+  album: (id: string) => [...communauteKeys.all, "album", id] as const,
+  photos: (filtres: communauteApi.PhotosFiltres = {}) =>
+    [...communauteKeys.all, "photos", filtres] as const,
+  quizListe: (filtres: communauteApi.QuizFiltres = {}) =>
+    [...communauteKeys.all, "quiz-liste", filtres] as const,
+  quiz: (id: string) => [...communauteKeys.all, "quiz", id] as const,
+  classementQuiz: (id: string) => [...communauteKeys.all, "quiz-classement", id] as const,
 };
 
 function invalidatePublications(queryClient: ReturnType<typeof useQueryClient>) {
@@ -292,5 +314,184 @@ export function useMessagesGroupe(groupeId: string | undefined) {
     queryKey: communauteKeys.messagesGroupe(groupeId ?? ""),
     queryFn: () => communauteApi.listMessagesGroupe(groupeId as string),
     enabled: !!groupeId,
+  });
+}
+
+// --- Live Match (REST = gestion/historique, voir hooks/useLiveMatchSocket.ts pour les
+// commentaires/réactions temps réel — troisième lot, Phase 4B) ---
+
+export function useMatchs(filtres: communauteApi.MatchsFiltres = {}) {
+  return useQuery({
+    queryKey: communauteKeys.matchs(filtres),
+    queryFn: () => communauteApi.listMatchs(filtres),
+  });
+}
+
+export function useMatch(id: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.match(id ?? ""),
+    queryFn: () => communauteApi.getMatch(id as string),
+    enabled: !!id,
+  });
+}
+
+export function useCreerMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: MatchPayload) => communauteApi.creerMatch(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "matchs"] }),
+  });
+}
+
+export function useModifierMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: MatchMiseAJourPayload }) =>
+      communauteApi.modifierMatch(id, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: communauteKeys.match(variables.id) });
+      queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "matchs"] });
+    },
+  });
+}
+
+export function useMatchCommentaires(matchId: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.matchCommentaires(matchId ?? ""),
+    queryFn: () => communauteApi.listMatchCommentaires(matchId as string),
+    enabled: !!matchId,
+  });
+}
+
+// --- Albums photos (troisième lot, Phase 4B) ---
+
+export function useAlbums(filtres: communauteApi.AlbumsFiltres = {}) {
+  return useQuery({
+    queryKey: communauteKeys.albums(filtres),
+    queryFn: () => communauteApi.listAlbums(filtres),
+  });
+}
+
+export function useAlbum(id: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.album(id ?? ""),
+    queryFn: () => communauteApi.getAlbum(id as string),
+    enabled: !!id,
+  });
+}
+
+export function useCreerAlbum() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AlbumPayload) => communauteApi.creerAlbum(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "albums"] }),
+  });
+}
+
+export function usePhotos(filtres: communauteApi.PhotosFiltres = {}) {
+  return useQuery({
+    queryKey: communauteKeys.photos(filtres),
+    queryFn: () => communauteApi.listPhotos(filtres),
+    enabled: !!filtres.album,
+  });
+}
+
+function invalidatePhotos(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "photos"] });
+  queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "albums"] });
+}
+
+export function useUploaderPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: PhotoUploadPayload) => communauteApi.uploaderPhoto(payload),
+    onSuccess: () => invalidatePhotos(queryClient),
+  });
+}
+
+export function useSupprimerPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.supprimerPhoto(id),
+    onSuccess: () => invalidatePhotos(queryClient),
+  });
+}
+
+export function useLikerPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.likerPhoto(id),
+    onSuccess: () => invalidatePhotos(queryClient),
+  });
+}
+
+export function useMasquerPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.masquerPhoto(id),
+    onSuccess: () => invalidatePhotos(queryClient),
+  });
+}
+
+export function useCommenterPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ photoId, contenu }: { photoId: string; contenu: string }) =>
+      communauteApi.commenterPhoto(photoId, contenu),
+    onSuccess: () => invalidatePhotos(queryClient),
+  });
+}
+
+// --- Quiz (troisième lot, Phase 4B) ---
+
+export function useQuizListe(filtres: communauteApi.QuizFiltres = {}) {
+  return useQuery({
+    queryKey: communauteKeys.quizListe(filtres),
+    queryFn: () => communauteApi.listQuiz(filtres),
+  });
+}
+
+export function useQuiz(id: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.quiz(id ?? ""),
+    queryFn: () => communauteApi.getQuiz(id as string),
+    enabled: !!id,
+  });
+}
+
+function invalidateQuiz(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  queryClient.invalidateQueries({ queryKey: communauteKeys.quiz(id) });
+  queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "quiz-liste"] });
+}
+
+export function useDemarrerQuiz() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.demarrerQuiz(id),
+    onSuccess: (_data, id) => invalidateQuiz(queryClient, id),
+  });
+}
+
+export function useRepondreQuiz() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      quizId,
+      question,
+      choix,
+    }: {
+      quizId: string;
+      question: string;
+      choix: string;
+    }) => communauteApi.repondreQuiz(quizId, question, choix),
+    onSuccess: (_data, variables) => invalidateQuiz(queryClient, variables.quizId),
+  });
+}
+
+export function useClassementQuiz(id: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.classementQuiz(id ?? ""),
+    queryFn: () => communauteApi.classementQuiz(id as string),
+    enabled: !!id,
   });
 }

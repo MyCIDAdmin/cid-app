@@ -1,20 +1,33 @@
-"""Tests API — app communaute, lot Fil d'actualité + Forum (CID-SCD-001 §résumé
-"Forum / Fil — RBAC")."""
+"""Tests API — app communaute, tous les lots (Fil d'actualité + Forum ; Messagerie +
+Groupes ; Live Match + Albums + Quiz — Phase 4B, CID-SCD-001 §résumé "Forum / Fil — RBAC")."""
+
+import io
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
 from apps.communaute.models import CategorieForum, Commentaire, Conversation, MembreGroupe
 from apps.communaute.tests.factories import (
+    AlbumFactory,
+    ChoixQuestionFactory,
     CommentaireFactory,
     ConversationFactory,
     GroupeChatFactory,
+    MatchCommentaireFactory,
+    MatchFactory,
+    MatchReactionFactory,
     MembreGroupeFactory,
     MessageGroupeFactory,
     MessagePriveFactory,
+    ParticipationQuizFactory,
+    PhotoFactory,
     PublicationFactory,
+    QuestionQuizFactory,
+    QuizFactory,
     ReponseForumFactory,
     SujetFactory,
 )
@@ -556,3 +569,397 @@ def test_messages_groupe_liste_pour_un_groupe_public(api_client):
     resp = _auth(api_client, user).get(reverse(MESSAGE_GROUPE_LIST_URL), {"groupe": str(groupe.id)})
     assert resp.status_code == 200
     assert resp.data["results"][0]["contenu"] == "Bienvenue !"
+
+
+# ---------------------------------------------------------------------------
+# Live Match, Albums, Quiz (troisième lot — Phase 4B)
+# ---------------------------------------------------------------------------
+
+MATCH_LIST_URL = "communaute:match-list"
+MATCH_COMMENTAIRE_LIST_URL = "communaute:match-commentaire-list"
+ALBUM_LIST_URL = "communaute:album-list"
+PHOTO_LIST_URL = "communaute:photo-list"
+PHOTO_COMMENTAIRE_LIST_URL = "communaute:photo-commentaire-list"
+QUIZ_LIST_URL = "communaute:quiz-list"
+QUESTION_QUIZ_LIST_URL = "communaute:quiz-question-list"
+CHOIX_QUESTION_LIST_URL = "communaute:quiz-choix-list"
+
+
+def _match_detail_url(match):
+    return reverse("communaute:match-detail", args=[match.id])
+
+
+def _album_detail_url(album):
+    return reverse("communaute:album-detail", args=[album.id])
+
+
+def _photo_detail_url(photo):
+    return reverse("communaute:photo-detail", args=[photo.id])
+
+
+def _photo_liker_url(photo):
+    return reverse("communaute:photo-liker", args=[photo.id])
+
+
+def _photo_masquer_url(photo):
+    return reverse("communaute:photo-masquer", args=[photo.id])
+
+
+def _quiz_demarrer_url(quiz):
+    return reverse("communaute:quiz-demarrer", args=[quiz.id])
+
+
+def _quiz_repondre_url(quiz):
+    return reverse("communaute:quiz-repondre", args=[quiz.id])
+
+
+def _quiz_classement_url(quiz):
+    return reverse("communaute:quiz-classement", args=[quiz.id])
+
+
+def _image_valide(nom="photo.jpg", format_pillow="JPEG", content_type="image/jpeg"):
+    buffer = io.BytesIO()
+    Image.new("RGB", (60, 60), color=(255, 0, 0)).save(buffer, format=format_pillow)
+    buffer.seek(0)
+    return SimpleUploadedFile(nom, buffer.read(), content_type=content_type)
+
+
+# --- Live Match --------------------------------------------------------------------
+
+
+def test_match_list_ouvert_a_tout_authentifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "live1@example.de")
+    MatchFactory(adversaire="EST")
+    resp = _auth(api_client, user).get(reverse(MATCH_LIST_URL))
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["adversaire"] == "EST"
+
+
+def test_creer_un_match_reserve_au_bureau_admin(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "live2@example.de")
+    payload = {"adversaire": "ES Sahel", "date_heure": "2026-10-01T18:00:00Z"}
+    resp = _auth(api_client, user).post(reverse(MATCH_LIST_URL), payload)
+    assert resp.status_code == 403
+
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "live3@example.de")
+    resp = _auth(api_client, admin_user).post(reverse(MATCH_LIST_URL), payload)
+    assert resp.status_code == 201
+    assert resp.data["adversaire"] == "ES Sahel"
+
+
+def test_modifier_le_score_dun_match_reserve_au_bureau_admin(api_client):
+    match = MatchFactory(score_ca=0, score_adversaire=0)
+    user, _ = _user_avec_membre(Role.MEMBRE, "live4@example.de")
+    resp = _auth(api_client, user).patch(_match_detail_url(match), {"score_ca": 1})
+    assert resp.status_code == 403
+
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "live5@example.de")
+    resp = _auth(api_client, admin_user).patch(_match_detail_url(match), {"score_ca": 1})
+    assert resp.status_code == 200
+    assert resp.data["score_ca"] == 1
+
+
+def test_match_commentaires_necessite_le_parametre_match(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "live6@example.de")
+    resp = _auth(api_client, user).get(reverse(MATCH_COMMENTAIRE_LIST_URL))
+    assert resp.status_code == 400
+
+
+def test_match_commentaires_liste_lhistorique(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "live7@example.de")
+    match = MatchFactory()
+    MatchCommentaireFactory(match=match, contenu="Allez le CA !")
+    resp = _auth(api_client, user).get(
+        reverse(MATCH_COMMENTAIRE_LIST_URL), {"match": str(match.id)}
+    )
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["contenu"] == "Allez le CA !"
+
+
+def test_reactions_agregees_par_emoji_dans_le_detail_du_match(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "live8@example.de")
+    match = MatchFactory()
+    MatchReactionFactory(match=match, emoji="coeur")
+    MatchReactionFactory(match=match, emoji="coeur")
+    MatchReactionFactory(match=match, emoji="feu")
+    resp = _auth(api_client, user).get(_match_detail_url(match))
+    assert resp.status_code == 200
+    assert resp.data["reactions"]["coeur"] == 2
+    assert resp.data["reactions"]["feu"] == 1
+    assert resp.data["reactions"]["etoile"] == 0  # présent même à 0, voir serializer
+
+
+# --- Albums photos -------------------------------------------------------------------
+
+
+def test_creer_un_album_ouvert_a_tout_membre(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb1@example.de")
+    resp = _auth(api_client, user).post(reverse(ALBUM_LIST_URL), {"nom": "Derby 2026"})
+    assert resp.status_code == 201
+    assert resp.data["nom"] == "Derby 2026"
+
+
+def test_modifier_un_album_reserve_au_createur_ou_bureau_admin(api_client):
+    createur_user, createur = _user_avec_membre(Role.MEMBRE, "alb2@example.de")
+    album = AlbumFactory(createur=createur)
+    autre_user, _ = _user_avec_membre(Role.MEMBRE, "alb3@example.de")
+
+    resp = _auth(api_client, autre_user).patch(_album_detail_url(album), {"nom": "Piraté"})
+    assert resp.status_code == 403
+
+    resp = _auth(api_client, createur_user).patch(_album_detail_url(album), {"nom": "Renommé"})
+    assert resp.status_code == 200
+    assert resp.data["nom"] == "Renommé"
+
+
+def test_upload_photo_valide(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb4@example.de")
+    album = AlbumFactory()
+    resp = _auth(api_client, user).post(
+        reverse(PHOTO_LIST_URL),
+        {"album": str(album.id), "legende": "But de Hamza !", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 201
+    assert resp.data["legende"] == "But de Hamza !"
+    assert resp.data["image"]
+
+
+def test_upload_photo_rejette_fichier_non_image(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb5@example.de")
+    album = AlbumFactory()
+    faux_fichier = SimpleUploadedFile("photo.jpg", b"ceci n'est pas une image", "image/jpeg")
+    resp = _auth(api_client, user).post(
+        reverse(PHOTO_LIST_URL),
+        {"album": str(album.id), "image": faux_fichier},
+        format="multipart",
+    )
+    assert resp.status_code == 400
+    assert "image" in resp.data["details"]
+
+
+def test_upload_photo_rejette_fichier_trop_volumineux(api_client, monkeypatch):
+    import apps.communaute.validators as validators_module
+
+    monkeypatch.setattr(validators_module, "MAX_PHOTO_SIZE_BYTES", 10)  # 10 octets
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb6@example.de")
+    album = AlbumFactory()
+    resp = _auth(api_client, user).post(
+        reverse(PHOTO_LIST_URL),
+        {"album": str(album.id), "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 400
+    assert "image" in resp.data["details"]
+
+
+def test_supprimer_sa_propre_photo(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "alb7@example.de")
+    photo = PhotoFactory(membre=membre)
+    resp = _auth(api_client, user).delete(_photo_detail_url(photo))
+    assert resp.status_code == 204
+
+
+def test_supprimer_la_photo_dautrui_refuse(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb8@example.de")
+    photo = PhotoFactory()
+    resp = _auth(api_client, user).delete(_photo_detail_url(photo))
+    assert resp.status_code == 403
+
+
+def test_liker_bascule_le_like_photo(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb9@example.de")
+    photo = PhotoFactory()
+    resp = _auth(api_client, user).post(_photo_liker_url(photo))
+    assert resp.status_code == 200
+    assert resp.data["jaime"] is True
+    assert resp.data["nombre_likes"] == 1
+
+    resp = _auth(api_client, user).post(_photo_liker_url(photo))
+    assert resp.data["jaime"] is False
+    assert resp.data["nombre_likes"] == 0
+
+
+def test_masquer_une_photo_reserve_au_bureau_admin(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb10@example.de")
+    photo = PhotoFactory()
+    resp = _auth(api_client, user).post(_photo_masquer_url(photo))
+    assert resp.status_code == 403
+
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "alb11@example.de")
+    resp = _auth(api_client, admin_user).post(_photo_masquer_url(photo))
+    assert resp.status_code == 200
+    assert resp.data["est_masquee"] is True
+
+
+def test_commenter_une_photo(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb12@example.de")
+    photo = PhotoFactory()
+    resp = _auth(api_client, user).post(
+        reverse(PHOTO_COMMENTAIRE_LIST_URL), {"photo": str(photo.id), "contenu": "Magnifique !"}
+    )
+    assert resp.status_code == 201
+    assert photo.commentaires.count() == 1
+
+
+# --- Quiz ------------------------------------------------------------------------
+
+
+def test_quiz_liste_masque_est_correct_pour_membre_normal(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "quiz1@example.de")
+    question = QuestionQuizFactory()
+    ChoixQuestionFactory(question=question, texte="1920", est_correct=True)
+    resp = _auth(api_client, user).get(reverse(QUIZ_LIST_URL))
+    assert resp.status_code == 200
+    choix = resp.data["results"][0]["questions"][0]["choix"][0]
+    assert "est_correct" not in choix
+
+
+def test_quiz_liste_expose_est_correct_pour_bureau_admin(api_client):
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "quiz2@example.de")
+    question = QuestionQuizFactory()
+    ChoixQuestionFactory(question=question, texte="1920", est_correct=True)
+    resp = _auth(api_client, admin_user).get(reverse(QUIZ_LIST_URL))
+    assert resp.status_code == 200
+    choix = resp.data["results"][0]["questions"][0]["choix"][0]
+    assert choix["est_correct"] is True
+
+
+def test_demarrer_puis_repondre_calcule_le_score_correctement(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "quiz3@example.de")
+    quiz = QuizFactory()
+    question = QuestionQuizFactory(quiz=quiz, points=100)
+    bon_choix = ChoixQuestionFactory(question=question, est_correct=True)
+    ChoixQuestionFactory(question=question, est_correct=False)
+
+    resp = _auth(api_client, user).post(_quiz_demarrer_url(quiz))
+    assert resp.status_code == 200
+    assert resp.data["score"] == 0
+    assert resp.data["terminee_le"] is None
+
+    resp = _auth(api_client, user).post(
+        _quiz_repondre_url(quiz), {"question": str(question.id), "choix": str(bon_choix.id)}
+    )
+    assert resp.status_code == 201
+    assert resp.data["est_correct"] is True
+    assert resp.data["points_obtenus"] == 100
+
+    # Une seule question dans ce quiz -> la participation est automatiquement terminée,
+    # vérifié via l'action classement (plus direct qu'un re-GET de la participation seule).
+    resp = _auth(api_client, user).get(_quiz_classement_url(quiz))
+    assert resp.status_code == 200
+    assert resp.data["ma_participation"]["score"] == 100
+    assert resp.data["ma_participation"]["terminee_le"] is not None
+
+
+def test_repondre_avec_un_mauvais_choix_ne_rapporte_aucun_point(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "quiz4@example.de")
+    quiz = QuizFactory()
+    question = QuestionQuizFactory(quiz=quiz, points=100)
+    ChoixQuestionFactory(question=question, est_correct=True)
+    mauvais_choix = ChoixQuestionFactory(question=question, est_correct=False)
+
+    _auth(api_client, user).post(_quiz_demarrer_url(quiz))
+    resp = _auth(api_client, user).post(
+        _quiz_repondre_url(quiz), {"question": str(question.id), "choix": str(mauvais_choix.id)}
+    )
+    assert resp.status_code == 201
+    assert resp.data["est_correct"] is False
+    assert resp.data["points_obtenus"] == 0
+
+
+def test_repondre_deux_fois_a_la_meme_question_refuse(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "quiz5@example.de")
+    quiz = QuizFactory()
+    question = QuestionQuizFactory(quiz=quiz)
+    # Deuxième question du même quiz — sans elle, répondre à l'unique question termine la
+    # participation (voir QuizViewSet.repondre) et le deuxième essai buterait sur le
+    # contrôle "déjà terminée" (403) plutôt que sur celui testé ici (réponse dupliquée, 400).
+    QuestionQuizFactory(quiz=quiz)
+    choix = ChoixQuestionFactory(question=question, est_correct=True)
+
+    _auth(api_client, user).post(_quiz_demarrer_url(quiz))
+    _auth(api_client, user).post(
+        _quiz_repondre_url(quiz), {"question": str(question.id), "choix": str(choix.id)}
+    )
+    resp = _auth(api_client, user).post(
+        _quiz_repondre_url(quiz), {"question": str(question.id), "choix": str(choix.id)}
+    )
+    assert resp.status_code == 400
+
+
+def test_repondre_sans_avoir_demarre_refuse(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "quiz6@example.de")
+    quiz = QuizFactory()
+    question = QuestionQuizFactory(quiz=quiz)
+    choix = ChoixQuestionFactory(question=question, est_correct=True)
+    resp = _auth(api_client, user).post(
+        _quiz_repondre_url(quiz), {"question": str(question.id), "choix": str(choix.id)}
+    )
+    assert resp.status_code == 400
+
+
+def test_repondre_apres_participation_terminee_refuse(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "quiz7@example.de")
+    quiz = QuizFactory()
+    question = QuestionQuizFactory(quiz=quiz)
+    choix = ChoixQuestionFactory(question=question, est_correct=True)
+
+    participation = ParticipationQuizFactory(quiz=quiz, membre=user.membre)
+    from django.utils import timezone
+
+    participation.terminee_le = timezone.now()
+    participation.save(update_fields=["terminee_le"])
+
+    resp = _auth(api_client, user).post(
+        _quiz_repondre_url(quiz), {"question": str(question.id), "choix": str(choix.id)}
+    )
+    assert resp.status_code == 403
+
+
+def test_classement_expose_le_top_et_ma_participation(api_client):
+    quiz = QuizFactory()
+    question = QuestionQuizFactory(quiz=quiz, points=100)
+    bon_choix = ChoixQuestionFactory(question=question, est_correct=True)
+
+    meilleur_user, meilleur_membre = _user_avec_membre(Role.MEMBRE, "quiz8@example.de")
+    _auth(api_client, meilleur_user).post(_quiz_demarrer_url(quiz))
+    _auth(api_client, meilleur_user).post(
+        _quiz_repondre_url(quiz), {"question": str(question.id), "choix": str(bon_choix.id)}
+    )
+
+    observateur_user, _ = _user_avec_membre(Role.MEMBRE, "quiz9@example.de")
+    resp = _auth(api_client, observateur_user).get(_quiz_classement_url(quiz))
+    assert resp.status_code == 200
+    assert len(resp.data["classement"]) == 1
+    assert resp.data["classement"][0]["score"] == 100
+    assert "ma_participation" not in resp.data  # cet observateur n'a pas participé
+
+
+def test_creer_question_et_choix_reserve_au_bureau_admin(api_client):
+    quiz = QuizFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "quiz10@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(QUESTION_QUIZ_LIST_URL), {"quiz": str(quiz.id), "texte": "Question ?"}
+    )
+    assert resp.status_code == 403
+
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "quiz11@example.de")
+    resp = _auth(api_client, admin_user).post(
+        reverse(QUESTION_QUIZ_LIST_URL), {"quiz": str(quiz.id), "texte": "Question ?"}
+    )
+    assert resp.status_code == 201
+    question_id = resp.data["id"]
+
+    resp = _auth(api_client, user).post(
+        reverse(CHOIX_QUESTION_LIST_URL),
+        {"question": question_id, "texte": "Réponse", "est_correct": True},
+    )
+    assert resp.status_code == 403
+
+    resp = _auth(api_client, admin_user).post(
+        reverse(CHOIX_QUESTION_LIST_URL),
+        {"question": question_id, "texte": "Réponse", "est_correct": True},
+    )
+    assert resp.status_code == 201
+    assert resp.data["est_correct"] is True

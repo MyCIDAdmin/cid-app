@@ -16,7 +16,10 @@
     "fil": "Neuigkeiten",
     "forum": "Forum",
     "messagerie": "Nachrichten",
-    "groupes": "Chatgruppen"
+    "groupes": "Chatgruppen",
+    "live": "Live-Spiel",
+    "albums": "Fotoalben",
+    "quiz": "Quiz"
   },
   "dashboard": {
     "title": "Übersicht",

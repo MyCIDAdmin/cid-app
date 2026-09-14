@@ -16,7 +16,10 @@
     "fil": "Fil d'actualité",
     "forum": "Forum",
     "messagerie": "Messagerie",
-    "groupes": "Groupes de chat"
+    "groupes": "Groupes de chat",
+    "live": "Live Match",
+    "albums": "Albums photos",
+    "quiz": "Quiz"
   },
   "dashboard": {
     "title": "Tableau de bord",

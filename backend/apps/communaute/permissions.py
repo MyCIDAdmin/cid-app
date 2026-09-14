@@ -1,6 +1,6 @@
 """
-Permissions API — app communaute, lot Fil d'actualité + Forum (CID-SCD-001 §résumé
-"Forum / Fil — RBAC").
+Permissions API — app communaute (CID-SCD-001 §résumé "Forum / Fil — RBAC"), tous les lots
+(Fil d'actualité + Forum, Messagerie + Groupes, puis Live Match + Albums + Quiz — Phase 4B).
 
 Règle commune aux deux sous-modules :
   - Lecture (list/retrieve) et création (create) : tout authentifié — pas de rôle
@@ -117,4 +117,130 @@ class GroupeChatPermission(BasePermission):
             return obj.type_groupe == "public"
         if action == "quitter":
             return membre is not None and obj.membres_groupe.filter(membre=membre).exists()
+        return True
+
+
+# ---------------------------------------------------------------------------
+# Live Match, Albums, Quiz (troisième lot — Phase 4B, voir docstring de tête models.py)
+# ---------------------------------------------------------------------------
+
+
+class MatchPermission(BasePermission):
+    """Lecture (list/retrieve) ouverte à tout authentifié. Gestion (create/update/destroy —
+    score, chrono, statut) réservée à Bureau Admin+ : le mockup ne propose aucune UI de
+    pilotage du score côté membre standard."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if view.action in ("create", "update", "partial_update", "destroy"):
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if view.action in ("update", "partial_update", "destroy"):
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return True
+
+
+class GestionQuizPermission(BasePermission):
+    """CRUD des questions/choix (endpoints d'administration séparés, voir views.py) —
+    Bureau Admin+ uniquement sur TOUTES les actions : un membre standard ne consulte jamais
+    ces endpoints bruts, les questions lui sont exposées uniquement imbriquées dans
+    `QuizSerializer` (avec `est_correct` masqué, voir `ChoixQuestionSerializer
+    .to_representation`)."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and user.is_authenticated and ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        )
+
+
+class MatchCommentairePermission(BasePermission):
+    """Liste seule côté REST (historique) — l'envoi passe exclusivement par
+    `LiveMatchConsumer` (voir consumers.py), même découpage que
+    `MessagePrivePermission`/`MessageGroupeViewSet`."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated)
+
+
+class AlbumPermission(BasePermission):
+    """Lecture/création ouvertes à tout authentifié ("upload collaboratif" : un album se
+    crée comme n'importe quelle publication, voir docstring de tête models.py). Modifier ou
+    supprimer les MÉTADONNÉES d'un album (nom/description) : créateur ou Bureau Admin+."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if view.action in ("update", "partial_update", "destroy"):
+            membre = _membre_de(user)
+            est_createur = membre is not None and obj.createur_id == membre.id
+            return est_createur or ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return True
+
+
+class PhotoPermission(BasePermission):
+    """Lecture/upload ouverts à tout authentifié. Modifier (légende) ou supprimer SA PROPRE
+    photo : le membre qui l'a uploadée, ou Bureau Admin+. `masquer` (modération) : Bureau
+    Admin+ uniquement — voir docstring de tête models.py (pas de modération dédiée sur les
+    likes/commentaires de photo, contrairement au Fil d'actualité — non documentée pour ce
+    sous-module)."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if view.action == "masquer":
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if view.action == "masquer":
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        if view.action in ("update", "partial_update", "destroy"):
+            membre = _membre_de(user)
+            est_proprietaire = membre is not None and obj.membre_id == membre.id
+            return est_proprietaire or ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return True
+
+
+class PhotoCommentairePermission(BasePermission):
+    """Créer : tout authentifié. Supprimer : auteur uniquement (pas de modération dédiée
+    pour ce sous-module, voir docstring de tête models.py)."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        membre = _membre_de(request.user)
+        return membre is not None and obj.auteur_id == membre.id
+
+
+class QuizPermission(BasePermission):
+    """Lecture (list/retrieve) et participation (`demarrer`/`repondre`/`classement`) : tout
+    authentifié. Gestion (create/update/destroy — questions et choix imbriqués) : Bureau
+    Admin+ uniquement, le mockup n'offrant aucune UI de création de quiz côté membre."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if view.action in ("create", "update", "partial_update", "destroy"):
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if view.action in ("update", "partial_update", "destroy"):
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
         return True

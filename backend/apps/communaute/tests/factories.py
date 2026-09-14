@@ -1,21 +1,36 @@
 import itertools
+from datetime import timezone
 
 import factory
 from factory.django import DjangoModelFactory
 
 from apps.accounts.models import Role, User
 from apps.communaute.models import (
+    Album,
     CategorieForum,
+    ChoixQuestion,
     Commentaire,
     Conversation,
     GroupeChat,
+    Match,
+    MatchCommentaire,
+    MatchReaction,
     MembreGroupe,
     MessageGroupe,
     MessagePrive,
+    ParticipationQuiz,
+    Photo,
+    PhotoCommentaire,
+    PhotoLike,
     Publication,
+    Quiz,
+    QuestionQuiz,
     ReponseForum,
+    ReponseQuiz,
+    StatutMatch,
     Sujet,
     TypeGroupe,
+    TypeReactionMatch,
 )
 from apps.membres.tests.factories import MembreFactory
 
@@ -112,3 +127,141 @@ class MessageGroupeFactory(DjangoModelFactory):
     groupe = factory.SubFactory(GroupeChatFactory)
     auteur = factory.SubFactory(MembreFactory)
     contenu = "Message de groupe de test."
+
+
+# ---------------------------------------------------------------------------
+# Live Match, Albums, Quiz (troisième lot — Phase 4B)
+# ---------------------------------------------------------------------------
+
+
+class UserFactory(DjangoModelFactory):
+    """Petite factory locale — même raisonnement que apps.notifications.tests.factories
+    .UserFactory (un `created_by` de Match/Quiz est un User nu, sans Membre associé
+    nécessairement testé)."""
+
+    class Meta:
+        model = User
+        django_get_or_create = ("email",)
+
+    email = factory.Sequence(lambda n: f"admin{n}@example.de")
+    role = Role.BUREAU_ADMIN
+    is_active = True
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        manager = cls._get_manager(model_class)
+        return manager.create_user(*args, **kwargs)
+
+
+class MatchFactory(DjangoModelFactory):
+    class Meta:
+        model = Match
+
+    adversaire = factory.Sequence(lambda n: f"Adversaire {n}")
+    # `tzinfo` explicite : `factory.Faker("future_datetime", ...)` renvoie par défaut un
+    # datetime naïf, qui déclenche un RuntimeWarning avec USE_TZ=True (settings/base.py).
+    date_heure = factory.Faker("future_datetime", end_date="+30d", tzinfo=timezone.utc)
+    statut = StatutMatch.EN_COURS
+    created_by = factory.SubFactory(UserFactory)
+
+
+class MatchCommentaireFactory(DjangoModelFactory):
+    class Meta:
+        model = MatchCommentaire
+
+    match = factory.SubFactory(MatchFactory)
+    auteur = factory.SubFactory(MembreFactory)
+    contenu = "Commentaire live de test."
+
+
+class MatchReactionFactory(DjangoModelFactory):
+    class Meta:
+        model = MatchReaction
+
+    match = factory.SubFactory(MatchFactory)
+    membre = factory.SubFactory(MembreFactory)
+    emoji = TypeReactionMatch.COEUR
+
+
+class AlbumFactory(DjangoModelFactory):
+    class Meta:
+        model = Album
+
+    nom = factory.Sequence(lambda n: f"Album de test {n}")
+    description = "Description de l'album de test."
+    createur = factory.SubFactory(MembreFactory)
+
+
+class PhotoFactory(DjangoModelFactory):
+    class Meta:
+        model = Photo
+
+    album = factory.SubFactory(AlbumFactory)
+    membre = factory.SubFactory(MembreFactory)
+    image = factory.django.ImageField(color="blue", format="JPEG")
+    legende = "Légende de test."
+
+
+class PhotoLikeFactory(DjangoModelFactory):
+    class Meta:
+        model = PhotoLike
+
+    photo = factory.SubFactory(PhotoFactory)
+    membre = factory.SubFactory(MembreFactory)
+
+
+class PhotoCommentaireFactory(DjangoModelFactory):
+    class Meta:
+        model = PhotoCommentaire
+
+    photo = factory.SubFactory(PhotoFactory)
+    auteur = factory.SubFactory(MembreFactory)
+    contenu = "Commentaire de photo de test."
+
+
+class QuizFactory(DjangoModelFactory):
+    class Meta:
+        model = Quiz
+
+    titre = factory.Sequence(lambda n: f"Quiz de test {n}")
+    description = "Description du quiz de test."
+    est_actif = True
+    created_by = factory.SubFactory(UserFactory)
+
+
+class QuestionQuizFactory(DjangoModelFactory):
+    class Meta:
+        model = QuestionQuiz
+
+    quiz = factory.SubFactory(QuizFactory)
+    texte = factory.Sequence(lambda n: f"Question de test {n} ?")
+    ordre = factory.Sequence(lambda n: n)
+    points = 100
+
+
+class ChoixQuestionFactory(DjangoModelFactory):
+    class Meta:
+        model = ChoixQuestion
+
+    question = factory.SubFactory(QuestionQuizFactory)
+    texte = factory.Sequence(lambda n: f"Choix {n}")
+    est_correct = False
+
+
+class ParticipationQuizFactory(DjangoModelFactory):
+    class Meta:
+        model = ParticipationQuiz
+
+    quiz = factory.SubFactory(QuizFactory)
+    membre = factory.SubFactory(MembreFactory)
+
+
+class ReponseQuizFactory(DjangoModelFactory):
+    class Meta:
+        model = ReponseQuiz
+
+    participation = factory.SubFactory(ParticipationQuizFactory)
+    question = factory.SubFactory(QuestionQuizFactory)
+    choix = factory.SubFactory(ChoixQuestionFactory)
+    est_correct = False
+    points_obtenus = 0

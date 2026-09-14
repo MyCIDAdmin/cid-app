@@ -35,6 +35,7 @@ journaliser l'activité sociale ordinaire des membres (minimisation RGPD, même 
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -49,33 +50,61 @@ from apps.membres.models import Membre
 
 from .filters import PublicationFilter, SujetFilter
 from .models import (
+    Album,
+    ChoixQuestion,
     Commentaire,
     Conversation,
     GroupeChat,
+    Match,
+    MatchCommentaire,
     MembreGroupe,
     MessageGroupe,
     MessagePrive,
+    ParticipationQuiz,
+    Photo,
+    PhotoCommentaire,
+    PhotoLike,
     Publication,
     PublicationLike,
     PublicationPartage,
+    Quiz,
+    QuestionQuiz,
     ReponseForum,
+    ReponseQuiz,
     Sujet,
 )
 from .permissions import (
     MODERATION_MIN_LEVEL,
+    AlbumPermission,
     ContenuCommunautePermission,
     ConversationPermission,
+    GestionQuizPermission,
     GroupeChatPermission,
+    MatchCommentairePermission,
+    MatchPermission,
     MessagePrivePermission,
+    PhotoCommentairePermission,
+    PhotoPermission,
+    QuizPermission,
 )
 from .serializers import (
+    AlbumSerializer,
+    ChoixQuestionSerializer,
     CommentaireSerializer,
     ConversationSerializer,
     GroupeChatSerializer,
+    MatchCommentaireSerializer,
+    MatchSerializer,
     MessageGroupeSerializer,
     MessagePriveSerializer,
+    ParticipationQuizSerializer,
+    PhotoCommentaireSerializer,
+    PhotoSerializer,
     PublicationSerializer,
+    QuestionQuizSerializer,
+    QuizSerializer,
     ReponseForumSerializer,
+    ReponseQuizSerializer,
     SujetSerializer,
 )
 
@@ -460,3 +489,283 @@ class MessageGroupeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             if membre is None or not groupe.membres_groupe.filter(membre=membre).exists():
                 raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
         return MessageGroupe.objects.filter(groupe=groupe).select_related("auteur")
+
+
+# ---------------------------------------------------------------------------
+# Live Match, Albums, Quiz (troisième lot — Phase 4B) :
+#
+#   GET/POST     /communaute/matchs/                    — lecture ouverte à tout
+#                                                           authentifié, gestion (créer/
+#                                                           modifier le score/chrono/statut)
+#                                                           réservée à Bureau Admin+ ; toute
+#                                                           modification est diffusée au
+#                                                           groupe WebSocket live_{id}
+#   GET          /communaute/match-commentaires/?match=  — historique ; ENVOYER un
+#                                                           commentaire passe UNIQUEMENT par
+#                                                           LiveMatchConsumer (WebSocket)
+#
+#   GET/POST     /communaute/albums/                     — liste/création (upload
+#                                                           collaboratif)
+#   PATCH/DELETE /communaute/albums/{id}/                 — créateur ou Bureau Admin+
+#   GET/POST     /communaute/photos/?album=               — liste (filtrée par album) /
+#                                                           upload (image validée + ré-
+#                                                           encodée, voir validators.py)
+#   PATCH/DELETE /communaute/photos/{id}/                  — propriétaire ou Bureau Admin+
+#   POST         /communaute/photos/{id}/liker/            — bascule like
+#   POST         /communaute/photos/{id}/masquer/          — modération (Bureau Admin+)
+#   POST/DELETE  /communaute/photo-commentaires/           — commenter une photo
+#
+#   GET/POST     /communaute/quiz/                        — lecture ouverte à tout
+#                                                           authentifié (questions imbriquées,
+#                                                           est_correct masqué) ; création/
+#                                                           modification réservée à Bureau
+#                                                           Admin+
+#   POST         /communaute/quiz/{id}/demarrer/           — démarre (ou retrouve) MA
+#                                                           participation
+#   POST         /communaute/quiz/{id}/repondre/           — {"question":.., "choix":..} —
+#                                                           correction et points TOUJOURS
+#                                                           recalculés côté serveur
+#   GET          /communaute/quiz/{id}/classement/         — top 10 + ma participation
+#   GET/POST     /communaute/quiz-questions/               — gestion Bureau Admin+ (créer
+#                                                           les questions d'un quiz)
+#   GET/POST     /communaute/quiz-choix/                   — gestion Bureau Admin+ (créer
+#                                                           les choix d'une question, dont
+#                                                           `est_correct`)
+# ---------------------------------------------------------------------------
+
+
+class MatchCursorPagination(CursorPagination):
+    ordering = ("-date_heure", "id")
+
+
+class MatchCommentaireCursorPagination(CursorPagination):
+    ordering = ("created_at", "id")
+
+
+class AlbumCursorPagination(CursorPagination):
+    ordering = ("-created_at", "id")
+
+
+class PhotoCursorPagination(CursorPagination):
+    ordering = ("-created_at", "id")
+
+
+class QuizCursorPagination(CursorPagination):
+    ordering = ("-created_at", "id")
+
+
+class MatchViewSet(viewsets.ModelViewSet):
+    serializer_class = MatchSerializer
+    permission_classes = [MatchPermission]
+    pagination_class = MatchCursorPagination
+    queryset = Match.objects.prefetch_related("reactions")
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    def perform_update(self, serializer):
+        match = serializer.save()
+        self._broadcast_match_update(match)
+
+    @staticmethod
+    def _broadcast_match_update(match):
+        # Diffuse la mise à jour REST (score/chrono/statut, modérateur Bureau Admin+) au
+        # groupe WebSocket du match — même mécanisme que
+        # apps.vote.views.VoteSessionViewSet._broadcast_resultats (voir docstring de tête
+        # models.py).
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            return
+        async_to_sync(channel_layer.group_send)(
+            f"live_{match.id}",
+            {
+                "type": "match_update",
+                "payload": {
+                    "id": str(match.id),
+                    "statut": match.statut,
+                    "score_ca": match.score_ca,
+                    "score_adversaire": match.score_adversaire,
+                    "minute_chrono": match.minute_chrono,
+                },
+            },
+        )
+
+
+class MatchCommentaireViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Liste seule — l'envoi passe exclusivement par `LiveMatchConsumer`."""
+
+    serializer_class = MatchCommentaireSerializer
+    permission_classes = [MatchCommentairePermission]
+    pagination_class = MatchCommentaireCursorPagination
+
+    def get_queryset(self):
+        match_id = self.request.query_params.get("match")
+        if not match_id:
+            raise ValidationError({"match": "Ce paramètre est requis."})
+        get_object_or_404(Match, pk=match_id)
+        return MatchCommentaire.objects.filter(match_id=match_id).select_related("auteur")
+
+
+class AlbumViewSet(viewsets.ModelViewSet):
+    serializer_class = AlbumSerializer
+    permission_classes = [AlbumPermission]
+    pagination_class = AlbumCursorPagination
+    queryset = Album.objects.select_related("createur", "evenement")
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+
+class PhotoViewSet(viewsets.ModelViewSet):
+    serializer_class = PhotoSerializer
+    permission_classes = [PhotoPermission]
+    pagination_class = PhotoCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["album"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        qs = Photo.objects.select_related("membre", "album").prefetch_related(
+            "likes", "commentaires__auteur"
+        )
+        user = self.request.user
+        if ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL:
+            return qs
+        return qs.filter(est_masquee=False)
+
+    @action(detail=True, methods=["post"])
+    def liker(self, request, pk=None):
+        photo = self.get_object()
+        membre = request.user.membre
+        like, cree = PhotoLike.objects.get_or_create(photo=photo, membre=membre)
+        if not cree:
+            like.delete()
+        # Même piège que PublicationViewSet.liker — le prefetch_related("likes", ...) de
+        # get_queryset() porte encore le cache d'AVANT la bascule ci-dessus.
+        photo.refresh_from_db()
+        return Response(self.get_serializer(photo).data)
+
+    @action(detail=True, methods=["post"])
+    def masquer(self, request, pk=None):
+        photo = self.get_object()
+        photo.est_masquee = not photo.est_masquee
+        photo.masquee_par = request.user if photo.est_masquee else None
+        photo.save(update_fields=["est_masquee", "masquee_par"])
+        log_audit_event(
+            "photo_masquee" if photo.est_masquee else "photo_demasquee",
+            user=request.user,
+            ip_address=_client_ip(request),
+            photo_id=str(photo.id),
+        )
+        return Response(self.get_serializer(photo).data)
+
+
+class PhotoCommentaireViewSet(
+    mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet
+):
+    serializer_class = PhotoCommentaireSerializer
+    permission_classes = [PhotoCommentairePermission]
+    queryset = PhotoCommentaire.objects.select_related("auteur", "photo")
+
+
+class QuizViewSet(viewsets.ModelViewSet):
+    serializer_class = QuizSerializer
+    permission_classes = [QuizPermission]
+    pagination_class = QuizCursorPagination
+    queryset = Quiz.objects.prefetch_related("questions__choix")
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=["post"])
+    def demarrer(self, request, pk=None):
+        quiz = self.get_object()
+        membre = request.user.membre
+        participation, _cree = ParticipationQuiz.objects.get_or_create(quiz=quiz, membre=membre)
+        return Response(
+            ParticipationQuizSerializer(participation, context=self.get_serializer_context()).data
+        )
+
+    @action(detail=True, methods=["post"])
+    def repondre(self, request, pk=None):
+        quiz = self.get_object()
+        membre = request.user.membre
+        participation = ParticipationQuiz.objects.filter(quiz=quiz, membre=membre).first()
+        if participation is None:
+            raise ValidationError(
+                "Démarrez le quiz avant de répondre (voir action 'demarrer')."
+            )
+        if participation.terminee_le is not None:
+            raise PermissionDenied("Cette participation est déjà terminée.")
+
+        question = get_object_or_404(QuestionQuiz, pk=request.data.get("question"), quiz=quiz)
+        choix = get_object_or_404(ChoixQuestion, pk=request.data.get("choix"), question=question)
+
+        if ReponseQuiz.objects.filter(participation=participation, question=question).exists():
+            raise ValidationError({"question": "Cette question a déjà une réponse enregistrée."})
+
+        # Correction et points TOUJOURS calculés côté serveur, jamais transmis par le
+        # client (CLAUDE.md §8, voir docstring de tête models.py).
+        est_correct = choix.est_correct
+        points = question.points if est_correct else 0
+        reponse = ReponseQuiz.objects.create(
+            participation=participation,
+            question=question,
+            choix=choix,
+            est_correct=est_correct,
+            points_obtenus=points,
+        )
+
+        update_fields = []
+        if est_correct:
+            participation.score += points
+            update_fields.append("score")
+        if participation.reponses.count() >= quiz.questions.count():
+            participation.terminee_le = timezone.now()
+            update_fields.append("terminee_le")
+        if update_fields:
+            participation.save(update_fields=update_fields)
+
+        return Response(ReponseQuizSerializer(reponse).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get"])
+    def classement(self, request, pk=None):
+        quiz = self.get_object()
+        top = quiz.participations.filter(terminee_le__isnull=False).select_related("membre")[:10]
+        data = {
+            "classement": ParticipationQuizSerializer(
+                top, many=True, context=self.get_serializer_context()
+            ).data
+        }
+        membre = getattr(request.user, "membre", None)
+        if membre is not None:
+            ma_participation = quiz.participations.filter(membre=membre).first()
+            if ma_participation is not None:
+                data["ma_participation"] = ParticipationQuizSerializer(
+                    ma_participation, context=self.get_serializer_context()
+                ).data
+        return Response(data)
+
+
+class QuestionQuizViewSet(viewsets.ModelViewSet):
+    """Gestion Bureau Admin+ des questions — jamais consultée directement par un membre
+    standard (voir GestionQuizPermission)."""
+
+    serializer_class = QuestionQuizSerializer
+    permission_classes = [GestionQuizPermission]
+    queryset = QuestionQuiz.objects.select_related("quiz").prefetch_related("choix")
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["quiz"]
+
+
+class ChoixQuestionViewSet(viewsets.ModelViewSet):
+    """Gestion Bureau Admin+ des choix (dont `est_correct`) — voir GestionQuizPermission."""
+
+    serializer_class = ChoixQuestionSerializer
+    permission_classes = [GestionQuizPermission]
+    queryset = ChoixQuestion.objects.select_related("question")
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["question"]

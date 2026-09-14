@@ -3,14 +3,26 @@ from django.db import IntegrityError
 
 from apps.communaute.models import Conversation, extraire_hashtags
 from apps.communaute.tests.factories import (
+    AlbumFactory,
+    ChoixQuestionFactory,
     CommentaireFactory,
     ConversationFactory,
     GroupeChatFactory,
+    MatchCommentaireFactory,
+    MatchFactory,
+    MatchReactionFactory,
     MembreGroupeFactory,
     MessageGroupeFactory,
     MessagePriveFactory,
+    ParticipationQuizFactory,
+    PhotoCommentaireFactory,
+    PhotoFactory,
+    PhotoLikeFactory,
     PublicationFactory,
+    QuestionQuizFactory,
+    QuizFactory,
     ReponseForumFactory,
+    ReponseQuizFactory,
     SujetFactory,
 )
 from apps.membres.tests.factories import MembreFactory
@@ -122,3 +134,92 @@ def test_message_groupe_ordre_chronologique():
     second = MessageGroupeFactory(groupe=groupe, contenu="Second")
     ids = list(groupe.messages.values_list("id", flat=True))
     assert ids == [premier.id, second.id]
+
+
+# ---------------------------------------------------------------------------
+# Live Match, Albums, Quiz (troisième lot — Phase 4B)
+# ---------------------------------------------------------------------------
+
+
+def test_match_commentaire_ordre_chronologique():
+    match = MatchFactory()
+    premier = MatchCommentaireFactory(match=match, contenu="Premier")
+    second = MatchCommentaireFactory(match=match, contenu="Second")
+    ids = list(match.commentaires.values_list("id", flat=True))
+    assert ids == [premier.id, second.id]
+
+
+def test_match_reaction_sans_contrainte_dunicite_chaque_frappe_est_une_ligne():
+    # Voir docstring de tête models.py — pas de bascule comme un like, chaque clic compte.
+    match = MatchFactory()
+    membre = MembreFactory()
+    MatchReactionFactory(match=match, membre=membre)
+    MatchReactionFactory(match=match, membre=membre)
+    assert match.reactions.filter(membre=membre).count() == 2
+
+
+def test_album_nombre_photos_exclut_les_masquees():
+    album = AlbumFactory()
+    PhotoFactory(album=album)
+    PhotoFactory(album=album, est_masquee=True)
+    assert album.nombre_photos == 1
+
+
+def test_photo_like_unicite():
+    photo = PhotoFactory()
+    membre = MembreFactory()
+    PhotoLikeFactory(photo=photo, membre=membre)
+    with pytest.raises(IntegrityError):
+        PhotoLikeFactory(photo=photo, membre=membre)
+
+
+def test_photo_commentaire_ordre_chronologique():
+    photo = PhotoFactory()
+    premier = PhotoCommentaireFactory(photo=photo, contenu="Premier")
+    second = PhotoCommentaireFactory(photo=photo, contenu="Second")
+    ids = list(photo.commentaires.values_list("id", flat=True))
+    assert ids == [premier.id, second.id]
+
+
+def test_choix_question_est_correct_non_expose_par_defaut_au_niveau_modele():
+    # Le modèle lui-même n'a pas de logique de masquage (c'est le serializer qui s'en
+    # charge, voir test_api.py) — ce test vérifie juste que le champ est bien persistant.
+    choix = ChoixQuestionFactory(est_correct=True)
+    choix.refresh_from_db()
+    assert choix.est_correct is True
+
+
+def test_participation_quiz_unicite_par_quiz_et_membre():
+    quiz = QuizFactory()
+    membre = MembreFactory()
+    ParticipationQuizFactory(quiz=quiz, membre=membre)
+    with pytest.raises(IntegrityError):
+        ParticipationQuizFactory(quiz=quiz, membre=membre)
+
+
+def test_reponse_quiz_unicite_par_participation_et_question():
+    participation = ParticipationQuizFactory()
+    question = QuestionQuizFactory(quiz=participation.quiz)
+    choix = ChoixQuestionFactory(question=question)
+    ReponseQuizFactory(participation=participation, question=question, choix=choix)
+    with pytest.raises(IntegrityError):
+        ReponseQuizFactory(participation=participation, question=question, choix=choix)
+
+
+def test_participation_quiz_temps_total_secondes_none_si_pas_terminee():
+    participation = ParticipationQuizFactory()
+    assert participation.temps_total_secondes is None
+
+
+def test_participation_quiz_temps_total_secondes_calcule_une_fois_terminee():
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    participation = ParticipationQuizFactory()
+    participation.terminee_le = participation.demarree_le + timedelta(seconds=42)
+    participation.save(update_fields=["terminee_le"])
+    assert participation.temps_total_secondes == pytest.approx(42, abs=1)
+    # `timezone.now()` importé ici uniquement pour rendre explicite que `terminee_le` est
+    # bien un datetime aware (cohérence de fuseau horaire, USE_TZ=True) — pas utilisé au-delà.
+    assert timezone.is_aware(participation.terminee_le)

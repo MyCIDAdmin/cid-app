@@ -109,7 +109,7 @@ Timeline v1.2 (`CID-PTL-001`) :
 | Go-Live R1 (fin S12) | Smoke tests R1, déploiement Railway production | à faire |
 | Phase 4A (S13-14, R2) | `apps.communaute` — fil d'actualité, forum (4 catégories) | ✅ fait |
 | Phase 4A (S13-14, R2) | `apps.communaute` — messagerie privée AES-256, groupes de chat (WebSocket) | ✅ fait |
-| Phase 4B (S15, R2) | `apps.communaute` — live match, albums, quiz | à faire |
+| Phase 4B (S15, R2) | `apps.communaute` — live match, albums, quiz | ✅ fait |
 | Phase 5 (S16-17) | i18n arabe RTL complet, tests E2E, Locust 1000 users, OWASP ZAP | à faire |
 | Go-Live R2 (S18) | Application complète en production | à faire |
 

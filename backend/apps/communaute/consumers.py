@@ -19,15 +19,41 @@ lecture volontairement étroite du périmètre documenté (voir docstring de tê
 
 Aucun suivi de présence pour `GroupeChatConsumer` : le compteur "X en ligne" du mockup est
 une fonctionnalité de démonstration, absente des bullets fonctionnels du FDD/Release Plan
-pour Groupes de chat — délibérément hors périmètre (voir CLAUDE.md/notes de session)."""
+pour Groupes de chat — délibérément hors périmètre (voir CLAUDE.md/notes de session).
+
+ws://app/ws/live/{match_id}/?token=JWT — LiveMatchConsumer (troisième lot, Phase 4B, voir
+docstring de tête models.py) : SEUL consumer de ce fichier à combiner mutation temps réel
+ET diffusion d'une mise à jour déclenchée côté REST — le score/chrono/statut d'un match sont
+modifiés exclusivement par `MatchViewSet` (Bureau Admin+, jamais par le WebSocket lui-même,
+même logique que "rejoindre un groupe est une action REST" pour `GroupeChatConsumer") puis
+diffusés au groupe `live_{match_id}` via `channel_layer.group_send(..., {"type":
+"match_update", ...})`, appelé depuis la vue — même mécanisme que
+`apps.vote.views.VoteSessionViewSet._broadcast_resultats`. Commentaires et réactions emoji,
+eux, suivent le pattern WS-only habituel de ce module (`receive_json`). Présence "membres
+connectés" (mockup) : compteur agrégé (pas une présence par conversation comme
+`MessagerieConsumer`) via `cache.incr`/`cache.decr` sur une clé unique par match, TTL de
+sécurité volontairement long (`PRESENCE_TTL_LIVE`, 4h) car un match dure largement plus
+longtemps qu'une conversation de messagerie."""
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.core.cache import cache
+from django.db.models import Count
 
-from .models import Conversation, GroupeChat, MembreGroupe, MessageGroupe, MessagePrive
+from .models import (
+    Conversation,
+    GroupeChat,
+    Match,
+    MatchCommentaire,
+    MatchReaction,
+    MembreGroupe,
+    MessageGroupe,
+    MessagePrive,
+    TypeReactionMatch,
+)
 
 PRESENCE_TTL = 300  # secondes — filet de sécurité si disconnect() n'est jamais appelé
+PRESENCE_TTL_LIVE = 4 * 60 * 60  # 4h — un match dure bien plus longtemps qu'une conversation
 
 
 def _cle_presence(conversation_id, membre_id):
@@ -268,3 +294,183 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
             "nom": membre.nom,
             "photo": membre.photo.url if membre.photo else None,
         }
+
+
+def _cle_presence_live(match_id):
+    return f"communaute:live:connectes:{match_id}"
+
+
+class LiveMatchConsumer(AsyncJsonWebsocketConsumer):
+    async def connect(self):
+        self.match_id = self.scope["url_route"]["kwargs"]["match_id"]
+        self.group_name = f"live_{self.match_id}"
+
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated:
+            await self.close(code=4001)
+            return
+
+        membre_id = await self._get_membre_id(user)
+        if membre_id is None:
+            await self.close(code=4001)
+            return
+        self.membre_id = membre_id
+
+        if not await self._match_existe():
+            await self.close(code=4004)
+            return
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+        connectes = await self._incrementer_presence()
+        await self.channel_layer.group_send(
+            self.group_name, {"type": "presence_update", "payload": {"connectes": connectes}}
+        )
+
+    async def disconnect(self, code):
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if hasattr(self, "membre_id"):
+            connectes = await self._decrementer_presence()
+            channel_layer = self.channel_layer
+            if channel_layer is not None:
+                await channel_layer.group_send(
+                    self.group_name,
+                    {"type": "presence_update", "payload": {"connectes": connectes}},
+                )
+
+    async def receive_json(self, content, **kwargs):
+        type_message = content.get("type")
+
+        if type_message == "commentaire":
+            contenu = (content.get("contenu") or "").strip()
+            if not contenu:
+                return
+            commentaire = await self._creer_commentaire(contenu)
+            if commentaire is None:
+                await self.send_json({"type": "erreur", "message": "Match introuvable."})
+                return
+            auteur = await self._auteur_infos()
+            payload = {
+                "id": str(commentaire.id),
+                "match": str(self.match_id),
+                "auteur": auteur,
+                "contenu": contenu,
+                "created_at": commentaire.created_at.isoformat(),
+            }
+            await self.channel_layer.group_send(
+                self.group_name, {"type": "commentaire_recu", "payload": payload}
+            )
+            return
+
+        if type_message == "reaction":
+            emoji = content.get("emoji")
+            if emoji not in TypeReactionMatch.values:
+                await self.send_json({"type": "erreur", "message": "Emoji invalide."})
+                return
+            reussi = await self._creer_reaction(emoji)
+            if not reussi:
+                await self.send_json({"type": "erreur", "message": "Match introuvable."})
+                return
+            compteurs = await self._compteurs_reactions()
+            await self.channel_layer.group_send(
+                self.group_name, {"type": "reaction_recue", "payload": {"reactions": compteurs}}
+            )
+            return
+
+    # --- handlers de groupe ---
+
+    async def commentaire_recu(self, event):
+        await self.send_json({"type": "commentaire", **event["payload"]})
+
+    async def reaction_recue(self, event):
+        await self.send_json({"type": "reaction", **event["payload"]})
+
+    async def presence_update(self, event):
+        await self.send_json({"type": "presence", **event["payload"]})
+
+    async def match_update(self, event):
+        # Diffusé depuis MatchViewSet (REST — score/chrono/statut modifiés par un
+        # modérateur), voir docstring de tête.
+        await self.send_json({"type": "match", **event["payload"]})
+
+    # --- accès base de données ---
+
+    @database_sync_to_async
+    def _get_membre_id(self, user):
+        from apps.membres.models import Membre
+
+        return Membre.objects.filter(user=user).values_list("id", flat=True).first()
+
+    @database_sync_to_async
+    def _match_existe(self):
+        return Match.objects.filter(id=self.match_id).exists()
+
+    @database_sync_to_async
+    def _creer_commentaire(self, contenu):
+        match = Match.objects.filter(id=self.match_id).first()
+        if match is None:
+            return None
+        return MatchCommentaire.objects.create(
+            match=match, auteur_id=self.membre_id, contenu=contenu
+        )
+
+    @database_sync_to_async
+    def _creer_reaction(self, emoji):
+        match = Match.objects.filter(id=self.match_id).first()
+        if match is None:
+            return False
+        MatchReaction.objects.create(match=match, membre_id=self.membre_id, emoji=emoji)
+        return True
+
+    @database_sync_to_async
+    def _compteurs_reactions(self):
+        compteurs = {valeur: 0 for valeur in TypeReactionMatch.values}
+        qs = (
+            MatchReaction.objects.filter(match_id=self.match_id)
+            .values("emoji")
+            .annotate(total=Count("id"))
+        )
+        for ligne in qs:
+            compteurs[ligne["emoji"]] = ligne["total"]
+        return compteurs
+
+    @database_sync_to_async
+    def _auteur_infos(self):
+        from apps.membres.models import Membre
+
+        membre = Membre.objects.filter(id=self.membre_id).first()
+        if membre is None:
+            return {"id": str(self.membre_id)}
+        return {
+            "id": str(membre.id),
+            "prenom": membre.prenom,
+            "nom": membre.nom,
+            "photo": membre.photo.url if membre.photo else None,
+        }
+
+    # --- présence (compteur agrégé, voir docstring de tête) ---
+
+    @database_sync_to_async
+    def _incrementer_presence(self):
+        cle = _cle_presence_live(self.match_id)
+        cache.add(cle, 0, timeout=PRESENCE_TTL_LIVE)
+        try:
+            return cache.incr(cle)
+        except ValueError:
+            # La clé a expiré entre le add() et l'incr() (filet de sécurité) — on
+            # réinitialise à 1 (cette connexion) plutôt que d'échouer.
+            cache.set(cle, 1, timeout=PRESENCE_TTL_LIVE)
+            return 1
+
+    @database_sync_to_async
+    def _decrementer_presence(self):
+        cle = _cle_presence_live(self.match_id)
+        try:
+            valeur = cache.decr(cle)
+        except ValueError:
+            valeur = 0
+        if valeur < 0:
+            cache.set(cle, 0, timeout=PRESENCE_TTL_LIVE)
+            valeur = 0
+        return valeur
