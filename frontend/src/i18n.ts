@@ -25,6 +25,7 @@ i18n
       "cotisations",
       "inscriptions",
       "adhesions",
+      "evenements",
       "boutique",
       "stats",
       "notifications",

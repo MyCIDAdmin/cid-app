@@ -1,0 +1,172 @@
+import { fireEvent, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithProviders } from "../../test/renderWithProviders";
+import * as useEvenementsHooks from "../../hooks/useEvenements";
+import { useAuthStore } from "../../store/authStore";
+import type { Evenement, Inscription } from "../../types/evenements";
+import EvenementsPage from "./EvenementsPage";
+
+vi.mock("../../hooks/useEvenements", async () => {
+  const actual = await vi.importActual<typeof useEvenementsHooks>("../../hooks/useEvenements");
+  return {
+    ...actual,
+    useEvenements: vi.fn(),
+    useInscriptions: vi.fn(),
+    useInscrire: vi.fn(),
+    useAnnulerInscription: vi.fn(),
+  };
+});
+
+const membre = {
+  id: "u1",
+  email: "membre@example.com",
+  role: "membre" as const,
+  langue_preferee: "fr" as const,
+};
+
+function page<T>(results: T[]) {
+  return { count: results.length, next: null, previous: null, results };
+}
+
+function mutationMock<T>(): T {
+  return { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false } as unknown as T;
+}
+
+function evenement(overrides: Partial<Evenement> = {}): Evenement {
+  return {
+    id: "e1",
+    titre: "Déplacement Stuttgart",
+    type_evenement: "deplacement",
+    description: "Bus au départ de Berlin.",
+    date_evenement: "2099-05-31",
+    heure: "06:00",
+    lieu: "Mercedes-Benz Arena, Stuttgart",
+    point_rdv: "Berlin Hbf",
+    places_max: 45,
+    gratuit: false,
+    cout: "35.00",
+    organisateur: "m1",
+    organisateur_detail: { id: "m1", prenom: "Sami", nom: "Trabelsi" },
+    statut: "publie",
+    places_reservees: 38,
+    places_restantes: 7,
+    created_by: "m1",
+    created_at: "2026-01-01T10:00:00Z",
+    updated_at: "2026-01-01T10:00:00Z",
+    ...overrides,
+  };
+}
+
+function inscription(overrides: Partial<Inscription> = {}): Inscription {
+  return {
+    id: "i1",
+    evenement: "e1",
+    evenement_detail: {
+      id: "e1",
+      titre: "Déplacement Stuttgart",
+      date_evenement: "2099-05-31",
+      heure: "06:00",
+      lieu: "Mercedes-Benz Arena, Stuttgart",
+      cout: "35.00",
+      gratuit: false,
+      statut: "publie",
+    },
+    membre: "m2",
+    places: 1,
+    regime_alimentaire: "aucun",
+    remarques: "",
+    montant_paye: "35.00",
+    statut: "en_attente_paiement",
+    cotisation: null,
+    created_at: "2026-01-01T10:00:00Z",
+    updated_at: "2026-01-01T10:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("EvenementsPage", () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: membre,
+      isAuthenticated: true,
+    });
+    vi.mocked(useEvenementsHooks.useInscrire).mockReturnValue(
+      mutationMock<ReturnType<typeof useEvenementsHooks.useInscrire>>(),
+    );
+    vi.mocked(useEvenementsHooks.useAnnulerInscription).mockReturnValue(
+      mutationMock<ReturnType<typeof useEvenementsHooks.useAnnulerInscription>>(),
+    );
+    vi.mocked(useEvenementsHooks.useInscriptions).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useInscriptions>);
+  });
+
+  it("affiche les événements à venir", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    expect(screen.getByText("Déplacement Stuttgart")).toBeInTheDocument();
+  });
+
+  it("affiche un message si aucun événement à venir", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    expect(screen.getByText("aucun_evenement")).toBeInTheDocument();
+  });
+
+  it("ouvre la modale d'inscription et confirme l'inscription (places/régime/remarques)", () => {
+    const inscrire = mutationMock<ReturnType<typeof useEvenementsHooks.useInscrire>>();
+    vi.mocked(useEvenementsHooks.useInscrire).mockReturnValue(inscrire);
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    fireEvent.click(screen.getByText("sinscrire_payer"));
+    fireEvent.click(screen.getByText("modal_confirmer_payer"));
+
+    expect(inscrire.mutate).toHaveBeenCalledWith(
+      { evenement: "e1", places: 1, regime_alimentaire: "aucun", remarques: "" },
+      expect.anything(),
+    );
+  });
+
+  it("affiche mes inscriptions avec le statut de paiement", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+    vi.mocked(useEvenementsHooks.useInscriptions).mockReturnValue({
+      data: page([inscription()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useInscriptions>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    fireEvent.click(screen.getByText("tab_inscrits"));
+
+    expect(screen.getByText("Déplacement Stuttgart")).toBeInTheDocument();
+    expect(screen.getByText("payer_maintenant")).toBeInTheDocument();
+  });
+});

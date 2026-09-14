@@ -8,12 +8,36 @@ serveur dans les vues (voir views.py), à partir de evenement.cout / trajet.prix
 
 from rest_framework import serializers
 
+from apps.membres.models import Membre
+
 from .models import Covoiturage, Evenement, Inscription, ReservationCovoiturage, StatutEvenement
+
+
+class MembreResumeSerializer(serializers.ModelSerializer):
+    """Identité minimale d'un membre, utilisée en lecture imbriquée (organisateur d'un
+    événement, conducteur d'un trajet) — même principe que AuteurSerializer côté
+    apps.communaute, dupliqué ici plutôt qu'importé pour ne pas créer de dépendance entre
+    apps métier ; évite un aller-retour supplémentaire côté frontend pour afficher un nom."""
+
+    class Meta:
+        model = Membre
+        fields = ["id", "prenom", "nom"]
+
+
+class EvenementResumeSerializer(serializers.ModelSerializer):
+    """Résumé minimal d'un événement, utilisé en lecture imbriquée dans InscriptionSerializer
+    ("Mes inscriptions" a besoin du titre/de la date sans requête supplémentaire — Inscription
+    n'expose sinon que l'id de l'événement)."""
+
+    class Meta:
+        model = Evenement
+        fields = ["id", "titre", "date_evenement", "heure", "lieu", "cout", "gratuit", "statut"]
 
 
 class EvenementSerializer(serializers.ModelSerializer):
     places_reservees = serializers.IntegerField(read_only=True)
     places_restantes = serializers.IntegerField(read_only=True, allow_null=True)
+    organisateur_detail = MembreResumeSerializer(source="organisateur", read_only=True)
 
     class Meta:
         model = Evenement
@@ -30,6 +54,7 @@ class EvenementSerializer(serializers.ModelSerializer):
             "gratuit",
             "cout",
             "organisateur",
+            "organisateur_detail",
             "statut",
             "places_reservees",
             "places_restantes",
@@ -49,9 +74,25 @@ class EvenementSerializer(serializers.ModelSerializer):
 
 
 class InscriptionSerializer(serializers.ModelSerializer):
+    evenement_detail = EvenementResumeSerializer(source="evenement", read_only=True)
+
     class Meta:
         model = Inscription
         fields = [
+            "id",
+            "evenement",
+            "evenement_detail",
+            "membre",
+            "places",
+            "regime_alimentaire",
+            "remarques",
+            "montant_paye",
+            "statut",
+            "cotisation",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
             "id",
             "evenement",
             "membre",
@@ -64,7 +105,6 @@ class InscriptionSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = fields
 
 
 class InscrireSerializer(serializers.Serializer):
@@ -87,12 +127,14 @@ class InscrireSerializer(serializers.Serializer):
 class CovoiturageSerializer(serializers.ModelSerializer):
     places_reservees = serializers.IntegerField(read_only=True)
     places_restantes = serializers.IntegerField(read_only=True)
+    conducteur_detail = MembreResumeSerializer(source="conducteur", read_only=True)
 
     class Meta:
         model = Covoiturage
         fields = [
             "id",
             "conducteur",
+            "conducteur_detail",
             "evenement",
             "depart",
             "destination",

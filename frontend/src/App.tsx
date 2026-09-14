@@ -29,6 +29,9 @@ import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
 import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
+import AdminEventsPage from "./pages/evenements/AdminEventsPage";
+import CovoituragePage from "./pages/evenements/CovoituragePage";
+import EvenementsPage from "./pages/evenements/EvenementsPage";
 import LoginPage from "./pages/LoginPage";
 import MembreDetailPage from "./pages/membres/MembreDetailPage";
 import MembreFormPage from "./pages/membres/MembreFormPage";
@@ -237,8 +240,24 @@ export default function App() {
             </RequireRole>
           }
         />
-        {/* Les routes suivantes sont ajoutées au fil des phases :
-            /evenements, /admin/* */}
+        {/* Événements + Covoiturage (mockup #pg-evenements/#pg-covoiturage/#pg-admin-events,
+            FDD §3.4/F-005/F-006/F-007, Phase 2A) — catalogue/inscription et covoiturage ouverts
+            à tout authentifié, même principe que /boutique et /votes : le backend ne renvoie de
+            toute façon que les événements publiés à un rôle < Bureau Admin (voir
+            EvenementViewSet.get_queryset) et impose déjà l'IDOR sur les inscriptions/réservations
+            (InscriptionPermission/ReservationCovoituragePermission) ; gestion du catalogue
+            (créer/modifier/publier/annuler) réservée Bureau Admin+, même niveau que
+            EvenementPermission côté API. */}
+        <Route path="/evenements" element={<EvenementsPage />} />
+        <Route path="/covoiturage" element={<CovoituragePage />} />
+        <Route
+          path="/admin/events"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <AdminEventsPage />
+            </RequireRole>
+          }
+        />
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
