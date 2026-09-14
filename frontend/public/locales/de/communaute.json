@@ -123,7 +123,6 @@
     "nouvel_album": "Neues Album",
     "nom_placeholder": "Albumname",
     "description_placeholder": "Beschreibung (optional)…",
-    "evenement_placeholder": "Verknüpfte Veranstaltung (optional)",
     "creer": "Album erstellen",
     "erreur_creation": "Das Album konnte nicht erstellt werden.",
     "chargement": "Alben werden geladen…",
@@ -164,5 +163,28 @@
     "score_final": "Ergebnis: {{score}}",
     "classement": "Rangliste",
     "chargement_classement": "Rangliste wird geladen…"
+  },
+  "admin_quiz": {
+    "titre": "Quiz-Verwaltung",
+    "nouveau_quiz": "Neues Quiz",
+    "titre_placeholder": "Quiztitel",
+    "description_placeholder": "Beschreibung (optional)…",
+    "creer": "Quiz erstellen",
+    "erreur_creation": "Das Quiz konnte nicht erstellt werden.",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Quiz konnten nicht geladen werden.",
+    "aucun_quiz": "Noch kein Quiz.",
+    "activer": "Aktivieren",
+    "desactiver": "Deaktivieren",
+    "supprimer": "Löschen",
+    "selectionner_quiz": "Wählen Sie links ein Quiz aus, um Fragen und Antworten zu verwalten.",
+    "aucune_question": "Noch keine Frage.",
+    "question_numero": "Frage {{n}}",
+    "question_placeholder": "Neue Frage…",
+    "ajouter_question": "Frage hinzufügen",
+    "aucun_choix": "Noch keine Antwortmöglichkeit.",
+    "choix_placeholder": "Antwortmöglichkeit…",
+    "est_correct": "Richtige Antwort",
+    "ajouter_choix": "Hinzufügen"
   }
 }

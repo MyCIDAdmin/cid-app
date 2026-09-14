@@ -3,19 +3,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
-import * as useMembresHooks from "../../hooks/useMembres";
 import { useAuthStore } from "../../store/authStore";
 import type { GroupeChat } from "../../types/communaute";
 import GroupesPage from "./GroupesPage";
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
-  return { ...actual, useGroupes: vi.fn(), useCreerGroupe: vi.fn(), useRejoindreGroupe: vi.fn() };
-});
-
-vi.mock("../../hooks/useMembres", async () => {
-  const actual = await vi.importActual<typeof useMembresHooks>("../../hooks/useMembres");
-  return { ...actual, useMembresList: vi.fn() };
+  return {
+    ...actual,
+    useGroupes: vi.fn(),
+    useCreerGroupe: vi.fn(),
+    useRejoindreGroupe: vi.fn(),
+    useRechercherMembres: vi.fn(),
+  };
 });
 
 const membre = {
@@ -61,11 +61,11 @@ describe("GroupesPage", () => {
     vi.mocked(useCommunauteHooks.useRejoindreGroupe).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useRejoindreGroupe>>(),
     );
-    vi.mocked(useMembresHooks.useMembresList).mockReturnValue({
-      data: page([]),
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [],
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof useMembresHooks.useMembresList>);
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
   });
 
   it("affiche la liste des groupes", () => {
@@ -137,5 +137,28 @@ describe("GroupesPage", () => {
       { nom: "Nouveau groupe", description: "", type_groupe: "public", membres_invites: undefined },
       expect.anything(),
     );
+  });
+
+  it("recherche un membre à inviter (via l'annuaire communaute, pas apps/membres) pour un groupe privé", () => {
+    vi.mocked(useCommunauteHooks.useGroupes).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useGroupes>);
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [{ id: "m3", prenom: "Hamza", nom: "Meddeb", photo: null }],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
+
+    renderWithProviders(<GroupesPage />);
+
+    fireEvent.click(screen.getByText("groupes.nouveau_groupe"));
+    fireEvent.click(screen.getByText("groupes.type_prive"));
+    fireEvent.change(screen.getByPlaceholderText("groupes.inviter_membres"), {
+      target: { value: "Hamza" },
+    });
+
+    expect(screen.getByText("Hamza Meddeb")).toBeInTheDocument();
   });
 });

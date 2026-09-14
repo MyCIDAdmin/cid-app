@@ -19,19 +19,17 @@ export default function AlbumsPage() {
   const [afficherFormulaire, setAfficherFormulaire] = useState(false);
   const [nom, setNom] = useState("");
   const [description, setDescription] = useState("");
-  const [evenement, setEvenement] = useState("");
   const [erreur, setErreur] = useState("");
 
   function creerAlbum(e: React.FormEvent) {
     e.preventDefault();
     if (!nom.trim()) return;
     creer.mutate(
-      { nom, description, evenement },
+      { nom, description },
       {
         onSuccess: () => {
           setNom("");
           setDescription("");
-          setEvenement("");
           setAfficherFormulaire(false);
           setErreur("");
         },
@@ -69,13 +67,6 @@ export default function AlbumsPage() {
             rows={2}
             className="w-full resize-none rounded-cid border border-text-tertiary/30 p-2 text-sm"
           />
-          <input
-            type="text"
-            value={evenement}
-            onChange={(e) => setEvenement(e.target.value)}
-            placeholder={t("albums.evenement_placeholder")}
-            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-          />
           <button
             type="submit"
             disabled={creer.isPending}
@@ -103,7 +94,9 @@ export default function AlbumsPage() {
             className="block rounded-cid-lg bg-bg-primary p-3 shadow-sm hover:bg-bg-secondary"
           >
             <div className="text-sm font-bold text-text-primary">{album.nom}</div>
-            {album.evenement && <div className="text-xs text-text-tertiary">{album.evenement}</div>}
+            {album.evenement && (
+              <div className="text-xs text-text-tertiary">{album.evenement.titre}</div>
+            )}
             <div className="mt-1 text-[10px] text-text-tertiary">
               {t("albums.nombre_photos", { count: album.nombre_photos })}
             </div>

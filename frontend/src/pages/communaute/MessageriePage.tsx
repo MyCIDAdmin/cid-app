@@ -1,17 +1,23 @@
 /**
  * Page "Messagerie privée" — liste des conversations (Release Plan §3.2 "Conversations
  * 1-to-1 chiffrées AES-256, indicateur 'lu'"). Démarrer une conversation cherche un membre
- * par nom (réutilise useMembresList, comme le reste de l'app) puis crée/retrouve la
- * conversation via REST (`useCreerConversation` — idempotent côté backend, voir
- * Conversation.get_or_create_entre) ; l'ENVOI des messages, lui, passe exclusivement par le
- * WebSocket, voir MessagerieConversationPage.
+ * par nom via `useRechercherMembres` (endpoint dédié communaute — PAS `useMembresList` de
+ * apps/membres, qui est volontairement verrouillé à RH+ pour tout rôle Membre standard, voir
+ * MembreViewSet.get_queryset côté backend ; utiliser cette liste ici rendait la recherche de
+ * destinataire silencieusement vide pour la quasi-totalité des membres, bug remonté en test
+ * manuel Phase 4) puis crée/retrouve la conversation via REST (`useCreerConversation` —
+ * idempotent côté backend, voir Conversation.get_or_create_entre) ; l'ENVOI des messages,
+ * lui, passe exclusivement par le WebSocket, voir MessagerieConversationPage.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { useCreerConversation, useConversations } from "../../hooks/useCommunaute";
-import { useMembresList } from "../../hooks/useMembres";
+import {
+  useCreerConversation,
+  useConversations,
+  useRechercherMembres,
+} from "../../hooks/useCommunaute";
 import { useAuthStore } from "../../store/authStore";
 
 function formatDate(iso: string): string {
@@ -30,7 +36,7 @@ export default function MessageriePage() {
   const moi = useAuthStore((s) => s.user);
 
   const [recherche, setRecherche] = useState("");
-  const membresQuery = useMembresList({ nom: recherche }, null, { enabled: recherche.length >= 2 });
+  const membresQuery = useRechercherMembres(recherche);
 
   function demarrerConversation(membreId: string) {
     creerConversation.mutate(membreId, {
@@ -55,8 +61,8 @@ export default function MessageriePage() {
         />
         {recherche.length >= 2 && (
           <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">
-            {membresQuery.data?.results
-              .filter((m) => m.id !== moi?.id)
+            {membresQuery.data
+              ?.filter((m) => m.id !== moi?.id)
               .map((membre) => (
                 <button
                   key={membre.id}
@@ -70,7 +76,7 @@ export default function MessageriePage() {
                   {membre.prenom} {membre.nom}
                 </button>
               ))}
-            {membresQuery.data?.results.length === 0 && (
+            {membresQuery.data?.length === 0 && (
               <p className="px-2 py-1 text-xs text-text-tertiary">
                 {t("messagerie.aucun_membre_trouve")}
               </p>

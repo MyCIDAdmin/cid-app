@@ -7,7 +7,10 @@ import type { CursorPage } from "../types/membre";
 import type {
   Album,
   AlbumPayload,
+  Auteur,
   CategorieForum,
+  ChoixQuestion,
+  ChoixQuestionPayload,
   Commentaire,
   Conversation,
   GroupeChat,
@@ -24,8 +27,12 @@ import type {
   PhotoUploadPayload,
   Publication,
   PublicationPayload,
+  QuestionQuiz,
+  QuestionQuizPayload,
   Quiz,
   QuizClassement,
+  QuizMiseAJourPayload,
+  QuizPayload,
   ReponseForum,
   ReponseQuiz,
   Sujet,
@@ -246,6 +253,17 @@ export async function listMessagesGroupe(
   return data;
 }
 
+// --- Recherche de membres (démarrer une conversation, inviter dans un groupe) — distinct de
+// apps/membres (réservé RH+, voir MembreRechercheViewSet côté backend), 2 caractères min. ---
+
+export async function rechercherMembres(q: string): Promise<Auteur[]> {
+  if (q.trim().length < 2) return [];
+  const { data } = await apiClient.get<CursorPage<Auteur>>("/communaute/membres-recherche/", {
+    params: { q },
+  });
+  return data.results;
+}
+
 // --- Live Match (REST = gestion/historique, voir hooks/useLiveMatchSocket.ts pour les
 // commentaires/réactions temps réel — troisième lot, Phase 4B) ---
 
@@ -390,4 +408,39 @@ export async function repondreQuiz(
 export async function classementQuiz(id: string): Promise<QuizClassement> {
   const { data } = await apiClient.get<QuizClassement>(`/communaute/quiz/${id}/classement/`);
   return data;
+}
+
+// --- Gestion Quiz (Bureau Admin+ — création/édition questions & choix, voir
+// GestionQuizPermission côté backend ; distinct du jeu ci-dessus) ---
+
+export async function creerQuiz(payload: QuizPayload): Promise<Quiz> {
+  const { data } = await apiClient.post<Quiz>("/communaute/quiz/", payload);
+  return data;
+}
+
+export async function modifierQuiz(id: string, payload: QuizMiseAJourPayload): Promise<Quiz> {
+  const { data } = await apiClient.patch<Quiz>(`/communaute/quiz/${id}/`, payload);
+  return data;
+}
+
+export async function supprimerQuiz(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/quiz/${id}/`);
+}
+
+export async function creerQuestionQuiz(payload: QuestionQuizPayload): Promise<QuestionQuiz> {
+  const { data } = await apiClient.post<QuestionQuiz>("/communaute/quiz-questions/", payload);
+  return data;
+}
+
+export async function supprimerQuestionQuiz(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/quiz-questions/${id}/`);
+}
+
+export async function creerChoixQuestion(payload: ChoixQuestionPayload): Promise<ChoixQuestion> {
+  const { data } = await apiClient.post<ChoixQuestion>("/communaute/quiz-choix/", payload);
+  return data;
+}
+
+export async function supprimerChoixQuestion(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/quiz-choix/${id}/`);
 }

@@ -19,7 +19,8 @@
     "groupes": "Chatgruppen",
     "live": "Live-Spiel",
     "albums": "Fotoalben",
-    "quiz": "Quiz"
+    "quiz": "Quiz",
+    "admin_quiz": "Quiz-Verwaltung"
   },
   "dashboard": {
     "title": "Übersicht",

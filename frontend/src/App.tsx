@@ -10,6 +10,7 @@ import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
 import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
 import CataloguePage from "./pages/boutique/CataloguePage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
+import AdminQuizPage from "./pages/communaute/AdminQuizPage";
 import AlbumDetailPage from "./pages/communaute/AlbumDetailPage";
 import AlbumsPage from "./pages/communaute/AlbumsPage";
 import FilPage from "./pages/communaute/FilPage";
@@ -224,6 +225,18 @@ export default function App() {
         <Route path="/albums/:id" element={<AlbumDetailPage />} />
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/quiz/:id" element={<QuizDetailPage />} />
+        {/* Gestion des quiz (mockup #pg-quiz, Bureau Admin+) — création de quiz/questions/choix,
+            même niveau que GestionQuizPermission côté API. Corrige le bug remonté en test
+            manuel Phase 4 ("beim Quiz ist es nicht möglich Quiz anzulegen") : jusqu'ici, cette
+            gestion n'avait aucune UI (voir QuizPage — "gérée hors application pour l'instant"). */}
+        <Route
+          path="/admin/quiz"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <AdminQuizPage />
+            </RequireRole>
+          }
+        />
         {/* Les routes suivantes sont ajoutées au fil des phases :
             /evenements, /admin/* */}
       </Route>

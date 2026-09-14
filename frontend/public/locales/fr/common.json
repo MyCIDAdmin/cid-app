@@ -19,7 +19,8 @@
     "groupes": "Groupes de chat",
     "live": "Live Match",
     "albums": "Albums photos",
-    "quiz": "Quiz"
+    "quiz": "Quiz",
+    "admin_quiz": "Gestion quiz"
   },
   "dashboard": {
     "title": "Tableau de bord",

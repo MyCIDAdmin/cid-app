@@ -3,19 +3,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
-import * as useMembresHooks from "../../hooks/useMembres";
 import { useAuthStore } from "../../store/authStore";
 import type { Conversation } from "../../types/communaute";
 import MessageriePage from "./MessageriePage";
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
-  return { ...actual, useConversations: vi.fn(), useCreerConversation: vi.fn() };
-});
-
-vi.mock("../../hooks/useMembres", async () => {
-  const actual = await vi.importActual<typeof useMembresHooks>("../../hooks/useMembres");
-  return { ...actual, useMembresList: vi.fn() };
+  return {
+    ...actual,
+    useConversations: vi.fn(),
+    useCreerConversation: vi.fn(),
+    useRechercherMembres: vi.fn(),
+  };
 });
 
 const membre = {
@@ -55,11 +54,11 @@ describe("MessageriePage", () => {
     vi.mocked(useCommunauteHooks.useCreerConversation).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useCreerConversation>>(),
     );
-    vi.mocked(useMembresHooks.useMembresList).mockReturnValue({
-      data: page([]),
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [],
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof useMembresHooks.useMembresList>);
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
   });
 
   it("affiche la liste des conversations avec le nom de l'autre participant", () => {
@@ -98,17 +97,17 @@ describe("MessageriePage", () => {
     expect(screen.getByText("messagerie.aucune_conversation")).toBeInTheDocument();
   });
 
-  it("recherche un membre et démarre une conversation", () => {
+  it("recherche un membre (via l'annuaire communaute, pas apps/membres) et démarre une conversation", () => {
     vi.mocked(useCommunauteHooks.useConversations).mockReturnValue({
       data: page([]),
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useConversations>);
-    vi.mocked(useMembresHooks.useMembresList).mockReturnValue({
-      data: page([{ id: "m3", prenom: "Hamza", nom: "Meddeb" }]),
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [{ id: "m3", prenom: "Hamza", nom: "Meddeb", photo: null }],
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof useMembresHooks.useMembresList>);
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
     const creer = mutationMock<ReturnType<typeof useCommunauteHooks.useCreerConversation>>();
     vi.mocked(useCommunauteHooks.useCreerConversation).mockReturnValue(creer);
 

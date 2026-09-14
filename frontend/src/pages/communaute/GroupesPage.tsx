@@ -4,13 +4,22 @@
  * dont je fais déjà partie, voir GroupeChatViewSet.get_queryset côté backend) + création.
  * Rejoindre un groupe public est une action REST explicite (useRejoindreGroupe) — l'envoi
  * de messages, lui, passe exclusivement par WebSocket, voir GroupeChatPage.
+ *
+ * L'invitation à un groupe privé cherche un membre par nom via `useRechercherMembres`
+ * (endpoint dédié communaute — PAS `useMembresList` de apps/membres, verrouillé à RH+ pour un
+ * rôle Membre standard, voir MembreViewSet.get_queryset côté backend ; même bug que
+ * MessageriePage, remonté en test manuel Phase 4).
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { useCreerGroupe, useGroupes, useRejoindreGroupe } from "../../hooks/useCommunaute";
-import { useMembresList } from "../../hooks/useMembres";
+import {
+  useCreerGroupe,
+  useGroupes,
+  useRechercherMembres,
+  useRejoindreGroupe,
+} from "../../hooks/useCommunaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 export default function GroupesPage() {
@@ -28,11 +37,7 @@ export default function GroupesPage() {
   const [invites, setInvites] = useState<string[]>([]);
   const [erreur, setErreur] = useState("");
 
-  const membresQuery = useMembresList(
-    { nom: rechercheInvites },
-    null,
-    { enabled: typeGroupe === "prive" && rechercheInvites.length >= 2 },
-  );
+  const membresQuery = useRechercherMembres(typeGroupe === "prive" ? rechercheInvites : "");
 
   function creer(e: React.FormEvent) {
     e.preventDefault();
@@ -124,7 +129,7 @@ export default function GroupesPage() {
               />
               {rechercheInvites.length >= 2 && (
                 <div className="mt-1 max-h-32 space-y-1 overflow-y-auto">
-                  {membresQuery.data?.results.map((membre) => (
+                  {membresQuery.data?.map((membre) => (
                     <label key={membre.id} className="flex items-center gap-2 px-1 text-xs">
                       <input
                         type="checkbox"

@@ -123,7 +123,6 @@
     "nouvel_album": "Nouvel album",
     "nom_placeholder": "Nom de l'album",
     "description_placeholder": "Description (optionnelle)…",
-    "evenement_placeholder": "Événement lié (optionnel)",
     "creer": "Créer l'album",
     "erreur_creation": "La création de l'album a échoué.",
     "chargement": "Chargement des albums…",
@@ -164,5 +163,28 @@
     "score_final": "Score : {{score}}",
     "classement": "Classement",
     "chargement_classement": "Chargement du classement…"
+  },
+  "admin_quiz": {
+    "titre": "Gestion des quiz",
+    "nouveau_quiz": "Nouveau quiz",
+    "titre_placeholder": "Titre du quiz",
+    "description_placeholder": "Description (optionnel)…",
+    "creer": "Créer le quiz",
+    "erreur_creation": "La création du quiz a échoué.",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les quiz.",
+    "aucun_quiz": "Aucun quiz pour le moment.",
+    "activer": "Activer",
+    "desactiver": "Désactiver",
+    "supprimer": "Supprimer",
+    "selectionner_quiz": "Sélectionnez un quiz à gauche pour gérer ses questions et réponses.",
+    "aucune_question": "Aucune question pour le moment.",
+    "question_numero": "Question {{n}}",
+    "question_placeholder": "Nouvelle question…",
+    "ajouter_question": "Ajouter la question",
+    "aucun_choix": "Aucune réponse pour le moment.",
+    "choix_placeholder": "Réponse…",
+    "est_correct": "Bonne réponse",
+    "ajouter_choix": "Ajouter"
   }
 }

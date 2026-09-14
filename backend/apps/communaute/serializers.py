@@ -470,6 +470,15 @@ class MatchCommentaireSerializer(serializers.ModelSerializer):
 class AlbumSerializer(serializers.ModelSerializer):
     createur = AuteurSerializer(read_only=True)
     nombre_photos = serializers.IntegerField(read_only=True)
+    # SerializerMethodField (donc en LECTURE SEULE, jamais généré comme PrimaryKeyRelatedField
+    # writable) : aucun écran ne permet encore de choisir un événement à la création d'un
+    # album (le mockup #m-photo ne propose qu'un sélecteur d'ALBUM existant, pas de lien vers
+    # apps.evenements) — accepter un id brut en écriture ici a précédemment permis d'envoyer
+    # n'importe quel texte de formulaire (ex. "Album") comme si c'était un UUID, provoquant
+    # une 400 "n'est pas un UUID valide" (bug remonté en test manuel Phase 4). En lecture, on
+    # renvoie {id, titre} plutôt que l'UUID brut — seul moyen d'afficher un nom lisible.
+    # Reste modifiable via l'admin Django tant qu'aucune UI de liaison n'existe.
+    evenement = serializers.SerializerMethodField()
 
     class Meta:
         model = Album
@@ -483,6 +492,11 @@ class AlbumSerializer(serializers.ModelSerializer):
             "nombre_photos",
         ]
         read_only_fields = ["id", "createur", "created_at", "nombre_photos"]
+
+    def get_evenement(self, obj):
+        if not obj.evenement_id:
+            return None
+        return {"id": str(obj.evenement_id), "titre": obj.evenement.titre}
 
     def create(self, validated_data):
         validated_data["createur"] = self.context["request"].user.membre

@@ -6,11 +6,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as communauteApi from "../api/communaute";
 import type {
   AlbumPayload,
+  ChoixQuestionPayload,
   GroupeChatPayload,
   MatchMiseAJourPayload,
   MatchPayload,
   PhotoUploadPayload,
   PublicationPayload,
+  QuestionQuizPayload,
+  QuizMiseAJourPayload,
+  QuizPayload,
   SujetPayload,
 } from "../types/communaute";
 
@@ -317,6 +321,16 @@ export function useMessagesGroupe(groupeId: string | undefined) {
   });
 }
 
+// --- Recherche de membres (démarrer une conversation, inviter dans un groupe) ---
+
+export function useRechercherMembres(q: string) {
+  return useQuery({
+    queryKey: [...communauteKeys.all, "membres-recherche", q],
+    queryFn: () => communauteApi.rechercherMembres(q),
+    enabled: q.trim().length >= 2,
+  });
+}
+
 // --- Live Match (REST = gestion/historique, voir hooks/useLiveMatchSocket.ts pour les
 // commentaires/réactions temps réel — troisième lot, Phase 4B) ---
 
@@ -493,5 +507,72 @@ export function useClassementQuiz(id: string | undefined) {
     queryKey: communauteKeys.classementQuiz(id ?? ""),
     queryFn: () => communauteApi.classementQuiz(id as string),
     enabled: !!id,
+  });
+}
+
+// --- Gestion Quiz (Bureau Admin+ — création/édition questions & choix, voir
+// GestionQuizPermission côté backend ; distinct du jeu ci-dessus) ---
+
+function invalidateQuizListe(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "quiz-liste"] });
+}
+
+export function useCreerQuiz() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: QuizPayload) => communauteApi.creerQuiz(payload),
+    onSuccess: () => invalidateQuizListe(queryClient),
+  });
+}
+
+export function useModifierQuiz() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: QuizMiseAJourPayload }) =>
+      communauteApi.modifierQuiz(id, payload),
+    onSuccess: (_data, variables) => invalidateQuiz(queryClient, variables.id),
+  });
+}
+
+export function useSupprimerQuiz() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.supprimerQuiz(id),
+    onSuccess: () => invalidateQuizListe(queryClient),
+  });
+}
+
+export function useCreerQuestionQuiz() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: QuestionQuizPayload) => communauteApi.creerQuestionQuiz(payload),
+    onSuccess: (_data, variables) => invalidateQuiz(queryClient, variables.quiz),
+  });
+}
+
+export function useSupprimerQuestionQuiz() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string; quizId: string }) =>
+      communauteApi.supprimerQuestionQuiz(id),
+    onSuccess: (_data, variables) => invalidateQuiz(queryClient, variables.quizId),
+  });
+}
+
+export function useCreerChoixQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ payload }: { payload: ChoixQuestionPayload; quizId: string }) =>
+      communauteApi.creerChoixQuestion(payload),
+    onSuccess: (_data, variables) => invalidateQuiz(queryClient, variables.quizId),
+  });
+}
+
+export function useSupprimerChoixQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: string; quizId: string }) =>
+      communauteApi.supprimerChoixQuestion(id),
+    onSuccess: (_data, variables) => invalidateQuiz(queryClient, variables.quizId),
   });
 }

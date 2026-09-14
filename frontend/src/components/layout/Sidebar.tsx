@@ -43,6 +43,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/live", labelKey: "nav.live" },
   { to: "/albums", labelKey: "nav.albums" },
   { to: "/quiz", labelKey: "nav.quiz" },
+  // Gestion des quiz (mockup #pg-quiz) — Bureau Admin+ seulement, même niveau que
+  // GestionQuizPermission côté API.
+  { to: "/admin/quiz", labelKey: "nav.admin_quiz", minRoleLevel: ROLE_LEVELS.bureau_admin },
   // Gestion boutique (mockup #pg-admin-boutique) — Bureau Admin+ seulement, même niveau que
   // CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API.
   { to: "/admin/boutique", labelKey: "nav.admin_boutique", minRoleLevel: ROLE_LEVELS.bureau_admin },

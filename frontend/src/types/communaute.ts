@@ -207,11 +207,13 @@ export interface MatchCommentaire {
 
 // --- Albums photos ---
 
+/** `evenement` est en lecture seule côté API (voir AlbumSerializer.get_evenement côté
+ * backend) — aucun écran ne permet encore de le renseigner, seul l'admin Django le peut. */
 export interface Album {
   id: string;
   nom: string;
   description: string;
-  evenement: string | null;
+  evenement: { id: string; titre: string } | null;
   createur: Auteur;
   created_at: string;
   nombre_photos: number;
@@ -220,7 +222,6 @@ export interface Album {
 export interface AlbumPayload {
   nom: string;
   description?: string;
-  evenement?: string;
 }
 
 export interface PhotoCommentaire {
@@ -307,6 +308,33 @@ export interface ReponseQuiz {
 export interface QuizClassement {
   classement: ParticipationQuiz[];
   ma_participation?: ParticipationQuiz;
+}
+
+// --- Gestion Quiz (Bureau Admin+, voir GestionQuizPermission côté backend) ---
+
+export interface QuizPayload {
+  titre: string;
+  description?: string;
+  est_actif?: boolean;
+}
+
+export interface QuizMiseAJourPayload {
+  titre?: string;
+  description?: string;
+  est_actif?: boolean;
+}
+
+export interface QuestionQuizPayload {
+  quiz: string;
+  texte: string;
+  ordre?: number;
+  points?: number;
+}
+
+export interface ChoixQuestionPayload {
+  question: string;
+  texte: string;
+  est_correct?: boolean;
 }
 
 // --- Messages WebSocket LiveMatchConsumer ---

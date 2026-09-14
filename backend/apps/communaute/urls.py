@@ -8,6 +8,7 @@ from .views import (
     GroupeChatViewSet,
     MatchCommentaireViewSet,
     MatchViewSet,
+    MembreRechercheViewSet,
     MessageGroupeViewSet,
     MessagePriveViewSet,
     PhotoCommentaireViewSet,
@@ -30,6 +31,7 @@ router.register("conversations", ConversationViewSet, basename="conversation")
 router.register("messages-prives", MessagePriveViewSet, basename="message-prive")
 router.register("groupes", GroupeChatViewSet, basename="groupe-chat")
 router.register("messages-groupe", MessageGroupeViewSet, basename="message-groupe")
+router.register("membres-recherche", MembreRechercheViewSet, basename="membre-recherche")
 router.register("matchs", MatchViewSet, basename="match")
 router.register("match-commentaires", MatchCommentaireViewSet, basename="match-commentaire")
 router.register("albums", AlbumViewSet, basename="album")

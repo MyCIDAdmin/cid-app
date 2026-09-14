@@ -46,7 +46,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
-from apps.membres.models import Membre
+from apps.membres.models import Membre, StatutMembre
 
 from .filters import PublicationFilter, SujetFilter
 from .models import (
@@ -89,6 +89,7 @@ from .permissions import (
 )
 from .serializers import (
     AlbumSerializer,
+    AuteurSerializer,
     ChoixQuestionSerializer,
     CommentaireSerializer,
     ConversationSerializer,
@@ -489,6 +490,35 @@ class MessageGroupeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             if membre is None or not groupe.membres_groupe.filter(membre=membre).exists():
                 raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
         return MessageGroupe.objects.filter(groupe=groupe).select_related("auteur")
+
+
+class MembreRechercheViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Recherche de membres par nom/prénom pour démarrer une conversation (MessageriePage)
+    ou inviter dans un groupe privé (GroupesPage) — `?q=<recherche>`, 2 caractères minimum.
+
+    Distincte de `apps.membres.MembreViewSet` : ce dernier restreint volontairement la liste
+    des membres à RH+ (protection IDOR, voir sa docstring `get_queryset`, "un membre ne voit
+    jamais la liste des autres") pour ne pas exposer la fiche complète (adresse, CIN, email...).
+    Ici on expose sciemment un annuaire minimal — seulement nom/prénom/photo via
+    `AuteurSerializer`, exactement ce que tout membre voit déjà à côté de chaque publication/
+    commentaire/message dans le reste du module communaute — à tout authentifié, sans quoi
+    Messagerie et Groupes sont inutilisables pour un rôle Membre standard (bug remonté en
+    test manuel Phase 4)."""
+
+    serializer_class = AuteurSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        q = self.request.query_params.get("q", "").strip()
+        if len(q) < 2:
+            return Membre.objects.none()
+        queryset = Membre.objects.filter(statut=StatutMembre.ACTIF).filter(
+            Q(nom__icontains=q) | Q(prenom__icontains=q)
+        )
+        membre = getattr(self.request.user, "membre", None)
+        if membre is not None:
+            queryset = queryset.exclude(id=membre.id)
+        return queryset.order_by("nom", "prenom")[:20]
 
 
 # ---------------------------------------------------------------------------
