@@ -111,7 +111,12 @@ export default function Sidebar() {
         </div>
         <span className="text-sm font-semibold">Clubistes in DE</span>
       </div>
-      <nav className="flex-1 space-y-1 px-2">
+      {/* overflow-y-auto + min-h-0 : le nombre de modules a fini par dépasser la hauteur de
+          l'écran (bug remonté en test manuel — la sidebar sombre s'arrêtait avant la fin des
+          items, qui continuaient sur le fond clair de la page). Sans min-h-0, un enfant flex-1
+          ne se contracte jamais en dessous de son contenu, donc le overflow-y-auto n'avait
+          aucun effet (l'aside h-screen débordait silencieusement). */}
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2">
         {NAV_ITEMS.filter((item) => hasRoleAtLeast(user, item.minRoleLevel ?? 1)).map((item) => (
           <NavLink
             key={item.to}
