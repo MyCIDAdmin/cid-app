@@ -1,13 +1,19 @@
 /**
  * Page "Messagerie privée" — liste des conversations (Release Plan §3.2 "Conversations
- * 1-to-1 chiffrées AES-256, indicateur 'lu'"). Démarrer une conversation cherche un membre
- * par nom via `useRechercherMembres` (endpoint dédié communaute — PAS `useMembresList` de
- * apps/membres, qui est volontairement verrouillé à RH+ pour tout rôle Membre standard, voir
+ * 1-to-1 chiffrées AES-256, indicateur 'lu'"). Démarrer une conversation choisit un membre via
+ * `useRechercherMembres` (endpoint dédié communaute — PAS `useMembresList` de apps/membres, qui
+ * est volontairement verrouillé à RH+ pour tout rôle Membre standard, voir
  * MembreViewSet.get_queryset côté backend ; utiliser cette liste ici rendait la recherche de
  * destinataire silencieusement vide pour la quasi-totalité des membres, bug remonté en test
  * manuel Phase 4) puis crée/retrouve la conversation via REST (`useCreerConversation` —
  * idempotent côté backend, voir Conversation.get_or_create_entre) ; l'ENVOI des messages,
  * lui, passe exclusivement par le WebSocket, voir MessagerieConversationPage.
+ *
+ * La liste de membres est TOUJOURS affichée (pas seulement après avoir tapé une recherche) :
+ * sans texte saisi, `useRechercherMembres("")` renvoie déjà une liste parcourable par défaut
+ * (voir MembreRechercheViewSet côté backend) — il faut pouvoir choisir un destinataire sans
+ * connaître son nom exact, pas seulement filtrer une recherche déjà connue (bug remonté en test
+ * manuel Phase 4 : "muss es möglich sein einer Liste an Mitgliedern auszuwählen").
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -59,30 +65,28 @@ export default function MessageriePage() {
           placeholder={t("messagerie.rechercher_membre")}
           className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
         />
-        {recherche.length >= 2 && (
-          <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">
-            {membresQuery.data
-              ?.filter((m) => m.id !== moi?.id)
-              .map((membre) => (
-                <button
-                  key={membre.id}
-                  type="button"
-                  onClick={() => demarrerConversation(membre.id)}
-                  className="flex w-full items-center gap-2 rounded-cid px-2 py-1 text-left text-sm hover:bg-bg-secondary"
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cal text-[9px] font-bold text-cad">
-                    {initiales(membre)}
-                  </span>
-                  {membre.prenom} {membre.nom}
-                </button>
-              ))}
-            {membresQuery.data?.length === 0 && (
-              <p className="px-2 py-1 text-xs text-text-tertiary">
-                {t("messagerie.aucun_membre_trouve")}
-              </p>
-            )}
-          </div>
-        )}
+        <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">
+          {membresQuery.data
+            ?.filter((m) => m.id !== moi?.id)
+            .map((membre) => (
+              <button
+                key={membre.id}
+                type="button"
+                onClick={() => demarrerConversation(membre.id)}
+                className="flex w-full items-center gap-2 rounded-cid px-2 py-1 text-left text-sm hover:bg-bg-secondary"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cal text-[9px] font-bold text-cad">
+                  {initiales(membre)}
+                </span>
+                {membre.prenom} {membre.nom}
+              </button>
+            ))}
+          {membresQuery.data?.length === 0 && (
+            <p className="px-2 py-1 text-xs text-text-tertiary">
+              {t("messagerie.aucun_membre_trouve")}
+            </p>
+          )}
+        </div>
       </div>
 
       {conversationsQuery.isLoading && (

@@ -5,10 +5,12 @@
  * Rejoindre un groupe public est une action REST explicite (useRejoindreGroupe) — l'envoi
  * de messages, lui, passe exclusivement par WebSocket, voir GroupeChatPage.
  *
- * L'invitation à un groupe privé cherche un membre par nom via `useRechercherMembres`
- * (endpoint dédié communaute — PAS `useMembresList` de apps/membres, verrouillé à RH+ pour un
- * rôle Membre standard, voir MembreViewSet.get_queryset côté backend ; même bug que
- * MessageriePage, remonté en test manuel Phase 4).
+ * L'invitation à un groupe privé choisit un membre via `useRechercherMembres` (endpoint dédié
+ * communaute — PAS `useMembresList` de apps/membres, verrouillé à RH+ pour un rôle Membre
+ * standard, voir MembreViewSet.get_queryset côté backend ; même bug que MessageriePage, remonté
+ * en test manuel Phase 4). La liste est affichée dès que "privé" est sélectionné, pas seulement
+ * après une frappe : `useRechercherMembres("")` renvoie déjà une liste parcourable par défaut
+ * (voir MembreRechercheViewSet côté backend), pour inviter sans connaître le nom exact.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -37,7 +39,7 @@ export default function GroupesPage() {
   const [invites, setInvites] = useState<string[]>([]);
   const [erreur, setErreur] = useState("");
 
-  const membresQuery = useRechercherMembres(typeGroupe === "prive" ? rechercheInvites : "");
+  const membresQuery = useRechercherMembres(rechercheInvites, typeGroupe === "prive");
 
   function creer(e: React.FormEvent) {
     e.preventDefault();
@@ -127,26 +129,24 @@ export default function GroupesPage() {
                 placeholder={t("groupes.inviter_membres")}
                 className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
               />
-              {rechercheInvites.length >= 2 && (
-                <div className="mt-1 max-h-32 space-y-1 overflow-y-auto">
-                  {membresQuery.data?.map((membre) => (
-                    <label key={membre.id} className="flex items-center gap-2 px-1 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={invites.includes(membre.id)}
-                        onChange={(e) =>
-                          setInvites((precedents) =>
-                            e.target.checked
-                              ? [...precedents, membre.id]
-                              : precedents.filter((id) => id !== membre.id),
-                          )
-                        }
-                      />
-                      {membre.prenom} {membre.nom}
-                    </label>
-                  ))}
-                </div>
-              )}
+              <div className="mt-1 max-h-32 space-y-1 overflow-y-auto">
+                {membresQuery.data?.map((membre) => (
+                  <label key={membre.id} className="flex items-center gap-2 px-1 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={invites.includes(membre.id)}
+                      onChange={(e) =>
+                        setInvites((precedents) =>
+                          e.target.checked
+                            ? [...precedents, membre.id]
+                            : precedents.filter((id) => id !== membre.id),
+                        )
+                      }
+                    />
+                    {membre.prenom} {membre.nom}
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 

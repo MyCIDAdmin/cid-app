@@ -321,13 +321,17 @@ export function useMessagesGroupe(groupeId: string | undefined) {
   });
 }
 
-// --- Recherche de membres (démarrer une conversation, inviter dans un groupe) ---
+// --- Recherche de membres (démarrer une conversation, inviter dans un groupe) — `q` vide
+// renvoie une liste parcourable par défaut (voir communauteApi.rechercherMembres), donc pas de
+// seuil de longueur minimal ici ; `enabled` reste au choix de l'appelant (ex. GroupesPage ne
+// veut interroger l'annuaire que lorsque le panneau d'invitation à un groupe privé est visible,
+// pas à chaque frappe dans un formulaire de groupe public). ---
 
-export function useRechercherMembres(q: string) {
+export function useRechercherMembres(q: string, enabled = true) {
   return useQuery({
     queryKey: [...communauteKeys.all, "membres-recherche", q],
     queryFn: () => communauteApi.rechercherMembres(q),
-    enabled: q.trim().length >= 2,
+    enabled,
   });
 }
 

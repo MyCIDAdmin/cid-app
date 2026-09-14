@@ -492,9 +492,21 @@ class MessageGroupeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return MessageGroupe.objects.filter(groupe=groupe).select_related("auteur")
 
 
+class MembreRechercheCursorPagination(CursorPagination):
+    # "id" en dernier pour garantir un tri strictement déterministe, requis par CursorPagination
+    # (même correctif que SujetCursorPagination/VarianteCursorPagination ci-dessus) — sans lui,
+    # get_queryset() ci-dessous levait "Cannot reorder a query once a slice has been taken"
+    # (la pagination par défaut du projet réordonne toujours la queryset selon `ordering`).
+    ordering = ("nom", "prenom", "id")
+
+
 class MembreRechercheViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Recherche de membres par nom/prénom pour démarrer une conversation (MessageriePage)
-    ou inviter dans un groupe privé (GroupesPage) — `?q=<recherche>`, 2 caractères minimum.
+    """Annuaire minimal des membres pour démarrer une conversation (MessageriePage) ou inviter
+    dans un groupe privé (GroupesPage) — `?q=<recherche>` optionnel : sans lui (ou vide),
+    renvoie une liste parcourable (ordre alphabétique, 20 premiers) plutôt qu'une liste vide,
+    pour permettre de choisir un destinataire sans connaître son nom exact (bug remonté en test
+    manuel Phase 4 : "muss es möglich sein einer Liste an Mitgliedern auszuwählen") ; avec lui,
+    filtre par nom/prénom.
 
     Distincte de `apps.membres.MembreViewSet` : ce dernier restreint volontairement la liste
     des membres à RH+ (protection IDOR, voir sa docstring `get_queryset`, "un membre ne voit
@@ -507,18 +519,20 @@ class MembreRechercheViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     serializer_class = AuteurSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = MembreRechercheCursorPagination
 
     def get_queryset(self):
         q = self.request.query_params.get("q", "").strip()
-        if len(q) < 2:
-            return Membre.objects.none()
-        queryset = Membre.objects.filter(statut=StatutMembre.ACTIF).filter(
-            Q(nom__icontains=q) | Q(prenom__icontains=q)
-        )
+        queryset = Membre.objects.filter(statut=StatutMembre.ACTIF)
+        if q:
+            queryset = queryset.filter(Q(nom__icontains=q) | Q(prenom__icontains=q))
         membre = getattr(self.request.user, "membre", None)
         if membre is not None:
             queryset = queryset.exclude(id=membre.id)
-        return queryset.order_by("nom", "prenom")[:20]
+        # Pas de slice manuel ici : MembreRechercheCursorPagination applique déjà le PAGE_SIZE
+        # global (20, voir config/settings/base.py) et a besoin de la queryset non tronquée pour
+        # pouvoir la réordonner selon `ordering`.
+        return queryset.order_by("nom", "prenom")
 
 
 # ---------------------------------------------------------------------------

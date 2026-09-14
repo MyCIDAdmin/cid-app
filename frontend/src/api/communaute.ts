@@ -257,9 +257,12 @@ export async function listMessagesGroupe(
 // apps/membres (réservé RH+, voir MembreRechercheViewSet côté backend), 2 caractères min. ---
 
 export async function rechercherMembres(q: string): Promise<Auteur[]> {
-  if (q.trim().length < 2) return [];
+  // Sans recherche (q vide), le backend renvoie une liste parcourable par défaut plutôt qu'une
+  // liste vide — voir MembreRechercheViewSet.get_queryset côté backend — pour permettre de
+  // choisir un destinataire sans devoir taper son nom (bug remonté en test manuel Phase 4).
+  const recherche = q.trim();
   const { data } = await apiClient.get<CursorPage<Auteur>>("/communaute/membres-recherche/", {
-    params: { q },
+    params: recherche ? { q: recherche } : {},
   });
   return data.results;
 }

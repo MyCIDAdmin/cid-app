@@ -31,6 +31,7 @@ from apps.communaute.tests.factories import (
     ReponseForumFactory,
     SujetFactory,
 )
+from apps.membres.models import StatutMembre
 from apps.membres.tests.factories import MembreFactory
 
 pytestmark = pytest.mark.django_db
@@ -461,6 +462,56 @@ def test_messages_prives_liste_pour_un_participant_et_dechiffre_le_contenu(api_c
     assert resp.status_code == 200
     assert resp.data["results"][0]["contenu"] == "Salut !"
     assert resp.data["results"][0]["est_expediteur"] is True
+
+
+# --- Annuaire de recherche de membres (démarrer une conversation / inviter dans un groupe
+# privé) — distinct de apps.membres, voir MembreRechercheViewSet ---
+
+MEMBRE_RECHERCHE_LIST_URL = "communaute:membre-recherche-list"
+
+
+def test_membre_recherche_sans_q_renvoie_une_liste_parcourable(api_client):
+    """Sans recherche, l'annuaire doit rester utilisable pour choisir un destinataire sans
+    connaître son nom exact (bug remonté en test manuel Phase 4), pas renvoyer une liste vide."""
+    user, _ = _user_avec_membre(Role.MEMBRE, "r1@example.de")
+    MembreFactory(nom="Werfelli", prenom="Sana")
+    MembreFactory(nom="Meddeb", prenom="Hamza")
+
+    resp = _auth(api_client, user).get(reverse(MEMBRE_RECHERCHE_LIST_URL))
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 2
+
+
+def test_membre_recherche_filtre_par_nom_ou_prenom(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "r2@example.de")
+    MembreFactory(nom="Werfelli", prenom="Sana")
+    MembreFactory(nom="Meddeb", prenom="Hamza")
+
+    resp = _auth(api_client, user).get(reverse(MEMBRE_RECHERCHE_LIST_URL), {"q": "ham"})
+    assert resp.status_code == 200
+    assert [m["prenom"] for m in resp.data["results"]] == ["Hamza"]
+
+
+def test_membre_recherche_exclut_le_membre_courant_et_les_inactifs(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "r3@example.de")
+    MembreFactory(statut=StatutMembre.INACTIF, nom="Ancien")
+
+    resp = _auth(api_client, user).get(reverse(MEMBRE_RECHERCHE_LIST_URL))
+    assert resp.status_code == 200
+    ids = [m["id"] for m in resp.data["results"]]
+    assert str(membre.id) not in ids
+    assert len(resp.data["results"]) == 0
+
+
+def test_membre_recherche_expose_uniquement_lidentite_minimale(api_client):
+    """Pas d'email/adresse/CIN — voir AuteurSerializer, à la différence de
+    apps.membres.MembreListSerializer réservé RH+."""
+    user, _ = _user_avec_membre(Role.MEMBRE, "r4@example.de")
+    MembreFactory(nom="Werfelli", prenom="Sana")
+
+    resp = _auth(api_client, user).get(reverse(MEMBRE_RECHERCHE_LIST_URL))
+    assert resp.status_code == 200
+    assert set(resp.data["results"][0].keys()) == {"id", "prenom", "nom", "photo"}
 
 
 # --- Groupes de chat ---

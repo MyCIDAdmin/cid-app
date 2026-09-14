@@ -161,4 +161,24 @@ describe("GroupesPage", () => {
 
     expect(screen.getByText("Hamza Meddeb")).toBeInTheDocument();
   });
+
+  it("affiche une liste de membres parcourable dès que 'privé' est choisi, sans avoir tapé de recherche", () => {
+    vi.mocked(useCommunauteHooks.useGroupes).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useGroupes>);
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [{ id: "m3", prenom: "Hamza", nom: "Meddeb", photo: null }],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
+
+    renderWithProviders(<GroupesPage />);
+
+    fireEvent.click(screen.getByText("groupes.nouveau_groupe"));
+    fireEvent.click(screen.getByText("groupes.type_prive"));
+
+    expect(screen.getByText("Hamza Meddeb")).toBeInTheDocument();
+  });
 });

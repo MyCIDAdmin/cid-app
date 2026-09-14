@@ -120,4 +120,21 @@ describe("MessageriePage", () => {
 
     expect(creer.mutate).toHaveBeenCalledWith("m3", expect.anything());
   });
+
+  it("affiche une liste de membres parcourable sans avoir tapé de recherche", () => {
+    vi.mocked(useCommunauteHooks.useConversations).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useConversations>);
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [{ id: "m3", prenom: "Hamza", nom: "Meddeb", photo: null }],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
+
+    renderWithProviders(<MessageriePage />);
+
+    expect(screen.getByText("Hamza Meddeb")).toBeInTheDocument();
+  });
 });
