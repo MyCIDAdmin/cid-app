@@ -32,6 +32,8 @@
   "action": {
     "annuler": "Abbrechen",
     "confirmer": "Bestätigen",
-    "deconnexion": "Abmelden"
+    "deconnexion": "Abmelden",
+    "replier_sidebar": "Menü einklappen",
+    "deplier_sidebar": "Menü ausklappen"
   }
 }

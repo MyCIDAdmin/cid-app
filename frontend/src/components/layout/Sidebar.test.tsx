@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { queryClient } from "../../queryClient";
 import { useAuthStore } from "../../store/authStore";
+import { useUiStore } from "../../store/uiStore";
 import Sidebar from "./Sidebar";
 
 const utilisateur = {
@@ -21,6 +22,7 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
       user: utilisateur,
       isAuthenticated: true,
     });
+    useUiStore.setState({ sidebarCollapsed: false });
   });
 
   it("affiche un bouton de déconnexion pour un utilisateur connecté", () => {
@@ -40,5 +42,21 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().user).toBeNull();
     expect(queryClient.getQueryData(["membres", "list"])).toBeUndefined();
+  });
+
+  it("se replie et se déplie au clic sur le bouton dédié (persisté via uiStore)", () => {
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("action.replier_sidebar"));
+
+    expect(useUiStore.getState().sidebarCollapsed).toBe(true);
+    expect(screen.queryByText("nav.dashboard")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("action.deplier_sidebar"));
+
+    expect(useUiStore.getState().sidebarCollapsed).toBe(false);
+    expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
   });
 });
