@@ -2,7 +2,7 @@
 
 import django_filters
 
-from .models import Commande, Produit, StatutCommande, StatutProduit
+from .models import Commande, Produit, Retour, StatutCommande, StatutProduit
 
 
 class ProduitFilter(django_filters.FilterSet):
@@ -22,3 +22,11 @@ class CommandeFilter(django_filters.FilterSet):
     class Meta:
         model = Commande
         fields = ["statut", "membre"]
+
+
+class RetourFilter(django_filters.FilterSet):
+    commande = django_filters.UUIDFilter(field_name="commande_id")
+
+    class Meta:
+        model = Retour
+        fields = ["commande"]

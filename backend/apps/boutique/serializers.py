@@ -7,9 +7,19 @@ montant total sont entièrement recalculés côté serveur dans CommandeViewSet.
 views.py), sous verrou transactionnel pour un stock toujours cohérent.
 """
 
+from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Commande, LigneCommande, Produit, StatutCommande, VarianteProduit
+from .models import (
+    STATUTS_RETOURNABLES,
+    Commande,
+    LigneCommande,
+    ModePaiementCommande,
+    Produit,
+    Retour,
+    StatutCommande,
+    VarianteProduit,
+)
 
 
 class VarianteProduitSerializer(serializers.ModelSerializer):
@@ -73,15 +83,74 @@ class ProduitSerializer(serializers.ModelSerializer):
 
 class LigneCommandeSerializer(serializers.ModelSerializer):
     sous_total = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
+    quantite_retournee = serializers.IntegerField(read_only=True)
+    quantite_retournable = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = LigneCommande
-        fields = ["id", "variante", "quantite", "prix_unitaire", "sous_total"]
+        fields = [
+            "id",
+            "variante",
+            "quantite",
+            "prix_unitaire",
+            "sous_total",
+            "quantite_retournee",
+            "quantite_retournable",
+        ]
         read_only_fields = fields
+
+
+class RetourSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Retour
+        fields = [
+            "id",
+            "commande",
+            "ligne_commande",
+            "quantite",
+            "motif",
+            "commentaire",
+            "enregistre_par",
+            "created_at",
+        ]
+        read_only_fields = ["id", "enregistre_par", "created_at"]
+
+    def validate(self, attrs):
+        commande = attrs["commande"]
+        ligne_commande = attrs["ligne_commande"]
+        quantite = attrs["quantite"]
+
+        if ligne_commande.commande_id != commande.id:
+            raise serializers.ValidationError(
+                {"ligne_commande": "Cette ligne n'appartient pas à la commande indiquée."}
+            )
+        if commande.statut not in STATUTS_RETOURNABLES:
+            raise serializers.ValidationError(
+                {
+                    "commande": (
+                        "Seule une commande expédiée ou livrée peut faire l'objet d'un retour "
+                        f"(statut actuel : {commande.get_statut_display()})."
+                    )
+                }
+            )
+        # Re-vérifié dans la vue sous verrou (SELECT FOR UPDATE) : ce contrôle ici évite un
+        # aller-retour serveur inutile pour le cas non concurrent, la vue reste seule source
+        # de vérité transactionnelle (même principe que PasserCommandeSerializer/CLAUDE.md §8).
+        if quantite > ligne_commande.quantite_retournable:
+            raise serializers.ValidationError(
+                {
+                    "quantite": (
+                        "Quantité supérieure à ce qui reste retournable pour cette ligne "
+                        f"({ligne_commande.quantite_retournable})."
+                    )
+                }
+            )
+        return attrs
 
 
 class CommandeSerializer(serializers.ModelSerializer):
     lignes = LigneCommandeSerializer(many=True, read_only=True)
+    retours = RetourSerializer(many=True, read_only=True)
 
     class Meta:
         model = Commande
@@ -97,11 +166,60 @@ class CommandeSerializer(serializers.ModelSerializer):
             "telephone_livraison",
             "montant_total",
             "statut",
+            "mode_paiement",
+            "date_paiement_confirme",
+            "paiement_confirme_par",
+            "numero_suivi",
+            "transporteur",
+            "date_expedition",
             "lignes",
+            "retours",
             "created_at",
             "updated_at",
         ]
         read_only_fields = fields
+
+
+class ConfirmerPaiementCommandeSerializer(serializers.Serializer):
+    """Entrée de POST /boutique/commandes/{id}/confirmer-paiement/ — Directeur Financier+,
+    même principe que Cotisation.marquer_payee/AHM-53 (voir permissions.py)."""
+
+    mode_paiement = serializers.ChoiceField(choices=ModePaiementCommande.choices)
+
+
+class ExpedierCommandeSerializer(serializers.Serializer):
+    """Entrée de POST /boutique/commandes/{id}/expedier/ — Directeur Financier+.
+
+    `nacherfassement=True` (demande utilisateur du 2026-09-15) autorise l'action à sauter
+    directement à EXPEDIEE pour une commande dont le paiement n'a jamais été confirmé dans le
+    système (gérée hors flux normal) — `mode_paiement` devient alors obligatoire, puisque
+    confirmer_paiement n'aura jamais été appelée pour cette commande (voir CommandeViewSet).
+    """
+
+    numero_suivi = serializers.CharField(max_length=100)
+    transporteur = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    date_expedition = serializers.DateTimeField(required=False)
+    nacherfassement = serializers.BooleanField(default=False)
+    mode_paiement = serializers.ChoiceField(
+        choices=ModePaiementCommande.choices, required=False
+    )
+
+    def validate_date_expedition(self, value):
+        if value > timezone.now():
+            raise serializers.ValidationError("La date d'expédition ne peut pas être future.")
+        return value
+
+    def validate(self, attrs):
+        if attrs.get("nacherfassement") and not attrs.get("mode_paiement"):
+            raise serializers.ValidationError(
+                {
+                    "mode_paiement": (
+                        "Le mode de paiement doit être précisé pour une saisie rétroactive "
+                        "(le paiement de cette commande n'a jamais été confirmé)."
+                    )
+                }
+            )
+        return attrs
 
 
 class LigneCommandeEntreeSerializer(serializers.Serializer):

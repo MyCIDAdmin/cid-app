@@ -39,12 +39,23 @@ def notifier_commande_confirmee(commande: Commande) -> None:
 
 
 def notifier_commande_expediee(commande: Commande) -> None:
-    """Appelée quand `CommandeViewSet.changer_statut` fait passer une commande à `expediee`."""
+    """Appelée quand `CommandeViewSet.expedier` fait passer une commande à `expediee` (flux
+    normal ou nacherfassement) — voir views.py. Inclut le numéro de suivi/transporteur dans
+    l'email quand ils sont renseignés (demande utilisateur du 2026-09-15 : "Versandbestätigung
+    per Mail")."""
     user = _destinataire(commande)
+    if commande.numero_suivi:
+        suivi = (
+            f" Numéro de suivi : {commande.numero_suivi}"
+            + (f" ({commande.transporteur})" if commande.transporteur else "")
+            + "."
+        )
+    else:
+        suivi = ""
     if user and user.email:
         send_mail(
             subject=f"Commande {commande.numero_commande} expédiée",
-            message=f"Votre commande {commande.numero_commande} vient d'être expédiée.",
+            message=f"Votre commande {commande.numero_commande} vient d'être expédiée.{suivi}",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             fail_silently=True,
@@ -53,6 +64,6 @@ def notifier_commande_expediee(commande: Commande) -> None:
         user,
         TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE,
         titre=f"Commande {commande.numero_commande} expédiée",
-        message="Votre commande vient d'être expédiée.",
+        message=f"Votre commande vient d'être expédiée.{suivi}",
         lien="/boutique/commandes",
     )

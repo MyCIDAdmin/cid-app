@@ -4,6 +4,16 @@
  * CommandeViewSet.get_queryset), filtrable par statut, avec changement de statut et
  * annulation. Ne couvre que la première page du cursor (comme les autres pages de gestion de
  * ce module — voir MonAdhesionPage) : limite connue, acceptable pour ce périmètre.
+ *
+ * Workflow paiement/expédition/retours (demande utilisateur du 2026-09-15, voir
+ * apps/boutique/views.py côté backend) :
+ *   - "Zahlungseingang bestätigen" (confirmer_paiement) et "Versenden"/"Nacherfassung"
+ *     (expedier) sont réservés à PAIEMENT_EXPEDITION_MIN_LEVEL (Directeur Financier+),
+ *     seuil plus strict que la gestion générale des commandes — gaté ici via
+ *     `hasRoleAtLeast(user, ROLE_LEVELS.dir_financier)`, en miroir de CommandePermission
+ *     côté backend (le backend reste seul juge, ce gating n'est qu'un confort d'UI).
+ *   - "Retoure erfassen" (création d'un Retour) reste au seuil Bureau Admin+, comme le
+ *     reste de la gestion des commandes.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,14 +23,32 @@ import {
   useAnnulerCommande,
   useChangerStatutCommande,
   useCommandes,
+  useConfirmerPaiementCommande,
+  useCreerRetour,
+  useExpedierCommande,
 } from "../../hooks/useBoutique";
+import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import {
   STATUTS_ANNULABLES,
+  STATUTS_CONFIRMABLES_PAIEMENT,
+  STATUTS_EXPEDIABLES_NORMAL,
+  STATUTS_RETOURNABLES,
   TRANSITIONS_STATUT_COMMANDE,
   type Commande,
+  type ModePaiementCommande,
+  type MotifRetour,
   type StatutCommande,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+
+const MODES_PAIEMENT: ModePaiementCommande[] = ["en_ligne", "virement", "especes"];
+const MOTIFS_RETOUR: MotifRetour[] = [
+  "defectueux",
+  "mauvaise_taille",
+  "ne_convient_pas",
+  "erreur_envoi",
+  "autre",
+];
 
 const TOUS_STATUTS: StatutCommande[] = [
   "en_attente",
@@ -50,19 +78,108 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
+interface ExpeditionModalState {
+  commande: Commande;
+  nacherfassement: boolean;
+}
+
 export default function GestionCommandesTab() {
   const { t } = useTranslation("boutique");
+  const user = useAuthStore((s) => s.user);
+  const peutConfirmerPaiementEtExpedier = hasRoleAtLeast(user, ROLE_LEVELS.dir_financier);
+  const peutGererRetours = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+
   const [filtreStatut, setFiltreStatut] = useState<StatutCommande | "">("");
   const [commandeAAnnuler, setCommandeAAnnuler] = useState<Commande | null>(null);
+  const [modePaiementParCommande, setModePaiementParCommande] = useState<
+    Record<string, ModePaiementCommande>
+  >({});
+
+  const [expeditionModal, setExpeditionModal] = useState<ExpeditionModalState | null>(null);
+  const [numeroSuivi, setNumeroSuivi] = useState("");
+  const [transporteurSaisi, setTransporteurSaisi] = useState("");
+  const [dateExpeditionSaisie, setDateExpeditionSaisie] = useState("");
+  const [modePaiementNacherfassung, setModePaiementNacherfassung] =
+    useState<ModePaiementCommande>("especes");
+
+  const [retourModal, setRetourModal] = useState<Commande | null>(null);
+  const [ligneRetourId, setLigneRetourId] = useState("");
+  const [quantiteRetour, setQuantiteRetour] = useState(1);
+  const [motifRetour, setMotifRetour] = useState<MotifRetour>("autre");
+  const [commentaireRetour, setCommentaireRetour] = useState("");
 
   const commandesQuery = useCommandes({ statut: filtreStatut || undefined });
   const changerStatutMutation = useChangerStatutCommande();
   const annulerMutation = useAnnulerCommande();
+  const confirmerPaiementMutation = useConfirmerPaiementCommande();
+  const expedierMutation = useExpedierCommande();
+  const creerRetourMutation = useCreerRetour();
 
   function confirmerAnnulation() {
     if (!commandeAAnnuler) return;
     annulerMutation.mutate(commandeAAnnuler.id, { onSuccess: () => setCommandeAAnnuler(null) });
   }
+
+  function confirmerPaiement(commande: Commande) {
+    confirmerPaiementMutation.mutate({
+      id: commande.id,
+      payload: { mode_paiement: modePaiementParCommande[commande.id] ?? "virement" },
+    });
+  }
+
+  function ouvrirExpedition(commande: Commande, nacherfassement: boolean) {
+    setExpeditionModal({ commande, nacherfassement });
+    setNumeroSuivi("");
+    setTransporteurSaisi("");
+    setDateExpeditionSaisie("");
+    setModePaiementNacherfassung("especes");
+  }
+
+  function soumettreExpedition() {
+    if (!expeditionModal || !numeroSuivi) return;
+    expedierMutation.mutate(
+      {
+        id: expeditionModal.commande.id,
+        payload: {
+          numero_suivi: numeroSuivi,
+          transporteur: transporteurSaisi || undefined,
+          nacherfassement: expeditionModal.nacherfassement,
+          ...(expeditionModal.nacherfassement && {
+            mode_paiement: modePaiementNacherfassung,
+            ...(dateExpeditionSaisie && {
+              date_expedition: new Date(dateExpeditionSaisie).toISOString(),
+            }),
+          }),
+        },
+      },
+      { onSuccess: () => setExpeditionModal(null) },
+    );
+  }
+
+  function ouvrirRetour(commande: Commande) {
+    setRetourModal(commande);
+    const premiereLigne = commande.lignes.find((l) => l.quantite_retournable > 0);
+    setLigneRetourId(premiereLigne?.id ?? "");
+    setQuantiteRetour(1);
+    setMotifRetour("autre");
+    setCommentaireRetour("");
+  }
+
+  function soumettreRetour() {
+    if (!retourModal || !ligneRetourId) return;
+    creerRetourMutation.mutate(
+      {
+        commande: retourModal.id,
+        ligne_commande: ligneRetourId,
+        quantite: quantiteRetour,
+        motif: motifRetour,
+        commentaire: commentaireRetour || undefined,
+      },
+      { onSuccess: () => setRetourModal(null) },
+    );
+  }
+
+  const ligneRetourSelectionnee = retourModal?.lignes.find((l) => l.id === ligneRetourId);
 
   return (
     <div>
@@ -95,6 +212,21 @@ export default function GestionCommandesTab() {
           {extractApiErrorMessage(changerStatutMutation.error, t("commandes_admin.erreur_statut"))}
         </p>
       )}
+      {confirmerPaiementMutation.isError && (
+        <p className="mb-2 text-xs text-status-dangerText">
+          {extractApiErrorMessage(confirmerPaiementMutation.error, t("paiement.erreur"))}
+        </p>
+      )}
+      {expedierMutation.isError && !expeditionModal && (
+        <p className="mb-2 text-xs text-status-dangerText">
+          {extractApiErrorMessage(expedierMutation.error, t("expedition.erreur"))}
+        </p>
+      )}
+      {creerRetourMutation.isError && !retourModal && (
+        <p className="mb-2 text-xs text-status-dangerText">
+          {extractApiErrorMessage(creerRetourMutation.error, t("retour.erreur"))}
+        </p>
+      )}
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-xs">
@@ -113,7 +245,17 @@ export default function GestionCommandesTab() {
               const transitions = TRANSITIONS_STATUT_COMMANDE[commande.statut];
               return (
                 <tr key={commande.id} className="border-b border-text-tertiary/10 last:border-0">
-                  <td className="px-3 py-2 font-mono">{commande.numero_commande}</td>
+                  <td className="px-3 py-2 font-mono">
+                    {commande.numero_commande}
+                    {commande.numero_suivi && (
+                      <div className="mt-0.5 font-sans text-[10px] font-normal text-text-tertiary">
+                        {t("expedition.suivi_label", {
+                          numero: commande.numero_suivi,
+                          transporteur: commande.transporteur || "—",
+                        })}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-3 py-2">{commande.nom_destinataire}</td>
                   <td className="px-3 py-2 font-bold text-ca">
                     {formatMontant(commande.montant_total)}
@@ -127,7 +269,7 @@ export default function GestionCommandesTab() {
                   </td>
                   <td className="px-3 py-2">{formatDate(commande.created_at)}</td>
                   <td className="px-3 py-2">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       {transitions.length > 0 && (
                         <select
                           aria-label={t("commandes_admin.changer_statut")}
@@ -150,6 +292,71 @@ export default function GestionCommandesTab() {
                           ))}
                         </select>
                       )}
+
+                      {peutConfirmerPaiementEtExpedier &&
+                        STATUTS_CONFIRMABLES_PAIEMENT.includes(commande.statut) && (
+                          <span className="flex items-center gap-1">
+                            <select
+                              aria-label={t("paiement.mode_label")}
+                              value={modePaiementParCommande[commande.id] ?? "virement"}
+                              onChange={(e) =>
+                                setModePaiementParCommande((prev) => ({
+                                  ...prev,
+                                  [commande.id]: e.target.value as ModePaiementCommande,
+                                }))
+                              }
+                              className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-[11px]"
+                            >
+                              {MODES_PAIEMENT.map((m) => (
+                                <option key={m} value={m}>
+                                  {t(`paiement.mode.${m}`)}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => confirmerPaiement(commande)}
+                              disabled={confirmerPaiementMutation.isPending}
+                              className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-status-successText hover:bg-bg-tertiary disabled:opacity-50"
+                            >
+                              {t("paiement.confirmer")}
+                            </button>
+                          </span>
+                        )}
+
+                      {peutConfirmerPaiementEtExpedier &&
+                        STATUTS_EXPEDIABLES_NORMAL.includes(commande.statut) && (
+                          <button
+                            type="button"
+                            onClick={() => ouvrirExpedition(commande, false)}
+                            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary"
+                          >
+                            {t("expedition.expedier")}
+                          </button>
+                        )}
+
+                      {peutConfirmerPaiementEtExpedier && commande.statut === "en_attente" && (
+                        <button
+                          type="button"
+                          onClick={() => ouvrirExpedition(commande, true)}
+                          className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary"
+                        >
+                          {t("nacherfassung.bouton")}
+                        </button>
+                      )}
+
+                      {peutGererRetours &&
+                        STATUTS_RETOURNABLES.includes(commande.statut) &&
+                        commande.lignes.some((l) => l.quantite_retournable > 0) && (
+                          <button
+                            type="button"
+                            onClick={() => ouvrirRetour(commande)}
+                            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary"
+                          >
+                            {t("retour.bouton")}
+                          </button>
+                        )}
+
                       {STATUTS_ANNULABLES.includes(commande.statut) && (
                         <button
                           type="button"
@@ -183,6 +390,206 @@ export default function GestionCommandesTab() {
         onConfirm={confirmerAnnulation}
         onCancel={() => setCommandeAAnnuler(null)}
       />
+
+      {expeditionModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="expedition-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        >
+          <div className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-5 shadow-xl">
+            <h2 id="expedition-modal-title" className="text-base font-semibold text-text-primary">
+              {expeditionModal.nacherfassement ? t("nacherfassung.titre") : t("expedition.titre")}
+            </h2>
+            <p className="mt-1 text-xs text-text-tertiary">
+              {expeditionModal.commande.numero_commande}
+            </p>
+
+            <div className="mt-3 flex flex-col gap-2">
+              <label className="text-xs font-medium text-text-secondary">
+                {t("expedition.numero_suivi_label")}
+                <input
+                  type="text"
+                  value={numeroSuivi}
+                  onChange={(e) => setNumeroSuivi(e.target.value)}
+                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </label>
+              <label className="text-xs font-medium text-text-secondary">
+                {t("expedition.transporteur_label")}
+                <input
+                  type="text"
+                  value={transporteurSaisi}
+                  onChange={(e) => setTransporteurSaisi(e.target.value)}
+                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </label>
+
+              {expeditionModal.nacherfassement && (
+                <>
+                  <label className="text-xs font-medium text-text-secondary">
+                    {t("paiement.mode_label")}
+                    <select
+                      value={modePaiementNacherfassung}
+                      onChange={(e) =>
+                        setModePaiementNacherfassung(e.target.value as ModePaiementCommande)
+                      }
+                      className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                    >
+                      {MODES_PAIEMENT.map((m) => (
+                        <option key={m} value={m}>
+                          {t(`paiement.mode.${m}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="text-xs font-medium text-text-secondary">
+                    {t("nacherfassung.date_expedition_label")}
+                    <input
+                      type="datetime-local"
+                      value={dateExpeditionSaisie}
+                      onChange={(e) => setDateExpeditionSaisie(e.target.value)}
+                      className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                </>
+              )}
+            </div>
+
+            {expedierMutation.isError && (
+              <p className="mt-2 text-xs text-status-dangerText">
+                {extractApiErrorMessage(expedierMutation.error, t("expedition.erreur"))}
+              </p>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setExpeditionModal(null)}
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("modal_annuler")}
+              </button>
+              <button
+                type="button"
+                onClick={soumettreExpedition}
+                disabled={!numeroSuivi || expedierMutation.isPending}
+                className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-50"
+              >
+                {expeditionModal.nacherfassement
+                  ? t("nacherfassung.confirmer")
+                  : t("expedition.confirmer")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {retourModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="retour-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        >
+          <div className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-5 shadow-xl">
+            <h2 id="retour-modal-title" className="text-base font-semibold text-text-primary">
+              {t("retour.titre")}
+            </h2>
+            <p className="mt-1 text-xs text-text-tertiary">{retourModal.numero_commande}</p>
+
+            <div className="mt-3 flex flex-col gap-2">
+              <label className="text-xs font-medium text-text-secondary">
+                {t("retour.ligne_label")}
+                <select
+                  value={ligneRetourId}
+                  onChange={(e) => {
+                    setLigneRetourId(e.target.value);
+                    setQuantiteRetour(1);
+                  }}
+                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                >
+                  {retourModal.lignes
+                    .filter((l) => l.quantite_retournable > 0)
+                    .map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {t("retour.ligne_option", {
+                          quantite: l.quantite,
+                          prix: l.prix_unitaire,
+                          retournable: l.quantite_retournable,
+                        })}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="text-xs font-medium text-text-secondary">
+                {t("retour.quantite_label")}
+                <input
+                  type="number"
+                  min={1}
+                  max={ligneRetourSelectionnee?.quantite_retournable ?? 1}
+                  value={quantiteRetour}
+                  onChange={(e) => setQuantiteRetour(Number(e.target.value))}
+                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </label>
+              <label className="text-xs font-medium text-text-secondary">
+                {t("retour.motif_label")}
+                <select
+                  value={motifRetour}
+                  onChange={(e) => setMotifRetour(e.target.value as MotifRetour)}
+                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                >
+                  {MOTIFS_RETOUR.map((m) => (
+                    <option key={m} value={m}>
+                      {t(`retour.motif.${m}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs font-medium text-text-secondary">
+                {t("retour.commentaire_label")}
+                <textarea
+                  value={commentaireRetour}
+                  onChange={(e) => setCommentaireRetour(e.target.value)}
+                  rows={2}
+                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </label>
+            </div>
+
+            {creerRetourMutation.isError && (
+              <p className="mt-2 text-xs text-status-dangerText">
+                {extractApiErrorMessage(creerRetourMutation.error, t("retour.erreur"))}
+              </p>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRetourModal(null)}
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("modal_annuler")}
+              </button>
+              <button
+                type="button"
+                onClick={soumettreRetour}
+                disabled={
+                  !ligneRetourId ||
+                  quantiteRetour < 1 ||
+                  quantiteRetour > (ligneRetourSelectionnee?.quantite_retournable ?? 0) ||
+                  creerRetourMutation.isPending
+                }
+                className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-50"
+              >
+                {t("retour.confirmer")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

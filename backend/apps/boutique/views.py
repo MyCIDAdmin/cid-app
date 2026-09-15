@@ -14,18 +14,36 @@ Vues API — app boutique (FDD §3.4) :
                                                     restitue le stock atomiquement
   POST       /boutique/commandes/{id}/changer-statut/ — faire progresser le statut
                                                     (Bureau Admin+ — transitions validées,
-                                                    voir models.TRANSITIONS_STATUT_COMMANDE)
+                                                    voir models.TRANSITIONS_STATUT_COMMANDE ;
+                                                    n'inclut PLUS confirmee/expediee, voir
+                                                    ci-dessous)
+  POST       /boutique/commandes/{id}/confirmer-paiement/ — confirme la réception d'un
+                                                    paiement (en_attente -> confirmee),
+                                                    Directeur Financier+ (demande
+                                                    utilisateur du 2026-09-15)
+  POST       /boutique/commandes/{id}/expedier/  — expédie avec numéro de suivi
+                                                    (-> expediee), Directeur Financier+ ;
+                                                    `nacherfassement=true` saute
+                                                    directement à expediee pour une
+                                                    commande gérée hors flux normal
+  GET/POST   /boutique/retours/                  — retours partiels par ligne de
+                                                    commande (Bureau Admin+), réintègre le
+                                                    stock atomiquement
 
 Pas de create/update/destroy génériques exposés sur Commande : une fois créée (via
 `passer`), elle n'évolue que par ses actions dédiées — registre append-only, même
 convention que Cotisation/Souscription.
 
-Notifications (Phase 2B, voir notifications.py) : `passer` et `changer_statut` (transition vers
-`expediee`) déclenchent chacun un email + une notification in-app — voir
+Notifications (Phase 2B, voir notifications.py) : `passer` et `expedier` déclenchent chacun un
+email + une notification in-app — voir
 apps.notifications.models.TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE/EXPEDIEE.
+`confirmer_paiement` et la création d'un Retour ne déclenchent volontairement pas d'email
+(hors du périmètre demandé le 2026-09-15 — seules la confirmation de commande et l'expédition en
+ont un).
 """
 
 from django.db import transaction
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -35,13 +53,17 @@ from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
 
-from .filters import CommandeFilter, ProduitFilter
+from .filters import CommandeFilter, ProduitFilter, RetourFilter
 from .models import (
     STATUTS_ANNULABLES,
+    STATUTS_CONFIRMABLES_PAIEMENT,
+    STATUTS_EXPEDIABLES_NACERFASSEMENT,
+    STATUTS_EXPEDIABLES_NORMAL,
     TRANSITIONS_STATUT_COMMANDE,
     Commande,
     LigneCommande,
     Produit,
+    Retour,
     StatutCommande,
     StatutProduit,
     VarianteProduit,
@@ -50,14 +72,19 @@ from .notifications import notifier_commande_confirmee, notifier_commande_expedi
 from .permissions import (
     GESTION_CATALOGUE_MIN_LEVEL,
     ORDER_VISIBILITY_MIN_LEVEL,
+    PAIEMENT_EXPEDITION_MIN_LEVEL,
     CatalogueBoutiquePermission,
     CommandePermission,
+    RetourPermission,
 )
 from .serializers import (
     ChangerStatutCommandeSerializer,
     CommandeSerializer,
+    ConfirmerPaiementCommandeSerializer,
+    ExpedierCommandeSerializer,
     PasserCommandeSerializer,
     ProduitSerializer,
+    RetourSerializer,
     VarianteProduitSerializer,
 )
 
@@ -269,3 +296,137 @@ class CommandeViewSet(ModelViewSet):
             notifier_commande_expediee(commande)
 
         return Response(self.get_serializer(commande).data)
+
+    @action(detail=True, methods=["post"], url_path="confirmer-paiement")
+    def confirmer_paiement(self, request, pk=None):
+        """Confirme la réception du paiement d'une commande encore en_attente
+        (en_attente -> confirmee) — Directeur Financier+, voir permissions.py. Ne déclenche
+        volontairement aucune notification (voir docstring module)."""
+        commande = self.get_object()
+        if commande.statut not in STATUTS_CONFIRMABLES_PAIEMENT:
+            raise ValidationError(
+                {
+                    "statut": (
+                        "Le paiement ne peut être confirmé que pour une commande en attente "
+                        f"(statut actuel : {commande.get_statut_display()})."
+                    )
+                }
+            )
+
+        serializer = ConfirmerPaiementCommandeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        membre = getattr(request.user, "membre", None)
+        commande.mode_paiement = serializer.validated_data["mode_paiement"]
+        commande.date_paiement_confirme = timezone.now()
+        commande.paiement_confirme_par = membre
+        commande.statut = StatutCommande.CONFIRMEE
+        commande.save(
+            update_fields=[
+                "mode_paiement",
+                "date_paiement_confirme",
+                "paiement_confirme_par",
+                "statut",
+            ]
+        )
+        return Response(self.get_serializer(commande).data)
+
+    @action(detail=True, methods=["post"])
+    def expedier(self, request, pk=None):
+        """Expédie une commande (-> expediee), Directeur Financier+ — voir permissions.py.
+
+        Flux normal : depuis confirmee/en_preparation, le paiement ayant déjà été confirmé
+        via `confirmer_paiement`. `nacherfassement=True` (demande utilisateur du 2026-09-15)
+        autorise en plus le saut direct depuis en_attente pour une commande gérée hors flux
+        normal (vente en personne, virement reçu avant la mise en place du système, etc.) —
+        dans ce cas `mode_paiement` doit être fourni et vient rétroactivement renseigner les
+        champs de confirmation de paiement, pour qu'une commande expediee ait toujours un
+        paiement confirmé quel que soit le chemin emprunté."""
+        commande = self.get_object()
+        serializer = ExpedierCommandeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        nacherfassement = data["nacherfassement"]
+
+        statuts_valides = (
+            STATUTS_EXPEDIABLES_NACERFASSEMENT
+            if nacherfassement
+            else STATUTS_EXPEDIABLES_NORMAL
+        )
+        if commande.statut not in statuts_valides:
+            raise ValidationError(
+                {
+                    "statut": (
+                        "Cette commande ne peut pas être expédiée depuis son statut actuel "
+                        f"({commande.get_statut_display()})."
+                    )
+                }
+            )
+
+        update_fields = ["statut", "numero_suivi", "transporteur", "date_expedition"]
+        commande.statut = StatutCommande.EXPEDIEE
+        commande.numero_suivi = data["numero_suivi"]
+        commande.transporteur = data.get("transporteur", "")
+        commande.date_expedition = data.get("date_expedition") or timezone.now()
+
+        if nacherfassement and commande.date_paiement_confirme is None:
+            membre = getattr(request.user, "membre", None)
+            commande.mode_paiement = data["mode_paiement"]
+            commande.date_paiement_confirme = timezone.now()
+            commande.paiement_confirme_par = membre
+            update_fields += [
+                "mode_paiement",
+                "date_paiement_confirme",
+                "paiement_confirme_par",
+            ]
+
+        commande.save(update_fields=update_fields)
+        notifier_commande_expediee(commande)
+        return Response(self.get_serializer(commande).data)
+
+
+class RetourViewSet(ModelViewSet):
+    """Retours partiels par ligne de commande — voir models.Retour et permissions.py.
+
+    Pas d'update/destroy : un retour enregistré est définitif (registre append-only, même
+    convention que Commande). La réintégration de stock est atomique, verrouillée dans le
+    même ordre (tri par id de variante) que `passer`/`_restituer_stock` pour éviter tout
+    interblocage avec une commande passée ou annulée concurremment."""
+
+    http_method_names = ["get", "post", "head", "options"]
+    permission_classes = [RetourPermission]
+    serializer_class = RetourSerializer
+    pagination_class = BoutiqueCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = RetourFilter
+
+    def get_queryset(self):
+        return Retour.objects.select_related(
+            "commande", "ligne_commande", "ligne_commande__variante", "enregistre_par"
+        ).all()
+
+    def perform_create(self, serializer):
+        ligne_commande = serializer.validated_data["ligne_commande"]
+        quantite = serializer.validated_data["quantite"]
+
+        with transaction.atomic():
+            # Reverrouille la ligne/variante et revalide la quantité retournable sous
+            # verrou — le contrôle déjà fait dans RetourSerializer.validate() ne protège pas
+            # contre deux retours concurrents sur la même ligne (même principe que
+            # CommandeViewSet.passer, voir docstring module).
+            variante = VarianteProduit.objects.select_for_update().get(
+                id=ligne_commande.variante_id
+            )
+            ligne = LigneCommande.objects.select_for_update().get(id=ligne_commande.id)
+            if quantite > ligne.quantite_retournable:
+                raise ValidationError(
+                    {
+                        "quantite": (
+                            "Quantité supérieure à ce qui reste retournable pour cette ligne "
+                            f"({ligne.quantite_retournable})."
+                        )
+                    }
+                )
+            variante.stock += quantite
+            variante.save(update_fields=["stock"])
+            serializer.save(enregistre_par=getattr(self.request.user, "membre", None))

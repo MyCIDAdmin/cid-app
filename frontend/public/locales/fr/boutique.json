@@ -1,4 +1,5 @@
 {
+  "modal_annuler": "Annuler",
   "categorie": {
     "vetements": "Vêtements",
     "accessoires": "Accessoires",
@@ -90,6 +91,49 @@
     "confirmer_annulation_titre": "Annuler cette commande ?",
     "confirmer_annulation_message": "La commande {{numero}} sera annulée et le stock restitué.",
     "confirmer_annulation": "Annuler la commande"
+  },
+  "paiement": {
+    "mode_label": "Mode de paiement",
+    "mode": {
+      "en_ligne": "Paiement en ligne",
+      "virement": "Virement SEPA",
+      "especes": "Espèces"
+    },
+    "confirmer": "Confirmer le paiement",
+    "erreur": "La confirmation du paiement a échoué."
+  },
+  "expedition": {
+    "expedier": "Expédier",
+    "titre": "Expédier la commande",
+    "numero_suivi_label": "Numéro de suivi",
+    "transporteur_label": "Transporteur (optionnel)",
+    "confirmer": "Confirmer l'expédition",
+    "erreur": "L'expédition a échoué.",
+    "suivi_label": "Suivi : {{numero}} ({{transporteur}})"
+  },
+  "nacherfassung": {
+    "bouton": "Saisie rétroactive",
+    "titre": "Saisie rétroactive d'une expédition",
+    "date_expedition_label": "Date d'expédition réelle (optionnel — sinon maintenant)",
+    "confirmer": "Enregistrer l'expédition"
+  },
+  "retour": {
+    "bouton": "Enregistrer un retour",
+    "titre": "Enregistrer un retour",
+    "ligne_label": "Article",
+    "ligne_option": "{{quantite}} × {{prix}} € — {{retournable}} retournable(s)",
+    "quantite_label": "Quantité retournée",
+    "motif_label": "Motif",
+    "motif": {
+      "defectueux": "Article défectueux/abîmé",
+      "mauvaise_taille": "Mauvaise taille",
+      "ne_convient_pas": "Ne convient pas",
+      "erreur_envoi": "Erreur d'envoi",
+      "autre": "Autre"
+    },
+    "commentaire_label": "Commentaire (optionnel)",
+    "confirmer": "Enregistrer le retour",
+    "erreur": "L'enregistrement du retour a échoué."
   },
   "catalogue_admin": {
     "nouveau_produit": "Nouveau produit",

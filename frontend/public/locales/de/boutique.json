@@ -1,4 +1,5 @@
 {
+  "modal_annuler": "Abbrechen",
   "categorie": {
     "vetements": "Kleidung",
     "accessoires": "Accessoires",
@@ -90,6 +91,49 @@
     "confirmer_annulation_titre": "Diese Bestellung stornieren?",
     "confirmer_annulation_message": "Die Bestellung {{numero}} wird storniert und der Bestand wird zurückgebucht.",
     "confirmer_annulation": "Bestellung stornieren"
+  },
+  "paiement": {
+    "mode_label": "Zahlungsart",
+    "mode": {
+      "en_ligne": "Online-Zahlung",
+      "virement": "SEPA-Überweisung",
+      "especes": "Bar"
+    },
+    "confirmer": "Zahlung bestätigen",
+    "erreur": "Die Zahlungsbestätigung ist fehlgeschlagen."
+  },
+  "expedition": {
+    "expedier": "Versenden",
+    "titre": "Bestellung versenden",
+    "numero_suivi_label": "Sendungsnummer",
+    "transporteur_label": "Transportunternehmen (optional)",
+    "confirmer": "Versand bestätigen",
+    "erreur": "Der Versand ist fehlgeschlagen.",
+    "suivi_label": "Sendung: {{numero}} ({{transporteur}})"
+  },
+  "nacherfassung": {
+    "bouton": "Nacherfassung",
+    "titre": "Nacherfassung eines Versands",
+    "date_expedition_label": "Tatsächliches Versanddatum (optional — sonst jetzt)",
+    "confirmer": "Versand erfassen"
+  },
+  "retour": {
+    "bouton": "Retoure erfassen",
+    "titre": "Retoure erfassen",
+    "ligne_label": "Artikel",
+    "ligne_option": "{{quantite}} × {{prix}} € — {{retournable}} retournierbar",
+    "quantite_label": "Retournierte Menge",
+    "motif_label": "Grund",
+    "motif": {
+      "defectueux": "Artikel defekt/beschädigt",
+      "mauvaise_taille": "Falsche Größe",
+      "ne_convient_pas": "Gefällt nicht",
+      "erreur_envoi": "Versandfehler",
+      "autre": "Sonstiges"
+    },
+    "commentaire_label": "Kommentar (optional)",
+    "confirmer": "Retoure erfassen",
+    "erreur": "Die Retoure konnte nicht erfasst werden."
   },
   "catalogue_admin": {
     "nouveau_produit": "Neues Produkt",

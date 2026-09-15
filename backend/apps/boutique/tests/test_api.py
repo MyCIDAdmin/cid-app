@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
@@ -417,15 +418,45 @@ def test_membre_ne_peut_pas_changer_le_statut(api_client):
 
 
 def test_bureau_admin_peut_faire_progresser_le_statut(api_client):
+    # EN_ATTENTE -> CONFIRMEE passe désormais exclusivement par `confirmer_paiement`
+    # (Directeur Financier+, voir tests dédiés plus bas) : `changer_statut` couvre encore
+    # CONFIRMEE -> EN_PREPARATION, une transition de gestion générale sans enjeu financier.
     admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau4@example.de")
     _, membre = _user_avec_membre(Role.MEMBRE, "m18@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, admin).post(
+        _changer_statut_url(commande), {"statut": StatutCommande.EN_PREPARATION}
+    )
+    assert resp.status_code == 200
+    assert resp.data["statut"] == StatutCommande.EN_PREPARATION
+
+
+def test_changer_statut_vers_confirmee_desormais_refuse(api_client):
+    # Loophole fermé (demande utilisateur du 2026-09-15) : confirmer le paiement ne doit
+    # être possible que via l'action dédiée `confirmer_paiement` (Directeur Financier+), pas
+    # via le `changer_statut` générique (Bureau Admin+) qui contournerait la vérification du
+    # rôle et du mode de paiement.
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau30@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m30@example.de")
     commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
 
     resp = _auth(api_client, admin).post(
         _changer_statut_url(commande), {"statut": StatutCommande.CONFIRMEE}
     )
-    assert resp.status_code == 200
-    assert resp.data["statut"] == StatutCommande.CONFIRMEE
+    assert resp.status_code == 400
+
+
+def test_changer_statut_vers_expediee_desormais_refuse(api_client):
+    # Même principe : l'expédition passe désormais par `expedier` (Directeur Financier+).
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau31@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m31@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_PREPARATION)
+
+    resp = _auth(api_client, admin).post(
+        _changer_statut_url(commande), {"statut": StatutCommande.EXPEDIEE}
+    )
+    assert resp.status_code == 400
 
 
 def test_changer_statut_transition_invalide_refusee(api_client):
@@ -457,34 +488,15 @@ def test_changer_statut_vers_annulee_restitue_le_stock(api_client):
     assert variante.stock == 5
 
 
-def test_changer_statut_vers_expediee_cree_une_notification_in_app(api_client):
-    from apps.notifications.models import Notification, TypeNotification
-
-    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau8@example.de")
-    user, membre = _user_avec_membre(Role.MEMBRE, "m23@example.de")
-    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_PREPARATION)
-
-    resp = _auth(api_client, admin).post(
-        _changer_statut_url(commande), {"statut": StatutCommande.EXPEDIEE}
-    )
-    assert resp.status_code == 200
-
-    notification = Notification.objects.get(destinataire=user)
-    assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE
+# Note : la notification d'expédition est désormais testée via l'action `expedier`
+# (voir la section "confirmer-paiement / expedier / retours" plus bas), `changer_statut`
+# ne pouvant plus produire cette transition.
 
 
-def test_changer_statut_vers_confirmee_ne_cree_pas_de_notification_expedition(api_client):
-    from apps.notifications.models import Notification
-
-    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau9@example.de")
-    _, membre = _user_avec_membre(Role.MEMBRE, "m24@example.de")
-    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
-
-    resp = _auth(api_client, admin).post(
-        _changer_statut_url(commande), {"statut": StatutCommande.CONFIRMEE}
-    )
-    assert resp.status_code == 200
-    assert Notification.objects.count() == 0
+# Note : cette transition (EN_ATTENTE -> CONFIRMEE) est désormais refusée par
+# `changer_statut` — voir test_changer_statut_vers_confirmee_desormais_refuse plus haut.
+# L'absence de notification lors de `confirmer_paiement` est vérifiée dans la section dédiée
+# ci-dessous.
 
 
 def test_changer_statut_sur_commande_terminale_refuse(api_client):
@@ -496,3 +508,406 @@ def test_changer_statut_sur_commande_terminale_refuse(api_client):
         _changer_statut_url(commande), {"statut": StatutCommande.CONFIRMEE}
     )
     assert resp.status_code == 400
+
+
+# --- confirmer_paiement / expedier / retours (demande utilisateur du 2026-09-15) ---
+# Workflow : commande -> paiement (en ligne/virement/espèces) -> confirmer_paiement
+# (Directeur Financier+) -> expedier (Directeur Financier+, avec numéro de suivi) ; voir
+# apps/boutique/permissions.py et views.py pour le détail des seuils.
+
+
+def _confirmer_paiement_url(commande):
+    return reverse("boutique:commande-confirmer-paiement", args=[commande.id])
+
+
+def _expedier_url(commande):
+    return reverse("boutique:commande-expedier", args=[commande.id])
+
+
+RETOUR_LIST_URL = "boutique:retour-list"
+
+
+def _retour_detail_url(retour):
+    return reverse("boutique:retour-detail", args=[retour.id])
+
+
+# confirmer_paiement
+
+
+def test_confirmer_paiement_directeur_financier_ok(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df1@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m32@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, df).post(
+        _confirmer_paiement_url(commande), {"mode_paiement": "virement"}
+    )
+    assert resp.status_code == 200
+    assert resp.data["statut"] == StatutCommande.CONFIRMEE
+    assert resp.data["mode_paiement"] == "virement"
+    assert resp.data["date_paiement_confirme"] is not None
+    assert resp.data["paiement_confirme_par"] is not None
+
+
+def test_confirmer_paiement_admin_app_ok(api_client):
+    admin_app, _ = _user_avec_membre(Role.SUPER_ADMIN, "admin1@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m33@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, admin_app).post(
+        _confirmer_paiement_url(commande), {"mode_paiement": "especes"}
+    )
+    assert resp.status_code == 200
+
+
+def test_confirmer_paiement_bureau_admin_refuse(api_client):
+    # Bureau Admin gère les commandes en général mais pas la confirmation de paiement —
+    # seuil plus strict, Directeur Financier+ (voir permissions.py).
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau14@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m34@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, bureau).post(
+        _confirmer_paiement_url(commande), {"mode_paiement": "virement"}
+    )
+    assert resp.status_code == 403
+
+
+def test_confirmer_paiement_membre_refuse(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "m35@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, user).post(
+        _confirmer_paiement_url(commande), {"mode_paiement": "virement"}
+    )
+    assert resp.status_code == 403
+
+
+def test_confirmer_paiement_statut_invalide_refuse(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df2@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m36@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, df).post(
+        _confirmer_paiement_url(commande), {"mode_paiement": "virement"}
+    )
+    assert resp.status_code == 400
+
+
+def test_confirmer_paiement_sans_mode_paiement_refuse(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df3@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m37@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, df).post(_confirmer_paiement_url(commande), {})
+    assert resp.status_code == 400
+
+
+# expedier — flux normal
+
+
+def test_expedier_directeur_financier_cree_une_notification_avec_suivi(api_client):
+    from apps.notifications.models import Notification, TypeNotification
+
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df4@example.de")
+    user, membre = _user_avec_membre(Role.MEMBRE, "m38@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, df).post(
+        _expedier_url(commande), {"numero_suivi": "DHL123456789", "transporteur": "DHL"}
+    )
+    assert resp.status_code == 200
+    assert resp.data["statut"] == StatutCommande.EXPEDIEE
+    assert resp.data["numero_suivi"] == "DHL123456789"
+
+    notification = Notification.objects.get(destinataire=user)
+    assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE
+    assert "DHL123456789" in notification.message
+
+
+def test_expedier_depuis_en_preparation_ok(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df5@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m39@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_PREPARATION)
+
+    resp = _auth(api_client, df).post(_expedier_url(commande), {"numero_suivi": "UPS999"})
+    assert resp.status_code == 200
+
+
+def test_expedier_depuis_en_attente_sans_nacherfassement_refuse(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df6@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m40@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, df).post(_expedier_url(commande), {"numero_suivi": "UPS000"})
+    assert resp.status_code == 400
+
+
+def test_expedier_bureau_admin_refuse(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau15@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m41@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, bureau).post(_expedier_url(commande), {"numero_suivi": "X1"})
+    assert resp.status_code == 403
+
+
+def test_expedier_sans_numero_suivi_refuse(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df7@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m42@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, df).post(_expedier_url(commande), {})
+    assert resp.status_code == 400
+
+
+def test_expedier_date_future_refusee(api_client):
+    from datetime import timedelta
+
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df8@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m43@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    demain = (timezone.now() + timedelta(days=1)).isoformat()
+    resp = _auth(api_client, df).post(
+        _expedier_url(commande), {"numero_suivi": "X2", "date_expedition": demain}
+    )
+    assert resp.status_code == 400
+
+
+# expedier — nacherfassement (saisie rétroactive, demande utilisateur du 2026-09-15)
+
+
+def test_expedier_nacherfassement_depuis_en_attente_ok(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df9@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m44@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, df).post(
+        _expedier_url(commande),
+        {
+            "numero_suivi": "LEGACY001",
+            "nacherfassement": True,
+            "mode_paiement": "especes",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.data["statut"] == StatutCommande.EXPEDIEE
+    assert resp.data["mode_paiement"] == "especes"
+    assert resp.data["date_paiement_confirme"] is not None
+    assert resp.data["paiement_confirme_par"] is not None
+
+
+def test_expedier_nacherfassement_sans_mode_paiement_refuse(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df10@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m45@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, df).post(
+        _expedier_url(commande), {"numero_suivi": "LEGACY002", "nacherfassement": True}
+    )
+    assert resp.status_code == 400
+
+
+def test_expedier_nacherfassement_ne_recrase_pas_un_paiement_deja_confirme(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df11@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m46@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+    # Paiement déjà confirmé (via confirmer_paiement, simulé directement ici) en virement.
+    commande.mode_paiement = "virement"
+    commande.date_paiement_confirme = timezone.now()
+    commande.save(update_fields=["mode_paiement", "date_paiement_confirme"])
+
+    resp = _auth(api_client, df).post(
+        _expedier_url(commande),
+        {
+            "numero_suivi": "X3",
+            "nacherfassement": True,
+            "mode_paiement": "especes",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.data["mode_paiement"] == "virement"  # inchangé, pas écrasé par "especes"
+
+
+# retours — retours partiels par ligne (Bureau Admin+)
+
+
+def test_creer_retour_bureau_admin_ok(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau16@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m47@example.de")
+    variante = VarianteProduitFactory(stock=1)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=3)
+
+    resp = _auth(api_client, bureau).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 2,
+            "motif": "mauvaise_taille",
+            "commentaire": "Taille trop petite",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+
+    variante.refresh_from_db()
+    assert variante.stock == 3  # 1 initial + 2 retournés
+
+    ligne.refresh_from_db()
+    assert ligne.quantite_retournee == 2
+    assert ligne.quantite_retournable == 1
+
+
+def test_creer_retour_membre_refuse(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "m48@example.de")
+    variante = VarianteProduitFactory(stock=1)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
+
+    resp = _auth(api_client, user).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 403
+
+
+def test_creer_retour_quantite_superieure_refusee(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau17@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m49@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
+
+    resp = _auth(api_client, bureau).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 3,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    variante.refresh_from_db()
+    assert variante.stock == 0  # pas de réintégration sur un retour refusé
+
+
+def test_creer_retour_commande_non_retournable_refuse(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau18@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m50@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
+
+    resp = _auth(api_client, bureau).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
+def test_creer_retour_partiel_puis_retour_complementaire(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau19@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m51@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.LIVREE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=5)
+
+    api = _auth(api_client, bureau)
+    resp1 = api.post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 2,
+            "motif": "defectueux",
+        },
+        format="json",
+    )
+    assert resp1.status_code == 201
+
+    resp2 = api.post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 3,
+            "motif": "erreur_envoi",
+        },
+        format="json",
+    )
+    assert resp2.status_code == 201
+
+    ligne.refresh_from_db()
+    assert ligne.quantite_retournee == 5
+    assert ligne.quantite_retournable == 0
+
+    # Une troisième tentative dépasse désormais le quota retournable.
+    resp3 = api.post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp3.status_code == 400
+
+    variante.refresh_from_db()
+    assert variante.stock == 5
+
+
+def test_list_retours_filtre_par_commande(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau20@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m52@example.de")
+    commande1 = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    commande2 = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    variante1 = VarianteProduitFactory(stock=0)
+    variante2 = VarianteProduitFactory(stock=0)
+    ligne1 = LigneCommandeFactory(commande=commande1, variante=variante1, quantite=2)
+    ligne2 = LigneCommandeFactory(commande=commande2, variante=variante2, quantite=2)
+
+    api = _auth(api_client, bureau)
+    api.post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande1.id),
+            "ligne_commande": str(ligne1.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    api.post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande2.id),
+            "ligne_commande": str(ligne2.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+
+    resp = api.get(reverse(RETOUR_LIST_URL), {"commande": str(commande1.id)})
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert resp.data["results"][0]["commande"] == commande1.id

@@ -6,9 +6,13 @@ import type { CursorPage } from "../types/membre";
 import type {
   ChangerStatutCommandePayload,
   Commande,
+  ConfirmerPaiementCommandePayload,
+  ExpedierCommandePayload,
   PasserCommandePayload,
   Produit,
   ProduitPayload,
+  Retour,
+  RetourPayload,
   StatutCommande,
   StatutProduit,
   VarianteProduit,
@@ -137,5 +141,52 @@ export async function changerStatutCommande(
     `/boutique/commandes/${id}/changer-statut/`,
     payload,
   );
+  return data;
+}
+
+/**
+ * Confirme la réception du paiement (en_attente -> confirmee), Directeur Financier+ —
+ * demande utilisateur du 2026-09-15. Aucune passerelle de paiement réelle n'est appelée ici
+ * (voir ModePaiementCommande côté types) : c'est une confirmation déclarative, la passerelle
+ * réelle étant hors périmètre (ticket AHM-27).
+ */
+export async function confirmerPaiementCommande(
+  id: string,
+  payload: ConfirmerPaiementCommandePayload,
+): Promise<Commande> {
+  const { data } = await apiClient.post<Commande>(
+    `/boutique/commandes/${id}/confirmer-paiement/`,
+    payload,
+  );
+  return data;
+}
+
+/**
+ * Expédie la commande (-> expediee), Directeur Financier+. `payload.nacherfassement: true`
+ * pour une saisie rétroactive (Alt-/Sonderfälle) — voir ExpedierCommandePayload.
+ */
+export async function expedierCommande(
+  id: string,
+  payload: ExpedierCommandePayload,
+): Promise<Commande> {
+  const { data } = await apiClient.post<Commande>(`/boutique/commandes/${id}/expedier/`, payload);
+  return data;
+}
+
+export interface RetoursFiltres {
+  commande?: string;
+  cursor?: string;
+}
+
+/** Retours partiels par ligne de commande — Bureau Admin+ (voir RetourPermission). */
+export async function listRetours(filtres: RetoursFiltres = {}): Promise<CursorPage<Retour>> {
+  const { data } = await apiClient.get<CursorPage<Retour>>("/boutique/retours/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function creerRetour(payload: RetourPayload): Promise<Retour> {
+  const { data } = await apiClient.post<Retour>("/boutique/retours/", payload);
   return data;
 }

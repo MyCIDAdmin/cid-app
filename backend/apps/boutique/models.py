@@ -18,6 +18,14 @@ Périmètre de ce module (Phase 2A, CLAUDE.md §7 — modèles + API uniquement)
     d'une commande pour éviter toute survente en cas de requêtes concurrentes (FDD §3.4).
   - Génération de facture/reçu PDF, emails de suivi de statut, tâches Celery, KPIs ventes
     et pages React restent hors périmètre de ce ticket (Phase 2B, voir CLAUDE.md §7).
+
+Workflow paiement/expédition/retours (demande utilisateur du 2026-09-15) : Commande porte
+désormais `mode_paiement`/`date_paiement_confirme`/`paiement_confirme_par` (confirmation
+manuelle du règlement — voir CommandeViewSet.confirmer_paiement, même principe déclaratif que
+Cotisation.marquer_payee/AHM-53 ; AUCUN gateway de paiement réel ici, prévu séparément par
+AHM-27) et `numero_suivi`/`transporteur`/`date_expedition` (voir CommandeViewSet.expedier). Le
+modèle Retour journalise les retours (partiels, par ligne de commande) avec réintégration
+automatique du stock — voir CommandeViewSet et le nouveau RetourViewSet.
 """
 
 import uuid
@@ -161,23 +169,69 @@ class StatutCommande(models.TextChoices):
     REMBOURSEE = "remboursee", _("Remboursée")
 
 
+class ModePaiementCommande(models.TextChoices):
+    """Mode de paiement déclaré pour une commande — même principe déclaratif que
+    apps.cotisations.ModePaiement (AUCUN gateway réel branché ici, voir AHM-27) : la valeur
+    reflète ce que le membre a choisi/le CID a reçu, la confirmation reste toujours manuelle
+    (voir CommandeViewSet.confirmer_paiement)."""
+
+    EN_LIGNE = "en_ligne", _("Paiement en ligne")
+    VIREMENT = "virement", _("Virement SEPA")
+    ESPECES = "especes", _("Espèces")
+
+
+class MotifRetour(models.TextChoices):
+    """Motif d'une retoure (mockup non fourni pour cet écran — catégories usuelles e-commerce,
+    voir Retour)."""
+
+    DEFECTUEUX = "defectueux", _("Article défectueux/abîmé")
+    MAUVAISE_TAILLE = "mauvaise_taille", _("Mauvaise taille")
+    NE_CONVIENT_PAS = "ne_convient_pas", _("Ne convient pas")
+    ERREUR_ENVOI = "erreur_envoi", _("Erreur d'envoi")
+    AUTRE = "autre", _("Autre")
+
+
 # Statuts depuis lesquels une commande peut encore être annulée (par le membre ou un
-# rôle de gestion) avec restitution du stock — au-delà (expédiée/livrée), une annulation
-# relèverait d'un processus de retour non modélisé dans ce ticket (voir docstring module).
+# rôle de gestion) avec restitution du stock — au-delà (expédiée/livrée), le processus
+# adapté est une Retoure (voir CommandeViewSet/RetourViewSet), pas une annulation.
 STATUTS_ANNULABLES = {StatutCommande.EN_ATTENTE, StatutCommande.CONFIRMEE}
 
-# Transitions de statut valides pour l'action de gestion `changer_statut` (Bureau Admin+).
-# Volontairement strict (pas de retour en arrière hors annulation) pour éviter des
-# incohérences (ex. "livrée" -> "en attente").
+# Statuts depuis lesquels une retoure peut être enregistrée — seule une commande déjà
+# physiquement expédiée peut faire l'objet d'un retour ; avant cela, `annuler` est le bon outil.
+STATUTS_RETOURNABLES = {StatutCommande.EXPEDIEE, StatutCommande.LIVREE}
+
+# Transitions de statut valides pour l'action de gestion générique `changer_statut`
+# (Bureau Admin+). Volontairement strict (pas de retour en arrière hors annulation) pour
+# éviter des incohérences (ex. "livrée" -> "en attente").
+#
+# EN_ATTENTE -> CONFIRMEE et {CONFIRMEE,EN_PREPARATION} -> EXPEDIEE sont volontairement ABSENTS
+# de cette machine générique (demande utilisateur du 2026-09-15) : ces deux transitions portent
+# des données/contrôles propres (confirmation de paiement, numéro de suivi) et ne passent QUE par
+# les actions dédiées confirmer_paiement/expedier ci-dessous (CommandeViewSet) — sinon
+# `changer_statut` permettrait de contourner le contrôle "paiement reçu avant expédition" au
+# cœur de la demande.
 TRANSITIONS_STATUT_COMMANDE = {
-    StatutCommande.EN_ATTENTE: {StatutCommande.CONFIRMEE, StatutCommande.ANNULEE},
+    StatutCommande.EN_ATTENTE: {StatutCommande.ANNULEE},
     StatutCommande.CONFIRMEE: {StatutCommande.EN_PREPARATION, StatutCommande.ANNULEE},
-    StatutCommande.EN_PREPARATION: {StatutCommande.EXPEDIEE, StatutCommande.ANNULEE},
+    StatutCommande.EN_PREPARATION: {StatutCommande.ANNULEE},
     StatutCommande.EXPEDIEE: {StatutCommande.LIVREE, StatutCommande.REMBOURSEE},
     StatutCommande.LIVREE: {StatutCommande.REMBOURSEE},
     StatutCommande.ANNULEE: set(),
     StatutCommande.REMBOURSEE: set(),
 }
+
+# Statuts depuis lesquels confirmer_paiement (EN_ATTENTE -> CONFIRMEE) est autorisé — un seul
+# statut de départ ici (pas d'équivalent "échouée" côté boutique, contrairement à Cotisation).
+STATUTS_CONFIRMABLES_PAIEMENT = {StatutCommande.EN_ATTENTE}
+
+# Statuts depuis lesquels expedier (-> EXPEDIEE) est autorisé en flux normal, càd une fois le
+# paiement déjà confirmé — voir STATUTS_EXPEDIABLES_NACERFASSEMENT pour le cas dérogatoire.
+STATUTS_EXPEDIABLES_NORMAL = {StatutCommande.CONFIRMEE, StatutCommande.EN_PREPARATION}
+
+# "Nacherfassung" (demande utilisateur du 2026-09-15) : statuts depuis lesquels expedier() peut
+# sauter directement à EXPEDIEE, paiement compris, pour une commande gérée hors système (avant
+# l'introduction de cette fonctionnalité, ou par téléphone) — voir CommandeViewSet.expedier.
+STATUTS_EXPEDIABLES_NACERFASSEMENT = STATUTS_EXPEDIABLES_NORMAL | {StatutCommande.EN_ATTENTE}
 
 
 class Commande(models.Model):
@@ -209,6 +263,32 @@ class Commande(models.Model):
     )
     statut = models.CharField(
         max_length=20, choices=StatutCommande.choices, default=StatutCommande.EN_ATTENTE
+    )
+
+    # --- Paiement (confirmation manuelle, voir CommandeViewSet.confirmer_paiement) ---
+    mode_paiement = models.CharField(
+        max_length=20, choices=ModePaiementCommande.choices, blank=True
+    )
+    date_paiement_confirme = models.DateTimeField(null=True, blank=True)
+    paiement_confirme_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="commandes_paiement_confirme",
+        help_text=_("Directeur Financier/Admin ayant confirmé la réception du paiement."),
+    )
+
+    # --- Expédition (voir CommandeViewSet.expedier) ---
+    numero_suivi = models.CharField(max_length=100, blank=True)
+    transporteur = models.CharField(max_length=100, blank=True)
+    date_expedition = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "Date réelle d'expédition — normalement la date de l'action, mais éditable pour une "
+            "saisie rétroactive (nacherfassement)."
+        ),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -273,3 +353,54 @@ class LigneCommande(models.Model):
     @property
     def sous_total(self) -> Decimal:
         return (self.prix_unitaire * self.quantite).quantize(Decimal("0.01"))
+
+    @property
+    def quantite_retournee(self) -> int:
+        total = self.retours.aggregate(total=models.Sum("quantite"))["total"]
+        return total or 0
+
+    @property
+    def quantite_retournable(self) -> int:
+        return max(0, self.quantite - self.quantite_retournee)
+
+
+class Retour(models.Model):
+    """
+    Retoure (demande utilisateur du 2026-09-15) — journal des retours, partiels ou complets,
+    ligne par ligne : `quantite` ne peut jamais dépasser LigneCommande.quantite_retournable (voir
+    RetourViewSet.create). L'enregistrement d'une retoure réintègre atomiquement la quantité
+    retournée dans VarianteProduit.stock (même verrouillage SELECT FOR UPDATE que
+    `_restituer_stock`) ; elle ne modifie PAS `Commande.statut` (une commande partiellement
+    retournée n'a pas d'état propre dans StatutCommande — un remboursement/changement de statut
+    reste un geste manuel séparé, via `changer_statut` vers REMBOURSEE si besoin).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    commande = models.ForeignKey(Commande, on_delete=models.PROTECT, related_name="retours")
+    ligne_commande = models.ForeignKey(
+        LigneCommande, on_delete=models.PROTECT, related_name="retours"
+    )
+    quantite = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    motif = models.CharField(max_length=20, choices=MotifRetour.choices)
+    commentaire = models.TextField(blank=True)
+
+    enregistre_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="retours_enregistres",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "boutique_retours"
+        verbose_name = _("Retoure")
+        verbose_name_plural = _("Retoures")
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["commande"])]
+
+    def __str__(self):
+        return f"Retoure {self.quantite} × {self.ligne_commande.variante} ({self.commande.numero_commande})"
