@@ -61,6 +61,7 @@ import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
+import { useMarquerLuesPrefixe, useNotificationsNonLues } from "../../hooks/useNotifications";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { type SidebarGroupKey, useUiStore } from "../../store/uiStore";
 import BrandLogo from "../ui/BrandLogo";
@@ -230,10 +231,34 @@ export default function Sidebar() {
     navigate("/login", { replace: true });
   }
 
+  // Point d'activité par module (ajouté le 2026-09-16, demande utilisateur : "Für die Sidebar,
+  // es soll ein zeichen ... geben, der hinweist dass es neuigkeiten bei dem Modul gibt") :
+  // dérivé des notifications non lues dont `lien` commence par le `to` de l'item — même
+  // comparaison de préfixe que isItemActive ci-dessous, donc jamais deux items à la fois pour
+  // un même lien (ex. "/cotisations" n'allume jamais "/cotisations/en-attente"). Cloche et point
+  // partagent le même état "lu" côté backend (voir hooks/useNotifications) : marquer un module
+  // comme visité fait baisser le badge de la cloche avec lui, un seul état de lecture.
+  const notificationsNonLues = useNotificationsNonLues().data?.results ?? [];
+  const marquerLuesPrefixeMutation = useMarquerLuesPrefixe();
+
   const visibleItems = NAV_ITEMS.filter((item) => hasRoleAtLeast(user, item.minRoleLevel ?? 1));
 
   function isItemActive(item: NavItem): boolean {
     return location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+  }
+
+  function itemALeSignal(item: NavItem): boolean {
+    return notificationsNonLues.some(
+      (n) => n.lien === item.to || n.lien.startsWith(`${item.to}/`),
+    );
+  }
+
+  function handleClicItem(item: NavItem) {
+    // Ne déclenche l'appel que si un point est effectivement affiché — inutile de solliciter
+    // le backend à chaque clic de navigation ordinaire.
+    if (itemALeSignal(item)) {
+      marquerLuesPrefixeMutation.mutate(item.to);
+    }
   }
 
   // Groupes non vides, dans l'ordre fixe GROUP_ORDER, chacun sachant s'il contient la page
@@ -246,10 +271,12 @@ export default function Sidebar() {
 
   function renderItem(item: NavItem) {
     const Icon = item.icon;
+    const signale = itemALeSignal(item);
     return (
       <NavLink
         key={item.to}
         to={item.to}
+        onClick={() => handleClicItem(item)}
         title={collapsed ? t(item.labelKey) : undefined}
         className={({ isActive }) =>
           `flex items-center gap-3 rounded-cid px-3 py-2 text-sm transition ${
@@ -257,7 +284,16 @@ export default function Sidebar() {
           } ${isActive ? "bg-ca font-semibold text-white" : "text-white/70 hover:bg-white/5"}`
         }
       >
-        <Icon size={18} className="shrink-0" />
+        <span className="relative shrink-0">
+          <Icon size={18} />
+          {signale && (
+            <span
+              className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-ca ring-2 ring-sb"
+              aria-label={t("nav.point_activite", { module: t(item.labelKey) })}
+              role="status"
+            />
+          )}
+        </span>
         {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
       </NavLink>
     );

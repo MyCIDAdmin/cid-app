@@ -44,6 +44,10 @@ def _publier_url(evenement):
     return reverse("evenements:evenement-publier", args=[evenement.id])
 
 
+def _annuler_evenement_url(evenement):
+    return reverse("evenements:evenement-annuler", args=[evenement.id])
+
+
 def _inscription_annuler_url(inscription):
     return reverse("evenements:inscription-annuler", args=[inscription.id])
 
@@ -114,6 +118,25 @@ def test_bureau_admin_peut_creer_et_publier_evenement(api_client):
     resp2 = _auth(api_client, user).post(_publier_url(_Obj(resp.data["id"])))
     assert resp2.status_code == 200
     assert resp2.data["statut"] == StatutEvenement.PUBLIE
+
+
+def test_annuler_evenement_publie_declenche_la_notification(api_client, monkeypatch):
+    """Ajouté le 2026-09-16 — vérifie uniquement le câblage (annuler() -> .delay()), la
+    logique de la tâche elle-même est testée dans test_tasks.py."""
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-annule@example.de")
+    evenement = EvenementFactory(statut=StatutEvenement.PUBLIE)
+
+    appels = []
+    monkeypatch.setattr(
+        "apps.evenements.views.envoyer_annulation_evenement.delay",
+        lambda evenement_id: appels.append(evenement_id),
+    )
+
+    resp = _auth(api_client, user).post(_annuler_evenement_url(evenement))
+
+    assert resp.status_code == 200
+    assert resp.data["statut"] == StatutEvenement.ANNULE
+    assert appels == [str(evenement.id)]
 
 
 class _Obj:

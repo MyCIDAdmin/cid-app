@@ -61,7 +61,7 @@ from .serializers import (
     RejoindreTrajetSerializer,
     ReservationCovoiturageSerializer,
 )
-from .tasks import envoyer_invitations_evenement
+from .tasks import envoyer_annulation_evenement, envoyer_invitations_evenement
 
 
 class EvenementsCursorPagination(CursorPagination):
@@ -116,6 +116,8 @@ class EvenementViewSet(ModelViewSet):
             raise ValidationError({"statut": "Cet événement est déjà annulé."})
         evenement.statut = StatutEvenement.ANNULE
         evenement.save(update_fields=["statut"])
+        # Email + notification in-app à chaque inscrit non annulé (ajouté le 2026-09-16).
+        envoyer_annulation_evenement.delay(str(evenement.id))
         return Response(self.get_serializer(evenement).data)
 
     @action(detail=False, methods=["post"])

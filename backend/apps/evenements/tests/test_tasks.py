@@ -6,7 +6,11 @@ import pytest
 
 from apps.accounts.models import User
 from apps.evenements.models import StatutInscription
-from apps.evenements.tasks import envoyer_invitations_evenement, envoyer_rappels_evenements
+from apps.evenements.tasks import (
+    envoyer_annulation_evenement,
+    envoyer_invitations_evenement,
+    envoyer_rappels_evenements,
+)
 from apps.evenements.tests.factories import EvenementFactory, InscriptionFactory
 from apps.membres.models import StatutMembre
 from apps.membres.tests.factories import MembreFactory
@@ -95,3 +99,26 @@ def test_rappel_ignore_les_evenements_hors_fenetre(mailoutbox):
 
     assert envoyes == 0
     assert len(mailoutbox) == 0
+
+
+# --- envoyer_annulation_evenement (ajoutée le 2026-09-16) ---
+
+
+def test_annulation_envoyee_aux_inscrits_non_annules(mailoutbox):
+    m1 = _membre_actif_avec_compte("inscrit1@example.de")
+    m2 = _membre_actif_avec_compte("desinscrit@example.de")
+    evenement = EvenementFactory(titre="AG Berlin")
+    InscriptionFactory(evenement=evenement, membre=m1)
+    InscriptionFactory(evenement=evenement, membre=m2, statut=StatutInscription.ANNULEE)
+
+    envoyes = envoyer_annulation_evenement(str(evenement.id))
+
+    assert envoyes == 1
+    assert len(mailoutbox) == 1
+    notification = Notification.objects.get(destinataire=m1.user)
+    assert notification.type_notification == TypeNotification.EVENEMENT_ANNULE
+    assert Notification.objects.filter(destinataire=m2.user).count() == 0
+
+
+def test_annulation_evenement_introuvable_ne_leve_pas():
+    assert envoyer_annulation_evenement("00000000-0000-0000-0000-000000000000") == 0

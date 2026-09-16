@@ -68,7 +68,11 @@ from .models import (
     StatutProduit,
     VarianteProduit,
 )
-from .notifications import notifier_commande_confirmee, notifier_commande_expediee
+from .notifications import (
+    notifier_commande_annulee,
+    notifier_commande_confirmee,
+    notifier_commande_expediee,
+)
 from .permissions import (
     GESTION_CATALOGUE_MIN_LEVEL,
     ORDER_VISIBILITY_MIN_LEVEL,
@@ -266,6 +270,11 @@ class CommandeViewSet(ModelViewSet):
             _restituer_stock(commande)
             commande.statut = StatutCommande.ANNULEE
             commande.save(update_fields=["statut"])
+        # Notification (ajoutée le 2026-09-16) uniquement quand ce n'est pas le client lui-même
+        # qui vient d'annuler sa propre commande — voir notifications.notifier_commande_annulee.
+        proprietaire_user = getattr(commande.membre, "user", None)
+        if proprietaire_user is not None and proprietaire_user.id != request.user.id:
+            notifier_commande_annulee(commande)
         return Response(self.get_serializer(commande).data)
 
     @action(detail=True, methods=["post"], url_path="changer-statut")
@@ -294,6 +303,11 @@ class CommandeViewSet(ModelViewSet):
 
         if nouveau_statut == StatutCommande.EXPEDIEE:
             notifier_commande_expediee(commande)
+        elif nouveau_statut == StatutCommande.ANNULEE:
+            # changer_statut est réservé à ORDER_VISIBILITY_MIN_LEVEL (Bureau Admin+, voir
+            # CommandePermission) : jamais le client lui-même, contrairement à `annuler`
+            # ci-dessus — toujours notifier (ajouté le 2026-09-16).
+            notifier_commande_annulee(commande)
 
         return Response(self.get_serializer(commande).data)
 
@@ -349,9 +363,7 @@ class CommandeViewSet(ModelViewSet):
         nacherfassement = data["nacherfassement"]
 
         statuts_valides = (
-            STATUTS_EXPEDIABLES_NACERFASSEMENT
-            if nacherfassement
-            else STATUTS_EXPEDIABLES_NORMAL
+            STATUTS_EXPEDIABLES_NACERFASSEMENT if nacherfassement else STATUTS_EXPEDIABLES_NORMAL
         )
         if commande.statut not in statuts_valides:
             raise ValidationError(

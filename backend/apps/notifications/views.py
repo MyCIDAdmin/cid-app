@@ -5,6 +5,14 @@ Vues API — app notifications :
                                                 ?lu=/?type_notification=
   POST /notifications/{id}/marquer-lue/     — marque une notification comme lue
   POST /notifications/tout-marquer-lu/      — marque toutes mes notifications non lues comme lues
+  POST /notifications/marquer-lues-prefixe/ — marque comme lues mes notifications non lues dont
+                                                `lien` commence par ?prefixe= (demande utilisateur
+                                                du 2026-09-16 : le point d'activité de la sidebar
+                                                doit disparaître — et donc faire baisser le badge
+                                                de la cloche avec lui, un seul état de lecture,
+                                                voir Sidebar.tsx/useMarquerLuesPrefixe côté
+                                                frontend — dès que le membre ouvre le module
+                                                concerné)
   GET  /notifications/non-lues-count/       — compteur pour le badge de la cloche (layout React)
 
 Pas de create/update/destroy exposés : une notification n'est jamais créée ni modifiée par un
@@ -53,6 +61,14 @@ class NotificationViewSet(ModelViewSet):
     @action(detail=False, methods=["post"], url_path="tout-marquer-lu")
     def tout_marquer_lu(self, request):
         nombre = self.get_queryset().filter(lu=False).update(lu=True)
+        return Response({"marquees": nombre})
+
+    @action(detail=False, methods=["post"], url_path="marquer-lues-prefixe")
+    def marquer_lues_prefixe(self, request):
+        prefixe = (request.data.get("prefixe") or "").strip()
+        if not prefixe:
+            return Response({"marquees": 0})
+        nombre = self.get_queryset().filter(lu=False, lien__startswith=prefixe).update(lu=True)
         return Response({"marquees": nombre})
 
     @action(detail=False, methods=["get"], url_path="non-lues-count")

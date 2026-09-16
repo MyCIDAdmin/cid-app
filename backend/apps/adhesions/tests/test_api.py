@@ -18,6 +18,7 @@ from apps.adhesions.tests.factories import (
     SouscriptionFactory,
 )
 from apps.membres.tests.factories import MembreFactory
+from apps.notifications.models import Notification, TypeNotification
 
 pytestmark = pytest.mark.django_db
 
@@ -655,6 +656,36 @@ def test_rh_annule_la_souscription_dun_membre(api_client):
     assert resp.status_code == 200, resp.data
     souscription.refresh_from_db()
     assert souscription.statut == StatutSouscription.ANNULEE
+
+
+def test_rh_annule_la_souscription_dun_membre_le_notifie(api_client):
+    """Ajouté le 2026-09-16 — voir notifications.notifier_souscription_annulee : le membre est
+    notifié quand c'est RH+ qui annule (stornieren), jamais quand il annule lui-même."""
+    user_rh, _rh = _user_avec_membre(Role.RH, "rh-annule@example.de")
+    user_membre, membre = _user_avec_membre(Role.MEMBRE, "membre-annule@example.de")
+    souscription = SouscriptionFactory(
+        membre=membre, statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF
+    )
+    _auth(api_client, user_rh)
+
+    resp = api_client.post(_annuler_url(souscription))
+
+    assert resp.status_code == 200, resp.data
+    notification = Notification.objects.get(destinataire=user_membre)
+    assert notification.type_notification == TypeNotification.ADHESION_SOUSCRIPTION_ANNULEE
+
+
+def test_membre_qui_retire_sa_propre_souscription_nest_pas_notifie(api_client):
+    """Ajouté le 2026-09-16 — pas besoin d'informer un membre de sa propre action
+    (zurückziehen), voir notifications.notifier_souscription_annulee."""
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre-zuruck@example.de")
+    souscription = SouscriptionFactory(membre=membre, statut=StatutSouscription.EN_ATTENTE_PAIEMENT)
+    _auth(api_client, user)
+
+    resp = api_client.post(_annuler_url(souscription))
+
+    assert resp.status_code == 200, resp.data
+    assert Notification.objects.filter(destinataire=user).count() == 0
 
 
 def test_rh_ne_peut_pas_annuler_une_souscription_deja_payee(api_client):

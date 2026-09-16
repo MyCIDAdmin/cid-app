@@ -84,6 +84,12 @@ from .serializers import (
     SouscriptionSerializer,
     ValiderJustificatifSerializer,
 )
+from .notifications import (
+    notifier_justificatif_refuse,
+    notifier_justificatif_valide,
+    notifier_souscription_annulee,
+)
+from .tasks import envoyer_annonce_campagne
 
 
 class AdhesionsCursorPagination(CursorPagination):
@@ -146,6 +152,9 @@ class CampagneAdhesionViewSet(ModelViewSet):
                     )
                 }
             ) from exc
+        # Email + notification in-app à tous les membres actifs (ajouté le 2026-09-16, voir
+        # tasks.py — même principe que EvenementViewSet.publier).
+        envoyer_annonce_campagne.delay(str(campagne.id))
         return Response(self.get_serializer(campagne).data)
 
     @action(detail=True, methods=["post"])
@@ -306,6 +315,12 @@ class SouscriptionViewSet(ModelViewSet):
             )
         souscription.statut = StatutSouscription.ANNULEE
         souscription.save(update_fields=["statut"])
+        # Notification (ajoutée le 2026-09-16) uniquement quand ce n'est pas le membre
+        # propriétaire qui vient d'annuler sa propre souscription ("zurückziehen") — voir
+        # notifications.notifier_souscription_annulee.
+        proprietaire_user = getattr(souscription.membre, "user", None)
+        if proprietaire_user is not None and proprietaire_user.id != request.user.id:
+            notifier_souscription_annulee(souscription)
         return Response(SouscriptionSerializer(souscription).data)
 
 
@@ -423,5 +438,11 @@ class JustificatifRabaisViewSet(ModelViewSet):
             else StatutSouscription.RABAIS_REFUSE
         )
         souscription.save(update_fields=["statut"])
+
+        # Notification (ajoutée le 2026-09-16) — voir notifications.py.
+        if decision == "approuve":
+            notifier_justificatif_valide(justificatif)
+        else:
+            notifier_justificatif_refuse(justificatif)
 
         return Response(JustificatifRabaisSerializer(justificatif).data)

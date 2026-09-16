@@ -22,6 +22,7 @@ from apps.adhesions.tests.factories import (
     SouscriptionFactory,
 )
 from apps.membres.tests.factories import MembreFactory
+from apps.notifications.models import Notification, TypeNotification
 
 pytestmark = pytest.mark.django_db
 
@@ -357,6 +358,27 @@ def test_rh_approuve_le_justificatif(api_client):
     assert souscription.statut == StatutSouscription.EN_ATTENTE_PAIEMENT
 
 
+def test_rh_approuve_le_justificatif_notifie_le_membre(api_client, mailoutbox):
+    """Ajouté le 2026-09-16 — voir apps.adhesions.notifications.notifier_justificatif_valide."""
+    user_membre = User.objects.create_user(
+        email="etudiant@example.de", password="Password123!", is_active=True
+    )
+    membre = MembreFactory(user=user_membre)
+    souscription = SouscriptionFactory(
+        membre=membre, statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF
+    )
+    justificatif = JustificatifRabaisFactory(souscription=souscription)
+    user_rh, _rh = _user_avec_membre(Role.RH, "rh-valide@example.de")
+    _auth(api_client, user_rh)
+
+    resp = api_client.post(_valider_url(justificatif), {"decision": "approuve"})
+
+    assert resp.status_code == 200, resp.data
+    notification = Notification.objects.get(destinataire=user_membre)
+    assert notification.type_notification == TypeNotification.ADHESION_JUSTIFICATIF_VALIDE
+    assert len(mailoutbox) == 1
+
+
 def test_rh_rejette_le_justificatif_avec_motif(api_client):
     souscription = SouscriptionFactory(statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF)
     justificatif = JustificatifRabaisFactory(souscription=souscription)
@@ -374,6 +396,31 @@ def test_rh_rejette_le_justificatif_avec_motif(api_client):
     assert justificatif.statut == StatutJustificatif.REJETE
     assert justificatif.motif_rejet == "Carte étudiante expirée."
     assert souscription.statut == StatutSouscription.RABAIS_REFUSE
+
+
+def test_rh_rejette_le_justificatif_notifie_le_membre_avec_le_motif(api_client, mailoutbox):
+    """Ajouté le 2026-09-16 — voir apps.adhesions.notifications.notifier_justificatif_refuse."""
+    user_membre = User.objects.create_user(
+        email="etudiant2@example.de", password="Password123!", is_active=True
+    )
+    membre = MembreFactory(user=user_membre)
+    souscription = SouscriptionFactory(
+        membre=membre, statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF
+    )
+    justificatif = JustificatifRabaisFactory(souscription=souscription)
+    user_rh, _rh = _user_avec_membre(Role.RH, "rh-rejette@example.de")
+    _auth(api_client, user_rh)
+
+    resp = api_client.post(
+        _valider_url(justificatif),
+        {"decision": "rejete", "motif_rejet": "Carte étudiante expirée."},
+    )
+
+    assert resp.status_code == 200, resp.data
+    notification = Notification.objects.get(destinataire=user_membre)
+    assert notification.type_notification == TypeNotification.ADHESION_JUSTIFICATIF_REFUSE
+    assert "Carte étudiante expirée." in notification.message
+    assert len(mailoutbox) == 1
 
 
 def test_rejet_sans_motif_refuse(api_client):

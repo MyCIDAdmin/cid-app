@@ -16,6 +16,7 @@ from apps.boutique.tests.factories import (
     VarianteProduitFactory,
 )
 from apps.membres.tests.factories import MembreFactory
+from apps.notifications.models import Notification, TypeNotification
 
 pytestmark = pytest.mark.django_db
 
@@ -404,6 +405,30 @@ def test_annuler_commande_deja_expediee_refuse(api_client):
     assert resp.status_code == 400
 
 
+def test_annuler_sa_propre_commande_nest_pas_notifie(api_client):
+    """Ajouté le 2026-09-16 — pas besoin d'informer un client de sa propre action, voir
+    notifications.notifier_commande_annulee et views.CommandeViewSet.annuler."""
+    user, membre = _user_avec_membre(Role.MEMBRE, "m15b@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, user).post(_annuler_url(commande))
+    assert resp.status_code == 200
+    assert Notification.objects.filter(destinataire=user).count() == 0
+
+
+def test_bureau_admin_annule_la_commande_dun_membre_le_notifie(api_client):
+    """Ajouté le 2026-09-16 — voir notifications.notifier_commande_annulee : le client est
+    notifié quand c'est un tiers (Bureau Admin+) qui annule sa commande."""
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-annule@example.de")
+    user_membre, membre = _user_avec_membre(Role.MEMBRE, "m15c@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, admin).post(_annuler_url(commande))
+    assert resp.status_code == 200
+    notification = Notification.objects.get(destinataire=user_membre)
+    assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_ANNULEE
+
+
 # --- changer_statut : réservé Bureau Admin+, transitions valides ---
 
 
@@ -486,6 +511,21 @@ def test_changer_statut_vers_annulee_restitue_le_stock(api_client):
 
     variante.refresh_from_db()
     assert variante.stock == 5
+
+
+def test_changer_statut_vers_annulee_notifie_le_client(api_client):
+    """Ajouté le 2026-09-16 — changer_statut est réservé Bureau Admin+ (jamais le client
+    lui-même), donc toujours notifié — voir notifications.notifier_commande_annulee."""
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau6b@example.de")
+    user_membre, membre = _user_avec_membre(Role.MEMBRE, "m20b@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, admin).post(
+        _changer_statut_url(commande), {"statut": StatutCommande.ANNULEE}
+    )
+    assert resp.status_code == 200
+    notification = Notification.objects.get(destinataire=user_membre)
+    assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_ANNULEE
 
 
 # Note : la notification d'expédition est désormais testée via l'action `expedier`

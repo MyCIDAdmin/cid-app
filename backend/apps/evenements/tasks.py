@@ -7,6 +7,11 @@ fois, au moment où l'événement passe de brouillon à publié.
 W-005 (rappel J-3/J-1) : planifiée par Celery Beat, une fois par jour à 10h00 (voir la migration
 0002_planifier_rappels_evenements, même principe que apps.cotisations 0003).
 
+`envoyer_annulation_evenement` (ajoutée le 2026-09-16, demande utilisateur : "Baue notification wo
+du siehst, dass es Sinn macht") : déclenchée par `EvenementViewSet.annuler`, à chaque inscrit non
+annulé (même portée que `envoyer_rappels_evenements` ci-dessous) — même principe de broadcast que
+`envoyer_invitations_evenement`.
+
 Comme apps.cotisations.tasks (voir son docstring), chaque envoi email individuel est protégé
 (`fail_silently`/try-except) pour qu'un échec isolé n'interrompe jamais la boucle sur les membres
 suivants — et la notification in-app est créée indépendamment de l'email, jamais conditionnée à
@@ -72,6 +77,54 @@ def envoyer_invitations_evenement(evenement_id) -> int:
             TypeNotification.EVENEMENT_INVITATION,
             titre=f"Nouvel événement : {evenement.titre}",
             message=f"Un nouvel événement a été publié le {evenement.date_evenement:%d/%m/%Y}.",
+            lien=lien,
+        )
+
+    return envoyes
+
+
+@shared_task
+def envoyer_annulation_evenement(evenement_id) -> int:
+    """Email + notification in-app à chaque inscrit non annulé, déclenchée à l'annulation d'un
+    événement (ajouté le 2026-09-16). Retourne le nombre d'annulations notifiées avec succès."""
+    try:
+        evenement = Evenement.objects.get(id=evenement_id)
+    except Evenement.DoesNotExist:
+        return 0
+
+    inscriptions = evenement.inscriptions.exclude(statut=StatutInscription.ANNULEE).select_related(
+        "membre__user"
+    )
+    lien = f"/evenements/{evenement.id}"
+    envoyes = 0
+
+    for inscription in inscriptions:
+        user = inscription.membre.user
+        if not user or not user.email:
+            continue
+        try:
+            send_mail(
+                subject=f"Événement annulé : {evenement.titre}",
+                message=(
+                    f"L'événement {evenement.titre}, prévu le "
+                    f"{evenement.date_evenement:%d/%m/%Y}, a été annulé."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            envoyes += 1
+        except Exception:  # noqa: BLE001 — voir docstring de module
+            logger.warning(
+                "envoyer_annulation_evenement: échec d'envoi pour user=%s evenement=%s",
+                user.id,
+                evenement_id,
+            )
+        notifier(
+            user,
+            TypeNotification.EVENEMENT_ANNULE,
+            titre=f"Événement annulé : {evenement.titre}",
+            message=f"{evenement.titre} ({evenement.date_evenement:%d/%m/%Y}) a été annulé.",
             lien=lien,
         )
 

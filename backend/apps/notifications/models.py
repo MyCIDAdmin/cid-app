@@ -14,6 +14,14 @@ que les autres apps appellent en plus de leur email existant — voir son docstr
 des points d'intégration (apps.accounts.tasks, apps.cotisations.{views,webhooks,tasks},
 apps.evenements.tasks, apps.boutique.views).
 
+8 types supplémentaires ajoutés le 2026-09-16 (demande utilisateur : "Baue notification wo du
+siehst, dass es Sinn macht") pour des événements jusque-là silencieux — voir chaque app pour le
+point d'intégration exact : apps.adhesions.{tasks,notifications,views} (campagne publiée,
+justificatif validé/rejeté, souscription annulée), apps.evenements.tasks (événement annulé),
+apps.boutique.notifications (commande annulée), apps.communaute.notifications (nouvelle réponse
+de forum — uniquement l'auteur du sujet et les précédents répondants, jamais tous les membres,
+pour ne pas multiplier les écritures en base sur un forum actif).
+
 Destinataire porté par `User` (jamais `Membre`) : l'API "mes notifications" liste toujours
 `request.user`, et un compte RH/Bureau Admin/DG sans fiche Membre à jour doit pouvoir recevoir des
 notifications de gestion (ex. relance justificatif) au même titre qu'un membre normal.
@@ -29,7 +37,9 @@ from django.utils.translation import gettext_lazy as _
 class TypeNotification(models.TextChoices):
     """Les 11 types R1 (CID-RPL-001 §2.2) — vote_ouverture/vote_resultats ne sont pas encore
     déclenchés (apps.vote n'existe pas avant la Phase 3) mais sont déjà répertoriés ici pour que
-    le modèle n'ait pas à être remanié quand ce module sera construit."""
+    le modèle n'ait pas à être remanié quand ce module sera construit. Les 8 types suivants
+    (ADHESION_* à COMMUNAUTE_REPONSE_FORUM) ont été ajoutés le 2026-09-16, voir docstring de
+    module."""
 
     BIENVENUE = "bienvenue", _("Bienvenue")
     PAIEMENT_CONFIRME = "paiement_confirme", _("Paiement confirmé")
@@ -41,6 +51,13 @@ class TypeNotification(models.TextChoices):
     VOTE_OUVERTURE = "vote_ouverture", _("Ouverture d'un vote")
     VOTE_RESULTATS = "vote_resultats", _("Résultats d'un vote")
     MESSAGE_PRIVE_RECU = "message_prive_recu", _("Nouveau message privé")
+    ADHESION_CAMPAGNE_PUBLIEE = "adhesion_campagne_publiee", _("Nouvelle campagne d'adhésion")
+    ADHESION_JUSTIFICATIF_VALIDE = "adhesion_justificatif_valide", _("Justificatif validé")
+    ADHESION_JUSTIFICATIF_REFUSE = "adhesion_justificatif_refuse", _("Justificatif refusé")
+    ADHESION_SOUSCRIPTION_ANNULEE = "adhesion_souscription_annulee", _("Souscription annulée")
+    EVENEMENT_ANNULE = "evenement_annule", _("Événement annulé")
+    BOUTIQUE_COMMANDE_ANNULEE = "boutique_commande_annulee", _("Commande annulée")
+    COMMUNAUTE_REPONSE_FORUM = "communaute_reponse_forum", _("Nouvelle réponse sur un sujet")
 
 
 class Notification(models.Model):

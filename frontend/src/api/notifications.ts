@@ -36,6 +36,20 @@ export async function toutMarquerLu(): Promise<{ marquees: number }> {
   return data;
 }
 
+/**
+ * Marque comme lues mes notifications non lues dont `lien` commence par `prefixe` (ajouté le
+ * 2026-09-16, demande utilisateur : le point d'activité de la sidebar doit disparaître — et donc
+ * faire baisser le badge de la cloche avec lui, un seul état de lecture — dès que le membre ouvre
+ * le module concerné). Voir components/layout/Sidebar.
+ */
+export async function marquerLuesPrefixe(prefixe: string): Promise<{ marquees: number }> {
+  const { data } = await apiClient.post<{ marquees: number }>(
+    "/notifications/notifications/marquer-lues-prefixe/",
+    { prefixe },
+  );
+  return data;
+}
+
 /** Compteur pour le badge de la cloche (layout React) — voir NotificationBell. */
 export async function nonLuesCount(): Promise<{ count: number }> {
   const { data } = await apiClient.get<{ count: number }>(

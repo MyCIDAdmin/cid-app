@@ -55,6 +55,7 @@ from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 
 from .filters import PublicationFilter, SujetFilter
+from .notifications import notifier_nouvelle_reponse_forum
 from .models import (
     Album,
     ChoixQuestion,
@@ -327,6 +328,9 @@ class ReponseForumViewSet(
         if sujet.est_masque:
             raise ValidationError({"sujet": "Sujet introuvable."})
         serializer.save()
+        # Notification (ajoutée le 2026-09-16) — auteur du sujet + précédents répondants
+        # uniquement, voir notifications.notifier_nouvelle_reponse_forum.
+        notifier_nouvelle_reponse_forum(serializer.instance)
 
     @action(detail=True, methods=["post"])
     def masquer(self, request, pk=None):

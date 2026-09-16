@@ -24,7 +24,8 @@
     "albums": "Fotoalben",
     "quiz": "Quiz",
     "admin_quiz": "Quiz-Verwaltung",
-    "gestion_roles": "Rollenverwaltung"
+    "gestion_roles": "Rollenverwaltung",
+    "point_activite": "Neuigkeiten bei {{module}}"
   },
   "nav_groupe": {
     "general": "Allgemein",

@@ -38,6 +38,29 @@ def notifier_commande_confirmee(commande: Commande) -> None:
     )
 
 
+def notifier_commande_annulee(commande: Commande) -> None:
+    """Appelée juste après qu'une commande soit passée à `annulee` (`CommandeViewSet.annuler` ou
+    `changer_statut`), ajouté le 2026-09-16 — uniquement quand ce n'est pas le client lui-même qui
+    vient d'annuler sa propre commande (voir views.py, même principe que
+    apps.adhesions.notifications.notifier_souscription_annulee)."""
+    user = _destinataire(commande)
+    if user and user.email:
+        send_mail(
+            subject=f"Commande {commande.numero_commande} annulée",
+            message=f"Votre commande {commande.numero_commande} a été annulée.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    notifier(
+        user,
+        TypeNotification.BOUTIQUE_COMMANDE_ANNULEE,
+        titre=f"Commande {commande.numero_commande} annulée",
+        message=f"Votre commande {commande.numero_commande} a été annulée.",
+        lien="/boutique/commandes",
+    )
+
+
 def notifier_commande_expediee(commande: Commande) -> None:
     """Appelée quand `CommandeViewSet.expedier` fait passer une commande à `expediee` (flux
     normal ou nacherfassement) — voir views.py. Inclut le numéro de suivi/transporteur dans

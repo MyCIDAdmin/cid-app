@@ -39,6 +39,7 @@ from apps.communaute.tests.factories import (
 )
 from apps.membres.models import StatutMembre
 from apps.membres.tests.factories import MembreFactory
+from apps.notifications.models import Notification, TypeNotification
 
 pytestmark = pytest.mark.django_db
 
@@ -346,6 +347,52 @@ def test_repondre_a_un_sujet(api_client):
     assert resp.status_code == 201
     assert resp.data["auteur"]["id"] == str(membre.id)
     assert sujet.nombre_reponses == 1
+
+
+def test_repondre_notifie_lauteur_du_sujet_et_les_precedents_repondants_mais_pas_le_replier(
+    api_client, mailoutbox
+):
+    """Ajouté le 2026-09-16 — voir apps.communaute.notifications.notifier_nouvelle_reponse_forum.
+    Volontairement pas un broadcast à tous les membres (trop fréquent sur un forum actif) :
+    seuls l'auteur du sujet et les précédents répondants sont notifiés."""
+    auteur_user, auteur_membre = _user_avec_membre(Role.MEMBRE, "auteur-sujet@example.de")
+    premier_user, premier_membre = _user_avec_membre(Role.MEMBRE, "premier-repondant@example.de")
+    replier_user, _replier_membre = _user_avec_membre(Role.MEMBRE, "nouveau-repondant@example.de")
+    tiers_user, _tiers_membre = _user_avec_membre(Role.MEMBRE, "sans-rapport@example.de")
+
+    sujet = SujetFactory(auteur=auteur_membre, titre="Discussion AG")
+    ReponseForumFactory(sujet=sujet, auteur=premier_membre)
+
+    resp = _auth(api_client, replier_user).post(
+        reverse("communaute:reponse-forum-list"),
+        {"sujet": str(sujet.id), "contenu": "Une nouvelle réponse."},
+    )
+
+    assert resp.status_code == 201
+    destinataires = set(
+        Notification.objects.filter(
+            type_notification=TypeNotification.COMMUNAUTE_REPONSE_FORUM
+        ).values_list("destinataire_id", flat=True)
+    )
+    assert destinataires == {auteur_user.id, premier_user.id}
+    assert Notification.objects.filter(destinataire=replier_user).count() == 0
+    assert Notification.objects.filter(destinataire=tiers_user).count() == 0
+    assert len(mailoutbox) == 2
+
+
+def test_repondre_a_son_propre_sujet_sans_autre_repondant_ne_notifie_personne(api_client):
+    """Ajouté le 2026-09-16 — l'auteur du sujet qui répond à sa propre discussion (et qu'il n'y
+    a pas encore d'autre répondant) n'a personne à notifier."""
+    auteur_user, auteur_membre = _user_avec_membre(Role.MEMBRE, "auteur-solo@example.de")
+    sujet = SujetFactory(auteur=auteur_membre)
+
+    resp = _auth(api_client, auteur_user).post(
+        reverse("communaute:reponse-forum-list"),
+        {"sujet": str(sujet.id), "contenu": "Je précise mon propos."},
+    )
+
+    assert resp.status_code == 201
+    assert Notification.objects.count() == 0
 
 
 def test_detail_dun_sujet_inclut_ses_reponses_mais_pas_la_liste(api_client):

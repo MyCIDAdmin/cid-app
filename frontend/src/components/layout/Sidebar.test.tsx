@@ -1,11 +1,37 @@
 import { fireEvent, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as useNotificationsHooks from "../../hooks/useNotifications";
 import { queryClient } from "../../queryClient";
 import { useAuthStore } from "../../store/authStore";
 import { DEFAULT_COLLAPSED_GROUPS, useUiStore } from "../../store/uiStore";
+import type { Notification } from "../../types/notification";
 import Sidebar from "./Sidebar";
+
+vi.mock("../../hooks/useNotifications", async () => {
+  const actual = await vi.importActual<typeof useNotificationsHooks>(
+    "../../hooks/useNotifications",
+  );
+  return {
+    ...actual,
+    useNotificationsNonLues: vi.fn(),
+    useMarquerLuesPrefixe: vi.fn(),
+  };
+});
+
+function notification(overrides: Partial<Notification> = {}): Notification {
+  return {
+    id: "n1",
+    type_notification: "evenement_invitation",
+    titre: "Nouvel événement",
+    message: "…",
+    lien: "/evenements/1",
+    lu: false,
+    created_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
 
 const utilisateur = {
   id: "u1",
@@ -32,6 +58,12 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
       isAuthenticated: true,
     });
     useUiStore.setState({ sidebarCollapsed: false, collapsedGroups: DEFAULT_COLLAPSED_GROUPS });
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+    vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
   });
 
   it("affiche un bouton de déconnexion pour un utilisateur connecté", () => {
@@ -106,5 +138,82 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
     expect(screen.queryByText("nav.dashboard")).not.toBeInTheDocument();
     // L'en-tête reste néanmoins mis en évidence pour indiquer que la page active s'y trouve.
     expect(screen.getByText("nav_groupe.general").closest("button")).toHaveClass("text-white/70");
+  });
+});
+
+describe("Sidebar — point d'activité par module (demande utilisateur du 2026-09-16)", () => {
+  let marquerLuesPrefixeMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    useAuthStore.setState({
+      accessToken: "access",
+      refreshToken: "refresh",
+      user: utilisateur,
+      isAuthenticated: true,
+    });
+    useUiStore.setState({ sidebarCollapsed: false, collapsedGroups: DEFAULT_COLLAPSED_GROUPS });
+    marquerLuesPrefixeMock = vi.fn();
+    vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
+      mutate: marquerLuesPrefixeMock,
+    } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
+  });
+
+  it("affiche un point sur le module concerné par une notification non lue", () => {
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [notification({ lien: "/evenements/1" })] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  it("n'affiche aucun point sans notification non lue", () => {
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("un lien plus précis n'allume pas un préfixe plus court non concerné (ex. /cotisations/en-attente ne déclenche pas le point de /cotisations)", () => {
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [notification({ lien: "/cotisations/relances" })],
+      },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+
+    renderWithProviders(<Sidebar />);
+
+    // "/cotisations" ne commence pas par "/cotisations/relances/" donc ne s'allume pas —
+    // seul le module "/cotisations/relances" lui-même (Échéances des relances, visible
+    // uniquement Directeur Financier+) le ferait, absent ici (utilisateur = simple membre).
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("marque le module comme lu au clic, ce qui éteint le point (glocke incluse)", () => {
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [notification({ lien: "/evenements/1" })] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+
+    renderWithProviders(<Sidebar />);
+    fireEvent.click(screen.getByText("nav.evenements"));
+
+    expect(marquerLuesPrefixeMock).toHaveBeenCalledWith("/evenements");
+  });
+
+  it("ne déclenche aucun appel au clic sur un module sans point", () => {
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+
+    renderWithProviders(<Sidebar />);
+    fireEvent.click(screen.getByText("nav.dashboard"));
+
+    expect(marquerLuesPrefixeMock).not.toHaveBeenCalled();
   });
 });

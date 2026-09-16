@@ -29,6 +29,20 @@ export function useNonLuesCount() {
   });
 }
 
+/**
+ * Notifications non lues (première page, 20 max — voir NotificationsCursorPagination côté
+ * backend) — sert au point d'activité par module de la sidebar (ajouté le 2026-09-16, voir
+ * components/layout/Sidebar) : chaque item compare son `to` au `lien` de ces notifications,
+ * même mécanisme de polling léger que useNonLuesCount.
+ */
+export function useNotificationsNonLues() {
+  return useQuery({
+    queryKey: notificationsKeys.liste({ lu: false }),
+    queryFn: () => notificationsApi.listNotifications({ lu: false }),
+    refetchInterval: 60_000,
+  });
+}
+
 function invalidateNotifications(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: notificationsKeys.all });
 }
@@ -45,6 +59,14 @@ export function useToutMarquerLu() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => notificationsApi.toutMarquerLu(),
+    onSuccess: () => invalidateNotifications(queryClient),
+  });
+}
+
+export function useMarquerLuesPrefixe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (prefixe: string) => notificationsApi.marquerLuesPrefixe(prefixe),
     onSuccess: () => invalidateNotifications(queryClient),
   });
 }
