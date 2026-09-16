@@ -93,13 +93,15 @@ def test_export_comme_bureau_admin_ok(api_client, bureau_admin_user):
     assert resp.status_code == 200
 
 
-def test_export_cin_toujours_masque(api_client, rh_user):
+def test_export_cin_en_clair_pour_rh_plus(api_client, rh_user):
+    # Demande utilisateur du 2026-09-16 (3e) : la CIN est exportée en clair, et non plus
+    # masquée — cohérent avec le fait que l'export est déjà réservé à RH+ (IsRHOrAbove), qui
+    # peut de toute façon déjà la consulter en clair fiche par fiche.
     MembreFactory(cin="99998888")
     resp = _export(_auth(api_client, rh_user))
     entetes, lignes = _lignes(resp)
     idx_cin = entetes.index("CIN")
-    assert lignes[0][idx_cin] == "•••••888"
-    assert "99998888" not in str(lignes[0])
+    assert lignes[0][idx_cin] == "99998888"
 
 
 def test_export_colonnes_identifiants_au_format_texte(api_client, rh_user):

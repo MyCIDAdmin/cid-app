@@ -17,14 +17,23 @@ tri dynamique par requête ; un export n'est pas paginé et peut donc trier libr
 casser cette contrainte.
 
 Suite retour utilisateur du 2026-09-16 (deuxième demande, après la mise en service ci-dessus) :
-  1. Les colonnes contenant des identifiants (N° membre, téléphone, CIN masqué, code postal)
-     doivent être exportées explicitement au format Texte Excel (number_format '@'), pour
-     qu'Excel ne les réinterprète jamais comme un nombre/une date à l'ouverture (perte des
-     zéros non significatifs sur un code postal, notation scientifique sur un long numéro de
+  1. Les colonnes contenant des identifiants (N° membre, téléphone, CIN, code postal) doivent
+     être exportées explicitement au format Texte Excel (number_format '@'), pour qu'Excel ne
+     les réinterprète jamais comme un nombre/une date à l'ouverture (perte des zéros non
+     significatifs sur un code postal ou une CIN, notation scientifique sur un long numéro de
      téléphone, etc.).
   2. L'utilisateur doit pouvoir choisir les colonnes à exporter plutôt que de toujours recevoir
      le classeur complet — voir `champs`/CHAMPS_EXPORT/parse_champs ci-dessous, et le paramètre
      `champs` de MembreExportView (export_views.py).
+
+Suite retour utilisateur du 2026-09-16 (troisième demande) : la CIN est désormais exportée en
+clair, et non plus masquée (•••••xxx). Revient sur le choix initial ("jamais démasqué dans
+l'export, même pour RH+, réduit la surface d'exposition") à la demande explicite de
+l'utilisateur — reste cohérent avec le contrôle d'accès existant : MembreExportView est déjà
+réservée à RH+ (IsRHOrAbove), qui peut de toute façon déjà consulter la CIN en clair fiche par
+fiche (voir MembreSerializer._can_view_pii). Le format Texte forcé (point 1 ci-dessus) reste
+donc d'autant plus utile : une CIN correspond typiquement à une chaîne de chiffres, avec un
+risque réel de perte des zéros non significatifs si Excel la traitait comme un nombre.
 """
 
 from django.utils import timezone
@@ -32,8 +41,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle
-
-from .serializers import _mask
 
 # Champs de tri acceptés par MembreExportView (voir export_views.py) — liste blanche
 # volontairement restreinte à des champs réellement utiles pour trier un répertoire membres,
@@ -138,11 +145,10 @@ def _valeurs_membre(membre, *, cotisations_payees_ids) -> dict:
     de liste positionnelle — construire_classeur_export peut ainsi n'en garder qu'un
     sous-ensemble (voir `champs`) sans avoir à réordonner quoi que ce soit à la main.
 
-    CIN : jamais démasqué dans l'export, même pour un rôle RH+ qui pourrait le voir en clair
-    fiche par fiche (voir MembreSerializer._can_view_pii) — même choix que la vue liste
-    (MembreListSerializer, "jamais nécessaire pour un simple listing, réduit la surface
-    d'exposition"), qui s'applique d'autant plus à un fichier téléchargeable regroupant tous
-    les membres d'un coup.
+    CIN exportée en clair (demande utilisateur du 2026-09-16, 3e — voir docstring de module) :
+    `membre.cin` est un EncryptedCharField, déchiffré automatiquement à l'accès ; l'export
+    reste réservé à RH+ (IsRHOrAbove, voir MembreExportView), qui peut de toute façon déjà
+    consulter la CIN en clair fiche par fiche (MembreSerializer._can_view_pii).
     """
     return {
         "numero_membre": membre.numero_membre,
@@ -150,7 +156,7 @@ def _valeurs_membre(membre, *, cotisations_payees_ids) -> dict:
         "nom": membre.nom,
         "email": membre.email,
         "telephone": membre.telephone,
-        "cin": _mask(membre.cin),
+        "cin": membre.cin,
         "date_naissance": _formater_date(membre.date_naissance),
         "age": membre.age,
         "sexe": membre.get_sexe_display(),
