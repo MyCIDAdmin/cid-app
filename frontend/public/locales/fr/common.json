@@ -25,6 +25,7 @@
     "quiz": "Quiz",
     "admin_quiz": "Gestion quiz",
     "gestion_roles": "Gestion des rôles",
+    "articles_cotisation": "Articles de cotisation",
     "point_activite": "Nouveautés dans {{module}}"
   },
   "nav_groupe": {

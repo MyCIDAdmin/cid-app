@@ -3,6 +3,8 @@
  */
 import { apiClient } from "./client";
 import type {
+  ArticleCatalogue,
+  ArticleCataloguePayload,
   ConfigurationRelance,
   ConfigurationRelancePayload,
   Cotisation,
@@ -132,4 +134,45 @@ export async function modifierConfigurationRelance(
 
 export async function supprimerConfigurationRelance(id: string): Promise<void> {
   await apiClient.delete(`/cotisations/configurations-relance/${id}/`);
+}
+
+/**
+ * Catalogue d'articles de paiement personnalisés (retour utilisateur du 2026-09-17, voir
+ * apps.cotisations.models.ArticleCatalogue). Lecture ouverte à tout authentifié — le backend
+ * scope automatiquement aux articles actif=true pour un rôle < Administrateur App
+ * (ArticleCatalogueViewSet.get_queryset) ; l'Administrateur App voit aussi les désactivés (pour
+ * pouvoir les réactiver).
+ */
+export async function listArticlesCatalogue(): Promise<CursorPage<ArticleCatalogue>> {
+  const { data } = await apiClient.get<CursorPage<ArticleCatalogue>>(
+    "/cotisations/articles-catalogue/",
+  );
+  return data;
+}
+
+/** Réservé à l'Administrateur App côté backend (ArticleCataloguePermission). */
+export async function creerArticleCatalogue(
+  payload: ArticleCataloguePayload,
+): Promise<ArticleCatalogue> {
+  const { data } = await apiClient.post<ArticleCatalogue>(
+    "/cotisations/articles-catalogue/",
+    payload,
+  );
+  return data;
+}
+
+/**
+ * PATCH partiel — sert à la fois à corriger libellé/montant et à basculer `actif` (pas de
+ * suppression exposée, voir docstring de module ArticleCatalogue). Réservé à l'Administrateur
+ * App côté backend.
+ */
+export async function modifierArticleCatalogue(
+  id: string,
+  payload: Partial<ArticleCataloguePayload> & { actif?: boolean },
+): Promise<ArticleCatalogue> {
+  const { data } = await apiClient.patch<ArticleCatalogue>(
+    `/cotisations/articles-catalogue/${id}/`,
+    payload,
+  );
+  return data;
 }

@@ -9,6 +9,10 @@
  *  - Seuls les types d'article "cotisation", "adhesion" et "don" sont
  *    proposés — "evenement" est exclu tant que apps.evenements n'existe
  *    pas (aucun événement à sélectionner).
+ *  - Ajouté le 2026-09-17 (retour utilisateur, voir apps.cotisations.models.ArticleCatalogue) :
+ *    les articles actifs du catalogue géré par l'Administrateur App (/admin/articles-cotisation)
+ *    sont proposés ici comme choix supplémentaires (type_article="autre"), à côté des 3 choix
+ *    fixes ci-dessus — jamais à leur place.
  *  - Aucune donnée bancaire (numéro de carte, IBAN/BIC) n'est saisie sur CETTE page, quel que soit
  *    le mode : pour carte/paypal, la saisie a lieu entièrement sur la page hébergée par le PSP
  *    (Stripe Checkout/PayPal Checkout, AHM-46 ci-dessous) — jamais dans ce formulaire, qui reste
@@ -44,6 +48,7 @@ import { Link } from "react-router-dom";
 
 import { telechargerRecuCotisation } from "../../api/cotisations";
 import {
+  useArticlesCatalogue,
   useCreerCotisation,
   useInitierPaiementEnLigne,
   useMesCotisations,
@@ -106,6 +111,7 @@ export default function CotisationStepperPage() {
 
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
   const [articleChoisi, setArticleChoisi] = useState<TypeArticleStepper>("cotisation");
+  const [articleCatalogueId, setArticleCatalogueId] = useState<string | null>(null);
   const [donMontant, setDonMontant] = useState("10");
   const [donErreur, setDonErreur] = useState<string | null>(null);
   const [modePaiement, setModePaiement] = useState<ModePaiement>("carte");
@@ -118,6 +124,12 @@ export default function CotisationStepperPage() {
   const historique = useMesCotisations();
   const creerMutation = useCreerCotisation();
   const initierPaiementMutation = useInitierPaiementEnLigne();
+  const articlesCatalogue = useArticlesCatalogue();
+  // Le backend scope déjà aux articles actif=true pour un rôle < Administrateur App (voir
+  // ArticleCatalogueViewSet.get_queryset), mais on refiltre ici par défense en profondeur — un
+  // Administrateur App consultant lui-même ce stepper ne doit pas se voir proposer un article
+  // qu'il vient de désactiver.
+  const articlesCatalogueActifs = (articlesCatalogue.data?.results ?? []).filter((a) => a.actif);
 
   function redirigerVersGateway(cotisationId: string) {
     setErreurGateway(null);
@@ -179,17 +191,23 @@ export default function CotisationStepperPage() {
     },
   ];
 
+  const articleCatalogueChoisi = articlesCatalogueActifs.find((a) => a.id === articleCatalogueId);
+
   const donMontantNombre = Number(donMontant.replace(",", "."));
   const montantAffiche =
     articleChoisi === "don"
       ? Number.isFinite(donMontantNombre)
         ? donMontantNombre
         : 0
-      : (ARTICLES.find((a) => a.type === articleChoisi)?.montant ?? 0);
+      : articleChoisi === "autre"
+        ? Number(articleCatalogueChoisi?.montant ?? 0)
+        : (ARTICLES.find((a) => a.type === articleChoisi)?.montant ?? 0);
   const libelleAffiche =
     articleChoisi === "don"
       ? DON_LIBELLE
-      : (ARTICLES.find((a) => a.type === articleChoisi)?.titre ?? "");
+      : articleChoisi === "autre"
+        ? (articleCatalogueChoisi?.libelle ?? "")
+        : (ARTICLES.find((a) => a.type === articleChoisi)?.titre ?? "");
 
   function allerEtapePaiement() {
     if (articleChoisi === "don") {
@@ -211,10 +229,16 @@ export default function CotisationStepperPage() {
             libelle: DON_LIBELLE,
             montant: donMontantNombre.toFixed(2),
           }
-        : {
-            type_article: articleChoisi,
-            mode_paiement: modePaiement,
-          };
+        : articleChoisi === "autre"
+          ? {
+              type_article: "autre" as const,
+              mode_paiement: modePaiement,
+              article_catalogue: articleCatalogueId ?? undefined,
+            }
+          : {
+              type_article: articleChoisi,
+              mode_paiement: modePaiement,
+            };
 
     creerMutation.mutate(payload, {
       onSuccess: (cotisation) => {
@@ -233,6 +257,7 @@ export default function CotisationStepperPage() {
 
   function nouveauPaiement() {
     setArticleChoisi("cotisation");
+    setArticleCatalogueId(null);
     setDonMontant("10");
     setDonErreur(null);
     setModePaiement("carte");
@@ -264,7 +289,10 @@ export default function CotisationStepperPage() {
                 <button
                   key={a.type}
                   type="button"
-                  onClick={() => setArticleChoisi(a.type)}
+                  onClick={() => {
+                    setArticleChoisi(a.type);
+                    setArticleCatalogueId(null);
+                  }}
                   className={`flex w-full items-center justify-between rounded-cid border px-3 py-2 text-left ${
                     articleChoisi === a.type
                       ? "border-ca bg-cal/20"
@@ -280,6 +308,35 @@ export default function CotisationStepperPage() {
                   )}
                 </button>
               ))}
+              {/* Articles supplémentaires gérés par l'Administrateur App (voir docstring de
+                  module) — mêmes cartes que ci-dessus, sélection identifiée par l'id de
+                  l'article plutôt que par son type (toujours "autre"). */}
+              {articlesCatalogueActifs.map((article) => (
+                <button
+                  key={article.id}
+                  type="button"
+                  onClick={() => {
+                    setArticleChoisi("autre");
+                    setArticleCatalogueId(article.id);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-cid border px-3 py-2 text-left ${
+                    articleChoisi === "autre" && articleCatalogueId === article.id
+                      ? "border-ca bg-cal/20"
+                      : "border-text-tertiary/20 hover:bg-bg-tertiary"
+                  }`}
+                >
+                  <div className="text-sm font-semibold text-text-primary">{article.libelle}</div>
+                  <div className="text-sm font-bold text-ca">
+                    {formatMontant(Number(article.montant))}
+                  </div>
+                </button>
+              ))}
+              {articlesCatalogue.isLoading && (
+                <p className="text-xs text-text-tertiary">{t("article.catalogue_chargement")}</p>
+              )}
+              {articlesCatalogue.isError && (
+                <p className="text-xs text-status-dangerText">{t("article.catalogue_erreur")}</p>
+              )}
             </div>
 
             {articleChoisi === "don" && (

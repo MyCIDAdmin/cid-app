@@ -9,14 +9,22 @@ Permissions API — app cotisations (FDD §2.2 matrice des permissions) :
     CotisationViewSet.perform_create). Saisir une transaction pour le compte d'un AUTRE membre
     (RICEFW F-015) est réservé à Directeur Financier et Administrateur App.
   - Pas d'update/destroy exposés : voir views.py (registre financier append-only).
+  - ArticleCatalogue (ajouté le 2026-09-17, retour utilisateur : catalogue d'articles de paiement
+    géré par l'App-Admin) : list/retrieve — tout authentifié (un membre doit voir les articles
+    actifs pour les choisir dans le stepper), scope à actif=True pour tout rôle < Administrateur
+    App (voir ArticleCatalogueViewSet.get_queryset). create/update/partial_update — réservé à
+    l'Administrateur App (Role.SUPER_ADMIN), décision actée avec l'utilisateur ("APP-Admin"
+    littéralement). Pas de destroy exposé : jamais de suppression physique, seulement
+    actif=False (voir models.py).
 """
 
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
 
 READ_ALL_MIN_LEVEL = ROLE_LEVELS[Role.RH]
 SAISIE_POUR_AUTRUI_MIN_LEVEL = ROLE_LEVELS[Role.DIR_FINANCIER]
+GESTION_ARTICLES_MIN_LEVEL = ROLE_LEVELS[Role.SUPER_ADMIN]
 
 
 class CotisationPermission(BasePermission):
@@ -30,3 +38,16 @@ class CotisationPermission(BasePermission):
             return True
         membre = getattr(user, "membre", None)
         return membre is not None and obj.membre_id == membre.id
+
+
+class ArticleCataloguePermission(BasePermission):
+    """ArticleCatalogue — lecture ouverte à tout authentifié, écriture réservée à
+    l'Administrateur App (voir docstring de module)."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if request.method in SAFE_METHODS:
+            return True
+        return ROLE_LEVELS.get(user.role, 0) >= GESTION_ARTICLES_MIN_LEVEL

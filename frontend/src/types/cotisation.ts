@@ -7,8 +7,10 @@
 // Sous-ensemble exposé par le stepper (AHM-16) : "evenement" est exclu tant
 // que apps.evenements n'existe pas (pas d'événement à sélectionner — voir
 // MONTANTS_CATALOGUE côté backend, qui ne couvre de toute façon que ces
-// deux tarifs fixes).
-export type TypeArticleStepper = "cotisation" | "adhesion" | "don";
+// deux tarifs fixes). "autre" ajouté le 2026-09-17 (retour utilisateur :
+// catalogue d'articles géré par l'App-Admin, voir ArticleCatalogue plus bas) —
+// vient s'ajouter aux 3 choix existants, jamais les remplacer.
+export type TypeArticleStepper = "cotisation" | "adhesion" | "don" | "autre";
 export type TypeArticle = TypeArticleStepper | "evenement";
 
 export type ModePaiement = "carte" | "virement_sepa" | "paypal";
@@ -19,6 +21,7 @@ export interface Cotisation {
   id: string;
   membre: string;
   type_article: TypeArticle;
+  article_catalogue: string | null;
   libelle: string;
   montant: string;
   mode_paiement: ModePaiement | "";
@@ -35,8 +38,10 @@ export interface Cotisation {
  * Payload de POST /cotisations/ en libre-service (AHM-16) : `membre` est
  * résolu côté vue (CotisationViewSet.perform_create) à partir du compte
  * authentifié, jamais transmis par le client. `libelle`/`montant` ne sont
- * envoyés que pour "don" — pour cotisation/adhesion le serializer impose le
- * tarif catalogue côté serveur et ignore toute valeur transmise.
+ * envoyés que pour "don" — pour cotisation/adhesion/autre le serializer
+ * impose le tarif catalogue côté serveur et ignore toute valeur transmise.
+ * `article_catalogue` (id) n'est envoyé que pour type_article="autre" (voir
+ * ArticleCatalogue plus bas, ajouté le 2026-09-17).
  *
  * Pas de champ `statut` (AHM-53) : quel que soit le mode de paiement choisi, le serveur impose
  * toujours statut=en_attente pour ce flux — aucune passerelle de paiement réelle ne pouvant le
@@ -47,6 +52,7 @@ export interface CotisationCreatePayload {
   mode_paiement: ModePaiement;
   libelle?: string;
   montant?: string;
+  article_catalogue?: string;
 }
 
 // Tarifs catalogue affichés côté client à titre indicatif (récapitulatif) —
@@ -56,6 +62,26 @@ export const MONTANTS_CATALOGUE: Record<"cotisation" | "adhesion", number> = {
   cotisation: 45,
   adhesion: 15,
 };
+
+/**
+ * Article de paiement personnalisé géré par l'Administrateur App (retour utilisateur du
+ * 2026-09-17, voir apps.cotisations.models.ArticleCatalogue) — vient s'ajouter aux 4 types fixes
+ * de TypeArticle, jamais les remplacer. `actif=false` = désactivé (jamais de suppression
+ * physique exposée, voir CotisationViewSet backend).
+ */
+export interface ArticleCatalogue {
+  id: string;
+  libelle: string;
+  montant: string;
+  actif: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ArticleCataloguePayload {
+  libelle: string;
+  montant: string;
+}
 
 /**
  * Échéance des relances de cotisation, configurable par année (AHM-54, suite retour

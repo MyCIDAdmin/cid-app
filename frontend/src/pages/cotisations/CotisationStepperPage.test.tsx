@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as cotisationsApi from "../../api/cotisations";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
-import type { Cotisation } from "../../types/cotisation";
+import type { ArticleCatalogue, Cotisation } from "../../types/cotisation";
 import CotisationStepperPage from "./CotisationStepperPage";
 
 vi.mock("../../hooks/useCotisations", async () => {
@@ -14,6 +14,7 @@ vi.mock("../../hooks/useCotisations", async () => {
     useMesCotisations: vi.fn(),
     useCreerCotisation: vi.fn(),
     useInitierPaiementEnLigne: vi.fn(),
+    useArticlesCatalogue: vi.fn(),
   };
 });
 
@@ -30,6 +31,7 @@ function cotisation(overrides: Partial<Cotisation> = {}): Cotisation {
     id: "c1",
     membre: "m1",
     type_article: "cotisation",
+    article_catalogue: null,
     libelle: "Cotisation annuelle 2025",
     montant: "45.00",
     mode_paiement: "carte",
@@ -51,6 +53,14 @@ describe("CotisationStepperPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useMesCotisations>);
+
+    // Défaut neutre : pas d'article de catalogue supplémentaire — les tests qui exercent
+    // spécifiquement le flux "autre" (retour utilisateur du 2026-09-17) le redéfinissent.
+    vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
 
     window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
     window.URL.revokeObjectURL = vi.fn();
@@ -316,5 +326,56 @@ describe("CotisationStepperPage", () => {
     await waitFor(() =>
       expect(cotisationsApi.telechargerRecuCotisation).toHaveBeenCalledWith("c-nouveau"),
     );
+  });
+
+  // Retour utilisateur du 2026-09-17 : catalogue d'articles supplémentaires géré par
+  // l'Administrateur App (voir apps.cotisations.models.ArticleCatalogue), proposé ici en plus des
+  // 3 choix fixes existants.
+  it("propose les articles actifs du catalogue et envoie article_catalogue pour le type autre", () => {
+    function articleCatalogue(overrides: Partial<ArticleCatalogue> = {}): ArticleCatalogue {
+      return {
+        id: "art-1",
+        libelle: "T-shirt du club",
+        montant: "20.00",
+        actif: true,
+        created_at: "2026-09-17T10:00:00Z",
+        updated_at: "2026-09-17T10:00:00Z",
+        ...overrides,
+      };
+    }
+
+    vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [articleCatalogue(), articleCatalogue({ id: "art-2", actif: false, libelle: "Ancien article" })],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+
+    const mutate = vi.fn();
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+    renderWithProviders(<CotisationStepperPage />);
+
+    // L'article désactivé n'est jamais proposé.
+    expect(screen.queryByText("Ancien article")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("T-shirt du club"));
+    fireEvent.click(screen.getByText("continuer"));
+    fireEvent.click(screen.getByText(/paiement\.payer/));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate.mock.calls[0][0]).toEqual({
+      type_article: "autre",
+      mode_paiement: "carte",
+      article_catalogue: "art-1",
+    });
   });
 });

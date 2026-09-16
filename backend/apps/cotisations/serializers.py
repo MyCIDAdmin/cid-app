@@ -10,7 +10,28 @@ pas par le client : un membre normal ne peut créer une cotisation que pour lui-
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import MONTANTS_CATALOGUE, ConfigurationRelance, Cotisation, TypeArticle
+from .models import (
+    MONTANTS_CATALOGUE,
+    ArticleCatalogue,
+    ConfigurationRelance,
+    Cotisation,
+    TypeArticle,
+)
+
+
+class ArticleCatalogueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArticleCatalogue
+        fields = ["id", "libelle", "montant", "actif", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+        extra_kwargs = {
+            # `default=True` explicite : sans lui, DRF.BooleanField.get_value() traite un payload
+            # multipart/form-data comme un formulaire HTML et renvoie False (pas le défaut modèle)
+            # quand le champ est absent — un client qui ne transmet pas `actif` à la création (cas
+            # normal : NouvelArticleForm côté frontend n'envoie que libelle/montant) doit tout de
+            # même obtenir un article actif par défaut, quel que soit l'encodage de la requête.
+            "actif": {"default": True},
+        }
 
 
 class CotisationSerializer(serializers.ModelSerializer):
@@ -20,6 +41,7 @@ class CotisationSerializer(serializers.ModelSerializer):
             "id",
             "membre",
             "type_article",
+            "article_catalogue",
             "libelle",
             "montant",
             "mode_paiement",
@@ -41,10 +63,12 @@ class CotisationSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {
             "membre": {"required": False},
-            # Non requis en entrée pour cotisation/adhésion : imposés côté serveur ci-dessous
-            # (tarif catalogue). Requis manuellement pour les autres types dans validate().
+            # Non requis en entrée pour cotisation/adhésion/autre : imposés côté serveur
+            # ci-dessous (tarif catalogue). Requis manuellement pour les autres types dans
+            # validate().
             "libelle": {"required": False},
             "montant": {"required": False},
+            "article_catalogue": {"required": False},
         }
 
     def validate(self, attrs):
@@ -58,6 +82,18 @@ class CotisationSerializer(serializers.ModelSerializer):
         elif type_article == TypeArticle.ADHESION:
             attrs["libelle"] = "Frais d'adhésion"
             attrs["montant"] = MONTANTS_CATALOGUE[TypeArticle.ADHESION]
+        elif type_article == TypeArticle.AUTRE:
+            # Ajouté le 2026-09-17 — même principe que ci-dessus (CLAUDE.md §8) : le montant/
+            # libellé d'un article du catalogue est toujours recalculé côté serveur à partir de
+            # l'article référencé, jamais fait confiance au client, voir ArticleCatalogue.
+            article = attrs.get("article_catalogue")
+            if article is None:
+                erreurs["article_catalogue"] = "Ce champ est requis pour ce type d'article."
+            elif not article.actif:
+                erreurs["article_catalogue"] = "Cet article n'est plus disponible."
+            else:
+                attrs["libelle"] = article.libelle
+                attrs["montant"] = article.montant
         else:
             if not attrs.get("libelle", "").strip():
                 erreurs["libelle"] = "Ce champ est requis pour ce type d'article."

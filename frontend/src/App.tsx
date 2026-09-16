@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
+import ArticlesCatalogueCotisationPage from "./pages/admin/ArticlesCatalogueCotisationPage";
 import GestionRolesPage from "./pages/admin/GestionRolesPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
@@ -167,6 +168,16 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
               <GestionRolesPage />
+            </RequireRole>
+          }
+        />
+        {/* Catalogue d'articles de cotisation (retour utilisateur du 2026-09-17) — réservé à
+            l'Administrateur App, même gate que ArticleCataloguePermission côté API. */}
+        <Route
+          path="/admin/articles-cotisation"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
+              <ArticlesCatalogueCotisationPage />
             </RequireRole>
           }
         />

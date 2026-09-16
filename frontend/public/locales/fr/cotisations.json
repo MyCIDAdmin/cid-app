@@ -20,7 +20,9 @@
     "don_titre": "Don à l'association",
     "don_description": "Montant libre",
     "don_montant_label": "Montant du don (€)",
-    "don_montant_erreur": "Indiquez un montant supérieur à 0."
+    "don_montant_erreur": "Indiquez un montant supérieur à 0.",
+    "catalogue_chargement": "Chargement des autres articles…",
+    "catalogue_erreur": "Impossible de charger les articles supplémentaires."
   },
   "recap": {
     "titre": "Récapitulatif",
@@ -115,6 +117,27 @@
     "erreur_action": "L'échéance n'a pas pu être enregistrée.",
     "confirmer_suppression": "Supprimer l'échéance {{annee}} ? Cette année reviendra au 1er janvier par défaut.",
     "note_repli": "Une année sans échéance configurée ci-dessus utilise automatiquement le 1er janvier de cette année (comportement par défaut)."
+  },
+  "catalogue_articles": {
+    "titre": "Articles de cotisation",
+    "sous_titre": "Créez des articles de paiement supplémentaires que les membres pourront choisir dans le formulaire de cotisation, en plus de la cotisation annuelle, des frais d'adhésion et du don libre. Un article désactivé n'est plus proposé aux membres mais reste visible ici et dans l'historique des paiements déjà effectués.",
+    "champ_libelle": "Libellé",
+    "champ_montant": "Montant (€)",
+    "ajouter": "Ajouter",
+    "col_libelle": "Libellé",
+    "col_montant": "Montant",
+    "col_statut": "Statut",
+    "col_actions": "Actions",
+    "enregistrer": "Enregistrer",
+    "activer": "Réactiver",
+    "desactiver": "Désactiver",
+    "en_cours": "Enregistrement…",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les articles.",
+    "aucun": "Aucun article créé pour le moment.",
+    "erreur_action": "L'article n'a pas pu être enregistré.",
+    "statut_actif": "Actif",
+    "statut_inactif": "Désactivé"
   },
   "retour": {
     "chargement": "Vérification du paiement…",

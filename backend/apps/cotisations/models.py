@@ -40,6 +40,18 @@ Périmètre de ce module (AHM-15, révisé par AHM-53) :
     décalages eux-mêmes. Une année sans ligne ici retombe sur le comportement historique
     (échéance au 1er janvier de cette année), pour ne rien casser en production tant que le
     Directeur Financier n'a pas explicitement configuré l'année en cours.
+  - ArticleCatalogue (ajouté le 2026-09-17, demande utilisateur : "Artikeln / Elemente bei
+    Cotisation müssen vom APP-Admin verwaltbar sein (Anlegen / Aktualisieren / Deaktivieren)") —
+    décision actée avec l'utilisateur : ces articles s'ajoutent aux 4 types fixes de TypeArticle
+    ci-dessous, ils ne les remplacent jamais (cotisation/adhésion restent des tarifs figés dans le
+    code, gérés par MONTANTS_CATALOGUE, hors périmètre de ce catalogue). Un membre peut souscrire
+    librement à n'importe quel article actif de ce catalogue (ex. "Beitrag Unterstützer") au même
+    titre qu'une cotisation annuelle — voir TypeArticle.AUTRE et Cotisation.article_catalogue.
+    Réservé à l'Administrateur App (Role.SUPER_ADMIN) — décision actée avec l'utilisateur,
+    littéralement "APP-Admin". `actif=False` retire l'article de la sélection pour tout nouveau
+    paiement sans jamais toucher aux Cotisation déjà enregistrées qui le référencent (jamais de
+    suppression physique — voir on_delete=PROTECT ci-dessous, pas d'action DELETE exposée côté
+    API : "Deaktivieren", jamais "Löschen").
 """
 
 import uuid
@@ -58,6 +70,9 @@ class TypeArticle(models.TextChoices):
     ADHESION = "adhesion", _("Frais d'adhésion")
     EVENEMENT = "evenement", _("Événement")
     DON = "don", _("Don libre")
+    # Ajouté le 2026-09-17 — voir ArticleCatalogue ci-dessous : un article personnalisé créé par
+    # l'App-Admin, jamais un 5e tarif fixe géré par MONTANTS_CATALOGUE.
+    AUTRE = "autre", _("Article personnalisé")
 
 
 class ModePaiement(models.TextChoices):
@@ -85,6 +100,36 @@ MONTANTS_CATALOGUE = {
 }
 
 
+class ArticleCatalogue(models.Model):
+    """Article de paiement personnalisé, géré par l'Administrateur App (voir docstring de
+    module) — vient s'ajouter aux 4 types fixes de TypeArticle, jamais les remplacer."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    libelle = models.CharField(max_length=200)
+    montant = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    # Retire l'article de la sélection pour tout nouveau paiement (voir Cotisation.article_
+    # catalogue, on_delete=PROTECT) — jamais de suppression physique, jamais exposé en DELETE
+    # côté API (voir views.ArticleCatalogueViewSet) : "Deaktivieren", pas "Löschen".
+    actif = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "cotisations_articles_catalogue"
+        verbose_name = _("Article du catalogue")
+        verbose_name_plural = _("Articles du catalogue")
+        ordering = ["libelle"]
+
+    def __str__(self):
+        return f"{self.libelle} ({self.montant} €)"
+
+
 class Cotisation(models.Model):
     """Écriture de paiement — voir mockup #pg-cotisation (stepper + historique des paiements)."""
 
@@ -97,6 +142,17 @@ class Cotisation(models.Model):
     )
 
     type_article = models.CharField(max_length=20, choices=TypeArticle.choices)
+    # Renseigné uniquement quand type_article=autre — voir ArticleCatalogue et
+    # CotisationSerializer.validate. on_delete=PROTECT : un article du catalogue référencé par au
+    # moins une Cotisation ne peut jamais être supprimé (il est de toute façon seulement
+    # désactivable, jamais supprimable, voir ArticleCatalogue.actif).
+    article_catalogue = models.ForeignKey(
+        ArticleCatalogue,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="cotisations",
+    )
     libelle = models.CharField(max_length=200)
     montant = models.DecimalField(
         max_digits=8,

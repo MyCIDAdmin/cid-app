@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
 from apps.cotisations.models import StatutCotisation, TypeArticle
-from apps.cotisations.tests.factories import CotisationFactory
+from apps.cotisations.tests.factories import ArticleCatalogueFactory, CotisationFactory
 from apps.membres.tests.factories import MembreFactory
 from apps.notifications.models import Notification, TypeNotification
 
@@ -198,6 +198,65 @@ def test_evenement_sans_montant_refuse(api_client):
 
     assert resp.status_code == 400
     assert "montant" in resp.data["details"]
+
+
+# --- Article catalogue, type_article=autre (retour utilisateur du 2026-09-17) ---
+
+
+def test_paiement_article_catalogue_recalcule_libelle_et_montant_cote_serveur(api_client):
+    """CLAUDE.md §8 : comme pour cotisation/adhésion ci-dessus, le libellé/montant d'un article du
+    catalogue est toujours recalculé côté serveur à partir de l'ArticleCatalogue référencé, jamais
+    fait confiance au client — voir CotisationSerializer.validate, branche TypeArticle.AUTRE."""
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    article = ArticleCatalogueFactory(libelle="T-shirt du club", montant="20.00")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.AUTRE,
+            "article_catalogue": str(article.id),
+            "libelle": "Faux libellé",  # doit être ignoré
+            "montant": "1.00",  # doit être ignoré
+            "mode_paiement": "carte",
+            "statut": "payee",
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["libelle"] == "T-shirt du club"
+    assert str(resp.data["montant"]) == "20.00"
+    assert resp.data["statut"] == StatutCotisation.EN_ATTENTE
+
+
+def test_article_catalogue_sans_id_refuse(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.AUTRE, "mode_paiement": "carte"}
+    )
+
+    assert resp.status_code == 400
+    assert "article_catalogue" in resp.data["details"]
+
+
+def test_article_catalogue_desactive_refuse(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    article = ArticleCatalogueFactory(actif=False)
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.AUTRE,
+            "article_catalogue": str(article.id),
+            "mode_paiement": "carte",
+        },
+    )
+
+    assert resp.status_code == 400
+    assert "article_catalogue" in resp.data["details"]
 
 
 def test_creation_sans_fiche_membre_liee_refusee(api_client):

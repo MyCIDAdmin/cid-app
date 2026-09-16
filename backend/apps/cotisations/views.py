@@ -12,6 +12,12 @@ Vues API — app cotisations (TDD §2.4) :
   GET/POST/PATCH/DELETE /configurations-relance/ — échéance des relances par année de cotisation
                                             (AHM-54, DF/Admin uniquement — voir
                                             ConfigurationRelanceViewSet ci-dessous)
+  GET/POST/PATCH   /articles-catalogue/  — catalogue d'articles de paiement personnalisés (ajouté
+                                            le 2026-09-17) : lecture ouverte à tout authentifié
+                                            (scope aux actifs pour un rôle < Administrateur App),
+                                            écriture réservée à l'Administrateur App — voir
+                                            ArticleCatalogueViewSet ci-dessous. Pas de DELETE :
+                                            "Deaktivieren" (actif=False), jamais "Löschen".
 
 Pas de PUT/PATCH/DELETE sur /cotisations/ : registre financier append-only (voir models.py) —
 seule exception volontaire, l'action `marquer_payee` ci-dessous, réservée au Directeur
@@ -49,12 +55,28 @@ from apps.accounts.models import ROLE_LEVELS
 
 from .filters import CotisationFilter
 from .gateways import GatewayError, creer_commande_paypal, creer_session_stripe
-from .models import ConfigurationRelance, Cotisation, ModePaiement, StatutCotisation
+from .models import (
+    ArticleCatalogue,
+    ConfigurationRelance,
+    Cotisation,
+    ModePaiement,
+    StatutCotisation,
+)
 from .notifications import notifier_paiement_confirme as _notifier_paiement_confirme
 from .notifications import notifier_nouveau_paiement_attente_staff
 from .pdf import generate_receipt_pdf
-from .permissions import READ_ALL_MIN_LEVEL, SAISIE_POUR_AUTRUI_MIN_LEVEL, CotisationPermission
-from .serializers import ConfigurationRelanceSerializer, CotisationSerializer
+from .permissions import (
+    GESTION_ARTICLES_MIN_LEVEL,
+    READ_ALL_MIN_LEVEL,
+    SAISIE_POUR_AUTRUI_MIN_LEVEL,
+    ArticleCataloguePermission,
+    CotisationPermission,
+)
+from .serializers import (
+    ArticleCatalogueSerializer,
+    ConfigurationRelanceSerializer,
+    CotisationSerializer,
+)
 
 # Modes de paiement pris en charge par initier_paiement_en_ligne (AHM-46) — le virement SEPA n'a
 # volontairement pas d'équivalent en ligne, voir docstring de module.
@@ -283,3 +305,39 @@ class ConfigurationRelanceViewSet(ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(modifie_par=getattr(self.request.user, "membre", None))
+
+
+class ArticleCatalogueCursorPagination(CursorPagination):
+    # Petit catalogue par nature (association de taille modeste) — même choix que
+    # ConfigurationRelanceCursorPagination ci-dessus, la 1re page suffit en pratique.
+    page_size = 20
+    ordering = ("libelle",)
+
+
+class ArticleCatalogueViewSet(ModelViewSet):
+    """
+    Catalogue d'articles de paiement personnalisés, géré par l'Administrateur App (ajouté le
+    2026-09-17, retour utilisateur : "Artikeln / Elemente bei Cotisation müssen vom APP-Admin
+    verwaltbar sein (Anlegen / Aktualisieren / Deaktivieren)") — voir ArticleCataloguePermission
+    et models.ArticleCatalogue. Pas de DELETE exposé : "Deaktivieren" (actif=False via PATCH),
+    jamais "Löschen" — un article référencé par une Cotisation existante ne doit jamais pouvoir
+    disparaître (voir Cotisation.article_catalogue, on_delete=PROTECT).
+    """
+
+    http_method_names = ["get", "post", "patch", "head", "options"]
+    permission_classes = [ArticleCataloguePermission]
+    serializer_class = ArticleCatalogueSerializer
+    pagination_class = ArticleCatalogueCursorPagination
+
+    def get_queryset(self):
+        queryset = ArticleCatalogue.objects.all()
+        user = self.request.user
+        if (
+            user
+            and user.is_authenticated
+            and ROLE_LEVELS.get(user.role, 0) >= GESTION_ARTICLES_MIN_LEVEL
+        ):
+            return queryset
+        # Un membre normal (ou tout rôle < Administrateur App) ne doit voir, pour choisir dans le
+        # stepper, que les articles actuellement proposés — voir docstring de module.
+        return queryset.filter(actif=True)

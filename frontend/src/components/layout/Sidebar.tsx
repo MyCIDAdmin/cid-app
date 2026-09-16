@@ -53,6 +53,7 @@ import {
   IconPhoto,
   IconSettings,
   IconShoppingBag,
+  IconTag,
   IconUserCog,
   IconUsers,
   IconUsersGroup,
@@ -207,6 +208,15 @@ const NAV_ITEMS: NavItem[] = [
     to: "/admin/roles",
     labelKey: "nav.gestion_roles",
     icon: IconUserCog,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.super_admin,
+  },
+  // Catalogue d'articles de cotisation (retour utilisateur du 2026-09-17) — Admin App
+  // exclusivement, même niveau que ArticleCataloguePermission (écriture) côté API.
+  {
+    to: "/admin/articles-cotisation",
+    labelKey: "nav.articles_cotisation",
+    icon: IconTag,
     group: "administration",
     minRoleLevel: ROLE_LEVELS.super_admin,
   },

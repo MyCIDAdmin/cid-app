@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as cotisationsApi from "../api/cotisations";
 import type {
+  ArticleCataloguePayload,
   ConfigurationRelancePayload,
   CotisationCreatePayload,
   ModePaiement,
@@ -16,6 +17,7 @@ const cotisationsKeys = {
   detail: (id: string) => [...cotisationsKeys.all, "detail", id] as const,
   enAttenteDePaiement: () => [...cotisationsKeys.all, "en-attente-paiement"] as const,
   configurationsRelance: () => [...cotisationsKeys.all, "configurations-relance"] as const,
+  articlesCatalogue: () => [...cotisationsKeys.all, "articles-catalogue"] as const,
 };
 
 export function useMesCotisations() {
@@ -110,5 +112,43 @@ export function useSupprimerConfigurationRelance() {
     mutationFn: (id: string) => cotisationsApi.supprimerConfigurationRelance(id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: cotisationsKeys.configurationsRelance() }),
+  });
+}
+
+/**
+ * Catalogue d'articles de paiement personnalisés (retour utilisateur du 2026-09-17). Lecture
+ * ouverte à tout authentifié (utilisé aussi bien par le stepper membre que par la page de
+ * gestion Administrateur App) — le scope actif=true / tous est déjà géré côté backend selon le
+ * rôle, voir cotisationsApi.listArticlesCatalogue.
+ */
+export function useArticlesCatalogue() {
+  return useQuery({
+    queryKey: cotisationsKeys.articlesCatalogue(),
+    queryFn: () => cotisationsApi.listArticlesCatalogue(),
+  });
+}
+
+export function useCreerArticleCatalogue() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ArticleCataloguePayload) =>
+      cotisationsApi.creerArticleCatalogue(payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: cotisationsKeys.articlesCatalogue() }),
+  });
+}
+
+export function useModifierArticleCatalogue() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<ArticleCataloguePayload> & { actif?: boolean };
+    }) => cotisationsApi.modifierArticleCatalogue(id, payload),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: cotisationsKeys.articlesCatalogue() }),
   });
 }

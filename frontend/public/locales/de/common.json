@@ -25,6 +25,7 @@
     "quiz": "Quiz",
     "admin_quiz": "Quiz-Verwaltung",
     "gestion_roles": "Rollenverwaltung",
+    "articles_cotisation": "Beitragsartikel",
     "point_activite": "Neuigkeiten bei {{module}}"
   },
   "nav_groupe": {

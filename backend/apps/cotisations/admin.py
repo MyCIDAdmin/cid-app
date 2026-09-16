@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ConfigurationRelance, Cotisation, RelanceCotisation
+from .models import ArticleCatalogue, ConfigurationRelance, Cotisation, RelanceCotisation
 
 
 @admin.register(Cotisation)
@@ -16,8 +16,19 @@ class CotisationAdmin(admin.ModelAdmin):
     )
     list_filter = ("statut", "type_article", "mode_paiement", "annee")
     search_fields = ("reference_transaction", "membre__nom", "membre__prenom", "libelle")
-    autocomplete_fields = ("membre", "saisie_par")
+    autocomplete_fields = ("membre", "saisie_par", "article_catalogue")
     readonly_fields = ("id", "reference_transaction", "created_at", "updated_at")
+
+
+@admin.register(ArticleCatalogue)
+class ArticleCatalogueAdmin(admin.ModelAdmin):
+    """Complète la page frontend dédiée (voir /admin/articles-cotisation) — même donnée, vue
+    admin technique."""
+
+    list_display = ("libelle", "montant", "actif", "updated_at")
+    list_filter = ("actif",)
+    search_fields = ("libelle",)
+    readonly_fields = ("id", "created_at", "updated_at")
 
 
 @admin.register(RelanceCotisation)

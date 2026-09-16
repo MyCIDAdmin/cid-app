@@ -1,17 +1,19 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import ConfigurationRelanceViewSet, CotisationViewSet
+from .views import ArticleCatalogueViewSet, ConfigurationRelanceViewSet, CotisationViewSet
 from .webhooks import PayPalWebhookView, StripeWebhookView
 
 app_name = "cotisations"
 
 router = DefaultRouter()
-# Enregistré AVANT le préfixe "" ci-dessous : CotisationViewSet accepte un préfixe vide, dont la
-# route de détail (^(?P<pk>[^/.]+)/$) matcherait sinon "configurations-relance" comme un pk.
+# Enregistrés AVANT le préfixe "" ci-dessous : CotisationViewSet accepte un préfixe vide, dont la
+# route de détail (^(?P<pk>[^/.]+)/$) matcherait sinon "configurations-relance"/"articles-
+# catalogue" comme un pk.
 router.register(
     "configurations-relance", ConfigurationRelanceViewSet, basename="configuration-relance"
 )
+router.register("articles-catalogue", ArticleCatalogueViewSet, basename="article-catalogue")
 router.register("", CotisationViewSet, basename="cotisation")
 
 urlpatterns = [

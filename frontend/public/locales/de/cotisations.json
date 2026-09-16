@@ -20,7 +20,9 @@
     "don_titre": "Spende an den Verein",
     "don_description": "Freier Betrag",
     "don_montant_label": "Spendenbetrag (€)",
-    "don_montant_erreur": "Geben Sie einen Betrag größer als 0 an."
+    "don_montant_erreur": "Geben Sie einen Betrag größer als 0 an.",
+    "catalogue_chargement": "Weitere Artikel werden geladen…",
+    "catalogue_erreur": "Die zusätzlichen Artikel konnten nicht geladen werden."
   },
   "recap": {
     "titre": "Zusammenfassung",
@@ -115,6 +117,27 @@
     "erreur_action": "Der Fälligkeitstermin konnte nicht gespeichert werden.",
     "confirmer_suppression": "Fälligkeitstermin {{annee}} löschen? Dieses Jahr verwendet danach wieder den 1. Januar.",
     "note_repli": "Ein Jahr ohne oben konfigurierten Fälligkeitstermin verwendet automatisch den 1. Januar dieses Jahres (Standardverhalten)."
+  },
+  "catalogue_articles": {
+    "titre": "Beitragsartikel",
+    "sous_titre": "Erstellen Sie zusätzliche Zahlungsartikel, die Mitglieder im Beitragsformular auswählen können — zusätzlich zum Jahresbeitrag, der Beitrittsgebühr und der freien Spende. Ein deaktivierter Artikel wird Mitgliedern nicht mehr angeboten, bleibt aber hier und im Zahlungsverlauf bereits erfolgter Zahlungen sichtbar.",
+    "champ_libelle": "Bezeichnung",
+    "champ_montant": "Betrag (€)",
+    "ajouter": "Hinzufügen",
+    "col_libelle": "Bezeichnung",
+    "col_montant": "Betrag",
+    "col_statut": "Status",
+    "col_actions": "Aktionen",
+    "enregistrer": "Speichern",
+    "activer": "Reaktivieren",
+    "desactiver": "Deaktivieren",
+    "en_cours": "Wird gespeichert…",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Artikel konnten nicht geladen werden.",
+    "aucun": "Noch kein Artikel erstellt.",
+    "erreur_action": "Der Artikel konnte nicht gespeichert werden.",
+    "statut_actif": "Aktiv",
+    "statut_inactif": "Deaktiviert"
   },
   "retour": {
     "chargement": "Zahlung wird überprüft…",
