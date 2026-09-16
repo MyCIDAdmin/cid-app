@@ -10,10 +10,13 @@ import { Link } from "react-router-dom";
 
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import StatutBadge from "../../components/ui/StatutBadge";
+import { exporterMembres } from "../../api/membres";
+import type { MembresOrdering } from "../../api/membres";
 import { useDeleteMembre, useMembresList } from "../../hooks/useMembres";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { PAYS_ALLEMAGNE } from "../../types/membre";
 import type { StatutMembre } from "../../types/membre";
+import { extractApiErrorMessage } from "../../utils/apiError";
 
 function initiales(prenom: string, nom: string): string {
   return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
@@ -30,10 +33,37 @@ export default function MembresListPage() {
   const [q, setQ] = useState("");
   const [pageUrl, setPageUrl] = useState<string | null>(null);
   const [aSupprimer, setASupprimer] = useState<{ id: string; nom: string } | null>(null);
+  // Tri utilisé uniquement pour l'export Excel (demande utilisateur du 2026-09-16) — l'écran
+  // reste paginé par curseur à ordre fixe (nom, prénom, voir MembreCursorPagination côté
+  // backend), qui ne supporte pas un tri dynamique par requête ; le fichier exporté, lui, n'est
+  // pas paginé et peut donc être trié librement (voir apps.membres.exports côté backend).
+  const [ordering, setOrdering] = useState<MembresOrdering>("nom");
+  const [exportEnCours, setExportEnCours] = useState(false);
+  const [erreurExport, setErreurExport] = useState<string | null>(null);
 
   const filters = { statut, ville, q };
   const { data, isLoading, isError } = useMembresList(filters, pageUrl);
   const deleteMutation = useDeleteMembre();
+
+  async function exporter() {
+    setErreurExport(null);
+    setExportEnCours(true);
+    try {
+      const { blob, nomFichier } = await exporterMembres({ ...filters, ordering });
+      const url = window.URL.createObjectURL(blob);
+      const lien = document.createElement("a");
+      lien.href = url;
+      lien.download = nomFichier;
+      document.body.appendChild(lien);
+      lien.click();
+      lien.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setErreurExport(extractApiErrorMessage(error, t("liste.export_erreur")));
+    } finally {
+      setExportEnCours(false);
+    }
+  }
 
   function appliquerFiltres(e: React.FormEvent) {
     e.preventDefault();
@@ -79,10 +109,14 @@ export default function MembresListPage() {
         className="mb-4 flex flex-wrap items-end gap-3 rounded-cid-lg bg-bg-primary p-4 shadow-sm"
       >
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label
+            htmlFor="membres-filtre-statut"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
             {t("liste.filtre_statut")}
           </label>
           <select
+            id="membres-filtre-statut"
             value={statut}
             onChange={(e) => setStatut(e.target.value as StatutMembre | "")}
             className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
@@ -94,10 +128,14 @@ export default function MembresListPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label
+            htmlFor="membres-filtre-ville"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
             {t("liste.filtre_ville")}
           </label>
           <input
+            id="membres-filtre-ville"
             value={ville}
             onChange={(e) => setVille(e.target.value)}
             className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
@@ -105,10 +143,14 @@ export default function MembresListPage() {
           />
         </div>
         <div className="flex-1 min-w-[10rem]">
-          <label className="mb-1 block text-xs font-medium text-text-secondary">
+          <label
+            htmlFor="membres-recherche"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
             {t("liste.recherche")}
           </label>
           <input
+            id="membres-recherche"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
@@ -128,7 +170,47 @@ export default function MembresListPage() {
         >
           {t("liste.reinitialiser")}
         </button>
+
+        {peutGerer && (
+          <>
+            {/* Tri : n'affecte que l'export Excel ci-dessous, pas le tableau à l'écran (voir
+                commentaire sur `ordering` plus haut). */}
+            <div className="ml-auto">
+              <label
+                htmlFor="membres-tri"
+                className="mb-1 block text-xs font-medium text-text-secondary"
+              >
+                {t("liste.trier_par")}
+              </label>
+              <select
+                id="membres-tri"
+                value={ordering}
+                onChange={(e) => setOrdering(e.target.value as MembresOrdering)}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              >
+                <option value="nom">{t("liste.tri_nom_asc")}</option>
+                <option value="-nom">{t("liste.tri_nom_desc")}</option>
+                <option value="-date_adhesion">{t("liste.tri_date_adhesion_desc")}</option>
+                <option value="date_adhesion">{t("liste.tri_date_adhesion_asc")}</option>
+                <option value="statut">{t("liste.tri_statut")}</option>
+                <option value="ville_de">{t("liste.tri_ville")}</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={exporter}
+              disabled={exportEnCours}
+              className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
+            >
+              {exportEnCours ? t("liste.export_en_cours") : t("liste.exporter")}
+            </button>
+          </>
+        )}
       </form>
+
+      {erreurExport && (
+        <p className="mb-4 -mt-2 text-sm text-status-dangerText">{erreurExport}</p>
+      )}
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">

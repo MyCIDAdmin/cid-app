@@ -7,10 +7,7 @@ ModelViewSet aux côtés du parsing JSON par défaut des autres actions), et
 TDD §2.4 documente explicitement un endpoint dédié `POST /membres/import/`.
 """
 
-import io
-
 import magic
-from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
@@ -19,6 +16,7 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsRHOrAbove
 
 from .imports import ImportSchemaError, construire_classeur_template, importer_membres
+from .utils_http import xlsx_response
 
 # ~300 lignes historiques (RICEFW C-001) → un .xlsx de cette taille ne
 # dépasse jamais quelques centaines de Ko. 5 Mo laisse une large marge tout
@@ -110,13 +108,4 @@ class MembreImportTemplateView(APIView):
 
     def get(self, request):
         classeur = construire_classeur_template()
-        buffer = io.BytesIO()
-        classeur.save(buffer)
-        buffer.seek(0)
-
-        response = HttpResponse(
-            buffer.getvalue(),
-            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-        response["Content-Disposition"] = 'attachment; filename="template_import_membres.xlsx"'
-        return response
+        return xlsx_response(classeur, "template_import_membres.xlsx")

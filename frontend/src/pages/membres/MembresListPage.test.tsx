@@ -1,7 +1,8 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as membresApi from "../../api/membres";
 import { useAuthStore } from "../../store/authStore";
 import type { CursorPage, MembreListItem } from "../../types/membre";
 import * as useMembresHooks from "../../hooks/useMembres";
@@ -13,6 +14,14 @@ vi.mock("../../hooks/useMembres", async () => {
     ...actual,
     useMembresList: vi.fn(),
     useDeleteMembre: vi.fn(),
+  };
+});
+
+vi.mock("../../api/membres", async () => {
+  const actual = await vi.importActual<typeof membresApi>("../../api/membres");
+  return {
+    ...actual,
+    exporterMembres: vi.fn(),
   };
 });
 
@@ -97,5 +106,65 @@ describe("MembresListPage", () => {
 
     renderWithProviders(<MembresListPage />);
     expect(screen.getByText("liste.chargement")).toBeInTheDocument();
+  });
+
+  describe("export Excel (demande utilisateur du 2026-09-16)", () => {
+    beforeEach(() => {
+      window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+      window.URL.revokeObjectURL = vi.fn();
+      // jsdom tente une vraie navigation sur le clic d'un <a href="blob:...">
+      // (non pertinent ici, on ne teste que le déclenchement du téléchargement).
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    });
+
+    it("n'affiche pas le bouton d'export pour un rôle membre", () => {
+      useAuthStore.setState({
+        user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
+      });
+      mockList();
+
+      renderWithProviders(<MembresListPage />);
+
+      expect(screen.queryByText("liste.exporter")).not.toBeInTheDocument();
+    });
+
+    it("exporte avec les filtres et le tri courants au clic, pour un rôle RH+", async () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+      vi.mocked(membresApi.exporterMembres).mockResolvedValue({
+        blob: new Blob(["contenu"]),
+        nomFichier: "export_membres_20260916.xlsx",
+      });
+
+      renderWithProviders(<MembresListPage />);
+
+      fireEvent.change(screen.getByLabelText("liste.filtre_ville"), {
+        target: { value: "Berlin" },
+      });
+      fireEvent.change(screen.getByLabelText("liste.trier_par"), {
+        target: { value: "-date_adhesion" },
+      });
+      fireEvent.click(screen.getByText("liste.exporter"));
+
+      await waitFor(() => expect(membresApi.exporterMembres).toHaveBeenCalledTimes(1));
+      expect(membresApi.exporterMembres).toHaveBeenCalledWith(
+        expect.objectContaining({ ville: "Berlin", ordering: "-date_adhesion" }),
+      );
+    });
+
+    it("affiche un message d'erreur si l'export échoue", async () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+      vi.mocked(membresApi.exporterMembres).mockRejectedValue(new Error("boom"));
+
+      renderWithProviders(<MembresListPage />);
+      fireEvent.click(screen.getByText("liste.exporter"));
+
+      expect(await screen.findByText("liste.export_erreur")).toBeInTheDocument();
+    });
   });
 });
