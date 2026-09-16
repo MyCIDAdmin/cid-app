@@ -296,6 +296,11 @@ class GroupeChatSerializer(serializers.ModelSerializer):
     createur = AuteurSerializer(read_only=True)
     nombre_membres = serializers.IntegerField(source="membres_groupe.count", read_only=True)
     est_membre = serializers.SerializerMethodField()
+    # Utilisé par le frontend pour n'afficher "Supprimer le groupe" qu'au créateur (demande
+    # utilisateur du 2026-09-16, "Besprechungen ... vom Ersteller gelöscht werden") — même
+    # principe de confort d'affichage que est_auteur/est_expediteur ailleurs dans ce module,
+    # le backend reste seul juge (voir GroupeChatPermission.has_object_permission).
+    est_createur = serializers.SerializerMethodField()
     # Écriture seule, utilisé uniquement à la création d'un groupe privé (voir mockup
     # "Créer un groupe de chat" — cases "Membres à inviter") ; ignoré pour un groupe public.
     membres_invites = serializers.PrimaryKeyRelatedField(
@@ -313,9 +318,17 @@ class GroupeChatSerializer(serializers.ModelSerializer):
             "created_at",
             "nombre_membres",
             "est_membre",
+            "est_createur",
             "membres_invites",
         ]
-        read_only_fields = ["id", "createur", "created_at", "nombre_membres", "est_membre"]
+        read_only_fields = [
+            "id",
+            "createur",
+            "created_at",
+            "nombre_membres",
+            "est_membre",
+            "est_createur",
+        ]
 
     def get_est_membre(self, obj) -> bool:
         request = self.context.get("request")
@@ -323,6 +336,13 @@ class GroupeChatSerializer(serializers.ModelSerializer):
             return False
         membre = getattr(request.user, "membre", None)
         return membre is not None and obj.membres_groupe.filter(membre=membre).exists()
+
+    def get_est_createur(self, obj) -> bool:
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        membre = getattr(request.user, "membre", None)
+        return membre is not None and obj.createur_id == membre.id
 
     def create(self, validated_data):
         membres_invites = validated_data.pop("membres_invites", [])

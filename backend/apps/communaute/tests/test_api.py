@@ -10,7 +10,13 @@ from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.communaute.models import CategorieForum, Commentaire, Conversation, MembreGroupe
+from apps.communaute.models import (
+    CategorieForum,
+    Commentaire,
+    Conversation,
+    MembreGroupe,
+    MessageGroupe,
+)
 from apps.communaute.tests.factories import (
     AlbumFactory,
     ChoixQuestionFactory,
@@ -142,6 +148,24 @@ def test_bureau_admin_peut_masquer_une_publication_et_ca_est_journalise(api_clie
     publication.refresh_from_db()
     assert publication.est_masquee is True
     assert publication.motif_masquage == "spam"
+
+
+def test_bureau_admin_peut_supprimer_la_publication_dautrui(api_client):
+    # Demande utilisateur du 2026-09-16 ("Fil d'actualité : Posts müssen vom Admin
+    # Verwaltbar werden sein [Gelöscht/Archiviert]") — ContenuCommunautePermission
+    # l'autorisait déjà côté backend (voir has_object_permission), seul le bouton manquait
+    # côté frontend (FilPage.tsx) : ce test couvre le comportement backend déjà en place.
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "admin2b@example.de")
+    publication = PublicationFactory()
+    resp = _auth(api_client, user).delete(_publication_detail_url(publication))
+    assert resp.status_code == 204
+
+
+def test_membre_normal_ne_peut_pas_supprimer_la_publication_dautrui(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "m3b@example.de")
+    publication = PublicationFactory()
+    resp = _auth(api_client, user).delete(_publication_detail_url(publication))
+    assert resp.status_code == 403
 
 
 def test_auteur_peut_modifier_sa_propre_publication(api_client):
@@ -464,6 +488,37 @@ def test_messages_prives_liste_pour_un_participant_et_dechiffre_le_contenu(api_c
     assert resp.data["results"][0]["est_expediteur"] is True
 
 
+def _message_prive_detail_url(message):
+    return reverse("communaute:message-prive-detail", args=[message.id])
+
+
+def test_lexpediteur_peut_supprimer_son_propre_message_prive(api_client):
+    # Demande utilisateur du 2026-09-16 ("Nachricht ... kann vom Ersteller gelöscht
+    # werden").
+    user, membre = _user_avec_membre(Role.MEMBRE, "c8@example.de")
+    conversation = ConversationFactory(membre_a=membre)
+    message = MessagePriveFactory(conversation=conversation, expediteur=membre)
+    resp = _auth(api_client, user).delete(_message_prive_detail_url(message))
+    assert resp.status_code == 204
+    assert not Conversation.objects.get(id=conversation.id).messages.filter(id=message.id).exists()
+
+
+def test_lautre_participant_ne_peut_pas_supprimer_le_message_prive_dautrui(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "c9@example.de")
+    conversation = ConversationFactory(membre_a=membre)
+    message = MessagePriveFactory(conversation=conversation)  # expéditeur = l'autre membre
+    resp = _auth(api_client, user).delete(_message_prive_detail_url(message))
+    assert resp.status_code == 403
+    assert Conversation.objects.get(id=conversation.id).messages.filter(id=message.id).exists()
+
+
+def test_un_tiers_ne_peut_pas_supprimer_un_message_prive_dune_conversation_etrangere(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "c10@example.de")
+    message = MessagePriveFactory()  # conversation totalement étrangère
+    resp = _auth(api_client, user).delete(_message_prive_detail_url(message))
+    assert resp.status_code == 403
+
+
 # --- Annuaire de recherche de membres (démarrer une conversation / inviter dans un groupe
 # privé) — distinct de apps.membres, voir MembreRechercheViewSet ---
 
@@ -600,6 +655,44 @@ def test_inviter_reserve_au_createur_ou_bureau_admin(api_client):
     assert MembreGroupe.objects.filter(groupe=groupe, membre=invite).exists()
 
 
+def _groupe_detail_url(groupe):
+    return reverse("communaute:groupe-chat-detail", args=[groupe.id])
+
+
+def test_est_createur_reflete_le_membre_courant_du_groupe(api_client):
+    # Demande utilisateur du 2026-09-16 ("Besprechungen ... vom Ersteller gelöscht werden")
+    # — utilisé par le frontend pour n'afficher "Supprimer le groupe" qu'au créateur.
+    user, createur = _user_avec_membre(Role.MEMBRE, "g12@example.de")
+    mien = GroupeChatFactory(createur=createur)
+    dautrui = GroupeChatFactory()
+    resp = _auth(api_client, user).get(reverse(GROUPE_LIST_URL))
+    par_id = {g["id"]: g["est_createur"] for g in resp.data["results"]}
+    assert par_id[str(mien.id)] is True
+    assert par_id[str(dautrui.id)] is False
+
+
+def test_le_createur_peut_supprimer_son_groupe(api_client):
+    user, createur = _user_avec_membre(Role.MEMBRE, "g13@example.de")
+    groupe = GroupeChatFactory(createur=createur)
+    resp = _auth(api_client, user).delete(_groupe_detail_url(groupe))
+    assert resp.status_code == 204
+
+
+def test_un_membre_normal_ne_peut_pas_supprimer_le_groupe_dautrui(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "g14@example.de")
+    groupe = GroupeChatFactory()
+    MembreGroupeFactory(groupe=groupe, membre=membre)
+    resp = _auth(api_client, user).delete(_groupe_detail_url(groupe))
+    assert resp.status_code == 403
+
+
+def test_bureau_admin_peut_supprimer_le_groupe_dautrui(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "g15@example.de")
+    groupe = GroupeChatFactory()
+    resp = _auth(api_client, user).delete(_groupe_detail_url(groupe))
+    assert resp.status_code == 204
+
+
 def test_messages_groupe_necessite_le_parametre_groupe(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "g9@example.de")
     resp = _auth(api_client, user).get(reverse(MESSAGE_GROUPE_LIST_URL))
@@ -620,6 +713,40 @@ def test_messages_groupe_liste_pour_un_groupe_public(api_client):
     resp = _auth(api_client, user).get(reverse(MESSAGE_GROUPE_LIST_URL), {"groupe": str(groupe.id)})
     assert resp.status_code == 200
     assert resp.data["results"][0]["contenu"] == "Bienvenue !"
+
+
+def _message_groupe_detail_url(message):
+    return reverse("communaute:message-groupe-detail", args=[message.id])
+
+
+def test_lauteur_peut_supprimer_son_propre_message_de_groupe(api_client):
+    # Demande utilisateur du 2026-09-16 ("Nachricht ... kann vom Ersteller gelöscht
+    # werden") — même principe que la messagerie privée.
+    user, membre = _user_avec_membre(Role.MEMBRE, "g16@example.de")
+    groupe = GroupeChatFactory()
+    message = MessageGroupeFactory(groupe=groupe, auteur=membre)
+    resp = _auth(api_client, user).delete(_message_groupe_detail_url(message))
+    assert resp.status_code == 204
+    assert not MessageGroupe.objects.filter(id=message.id).exists()
+
+
+def test_un_autre_membre_ne_peut_pas_supprimer_le_message_de_groupe_dautrui(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "g17@example.de")
+    groupe = GroupeChatFactory()
+    MembreGroupeFactory(groupe=groupe, membre=membre)
+    message = MessageGroupeFactory(groupe=groupe)  # auteur = un autre membre
+    resp = _auth(api_client, user).delete(_message_groupe_detail_url(message))
+    assert resp.status_code == 403
+    assert MessageGroupe.objects.filter(id=message.id).exists()
+
+
+def test_un_bureau_admin_ne_peut_pas_supprimer_le_message_de_groupe_dautrui(api_client):
+    # Pas de modération dédiée pour ce sous-module (voir MessageGroupePermission) — la
+    # demande utilisateur ne porte que sur l'auteur/"Ersteller", pas sur un rôle Admin.
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "g18@example.de")
+    message = MessageGroupeFactory()
+    resp = _auth(api_client, user).delete(_message_groupe_detail_url(message))
+    assert resp.status_code == 403
 
 
 # ---------------------------------------------------------------------------

@@ -22,6 +22,10 @@ type StatutConnexion = "connexion" | "ouvert" | "ferme" | "erreur";
 export interface UseMessagerieSocketResult {
   statut: StatutConnexion;
   messages: Extract<MessagerieSocketMessage, { type: "message" }>[];
+  /** Id des messages supprimés reçus depuis l'ouverture de cette connexion (demande
+   * utilisateur du 2026-09-16) — à soustraire par la page à l'historique REST ET aux
+   * messages temps réel ci-dessus, voir MessagerieConversationPage. */
+  messagesSupprimesIds: string[];
   erreur: string | null;
   envoyer: (contenu: string) => void;
   marquerLu: () => void;
@@ -33,6 +37,7 @@ export function useMessagerieSocket(conversationId: string | undefined): UseMess
   const [messages, setMessages] = useState<
     Extract<MessagerieSocketMessage, { type: "message" }>[]
   >([]);
+  const [messagesSupprimesIds, setMessagesSupprimesIds] = useState<string[]>([]);
   const [erreur, setErreur] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -42,6 +47,7 @@ export function useMessagerieSocket(conversationId: string | undefined): UseMess
     setStatut("connexion");
     setErreur(null);
     setMessages([]);
+    setMessagesSupprimesIds([]);
 
     const url = `${WS_BASE_URL}/messagerie/${conversationId}/?token=${encodeURIComponent(accessToken)}`;
     const ws = new WebSocket(url);
@@ -59,6 +65,10 @@ export function useMessagerieSocket(conversationId: string | undefined): UseMess
       switch (message.type) {
         case "message":
           setMessages((precedents) => [...precedents, message]);
+          break;
+        case "message_supprime":
+          setMessages((precedents) => precedents.filter((m) => m.id !== message.id));
+          setMessagesSupprimesIds((precedents) => [...precedents, message.id]);
           break;
         case "erreur":
           setErreur(message.message);
@@ -95,5 +105,5 @@ export function useMessagerieSocket(conversationId: string | undefined): UseMess
     ws.send(JSON.stringify({ type: "lu" }));
   }, []);
 
-  return { statut, messages, erreur, envoyer, marquerLu };
+  return { statut, messages, messagesSupprimesIds, erreur, envoyer, marquerLu };
 }

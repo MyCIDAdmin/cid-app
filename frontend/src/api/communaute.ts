@@ -202,6 +202,13 @@ export async function listMessagesPrives(
   return data;
 }
 
+// Demande utilisateur du 2026-09-16 ("Nachricht ... kann vom Ersteller gelöscht werden") —
+// réservé à l'expéditeur côté backend (voir MessagePrivePermission) ; diffusé en temps réel
+// aux autres participants via MessagerieConsumer.message_supprime.
+export async function supprimerMessagePrive(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/messages-prives/${id}/`);
+}
+
 // --- Groupes de chat (REST = liste/gestion, voir hooks/useGroupeChatSocket.ts pour l'envoi) ---
 
 export interface GroupesFiltres {
@@ -235,6 +242,12 @@ export async function quitterGroupe(id: string): Promise<GroupeChat> {
   return data;
 }
 
+// Demande utilisateur du 2026-09-16 ("Besprechungen ... vom Ersteller gelöscht werden") —
+// réservé au créateur (ou Bureau Admin+) côté backend, voir GroupeChatPermission.
+export async function supprimerGroupe(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/groupes/${id}/`);
+}
+
 export async function inviterAuGroupe(id: string, membres: string[]): Promise<GroupeChat> {
   const { data } = await apiClient.post<GroupeChat>(`/communaute/groupes/${id}/inviter/`, {
     membres,
@@ -251,6 +264,13 @@ export async function listMessagesGroupe(
     { params: { groupe: groupeId, cursor } },
   );
   return data;
+}
+
+// Demande utilisateur du 2026-09-16 — réservé à l'auteur côté backend (voir
+// MessageGroupePermission) ; diffusé en temps réel aux autres membres du groupe via
+// GroupeChatConsumer.message_supprime.
+export async function supprimerMessageGroupe(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/messages-groupe/${id}/`);
 }
 
 // --- Recherche de membres (démarrer une conversation, inviter dans un groupe) — distinct de

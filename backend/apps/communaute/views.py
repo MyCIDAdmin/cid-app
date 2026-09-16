@@ -6,6 +6,12 @@ Vues API — app communaute, lot Fil d'actualité + Forum (Release Plan §3.2) :
                                                            masquées uniquement en dessous de
                                                            Bureau Admin — voir get_queryset)
   PATCH/DELETE /communaute/publications/{id}/           — propriétaire ou Bureau Admin+
+                                                           (demande utilisateur du
+                                                           2026-09-16 : un post géré/
+                                                           supprimé par l'Admin passait déjà
+                                                           par ce même DELETE côté backend —
+                                                           seul le bouton manquait côté
+                                                           frontend, voir FilPage.tsx)
   POST       /communaute/publications/{id}/liker/       — bascule like (toggle)
   POST       /communaute/publications/{id}/partager/    — bascule partage (toggle)
   POST       /communaute/publications/{id}/masquer/     — modération (Bureau Admin+),
@@ -82,6 +88,7 @@ from .permissions import (
     GroupeChatPermission,
     MatchCommentairePermission,
     MatchPermission,
+    MessageGroupePermission,
     MessagePrivePermission,
     PhotoCommentairePermission,
     PhotoPermission,
@@ -347,6 +354,11 @@ class ReponseForumViewSet(
 #                                                             uniquement) ; ENVOYER un
 #                                                             message passe UNIQUEMENT par
 #                                                             MessagerieConsumer (WebSocket)
+#   DELETE     /communaute/messages-prives/{id}/           — expéditeur uniquement (demande
+#                                                             utilisateur du 2026-09-16),
+#                                                             diffusée en temps réel au
+#                                                             WebSocket de la conversation
+#                                                             (voir _broadcast_message_supprime)
 #
 #   GET/POST   /communaute/groupes/                        — liste (publics + les miens) /
 #                                                             création
@@ -359,7 +371,29 @@ class ReponseForumViewSet(
 #   GET        /communaute/messages-groupe/?groupe=        — historique ; ENVOYER un message
 #                                                             passe UNIQUEMENT par
 #                                                             GroupeChatConsumer (WebSocket)
+#   DELETE     /communaute/messages-groupe/{id}/           — auteur uniquement (demande
+#                                                             utilisateur du 2026-09-16),
+#                                                             diffusée en temps réel au
+#                                                             WebSocket du groupe
 # ---------------------------------------------------------------------------
+
+
+def _broadcast_message_supprime(group_name: str, message_id: str) -> None:
+    """Diffuse la suppression d'un message (privé ou de groupe) au groupe WebSocket
+    concerné — même mécanisme REST -> WS que `MatchViewSet._broadcast_match_update` (voir
+    consumers.py : `MessagerieConsumer.message_supprime` / `GroupeChatConsumer
+    .message_supprime`), pour que les fenêtres de discussion déjà ouvertes des autres
+    participants retirent le message immédiatement plutôt qu'au prochain rechargement."""
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {"type": "message_supprime", "payload": {"id": message_id}},
+    )
 
 
 class ConversationViewSet(
@@ -398,15 +432,25 @@ class ConversationViewSet(
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class MessagePriveViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Liste seule — l'envoi d'un message passe exclusivement par `MessagerieConsumer`
-    (voir docstring de tête de consumers.py). `?conversation=<id>` est obligatoire."""
+class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    """Liste seule + suppression — l'ENVOI d'un message passe exclusivement par
+    `MessagerieConsumer` (voir docstring de tête de consumers.py). `?conversation=<id>` est
+    obligatoire pour lister. `DELETE /{id}/` (demande utilisateur du 2026-09-16, "Nachricht
+    ... kann vom Ersteller gelöscht werden") : suppression définitive réservée à
+    l'expéditeur (voir MessagePrivePermission), diffusée en temps réel au WebSocket de la
+    conversation pour que la fenêtre de l'autre participant retire aussi le message."""
 
     serializer_class = MessagePriveSerializer
     permission_classes = [MessagePrivePermission]
     pagination_class = MessagePriveCursorPagination
 
     def get_queryset(self):
+        if self.action == "destroy":
+            # Pas de filtre par conversation ici (contrairement au `list` ci-dessous) — la
+            # permission objet (MessagePrivePermission, expéditeur uniquement) est le seul
+            # contrôle nécessaire, même principe que ContenuCommunautePermission pour
+            # Publication/Commentaire (queryset large, IDOR géré par has_object_permission).
+            return MessagePrive.objects.select_related("expediteur", "conversation")
         conversation_id = self.request.query_params.get("conversation")
         if not conversation_id:
             raise ValidationError({"conversation": "Ce paramètre est requis."})
@@ -418,6 +462,12 @@ class MessagePriveViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             # l'existence d'une conversation à laquelle il n'appartient pas.
             raise PermissionDenied("Vous n'êtes pas participant de cette conversation.")
         return MessagePrive.objects.filter(conversation=conversation).select_related("expediteur")
+
+    def perform_destroy(self, instance):
+        conversation_id = str(instance.conversation_id)
+        message_id = str(instance.id)
+        super().perform_destroy(instance)
+        _broadcast_message_supprime(f"messagerie_{conversation_id}", message_id)
 
 
 class GroupeChatViewSet(
@@ -472,15 +522,24 @@ class GroupeChatViewSet(
         return Response(self.get_serializer(groupe).data)
 
 
-class MessageGroupeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Liste seule — l'envoi d'un message passe exclusivement par `GroupeChatConsumer`.
-    `?groupe=<id>` est obligatoire."""
+class MessageGroupeViewSet(
+    mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet
+):
+    """Liste seule + suppression — l'ENVOI d'un message passe exclusivement par
+    `GroupeChatConsumer`. `?groupe=<id>` est obligatoire pour lister. `DELETE /{id}/`
+    (demande utilisateur du 2026-09-16, même principe que MessagePriveViewSet) :
+    suppression définitive réservée à l'auteur (voir MessageGroupePermission), diffusée en
+    temps réel au WebSocket du groupe."""
 
     serializer_class = MessageGroupeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [MessageGroupePermission]
     pagination_class = MessageGroupeCursorPagination
 
     def get_queryset(self):
+        if self.action == "destroy":
+            # Même raisonnement que MessagePriveViewSet.get_queryset : queryset large, IDOR
+            # géré par la permission objet (auteur uniquement).
+            return MessageGroupe.objects.select_related("auteur", "groupe")
         groupe_id = self.request.query_params.get("groupe")
         if not groupe_id:
             raise ValidationError({"groupe": "Ce paramètre est requis."})
@@ -490,6 +549,12 @@ class MessageGroupeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             if membre is None or not groupe.membres_groupe.filter(membre=membre).exists():
                 raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
         return MessageGroupe.objects.filter(groupe=groupe).select_related("auteur")
+
+    def perform_destroy(self, instance):
+        groupe_id = str(instance.groupe_id)
+        message_id = str(instance.id)
+        super().perform_destroy(instance)
+        _broadcast_message_supprime(f"groupe_{groupe_id}", message_id)
 
 
 class MembreRechercheCursorPagination(CursorPagination):
@@ -739,9 +804,7 @@ class QuizViewSet(viewsets.ModelViewSet):
         membre = request.user.membre
         participation = ParticipationQuiz.objects.filter(quiz=quiz, membre=membre).first()
         if participation is None:
-            raise ValidationError(
-                "Démarrez le quiz avant de répondre (voir action 'demarrer')."
-            )
+            raise ValidationError("Démarrez le quiz avant de répondre (voir action 'demarrer').")
         if participation.terminee_le is not None:
             raise PermissionDenied("Cette participation est déjà terminée.")
 

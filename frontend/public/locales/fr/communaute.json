@@ -65,7 +65,8 @@
     "membre_inconnu": "Membre",
     "retour_liste": "← Retour à la messagerie",
     "placeholder_message": "Écrire un message…",
-    "envoyer": "Envoyer"
+    "envoyer": "Envoyer",
+    "supprimer_message": "Supprimer"
   },
   "groupes": {
     "titre": "Groupes de chat",
@@ -84,9 +85,11 @@
     "rejoindre": "Rejoindre",
     "ouvrir": "Ouvrir",
     "quitter": "Quitter le groupe",
+    "supprimer_groupe": "Supprimer le groupe",
     "retour_liste": "← Retour aux groupes",
     "placeholder_message": "Écrire un message…",
-    "envoyer": "Envoyer"
+    "envoyer": "Envoyer",
+    "supprimer_message": "Supprimer"
   },
   "live": {
     "titre": "Live Match",

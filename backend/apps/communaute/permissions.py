@@ -75,13 +75,23 @@ class ConversationPermission(BasePermission):
 
 
 class MessagePrivePermission(BasePermission):
-    """Authentifié uniquement — l'appartenance à la conversation ciblée par `?conversation=`
-    est vérifiée explicitement dans `MessagePriveViewSet.get_queryset` (403 plutôt qu'une
-    liste vide silencieuse, pour ne pas laisser croire à une conversation inexistante)."""
+    """Authentifié uniquement pour lister — l'appartenance à la conversation ciblée par
+    `?conversation=` est vérifiée explicitement dans `MessagePriveViewSet.get_queryset` (403
+    plutôt qu'une liste vide silencieuse, pour ne pas laisser croire à une conversation
+    inexistante). Supprimer SON PROPRE message (demande utilisateur du 2026-09-16 : "Nachricht
+    ... kann vom Ersteller gelöscht werden") : expéditeur uniquement, jamais l'autre
+    participant ni un modérateur — la messagerie privée reste strictement entre ses 2
+    participants (voir ConversationPermission)."""
 
     def has_permission(self, request, view):
         user = request.user
         return bool(user and user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        if getattr(view, "action", None) != "destroy":
+            return True
+        membre = _membre_de(request.user)
+        return membre is not None and obj.expediteur_id == membre.id
 
 
 class GroupeChatPermission(BasePermission):
@@ -118,6 +128,25 @@ class GroupeChatPermission(BasePermission):
         if action == "quitter":
             return membre is not None and obj.membres_groupe.filter(membre=membre).exists()
         return True
+
+
+class MessageGroupePermission(BasePermission):
+    """Authentifié uniquement pour lister — l'appartenance au groupe ciblé par `?groupe=` est
+    vérifiée explicitement dans `MessageGroupeViewSet.get_queryset` (même principe que
+    `MessagePrivePermission`). Supprimer SON PROPRE message (demande utilisateur du
+    2026-09-16, même que ci-dessus) : auteur uniquement — pas de modération dédiée pour ce
+    sous-module (un Bureau Admin+ ne peut pas supprimer le message d'un tiers, la demande ne
+    porte que sur l'auteur/"Ersteller")."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        if getattr(view, "action", None) != "destroy":
+            return True
+        membre = _membre_de(request.user)
+        return membre is not None and obj.auteur_id == membre.id
 
 
 # ---------------------------------------------------------------------------

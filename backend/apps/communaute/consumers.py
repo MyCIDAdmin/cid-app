@@ -142,6 +142,12 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
     async def lecture_update(self, event):
         await self.send_json({"type": "lu", **event["payload"]})
 
+    async def message_supprime(self, event):
+        # Diffusé depuis MessagePriveViewSet.perform_destroy (REST — suppression réservée à
+        # l'expéditeur, voir apps.communaute.permissions.MessagePrivePermission), même
+        # mécanisme REST -> WS que LiveMatchConsumer.match_update.
+        await self.send_json({"type": "message_supprime", **event["payload"]})
+
     # --- accès base de données ---
 
     @database_sync_to_async
@@ -259,6 +265,11 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def message_recu(self, event):
         await self.send_json({"type": "message", **event["payload"]})
+
+    async def message_supprime(self, event):
+        # Diffusé depuis MessageGroupeViewSet.perform_destroy — même mécanisme que
+        # MessagerieConsumer.message_supprime ci-dessus.
+        await self.send_json({"type": "message_supprime", **event["payload"]})
 
     @database_sync_to_async
     def _get_membre_id(self, user):

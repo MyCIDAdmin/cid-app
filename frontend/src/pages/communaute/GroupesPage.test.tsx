@@ -39,6 +39,7 @@ function groupe(overrides: Partial<GroupeChat> = {}): GroupeChat {
     created_at: "2026-01-01T10:00:00Z",
     nombre_membres: 5,
     est_membre: false,
+    est_createur: false,
     ...overrides,
   };
 }

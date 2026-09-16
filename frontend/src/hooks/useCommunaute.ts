@@ -254,6 +254,19 @@ export function useMessagesPrives(conversationId: string | undefined) {
   });
 }
 
+export function useSupprimerMessagePrive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.supprimerMessagePrive(id),
+    // Invalide tout l'historique en cache (pas seulement la conversation courante) — même
+    // principe que invalidatePublications ; la suppression en temps réel affichée à l'écran
+    // passe elle par le WebSocket (voir hooks/useMessagerieSocket.ts), cette invalidation
+    // n'est qu'un filet de sécurité pour un rechargement ultérieur.
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "messages-prives"] }),
+  });
+}
+
 // --- Groupes de chat (REST = liste/gestion, voir hooks/useGroupeChatSocket.ts pour l'envoi) ---
 
 function invalidateGroupes(queryClient: ReturnType<typeof useQueryClient>) {
@@ -304,6 +317,14 @@ export function useQuitterGroupe() {
   });
 }
 
+export function useSupprimerGroupe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.supprimerGroupe(id),
+    onSuccess: () => invalidateGroupes(queryClient),
+  });
+}
+
 export function useInviterAuGroupe() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -318,6 +339,16 @@ export function useMessagesGroupe(groupeId: string | undefined) {
     queryKey: communauteKeys.messagesGroupe(groupeId ?? ""),
     queryFn: () => communauteApi.listMessagesGroupe(groupeId as string),
     enabled: !!groupeId,
+  });
+}
+
+export function useSupprimerMessageGroupe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.supprimerMessageGroupe(id),
+    // Même raisonnement que useSupprimerMessagePrive ci-dessus.
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "messages-groupe"] }),
   });
 }
 

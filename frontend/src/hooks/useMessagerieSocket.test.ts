@@ -90,6 +90,30 @@ describe("useMessagerieSocket", () => {
     expect(result.current.messages[0].contenu).toBe("Salut !");
   });
 
+  it("retire un message supprimé de 'messages' et l'ajoute à 'messagesSupprimesIds' (demande utilisateur du 2026-09-16)", async () => {
+    const { result } = renderHook(() => useMessagerieSocket("conv-1"));
+    const ws = FakeWebSocket.instances[0];
+
+    act(() => {
+      ws.ouvrir();
+      ws.recevoir({
+        type: "message",
+        id: "m1",
+        conversation: "conv-1",
+        expediteur: "u1",
+        contenu: "Oups",
+        est_lu: false,
+        created_at: "2026-01-01T10:00:00Z",
+      });
+    });
+    await waitFor(() => expect(result.current.messages).toHaveLength(1));
+
+    act(() => ws.recevoir({ type: "message_supprime", id: "m1" }));
+
+    await waitFor(() => expect(result.current.messages).toHaveLength(0));
+    expect(result.current.messagesSupprimesIds).toEqual(["m1"]);
+  });
+
   it("envoie {type: 'message', contenu} au format attendu par le consumer", () => {
     const { result } = renderHook(() => useMessagerieSocket("conv-1"));
     const ws = FakeWebSocket.instances[0];

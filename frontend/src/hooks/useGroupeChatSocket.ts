@@ -22,6 +22,9 @@ type StatutConnexion = "connexion" | "ouvert" | "ferme" | "erreur";
 export interface UseGroupeChatSocketResult {
   statut: StatutConnexion;
   messages: Extract<GroupeChatSocketMessage, { type: "message" }>[];
+  /** Id des messages supprimés reçus depuis l'ouverture de cette connexion (demande
+   * utilisateur du 2026-09-16) — voir GroupeChatPage. */
+  messagesSupprimesIds: string[];
   erreur: string | null;
   envoyer: (contenu: string) => void;
 }
@@ -32,6 +35,7 @@ export function useGroupeChatSocket(groupeId: string | undefined): UseGroupeChat
   const [messages, setMessages] = useState<
     Extract<GroupeChatSocketMessage, { type: "message" }>[]
   >([]);
+  const [messagesSupprimesIds, setMessagesSupprimesIds] = useState<string[]>([]);
   const [erreur, setErreur] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -41,6 +45,7 @@ export function useGroupeChatSocket(groupeId: string | undefined): UseGroupeChat
     setStatut("connexion");
     setErreur(null);
     setMessages([]);
+    setMessagesSupprimesIds([]);
 
     const url = `${WS_BASE_URL}/groupes/${groupeId}/?token=${encodeURIComponent(accessToken)}`;
     const ws = new WebSocket(url);
@@ -58,6 +63,10 @@ export function useGroupeChatSocket(groupeId: string | undefined): UseGroupeChat
       switch (message.type) {
         case "message":
           setMessages((precedents) => [...precedents, message]);
+          break;
+        case "message_supprime":
+          setMessages((precedents) => precedents.filter((m) => m.id !== message.id));
+          setMessagesSupprimesIds((precedents) => [...precedents, message.id]);
           break;
         case "erreur":
           setErreur(message.message);
@@ -84,5 +93,5 @@ export function useGroupeChatSocket(groupeId: string | undefined): UseGroupeChat
     ws.send(JSON.stringify({ type: "message", contenu }));
   }, []);
 
-  return { statut, messages, erreur, envoyer };
+  return { statut, messages, messagesSupprimesIds, erreur, envoyer };
 }

@@ -7,7 +7,13 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { useGroupe, useMessagesGroupe, useQuitterGroupe } from "../../hooks/useCommunaute";
+import {
+  useGroupe,
+  useMessagesGroupe,
+  useQuitterGroupe,
+  useSupprimerGroupe,
+  useSupprimerMessageGroupe,
+} from "../../hooks/useCommunaute";
 import { useGroupeChatSocket } from "../../hooks/useGroupeChatSocket";
 import { useAuthStore } from "../../store/authStore";
 
@@ -24,12 +30,16 @@ export default function GroupeChatPage() {
   const groupeQuery = useGroupe(id);
   const historiqueQuery = useMessagesGroupe(id);
   const quitter = useQuitterGroupe();
-  const { statut, messages: messagesTempsReel, erreur, envoyer } = useGroupeChatSocket(id);
+  const supprimerGroupe = useSupprimerGroupe();
+  const supprimerMessage = useSupprimerMessageGroupe();
+  const { statut, messages: messagesTempsReel, messagesSupprimesIds, erreur, envoyer } =
+    useGroupeChatSocket(id);
 
   const [texte, setTexte] = useState("");
 
   const tousLesMessages = useMemo(() => {
-    const historique = historiqueQuery.data?.results ?? [];
+    const supprimes = new Set(messagesSupprimesIds);
+    const historique = (historiqueQuery.data?.results ?? []).filter((m) => !supprimes.has(m.id));
     const idsHistorique = new Set(historique.map((m) => m.id));
     const nouveaux = messagesTempsReel.filter((m) => !idsHistorique.has(m.id));
     return [
@@ -48,7 +58,7 @@ export default function GroupeChatPage() {
         estMoi: m.auteur.id === moi?.id,
       })),
     ];
-  }, [historiqueQuery.data, messagesTempsReel, moi?.id]);
+  }, [historiqueQuery.data, messagesTempsReel, messagesSupprimesIds, moi?.id]);
 
   function envoyerMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -62,15 +72,34 @@ export default function GroupeChatPage() {
     quitter.mutate(id, { onSuccess: () => navigate("/groupes") });
   }
 
+  function handleSupprimerGroupe() {
+    if (!id) return;
+    supprimerGroupe.mutate(id, { onSuccess: () => navigate("/groupes") });
+  }
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
         <Link to="/groupes" className="text-xs text-ca hover:underline">
           {t("groupes.retour_liste")}
         </Link>
-        <button type="button" onClick={handleQuitter} className="text-xs text-status-dangerText hover:underline">
-          {t("groupes.quitter")}
-        </button>
+        <div className="flex gap-3">
+          {/* Demande utilisateur du 2026-09-16 ("Besprechungen ... vom Ersteller gelöscht
+              werden") — réservé au créateur côté backend (GroupeChatPermission), voir
+              GroupeChatSerializer.est_createur. */}
+          {groupeQuery.data?.est_createur && (
+            <button
+              type="button"
+              onClick={handleSupprimerGroupe}
+              className="text-xs text-status-dangerText hover:underline"
+            >
+              {t("groupes.supprimer_groupe")}
+            </button>
+          )}
+          <button type="button" onClick={handleQuitter} className="text-xs text-status-dangerText hover:underline">
+            {t("groupes.quitter")}
+          </button>
+        </div>
       </div>
 
       {groupeQuery.data && (
@@ -96,9 +125,18 @@ export default function GroupeChatPage() {
               >
                 <p className="whitespace-pre-wrap">{message.contenu}</p>
                 <p
-                  className={`mt-0.5 text-[10px] ${message.estMoi ? "text-white/70" : "text-text-tertiary"}`}
+                  className={`mt-0.5 flex items-center gap-2 text-[10px] ${message.estMoi ? "text-white/70" : "text-text-tertiary"}`}
                 >
                   {formatHeure(message.created_at)}
+                  {message.estMoi && (
+                    <button
+                      type="button"
+                      onClick={() => supprimerMessage.mutate(message.id)}
+                      className="hover:underline"
+                    >
+                      {t("groupes.supprimer_message")}
+                    </button>
+                  )}
                 </p>
               </div>
             </div>

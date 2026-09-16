@@ -118,6 +118,37 @@ def test_marquer_lu_diffuse_un_accuse_de_lecture():
     assert message.est_lu is True
 
 
+def test_suppression_dun_message_prive_par_lapi_rest_est_diffusee_au_websocket():
+    """La suppression d'un message privé passe par MessagePriveViewSet (REST, expéditeur
+    uniquement — voir apps.communaute.permissions.MessagePrivePermission), jamais par le
+    WebSocket lui-même. Ce test appelle directement `views._broadcast_message_supprime`
+    (même principe que test_mise_a_jour_du_score_par_lapi_rest_est_diffusee_au_websocket
+    pour LiveMatchConsumer) pour vérifier que l'autre participant, connecté à la
+    conversation, voit le message disparaître en temps réel."""
+    _, m1 = user_membre_avec_fiche(email="msg12@example.de")
+    _, m2 = user_membre_avec_fiche(email="msg13@example.de")
+    conversation = Conversation.get_or_create_entre(m1, m2)
+    message = MessagePrive.objects.create(conversation=conversation, expediteur=m1, contenu="Oups")
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/messagerie/{conversation.id}/", m2.user)
+        assert connected is True
+
+        from channels.db import database_sync_to_async
+
+        from apps.communaute.views import _broadcast_message_supprime
+
+        await database_sync_to_async(_broadcast_message_supprime)(
+            f"messagerie_{conversation.id}", str(message.id)
+        )
+        recu = await communicator.receive_json_from()
+        assert recu == {"type": "message_supprime", "id": str(message.id)}
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
 def test_presence_en_ligne_empeche_la_notification_hors_ligne(monkeypatch):
     _, m1 = user_membre_avec_fiche(email="msg8@example.de")
     _, m2 = user_membre_avec_fiche(email="msg9@example.de")
@@ -204,6 +235,33 @@ def test_connexion_groupe_acceptee_pour_un_membre_puis_message_diffuse():
 
     asyncio.run(run())
     assert MessageGroupe.objects.filter(groupe=groupe).count() == 1
+
+
+def test_suppression_dun_message_de_groupe_par_lapi_rest_est_diffusee_au_websocket():
+    """Même principe que le test équivalent pour MessagerieConsumer ci-dessus, côté
+    GroupeChatConsumer."""
+    _, m1 = user_membre_avec_fiche(email="grp4@example.de")
+    groupe = GroupeChatFactory()
+    MembreGroupeFactory(groupe=groupe, membre=m1)
+    message = MessageGroupe.objects.create(groupe=groupe, auteur=m1, contenu="Oups")
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/groupes/{groupe.id}/", m1.user)
+        assert connected is True
+
+        from channels.db import database_sync_to_async
+
+        from apps.communaute.views import _broadcast_message_supprime
+
+        await database_sync_to_async(_broadcast_message_supprime)(
+            f"groupe_{groupe.id}", str(message.id)
+        )
+        recu = await communicator.receive_json_from()
+        assert recu == {"type": "message_supprime", "id": str(message.id)}
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
 
 
 def test_rejoindre_ne_cree_aucune_appartenance_via_le_websocket():

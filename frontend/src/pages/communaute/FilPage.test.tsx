@@ -182,6 +182,48 @@ describe("FilPage", () => {
     expect(screen.getByText("fil.masquer")).toBeInTheDocument();
   });
 
+  it("un bureau admin voit aussi le bouton supprimer sur le contenu d'autrui (AHM-XX)", () => {
+    // Demande utilisateur du 2026-09-16 : "Posts müssen vom Admin Verwaltbar werden sein
+    // (Gelöscht/Archiviert)" — le backend autorisait déjà la suppression admin, il manquait
+    // le bouton.
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: bureauAdmin,
+      isAuthenticated: true,
+    });
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication({ est_auteur: false })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    expect(screen.getAllByText("fil.supprimer")).toHaveLength(1);
+    expect(screen.getByText("fil.masquer")).toBeInTheDocument();
+  });
+
+  it("appelle supprimer au clic du bouton supprimer d'un bureau admin sur le contenu d'autrui", () => {
+    const supprimer = mutationMock<ReturnType<typeof useCommunauteHooks.useSupprimerPublication>>();
+    vi.mocked(useCommunauteHooks.useSupprimerPublication).mockReturnValue(supprimer);
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: bureauAdmin,
+      isAuthenticated: true,
+    });
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication({ id: "p9", est_auteur: false })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+    fireEvent.click(screen.getByText("fil.supprimer"));
+    expect(supprimer.mutate).toHaveBeenCalledWith("p9");
+  });
+
   it("l'auteur voit le bouton supprimer sur sa propre publication", () => {
     vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
       data: page([publication({ est_auteur: true })]),

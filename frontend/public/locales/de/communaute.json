@@ -65,7 +65,8 @@
     "membre_inconnu": "Mitglied",
     "retour_liste": "← Zurück zu den Nachrichten",
     "placeholder_message": "Nachricht schreiben…",
-    "envoyer": "Senden"
+    "envoyer": "Senden",
+    "supprimer_message": "Löschen"
   },
   "groupes": {
     "titre": "Chatgruppen",
@@ -84,9 +85,11 @@
     "rejoindre": "Beitreten",
     "ouvrir": "Öffnen",
     "quitter": "Gruppe verlassen",
+    "supprimer_groupe": "Gruppe löschen",
     "retour_liste": "← Zurück zu den Gruppen",
     "placeholder_message": "Nachricht schreiben…",
-    "envoyer": "Senden"
+    "envoyer": "Senden",
+    "supprimer_message": "Löschen"
   },
   "live": {
     "titre": "Live-Spiel",

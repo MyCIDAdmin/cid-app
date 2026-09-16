@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
-import { useMessagesPrives } from "../../hooks/useCommunaute";
+import { useMessagesPrives, useSupprimerMessagePrive } from "../../hooks/useCommunaute";
 import { useMessagerieSocket } from "../../hooks/useMessagerieSocket";
 import { useAuthStore } from "../../store/authStore";
 
@@ -23,8 +23,15 @@ export default function MessagerieConversationPage() {
   const moi = useAuthStore((s) => s.user);
 
   const historiqueQuery = useMessagesPrives(id);
-  const { statut, messages: messagesTempsReel, erreur, envoyer, marquerLu } =
-    useMessagerieSocket(id);
+  const {
+    statut,
+    messages: messagesTempsReel,
+    messagesSupprimesIds,
+    erreur,
+    envoyer,
+    marquerLu,
+  } = useMessagerieSocket(id);
+  const supprimerMessage = useSupprimerMessagePrive();
 
   const [texte, setTexte] = useState("");
 
@@ -33,7 +40,8 @@ export default function MessagerieConversationPage() {
   }, [statut, marquerLu]);
 
   const tousLesMessages = useMemo(() => {
-    const historique = historiqueQuery.data?.results ?? [];
+    const supprimes = new Set(messagesSupprimesIds);
+    const historique = (historiqueQuery.data?.results ?? []).filter((m) => !supprimes.has(m.id));
     const idsHistorique = new Set(historique.map((m) => m.id));
     const nouveaux = messagesTempsReel.filter((m) => !idsHistorique.has(m.id));
     return [
@@ -52,7 +60,7 @@ export default function MessagerieConversationPage() {
         estMoi: m.expediteur === moi?.id,
       })),
     ];
-  }, [historiqueQuery.data, messagesTempsReel, moi?.id]);
+  }, [historiqueQuery.data, messagesTempsReel, messagesSupprimesIds, moi?.id]);
 
   function envoyerMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -83,9 +91,18 @@ export default function MessagerieConversationPage() {
             >
               <p className="whitespace-pre-wrap">{message.contenu}</p>
               <p
-                className={`mt-0.5 text-[10px] ${message.estMoi ? "text-white/70" : "text-text-tertiary"}`}
+                className={`mt-0.5 flex items-center gap-2 text-[10px] ${message.estMoi ? "text-white/70" : "text-text-tertiary"}`}
               >
                 {formatHeure(message.created_at)}
+                {message.estMoi && (
+                  <button
+                    type="button"
+                    onClick={() => supprimerMessage.mutate(message.id)}
+                    className="hover:underline"
+                  >
+                    {t("messagerie.supprimer_message")}
+                  </button>
+                )}
               </p>
             </div>
           ))}

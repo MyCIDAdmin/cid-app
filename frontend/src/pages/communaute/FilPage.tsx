@@ -212,13 +212,26 @@ function PublicationCarte({ publication }: { publication: Publication }) {
             </button>
           )}
           {peutModerer && !publication.est_auteur && (
-            <button
-              type="button"
-              onClick={() => masquer.mutate({ id: publication.id, motif: "modération" })}
-              className="hover:underline"
-            >
-              {publication.est_masquee ? t("fil.demasquer") : t("fil.masquer")}
-            </button>
+            <>
+              {/* Demande utilisateur du 2026-09-16 ("Posts müssen vom Admin Verwaltbar
+                  werden sein [Gelöscht/Archiviert]") — le backend (ContenuCommunautePermission)
+                  autorise déjà Bureau Admin+ à supprimer N'IMPORTE QUELLE publication, pas
+                  seulement la sienne ; seul ce bouton manquait ici. */}
+              <button
+                type="button"
+                onClick={() => supprimer.mutate(publication.id)}
+                className="hover:underline"
+              >
+                {t("fil.supprimer")}
+              </button>
+              <button
+                type="button"
+                onClick={() => masquer.mutate({ id: publication.id, motif: "modération" })}
+                className="hover:underline"
+              >
+                {publication.est_masquee ? t("fil.demasquer") : t("fil.masquer")}
+              </button>
+            </>
           )}
         </div>
       </div>

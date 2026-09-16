@@ -126,6 +126,9 @@ export interface GroupeChat {
   created_at: string;
   nombre_membres: number;
   est_membre: boolean;
+  /** Utilisé pour n'afficher "Supprimer le groupe" qu'au créateur (demande utilisateur du
+   * 2026-09-16, "Besprechungen ... vom Ersteller gelöscht werden") — voir GroupeChatPage. */
+  est_createur: boolean;
 }
 
 export interface GroupeChatPayload {
@@ -149,10 +152,16 @@ export interface MessageGroupe {
 export type MessagerieSocketMessage =
   | { type: "message"; id: string; conversation: string; expediteur: string; contenu: string; est_lu: boolean; created_at: string }
   | { type: "lu"; conversation: string; lu_par: string }
+  // Diffusé par MessagePriveViewSet (REST, expéditeur uniquement — demande utilisateur du
+  // 2026-09-16) via MessagerieConsumer.message_supprime, voir hooks/useMessagerieSocket.ts.
+  | { type: "message_supprime"; id: string }
   | { type: "erreur"; message: string };
 
 export type GroupeChatSocketMessage =
   | { type: "message"; id: string; groupe: string; auteur: Auteur; contenu: string; created_at: string }
+  // Diffusé par MessageGroupeViewSet (REST, auteur uniquement) via
+  // GroupeChatConsumer.message_supprime, voir hooks/useGroupeChatSocket.ts.
+  | { type: "message_supprime"; id: string }
   | { type: "erreur"; message: string };
 
 // --- Live Match, Albums, Quiz (troisième lot — Phase 4B, miroir de
