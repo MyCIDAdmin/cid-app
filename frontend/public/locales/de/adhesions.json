@@ -8,7 +8,11 @@
     "expire_le": "Gültig bis {{date}}",
     "prix_paye": "Bezahlter Preis",
     "souscrit_le": "Abgeschlossen am {{date}}",
-    "avantages_titre": "Enthaltene Vorteile"
+    "avantages_titre": "Enthaltene Vorteile",
+    "retirer": "Antrag zurückziehen",
+    "erreur_retrait": "Der Antrag konnte nicht zurückgezogen werden.",
+    "confirmer_retrait_titre": "Mitgliedschaftsantrag zurückziehen?",
+    "confirmer_retrait_message": "Ihre Anmeldung wird storniert. Sie können sich erneut anmelden, solange die Kampagne noch offen ist."
   },
   "statut": {
     "brouillon": "Entwurf",
@@ -77,7 +81,13 @@
     "rejeter": "Ablehnen",
     "motif_placeholder": "Ablehnungsgrund (erforderlich)",
     "confirmer_rejet": "Ablehnung bestätigen",
-    "erreur_action": "Die Aktion konnte nicht ausgeführt werden."
+    "erreur_action": "Die Aktion konnte nicht ausgeführt werden.",
+    "uploader_pour_membre": "Dokument für dieses Mitglied hochladen",
+    "erreur_upload": "Das Dokument konnte nicht gesendet werden.",
+    "annuler_souscription": "Diesen Antrag stornieren",
+    "confirmer_annuler_titre": "Diesen Antrag stornieren?",
+    "confirmer_annuler_message": "Der Mitgliedschaftsantrag dieses Mitglieds wird storniert — diese Aktion kann nicht rückgängig gemacht werden.",
+    "erreur_annulation": "Der Antrag konnte nicht storniert werden."
   },
   "admin": {
     "titre": "Verwaltung der Mitgliedschaftskampagnen",
@@ -102,6 +112,46 @@
     "erreur_action": "Die Aktion konnte nicht ausgeführt werden.",
     "aucune_campagne": "Noch keine Kampagne erstellt.",
     "chargement": "Wird geladen…",
-    "erreur_chargement": "Kampagnen konnten nicht geladen werden."
+    "erreur_chargement": "Kampagnen konnten nicht geladen werden.",
+    "gerer_offres": "Angebote verwalten",
+    "masquer_offres": "Angebote ausblenden"
+  },
+  "admin_offres": {
+    "titre": "Angebote dieser Kampagne",
+    "prix_label": "Vollpreis (€)",
+    "visible_label": "Sichtbar",
+    "gerer_rabais": "Rabatte verwalten",
+    "masquer_rabais": "Rabatte ausblenden",
+    "supprimer": "Angebot löschen",
+    "aucune": "Noch kein Angebot für diese Kampagne.",
+    "nom_label": "Name des Angebots",
+    "description_label": "Beschreibung",
+    "avantages_label": "Vorteile (eine Zeile pro Vorteil)",
+    "avantages_placeholder": "Socios-Mitgliedschaft\nKleines Willkommensgeschenk",
+    "age_min_label": "Mindestalter",
+    "age_max_label": "Höchstalter",
+    "erreur": "Das Angebot konnte nicht gespeichert werden.",
+    "ajouter": "Angebot hinzufügen"
+  },
+  "admin_rabais": {
+    "titre": "Rabatte dieses Angebots",
+    "justificatif_requis_label": "Nachweis erforderlich",
+    "supprimer": "Rabatt löschen",
+    "aucun": "Noch kein Rabatt für dieses Angebot.",
+    "type_label": "Typ",
+    "label_fr_label": "Bezeichnung (FR)",
+    "valeur_type_label": "Reduktion",
+    "type_montant": "Fester Betrag (€)",
+    "type_pct": "Prozentsatz (%)",
+    "valeur_label": "Wert",
+    "instructions_placeholder": "Hinweise für das Mitglied (erwarteter Nachweis)",
+    "erreur": "Der Rabatt konnte nicht gespeichert werden.",
+    "ajouter": "Rabatt hinzufügen"
+  },
+  "type_rabais": {
+    "etudiant": "Student",
+    "famille": "Familie",
+    "senior": "Senior",
+    "autre": "Sonstiges"
   }
 }

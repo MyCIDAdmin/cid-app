@@ -13,13 +13,29 @@
  * Le fichier lui-même ne s'obtient jamais autrement que via l'action "telecharger" (URL MinIO
  * pré-signée, TTL 15 min, voir JustificatifRabaisSerializer côté backend) — jamais stocké ni
  * affiché en clair ici.
+ *
+ * Deux capacités ajoutées le 2026-09-16 (demande utilisateur) :
+ *  - upload "pour le compte d'un membre" quand justificatif est encore null (réutilise
+ *    useUploaderJustificatif, déjà utilisé côté membre sur MonAdhesionPage — c'est le backend qui
+ *    autorise l'upload par un RH+ pour une souscription qui n'est pas la sienne, voir
+ *    JustificatifRabaisViewSet.create) ;
+ *  - annulation ("stornieren") de la souscription elle-même, indépendamment de la décision sur le
+ *    justificatif — toutes les souscriptions de cette file sont "en_attente_justificatif", donc
+ *    toujours annulables (voir STATUTS_SOUSCRIPTION_ANNULABLES côté backend).
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { telechargerJustificatif } from "../../api/adhesions";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import { useMembre } from "../../hooks/useMembres";
-import { useCampagnes, useJustificatifsEnAttente, useValiderJustificatif } from "../../hooks/useAdhesions";
+import {
+  useAnnulerSouscription,
+  useCampagnes,
+  useJustificatifsEnAttente,
+  useUploaderJustificatif,
+  useValiderJustificatif,
+} from "../../hooks/useAdhesions";
 import type { CampagneAdhesion, Souscription } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -37,16 +53,29 @@ function JustificatifQueueRow({ souscription, campagnesById }: JustificatifQueue
   const { t } = useTranslation("adhesions");
   const membre = useMembre(souscription.membre);
   const validerMutation = useValiderJustificatif();
+  const uploaderMutation = useUploaderJustificatif();
+  const annulerMutation = useAnnulerSouscription();
 
   const [rejetOuvert, setRejetOuvert] = useState(false);
   const [motifRejet, setMotifRejet] = useState("");
   const [telechargementEnCours, setTelechargementEnCours] = useState(false);
   const [erreurTelechargement, setErreurTelechargement] = useState<string | null>(null);
+  const [annulationOuverte, setAnnulationOuverte] = useState(false);
+  const fichierInputRef = useRef<HTMLInputElement>(null);
 
   const campagne = campagnesById.get(souscription.campagne);
   const offre = campagne?.offres.find((o) => o.id === souscription.offre);
   const rabais = offre?.rabais.find((r) => r.id === souscription.rabais);
   const justificatif = souscription.justificatif;
+
+  function handleFichierChoisi(fichier: File | undefined) {
+    if (!fichier) return;
+    uploaderMutation.mutate({ souscriptionId: souscription.id, fichier });
+  }
+
+  function confirmerAnnulation() {
+    annulerMutation.mutate(souscription.id, { onSuccess: () => setAnnulationOuverte(false) });
+  }
 
   async function voirJustificatif() {
     if (!justificatif) return;
@@ -100,58 +129,95 @@ function JustificatifQueueRow({ souscription, campagnesById }: JustificatifQueue
               : t("admin_justificatifs.voir")}
           </button>
         ) : (
-          <span className="text-xs text-text-tertiary">{t("admin_justificatifs.pas_encore_uploade")}</span>
+          <div className="space-y-1">
+            <input
+              ref={fichierInputRef}
+              type="file"
+              aria-label={`${t("admin_justificatifs.uploader_pour_membre")} — ${offre?.nom ?? ""}`}
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => handleFichierChoisi(e.target.files?.[0])}
+              disabled={uploaderMutation.isPending}
+              className="text-[11px]"
+            />
+            {uploaderMutation.isError && (
+              <p className="text-xs text-status-dangerText">
+                {extractApiErrorMessage(uploaderMutation.error, t("admin_justificatifs.erreur_upload"))}
+              </p>
+            )}
+          </div>
         )}
         {erreurTelechargement && (
           <p className="mt-1 text-xs text-status-dangerText">{erreurTelechargement}</p>
         )}
       </td>
       <td className="px-4 py-2">
-        {justificatif && (
-          <div className="space-y-1.5">
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={approuver}
-                disabled={validerMutation.isPending}
-                className="rounded-cid bg-status-successText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
-              >
-                {t("admin_justificatifs.approuver")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setRejetOuvert((cur) => !cur)}
-                className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
-              >
-                {t("admin_justificatifs.rejeter")}
-              </button>
-            </div>
-            {rejetOuvert && (
-              <div className="w-56">
-                <textarea
-                  rows={2}
-                  value={motifRejet}
-                  onChange={(e) => setMotifRejet(e.target.value)}
-                  placeholder={t("admin_justificatifs.motif_placeholder")}
-                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
-                />
+        <div className="space-y-1.5">
+          {justificatif && (
+            <>
+              <div className="flex gap-1.5">
                 <button
                   type="button"
-                  onClick={confirmerRejet}
-                  disabled={!motifRejet.trim() || validerMutation.isPending}
-                  className="mt-1 rounded-cid bg-status-dangerText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
+                  onClick={approuver}
+                  disabled={validerMutation.isPending}
+                  className="rounded-cid bg-status-successText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
                 >
-                  {t("admin_justificatifs.confirmer_rejet")}
+                  {t("admin_justificatifs.approuver")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRejetOuvert((cur) => !cur)}
+                  className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                >
+                  {t("admin_justificatifs.rejeter")}
                 </button>
               </div>
-            )}
-            {validerMutation.isError && (
-              <p className="text-xs text-status-dangerText">
-                {extractApiErrorMessage(validerMutation.error, t("admin_justificatifs.erreur_action"))}
-              </p>
-            )}
-          </div>
-        )}
+              {rejetOuvert && (
+                <div className="w-56">
+                  <textarea
+                    rows={2}
+                    value={motifRejet}
+                    onChange={(e) => setMotifRejet(e.target.value)}
+                    placeholder={t("admin_justificatifs.motif_placeholder")}
+                    className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={confirmerRejet}
+                    disabled={!motifRejet.trim() || validerMutation.isPending}
+                    className="mt-1 rounded-cid bg-status-dangerText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
+                  >
+                    {t("admin_justificatifs.confirmer_rejet")}
+                  </button>
+                </div>
+              )}
+              {validerMutation.isError && (
+                <p className="text-xs text-status-dangerText">
+                  {extractApiErrorMessage(validerMutation.error, t("admin_justificatifs.erreur_action"))}
+                </p>
+              )}
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => setAnnulationOuverte(true)}
+            className="text-xs text-text-tertiary hover:text-status-dangerText hover:underline"
+          >
+            {t("admin_justificatifs.annuler_souscription")}
+          </button>
+          {annulerMutation.isError && (
+            <p className="text-xs text-status-dangerText">
+              {extractApiErrorMessage(annulerMutation.error, t("admin_justificatifs.erreur_annulation"))}
+            </p>
+          )}
+        </div>
+        <ConfirmDialog
+          open={annulationOuverte}
+          title={t("admin_justificatifs.confirmer_annuler_titre")}
+          message={t("admin_justificatifs.confirmer_annuler_message")}
+          danger
+          onConfirm={confirmerAnnulation}
+          onCancel={() => setAnnulationOuverte(false)}
+        />
       </td>
     </tr>
   );

@@ -13,16 +13,25 @@ Vues API — app adhesions (FDD §6.1, TDD §4) :
   GET       /adhesions/souscriptions/{id}/
   POST      /adhesions/souscriptions/souscrire/         — souscrire/modifier sa souscription
   GET       /adhesions/souscriptions/mes-souscriptions/ — mes souscriptions (toujours les siennes)
-  POST      /adhesions/justificatifs/                — uploader un justificatif (multipart)
+  POST      /adhesions/souscriptions/{id}/annuler/      — stornieren/zurückziehen (demande
+                                                            utilisateur du 2026-09-16) : le
+                                                            membre propriétaire (non payée) ou
+                                                            RH+/Bureau Admin
+  POST      /adhesions/justificatifs/                — uploader un justificatif (multipart) ; RH+
+                                                          peut aussi l'uploader pour le compte
+                                                          d'un membre (demande utilisateur du
+                                                          2026-09-16)
   GET       /adhesions/justificatifs/                — file d'attente de validation (RH+)
   GET       /adhesions/justificatifs/{id}/           — détail (RH+ ou membre propriétaire)
   GET       /adhesions/justificatifs/{id}/telecharger/ — URL MinIO pré-signée, TTL 15 min
   POST      /adhesions/justificatifs/{id}/valider/   — approuver/rejeter (RH+, motif si rejet)
 
 Pas de PUT/PATCH/DELETE sur Souscription : une fois créée, elle n'évolue que via son statut
-(paiement, justificatif — AHM-20/AHM-46) ; une souscription payée ne peut jamais être
-supprimée. Le prix et le statut de souscription sont entièrement recalculés côté serveur
-(CLAUDE.md §8) — voir SouscrireSerializer.validate et souscrire() ci-dessous.
+(paiement, justificatif, annulation — AHM-20/AHM-46, demande utilisateur du 2026-09-16) ; une
+souscription payée ne peut jamais être supprimée ni annulée par cette action (voir annuler()
+ci-dessous — un remboursement éventuel resterait un processus séparé, hors périmètre). Le prix
+et le statut de souscription sont entièrement recalculés côté serveur (CLAUDE.md §8) — voir
+SouscrireSerializer.validate et souscrire() ci-dessous.
 
 Périmètre AHM-19/AHM-20 restant hors champ : reçu PDF, tâches Celery Beat (relance/clôture
 auto), notifications (email/in-app), stats/export — voir models.py.
@@ -179,6 +188,17 @@ class RabaisOffreViewSet(ModelViewSet):
     filterset_fields = ["offre"]
 
 
+#: Statuts depuis lesquels une souscription peut être annulée/retirée (demande utilisateur du
+#: 2026-09-16) — jamais "payee" (registre append-only, un remboursement suivrait un processus
+#: séparé hors périmètre) ni "annulee"/"expiree" (déjà des états terminaux).
+STATUTS_SOUSCRIPTION_ANNULABLES = {
+    StatutSouscription.BROUILLON,
+    StatutSouscription.EN_ATTENTE_JUSTIFICATIF,
+    StatutSouscription.EN_ATTENTE_PAIEMENT,
+    StatutSouscription.RABAIS_REFUSE,
+}
+
+
 class SouscriptionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
     permission_classes = [SouscriptionPermission]
@@ -268,6 +288,26 @@ class SouscriptionViewSet(ModelViewSet):
             return self.get_paginated_response(serializer.data)
         return Response(serializer.data)
 
+    @action(detail=True, methods=["post"])
+    def annuler(self, request, pk=None):
+        """
+        Stornieren (RH+/Bureau Admin) ou zurückziehen (le membre propriétaire) — demande
+        utilisateur du 2026-09-16 : une seule action côté serveur, la distinction se fait par le
+        rôle de l'appelant (voir permissions.SouscriptionPermission.has_object_permission,
+        get_object() ci-dessous applique déjà l'IDOR — un membre non-RH+ n'atteint même pas ici
+        s'il ne s'agit pas de sa propre souscription). Jamais depuis "payee" (voir
+        STATUTS_SOUSCRIPTION_ANNULABLES) : un remboursement resterait un processus séparé, hors
+        périmètre.
+        """
+        souscription = self.get_object()
+        if souscription.statut not in STATUTS_SOUSCRIPTION_ANNULABLES:
+            raise ValidationError(
+                {"statut": ("Cette souscription ne peut plus être annulée dans son statut actuel.")}
+            )
+        souscription.statut = StatutSouscription.ANNULEE
+        souscription.save(update_fields=["statut"])
+        return Response(SouscriptionSerializer(souscription).data)
+
 
 class JustificatifRabaisViewSet(ModelViewSet):
     """Justificatifs de rabais (AHM-20) — voir permissions.JustificatifPermission pour la
@@ -305,13 +345,20 @@ class JustificatifRabaisViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         membre = getattr(request.user, "membre", None)
-        if membre is None:
+        # RH+/Bureau Admin peut uploader un justificatif pour le compte d'un membre — demande
+        # utilisateur du 2026-09-16 ("Inklusive das hochladen des Beweisdokumentes beim
+        # Rabatt-Vorteil"), analogue à ce que Django Admin permet déjà en laissant `fichier`
+        # éditable (voir admin.py). Dans ce cas, pas besoin que l'appelant ait lui-même une
+        # fiche membre (un compte RH pur reste valide) — voir validate_souscription côté
+        # serializer, qui n'exige alors plus que la souscription appartienne à `membre`.
+        est_rh_plus = ROLE_LEVELS.get(request.user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL
+        if membre is None and not est_rh_plus:
             raise ValidationError(
                 {"membre": "Aucune fiche membre associée à ce compte utilisateur."}
             )
 
         serializer = JustificatifRabaisUploadSerializer(
-            data=request.data, context={"membre": membre}
+            data=request.data, context={"membre": membre, "est_rh_plus": est_rh_plus}
         )
         serializer.is_valid(raise_exception=True)
         souscription = serializer.validated_data["souscription"]

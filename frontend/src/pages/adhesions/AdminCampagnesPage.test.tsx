@@ -124,4 +124,21 @@ describe("AdminCampagnesPage", () => {
       date_fin: "2027-12-31",
     });
   });
+
+  it("déplie la gestion des offres d'une campagne (demande utilisateur du 2026-09-16)", () => {
+    vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
+      data: { next: null, previous: null, results: [campagne()] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
+    setupMutationMocks();
+
+    renderWithProviders(<AdminCampagnesPage />);
+
+    expect(screen.queryByText("admin_offres.titre")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("admin.gerer_offres"));
+
+    expect(screen.getByText("admin_offres.titre")).toBeInTheDocument();
+    expect(screen.getByText("admin.masquer_offres")).toBeInTheDocument();
+  });
 });

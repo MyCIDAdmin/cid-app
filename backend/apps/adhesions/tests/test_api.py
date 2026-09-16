@@ -10,7 +10,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.adhesions.models import StatutCampagne, StatutSouscription
+from apps.adhesions.models import OffreAdhesion, RabaisOffre, StatutCampagne, StatutSouscription
 from apps.adhesions.tests.factories import (
     CampagneAdhesionFactory,
     OffreAdhesionFactory,
@@ -485,3 +485,195 @@ def test_delete_souscription_non_autorise(api_client):
     resp = api_client.delete(_souscription_detail_url(souscription))
 
     assert resp.status_code == 405
+
+
+# --- Gestion du catalogue (Offres/Rabais) : CRUD Bureau Admin+ — demande utilisateur du
+# 2026-09-16 (tool frontend analogue au Django Admin, la création existait déjà côté API). ---
+
+
+def _offre_detail_url(offre):
+    return reverse("adhesions:offre-detail", args=[offre.id])
+
+
+def _rabais_detail_url(rabais):
+    return reverse("adhesions:rabais-detail", args=[rabais.id])
+
+
+def test_bureau_admin_modifie_une_offre(api_client):
+    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"), visible=True)
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.patch(_offre_detail_url(offre), {"prix_plein": "60.00", "visible": False})
+
+    assert resp.status_code == 200, resp.data
+    offre.refresh_from_db()
+    assert str(offre.prix_plein) == "60.00"
+    assert offre.visible is False
+
+
+def test_bureau_admin_supprime_une_offre(api_client):
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.delete(_offre_detail_url(offre))
+
+    assert resp.status_code == 204
+    assert not OffreAdhesion.objects.filter(id=offre.id).exists()
+
+
+def test_membre_ne_peut_pas_modifier_ni_supprimer_une_offre(api_client):
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp_patch = api_client.patch(_offre_detail_url(offre), {"prix_plein": "1.00"})
+    resp_delete = api_client.delete(_offre_detail_url(offre))
+
+    assert resp_patch.status_code == 403
+    assert resp_delete.status_code == 403
+
+
+def test_bureau_admin_cree_modifie_et_supprime_un_rabais(api_client):
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp_creer = api_client.post(
+        reverse("adhesions:rabais-list"),
+        {
+            "offre": str(offre.id),
+            "type_rabais": "etudiant",
+            "label_fr": "Réduction étudiant",
+            "montant_reduction": "10.00",
+            "justificatif_requis": True,
+            "instructions_fr": "Carte étudiante en cours de validité.",
+        },
+    )
+    assert resp_creer.status_code == 201, resp_creer.data
+    rabais_id = resp_creer.data["id"]
+
+    resp_modifier = api_client.patch(
+        reverse("adhesions:rabais-detail", args=[rabais_id]), {"montant_reduction": "15.00"}
+    )
+    assert resp_modifier.status_code == 200, resp_modifier.data
+    assert str(resp_modifier.data["montant_reduction"]) == "15.00"
+
+    resp_supprimer = api_client.delete(reverse("adhesions:rabais-detail", args=[rabais_id]))
+    assert resp_supprimer.status_code == 204
+    assert not RabaisOffre.objects.filter(id=rabais_id).exists()
+
+
+def test_creer_rabais_montant_et_pourcentage_simultanes_refuse(api_client):
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse("adhesions:rabais-list"),
+        {
+            "offre": str(offre.id),
+            "type_rabais": "etudiant",
+            "label_fr": "Réduction étudiant",
+            "montant_reduction": "10.00",
+            "pct_reduction": "10.00",
+        },
+    )
+
+    assert resp.status_code == 400
+
+
+def test_membre_ne_peut_pas_gerer_les_rabais(api_client):
+    rabais = RabaisOffreFactory()
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp_creer = api_client.post(
+        reverse("adhesions:rabais-list"),
+        {"offre": str(rabais.offre_id), "type_rabais": "autre", "label_fr": "x"},
+    )
+    resp_supprimer = api_client.delete(_rabais_detail_url(rabais))
+
+    assert resp_creer.status_code == 403
+    assert resp_supprimer.status_code == 403
+
+
+# --- Annulation (stornieren/zurückziehen) — demande utilisateur du 2026-09-16 ---
+
+
+ANNULER_URL_NAME = "adhesions:souscription-annuler"
+
+
+def _annuler_url(souscription):
+    return reverse(ANNULER_URL_NAME, args=[souscription.id])
+
+
+def test_membre_retire_sa_propre_souscription_non_payee(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    souscription = SouscriptionFactory(membre=membre, statut=StatutSouscription.EN_ATTENTE_PAIEMENT)
+    _auth(api_client, user)
+
+    resp = api_client.post(_annuler_url(souscription))
+
+    assert resp.status_code == 200, resp.data
+    souscription.refresh_from_db()
+    assert souscription.statut == StatutSouscription.ANNULEE
+
+
+def test_membre_ne_peut_pas_retirer_la_souscription_dun_autre(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    souscription_autrui = SouscriptionFactory(statut=StatutSouscription.EN_ATTENTE_PAIEMENT)
+    _auth(api_client, user)
+
+    resp = api_client.post(_annuler_url(souscription_autrui))
+
+    assert resp.status_code == 404  # IDOR : get_queryset() exclut déjà la souscription d'autrui
+    souscription_autrui.refresh_from_db()
+    assert souscription_autrui.statut == StatutSouscription.EN_ATTENTE_PAIEMENT
+
+
+def test_membre_ne_peut_pas_retirer_une_souscription_deja_payee(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    souscription = SouscriptionFactory(membre=membre, statut=StatutSouscription.PAYEE)
+    _auth(api_client, user)
+
+    resp = api_client.post(_annuler_url(souscription))
+
+    assert resp.status_code == 400
+    souscription.refresh_from_db()
+    assert souscription.statut == StatutSouscription.PAYEE
+
+
+def test_rh_annule_la_souscription_dun_membre(api_client):
+    user, _rh = _user_avec_membre(Role.RH, "rh@example.de")
+    souscription = SouscriptionFactory(statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF)
+    _auth(api_client, user)
+
+    resp = api_client.post(_annuler_url(souscription))
+
+    assert resp.status_code == 200, resp.data
+    souscription.refresh_from_db()
+    assert souscription.statut == StatutSouscription.ANNULEE
+
+
+def test_rh_ne_peut_pas_annuler_une_souscription_deja_payee(api_client):
+    user, _rh = _user_avec_membre(Role.RH, "rh@example.de")
+    souscription = SouscriptionFactory(statut=StatutSouscription.PAYEE)
+    _auth(api_client, user)
+
+    resp = api_client.post(_annuler_url(souscription))
+
+    assert resp.status_code == 400
+    souscription.refresh_from_db()
+    assert souscription.statut == StatutSouscription.PAYEE
+
+
+def test_annuler_une_souscription_deja_annulee_refuse(api_client):
+    user, _rh = _user_avec_membre(Role.RH, "rh@example.de")
+    souscription = SouscriptionFactory(statut=StatutSouscription.ANNULEE)
+    _auth(api_client, user)
+
+    resp = api_client.post(_annuler_url(souscription))
+
+    assert resp.status_code == 400

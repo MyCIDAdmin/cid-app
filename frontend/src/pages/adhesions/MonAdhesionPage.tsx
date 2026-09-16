@@ -17,11 +17,18 @@
  * comme pour le stepper de cotisations, le prix réellement enregistré est
  * toujours recalculé par le serveur (CLAUDE.md §8, voir
  * SouscriptionViewSet.souscrire côté backend).
+ *
+ * Retrait ("zurückziehen", demande utilisateur du 2026-09-16) : le membre peut retirer sa
+ * propre souscription tant qu'elle n'est pas payée (brouillon/en_attente_justificatif/
+ * en_attente_paiement/rabais_refuse — voir STATUTS_SOUSCRIPTION_ANNULABLES côté backend, qui
+ * reste seul juge du statut autorisé).
  */
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
+  useAnnulerSouscription,
   useCampagneActive,
   useCampagnes,
   useMesSouscriptions,
@@ -30,6 +37,13 @@ import {
 } from "../../hooks/useAdhesions";
 import type { CampagneAdhesion, OffreAdhesion, Souscription, StatutSouscription } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
+
+const STATUTS_RETIRABLES: StatutSouscription[] = [
+  "brouillon",
+  "en_attente_justificatif",
+  "en_attente_paiement",
+  "rabais_refuse",
+];
 
 const STATUT_STYLES: Record<StatutSouscription, string> = {
   brouillon: "bg-bg-tertiary text-text-secondary",
@@ -63,10 +77,12 @@ export default function MonAdhesionPage() {
   const mesSouscriptions = useMesSouscriptions();
   const souscrireMutation = useSouscrire();
   const uploaderJustificatifMutation = useUploaderJustificatif();
+  const annulerMutation = useAnnulerSouscription();
 
   const [offreSelectionneeId, setOffreSelectionneeId] = useState<string | null>(null);
   const [rabaisSelectionneId, setRabaisSelectionneId] = useState<string | null>(null);
   const [fichierJustificatif, setFichierJustificatif] = useState<File | null>(null);
+  const [retraitOuvert, setRetraitOuvert] = useState(false);
   const fichierInputRef = useRef<HTMLInputElement>(null);
 
   const campagne = campagneActive.data;
@@ -130,6 +146,14 @@ export default function MonAdhesionPage() {
     );
   }
 
+  const peutRetirer =
+    !!souscriptionActuelle && STATUTS_RETIRABLES.includes(souscriptionActuelle.statut);
+
+  function confirmerRetrait() {
+    if (!souscriptionActuelle) return;
+    annulerMutation.mutate(souscriptionActuelle.id, { onSuccess: () => setRetraitOuvert(false) });
+  }
+
   return (
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("page.titre")}</h1>
@@ -173,6 +197,22 @@ export default function MonAdhesionPage() {
                     </span>
                   ))}
               </div>
+            </div>
+          )}
+          {peutRetirer && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setRetraitOuvert(true)}
+                className="rounded-cid border border-white/30 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
+              >
+                {t("hero.retirer")}
+              </button>
+              {annulerMutation.isError && (
+                <p className="mt-1 text-xs text-white/90">
+                  {extractApiErrorMessage(annulerMutation.error, t("hero.erreur_retrait"))}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -363,6 +403,15 @@ export default function MonAdhesionPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={retraitOuvert}
+        title={t("hero.confirmer_retrait_titre")}
+        message={t("hero.confirmer_retrait_message")}
+        danger
+        onConfirm={confirmerRetrait}
+        onCancel={() => setRetraitOuvert(false)}
+      />
     </div>
   );
 }

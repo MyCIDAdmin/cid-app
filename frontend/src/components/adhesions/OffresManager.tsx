@@ -1,0 +1,252 @@
+/**
+ * Gestion des offres d'une campagne — panneau dépliable d'AdminCampagnesPage (demande
+ * utilisateur du 2026-09-16, analogue à OffreAdhesionInline de Django Admin — voir
+ * apps/adhesions/admin.py). Remplace le renvoi vers Django Admin acté dans une itération
+ * précédente (voir historique du docstring d'AdminCampagnesPage).
+ *
+ * "Avantages (un par ligne)" reprend l'interaction du mockup #m-newcamp étape 2 : chaque ligne
+ * du textarea devient un avantage trilingue {ordre, texte_fr, texte_de: "", texte_ar: ""} —
+ * seul le français est saisi ici, comme le reste de ce formulaire (label_de/ar restent éditables
+ * via Django Admin si besoin, cf. RabaisManager).
+ */
+import { useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
+
+import {
+  useCreerOffre,
+  useModifierOffre,
+  useSupprimerOffre,
+} from "../../hooks/useAdhesions";
+import type { CampagneAdhesion, OffreCreatePayload } from "../../types/adhesion";
+import { extractApiErrorMessage } from "../../utils/apiError";
+import RabaisManager from "./RabaisManager";
+
+function formulaireInitial(campagneId: string): OffreCreatePayload & { avantages_texte: string } {
+  return {
+    campagne: campagneId,
+    nom: "",
+    prix_plein: "0.00",
+    description: "",
+    condition_age_min: null,
+    condition_age_max: null,
+    visible: true,
+    ordre: 0,
+    avantages_texte: "",
+  };
+}
+
+function avantagesDepuisTexte(texte: string) {
+  return texte
+    .split("\n")
+    .map((ligne) => ligne.trim())
+    .filter(Boolean)
+    .map((texte_fr, index) => ({ ordre: index + 1, texte_fr, texte_de: "", texte_ar: "" }));
+}
+
+export default function OffresManager({ campagne }: { campagne: CampagneAdhesion }) {
+  const { t } = useTranslation("adhesions");
+  const creerMutation = useCreerOffre();
+  const modifierMutation = useModifierOffre();
+  const supprimerMutation = useSupprimerOffre();
+
+  const [form, setForm] = useState(() => formulaireInitial(campagne.id));
+  const [offreDepliee, setOffreDepliee] = useState<string | null>(null);
+
+  function handleAjouter(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const { avantages_texte, ...payload } = form;
+    creerMutation.mutate(
+      { ...payload, avantages: avantagesDepuisTexte(avantages_texte) },
+      { onSuccess: () => setForm(formulaireInitial(campagne.id)) },
+    );
+  }
+
+  function toggleVisible(offreId: string, visible: boolean) {
+    modifierMutation.mutate({ id: offreId, payload: { visible } });
+  }
+
+  function modifierPrix(offreId: string, valeur: string) {
+    modifierMutation.mutate({ id: offreId, payload: { prix_plein: valeur } });
+  }
+
+  return (
+    <div className="mt-2 rounded-cid border border-text-tertiary/20 bg-bg-tertiary/30 p-3">
+      <h3 className="mb-2 text-xs font-bold text-text-primary">{t("admin_offres.titre")}</h3>
+
+      <div className="space-y-2">
+        {campagne.offres.map((offre) => (
+          <div key={offre.id} className="rounded-cid border border-text-tertiary/20 bg-bg-primary p-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="flex-1 font-semibold text-text-primary">{offre.nom}</span>
+              <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                {t("admin_offres.prix_label")}
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  aria-label={`${t("admin_offres.prix_label")} — ${offre.nom}`}
+                  defaultValue={offre.prix_plein}
+                  onBlur={(e) => modifierPrix(offre.id, e.target.value)}
+                  className="w-16 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs"
+                />
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={offre.visible}
+                  onChange={(e) => toggleVisible(offre.id, e.target.checked)}
+                />
+                {t("admin_offres.visible_label")}
+              </label>
+              <button
+                type="button"
+                onClick={() => setOffreDepliee((cur) => (cur === offre.id ? null : offre.id))}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+              >
+                {offreDepliee === offre.id
+                  ? t("admin_offres.masquer_rabais")
+                  : t("admin_offres.gerer_rabais")}
+              </button>
+              <button
+                type="button"
+                onClick={() => supprimerMutation.mutate(offre.id)}
+                className="text-text-tertiary hover:text-status-dangerText"
+                aria-label={`${t("admin_offres.supprimer")} — ${offre.nom}`}
+              >
+                ✕
+              </button>
+            </div>
+            {offreDepliee === offre.id && <RabaisManager offre={offre} />}
+          </div>
+        ))}
+        {campagne.offres.length === 0 && (
+          <p className="text-xs text-text-tertiary">{t("admin_offres.aucune")}</p>
+        )}
+      </div>
+
+      <form onSubmit={handleAjouter} className="mt-3 grid gap-2 border-t border-text-tertiary/10 pt-3 md:grid-cols-2">
+        <div>
+          <label
+            htmlFor={`offre-nom-${campagne.id}`}
+            className="mb-1 block text-[10px] text-text-tertiary"
+          >
+            {t("admin_offres.nom_label")}
+          </label>
+          <input
+            id={`offre-nom-${campagne.id}`}
+            required
+            value={form.nom}
+            onChange={(e) => setForm({ ...form, nom: e.target.value })}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={`offre-prix-${campagne.id}`}
+            className="mb-1 block text-[10px] text-text-tertiary"
+          >
+            {t("admin_offres.prix_label")}
+          </label>
+          <input
+            id={`offre-prix-${campagne.id}`}
+            type="number"
+            min="0"
+            step="0.01"
+            required
+            value={form.prix_plein}
+            onChange={(e) => setForm({ ...form, prix_plein: e.target.value })}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label
+            htmlFor={`offre-desc-${campagne.id}`}
+            className="mb-1 block text-[10px] text-text-tertiary"
+          >
+            {t("admin_offres.description_label")}
+          </label>
+          <input
+            id={`offre-desc-${campagne.id}`}
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label
+            htmlFor={`offre-avantages-${campagne.id}`}
+            className="mb-1 block text-[10px] text-text-tertiary"
+          >
+            {t("admin_offres.avantages_label")}
+          </label>
+          <textarea
+            id={`offre-avantages-${campagne.id}`}
+            rows={2}
+            value={form.avantages_texte}
+            onChange={(e) => setForm({ ...form, avantages_texte: e.target.value })}
+            placeholder={t("admin_offres.avantages_placeholder")}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={`offre-age-min-${campagne.id}`}
+            className="mb-1 block text-[10px] text-text-tertiary"
+          >
+            {t("admin_offres.age_min_label")}
+          </label>
+          <input
+            id={`offre-age-min-${campagne.id}`}
+            type="number"
+            min="0"
+            value={form.condition_age_min ?? ""}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                condition_age_min: e.target.value === "" ? null : Number(e.target.value),
+              })
+            }
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={`offre-age-max-${campagne.id}`}
+            className="mb-1 block text-[10px] text-text-tertiary"
+          >
+            {t("admin_offres.age_max_label")}
+          </label>
+          <input
+            id={`offre-age-max-${campagne.id}`}
+            type="number"
+            min="0"
+            value={form.condition_age_max ?? ""}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                condition_age_max: e.target.value === "" ? null : Number(e.target.value),
+              })
+            }
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        </div>
+
+        {creerMutation.isError && (
+          <p className="text-xs text-status-dangerText md:col-span-2">
+            {extractApiErrorMessage(creerMutation.error, t("admin_offres.erreur"))}
+          </p>
+        )}
+
+        <div className="md:col-span-2">
+          <button
+            type="submit"
+            disabled={creerMutation.isPending}
+            className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
+          >
+            {t("admin_offres.ajouter")}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

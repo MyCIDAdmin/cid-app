@@ -15,6 +15,7 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useMesSouscriptions: vi.fn(),
     useSouscrire: vi.fn(),
     useUploaderJustificatif: vi.fn(),
+    useAnnulerSouscription: vi.fn(),
   };
 });
 
@@ -95,6 +96,11 @@ describe("MonAdhesionPage", () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useAdhesionsHooks.useUploaderJustificatif>);
+    vi.mocked(useAdhesionsHooks.useAnnulerSouscription).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useAnnulerSouscription>);
   });
 
   it("affiche un message quand aucune campagne n'est publiée", () => {
@@ -254,5 +260,59 @@ describe("MonAdhesionPage", () => {
     renderWithProviders(<MonAdhesionPage />);
 
     expect(screen.getByText("Carte étudiante expirée.")).toBeInTheDocument();
+  });
+
+  it("propose de retirer sa demande tant qu'elle n'est pas payée et confirme avant d'agir (demande utilisateur du 2026-09-16)", () => {
+    const mutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useAnnulerSouscription).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useAnnulerSouscription>);
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription({ statut: "en_attente_paiement" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    fireEvent.click(screen.getByText("hero.retirer"));
+    expect(mutate).not.toHaveBeenCalled(); // confirmation requise avant d'agir
+    fireEvent.click(screen.getByText("action.confirmer"));
+
+    expect(mutate).toHaveBeenCalledWith("s1", expect.anything());
+  });
+
+  it("ne propose pas de retirer une adhésion déjà payée", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription({ statut: "payee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.queryByText("hero.retirer")).not.toBeInTheDocument();
   });
 });

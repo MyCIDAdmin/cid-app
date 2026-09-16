@@ -15,6 +15,8 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useCampagnes: vi.fn(),
     useJustificatifsEnAttente: vi.fn(),
     useValiderJustificatif: vi.fn(),
+    useUploaderJustificatif: vi.fn(),
+    useAnnulerSouscription: vi.fn(),
   };
 });
 
@@ -120,6 +122,16 @@ describe("AdminJustificatifsPage", () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useAdhesionsHooks.useValiderJustificatif>);
+    vi.mocked(useAdhesionsHooks.useUploaderJustificatif).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useUploaderJustificatif>);
+    vi.mocked(useAdhesionsHooks.useAnnulerSouscription).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useAnnulerSouscription>);
   });
 
   it("affiche un message quand la file est vide", () => {
@@ -149,7 +161,7 @@ describe("AdminJustificatifsPage", () => {
     expect(screen.getByText("admin_justificatifs.voir")).toBeInTheDocument();
   });
 
-  it("affiche 'pas encore uploadé' quand le justificatif n'a pas encore été envoyé", () => {
+  it("propose d'uploader le document pour le membre quand il n'a pas encore été envoyé (demande utilisateur du 2026-09-16)", () => {
     vi.mocked(useAdhesionsHooks.useJustificatifsEnAttente).mockReturnValue({
       data: {
         next: null,
@@ -162,8 +174,58 @@ describe("AdminJustificatifsPage", () => {
 
     renderWithProviders(<AdminJustificatifsPage />);
 
-    expect(screen.getByText("admin_justificatifs.pas_encore_uploade")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("admin_justificatifs.uploader_pour_membre — Basic"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("admin_justificatifs.approuver")).not.toBeInTheDocument();
+  });
+
+  it("uploade le fichier choisi pour le compte du membre", () => {
+    const mutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useUploaderJustificatif).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useUploaderJustificatif>);
+    vi.mocked(useAdhesionsHooks.useJustificatifsEnAttente).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [souscriptionAvecJustificatif({ justificatif: null })],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useJustificatifsEnAttente>);
+
+    renderWithProviders(<AdminJustificatifsPage />);
+
+    const fichier = new File(["contenu"], "carte.pdf", { type: "application/pdf" });
+    fireEvent.change(screen.getByLabelText("admin_justificatifs.uploader_pour_membre — Basic"), {
+      target: { files: [fichier] },
+    });
+
+    expect(mutate).toHaveBeenCalledWith({ souscriptionId: "s1", fichier });
+  });
+
+  it("annule la souscription après confirmation", () => {
+    const mutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useAnnulerSouscription).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useAnnulerSouscription>);
+    vi.mocked(useAdhesionsHooks.useJustificatifsEnAttente).mockReturnValue({
+      data: { next: null, previous: null, results: [souscriptionAvecJustificatif()] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useJustificatifsEnAttente>);
+
+    renderWithProviders(<AdminJustificatifsPage />);
+
+    fireEvent.click(screen.getByText("admin_justificatifs.annuler_souscription"));
+    fireEvent.click(screen.getByText("action.confirmer"));
+
+    expect(mutate).toHaveBeenCalledWith("s1", expect.anything());
   });
 
   it("ouvre le document dans un nouvel onglet via l'URL pré-signée", async () => {

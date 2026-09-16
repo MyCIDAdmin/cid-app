@@ -180,6 +180,56 @@ def test_reupload_avant_decision_remplace_le_meme_enregistrement(api_client):
     assert JustificatifRabais.objects.filter(souscription=souscription).count() == 1
 
 
+def test_rh_uploade_un_justificatif_pour_le_compte_dun_membre(api_client):
+    """Demande utilisateur du 2026-09-16 : "Inklusive das hochladen des Beweisdokumentes
+    beim Rabatt-Vorteil" — RH+ peut désormais uploader pour n'importe quelle souscription,
+    pas seulement pour la sienne."""
+    user, _rh = _user_avec_membre(Role.RH, "rh@example.de")
+    souscription = SouscriptionFactory(statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF)
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(JUSTIFICATIF_LIST_URL),
+        {"souscription": str(souscription.id), "fichier": _pdf_upload()},
+        format="multipart",
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert JustificatifRabais.objects.filter(souscription=souscription).count() == 1
+
+
+def test_rh_sans_fiche_membre_peut_quand_meme_uploader_pour_autrui(api_client):
+    """Un compte RH pur (sans Membre associé) reste valide pour cette action — voir
+    JustificatifRabaisViewSet.create."""
+    user = User.objects.create_user(
+        email="rh-sans-fiche@example.de", password="Password123!", role=Role.RH, is_active=True
+    )
+    souscription = SouscriptionFactory(statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF)
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(JUSTIFICATIF_LIST_URL),
+        {"souscription": str(souscription.id), "fichier": _pdf_upload()},
+        format="multipart",
+    )
+
+    assert resp.status_code == 201, resp.data
+
+
+def test_bureau_admin_uploade_aussi_pour_le_compte_dun_membre(api_client):
+    user, _admin = _user_avec_membre(Role.BUREAU_ADMIN, "admin@example.de")
+    souscription = SouscriptionFactory(statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF)
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(JUSTIFICATIF_LIST_URL),
+        {"souscription": str(souscription.id), "fichier": _pdf_upload()},
+        format="multipart",
+    )
+
+    assert resp.status_code == 201, resp.data
+
+
 def test_reupload_apres_decision_refuse(api_client):
     user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     souscription = SouscriptionFactory(

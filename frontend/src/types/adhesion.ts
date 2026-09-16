@@ -80,6 +80,38 @@ export interface CampagneCreatePayload {
   description?: string;
 }
 
+/**
+ * Payload de POST/PATCH /adhesions/offres/ (OffreAdhesionSerializer — seul `id` est en
+ * lecture seule, `rabais` est nichée en lecture seule séparément, AHM-19/demande utilisateur
+ * du 2026-09-16 "tool" d'administration des campagnes).
+ */
+export interface OffreCreatePayload {
+  campagne: string;
+  nom: string;
+  prix_plein: string;
+  description?: string;
+  avantages?: AvantageOffre[];
+  condition_age_min?: number | null;
+  condition_age_max?: number | null;
+  visible?: boolean;
+  ordre?: number;
+}
+
+/** Payload de POST/PATCH /adhesions/rabais/ (RabaisOffreSerializer). */
+export interface RabaisCreatePayload {
+  offre: string;
+  type_rabais: TypeRabais;
+  label_fr: string;
+  label_de?: string;
+  label_ar?: string;
+  montant_reduction?: string | null;
+  pct_reduction?: string | null;
+  justificatif_requis?: boolean;
+  instructions_fr?: string;
+  instructions_de?: string;
+  instructions_ar?: string;
+}
+
 export type StatutJustificatif = "en_attente" | "approuve" | "rejete";
 
 /**

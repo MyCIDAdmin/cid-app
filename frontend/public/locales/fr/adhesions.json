@@ -8,7 +8,11 @@
     "expire_le": "Valable jusqu'au {{date}}",
     "prix_paye": "Prix payé",
     "souscrit_le": "Souscrit le {{date}}",
-    "avantages_titre": "Avantages inclus"
+    "avantages_titre": "Avantages inclus",
+    "retirer": "Retirer ma demande",
+    "erreur_retrait": "La demande n'a pas pu être retirée.",
+    "confirmer_retrait_titre": "Retirer votre demande d'adhésion ?",
+    "confirmer_retrait_message": "Votre souscription sera annulée. Vous pourrez souscrire à nouveau tant que la campagne reste ouverte."
   },
   "statut": {
     "brouillon": "Brouillon",
@@ -77,7 +81,13 @@
     "rejeter": "Rejeter",
     "motif_placeholder": "Motif du rejet (obligatoire)",
     "confirmer_rejet": "Confirmer le rejet",
-    "erreur_action": "L'action n'a pas pu être effectuée."
+    "erreur_action": "L'action n'a pas pu être effectuée.",
+    "uploader_pour_membre": "Uploader le document pour ce membre",
+    "erreur_upload": "Le document n'a pas pu être envoyé.",
+    "annuler_souscription": "Annuler cette souscription",
+    "confirmer_annuler_titre": "Annuler cette souscription ?",
+    "confirmer_annuler_message": "La demande d'adhésion de ce membre sera annulée — cette action est irréversible.",
+    "erreur_annulation": "La souscription n'a pas pu être annulée."
   },
   "admin": {
     "titre": "Gestion des campagnes d'adhésion",
@@ -102,6 +112,46 @@
     "erreur_action": "L'action n'a pas pu être effectuée.",
     "aucune_campagne": "Aucune campagne créée pour le moment.",
     "chargement": "Chargement…",
-    "erreur_chargement": "Impossible de charger les campagnes."
+    "erreur_chargement": "Impossible de charger les campagnes.",
+    "gerer_offres": "Gérer les offres",
+    "masquer_offres": "Masquer les offres"
+  },
+  "admin_offres": {
+    "titre": "Offres de cette campagne",
+    "prix_label": "Prix plein (€)",
+    "visible_label": "Visible",
+    "gerer_rabais": "Gérer les rabais",
+    "masquer_rabais": "Masquer les rabais",
+    "supprimer": "Supprimer l'offre",
+    "aucune": "Aucune offre pour cette campagne.",
+    "nom_label": "Nom de l'offre",
+    "description_label": "Description",
+    "avantages_label": "Avantages (un par ligne)",
+    "avantages_placeholder": "Adhésion socios Clubistes\nPetit cadeau de bienvenue",
+    "age_min_label": "Âge minimum",
+    "age_max_label": "Âge maximum",
+    "erreur": "L'offre n'a pas pu être enregistrée.",
+    "ajouter": "Ajouter cette offre"
+  },
+  "admin_rabais": {
+    "titre": "Rabais de cette offre",
+    "justificatif_requis_label": "Justificatif requis",
+    "supprimer": "Supprimer le rabais",
+    "aucun": "Aucun rabais pour cette offre.",
+    "type_label": "Type",
+    "label_fr_label": "Libellé (FR)",
+    "valeur_type_label": "Réduction",
+    "type_montant": "Montant fixe (€)",
+    "type_pct": "Pourcentage (%)",
+    "valeur_label": "Valeur",
+    "instructions_placeholder": "Instructions pour le membre (justificatif attendu)",
+    "erreur": "Le rabais n'a pas pu être enregistré.",
+    "ajouter": "Ajouter ce rabais"
+  },
+  "type_rabais": {
+    "etudiant": "Étudiant",
+    "famille": "Famille",
+    "senior": "Senior",
+    "autre": "Autre"
   }
 }

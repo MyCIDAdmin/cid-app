@@ -239,9 +239,15 @@ class JustificatifRabaisUploadSerializer(serializers.ModelSerializer):
         return fichier
 
     def validate_souscription(self, souscription):
-        membre = self.context["membre"]
-        if souscription.membre_id != membre.id:
-            raise serializers.ValidationError("Cette souscription ne vous appartient pas.")
+        # RH+ peut uploader un justificatif pour le compte d'un membre (demande utilisateur du
+        # 2026-09-16, "Inklusive das hochladen des Beweisdokumentes beim Rabatt-Vorteil") : dans
+        # ce cas, `membre` (le membre RH lui-même, pas nécessairement le propriétaire de la
+        # souscription) n'a pas à correspondre à souscription.membre_id — voir
+        # JustificatifRabaisViewSet.create pour le calcul de est_rh_plus.
+        if not self.context.get("est_rh_plus", False):
+            membre = self.context["membre"]
+            if souscription.membre_id != membre.id:
+                raise serializers.ValidationError("Cette souscription ne vous appartient pas.")
         if souscription.statut != StatutSouscription.EN_ATTENTE_JUSTIFICATIF:
             raise serializers.ValidationError(
                 "Cette souscription n'est pas en attente de justificatif."

@@ -2,17 +2,24 @@
  * Gestion des campagnes d'adhésion — vue Bureau Admin+ (mockup
  * #pg-admin-adhesion, FDD §6.1, AHM-21).
  *
- * Périmètre réduit acté avec l'utilisateur ("Member-Seite + einfache
+ * Périmètre initial acté avec l'utilisateur ("Member-Seite + einfache
  * Admin-Verwaltung") : créer une campagne, la publier, la clôturer — SANS
  * l'assistant de création en 4 étapes du mockup (#m-newcamp, paramètres/
- * offres/rabais/publication). La gestion des offres et rabais d'une
- * campagne reste, pour cette itération, assurée via le Django Admin déjà
- * livré par AHM-19 (voir apps/adhesions/admin.py — OffreAdhesionInline /
- * RabaisOffreInline) plutôt que réimplémentée ici.
+ * offres/rabais/publication) ; la gestion des offres/rabais renvoyait alors
+ * vers Django Admin (AHM-19).
+ *
+ * Étendu le 2026-09-16 (demande utilisateur, "tool" analogue à la zone
+ * Adhésion de Django Admin) : chaque campagne peut désormais être dépliée
+ * pour gérer ses offres, et chaque offre pour gérer ses rabais — voir
+ * OffresManager/RabaisManager. Toujours pas l'assistant en 4 étapes du
+ * mockup (panneaux dépliables persistants, modifiables à tout moment,
+ * plutôt qu'un flux de création unique) : le CRUD backend (AHM-19) le
+ * permettait déjà, seule l'UI manquait.
  */
-import { useState, type FormEvent } from "react";
+import { Fragment, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import OffresManager from "../../components/adhesions/OffresManager";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
   useCampagnes,
@@ -48,6 +55,7 @@ export default function AdminCampagnesPage() {
 
   const [form, setForm] = useState<CampagneCreatePayload>(formulaireInitial);
   const [campagneACloturer, setCampagneACloturer] = useState<CampagneAdhesion | null>(null);
+  const [campagneDepliee, setCampagneDepliee] = useState<string | null>(null);
 
   const campagnes = useCampagnes();
   const creerMutation = useCreerCampagne();
@@ -191,43 +199,63 @@ export default function AdminCampagnesPage() {
               </tr>
             )}
             {campagnes.data?.results.map((c) => (
-              <tr key={c.id} className="border-b border-text-tertiary/10 last:border-0">
-                <td className="px-4 py-2 font-medium text-text-primary">{c.nom}</td>
-                <td className="px-4 py-2 text-text-secondary">{c.annee}</td>
-                <td className="px-4 py-2">
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[c.statut]}`}
-                  >
-                    {t(`statut_campagne.${c.statut}`)}
-                  </span>
-                </td>
-                <td className="px-4 py-2 text-text-secondary">
-                  {formatDate(c.date_debut)} – {formatDate(c.date_fin)}
-                </td>
-                <td className="px-4 py-2">
-                  <div className="flex gap-1">
-                    {c.statut === "brouillon" && (
+              <Fragment key={c.id}>
+                <tr className="border-b border-text-tertiary/10 last:border-0">
+                  <td className="px-4 py-2 font-medium text-text-primary">{c.nom}</td>
+                  <td className="px-4 py-2 text-text-secondary">{c.annee}</td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[c.statut]}`}
+                    >
+                      {t(`statut_campagne.${c.statut}`)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-text-secondary">
+                    {formatDate(c.date_debut)} – {formatDate(c.date_fin)}
+                  </td>
+                  <td className="px-4 py-2">
+                    <div className="flex flex-wrap gap-1">
+                      {c.statut === "brouillon" && (
+                        <button
+                          type="button"
+                          onClick={() => publierMutation.mutate(c.id)}
+                          disabled={publierMutation.isPending}
+                          className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
+                        >
+                          {t("admin.publier")}
+                        </button>
+                      )}
+                      {c.statut === "publiee" && (
+                        <button
+                          type="button"
+                          onClick={() => setCampagneACloturer(c)}
+                          className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                        >
+                          {t("admin.cloturer")}
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => publierMutation.mutate(c.id)}
-                        disabled={publierMutation.isPending}
-                        className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
+                        onClick={() =>
+                          setCampagneDepliee((cur) => (cur === c.id ? null : c.id))
+                        }
+                        className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
                       >
-                        {t("admin.publier")}
+                        {campagneDepliee === c.id
+                          ? t("admin.masquer_offres")
+                          : t("admin.gerer_offres")}
                       </button>
-                    )}
-                    {c.statut === "publiee" && (
-                      <button
-                        type="button"
-                        onClick={() => setCampagneACloturer(c)}
-                        className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
-                      >
-                        {t("admin.cloturer")}
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
+                    </div>
+                  </td>
+                </tr>
+                {campagneDepliee === c.id && (
+                  <tr className="border-b border-text-tertiary/10 last:border-0">
+                    <td colSpan={5} className="bg-bg-tertiary/20 px-4 py-3">
+                      <OffresManager campagne={c} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>
