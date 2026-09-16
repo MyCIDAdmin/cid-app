@@ -369,3 +369,112 @@ def test_approve_registration_deja_traitee_echoue(api_client, rh_user, inscripti
 
     second = api_client.post(url)
     assert second.status_code == 400
+
+
+# --- Gestion des rôles (SCD §4.2/§8.1) : promotion d'un compte, ex. Abir en Bureau Admin ---
+
+
+@pytest.fixture
+def super_admin_user():
+    return User.objects.create_user(
+        email="admin@clubistes.de",
+        password="Password123!",
+        role=Role.SUPER_ADMIN,
+        is_active=True,
+    )
+
+
+@pytest.fixture
+def membre_cible():
+    return User.objects.create_user(
+        email="abir@example.com",
+        password="Password123!",
+        role=Role.MEMBRE,
+        is_active=True,
+    )
+
+
+def test_users_list_refuse_sans_authentification(api_client):
+    resp = api_client.get(reverse("accounts:users-list"))
+    assert resp.status_code == 401
+
+
+def test_users_list_refuse_a_non_super_admin(api_client, rh_user, membre_cible):
+    api_client.force_authenticate(user=rh_user)
+    resp = api_client.get(reverse("accounts:users-list"))
+    assert resp.status_code == 403
+
+
+def test_users_list_recherche_par_email(api_client, super_admin_user, membre_cible):
+    api_client.force_authenticate(user=super_admin_user)
+    resp = api_client.get(reverse("accounts:users-list"), {"q": "abir"})
+    assert resp.status_code == 200
+    emails = [row["email"] for row in resp.data["results"]]
+    assert "abir@example.com" in emails
+
+
+def test_changer_role_promeut_bureau_admin(api_client, super_admin_user, membre_cible):
+    from apps.accounts.models import AuditLogEntry
+
+    api_client.force_authenticate(user=super_admin_user)
+    url = reverse("accounts:user-change-role", args=[membre_cible.id])
+    resp = api_client.post(url, {"role": "bureau_admin"}, format="json")
+    assert resp.status_code == 200
+    assert resp.data["role"] == "bureau_admin"
+
+    membre_cible.refresh_from_db()
+    assert membre_cible.role == Role.BUREAU_ADMIN
+
+    entry = AuditLogEntry.objects.filter(action="role_changed", user=membre_cible).first()
+    assert entry is not None
+    assert entry.metadata["ancien_role"] == Role.MEMBRE
+    assert entry.metadata["nouveau_role"] == "bureau_admin"
+    assert entry.metadata["decided_by"] == str(super_admin_user.id)
+
+    # Le prochain login de ce compte doit désormais exiger le 2FA (niveau >= 3, SCD §3.2).
+    login_resp = api_client.post(
+        reverse("accounts:login"),
+        {"email": "abir@example.com", "password": "Password123!"},
+        format="json",
+    )
+    assert login_resp.status_code == 200
+    assert login_resp.data["requires_2fa"] is True
+
+
+def test_changer_role_refuse_a_non_super_admin(api_client, rh_user, membre_cible):
+    api_client.force_authenticate(user=rh_user)
+    url = reverse("accounts:user-change-role", args=[membre_cible.id])
+    resp = api_client.post(url, {"role": "bureau_admin"}, format="json")
+    assert resp.status_code == 403
+
+    membre_cible.refresh_from_db()
+    assert membre_cible.role == Role.MEMBRE
+
+
+def test_changer_role_valeur_invalide_echoue(api_client, super_admin_user, membre_cible):
+    api_client.force_authenticate(user=super_admin_user)
+    url = reverse("accounts:user-change-role", args=[membre_cible.id])
+    resp = api_client.post(url, {"role": "super_hacker"}, format="json")
+    assert resp.status_code == 400
+
+    membre_cible.refresh_from_db()
+    assert membre_cible.role == Role.MEMBRE
+
+
+def test_changer_role_soi_meme_echoue(api_client, super_admin_user):
+    api_client.force_authenticate(user=super_admin_user)
+    url = reverse("accounts:user-change-role", args=[super_admin_user.id])
+    resp = api_client.post(url, {"role": "dir_financier"}, format="json")
+    assert resp.status_code == 400
+
+    super_admin_user.refresh_from_db()
+    assert super_admin_user.role == Role.SUPER_ADMIN
+
+
+def test_changer_role_utilisateur_introuvable_echoue(api_client, super_admin_user):
+    import uuid
+
+    api_client.force_authenticate(user=super_admin_user)
+    url = reverse("accounts:user-change-role", args=[uuid.uuid4()])
+    resp = api_client.post(url, {"role": "rh"}, format="json")
+    assert resp.status_code == 400

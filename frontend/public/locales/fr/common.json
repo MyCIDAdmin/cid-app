@@ -23,7 +23,8 @@
     "live": "Live Match",
     "albums": "Albums photos",
     "quiz": "Quiz",
-    "admin_quiz": "Gestion quiz"
+    "admin_quiz": "Gestion quiz",
+    "gestion_roles": "Gestion des rôles"
   },
   "nav_groupe": {
     "general": "Général",

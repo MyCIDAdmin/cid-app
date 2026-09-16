@@ -25,6 +25,7 @@ i18n
       "membres",
       "cotisations",
       "inscriptions",
+      "utilisateurs",
       "adhesions",
       "evenements",
       "boutique",

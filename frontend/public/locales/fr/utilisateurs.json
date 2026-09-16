@@ -1,0 +1,34 @@
+{
+  "role": {
+    "membre": "Membre Normal",
+    "rh": "Ressources Humaines",
+    "bureau_admin": "Membre Bureau Administratif",
+    "dir_financier": "Directeur Financier",
+    "super_admin": "Administrateur App"
+  },
+  "liste": {
+    "titre": "Gestion des rôles",
+    "description": "Recherchez un compte (email, prénom, nom) pour lui attribuer un rôle au-delà de Membre Normal — par exemple après une inscription libre-service validée par RH.",
+    "recherche": "Recherche",
+    "recherche_placeholder": "Nom, prénom, email…",
+    "filtrer": "Rechercher",
+    "reinitialiser": "Réinitialiser",
+    "col_nom": "Nom",
+    "col_email": "Email",
+    "col_role_actuel": "Rôle actuel",
+    "col_statut": "Statut",
+    "col_nouveau_role": "Nouveau rôle",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les utilisateurs.",
+    "aucun_resultat": "Aucun utilisateur ne correspond à cette recherche.",
+    "actif": "Actif",
+    "inactif": "Inactif",
+    "vous": "vous",
+    "choisir_role": "Choisir un rôle…",
+    "appliquer": "Appliquer",
+    "precedent": "Précédent",
+    "suivant": "Suivant",
+    "succes_message": "{{email}} a maintenant le rôle {{role}}.",
+    "erreur_action": "Le changement de rôle a échoué, veuillez réessayer."
+  }
+}

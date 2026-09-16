@@ -53,6 +53,7 @@ import {
   IconPhoto,
   IconSettings,
   IconShoppingBag,
+  IconUserCog,
   IconUsers,
   IconUsersGroup,
 } from "@tabler/icons-react";
@@ -198,6 +199,15 @@ const NAV_ITEMS: NavItem[] = [
     icon: IconBellRinging,
     group: "administration",
     minRoleLevel: ROLE_LEVELS.dir_financier,
+  },
+  // Gestion des rôles utilisateurs (SCD §4.2/§8.1) — Admin App seulement, même niveau que
+  // UsersListView/ChangeUserRoleView côté API.
+  {
+    to: "/admin/roles",
+    labelKey: "nav.gestion_roles",
+    icon: IconUserCog,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.super_admin,
   },
 ];
 

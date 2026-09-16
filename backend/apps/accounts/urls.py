@@ -37,6 +37,12 @@ urlpatterns = [
         views.RefuseRegistrationView.as_view(),
         name="pending-registration-refuse",
     ),
+    path("users/", views.UsersListView.as_view(), name="users-list"),
+    path(
+        "users/<uuid:pk>/changer_role/",
+        views.ChangeUserRoleView.as_view(),
+        name="user-change-role",
+    ),
     path("me/", views.MeView.as_view(), name="me"),
     path("2fa/send-otp/", views.SendOTPView.as_view(), name="2fa-send-otp"),
     path("2fa/verify/", views.Verify2FAView.as_view(), name="2fa-verify"),

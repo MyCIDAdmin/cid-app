@@ -1,0 +1,34 @@
+{
+  "role": {
+    "membre": "Normales Mitglied",
+    "rh": "Personalabteilung",
+    "bureau_admin": "Mitglied des Vorstands",
+    "dir_financier": "Finanzdirektor",
+    "super_admin": "App-Administrator"
+  },
+  "liste": {
+    "titre": "Rollenverwaltung",
+    "description": "Suchen Sie ein Konto (E-Mail, Vorname, Nachname), um ihm eine Rolle über Normales Mitglied hinaus zuzuweisen — zum Beispiel nach einer von der Personalabteilung genehmigten Selbstregistrierung.",
+    "recherche": "Suche",
+    "recherche_placeholder": "Name, Vorname, E-Mail…",
+    "filtrer": "Suchen",
+    "reinitialiser": "Zurücksetzen",
+    "col_nom": "Name",
+    "col_email": "E-Mail",
+    "col_role_actuel": "Aktuelle Rolle",
+    "col_statut": "Status",
+    "col_nouveau_role": "Neue Rolle",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Benutzer konnten nicht geladen werden.",
+    "aucun_resultat": "Kein Benutzer entspricht dieser Suche.",
+    "actif": "Aktiv",
+    "inactif": "Inaktiv",
+    "vous": "Sie",
+    "choisir_role": "Rolle wählen…",
+    "appliquer": "Anwenden",
+    "precedent": "Zurück",
+    "suivant": "Weiter",
+    "succes_message": "{{email}} hat jetzt die Rolle {{role}}.",
+    "erreur_action": "Die Rollenänderung ist fehlgeschlagen, bitte erneut versuchen."
+  }
+}

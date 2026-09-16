@@ -14,6 +14,8 @@ Vues API — app accounts (TDD §2.4) :
   GET  /auth/pending-registrations/          — liste des inscriptions en attente (RH+)
   POST /auth/pending-registrations/{id}/approve/ — active le compte (RH+)
   POST /auth/pending-registrations/{id}/refuse/  — refuse l'inscription (RH+)
+  GET  /auth/users/                      — liste/recherche des comptes (Admin App, SCD §4.2)
+  POST /auth/users/{id}/changer_role/    — change le rôle d'un compte (Admin App, SCD §4.2/§8.1)
 """
 
 import base64
@@ -24,6 +26,7 @@ from django.contrib.auth import authenticate
 from django.core import signing
 from django.core.signing import BadSignature, SignatureExpired
 from django.db import transaction
+from django.db.models import Q
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import generics, status
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
@@ -39,8 +42,9 @@ from apps.membres.models import StatutMembre
 
 from . import services
 from .models import RegistrationDecision
-from .permissions import IsRHOrAbove
+from .permissions import IsRHOrAbove, IsSuperAdmin
 from .serializers import (
+    ChangeRoleSerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
@@ -51,6 +55,7 @@ from .serializers import (
     SendOTPSerializer,
     TOTPSetupConfirmSerializer,
     User,
+    UserManagementSerializer,
     UserSerializer,
     Verify2FASerializer,
 )
@@ -450,6 +455,76 @@ class PendingRegistrationsView(generics.ListAPIView):
             .select_related("membre")
             .order_by("created_at", "id")
         )
+
+
+class UsersCursorPagination(CursorPagination):
+    page_size = 20
+    ordering = ("created_at", "id")
+
+
+class UsersListView(generics.ListAPIView):
+    """
+    Liste/recherche des comptes utilisateurs, réservée à l'Admin App (SCD
+    §4.2 : `GET /admin/rôles/`) — sert à retrouver un compte (ex. Abir,
+    après son inscription libre-service et sa validation par RH) avant de
+    lui changer de rôle via ChangeUserRoleView. Recherche simple sur
+    email/prénom/nom via `?q=`.
+    """
+
+    permission_classes = [IsSuperAdmin]
+    serializer_class = UserManagementSerializer
+    pagination_class = UsersCursorPagination
+
+    def get_queryset(self):
+        qs = User.objects.select_related("membre").order_by("created_at", "id")
+        q = self.request.query_params.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(email__icontains=q) | Q(membre__prenom__icontains=q) | Q(membre__nom__icontains=q)
+            )
+        return qs
+
+
+class ChangeUserRoleView(APIView):
+    """
+    Change le rôle d'un utilisateur (SCD §4.2, réservé Admin App). Journalisé
+    dans AuditLogEntry via log_audit_event (ancien/nouveau rôle, acteur,
+    cible, horodatage), conformément à SCD §8.1 (rétention 24 mois).
+    Un Admin App ne peut pas changer son propre rôle — garde-fou contre un
+    auto-verrouillage accidentel (il n'y a qu'un seul rôle avec ce niveau
+    d'accès).
+    """
+
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request, pk):
+        serializer = ChangeRoleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        nouveau_role = serializer.validated_data["role"]
+
+        target = User.objects.filter(pk=pk).first()
+        if target is None:
+            raise ValidationError("Utilisateur introuvable.")
+
+        if target.id == request.user.id:
+            raise ValidationError("Vous ne pouvez pas changer votre propre rôle.")
+
+        ancien_role = target.role
+        if ancien_role == nouveau_role:
+            raise ValidationError("Ce compte a déjà ce rôle.")
+
+        target.role = nouveau_role
+        target.save(update_fields=["role"])
+
+        services.log_audit_event(
+            "role_changed",
+            user=target,
+            ip_address=_client_ip(request),
+            decided_by=str(request.user.id),
+            ancien_role=ancien_role,
+            nouveau_role=nouveau_role,
+        )
+        return Response(UserManagementSerializer(target).data)
 
 
 class ApproveRegistrationView(APIView):

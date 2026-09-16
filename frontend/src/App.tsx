@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
+import GestionRolesPage from "./pages/admin/GestionRolesPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
@@ -156,6 +157,16 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
               <InscriptionsEnAttentePage />
+            </RequireRole>
+          }
+        />
+        {/* Gestion des rôles utilisateurs (SCD §4.2/§8.1) — Admin App uniquement, même gate que
+            UsersListView/ChangeUserRoleView côté API. */}
+        <Route
+          path="/admin/roles"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
+              <GestionRolesPage />
             </RequireRole>
           }
         />

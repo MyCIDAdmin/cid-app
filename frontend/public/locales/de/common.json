@@ -23,7 +23,8 @@
     "live": "Live-Spiel",
     "albums": "Fotoalben",
     "quiz": "Quiz",
-    "admin_quiz": "Quiz-Verwaltung"
+    "admin_quiz": "Quiz-Verwaltung",
+    "gestion_roles": "Rollenverwaltung"
   },
   "nav_groupe": {
     "general": "Allgemein",

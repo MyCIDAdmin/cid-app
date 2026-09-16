@@ -192,6 +192,37 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, validators=[validate_password])
 
 
+class UserManagementSerializer(serializers.ModelSerializer):
+    """
+    Liste/recherche des comptes utilisateurs pour la gestion des rôles (SCD
+    §4.2 : `GET /admin/rôles/`, réservé Admin App) — sert à retrouver un
+    compte (ex. après inscription libre-service + validation RH) avant de
+    lui changer de rôle via ChangeUserRoleView. prenom/nom viennent de la
+    fiche Membre liée quand elle existe, comme UserSerializer.
+    """
+
+    prenom = serializers.SerializerMethodField()
+    nom = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "role", "is_active", "created_at", "prenom", "nom"]
+        read_only_fields = fields
+
+    def get_prenom(self, obj):
+        return obj.membre.prenom if hasattr(obj, "membre") else ""
+
+    def get_nom(self, obj):
+        return obj.membre.nom if hasattr(obj, "membre") else ""
+
+
+class ChangeRoleSerializer(serializers.Serializer):
+    """Changement de rôle d'un utilisateur (SCD §4.2/§8.1 — journalisé, voir
+    apps.accounts.views.ChangeUserRoleView)."""
+
+    role = serializers.ChoiceField(choices=Role.choices)
+
+
 class PendingRegistrationSerializer(serializers.ModelSerializer):
     """
     Inscription libre-service en attente de décision RH/Admin (AHM-48).
