@@ -132,3 +132,49 @@ export const PAYS_MEMBRE: { value: Pays; labelKey: string }[] = [
 ];
 
 export const PAYS_ALLEMAGNE: Pays = "DE";
+
+/** Clés acceptées par le paramètre `champs` de GET /membres/export/ — doit rester synchronisé
+ * avec apps.membres.exports.CHAMPS_EXPORT (même ordre canonique côté backend, qui prévaut de
+ * toute façon sur l'ordre de sélection envoyé). */
+export type ChampExport =
+  | "numero_membre"
+  | "prenom"
+  | "nom"
+  | "email"
+  | "telephone"
+  | "cin"
+  | "date_naissance"
+  | "age"
+  | "sexe"
+  | "pays"
+  | "adresse_de"
+  | "code_postal_de"
+  | "ville_de"
+  | "land_de"
+  | "ville_origine_tn"
+  | "gouvernorat_tn"
+  | "statut"
+  | "date_adhesion"
+  | "cotisation_annee_en_cours";
+
+export const CHAMPS_EXPORT: { value: ChampExport; labelKey: string }[] = [
+  { value: "numero_membre", labelKey: "champ.numero_membre" },
+  { value: "prenom", labelKey: "champ.prenom" },
+  { value: "nom", labelKey: "champ.nom" },
+  { value: "email", labelKey: "champ.email" },
+  { value: "telephone", labelKey: "champ.telephone" },
+  { value: "cin", labelKey: "champ.cin" },
+  { value: "date_naissance", labelKey: "champ.date_naissance" },
+  { value: "age", labelKey: "champ.age" },
+  { value: "sexe", labelKey: "champ.sexe" },
+  { value: "pays", labelKey: "champ.pays" },
+  { value: "adresse_de", labelKey: "champ.adresse_de" },
+  { value: "code_postal_de", labelKey: "champ.code_postal_de" },
+  { value: "ville_de", labelKey: "champ.ville_de" },
+  { value: "land_de", labelKey: "champ.land_de" },
+  { value: "ville_origine_tn", labelKey: "champ.ville_origine_tn" },
+  { value: "gouvernorat_tn", labelKey: "champ.gouvernorat_tn" },
+  { value: "statut", labelKey: "champ.statut" },
+  { value: "date_adhesion", labelKey: "champ.date_adhesion" },
+  { value: "cotisation_annee_en_cours", labelKey: "champ.cotisation_annee_en_cours" },
+];

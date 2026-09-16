@@ -115,6 +115,9 @@ describe("MembresListPage", () => {
       // jsdom tente une vraie navigation sur le clic d'un <a href="blob:...">
       // (non pertinent ici, on ne teste que le déclenchement du téléchargement).
       vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+      // Historique d'appels/implémentation remis à zéro entre chaque test de ce bloc — sans ça,
+      // toHaveBeenCalledTimes(1) et mock.calls[0] retombent sur un appel d'un test précédent.
+      vi.mocked(membresApi.exporterMembres).mockReset();
     });
 
     it("n'affiche pas le bouton d'export pour un rôle membre", () => {
@@ -128,7 +131,22 @@ describe("MembresListPage", () => {
       expect(screen.queryByText("liste.exporter")).not.toBeInTheDocument();
     });
 
-    it("exporte avec les filtres et le tri courants au clic, pour un rôle RH+", async () => {
+    it("ouvre la sélection des colonnes au clic, toutes cochées par défaut", () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+
+      renderWithProviders(<MembresListPage />);
+      fireEvent.click(screen.getByText("liste.exporter"));
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      const cases = screen.getAllByRole("checkbox") as HTMLInputElement[];
+      expect(cases.length).toBeGreaterThan(0);
+      expect(cases.every((c) => c.checked)).toBe(true);
+    });
+
+    it("exporte avec les filtres, le tri et toutes les colonnes après confirmation, pour un rôle RH+", async () => {
       useAuthStore.setState({
         user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
       });
@@ -147,11 +165,51 @@ describe("MembresListPage", () => {
         target: { value: "-date_adhesion" },
       });
       fireEvent.click(screen.getByText("liste.exporter"));
+      fireEvent.click(screen.getByText("liste.export_champs_confirmer"));
 
       await waitFor(() => expect(membresApi.exporterMembres).toHaveBeenCalledTimes(1));
       expect(membresApi.exporterMembres).toHaveBeenCalledWith(
-        expect.objectContaining({ ville: "Berlin", ordering: "-date_adhesion" }),
+        expect.objectContaining({
+          ville: "Berlin",
+          ordering: "-date_adhesion",
+          champs: expect.arrayContaining(["prenom", "nom", "cin"]),
+        }),
       );
+    });
+
+    it("n'exporte que les colonnes cochées après décoche d'un champ", async () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+      vi.mocked(membresApi.exporterMembres).mockResolvedValue({
+        blob: new Blob(["contenu"]),
+        nomFichier: "export_membres_20260916.xlsx",
+      });
+
+      renderWithProviders(<MembresListPage />);
+      fireEvent.click(screen.getByText("liste.exporter"));
+      // champ.cin est le libellé traduit (mock i18n renvoie la clé) affiché à côté de la case.
+      fireEvent.click(screen.getByLabelText("champ.cin"));
+      fireEvent.click(screen.getByText("liste.export_champs_confirmer"));
+
+      await waitFor(() => expect(membresApi.exporterMembres).toHaveBeenCalledTimes(1));
+      const appel = vi.mocked(membresApi.exporterMembres).mock.calls[0][0];
+      expect(appel?.champs).not.toContain("cin");
+    });
+
+    it("désactive la confirmation si aucune colonne n'est sélectionnée", () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+
+      renderWithProviders(<MembresListPage />);
+      fireEvent.click(screen.getByText("liste.exporter"));
+      fireEvent.click(screen.getByText("liste.export_champs_tout_deselectionner"));
+
+      expect(screen.getByText("liste.export_champs_confirmer")).toBeDisabled();
+      expect(screen.getByText("liste.export_champs_aucune_selection")).toBeInTheDocument();
     });
 
     it("affiche un message d'erreur si l'export échoue", async () => {
@@ -163,6 +221,7 @@ describe("MembresListPage", () => {
 
       renderWithProviders(<MembresListPage />);
       fireEvent.click(screen.getByText("liste.exporter"));
+      fireEvent.click(screen.getByText("liste.export_champs_confirmer"));
 
       expect(await screen.findByText("liste.export_erreur")).toBeInTheDocument();
     });

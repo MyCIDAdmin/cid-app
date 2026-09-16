@@ -13,6 +13,7 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle
+from apps.membres.exports import CHAMPS_EXPORT
 from apps.membres.models import Bundesland, StatutMembre
 from apps.membres.tests.factories import MembreFactory
 
@@ -101,6 +102,24 @@ def test_export_cin_toujours_masque(api_client, rh_user):
     assert "99998888" not in str(lignes[0])
 
 
+def test_export_colonnes_identifiants_au_format_texte(api_client, rh_user):
+    # Demande utilisateur du 2026-09-16 (2e) : N° membre, Téléphone, CIN, Code postal ne
+    # doivent jamais être réinterprétés par Excel comme un nombre à l'ouverture.
+    MembreFactory(cin="99998888", telephone="+4915112345678", code_postal_de="01067")
+    resp = _export(_auth(api_client, rh_user))
+    feuille = _classeur(resp).active
+    entetes = list(next(feuille.iter_rows(min_row=1, max_row=1, values_only=True)))
+    ligne = list(feuille.iter_rows(min_row=2, max_row=2))[0]
+
+    for libelle in ("N° membre", "Téléphone", "CIN", "Code postal"):
+        idx = entetes.index(libelle)
+        assert ligne[idx].number_format == "@", libelle
+
+    # Une colonne numérique "normale" (Âge) n'a pas de raison d'être forcée en texte.
+    idx_age = entetes.index("Âge")
+    assert ligne[idx_age].number_format != "@"
+
+
 def test_export_colonne_cotisation_annee_en_cours(api_client, rh_user):
     membre_paye = MembreFactory()
     membre_impaye = MembreFactory()
@@ -121,6 +140,54 @@ def test_export_colonne_cotisation_annee_en_cours(api_client, rh_user):
     valeurs_par_email = {ligne[idx_email]: ligne[idx_cotisation] for ligne in lignes}
     assert valeurs_par_email[membre_paye.email] == "Payée"
     assert valeurs_par_email[membre_impaye.email] == "En attente"
+
+
+# --- Sélection des colonnes (demande utilisateur du 2026-09-16, 2e) ---
+
+
+def test_export_champs_selection_reduit_les_colonnes(api_client, rh_user):
+    MembreFactory(prenom="Sana", nom="Werfelli")
+    resp = _export(_auth(api_client, rh_user), champs="prenom,nom,email")
+    entetes, lignes = _lignes(resp)
+    assert list(entetes) == ["Prénom", "Nom", "Email"]
+    assert len(lignes[0]) == 3
+
+
+def test_export_champs_respecte_toujours_l_ordre_canonique(api_client, rh_user):
+    MembreFactory(prenom="Sana", nom="Werfelli")
+    # Ordre de sélection volontairement inversé par rapport à CHAMPS_EXPORT.
+    resp = _export(_auth(api_client, rh_user), champs="email,nom,prenom")
+    entetes, _ = _lignes(resp)
+    assert list(entetes) == ["Prénom", "Nom", "Email"]
+
+
+def test_export_champs_ignore_les_cles_inconnues(api_client, rh_user):
+    MembreFactory()
+    resp = _export(_auth(api_client, rh_user), champs="prenom,nom,mot_de_passe")
+    entetes, _ = _lignes(resp)
+    assert list(entetes) == ["Prénom", "Nom"]
+
+
+def test_export_champs_aucune_cle_connue_retombe_sur_toutes_les_colonnes(api_client, rh_user):
+    MembreFactory()
+    resp = _export(_auth(api_client, rh_user), champs="inconnu1,inconnu2")
+    entetes, _ = _lignes(resp)
+    assert len(entetes) == len(CHAMPS_EXPORT)
+
+
+def test_export_sans_parametre_champs_retourne_toutes_les_colonnes(api_client, rh_user):
+    MembreFactory()
+    resp = _export(_auth(api_client, rh_user))
+    entetes, _ = _lignes(resp)
+    assert len(entetes) == len(CHAMPS_EXPORT)
+
+
+def test_export_champs_cotisation_libelle_inclut_l_annee(api_client, rh_user):
+    MembreFactory()
+    resp = _export(_auth(api_client, rh_user), champs="prenom,cotisation_annee_en_cours")
+    entetes, _ = _lignes(resp)
+    annee_courante = date.today().year
+    assert list(entetes) == ["Prénom", f"Cotisation {annee_courante}"]
 
 
 # --- Filtrage (même FilterSet que GET /membres/) ---

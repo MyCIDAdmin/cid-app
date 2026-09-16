@@ -8,15 +8,18 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import ExportChampsDialog from "../../components/membres/ExportChampsDialog";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import StatutBadge from "../../components/ui/StatutBadge";
 import { exporterMembres } from "../../api/membres";
 import type { MembresOrdering } from "../../api/membres";
 import { useDeleteMembre, useMembresList } from "../../hooks/useMembres";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
-import { PAYS_ALLEMAGNE } from "../../types/membre";
-import type { StatutMembre } from "../../types/membre";
+import { CHAMPS_EXPORT, PAYS_ALLEMAGNE } from "../../types/membre";
+import type { ChampExport, StatutMembre } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
+
+const TOUS_LES_CHAMPS_EXPORT: ChampExport[] = CHAMPS_EXPORT.map((c) => c.value);
 
 function initiales(prenom: string, nom: string): string {
   return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
@@ -40,16 +43,28 @@ export default function MembresListPage() {
   const [ordering, setOrdering] = useState<MembresOrdering>("nom");
   const [exportEnCours, setExportEnCours] = useState(false);
   const [erreurExport, setErreurExport] = useState<string | null>(null);
+  const [exportDialogOuvert, setExportDialogOuvert] = useState(false);
+  // Toutes les colonnes cochées par défaut à l'ouverture de la boîte de dialogue — l'utilisateur
+  // décoche celles qu'il ne veut pas plutôt que de partir d'une sélection vide.
+  const [champsExport, setChampsExport] = useState<ChampExport[]>(TOUS_LES_CHAMPS_EXPORT);
 
   const filters = { statut, ville, q };
   const { data, isLoading, isError } = useMembresList(filters, pageUrl);
   const deleteMutation = useDeleteMembre();
 
   async function exporter() {
+    // La boîte de dialogue ne sert qu'à choisir les colonnes — une fois confirmée, elle se
+    // ferme immédiatement ; le téléchargement lui-même (succès ou erreur) suit le même
+    // affichage qu'avant (bouton "en cours", erreur sous le formulaire de filtres).
+    setExportDialogOuvert(false);
     setErreurExport(null);
     setExportEnCours(true);
     try {
-      const { blob, nomFichier } = await exporterMembres({ ...filters, ordering });
+      const { blob, nomFichier } = await exporterMembres({
+        ...filters,
+        ordering,
+        champs: champsExport,
+      });
       const url = window.URL.createObjectURL(blob);
       const lien = document.createElement("a");
       lien.href = url;
@@ -63,6 +78,12 @@ export default function MembresListPage() {
     } finally {
       setExportEnCours(false);
     }
+  }
+
+  function toggleChampExport(champ: ChampExport) {
+    setChampsExport((prev) =>
+      prev.includes(champ) ? prev.filter((c) => c !== champ) : [...prev, champ],
+    );
   }
 
   function appliquerFiltres(e: React.FormEvent) {
@@ -198,7 +219,7 @@ export default function MembresListPage() {
             </div>
             <button
               type="button"
-              onClick={exporter}
+              onClick={() => setExportDialogOuvert(true)}
               disabled={exportEnCours}
               className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
             >
@@ -334,6 +355,16 @@ export default function MembresListPage() {
         danger
         onConfirm={confirmerSuppression}
         onCancel={() => setASupprimer(null)}
+      />
+
+      <ExportChampsDialog
+        open={exportDialogOuvert}
+        selection={champsExport}
+        onToggle={toggleChampExport}
+        onToutSelectionner={() => setChampsExport(TOUS_LES_CHAMPS_EXPORT)}
+        onToutDeselectionner={() => setChampsExport([])}
+        onConfirm={exporter}
+        onCancel={() => setExportDialogOuvert(false)}
       />
     </div>
   );

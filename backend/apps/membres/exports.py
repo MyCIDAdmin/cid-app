@@ -15,6 +15,16 @@ paramètre propre à cette vue (voir export_views.py) : MembreViewSet utilise un
 cursor à ordre fixe (nom, prenom, id — voir MembreCursorPagination), qui ne supporte pas un
 tri dynamique par requête ; un export n'est pas paginé et peut donc trier librement sans
 casser cette contrainte.
+
+Suite retour utilisateur du 2026-09-16 (deuxième demande, après la mise en service ci-dessus) :
+  1. Les colonnes contenant des identifiants (N° membre, téléphone, CIN masqué, code postal)
+     doivent être exportées explicitement au format Texte Excel (number_format '@'), pour
+     qu'Excel ne les réinterprète jamais comme un nombre/une date à l'ouverture (perte des
+     zéros non significatifs sur un code postal, notation scientifique sur un long numéro de
+     téléphone, etc.).
+  2. L'utilisateur doit pouvoir choisir les colonnes à exporter plutôt que de toujours recevoir
+     le classeur complet — voir `champs`/CHAMPS_EXPORT/parse_champs ci-dessous, et le paramètre
+     `champs` de MembreExportView (export_views.py).
 """
 
 from django.utils import timezone
@@ -71,12 +81,62 @@ def _formater_date(valeur) -> str:
     return valeur.strftime("%d/%m/%Y") if valeur else ""
 
 
-def construire_classeur_export(queryset) -> Workbook:
+# Colonnes disponibles à l'export, dans leur ordre d'affichage canonique — clé technique
+# (valeur acceptée par le paramètre `champs` de MembreExportView, voir parse_champs) -> libellé
+# Excel. Le libellé de la dernière colonne dépend de l'année en cours ; CHAMPS_EXPORT porte un
+# libellé générique, construire_classeur_export le complète avec l'année au moment de l'appel.
+CHAMPS_EXPORT = [
+    ("numero_membre", "N° membre"),
+    ("prenom", "Prénom"),
+    ("nom", "Nom"),
+    ("email", "Email"),
+    ("telephone", "Téléphone"),
+    ("cin", "CIN"),
+    ("date_naissance", "Date de naissance"),
+    ("age", "Âge"),
+    ("sexe", "Sexe"),
+    ("pays", "Pays"),
+    ("adresse_de", "Adresse (Allemagne)"),
+    ("code_postal_de", "Code postal"),
+    ("ville_de", "Ville"),
+    ("land_de", "Land"),
+    ("ville_origine_tn", "Ville d'origine (Tunisie)"),
+    ("gouvernorat_tn", "Gouvernorat (Tunisie)"),
+    ("statut", "Statut"),
+    ("date_adhesion", "Date d'adhésion"),
+    ("cotisation_annee_en_cours", "Cotisation"),
+]
+CHAMPS_EXPORT_CLES = [cle for cle, _ in CHAMPS_EXPORT]
+
+# Colonnes forcées au format Texte Excel (number_format '@') — des identifiants qui ne doivent
+# jamais être réinterprétés comme un nombre à l'ouverture du fichier (zéros non significatifs
+# d'un code postal, notation scientifique sur un long numéro de téléphone...). Le CIN est inclus
+# par précaution même si sa valeur masquée (•••••xxx) n'est de toute façon jamais numérique.
+CHAMPS_TEXTE = {"numero_membre", "telephone", "cin", "code_postal_de"}
+
+
+def parse_champs(valeur: str | None) -> list:
     """
-    Construit (sans l'enregistrer) le classeur .xlsx d'export — `queryset` doit déjà être
-    filtré et trié par l'appelant (voir export_views.MembreExportView). Même style visuel que
-    le template d'import (apps.membres.imports.construire_classeur_template — en-tête rouge
-    #CC0000, une seule source de vérité visuelle entre import et export).
+    Valide `valeur` (paramètre `champs` de la requête, liste de clés séparées par des virgules
+    — voir CHAMPS_EXPORT) et retourne la liste des clés à exporter, dans l'ordre d'affichage
+    canonique (pas l'ordre demandé par l'appelant, pour un fichier toujours lisible de la même
+    façon quel que soit l'ordre de sélection côté écran). Même politique de tolérance que
+    parse_ordering : une clé inconnue est silencieusement ignorée plutôt que de faire échouer
+    l'export ; si la sélection ne contient alors plus aucune clé valide, on retombe sur toutes
+    les colonnes plutôt que de renvoyer un classeur vide.
+    """
+    if not valeur:
+        return list(CHAMPS_EXPORT_CLES)
+    demandees = {c.strip() for c in valeur.split(",")}
+    selection = [cle for cle in CHAMPS_EXPORT_CLES if cle in demandees]
+    return selection or list(CHAMPS_EXPORT_CLES)
+
+
+def _valeurs_membre(membre, *, cotisations_payees_ids) -> dict:
+    """
+    Valeur "brute" de chaque colonne exportable pour un membre, sous forme de dict plutôt que
+    de liste positionnelle — construire_classeur_export peut ainsi n'en garder qu'un
+    sous-ensemble (voir `champs`) sans avoir à réordonner quoi que ce soit à la main.
 
     CIN : jamais démasqué dans l'export, même pour un rôle RH+ qui pourrait le voir en clair
     fiche par fiche (voir MembreSerializer._can_view_pii) — même choix que la vue liste
@@ -84,30 +144,48 @@ def construire_classeur_export(queryset) -> Workbook:
     d'exposition"), qui s'applique d'autant plus à un fichier téléchargeable regroupant tous
     les membres d'un coup.
     """
+    return {
+        "numero_membre": membre.numero_membre,
+        "prenom": membre.prenom,
+        "nom": membre.nom,
+        "email": membre.email,
+        "telephone": membre.telephone,
+        "cin": _mask(membre.cin),
+        "date_naissance": _formater_date(membre.date_naissance),
+        "age": membre.age,
+        "sexe": membre.get_sexe_display(),
+        "pays": membre.get_pays_display(),
+        "adresse_de": membre.adresse_de,
+        "code_postal_de": membre.code_postal_de,
+        "ville_de": membre.ville_de,
+        "land_de": membre.get_land_de_display() if membre.land_de else "",
+        "ville_origine_tn": membre.ville_origine_tn,
+        "gouvernorat_tn": membre.gouvernorat_tn,
+        "statut": membre.get_statut_display(),
+        "date_adhesion": _formater_date(membre.date_adhesion),
+        "cotisation_annee_en_cours": (
+            "Payée" if membre.id in cotisations_payees_ids else "En attente"
+        ),
+    }
+
+
+def construire_classeur_export(queryset, champs: list | None = None) -> Workbook:
+    """
+    Construit (sans l'enregistrer) le classeur .xlsx d'export — `queryset` doit déjà être
+    filtré et trié par l'appelant (voir export_views.MembreExportView). Même style visuel que
+    le template d'import (apps.membres.imports.construire_classeur_template — en-tête rouge
+    #CC0000, une seule source de vérité visuelle entre import et export).
+
+    `champs` : sous-ensemble et ordre des colonnes à inclure (clés de CHAMPS_EXPORT, voir
+    parse_champs) — toutes les colonnes par défaut (`None`).
+    """
     annee_courante = timezone.localdate().year
     cotisations_payees_ids = _cotisation_annee_en_cours_payee_ids(annee_courante)
 
-    entetes = [
-        "N° membre",
-        "Prénom",
-        "Nom",
-        "Email",
-        "Téléphone",
-        "CIN",
-        "Date de naissance",
-        "Âge",
-        "Sexe",
-        "Pays",
-        "Adresse (Allemagne)",
-        "Code postal",
-        "Ville",
-        "Land",
-        "Ville d'origine (Tunisie)",
-        "Gouvernorat (Tunisie)",
-        "Statut",
-        "Date d'adhésion",
-        f"Cotisation {annee_courante}",
-    ]
+    champs = list(champs) if champs else list(CHAMPS_EXPORT_CLES)
+    libelles = dict(CHAMPS_EXPORT)
+    libelles["cotisation_annee_en_cours"] = f"Cotisation {annee_courante}"
+    entetes = [libelles[cle] for cle in champs]
 
     classeur = Workbook()
     feuille = classeur.active
@@ -122,30 +200,11 @@ def construire_classeur_export(queryset) -> Workbook:
 
     ligne_idx = 2
     for membre in queryset:
-        cotisation_valeur = "Payée" if membre.id in cotisations_payees_ids else "En attente"
-        valeurs = [
-            membre.numero_membre,
-            membre.prenom,
-            membre.nom,
-            membre.email,
-            membre.telephone,
-            _mask(membre.cin),
-            _formater_date(membre.date_naissance),
-            membre.age,
-            membre.get_sexe_display(),
-            membre.get_pays_display(),
-            membre.adresse_de,
-            membre.code_postal_de,
-            membre.ville_de,
-            membre.get_land_de_display() if membre.land_de else "",
-            membre.ville_origine_tn,
-            membre.gouvernorat_tn,
-            membre.get_statut_display(),
-            _formater_date(membre.date_adhesion),
-            cotisation_valeur,
-        ]
-        for col_idx, valeur in enumerate(valeurs, start=1):
-            feuille.cell(row=ligne_idx, column=col_idx, value=valeur)
+        valeurs = _valeurs_membre(membre, cotisations_payees_ids=cotisations_payees_ids)
+        for col_idx, cle in enumerate(champs, start=1):
+            cellule = feuille.cell(row=ligne_idx, column=col_idx, value=valeurs[cle])
+            if cle in CHAMPS_TEXTE:
+                cellule.number_format = "@"
         ligne_idx += 1
 
     for col_idx, libelle in enumerate(entetes, start=1):

@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsRHOrAbove
 
-from .exports import construire_classeur_export, parse_ordering
+from .exports import construire_classeur_export, parse_champs, parse_ordering
 from .filters import MembreFilter
 from .models import Membre
 from .utils_http import xlsx_response
@@ -22,7 +22,9 @@ class MembreExportView(APIView):
     fiches, voir apps.membres.permissions/MembreImportView). Accepte les mêmes paramètres de
     filtre que GET /membres/ (statut, ville, land, pays, nom, date_adhesion_apres/avant, q —
     voir MembreFilter), plus `ordering` (liste de champs séparés par virgules, "-" pour
-    descendant — voir apps.membres.exports.ORDERING_FIELDS).
+    descendant — voir apps.membres.exports.ORDERING_FIELDS) et `champs` (sous-ensemble de
+    colonnes à exporter, liste de clés séparées par virgules — voir
+    apps.membres.exports.CHAMPS_EXPORT ; toutes les colonnes par défaut).
 
     Pas de pagination ici volontairement : un export doit contenir TOUTE la sélection filtrée,
     pas une seule page (à la différence de MembreViewSet.list, qui reste paginé pour l'écran).
@@ -36,7 +38,8 @@ class MembreExportView(APIView):
         queryset = Membre.objects.all()
         queryset = MembreFilter(request.GET, queryset=queryset).qs
         queryset = queryset.order_by(*parse_ordering(request.GET.get("ordering")))
+        champs = parse_champs(request.GET.get("champs"))
 
-        classeur = construire_classeur_export(queryset)
+        classeur = construire_classeur_export(queryset, champs=champs)
         nom_fichier = f"export_membres_{timezone.localtime():%Y%m%d_%H%M}.xlsx"
         return xlsx_response(classeur, nom_fichier)

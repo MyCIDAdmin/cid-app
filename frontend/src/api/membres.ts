@@ -3,6 +3,7 @@
  */
 import { apiClient } from "./client";
 import type {
+  ChampExport,
   CursorPage,
   Membre,
   MembreFormValues,
@@ -96,6 +97,9 @@ export type MembresOrdering =
 
 export interface MembresExportParams extends MembresListFilters {
   ordering?: MembresOrdering;
+  /** Sous-ensemble de colonnes à exporter (voir apps.membres.exports.CHAMPS_EXPORT côté
+   * backend) — toutes les colonnes si omis/vide. */
+  champs?: ChampExport[];
 }
 
 /** Nom de fichier suggéré par le serveur (Content-Disposition), avec repli si l'en-tête est
@@ -113,9 +117,15 @@ function nomFichierDepuisContentDisposition(contentDisposition: unknown): string
 export async function exporterMembres(
   params: MembresExportParams = {},
 ): Promise<{ blob: Blob; nomFichier: string }> {
-  const filtres = Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== undefined && value !== ""),
+  const { champs, ...reste } = params;
+  const filtres: Record<string, string> = Object.fromEntries(
+    Object.entries(reste).filter(([, value]) => value !== undefined && value !== ""),
   );
+  // Liste de clés séparées par virgules, même convention que `ordering` — voir
+  // apps.membres.exports.parse_champs côté backend.
+  if (champs && champs.length > 0) {
+    filtres.champs = champs.join(",");
+  }
   const { data, headers } = await apiClient.get("/membres/export/", {
     params: filtres,
     responseType: "blob",

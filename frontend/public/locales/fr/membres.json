@@ -40,7 +40,9 @@
     "gouvernorat_tn": "Gouvernorat (Tunisie)",
     "numero_membre": "Numéro de membre",
     "date_adhesion": "Date d'adhésion",
-    "statut": "Statut"
+    "statut": "Statut",
+    "age": "Âge",
+    "cotisation_annee_en_cours": "Cotisation (année en cours)"
   },
   "liste": {
     "titre": "Membres",
@@ -64,6 +66,12 @@
     "exporter": "Exporter Excel",
     "export_en_cours": "Export en cours…",
     "export_erreur": "Erreur lors de l'export Excel.",
+    "export_champs_titre": "Choisir les colonnes à exporter",
+    "export_champs_description": "Sélectionnez les informations à inclure dans le fichier Excel.",
+    "export_champs_tout_selectionner": "Tout sélectionner",
+    "export_champs_tout_deselectionner": "Tout désélectionner",
+    "export_champs_aucune_selection": "Sélectionnez au moins une colonne.",
+    "export_champs_confirmer": "Exporter",
     "col_membre": "Membre",
     "col_ville": "Ville",
     "col_cin": "CIN",
