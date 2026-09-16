@@ -132,6 +132,13 @@ Docker officielle :
    navigateur des membres (icône d'image cassée) : `MINIO_ENDPOINT` (étape 6)
    est l'URL interne Railway, jamais routable depuis l'extérieur — voir le
    commentaire dans `.env.example` et la docstring de `ProduitsStorage`.
+   Cette même variable `MINIO_PUBLIC_ENDPOINT` est aussi nécessaire pour que
+   le bouton « voir le document » des justificatifs de rabais fonctionne
+   (bug corrigé le 2026-09-16 : sans elle, le lien pré-signé pointe vers
+   `MINIO_ENDPOINT`, l'hôte interne, et le navigateur affiche
+   `DNS_PROBE_FINISHED_NXDOMAIN` — voir la docstring de `JustificatifsStorage`,
+   `apps/adhesions/storage.py`). Si l'étape 9 est déjà faite (images produit
+   déjà visibles), aucune configuration supplémentaire n'est nécessaire.
 
 `STORAGES["default"]` (`backend/config/settings/base.py`) pointe vers ce
 service MinIO **exclusivement via les variables d'environnement** `AWS_*` /
