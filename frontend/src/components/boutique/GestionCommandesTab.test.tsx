@@ -307,4 +307,83 @@ describe("GestionCommandesTab", () => {
     renderWithProviders(<GestionCommandesTab />);
     expect(screen.queryByText("retour.bouton")).not.toBeInTheDocument();
   });
+
+  it("propose un retour même pour une commande jamais expédiée dans le système (nacherfassung)", () => {
+    // Précision du 2026-09-16 : une retoure doit pouvoir être enregistrée indépendamment du
+    // statut de la commande (symétrique à expedier nacherfassement), tant que du stock reste
+    // retournable sur au moins une ligne.
+    useAuthStore.setState({ user: bureauAdmin });
+    vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          commande({
+            statut: "en_attente",
+            lignes: [
+              {
+                id: "l1",
+                variante: "v1",
+                quantite: 10,
+                prix_unitaire: "20.00",
+                sous_total: "200.00",
+                quantite_retournee: 0,
+                quantite_retournable: 10,
+              },
+            ],
+          }),
+        ],
+      },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+
+    renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByText("retour.bouton"));
+
+    fireEvent.change(screen.getByLabelText("retour.quantite_label"), {
+      target: { value: "5" },
+    });
+    fireEvent.click(screen.getByText("retour.confirmer"));
+
+    expect(creerRetourMock).toHaveBeenCalledWith(
+      {
+        commande: "c1",
+        ligne_commande: "l1",
+        quantite: 5,
+        motif: "autre",
+        commentaire: undefined,
+      },
+      expect.anything(),
+    );
+  });
+
+  it("ne propose pas de retour pour une commande annulée ou remboursée (stock déjà restitué)", () => {
+    for (const statut of ["annulee", "remboursee"] as const) {
+      vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+        data: {
+          next: null,
+          previous: null,
+          results: [
+            commande({
+              statut,
+              lignes: [
+                {
+                  id: "l1",
+                  variante: "v1",
+                  quantite: 2,
+                  prix_unitaire: "20.00",
+                  sous_total: "40.00",
+                  quantite_retournee: 0,
+                  quantite_retournable: 2,
+                },
+              ],
+            }),
+          ],
+        },
+      } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+
+      const { unmount } = renderWithProviders(<GestionCommandesTab />);
+      expect(screen.queryByText("retour.bouton")).not.toBeInTheDocument();
+      unmount();
+    }
+  });
 });

@@ -128,7 +128,8 @@ class RetourSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "commande": (
-                        "Seule une commande expédiée ou livrée peut faire l'objet d'un retour "
+                        "Une commande annulée ou remboursée a déjà eu son stock intégralement "
+                        "restitué — enregistrer un retour créerait un double comptage "
                         f"(statut actuel : {commande.get_statut_display()})."
                     )
                 }

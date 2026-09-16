@@ -196,9 +196,22 @@ class MotifRetour(models.TextChoices):
 # adapté est une Retoure (voir CommandeViewSet/RetourViewSet), pas une annulation.
 STATUTS_ANNULABLES = {StatutCommande.EN_ATTENTE, StatutCommande.CONFIRMEE}
 
-# Statuts depuis lesquels une retoure peut être enregistrée — seule une commande déjà
-# physiquement expédiée peut faire l'objet d'un retour ; avant cela, `annuler` est le bon outil.
-STATUTS_RETOURNABLES = {StatutCommande.EXPEDIEE, StatutCommande.LIVREE}
+# Statuts depuis lesquels une retoure peut être enregistrée — "Nacherfassung von Retouren"
+# (demande utilisateur du 2026-09-15, précisée le 2026-09-16 après un premier test) : la
+# retoure est volontairement INDÉPENDANTE du statut de la commande, symétriquement à
+# `expedier(nacherfassement=True)` pour l'expédition — un Bureau Admin+ doit pouvoir
+# enregistrer un retour partiel même pour une commande jamais formellement fait passer par
+# confirmer_paiement/expedier dans le système (vente/retour gérés en pratique hors flux
+# digital). Seuls ANNULEE et REMBOURSEE sont exclus : ces deux statuts ont déjà restitué la
+# totalité du stock de la commande via `_restituer_stock`/`changer_statut`, un Retour
+# supplémentaire par-dessus créerait un double comptage de stock.
+STATUTS_RETOURNABLES = {
+    StatutCommande.EN_ATTENTE,
+    StatutCommande.CONFIRMEE,
+    StatutCommande.EN_PREPARATION,
+    StatutCommande.EXPEDIEE,
+    StatutCommande.LIVREE,
+}
 
 # Transitions de statut valides pour l'action de gestion générique `changer_statut`
 # (Bureau Admin+). Volontairement strict (pas de retour en arrière hors annulation) pour

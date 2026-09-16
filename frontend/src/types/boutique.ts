@@ -215,5 +215,16 @@ export const STATUTS_EXPEDIABLES_NACERFASSEMENT: StatutCommande[] = [
   "en_attente",
 ];
 
-/** Statuts depuis lesquels une commande accepte encore des retours. */
-export const STATUTS_RETOURNABLES: StatutCommande[] = ["expediee", "livree"];
+/**
+ * Statuts depuis lesquels une commande accepte encore des retours — "Nacherfassung von
+ * Retouren" (demande utilisateur du 2026-09-15, précisée le 2026-09-16) : volontairement
+ * indépendant du statut de la commande (symétrique à `expedier(nacherfassement)`), sauf
+ * annulee/remboursee où le stock a déjà été intégralement restitué (double comptage sinon).
+ */
+export const STATUTS_RETOURNABLES: StatutCommande[] = [
+  "en_attente",
+  "confirmee",
+  "en_preparation",
+  "expediee",
+  "livree",
+];

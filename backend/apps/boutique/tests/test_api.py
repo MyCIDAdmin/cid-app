@@ -802,11 +802,13 @@ def test_creer_retour_quantite_superieure_refusee(api_client):
     assert variante.stock == 0  # pas de réintégration sur un retour refusé
 
 
-def test_creer_retour_commande_non_retournable_refuse(api_client):
+def test_creer_retour_commande_annulee_refuse(api_client):
+    # ANNULEE/REMBOURSEE ont déjà eu leur stock intégralement restitué (_restituer_stock) —
+    # un Retour supplémentaire par-dessus créerait un double comptage de stock.
     bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau18@example.de")
     _, membre = _user_avec_membre(Role.MEMBRE, "m50@example.de")
     variante = VarianteProduitFactory(stock=0)
-    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.ANNULEE)
     ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
 
     resp = _auth(api_client, bureau).post(
@@ -820,6 +822,94 @@ def test_creer_retour_commande_non_retournable_refuse(api_client):
         format="json",
     )
     assert resp.status_code == 400
+
+
+def test_creer_retour_commande_remboursee_refuse(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau25@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m56@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.REMBOURSEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
+
+    resp = _auth(api_client, bureau).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
+def test_creer_retour_commande_en_attente_ok(api_client):
+    # "Nacherfassung von Retouren" (précisé le 2026-09-16) : un retour doit pouvoir être
+    # enregistré même pour une commande jamais fait passer par confirmer_paiement/expedier
+    # dans le système — symétrique à expedier(nacherfassement=True).
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau26@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m57@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=10)
+
+    resp = _auth(api_client, bureau).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 5,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+
+    variante.refresh_from_db()
+    assert variante.stock == 5
+    ligne.refresh_from_db()
+    assert ligne.quantite_retournable == 5
+
+
+def test_creer_retour_commande_confirmee_ok(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau27@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m58@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=4)
+
+    resp = _auth(api_client, bureau).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+
+
+def test_creer_retour_commande_en_preparation_ok(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau28@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m59@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_PREPARATION)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=4)
+
+    resp = _auth(api_client, bureau).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
 
 
 def test_creer_retour_partiel_puis_retour_complementaire(api_client):
