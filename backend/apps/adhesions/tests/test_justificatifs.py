@@ -94,6 +94,33 @@ def test_upload_pour_sa_propre_souscription(api_client):
     assert JustificatifRabais.objects.filter(souscription=souscription).count() == 1
 
 
+def test_upload_par_un_membre_notifie_le_staff_rh(api_client):
+    """Ajouté le 2026-09-16 (retour utilisateur : couverture "allen Admin Modulen") — voir
+    notifications.notifier_nouveau_justificatif_staff : tout RH+ est notifié quand un membre
+    soumet lui-même son justificatif."""
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    user_rh, _rh = _user_avec_membre(Role.RH, "rh-destinataire@example.de")
+    user_bureau, _bureau = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-destinataire@example.de")
+    souscription = SouscriptionFactory(
+        membre=membre, statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF
+    )
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(JUSTIFICATIF_LIST_URL),
+        {"souscription": str(souscription.id), "fichier": _pdf_upload()},
+        format="multipart",
+    )
+
+    assert resp.status_code == 201, resp.data
+    for destinataire in (user_rh, user_bureau):
+        notification = Notification.objects.get(destinataire=destinataire)
+        assert notification.type_notification == TypeNotification.ADHESION_JUSTIFICATIF_SOUMIS
+        assert notification.lien == "/admin/justificatifs"
+    # Le membre lui-même n'est pas dans la file RH — aucune notification pour lui ici.
+    assert not Notification.objects.filter(destinataire=user).exists()
+
+
 def test_upload_pour_la_souscription_dun_autre_refuse(api_client):
     user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     autre_souscription = SouscriptionFactory(statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF)
@@ -197,6 +224,10 @@ def test_rh_uploade_un_justificatif_pour_le_compte_dun_membre(api_client):
 
     assert resp.status_code == 201, resp.data
     assert JustificatifRabais.objects.filter(souscription=souscription).count() == 1
+    # Ajouté le 2026-09-16 : RH n'a pas besoin d'être notifié de sa propre action.
+    assert not Notification.objects.filter(
+        type_notification=TypeNotification.ADHESION_JUSTIFICATIF_SOUMIS
+    ).exists()
 
 
 def test_rh_sans_fiche_membre_peut_quand_meme_uploader_pour_autrui(api_client):

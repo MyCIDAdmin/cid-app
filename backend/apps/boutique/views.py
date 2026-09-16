@@ -72,6 +72,7 @@ from .notifications import (
     notifier_commande_annulee,
     notifier_commande_confirmee,
     notifier_commande_expediee,
+    notifier_nouvelle_commande_staff,
 )
 from .permissions import (
     GESTION_CATALOGUE_MIN_LEVEL,
@@ -257,6 +258,7 @@ class CommandeViewSet(ModelViewSet):
             commande.save(update_fields=["montant_total"])
 
         notifier_commande_confirmee(commande)
+        notifier_nouvelle_commande_staff(commande)
         return Response(self.get_serializer(commande).data, status=201)
 
     @action(detail=True, methods=["post"])

@@ -87,6 +87,7 @@ from .serializers import (
 from .notifications import (
     notifier_justificatif_refuse,
     notifier_justificatif_valide,
+    notifier_nouveau_justificatif_staff,
     notifier_souscription_annulee,
 )
 from .tasks import envoyer_annonce_campagne
@@ -389,6 +390,12 @@ class JustificatifRabaisViewSet(ModelViewSet):
             instance = existant
         else:
             instance = serializer.save()
+
+        # Notification staff (ajoutée le 2026-09-16) — uniquement quand c'est le membre
+        # lui-même qui soumet, jamais quand RH+ vient d'uploader pour son compte (voir
+        # notifications.notifier_nouveau_justificatif_staff).
+        if not est_rh_plus:
+            notifier_nouveau_justificatif_staff(instance)
 
         return Response(JustificatifRabaisSerializer(instance).data, status=status.HTTP_201_CREATED)
 

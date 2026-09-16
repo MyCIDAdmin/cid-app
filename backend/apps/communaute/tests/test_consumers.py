@@ -237,6 +237,32 @@ def test_connexion_groupe_acceptee_pour_un_membre_puis_message_diffuse():
     assert MessageGroupe.objects.filter(groupe=groupe).count() == 1
 
 
+def test_envoi_dun_message_de_groupe_declenche_la_notification(monkeypatch):
+    """Ajouté le 2026-09-16 (retour utilisateur : couverture "Messaging und Austausch
+    Module") — contrairement à MessagerieConsumer, aucune vérification de présence :
+    GroupeChatConsumer notifie systématiquement les autres membres du groupe (voir
+    tasks.envoyer_notification_message_groupe)."""
+    _, m1 = user_membre_avec_fiche(email="grp3@example.de")
+    groupe = GroupeChatFactory()
+    MembreGroupeFactory(groupe=groupe, membre=m1)
+
+    appels = []
+    monkeypatch.setattr(
+        "apps.communaute.tasks.envoyer_notification_message_groupe.delay",
+        lambda *args, **kwargs: appels.append(args),
+    )
+
+    async def run():
+        communicator, _ = await _connect(f"/ws/groupes/{groupe.id}/", m1.user)
+        await communicator.send_json_to({"type": "message", "contenu": "Salut le groupe !"})
+        await communicator.receive_json_from()
+        await communicator.disconnect()
+
+    asyncio.run(run())
+    assert len(appels) == 1
+    assert appels[0] == (str(groupe.id), str(m1.id))
+
+
 def test_suppression_dun_message_de_groupe_par_lapi_rest_est_diffusee_au_websocket():
     """Même principe que le test équivalent pour MessagerieConsumer ci-dessus, côté
     GroupeChatConsumer."""

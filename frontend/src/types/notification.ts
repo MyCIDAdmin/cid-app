@@ -22,7 +22,16 @@ export type TypeNotification =
   | "adhesion_souscription_annulee"
   | "evenement_annule"
   | "boutique_commande_annulee"
-  | "communaute_reponse_forum";
+  | "communaute_reponse_forum"
+  // Ajoutés le 2026-09-16 (retour utilisateur : "Es soll bei allen Admin Modulen aber auch
+  // bei Messaging und Austausch Modulen funktionieren") — voir backend/apps/notifications/
+  // models.py TypeNotification pour le détail des 6 nouveaux points d'intégration.
+  | "adhesion_justificatif_soumis"
+  | "accounts_nouvelle_inscription"
+  | "cotisation_paiement_attente"
+  | "boutique_nouvelle_commande"
+  | "communaute_message_groupe"
+  | "communaute_commentaire_fil";
 
 export interface Notification {
   id: string;

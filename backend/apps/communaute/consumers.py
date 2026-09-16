@@ -19,7 +19,11 @@ lecture volontairement étroite du périmètre documenté (voir docstring de tê
 
 Aucun suivi de présence pour `GroupeChatConsumer` : le compteur "X en ligne" du mockup est
 une fonctionnalité de démonstration, absente des bullets fonctionnels du FDD/Release Plan
-pour Groupes de chat — délibérément hors périmètre (voir CLAUDE.md/notes de session).
+pour Groupes de chat — délibérément hors périmètre (voir CLAUDE.md/notes de session). Sa
+notification in-app (ajoutée le 2026-09-16, `tasks.envoyer_notification_message_groupe`)
+notifie donc systématiquement tous les autres membres du groupe, sans condition de présence
+— contrairement à `MessagerieConsumer` ci-dessous, dont la notification ne se déclenche que
+si l'autre participant n'est PAS connecté à la conversation.
 
 ws://app/ws/live/{match_id}/?token=JWT — LiveMatchConsumer (troisième lot, Phase 4B, voir
 docstring de tête models.py) : SEUL consumer de ce fichier à combiner mutation temps réel
@@ -262,6 +266,10 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
         await self.channel_layer.group_send(
             self.group_name, {"type": "message_recu", "payload": payload}
         )
+
+        from .tasks import envoyer_notification_message_groupe
+
+        envoyer_notification_message_groupe.delay(str(self.groupe_id), str(self.membre_id))
 
     async def message_recu(self, event):
         await self.send_json({"type": "message", **event["payload"]})

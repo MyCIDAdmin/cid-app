@@ -55,7 +55,7 @@ from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 
 from .filters import PublicationFilter, SujetFilter
-from .notifications import notifier_nouvelle_reponse_forum
+from .notifications import notifier_nouveau_commentaire_fil, notifier_nouvelle_reponse_forum
 from .models import (
     Album,
     ChoixQuestion,
@@ -223,6 +223,12 @@ class CommentaireViewSet(
     serializer_class = CommentaireSerializer
     permission_classes = [ContenuCommunautePermission]
     queryset = Commentaire.objects.select_related("auteur", "publication")
+
+    def perform_create(self, serializer):
+        serializer.save()
+        # Notification (ajoutée le 2026-09-16) — auteur de la publication + auteur du
+        # commentaire parent si réponse, voir notifications.notifier_nouveau_commentaire_fil.
+        notifier_nouveau_commentaire_fil(serializer.instance)
 
     @action(detail=True, methods=["post"])
     def masquer(self, request, pk=None):

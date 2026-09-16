@@ -256,6 +256,63 @@ def test_repondre_a_un_commentaire_apparait_dans_le_serializer_de_publication(ap
     assert racine["reponses"][0]["contenu"] == "Merci !"
 
 
+def test_commenter_notifie_lauteur_de_la_publication(api_client):
+    """Ajouté le 2026-09-16 (retour utilisateur : couverture "Messaging und Austausch
+    Module") — voir notifications.notifier_nouveau_commentaire_fil."""
+    user, _ = _user_avec_membre(Role.MEMBRE, "m8b@example.de")
+    auteur_user, auteur_membre = _user_avec_membre(Role.MEMBRE, "auteur-fil@example.de")
+    publication = PublicationFactory(auteur=auteur_membre)
+
+    resp = _auth(api_client, user).post(
+        reverse("communaute:commentaire-list"),
+        {"publication": str(publication.id), "contenu": "Bravo !"},
+    )
+
+    assert resp.status_code == 201
+    notification = Notification.objects.get(destinataire=auteur_user)
+    assert notification.type_notification == TypeNotification.COMMUNAUTE_COMMENTAIRE_FIL
+    assert notification.lien == f"/fil/{publication.id}"
+
+
+def test_commenter_sa_propre_publication_ne_se_notifie_pas_soi_meme(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "m8c@example.de")
+    publication = PublicationFactory(auteur=membre)
+
+    resp = _auth(api_client, user).post(
+        reverse("communaute:commentaire-list"),
+        {"publication": str(publication.id), "contenu": "Note perso"},
+    )
+
+    assert resp.status_code == 201
+    assert not Notification.objects.filter(
+        type_notification=TypeNotification.COMMUNAUTE_COMMENTAIRE_FIL
+    ).exists()
+
+
+def test_repondre_a_un_commentaire_notifie_aussi_son_auteur(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "m9b@example.de")
+    auteur_pub_user, auteur_pub = _user_avec_membre(Role.MEMBRE, "auteur-pub@example.de")
+    auteur_parent_user, auteur_parent = _user_avec_membre(Role.MEMBRE, "auteur-parent@example.de")
+    publication = PublicationFactory(auteur=auteur_pub)
+    commentaire = CommentaireFactory(publication=publication, auteur=auteur_parent)
+
+    resp = _auth(api_client, user).post(
+        reverse("communaute:commentaire-list"),
+        {
+            "publication": str(publication.id),
+            "parent": str(commentaire.id),
+            "contenu": "Merci !",
+        },
+    )
+
+    assert resp.status_code == 201
+    for destinataire in (auteur_pub_user, auteur_parent_user):
+        assert Notification.objects.filter(
+            destinataire=destinataire,
+            type_notification=TypeNotification.COMMUNAUTE_COMMENTAIRE_FIL,
+        ).exists()
+
+
 def test_auteur_du_commentaire_peut_le_supprimer(api_client):
     user, membre = _user_avec_membre(Role.MEMBRE, "m10@example.de")
     commentaire = CommentaireFactory(auteur=membre)

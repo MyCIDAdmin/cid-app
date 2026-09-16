@@ -307,6 +307,38 @@ def test_passer_commande_cree_une_notification_in_app(api_client):
     assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE
 
 
+def test_passer_commande_notifie_le_staff_bureau_admin(api_client):
+    """Ajouté le 2026-09-16 (retour utilisateur : couverture "allen Admin Modulen") — voir
+    notifications.notifier_nouvelle_commande_staff : tout Bureau Admin+ est notifié d'une
+    nouvelle commande, en plus de la confirmation envoyée au client."""
+    user, _membre = _user_avec_membre(Role.MEMBRE, "m23@example.de")
+    bureau = User.objects.create_user(
+        email="bureau@example.de", password="Password123!", role=Role.BUREAU_ADMIN, is_active=True
+    )
+    rh = User.objects.create_user(
+        email="rh-boutique@example.de", password="Password123!", role=Role.RH, is_active=True
+    )
+    variante = VarianteProduitFactory(stock=5)
+
+    resp = _auth(api_client, user).post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    assert resp.status_code == 201
+
+    notification = Notification.objects.get(destinataire=bureau)
+    assert notification.type_notification == TypeNotification.BOUTIQUE_NOUVELLE_COMMANDE
+    assert notification.lien == "/admin/boutique"
+    # RH n'a pas le niveau requis (Bureau Admin+) pour cette file de gestion.
+    assert not Notification.objects.filter(
+        destinataire=rh, type_notification=TypeNotification.BOUTIQUE_NOUVELLE_COMMANDE
+    ).exists()
+
+
 def test_passer_commande_panier_vide_refuse(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "m6@example.de")
     resp = _auth(api_client, user).post(

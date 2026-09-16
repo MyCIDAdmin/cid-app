@@ -13,10 +13,14 @@ directe à une action RH+/membre, donc restent synchrones (pas de tâche Celery 
 from django.conf import settings
 from django.core.mail import send_mail
 
+from apps.accounts.models import ROLE_LEVELS, Role
+from apps.accounts.services import users_role_at_least
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import notifier
 
 LIEN_MON_ADHESION = "/mon-adhesion"
+LIEN_ADMIN_JUSTIFICATIFS = "/admin/justificatifs"
+STAFF_JUSTIFICATIFS_MIN_LEVEL = ROLE_LEVELS[Role.RH]
 
 
 def _envoyer_email(user, subject: str, message: str) -> None:
@@ -29,6 +33,27 @@ def _envoyer_email(user, subject: str, message: str) -> None:
         recipient_list=[user.email],
         fail_silently=True,
     )
+
+
+def notifier_nouveau_justificatif_staff(justificatif) -> None:
+    """Appelée par `JustificatifRabaisViewSet.create` — uniquement quand c'est le membre
+    lui-même qui vient de soumettre son justificatif (jamais quand c'est RH+ qui l'a
+    uploadé pour le compte d'un membre, voir views.py : inutile de notifier RH de sa propre
+    action, même principe que l'annulation par RH d'une souscription/commande). Diffusée à
+    tout RH+ (pas de destinataire unique — c'est une file d'attente partagée, pas un
+    justificatif assigné à une personne)."""
+    souscription = justificatif.souscription
+    membre = souscription.membre
+    titre = "Nouveau justificatif à valider"
+    message = f"{membre} a soumis un justificatif pour {souscription.campagne.nom}."
+    for user in users_role_at_least(STAFF_JUSTIFICATIFS_MIN_LEVEL):
+        notifier(
+            user,
+            TypeNotification.ADHESION_JUSTIFICATIF_SOUMIS,
+            titre=titre,
+            message=message,
+            lien=LIEN_ADMIN_JUSTIFICATIFS,
+        )
 
 
 def notifier_justificatif_valide(justificatif) -> None:

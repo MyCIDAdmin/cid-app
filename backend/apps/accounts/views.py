@@ -60,6 +60,7 @@ from .serializers import (
     Verify2FASerializer,
 )
 from .tasks import (
+    notifier_nouvelle_inscription_rh,
     send_email_verification_code,
     send_new_ip_alert_email,
     send_otp_email,
@@ -275,6 +276,9 @@ class RegisterConfirmView(APIView):
         # uniquement après confirmation de l'email — c'est ici, pas à
         # l'inscription, que la demande devient visible par RH (AHM-48).
         send_welcome_email.delay(str(user.id))
+        # Notification staff (ajoutée le 2026-09-16) — même instant précis que ci-dessus :
+        # c'est bien maintenant que la demande devient visible par RH sur /inscriptions.
+        notifier_nouvelle_inscription_rh.delay(str(user.id))
         services.log_audit_event("email_verified", user=user, ip_address=_client_ip(request))
         return Response(
             {

@@ -11,7 +11,11 @@ Comme apps.evenements.tasks (voir son docstring) : l'envoi email est protégé (
 un échec n'empêche jamais la notification in-app) et la notification in-app est créée
 indépendamment de l'email. Le contenu du message n'est JAMAIS repris dans l'email/la
 notification (CID-SCD-001 — la Messagerie privée est chiffrée précisément pour rester
-confidentielle ; un sujet/corps générique évite de recréer une fuite en clair côté email)."""
+confidentielle ; un sujet/corps générique évite de recréer une fuite en clair côté email).
+
+`envoyer_notification_message_groupe` (ajoutée le 2026-09-16, lot Groupes de chat) : même
+brique de notification in-app mais PAS le même principe de présence — voir sa propre
+docstring."""
 
 import logging
 
@@ -70,3 +74,50 @@ def envoyer_notification_message_prive(destinataire_membre_id, expediteur_nom, c
         )
 
     return envoye
+
+
+@shared_task
+def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
+    """Ajoutée le 2026-09-16 (retour utilisateur : couverture "Messaging und Austausch
+    Module") — déclenchée par `GroupeChatConsumer.receive_json` à chaque message envoyé dans un
+    groupe de chat. Contrairement à `envoyer_notification_message_prive` ci-dessus, aucun
+    contrôle de présence : `GroupeChatConsumer` n'en tient aucun (voir docstring de tête
+    consumers.py, "Aucun suivi de présence pour GroupeChatConsumer" — délibérément hors
+    périmètre), donc notifie systématiquement tous les autres membres du groupe, même principe
+    que `notifications.notifier_nouvelle_reponse_forum` (jamais l'auteur du message
+    lui-même). Pas d'email — un chat de groupe est un flux temps réel à fort volume, l'email
+    ferait plus de bruit que de service."""
+    from .models import GroupeChat, MembreGroupe
+
+    try:
+        groupe = GroupeChat.objects.get(id=groupe_id)
+    except GroupeChat.DoesNotExist:
+        return 0
+
+    try:
+        auteur = Membre.objects.get(id=auteur_membre_id)
+    except Membre.DoesNotExist:
+        return 0
+
+    lien = f"/groupes/{groupe_id}"
+    titre = f"Nouveau message — {groupe.nom}"
+    envoyes = 0
+    membres = (
+        MembreGroupe.objects.filter(groupe_id=groupe_id)
+        .exclude(membre_id=auteur_membre_id)
+        .select_related("membre__user")
+    )
+    for membre_groupe in membres:
+        user = membre_groupe.membre.user
+        if not user:
+            continue
+        notifier(
+            user,
+            TypeNotification.COMMUNAUTE_MESSAGE_GROUPE,
+            titre=titre,
+            message=f"{auteur} a envoyé un message dans {groupe.nom}.",
+            lien=lien,
+        )
+        envoyes += 1
+
+    return envoyes

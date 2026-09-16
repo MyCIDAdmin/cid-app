@@ -29,6 +29,19 @@ PASSWORD_RESET_SALT = "cid.accounts.password_reset"
 PASSWORD_RESET_MAX_AGE_SECONDS = 3600
 
 
+def users_role_at_least(min_level: int):
+    """Tous les comptes actifs dont le rôle a un niveau RBAC >= `min_level` (voir ROLE_LEVELS) —
+    ajouté le 2026-09-16 pour les notifications in-app "staff" (nouvel élément en attente de
+    validation) diffusées à tout un rôle et au-dessus, plutôt qu'à un destinataire précis : voir
+    apps.adhesions.notifications (justificatif soumis), apps.accounts.tasks (nouvelle
+    inscription), apps.cotisations.notifications (paiement en attente),
+    apps.boutique.notifications (nouvelle commande)."""
+    from .models import ROLE_LEVELS
+
+    roles_eligibles = [role for role, niveau in ROLE_LEVELS.items() if niveau >= min_level]
+    return User.objects.filter(role__in=roles_eligibles, is_active=True)
+
+
 def log_audit_event(action: str, user=None, ip_address=None, user_agent="", **metadata):
     """Trace un événement de sécurité — jamais de données sensibles (SCD §8.1)."""
     AuditLogEntry.objects.create(

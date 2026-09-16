@@ -86,6 +86,40 @@ def send_welcome_email(user_id):
 
 
 @shared_task
+def notifier_nouvelle_inscription_rh(user_id):
+    """Ajoutée le 2026-09-16 (retour utilisateur : couverture "allen Admin Modulen") —
+    déclenchée par `RegisterConfirmView.post` juste après confirmation de l'email (AHM-50),
+    au moment précis où l'inscription devient visible par RH sur `/inscriptions` (voir
+    `PendingRegistrationsView.get_queryset`, filtrée sur `email_verifie=True`). Diffusée à
+    tout RH+, sans email (file d'attente partagée, pas de destinataire individuel) — même
+    principe que `apps.adhesions.notifications.notifier_nouveau_justificatif_staff`."""
+    from django.contrib.auth import get_user_model
+
+    from apps.accounts.services import users_role_at_least
+    from apps.notifications.models import TypeNotification
+    from apps.notifications.services import notifier
+
+    from .models import ROLE_LEVELS, Role
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return
+
+    membre = getattr(user, "membre", None)
+    nom = f"{membre.prenom} {membre.nom}".strip() if membre else user.email
+    for destinataire in users_role_at_least(ROLE_LEVELS[Role.RH]):
+        notifier(
+            destinataire,
+            TypeNotification.ACCOUNTS_NOUVELLE_INSCRIPTION,
+            titre="Nouvelle inscription à valider",
+            message=f"{nom} a confirmé son inscription et attend une décision.",
+            lien="/inscriptions",
+        )
+
+
+@shared_task
 def send_password_reset_email(user_id, token):
     """FDD §3.1 — lien de réinitialisation, valide 1h (services.PASSWORD_RESET_MAX_AGE_SECONDS)."""
     from django.contrib.auth import get_user_model

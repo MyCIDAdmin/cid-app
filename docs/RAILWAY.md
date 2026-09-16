@@ -160,6 +160,21 @@ chaque service concerné. Recommandation :
 - Merge sur `main` → Railway redéploie automatiquement `backend`,
   `celery_worker`, `celery_beat` et `frontend`.
 
+**Piège fréquent (retour utilisateur du 2026-09-16 : une fonctionnalité qui
+semblait ne "rien faire du tout" après un merge)** : les 4 services
+redéploient chacun indépendamment — rien ne garantit qu'ils réussissent
+tous ensemble. Un service peut échouer silencieusement (build cassé,
+variable d'environnement manquante) pendant que les 3 autres redéploient
+sans problème, et rien dans l'app elle-même ne signale ce genre d'échec
+partiel : pas d'erreur visible, simplement une fonctionnalité qui ne se
+déclenche jamais (ex. une notification envoyée par une tâche Celery, ou
+un changement frontend jamais servi). Après chaque merge sur `main` qui
+touche `apps.notifications`/tâches Celery ou le frontend, vérifier dans
+le dashboard Railway que les 4 services (`backend`, `celery_worker`,
+`celery_beat`, `frontend`) affichent bien le même commit le plus récent
+et un déploiement réussi (pas seulement `backend`, qui est celui qu'on
+vérifie le plus naturellement en testant l'API/l'UI).
+
 ## 9. Checklist avant d'ouvrir l'accès aux premiers membres
 
 Reprendre la checklist sécurité complète du Security Concept Document

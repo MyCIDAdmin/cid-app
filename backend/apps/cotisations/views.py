@@ -51,6 +51,7 @@ from .filters import CotisationFilter
 from .gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 from .models import ConfigurationRelance, Cotisation, ModePaiement, StatutCotisation
 from .notifications import notifier_paiement_confirme as _notifier_paiement_confirme
+from .notifications import notifier_nouveau_paiement_attente_staff
 from .pdf import generate_receipt_pdf
 from .permissions import READ_ALL_MIN_LEVEL, SAISIE_POUR_AUTRUI_MIN_LEVEL, CotisationPermission
 from .serializers import ConfigurationRelanceSerializer, CotisationSerializer
@@ -110,7 +111,13 @@ class CotisationViewSet(ModelViewSet):
         # AHM-53 : jamais fait confiance au statut transmis par le client en libre-service — voir
         # docstring de ce module. Le paiement reste en_attente jusqu'à confirmation manuelle
         # (marquer_payee ci-dessous) ; aucune référence de transaction/reçu tant qu'il ne l'est pas.
-        serializer.save(membre=membre_self, saisie_par=None, statut=StatutCotisation.EN_ATTENTE)
+        cotisation = serializer.save(
+            membre=membre_self, saisie_par=None, statut=StatutCotisation.EN_ATTENTE
+        )
+        # Notification staff (ajoutée le 2026-09-16) — seule cette branche libre-service
+        # produit un paiement en_attente à confirmer ; la saisie DF pour autrui ci-dessus n'en
+        # a pas besoin (voir notifications.notifier_nouveau_paiement_attente_staff).
+        notifier_nouveau_paiement_attente_staff(cotisation)
 
     @action(detail=True, methods=["get"])
     def receipt(self, request, pk=None):

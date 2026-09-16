@@ -10,6 +10,7 @@ from apps.accounts.models import Role, User
 from apps.cotisations.models import StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.membres.tests.factories import MembreFactory
+from apps.notifications.models import Notification, TypeNotification
 
 pytestmark = pytest.mark.django_db
 
@@ -67,6 +68,55 @@ def test_membre_peut_payer_sa_propre_cotisation(api_client):
     assert resp.data["statut"] == StatutCotisation.EN_ATTENTE
     assert resp.data["reference_transaction"] is None
     assert resp.data["date_paiement"] is None
+
+
+def test_paiement_libre_service_en_attente_notifie_le_directeur_financier(api_client):
+    """Ajouté le 2026-09-16 (retour utilisateur : couverture "allen Admin Modulen") — voir
+    notifications.notifier_nouveau_paiement_attente_staff : tout Directeur Financier+ est
+    notifié dès qu'un paiement libre-service reste en_attente de confirmation manuelle
+    (AHM-53), jamais RH/Bureau Admin (niveau insuffisant)."""
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    df = User.objects.create_user(
+        email="df@example.de", password="Password123!", role=Role.DIR_FINANCIER, is_active=True
+    )
+    rh = User.objects.create_user(
+        email="rh@example.de", password="Password123!", role=Role.RH, is_active=True
+    )
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {"type_article": TypeArticle.COTISATION, "mode_paiement": "carte", "statut": "payee"},
+    )
+
+    assert resp.status_code == 201, resp.data
+    notification = Notification.objects.get(destinataire=df)
+    assert notification.type_notification == TypeNotification.COTISATION_PAIEMENT_ATTENTE
+    assert notification.lien == "/cotisations/en-attente"
+    assert not Notification.objects.filter(destinataire=rh).exists()
+
+
+def test_df_qui_saisit_pour_autrui_nest_pas_soi_meme_notifie(api_client):
+    """La branche "saisie DF pour un autre membre" n'utilise pas le statut en_attente
+    libre-service — pas de notification staff à générer ici (voir views.perform_create)."""
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
+    _autre_user, autre_membre = _user_avec_membre(Role.MEMBRE, "autre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.COTISATION,
+            "mode_paiement": "carte",
+            "statut": "payee",
+            "membre": str(autre_membre.id),
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert not Notification.objects.filter(
+        type_notification=TypeNotification.COTISATION_PAIEMENT_ATTENTE
+    ).exists()
 
 
 def test_statut_libre_service_toujours_en_attente_quel_que_soit_le_mode_de_paiement(api_client):

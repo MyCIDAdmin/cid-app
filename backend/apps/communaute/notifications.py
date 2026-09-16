@@ -54,3 +54,36 @@ def notifier_nouvelle_reponse_forum(reponse) -> None:
             message=f'{reponse.auteur} a répondu à "{sujet.titre}".',
             lien=lien,
         )
+
+
+def notifier_nouveau_commentaire_fil(commentaire) -> None:
+    """Appelée par `CommentaireViewSet.perform_create` juste après la création d'un commentaire
+    (ou d'une réponse à un commentaire, voir `Commentaire.parent`) — ajoutée le 2026-09-16, même
+    principe restrictif que `notifier_nouvelle_reponse_forum` ci-dessus (jamais un broadcast à
+    tous les membres) : seuls l'auteur de la publication et, s'il s'agit d'une réponse à un
+    commentaire, l'auteur du commentaire parent sont notifiés — jamais l'auteur du nouveau
+    commentaire lui-même. Pas d'email (cf. fil d'actualité = flux à fort volume, contrairement
+    au forum où chaque sujet reste actif plus longtemps)."""
+    publication = commentaire.publication
+
+    destinataires_membres = {publication.auteur_id: publication.auteur}
+    if commentaire.parent_id:
+        parent = commentaire.parent
+        destinataires_membres.setdefault(parent.auteur_id, parent.auteur)
+
+    destinataires_membres.pop(commentaire.auteur_id, None)
+
+    apercu = (publication.contenu or "")[:40]
+    lien = f"/fil/{publication.id}"
+    titre = "Nouveau commentaire"
+    for membre in destinataires_membres.values():
+        user = getattr(membre, "user", None)
+        if not user:
+            continue
+        notifier(
+            user,
+            TypeNotification.COMMUNAUTE_COMMENTAIRE_FIL,
+            titre=titre,
+            message=f"{commentaire.auteur} a commenté « {apercu} ».",
+            lien=lien,
+        )

@@ -5,14 +5,35 @@ pour le même principe appliqué aux cotisations."""
 from django.conf import settings
 from django.core.mail import send_mail
 
+from apps.accounts.models import ROLE_LEVELS, Role
+from apps.accounts.services import users_role_at_least
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import notifier
 
 from .models import Commande
 
+STAFF_NOUVELLE_COMMANDE_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
+
 
 def _destinataire(commande: Commande):
     return getattr(commande.membre, "user", None)
+
+
+def notifier_nouvelle_commande_staff(commande: Commande) -> None:
+    """Ajoutée le 2026-09-16 (retour utilisateur : couverture "allen Admin Modulen") — appelée
+    juste après `notifier_commande_confirmee` par `CommandeViewSet.passer`. Diffusée à tout
+    Bureau Admin+ (même niveau que `ORDER_VISIBILITY_MIN_LEVEL`, voir permissions.py), sans
+    email (file de gestion partagée, pas de destinataire individuel)."""
+    titre = f"Nouvelle commande {commande.numero_commande}"
+    message = f"{commande.membre} a passé une commande de {commande.montant_total} €."
+    for destinataire in users_role_at_least(STAFF_NOUVELLE_COMMANDE_MIN_LEVEL):
+        notifier(
+            destinataire,
+            TypeNotification.BOUTIQUE_NOUVELLE_COMMANDE,
+            titre=titre,
+            message=message,
+            lien="/admin/boutique",
+        )
 
 
 def notifier_commande_confirmee(commande: Commande) -> None:

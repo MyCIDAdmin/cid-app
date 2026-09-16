@@ -22,6 +22,22 @@ apps.boutique.notifications (commande annulée), apps.communaute.notifications (
 de forum — uniquement l'auteur du sujet et les précédents répondants, jamais tous les membres,
 pour ne pas multiplier les écritures en base sur un forum actif).
 
+6 types supplémentaires ajoutés le 2026-09-16, suite au retour utilisateur ("Es soll bei allen
+Admin Modulen aber auch bei Messaging und Austausch Modulen funktionieren") : couvrent cette
+fois deux angles jusque-là absents — (a) notifications "staff" (nouvel élément en attente
+d'action, diffusées à tout un rôle et au-dessus via apps.accounts.services.users_role_at_least,
+jamais à un seul destinataire) pour les modules d'administration, et (b) notifications membres
+sur les modules d'échange/messagerie pas encore couverts (fil d'actualité, groupes de chat — la
+messagerie privée et le forum avaient déjà leur notification, voir ci-dessus/message_prive_recu).
+Points d'intégration : apps.adhesions.{notifications,views} (nouveau justificatif soumis,
+RH+), apps.accounts.{tasks,views} (nouvelle inscription en attente, RH+), apps.cotisations.
+{notifications,views} (nouveau paiement en attente de confirmation manuelle, Directeur
+Financier+), apps.boutique.{notifications,views} (nouvelle commande passée, Bureau Admin+),
+apps.communaute.{notifications,views} (nouveau commentaire sur une publication du fil),
+apps.communaute.{tasks,consumers} (nouveau message dans un groupe de chat — diffusé à tous les
+membres du groupe sauf l'auteur, sans vérification de présence : contrairement à la messagerie
+privée 1:1, GroupeChatConsumer ne suit aucune présence, voir docstring de tête consumers.py).
+
 Destinataire porté par `User` (jamais `Membre`) : l'API "mes notifications" liste toujours
 `request.user`, et un compte RH/Bureau Admin/DG sans fiche Membre à jour doit pouvoir recevoir des
 notifications de gestion (ex. relance justificatif) au même titre qu'un membre normal.
@@ -38,8 +54,8 @@ class TypeNotification(models.TextChoices):
     """Les 11 types R1 (CID-RPL-001 §2.2) — vote_ouverture/vote_resultats ne sont pas encore
     déclenchés (apps.vote n'existe pas avant la Phase 3) mais sont déjà répertoriés ici pour que
     le modèle n'ait pas à être remanié quand ce module sera construit. Les 8 types suivants
-    (ADHESION_* à COMMUNAUTE_REPONSE_FORUM) ont été ajoutés le 2026-09-16, voir docstring de
-    module."""
+    (ADHESION_* à COMMUNAUTE_REPONSE_FORUM) puis les 6 derniers (ADHESION_JUSTIFICATIF_SOUMIS à
+    COMMUNAUTE_COMMENTAIRE_FIL) ont été ajoutés le 2026-09-16, voir docstring de module."""
 
     BIENVENUE = "bienvenue", _("Bienvenue")
     PAIEMENT_CONFIRME = "paiement_confirme", _("Paiement confirmé")
@@ -58,6 +74,12 @@ class TypeNotification(models.TextChoices):
     EVENEMENT_ANNULE = "evenement_annule", _("Événement annulé")
     BOUTIQUE_COMMANDE_ANNULEE = "boutique_commande_annulee", _("Commande annulée")
     COMMUNAUTE_REPONSE_FORUM = "communaute_reponse_forum", _("Nouvelle réponse sur un sujet")
+    ADHESION_JUSTIFICATIF_SOUMIS = "adhesion_justificatif_soumis", _("Nouveau justificatif soumis")
+    ACCOUNTS_NOUVELLE_INSCRIPTION = "accounts_nouvelle_inscription", _("Nouvelle inscription")
+    COTISATION_PAIEMENT_ATTENTE = "cotisation_paiement_attente", _("Paiement en attente")
+    BOUTIQUE_NOUVELLE_COMMANDE = "boutique_nouvelle_commande", _("Nouvelle commande")
+    COMMUNAUTE_MESSAGE_GROUPE = "communaute_message_groupe", _("Nouveau message de groupe")
+    COMMUNAUTE_COMMENTAIRE_FIL = "communaute_commentaire_fil", _("Nouveau commentaire")
 
 
 class Notification(models.Model):
