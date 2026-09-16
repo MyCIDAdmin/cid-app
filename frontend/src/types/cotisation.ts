@@ -55,25 +55,39 @@ export interface CotisationCreatePayload {
   article_catalogue?: string;
 }
 
-// Tarifs catalogue affichés côté client à titre indicatif (récapitulatif) —
-// le montant réellement enregistré est toujours recalculé par le serveur
-// (CLAUDE.md §8, apps.cotisations.serializers.CotisationSerializer.validate).
+// Tarifs de repli affichés avant le premier chargement de useArticlesCatalogue() (voir
+// CotisationStepperPage) — le montant réellement enregistré est de toute façon toujours
+// recalculé par le serveur (CLAUDE.md §8, CotisationSerializer.validate). Depuis le 2026-09-17
+// (retour utilisateur : "die bestehende [Cotisation annuelle/Frais d'adhésion] müssen auch
+// verwaltbar sein"), ces tarifs sont pilotés par l'Administrateur App via ArticleCatalogue.
+// type_fixe et ne sont donc plus la source de vérité — seulement un affichage initial le temps
+// que la requête réseau réponde.
 export const MONTANTS_CATALOGUE: Record<"cotisation" | "adhesion", number> = {
   cotisation: 45,
   adhesion: 15,
 };
 
 /**
- * Article de paiement personnalisé géré par l'Administrateur App (retour utilisateur du
- * 2026-09-17, voir apps.cotisations.models.ArticleCatalogue) — vient s'ajouter aux 4 types fixes
- * de TypeArticle, jamais les remplacer. `actif=false` = désactivé (jamais de suppression
- * physique exposée, voir CotisationViewSet backend).
+ * Article de paiement, géré par l'Administrateur App (voir apps.cotisations.models.
+ * ArticleCatalogue). Deux catégories partagent ce même type, distinguées par `type_fixe` :
+ *  - `type_fixe: null` — article personnalisé créé librement par l'Administrateur App (retour
+ *    utilisateur du 2026-09-17), vient s'ajouter aux 4 types fixes de TypeArticle.
+ *  - `type_fixe: "cotisation" | "adhesion"` — l'une des 2 lignes techniques seedées une fois
+ *    (jamais créées/renommées via l'API, voir ArticleCataloguePermission/serializer) qui
+ *    représentent les tarifs fixes cotisation annuelle / frais d'adhésion (retour utilisateur
+ *    du même jour : "die bestehende [...] müssen auch verwaltbar sein"). Seuls `montant` et
+ *    `actif` sont éditables pour ces 2 lignes — `libelle` est ignoré en écriture côté serveur,
+ *    l'intitulé affiché aux membres reste piloté par les clés i18n existantes.
+ *
+ * `actif=false` = désactivé (jamais de suppression physique exposée, voir CotisationViewSet
+ * backend) — pour une ligne `type_fixe`, cela retire ce type du stepper de paiement.
  */
 export interface ArticleCatalogue {
   id: string;
   libelle: string;
   montant: string;
   actif: boolean;
+  type_fixe: "cotisation" | "adhesion" | null;
   created_at: string;
   updated_at: string;
 }

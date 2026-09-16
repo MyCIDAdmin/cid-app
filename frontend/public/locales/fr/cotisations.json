@@ -120,7 +120,7 @@
   },
   "catalogue_articles": {
     "titre": "Articles de cotisation",
-    "sous_titre": "Créez des articles de paiement supplémentaires que les membres pourront choisir dans le formulaire de cotisation, en plus de la cotisation annuelle, des frais d'adhésion et du don libre. Un article désactivé n'est plus proposé aux membres mais reste visible ici et dans l'historique des paiements déjà effectués.",
+    "sous_titre": "Créez des articles de paiement supplémentaires que les membres pourront choisir dans le formulaire de cotisation, en plus du don libre. La cotisation annuelle et les frais d'adhésion ci-dessous font aussi partie de ce catalogue : seuls leur montant et leur activation sont modifiables, leur libellé reste fixe. Un article désactivé n'est plus proposé aux membres mais reste visible ici et dans l'historique des paiements déjà effectués.",
     "champ_libelle": "Libellé",
     "champ_montant": "Montant (€)",
     "ajouter": "Ajouter",
@@ -137,7 +137,10 @@
     "aucun": "Aucun article créé pour le moment.",
     "erreur_action": "L'article n'a pas pu être enregistré.",
     "statut_actif": "Actif",
-    "statut_inactif": "Désactivé"
+    "statut_inactif": "Désactivé",
+    "type_fixe_cotisation": "Cotisation annuelle",
+    "type_fixe_adhesion": "Frais d'adhésion",
+    "badge_type_fixe": "Tarif intégré"
   },
   "retour": {
     "chargement": "Vérification du paiement…",

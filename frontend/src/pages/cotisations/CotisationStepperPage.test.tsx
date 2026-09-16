@@ -338,6 +338,7 @@ describe("CotisationStepperPage", () => {
         libelle: "T-shirt du club",
         montant: "20.00",
         actif: true,
+        type_fixe: null,
         created_at: "2026-09-17T10:00:00Z",
         updated_at: "2026-09-17T10:00:00Z",
         ...overrides,
@@ -377,5 +378,87 @@ describe("CotisationStepperPage", () => {
       mode_paiement: "carte",
       article_catalogue: "art-1",
     });
+  });
+
+  // Retour utilisateur du 2026-09-17 : "die bestehende [Cotisation annuelle/Frais d'adhésion]
+  // müssen auch verwaltbar sein" — les 2 cartes fixes sont désormais pilotées par
+  // ArticleCatalogue.type_fixe (voir docstring de module).
+  function articleFixe(overrides: Partial<ArticleCatalogue> = {}): ArticleCatalogue {
+    return {
+      id: "art-fixe-cotisation",
+      libelle: "Cotisation annuelle",
+      montant: "45.00",
+      actif: true,
+      type_fixe: "cotisation",
+      created_at: "2026-09-17T10:00:00Z",
+      updated_at: "2026-09-17T10:00:00Z",
+      ...overrides,
+    };
+  }
+
+  it("affiche le tarif de cotisation configuré par l'Administrateur App plutôt que la valeur de repli", () => {
+    // Historique vidé pour ce test : la cotisation de test par défaut (montant 45.00, voir
+    // fonction cotisation() en tête de fichier) afficherait sinon aussi "45,00 €", sans rapport
+    // avec le tarif catalogue vérifié ici.
+    vi.mocked(useCotisationsHooks.useMesCotisations).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useMesCotisations>);
+    vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+      data: { next: null, previous: null, results: [articleFixe({ montant: "60.00" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+    renderWithProviders(<CotisationStepperPage />);
+
+    expect(screen.getAllByText("60,00 €").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("45,00 €")).not.toBeInTheDocument();
+  });
+
+  it("masque la carte cotisation quand ce tarif est désactivé par l'Administrateur App", () => {
+    vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+      data: { next: null, previous: null, results: [articleFixe({ actif: false })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+    renderWithProviders(<CotisationStepperPage />);
+
+    expect(screen.queryByText("article.cotisation_description")).not.toBeInTheDocument();
+    // La carte adhésion (non désactivée) reste proposée.
+    expect(screen.getByText("article.adhesion_description")).toBeInTheDocument();
+  });
+
+  it("continue d'afficher les cartes cotisation/adhesion (fail-open) tant que le catalogue n'est pas chargé", () => {
+    vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+    renderWithProviders(<CotisationStepperPage />);
+
+    expect(screen.getByText("article.cotisation_description")).toBeInTheDocument();
+    expect(screen.getByText("article.adhesion_description")).toBeInTheDocument();
   });
 });

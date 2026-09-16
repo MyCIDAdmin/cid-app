@@ -5,8 +5,7 @@
  *
  * Décisions actées avec l'utilisateur (AskUserQuestion) :
  *  - Ces articles s'ajoutent aux 4 types fixes existants (cotisation/adhésion/événement/don), ils
- *    ne les remplacent pas — les 2 tarifs fixes (cotisation 45€, adhésion 15€) restent inchangés
- *    et non éditables ici.
+ *    ne les remplacent pas.
  *  - Réservé exclusivement à l'Administrateur App (Role.SUPER_ADMIN) — voir la garde de route
  *    dans App.tsx et ArticleCataloguePermission côté backend.
  *
@@ -16,6 +15,15 @@
  * (on_delete=PROTECT). Structure calquée sur ConfigurationRelancePage (AHM-54) : formulaire de
  * création + tableau avec ligne éditable en ligne, un bouton bascule actif/inactif à la place du
  * bouton "supprimer".
+ *
+ * Mise à jour du 2026-09-17 (retour utilisateur : "die bestehende [Cotisation annuelle/Frais
+ * d'adhésion] müssen auch verwaltbar sein") : la liste inclut désormais aussi les 2 lignes
+ * techniques ArticleCatalogue.type_fixe (cotisation/adhésion) — seedées une fois en base, jamais
+ * créées/renommées ici. Pour ces lignes, `ArticleCatalogueRow` affiche un libellé fixe (piloté par
+ * i18n, jamais par le champ `libelle` renvoyé par l'API — celui-ci est ignoré en écriture côté
+ * serveur) et n'affiche pas de champ libellé éditable, mais garde montant + bascule actif/inactif
+ * pleinement fonctionnels, exactement comme pour les articles personnalisés (décision utilisateur :
+ * "Auch deaktivierbar"). Ces 2 lignes sont épinglées en tête de tableau pour la lisibilité.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -40,12 +48,21 @@ function ArticleCatalogueRow({ article }: ArticleCatalogueRowProps) {
   const { t } = useTranslation("cotisations");
   const modifierMutation = useModifierArticleCatalogue();
 
+  // Libellé fixe (2026-09-17) : pour une ligne type_fixe, l'API ignore toute écriture sur
+  // `libelle` (voir ArticleCatalogueSerializer.update côté backend) — l'intitulé affiché reste
+  // piloté par i18n, jamais par article.libelle. Pas de state éditable pour ce champ ici.
+  const estTypeFixe = article.type_fixe !== null;
+  const libelleAffiche = estTypeFixe
+    ? t(`catalogue_articles.type_fixe_${article.type_fixe}`)
+    : article.libelle;
+
   const [libelle, setLibelle] = useState(article.libelle);
   const [montant, setMontant] = useState(article.montant);
-  const modifiee = libelle !== article.libelle || montant !== article.montant;
+  const modifiee = (!estTypeFixe && libelle !== article.libelle) || montant !== article.montant;
 
   function enregistrer() {
-    modifierMutation.mutate({ id: article.id, payload: { libelle, montant } });
+    const payload = estTypeFixe ? { montant } : { libelle, montant };
+    modifierMutation.mutate({ id: article.id, payload });
   }
 
   function basculerActif() {
@@ -55,13 +72,24 @@ function ArticleCatalogueRow({ article }: ArticleCatalogueRowProps) {
   return (
     <tr className="border-b border-text-tertiary/10 last:border-0 align-top">
       <td className="px-4 py-2">
-        <input
-          type="text"
-          data-testid={`article-catalogue-libelle-${article.id}`}
-          value={libelle}
-          onChange={(e) => setLibelle(e.target.value)}
-          className="w-full min-w-[10rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
-        />
+        {estTypeFixe ? (
+          <div>
+            <span data-testid={`article-catalogue-libelle-fixe-${article.id}`} className="text-xs font-medium text-text-primary">
+              {libelleAffiche}
+            </span>
+            <span className="ml-2 inline-block rounded-full bg-bg-tertiary px-2 py-0.5 text-[10px] font-medium text-text-secondary">
+              {t("catalogue_articles.badge_type_fixe")}
+            </span>
+          </div>
+        ) : (
+          <input
+            type="text"
+            data-testid={`article-catalogue-libelle-${article.id}`}
+            value={libelle}
+            onChange={(e) => setLibelle(e.target.value)}
+            className="w-full min-w-[10rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        )}
       </td>
       <td className="px-4 py-2">
         <input
@@ -200,6 +228,16 @@ export default function ArticlesCatalogueCotisationPage() {
   const { t } = useTranslation("cotisations");
   const articles = useArticlesCatalogue();
 
+  // Les 2 lignes type_fixe (cotisation/adhésion) sont épinglées en tête de tableau (2026-09-17) —
+  // plus lisible pour l'Administrateur App que mêlées aux articles personnalisés créés librement.
+  // Tri stable : à ordre de type_fixe égal (les deux `null` entre eux, ou les deux non-null entre
+  // eux — au plus 2 lignes non-null de toute façon), l'ordre renvoyé par l'API est conservé.
+  const articlesTries = articles.data
+    ? [...articles.data.results].sort(
+        (a, b) => Number(b.type_fixe !== null) - Number(a.type_fixe !== null),
+      )
+    : undefined;
+
   return (
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("catalogue_articles.titre")}</h1>
@@ -232,14 +270,14 @@ export default function ArticlesCatalogueCotisationPage() {
                 </td>
               </tr>
             )}
-            {articles.data && articles.data.results.length === 0 && (
+            {articlesTries && articlesTries.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-6 text-center text-text-tertiary">
                   {t("catalogue_articles.aucun")}
                 </td>
               </tr>
             )}
-            {articles.data?.results.map((article) => (
+            {articlesTries?.map((article) => (
               <ArticleCatalogueRow key={article.id} article={article} />
             ))}
           </tbody>

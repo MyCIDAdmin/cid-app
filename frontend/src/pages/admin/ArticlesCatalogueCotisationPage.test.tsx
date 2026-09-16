@@ -22,6 +22,7 @@ function articleCatalogue(overrides: Partial<ArticleCatalogue> = {}): ArticleCat
     libelle: "T-shirt du club",
     montant: "20.00",
     actif: true,
+    type_fixe: null,
     created_at: "2026-09-17T10:00:00Z",
     updated_at: "2026-09-17T10:00:00Z",
     ...overrides,
@@ -172,5 +173,96 @@ describe("ArticlesCatalogueCotisationPage", () => {
     fireEvent.click(screen.getByText("catalogue_articles.activer"));
 
     expect(mutate).toHaveBeenCalledWith({ id: "art-1", payload: { actif: true } });
+  });
+
+  // Ajouté le 2026-09-17 (retour utilisateur : "die bestehende [Cotisation annuelle/Frais
+  // d'adhésion] müssen auch verwaltbar sein") — voir ArticleCatalogue.type_fixe.
+  describe("lignes techniques type_fixe (cotisation/adhésion)", () => {
+    function articleFixe(overrides: Partial<ArticleCatalogue> = {}): ArticleCatalogue {
+      return articleCatalogue({
+        id: "art-fixe-cotisation",
+        libelle: "Cotisation annuelle",
+        montant: "45.00",
+        type_fixe: "cotisation",
+        ...overrides,
+      });
+    }
+
+    it("affiche un libellé fixe traduit sans champ libellé éditable", () => {
+      vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+        data: { next: null, previous: null, results: [articleFixe()] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      expect(screen.getByTestId("article-catalogue-libelle-fixe-art-fixe-cotisation")).toHaveTextContent(
+        "catalogue_articles.type_fixe_cotisation",
+      );
+      expect(screen.queryByTestId("article-catalogue-libelle-art-fixe-cotisation")).not.toBeInTheDocument();
+      expect(screen.getByText("catalogue_articles.badge_type_fixe")).toBeInTheDocument();
+    });
+
+    it("garde le montant et la bascule actif/inactif éditables pour une ligne type_fixe", () => {
+      const mutate = vi.fn();
+      vi.mocked(useCotisationsHooks.useModifierArticleCatalogue).mockReturnValue({
+        mutate,
+        isPending: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useModifierArticleCatalogue>);
+      vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+        data: { next: null, previous: null, results: [articleFixe()] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      fireEvent.change(screen.getByTestId("article-catalogue-montant-art-fixe-cotisation"), {
+        target: { value: "50.00" },
+      });
+      fireEvent.click(screen.getByText("catalogue_articles.enregistrer"));
+
+      // Seul `montant` est transmis — jamais `libelle`, ignoré côté serveur pour ces lignes (voir
+      // ArticleCatalogueSerializer.update).
+      expect(mutate).toHaveBeenCalledWith({
+        id: "art-fixe-cotisation",
+        payload: { montant: "50.00" },
+      });
+
+      fireEvent.click(screen.getByText("catalogue_articles.desactiver"));
+      expect(mutate).toHaveBeenCalledWith({
+        id: "art-fixe-cotisation",
+        payload: { actif: false },
+      });
+    });
+
+    it("épingle les 2 lignes type_fixe en tête de tableau, avant les articles personnalisés", () => {
+      vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+        data: {
+          next: null,
+          previous: null,
+          results: [
+            articleCatalogue({ id: "art-custom", libelle: "T-shirt du club" }),
+            articleFixe({ id: "art-fixe-adhesion", libelle: "Frais d'adhésion", type_fixe: "adhesion" }),
+            articleFixe(),
+          ],
+        },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      // Le libellé d'un article personnalisé est un <input> (valeur, pas texte enfant) — on
+      // vérifie donc la présence de son testid dans la ligne plutôt que son contenu textuel.
+      const lignes = screen.getAllByRole("row").slice(1); // exclut l'en-tête
+      expect(lignes[0]).toHaveTextContent("catalogue_articles.type_fixe_adhesion");
+      expect(lignes[1]).toHaveTextContent("catalogue_articles.type_fixe_cotisation");
+      expect(
+        lignes[2].querySelector('[data-testid="article-catalogue-libelle-art-custom"]'),
+      ).toHaveValue("T-shirt du club");
+    });
   });
 });

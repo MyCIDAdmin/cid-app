@@ -43,15 +43,28 @@ Périmètre de ce module (AHM-15, révisé par AHM-53) :
   - ArticleCatalogue (ajouté le 2026-09-17, demande utilisateur : "Artikeln / Elemente bei
     Cotisation müssen vom APP-Admin verwaltbar sein (Anlegen / Aktualisieren / Deaktivieren)") —
     décision actée avec l'utilisateur : ces articles s'ajoutent aux 4 types fixes de TypeArticle
-    ci-dessous, ils ne les remplacent jamais (cotisation/adhésion restent des tarifs figés dans le
-    code, gérés par MONTANTS_CATALOGUE, hors périmètre de ce catalogue). Un membre peut souscrire
-    librement à n'importe quel article actif de ce catalogue (ex. "Beitrag Unterstützer") au même
-    titre qu'une cotisation annuelle — voir TypeArticle.AUTRE et Cotisation.article_catalogue.
-    Réservé à l'Administrateur App (Role.SUPER_ADMIN) — décision actée avec l'utilisateur,
-    littéralement "APP-Admin". `actif=False` retire l'article de la sélection pour tout nouveau
-    paiement sans jamais toucher aux Cotisation déjà enregistrées qui le référencent (jamais de
-    suppression physique — voir on_delete=PROTECT ci-dessous, pas d'action DELETE exposée côté
-    API : "Deaktivieren", jamais "Löschen").
+    ci-dessous, ils ne les remplacent jamais. Un membre peut souscrire librement à n'importe quel
+    article actif de ce catalogue (ex. "Beitrag Unterstützer") au même titre qu'une cotisation
+    annuelle — voir TypeArticle.AUTRE et Cotisation.article_catalogue. Réservé à l'Administrateur
+    App (Role.SUPER_ADMIN) — décision actée avec l'utilisateur, littéralement "APP-Admin".
+    `actif=False` retire l'article de la sélection pour tout nouveau paiement sans jamais toucher
+    aux Cotisation déjà enregistrées qui le référencent (jamais de suppression physique — voir
+    on_delete=PROTECT ci-dessous, pas d'action DELETE exposée côté API : "Deaktivieren", jamais
+    "Löschen").
+  - `ArticleCatalogue.type_fixe` (ajouté le 2026-09-17, suite au retour "die bestehende [Cotisation
+    annuelle/Frais d'adhésion] müssen auch verwaltbar sein") : les tarifs de cotisation/adhésion ne
+    sont plus un dict Python figé (MONTANTS_CATALOGUE ci-dessous ne sert plus que de valeur de
+    repli défensive) — ils vivent désormais dans CE MÊME catalogue, comme deux lignes techniques
+    seedées une fois par la migration 0006 et identifiées par `type_fixe` (jamais créées/renommées
+    via l'API : champ en lecture seule, voir ArticleCatalogueSerializer). Décision actée avec
+    l'utilisateur (AskUserQuestion du 2026-09-17) : seuls cotisation/adhésion (tarif fixe) sont
+    concernés, pas "don" (montant libre, rien à administrer) ; et ces deux lignes sont aussi
+    désactivables que les articles personnalisés (`actif=False` masque le type dans le stepper et
+    fait échouer toute nouvelle tentative de paiement de ce type — voir CotisationSerializer.
+    validate, montant_catalogue/article_catalogue_fixe_actif ci-dessous). Seul le montant (et
+    l'activation) de ces deux lignes est modifiable ; leur libellé reste ignoré en écriture (voir
+    ArticleCatalogueSerializer.update) — l'intitulé affiché aux membres reste piloté par les clés
+    i18n existantes (cotisations.json), pas par ce champ, pour ne pas casser la traduction FR/DE.
 """
 
 import uuid
@@ -91,18 +104,28 @@ class StatutCotisation(models.TextChoices):
     ANNULEE = "annulee", _("Annulée")
 
 
-# Tarifs fixes de l'association (FDD §3.2) — le serializer les impose côté serveur pour ces deux
-# types d'article ; "evenement" (pas encore de modèle Evenement pour porter un prix — à revisiter
-# en Phase 2A) et "don" (montant libre par définition) restent au montant transmis par le client.
+# Tarifs fixes de l'association (FDD §3.2) — ne sert plus que de valeur de repli défensive pour
+# montant_catalogue() ci-dessous (cas où la ligne ArticleCatalogue.type_fixe correspondante
+# n'existe pas encore, ex. avant la migration 0006 de seed) : la source de vérité normale est
+# désormais ArticleCatalogue (voir docstring de module, "type_fixe"). "evenement" (pas encore de
+# modèle Evenement pour porter un prix — à revisiter en Phase 2A) et "don" (montant libre par
+# définition) restent hors catalogue, au montant transmis par le client.
 MONTANTS_CATALOGUE = {
     TypeArticle.COTISATION: Decimal("45.00"),
     TypeArticle.ADHESION: Decimal("15.00"),
 }
 
+# Types éligibles à ArticleCatalogue.type_fixe — uniquement les 2 tarifs fixes, jamais "don"
+# (montant libre, rien à administrer) ni "evenement"/"autre" (décision actée avec l'utilisateur,
+# AskUserQuestion du 2026-09-17).
+TYPES_FIXES_CATALOGABLES = [TypeArticle.COTISATION, TypeArticle.ADHESION]
+
 
 class ArticleCatalogue(models.Model):
     """Article de paiement personnalisé, géré par l'Administrateur App (voir docstring de
-    module) — vient s'ajouter aux 4 types fixes de TypeArticle, jamais les remplacer."""
+    module) — vient s'ajouter aux 4 types fixes de TypeArticle, jamais les remplacer. Contient
+    aussi, depuis le 2026-09-17, les 2 lignes techniques `type_fixe` représentant les tarifs
+    cotisation/adhésion (voir docstring de module)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -116,6 +139,16 @@ class ArticleCatalogue(models.Model):
     # catalogue, on_delete=PROTECT) — jamais de suppression physique, jamais exposé en DELETE
     # côté API (voir views.ArticleCatalogueViewSet) : "Deaktivieren", pas "Löschen".
     actif = models.BooleanField(default=True)
+    # None pour un article personnalisé (cas normal) ; TypeArticle.COTISATION/ADHESION pour l'une
+    # des 2 lignes techniques seedées par la migration 0006 — jamais renseigné via l'API (champ
+    # en lecture seule, voir ArticleCatalogueSerializer) : voir docstring de module.
+    type_fixe = models.CharField(
+        max_length=20,
+        choices=[(t, t.label) for t in TYPES_FIXES_CATALOGABLES],
+        null=True,
+        blank=True,
+        unique=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -128,6 +161,27 @@ class ArticleCatalogue(models.Model):
 
     def __str__(self):
         return f"{self.libelle} ({self.montant} €)"
+
+
+def montant_catalogue(type_article: str) -> Decimal:
+    """Tarif actuellement configuré pour un type fixe (cotisation/adhésion) — lu depuis
+    ArticleCatalogue.type_fixe (retour utilisateur du 2026-09-17). Repli sur l'ancien dict
+    MONTANTS_CATALOGUE si la ligne de seed n'existe pas encore (défensif, ne devrait pas arriver
+    en usage normal après la migration 0006) — ne doit jamais lever, CLAUDE.md §8 impose un
+    montant recalculé côté serveur pour toute cotisation créée."""
+    article = ArticleCatalogue.objects.filter(type_fixe=type_article).first()
+    if article is not None:
+        return article.montant
+    return MONTANTS_CATALOGUE[type_article]
+
+
+def article_catalogue_fixe_actif(type_article: str) -> bool:
+    """True si le type fixe (cotisation/adhésion) est actuellement proposé aux membres (voir
+    docstring de module) — False uniquement si l'Administrateur App l'a explicitement désactivé.
+    Fail-open (True) si la ligne de seed n'existe pas encore : ne bloque jamais un paiement à
+    cause d'une donnée absente."""
+    article = ArticleCatalogue.objects.filter(type_fixe=type_article).first()
+    return article is None or article.actif
 
 
 class Cotisation(models.Model):

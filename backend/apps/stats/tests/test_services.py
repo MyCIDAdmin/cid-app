@@ -9,7 +9,7 @@ from apps.adhesions.models import StatutSouscription
 from apps.adhesions.tests.factories import SouscriptionFactory
 from apps.boutique.models import StatutCommande
 from apps.boutique.tests.factories import CommandeFactory
-from apps.cotisations.models import StatutCotisation, TypeArticle
+from apps.cotisations.models import ArticleCatalogue, StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.evenements.models import StatutEvenement, StatutInscription
 from apps.evenements.tests.factories import EvenementFactory, InscriptionFactory
@@ -66,6 +66,27 @@ def test_cotisations_en_attente_comptees_separement():
     resultat = kpis_financier(annee=annee)
     assert resultat["cotisations_en_attente"] == Decimal("45.00")
     assert resultat["recettes"] == Decimal("0.00")  # pas encore payée, ne compte pas en recettes
+
+
+def test_taux_collecte_suit_le_tarif_cotisation_configure_par_ladmin():
+    # Ajouté le 2026-09-17 (retour utilisateur : le tarif cotisation doit être modifiable par
+    # l'Administrateur App) — montant_attendu (dénominateur du taux de collecte) ne doit plus
+    # reposer sur un dict figé mais sur apps.cotisations.models.montant_catalogue.
+    annee = _aujourdhui().year
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.COTISATION).update(montant="60.00")
+    # CotisationFactory crée son propre membre (statut ACTIF par défaut) — seul membre actif de
+    # ce test, pour garder le calcul de montant_attendu (1 membre) simple à vérifier.
+    CotisationFactory(
+        type_article=TypeArticle.COTISATION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("30.00"),
+        annee=annee,
+    )
+
+    resultat = kpis_financier(annee=annee)
+
+    # montant_attendu = 1 membre actif * 60.00 (tarif reconfiguré) = 60.00 ; recettes = 30.00.
+    assert resultat["taux_collecte"] == 50.0
 
 
 def test_top_contributeurs_classe_par_total_desc():

@@ -25,10 +25,10 @@ class ArticleCatalogueAdmin(admin.ModelAdmin):
     """Complète la page frontend dédiée (voir /admin/articles-cotisation) — même donnée, vue
     admin technique."""
 
-    list_display = ("libelle", "montant", "actif", "updated_at")
-    list_filter = ("actif",)
+    list_display = ("libelle", "montant", "actif", "type_fixe", "updated_at")
+    list_filter = ("actif", "type_fixe")
     search_fields = ("libelle",)
-    readonly_fields = ("id", "created_at", "updated_at")
+    readonly_fields = ("id", "type_fixe", "created_at", "updated_at")
 
 
 @admin.register(RelanceCotisation)

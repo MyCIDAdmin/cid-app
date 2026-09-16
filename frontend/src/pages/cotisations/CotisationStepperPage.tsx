@@ -13,6 +13,15 @@
  *    les articles actifs du catalogue géré par l'Administrateur App (/admin/articles-cotisation)
  *    sont proposés ici comme choix supplémentaires (type_article="autre"), à côté des 3 choix
  *    fixes ci-dessus — jamais à leur place.
+ *  - Complété le même jour (retour utilisateur : "die bestehende [Cotisation annuelle/Frais
+ *    d'adhésion] müssen auch verwaltbar sein") : le montant affiché pour les cartes "cotisation"
+ *    et "adhesion" ci-dessus n'est plus la constante MONTANTS_CATALOGUE mais lu depuis les 2
+ *    lignes ArticleCatalogue.type_fixe correspondantes (repli sur MONTANTS_CATALOGUE tant que la
+ *    requête n'a pas répondu). Une carte est masquée si sa ligne type_fixe existe et est
+ *    actif=false — mais reste affichée (fail-open) si les données ne sont pas encore chargées ou
+ *    si aucune ligne ne correspond, pour ne jamais casser ce flux sur un souci transitoire. Ces 2
+ *    lignes techniques sont exclues de la liste des articles personnalisés ci-dessous (elles y
+ *    apparaîtraient sinon en double, une fois comme carte fixe et une fois comme article "autre").
  *  - Aucune donnée bancaire (numéro de carte, IBAN/BIC) n'est saisie sur CETTE page, quel que soit
  *    le mode : pour carte/paypal, la saisie a lieu entièrement sur la page hébergée par le PSP
  *    (Stripe Checkout/PayPal Checkout, AHM-46 ci-dessous) — jamais dans ce formulaire, qui reste
@@ -42,7 +51,7 @@
  * configuré, réseau...), le paiement reste simplement en_attente et l'écran de confirmation
  * propose de réessayer, sans bloquer l'utilisateur.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -128,8 +137,30 @@ export default function CotisationStepperPage() {
   // Le backend scope déjà aux articles actif=true pour un rôle < Administrateur App (voir
   // ArticleCatalogueViewSet.get_queryset), mais on refiltre ici par défense en profondeur — un
   // Administrateur App consultant lui-même ce stepper ne doit pas se voir proposer un article
-  // qu'il vient de désactiver.
-  const articlesCatalogueActifs = (articlesCatalogue.data?.results ?? []).filter((a) => a.actif);
+  // qu'il vient de désactiver. `type_fixe` exclu : ces 2 lignes techniques sont représentées par
+  // les cartes cotisation/adhesion ci-dessous, jamais par une carte "autre" supplémentaire.
+  const articlesCatalogueActifs = (articlesCatalogue.data?.results ?? []).filter(
+    (a) => a.actif && a.type_fixe === null,
+  );
+
+  // Tarifs cotisation/adhésion pilotés par l'Administrateur App (2026-09-17, voir docstring de
+  // module) — repli sur MONTANTS_CATALOGUE tant que la requête n'a pas encore répondu.
+  const articleFixeCotisation = articlesCatalogue.data?.results.find(
+    (a) => a.type_fixe === "cotisation",
+  );
+  const articleFixeAdhesion = articlesCatalogue.data?.results.find(
+    (a) => a.type_fixe === "adhesion",
+  );
+  const montantCotisation = articleFixeCotisation
+    ? Number(articleFixeCotisation.montant)
+    : MONTANTS_CATALOGUE.cotisation;
+  const montantAdhesion = articleFixeAdhesion
+    ? Number(articleFixeAdhesion.montant)
+    : MONTANTS_CATALOGUE.adhesion;
+  // Fail-open : une carte reste affichée tant que les données ne sont pas chargées ou qu'aucune
+  // ligne type_fixe ne correspond — seule une désactivation explicitement chargée la masque.
+  const cotisationDisponible = articlesCatalogue.data ? (articleFixeCotisation?.actif ?? true) : true;
+  const adhesionDisponible = articlesCatalogue.data ? (articleFixeAdhesion?.actif ?? true) : true;
 
   function redirigerVersGateway(cotisationId: string) {
     setErreurGateway(null);
@@ -170,26 +201,47 @@ export default function CotisationStepperPage() {
     titre: string;
     description: string;
     montant: number | null;
+    disponible: boolean;
   }[] = [
     {
       type: "cotisation",
       titre: t("article.cotisation_titre", { annee: anneeCourante }),
       description: t("article.cotisation_description"),
-      montant: MONTANTS_CATALOGUE.cotisation,
+      montant: montantCotisation,
+      disponible: cotisationDisponible,
     },
     {
       type: "adhesion",
       titre: t("article.adhesion_titre"),
       description: t("article.adhesion_description"),
-      montant: MONTANTS_CATALOGUE.adhesion,
+      montant: montantAdhesion,
+      disponible: adhesionDisponible,
     },
     {
       type: "don",
       titre: t("article.don_titre"),
       description: t("article.don_description"),
       montant: null,
+      disponible: true,
     },
   ];
+  const ARTICLES_DISPONIBLES = ARTICLES.filter((a) => a.disponible);
+
+  // Si l'article fixe actuellement sélectionné est désactivé pendant que le membre est sur cette
+  // page (données rechargées entre-temps), on retombe sur le premier choix encore disponible —
+  // seulement à l'étape 1, pour ne jamais changer la sélection après validation (étapes 2/3).
+  useEffect(() => {
+    if (
+      etape === 1 &&
+      articleChoisi !== "don" &&
+      articleChoisi !== "autre" &&
+      !ARTICLES_DISPONIBLES.some((a) => a.type === articleChoisi) &&
+      ARTICLES_DISPONIBLES.length > 0
+    ) {
+      setArticleChoisi(ARTICLES_DISPONIBLES[0].type);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cotisationDisponible, adhesionDisponible, etape]);
 
   const articleCatalogueChoisi = articlesCatalogueActifs.find((a) => a.id === articleCatalogueId);
 
@@ -285,7 +337,7 @@ export default function CotisationStepperPage() {
           <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
             <h2 className="mb-3 text-xs font-bold text-text-primary">{t("article.titre")}</h2>
             <div className="space-y-2">
-              {ARTICLES.map((a) => (
+              {ARTICLES_DISPONIBLES.map((a) => (
                 <button
                   key={a.type}
                   type="button"

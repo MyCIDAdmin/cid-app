@@ -13,7 +13,7 @@ cotisation par le Directeur Financier/Admin via ConfigurationRelance (voir model
 views.py). Une année sans configuration explicite retombe sur le comportement historique
 introduit par AHM-18 : échéance au 1er janvier de cette année N, identique pour tous les membres
 (pas de cycle individuel par date d'adhésion — cohérent avec le tarif catalogue annuel unique,
-MONTANTS_CATALOGUE, et le champ Cotisation.annee). Dans les deux cas, seule la date pivot change :
+montant_catalogue(), et le champ Cotisation.annee). Dans les deux cas, seule la date pivot change :
 les 3 checkpoints restent à J-30/J-7/J+1 par rapport à elle. Avec l'échéance par défaut (1er
 janvier N) cela donne :
   J-30 -> 2 décembre N-1
@@ -46,12 +46,12 @@ from django.utils import timezone
 from apps.membres.models import Membre, StatutMembre
 
 from .models import (
-    MONTANTS_CATALOGUE,
     CheckpointRelance,
     ConfigurationRelance,
     RelanceCotisation,
     StatutCotisation,
     TypeArticle,
+    montant_catalogue,
 )
 from .notifications import notifier_relance_cotisation
 
@@ -197,7 +197,11 @@ def _envoyer_relances_pour(checkpoint: str, annee: int) -> int:
         .select_related("user")
     )
 
-    montant = MONTANTS_CATALOGUE[TypeArticle.COTISATION]
+    # Ajouté le 2026-09-17 : le tarif affiché dans l'email de relance suit désormais le montant
+    # couramment configuré par l'Administrateur App (voir apps.cotisations.models.
+    # montant_catalogue), plutôt qu'un dict figé — les relances déjà envoyées ne sont pas
+    # recalculées rétroactivement, seul le prochain envoi reflète un changement de tarif.
+    montant = montant_catalogue(TypeArticle.COTISATION)
     envoyes = 0
 
     for membre in membres_a_relancer:

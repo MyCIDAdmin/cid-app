@@ -120,7 +120,7 @@
   },
   "catalogue_articles": {
     "titre": "Beitragsartikel",
-    "sous_titre": "Erstellen Sie zusätzliche Zahlungsartikel, die Mitglieder im Beitragsformular auswählen können — zusätzlich zum Jahresbeitrag, der Beitrittsgebühr und der freien Spende. Ein deaktivierter Artikel wird Mitgliedern nicht mehr angeboten, bleibt aber hier und im Zahlungsverlauf bereits erfolgter Zahlungen sichtbar.",
+    "sous_titre": "Erstellen Sie zusätzliche Zahlungsartikel, die Mitglieder im Beitragsformular auswählen können — zusätzlich zur freien Spende. Der Jahresbeitrag und die Beitrittsgebühr unten gehören ebenfalls zu diesem Katalog: Nur Betrag und Aktivierung sind änderbar, die Bezeichnung bleibt fest. Ein deaktivierter Artikel wird Mitgliedern nicht mehr angeboten, bleibt aber hier und im Zahlungsverlauf bereits erfolgter Zahlungen sichtbar.",
     "champ_libelle": "Bezeichnung",
     "champ_montant": "Betrag (€)",
     "ajouter": "Hinzufügen",
@@ -137,7 +137,10 @@
     "aucun": "Noch kein Artikel erstellt.",
     "erreur_action": "Der Artikel konnte nicht gespeichert werden.",
     "statut_actif": "Aktiv",
-    "statut_inactif": "Deaktiviert"
+    "statut_inactif": "Deaktiviert",
+    "type_fixe_cotisation": "Jahresbeitrag",
+    "type_fixe_adhesion": "Beitrittsgebühr",
+    "badge_type_fixe": "Fest hinterlegter Tarif"
   },
   "retour": {
     "chargement": "Zahlung wird überprüft…",

@@ -11,19 +11,20 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from .models import (
-    MONTANTS_CATALOGUE,
     ArticleCatalogue,
     ConfigurationRelance,
     Cotisation,
     TypeArticle,
+    article_catalogue_fixe_actif,
+    montant_catalogue,
 )
 
 
 class ArticleCatalogueSerializer(serializers.ModelSerializer):
     class Meta:
         model = ArticleCatalogue
-        fields = ["id", "libelle", "montant", "actif", "created_at", "updated_at"]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        fields = ["id", "libelle", "montant", "actif", "type_fixe", "created_at", "updated_at"]
+        read_only_fields = ["id", "type_fixe", "created_at", "updated_at"]
         extra_kwargs = {
             # `default=True` explicite : sans lui, DRF.BooleanField.get_value() traite un payload
             # multipart/form-data comme un formulaire HTML et renvoie False (pas le défaut modèle)
@@ -32,6 +33,17 @@ class ArticleCatalogueSerializer(serializers.ModelSerializer):
             # même obtenir un article actif par défaut, quel que soit l'encodage de la requête.
             "actif": {"default": True},
         }
+
+    def update(self, instance, validated_data):
+        # Ajouté le 2026-09-17 : pour les 2 lignes techniques `type_fixe` (cotisation/adhésion,
+        # voir docstring de module ArticleCatalogue), le libellé affiché aux membres reste piloté
+        # par les clés i18n existantes, jamais par ce champ — on ignore silencieusement toute
+        # tentative de le modifier plutôt que de lever une erreur (seuls montant/actif comptent
+        # pour ces 2 lignes ; le frontend n'affiche d'ailleurs pas de champ libellé éditable pour
+        # elles, voir ArticlesCatalogueCotisationPage).
+        if instance.type_fixe:
+            validated_data.pop("libelle", None)
+        return super().update(instance, validated_data)
 
 
 class CotisationSerializer(serializers.ModelSerializer):
@@ -76,12 +88,21 @@ class CotisationSerializer(serializers.ModelSerializer):
         erreurs = {}
 
         if type_article == TypeArticle.COTISATION:
-            attrs.setdefault("annee", timezone.now().year)
-            attrs["libelle"] = f"Cotisation annuelle {attrs['annee']}"
-            attrs["montant"] = MONTANTS_CATALOGUE[TypeArticle.COTISATION]
+            # Depuis le 2026-09-17, le tarif n'est plus un dict figé : il est lu dans
+            # ArticleCatalogue (voir docstring de module) et peut être désactivé par
+            # l'Administrateur App, tout comme un article personnalisé.
+            if not article_catalogue_fixe_actif(TypeArticle.COTISATION):
+                erreurs["type_article"] = "Ce type d'article n'est plus disponible."
+            else:
+                attrs.setdefault("annee", timezone.now().year)
+                attrs["libelle"] = f"Cotisation annuelle {attrs['annee']}"
+                attrs["montant"] = montant_catalogue(TypeArticle.COTISATION)
         elif type_article == TypeArticle.ADHESION:
-            attrs["libelle"] = "Frais d'adhésion"
-            attrs["montant"] = MONTANTS_CATALOGUE[TypeArticle.ADHESION]
+            if not article_catalogue_fixe_actif(TypeArticle.ADHESION):
+                erreurs["type_article"] = "Ce type d'article n'est plus disponible."
+            else:
+                attrs["libelle"] = "Frais d'adhésion"
+                attrs["montant"] = montant_catalogue(TypeArticle.ADHESION)
         elif type_article == TypeArticle.AUTRE:
             # Ajouté le 2026-09-17 — même principe que ci-dessus (CLAUDE.md §8) : le montant/
             # libellé d'un article du catalogue est toujours recalculé côté serveur à partir de

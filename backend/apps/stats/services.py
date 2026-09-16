@@ -35,7 +35,7 @@ from django.utils import timezone
 
 from apps.adhesions.models import Souscription, StatutSouscription
 from apps.boutique.models import Commande, StatutCommande
-from apps.cotisations.models import MONTANTS_CATALOGUE, Cotisation, StatutCotisation, TypeArticle
+from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle, montant_catalogue
 from apps.evenements.models import Evenement, Inscription, StatutEvenement, StatutInscription
 from apps.membres.models import Membre, StatutMembre
 
@@ -116,7 +116,9 @@ def kpis_financier(*, annee=None, ville=None, statut=None) -> dict:
     membres_actifs = Membre.objects.filter(statut=StatutMembre.ACTIF)
     if ville:
         membres_actifs = membres_actifs.filter(ville_de=ville)
-    montant_attendu = membres_actifs.count() * MONTANTS_CATALOGUE[TypeArticle.COTISATION]
+    # Ajouté le 2026-09-17 : suit désormais le tarif couramment configuré par l'Administrateur App
+    # (voir apps.cotisations.models.montant_catalogue), plutôt qu'un dict figé.
+    montant_attendu = membres_actifs.count() * montant_catalogue(TypeArticle.COTISATION)
     taux_collecte = (
         round(float(recettes_cotisations) / float(montant_attendu) * 100, 1)
         if montant_attendu

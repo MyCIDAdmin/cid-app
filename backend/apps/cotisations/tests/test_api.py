@@ -7,7 +7,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.cotisations.models import StatutCotisation, TypeArticle
+from apps.cotisations.models import ArticleCatalogue, StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import ArticleCatalogueFactory, CotisationFactory
 from apps.membres.tests.factories import MembreFactory
 from apps.notifications.models import Notification, TypeNotification
@@ -156,6 +156,63 @@ def test_montant_catalogue_impose_meme_si_client_en_envoie_un_autre(api_client):
 
     assert resp.status_code == 201, resp.data
     assert str(resp.data["montant"]) == "45.00"
+
+
+# --- Tarifs cotisation/adhésion pilotés par ArticleCatalogue.type_fixe (retour utilisateur du
+# 2026-09-17 : "die bestehende [Cotisation annuelle/Frais d'adhésion] müssen auch verwaltbar
+# sein") ---
+
+
+def test_montant_cotisation_suit_le_tarif_configure_par_ladmin(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.COTISATION).update(montant="50.00")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.COTISATION, "mode_paiement": "carte"}
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert str(resp.data["montant"]) == "50.00"
+
+
+def test_montant_adhesion_suit_le_tarif_configure_par_ladmin(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.ADHESION).update(montant="20.00")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.ADHESION, "mode_paiement": "carte"}
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert str(resp.data["montant"]) == "20.00"
+
+
+def test_paiement_cotisation_refuse_si_type_desactive_par_ladmin(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.COTISATION).update(actif=False)
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.COTISATION, "mode_paiement": "carte"}
+    )
+
+    assert resp.status_code == 400
+    assert "type_article" in resp.data["details"]
+
+
+def test_paiement_adhesion_refuse_si_type_desactive_par_ladmin(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.ADHESION).update(actif=False)
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.ADHESION, "mode_paiement": "carte"}
+    )
+
+    assert resp.status_code == 400
+    assert "type_article" in resp.data["details"]
 
 
 def test_don_libre_conserve_le_montant_transmis(api_client):

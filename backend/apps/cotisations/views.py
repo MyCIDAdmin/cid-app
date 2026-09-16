@@ -322,6 +322,14 @@ class ArticleCatalogueViewSet(ModelViewSet):
     et models.ArticleCatalogue. Pas de DELETE exposé : "Deaktivieren" (actif=False via PATCH),
     jamais "Löschen" — un article référencé par une Cotisation existante ne doit jamais pouvoir
     disparaître (voir Cotisation.article_catalogue, on_delete=PROTECT).
+
+    Ce même queryset renvoie aussi, mêlées aux articles personnalisés, les 2 lignes techniques
+    `type_fixe` (cotisation/adhésion, seedées par la migration 0006 — voir docstring de module de
+    models.py) : suite au retour utilisateur du même jour ("die bestehende [Artikel] müssen auch
+    verwaltbar sein"), leur montant/actif se gèrent exactement comme un article personnalisé, via
+    ce même endpoint — pas de vue séparée. `type_fixe` est en lecture seule côté serializer : ces
+    2 lignes ne peuvent ni être créées à nouveau, ni renommées en un autre type, seulement
+    modifiées/désactivées.
     """
 
     http_method_names = ["get", "post", "patch", "head", "options"]
