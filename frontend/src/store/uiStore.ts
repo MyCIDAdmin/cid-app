@@ -4,19 +4,25 @@
  * survit donc volontairement à un changement de compte dans le même navigateur, contrairement
  * au panier qui est lui limité à la session, voir panierStore.ts).
  *
- * Deux préférences pour l'instant, toutes deux nées du même problème remonté en test manuel
- * (trop de modules pour tenir à l'écran, même avec le défilement ajouté d'abord) :
+ * Trois préférences pour l'instant :
  * - le repli de la sidebar entière en rail étroit (icônes seules) ;
  * - le repli par groupe (accordéon) une fois la sidebar dépliée, cf Sidebar.tsx — les groupes
  *   par défaut peu consultés (Administration) démarrent repliés, les autres ouverts. Ce choix
  *   est la seule source de vérité pour l'état déplié/replié d'un groupe (bug corrigé : une
  *   première version forçait aussi l'ouverture du groupe contenant la page active, ce qui
  *   rendait "Général" — qui contient le tableau de bord — impossible à replier en pratique).
+ * - le thème clair/sombre (demande utilisateur du 2026-09-16, "Button zu Wechseln zwischen
+ *   Dunkel und Hell Modus", voir ThemeToggle.tsx) — `toggleTheme` pose/retire lui-même la
+ *   classe `dark` sur <html> (Tailwind `darkMode: "class"`, voir tailwind.config.js/index.css)
+ *   en plus de mettre à jour le state ; main.tsx fait le même geste de façon synchrone avant le
+ *   premier rendu React (lecture directe du localStorage, le store n'existe pas encore à ce
+ *   stade) pour éviter un flash en thème clair au chargement.
  */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export type SidebarGroupKey = "general" | "communaute" | "contenu" | "administration";
+export type Theme = "light" | "dark";
 
 export const DEFAULT_COLLAPSED_GROUPS: Record<SidebarGroupKey, boolean> = {
   general: false,
@@ -33,6 +39,8 @@ interface UiState {
   toggleSidebar: () => void;
   collapsedGroups: Record<SidebarGroupKey, boolean>;
   toggleGroup: (key: SidebarGroupKey) => void;
+  theme: Theme;
+  toggleTheme: () => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -45,6 +53,13 @@ export const useUiStore = create<UiState>()(
         set((state) => ({
           collapsedGroups: { ...state.collapsedGroups, [key]: !state.collapsedGroups[key] },
         })),
+      theme: "light",
+      toggleTheme: () =>
+        set((state) => {
+          const theme: Theme = state.theme === "dark" ? "light" : "dark";
+          document.documentElement.classList.toggle("dark", theme === "dark");
+          return { theme };
+        }),
     }),
     { name: "cid-ui", storage: createJSONStorage(() => localStorage) },
   ),

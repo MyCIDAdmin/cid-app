@@ -36,6 +36,12 @@
     "confirmer": "Bestätigen",
     "deconnexion": "Abmelden",
     "replier_sidebar": "Menü einklappen",
-    "deplier_sidebar": "Menü ausklappen"
+    "deplier_sidebar": "Menü ausklappen",
+    "mode_sombre": "Dunkler Modus",
+    "mode_clair": "Heller Modus"
+  },
+  "langue": {
+    "francais": "Auf Französisch wechseln",
+    "allemand": "Auf Deutsch wechseln"
   }
 }

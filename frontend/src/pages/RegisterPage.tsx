@@ -82,7 +82,7 @@ function Champ({
 }
 
 const champClasses =
-  "w-full rounded-cid border border-black/10 px-3 py-2 text-sm outline-none focus:border-ca";
+  "w-full rounded-cid border border-text-tertiary/20 px-3 py-2 text-sm outline-none focus:border-ca";
 
 type Step = "form" | "confirm" | "success";
 
@@ -189,7 +189,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sb to-ca p-4">
-      <div className="w-full max-w-[560px] rounded-cid-lg bg-white p-8 shadow-2xl">
+      <div className="w-full max-w-[560px] rounded-cid-lg bg-bg-primary p-8 shadow-2xl">
         <div className="mb-6 flex flex-col items-center gap-2.5">
           <BrandLogo className="h-[54px] w-[54px] shadow-lg shadow-ca/50" />
           <h1 className="text-center text-lg font-bold text-text-primary">{t("register.title")}</h1>
@@ -228,7 +228,7 @@ export default function RegisterPage() {
               maxLength={6}
               aria-label={t("register.confirm_code")}
               {...registerCode("code")}
-              className="mx-auto w-full max-w-[200px] rounded-cid border border-black/10 px-3 py-2 text-center text-lg tracking-[0.4em] outline-none focus:border-ca"
+              className="mx-auto w-full max-w-[200px] rounded-cid border border-text-tertiary/20 px-3 py-2 text-center text-lg tracking-[0.4em] outline-none focus:border-ca"
               placeholder="000000"
             />
             {erreursCode.code && (

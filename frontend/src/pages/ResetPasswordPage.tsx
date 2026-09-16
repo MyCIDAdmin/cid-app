@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-sb to-ca p-4">
-      <div className="w-full max-w-[360px] rounded-cid-lg bg-white p-8 shadow-2xl">
+      <div className="w-full max-w-[360px] rounded-cid-lg bg-bg-primary p-8 shadow-2xl">
         <div className="mb-6 flex flex-col items-center gap-2.5">
           <BrandLogo className="h-[54px] w-[54px] shadow-lg shadow-ca/50" />
           <h1 className="text-center text-lg font-bold text-text-primary">
@@ -105,7 +105,7 @@ export default function ResetPasswordPage() {
               <input
                 type="password"
                 {...register("password")}
-                className="mt-1 w-full rounded-cid border border-black/10 px-3 py-2 text-sm outline-none focus:border-ca"
+                className="mt-1 w-full rounded-cid border border-text-tertiary/20 px-3 py-2 text-sm outline-none focus:border-ca"
               />
               {errors.password && (
                 <span className="mt-1 block text-xs text-status-dangerText">
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
               <input
                 type="password"
                 {...register("confirmPassword")}
-                className="mt-1 w-full rounded-cid border border-black/10 px-3 py-2 text-sm outline-none focus:border-ca"
+                className="mt-1 w-full rounded-cid border border-text-tertiary/20 px-3 py-2 text-sm outline-none focus:border-ca"
               />
               {errors.confirmPassword && (
                 <span className="mt-1 block text-xs text-status-dangerText">

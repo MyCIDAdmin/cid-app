@@ -2,10 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Jetons de couleur — thème clair (défaut) et sombre (demande utilisateur du 2026-09-16,
+ * "Button zu Wechseln zwischen Dunkel und Hell Modus"). tailwind.config.js pointe ses couleurs
+ * (ca, cad, bg.*, text.*, status.*...) vers ces variables : toute classe existante
+ * (bg-bg-primary, text-text-secondary, bg-status-successBg...) suit donc automatiquement le
+ * thème actif, sans modification des composants. La classe `.dark` est posée sur <html> par
+ * useUiStore.toggleTheme (voir store/uiStore.ts) et, avant le premier rendu React, par
+ * main.tsx (évite un flash en thème clair au chargement).
+ *
+ * bg.primary/secondary/tertiary gardent leur hiérarchie sémantique dans les deux thèmes plutôt
+ * que republier les mêmes valeurs : primary = surface la plus "élevée" (cartes, topbar),
+ * tertiary = fond de page le plus "bas" — en sombre l'ordre des gris s'inverse donc
+ * (primary devient plus clair que tertiary) pour que les cartes se détachent toujours du fond,
+ * exactement comme en clair.
+ */
+:root {
+  --color-ca: #cc0000;
+  --color-cad: #8b0000;
+  --color-cal: #fff0f0;
+  --color-caxx: #fff8f8;
+  --color-sb: #1a0000;
+
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #fafafa;
+  --color-bg-tertiary: #f0f0f0;
+
+  --color-status-infoBg: #fff0f0;
+  --color-status-infoText: #cc0000;
+  --color-status-successBg: #e8f5e0;
+  --color-status-successText: #1a5c0a;
+  --color-status-warningBg: #fef3e2;
+  --color-status-warningText: #7a4a00;
+  --color-status-dangerBg: #fdeaea;
+  --color-status-dangerText: #8b1a1a;
+
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #555555;
+  --color-text-tertiary: #999999;
+}
+
+.dark {
+  /* Rouge principal légèrement éclairci pour rester lisible sur les fonds sombres ci-dessous
+     (le rouge de marque d'origine, #CC0000, perd du contraste avec le texte blanc des boutons
+     une fois le reste de l'UI assombri). */
+  --color-ca: #e5453d;
+  --color-cad: #b7362f;
+  --color-cal: #3a1616;
+  --color-caxx: #2a1010;
+  --color-sb: #120000;
+
+  --color-bg-primary: #242424;
+  --color-bg-secondary: #1c1c1c;
+  --color-bg-tertiary: #141414;
+
+  --color-status-infoBg: #3a1616;
+  --color-status-infoText: #ff8a80;
+  --color-status-successBg: #16321a;
+  --color-status-successText: #7bd389;
+  --color-status-warningBg: #3a2a10;
+  --color-status-warningText: #f0b84b;
+  --color-status-dangerBg: #3a1616;
+  --color-status-dangerText: #ff8a80;
+
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #b8b8b8;
+  --color-text-tertiary: #8a8a8a;
+}
+
 html[dir="rtl"] {
   direction: rtl;
 }
 
 body {
-  @apply bg-bg-tertiary text-text-primary;
+  @apply bg-bg-tertiary text-text-primary transition-colors duration-150;
 }
