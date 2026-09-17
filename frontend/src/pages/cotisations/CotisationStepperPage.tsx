@@ -17,11 +17,20 @@
  *    d'adhésion] müssen auch verwaltbar sein") : le montant affiché pour les cartes "cotisation"
  *    et "adhesion" ci-dessus n'est plus la constante MONTANTS_CATALOGUE mais lu depuis les 2
  *    lignes ArticleCatalogue.type_fixe correspondantes (repli sur MONTANTS_CATALOGUE tant que la
- *    requête n'a pas répondu). Une carte est masquée si sa ligne type_fixe existe et est
- *    actif=false — mais reste affichée (fail-open) si les données ne sont pas encore chargées ou
- *    si aucune ligne ne correspond, pour ne jamais casser ce flux sur un souci transitoire. Ces 2
- *    lignes techniques sont exclues de la liste des articles personnalisés ci-dessous (elles y
- *    apparaîtraient sinon en double, une fois comme carte fixe et une fois comme article "autre").
+ *    requête n'a pas répondu). Ces 2 lignes techniques sont exclues de la liste des articles
+ *    personnalisés ci-dessous (elles y apparaîtraient sinon en double, une fois comme carte fixe
+ *    et une fois comme article "autre").
+ *  - Disponibilité des cartes cotisation/adhésion — changé le 2026-09-17 (retour utilisateur
+ *    répété : "Die Artikel müssen komplett gelöscht werden", après qu'une suppression de la ligne
+ *    ArticleCatalogue.type_fixe via Django Admin — plutôt qu'une désactivation via /admin/
+ *    articles-cotisation — la faisait réapparaître à la connexion suivante) : une carte reste
+ *    affichée UNIQUEMENT tant que la requête n'a pas encore répondu (évite un flash "carte absente
+ *    puis carte présente" au premier rendu) ; dès que la réponse est là, l'absence de ligne
+ *    correspondante masque désormais la carte au même titre qu'une ligne explicitement
+ *    actif=false — fail-CLOSED, symétrique à article_catalogue_fixe_actif() côté backend (voir
+ *    modèles). Avant ce changement, une ligne supprimée (au lieu de désactivée) faisait réapparaître
+ *    la carte au tarif MONTANTS_CATALOGUE, ce qui ne correspondait jamais à l'intention de
+ *    l'Administrateur App.
  *  - Aucune donnée bancaire (numéro de carte, IBAN/BIC) n'est saisie sur CETTE page, quel que soit
  *    le mode : pour carte/paypal, la saisie a lieu entièrement sur la page hébergée par le PSP
  *    (Stripe Checkout/PayPal Checkout, AHM-46 ci-dessous) — jamais dans ce formulaire, qui reste
@@ -157,10 +166,14 @@ export default function CotisationStepperPage() {
   const montantAdhesion = articleFixeAdhesion
     ? Number(articleFixeAdhesion.montant)
     : MONTANTS_CATALOGUE.adhesion;
-  // Fail-open : une carte reste affichée tant que les données ne sont pas chargées ou qu'aucune
-  // ligne type_fixe ne correspond — seule une désactivation explicitement chargée la masque.
-  const cotisationDisponible = articlesCatalogue.data ? (articleFixeCotisation?.actif ?? true) : true;
-  const adhesionDisponible = articlesCatalogue.data ? (articleFixeAdhesion?.actif ?? true) : true;
+  // Fail-CLOSED depuis le 2026-09-17 (voir docstring de module) : une carte reste affichée
+  // seulement tant que la requête n'a pas encore répondu ; une fois les données là, l'absence de
+  // ligne correspondante (supprimée) masque la carte, exactement comme actif=false explicite —
+  // symétrique à article_catalogue_fixe_actif() côté backend.
+  const cotisationDisponible = articlesCatalogue.data
+    ? Boolean(articleFixeCotisation?.actif)
+    : true;
+  const adhesionDisponible = articlesCatalogue.data ? Boolean(articleFixeAdhesion?.actif) : true;
 
   function redirigerVersGateway(cotisationId: string) {
     setErreurGateway(null);

@@ -54,10 +54,20 @@ describe("CotisationStepperPage", () => {
       isError: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useMesCotisations>);
 
-    // Défaut neutre : pas d'article de catalogue supplémentaire — les tests qui exercent
-    // spécifiquement le flux "autre" (retour utilisateur du 2026-09-17) le redéfinissent.
+    // Défaut réaliste (2026-09-17, suite au passage fail-closed des cartes cotisation/adhésion,
+    // voir docstring de module) : les 2 lignes type_fixe actives, comme après la migration 0006
+    // en usage normal — sans elles, plus aucune carte cotisation/adhésion ne s'afficherait, ce qui
+    // casserait tous les tests non liés au catalogue. Pas d'article personnalisé par défaut ; les
+    // tests qui exercent spécifiquement le flux "autre" ou la désactivation redéfinissent `data`.
     vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
-      data: { next: null, previous: null, results: [] },
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          articleFixe(),
+          articleFixe({ id: "art-fixe-adhesion", type_fixe: "adhesion", montant: "15.00" }),
+        ],
+      },
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
@@ -424,8 +434,19 @@ describe("CotisationStepperPage", () => {
   });
 
   it("masque la carte cotisation quand ce tarif est désactivé par l'Administrateur App", () => {
+    // Les 2 lignes type_fixe sont présentes (comme en usage normal après la migration 0006) —
+    // seule cotisation est désactivée, adhésion reste active : la ligne adhésion doit donc être
+    // incluse dans la réponse mockée pour que sa carte reste visible (fail-closed depuis le
+    // 2026-09-17 : une ligne absente masque désormais la carte, voir docstring de module).
     vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
-      data: { next: null, previous: null, results: [articleFixe({ actif: false })] },
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          articleFixe({ actif: false }),
+          articleFixe({ id: "art-fixe-adhesion", type_fixe: "adhesion", montant: "15.00" }),
+        ],
+      },
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
@@ -443,7 +464,9 @@ describe("CotisationStepperPage", () => {
     expect(screen.getByText("article.adhesion_description")).toBeInTheDocument();
   });
 
-  it("continue d'afficher les cartes cotisation/adhesion (fail-open) tant que le catalogue n'est pas chargé", () => {
+  it("continue d'afficher les cartes cotisation/adhesion tant que le catalogue n'est pas encore chargé", () => {
+    // Fail-open UNIQUEMENT pendant le chargement (évite un flash "absent puis présent") — une
+    // fois la réponse là, voir le test suivant pour le comportement fail-closed.
     vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -460,5 +483,30 @@ describe("CotisationStepperPage", () => {
 
     expect(screen.getByText("article.cotisation_description")).toBeInTheDocument();
     expect(screen.getByText("article.adhesion_description")).toBeInTheDocument();
+  });
+
+  it("masque les cartes cotisation/adhesion quand leur ligne type_fixe a été supprimée (pas seulement désactivée)", () => {
+    // Corrigé le 2026-09-17 (retour utilisateur répété : "Die Artikel müssen komplett gelöscht
+    // werden") — avant ce correctif, une ligne SUPPRIMÉE (au lieu de désactivée, ex. via Django
+    // Admin) était traitée comme "pas encore chargée" et la carte réapparaissait au tarif de
+    // repli MONTANTS_CATALOGUE. La réponse catalogue est chargée mais ne contient aucune ligne
+    // type_fixe : symétrique au test ci-dessus (chargement en cours), qui lui reste fail-open.
+    vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+    renderWithProviders(<CotisationStepperPage />);
+
+    expect(screen.queryByText("article.cotisation_description")).not.toBeInTheDocument();
+    expect(screen.queryByText("article.adhesion_description")).not.toBeInTheDocument();
+    expect(screen.getByText("article.don_description")).toBeInTheDocument();
   });
 });

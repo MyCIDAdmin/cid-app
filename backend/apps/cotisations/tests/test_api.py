@@ -215,6 +215,37 @@ def test_paiement_adhesion_refuse_si_type_desactive_par_ladmin(api_client):
     assert "type_article" in resp.data["details"]
 
 
+def test_paiement_cotisation_refuse_si_ligne_type_fixe_supprimee(api_client):
+    # Corrigé le 2026-09-17 (retour utilisateur répété : "Die Artikel müssen komplett gelöscht
+    # werden") — article_catalogue_fixe_actif() est désormais fail-CLOSED : une ligne type_fixe
+    # supprimée (ex. via Django Admin, en dehors de l'API) doit rendre le type indisponible, tout
+    # comme une désactivation explicite — pas retomber sur l'ancien tarif MONTANTS_CATALOGUE. Voir
+    # docstring de la fonction dans models.py pour le raisonnement complet.
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.COTISATION).delete()
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.COTISATION, "mode_paiement": "carte"}
+    )
+
+    assert resp.status_code == 400
+    assert "type_article" in resp.data["details"]
+
+
+def test_paiement_adhesion_refuse_si_ligne_type_fixe_supprimee(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.ADHESION).delete()
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.ADHESION, "mode_paiement": "carte"}
+    )
+
+    assert resp.status_code == 400
+    assert "type_article" in resp.data["details"]
+
+
 def test_don_libre_conserve_le_montant_transmis(api_client):
     user, _membre = _user_avec_membre(Role.MEMBRE, "donateur@example.de")
     _auth(api_client, user)

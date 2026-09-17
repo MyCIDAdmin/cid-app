@@ -2,7 +2,15 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle
+from apps.cotisations.models import (
+    MONTANTS_CATALOGUE,
+    ArticleCatalogue,
+    Cotisation,
+    StatutCotisation,
+    TypeArticle,
+    article_catalogue_fixe_actif,
+    montant_catalogue,
+)
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.membres.tests.factories import MembreFactory
 
@@ -66,3 +74,31 @@ def test_statut_par_defaut_en_attente():
         montant="10.00",
     )
     assert cotisation.statut == StatutCotisation.EN_ATTENTE
+
+
+# --- article_catalogue_fixe_actif / montant_catalogue (retour utilisateur du 2026-09-17) ---
+
+
+def test_article_catalogue_fixe_actif_est_fail_closed_si_ligne_absente():
+    # Changé le 2026-09-17 (retour utilisateur répété : "Die Artikel müssen komplett gelöscht
+    # werden") — une ligne type_fixe supprimée (pas seulement désactivée) rend désormais le type
+    # indisponible, au lieu de retomber sur l'ancien comportement fail-open (toujours disponible).
+    # La migration 0006 seed ces lignes par défaut ; ce test simule leur suppression explicite.
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.COTISATION).delete()
+    assert article_catalogue_fixe_actif(TypeArticle.COTISATION) is False
+
+
+def test_article_catalogue_fixe_actif_reflete_actif_quand_la_ligne_existe():
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.ADHESION).update(actif=False)
+    assert article_catalogue_fixe_actif(TypeArticle.ADHESION) is False
+
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.ADHESION).update(actif=True)
+    assert article_catalogue_fixe_actif(TypeArticle.ADHESION) is True
+
+
+def test_montant_catalogue_retombe_sur_lancien_tarif_si_ligne_absente():
+    # montant_catalogue() reste, lui, fail-open (repli défensif pour tasks.py/apps.stats, appelés
+    # indépendamment de l'activation) — seule article_catalogue_fixe_actif() ci-dessus décide de
+    # la disponibilité réelle dans le stepper. Voir docstring des deux fonctions dans models.py.
+    ArticleCatalogue.objects.filter(type_fixe=TypeArticle.COTISATION).delete()
+    assert montant_catalogue(TypeArticle.COTISATION) == MONTANTS_CATALOGUE[TypeArticle.COTISATION]

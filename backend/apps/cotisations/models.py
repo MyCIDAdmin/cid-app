@@ -168,7 +168,13 @@ def montant_catalogue(type_article: str) -> Decimal:
     ArticleCatalogue.type_fixe (retour utilisateur du 2026-09-17). Repli sur l'ancien dict
     MONTANTS_CATALOGUE si la ligne de seed n'existe pas encore (défensif, ne devrait pas arriver
     en usage normal après la migration 0006) — ne doit jamais lever, CLAUDE.md §8 impose un
-    montant recalculé côté serveur pour toute cotisation créée."""
+    montant recalculé côté serveur pour toute cotisation créée.
+
+    Ce repli ne s'applique qu'ici (montant nominal de référence pour tasks.py/apps.stats, appelés
+    indépendamment de l'activation) — la disponibilité réelle du type de paiement dans le stepper
+    est décidée par article_catalogue_fixe_actif() ci-dessous, qui est elle fail-CLOSED depuis le
+    2026-09-17 (voir sa docstring) : une ligne absente y est désormais "indisponible", pas
+    "disponible au tarif par défaut"."""
     article = ArticleCatalogue.objects.filter(type_fixe=type_article).first()
     if article is not None:
         return article.montant
@@ -177,11 +183,21 @@ def montant_catalogue(type_article: str) -> Decimal:
 
 def article_catalogue_fixe_actif(type_article: str) -> bool:
     """True si le type fixe (cotisation/adhésion) est actuellement proposé aux membres (voir
-    docstring de module) — False uniquement si l'Administrateur App l'a explicitement désactivé.
-    Fail-open (True) si la ligne de seed n'existe pas encore : ne bloque jamais un paiement à
-    cause d'une donnée absente."""
+    docstring de module) — False si l'Administrateur App l'a explicitement désactivé, OU si la
+    ligne n'existe plus du tout.
+
+    Fail-CLOSED (False) si la ligne est absente — changé le 2026-09-17 (retour utilisateur répété :
+    "Die Artikel müssen komplett gelöscht werden", après que la version précédente, fail-open,
+    faisait réapparaître Cotisation annuelle/Frais d'adhésion à chaque nouvelle connexion dès que
+    la ligne était supprimée — au lieu de désactivée — via Django Admin). Un administrateur qui
+    supprime la ligne obtient donc maintenant exactement l'effet recherché : le type de paiement
+    disparaît, point, sans avoir besoin de repasser par le module de gestion ou un accès shell pour
+    le désactiver explicitement. Contrepartie assumée : sur un environnement où la migration 0006
+    n'aurait pas encore tourné, cotisation/adhésion seraient elles aussi indisponibles plutôt que de
+    retomber sur l'ancien tarif MONTANTS_CATALOGUE — cas couvert par la consigne existante
+    d'exécuter `migrate` après chaque déploiement (voir instructions de livraison)."""
     article = ArticleCatalogue.objects.filter(type_fixe=type_article).first()
-    return article is None or article.actif
+    return article is not None and article.actif
 
 
 class Cotisation(models.Model):
