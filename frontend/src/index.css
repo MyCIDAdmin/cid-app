@@ -77,3 +77,38 @@ html[dir="rtl"] {
 body {
   @apply bg-bg-tertiary text-text-primary transition-colors duration-150;
 }
+
+/*
+ * Champs de formulaire (retour utilisateur du 2026-09-17 : "Im dunkel Modus, werden die Texte in
+ * den Textboxes schlecht lesbar wegen der hellen grauen Tönen und des weißen Hintergrund").
+ * Cause : le préflight Tailwind (@tailwind base ci-dessus) met déjà `color: inherit` sur
+ * input/textarea/select, donc leur texte suit bien --color-text-primary (clair en mode sombre) —
+ * mais leur fond, lui, reste le blanc par défaut du navigateur, jamais réinitialisé par Tailwind.
+ * D'où du texte clair sur fond resté blanc en mode sombre. Plutôt que de corriger un par un les
+ * 150+ champs de l'app (aucun ne fixe explicitement son propre fond), un seul réglage ici — cohérent
+ * avec le principe déjà en place plus haut (les jetons de couleur suivent le thème sans toucher
+ * aux composants). Une classe Tailwind explicite sur un champ précis (ex. bg-cal/20) reste
+ * prioritaire : sélecteur de classe, donc plus spécifique que ce sélecteur de balise.
+ */
+input,
+textarea,
+select {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Auto-remplissage du navigateur (Chrome impose son propre fond clair, ignorant background-color
+   tant qu'on ne surcharge pas cette pseudo-classe) — même correctif, sinon un champ auto-rempli
+   redevient illisible en mode sombre après une saisie assistée du navigateur. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text-primary);
+  box-shadow: 0 0 0 1000px var(--color-bg-primary) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
