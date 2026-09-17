@@ -44,6 +44,7 @@ ici ni par le client : c'est le webhook (apps.cotisations.webhooks), signé par 
 CLAUDE.md §8).
 """
 
+from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -244,14 +245,22 @@ class CotisationViewSet(ModelViewSet):
                 }
             )
 
+        success_url = f"{settings.FRONTEND_URL}/cotisation/retour?cotisation={cotisation.id}"
+        cancel_url = (
+            f"{settings.FRONTEND_URL}/cotisation/retour?cotisation={cotisation.id}&annule=1"
+        )
         try:
             # Appelées par leur nom de module (pas via un dict construit à l'import) pour rester
             # patchables individuellement dans les tests (unittest.mock.patch sur
             # apps.cotisations.views.creer_session_stripe / creer_commande_paypal).
             if cotisation.mode_paiement == ModePaiement.CARTE:
-                redirect_url = creer_session_stripe(cotisation)
+                redirect_url = creer_session_stripe(
+                    cotisation.id, cotisation.libelle, cotisation.montant, success_url, cancel_url
+                )
             else:
-                redirect_url = creer_commande_paypal(cotisation)
+                redirect_url = creer_commande_paypal(
+                    cotisation.id, cotisation.libelle, cotisation.montant, success_url, cancel_url
+                )
         except GatewayError as exc:
             # Message volontairement générique côté client (jamais de détail interne PSP) — voir
             # GatewayError. Le paiement reste en_attente : le membre peut réessayer plus tard, ou

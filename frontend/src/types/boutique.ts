@@ -12,9 +12,16 @@ export type StatutProduit = "brouillon" | "publie" | "archive";
 export type StatutCommande =
   "en_attente" | "confirmee" | "en_preparation" | "expediee" | "livree" | "annulee" | "remboursee";
 
-/** Voir apps.boutique.models.ModePaiementCommande — déclaratif uniquement pour l'instant,
- * aucune passerelle de paiement réelle (celle-ci sera ajoutée via le ticket AHM-27). */
+/** Voir apps.boutique.models.ModePaiementCommande. "en_ligne" est confirmé automatiquement par
+ * webhook PSP (voir initierPaiementEnLigneCommande/reference_paiement) ; virement/especes restent
+ * confirmés manuellement par le Directeur Financier (confirmerPaiementCommande). */
 export type ModePaiementCommande = "en_ligne" | "virement" | "especes";
+
+/** Passerelle de paiement en ligne choisie au moment d'initier le paiement (ajouté le
+ * 2026-09-17, même principe que apps.cotisations — voir InitierPaiementEnLigneCommandeSerializer
+ * côté backend). Contrairement à Cotisation.mode_paiement, ModePaiementCommande.EN_LIGNE ne
+ * distingue pas la passerelle : le choix se fait ici, à l'appel de l'API. */
+export type PasserelleCommande = "stripe" | "paypal";
 
 /** Voir apps.boutique.models.MotifRetour. */
 export type MotifRetour =
@@ -126,6 +133,10 @@ export interface Commande {
   mode_paiement: ModePaiementCommande | "";
   date_paiement_confirme: string | null;
   paiement_confirme_par: string | null;
+  /** Référence externe du paiement PSP (ex. "STRIPE-pi_xxx" / "PAYPAL-xxx") — renseignée
+   * uniquement pour un paiement confirmé automatiquement via webhook, jamais pour une
+   * confirmation manuelle (voir apps.boutique.webhooks). */
+  reference_paiement: string;
   numero_suivi: string;
   transporteur: string;
   date_expedition: string | null;
@@ -162,6 +173,19 @@ export interface ChangerStatutCommandePayload {
  * demande utilisateur du 2026-09-15). */
 export interface ConfirmerPaiementCommandePayload {
   mode_paiement: ModePaiementCommande;
+}
+
+/** Entrée de POST /boutique/commandes/{id}/initier-paiement-en-ligne/ (ajouté le 2026-09-17,
+ * même principe que Cotisation/AHM-46) — réservé au propriétaire de la commande. */
+export interface InitierPaiementEnLigneCommandePayload {
+  passerelle: PasserelleCommande;
+}
+
+/** Réponse de POST /boutique/commandes/{id}/initier-paiement-en-ligne/ — l'URL de redirection
+ * Stripe Checkout ou PayPal Checkout vers laquelle le navigateur doit naviguer
+ * (window.location.href), voir apps.cotisations.gateways (partagé avec apps.boutique). */
+export interface PaiementEnLigneCommandeResponse {
+  redirect_url: string;
 }
 
 /** Entrée de POST /boutique/commandes/{id}/expedier/ (Directeur Financier+).

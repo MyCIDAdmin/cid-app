@@ -170,6 +170,7 @@ class CommandeSerializer(serializers.ModelSerializer):
             "mode_paiement",
             "date_paiement_confirme",
             "paiement_confirme_par",
+            "reference_paiement",
             "numero_suivi",
             "transporteur",
             "date_expedition",
@@ -186,6 +187,17 @@ class ConfirmerPaiementCommandeSerializer(serializers.Serializer):
     même principe que Cotisation.marquer_payee/AHM-53 (voir permissions.py)."""
 
     mode_paiement = serializers.ChoiceField(choices=ModePaiementCommande.choices)
+
+
+class InitierPaiementEnLigneCommandeSerializer(serializers.Serializer):
+    """Entrée de POST /boutique/commandes/{id}/initier-paiement-en-ligne/ (ajouté le
+    2026-09-17, même principe que Cotisation/AHM-46) — réservé au propriétaire de la commande.
+
+    Contrairement à Cotisation.mode_paiement (qui distingue déjà carte/paypal/virement dès la
+    création), ModePaiementCommande.EN_LIGNE ne distingue pas la passerelle : le choix se fait
+    ici, au moment où le membre initie réellement le paiement."""
+
+    passerelle = serializers.ChoiceField(choices=["stripe", "paypal"])
 
 
 class ExpedierCommandeSerializer(serializers.Serializer):

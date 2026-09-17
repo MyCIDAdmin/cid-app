@@ -8,6 +8,7 @@ import type {
   ChangerStatutCommandePayload,
   ConfirmerPaiementCommandePayload,
   ExpedierCommandePayload,
+  InitierPaiementEnLigneCommandePayload,
   PasserCommandePayload,
   ProduitPayload,
   RetourPayload,
@@ -23,6 +24,7 @@ const boutiqueKeys = {
     [...boutiqueKeys.all, "variantes-par-ids", [...ids].sort()] as const,
   commandes: (filtres: boutiqueApi.CommandesFiltres = {}) =>
     [...boutiqueKeys.all, "commandes", filtres] as const,
+  commande: (id: string) => [...boutiqueKeys.all, "commande", id] as const,
   retours: (filtres: boutiqueApi.RetoursFiltres = {}) =>
     [...boutiqueKeys.all, "retours", filtres] as const,
 };
@@ -65,6 +67,19 @@ export function useCommandes(filtres: boutiqueApi.CommandesFiltres = {}) {
   return useQuery({
     queryKey: boutiqueKeys.commandes(filtres),
     queryFn: () => boutiqueApi.listCommandes(filtres),
+  });
+}
+
+/**
+ * Détail d'une commande (page de retour de paiement en ligne) — même principe que
+ * useCotisation/AHM-46 : le statut n'est fiable qu'après passage du webhook (asynchrone), d'où
+ * `refetch` exposé pour un bouton "vérifier à nouveau" plutôt qu'un polling automatique.
+ */
+export function useCommande(id: string | undefined) {
+  return useQuery({
+    queryKey: boutiqueKeys.commande(id ?? ""),
+    queryFn: () => boutiqueApi.getCommande(id as string),
+    enabled: Boolean(id),
   });
 }
 
@@ -187,6 +202,26 @@ export function useConfirmerPaiementCommande() {
     mutationFn: ({ id, payload }: { id: string; payload: ConfirmerPaiementCommandePayload }) =>
       boutiqueApi.confirmerPaiementCommande(id, payload),
     onSuccess: () => invalidateCommandes(queryClient),
+  });
+}
+
+/**
+ * Initie un paiement en ligne (Stripe/PayPal Checkout, ajouté le 2026-09-17) — le composant
+ * appelant est responsable de la redirection (`window.location.href = redirect_url`) après
+ * succès, même principe que useInitierPaiementEnLigne (cotisations).
+ */
+export function useInitierPaiementEnLigneCommande() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: InitierPaiementEnLigneCommandePayload;
+    }) => boutiqueApi.initierPaiementEnLigneCommande(id, payload),
+    onSuccess: (_data, variables) =>
+      queryClient.invalidateQueries({ queryKey: boutiqueKeys.commande(variables.id) }),
   });
 }
 

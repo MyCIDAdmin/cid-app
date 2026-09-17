@@ -8,6 +8,8 @@ import type {
   Commande,
   ConfirmerPaiementCommandePayload,
   ExpedierCommandePayload,
+  InitierPaiementEnLigneCommandePayload,
+  PaiementEnLigneCommandeResponse,
   PasserCommandePayload,
   Produit,
   ProduitPayload,
@@ -128,6 +130,16 @@ export async function passerCommande(payload: PasserCommandePayload): Promise<Co
   return data;
 }
 
+/**
+ * GET /boutique/commandes/{id}/ (page de retour de paiement, même principe que
+ * cotisationsApi.getCotisation/AHM-46) — même scope IDOR que le reste du ViewSet : propriétaire
+ * ou Bureau Admin+ uniquement (CommandeViewSet.get_queryset).
+ */
+export async function getCommande(id: string): Promise<Commande> {
+  const { data } = await apiClient.get<Commande>(`/boutique/commandes/${id}/`);
+  return data;
+}
+
 export async function annulerCommande(id: string): Promise<Commande> {
   const { data } = await apiClient.post<Commande>(`/boutique/commandes/${id}/annuler/`);
   return data;
@@ -156,6 +168,24 @@ export async function confirmerPaiementCommande(
 ): Promise<Commande> {
   const { data } = await apiClient.post<Commande>(
     `/boutique/commandes/${id}/confirmer-paiement/`,
+    payload,
+  );
+  return data;
+}
+
+/**
+ * POST /boutique/commandes/{id}/initier-paiement-en-ligne/ (ajouté le 2026-09-17, même principe
+ * que cotisationsApi.initierPaiementEnLigne/AHM-46) — crée une session Stripe Checkout ou une
+ * commande PayPal Checkout pour cette commande et renvoie son URL de redirection. Réservé au
+ * propriétaire de la commande (paiement en libre-service uniquement), voir
+ * apps.boutique.views.CommandeViewSet.initier_paiement_en_ligne.
+ */
+export async function initierPaiementEnLigneCommande(
+  id: string,
+  payload: InitierPaiementEnLigneCommandePayload,
+): Promise<PaiementEnLigneCommandeResponse> {
+  const { data } = await apiClient.post<PaiementEnLigneCommandeResponse>(
+    `/boutique/commandes/${id}/initier-paiement-en-ligne/`,
     payload,
   );
   return data;

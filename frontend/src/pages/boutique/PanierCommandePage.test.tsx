@@ -10,7 +10,12 @@ import PanierCommandePage from "./PanierCommandePage";
 
 vi.mock("../../hooks/useBoutique", async () => {
   const actual = await vi.importActual<typeof useBoutiqueHooks>("../../hooks/useBoutique");
-  return { ...actual, usePasserCommande: vi.fn(), useVariantesParIds: vi.fn() };
+  return {
+    ...actual,
+    usePasserCommande: vi.fn(),
+    useVariantesParIds: vi.fn(),
+    useInitierPaiementEnLigneCommande: vi.fn(),
+  };
 });
 
 function articleTest(overrides: Partial<ArticlePanier> = {}): ArticlePanier {
@@ -43,6 +48,7 @@ function commandeResultat(overrides: Partial<Commande> = {}): Commande {
     mode_paiement: "",
     date_paiement_confirme: null,
     paiement_confirme_par: null,
+    reference_paiement: "",
     numero_suivi: "",
     transporteur: "",
     date_expedition: null,
@@ -56,6 +62,7 @@ function commandeResultat(overrides: Partial<Commande> = {}): Commande {
 
 describe("PanierCommandePage", () => {
   let passerCommandeMock: ReturnType<typeof vi.fn>;
+  let initierPaiementMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     sessionStorage.clear();
@@ -80,6 +87,12 @@ describe("PanierCommandePage", () => {
       data: [{ id: "v1", produit: "p1", taille: "M", couleur: "", stock: 5 }],
       isLoading: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.useVariantesParIds>);
+
+    initierPaiementMock = vi.fn();
+    vi.mocked(useBoutiqueHooks.useInitierPaiementEnLigneCommande).mockReturnValue({
+      mutate: initierPaiementMock,
+      isPending: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useInitierPaiementEnLigneCommande>);
   });
 
   it("affiche un message quand le panier est vide", () => {
@@ -169,5 +182,88 @@ describe("PanierCommandePage", () => {
 
     expect(screen.getByText("commande.confirmee_titre")).toBeInTheDocument();
     expect(usePanierStore.getState().articles).toEqual([]);
+  });
+
+  // Paiement en ligne (ajouté le 2026-09-17, même principe que CotisationStepperPage) — la
+  // commande fraîchement passée reste "en_attente" tant que le paiement n'a pas été confirmé.
+  function passerCommandeEtConfirmer() {
+    usePanierStore.setState({ articles: [articleTest()] });
+    passerCommandeMock.mockImplementation((_payload, { onSuccess }) => {
+      onSuccess(commandeResultat({ statut: "en_attente" }));
+    });
+    renderWithProviders(<PanierCommandePage />);
+    fireEvent.click(screen.getByText("commande.continuer_livraison"));
+    fireEvent.change(screen.getByLabelText("commande.adresse_label"), {
+      target: { value: "Musterstr. 1" },
+    });
+    fireEvent.change(screen.getByLabelText("commande.code_postal_label"), {
+      target: { value: "10115" },
+    });
+    fireEvent.change(screen.getByLabelText("commande.ville_label"), {
+      target: { value: "Berlin" },
+    });
+    fireEvent.click(screen.getByText("commande.continuer_confirmation"));
+    fireEvent.click(screen.getByText("commande.confirmer_commande"));
+  }
+
+  it("propose de payer en ligne quand la commande reste en_attente après passer()", () => {
+    passerCommandeEtConfirmer();
+
+    expect(screen.getByText("commande.payer_stripe")).toBeInTheDocument();
+    expect(screen.getByText("commande.payer_paypal")).toBeInTheDocument();
+    expect(screen.getByText("commande.payer_plus_tard")).toBeInTheDocument();
+  });
+
+  it("ne propose pas de payer en ligne quand la commande est déjà confirmée (statut par défaut)", () => {
+    usePanierStore.setState({ articles: [articleTest()] });
+    passerCommandeMock.mockImplementation((_payload, { onSuccess }) => {
+      onSuccess(commandeResultat());
+    });
+    renderWithProviders(<PanierCommandePage />);
+    fireEvent.click(screen.getByText("commande.continuer_livraison"));
+    fireEvent.change(screen.getByLabelText("commande.adresse_label"), {
+      target: { value: "Musterstr. 1" },
+    });
+    fireEvent.change(screen.getByLabelText("commande.code_postal_label"), {
+      target: { value: "10115" },
+    });
+    fireEvent.change(screen.getByLabelText("commande.ville_label"), {
+      target: { value: "Berlin" },
+    });
+    fireEvent.click(screen.getByText("commande.continuer_confirmation"));
+    fireEvent.click(screen.getByText("commande.confirmer_commande"));
+
+    expect(screen.queryByText("commande.payer_stripe")).not.toBeInTheDocument();
+    expect(screen.getByText("commande.retour_catalogue")).toBeInTheDocument();
+  });
+
+  it("initie le paiement Stripe et redirige vers l'URL renvoyée", () => {
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { ...window.location, href: "" },
+    });
+    initierPaiementMock.mockImplementation((_variables, { onSuccess }) => {
+      onSuccess({ redirect_url: "https://checkout.stripe.com/session/abc" });
+    });
+
+    passerCommandeEtConfirmer();
+    fireEvent.click(screen.getByText("commande.payer_stripe"));
+
+    expect(initierPaiementMock).toHaveBeenCalledWith(
+      { id: "c1", payload: { passerelle: "stripe" } },
+      expect.anything(),
+    );
+    expect(window.location.href).toBe("https://checkout.stripe.com/session/abc");
+  });
+
+  it("affiche une erreur si l'initiation du paiement PayPal échoue", () => {
+    initierPaiementMock.mockImplementation((_variables, { onError }) => {
+      onError(new Error("boom"));
+    });
+
+    passerCommandeEtConfirmer();
+    fireEvent.click(screen.getByText("commande.payer_paypal"));
+
+    expect(screen.getByText("commande.erreur_paiement")).toBeInTheDocument();
   });
 });

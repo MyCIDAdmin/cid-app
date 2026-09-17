@@ -1,15 +1,26 @@
 """
-Clients passerelles de paiement (AHM-46) — Stripe Checkout et PayPal Checkout, tous deux en mode
-hébergé (redirection vers une page payée entièrement par le PSP, puis retour vers l'app) :
+Clients passerelles de paiement (AHM-46, étendu au ticket boutique de 2026-09-17) — Stripe
+Checkout et PayPal Checkout, tous deux en mode hébergé (redirection vers une page payée
+entièrement par le PSP, puis retour vers l'app) :
 
-  1. CotisationViewSet.initier_paiement_en_ligne (views.py) crée une session/commande via ce
-     module et renvoie son URL de redirection au frontend.
+  1. CotisationViewSet.initier_paiement_en_ligne (apps.cotisations.views) et
+     CommandeViewSet.initier_paiement_en_ligne (apps.boutique.views) créent chacun une
+     session/commande via ce module et renvoient son URL de redirection au frontend.
   2. Le membre règle sur la page Stripe/PayPal — aucune donnée bancaire ne transite jamais par ce
      backend (scope PCI-DSS SAQ A pour Stripe ; PayPal héberge intégralement son propre
      formulaire).
-  3. Le PSP notifie le backend de façon asynchrone via webhook (apps.cotisations.webhooks), qui
-     fait passer la Cotisation de en_attente à payee/echouee — jamais le client (même principe
-     que marquer_payee, AHM-53 : le statut final n'est jamais fait confiance au frontend).
+  3. Le PSP notifie le backend de façon asynchrone via webhook (apps.cotisations.webhooks et,
+     depuis 2026-09-17, apps.boutique.webhooks), qui fait passer la Cotisation/Commande de
+     en_attente à payee/confirmee — jamais le client (même principe que marquer_payee, AHM-53 :
+     le statut final n'est jamais fait confiance au frontend).
+
+Volontairement générique (paramètres scalaires — identifiant de référence/libellé/montant/URLs de
+retour — plutôt qu'un objet Cotisation) depuis que ce module est partagé entre apps.cotisations et
+apps.boutique : c'est le même compte marchand Stripe/PayPal (mêmes clés STRIPE_*/PAYPAL_* dans les
+settings) qui règle les deux, seul l'objet métier derrière `reference_id` diffère. Toujours
+implémenté physiquement dans apps.cotisations (premier module à en avoir eu besoin, AHM-46) plutôt
+que déplacé vers une app "commune" séparée — ce dépôt a déjà plusieurs imports directs
+inter-apps du même genre (ex. apps.stats/apps.membres important apps.cotisations.models).
 
 Aucun SDK Python officiel de qualité équivalente à `stripe` n'existe pour les Checkout Orders v2
 de PayPal (les anciens SDK `paypalrestsdk`/`paypal-checkout-serversdk` sont dépréciés côté
@@ -36,8 +47,12 @@ class GatewayError(Exception):
     """
 
 
-def creer_session_stripe(cotisation) -> str:
-    """Crée une session Stripe Checkout pour `cotisation` et renvoie son URL de redirection."""
+def creer_session_stripe(reference_id: str, libelle: str, montant, success_url: str, cancel_url: str) -> str:
+    """Crée une session Stripe Checkout et renvoie son URL de redirection.
+
+    `reference_id` est l'identifiant (UUID) de l'objet métier (Cotisation ou Commande) — il
+    revient tel quel dans `client_reference_id` sur chaque événement webhook, c'est ainsi que
+    StripeWebhookView (cotisations ou boutique) retrouve l'objet concerné."""
     if not settings.STRIPE_SECRET_KEY:
         raise GatewayError("Stripe n'est pas configuré (STRIPE_SECRET_KEY manquant).")
     stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -45,25 +60,23 @@ def creer_session_stripe(cotisation) -> str:
         session = stripe.checkout.Session.create(
             mode="payment",
             payment_method_types=["card"],
-            client_reference_id=str(cotisation.id),
+            client_reference_id=str(reference_id),
             line_items=[
                 {
                     "price_data": {
                         "currency": "eur",
-                        "product_data": {"name": cotisation.libelle},
+                        "product_data": {"name": libelle},
                         # Stripe attend un montant en centimes (plus petite unité monétaire).
-                        "unit_amount": int(round(cotisation.montant * 100)),
+                        "unit_amount": int(round(montant * 100)),
                     },
                     "quantity": 1,
                 }
             ],
-            success_url=f"{settings.FRONTEND_URL}/cotisation/retour?cotisation={cotisation.id}",
-            cancel_url=(
-                f"{settings.FRONTEND_URL}/cotisation/retour?cotisation={cotisation.id}&annule=1"
-            ),
+            success_url=success_url,
+            cancel_url=cancel_url,
         )
     except stripe.error.StripeError as exc:
-        logger.warning("creer_session_stripe: échec pour cotisation=%s: %s", cotisation.id, exc)
+        logger.warning("creer_session_stripe: échec pour reference_id=%s: %s", reference_id, exc)
         raise GatewayError(str(exc)) from exc
     return session.url
 
@@ -93,25 +106,27 @@ def _paypal_access_token() -> str:
     return resp.json()["access_token"]
 
 
-def creer_commande_paypal(cotisation) -> str:
-    """Crée une commande PayPal (Orders v2, intent=CAPTURE) et renvoie son lien d'approbation."""
+def creer_commande_paypal(
+    reference_id: str, libelle: str, montant, success_url: str, cancel_url: str
+) -> str:
+    """Crée une commande PayPal (Orders v2, intent=CAPTURE) et renvoie son lien d'approbation.
+
+    `reference_id` est répercuté par PayPal sur la ressource de capture (webhook) en tant que
+    `custom_id` — c'est ainsi que PayPalWebhookView (cotisations ou boutique) retrouve l'objet
+    métier (Cotisation ou Commande) concerné."""
     token = _paypal_access_token()
     payload = {
         "intent": "CAPTURE",
         "purchase_units": [
             {
-                # custom_id est répercuté par PayPal sur la ressource de capture (webhook) :
-                # c'est ainsi que le webhook retrouve la Cotisation concernée.
-                "custom_id": str(cotisation.id),
-                "description": cotisation.libelle,
-                "amount": {"currency_code": "EUR", "value": f"{cotisation.montant:.2f}"},
+                "custom_id": str(reference_id),
+                "description": libelle,
+                "amount": {"currency_code": "EUR", "value": f"{montant:.2f}"},
             }
         ],
         "application_context": {
-            "return_url": (f"{settings.FRONTEND_URL}/cotisation/retour?cotisation={cotisation.id}"),
-            "cancel_url": (
-                f"{settings.FRONTEND_URL}/cotisation/retour?cotisation={cotisation.id}&annule=1"
-            ),
+            "return_url": success_url,
+            "cancel_url": cancel_url,
             "user_action": "PAY_NOW",
         },
     }
@@ -126,8 +141,8 @@ def creer_commande_paypal(cotisation) -> str:
         raise GatewayError("Impossible de contacter PayPal (réseau).") from exc
     if resp.status_code not in (200, 201):
         logger.warning(
-            "creer_commande_paypal: échec pour cotisation=%s: HTTP %s",
-            cotisation.id,
+            "creer_commande_paypal: échec pour reference_id=%s: HTTP %s",
+            reference_id,
             resp.status_code,
         )
         raise GatewayError(f"Création de la commande PayPal échouée (HTTP {resp.status_code}).")

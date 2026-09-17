@@ -11,6 +11,7 @@ import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
 import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
 import CataloguePage from "./pages/boutique/CataloguePage";
+import CommandeRetourPage from "./pages/boutique/CommandeRetourPage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
 import AdminQuizPage from "./pages/communaute/AdminQuizPage";
 import AlbumDetailPage from "./pages/communaute/AlbumDetailPage";
@@ -188,6 +189,11 @@ export default function App() {
             même niveau que CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API. */}
         <Route path="/boutique" element={<CataloguePage />} />
         <Route path="/boutique/panier" element={<PanierCommandePage />} />
+        {/* Retour de paiement en ligne (ajouté le 2026-09-17, même principe que
+            /cotisation/retour) — cible de success_url/cancel_url (Stripe) et return_url/
+            cancel_url (PayPal), voir apps.cotisations.gateways (partagé avec apps.boutique) —
+            ouvert à tout authentifié, même scope IDOR que /boutique/commandes/{id}/. */}
+        <Route path="/boutique/commande/retour" element={<CommandeRetourPage />} />
         <Route
           path="/admin/boutique"
           element={

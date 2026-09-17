@@ -63,6 +63,7 @@ function commande(overrides: Partial<Commande> = {}): Commande {
     mode_paiement: "",
     date_paiement_confirme: null,
     paiement_confirme_par: null,
+    reference_paiement: "",
     numero_suivi: "",
     transporteur: "",
     date_expedition: null,

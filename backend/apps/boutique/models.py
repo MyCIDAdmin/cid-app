@@ -278,7 +278,9 @@ class Commande(models.Model):
         max_length=20, choices=StatutCommande.choices, default=StatutCommande.EN_ATTENTE
     )
 
-    # --- Paiement (confirmation manuelle, voir CommandeViewSet.confirmer_paiement) ---
+    # --- Paiement (confirmation manuelle via CommandeViewSet.confirmer_paiement, OU
+    # automatique via webhook PSP — CommandeViewSet.initier_paiement_en_ligne/
+    # apps.boutique.webhooks, ajouté le 2026-09-17) ---
     mode_paiement = models.CharField(
         max_length=20, choices=ModePaiementCommande.choices, blank=True
     )
@@ -289,7 +291,19 @@ class Commande(models.Model):
         null=True,
         blank=True,
         related_name="commandes_paiement_confirme",
-        help_text=_("Directeur Financier/Admin ayant confirmé la réception du paiement."),
+        help_text=_(
+            "Directeur Financier/Admin ayant confirmé la réception du paiement — vide pour "
+            "une confirmation automatique par webhook PSP (voir reference_paiement)."
+        ),
+    )
+    reference_paiement = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text=_(
+            "Référence externe du paiement (PSP), ex. STRIPE-pi_xxx / PAYPAL-xxx — renseignée "
+            "uniquement pour un paiement confirmé automatiquement via webhook (voir "
+            "apps.boutique.webhooks), jamais pour une confirmation manuelle."
+        ),
     )
 
     # --- Expédition (voir CommandeViewSet.expedier) ---

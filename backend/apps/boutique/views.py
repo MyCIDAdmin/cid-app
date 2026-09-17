@@ -17,10 +17,21 @@ Vues API — app boutique (FDD §3.4) :
                                                     voir models.TRANSITIONS_STATUT_COMMANDE ;
                                                     n'inclut PLUS confirmee/expediee, voir
                                                     ci-dessous)
+  POST       /boutique/commandes/{id}/initier-paiement-en-ligne/ — crée une session Stripe
+                                                    ou commande PayPal Checkout pour cette
+                                                    commande et renvoie son URL de
+                                                    redirection ; propriétaire uniquement
+                                                    (ajouté le 2026-09-17, voir
+                                                    apps.boutique.webhooks pour la
+                                                    confirmation asynchrone côté PSP)
   POST       /boutique/commandes/{id}/confirmer-paiement/ — confirme la réception d'un
                                                     paiement (en_attente -> confirmee),
                                                     Directeur Financier+ (demande
-                                                    utilisateur du 2026-09-15)
+                                                    utilisateur du 2026-09-15) — reste la
+                                                    seule voie pour virement/espèces ; pour
+                                                    un paiement en ligne, la confirmation
+                                                    passe par le webhook PSP, pas par cette
+                                                    action
   POST       /boutique/commandes/{id}/expedier/  — expédie avec numéro de suivi
                                                     (-> expediee), Directeur Financier+ ;
                                                     `nacherfassement=true` saute
@@ -42,16 +53,18 @@ apps.notifications.models.TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE/EXPEDIEE.
 ont un).
 """
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
+from apps.cotisations.gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 
 from .filters import CommandeFilter, ProduitFilter, RetourFilter
 from .models import (
@@ -87,6 +100,7 @@ from .serializers import (
     CommandeSerializer,
     ConfirmerPaiementCommandeSerializer,
     ExpedierCommandeSerializer,
+    InitierPaiementEnLigneCommandeSerializer,
     PasserCommandeSerializer,
     ProduitSerializer,
     RetourSerializer,
@@ -312,6 +326,74 @@ class CommandeViewSet(ModelViewSet):
             notifier_commande_annulee(commande)
 
         return Response(self.get_serializer(commande).data)
+
+    @action(detail=True, methods=["post"], url_path="initier-paiement-en-ligne")
+    def initier_paiement_en_ligne(self, request, pk=None):
+        """
+        POST /boutique/commandes/{id}/initier-paiement-en-ligne/ (ajouté le 2026-09-17, même
+        principe que Cotisation.initier_paiement_en_ligne/AHM-46) — crée une session Stripe
+        Checkout ou une commande PayPal Checkout pour cette commande et renvoie son URL de
+        redirection. Réservé au propriétaire de la commande (paiement en libre-service
+        uniquement — CommandePermission autorise aussi le Bureau Admin+ à voir/gérer une
+        commande d'autrui, mais pas à payer à sa place)."""
+        commande = self.get_object()
+        membre_self = getattr(request.user, "membre", None)
+
+        if membre_self is None or commande.membre_id != membre_self.id:
+            raise PermissionDenied(
+                "Seul le titulaire de cette commande peut initier un paiement en ligne."
+            )
+
+        if commande.statut not in STATUTS_CONFIRMABLES_PAIEMENT:
+            raise ValidationError(
+                {
+                    "statut": (
+                        "Seule une commande en attente peut être payée en ligne "
+                        f"(statut actuel : {commande.get_statut_display()})."
+                    )
+                }
+            )
+
+        serializer = InitierPaiementEnLigneCommandeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        passerelle = serializer.validated_data["passerelle"]
+
+        success_url = f"{settings.FRONTEND_URL}/boutique/commande/retour?commande={commande.id}"
+        cancel_url = (
+            f"{settings.FRONTEND_URL}/boutique/commande/retour?commande={commande.id}&annule=1"
+        )
+        try:
+            if passerelle == "stripe":
+                redirect_url = creer_session_stripe(
+                    commande.id,
+                    commande.numero_commande,
+                    commande.montant_total,
+                    success_url,
+                    cancel_url,
+                )
+            else:
+                redirect_url = creer_commande_paypal(
+                    commande.id,
+                    commande.numero_commande,
+                    commande.montant_total,
+                    success_url,
+                    cancel_url,
+                )
+        except GatewayError as exc:
+            # Message volontairement générique côté client (jamais de détail interne PSP) —
+            # même principe que CotisationViewSet.initier_paiement_en_ligne. La commande reste
+            # en_attente : le membre peut réessayer plus tard, ou payer par virement/espèces
+            # (confirmé manuellement par le Directeur Financier via confirmer_paiement).
+            raise ValidationError(
+                {
+                    "gateway": (
+                        "Le paiement en ligne n'est pas disponible pour le moment. "
+                        "Contactez le Directeur Financier."
+                    )
+                }
+            ) from exc
+
+        return Response({"redirect_url": redirect_url})
 
     @action(detail=True, methods=["post"], url_path="confirmer-paiement")
     def confirmer_paiement(self, request, pk=None):

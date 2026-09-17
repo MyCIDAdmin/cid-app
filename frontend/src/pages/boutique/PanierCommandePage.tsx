@@ -21,10 +21,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { usePasserCommande, useVariantesParIds } from "../../hooks/useBoutique";
+import {
+  useInitierPaiementEnLigneCommande,
+  usePasserCommande,
+  useVariantesParIds,
+} from "../../hooks/useBoutique";
 import { totalPanier, usePanierStore } from "../../store/panierStore";
 import { useAuthStore } from "../../store/authStore";
-import type { PasserCommandePayload } from "../../types/boutique";
+import type { Commande, PasserCommandePayload, PasserelleCommande } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 function formatMontant(montant: number | string): string {
@@ -77,12 +81,14 @@ export default function PanierCommandePage() {
   const vider = usePanierStore((s) => s.vider);
   const synchroniserStocks = usePanierStore((s) => s.synchroniserStocks);
   const passerCommandeMutation = usePasserCommande();
+  const paiementMutation = useInitierPaiementEnLigneCommande();
 
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
   const [livraison, setLivraison] = useState(() =>
     livraisonInitiale(user ? `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() || user.email : ""),
   );
-  const [commandeConfirmee, setCommandeConfirmee] = useState<string | null>(null);
+  const [commandeConfirmee, setCommandeConfirmee] = useState<Commande | null>(null);
+  const [erreurPaiement, setErreurPaiement] = useState<string | null>(null);
 
   const total = totalPanier(articles);
 
@@ -116,13 +122,33 @@ export default function PanierCommandePage() {
     };
     passerCommandeMutation.mutate(payload, {
       onSuccess: (commande) => {
-        setCommandeConfirmee(commande.numero_commande);
+        setCommandeConfirmee(commande);
         vider();
       },
     });
   }
 
+  function payerEnLigne(passerelle: PasserelleCommande) {
+    if (!commandeConfirmee) return;
+    setErreurPaiement(null);
+    paiementMutation.mutate(
+      { id: commandeConfirmee.id, payload: { passerelle } },
+      {
+        onSuccess: ({ redirect_url }) => {
+          window.location.href = redirect_url;
+        },
+        onError: (error) => {
+          setErreurPaiement(extractApiErrorMessage(error, t("commande.erreur_paiement")));
+        },
+      },
+    );
+  }
+
   if (commandeConfirmee) {
+    // Le paiement en ligne (Stripe/PayPal) ne peut être proposé que tant que la commande est
+    // "en_attente" — voir STATUTS_CONFIRMABLES_PAIEMENT côté backend/types ; toujours vrai juste
+    // après passer(), gardé ici par cohérence si ce composant est réutilisé un jour.
+    const peutPayerEnLigne = commandeConfirmee.statut === "en_attente";
     return (
       <div className="mx-auto max-w-md rounded-cid-lg bg-bg-primary p-6 text-center shadow-sm">
         <div className="mb-3 text-4xl">✅</div>
@@ -130,14 +156,45 @@ export default function PanierCommandePage() {
           {t("commande.confirmee_titre")}
         </h1>
         <p className="mb-1 text-sm text-text-secondary">
-          {t("commande.confirmee_numero", { numero: commandeConfirmee })}
+          {t("commande.confirmee_numero", { numero: commandeConfirmee.numero_commande })}
         </p>
         <p className="mb-5 text-xs text-text-tertiary">{t("commande.confirmee_email")}</p>
+
+        {peutPayerEnLigne && (
+          <div className="mb-5 rounded-cid border border-text-tertiary/10 p-4 text-left">
+            <h2 className="mb-1 text-xs font-bold text-text-primary">
+              {t("commande.payer_titre")}
+            </h2>
+            <p className="mb-3 text-xs text-text-tertiary">{t("commande.payer_note")}</p>
+            {erreurPaiement && (
+              <p className="mb-2 text-xs text-status-dangerText">{erreurPaiement}</p>
+            )}
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => payerEnLigne("stripe")}
+                disabled={paiementMutation.isPending}
+                className="rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+              >
+                {paiementMutation.isPending ? t("commande.payer_en_cours") : t("commande.payer_stripe")}
+              </button>
+              <button
+                type="button"
+                onClick={() => payerEnLigne("paypal")}
+                disabled={paiementMutation.isPending}
+                className="rounded-cid border border-ca px-3 py-2 text-sm font-medium text-ca hover:bg-cal/20 disabled:opacity-40"
+              >
+                {paiementMutation.isPending ? t("commande.payer_en_cours") : t("commande.payer_paypal")}
+              </button>
+            </div>
+          </div>
+        )}
+
         <Link
           to="/boutique"
           className="inline-block rounded-cid bg-ca px-4 py-2 text-sm font-medium text-white hover:bg-cad"
         >
-          {t("commande.retour_catalogue")}
+          {peutPayerEnLigne ? t("commande.payer_plus_tard") : t("commande.retour_catalogue")}
         </Link>
       </div>
     );

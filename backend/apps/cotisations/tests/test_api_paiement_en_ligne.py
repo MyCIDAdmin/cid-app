@@ -5,6 +5,7 @@ clés Stripe/PayPal sandbox au moment de l'implémentation (voir gateways.py/web
 fonctions testées indépendamment).
 """
 
+from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
@@ -61,7 +62,18 @@ def test_proprietaire_peut_initier_paiement_carte(api_client):
 
     assert resp.status_code == 200, resp.data
     assert resp.data["redirect_url"] == "https://checkout.stripe.com/session/abc"
-    mock_creer.assert_called_once_with(cotisation)
+    # Signature généralisée le 2026-09-17 (gateways.py partagé avec apps.boutique) : appelée
+    # avec des valeurs scalaires plutôt que l'objet Cotisation lui-même.
+    args = mock_creer.call_args.args
+    assert args[0] == cotisation.id
+    assert args[1] == cotisation.libelle
+    # cotisation.montant côté test reste tel que fixé par la factory (chaîne "45.00", jamais
+    # recoercé en Decimal tant que l'objet Python n'est pas rechargé depuis la DB) — l'objet
+    # utilisé par la vue, lui, vient d'un get_object() frais (Decimal) : on compare la valeur
+    # numérique, pas le type.
+    assert Decimal(str(args[2])) == Decimal(cotisation.montant)
+    assert f"cotisation={cotisation.id}" in args[3]  # success_url
+    assert f"cotisation={cotisation.id}&annule=1" in args[4]  # cancel_url
 
 
 def test_proprietaire_peut_initier_paiement_paypal(api_client):
@@ -79,7 +91,11 @@ def test_proprietaire_peut_initier_paiement_paypal(api_client):
 
     assert resp.status_code == 200, resp.data
     assert resp.data["redirect_url"] == "https://sandbox.paypal.com/checkoutnow?token=ORDER-1"
-    mock_creer.assert_called_once_with(cotisation)
+    args = mock_creer.call_args.args
+    assert args[0] == cotisation.id
+    assert args[1] == cotisation.libelle
+    # Même remarque que pour le test "carte" ci-dessus (Decimal vs. chaîne de la factory).
+    assert Decimal(str(args[2])) == Decimal(cotisation.montant)
 
 
 def test_refuse_pour_le_virement_sepa(api_client):
