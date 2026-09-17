@@ -289,7 +289,14 @@ def test_admin_peut_desactiver_une_ligne_type_fixe(api_client):
     assert cotisation_fixe.actif is False
 
 
-def test_membre_ne_voit_plus_une_ligne_type_fixe_desactivee(api_client):
+def test_membre_voit_toujours_une_ligne_type_fixe_desactivee(api_client):
+    # Corrigé le 2026-09-17 (retour utilisateur : "Die Artikel sind immer noch bei einem anderen
+    # User vorhanden aber nicht mehr beim App-Admin") — une version antérieure de ce test
+    # affirmait l'inverse (ligne masquée pour un membre) : c'était précisément le bug. Masquer la
+    # ligne désactivée empêchait CotisationStepperPage de la distinguer d'une ligne pas encore
+    # seedée (repli volontaire vers le tarif par défaut, toujours actif) — le stepper réaffichait
+    # donc à tort la carte cotisation/adhésion désactivée à un membre normal. La ligne doit rester
+    # visible (avec actif=False) pour que le frontend puisse correctement masquer la carte.
     ArticleCatalogue.objects.filter(type_fixe=TypeArticle.ADHESION).update(actif=False)
     user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
@@ -297,8 +304,8 @@ def test_membre_ne_voit_plus_une_ligne_type_fixe_desactivee(api_client):
     resp = api_client.get(reverse(LIST_URL))
 
     assert resp.status_code == 200
-    types_fixes_visibles = {a["type_fixe"] for a in resp.data["results"] if a["type_fixe"]}
-    assert types_fixes_visibles == {TypeArticle.COTISATION}
+    lignes_fixes = {a["type_fixe"]: a["actif"] for a in resp.data["results"] if a["type_fixe"]}
+    assert lignes_fixes == {TypeArticle.COTISATION: True, TypeArticle.ADHESION: False}
 
 
 def test_membre_ne_peut_pas_modifier_une_ligne_type_fixe(api_client):

@@ -14,7 +14,9 @@ Vues API — app cotisations (TDD §2.4) :
                                             ConfigurationRelanceViewSet ci-dessous)
   GET/POST/PATCH   /articles-catalogue/  — catalogue d'articles de paiement personnalisés (ajouté
                                             le 2026-09-17) : lecture ouverte à tout authentifié
-                                            (scope aux actifs pour un rôle < Administrateur App),
+                                            (scope aux actifs pour un rôle < Administrateur App,
+                                            sauf les 2 lignes type_fixe cotisation/adhésion —
+                                            toujours visibles, voir ArticleCatalogueViewSet),
                                             écriture réservée à l'Administrateur App — voir
                                             ArticleCatalogueViewSet ci-dessous. Pas de DELETE :
                                             "Deaktivieren" (actif=False), jamais "Löschen".
@@ -42,6 +44,7 @@ ici ni par le client : c'est le webhook (apps.cotisations.webhooks), signé par 
 CLAUDE.md §8).
 """
 
+from django.db.models import Q
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
@@ -330,6 +333,19 @@ class ArticleCatalogueViewSet(ModelViewSet):
     ce même endpoint — pas de vue séparée. `type_fixe` est en lecture seule côté serializer : ces
     2 lignes ne peuvent ni être créées à nouveau, ni renommées en un autre type, seulement
     modifiées/désactivées.
+
+    Bug corrigé le 2026-09-17 (retour utilisateur : "Die Artikel sind immer noch bei einem anderen
+    User vorhanden aber nicht mehr beim App-Admin") : un membre normal continue à ne PAS voir un
+    article personnalisé désactivé (comportement voulu, voir plus bas), mais voit désormais
+    toujours les 2 lignes `type_fixe`, actives ou non — jamais filtrées par ce queryset pour lui.
+    Raison : CotisationStepperPage (frontend) décide d'afficher/masquer la carte cotisation/
+    adhésion en cherchant la ligne correspondante dans la réponse ; si ce queryset la lui cachait
+    dès qu'elle est désactivée, le frontend ne pouvait plus distinguer "ligne inexistante/pas
+    encore seedée" (repli volontaire vers le tarif par défaut, toujours actif) de "ligne désactivée
+    par l'Administrateur App" — les deux cas produisaient la même absence côté membre, et le
+    stepper retombait donc à tort sur le tarif par défaut (toujours actif) au lieu de masquer la
+    carte. Aucune donnée sensible exposée par ce changement : seuls libellé/montant/actif, déjà
+    publics pour tout authentifié.
     """
 
     http_method_names = ["get", "post", "patch", "head", "options"]
@@ -347,5 +363,7 @@ class ArticleCatalogueViewSet(ModelViewSet):
         ):
             return queryset
         # Un membre normal (ou tout rôle < Administrateur App) ne doit voir, pour choisir dans le
-        # stepper, que les articles actuellement proposés — voir docstring de module.
-        return queryset.filter(actif=True)
+        # stepper, que les articles personnalisés actuellement proposés — voir docstring de
+        # classe. Les 2 lignes type_fixe restent toujours visibles, actives ou non (Q séparé) :
+        # voir le paragraphe "Bug corrigé le 2026-09-17" ci-dessus.
+        return queryset.filter(Q(actif=True) | Q(type_fixe__isnull=False))
