@@ -16,14 +16,18 @@ import json
 import logging
 
 import stripe
-from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from .gateways import GatewayError, capturer_commande_paypal, verifier_signature_webhook_paypal
+from .gateways import (
+    GatewayError,
+    capturer_commande_paypal,
+    construire_evenement_stripe,
+    verifier_signature_webhook_paypal,
+)
 from .models import Cotisation, ModePaiement, StatutCotisation
 from .notifications import notifier_paiement_confirme
 
@@ -71,9 +75,7 @@ class StripeWebhookView(View):
     def post(self, request, *args, **kwargs):
         sig_header = request.headers.get("Stripe-Signature", "")
         try:
-            event = stripe.Webhook.construct_event(
-                request.body, sig_header, settings.STRIPE_WEBHOOK_SECRET
-            )
+            event = construire_evenement_stripe(request.body, sig_header)
         except (ValueError, stripe.error.SignatureVerificationError) as exc:
             logger.warning("StripeWebhookView: signature invalide (%s)", exc)
             return HttpResponseBadRequest("signature invalide")

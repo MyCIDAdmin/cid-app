@@ -330,6 +330,10 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 # =============================================================================
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
+# Peut contenir plusieurs signing secrets séparés par des virgules : un par endpoint Stripe
+# enregistré (apps.cotisations.webhooks et apps.boutique.webhooks ont chacun leur propre URL,
+# donc leur propre endpoint/secret côté Stripe, bien qu'ils partagent ce même compte marchand) —
+# voir apps.cotisations.gateways.construire_evenement_stripe.
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
 PAYPAL_MODE = os.environ.get("PAYPAL_MODE", "sandbox")  # "sandbox" ou "live"

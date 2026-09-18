@@ -47,6 +47,30 @@ class GatewayError(Exception):
     """
 
 
+def construire_evenement_stripe(payload: bytes, sig_header: str) -> stripe.Event:
+    """Vérifie la signature d'un webhook Stripe et renvoie l'Event correspondant.
+
+    STRIPE_WEBHOOK_SECRET peut contenir plusieurs secrets séparés par des virgules : Stripe
+    attribue un signing secret distinct à chaque endpoint enregistré dans le Dashboard, or
+    apps.cotisations.webhooks et apps.boutique.webhooks exposent chacun leur propre URL (donc leur
+    propre endpoint côté Stripe) tout en partageant ce même compte marchand et ces mêmes settings
+    Django. On essaie donc chaque secret jusqu'à ce qu'un signe correctement la requête, et on
+    relève la dernière erreur si aucun ne correspond — même comportement/exception qu'un
+    `stripe.Webhook.construct_event` direct du point de vue des appelants (StripeWebhookView)."""
+    secrets = [s.strip() for s in settings.STRIPE_WEBHOOK_SECRET.split(",") if s.strip()]
+    if not secrets:
+        raise stripe.error.SignatureVerificationError(
+            "STRIPE_WEBHOOK_SECRET non configuré.", sig_header
+        )
+    derniere_erreur: stripe.error.SignatureVerificationError
+    for secret in secrets:
+        try:
+            return stripe.Webhook.construct_event(payload, sig_header, secret)
+        except stripe.error.SignatureVerificationError as exc:
+            derniere_erreur = exc
+    raise derniere_erreur
+
+
 def creer_session_stripe(reference_id: str, libelle: str, montant, success_url: str, cancel_url: str) -> str:
     """Crée une session Stripe Checkout et renvoie son URL de redirection.
 
