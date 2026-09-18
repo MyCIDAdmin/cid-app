@@ -59,11 +59,22 @@
  * passerelle, confirmation manuelle par le Directeur Financier). Si l'initiation échoue (PSP non
  * configuré, réseau...), le paiement reste simplement en_attente et l'écran de confirmation
  * propose de réessayer, sans bloquer l'utilisateur.
+ *
+ * PAUSE DU PAIEMENT EN LIGNE (retour utilisateur du 2026-09-19, avant l'activation Stripe/PayPal
+ * en production) : MODES_GATEWAY est volontairement vide pour l'instant — "carte" n'est plus
+ * proposé du tout, et "paypal" ne redirige plus vers une passerelle réelle mais affiche les
+ * coordonnées PayPal de l'association (virement manuel "Amis & Famille", voir
+ * components/ui/PaymentInstructions) à côté du virement SEPA déjà existant. Tout le code
+ * AHM-46 ci-dessus (redirigerVersGateway, initierPaiementMutation, erreurGateway...) reste
+ * intact et fonctionnel — il suffit de restaurer MODES_GATEWAY = ["carte", "paypal"] et de
+ * remettre "carte" dans MODES_PROPOSES/la liste de l'étape 2 pour réactiver le paiement en ligne
+ * réel dans une phase ultérieure.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import PaymentInstructions from "../../components/ui/PaymentInstructions";
 import { telechargerRecuCotisation } from "../../api/cotisations";
 import {
   useArticlesCatalogue,
@@ -77,9 +88,18 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 
 const DON_LIBELLE = "Don libre à l'association";
 
-// Modes redirigés vers une passerelle réelle (AHM-46) — le virement SEPA reste hors ligne, voir
-// docstring de module et MODES_PAIEMENT_EN_LIGNE côté backend (apps.cotisations.views).
-const MODES_GATEWAY: ModePaiement[] = ["carte", "paypal"];
+// Modes redirigés vers une passerelle réelle (AHM-46) — VOLONTAIREMENT VIDE depuis le
+// 2026-09-19 (retour utilisateur : le paiement en ligne réel est mis en pause, seuls virement
+// SEPA et PayPal manuel — "Amis & Famille", voir PaymentInstructions — sont proposés, confirmés
+// manuellement par le Directeur Financier). L'intégration Stripe/PayPal (backend + ce fichier)
+// reste intacte pour une réactivation future : il suffira de remettre ["carte", "paypal"] ici et
+// "carte" dans la liste de modes ci-dessous (étape 2) pour la réactiver.
+const MODES_GATEWAY: ModePaiement[] = [];
+
+// Modes réellement proposés au membre pour le moment (voir commentaire MODES_GATEWAY
+// ci-dessus) — "carte" (Stripe) est volontairement absent de cette liste, pas du type
+// ModePaiement lui-même.
+const MODES_PROPOSES: ModePaiement[] = ["virement_sepa", "paypal"];
 
 const STATUT_STYLES: Record<Cotisation["statut"], string> = {
   en_attente: "bg-status-warningBg text-status-warningText",
@@ -132,7 +152,7 @@ export default function CotisationStepperPage() {
   const [articleCatalogueId, setArticleCatalogueId] = useState<string | null>(null);
   const [donMontant, setDonMontant] = useState("10");
   const [donErreur, setDonErreur] = useState<string | null>(null);
-  const [modePaiement, setModePaiement] = useState<ModePaiement>("carte");
+  const [modePaiement, setModePaiement] = useState<ModePaiement>("virement_sepa");
   const [resultat, setResultat] = useState<Cotisation | null>(null);
   const [recuEnCours, setRecuEnCours] = useState<string | null>(null);
   const [erreurRecu, setErreurRecu] = useState<string | null>(null);
@@ -325,7 +345,7 @@ export default function CotisationStepperPage() {
     setArticleCatalogueId(null);
     setDonMontant("10");
     setDonErreur(null);
-    setModePaiement("carte");
+    setModePaiement("virement_sepa");
     setResultat(null);
     setRedirectionEnCours(false);
     setErreurGateway(null);
@@ -513,11 +533,12 @@ export default function CotisationStepperPage() {
             <div className="space-y-2">
               {(
                 [
-                  { mode: "carte" as const, titre: t("paiement.carte_titre"), desc: t("paiement.carte_description") },
                   { mode: "virement_sepa" as const, titre: t("paiement.sepa_titre"), desc: t("paiement.sepa_description") },
                   { mode: "paypal" as const, titre: t("paiement.paypal_titre"), desc: t("paiement.paypal_description") },
                 ]
-              ).map((m) => (
+              )
+                .filter((m) => MODES_PROPOSES.includes(m.mode))
+                .map((m) => (
                 <label
                   key={m.mode}
                   className={`flex cursor-pointer items-center gap-3 rounded-cid border px-3 py-2 ${
@@ -540,6 +561,9 @@ export default function CotisationStepperPage() {
             <p className="mt-3 text-xs text-text-tertiary">
               {MODES_GATEWAY.includes(modePaiement) ? t("paiement.note_gateway") : t("paiement.note")}
             </p>
+            {!MODES_GATEWAY.includes(modePaiement) && (
+              <PaymentInstructions mode={modePaiement === "paypal" ? "paypal" : "virement_sepa"} className="mt-3" />
+            )}
           </div>
 
           <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
@@ -601,6 +625,12 @@ export default function CotisationStepperPage() {
                 {t("confirmation.titre_attente")}
               </div>
               <div className="mb-4 text-sm text-text-tertiary">{t("confirmation.sous_titre_attente")}</div>
+
+              {(resultat.mode_paiement === "virement_sepa" || resultat.mode_paiement === "paypal") && (
+                <div className="mx-auto mb-4 max-w-sm">
+                  <PaymentInstructions mode={resultat.mode_paiement} />
+                </div>
+              )}
 
               {MODES_GATEWAY.includes(resultat.mode_paiement as ModePaiement) && (
                 <div className="mx-auto mb-4 max-w-sm">

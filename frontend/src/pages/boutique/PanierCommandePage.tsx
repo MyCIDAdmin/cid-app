@@ -16,11 +16,22 @@
  * (Commande.adresse_livraison etc., volontairement distincts de Membre pour permettre une
  * livraison à une adresse différente) ; seul le nom du destinataire est préremployé depuis le
  * compte connecté.
+ *
+ * PAUSE DU PAIEMENT EN LIGNE (retour utilisateur du 2026-09-19, même principe que
+ * CotisationStepperPage/MODES_GATEWAY) : PAIEMENT_EN_LIGNE_ACTIF=false ci-dessous masque les
+ * boutons Stripe/PayPal réels (initier-paiement-en-ligne, AHM-46) au profit des coordonnées
+ * bancaires/PayPal de l'association (virement SEPA ou envoi PayPal manuel "Amis & Famille",
+ * voir components/ui/PaymentInstructions) — le Directeur Financier confirme la réception
+ * manuellement (CommandeViewSet.confirmer_paiement, déjà existant, aucun changement backend
+ * nécessaire). Tout le code du paiement en ligne (useInitierPaiementEnLigneCommande,
+ * payerEnLigne, erreurPaiement...) reste intact pour une réactivation future — il suffit de
+ * repasser PAIEMENT_EN_LIGNE_ACTIF à true.
  */
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import PaymentInstructions from "../../components/ui/PaymentInstructions";
 import {
   useInitierPaiementEnLigneCommande,
   usePasserCommande,
@@ -30,6 +41,8 @@ import { totalPanier, usePanierStore } from "../../store/panierStore";
 import { useAuthStore } from "../../store/authStore";
 import type { Commande, PasserCommandePayload, PasserelleCommande } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+
+const PAIEMENT_EN_LIGNE_ACTIF = false;
 
 function formatMontant(montant: number | string): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
@@ -160,7 +173,7 @@ export default function PanierCommandePage() {
         </p>
         <p className="mb-5 text-xs text-text-tertiary">{t("commande.confirmee_email")}</p>
 
-        {peutPayerEnLigne && (
+        {peutPayerEnLigne && PAIEMENT_EN_LIGNE_ACTIF && (
           <div className="mb-5 rounded-cid border border-text-tertiary/10 p-4 text-left">
             <h2 className="mb-1 text-xs font-bold text-text-primary">
               {t("commande.payer_titre")}
@@ -186,6 +199,19 @@ export default function PanierCommandePage() {
               >
                 {paiementMutation.isPending ? t("commande.payer_en_cours") : t("commande.payer_paypal")}
               </button>
+            </div>
+          </div>
+        )}
+
+        {peutPayerEnLigne && !PAIEMENT_EN_LIGNE_ACTIF && (
+          <div className="mb-5 rounded-cid border border-text-tertiary/10 p-4 text-left">
+            <h2 className="mb-1 text-xs font-bold text-text-primary">
+              {t("commande.payer_hors_ligne_titre")}
+            </h2>
+            <p className="mb-3 text-xs text-text-tertiary">{t("commande.payer_hors_ligne_note")}</p>
+            <div className="flex flex-col gap-2">
+              <PaymentInstructions mode="virement_sepa" />
+              <PaymentInstructions mode="paypal" />
             </div>
           </div>
         )}

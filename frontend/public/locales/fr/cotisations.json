@@ -38,7 +38,7 @@
     "sepa_titre": "Virement SEPA",
     "sepa_description": "Traitement sous 2 jours ouvrés",
     "paypal_titre": "PayPal",
-    "paypal_description": "Paiement rapide et sécurisé",
+    "paypal_description": "Envoi direct sur notre compte PayPal",
     "note": "Aucune donnée bancaire n'est saisie ici : ce mode sert uniquement à indiquer comment vous réglez votre paiement. Le Directeur Financier confirmera sa bonne réception avant qu'il ne soit considéré comme payé.",
     "note_gateway": "Vous allez être redirigé(e) vers une page de paiement sécurisée (Stripe ou PayPal). Aucune donnée bancaire ne transite par nos serveurs.",
     "payer": "Payer {{montant}} € en sécurité",

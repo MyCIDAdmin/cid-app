@@ -72,7 +72,9 @@
     "payer_paypal": "Payer avec PayPal",
     "payer_plus_tard": "Payer plus tard",
     "payer_en_cours": "Redirection…",
-    "erreur_paiement": "Le paiement en ligne n'a pas pu être initié. Vous pouvez réessayer plus tard depuis le suivi de vos commandes."
+    "erreur_paiement": "Le paiement en ligne n'a pas pu être initié. Vous pouvez réessayer plus tard depuis le suivi de vos commandes.",
+    "payer_hors_ligne_titre": "Comment régler votre commande",
+    "payer_hors_ligne_note": "Merci de régler le montant par virement ou PayPal. Le Directeur Financier confirmera manuellement la réception du paiement dans l'application dès qu'il sera reçu."
   },
   "retour_paiement": {
     "chargement": "Vérification du paiement…",

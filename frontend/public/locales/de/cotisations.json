@@ -38,7 +38,7 @@
     "sepa_titre": "SEPA-Überweisung",
     "sepa_description": "Bearbeitung innerhalb von 2 Werktagen",
     "paypal_titre": "PayPal",
-    "paypal_description": "Schnell und sicher bezahlen",
+    "paypal_description": "Direkt an unser PayPal-Konto senden",
     "note": "Hier werden keine Zahlungsdaten erfasst: Diese Auswahl gibt nur an, wie Sie bezahlen. Der Finanzverantwortliche bestätigt den Zahlungseingang, bevor die Zahlung als bezahlt gilt.",
     "note_gateway": "Sie werden zu einer sicheren Zahlungsseite (Stripe oder PayPal) weitergeleitet. Es werden keine Zahlungsdaten über unsere Server übertragen.",
     "payer": "{{montant}} € sicher bezahlen",

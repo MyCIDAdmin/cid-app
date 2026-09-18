@@ -46,5 +46,10 @@
   "langue": {
     "francais": "Auf Französisch wechseln",
     "allemand": "Auf Deutsch wechseln"
+  },
+  "paiement_instructions": {
+    "virement_titre": "Bankverbindung",
+    "paypal_titre": "PayPal-Konto",
+    "paypal_note": "Bitte als „Freunde und Familie“ senden, damit keine Gebühren anfallen."
   }
 }

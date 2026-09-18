@@ -151,9 +151,11 @@ describe("CotisationStepperPage", () => {
 
     expect(mutate).toHaveBeenCalledTimes(1);
     // Pas de champ `statut` envoyé : le serveur l'impose toujours lui-même (AHM-53).
+    // mode_paiement par défaut = virement_sepa depuis le 2026-09-19 (paiement en ligne en pause,
+    // "carte" n'est plus proposé — voir docstring de module).
     expect(mutate.mock.calls[0][0]).toEqual({
       type_article: "cotisation",
-      mode_paiement: "carte",
+      mode_paiement: "virement_sepa",
     });
 
     await waitFor(() =>
@@ -164,11 +166,22 @@ describe("CotisationStepperPage", () => {
     expect(screen.queryByText("recu.telecharger")).not.toBeInTheDocument();
   });
 
-  it("redirige vers la passerelle de paiement pour un règlement par carte (AHM-46)", async () => {
+  // AHM-46 mis en pause côté UI depuis le 2026-09-19 (retour utilisateur, voir docstring de
+  // module) : "carte" n'est plus proposé et la passerelle réelle (Stripe/PayPal Checkout) n'est
+  // plus jamais appelée automatiquement — les 2 tests ci-dessous couvrent le nouveau
+  // comportement (virement SEPA par défaut, PayPal manuel) à la place des anciens tests
+  // "redirige vers la passerelle..."/"affiche une erreur...(AHM-46)", qui exerçaient un chemin
+  // UI qui n'existe plus (choix "carte" par défaut, initiation automatique).
+  it("affiche les coordonnées bancaires par défaut sans jamais appeler la passerelle réelle (paiement en ligne en pause)", async () => {
     const mutateCreer = vi.fn(
       (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
         opts?.onSuccess?.(
-          cotisation({ id: "c-carte", statut: "en_attente", reference_transaction: null }),
+          cotisation({
+            id: "c-sepa",
+            statut: "en_attente",
+            mode_paiement: "virement_sepa",
+            reference_transaction: null,
+          }),
         ),
     );
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
@@ -177,13 +190,7 @@ describe("CotisationStepperPage", () => {
       isError: false,
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
-
-    const mutateInitier = vi.fn(
-      (
-        _cotisationId,
-        opts?: { onSuccess?: (r: { redirect_url: string }) => void },
-      ) => opts?.onSuccess?.({ redirect_url: "https://checkout.stripe.com/session/abc" }),
-    );
+    const mutateInitier = vi.fn();
     vi.mocked(useCotisationsHooks.useInitierPaiementEnLigne).mockReturnValue({
       mutate: mutateInitier,
       isPending: false,
@@ -192,17 +199,31 @@ describe("CotisationStepperPage", () => {
     renderWithProviders(<CotisationStepperPage />);
 
     fireEvent.click(screen.getByText("continuer"));
+    // "carte" (Stripe) n'est plus proposé du tout — seuls virement SEPA et PayPal manuel le sont.
+    expect(screen.queryByText("paiement.carte_titre")).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByText(/paiement\.payer/));
 
-    await waitFor(() => expect(mutateInitier).toHaveBeenCalledWith("c-carte", expect.anything()));
-    expect(window.location.href).toBe("https://checkout.stripe.com/session/abc");
+    await waitFor(() =>
+      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument(),
+    );
+    expect(mutateInitier).not.toHaveBeenCalled();
+    expect(window.location.href).toBe("");
+    // Coordonnées bancaires de l'association (components/ui/PaymentInstructions).
+    expect(screen.getByText("paiement_instructions.virement_titre")).toBeInTheDocument();
+    expect(screen.getByText("DE38 1009 000 2891 4900 06")).toBeInTheDocument();
   });
 
-  it("affiche une erreur et un bouton pour réessayer si l'initiation du paiement en ligne échoue (AHM-46)", async () => {
+  it("affiche les coordonnées PayPal manuelles pour un règlement PayPal sans appeler la passerelle réelle (paiement en ligne en pause)", async () => {
     const mutateCreer = vi.fn(
       (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
         opts?.onSuccess?.(
-          cotisation({ id: "c-paypal", statut: "en_attente", mode_paiement: "paypal" }),
+          cotisation({
+            id: "c-paypal",
+            statut: "en_attente",
+            mode_paiement: "paypal",
+            reference_transaction: null,
+          }),
         ),
     );
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
@@ -211,11 +232,7 @@ describe("CotisationStepperPage", () => {
       isError: false,
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
-
-    const mutateInitier = vi.fn(
-      (_cotisationId, opts?: { onError?: (e: unknown) => void }) =>
-        opts?.onError?.(new Error("boom")),
-    );
+    const mutateInitier = vi.fn();
     vi.mocked(useCotisationsHooks.useInitierPaiementEnLigne).mockReturnValue({
       mutate: mutateInitier,
       isPending: false,
@@ -224,18 +241,15 @@ describe("CotisationStepperPage", () => {
     renderWithProviders(<CotisationStepperPage />);
 
     fireEvent.click(screen.getByText("continuer"));
-    // Choisir PayPal explicitement (le mode par défaut est carte).
     fireEvent.click(screen.getByText("paiement.paypal_titre"));
     fireEvent.click(screen.getByText(/paiement\.payer/));
 
     await waitFor(() =>
-      expect(screen.getByText("paiement.erreur_gateway")).toBeInTheDocument(),
+      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument(),
     );
-    expect(window.location.href).toBe("");
-
-    mutateInitier.mockClear();
-    fireEvent.click(screen.getByText("paiement.reessayer_gateway"));
-    expect(mutateInitier).toHaveBeenCalledWith("c-paypal", expect.anything());
+    expect(mutateInitier).not.toHaveBeenCalled();
+    expect(screen.getByText("paiement_instructions.paypal_titre")).toBeInTheDocument();
+    expect(screen.getByText("info@clubistesindeutschland.org")).toBeInTheDocument();
   });
 
   it("n'appelle jamais la passerelle pour un virement SEPA (AHM-46)", async () => {
@@ -385,7 +399,7 @@ describe("CotisationStepperPage", () => {
     expect(mutate).toHaveBeenCalledTimes(1);
     expect(mutate.mock.calls[0][0]).toEqual({
       type_article: "autre",
-      mode_paiement: "carte",
+      mode_paiement: "virement_sepa",
       article_catalogue: "art-1",
     });
   });

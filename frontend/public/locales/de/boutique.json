@@ -72,7 +72,9 @@
     "payer_paypal": "Mit PayPal bezahlen",
     "payer_plus_tard": "Später bezahlen",
     "payer_en_cours": "Weiterleitung…",
-    "erreur_paiement": "Die Online-Zahlung konnte nicht gestartet werden. Sie können es später über Ihre Bestellungen erneut versuchen."
+    "erreur_paiement": "Die Online-Zahlung konnte nicht gestartet werden. Sie können es später über Ihre Bestellungen erneut versuchen.",
+    "payer_hors_ligne_titre": "So bezahlen Sie",
+    "payer_hors_ligne_note": "Bitte begleichen Sie den Betrag per Überweisung oder PayPal. Der Finanzverantwortliche bestätigt den Zahlungseingang manuell in der App, sobald er eingegangen ist."
   },
   "retour_paiement": {
     "chargement": "Zahlung wird überprüft…",

@@ -46,5 +46,10 @@
   "langue": {
     "francais": "Passer en français",
     "allemand": "Auf Deutsch wechseln"
+  },
+  "paiement_instructions": {
+    "virement_titre": "Coordonnées bancaires",
+    "paypal_titre": "Compte PayPal",
+    "paypal_note": "Merci d'envoyer en tant qu'« Amis et Famille » afin d'éviter des frais."
   }
 }

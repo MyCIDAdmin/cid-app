@@ -206,12 +206,21 @@ describe("PanierCommandePage", () => {
     fireEvent.click(screen.getByText("commande.confirmer_commande"));
   }
 
-  it("propose de payer en ligne quand la commande reste en_attente après passer()", () => {
+  // Paiement en ligne mis en pause côté UI depuis le 2026-09-19 (retour utilisateur, voir
+  // PAIEMENT_EN_LIGNE_ACTIF/docstring de module) : les boutons Stripe/PayPal réels ne sont plus
+  // affichés, remplacés par les coordonnées bancaires/PayPal de l'association.
+  it("affiche les coordonnées de paiement hors ligne quand la commande reste en_attente après passer()", () => {
     passerCommandeEtConfirmer();
 
-    expect(screen.getByText("commande.payer_stripe")).toBeInTheDocument();
-    expect(screen.getByText("commande.payer_paypal")).toBeInTheDocument();
+    expect(screen.queryByText("commande.payer_stripe")).not.toBeInTheDocument();
+    expect(screen.queryByText("commande.payer_paypal")).not.toBeInTheDocument();
+    expect(screen.getByText("commande.payer_hors_ligne_titre")).toBeInTheDocument();
+    expect(screen.getByText("paiement_instructions.virement_titre")).toBeInTheDocument();
+    expect(screen.getByText("DE38 1009 000 2891 4900 06")).toBeInTheDocument();
+    expect(screen.getByText("paiement_instructions.paypal_titre")).toBeInTheDocument();
+    expect(screen.getByText("info@clubistesindeutschland.org")).toBeInTheDocument();
     expect(screen.getByText("commande.payer_plus_tard")).toBeInTheDocument();
+    expect(initierPaiementMock).not.toHaveBeenCalled();
   });
 
   it("ne propose pas de payer en ligne quand la commande est déjà confirmée (statut par défaut)", () => {
@@ -237,33 +246,21 @@ describe("PanierCommandePage", () => {
     expect(screen.getByText("commande.retour_catalogue")).toBeInTheDocument();
   });
 
-  it("initie le paiement Stripe et redirige vers l'URL renvoyée", () => {
+  // Les 2 tests ci-dessous remplacent les anciens "initie le paiement Stripe et redirige vers
+  // l'URL renvoyée" / "affiche une erreur si l'initiation du paiement PayPal échoue", qui
+  // exerçaient les boutons Stripe/PayPal réels désormais masqués (PAIEMENT_EN_LIGNE_ACTIF=false,
+  // voir docstring de module) — le code de paiement en ligne (useInitierPaiementEnLigneCommande)
+  // reste intact mais n'est plus jamais appelé depuis cette page pour le moment.
+  it("n'appelle jamais la passerelle réelle depuis l'écran de confirmation (paiement en ligne en pause)", () => {
     Object.defineProperty(window, "location", {
       writable: true,
       value: { ...window.location, href: "" },
     });
-    initierPaiementMock.mockImplementation((_variables, { onSuccess }) => {
-      onSuccess({ redirect_url: "https://checkout.stripe.com/session/abc" });
-    });
 
     passerCommandeEtConfirmer();
-    fireEvent.click(screen.getByText("commande.payer_stripe"));
 
-    expect(initierPaiementMock).toHaveBeenCalledWith(
-      { id: "c1", payload: { passerelle: "stripe" } },
-      expect.anything(),
-    );
-    expect(window.location.href).toBe("https://checkout.stripe.com/session/abc");
-  });
-
-  it("affiche une erreur si l'initiation du paiement PayPal échoue", () => {
-    initierPaiementMock.mockImplementation((_variables, { onError }) => {
-      onError(new Error("boom"));
-    });
-
-    passerCommandeEtConfirmer();
-    fireEvent.click(screen.getByText("commande.payer_paypal"));
-
-    expect(screen.getByText("commande.erreur_paiement")).toBeInTheDocument();
+    expect(initierPaiementMock).not.toHaveBeenCalled();
+    expect(window.location.href).toBe("");
+    expect(screen.queryByText("commande.erreur_paiement")).not.toBeInTheDocument();
   });
 });
