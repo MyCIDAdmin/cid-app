@@ -9,17 +9,17 @@
     "membres_actifs": "Membres actifs",
     "taux_collecte": "Taux de collecte cotisations",
     "cotisations_en_attente": "{{montant}} en attente",
-    "evenements_a_venir": "Événements à venir",
-    "aucun_evenement_prevu": "Aucun événement prévu",
+    "evenements_a_venir": "Évènements à venir",
+    "aucun_evenement_prevu": "Aucun évènement prévu",
     "votes_en_cours": "Votes en cours",
     "vote_ouvert": "Session ouverte",
     "aucun_vote": "Aucun vote en cours",
     "mes_inscriptions_attente": "Inscriptions en attente"
   },
   "prochains_evenements": {
-    "titre": "Prochains événements",
+    "titre": "Prochains évènements",
     "voir_tout": "Voir tout",
-    "aucun": "Aucun événement à venir."
+    "aucun": "Aucun évènement à venir."
   },
   "ma_situation": {
     "titre": "Ma situation financière",

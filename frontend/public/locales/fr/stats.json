@@ -21,7 +21,7 @@
   "onglets": {
     "financier": "Financier",
     "membres": "Membres",
-    "evenements": "Événements"
+    "evenements": "Évènements"
   },
   "financier": {
     "solde": "Solde",
@@ -32,7 +32,7 @@
     "revenus_par_source": "Revenus par source",
     "revenus_boutique": "Boutique",
     "revenus_adhesions": "Adhésions",
-    "revenus_evenements": "Événements",
+    "revenus_evenements": "Évènements",
     "top_contributeurs": "Top contributeurs",
     "aucun_contributeur": "Aucun contributeur pour cette période.",
     "col_membre": "Membre",
@@ -47,14 +47,14 @@
     "aucune_donnee": "Aucune donnée disponible."
   },
   "evenements": {
-    "nombre": "Événements",
+    "nombre": "Évènements",
     "taux_remplissage": "Taux de remplissage moyen",
     "inscriptions": "Inscriptions",
     "revenus": "Revenus",
     "par_type": "Répartition par type",
-    "participation": "Participation par événement",
+    "participation": "Participation par évènement",
     "aucune_donnee": "Aucune donnée disponible.",
-    "col_titre": "Événement",
+    "col_titre": "Évènement",
     "col_places": "Places réservées"
   }
 }
