@@ -16,9 +16,17 @@ import type {
 export interface MembresListFilters {
   statut?: StatutMembre | "";
   ville?: string;
+  /** Bundesland — voir apps.membres.filters.MembreFilter (ChoiceFilter sur land_de). */
   land?: string;
+  /** Pays de résidence — voir apps.membres.filters.MembreFilter. */
+  pays?: string;
   nom?: string;
   q?: string;
+  /** Bornes (incluses) de la date d'adhésion, format YYYY-MM-DD — voir
+   * apps.membres.filters.MembreFilter (date_adhesion_apres/avant, ajoutées à l'UI le
+   * 2026-09-19, demande utilisateur : "füge mehr Filtermöglichten hinzu z.B. Bundesland"). */
+  date_adhesion_apres?: string;
+  date_adhesion_avant?: string;
 }
 
 export async function listMembres(

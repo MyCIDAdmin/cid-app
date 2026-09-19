@@ -1,5 +1,6 @@
 """Tests API — app stats (accès réservé Admin/DG/Bureau Admin — FDD écrans Release 1 §2.3)."""
 
+import datetime
 from decimal import Decimal
 
 import pytest
@@ -92,3 +93,28 @@ def test_annee_invalide_refusee(api_client):
     user, _ = _user_avec_membre(Role.SUPER_ADMIN, "admin2@example.de")
     resp = _auth(api_client, user).get(reverse(FINANCIER_URL), {"annee": "pas-une-annee"})
     assert resp.status_code == 400
+
+
+def test_filtre_land_transmis_aux_stats_membres(api_client):
+    # Ajouté le 2026-09-19 (demande utilisateur : "Bei ... Statistiken & KPIs füge mehr
+    # Filtermöglichten hinzu z.B. Bundesland").
+    user, _ = _user_avec_membre(Role.SUPER_ADMIN, "admin3@example.de")
+    MembreFactory(land_de="BY")
+    MembreFactory(land_de="BE")
+
+    resp = _auth(api_client, user).get(reverse(MEMBRES_URL), {"land": "BY"})
+    assert resp.status_code == 200
+    assert resp.data["total"] == 1
+
+
+def test_filtre_pays_et_dates_adhesion_transmis_aux_stats_membres(api_client):
+    user, _ = _user_avec_membre(Role.SUPER_ADMIN, "admin4@example.de")
+    MembreFactory(pays="TN", date_adhesion=datetime.date(2026, 6, 1))
+    MembreFactory(pays="DE", date_adhesion=datetime.date(2020, 1, 1))
+
+    resp = _auth(api_client, user).get(
+        reverse(MEMBRES_URL),
+        {"pays": "TN", "date_adhesion_apres": "2026-01-01"},
+    )
+    assert resp.status_code == 200
+    assert resp.data["total"] == 1

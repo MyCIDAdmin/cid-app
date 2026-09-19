@@ -137,6 +137,79 @@ def test_filtre_ville_restreint_les_recettes():
     assert resultat["recettes"] == Decimal("45.00")
 
 
+# --- filtres land/pays/date_adhesion (ajoutés le 2026-09-19, demande utilisateur : "füge mehr
+# Filtermöglichten hinzu z.B. Bundesland") ---
+
+
+def test_filtre_land_restreint_les_recettes():
+    annee = _aujourdhui().year
+    membre_bayern = MembreFactory(land_de="BY")
+    membre_berlin = MembreFactory(land_de="BE")
+    CotisationFactory(
+        membre=membre_bayern,
+        type_article=TypeArticle.COTISATION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("45.00"),
+        annee=annee,
+    )
+    CotisationFactory(
+        membre=membre_berlin,
+        type_article=TypeArticle.COTISATION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("45.00"),
+        annee=annee,
+    )
+
+    resultat = kpis_financier(annee=annee, land="BY")
+    assert resultat["recettes"] == Decimal("45.00")
+
+
+def test_filtre_pays_restreint_les_recettes():
+    annee = _aujourdhui().year
+    membre_tn = MembreFactory(pays="TN")
+    membre_de = MembreFactory(pays="DE")
+    CotisationFactory(
+        membre=membre_tn,
+        type_article=TypeArticle.COTISATION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("45.00"),
+        annee=annee,
+    )
+    CotisationFactory(
+        membre=membre_de,
+        type_article=TypeArticle.COTISATION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("45.00"),
+        annee=annee,
+    )
+
+    resultat = kpis_financier(annee=annee, pays="TN")
+    assert resultat["recettes"] == Decimal("45.00")
+
+
+def test_filtre_date_adhesion_restreint_les_recettes():
+    annee = _aujourdhui().year
+    membre_ancien = MembreFactory(date_adhesion=datetime.date(2020, 1, 1))
+    membre_recent = MembreFactory(date_adhesion=datetime.date(2026, 6, 1))
+    CotisationFactory(
+        membre=membre_ancien,
+        type_article=TypeArticle.COTISATION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("45.00"),
+        annee=annee,
+    )
+    CotisationFactory(
+        membre=membre_recent,
+        type_article=TypeArticle.COTISATION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("45.00"),
+        annee=annee,
+    )
+
+    resultat = kpis_financier(annee=annee, date_adhesion_apres=datetime.date(2026, 1, 1))
+    assert resultat["recettes"] == Decimal("45.00")
+
+
 # --- kpis_membres ---
 
 
@@ -170,6 +243,32 @@ def test_repartition_par_ville():
     par_ville = {ligne["ville_de"]: ligne["nombre"] for ligne in resultat["par_ville"]}
     assert par_ville["Berlin"] == 2
     assert par_ville["Hambourg"] == 1
+
+
+def test_filtre_land_restreint_le_total_membres():
+    MembreFactory(land_de="BY")
+    MembreFactory(land_de="BY")
+    MembreFactory(land_de="BE")
+
+    resultat = kpis_membres(land="BY")
+    assert resultat["total"] == 2
+
+
+def test_filtre_pays_restreint_le_total_membres():
+    MembreFactory(pays="TN")
+    MembreFactory(pays="DE")
+    MembreFactory(pays="DE")
+
+    resultat = kpis_membres(pays="TN")
+    assert resultat["total"] == 1
+
+
+def test_filtre_date_adhesion_restreint_le_total_membres():
+    MembreFactory(date_adhesion=datetime.date(2020, 1, 1))
+    MembreFactory(date_adhesion=datetime.date(2026, 6, 1))
+
+    resultat = kpis_membres(date_adhesion_apres=datetime.date(2026, 1, 1))
+    assert resultat["total"] == 1
 
 
 # --- kpis_evenements ---

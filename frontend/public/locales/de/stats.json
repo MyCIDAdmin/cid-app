@@ -10,7 +10,13 @@
     "statut_tous": "Alle",
     "statut_actif": "Aktiv",
     "statut_en_attente": "Ausstehend",
-    "statut_inactif": "Inaktiv"
+    "statut_inactif": "Inaktiv",
+    "land": "Bundesland",
+    "land_tous": "Alle Bundesländer",
+    "pays": "Land",
+    "pays_tous": "Alle Länder",
+    "adhesion_apres": "Beitritt nach dem",
+    "adhesion_avant": "Beitritt vor dem"
   },
   "onglets": {
     "financier": "Finanzen",

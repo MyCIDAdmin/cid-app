@@ -15,6 +15,11 @@ Filtres communs aux 3 onglets (mockup #pg-stats, filter-bar) :
   - ville : filtre "Ville DE" — Membre.ville_de (ou, pour les événements, aucun filtre pertinent
     au niveau de l'événement lui-même, appliqué uniquement aux inscriptions/membres).
   - statut : filtre "Statut" — Membre.statut (actif/en_attente/inactif).
+  - land : filtre "Bundesland" — Membre.land_de (ajouté le 2026-09-19, demande utilisateur :
+    "Bei ... Statistiken & KPIs füge mehr Filtermöglichten hinzu z.B. Bundesland").
+  - pays : filtre "Pays de résidence" — Membre.pays (ajouté le 2026-09-19, même demande).
+  - date_adhesion_apres / date_adhesion_avant : bornes (incluses) sur Membre.date_adhesion
+    (ajouté le 2026-09-19, même demande).
 
 Dépenses : aucun module de suivi des dépenses n'existe encore dans ce projet (seul F-015
 "Ajouter une transaction (DG)" existe, et Cotisation ne modélise que des recettes) — `depenses`
@@ -47,24 +52,57 @@ def _annee_ou_courante(annee):
     return annee or timezone.now().year
 
 
-def _filtrer_par_membre(queryset, prefix, ville, statut):
+def _filtrer_par_membre(
+    queryset,
+    prefix,
+    ville,
+    statut,
+    land=None,
+    pays=None,
+    date_adhesion_apres=None,
+    date_adhesion_avant=None,
+):
     if ville:
         queryset = queryset.filter(**{f"{prefix}__ville_de": ville})
     if statut:
         queryset = queryset.filter(**{f"{prefix}__statut": statut})
+    if land:
+        queryset = queryset.filter(**{f"{prefix}__land_de": land})
+    if pays:
+        queryset = queryset.filter(**{f"{prefix}__pays": pays})
+    if date_adhesion_apres:
+        queryset = queryset.filter(**{f"{prefix}__date_adhesion__gte": date_adhesion_apres})
+    if date_adhesion_avant:
+        queryset = queryset.filter(**{f"{prefix}__date_adhesion__lte": date_adhesion_avant})
     return queryset
 
 
-def kpis_financier(*, annee=None, ville=None, statut=None) -> dict:
+def kpis_financier(
+    *,
+    annee=None,
+    ville=None,
+    statut=None,
+    land=None,
+    pays=None,
+    date_adhesion_apres=None,
+    date_adhesion_avant=None,
+) -> dict:
     """FDD §5.3 — Solde, recettes, dépenses, taux collecte, cotisations en attente, revenus
     boutique, revenus adhésions, top contributeurs."""
     annee = _annee_ou_courante(annee)
+    filtres_membre = {
+        "land": land,
+        "pays": pays,
+        "date_adhesion_apres": date_adhesion_apres,
+        "date_adhesion_avant": date_adhesion_avant,
+    }
 
     cotisations_payees = _filtrer_par_membre(
         Cotisation.objects.filter(statut=StatutCotisation.PAYEE, date_paiement__year=annee),
         "membre",
         ville,
         statut,
+        **filtres_membre,
     )
     recettes_cotisations = cotisations_payees.filter(type_article=TypeArticle.COTISATION).aggregate(
         t=Sum("montant")
@@ -78,6 +116,7 @@ def kpis_financier(*, annee=None, ville=None, statut=None) -> dict:
         "membre",
         ville,
         statut,
+        **filtres_membre,
     )
     revenus_adhesions = souscriptions_payees.aggregate(t=Sum("prix_paye"))["t"] or Decimal("0.00")
 
@@ -88,6 +127,7 @@ def kpis_financier(*, annee=None, ville=None, statut=None) -> dict:
         "membre",
         ville,
         statut,
+        **filtres_membre,
     )
     revenus_boutique = commandes.aggregate(t=Sum("montant_total"))["t"] or Decimal("0.00")
 
@@ -98,6 +138,7 @@ def kpis_financier(*, annee=None, ville=None, statut=None) -> dict:
         "membre",
         ville,
         statut,
+        **filtres_membre,
     )
     revenus_evenements = inscriptions_payantes.aggregate(t=Sum("montant_paye"))["t"] or Decimal(
         "0.00"
@@ -116,6 +157,14 @@ def kpis_financier(*, annee=None, ville=None, statut=None) -> dict:
     membres_actifs = Membre.objects.filter(statut=StatutMembre.ACTIF)
     if ville:
         membres_actifs = membres_actifs.filter(ville_de=ville)
+    if land:
+        membres_actifs = membres_actifs.filter(land_de=land)
+    if pays:
+        membres_actifs = membres_actifs.filter(pays=pays)
+    if date_adhesion_apres:
+        membres_actifs = membres_actifs.filter(date_adhesion__gte=date_adhesion_apres)
+    if date_adhesion_avant:
+        membres_actifs = membres_actifs.filter(date_adhesion__lte=date_adhesion_avant)
     # Ajouté le 2026-09-17 : suit désormais le tarif couramment configuré par l'Administrateur App
     # (voir apps.cotisations.models.montant_catalogue), plutôt qu'un dict figé.
     montant_attendu = membres_actifs.count() * montant_catalogue(TypeArticle.COTISATION)
@@ -132,6 +181,7 @@ def kpis_financier(*, annee=None, ville=None, statut=None) -> dict:
         "membre",
         ville,
         statut,
+        **filtres_membre,
     ).aggregate(t=Sum("montant"))["t"] or Decimal("0.00")
 
     return {
@@ -144,11 +194,20 @@ def kpis_financier(*, annee=None, ville=None, statut=None) -> dict:
         "revenus_boutique": revenus_boutique,
         "revenus_adhesions": revenus_adhesions,
         "revenus_evenements": revenus_evenements,
-        "top_contributeurs": _top_contributeurs(annee, ville, statut),
+        "top_contributeurs": _top_contributeurs(annee, ville, statut, **filtres_membre),
     }
 
 
-def _top_contributeurs(annee, ville, statut, limite=5) -> list:
+def _top_contributeurs(
+    annee,
+    ville,
+    statut,
+    limite=5,
+    land=None,
+    pays=None,
+    date_adhesion_apres=None,
+    date_adhesion_avant=None,
+) -> list:
     totaux = defaultdict(
         lambda: {
             "membre": None,
@@ -157,6 +216,12 @@ def _top_contributeurs(annee, ville, statut, limite=5) -> list:
             "dons": Decimal("0"),
         }
     )
+    filtres_membre = {
+        "land": land,
+        "pays": pays,
+        "date_adhesion_apres": date_adhesion_apres,
+        "date_adhesion_avant": date_adhesion_avant,
+    }
 
     cotisations = _filtrer_par_membre(
         Cotisation.objects.filter(
@@ -167,6 +232,7 @@ def _top_contributeurs(annee, ville, statut, limite=5) -> list:
         "membre",
         ville,
         statut,
+        **filtres_membre,
     )
     for cotisation in cotisations:
         entree = totaux[cotisation.membre_id]
@@ -181,6 +247,7 @@ def _top_contributeurs(annee, ville, statut, limite=5) -> list:
         "membre",
         ville,
         statut,
+        **filtres_membre,
     )
     for inscription in inscriptions:
         entree = totaux[inscription.membre_id]
@@ -207,7 +274,15 @@ def _top_contributeurs(annee, ville, statut, limite=5) -> list:
     return classement[:limite]
 
 
-def kpis_membres(*, ville=None, statut=None) -> dict:
+def kpis_membres(
+    *,
+    ville=None,
+    statut=None,
+    land=None,
+    pays=None,
+    date_adhesion_apres=None,
+    date_adhesion_avant=None,
+) -> dict:
     """FDD §5.3 — Total, actifs/inactifs, répartition ville, pyramide âges (répartition
     professionnelle omise, voir docstring de module)."""
     membres = Membre.objects.all()
@@ -215,6 +290,14 @@ def kpis_membres(*, ville=None, statut=None) -> dict:
         membres = membres.filter(ville_de=ville)
     if statut:
         membres = membres.filter(statut=statut)
+    if land:
+        membres = membres.filter(land_de=land)
+    if pays:
+        membres = membres.filter(pays=pays)
+    if date_adhesion_apres:
+        membres = membres.filter(date_adhesion__gte=date_adhesion_apres)
+    if date_adhesion_avant:
+        membres = membres.filter(date_adhesion__lte=date_adhesion_avant)
 
     total = membres.count()
     actifs = membres.filter(statut=StatutMembre.ACTIF).count()
@@ -252,7 +335,16 @@ def kpis_membres(*, ville=None, statut=None) -> dict:
     }
 
 
-def kpis_evenements(*, annee=None, ville=None, statut=None) -> dict:
+def kpis_evenements(
+    *,
+    annee=None,
+    ville=None,
+    statut=None,
+    land=None,
+    pays=None,
+    date_adhesion_apres=None,
+    date_adhesion_avant=None,
+) -> dict:
     """FDD §5.3 — Taux de remplissage, inscriptions, revenus, répartition par type."""
     annee = _annee_ou_courante(annee)
 
@@ -268,6 +360,10 @@ def kpis_evenements(*, annee=None, ville=None, statut=None) -> dict:
         "membre",
         ville,
         statut,
+        land=land,
+        pays=pays,
+        date_adhesion_apres=date_adhesion_apres,
+        date_adhesion_avant=date_adhesion_avant,
     )
     inscriptions_totales = inscriptions.aggregate(t=Sum("places"))["t"] or 0
     revenus = inscriptions.aggregate(t=Sum("montant_paye"))["t"] or Decimal("0.00")

@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import OngletEvenements from "../../components/stats/OngletEvenements";
 import OngletFinancier from "../../components/stats/OngletFinancier";
 import OngletMembres from "../../components/stats/OngletMembres";
+import { BUNDESLANDER, PAYS_MEMBRE } from "../../types/membre";
 import type { StatsFiltres } from "../../types/stats";
 
 type Onglet = "financier" | "membres" | "evenements";
@@ -25,11 +26,22 @@ export default function StatsPage() {
   const [annee, setAnnee] = useState(ANNEE_COURANTE);
   const [ville, setVille] = useState("");
   const [statut, setStatut] = useState("");
+  // Ajoutés le 2026-09-19 (demande utilisateur : "Bei ... Statistiken & KPIs füge mehr
+  // Filtermöglichten hinzu z.B. Bundesland") — mêmes filtres que la liste des membres, le
+  // backend (apps.stats.services) les supportait déjà pour les 3 onglets.
+  const [land, setLand] = useState("");
+  const [pays, setPays] = useState("");
+  const [dateAdhesionApres, setDateAdhesionApres] = useState("");
+  const [dateAdhesionAvant, setDateAdhesionAvant] = useState("");
 
   const filtres: StatsFiltres = {
     annee,
     ville: ville || undefined,
     statut: statut || undefined,
+    land: land || undefined,
+    pays: pays || undefined,
+    date_adhesion_apres: dateAdhesionApres || undefined,
+    date_adhesion_avant: dateAdhesionAvant || undefined,
   };
 
   return (
@@ -85,6 +97,78 @@ export default function StatsPage() {
             <option value="en_attente">{t("filtres.statut_en_attente")}</option>
             <option value="inactif">{t("filtres.statut_inactif")}</option>
           </select>
+        </div>
+        <div>
+          <label
+            htmlFor="stats-land"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("filtres.land")}
+          </label>
+          <select
+            id="stats-land"
+            value={land}
+            onChange={(e) => setLand(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm"
+          >
+            <option value="">{t("filtres.land_tous")}</option>
+            {BUNDESLANDER.map((l) => (
+              <option key={l.value} value={l.value}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="stats-pays"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("filtres.pays")}
+          </label>
+          <select
+            id="stats-pays"
+            value={pays}
+            onChange={(e) => setPays(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm"
+          >
+            <option value="">{t("filtres.pays_tous")}</option>
+            {PAYS_MEMBRE.map((p) => (
+              <option key={p.value} value={p.value}>
+                {t(p.labelKey, { ns: "membres" })}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="stats-adhesion-apres"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("filtres.adhesion_apres")}
+          </label>
+          <input
+            id="stats-adhesion-apres"
+            type="date"
+            value={dateAdhesionApres}
+            onChange={(e) => setDateAdhesionApres(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="stats-adhesion-avant"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("filtres.adhesion_avant")}
+          </label>
+          <input
+            id="stats-adhesion-avant"
+            type="date"
+            value={dateAdhesionAvant}
+            onChange={(e) => setDateAdhesionAvant(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm"
+          />
         </div>
       </div>
 

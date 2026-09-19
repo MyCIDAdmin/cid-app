@@ -14,6 +14,10 @@ export default function OngletMembres({ filtres }: { filtres: StatsFiltres }) {
   const { data, isLoading, isError } = useStatsMembres({
     ville: filtres.ville,
     statut: filtres.statut,
+    land: filtres.land,
+    pays: filtres.pays,
+    date_adhesion_apres: filtres.date_adhesion_apres,
+    date_adhesion_avant: filtres.date_adhesion_avant,
   });
 
   if (isLoading) return <p className="text-sm text-text-tertiary">{t("chargement")}</p>;

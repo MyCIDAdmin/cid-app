@@ -11,7 +11,10 @@ export async function getStatsFinancier(filtres: StatsFiltres = {}): Promise<Kpi
 }
 
 export async function getStatsMembres(
-  filtres: Pick<StatsFiltres, "ville" | "statut"> = {},
+  filtres: Pick<
+    StatsFiltres,
+    "ville" | "statut" | "land" | "pays" | "date_adhesion_apres" | "date_adhesion_avant"
+  > = {},
 ): Promise<KpisMembres> {
   const { data } = await apiClient.get<KpisMembres>("/stats/membres/", { params: filtres });
   return data;

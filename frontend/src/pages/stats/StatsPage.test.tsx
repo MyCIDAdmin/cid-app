@@ -95,4 +95,43 @@ describe("StatsPage", () => {
       expect.objectContaining({ annee: 2025 }),
     );
   });
+
+  describe("filtres Bundesland/Pays/date d'adhésion (demande utilisateur du 2026-09-19)", () => {
+    it("affiche les nouveaux champs de filtre", () => {
+      renderWithProviders(<StatsPage />);
+      expect(screen.getByLabelText("filtres.land")).toBeInTheDocument();
+      expect(screen.getByLabelText("filtres.pays")).toBeInTheDocument();
+      expect(screen.getByLabelText("filtres.adhesion_apres")).toBeInTheDocument();
+      expect(screen.getByLabelText("filtres.adhesion_avant")).toBeInTheDocument();
+    });
+
+    it("transmet land/pays/dates aux 3 onglets", () => {
+      renderWithProviders(<StatsPage />);
+      // Un seul onglet est monté à la fois (voir StatsPage.tsx) — les filtres, eux, sont un état
+      // de la page et survivent au changement d'onglet, donc on vérifie chaque hook au fil des
+      // bascules plutôt que tous les trois à la fois sur le même rendu.
+      const filtresAttendus = expect.objectContaining({
+        land: "BE",
+        pays: "TN",
+        date_adhesion_apres: "2026-01-01",
+        date_adhesion_avant: "2026-12-31",
+      });
+
+      fireEvent.change(screen.getByLabelText("filtres.land"), { target: { value: "BE" } });
+      fireEvent.change(screen.getByLabelText("filtres.pays"), { target: { value: "TN" } });
+      fireEvent.change(screen.getByLabelText("filtres.adhesion_apres"), {
+        target: { value: "2026-01-01" },
+      });
+      fireEvent.change(screen.getByLabelText("filtres.adhesion_avant"), {
+        target: { value: "2026-12-31" },
+      });
+      expect(useStatsHooks.useStatsFinancier).toHaveBeenLastCalledWith(filtresAttendus);
+
+      fireEvent.click(screen.getByText("onglets.membres"));
+      expect(useStatsHooks.useStatsMembres).toHaveBeenLastCalledWith(filtresAttendus);
+
+      fireEvent.click(screen.getByText("onglets.evenements"));
+      expect(useStatsHooks.useStatsEvenements).toHaveBeenLastCalledWith(filtresAttendus);
+    });
+  });
 });

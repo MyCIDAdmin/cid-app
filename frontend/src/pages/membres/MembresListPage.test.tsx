@@ -68,7 +68,9 @@ describe("MembresListPage", () => {
 
     expect(screen.getByText("Sami Ben Salah")).toBeInTheDocument();
     expect(screen.getByText("CA-2024-001")).toBeInTheDocument();
-    expect(screen.getByText("Berlin")).toBeInTheDocument();
+    // "Berlin" scopé à la cellule du tableau : le nouveau filtre Bundesland (2026-09-19)
+    // ajoute aussi une <option>"Berlin"</option>, qui matcherait sinon un getByText global.
+    expect(screen.getByRole("cell", { name: "Berlin" })).toBeInTheDocument();
   });
 
   it("masque les actions RH+/Bureau Admin mais garde 'modifier' pour un rôle membre (AHM-51)", () => {
@@ -106,6 +108,84 @@ describe("MembresListPage", () => {
 
     renderWithProviders(<MembresListPage />);
     expect(screen.getByText("liste.chargement")).toBeInTheDocument();
+  });
+
+  describe("filtres Bundesland/Pays/date d'adhésion (demande utilisateur du 2026-09-19)", () => {
+    it("affiche les nouveaux champs de filtre", () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+
+      renderWithProviders(<MembresListPage />);
+
+      expect(screen.getByLabelText("liste.filtre_land")).toBeInTheDocument();
+      expect(screen.getByLabelText("liste.filtre_pays")).toBeInTheDocument();
+      expect(screen.getByLabelText("liste.filtre_adhesion_apres")).toBeInTheDocument();
+      expect(screen.getByLabelText("liste.filtre_adhesion_avant")).toBeInTheDocument();
+    });
+
+    it("transmet land/pays/dates à useMembresList et à l'export", async () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+      vi.mocked(membresApi.exporterMembres).mockResolvedValue({
+        blob: new Blob(["contenu"]),
+        nomFichier: "export_membres_20260919.xlsx",
+      });
+      window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+      window.URL.revokeObjectURL = vi.fn();
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+      renderWithProviders(<MembresListPage />);
+
+      fireEvent.change(screen.getByLabelText("liste.filtre_land"), { target: { value: "BE" } });
+      fireEvent.change(screen.getByLabelText("liste.filtre_pays"), { target: { value: "FR" } });
+      fireEvent.change(screen.getByLabelText("liste.filtre_adhesion_apres"), {
+        target: { value: "2026-01-01" },
+      });
+      fireEvent.change(screen.getByLabelText("liste.filtre_adhesion_avant"), {
+        target: { value: "2026-12-31" },
+      });
+
+      expect(vi.mocked(useMembresHooks.useMembresList)).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          land: "BE",
+          pays: "FR",
+          date_adhesion_apres: "2026-01-01",
+          date_adhesion_avant: "2026-12-31",
+        }),
+        null,
+      );
+
+      fireEvent.click(screen.getByText("liste.exporter"));
+      fireEvent.click(screen.getByText("liste.export_champs_confirmer"));
+
+      await waitFor(() => expect(membresApi.exporterMembres).toHaveBeenCalledTimes(1));
+      expect(membresApi.exporterMembres).toHaveBeenCalledWith(
+        expect.objectContaining({
+          land: "BE",
+          pays: "FR",
+          date_adhesion_apres: "2026-01-01",
+          date_adhesion_avant: "2026-12-31",
+        }),
+      );
+    });
+
+    it("réinitialise land/pays/dates avec les autres filtres", () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+
+      renderWithProviders(<MembresListPage />);
+
+      fireEvent.change(screen.getByLabelText("liste.filtre_land"), { target: { value: "BY" } });
+      fireEvent.click(screen.getByText("liste.reinitialiser"));
+
+      expect(screen.getByLabelText("liste.filtre_land")).toHaveValue("");
+    });
   });
 
   describe("export Excel (demande utilisateur du 2026-09-16)", () => {

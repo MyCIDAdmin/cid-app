@@ -6,11 +6,15 @@ import { useQuery } from "@tanstack/react-query";
 import * as statsApi from "../api/stats";
 import type { StatsFiltres } from "../types/stats";
 
+type FiltresMembres = Pick<
+  StatsFiltres,
+  "ville" | "statut" | "land" | "pays" | "date_adhesion_apres" | "date_adhesion_avant"
+>;
+
 const statsKeys = {
   all: ["stats"] as const,
   financier: (filtres: StatsFiltres) => [...statsKeys.all, "financier", filtres] as const,
-  membres: (filtres: Pick<StatsFiltres, "ville" | "statut">) =>
-    [...statsKeys.all, "membres", filtres] as const,
+  membres: (filtres: FiltresMembres) => [...statsKeys.all, "membres", filtres] as const,
   evenements: (filtres: StatsFiltres) => [...statsKeys.all, "evenements", filtres] as const,
 };
 
@@ -25,7 +29,7 @@ export function useStatsFinancier(filtres: StatsFiltres = {}, options: { enabled
 }
 
 export function useStatsMembres(
-  filtres: Pick<StatsFiltres, "ville" | "statut"> = {},
+  filtres: FiltresMembres = {},
   options: { enabled?: boolean } = {},
 ) {
   return useQuery({

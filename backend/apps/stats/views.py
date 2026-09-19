@@ -1,8 +1,15 @@
 """
 Vues API — app stats (FDD §5.3) :
-  GET /stats/financier/   — ?annee=&ville=&statut=
-  GET /stats/membres/     — ?ville=&statut=
-  GET /stats/evenements/  — ?annee=&ville=&statut=
+  GET /stats/financier/   — ?annee=&ville=&statut=&land=&pays=
+                             &date_adhesion_apres=&date_adhesion_avant=
+  GET /stats/membres/     — ?ville=&statut=&land=&pays=
+                             &date_adhesion_apres=&date_adhesion_avant=
+  GET /stats/evenements/  — ?annee=&ville=&statut=&land=&pays=
+                             &date_adhesion_apres=&date_adhesion_avant=
+
+land/pays/date_adhesion_apres/date_adhesion_avant ajoutés le 2026-09-19 (demande
+utilisateur : "Bei ... Statistiken & KPIs füge mehr Filtermöglichten hinzu z.B.
+Bundesland").
 
 Pas de ModelViewSet : ce module n'a pas de modèle propre (voir models.py/services.py), seulement
 des agrégations en lecture seule sur les modèles existants — de simples APIView suffisent, sans
@@ -33,9 +40,16 @@ class BaseStatsView(APIView):
     permission_classes = [IsAuthenticated, StatsPermission]
 
     def _filtres_communs(self, request):
+        # land/pays/date_adhesion_* ajoutés le 2026-09-19 (demande utilisateur : "Bei ...
+        # Statistiken & KPIs füge mehr Filtermöglichten hinzu z.B. Bundesland") — voir
+        # services._filtrer_par_membre.
         return {
             "ville": request.query_params.get("ville") or None,
             "statut": request.query_params.get("statut") or None,
+            "land": request.query_params.get("land") or None,
+            "pays": request.query_params.get("pays") or None,
+            "date_adhesion_apres": request.query_params.get("date_adhesion_apres") or None,
+            "date_adhesion_avant": request.query_params.get("date_adhesion_avant") or None,
         }
 
 

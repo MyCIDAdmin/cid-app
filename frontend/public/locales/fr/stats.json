@@ -10,7 +10,13 @@
     "statut_tous": "Tous",
     "statut_actif": "Actif",
     "statut_en_attente": "En attente",
-    "statut_inactif": "Inactif"
+    "statut_inactif": "Inactif",
+    "land": "Bundesland",
+    "land_tous": "Tous les Länder",
+    "pays": "Pays",
+    "pays_tous": "Tous les pays",
+    "adhesion_apres": "Adhésion après le",
+    "adhesion_avant": "Adhésion avant le"
   },
   "onglets": {
     "financier": "Financier",

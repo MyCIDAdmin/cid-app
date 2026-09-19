@@ -15,7 +15,7 @@ import { exporterMembres } from "../../api/membres";
 import type { MembresOrdering } from "../../api/membres";
 import { useDeleteMembre, useMembresList } from "../../hooks/useMembres";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
-import { CHAMPS_EXPORT, PAYS_ALLEMAGNE } from "../../types/membre";
+import { BUNDESLANDER, CHAMPS_EXPORT, PAYS_ALLEMAGNE, PAYS_MEMBRE } from "../../types/membre";
 import type { ChampExport, StatutMembre } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -34,6 +34,13 @@ export default function MembresListPage() {
   const [statut, setStatut] = useState<StatutMembre | "">("");
   const [ville, setVille] = useState("");
   const [q, setQ] = useState("");
+  // Ajoutés le 2026-09-19 (demande utilisateur : "füge mehr Filtermöglichten hinzu z.B.
+  // Bundesland") — le backend (apps.membres.filters.MembreFilter) les supportait déjà, seule
+  // l'UI manquait.
+  const [land, setLand] = useState("");
+  const [pays, setPays] = useState("");
+  const [dateAdhesionApres, setDateAdhesionApres] = useState("");
+  const [dateAdhesionAvant, setDateAdhesionAvant] = useState("");
   const [pageUrl, setPageUrl] = useState<string | null>(null);
   const [aSupprimer, setASupprimer] = useState<{ id: string; nom: string } | null>(null);
   // Tri utilisé uniquement pour l'export Excel (demande utilisateur du 2026-09-16) — l'écran
@@ -48,7 +55,15 @@ export default function MembresListPage() {
   // décoche celles qu'il ne veut pas plutôt que de partir d'une sélection vide.
   const [champsExport, setChampsExport] = useState<ChampExport[]>(TOUS_LES_CHAMPS_EXPORT);
 
-  const filters = { statut, ville, q };
+  const filters = {
+    statut,
+    ville,
+    q,
+    land,
+    pays,
+    date_adhesion_apres: dateAdhesionApres,
+    date_adhesion_avant: dateAdhesionAvant,
+  };
   const { data, isLoading, isError } = useMembresList(filters, pageUrl);
   const deleteMutation = useDeleteMembre();
 
@@ -95,6 +110,10 @@ export default function MembresListPage() {
     setStatut("");
     setVille("");
     setQ("");
+    setLand("");
+    setPays("");
+    setDateAdhesionApres("");
+    setDateAdhesionAvant("");
     setPageUrl(null);
   }
 
@@ -161,6 +180,78 @@ export default function MembresListPage() {
             onChange={(e) => setVille(e.target.value)}
             className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             placeholder={t("liste.filtre_ville_placeholder") ?? ""}
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="membres-filtre-land"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("liste.filtre_land")}
+          </label>
+          <select
+            id="membres-filtre-land"
+            value={land}
+            onChange={(e) => setLand(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          >
+            <option value="">{t("liste.tous_lander")}</option>
+            {BUNDESLANDER.map((l) => (
+              <option key={l.value} value={l.value}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="membres-filtre-pays"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("liste.filtre_pays")}
+          </label>
+          <select
+            id="membres-filtre-pays"
+            value={pays}
+            onChange={(e) => setPays(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          >
+            <option value="">{t("liste.tous_pays")}</option>
+            {PAYS_MEMBRE.map((p) => (
+              <option key={p.value} value={p.value}>
+                {t(p.labelKey)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="membres-filtre-adhesion-apres"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("liste.filtre_adhesion_apres")}
+          </label>
+          <input
+            id="membres-filtre-adhesion-apres"
+            type="date"
+            value={dateAdhesionApres}
+            onChange={(e) => setDateAdhesionApres(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="membres-filtre-adhesion-avant"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("liste.filtre_adhesion_avant")}
+          </label>
+          <input
+            id="membres-filtre-adhesion-avant"
+            type="date"
+            value={dateAdhesionAvant}
+            onChange={(e) => setDateAdhesionAvant(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
           />
         </div>
         <div className="flex-1 min-w-[10rem]">
