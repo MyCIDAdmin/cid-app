@@ -8,5 +8,30 @@
     "a_instant": "à l'instant",
     "il_y_a_minutes": "il y a {{count}} min",
     "il_y_a_heures": "il y a {{count}} h"
+  },
+  "parametres": {
+    "titre": "Notifications par email",
+    "description": "Activez ou désactivez l'envoi des emails de notification, module par module. Les notifications dans l'application (cloche) restent toujours actives, quel que soit ce paramétrage.",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger ce paramétrage.",
+    "erreur_action": "La modification a échoué.",
+    "module": {
+      "membres": "Membres",
+      "cotisations": "Cotisations",
+      "adhesions": "Adhésions",
+      "evenements": "Événements",
+      "boutique": "Boutique",
+      "vote": "Vote & Élections",
+      "communaute": "Communauté"
+    },
+    "module_description": {
+      "membres": "Changement de statut associatif (actif/inactif).",
+      "cotisations": "Relances de cotisation impayée.",
+      "adhesions": "Campagnes, justificatifs, souscriptions.",
+      "evenements": "Invitations, rappels, annulations.",
+      "boutique": "Commandes confirmées, expédiées ou annulées.",
+      "vote": "Ouverture de vote et résultats.",
+      "communaute": "Réponses de forum, messages privés."
+    }
   }
 }

@@ -22,6 +22,8 @@ from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
 
+from apps.notifications.services import email_module_actif
+
 from .models import Commande
 
 logger = logging.getLogger(__name__)
@@ -32,20 +34,51 @@ def _destinataire_email(commande: Commande) -> str | None:
     return user.email if user and user.email else None
 
 
+def _detail_lignes(commande: Commande) -> str:
+    """Détail des articles commandés (demande utilisateur du 2026-09-19 : "Füge zu den
+    versendeten Mails mehr Details. z.B. Details zur Bestelleng...") — une ligne par article,
+    même contenu que le récapitulatif du stepper frontend (CommandeConfirmationPage)."""
+    lignes = [
+        f"  - {ligne.variante.produit.nom}"
+        + (
+            f" ({' / '.join(filter(None, [ligne.variante.taille, ligne.variante.couleur]))})"
+            if ligne.variante.taille or ligne.variante.couleur
+            else ""
+        )
+        + f" × {ligne.quantite} — {ligne.sous_total} €"
+        for ligne in commande.lignes.all()
+    ]
+    return "\n".join(lignes)
+
+
+def _adresse_livraison(commande: Commande) -> str:
+    return (
+        f"{commande.nom_destinataire}\n"
+        f"{commande.adresse_livraison}\n"
+        f"{commande.code_postal_livraison} {commande.ville_livraison}, {commande.pays_livraison}"
+    )
+
+
 @shared_task
 def envoyer_email_commande_confirmee(commande_id) -> None:
     try:
-        commande = Commande.objects.select_related("membre__user").get(id=commande_id)
+        commande = (
+            Commande.objects.select_related("membre__user")
+            .prefetch_related("lignes__variante__produit")
+            .get(id=commande_id)
+        )
     except Commande.DoesNotExist:
         return
     email = _destinataire_email(commande)
-    if not email:
+    if not email or not email_module_actif("boutique"):
         return
     send_mail(
         subject=f"Commande {commande.numero_commande} confirmée",
         message=(
-            f"Votre commande {commande.numero_commande} d'un montant de "
-            f"{commande.montant_total} € a bien été enregistrée."
+            f"Votre commande {commande.numero_commande} a bien été enregistrée.\n\n"
+            f"Articles :\n{_detail_lignes(commande)}\n\n"
+            f"Montant total : {commande.montant_total} €\n\n"
+            f"Adresse de livraison :\n{_adresse_livraison(commande)}"
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
@@ -56,15 +89,24 @@ def envoyer_email_commande_confirmee(commande_id) -> None:
 @shared_task
 def envoyer_email_commande_annulee(commande_id) -> None:
     try:
-        commande = Commande.objects.select_related("membre__user").get(id=commande_id)
+        commande = (
+            Commande.objects.select_related("membre__user")
+            .prefetch_related("lignes__variante__produit")
+            .get(id=commande_id)
+        )
     except Commande.DoesNotExist:
         return
     email = _destinataire_email(commande)
-    if not email:
+    if not email or not email_module_actif("boutique"):
         return
     send_mail(
         subject=f"Commande {commande.numero_commande} annulée",
-        message=f"Votre commande {commande.numero_commande} a été annulée.",
+        message=(
+            f"Votre commande {commande.numero_commande} d'un montant de "
+            f"{commande.montant_total} € a été annulée.\n\n"
+            f"Articles :\n{_detail_lignes(commande)}\n\n"
+            "Le stock correspondant a été restitué au catalogue."
+        ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
         fail_silently=True,
@@ -74,23 +116,32 @@ def envoyer_email_commande_annulee(commande_id) -> None:
 @shared_task
 def envoyer_email_commande_expediee(commande_id) -> None:
     try:
-        commande = Commande.objects.select_related("membre__user").get(id=commande_id)
+        commande = (
+            Commande.objects.select_related("membre__user")
+            .prefetch_related("lignes__variante__produit")
+            .get(id=commande_id)
+        )
     except Commande.DoesNotExist:
         return
     email = _destinataire_email(commande)
-    if not email:
+    if not email or not email_module_actif("boutique"):
         return
     if commande.numero_suivi:
         suivi = (
-            f" Numéro de suivi : {commande.numero_suivi}"
+            f"Numéro de suivi : {commande.numero_suivi}"
             + (f" ({commande.transporteur})" if commande.transporteur else "")
-            + "."
+            + "\n\n"
         )
     else:
         suivi = ""
     send_mail(
         subject=f"Commande {commande.numero_commande} expédiée",
-        message=f"Votre commande {commande.numero_commande} vient d'être expédiée.{suivi}",
+        message=(
+            f"Votre commande {commande.numero_commande} vient d'être expédiée.\n\n"
+            f"{suivi}"
+            f"Articles :\n{_detail_lignes(commande)}\n\n"
+            f"Adresse de livraison :\n{_adresse_livraison(commande)}"
+        ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
         fail_silently=True,

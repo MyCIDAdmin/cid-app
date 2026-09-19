@@ -42,3 +42,29 @@ export interface Notification {
   lu: boolean;
   created_at: string;
 }
+
+/**
+ * Modules pouvant chacun activer/désactiver leurs emails de notification — miroir de
+ * backend/apps/notifications/models.py MODULES_NOTIFIABLES (ajouté le 2026-09-19, demande
+ * utilisateur : "Die Mail benachrichtigung muss vom App Admin verwaltbar sein... pro Modul").
+ * "accounts" en est volontairement absent (emails de sécurité/cycle de vie du compte, jamais
+ * désactivables par ce paramétrage — voir docstring de module côté backend).
+ */
+export const MODULES_NOTIFIABLES = [
+  "membres",
+  "cotisations",
+  "adhesions",
+  "evenements",
+  "boutique",
+  "vote",
+  "communaute",
+] as const;
+
+export type ModuleNotifiable = (typeof MODULES_NOTIFIABLES)[number];
+
+export type ParametresNotification = {
+  [K in ModuleNotifiable as `email_${K}`]: boolean;
+} & {
+  modifie_par: string | null;
+  updated_at: string;
+};

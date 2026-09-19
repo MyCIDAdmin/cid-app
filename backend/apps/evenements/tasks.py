@@ -29,11 +29,23 @@ from django.utils import timezone
 
 from apps.membres.models import Membre, StatutMembre
 from apps.notifications.models import TypeNotification
-from apps.notifications.services import notifier
+from apps.notifications.services import email_module_actif, notifier
 
 from .models import Evenement, StatutEvenement, StatutInscription
 
 logger = logging.getLogger(__name__)
+
+
+def _details_evenement(evenement: Evenement) -> str:
+    """Détails de l'événement (demande utilisateur du 2026-09-19 : "Füge zu den versendeten
+    Mails mehr Details hinzu")."""
+    cout = f"{evenement.cout} €" if evenement.cout else "Gratuit"
+    return (
+        f"{evenement.description}\n\n"
+        f"Date : {evenement.date_evenement:%d/%m/%Y}\n"
+        f"Lieu : {evenement.lieu}\n"
+        f"Coût : {cout}"
+    )
 
 
 @shared_task
@@ -57,25 +69,28 @@ def envoyer_invitations_evenement(evenement_id) -> int:
         user = membre.user
         if not user or not user.email:
             continue
-        try:
-            send_mail(
-                subject=f"Nouvel événement : {evenement.titre}",
-                message=(
-                    f"Un nouvel événement vient d'être publié : {evenement.titre}, "
-                    f"le {evenement.date_evenement:%d/%m/%Y} à {evenement.lieu}.\n\n"
-                    "Consultez la page Événements pour vous inscrire."
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-            envoyes += 1
-        except Exception:  # noqa: BLE001 — un échec d'envoi isolé ne doit jamais bloquer la boucle
-            logger.warning(
-                "envoyer_invitations_evenement: échec d'envoi pour user=%s evenement=%s",
-                user.id,
-                evenement_id,
-            )
+        if email_module_actif("evenements"):
+            try:
+                send_mail(
+                    subject=f"Nouvel événement : {evenement.titre}",
+                    message=(
+                        f"Un nouvel événement vient d'être publié : {evenement.titre}.\n\n"
+                        f"{_details_evenement(evenement)}\n\n"
+                        "Consultez la page Événements pour vous inscrire."
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+                envoyes += 1
+            except (
+                Exception
+            ):  # noqa: BLE001 — un échec d'envoi isolé ne doit jamais bloquer la boucle
+                logger.warning(
+                    "envoyer_invitations_evenement: échec d'envoi pour user=%s evenement=%s",
+                    user.id,
+                    evenement_id,
+                )
         notifier(
             user,
             TypeNotification.EVENEMENT_INVITATION,
@@ -106,24 +121,28 @@ def envoyer_annulation_evenement(evenement_id) -> int:
         user = inscription.membre.user
         if not user or not user.email:
             continue
-        try:
-            send_mail(
-                subject=f"Événement annulé : {evenement.titre}",
-                message=(
-                    f"L'événement {evenement.titre}, prévu le "
-                    f"{evenement.date_evenement:%d/%m/%Y}, a été annulé."
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-            envoyes += 1
-        except Exception:  # noqa: BLE001 — voir docstring de module
-            logger.warning(
-                "envoyer_annulation_evenement: échec d'envoi pour user=%s evenement=%s",
-                user.id,
-                evenement_id,
-            )
+        if email_module_actif("evenements"):
+            try:
+                send_mail(
+                    subject=f"Événement annulé : {evenement.titre}",
+                    message=(
+                        f"L'événement {evenement.titre}, prévu le "
+                        f"{evenement.date_evenement:%d/%m/%Y} à {evenement.lieu}, a été annulé.\n\n"
+                        f"Places réservées : {inscription.places} — montant payé : "
+                        f"{inscription.montant_paye} €. Contactez l'association pour un "
+                        "remboursement le cas échéant."
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+                envoyes += 1
+            except Exception:  # noqa: BLE001 — voir docstring de module
+                logger.warning(
+                    "envoyer_annulation_evenement: échec d'envoi pour user=%s evenement=%s",
+                    user.id,
+                    evenement_id,
+                )
         notifier(
             user,
             TypeNotification.EVENEMENT_ANNULE,
@@ -160,25 +179,27 @@ def envoyer_rappels_evenements(today=None) -> int:
                 user = membre.user
                 if not user or not user.email:
                     continue
-                try:
-                    send_mail(
-                        subject=f"Rappel — {evenement.titre} ({label})",
-                        message=(
-                            f"Rappel : {evenement.titre} a lieu le "
-                            f"{evenement.date_evenement:%d/%m/%Y} à {evenement.lieu}. "
-                            "Vous êtes inscrit(e)."
-                        ),
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[user.email],
-                        fail_silently=False,
-                    )
-                    envoyes += 1
-                except Exception:  # noqa: BLE001 — voir docstring de module
-                    logger.warning(
-                        "envoyer_rappels_evenements: échec d'envoi pour user=%s evenement=%s",
-                        user.id,
-                        evenement.id,
-                    )
+                if email_module_actif("evenements"):
+                    try:
+                        send_mail(
+                            subject=f"Rappel — {evenement.titre} ({label})",
+                            message=(
+                                f"Rappel : {evenement.titre} a lieu le "
+                                f"{evenement.date_evenement:%d/%m/%Y} à {evenement.lieu}. "
+                                f"Vous êtes inscrit(e) pour {inscription.places} place(s).\n\n"
+                                f"{evenement.description}"
+                            ),
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[user.email],
+                            fail_silently=False,
+                        )
+                        envoyes += 1
+                    except Exception:  # noqa: BLE001 — voir docstring de module
+                        logger.warning(
+                            "envoyer_rappels_evenements: échec d'envoi pour user=%s evenement=%s",
+                            user.id,
+                            evenement.id,
+                        )
                 notifier(
                     user,
                     TypeNotification.EVENEMENT_RAPPEL,

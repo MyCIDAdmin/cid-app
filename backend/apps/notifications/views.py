@@ -23,12 +23,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from .filters import NotificationFilter
-from .models import Notification
-from .permissions import NotificationPermission
-from .serializers import NotificationSerializer
+from .models import Notification, ParametresNotification
+from .permissions import NotificationPermission, ParametresNotificationPermission
+from .serializers import NotificationSerializer, ParametresNotificationSerializer
 
 
 class NotificationsCursorPagination(CursorPagination):
@@ -74,3 +75,26 @@ class NotificationViewSet(ModelViewSet):
     @action(detail=False, methods=["get"], url_path="non-lues-count")
     def non_lues_count(self, request):
         return Response({"count": self.get_queryset().filter(lu=False).count()})
+
+
+class ParametresNotificationView(APIView):
+    """
+    GET/PATCH /notifications/parametres/ — activation/désactivation des emails de notification
+    par module, réservée à l'Administrateur App (ajouté le 2026-09-19, voir models.
+    ParametresNotification et permissions.ParametresNotificationPermission). Singleton
+    (ParametresNotification.get_solo) : pas de ModelViewSet, un simple GET/PATCH suffit, même
+    principe qu'un futur endpoint de configuration globale plutôt qu'une collection.
+    """
+
+    permission_classes = [ParametresNotificationPermission]
+
+    def get(self, request):
+        parametres = ParametresNotification.get_solo()
+        return Response(ParametresNotificationSerializer(parametres).data)
+
+    def patch(self, request):
+        parametres = ParametresNotification.get_solo()
+        serializer = ParametresNotificationSerializer(parametres, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(modifie_par=getattr(request.user, "membre", None))
+        return Response(serializer.data)

@@ -15,6 +15,8 @@ from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
 
+from apps.notifications.services import email_module_actif
+
 from .models import Membre
 
 logger = logging.getLogger(__name__)
@@ -32,14 +34,14 @@ def envoyer_email_statut_actif(membre_id, annee) -> None:
     except Membre.DoesNotExist:
         return
     email = _destinataire_email(membre)
-    if not email:
+    if not email or not email_module_actif("membres"):
         return
     send_mail(
         subject="Votre statut de membre est de nouveau actif",
         message=(
             f"Bonjour {membre.prenom},\n\n"
             f"Votre cotisation {annee} a bien été enregistrée comme payée : votre statut de "
-            "membre est de nouveau actif.\n\n"
+            f"membre ({membre.numero_membre}) est de nouveau actif.\n\n"
             "L'équipe Clubistes in Deutschland"
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,
@@ -55,15 +57,15 @@ def envoyer_email_statut_inactif(membre_id, annee) -> None:
     except Membre.DoesNotExist:
         return
     email = _destinataire_email(membre)
-    if not email:
+    if not email or not email_module_actif("membres"):
         return
     send_mail(
         subject="Votre statut de membre est passé à inactif",
         message=(
             f"Bonjour {membre.prenom},\n\n"
             f"Votre cotisation {annee} n'a pas été réglée avant l'échéance : votre statut de "
-            "membre est passé à inactif. Réglez-la depuis l'application, rubrique "
-            '"Cotisation", pour être réactivé automatiquement.\n\n'
+            f"membre ({membre.numero_membre}) est passé à inactif. Réglez-la depuis l'application, "
+            'rubrique "Cotisation", pour être réactivé automatiquement.\n\n'
             "Contactez l'association si vous rencontrez une difficulté pour la régler.\n\n"
             "L'équipe Clubistes in Deutschland"
         ),

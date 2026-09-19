@@ -48,6 +48,7 @@ import {
   IconLayoutDashboard,
   IconLogout,
   IconMail,
+  IconMailCog,
   IconMessageCircle2,
   IconNews,
   IconPhoto,
@@ -222,6 +223,15 @@ const NAV_ITEMS: NavItem[] = [
     to: "/admin/articles-cotisation",
     labelKey: "nav.articles_cotisation",
     icon: IconTag,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.super_admin,
+  },
+  // Activation/désactivation des emails de notification par module (ajouté le 2026-09-19) —
+  // Admin App exclusivement, même niveau que ParametresNotificationPermission côté API.
+  {
+    to: "/admin/notifications",
+    labelKey: "nav.parametres_notification",
+    icon: IconMailCog,
     group: "administration",
     minRoleLevel: ROLE_LEVELS.super_admin,
   },

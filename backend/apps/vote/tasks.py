@@ -24,7 +24,7 @@ from django.core.mail import send_mail
 from django.utils import timezone
 
 from apps.notifications.models import TypeNotification
-from apps.notifications.services import notifier
+from apps.notifications.services import email_module_actif, notifier
 
 from .models import StatutSession
 from .services import calculer_resultats, membres_eligibles_qs
@@ -53,19 +53,20 @@ def _notifier_eligibles(session, type_notification, sujet, message) -> int:
         user = membre.user
         if not user or not user.email:
             continue
-        try:
-            send_mail(
-                subject=sujet,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-            envoyes += 1
-        except Exception:  # noqa: BLE001 — un échec d'envoi isolé ne bloque jamais la boucle
-            logger.warning(
-                "vote.tasks: échec d'envoi email pour user=%s session=%s", user.id, session.id
-            )
+        if email_module_actif("vote"):
+            try:
+                send_mail(
+                    subject=sujet,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+                envoyes += 1
+            except Exception:  # noqa: BLE001 — un échec d'envoi isolé ne bloque jamais la boucle
+                logger.warning(
+                    "vote.tasks: échec d'envoi email pour user=%s session=%s", user.id, session.id
+                )
         notifier(user, type_notification, titre=sujet, message=message, lien=lien)
     return envoyes
 
@@ -75,12 +76,17 @@ def envoyer_notification_ouverture(session_id) -> int:
     session = _get_session(session_id)
     if session is None:
         return 0
+    options = "\n".join(f"  - {option.label}" for option in session.options.all())
     return _notifier_eligibles(
         session,
         TypeNotification.VOTE_OUVERTURE,
         f"Vote ouvert : {session.titre}",
-        f"Une nouvelle session de vote est ouverte : {session.titre}. "
-        f"Vous avez jusqu'au {session.date_fin:%d/%m/%Y %H:%M} pour voter.",
+        (
+            f"Une nouvelle session de vote est ouverte : {session.titre}.\n\n"
+            f"{session.description}\n\n"
+            f"Options :\n{options}\n\n"
+            f"Vous avez jusqu'au {session.date_fin:%d/%m/%Y %H:%M} pour voter."
+        ),
     )
 
 
@@ -89,11 +95,20 @@ def envoyer_notification_resultats(session_id) -> int:
     session = _get_session(session_id)
     if session is None:
         return 0
+    resultats = calculer_resultats(session)
+    detail = "\n".join(
+        f"  - {r['label']} : {r['nombre_voix']} voix ({r['pct']} %)" for r in resultats["resultats"]
+    )
     return _notifier_eligibles(
         session,
         TypeNotification.VOTE_RESULTATS,
         f"Résultats disponibles : {session.titre}",
-        f"Les résultats du vote « {session.titre} » sont disponibles.",
+        (
+            f"Les résultats du vote « {session.titre} » sont disponibles.\n\n"
+            f"{detail}\n\n"
+            f"Participation : {resultats['total_participants']}/{resultats['total_eligibles']} "
+            f"({resultats['taux_participation']} %)."
+        ),
     )
 
 

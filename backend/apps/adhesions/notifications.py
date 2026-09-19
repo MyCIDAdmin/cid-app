@@ -16,7 +16,7 @@ from django.core.mail import send_mail
 from apps.accounts.models import ROLE_LEVELS, Role
 from apps.accounts.services import users_role_at_least
 from apps.notifications.models import TypeNotification
-from apps.notifications.services import notifier
+from apps.notifications.services import email_module_actif, notifier
 
 LIEN_MON_ADHESION = "/mon-adhesion"
 LIEN_ADMIN_JUSTIFICATIFS = "/admin/justificatifs"
@@ -24,7 +24,7 @@ STAFF_JUSTIFICATIFS_MIN_LEVEL = ROLE_LEVELS[Role.RH]
 
 
 def _envoyer_email(user, subject: str, message: str) -> None:
-    if not user or not user.email:
+    if not user or not user.email or not email_module_actif("adhesions"):
         return
     send_mail(
         subject=subject,
@@ -60,11 +60,15 @@ def notifier_justificatif_valide(justificatif) -> None:
     """Appelée par `JustificatifRabaisViewSet.valider` quand la décision RH+ est "approuve"."""
     souscription = justificatif.souscription
     user = getattr(souscription.membre, "user", None)
+    rabais = souscription.rabais
+    detail_rabais = f" ({rabais.label_fr})" if rabais else ""
     _envoyer_email(
         user,
         subject="Justificatif validé",
         message=(
-            f"Votre justificatif de rabais pour {souscription.campagne.nom} a été validé. "
+            f"Votre justificatif de rabais{detail_rabais} pour {souscription.campagne.nom} "
+            f"({souscription.offre.nom}) a été validé.\n\n"
+            f"Montant à payer : {souscription.prix_paye} €.\n\n"
             "Vous pouvez procéder au paiement."
         ),
     )
@@ -81,12 +85,14 @@ def notifier_justificatif_refuse(justificatif) -> None:
     """Appelée par `JustificatifRabaisViewSet.valider` quand la décision RH+ est "rejete"."""
     souscription = justificatif.souscription
     user = getattr(souscription.membre, "user", None)
-    motif = f" Motif : {justificatif.motif_rejet}" if justificatif.motif_rejet else ""
+    motif = f"\n\nMotif du refus : {justificatif.motif_rejet}" if justificatif.motif_rejet else ""
     _envoyer_email(
         user,
         subject="Justificatif refusé",
         message=(
-            f"Votre justificatif de rabais pour {souscription.campagne.nom} a été refusé.{motif} "
+            f"Votre justificatif de rabais pour {souscription.campagne.nom} "
+            f"({souscription.offre.nom}) a été refusé.{motif}\n\n"
+            f"Prix plein de l'offre : {souscription.offre.prix_plein} €. "
             "Vous pouvez souscrire au prix plein ou annuler votre souscription."
         ),
     )
@@ -110,7 +116,10 @@ def notifier_souscription_annulee(souscription) -> None:
     _envoyer_email(
         user,
         subject="Souscription annulée",
-        message=f"Votre souscription à {souscription.campagne.nom} a été annulée.",
+        message=(
+            f"Votre souscription à {souscription.campagne.nom} ({souscription.offre.nom}) a été "
+            f"annulée. Montant concerné : {souscription.prix_paye} €."
+        ),
     )
     notifier(
         user,

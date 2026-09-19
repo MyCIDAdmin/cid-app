@@ -25,7 +25,7 @@ from django.core.mail import send_mail
 
 from apps.membres.models import Membre
 from apps.notifications.models import TypeNotification
-from apps.notifications.services import notifier
+from apps.notifications.services import email_module_actif, notifier
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def envoyer_notification_message_prive(destinataire_membre_id, expediteur_nom, c
     lien = f"/messagerie/{conversation_id}"
     envoye = False
 
-    if user and user.email:
+    if user and user.email and email_module_actif("communaute"):
         try:
             send_mail(
                 subject="Nouveau message privé sur CID",

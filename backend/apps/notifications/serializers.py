@@ -1,6 +1,27 @@
 from rest_framework import serializers
 
-from .models import Notification
+from .models import Notification, ParametresNotification
+
+
+class ParametresNotificationSerializer(serializers.ModelSerializer):
+    """Singleton (voir ParametresNotification.get_solo) — `modifie_par` est résolu par la vue
+    (l'utilisateur courant), jamais par le client, même principe que ConfigurationRelanceSerializer
+    côté apps.cotisations."""
+
+    class Meta:
+        model = ParametresNotification
+        fields = [
+            "email_membres",
+            "email_cotisations",
+            "email_adhesions",
+            "email_evenements",
+            "email_boutique",
+            "email_vote",
+            "email_communaute",
+            "modifie_par",
+            "updated_at",
+        ]
+        read_only_fields = ["modifie_par", "updated_at"]
 
 
 class NotificationSerializer(serializers.ModelSerializer):

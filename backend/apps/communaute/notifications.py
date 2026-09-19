@@ -15,7 +15,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 
 from apps.notifications.models import TypeNotification
-from apps.notifications.services import notifier
+from apps.notifications.services import email_module_actif, notifier
 
 
 def notifier_nouvelle_reponse_forum(reponse) -> None:
@@ -39,10 +39,14 @@ def notifier_nouvelle_reponse_forum(reponse) -> None:
         user = getattr(membre, "user", None)
         if not user:
             continue
-        if user.email:
+        if user.email and email_module_actif("communaute"):
+            apercu = (reponse.contenu or "")[:150]
             send_mail(
                 subject=titre,
-                message=(f'{reponse.auteur} a répondu à "{sujet.titre}" sur le forum CID.'),
+                message=(
+                    f'{reponse.auteur} a répondu à "{sujet.titre}" sur le forum CID :\n\n'
+                    f"« {apercu} »"
+                ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
                 fail_silently=True,

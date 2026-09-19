@@ -120,3 +120,79 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.get_type_notification_display()} — {self.destinataire}"
+
+
+# Modules pouvant être activés/désactivés indépendamment sur ParametresNotification ci-dessous —
+# un module par app métier qui envoie des emails de notification (accounts est volontairement
+# absent : ce sont des emails de sécurité/cycle de vie du compte — OTP, bienvenue, réinitialisation
+# de mot de passe, inscription approuvée/refusée, alerte nouvelle IP —, jamais mentionnés par
+# l'utilisateur dans sa demande, et qu'un Administrateur App ne devrait de toute façon jamais
+# pouvoir couper par erreur).
+MODULES_NOTIFIABLES = [
+    "membres",
+    "cotisations",
+    "adhesions",
+    "evenements",
+    "boutique",
+    "vote",
+    "communaute",
+]
+
+
+class ParametresNotification(models.Model):
+    """
+    Quasi-singleton (une seule ligne, toujours pk=1 — voir get_solo()) permettant à
+    l'Administrateur App d'activer/désactiver l'envoi des EMAILS de notification, granularité
+    PAR MODULE (ajouté le 2026-09-19, demande utilisateur : "Die Mail benachrichtigung muss vom
+    App Admin verwaltbar sein. Es muss möglich sein für Funktionalitäten die Mail benachtigung
+    einzustellen oder zu aktivieren" — choix de granularité confirmé par AskUserQuestion : "Pro
+    Modul").
+
+    Ne concerne JAMAIS les notifications in-app (voir `notifier` ci-dessus/services.py) : celles-ci
+    restent toujours actives, quel que soit ce paramétrage — seul le canal email est concerné, afin
+    qu'un membre continue toujours de voir l'information dans son fil de notifications même si
+    l'Administrateur App a coupé les emails d'un module (ex. pour limiter le volume envoyé, ou
+    pendant une maintenance du fournisseur SMTP — voir Hosting_Migration_Vorschlag.md).
+
+    Un module désactivé n'empêche jamais l'événement métier lui-même (paiement, commande...) —
+    seul l'envoi de l'email correspondant est court-circuité, voir `services.email_module_actif`
+    et chaque point d'appel `send_mail` dans apps.{membres,cotisations,adhesions,evenements,
+    boutique,vote,communaute}.{tasks,notifications}.
+    """
+
+    id = models.AutoField(primary_key=True)
+    email_membres = models.BooleanField(default=True, verbose_name=_("Membres"))
+    email_cotisations = models.BooleanField(default=True, verbose_name=_("Cotisations"))
+    email_adhesions = models.BooleanField(default=True, verbose_name=_("Adhésions"))
+    email_evenements = models.BooleanField(default=True, verbose_name=_("Événements"))
+    email_boutique = models.BooleanField(default=True, verbose_name=_("Boutique"))
+    email_vote = models.BooleanField(default=True, verbose_name=_("Vote"))
+    email_communaute = models.BooleanField(default=True, verbose_name=_("Communauté"))
+
+    modifie_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Administrateur App ayant modifié ce paramétrage en dernier."),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "notifications_parametres"
+        verbose_name = _("Paramètres de notification")
+        verbose_name_plural = _("Paramètres de notification")
+
+    def __str__(self):
+        return "Paramètres de notification (email par module)"
+
+    @classmethod
+    def get_solo(cls) -> "ParametresNotification":
+        """Toujours pk=1 — crée la ligne (tous les modules activés par défaut, voir les champs
+        ci-dessus) à la première lecture/écriture plutôt que via une migration de données, pour
+        qu'un environnement déjà en production au moment de ce déploiement obtienne directement
+        le comportement historique (tous les emails déjà activés) sans étape de migration
+        supplémentaire."""
+        obj, _created = cls.objects.get_or_create(pk=1)
+        return obj

@@ -5,12 +5,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as notificationsApi from "../api/notifications";
+import type { ParametresNotification } from "../types/notification";
 
 const notificationsKeys = {
   all: ["notifications"] as const,
   liste: (filtres: notificationsApi.NotificationsFiltres = {}) =>
     [...notificationsKeys.all, "liste", filtres] as const,
   nonLuesCount: () => [...notificationsKeys.all, "non-lues-count"] as const,
+  parametres: () => [...notificationsKeys.all, "parametres"] as const,
 };
 
 export function useNotifications(filtres: notificationsApi.NotificationsFiltres = {}) {
@@ -68,5 +70,22 @@ export function useMarquerLuesPrefixe() {
   return useMutation({
     mutationFn: (prefixe: string) => notificationsApi.marquerLuesPrefixe(prefixe),
     onSuccess: () => invalidateNotifications(queryClient),
+  });
+}
+
+/** Activation/désactivation des emails de notification par module (Administrateur App). */
+export function useParametresNotification() {
+  return useQuery({
+    queryKey: notificationsKeys.parametres(),
+    queryFn: () => notificationsApi.getParametresNotification(),
+  });
+}
+
+export function useModifierParametresNotification() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Partial<ParametresNotification>) =>
+      notificationsApi.modifierParametresNotification(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: notificationsKeys.parametres() }),
   });
 }

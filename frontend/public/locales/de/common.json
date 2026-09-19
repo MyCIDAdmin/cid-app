@@ -27,6 +27,7 @@
     "admin_quiz": "Quiz-Verwaltung",
     "gestion_roles": "Rollenverwaltung",
     "articles_cotisation": "Beitragsartikel",
+    "parametres_notification": "E-Mail-Benachrichtigungen",
     "point_activite": "Neuigkeiten bei {{module}}"
   },
   "nav_groupe": {

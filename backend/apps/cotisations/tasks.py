@@ -45,6 +45,7 @@ from django.utils import timezone
 
 from apps.membres.models import Membre, RaisonChangementStatut, StatutMembre
 from apps.membres.services import enregistrer_statut_annuel
+from apps.notifications.services import email_module_actif
 
 from .models import (
     CheckpointRelance,
@@ -222,15 +223,23 @@ def _envoyer_relances_pour(checkpoint: str, annee: int) -> int:
             "montant": f"{montant:.2f}".replace(".", ","),
         }
 
-        resultat = send_mail(
-            subject=textes["sujet"].format(**contexte),
-            message=textes["corps"].format(**contexte),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            # Un envoi échoué (SMTP momentanément indisponible) ne doit pas interrompre la
-            # boucle pour les membres suivants ; on ne journalise (et donc ne "consomme" le
-            # verrou d'idempotence) qu'en cas de succès, voir ci-dessous.
-            fail_silently=True,
+        # Un module désactivé (voir apps.notifications.services.email_module_actif) ne doit
+        # jamais empêcher le reste du pipeline : le verrou d'idempotence (RelanceCotisation) et
+        # la notification in-app sont créés comme si l'email avait réussi — seul l'envoi lui-même
+        # est court-circuité, cohérent avec chaque autre point d'appel `send_mail` du projet.
+        resultat = (
+            send_mail(
+                subject=textes["sujet"].format(**contexte),
+                message=textes["corps"].format(**contexte),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                # Un envoi échoué (SMTP momentanément indisponible) ne doit pas interrompre la
+                # boucle pour les membres suivants ; on ne journalise (et donc ne "consomme" le
+                # verrou d'idempotence) qu'en cas de succès, voir ci-dessous.
+                fail_silently=True,
+            )
+            if email_module_actif("cotisations")
+            else True
         )
         if resultat:
             RelanceCotisation.objects.create(membre=membre, annee=annee, checkpoint=checkpoint)

@@ -5,7 +5,7 @@
  */
 import { apiClient } from "./client";
 import type { CursorPage } from "../types/membre";
-import type { Notification } from "../types/notification";
+import type { Notification, ParametresNotification } from "../types/notification";
 
 export interface NotificationsFiltres {
   lu?: boolean;
@@ -54,6 +54,26 @@ export async function marquerLuesPrefixe(prefixe: string): Promise<{ marquees: n
 export async function nonLuesCount(): Promise<{ count: number }> {
   const { data } = await apiClient.get<{ count: number }>(
     "/notifications/notifications/non-lues-count/",
+  );
+  return data;
+}
+
+/**
+ * Activation/désactivation des emails de notification par module (ajouté le 2026-09-19) —
+ * réservé à l'Administrateur App côté backend (ParametresNotificationPermission). Singleton :
+ * pas de liste, un seul GET/PATCH, voir ParametresNotificationView.
+ */
+export async function getParametresNotification(): Promise<ParametresNotification> {
+  const { data } = await apiClient.get<ParametresNotification>("/notifications/parametres/");
+  return data;
+}
+
+export async function modifierParametresNotification(
+  payload: Partial<ParametresNotification>,
+): Promise<ParametresNotification> {
+  const { data } = await apiClient.patch<ParametresNotification>(
+    "/notifications/parametres/",
+    payload,
   );
   return data;
 }

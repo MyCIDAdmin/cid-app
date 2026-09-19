@@ -8,5 +8,30 @@
     "a_instant": "gerade eben",
     "il_y_a_minutes": "vor {{count}} Min.",
     "il_y_a_heures": "vor {{count}} Std."
+  },
+  "parametres": {
+    "titre": "E-Mail-Benachrichtigungen",
+    "description": "Aktivieren oder deaktivieren Sie den Versand von Benachrichtigungs-E-Mails, Modul für Modul. Die In-App-Benachrichtigungen (Glocke) bleiben davon unabhängig immer aktiv.",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Diese Einstellung konnte nicht geladen werden.",
+    "erreur_action": "Die Änderung ist fehlgeschlagen.",
+    "module": {
+      "membres": "Mitglieder",
+      "cotisations": "Mitgliedsbeiträge",
+      "adhesions": "Mitgliedschaften",
+      "evenements": "Veranstaltungen",
+      "boutique": "Shop",
+      "vote": "Wahlen & Abstimmungen",
+      "communaute": "Community"
+    },
+    "module_description": {
+      "membres": "Änderung des Mitgliedsstatus (aktiv/inaktiv).",
+      "cotisations": "Erinnerungen bei unbezahltem Mitgliedsbeitrag.",
+      "adhesions": "Kampagnen, Nachweise, Anmeldungen.",
+      "evenements": "Einladungen, Erinnerungen, Absagen.",
+      "boutique": "Bestätigte, versandte oder stornierte Bestellungen.",
+      "vote": "Eröffnung von Abstimmungen und Ergebnisse.",
+      "communaute": "Forumantworten, private Nachrichten."
+    }
   }
 }

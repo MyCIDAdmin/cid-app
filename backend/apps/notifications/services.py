@@ -23,7 +23,27 @@ apps.accounts.tasks : évite tout risque de dépendance circulaire ou d'ordre de
 apps au démarrage de Django.
 """
 
-from .models import Notification
+from .models import Notification, ParametresNotification
+
+
+def email_module_actif(module: str) -> bool:
+    """True si l'Administrateur App n'a pas désactivé les emails de notification du module donné
+    (voir ParametresNotification/MODULES_NOTIFIABLES, docstring de models.py) — fail-OPEN (True)
+    pour un nom de module inconnu, afin qu'un futur module qui oublierait d'appeler cette
+    fonction avec le bon nom continue simplement d'envoyer ses emails plutôt que de les couper
+    silencieusement. N'affecte jamais la notification in-app correspondante (`notifier`
+    ci-dessous), toujours créée indépendamment de ce paramétrage.
+
+    Utilisation type, à l'endroit exact où l'email seul (jamais l'événement métier qui
+    l'accompagne) doit être court-circuité :
+
+        from apps.notifications.services import email_module_actif
+
+        if email_module_actif("boutique"):
+            send_mail(...)
+    """
+    parametres = ParametresNotification.get_solo()
+    return bool(getattr(parametres, f"email_{module}", True))
 
 
 def notifier(destinataire, type_notification, *, titre, message, lien=""):

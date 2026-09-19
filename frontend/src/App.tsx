@@ -6,6 +6,7 @@ import RequireRole from "./components/RequireRole";
 import ArticlesCatalogueCotisationPage from "./pages/admin/ArticlesCatalogueCotisationPage";
 import GestionRolesPage from "./pages/admin/GestionRolesPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
+import ParametresNotificationPage from "./pages/admin/ParametresNotificationPage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
@@ -180,6 +181,17 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
               <ArticlesCatalogueCotisationPage />
+            </RequireRole>
+          }
+        />
+        {/* Activation/désactivation des emails de notification par module (ajouté le
+            2026-09-19) — Admin App uniquement, même gate que ParametresNotificationPermission
+            côté API. */}
+        <Route
+          path="/admin/notifications"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
+              <ParametresNotificationPage />
             </RequireRole>
           }
         />
