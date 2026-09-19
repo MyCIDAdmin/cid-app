@@ -8,7 +8,9 @@
   "fil": {
     "titre": "Fil d'actualité",
     "placeholder_publication": "Partagez une actualité avec la communauté…",
-    "ajouter_photo": "Ajouter une photo",
+    "joindre_fichier": "Joindre une photo ou un document",
+    "types_autorises": "JPG, PNG, WEBP ou PDF · max 10 Mo",
+    "voir_document": "Voir le document",
     "publier": "Publier",
     "chargement": "Chargement du fil…",
     "erreur_chargement": "Impossible de charger le fil d'actualité.",

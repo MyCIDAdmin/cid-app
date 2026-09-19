@@ -31,6 +31,7 @@ export interface Publication {
   auteur: Auteur;
   contenu: string;
   image: string | null;
+  document: string | null;
   hashtags: string[];
   est_masquee: boolean;
   motif_masquage: string;
@@ -48,6 +49,7 @@ export interface Publication {
 export interface PublicationPayload {
   contenu: string;
   image?: File;
+  document?: File;
 }
 
 export interface ReponseForum {

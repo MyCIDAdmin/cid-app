@@ -33,7 +33,7 @@ from .models import (
     TypeReactionMatch,
 )
 from .permissions import MODERATION_MIN_LEVEL
-from .validators import valider_et_reencoder_photo
+from .validators import valider_document_pdf, valider_et_reencoder_photo
 
 
 class AuteurSerializer(serializers.ModelSerializer):
@@ -108,6 +108,7 @@ class PublicationSerializer(serializers.ModelSerializer):
             "auteur",
             "contenu",
             "image",
+            "document",
             "hashtags",
             "est_masquee",
             "motif_masquage",
@@ -122,6 +123,24 @@ class PublicationSerializer(serializers.ModelSerializer):
             "commentaires",
         ]
         read_only_fields = ["id", "est_masquee", "motif_masquage", "created_at", "updated_at"]
+
+    def validate_image(self, image):
+        # Ajouté le 2026-09-20 (retour utilisateur : "wenn ich ein Bild an einer Neuigkeit
+        # anhänge, wird das Bild nach dem Veröffentlichen nicht angezeigt") — jusqu'ici
+        # `Publication.image` ne passait par AUCUNE validation MIME/ré-encodage
+        # (contrairement à `Photo.image`, voir `validate_image` plus bas dans ce même
+        # fichier), en violation de CLAUDE.md §8 : le fichier brut du client (nom/extension
+        # arbitraires, Content-Type non garanti) était stocké et servi tel quel — un nom de
+        # fichier sans extension reconnue fait typiquement deviner à MinIO un
+        # Content-Type générique (`application/octet-stream`), que le navigateur refuse
+        # d'afficher dans un `<img>` (icône cassée), ce qui correspond exactement au
+        # symptôme rapporté. Même fonction que pour les photos d'album : reconstruit un
+        # nom de fichier serveur avec la vraie extension détectée, ce qui garantit un
+        # Content-Type image/* correct en plus de fermer l'écart de sécurité.
+        return valider_et_reencoder_photo(image)
+
+    def validate_document(self, document):
+        return valider_document_pdf(document)
 
     def get_nombre_commentaires(self, obj) -> int:
         return obj.commentaires.filter(est_masque=False).count()

@@ -154,6 +154,10 @@ def publication_image_upload_path(instance, filename):
     return f"fil/{instance.id}/{filename}"
 
 
+def publication_document_upload_path(instance, filename):
+    return f"fil/{instance.id}/documents/{filename}"
+
+
 class Publication(models.Model):
     """Publication du fil d'actualité — Release Plan §3.2."""
 
@@ -165,6 +169,19 @@ class Publication(models.Model):
     contenu = models.TextField()
     image = models.ImageField(
         upload_to=publication_image_upload_path,
+        storage=PublicationsStorage(),
+        null=True,
+        blank=True,
+    )
+    # Ajouté le 2026-09-20 (retour utilisateur : "Hochladen von pdf Dokumenten") — pièce
+    # jointe PDF, distincte de `image` (un `FileField` plutôt qu'un `ImageField` : un PDF
+    # n'est pas une image et ne peut pas être ouvert/validé par Pillow, voir
+    # validators.valider_document_pdf). Une publication ne porte jamais les deux à la fois
+    # en pratique (un seul sélecteur de fichier côté frontend, voir FilPage.tsx), mais rien
+    # ici ne l'empêche techniquement — pas de contrainte d'exclusion mutuelle ajoutée pour
+    # rester simple, aucun cas d'usage ne le justifie.
+    document = models.FileField(
+        upload_to=publication_document_upload_path,
         storage=PublicationsStorage(),
         null=True,
         blank=True,
@@ -855,9 +872,7 @@ class ParticipationQuiz(models.Model):
         verbose_name = _("Participation quiz")
         verbose_name_plural = _("Participations quiz")
         constraints = [
-            models.UniqueConstraint(
-                fields=["quiz", "membre"], name="une_participation_par_membre"
-            )
+            models.UniqueConstraint(fields=["quiz", "membre"], name="une_participation_par_membre")
         ]
         # Classement (mockup "Classement quiz") : score décroissant, temps de complétion
         # croissant pour départager (les valeurs NULL — pas encore terminé — sont triées en

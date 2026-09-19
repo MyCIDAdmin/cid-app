@@ -147,6 +147,7 @@ function publication(overrides: Partial<Publication> = {}): Publication {
     auteur: { id: "m2", prenom: "Sana", nom: "Werfelli", photo: null },
     contenu: "Ambiance de folie hier soir !",
     image: null,
+    document: null,
     hashtags: [],
     est_masquee: false,
     motif_masquage: "",

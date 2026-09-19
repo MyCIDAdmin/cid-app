@@ -8,7 +8,9 @@
   "fil": {
     "titre": "Neuigkeiten",
     "placeholder_publication": "Teilen Sie eine Neuigkeit mit der Community…",
-    "ajouter_photo": "Foto hinzufügen",
+    "joindre_fichier": "Foto oder Dokument anhängen",
+    "types_autorises": "JPG, PNG, WEBP oder PDF · max. 10 MB",
+    "voir_document": "Dokument ansehen",
     "publier": "Veröffentlichen",
     "chargement": "Neuigkeiten werden geladen…",
     "erreur_chargement": "Die Neuigkeiten konnten nicht geladen werden.",

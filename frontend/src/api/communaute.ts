@@ -57,10 +57,11 @@ export async function listPublications(
 }
 
 export async function creerPublication(payload: PublicationPayload): Promise<Publication> {
-  if (payload.image) {
+  if (payload.image || payload.document) {
     const formData = new FormData();
     formData.append("contenu", payload.contenu);
-    formData.append("image", payload.image);
+    if (payload.image) formData.append("image", payload.image);
+    if (payload.document) formData.append("document", payload.document);
     const { data } = await apiClient.post<Publication>("/communaute/publications/", formData);
     return data;
   }

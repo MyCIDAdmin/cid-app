@@ -44,6 +44,7 @@ function publication(overrides: Partial<Publication> = {}): Publication {
     auteur: auteurA,
     contenu: "Allez le CA !",
     image: null,
+    document: null,
     hashtags: [],
     est_masquee: false,
     motif_masquage: "",
@@ -253,8 +254,21 @@ describe("FilPage", () => {
     fireEvent.click(screen.getByText("fil.publier"));
 
     expect(creer.mutate).toHaveBeenCalledWith(
-      { contenu: "Nouvelle actu", image: undefined },
+      { contenu: "Nouvelle actu", image: undefined, document: undefined },
       expect.anything(),
     );
+  });
+
+  it("affiche un lien vers le document joint à une publication", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication({ document: "https://cid-media.example/fil/p1/doc.pdf" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    const lien = screen.getByText(/fil.voir_document/) as HTMLAnchorElement;
+    expect(lien.closest("a")).toHaveAttribute("href", "https://cid-media.example/fil/p1/doc.pdf");
   });
 });

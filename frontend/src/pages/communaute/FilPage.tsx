@@ -187,6 +187,17 @@ function PublicationCarte({
         />
       )}
 
+      {publication.document && (
+        <a
+          href={publication.document}
+          target="_blank"
+          rel="noreferrer"
+          className="mb-2 flex items-center gap-2 rounded-cid bg-bg-secondary px-3 py-2 text-xs font-medium text-ca hover:underline"
+        >
+          📄 {t("fil.voir_document")}
+        </a>
+      )}
+
       {publication.hashtags.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1">
           {publication.hashtags.map((hashtag) => (
@@ -292,7 +303,12 @@ function PublicationCarte({
 export default function FilPage() {
   const { t } = useTranslation("communaute");
   const [texte, setTexte] = useState("");
-  const [image, setImage] = useState<File | undefined>(undefined);
+  // Un seul sélecteur de fichier (voir input plus bas, accept="image/*,application/pdf")
+  // pour rester au plus près de l'UI existante — le fichier choisi est routé vers le champ
+  // `image` ou `document` de la publication selon son type MIME au moment de la soumission
+  // (voir soumettre() ci-dessous). Ajouté le 2026-09-20, retour utilisateur : "Hochladen von
+  // pdf Dokumenten" + "Hinweis welche Dateientypen sind erlaubt".
+  const [fichier, setFichier] = useState<File | undefined>(undefined);
   const [erreur, setErreur] = useState("");
 
   const publicationsQuery = usePublications();
@@ -302,12 +318,17 @@ export default function FilPage() {
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
     if (!texte.trim()) return;
+    const estPdf = fichier?.type === "application/pdf";
     creer.mutate(
-      { contenu: texte, image },
+      {
+        contenu: texte,
+        image: fichier && !estPdf ? fichier : undefined,
+        document: estPdf ? fichier : undefined,
+      },
       {
         onSuccess: () => {
           setTexte("");
-          setImage(undefined);
+          setFichier(undefined);
         },
         onError: (err) => setErreur(extractApiErrorMessage(err, t("fil.erreur_publication"))),
       },
@@ -334,9 +355,9 @@ export default function FilPage() {
         <div className="mt-2 flex items-center justify-between">
           <input
             type="file"
-            accept="image/*"
-            aria-label={t("fil.ajouter_photo")}
-            onChange={(e) => setImage(e.target.files?.[0])}
+            accept="image/*,application/pdf"
+            aria-label={t("fil.joindre_fichier")}
+            onChange={(e) => setFichier(e.target.files?.[0])}
             className="text-xs text-text-tertiary"
           />
           <button
@@ -347,6 +368,7 @@ export default function FilPage() {
             {t("fil.publier")}
           </button>
         </div>
+        <p className="mt-1 text-[10px] text-text-tertiary">{t("fil.types_autorises")}</p>
         {erreur && <p className="mt-1 text-xs text-status-dangerText">{erreur}</p>}
       </form>
 

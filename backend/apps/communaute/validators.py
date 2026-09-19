@@ -22,6 +22,16 @@ from django.core.files.base import ContentFile
 from PIL import Image
 from rest_framework import serializers
 
+# Ajoutés le 2026-09-20 (retour utilisateur : "Hochladen von pdf Dokumenten", module fil
+# d'actualité — Publication.document) — même principe que
+# apps.adhesions.serializers.JustificatifRabaisUploadSerializer.validate_fichier (magic
+# bytes réels, jamais l'extension/Content-Type déclarés par le client), mais PDF
+# uniquement ici : la demande utilisateur ne mentionne que des "pdf Dokumenten", pas des
+# documents Office ou autres formats.
+MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024  # même limite que les photos (MAX_PHOTO_SIZE_BYTES)
+
+ALLOWED_DOCUMENT_MIME_TYPES = {"application/pdf": "pdf"}
+
 # Mockup (modal "Ajouter des photos") : "JPG, PNG, WEBP · max 10 Mo" — seule limite/format
 # documentés pour ce module, repris tels quels plutôt qu'une valeur inventée.
 MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024
@@ -98,3 +108,35 @@ def valider_et_reencoder_photo(fichier):
 
     nom_fichier = f"{uuid.uuid4()}.{extension}"
     return ContentFile(tampon.read(), name=nom_fichier)
+
+
+def valider_document_pdf(fichier):
+    """Valide un fichier PDF uploadé (taille, MIME réel) pour `Publication.document` et
+    retourne le même fichier, nom reconstruit côté serveur — pas de ré-encodage possible
+    pour un PDF (contrairement à `valider_et_reencoder_photo`, il n'y a pas d'équivalent
+    Pillow ici) : la garantie de sécurité vient uniquement de la détection MIME réelle
+    (magic bytes), pas d'un nouveau fichier régénéré à partir du contenu décodé.
+
+    Lève `serializers.ValidationError` (mêmes clés de message que
+    `valider_et_reencoder_photo`/`JustificatifRabaisUploadSerializer.validate_fichier`) si
+    le fichier est invalide.
+    """
+    if fichier.size > MAX_DOCUMENT_SIZE_BYTES:
+        raise serializers.ValidationError(
+            f"Fichier trop volumineux (max {MAX_DOCUMENT_SIZE_BYTES // (1024 * 1024)} Mo)."
+        )
+
+    contenu = fichier.read()
+    fichier.seek(0)
+    mime_reel = magic.from_buffer(contenu, mime=True)
+    extension = ALLOWED_DOCUMENT_MIME_TYPES.get(mime_reel)
+    if extension is None:
+        raise serializers.ValidationError(
+            f"Format non supporté (détecté : {mime_reel}). PDF uniquement."
+        )
+
+    # Nom de fichier reconstruit côté serveur à partir du type réellement détecté — jamais
+    # le nom/l'extension fournis par le client (SCD §7.4, path traversal / extension
+    # trompeuse), même principe que valider_et_reencoder_photo ci-dessus.
+    fichier.name = f"{uuid.uuid4()}.{extension}"
+    return fichier

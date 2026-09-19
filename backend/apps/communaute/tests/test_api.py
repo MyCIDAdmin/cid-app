@@ -134,6 +134,73 @@ def test_membre_peut_creer_une_publication_avec_hashtags(api_client):
     assert resp.data["auteur"]["id"] == str(membre.id)
 
 
+# --- Pièces jointes (image/document) — ajoutées le 2026-09-20, retour utilisateur :
+# "Hochladen von pdf Dokumenten" + "wenn ich ein Bild an einer Neuigkeit anhänge, wird das
+# Bild nach dem Veröffentlichen nicht angezeigt". Voir _image_valide plus bas dans ce fichier
+# (module Albums) — même fonction, réutilisée ici — et PublicationSerializer.validate_image/
+# validate_document (apps/communaute/serializers.py).
+
+
+def _pdf_valide(nom="document.pdf"):
+    # En-tête %PDF- minimal — suffisant pour la détection MIME réelle par magic bytes
+    # (libmagic ne valide pas la structure PDF complète, seulement la signature de fichier),
+    # même principe que _image_valide ci-dessous pour un JPEG minimal.
+    contenu = b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>"
+    return SimpleUploadedFile(nom, contenu, content_type="application/pdf")
+
+
+def test_creer_publication_avec_image_valide_est_reencodee_et_saffiche(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "img1@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(PUBLICATION_LIST_URL),
+        {"contenu": "Belle photo du match", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 201, resp.data
+    assert resp.data["image"]
+    # Nom de fichier reconstruit côté serveur (jamais "photo.jpg" du client) — voir
+    # valider_et_reencoder_photo.
+    assert "photo.jpg" not in resp.data["image"]
+
+
+def test_creer_publication_avec_image_invalide_rejette(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "img2@example.de")
+    faux_fichier = SimpleUploadedFile("photo.jpg", b"ceci n'est pas une image", "image/jpeg")
+    resp = _auth(api_client, user).post(
+        reverse(PUBLICATION_LIST_URL),
+        {"contenu": "Belle photo du match", "image": faux_fichier},
+        format="multipart",
+    )
+    assert resp.status_code == 400
+    assert "image" in resp.data["details"]
+
+
+def test_creer_publication_avec_document_pdf_valide(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "doc1@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(PUBLICATION_LIST_URL),
+        {"contenu": "Le compte-rendu de l'AG", "document": _pdf_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 201, resp.data
+    assert resp.data["document"]
+    assert resp.data["document"].endswith(".pdf")
+
+
+def test_creer_publication_avec_document_non_pdf_rejette(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "doc2@example.de")
+    faux_fichier = SimpleUploadedFile(
+        "document.pdf", b"ceci n'est pas un pdf", content_type="application/pdf"
+    )
+    resp = _auth(api_client, user).post(
+        reverse(PUBLICATION_LIST_URL),
+        {"contenu": "Le compte-rendu de l'AG", "document": faux_fichier},
+        format="multipart",
+    )
+    assert resp.status_code == 400
+    assert "document" in resp.data["details"]
+
+
 def test_membre_normal_ne_peut_pas_masquer_la_publication_dautrui(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "m3@example.de")
     publication = PublicationFactory()
