@@ -6,9 +6,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as cotisationsApi from "../api/cotisations";
 import type {
   ArticleCataloguePayload,
+  ChangerStatutCotisationPayload,
   ConfigurationRelancePayload,
   CotisationCreatePayload,
   ModePaiement,
+  StatutCotisation,
 } from "../types/cotisation";
 
 const cotisationsKeys = {
@@ -16,6 +18,9 @@ const cotisationsKeys = {
   mesCotisations: () => [...cotisationsKeys.all, "mes-cotisations"] as const,
   detail: (id: string) => [...cotisationsKeys.all, "detail", id] as const,
   enAttenteDePaiement: () => [...cotisationsKeys.all, "en-attente-paiement"] as const,
+  gestion: (statut: StatutCotisation | "" = "") =>
+    [...cotisationsKeys.all, "gestion", statut] as const,
+  historiqueStatuts: (id: string) => [...cotisationsKeys.all, "historique-statuts", id] as const,
   configurationsRelance: () => [...cotisationsKeys.all, "configurations-relance"] as const,
   articlesCatalogue: () => [...cotisationsKeys.all, "articles-catalogue"] as const,
 };
@@ -75,6 +80,41 @@ export function useMarquerCotisationPayee() {
     mutationFn: ({ id, payload }: { id: string; payload: { mode_paiement?: ModePaiement } }) =>
       cotisationsApi.marquerCotisationPayee(id, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
+  });
+}
+
+/**
+ * Liste élargie pour la page "Ausstehende Zahlungen" (ajoutée le 2026-09-19) — un statut vide
+ * renvoie toutes les cotisations, pour retrouver une cotisation déjà "payee" à corriger.
+ */
+export function useCotisationsGestion(statut: StatutCotisation | "" = "") {
+  return useQuery({
+    queryKey: cotisationsKeys.gestion(statut),
+    queryFn: () => cotisationsApi.listCotisationsGestion(statut),
+  });
+}
+
+export function useChangerStatutCotisation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ChangerStatutCotisationPayload }) =>
+      cotisationsApi.changerStatutCotisation(id, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: cotisationsKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: cotisationsKeys.historiqueStatuts(variables.id),
+      });
+    },
+  });
+}
+
+/** Historique des changements de statut d'une cotisation — chargé à la demande (dépliant),
+ * voir `enabled`. */
+export function useHistoriqueStatutsCotisation(cotisationId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: cotisationsKeys.historiqueStatuts(cotisationId),
+    queryFn: () => cotisationsApi.getHistoriqueStatutsCotisation(cotisationId),
+    enabled,
   });
 }
 

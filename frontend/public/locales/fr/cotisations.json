@@ -79,16 +79,17 @@
   },
   "en_attente_paiement": {
     "titre": "Paiements en attente",
-    "sous_titre": "Cotisations en attente d'un paiement reçu hors ligne (virement SEPA, chèque, espèces…) — confirmez la réception pour les marquer comme payées.",
+    "sous_titre": "Cotisations en attente d'un paiement reçu hors ligne (virement SEPA, chèque, espèces…) — confirmez la réception pour les marquer comme payées. Le filtre ci-dessous permet aussi de retrouver n'importe quelle cotisation pour corriger son statut.",
     "col_date": "Date",
     "col_membre": "Membre",
     "col_libelle": "Article",
     "col_montant": "Montant",
+    "col_statut": "Statut",
     "col_mode": "Mode de paiement",
     "col_actions": "Actions",
     "chargement": "Chargement…",
     "erreur_chargement": "Impossible de charger la file des paiements en attente.",
-    "aucun": "Aucun paiement en attente.",
+    "aucun": "Aucun paiement pour ce filtre.",
     "mode": {
       "carte": "Carte bancaire",
       "virement_sepa": "Virement SEPA",
@@ -96,7 +97,17 @@
     },
     "confirmer": "Marquer comme payée",
     "en_cours": "Confirmation…",
-    "erreur_action": "Le paiement n'a pas pu être confirmé."
+    "erreur_action": "Le paiement n'a pas pu être confirmé.",
+    "filtre_statut": "Statut",
+    "filtre_tous": "Tous les statuts",
+    "changer_statut_label": "Nouveau statut",
+    "changer_statut": "Changer le statut",
+    "motif_placeholder": "Motif (optionnel)",
+    "voir_historique": "Voir l'historique",
+    "masquer_historique": "Masquer l'historique",
+    "erreur_historique": "Impossible de charger l'historique de ce paiement.",
+    "historique_vide": "Aucun changement de statut enregistré.",
+    "erreur_changement_statut": "Le changement de statut a échoué."
   },
   "configuration_relance": {
     "titre": "Échéances des relances",

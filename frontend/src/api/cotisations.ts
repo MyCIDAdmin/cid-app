@@ -5,12 +5,15 @@ import { apiClient } from "./client";
 import type {
   ArticleCatalogue,
   ArticleCataloguePayload,
+  ChangerStatutCotisationPayload,
   ConfigurationRelance,
   ConfigurationRelancePayload,
   Cotisation,
   CotisationCreatePayload,
+  HistoriqueStatutCotisation,
   ModePaiement,
   PaiementEnLigneResponse,
+  StatutCotisation,
 } from "../types/cotisation";
 import type { CursorPage } from "../types/membre";
 
@@ -80,6 +83,49 @@ export async function listCotisationsEnAttenteDePaiement(): Promise<CursorPage<C
   const { data } = await apiClient.get<CursorPage<Cotisation>>("/cotisations/", {
     params: { statut: "en_attente" },
   });
+  return data;
+}
+
+/**
+ * Liste des cotisations pour la page "Ausstehende Zahlungen" côté Directeur Financier/Admin,
+ * élargie le 2026-09-19 (demande utilisateur : correction rétroactive du statut) — un `statut`
+ * omis/vide renvoie toutes les cotisations (RH+ voit tout, voir CotisationViewSet.get_queryset),
+ * pour retrouver une cotisation déjà "payee" à corriger, pas seulement les "en_attente".
+ */
+export async function listCotisationsGestion(
+  statut?: StatutCotisation | "",
+): Promise<CursorPage<Cotisation>> {
+  const { data } = await apiClient.get<CursorPage<Cotisation>>("/cotisations/", {
+    params: statut ? { statut } : {},
+  });
+  return data;
+}
+
+/**
+ * POST /cotisations/{id}/changer-statut/ (ajouté le 2026-09-19) — corrige le statut vers
+ * n'importe lequel des 5 statuts, avec motif optionnel, réservé au Directeur Financier/Admin
+ * côté backend (CotisationViewSet.changer_statut). Contrairement à marquerCotisationPayee,
+ * autorise aussi de revenir en arrière depuis "payee".
+ */
+export async function changerStatutCotisation(
+  cotisationId: string,
+  payload: ChangerStatutCotisationPayload,
+): Promise<Cotisation> {
+  const { data } = await apiClient.post<Cotisation>(
+    `/cotisations/${cotisationId}/changer-statut/`,
+    payload,
+  );
+  return data;
+}
+
+/** GET /cotisations/{id}/historique-statuts/ (ajouté le 2026-09-19) — même scope IDOR que le
+ * reste du ViewSet (propriétaire ou RH+). */
+export async function getHistoriqueStatutsCotisation(
+  cotisationId: string,
+): Promise<HistoriqueStatutCotisation[]> {
+  const { data } = await apiClient.get<HistoriqueStatutCotisation[]>(
+    `/cotisations/${cotisationId}/historique-statuts/`,
+  );
   return data;
 }
 

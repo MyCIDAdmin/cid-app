@@ -11,8 +11,10 @@ vi.mock("../../hooks/useCotisations", async () => {
   const actual = await vi.importActual<typeof useCotisationsHooks>("../../hooks/useCotisations");
   return {
     ...actual,
-    useCotisationsEnAttenteDePaiement: vi.fn(),
+    useCotisationsGestion: vi.fn(),
     useMarquerCotisationPayee: vi.fn(),
+    useChangerStatutCotisation: vi.fn(),
+    useHistoriqueStatutsCotisation: vi.fn(),
   };
 });
 
@@ -55,14 +57,24 @@ describe("CotisationsEnAttentePage", () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useMarquerCotisationPayee>);
+    vi.mocked(useCotisationsHooks.useChangerStatutCotisation).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useChangerStatutCotisation>);
+    vi.mocked(useCotisationsHooks.useHistoriqueStatutsCotisation).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useHistoriqueStatutsCotisation>);
   });
 
   it("affiche un message quand la file est vide", () => {
-    vi.mocked(useCotisationsHooks.useCotisationsEnAttenteDePaiement).mockReturnValue({
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
       data: { next: null, previous: null, results: [] },
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsEnAttenteDePaiement>);
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
 
     renderWithProviders(<CotisationsEnAttentePage />);
 
@@ -70,11 +82,11 @@ describe("CotisationsEnAttentePage", () => {
   });
 
   it("affiche le membre, l'article et le montant", () => {
-    vi.mocked(useCotisationsHooks.useCotisationsEnAttenteDePaiement).mockReturnValue({
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
       data: { next: null, previous: null, results: [cotisationEnAttente()] },
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsEnAttenteDePaiement>);
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
 
     renderWithProviders(<CotisationsEnAttentePage />);
 
@@ -90,11 +102,11 @@ describe("CotisationsEnAttentePage", () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useMarquerCotisationPayee>);
-    vi.mocked(useCotisationsHooks.useCotisationsEnAttenteDePaiement).mockReturnValue({
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
       data: { next: null, previous: null, results: [cotisationEnAttente()] },
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsEnAttenteDePaiement>);
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
 
     renderWithProviders(<CotisationsEnAttentePage />);
 
@@ -111,7 +123,7 @@ describe("CotisationsEnAttentePage", () => {
   });
 
   it("préremplit le mode de paiement déjà connu", () => {
-    vi.mocked(useCotisationsHooks.useCotisationsEnAttenteDePaiement).mockReturnValue({
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
       data: {
         next: null,
         previous: null,
@@ -119,10 +131,83 @@ describe("CotisationsEnAttentePage", () => {
       },
       isLoading: false,
       isError: false,
-    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsEnAttenteDePaiement>);
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
 
     renderWithProviders(<CotisationsEnAttentePage />);
 
     expect(screen.getByDisplayValue("en_attente_paiement.mode.paypal")).toBeInTheDocument();
+  });
+
+  it("ne propose pas la confirmation rapide pour une cotisation déjà payée", () => {
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: { next: null, previous: null, results: [cotisationEnAttente({ statut: "payee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    expect(screen.queryByText("en_attente_paiement.confirmer")).not.toBeInTheDocument();
+    // Mais le contrôle générique de changement de statut, lui, reste disponible.
+    expect(screen.getByText("en_attente_paiement.changer_statut")).toBeInTheDocument();
+  });
+
+  it("permet de changer le statut vers n'importe quelle valeur avec un motif", () => {
+    const mutate = vi.fn();
+    vi.mocked(useCotisationsHooks.useChangerStatutCotisation).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useChangerStatutCotisation>);
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: { next: null, previous: null, results: [cotisationEnAttente({ statut: "payee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.changer_statut_label"), {
+      target: { value: "annulee" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("en_attente_paiement.motif_placeholder"), {
+      target: { value: "Erreur de saisie" },
+    });
+    fireEvent.click(screen.getByText("en_attente_paiement.changer_statut"));
+
+    expect(mutate).toHaveBeenCalledWith(
+      { id: "c1", payload: { statut: "annulee", motif: "Erreur de saisie" } },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  it("affiche l'historique au clic sur 'Voir l'historique'", () => {
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: { next: null, previous: null, results: [cotisationEnAttente({ statut: "payee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+    vi.mocked(useCotisationsHooks.useHistoriqueStatutsCotisation).mockReturnValue({
+      data: [
+        {
+          id: "h1",
+          cotisation: "c1",
+          ancien_statut: "en_attente",
+          nouveau_statut: "payee",
+          motif: "",
+          modifie_par: "m-dg",
+          modifie_par_nom: "Jean Dupont",
+          created_at: "2026-02-01T10:05:00Z",
+        },
+      ],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useHistoriqueStatutsCotisation>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.click(screen.getByText("en_attente_paiement.voir_historique"));
+
+    expect(screen.getByText(/Jean Dupont/)).toBeInTheDocument();
   });
 });

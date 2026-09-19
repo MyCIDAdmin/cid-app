@@ -79,16 +79,17 @@
   },
   "en_attente_paiement": {
     "titre": "Ausstehende Zahlungen",
-    "sous_titre": "Mitgliedsbeiträge, die auf eine offline erhaltene Zahlung warten (SEPA-Überweisung, Scheck, Bar) — bestätigen Sie den Erhalt, um sie als bezahlt zu markieren.",
+    "sous_titre": "Mitgliedsbeiträge, die auf eine offline erhaltene Zahlung warten (SEPA-Überweisung, Scheck, Bar) — bestätigen Sie den Erhalt, um sie als bezahlt zu markieren. Mit dem Filter unten finden Sie auch jeden anderen Beitrag, um dessen Status zu korrigieren.",
     "col_date": "Datum",
     "col_membre": "Mitglied",
     "col_libelle": "Artikel",
     "col_montant": "Betrag",
+    "col_statut": "Status",
     "col_mode": "Zahlungsmethode",
     "col_actions": "Aktionen",
     "chargement": "Wird geladen…",
     "erreur_chargement": "Die Liste der ausstehenden Zahlungen konnte nicht geladen werden.",
-    "aucun": "Keine ausstehende Zahlung.",
+    "aucun": "Keine Zahlung für diesen Filter.",
     "mode": {
       "carte": "Kreditkarte",
       "virement_sepa": "SEPA-Überweisung",
@@ -96,7 +97,17 @@
     },
     "confirmer": "Als bezahlt markieren",
     "en_cours": "Wird bestätigt…",
-    "erreur_action": "Die Zahlung konnte nicht bestätigt werden."
+    "erreur_action": "Die Zahlung konnte nicht bestätigt werden.",
+    "filtre_statut": "Status",
+    "filtre_tous": "Alle Status",
+    "changer_statut_label": "Neuer Status",
+    "changer_statut": "Status ändern",
+    "motif_placeholder": "Grund (optional)",
+    "voir_historique": "Verlauf anzeigen",
+    "masquer_historique": "Verlauf ausblenden",
+    "erreur_historique": "Der Verlauf dieser Zahlung konnte nicht geladen werden.",
+    "historique_vide": "Keine Statusänderung erfasst.",
+    "erreur_changement_statut": "Die Statusänderung ist fehlgeschlagen."
   },
   "configuration_relance": {
     "titre": "Fälligkeitstermine",

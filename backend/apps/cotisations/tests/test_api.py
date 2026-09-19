@@ -604,8 +604,9 @@ def test_marquer_payee_cree_une_notification_in_app_pour_le_membre(api_client):
 
 
 # Statut associatif automatique (demande utilisateur du 2026-09-19) : confirmer une cotisation
-# ANNUELLE réactive automatiquement le membre — voir apps.membres.services.enregistrer_statut_annuel,
-# déclenché depuis apps.cotisations.notifications.notifier_paiement_confirme.
+# ANNUELLE réactive automatiquement le membre — voir
+# apps.membres.services.enregistrer_statut_annuel, déclenché depuis
+# apps.cotisations.notifications.notifier_paiement_confirme.
 def test_marquer_payee_dune_cotisation_annuelle_reactive_le_membre(api_client):
     from apps.membres.models import HistoriqueStatutMembre, RaisonChangementStatut, StatutMembre
 
@@ -767,3 +768,172 @@ def test_marquer_payee_refuse_mode_de_paiement_invalide(api_client):
     resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "bitcoin"})
 
     assert resp.status_code == 400
+
+
+def test_marquer_payee_journalise_lhistorique(api_client):
+    """Ajouté le 2026-09-19 — marquer_payee alimente aussi HistoriqueStatutCotisation, même
+    point d'écriture que changer_statut ci-dessous, mais sans motif (transition standard)."""
+    from apps.cotisations.models import HistoriqueStatutCotisation
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg-hist@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 200, resp.data
+
+    entree = HistoriqueStatutCotisation.objects.get(cotisation=cotisation)
+    assert entree.ancien_statut == StatutCotisation.EN_ATTENTE
+    assert entree.nouveau_statut == StatutCotisation.PAYEE
+    assert entree.motif == ""
+
+
+# --- changer-statut (ajouté le 2026-09-19, correction rétroactive + historique complet) ---
+
+
+def _changer_statut_url(cotisation):
+    return reverse("cotisations:cotisation-changer-statut", args=[cotisation.id])
+
+
+def _historique_statuts_url(cotisation):
+    return reverse("cotisations:cotisation-historique-statuts", args=[cotisation.id])
+
+
+def test_changer_statut_non_authentifie_refuse(api_client):
+    cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
+    resp = api_client.post(_changer_statut_url(cotisation), {"statut": "remboursee"})
+    assert resp.status_code == 401
+
+
+def test_admin_peut_revenir_dun_statut_paye_a_un_autre_statut(api_client):
+    """Cœur de la demande utilisateur : contrairement à marquer_payee (restreint
+    EN_ATTENTE/ECHOUEE -> PAYEE), changer_statut autorise à revenir en arrière depuis PAYEE."""
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin-cs@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.post(
+        _changer_statut_url(cotisation),
+        {"statut": "remboursee", "motif": "Paiement finalement rejeté par la banque"},
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutCotisation.REMBOURSEE
+
+    cotisation.refresh_from_db()
+    assert cotisation.statut == StatutCotisation.REMBOURSEE
+
+
+def test_directeur_financier_peut_changer_statut(api_client):
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg-cs@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(_changer_statut_url(cotisation), {"statut": "annulee"})
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutCotisation.ANNULEE
+
+
+def test_rh_ne_peut_pas_changer_statut(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh-cs@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.post(_changer_statut_url(cotisation), {"statut": "annulee"})
+
+    assert resp.status_code == 403
+
+
+def test_membre_ne_peut_pas_changer_le_statut_de_sa_propre_cotisation(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre-cs@example.de")
+    cotisation = CotisationFactory(membre=membre, statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.post(_changer_statut_url(cotisation), {"statut": "annulee"})
+
+    assert resp.status_code == 403
+
+
+def test_changer_statut_refuse_statut_invalide(api_client):
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin-cs2@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE)
+
+    _auth(api_client, user)
+    resp = api_client.post(_changer_statut_url(cotisation), {"statut": "inexistant"})
+
+    assert resp.status_code == 400
+
+
+def test_changer_statut_refuse_si_meme_statut(api_client):
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin-cs3@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE)
+
+    _auth(api_client, user)
+    resp = api_client.post(_changer_statut_url(cotisation), {"statut": "en_attente"})
+
+    assert resp.status_code == 400
+
+
+def test_changer_statut_vers_payee_notifie_comme_marquer_payee(api_client):
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin-cs4@example.de")
+    user_paye = User.objects.create_user(
+        email="paye-cs@example.de", password="Password123!", is_active=True
+    )
+    membre_paye = MembreFactory(user=user_paye)
+    cotisation = CotisationFactory(membre=membre_paye, statut=StatutCotisation.EN_ATTENTE)
+
+    _auth(api_client, user)
+    resp = api_client.post(_changer_statut_url(cotisation), {"statut": "payee"})
+    assert resp.status_code == 200, resp.data
+
+    notification = Notification.objects.get(destinataire=user_paye)
+    assert notification.type_notification == TypeNotification.PAIEMENT_CONFIRME
+
+
+def test_changer_statut_journalise_le_motif_et_lauteur(api_client):
+    from apps.cotisations.models import HistoriqueStatutCotisation
+
+    user, membre_admin = _user_avec_membre(Role.SUPER_ADMIN, "admin-cs5@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.post(
+        _changer_statut_url(cotisation), {"statut": "annulee", "motif": "Erreur de saisie"}
+    )
+    assert resp.status_code == 200, resp.data
+
+    entree = HistoriqueStatutCotisation.objects.get(cotisation=cotisation)
+    assert entree.ancien_statut == StatutCotisation.PAYEE
+    assert entree.nouveau_statut == StatutCotisation.ANNULEE
+    assert entree.motif == "Erreur de saisie"
+    assert entree.modifie_par_id == membre_admin.id
+
+
+def test_historique_statuts_visible_par_le_proprietaire(api_client):
+    from apps.cotisations.models import HistoriqueStatutCotisation
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "hist-owner@example.de")
+    cotisation = CotisationFactory(membre=membre, statut=StatutCotisation.PAYEE)
+    HistoriqueStatutCotisation.objects.create(
+        cotisation=cotisation,
+        ancien_statut=StatutCotisation.EN_ATTENTE,
+        nouveau_statut=StatutCotisation.PAYEE,
+    )
+
+    _auth(api_client, user)
+    resp = api_client.get(_historique_statuts_url(cotisation))
+
+    assert resp.status_code == 200
+    assert len(resp.data) == 1
+    assert resp.data[0]["nouveau_statut"] == StatutCotisation.PAYEE
+
+
+def test_historique_statuts_refuse_pour_la_cotisation_dun_autre_membre(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "hist-autrui@example.de")
+    cotisation_autrui = CotisationFactory(statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.get(_historique_statuts_url(cotisation_autrui))
+
+    assert resp.status_code in (403, 404)

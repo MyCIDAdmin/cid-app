@@ -124,3 +124,26 @@ export interface ConfigurationRelancePayload {
 export interface PaiementEnLigneResponse {
   redirect_url: string;
 }
+
+/**
+ * Entrée d'historique de statut (ajoutée le 2026-09-19, demande utilisateur : "Bei 'Ausstehende
+ * Zahlungen' muss es möglich sein die Historie zu behalten und Zahlungsstatus nachträglich zu
+ * ändern") — miroir de apps.cotisations.models.HistoriqueStatutCotisation, entièrement en
+ * lecture seule côté client.
+ */
+export interface HistoriqueStatutCotisation {
+  id: string;
+  cotisation: string;
+  ancien_statut: StatutCotisation;
+  nouveau_statut: StatutCotisation;
+  motif: string;
+  modifie_par: string | null;
+  modifie_par_nom: string | null;
+  created_at: string;
+}
+
+/** Payload de POST /cotisations/{id}/changer-statut/ (Directeur Financier/Admin uniquement). */
+export interface ChangerStatutCotisationPayload {
+  statut: StatutCotisation;
+  motif?: string;
+}

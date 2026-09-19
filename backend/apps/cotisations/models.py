@@ -372,3 +372,58 @@ class ConfigurationRelance(models.Model):
 
     def __str__(self):
         return f"Échéance {self.annee} : {self.date_echeance:%d/%m/%Y}"
+
+
+class HistoriqueStatutCotisation(models.Model):
+    """
+    Journal des changements de statut d'une Cotisation (ajouté le 2026-09-19, demande
+    utilisateur : "Bei 'Ausstehende Zahlungen' muss es möglich sein die Historie zu behalten und
+    Zahlungsstatus nachträglich zu ändern" — décision actée avec l'utilisateur, AskUserQuestion :
+    "Admin kann jeden Status ändern + volles Änderungsprotokoll"). Une ligne par transition,
+    jamais modifiée ni supprimée (append-only, même principe que Cotisation elle-même) — voir
+    CotisationViewSet.changer_statut, seul point d'écriture.
+
+    À ne pas confondre avec `apps.membres.models.HistoriqueStatutMembre` : celui-ci journalise le
+    statut ASSOCIATIF du membre PAR ANNÉE (upsert, une ligne par (membre, année)), alors que ce
+    modèle-ci journalise CHAQUE changement individuel de `Cotisation.statut` (paiement confirmé,
+    correction manuelle, remboursement...), potentiellement plusieurs lignes pour une même
+    cotisation au fil du temps.
+
+    Alimenté par les 2 points d'écriture existants du statut d'une Cotisation
+    (`CotisationViewSet.marquer_payee`, transition restreinte EN_ATTENTE/ECHOUEE -> PAYEE) et le
+    nouveau `CotisationViewSet.changer_statut` (transition libre vers n'importe quel statut,
+    réservée au Directeur Financier/Admin, AHM-53 étendu) — jamais créé directement ailleurs.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cotisation = models.ForeignKey(
+        Cotisation, on_delete=models.CASCADE, related_name="historique_statuts"
+    )
+    ancien_statut = models.CharField(max_length=20, choices=StatutCotisation.choices)
+    nouveau_statut = models.CharField(max_length=20, choices=StatutCotisation.choices)
+    motif = models.TextField(
+        blank=True,
+        help_text=_(
+            "Raison de la correction, saisie par le Directeur Financier/Admin — vide pour une "
+            "transition automatique (ex. marquer_payee sans motif renseigné)."
+        ),
+    )
+    modifie_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Directeur Financier/Admin à l'origine de ce changement de statut."),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "cotisations_historique_statuts"
+        verbose_name = _("Historique de statut de cotisation")
+        verbose_name_plural = _("Historiques de statut de cotisation")
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["cotisation"])]
+
+    def __str__(self):
+        return f"{self.cotisation_id} : {self.ancien_statut} → {self.nouveau_statut}"

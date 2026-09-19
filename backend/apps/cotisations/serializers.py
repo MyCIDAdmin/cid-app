@@ -14,6 +14,8 @@ from .models import (
     ArticleCatalogue,
     ConfigurationRelance,
     Cotisation,
+    HistoriqueStatutCotisation,
+    StatutCotisation,
     TypeArticle,
     article_catalogue_fixe_actif,
     montant_catalogue,
@@ -134,3 +136,39 @@ class ConfigurationRelanceSerializer(serializers.ModelSerializer):
         model = ConfigurationRelance
         fields = ["id", "annee", "date_echeance", "modifie_par", "created_at", "updated_at"]
         read_only_fields = ["id", "modifie_par", "created_at", "updated_at"]
+
+
+class HistoriqueStatutCotisationSerializer(serializers.ModelSerializer):
+    """Entièrement en lecture seule côté API — une entrée n'est jamais créée/modifiée par un
+    appel client, seulement par CotisationViewSet.marquer_payee/changer_statut (voir docstring de
+    module de models.HistoriqueStatutCotisation)."""
+
+    modifie_par_nom = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HistoriqueStatutCotisation
+        fields = [
+            "id",
+            "cotisation",
+            "ancien_statut",
+            "nouveau_statut",
+            "motif",
+            "modifie_par",
+            "modifie_par_nom",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_modifie_par_nom(self, obj) -> str | None:
+        if obj.modifie_par is None:
+            return None
+        return f"{obj.modifie_par.prenom} {obj.modifie_par.nom}"
+
+
+class ChangerStatutCotisationSerializer(serializers.Serializer):
+    """Payload de `CotisationViewSet.changer_statut` (AHM-53 étendu, 2026-09-19) — jamais
+    persisté directement : la vue s'en sert uniquement pour valider l'entrée avant d'appliquer le
+    changement elle-même (voir views.py)."""
+
+    statut = serializers.ChoiceField(choices=StatutCotisation.choices)
+    motif = serializers.CharField(required=False, allow_blank=True, default="")

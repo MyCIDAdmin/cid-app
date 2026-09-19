@@ -8,6 +8,12 @@ Vues API — app cotisations (TDD §2.4) :
                                             (AHM-53, DF/Admin uniquement)
   POST  /cotisations/{id}/initier-paiement-en-ligne/ — créer une session/commande Stripe ou
                                             PayPal (AHM-46, propriétaire uniquement)
+  POST  /cotisations/{id}/changer-statut/ — corriger rétroactivement le statut vers n'importe
+                                            lequel des 5 statuts, avec motif (ajouté le
+                                            2026-09-19, DF/Admin uniquement — voir
+                                            HistoriqueStatutCotisation)
+  GET   /cotisations/{id}/historique-statuts/ — historique des changements de statut (ajouté le
+                                            2026-09-19, même scope que list/retrieve)
 
   GET/POST/PATCH/DELETE /configurations-relance/ — échéance des relances par année de cotisation
                                             (AHM-54, DF/Admin uniquement — voir
@@ -63,11 +69,12 @@ from .models import (
     ArticleCatalogue,
     ConfigurationRelance,
     Cotisation,
+    HistoriqueStatutCotisation,
     ModePaiement,
     StatutCotisation,
 )
-from .notifications import notifier_paiement_confirme as _notifier_paiement_confirme
 from .notifications import notifier_nouveau_paiement_attente_staff
+from .notifications import notifier_paiement_confirme as _notifier_paiement_confirme
 from .pdf import generate_receipt_pdf
 from .permissions import (
     GESTION_ARTICLES_MIN_LEVEL,
@@ -78,8 +85,10 @@ from .permissions import (
 )
 from .serializers import (
     ArticleCatalogueSerializer,
+    ChangerStatutCotisationSerializer,
     ConfigurationRelanceSerializer,
     CotisationSerializer,
+    HistoriqueStatutCotisationSerializer,
 )
 
 # Modes de paiement pris en charge par initier_paiement_en_ligne (AHM-46) — le virement SEPA n'a
@@ -203,13 +212,87 @@ class CotisationViewSet(ModelViewSet):
                 }
             )
 
+        ancien_statut = cotisation.statut
         cotisation.statut = StatutCotisation.PAYEE
         # save() (voir models.py) génère la référence de transaction et la date de paiement
         # puisque le statut passe à "payee" sans référence existante.
         cotisation.save()
+        # Journalisation (ajoutée le 2026-09-19, voir HistoriqueStatutCotisation) — même point
+        # d'écriture que changer_statut ci-dessous, sans motif (transition standard du flux
+        # normal, pas une correction manuelle).
+        HistoriqueStatutCotisation.objects.create(
+            cotisation=cotisation,
+            ancien_statut=ancien_statut,
+            nouveau_statut=StatutCotisation.PAYEE,
+            modifie_par=getattr(request.user, "membre", None),
+        )
         _notifier_paiement_confirme(cotisation)
 
         return Response(CotisationSerializer(cotisation).data)
+
+    @action(detail=True, methods=["post"], url_path="changer-statut")
+    def changer_statut(self, request, pk=None):
+        """
+        POST /cotisations/{id}/changer-statut/ (ajouté le 2026-09-19, demande utilisateur : "Bei
+        'Ausstehende Zahlungen' muss es möglich sein die Historie zu behalten und Zahlungsstatus
+        nachträglich zu ändern" — "Admin kann jeden Status ändern + volles Änderungsprotokoll").
+
+        Contrairement à `marquer_payee` (restreint EN_ATTENTE/ECHOUEE -> PAYEE, flux normal de
+        confirmation d'un paiement reçu hors ligne), cette action autorise le Directeur
+        Financier/Admin à corriger RÉTROACTIVEMENT le statut d'une cotisation vers N'IMPORTE
+        LEQUEL des 5 statuts (y compris revenir en arrière depuis "payee", ex. paiement finalement
+        rejeté/à tort confirmé) — chaque changement est journalisé (HistoriqueStatutCotisation),
+        avec motif optionnel.
+
+        Effets de bord volontairement limités : si le nouveau statut est "payee", la même
+        notification que marquer_payee est déclenchée (email + in-app + synchronisation du statut
+        associatif annuel du membre, voir notifications.notifier_paiement_confirme) — cohérent
+        avec le fait qu'une cotisation devient "payee" par ce chemin ou par marquer_payee de
+        façon équivalente pour la suite du système. À l'inverse, annuler rétroactivement un
+        paiement (payee -> un autre statut) NE désactive PAS automatiquement le membre : cette
+        automatisation reste le rôle du pipeline de relance existant (checkpoint J+1, voir
+        apps.cotisations.tasks._desactiver_membres_impayes_pour) plutôt qu'un effet de bord
+        immédiat d'une correction ponctuelle, potentiellement surprenant pour l'Admin qui ne
+        fait que corriger une erreur de saisie.
+        """
+        cotisation = self.get_object()
+
+        if ROLE_LEVELS.get(request.user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+            raise PermissionDenied(
+                "Seuls le Directeur Financier ou l'Administrateur peuvent modifier le statut "
+                "d'une cotisation."
+            )
+
+        serializer = ChangerStatutCotisationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        nouveau_statut = serializer.validated_data["statut"]
+        motif = serializer.validated_data["motif"]
+
+        ancien_statut = cotisation.statut
+        if nouveau_statut == ancien_statut:
+            raise ValidationError({"statut": "La cotisation a déjà ce statut."})
+
+        cotisation.statut = nouveau_statut
+        cotisation.save()
+        HistoriqueStatutCotisation.objects.create(
+            cotisation=cotisation,
+            ancien_statut=ancien_statut,
+            nouveau_statut=nouveau_statut,
+            motif=motif,
+            modifie_par=getattr(request.user, "membre", None),
+        )
+        if nouveau_statut == StatutCotisation.PAYEE:
+            _notifier_paiement_confirme(cotisation)
+
+        return Response(CotisationSerializer(cotisation).data)
+
+    @action(detail=True, methods=["get"], url_path="historique-statuts")
+    def historique_statuts(self, request, pk=None):
+        """GET /cotisations/{id}/historique-statuts/ — même scope IDOR que list/retrieve
+        (get_object() : propriétaire ou RH+, voir CotisationPermission)."""
+        cotisation = self.get_object()
+        historique = cotisation.historique_statuts.select_related("modifie_par")
+        return Response(HistoriqueStatutCotisationSerializer(historique, many=True).data)
 
     @action(detail=True, methods=["post"], url_path="initier-paiement-en-ligne")
     def initier_paiement_en_ligne(self, request, pk=None):
