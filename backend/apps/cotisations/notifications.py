@@ -10,13 +10,24 @@ la même notification "paiement confirmé"/"relance cotisation" (RICEFW W-001/W-
 Depuis le 2026-09-19 (demande utilisateur), `notifier_paiement_confirme` déclenche aussi la mise à
 jour du statut associatif annuel du membre (voir apps.membres.services.enregistrer_statut_annuel)
 quand le paiement concerne la cotisation annuelle (type_article=cotisation, jamais adhesion/
-autre) — c'est le point commun aux 2 chemins qui font passer une Cotisation "cotisation" à
-`payee` (marquer_payee ET le webhook PSP), donc l'endroit naturel pour ce déclenchement, plutôt que
-dupliqué dans views.py et webhooks.py.
+autre) — c'est le point commun aux 3 chemins qui font passer une Cotisation "cotisation" à
+`payee` (marquer_payee, changer_statut ET le webhook PSP), donc l'endroit naturel pour ce
+déclenchement, plutôt que dupliqué dans views.py et webhooks.py.
+
+Même principe, même jour, pour type_article=adhesion (retour utilisateur : "Die Zahlung taucht
+nicht im Modul Ausstehende Zahlungen" — voir apps.adhesions.services.synchroniser_cotisation pour
+la création de la Cotisation liée) : `notifier_paiement_confirme` fait aussi passer la/les
+Souscription(s) liées à `payee`. Import d'apps.adhesions ici plutôt que l'inverse : apps.adhesions
+ne dépend d'aucun module de apps.cotisations au niveau Python (seule une référence par chaîne de
+caractères dans son FK, voir apps.adhesions.models.Souscription.cotisation), donc aucun risque de
+cycle. Cascade avant seulement, jamais inverse : voir CotisationViewSet.changer_statut — une
+correction rétroactive du statut de la Cotisation ne fait jamais régresser la Souscription, même
+philosophie que l'absence de désactivation automatique du membre ci-dessous.
 """
 
 from apps.accounts.models import ROLE_LEVELS, Role
 from apps.accounts.services import users_role_at_least
+from apps.adhesions.models import StatutSouscription
 from apps.membres.models import RaisonChangementStatut, StatutMembre
 from apps.membres.services import enregistrer_statut_annuel
 from apps.notifications.models import TypeNotification
@@ -68,6 +79,16 @@ def notifier_paiement_confirme(cotisation: Cotisation) -> None:
             RaisonChangementStatut.PAIEMENT_CONFIRME,
             date_effet=cotisation.date_paiement,
         )
+    elif cotisation.type_article == TypeArticle.ADHESION:
+        # related_name="souscription_adhesion" (ForeignKey, pas OneToOne — voir models.py) :
+        # normalement une seule Souscription non payée par Cotisation liée en pratique (voir
+        # apps.adhesions.services.synchroniser_cotisation), mais on couvre le queryset entier par
+        # robustesse plutôt que .first().
+        for souscription in cotisation.souscription_adhesion.exclude(
+            statut=StatutSouscription.PAYEE
+        ):
+            souscription.statut = StatutSouscription.PAYEE
+            souscription.save(update_fields=["statut", "updated_at"])
 
 
 def notifier_relance_cotisation(membre, annee: int, checkpoint: str) -> None:

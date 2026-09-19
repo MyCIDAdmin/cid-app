@@ -663,6 +663,39 @@ def test_marquer_payee_dune_adhesion_ne_touche_pas_le_statut_du_membre(api_clien
     assert not HistoriqueStatutMembre.objects.filter(membre=membre_paye, annee=2027).exists()
 
 
+def test_marquer_payee_dune_souscription_dadhesion_marque_la_souscription_payee(api_client):
+    """
+    Ajouté le 2026-09-19 (retour utilisateur : "Die Zahlung taucht nicht im Modul Ausstehende
+    Zahlungen") — cascade Cotisation payee -> Souscription payee, voir
+    apps.cotisations.notifications.notifier_paiement_confirme et
+    apps.adhesions.services.synchroniser_cotisation (qui crée la Cotisation liée).
+    """
+    from apps.adhesions.models import StatutSouscription
+    from apps.adhesions.tests.factories import SouscriptionFactory
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg5@example.de")
+    membre_paye = MembreFactory()
+    cotisation = CotisationFactory(
+        membre=membre_paye,
+        type_article=TypeArticle.ADHESION,
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="",
+        reference_transaction=None,
+    )
+    souscription = SouscriptionFactory(
+        membre=membre_paye,
+        cotisation=cotisation,
+        statut=StatutSouscription.EN_ATTENTE_PAIEMENT,
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 200, resp.data
+
+    souscription.refresh_from_db()
+    assert souscription.statut == StatutSouscription.PAYEE
+
+
 def test_admin_peut_marquer_payee(api_client):
     user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin@example.de")
     cotisation = CotisationFactory(

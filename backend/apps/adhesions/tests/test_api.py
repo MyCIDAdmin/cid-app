@@ -401,6 +401,73 @@ def test_souscrire_deux_fois_met_a_jour_la_meme_ligne_pas_une_nouvelle(api_clien
     assert Souscription.objects.filter(membre=membre, campagne=campagne).count() == 1
 
 
+# --- Synchronisation Cotisation liée (ajouté le 2026-09-19, retour utilisateur : "Die Zahlung
+# taucht nicht im Modul Ausstehende Zahlungen") — voir apps.adhesions.services.synchroniser_
+# cotisation, appelée depuis souscrire()/valider()/annuler().
+
+
+def test_souscrire_en_attente_paiement_cree_une_cotisation_liee(api_client):
+    from apps.cotisations.models import StatutCotisation, TypeArticle
+
+    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"))
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+
+    assert resp.status_code == 200, resp.data
+    from apps.adhesions.models import Souscription
+
+    souscription = Souscription.objects.get(id=resp.data["id"])
+    assert souscription.cotisation is not None
+    assert souscription.cotisation.membre_id == membre.id
+    assert souscription.cotisation.type_article == TypeArticle.ADHESION
+    assert souscription.cotisation.statut == StatutCotisation.EN_ATTENTE
+    assert str(souscription.cotisation.montant) == "50.00"
+
+
+def test_souscrire_avec_justificatif_requis_ne_cree_pas_encore_de_cotisation(api_client):
+    """Le paiement n'est pas encore dû tant que le justificatif n'est pas approuvé — voir
+    test_valider_justificatif_approuve_cree_la_cotisation_liee ci-dessous."""
+    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"))
+    rabais = RabaisOffreFactory(
+        offre=offre,
+        montant_reduction=Decimal("10.00"),
+        pct_reduction=None,
+        justificatif_requis=True,
+    )
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)}
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["cotisation"] is None
+
+
+def test_souscrire_deux_fois_met_a_jour_la_meme_cotisation_pas_une_nouvelle(api_client):
+    campagne = CampagneAdhesionFactory()
+    offre1 = OffreAdhesionFactory(campagne=campagne, prix_plein=Decimal("50.00"))
+    offre2 = OffreAdhesionFactory(campagne=campagne, prix_plein=Decimal("80.00"))
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    _auth(api_client, user)
+
+    resp1 = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre1.id)})
+    resp2 = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre2.id)})
+
+    assert resp1.status_code == 200, resp1.data
+    assert resp2.status_code == 200, resp2.data
+    assert resp1.data["cotisation"] == resp2.data["cotisation"]  # même écriture mise à jour
+
+    from apps.cotisations.models import Cotisation
+
+    assert Cotisation.objects.filter(membre=membre, type_article="adhesion").count() == 1
+    cotisation = Cotisation.objects.get(membre=membre, type_article="adhesion")
+    assert str(cotisation.montant) == "80.00"
+
+
 def test_souscription_deja_payee_ne_peut_plus_etre_modifiee(api_client):
     campagne = CampagneAdhesionFactory()
     offre = OffreAdhesionFactory(campagne=campagne)
@@ -644,6 +711,26 @@ def test_membre_ne_peut_pas_retirer_une_souscription_deja_payee(api_client):
     assert resp.status_code == 400
     souscription.refresh_from_db()
     assert souscription.statut == StatutSouscription.PAYEE
+
+
+def test_annuler_annule_la_cotisation_liee_non_payee(api_client):
+    """Ajouté le 2026-09-19 — voir apps.adhesions.services.synchroniser_cotisation : un paiement
+    qui n'est plus dû ne doit plus apparaître dans "Ausstehende Zahlungen"."""
+    from apps.cotisations.models import StatutCotisation
+    from apps.cotisations.tests.factories import CotisationFactory
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
+    cotisation = CotisationFactory(membre=membre, statut=StatutCotisation.EN_ATTENTE)
+    souscription = SouscriptionFactory(
+        membre=membre, cotisation=cotisation, statut=StatutSouscription.EN_ATTENTE_PAIEMENT
+    )
+    _auth(api_client, user)
+
+    resp = api_client.post(_annuler_url(souscription))
+
+    assert resp.status_code == 200, resp.data
+    cotisation.refresh_from_db()
+    assert cotisation.statut == StatutCotisation.ANNULEE
 
 
 def test_rh_annule_la_souscription_dun_membre(api_client):

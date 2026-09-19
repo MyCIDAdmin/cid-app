@@ -67,6 +67,12 @@ from .models import (
     StatutJustificatif,
     StatutSouscription,
 )
+from .notifications import (
+    notifier_justificatif_refuse,
+    notifier_justificatif_valide,
+    notifier_nouveau_justificatif_staff,
+    notifier_souscription_annulee,
+)
 from .permissions import (
     GESTION_CATALOGUE_MIN_LEVEL,
     READ_ALL_SOUSCRIPTIONS_MIN_LEVEL,
@@ -80,16 +86,11 @@ from .serializers import (
     JustificatifRabaisUploadSerializer,
     OffreAdhesionSerializer,
     RabaisOffreSerializer,
-    SouscrireSerializer,
     SouscriptionSerializer,
+    SouscrireSerializer,
     ValiderJustificatifSerializer,
 )
-from .notifications import (
-    notifier_justificatif_refuse,
-    notifier_justificatif_valide,
-    notifier_nouveau_justificatif_staff,
-    notifier_souscription_annulee,
-)
+from .services import synchroniser_cotisation
 from .tasks import envoyer_annonce_campagne
 
 
@@ -279,6 +280,11 @@ class SouscriptionViewSet(ModelViewSet):
         souscription.snapshot_avantages = offre.avantages
         souscription.date_souscription = timezone.now()
         souscription.save()
+        # Crée/actualise la Cotisation liée si un paiement est désormais dû dans l'immédiat, ou
+        # annule celle en attente si ce n'est plus le cas (ajouté le 2026-09-19, voir services.py
+        # — sans quoi une souscription en attente de paiement ne peut jamais apparaître dans
+        # "Ausstehende Zahlungen").
+        synchroniser_cotisation(souscription)
 
         return Response(SouscriptionSerializer(souscription).data)
 
@@ -316,6 +322,10 @@ class SouscriptionViewSet(ModelViewSet):
             )
         souscription.statut = StatutSouscription.ANNULEE
         souscription.save(update_fields=["statut"])
+        # Annule la Cotisation liée si elle n'était pas encore payée (ajouté le 2026-09-19, voir
+        # services.py) — jamais si elle l'était déjà : STATUTS_SOUSCRIPTION_ANNULABLES exclut déjà
+        # "payee" ci-dessus, ce cas ne devrait donc jamais se présenter ici.
+        synchroniser_cotisation(souscription)
         # Notification (ajoutée le 2026-09-16) uniquement quand ce n'est pas le membre
         # propriétaire qui vient d'annuler sa propre souscription ("zurückziehen") — voir
         # notifications.notifier_souscription_annulee.
@@ -445,6 +455,10 @@ class JustificatifRabaisViewSet(ModelViewSet):
             else StatutSouscription.RABAIS_REFUSE
         )
         souscription.save(update_fields=["statut"])
+        # Crée la Cotisation liée si le rabais est approuvé (paiement désormais dû), ou annule
+        # celle en attente si le rabais est rejeté et qu'une Cotisation avait déjà été créée pour
+        # un rabais précédent (ajouté le 2026-09-19, voir services.py).
+        synchroniser_cotisation(souscription)
 
         # Notification (ajoutée le 2026-09-16) — voir notifications.py.
         if decision == "approuve":

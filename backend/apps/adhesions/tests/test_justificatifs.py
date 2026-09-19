@@ -387,6 +387,15 @@ def test_rh_approuve_le_justificatif(api_client):
     assert justificatif.valide_par_id == rh.id
     assert justificatif.date_decision is not None
     assert souscription.statut == StatutSouscription.EN_ATTENTE_PAIEMENT
+    # Ajouté le 2026-09-19 (retour utilisateur : "Die Zahlung taucht nicht im Modul Ausstehende
+    # Zahlungen") — le paiement est désormais dû, voir apps.adhesions.services.synchroniser_
+    # cotisation, appelée depuis JustificatifRabaisViewSet.valider().
+    assert souscription.cotisation is not None
+    from apps.cotisations.models import StatutCotisation, TypeArticle
+
+    assert souscription.cotisation.type_article == TypeArticle.ADHESION
+    assert souscription.cotisation.statut == StatutCotisation.EN_ATTENTE
+    assert souscription.cotisation.montant == souscription.prix_paye
 
 
 def test_rh_approuve_le_justificatif_notifie_le_membre(api_client, mailoutbox):
@@ -427,6 +436,9 @@ def test_rh_rejette_le_justificatif_avec_motif(api_client):
     assert justificatif.statut == StatutJustificatif.REJETE
     assert justificatif.motif_rejet == "Carte étudiante expirée."
     assert souscription.statut == StatutSouscription.RABAIS_REFUSE
+    # Un rabais refusé ne rend pas de paiement dû dans l'immédiat (le membre doit encore choisir
+    # prix plein ou annulation) — voir apps.adhesions.services.synchroniser_cotisation.
+    assert souscription.cotisation is None
 
 
 def test_rh_rejette_le_justificatif_notifie_le_membre_avec_le_motif(api_client, mailoutbox):
