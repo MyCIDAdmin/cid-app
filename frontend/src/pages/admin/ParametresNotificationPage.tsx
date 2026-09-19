@@ -65,8 +65,8 @@ export default function ParametresNotificationPage() {
                   aria-label={t(`parametres.module.${module}`)}
                   disabled={modifierMutation.isPending}
                   onClick={() => toggleModule(module, actif)}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
-                    actif ? "bg-ca" : "bg-text-tertiary/30"
+                  className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:opacity-40 ${
+                    actif ? "border-ca bg-ca" : "border-text-tertiary bg-bg-tertiary"
                   }`}
                 >
                   <span
