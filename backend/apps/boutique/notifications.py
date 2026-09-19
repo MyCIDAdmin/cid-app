@@ -1,9 +1,11 @@
 """Point d'intégration `apps.notifications` pour ce module (Phase 2B) — voir
 apps.notifications.services.notifier pour la convention générale et apps.cotisations.notifications
-pour le même principe appliqué aux cotisations."""
+pour le même principe appliqué aux cotisations.
 
-from django.conf import settings
-from django.core.mail import send_mail
+Emails envoyés via Celery (`.delay()`, voir tasks.py) depuis le 2026-09-19, jamais en ligne dans
+ces fonctions — corrige une requête HTTP qui pouvait rester bloquée en attente d'une connexion
+SMTP (voir docstring de tasks.py pour le détail de l'incident). La notification in-app
+(`notifier`, DB seule) reste créée immédiatement, ici, de façon synchrone."""
 
 from apps.accounts.models import ROLE_LEVELS, Role
 from apps.accounts.services import users_role_at_least
@@ -11,6 +13,11 @@ from apps.notifications.models import TypeNotification
 from apps.notifications.services import notifier
 
 from .models import Commande
+from .tasks import (
+    envoyer_email_commande_annulee,
+    envoyer_email_commande_confirmee,
+    envoyer_email_commande_expediee,
+)
 
 STAFF_NOUVELLE_COMMANDE_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
 
@@ -39,17 +46,7 @@ def notifier_nouvelle_commande_staff(commande: Commande) -> None:
 def notifier_commande_confirmee(commande: Commande) -> None:
     """Appelée juste après la création réussie d'une commande (`CommandeViewSet.passer`)."""
     user = _destinataire(commande)
-    if user and user.email:
-        send_mail(
-            subject=f"Commande {commande.numero_commande} confirmée",
-            message=(
-                f"Votre commande {commande.numero_commande} d'un montant de "
-                f"{commande.montant_total} € a bien été enregistrée."
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=True,
-        )
+    envoyer_email_commande_confirmee.delay(str(commande.id))
     notifier(
         user,
         TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE,
@@ -65,14 +62,7 @@ def notifier_commande_annulee(commande: Commande) -> None:
     vient d'annuler sa propre commande (voir views.py, même principe que
     apps.adhesions.notifications.notifier_souscription_annulee)."""
     user = _destinataire(commande)
-    if user and user.email:
-        send_mail(
-            subject=f"Commande {commande.numero_commande} annulée",
-            message=f"Votre commande {commande.numero_commande} a été annulée.",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=True,
-        )
+    envoyer_email_commande_annulee.delay(str(commande.id))
     notifier(
         user,
         TypeNotification.BOUTIQUE_COMMANDE_ANNULEE,
@@ -96,14 +86,7 @@ def notifier_commande_expediee(commande: Commande) -> None:
         )
     else:
         suivi = ""
-    if user and user.email:
-        send_mail(
-            subject=f"Commande {commande.numero_commande} expédiée",
-            message=f"Votre commande {commande.numero_commande} vient d'être expédiée.{suivi}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=True,
-        )
+    envoyer_email_commande_expediee.delay(str(commande.id))
     notifier(
         user,
         TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE,
