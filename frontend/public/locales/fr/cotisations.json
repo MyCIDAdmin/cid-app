@@ -46,7 +46,10 @@
     "erreur": "Le paiement n'a pas pu être enregistré.",
     "redirection_en_cours": "Redirection vers le paiement sécurisé…",
     "reessayer_gateway": "Réessayer",
-    "erreur_gateway": "Le paiement en ligne n'a pas pu être initié. Le paiement reste enregistré en attente : vous pouvez réessayer, ou attendre la confirmation manuelle du Directeur Financier."
+    "erreur_gateway": "Le paiement en ligne n'a pas pu être initié. Le paiement reste enregistré en attente : vous pouvez réessayer, ou attendre la confirmation manuelle du Directeur Financier.",
+    "chargement_lien": "Chargement du paiement…",
+    "erreur_lien": "Impossible de charger ce paiement.",
+    "voir_instructions": "Voir les instructions de paiement"
   },
   "confirmation": {
     "titre": "Paiement confirmé !",

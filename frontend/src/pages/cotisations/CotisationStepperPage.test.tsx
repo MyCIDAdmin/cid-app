@@ -15,6 +15,7 @@ vi.mock("../../hooks/useCotisations", async () => {
     useCreerCotisation: vi.fn(),
     useInitierPaiementEnLigne: vi.fn(),
     useArticlesCatalogue: vi.fn(),
+    useCotisation: vi.fn(),
   };
 });
 
@@ -82,6 +83,13 @@ describe("CotisationStepperPage", () => {
       mutate: vi.fn(),
       isPending: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
+
+    // Défaut neutre : pas de lien direct `?paiement=...` (voir tests dédiés plus bas).
+    vi.mocked(useCotisationsHooks.useCotisation).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
 
     Object.defineProperty(window, "location", {
       writable: true,
@@ -522,5 +530,104 @@ describe("CotisationStepperPage", () => {
     expect(screen.queryByText("article.cotisation_description")).not.toBeInTheDocument();
     expect(screen.queryByText("article.adhesion_description")).not.toBeInTheDocument();
     expect(screen.getByText("article.don_description")).toBeInTheDocument();
+  });
+
+  // --- Lien direct `?paiement=<id>` (ajouté le 2026-09-20, retour utilisateur : "Confirmer et
+  // payer" doit sauter directement au paiement) — voir docstring de tête du composant. ---
+
+  describe("lien direct ?paiement=<id>", () => {
+    beforeEach(() => {
+      vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+        mutate: vi.fn(),
+        isPending: false,
+        isError: false,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+    });
+
+    it("saute directement à l'étape 2 pour une cotisation liée en attente, sans jamais en créer une nouvelle", () => {
+      const mutateCreer = vi.fn();
+      vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+        mutate: mutateCreer,
+        isPending: false,
+        isError: false,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+      vi.mocked(useCotisationsHooks.useCotisation).mockReturnValue({
+        data: cotisation({
+          id: "cot-evt",
+          type_article: "evenement",
+          libelle: "Inscription — Match amical",
+          montant: "70.00",
+          mode_paiement: "",
+          statut: "en_attente",
+          reference_transaction: null,
+          date_paiement: null,
+        }),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
+
+      renderWithProviders(<CotisationStepperPage />, { route: "/?paiement=cot-evt" });
+
+      // Étape 1 (choix d'article) entièrement sautée.
+      expect(screen.queryByText("article.cotisation_titre")).not.toBeInTheDocument();
+      expect(screen.getByText("paiement.titre")).toBeInTheDocument();
+      expect(screen.getByText("Inscription — Match amical")).toBeInTheDocument();
+      expect(screen.getByText("70,00 €")).toBeInTheDocument();
+      // Pas de retour possible vers une étape 1 qui n'a pas de sens ici.
+      expect(screen.queryByText("paiement.retour")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("paiement.voir_instructions"));
+
+      // Jamais de nouvelle Cotisation créée : la cotisation existe déjà côté serveur.
+      expect(mutateCreer).not.toHaveBeenCalled();
+      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument();
+      expect(screen.getByText("Inscription — Match amical")).toBeInTheDocument();
+      expect(screen.getByText("paiement_instructions.virement_titre")).toBeInTheDocument();
+    });
+
+    it("saute directement à l'étape 3 pour une cotisation liée déjà payée", () => {
+      vi.mocked(useCotisationsHooks.useCotisation).mockReturnValue({
+        data: cotisation({
+          id: "cot-payee",
+          type_article: "evenement",
+          libelle: "Inscription — Tournoi",
+          montant: "20.00",
+          statut: "payee",
+        }),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
+
+      renderWithProviders(<CotisationStepperPage />, { route: "/?paiement=cot-payee" });
+
+      expect(screen.getByText("confirmation.titre")).toBeInTheDocument();
+      expect(screen.getByText("Inscription — Tournoi")).toBeInTheDocument();
+    });
+
+    it("affiche un message de chargement le temps de récupérer la cotisation liée", () => {
+      vi.mocked(useCotisationsHooks.useCotisation).mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
+
+      renderWithProviders(<CotisationStepperPage />, { route: "/?paiement=cot-loading" });
+
+      expect(screen.getByText("paiement.chargement_lien")).toBeInTheDocument();
+    });
+
+    it("affiche une erreur si la cotisation liée ne peut pas être chargée", () => {
+      vi.mocked(useCotisationsHooks.useCotisation).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
+
+      renderWithProviders(<CotisationStepperPage />, { route: "/?paiement=cot-404" });
+
+      expect(screen.getByText("paiement.erreur_lien")).toBeInTheDocument();
+    });
   });
 });

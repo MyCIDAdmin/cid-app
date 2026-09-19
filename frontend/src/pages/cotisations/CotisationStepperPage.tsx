@@ -69,15 +69,31 @@
  * intact et fonctionnel — il suffit de restaurer MODES_GATEWAY = ["carte", "paypal"] et de
  * remettre "carte" dans MODES_PROPOSES/la liste de l'étape 2 pour réactiver le paiement en ligne
  * réel dans une phase ultérieure.
+ *
+ * Lien direct `?paiement=<cotisationId>` (ajouté le 2026-09-20, retour utilisateur : "Wenn ich
+ * auf 'Confirmer et payer' clicke, ich soll direkt zur Zahlung springen") : ouvert depuis
+ * EvenementsPage.tsx (modal d'inscription "Confirmer et payer", et le bouton "Payer maintenant"
+ * de l'onglet "Mes inscriptions") vers une Cotisation DÉJÀ créée côté serveur — voir
+ * apps.evenements.services.synchroniser_cotisation — jamais une nouvelle création. La Cotisation
+ * est chargée par `useCotisation(paiementId)`, et l'étape 1 (choix d'article) est sautée pour
+ * aller directement à l'étape 2 (choix du mode) : `payer()` n'appelle alors PAS
+ * `creerMutation`/POST /cotisations/ (CotisationViewSet n'autorise d'ailleurs même pas PATCH,
+ * voir `http_method_names` — un membre ne peut pas non plus corriger le mode a posteriori sur une
+ * cotisation existante), il se contente d'afficher l'étape 3 avec cette même cotisation et le
+ * mode choisi localement (uniquement pour l'affichage des instructions SEPA/PayPal — la
+ * confirmation réelle du paiement reste manuelle, DF/Admin, comme pour tout le reste de ce
+ * stepper, AHM-53). Si la cotisation est déjà `payee` (le membre revient sur ce lien après coup),
+ * on saute directement à l'étape 3 telle quelle.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import PaymentInstructions from "../../components/ui/PaymentInstructions";
 import { telechargerRecuCotisation } from "../../api/cotisations";
 import {
   useArticlesCatalogue,
+  useCotisation,
   useCreerCotisation,
   useInitierPaiementEnLigne,
   useMesCotisations,
@@ -145,7 +161,14 @@ function EtapeIndicateur({ numero, label, active, franchie }: EtapeIndicateurPro
 
 export default function CotisationStepperPage() {
   const { t } = useTranslation("cotisations");
+  const navigate = useNavigate();
   const anneeCourante = new Date().getFullYear();
+
+  const [searchParams] = useSearchParams();
+  // Lien direct depuis un autre module (voir docstring de tête) — id d'une Cotisation déjà
+  // créée côté serveur, jamais d'un article à choisir.
+  const paiementId = searchParams.get("paiement") ?? undefined;
+  const cotisationLiee = useCotisation(paiementId);
 
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
   const [articleChoisi, setArticleChoisi] = useState<TypeArticleStepper>("cotisation");
@@ -276,19 +299,38 @@ export default function CotisationStepperPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cotisationDisponible, adhesionDisponible, etape]);
 
+  // Lien direct `?paiement=<id>` (voir docstring de tête) : dès que la Cotisation existante est
+  // chargée, on saute l'étape 1 (aucun article à choisir, elle existe déjà) — directement à
+  // l'étape 3 si déjà payée (le membre revient sur ce lien après coup), sinon à l'étape 2 (choix
+  // du mode) en pré-sélectionnant son mode_paiement actuel s'il en a déjà un.
+  useEffect(() => {
+    if (!paiementId || !cotisationLiee.data) return;
+    const c = cotisationLiee.data;
+    if (c.statut === "payee") {
+      setResultat(c);
+      setEtape(3);
+    } else if ((c.statut === "en_attente" || c.statut === "echouee") && etape === 1) {
+      setModePaiement(c.mode_paiement || "virement_sepa");
+      setEtape(2);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paiementId, cotisationLiee.data]);
+
   const articleCatalogueChoisi = articlesCatalogueActifs.find((a) => a.id === articleCatalogueId);
 
   const donMontantNombre = Number(donMontant.replace(",", "."));
-  const montantAffiche =
-    articleChoisi === "don"
+  const montantAffiche = paiementId
+    ? Number(cotisationLiee.data?.montant ?? 0)
+    : articleChoisi === "don"
       ? Number.isFinite(donMontantNombre)
         ? donMontantNombre
         : 0
       : articleChoisi === "autre"
         ? Number(articleCatalogueChoisi?.montant ?? 0)
         : (ARTICLES.find((a) => a.type === articleChoisi)?.montant ?? 0);
-  const libelleAffiche =
-    articleChoisi === "don"
+  const libelleAffiche = paiementId
+    ? (cotisationLiee.data?.libelle ?? "")
+    : articleChoisi === "don"
       ? DON_LIBELLE
       : articleChoisi === "autre"
         ? (articleCatalogueChoisi?.libelle ?? "")
@@ -306,6 +348,15 @@ export default function CotisationStepperPage() {
   }
 
   function payer() {
+    if (paiementId && cotisationLiee.data) {
+      // Cotisation déjà créée côté serveur (voir docstring de tête) — jamais de POST
+      // /cotisations/ ici, `mode_paiement` n'est fusionné que localement pour piloter
+      // l'affichage des instructions SEPA/PayPal à l'étape 3 (CotisationViewSet n'autorise de
+      // toute façon aucune écriture PATCH sur une cotisation existante).
+      setResultat({ ...cotisationLiee.data, mode_paiement: modePaiement });
+      setEtape(3);
+      return;
+    }
     const payload =
       articleChoisi === "don"
         ? {
@@ -350,6 +401,11 @@ export default function CotisationStepperPage() {
     setRedirectionEnCours(false);
     setErreurGateway(null);
     creerMutation.reset();
+    if (paiementId) {
+      // Retire `?paiement=...` de l'URL, sinon l'effet ci-dessus resauterait immédiatement à
+      // l'étape 2 dès qu'elle repasse à 1.
+      navigate("/cotisation", { replace: true });
+    }
     setEtape(1);
   }
 
@@ -365,7 +421,18 @@ export default function CotisationStepperPage() {
         <EtapeIndicateur numero={3} label={t("etape.confirmation")} active={etape === 3} franchie={false} />
       </div>
 
-      {etape === 1 && (
+      {paiementId && etape === 1 && (
+        <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+          {cotisationLiee.isLoading && (
+            <p className="text-sm text-text-tertiary">{t("paiement.chargement_lien")}</p>
+          )}
+          {cotisationLiee.isError && (
+            <p className="text-sm text-status-dangerText">{t("paiement.erreur_lien")}</p>
+          )}
+        </div>
+      )}
+
+      {!paiementId && etape === 1 && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
             <h2 className="mb-3 text-xs font-bold text-text-primary">{t("article.titre")}</h2>
@@ -591,15 +658,21 @@ export default function CotisationStepperPage() {
               disabled={creerMutation.isPending}
               className="mt-3 w-full rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
             >
-              {t("paiement.payer", { montant: formatMontant(montantAffiche).replace(" €", "") })}
+              {paiementId
+                ? t("paiement.voir_instructions")
+                : t("paiement.payer", { montant: formatMontant(montantAffiche).replace(" €", "") })}
             </button>
-            <button
-              type="button"
-              onClick={() => setEtape(1)}
-              className="mt-2 w-full rounded-cid border border-text-tertiary/30 px-3 py-2 text-sm text-text-secondary hover:bg-bg-tertiary"
-            >
-              {t("paiement.retour")}
-            </button>
+            {/* Pas de retour à l'étape 1 pour un lien direct (voir docstring de tête) : il n'y a
+                aucun article à choisir, revenir en arrière resauterait immédiatement ici. */}
+            {!paiementId && (
+              <button
+                type="button"
+                onClick={() => setEtape(1)}
+                className="mt-2 w-full rounded-cid border border-text-tertiary/30 px-3 py-2 text-sm text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("paiement.retour")}
+              </button>
+            )}
           </div>
         </div>
       )}

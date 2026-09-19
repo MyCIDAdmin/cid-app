@@ -18,6 +18,15 @@ vi.mock("../../hooks/useEvenements", async () => {
   };
 });
 
+// Ajouté le 2026-09-20 (retour utilisateur : "Confirmer et payer" doit sauter directement au
+// paiement) — seul `useNavigate` est remplacé, le reste (MemoryRouter, Routes, Route utilisés
+// par renderWithProviders) reste le vrai module.
+const navigateMock = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return { ...actual, useNavigate: () => navigateMock };
+});
+
 const membre = {
   id: "u1",
   email: "membre@example.com",
@@ -87,6 +96,7 @@ function inscription(overrides: Partial<Inscription> = {}): Inscription {
 
 describe("EvenementsPage", () => {
   beforeEach(() => {
+    navigateMock.mockClear();
     useAuthStore.setState({
       accessToken: "t",
       refreshToken: "r",
@@ -148,6 +158,71 @@ describe("EvenementsPage", () => {
       { evenement: "e1", places: 1, regime_alimentaire: "aucun", remarques: "" },
       expect.anything(),
     );
+  });
+
+  // --- Lien direct vers le paiement (ajouté le 2026-09-20, retour utilisateur : "Confirmer et
+  // payer" doit sauter directement au paiement) ---
+
+  it("confirmer et payer une inscription payante navigue directement vers son paiement", () => {
+    const inscrire = mutationMock<ReturnType<typeof useEvenementsHooks.useInscrire>>();
+    inscrire.mutate = vi.fn((_payload, options) => {
+      options?.onSuccess?.(inscription({ id: "i2", cotisation: "cot1" }));
+    });
+    vi.mocked(useEvenementsHooks.useInscrire).mockReturnValue(inscrire);
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    fireEvent.click(screen.getByText("sinscrire_payer"));
+    fireEvent.click(screen.getByText("modal_confirmer_payer"));
+
+    expect(navigateMock).toHaveBeenCalledWith("/cotisation?paiement=cot1");
+  });
+
+  it("confirmer une inscription gratuite ne navigue pas vers un paiement", () => {
+    const inscrire = mutationMock<ReturnType<typeof useEvenementsHooks.useInscrire>>();
+    inscrire.mutate = vi.fn((_payload, options) => {
+      options?.onSuccess?.(
+        inscription({ id: "i3", statut: "confirmee", montant_paye: "0.00", cotisation: null }),
+      );
+    });
+    vi.mocked(useEvenementsHooks.useInscrire).mockReturnValue(inscrire);
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement({ gratuit: true, cout: "0.00" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    fireEvent.click(screen.getByText("sinscrire_gratuit"));
+    fireEvent.click(screen.getByText("modal_confirmer"));
+
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it("payer_maintenant navigue vers le paiement lié à l'inscription", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+    vi.mocked(useEvenementsHooks.useInscriptions).mockReturnValue({
+      data: page([inscription({ cotisation: "cot2" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useInscriptions>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    fireEvent.click(screen.getByText("tab_inscrits"));
+    fireEvent.click(screen.getByText("payer_maintenant"));
+
+    expect(navigateMock).toHaveBeenCalledWith("/cotisation?paiement=cot2");
   });
 
   it("affiche mes inscriptions avec le statut de paiement", () => {

@@ -12,9 +12,18 @@
  * Le prix affiché n'est qu'indicatif — comme boutique/adhésions/cotisations, le montant réel
  * (et la capacité) est toujours recalculé et vérifié côté serveur, jamais fait confiance au
  * frontend (CLAUDE.md §8, voir InscrirePayload/EvenementViewSet.inscrire). Il n'y a pas de
- * paiement intégré directement ici : une inscription payante repasse par la page Cotisation
- * (mockup : bouton "Payer maintenant" sur l'onglet "Mes inscriptions" → goTo('cotisation')),
+ * paiement intégré directement ici : une inscription payante repasse par la page Cotisation,
  * même principe que le panier boutique qui renvoie vers son propre flux de paiement.
+ *
+ * Changé le 2026-09-20 (retour utilisateur : "Wenn ich auf 'Confirmer et payer' clicke, ich
+ * soll direkt zur Zahlung springen") : "Confirmer et payer" (modale ci-dessus, quand
+ * l'inscription créée est payante) ET le bouton "Payer maintenant" de l'onglet "Mes
+ * inscriptions" naviguent maintenant directement vers `/cotisation?paiement=<cotisationId>` —
+ * la Cotisation déjà créée côté serveur pour CETTE inscription (voir `Inscription.cotisation`,
+ * apps.evenements.services.synchroniser_cotisation) — au lieu de renvoyer vers `/cotisation`
+ * sans contexte, ce qui obligeait jusqu'ici à rebasculer manuellement sur l'onglet "Mes
+ * souscriptions"/"Mes inscriptions" pour retrouver ce paiement (voir docstring de tête de
+ * CotisationStepperPage.tsx pour le comportement du lien direct).
  */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,7 +54,15 @@ function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
 }
 
-function ModaleInscription({ evenement, onClose }: { evenement: Evenement; onClose: () => void }) {
+function ModaleInscription({
+  evenement,
+  onClose,
+  onPayer,
+}: {
+  evenement: Evenement;
+  onClose: () => void;
+  onPayer: (cotisationId: string) => void;
+}) {
   const { t } = useTranslation("evenements");
   const inscrire = useInscrire();
   const [places, setPlaces] = useState(1);
@@ -60,7 +77,17 @@ function ModaleInscription({ evenement, onClose }: { evenement: Evenement; onClo
     inscrire.mutate(
       { evenement: evenement.id, places, regime_alimentaire: regime, remarques },
       {
-        onSuccess: onClose,
+        onSuccess: (inscription) => {
+          onClose();
+          // Ajouté le 2026-09-20 (retour utilisateur : "Wenn ich auf 'Confirmer et payer'
+          // clicke, ich soll direkt zur Zahlung springen") — une inscription gratuite ou déjà
+          // confirmée n'a pas de Cotisation liée (voir apps.evenements.services.
+          // synchroniser_cotisation, statut EN_ATTENTE_PAIEMENT uniquement) : dans ce cas on se
+          // contente de fermer la modale, comme avant.
+          if (inscription.cotisation) {
+            onPayer(inscription.cotisation);
+          }
+        },
         onError: (err) => setErreur(extractApiErrorMessage(err, t("erreur_inscription"))),
       },
     );
@@ -378,7 +405,13 @@ export default function EvenementsPage() {
                 {inscription.statut === "en_attente_paiement" && (
                   <button
                     type="button"
-                    onClick={() => navigate("/cotisation")}
+                    onClick={() =>
+                      navigate(
+                        inscription.cotisation
+                          ? `/cotisation?paiement=${inscription.cotisation}`
+                          : "/cotisation",
+                      )
+                    }
                     className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad"
                   >
                     {t("payer_maintenant")}
@@ -403,6 +436,7 @@ export default function EvenementsPage() {
         <ModaleInscription
           evenement={evenementInscription}
           onClose={() => setEvenementInscription(null)}
+          onPayer={(cotisationId) => navigate(`/cotisation?paiement=${cotisationId}`)}
         />
       )}
     </div>

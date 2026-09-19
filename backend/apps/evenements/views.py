@@ -61,6 +61,7 @@ from .serializers import (
     RejoindreTrajetSerializer,
     ReservationCovoiturageSerializer,
 )
+from .services import synchroniser_cotisation
 from .tasks import envoyer_annulation_evenement, envoyer_invitations_evenement
 
 
@@ -180,6 +181,12 @@ class EvenementViewSet(ModelViewSet):
                 else StatutInscription.EN_ATTENTE_PAIEMENT
             )
             inscription.save()
+            # Crée/actualise la Cotisation liée si un paiement est désormais dû dans l'immédiat
+            # (ajouté le 2026-09-20, voir services.py — sans quoi une inscription payante ne
+            # pouvait jamais être réglée en libre-service). Toujours dans la même transaction
+            # que select_for_update() ci-dessus : la Cotisation créée est donc, elle aussi,
+            # cohérente avec la capacité/le montant vérifiés atomiquement.
+            synchroniser_cotisation(inscription)
 
         return Response(InscriptionSerializer(inscription).data)
 
@@ -209,6 +216,11 @@ class InscriptionViewSet(ModelViewSet):
             raise ValidationError({"statut": "Cette inscription est déjà annulée."})
         inscription.statut = StatutInscription.ANNULEE
         inscription.save(update_fields=["statut"])
+        # Annule la Cotisation liée si elle n'était pas encore payée (ajouté le 2026-09-20, voir
+        # services.py) — ne touche jamais une Cotisation déjà payee (synchroniser_cotisation ne
+        # touche que en_attente/echouee), même philosophie que l'annulation d'une Souscription
+        # adhésion (apps.adhesions.views.SouscriptionViewSet.annuler).
+        synchroniser_cotisation(inscription)
         return Response(self.get_serializer(inscription).data)
 
 

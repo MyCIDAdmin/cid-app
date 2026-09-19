@@ -696,6 +696,39 @@ def test_marquer_payee_dune_souscription_dadhesion_marque_la_souscription_payee(
     assert souscription.statut == StatutSouscription.PAYEE
 
 
+def test_marquer_payee_dune_inscription_evenement_marque_linscription_confirmee(api_client):
+    """
+    Ajouté le 2026-09-20 (retour utilisateur : "Confirmer et payer" doit sauter directement au
+    paiement) — cascade Cotisation payee -> Inscription confirmee, voir
+    apps.cotisations.notifications.notifier_paiement_confirme et
+    apps.evenements.services.synchroniser_cotisation (qui crée la Cotisation liée).
+    """
+    from apps.evenements.models import StatutInscription
+    from apps.evenements.tests.factories import InscriptionFactory
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg6@example.de")
+    membre_paye = MembreFactory()
+    cotisation = CotisationFactory(
+        membre=membre_paye,
+        type_article=TypeArticle.EVENEMENT,
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="",
+        reference_transaction=None,
+    )
+    inscription = InscriptionFactory(
+        membre=membre_paye,
+        cotisation=cotisation,
+        statut=StatutInscription.EN_ATTENTE_PAIEMENT,
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 200, resp.data
+
+    inscription.refresh_from_db()
+    assert inscription.statut == StatutInscription.CONFIRMEE
+
+
 def test_admin_peut_marquer_payee(api_client):
     user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin@example.de")
     cotisation = CotisationFactory(

@@ -23,11 +23,19 @@ caractères dans son FK, voir apps.adhesions.models.Souscription.cotisation), do
 cycle. Cascade avant seulement, jamais inverse : voir CotisationViewSet.changer_statut — une
 correction rétroactive du statut de la Cotisation ne fait jamais régresser la Souscription, même
 philosophie que l'absence de désactivation automatique du membre ci-dessous.
+
+Même principe encore, le lendemain (retour utilisateur : "Wenn ich auf 'Confirmer et payer'
+clicke, ich soll direkt zur Zahlung springen" — voir apps.evenements.services.synchroniser_
+cotisation pour la création de la Cotisation liée à une Inscription payante), pour type_
+article=evenement : la/les Inscription(s) liées passent à `confirmee`. Même raison d'import
+qu'apps.adhesions ci-dessus (apps.evenements ne dépend d'aucun module de apps.cotisations non
+plus), même cascade avant seulement.
 """
 
 from apps.accounts.models import ROLE_LEVELS, Role
 from apps.accounts.services import users_role_at_least
 from apps.adhesions.models import StatutSouscription
+from apps.evenements.models import StatutInscription
 from apps.membres.models import RaisonChangementStatut, StatutMembre
 from apps.membres.services import enregistrer_statut_annuel
 from apps.notifications.models import TypeNotification
@@ -89,6 +97,14 @@ def notifier_paiement_confirme(cotisation: Cotisation) -> None:
         ):
             souscription.statut = StatutSouscription.PAYEE
             souscription.save(update_fields=["statut", "updated_at"])
+    elif cotisation.type_article == TypeArticle.EVENEMENT:
+        # related_name="inscription_evenement" (ForeignKey, pas OneToOne — voir
+        # apps.evenements.models.Inscription.cotisation), même raison que ci-dessus.
+        for inscription in cotisation.inscription_evenement.exclude(
+            statut=StatutInscription.CONFIRMEE
+        ):
+            inscription.statut = StatutInscription.CONFIRMEE
+            inscription.save(update_fields=["statut", "updated_at"])
 
 
 def notifier_relance_cotisation(membre, annee: int, checkpoint: str) -> None:

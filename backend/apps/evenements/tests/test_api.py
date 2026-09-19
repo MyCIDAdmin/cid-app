@@ -217,6 +217,100 @@ def test_annuler_inscription_libere_la_capacite(api_client):
     assert resp3.status_code == 200
 
 
+# --- Synchronisation Cotisation liée (ajoutée le 2026-09-20, retour utilisateur : "Wenn ich auf
+# 'Confirmer et payer' clicke, ich soll direkt zur Zahlung springen") — voir apps.evenements.
+# services.synchroniser_cotisation, appelée depuis inscrire()/InscriptionViewSet.annuler().
+
+
+def test_inscrire_en_attente_paiement_cree_une_cotisation_liee(api_client):
+    from apps.cotisations.models import StatutCotisation, TypeArticle
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "cot1@example.de")
+    evenement = EvenementFactory(cout=Decimal("35.00"), places_max=10)
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 2}
+    )
+
+    assert resp.status_code == 200, resp.data
+    from apps.evenements.models import Inscription
+
+    inscription = Inscription.objects.get(id=resp.data["id"])
+    assert inscription.cotisation is not None
+    assert inscription.cotisation.membre_id == membre.id
+    assert inscription.cotisation.type_article == TypeArticle.EVENEMENT
+    assert inscription.cotisation.statut == StatutCotisation.EN_ATTENTE
+    assert str(inscription.cotisation.montant) == "70.00"
+
+
+def test_inscrire_gratuit_ne_cree_pas_de_cotisation(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "cot2@example.de")
+    evenement = EvenementFactory(gratuit=True, cout=Decimal("0.00"), places_max=10)
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["cotisation"] is None
+
+
+def test_reinscrire_avant_paiement_met_a_jour_la_meme_cotisation_pas_une_nouvelle(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "cot3@example.de")
+    evenement = EvenementFactory(cout=Decimal("35.00"), places_max=10)
+
+    resp1 = _auth(api_client, user).post(
+        reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}
+    )
+    resp2 = _auth(api_client, user).post(
+        reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 3}
+    )
+
+    assert resp1.status_code == 200, resp1.data
+    assert resp2.status_code == 200, resp2.data
+    assert resp1.data["cotisation"] == resp2.data["cotisation"]  # même écriture mise à jour
+
+    from apps.cotisations.models import Cotisation
+
+    assert Cotisation.objects.filter(membre=membre, type_article="evenement").count() == 1
+    cotisation = Cotisation.objects.get(membre=membre, type_article="evenement")
+    assert str(cotisation.montant) == "105.00"
+
+
+def test_annuler_annule_la_cotisation_liee_non_payee(api_client):
+    from apps.cotisations.models import StatutCotisation
+    from apps.cotisations.tests.factories import CotisationFactory
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "cot4@example.de")
+    cotisation = CotisationFactory(membre=membre, statut=StatutCotisation.EN_ATTENTE)
+    inscription = InscriptionFactory(
+        membre=membre, cotisation=cotisation, statut=StatutInscription.EN_ATTENTE_PAIEMENT
+    )
+
+    resp = _auth(api_client, user).post(_inscription_annuler_url(inscription))
+
+    assert resp.status_code == 200, resp.data
+    cotisation.refresh_from_db()
+    assert cotisation.statut == StatutCotisation.ANNULEE
+
+
+def test_annuler_ne_touche_pas_une_cotisation_deja_payee(api_client):
+    from apps.cotisations.models import StatutCotisation
+    from apps.cotisations.tests.factories import CotisationFactory
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "cot5@example.de")
+    cotisation = CotisationFactory(membre=membre, statut=StatutCotisation.PAYEE)
+    inscription = InscriptionFactory(
+        membre=membre, cotisation=cotisation, statut=StatutInscription.CONFIRMEE
+    )
+
+    resp = _auth(api_client, user).post(_inscription_annuler_url(inscription))
+
+    assert resp.status_code == 200, resp.data
+    cotisation.refresh_from_db()
+    assert cotisation.statut == StatutCotisation.PAYEE
+
+
 def test_membre_ne_voit_que_ses_propres_inscriptions(api_client):
     user1, membre1 = _user_avec_membre(Role.MEMBRE, "m9@example.de")
     user2, membre2 = _user_avec_membre(Role.MEMBRE, "m10@example.de")

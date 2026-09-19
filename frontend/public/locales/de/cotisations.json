@@ -46,7 +46,10 @@
     "erreur": "Die Zahlung konnte nicht gespeichert werden.",
     "redirection_en_cours": "Weiterleitung zur sicheren Zahlung…",
     "reessayer_gateway": "Erneut versuchen",
-    "erreur_gateway": "Die Online-Zahlung konnte nicht gestartet werden. Die Zahlung bleibt als ausstehend gespeichert — Sie können es erneut versuchen oder auf die manuelle Bestätigung durch den Finanzverantwortlichen warten."
+    "erreur_gateway": "Die Online-Zahlung konnte nicht gestartet werden. Die Zahlung bleibt als ausstehend gespeichert — Sie können es erneut versuchen oder auf die manuelle Bestätigung durch den Finanzverantwortlichen warten.",
+    "chargement_lien": "Zahlung wird geladen…",
+    "erreur_lien": "Diese Zahlung konnte nicht geladen werden.",
+    "voir_instructions": "Zahlungsanweisungen anzeigen"
   },
   "confirmation": {
     "titre": "Zahlung bestätigt!",
