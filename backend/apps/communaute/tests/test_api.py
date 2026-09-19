@@ -271,7 +271,7 @@ def test_commenter_notifie_lauteur_de_la_publication(api_client):
     assert resp.status_code == 201
     notification = Notification.objects.get(destinataire=auteur_user)
     assert notification.type_notification == TypeNotification.COMMUNAUTE_COMMENTAIRE_FIL
-    assert notification.lien == f"/fil/{publication.id}"
+    assert notification.lien == f"/fil?publication={publication.id}"
 
 
 def test_commenter_sa_propre_publication_ne_se_notifie_pas_soi_meme(api_client):

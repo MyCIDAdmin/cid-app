@@ -21,18 +21,22 @@ def test_envoyer_notification_ouverture_notifie_les_eligibles():
     session = VoteSessionFactory()
     _, membre = user_membre_avec_fiche(email="eligible@example.de")
     envoyer_notification_ouverture(str(session.id))
-    assert Notification.objects.filter(
+    notification = Notification.objects.get(
         destinataire=membre.user, type_notification=TypeNotification.VOTE_OUVERTURE
-    ).exists()
+    )
+    # Corrigé le 2026-09-19 — l'ancien lien "/vote" ne correspondait à aucune route du frontend
+    # (voir docstring de _notifier_eligibles).
+    assert notification.lien == f"/votes?session={session.id}"
 
 
 def test_envoyer_notification_resultats_notifie_les_eligibles():
     session = VoteSessionFactory(statut=StatutSession.CLOTUREE)
     _, membre = user_membre_avec_fiche(email="eligible2@example.de")
     envoyer_notification_resultats(str(session.id))
-    assert Notification.objects.filter(
+    notification = Notification.objects.get(
         destinataire=membre.user, type_notification=TypeNotification.VOTE_RESULTATS
-    ).exists()
+    )
+    assert notification.lien == f"/votes?session={session.id}"
 
 
 def test_clore_sessions_expirees_cloture_uniquement_les_sessions_depassees():

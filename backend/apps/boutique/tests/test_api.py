@@ -305,6 +305,7 @@ def test_passer_commande_cree_une_notification_in_app(api_client):
 
     notification = Notification.objects.get(destinataire=user)
     assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE
+    assert notification.lien == f"/boutique/commandes?commande={resp.data['id']}"
 
 
 def test_passer_commande_notifie_le_staff_bureau_admin(api_client):
@@ -459,6 +460,7 @@ def test_bureau_admin_annule_la_commande_dun_membre_le_notifie(api_client):
     assert resp.status_code == 200
     notification = Notification.objects.get(destinataire=user_membre)
     assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_ANNULEE
+    assert notification.lien == f"/boutique/commandes?commande={commande.id}"
 
 
 # --- changer_statut : réservé Bureau Admin+, transitions valides ---
@@ -695,6 +697,7 @@ def test_expedier_directeur_financier_cree_une_notification_avec_suivi(api_clien
     notification = Notification.objects.get(destinataire=user)
     assert notification.type_notification == TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE
     assert "DHL123456789" in notification.message
+    assert notification.lien == f"/boutique/commandes?commande={commande.id}"
 
 
 def test_expedier_depuis_en_preparation_ok(api_client):

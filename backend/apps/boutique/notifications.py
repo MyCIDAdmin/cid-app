@@ -52,7 +52,11 @@ def notifier_commande_confirmee(commande: Commande) -> None:
         TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE,
         titre=f"Commande {commande.numero_commande} confirmée",
         message=f"Votre commande d'un montant de {commande.montant_total} € a été enregistrée.",
-        lien="/boutique/commandes",
+        # Corrigé le 2026-09-19 (retour utilisateur, clic sur notification sans effet) :
+        # "/boutique/commandes" n'existait comme route nulle part côté frontend — ajoutée avec
+        # cette même page (voir MesCommandesPage.tsx), ?commande= rouvre directement la
+        # commande concernée (même principe que ?evenement=/?publication=/?session= ailleurs).
+        lien=f"/boutique/commandes?commande={commande.id}",
     )
 
 
@@ -68,7 +72,7 @@ def notifier_commande_annulee(commande: Commande) -> None:
         TypeNotification.BOUTIQUE_COMMANDE_ANNULEE,
         titre=f"Commande {commande.numero_commande} annulée",
         message=f"Votre commande {commande.numero_commande} a été annulée.",
-        lien="/boutique/commandes",
+        lien=f"/boutique/commandes?commande={commande.id}",  # voir notifier_commande_confirmee
     )
 
 
@@ -92,5 +96,5 @@ def notifier_commande_expediee(commande: Commande) -> None:
         TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE,
         titre=f"Commande {commande.numero_commande} expédiée",
         message=f"Votre commande vient d'être expédiée.{suivi}",
-        lien="/boutique/commandes",
+        lien=f"/boutique/commandes?commande={commande.id}",  # voir notifier_commande_confirmee
     )

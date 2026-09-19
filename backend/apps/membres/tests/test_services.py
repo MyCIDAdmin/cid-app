@@ -105,6 +105,7 @@ def test_activation_cree_une_notification_in_app(mailoutbox):
 
     notification = Notification.objects.get(destinataire=membre.user)
     assert notification.type_notification == TypeNotification.MEMBRE_STATUT_ACTIF
+    assert notification.lien == f"/membres/{membre.id}"
 
 
 def test_desactivation_cree_une_notification_in_app(mailoutbox):
@@ -116,6 +117,7 @@ def test_desactivation_cree_une_notification_in_app(mailoutbox):
 
     notification = Notification.objects.get(destinataire=membre.user)
     assert notification.type_notification == TypeNotification.MEMBRE_STATUT_INACTIF
+    assert notification.lien == "/cotisation"
 
 
 def test_membre_sans_compte_utilisateur_ne_leve_pas(mailoutbox):

@@ -9,9 +9,11 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import ShareButton from "../../components/ui/ShareButton";
 import BulletinVote from "../../components/vote/BulletinVote";
 import MinuteurVote from "../../components/vote/MinuteurVote";
 import ResultatsPodium from "../../components/vote/ResultatsPodium";
+import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import {
   useCloturerVoteSession,
   useHistoriqueVote,
@@ -58,6 +60,18 @@ export default function VotePage() {
   const sessionQuery = useVoteSession(sessionAffichee);
   const session = sessionQuery.data;
   const socket = useVoteSocket(sessionAffichee);
+
+  // Lien profond depuis une notification (?session=<id>, voir useDeepLinkCible) — corrige le
+  // clic sur "Wahlen offen" qui ne naviguait nulle part (l'ancien lien backend, "/vote", ne
+  // correspondait à aucune route). Si la session visée n'est pas la session active actuellement
+  // affichée, on bascule sur l'onglet "historique" et on ouvre directement son accordéon.
+  const { cibleId: sessionCible, refCible } = useDeepLinkCible("session");
+  useEffect(() => {
+    if (!sessionCible || session?.id === sessionCible) return;
+    setOnglet("historique");
+    setHistoriqueOuvert(sessionCible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionCible]);
 
   const cloturerMutation = useCloturerVoteSession();
   const historiqueQuery = useHistoriqueVote();
@@ -150,20 +164,27 @@ export default function VotePage() {
           )}
 
           {session && (
-            <div className="space-y-4">
+            <div ref={refCible(session.id)} className="space-y-4">
               <div className="rounded-cid-lg bg-ca p-4 text-white shadow-sm">
-                <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase">
-                  <span className="flex items-center gap-1.5 rounded-full bg-white/20 px-2 py-0.5">
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full bg-white ${sessionCloturee ? "" : "animate-pulse"}`}
-                    />
-                    {sessionCloturee ? t("statut.cloturee") : t("statut.ouverte")}
-                  </span>
-                  <span className="rounded-full bg-white/20 px-2 py-0.5">
-                    {session.mode_anonymat === "anonyme"
-                      ? `🔒 ${t("anonymat.anonyme")}`
-                      : `👁 ${t("anonymat.nominatif")}`}
-                  </span>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase">
+                    <span className="flex items-center gap-1.5 rounded-full bg-white/20 px-2 py-0.5">
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full bg-white ${sessionCloturee ? "" : "animate-pulse"}`}
+                      />
+                      {sessionCloturee ? t("statut.cloturee") : t("statut.ouverte")}
+                    </span>
+                    <span className="rounded-full bg-white/20 px-2 py-0.5">
+                      {session.mode_anonymat === "anonyme"
+                        ? `🔒 ${t("anonymat.anonyme")}`
+                        : `👁 ${t("anonymat.nominatif")}`}
+                    </span>
+                  </div>
+                  <ShareButton
+                    path={`/votes?session=${session.id}`}
+                    titre={session.titre}
+                    variant="inverse"
+                  />
                 </div>
                 <div className="text-base font-bold">{session.titre}</div>
                 <div className="mt-1 text-xs text-white/85">{session.description}</div>
@@ -279,21 +300,34 @@ export default function VotePage() {
           )}
           <ul>
             {historiqueQuery.data?.results.map((s) => (
-              <li key={s.id} className="border-b border-text-tertiary/10 last:border-0">
-                <button
-                  type="button"
-                  onClick={() => setHistoriqueOuvert(historiqueOuvert === s.id ? null : s.id)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-bg-tertiary"
-                >
-                  <div>
+              <li
+                key={s.id}
+                ref={refCible(s.id)}
+                className="border-b border-text-tertiary/10 last:border-0"
+              >
+                <div className="flex w-full items-center justify-between px-4 py-3 hover:bg-bg-tertiary">
+                  <button
+                    type="button"
+                    onClick={() => setHistoriqueOuvert(historiqueOuvert === s.id ? null : s.id)}
+                    className="flex-1 text-left"
+                  >
                     <div className="text-sm font-semibold text-text-primary">{s.titre}</div>
                     <div className="text-xs text-text-tertiary">
                       {t("historique.cloture_le", { date: formatDate(s.date_cloture) })} ·{" "}
                       {t("resultats.nombre_voix", { count: s.total_participants })}
                     </div>
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <ShareButton path={`/votes?session=${s.id}`} titre={s.titre} />
+                    <button
+                      type="button"
+                      onClick={() => setHistoriqueOuvert(historiqueOuvert === s.id ? null : s.id)}
+                      className="px-1 text-xs text-ca"
+                    >
+                      {historiqueOuvert === s.id ? "▲" : "▼"}
+                    </button>
                   </div>
-                  <span className="text-xs text-ca">{historiqueOuvert === s.id ? "▲" : "▼"}</span>
-                </button>
+                </div>
                 {historiqueOuvert === s.id && (
                   <div className="border-t border-text-tertiary/10 bg-bg-secondary/40 p-4">
                     {resultatsHistorique.isLoading && (

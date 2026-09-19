@@ -13,6 +13,7 @@
     "cotisations_en_attente": "Ausstehende Zahlungen",
     "configuration_relance": "Fälligkeitstermine",
     "boutique": "Shop",
+    "mes_commandes": "Meine Bestellungen",
     "admin_boutique": "Shop-Verwaltung",
     "stats": "Statistiken & KPIs",
     "votes": "Abstimmungen & Wahlen",
@@ -51,5 +52,15 @@
     "virement_titre": "Bankverbindung",
     "paypal_titre": "PayPal-Konto",
     "paypal_note": "Bitte als „Freunde und Familie“ senden, damit keine Gebühren anfallen."
+  },
+  "partage": {
+    "bouton_aria": "Teilen",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "x": "X (Twitter)",
+    "email": "E-Mail",
+    "copier_lien": "Link kopieren",
+    "lien_copie": "Link kopiert!",
+    "texte_partage": "Entdecke „{{titre}}“ auf Clubistes in Deutschland."
   }
 }

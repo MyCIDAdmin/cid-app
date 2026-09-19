@@ -600,6 +600,7 @@ def test_marquer_payee_cree_une_notification_in_app_pour_le_membre(api_client):
 
     notification = Notification.objects.get(destinataire=user_paye)
     assert notification.type_notification == TypeNotification.PAIEMENT_CONFIRME
+    assert notification.lien == "/cotisation"
 
 
 # Statut associatif automatique (demande utilisateur du 2026-09-19) : confirmer une cotisation

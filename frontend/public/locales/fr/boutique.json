@@ -121,6 +121,20 @@
     "confirmer_annulation_message": "La commande {{numero}} sera annulée et le stock restitué.",
     "confirmer_annulation": "Annuler la commande"
   },
+  "mes_commandes": {
+    "titre": "Mes commandes",
+    "chargement": "Chargement…",
+    "erreur": "Impossible de charger vos commandes.",
+    "aucune_commande": "Vous n'avez pas encore passé de commande.",
+    "retour_catalogue": "Retour au catalogue",
+    "numero_prefixe": "Commande",
+    "passee_le": "Passée le {{date}}",
+    "articles": "{{count}} article(s)",
+    "voir_details": "Voir le suivi",
+    "confirmer_annulation_titre": "Annuler cette commande ?",
+    "confirmer_annulation_message": "La commande {{numero}} sera annulée et le stock restitué.",
+    "annuler": "Annuler la commande"
+  },
   "paiement": {
     "mode_label": "Mode de paiement",
     "mode": {

@@ -51,6 +51,7 @@ import {
   IconMessageCircle2,
   IconNews,
   IconPhoto,
+  IconReceipt2,
   IconSettings,
   IconShoppingBag,
   IconTag,
@@ -102,6 +103,10 @@ const NAV_ITEMS: NavItem[] = [
   // /mon-adhesion : le backend scope déjà le queryset (produits publiés uniquement en dessous
   // de Bureau Admin, voir ProduitViewSet.get_queryset).
   { to: "/boutique", labelKey: "nav.boutique", icon: IconShoppingBag, group: "general" },
+  // "Mes commandes" (ajoutée le 2026-09-19) — suivi/gestion des commandes du membre courant,
+  // même principe que /mon-adhesion : le backend scope déjà le queryset (CommandeViewSet.
+  // get_queryset ne renvoie que les commandes du membre courant en dessous de Bureau Admin).
+  { to: "/boutique/commandes", labelKey: "nav.mes_commandes", icon: IconReceipt2, group: "general" },
   // Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) — ouverts à
   // tout authentifié, même principe que /mon-adhesion : le backend scope déjà la visibilité (voir
   // PublicationViewSet/SujetViewSet.get_queryset).

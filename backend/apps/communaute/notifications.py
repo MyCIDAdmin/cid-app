@@ -74,7 +74,11 @@ def notifier_nouveau_commentaire_fil(commentaire) -> None:
     destinataires_membres.pop(commentaire.auteur_id, None)
 
     apercu = (publication.contenu or "")[:40]
-    lien = f"/fil/{publication.id}"
+    # Corrigé le 2026-09-19 (retour utilisateur, clic sur notification sans effet) :
+    # "/fil/{id}" ne correspond à aucune route du frontend (pas de page de détail par
+    # publication, voir App.tsx) — ?publication= permet à FilPage de retrouver et mettre en
+    # évidence la carte correspondante (voir useDeepLinkCible côté frontend).
+    lien = f"/fil?publication={publication.id}"
     titre = "Nouveau commentaire"
     for membre in destinataires_membres.values():
         user = getattr(membre, "user", None)

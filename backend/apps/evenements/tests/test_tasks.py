@@ -43,6 +43,8 @@ def test_invitation_envoyee_a_tous_les_membres_actifs(mailoutbox):
         ).count()
         == 2
     )
+    notification = Notification.objects.filter(destinataire=m1.user).first()
+    assert notification.lien == f"/evenements?evenement={evenement.id}"
 
 
 def test_invitation_ignore_les_membres_inactifs(mailoutbox):
@@ -75,6 +77,7 @@ def test_rappel_j3_envoye_aux_inscrits(mailoutbox):
     assert len(mailoutbox) == 1
     notification = Notification.objects.get(destinataire=membre.user)
     assert notification.type_notification == TypeNotification.EVENEMENT_RAPPEL
+    assert notification.lien == f"/evenements?evenement={evenement.id}"
 
 
 def test_rappel_ignore_les_inscriptions_annulees(mailoutbox):
@@ -117,6 +120,7 @@ def test_annulation_envoyee_aux_inscrits_non_annules(mailoutbox):
     assert len(mailoutbox) == 1
     notification = Notification.objects.get(destinataire=m1.user)
     assert notification.type_notification == TypeNotification.EVENEMENT_ANNULE
+    assert notification.lien == f"/evenements?evenement={evenement.id}"
     assert Notification.objects.filter(destinataire=m2.user).count() == 0
 
 

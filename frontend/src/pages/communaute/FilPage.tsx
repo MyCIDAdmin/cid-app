@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import ShareButton from "../../components/ui/ShareButton";
 import {
   useCommenterPublication,
   useCreerPublication,
@@ -19,6 +20,7 @@ import {
   useSupprimerCommentaire,
   useSupprimerPublication,
 } from "../../hooks/useCommunaute";
+import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Commentaire, Publication } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -105,7 +107,13 @@ function CommentaireLigne({
   );
 }
 
-function PublicationCarte({ publication }: { publication: Publication }) {
+function PublicationCarte({
+  publication,
+  cardRef,
+}: {
+  publication: Publication;
+  cardRef?: (el: HTMLElement | null) => void;
+}) {
   const { t } = useTranslation("communaute");
   const user = useAuthStore((s) => s.user);
   const peutModerer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
@@ -137,7 +145,7 @@ function PublicationCarte({ publication }: { publication: Publication }) {
   }
 
   return (
-    <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+    <div ref={cardRef} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-ca text-xs font-bold text-white">
@@ -152,11 +160,21 @@ function PublicationCarte({ publication }: { publication: Publication }) {
             </div>
           </div>
         </div>
-        {publication.est_masquee && (
-          <span className="rounded bg-status-dangerBg px-1.5 py-0.5 text-[9px] font-bold text-status-dangerText">
-            {t("fil.masquee_badge")}
-          </span>
-        )}
+        <div className="flex items-center gap-1">
+          {publication.est_masquee && (
+            <span className="rounded bg-status-dangerBg px-1.5 py-0.5 text-[9px] font-bold text-status-dangerText">
+              {t("fil.masquee_badge")}
+            </span>
+          )}
+          {/* Partage externe (réseaux sociaux) — distinct du bouton "partager" ci-dessous, qui
+              republie la publication dans le fil interne de l'association (voir docstring
+              ShareButton). */}
+          <ShareButton
+            path={`/fil?publication=${publication.id}`}
+            titre={`${publication.auteur.prenom} ${publication.auteur.nom}`}
+            texte={publication.contenu}
+          />
+        </div>
       </div>
 
       <p className="my-2 whitespace-pre-wrap text-sm text-text-secondary">{publication.contenu}</p>
@@ -279,6 +297,7 @@ export default function FilPage() {
 
   const publicationsQuery = usePublications();
   const creer = useCreerPublication();
+  const { refCible } = useDeepLinkCible("publication");
 
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
@@ -343,7 +362,11 @@ export default function FilPage() {
 
       <div className="space-y-3">
         {publicationsQuery.data?.results.map((publication) => (
-          <PublicationCarte key={publication.id} publication={publication} />
+          <PublicationCarte
+            key={publication.id}
+            publication={publication}
+            cardRef={refCible(publication.id)}
+          />
         ))}
       </div>
     </div>

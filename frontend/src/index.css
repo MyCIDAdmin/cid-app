@@ -112,3 +112,25 @@ input:-webkit-autofill:focus {
   box-shadow: 0 0 0 1000px var(--color-bg-primary) inset;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+/*
+ * Mise en évidence temporaire de l'élément ciblé par un lien profond depuis une notification
+ * (voir hooks/useDeepLinkCible.ts, ajouté le 2026-09-19) — un bref halo pulsé dans le rouge de
+ * marque (--color-ca) pour que la personne retrouve visuellement l'élément visé sur une page
+ * liste, sans dépendre d'une couleur qui casserait le contraste en mode sombre (voir jetons
+ * ci-dessus, --color-ca est déjà éclairci en .dark).
+ */
+@keyframes cid-pulse-cible {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px var(--color-ca);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+.cid-highlight-cible {
+  animation: cid-pulse-cible 0.7s ease-in-out 2;
+  border-radius: 0.5rem;
+}

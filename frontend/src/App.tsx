@@ -12,6 +12,7 @@ import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
 import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
 import CataloguePage from "./pages/boutique/CataloguePage";
 import CommandeRetourPage from "./pages/boutique/CommandeRetourPage";
+import MesCommandesPage from "./pages/boutique/MesCommandesPage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
 import AdminQuizPage from "./pages/communaute/AdminQuizPage";
 import AlbumDetailPage from "./pages/communaute/AlbumDetailPage";
@@ -189,6 +190,14 @@ export default function App() {
             même niveau que CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API. */}
         <Route path="/boutique" element={<CataloguePage />} />
         <Route path="/boutique/panier" element={<PanierCommandePage />} />
+        {/* "Mes commandes" (ajoutée le 2026-09-19) — corrige le lien de notification
+            "/boutique/commandes" (confirmation/annulation/expédition, voir
+            apps.boutique.notifications) qui ne pointait auparavant vers aucune route ;
+            ?commande= met en évidence la commande visée (voir useDeepLinkCible). Ouverte à
+            tout authentifié, même scope IDOR que le reste du module (CommandeViewSet.
+            get_queryset ne renvoie de toute façon que les commandes du membre courant en
+            dessous de Bureau Admin). */}
+        <Route path="/boutique/commandes" element={<MesCommandesPage />} />
         {/* Retour de paiement en ligne (ajouté le 2026-09-17, même principe que
             /cotisation/retour) — cible de success_url/cancel_url (Stripe) et return_url/
             cancel_url (PayPal), voir apps.cotisations.gateways (partagé avec apps.boutique) —

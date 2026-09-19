@@ -16,10 +16,12 @@
  * (mockup : bouton "Payer maintenant" sur l'onglet "Mes inscriptions" → goTo('cotisation')),
  * même principe que le panier boutique qui renvoie vers son propre flux de paiement.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import ShareButton from "../../components/ui/ShareButton";
+import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import {
   useAnnulerInscription,
   useEvenements,
@@ -170,10 +172,12 @@ function EvenementCarte({
   evenement,
   passe,
   onInscrire,
+  cardRef,
 }: {
   evenement: Evenement;
   passe: boolean;
   onInscrire: (evenement: Evenement) => void;
+  cardRef?: (el: HTMLElement | null) => void;
 }) {
   const { t } = useTranslation("evenements");
   const remplissage =
@@ -183,10 +187,18 @@ function EvenementCarte({
   const complet = evenement.places_restantes !== null && evenement.places_restantes <= 0;
 
   return (
-    <div className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
+    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
       <div className="flex items-center justify-between bg-ca px-3 py-2 text-white">
         <span className="text-sm font-bold">{evenement.titre}</span>
-        <span className="text-xs font-medium">{formatDate(evenement.date_evenement)}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium">{formatDate(evenement.date_evenement)}</span>
+          <ShareButton
+            path={`/evenements?evenement=${evenement.id}`}
+            titre={evenement.titre}
+            texte={`${evenement.titre} — ${formatDate(evenement.date_evenement)}, ${evenement.lieu}`}
+            variant="inverse"
+          />
+        </div>
       </div>
       <div className="space-y-2 p-3">
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-tertiary">
@@ -254,6 +266,19 @@ export default function EvenementsPage() {
   const inscriptionsQuery = useInscriptions();
   const annulerInscription = useAnnulerInscription();
 
+  // Lien profond depuis une notification (?evenement=<id>, voir useDeepLinkCible) — bascule
+  // automatiquement sur l'onglet ("avenir"/"passes") qui contient effectivement l'événement visé,
+  // dès que les données correspondantes arrivent.
+  const { cibleId: evenementCible, refCible } = useDeepLinkCible("evenement");
+  useEffect(() => {
+    if (!evenementCible) return;
+    if (avenirQuery.data?.results.some((e) => e.id === evenementCible)) {
+      setOnglet("avenir");
+    } else if (passesQuery.data?.results.some((e) => e.id === evenementCible)) {
+      setOnglet("passes");
+    }
+  }, [evenementCible, avenirQuery.data, passesQuery.data]);
+
   function annuler(id: string) {
     annulerInscription.mutate(id, {
       onError: (err) =>
@@ -304,6 +329,7 @@ export default function EvenementsPage() {
                 evenement={evenement}
                 passe={onglet === "passes"}
                 onInscrire={setEvenementInscription}
+                cardRef={refCible(evenement.id)}
               />
             ))}
           </div>

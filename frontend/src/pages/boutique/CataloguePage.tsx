@@ -14,7 +14,9 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import ShareButton from "../../components/ui/ShareButton";
 import { useProduits } from "../../hooks/useBoutique";
+import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { nombreArticlesPanier, totalPanier, usePanierStore } from "../../store/panierStore";
 import type { CategorieProduit, Produit, VarianteProduit } from "../../types/boutique";
 
@@ -35,7 +37,13 @@ function labelVariante(variante: VarianteProduit): string {
   return details || "Unique";
 }
 
-function ProduitCarte({ produit }: { produit: Produit }) {
+function ProduitCarte({
+  produit,
+  cardRef,
+}: {
+  produit: Produit;
+  cardRef?: (el: HTMLElement | null) => void;
+}) {
   const { t } = useTranslation("boutique");
   const ajouter = usePanierStore((s) => s.ajouter);
   const variantesEnStock = produit.variantes.filter((v) => v.stock > 0);
@@ -59,7 +67,7 @@ function ProduitCarte({ produit }: { produit: Produit }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
+    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
       <div className="relative flex h-32 items-center justify-center bg-cal">
         {produit.nouveaute && (
           <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-ca">
@@ -71,6 +79,9 @@ function ProduitCarte({ produit }: { produit: Produit }) {
             {t("catalogue.badge_rabais", { pct: produit.pourcentage_reduction })}
           </span>
         )}
+        <div className="absolute bottom-2 right-2 rounded-full bg-bg-primary/80 backdrop-blur-sm">
+          <ShareButton path={`/boutique?produit=${produit.id}`} titre={produit.nom} />
+        </div>
         {produit.image ? (
           <img src={produit.image} alt={produit.nom} className="h-full w-full object-cover" />
         ) : (
@@ -135,6 +146,7 @@ export default function CataloguePage() {
   const [categorie, setCategorie] = useState<CategorieProduit | "">("");
 
   const produitsQuery = useProduits({ statut: "publie", categorie: categorie || undefined });
+  const { refCible } = useDeepLinkCible("produit");
   const articles = usePanierStore((s) => s.articles);
   const nombreArticles = useMemo(() => nombreArticlesPanier(articles), [articles]);
   const total = useMemo(() => totalPanier(articles), [articles]);
@@ -180,7 +192,7 @@ export default function CataloguePage() {
       {produitsQuery.data && produitsQuery.data.results.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {produitsQuery.data.results.map((produit) => (
-            <ProduitCarte key={produit.id} produit={produit} />
+            <ProduitCarte key={produit.id} produit={produit} cardRef={refCible(produit.id)} />
           ))}
         </div>
       )}

@@ -76,7 +76,10 @@ def enregistrer_statut_annuel(
             TypeNotification.MEMBRE_STATUT_ACTIF,
             titre="Statut réactivé",
             message=f"Votre statut de membre est de nouveau actif pour {annee}.",
-            lien="/profil",
+            # Corrigé le 2026-09-19 (retour utilisateur, clic sur notification sans effet) :
+            # "/profil" ne correspond à aucune route du frontend (voir App.tsx) — la fiche
+            # membre consultable est "/membres/:id".
+            lien=f"/membres/{membre.id}",
         )
         envoyer_email_statut_actif.delay(str(membre.id), annee)
     elif statut == StatutMembre.INACTIF:
@@ -85,6 +88,6 @@ def enregistrer_statut_annuel(
             TypeNotification.MEMBRE_STATUT_INACTIF,
             titre="Statut désactivé",
             message=f"Votre statut de membre est passé à inactif — cotisation {annee} non réglée.",
-            lien="/cotisations",
+            lien="/cotisation",  # voir apps.cotisations.notifications pour le même correctif
         )
         envoyer_email_statut_inactif.delay(str(membre.id), annee)

@@ -133,6 +133,7 @@ def test_relance_cree_une_notification_in_app(mailoutbox):
     notification = Notification.objects.get(destinataire=membre.user)
     assert notification.type_notification == TypeNotification.RELANCE_COTISATION
     assert "2027" in notification.message
+    assert notification.lien == "/cotisation"
 
 
 def test_membre_ayant_deja_paye_nest_pas_relance(mailoutbox):

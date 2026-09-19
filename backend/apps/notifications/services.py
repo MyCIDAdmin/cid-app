@@ -14,7 +14,7 @@ l'email correspondant (jamais à la place) :
         TypeNotification.PAIEMENT_CONFIRME,
         titre="Paiement confirmé",
         message=f"Votre cotisation {cotisation.annee} a bien été enregistrée.",
-        lien="/cotisations",
+        lien="/cotisation",
     )
 
 Toujours importé localement (dans le corps de la fonction appelante), jamais en haut de fichier,

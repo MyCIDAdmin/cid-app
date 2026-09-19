@@ -46,7 +46,11 @@ def envoyer_invitations_evenement(evenement_id) -> int:
         return 0
 
     membres = Membre.objects.filter(statut=StatutMembre.ACTIF).select_related("user")
-    lien = f"/evenements/{evenement.id}"
+    # Corrigé le 2026-09-19 (retour utilisateur, clic sur notification sans effet) :
+    # "/evenements/{id}" ne correspond à aucune route du frontend (pas de page de détail par
+    # événement, voir App.tsx) — ?evenement= permet à EvenementsPage de retrouver et mettre en
+    # évidence la carte correspondante (voir useDeepLinkCible côté frontend).
+    lien = f"/evenements?evenement={evenement.id}"
     envoyes = 0
 
     for membre in membres:
@@ -95,7 +99,7 @@ def envoyer_annulation_evenement(evenement_id) -> int:
     inscriptions = evenement.inscriptions.exclude(statut=StatutInscription.ANNULEE).select_related(
         "membre__user"
     )
-    lien = f"/evenements/{evenement.id}"
+    lien = f"/evenements?evenement={evenement.id}"  # voir envoyer_invitations_evenement
     envoyes = 0
 
     for inscription in inscriptions:
@@ -150,7 +154,7 @@ def envoyer_rappels_evenements(today=None) -> int:
             inscriptions = evenement.inscriptions.exclude(
                 statut=StatutInscription.ANNULEE
             ).select_related("membre__user")
-            lien = f"/evenements/{evenement.id}"
+            lien = f"/evenements?evenement={evenement.id}"  # voir envoyer_invitations_evenement
             for inscription in inscriptions:
                 membre = inscription.membre
                 user = membre.user

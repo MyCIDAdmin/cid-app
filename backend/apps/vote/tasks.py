@@ -42,7 +42,12 @@ def _get_session(session_id):
 
 
 def _notifier_eligibles(session, type_notification, sujet, message) -> int:
-    lien = "/vote"
+    # Corrigé le 2026-09-19 (retour utilisateur : clic sur la notification "Wahlen offen" ne
+    # naviguait nulle part) — l'ancien lien "/vote" ne correspondait à aucune route du frontend
+    # (la route réelle est "/votes", pluriel, voir App.tsx). Le paramètre ?session= permet en
+    # plus à VotePage de rouvrir directement la bonne session (active ou déjà clôturée dans
+    # l'historique), voir useDeepLinkCible côté frontend.
+    lien = f"/votes?session={session.id}"
     envoyes = 0
     for membre in membres_eligibles_qs(session).select_related("user"):
         user = membre.user

@@ -56,7 +56,9 @@ def notifier_paiement_confirme(cotisation: Cotisation) -> None:
         TypeNotification.PAIEMENT_CONFIRME,
         titre="Paiement confirmé",
         message=f"Votre cotisation {cotisation.annee} a bien été enregistrée comme payée.",
-        lien="/cotisations",
+        # Corrigé le 2026-09-19 (retour utilisateur, clic sur notification sans effet) : la route
+        # frontend est "/cotisation" (singulier, voir App.tsx), jamais "/cotisations".
+        lien="/cotisation",
     )
     if cotisation.type_article == TypeArticle.COTISATION and cotisation.annee is not None:
         enregistrer_statut_annuel(
@@ -77,5 +79,5 @@ def notifier_relance_cotisation(membre, annee: int, checkpoint: str) -> None:
         TypeNotification.RELANCE_COTISATION,
         titre=f"Rappel — cotisation {annee}",
         message=f"Votre cotisation {annee} n'est pas encore réglée.",
-        lien="/cotisations",
+        lien="/cotisation",  # voir commentaire de notifier_paiement_confirme ci-dessus
     )

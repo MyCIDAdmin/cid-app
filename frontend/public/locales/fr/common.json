@@ -13,6 +13,7 @@
     "cotisations_en_attente": "Paiements en attente",
     "configuration_relance": "Échéances des relances",
     "boutique": "Boutique",
+    "mes_commandes": "Mes commandes",
     "admin_boutique": "Gestion boutique",
     "stats": "Statistiques & KPIs",
     "votes": "Votes & Élections",
@@ -51,5 +52,15 @@
     "virement_titre": "Coordonnées bancaires",
     "paypal_titre": "Compte PayPal",
     "paypal_note": "Merci d'envoyer en tant qu'« Amis et Famille » afin d'éviter des frais."
+  },
+  "partage": {
+    "bouton_aria": "Partager",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "x": "X (Twitter)",
+    "email": "E-mail",
+    "copier_lien": "Copier le lien",
+    "lien_copie": "Lien copié !",
+    "texte_partage": "Découvrez « {{titre}} » sur Clubistes in Deutschland."
   }
 }

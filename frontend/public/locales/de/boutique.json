@@ -121,6 +121,20 @@
     "confirmer_annulation_message": "Die Bestellung {{numero}} wird storniert und der Bestand wird zurückgebucht.",
     "confirmer_annulation": "Bestellung stornieren"
   },
+  "mes_commandes": {
+    "titre": "Meine Bestellungen",
+    "chargement": "Wird geladen…",
+    "erreur": "Ihre Bestellungen konnten nicht geladen werden.",
+    "aucune_commande": "Sie haben noch keine Bestellung aufgegeben.",
+    "retour_catalogue": "Zurück zum Shop",
+    "numero_prefixe": "Bestellung",
+    "passee_le": "Aufgegeben am {{date}}",
+    "articles": "{{count}} Artikel",
+    "voir_details": "Sendungsverfolgung ansehen",
+    "confirmer_annulation_titre": "Diese Bestellung stornieren?",
+    "confirmer_annulation_message": "Die Bestellung {{numero}} wird storniert und der Bestand wird zurückgebucht.",
+    "annuler": "Bestellung stornieren"
+  },
   "paiement": {
     "mode_label": "Zahlungsart",
     "mode": {
