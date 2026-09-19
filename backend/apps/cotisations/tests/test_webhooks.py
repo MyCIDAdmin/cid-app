@@ -102,6 +102,39 @@ def test_stripe_checkout_session_completed_cree_une_notification_in_app(client):
     assert notification.type_notification == TypeNotification.PAIEMENT_CONFIRME
 
 
+def test_stripe_checkout_session_completed_reactive_le_membre(client):
+    # Statut associatif automatique (demande utilisateur du 2026-09-19) : même déclencheur que
+    # marquer_payee (les 2 chemins passent par notifier_paiement_confirme) — voir
+    # apps.cotisations.tests.test_api::test_marquer_payee_dune_cotisation_annuelle_reactive_le_membre
+    # pour l'équivalent côté confirmation manuelle.
+    from apps.accounts.models import User
+    from apps.membres.models import StatutMembre
+    from apps.membres.tests.factories import MembreFactory
+
+    user = User.objects.create_user(
+        email="stripe-reactive@example.de", password="Password123!", is_active=True
+    )
+    membre = MembreFactory(user=user, statut=StatutMembre.INACTIF)
+    cotisation = _cotisation_en_attente(membre=membre, mode_paiement="", annee=2027)
+    event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "client_reference_id": str(cotisation.id),
+                "payment_intent": "pi_789",
+                "id": "cs_789",
+            }
+        },
+    }
+
+    with patch("stripe.Webhook.construct_event", return_value=event):
+        resp = _post_json(client, STRIPE_WEBHOOK_URL, {})
+
+    assert resp.status_code == 200
+    membre.refresh_from_db()
+    assert membre.statut == StatutMembre.ACTIF
+
+
 def test_stripe_rejeu_idempotent(client):
     cotisation = _cotisation_en_attente()
     event = {

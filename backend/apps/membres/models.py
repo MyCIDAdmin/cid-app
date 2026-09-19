@@ -246,3 +246,68 @@ class Membre(models.Model):
             except ValueError:
                 next_seq = Membre.objects.filter(numero_membre__startswith=prefix).count() + 1
         return f"{prefix}{next_seq:03d}"
+
+
+class RaisonChangementStatut(models.TextChoices):
+    """Origine d'une entrée HistoriqueStatutMembre (demande utilisateur du 2026-09-19) — permet
+    de distinguer, en consultation/audit, un changement automatique (paiement ou échéance) d'une
+    correction manuelle par un Admin App."""
+
+    PAIEMENT_CONFIRME = "paiement_confirme", _("Paiement confirmé")
+    ECHEANCE_DEPASSEE = "echeance_depassee", _("Échéance dépassée")
+    MANUEL = "manuel", _("Modification manuelle")
+
+
+class HistoriqueStatutMembre(models.Model):
+    """
+    Historique du statut associatif PAR ANNÉE DE COTISATION (demande utilisateur du 2026-09-19 :
+    "ein Benutzer kann im 2024 Mitglieder sein, im 2025 nicht aber wieder in 2026 Mitglieder
+    sein"). `Membre.statut` (ci-dessus) reste la seule source de vérité pour le statut COURANT —
+    utilisée telle quelle partout ailleurs dans le code (éligibilité vote, accès communauté,
+    inscription événements, statistiques...) — ce modèle ajoute, en plus, un enregistrement par
+    année, consultable en tout temps via l'identifiant technique stable du membre (`Membre.id`/
+    `numero_membre`, jamais réattribués ni recyclés — c'est cet identifiant qui sert de
+    "technische MitgliederID" pour retrouver l'historique, comme demandé, plutôt que d'en
+    introduire un second).
+
+    Alimenté exclusivement par `apps.membres.services.enregistrer_statut_annuel` (jamais créé/
+    modifié directement ailleurs) — voir sa docstring pour la logique de synchronisation avec
+    `Membre.statut` et les 2 déclencheurs actuels, tous deux côté `apps.cotisations` :
+      - paiement de la cotisation annuelle confirmé (manuellement par le Directeur Financier via
+        `marquer_payee`, ou automatiquement par le webhook Stripe/PayPal) -> actif ;
+      - échéance de paiement dépassée sans cotisation payée (checkpoint J+1 de la pipeline de
+        relance AHM-18/AHM-54) -> inactif.
+    Ne concerne que le type d'article "cotisation" (Jahresbeitrag/cotisation annuelle) — jamais
+    "adhesion" (frais d'adhésion, ponctuel) ni "autre" (boutique, événements...).
+
+    Rétroactif : la migration 0004 reconstruit une première version de cet historique à partir
+    des `Cotisation` déjà existantes au moment de son introduction (demande utilisateur), sans
+    jamais toucher au statut courant (`Membre.statut`) ni déclencher de notification/email —
+    seuls les changements réels, à partir de maintenant, en déclenchent."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.ForeignKey(
+        Membre, on_delete=models.CASCADE, related_name="historique_statuts"
+    )
+    annee = models.PositiveSmallIntegerField()
+    statut = models.CharField(max_length=20, choices=StatutMembre.choices)
+    raison = models.CharField(max_length=20, choices=RaisonChangementStatut.choices)
+    date_effet = models.DateTimeField(
+        help_text=_("Date/heure de l'événement à l'origine de ce statut (paiement ou échéance).")
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "historique_statuts_membre"
+        verbose_name = _("Historique de statut membre")
+        verbose_name_plural = _("Historiques de statut membre")
+        ordering = ["-annee"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["membre", "annee"], name="unique_historique_statut_par_membre_annee"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.membre.numero_membre} — {self.annee} : {self.get_statut_display()}"

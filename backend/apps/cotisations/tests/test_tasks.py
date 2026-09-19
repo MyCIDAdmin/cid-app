@@ -197,6 +197,76 @@ def test_les_trois_checkpoints_relancent_a_nouveau_le_meme_membre(mailoutbox):
     }
 
 
+# Désactivation automatique au checkpoint J+1 (demande utilisateur du 2026-09-19, symétrique de
+# la réactivation testée côté apps.cotisations.tests.test_api::
+# test_marquer_payee_dune_cotisation_annuelle_reactive_le_membre) — voir
+# apps.cotisations.tasks._desactiver_membres_impayes_pour.
+def test_membre_impaye_est_desactive_au_checkpoint_j_plus_1(mailoutbox):
+    from apps.membres.models import HistoriqueStatutMembre, RaisonChangementStatut, StatutMembre
+
+    membre = _membre_avec_compte()
+
+    resultat = envoyer_relances_cotisation(today=date(2027, 1, 2))
+
+    assert resultat["details"] == [
+        {
+            "checkpoint": CheckpointRelance.J_PLUS_1,
+            "annee": 2027,
+            "envoyes": 1,
+            "desactives": 1,
+        }
+    ]
+    membre.refresh_from_db()
+    assert membre.statut == StatutMembre.INACTIF
+    historique = HistoriqueStatutMembre.objects.get(membre=membre, annee=2027)
+    assert historique.statut == StatutMembre.INACTIF
+    assert historique.raison == RaisonChangementStatut.ECHEANCE_DEPASSEE
+
+
+def test_membre_ayant_paye_nest_pas_desactive_au_checkpoint_j_plus_1(mailoutbox):
+    from apps.membres.models import HistoriqueStatutMembre, StatutMembre
+
+    membre = _membre_avec_compte()
+    CotisationFactory(
+        membre=membre,
+        type_article=TypeArticle.COTISATION,
+        annee=2027,
+        statut=StatutCotisation.PAYEE,
+    )
+
+    resultat = envoyer_relances_cotisation(today=date(2027, 1, 2))
+
+    assert resultat["details"][0]["desactives"] == 0
+    membre.refresh_from_db()
+    assert membre.statut == StatutMembre.ACTIF
+    assert not HistoriqueStatutMembre.objects.filter(membre=membre, annee=2027).exists()
+
+
+def test_desactivation_ne_se_declenche_pas_aux_checkpoints_j_moins_30_et_j_moins_7(mailoutbox):
+    membre = _membre_avec_compte()
+
+    resultat_30 = envoyer_relances_cotisation(today=date(2026, 12, 2))
+    resultat_7 = envoyer_relances_cotisation(today=date(2026, 12, 25))
+
+    assert "desactives" not in resultat_30["details"][0]
+    assert "desactives" not in resultat_7["details"][0]
+    membre.refresh_from_db()
+    assert membre.statut == StatutMembre.ACTIF
+
+
+def test_desactivation_idempotente_si_deja_inactif(mailoutbox):
+    from apps.membres.models import HistoriqueStatutMembre, StatutMembre
+
+    membre = _membre_avec_compte(statut=StatutMembre.INACTIF)
+
+    resultat = envoyer_relances_cotisation(today=date(2027, 1, 2))
+
+    # Déjà inactif : exclu par le filtre statut=ACTIF, jamais retraité (pas de désactivation
+    # comptée, pas de nouvelle entrée d'historique créée pour autant).
+    assert resultat["details"][0]["desactives"] == 0
+    assert not HistoriqueStatutMembre.objects.filter(membre=membre, annee=2027).exists()
+
+
 def test_email_en_allemand_si_preference_membre(mailoutbox):
     _membre_avec_compte(langue="de")
 

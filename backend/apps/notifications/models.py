@@ -54,8 +54,10 @@ class TypeNotification(models.TextChoices):
     """Les 11 types R1 (CID-RPL-001 §2.2) — vote_ouverture/vote_resultats ne sont pas encore
     déclenchés (apps.vote n'existe pas avant la Phase 3) mais sont déjà répertoriés ici pour que
     le modèle n'ait pas à être remanié quand ce module sera construit. Les 8 types suivants
-    (ADHESION_* à COMMUNAUTE_REPONSE_FORUM) puis les 6 derniers (ADHESION_JUSTIFICATIF_SOUMIS à
-    COMMUNAUTE_COMMENTAIRE_FIL) ont été ajoutés le 2026-09-16, voir docstring de module."""
+    (ADHESION_* à COMMUNAUTE_REPONSE_FORUM) puis les 6 suivants (ADHESION_JUSTIFICATIF_SOUMIS à
+    COMMUNAUTE_COMMENTAIRE_FIL) ont été ajoutés le 2026-09-16, voir docstring de module. Les 2
+    derniers (MEMBRE_STATUT_*) ont été ajoutés le 2026-09-19 — voir
+    apps.membres.services.enregistrer_statut_annuel."""
 
     BIENVENUE = "bienvenue", _("Bienvenue")
     PAIEMENT_CONFIRME = "paiement_confirme", _("Paiement confirmé")
@@ -80,6 +82,8 @@ class TypeNotification(models.TextChoices):
     BOUTIQUE_NOUVELLE_COMMANDE = "boutique_nouvelle_commande", _("Nouvelle commande")
     COMMUNAUTE_MESSAGE_GROUPE = "communaute_message_groupe", _("Nouveau message de groupe")
     COMMUNAUTE_COMMENTAIRE_FIL = "communaute_commentaire_fil", _("Nouveau commentaire")
+    MEMBRE_STATUT_ACTIF = "membre_statut_actif", _("Statut de membre réactivé")
+    MEMBRE_STATUT_INACTIF = "membre_statut_inactif", _("Statut de membre désactivé")
 
 
 class Notification(models.Model):

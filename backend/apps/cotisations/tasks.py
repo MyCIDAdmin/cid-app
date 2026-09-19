@@ -43,7 +43,8 @@ from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.membres.models import Membre, StatutMembre
+from apps.membres.models import Membre, RaisonChangementStatut, StatutMembre
+from apps.membres.services import enregistrer_statut_annuel
 
 from .models import (
     CheckpointRelance,
@@ -246,12 +247,46 @@ def _envoyer_relances_pour(checkpoint: str, annee: int) -> int:
     return envoyes
 
 
+def _desactiver_membres_impayes_pour(annee: int) -> int:
+    """
+    Échéance dépassée (checkpoint J+1) : les membres actuellement actifs sans cotisation annuelle
+    payée pour `annee` passent automatiquement à inactif (demande utilisateur du 2026-09-19,
+    symétrique de l'activation automatique déclenchée par un paiement confirmé — voir
+    apps.cotisations.notifications.notifier_paiement_confirme). `enregistrer_statut_annuel`
+    (apps.membres.services) journalise l'historique par année et déclenche notification in-app +
+    email pour chaque membre réellement désactivé.
+
+    Même filtre de base que `_envoyer_relances_pour` (population identique : actif sans cotisation
+    payée pour l'année) mais volontairement en requête séparée plutôt que fusionnée avec la boucle
+    d'envoi d'emails ci-dessus — une future divergence des deux critères (ex. exempter certains
+    membres de la désactivation automatique) ne doit pas être couplée accidentellement à l'envoi
+    des relances.
+    """
+    membres_impayes = Membre.objects.filter(statut=StatutMembre.ACTIF).exclude(
+        cotisations__type_article=TypeArticle.COTISATION,
+        cotisations__annee=annee,
+        cotisations__statut=StatutCotisation.PAYEE,
+    )
+    desactives = 0
+    for membre in membres_impayes:
+        enregistrer_statut_annuel(
+            membre, annee, StatutMembre.INACTIF, RaisonChangementStatut.ECHEANCE_DEPASSEE
+        )
+        desactives += 1
+    return desactives
+
+
 @shared_task
 def envoyer_relances_cotisation(today: date | None = None):
     """
     W-001 — appelée par Celery Beat sans argument (today=None -> date du jour réelle) ; `today`
     n'est exposé qu'à des fins de test, pour ne pas dépendre d'un outil de gel du temps absent
     des dépendances du projet.
+
+    Au checkpoint J+1 (échéance dépassée), désactive aussi automatiquement les membres restés
+    sans cotisation payée pour l'année concernée — voir _desactiver_membres_impayes_pour, ajouté
+    le 2026-09-19. Les 2 autres checkpoints (J-30/J-7) ne font toujours qu'envoyer une relance :
+    le membre est encore dans les temps, son statut ne change pas.
     """
     today = today or timezone.localdate()
     checkpoints = _checkpoints_du_jour(today)
@@ -259,12 +294,16 @@ def envoyer_relances_cotisation(today: date | None = None):
     details = []
     for checkpoint, annee in checkpoints:
         envoyes = _envoyer_relances_pour(checkpoint, annee)
-        details.append({"checkpoint": checkpoint, "annee": annee, "envoyes": envoyes})
+        detail = {"checkpoint": checkpoint, "annee": annee, "envoyes": envoyes}
+        if checkpoint == CheckpointRelance.J_PLUS_1:
+            detail["desactives"] = _desactiver_membres_impayes_pour(annee)
+        details.append(detail)
         logger.info(
-            "envoyer_relances_cotisation: checkpoint=%s annee=%s envoyes=%s",
+            "envoyer_relances_cotisation: checkpoint=%s annee=%s envoyes=%s desactives=%s",
             checkpoint,
             annee,
             envoyes,
+            detail.get("desactives", 0),
         )
 
     return {"details": details, "envoyes": sum(d["envoyes"] for d in details)}

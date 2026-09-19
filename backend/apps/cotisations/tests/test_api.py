@@ -602,6 +602,65 @@ def test_marquer_payee_cree_une_notification_in_app_pour_le_membre(api_client):
     assert notification.type_notification == TypeNotification.PAIEMENT_CONFIRME
 
 
+# Statut associatif automatique (demande utilisateur du 2026-09-19) : confirmer une cotisation
+# ANNUELLE réactive automatiquement le membre — voir apps.membres.services.enregistrer_statut_annuel,
+# déclenché depuis apps.cotisations.notifications.notifier_paiement_confirme.
+def test_marquer_payee_dune_cotisation_annuelle_reactive_le_membre(api_client):
+    from apps.membres.models import HistoriqueStatutMembre, RaisonChangementStatut, StatutMembre
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg3@example.de")
+    user_paye = User.objects.create_user(
+        email="paye2@example.de", password="Password123!", is_active=True
+    )
+    membre_paye = MembreFactory(user=user_paye, statut=StatutMembre.INACTIF)
+    cotisation = CotisationFactory(
+        membre=membre_paye,
+        type_article=TypeArticle.COTISATION,
+        annee=2027,
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="",
+        reference_transaction=None,
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 200, resp.data
+
+    membre_paye.refresh_from_db()
+    assert membre_paye.statut == StatutMembre.ACTIF
+    historique = HistoriqueStatutMembre.objects.get(membre=membre_paye, annee=2027)
+    assert historique.statut == StatutMembre.ACTIF
+    assert historique.raison == RaisonChangementStatut.PAIEMENT_CONFIRME
+
+
+def test_marquer_payee_dune_adhesion_ne_touche_pas_le_statut_du_membre(api_client):
+    # Frais d'adhésion ponctuel (type_article=adhesion) — jamais concerné par la réactivation
+    # automatique, réservée à la cotisation annuelle (Mitgliederbeitrag).
+    from apps.membres.models import HistoriqueStatutMembre, StatutMembre
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg4@example.de")
+    user_paye = User.objects.create_user(
+        email="paye3@example.de", password="Password123!", is_active=True
+    )
+    membre_paye = MembreFactory(user=user_paye, statut=StatutMembre.INACTIF)
+    cotisation = CotisationFactory(
+        membre=membre_paye,
+        type_article=TypeArticle.ADHESION,
+        annee=2027,
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="",
+        reference_transaction=None,
+    )
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 200, resp.data
+
+    membre_paye.refresh_from_db()
+    assert membre_paye.statut == StatutMembre.INACTIF
+    assert not HistoriqueStatutMembre.objects.filter(membre=membre_paye, annee=2027).exists()
+
+
 def test_admin_peut_marquer_payee(api_client):
     user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin@example.de")
     cotisation = CotisationFactory(
