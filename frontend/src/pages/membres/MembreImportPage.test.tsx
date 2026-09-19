@@ -11,6 +11,7 @@ vi.mock("../../api/membres", async () => {
   return {
     ...actual,
     telechargerTemplateImportMembres: vi.fn(),
+    telechargerTemplateImportHistorique: vi.fn(),
   };
 });
 
@@ -19,8 +20,19 @@ vi.mock("../../hooks/useMembres", async () => {
   return {
     ...actual,
     useImporterMembres: vi.fn(),
+    useImporterHistoriqueStatuts: vi.fn(),
   };
 });
+
+/** Valeur par défaut (mutation inactive) — les deux hooks d'import partagent cette forme. */
+function mutationInactive<T>() {
+  return {
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    data: undefined,
+  } as unknown as T;
+}
 
 function fichierXlsx(nom = "membres.xlsx") {
   return new File(["contenu"], nom, {
@@ -35,18 +47,20 @@ describe("MembreImportPage", () => {
     // jsdom tente une vraie navigation sur le clic d'un <a href="blob:...">
     // (non pertinent ici, on ne teste que le déclenchement du téléchargement).
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    // Les deux sections de la page appellent chacune leur hook de mutation au rendu — on leur
+    // donne une valeur inactive par défaut, que chaque test peut écraser pour la section testée.
+    vi.mocked(useMembresHooks.useImporterMembres).mockReturnValue(
+      mutationInactive<ReturnType<typeof useMembresHooks.useImporterMembres>>(),
+    );
+    vi.mocked(useMembresHooks.useImporterHistoriqueStatuts).mockReturnValue(
+      mutationInactive<ReturnType<typeof useMembresHooks.useImporterHistoriqueStatuts>>(),
+    );
   });
 
   it("télécharge le template au clic", async () => {
     vi.mocked(membresApi.telechargerTemplateImportMembres).mockResolvedValue(
       new Blob(["contenu"]),
     );
-    vi.mocked(useMembresHooks.useImporterMembres).mockReturnValue({
-      mutate: vi.fn(),
-      isPending: false,
-      isError: false,
-      data: undefined,
-    } as unknown as ReturnType<typeof useMembresHooks.useImporterMembres>);
 
     renderWithProviders(<MembreImportPage />);
 
@@ -58,13 +72,6 @@ describe("MembreImportPage", () => {
   });
 
   it("affiche une erreur locale si on importe sans fichier sélectionné", () => {
-    vi.mocked(useMembresHooks.useImporterMembres).mockReturnValue({
-      mutate: vi.fn(),
-      isPending: false,
-      isError: false,
-      data: undefined,
-    } as unknown as ReturnType<typeof useMembresHooks.useImporterMembres>);
-
     renderWithProviders(<MembreImportPage />);
 
     fireEvent.click(screen.getByText("import.importer"));
@@ -94,5 +101,61 @@ describe("MembreImportPage", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("CIN invalide")).toBeInTheDocument();
+  });
+
+  it("télécharge le template historique au clic", async () => {
+    vi.mocked(membresApi.telechargerTemplateImportHistorique).mockResolvedValue(
+      new Blob(["contenu"]),
+    );
+
+    renderWithProviders(<MembreImportPage />);
+
+    fireEvent.click(screen.getByText("import_historique.template_bouton"));
+
+    await waitFor(() =>
+      expect(membresApi.telechargerTemplateImportHistorique).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it("affiche une erreur locale si on importe l'historique sans fichier sélectionné", () => {
+    renderWithProviders(<MembreImportPage />);
+
+    fireEvent.click(screen.getByText("import_historique.importer"));
+
+    expect(screen.getByText("import_historique.aucun_fichier")).toBeInTheDocument();
+  });
+
+  it("soumet le fichier historique sélectionné et affiche le résultat", async () => {
+    const mutate = vi.fn((_fichier, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.());
+    vi.mocked(useMembresHooks.useImporterHistoriqueStatuts).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+      data: {
+        total: 5,
+        lignes_traitees: 4,
+        entrees_importees: 3,
+        lignes_ignorees: 1,
+        erreurs: [{ ligne: 2, message: "Membre introuvable" }],
+      },
+    } as unknown as ReturnType<typeof useMembresHooks.useImporterHistoriqueStatuts>);
+
+    renderWithProviders(<MembreImportPage />);
+
+    const input = screen.getByLabelText(
+      "import_historique.choisir_fichier",
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [fichierXlsx("historique.xlsx")] } });
+
+    fireEvent.click(screen.getByText("import_historique.importer"));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate.mock.calls[0][0]).toBeInstanceOf(File);
+
+    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("Membre introuvable")).toBeInTheDocument();
   });
 });

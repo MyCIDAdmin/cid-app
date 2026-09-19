@@ -27,7 +27,12 @@ logger = logging.getLogger(__name__)
 
 
 def enregistrer_statut_annuel(
-    membre: Membre, annee: int, statut: str, raison: str, date_effet=None
+    membre: Membre,
+    annee: int,
+    statut: str,
+    raison: str,
+    date_effet=None,
+    notifier_membre: bool = True,
 ) -> None:
     """
     Enregistre/met à jour l'entrée d'historique (membre, annee) — idempotent (upsert), rejouer le
@@ -36,7 +41,13 @@ def enregistrer_statut_annuel(
     Ne synchronise `Membre.statut` que si `annee` est l'année la plus récente déjà enregistrée
     pour ce membre (ou la première entrée) : un rattrapage tardif d'une année PASSÉE (ex.
     régularisation d'un paiement N-1 après coup) alimente l'historique mais ne doit jamais faire
-    revivre/retomber le statut courant, qui ne suit que l'année en cours."""
+    revivre/retomber le statut courant, qui ne suit que l'année en cours.
+
+    `notifier_membre=False` (ajouté le 2026-09-19 pour apps.membres.imports_historique) : même
+    synchronisation du statut courant, mais SANS notification in-app ni email — un import Excel
+    en masse de données historiques n'est pas un événement personnel pour le membre concerné,
+    contrairement à un paiement confirmé ou une échéance dépassée (les 2 seuls appelants qui
+    laissent ce paramètre à sa valeur par défaut)."""
     date_effet = date_effet or timezone.now()
     HistoriqueStatutMembre.objects.update_or_create(
         membre=membre,
@@ -54,6 +65,9 @@ def enregistrer_statut_annuel(
         return
     membre.statut = statut
     membre.save(update_fields=["statut", "updated_at"])
+
+    if not notifier_membre:
+        return
 
     user = getattr(membre, "user", None)
     if statut == StatutMembre.ACTIF:

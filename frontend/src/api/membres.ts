@@ -8,6 +8,7 @@ import type {
   Membre,
   MembreFormValues,
   MembreListItem,
+  ResultatImportHistorique,
   ResultatImportMembres,
   StatutMembre,
 } from "../types/membre";
@@ -81,6 +82,29 @@ export async function importerMembres(fichier: File): Promise<ResultatImportMemb
 /** GET /membres/import/template/ — classeur vierge à compléter avant import. */
 export async function telechargerTemplateImportMembres(): Promise<Blob> {
   const { data } = await apiClient.get("/membres/import/template/", { responseType: "blob" });
+  return data;
+}
+
+/** POST /membres/import-historique/ (ajouté le 2026-09-19, réservé RH+) — importe l'historique
+ * de statut associatif par année (une colonne par année) pour des membres déjà existants,
+ * identifiés par email + cin — voir apps.membres.imports_historique côté backend. */
+export async function importerHistoriqueStatuts(fichier: File): Promise<ResultatImportHistorique> {
+  const formData = new FormData();
+  formData.append("fichier", fichier);
+  const { data } = await apiClient.post<ResultatImportHistorique>(
+    "/membres/import-historique/",
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return data;
+}
+
+/** GET /membres/import-historique/template/ — classeur vierge (email/cin + colonnes d'exemple
+ * par année) à compléter avant import. */
+export async function telechargerTemplateImportHistorique(): Promise<Blob> {
+  const { data } = await apiClient.get("/membres/import-historique/template/", {
+    responseType: "blob",
+  });
   return data;
 }
 

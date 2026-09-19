@@ -133,5 +133,28 @@
     "resultat_aucune_erreur": "Keine Fehler.",
     "col_ligne": "Zeile",
     "col_message": "Meldung"
+  },
+  "import_historique": {
+    "titre": "Statushistorie importieren",
+    "description": "Importieren Sie den Vereinsstatus (aktiv/inaktiv) bereits bestehender Mitglieder für vergangene Jahre — eine Spalte pro Jahr. Mitglieder werden anhand von E-Mail + Personalausweisnr. (CIN) identifiziert.",
+    "template_titre": "Excel-Vorlage",
+    "template_description": "Laden Sie die leere Vorlage herunter, füllen Sie sie aus und importieren Sie sie anschließend hier.",
+    "template_bouton": "Vorlage herunterladen",
+    "erreur_template": "Die Vorlage konnte nicht heruntergeladen werden.",
+    "upload_titre": "Datei importieren",
+    "choisir_fichier": "Eine .xlsx-Datei auswählen",
+    "aucun_fichier": "Keine Datei ausgewählt.",
+    "importer": "Importieren",
+    "import_en_cours": "Import läuft…",
+    "erreur_import": "Beim Import ist ein Fehler aufgetreten.",
+    "resultat_titre": "Import-Ergebnis",
+    "resultat_total": "Gelesene Zeilen",
+    "resultat_traitees": "Verarbeitete Zeilen",
+    "resultat_importees": "Importierte Einträge",
+    "resultat_ignorees": "Übersprungene Zeilen",
+    "resultat_erreurs_titre": "Fehler",
+    "resultat_aucune_erreur": "Keine Fehler.",
+    "col_ligne": "Zeile",
+    "col_message": "Meldung"
   }
 }

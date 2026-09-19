@@ -90,6 +90,16 @@ export interface ResultatImportMembres {
   erreurs: LigneErreurImport[];
 }
 
+/** Réponse de POST /membres/import-historique/ (ajouté le 2026-09-19) — voir
+ * apps.membres.imports_historique.ResultatImportHistorique.as_dict. */
+export interface ResultatImportHistorique {
+  total: number;
+  lignes_traitees: number;
+  entrees_importees: number;
+  lignes_ignorees: number;
+  erreurs: LigneErreurImport[];
+}
+
 // 16 Länder — doit rester synchronisé avec apps.membres.models.Bundesland.
 export const BUNDESLANDER: { value: string; label: string }[] = [
   { value: "BW", label: "Baden-Württemberg" },

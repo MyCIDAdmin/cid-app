@@ -76,3 +76,15 @@ export function useImporterMembres() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
   });
 }
+
+/** Ajouté le 2026-09-19 — voir membresApi.importerHistoriqueStatuts. N'invalide pas la liste
+ * membres (le statut COURANT n'est modifié que si l'année importée est la plus récente connue
+ * pour ce membre — voir apps.membres.services.enregistrer_statut_annuel côté backend) : on
+ * invalide quand même par prudence, l'import restant peu fréquent. */
+export function useImporterHistoriqueStatuts() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (fichier: File) => membresApi.importerHistoriqueStatuts(fichier),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
+  });
+}
