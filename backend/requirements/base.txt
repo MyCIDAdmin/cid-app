@@ -57,3 +57,10 @@ requests==2.32.3
 # --- Utilitaires ---
 Pillow==10.4.0
 gunicorn==23.0.0
+
+# --- Email (ajouté le 2026-09-19) ---
+# Backend API HTTPS pour Brevo (via BREVO_API_KEY, voir config/settings/base.py et prod.py) —
+# alternative au SMTP classique, qui reste bloqué par Railway sur les plans Free/Trial/Hobby.
+# 14.0 est la dernière version de django-anymail encore compatible avec Django 4.2 (>=15.0
+# exige Django>=5.0).
+django-anymail==14.0

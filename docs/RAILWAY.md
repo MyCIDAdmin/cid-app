@@ -55,11 +55,34 @@ DATABASE_URL=${{Postgres.DATABASE_URL}}        # référence au plugin Postgres
 REDIS_URL=${{Redis.REDIS_URL}}                  # référence au plugin Redis
 CELERY_BROKER_URL=${{Redis.REDIS_URL}}
 CELERY_RESULT_BACKEND=${{Redis.REDIS_URL}}
+BREVO_API_KEY=<clé API Brevo>                   # voir note ci-dessous
 EMAIL_HOST=<smtp>
 EMAIL_HOST_USER=<...>
 EMAIL_HOST_PASSWORD=<...>
 EMAIL_USE_TLS=True
 ```
+
+**Email — attention au plan Railway (ajouté le 2026-09-19) :** Railway bloque
+intégralement le SMTP sortant (ports 25/465/587/2525) sur les plans
+Free/Trial/Hobby — seul le plan **Pro** le débloque. Tant que le service
+`backend` tourne sur un plan Free/Trial/Hobby (ex. environnement privé de
+test), `EMAIL_HOST`/`EMAIL_HOST_USER`/`EMAIL_HOST_PASSWORD` ci-dessus
+**ne fonctionneront pas**, quelle que soit leur configuration (la requête
+SMTP reste bloquée en amont par Railway).
+
+La solution : définir `BREVO_API_KEY` (Menu Brevo → SMTP & API → API Keys sur
+app.brevo.com) — `config/settings/prod.py` bascule alors automatiquement sur
+l'API HTTPS de Brevo (via `django-anymail`) au lieu du SMTP, ce qui
+fonctionne sur n'importe quel plan Railway (aucun port SMTP requis). Une fois
+la migration vers le plan Pro effectuée, `EMAIL_HOST_USER`/SMTP redevient une
+alternative valable — il suffit de ne pas définir `BREVO_API_KEY` pour
+revenir dessus (priorité : `BREVO_API_KEY` > SMTP > logs du service si
+aucun des deux n'est configuré, voir `config/settings/prod.py`).
+
+⚠️ La clé SMTP Brevo actuelle a été brièvement partagée en clair dans une
+session de chat précédente — à régénérer sur app.brevo.com avant toute mise
+en production (SMTP & API → SMTP → régénérer la clé), que l'on passe par
+l'API ou le SMTP.
 
 Railway fournit automatiquement `PORT` — le `CMD` de `Dockerfile.prod` s'y
 adapte déjà (`daphne -p ${PORT:-8000}`).

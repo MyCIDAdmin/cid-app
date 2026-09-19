@@ -44,16 +44,21 @@ MIDDLEWARE.insert(  # noqa: F405
     "whitenoise.middleware.WhiteNoiseMiddleware",
 )
 
-# Tant qu'EMAIL_HOST_USER n'est pas configuré (SMTP réel), on écrit les
-# emails dans les logs du service au lieu d'échouer silencieusement à chaque
-# tentative d'envoi (OTP, bienvenue, etc.) — utile pour un premier déploiement
-# de test. À retirer dès qu'un vrai fournisseur SMTP est branché (voir
-# docs/RAILWAY.md §4 et la checklist §9 avant l'ouverture aux membres).
-EMAIL_BACKEND = (
-    "django.core.mail.backends.smtp.EmailBackend"
-    if EMAIL_HOST_USER  # noqa: F405
-    else "django.core.mail.backends.console.EmailBackend"
-)
+# Priorité (ajouté le 2026-09-19, voir BREVO_API_KEY/ANYMAIL dans settings/base.py) :
+#   1. BREVO_API_KEY défini -> API HTTPS Brevo via django-anymail — fonctionne quel que soit le
+#      plan Railway (SMTP y est bloqué sur Free/Trial/Hobby). C'est l'option recommandée tant que
+#      le compte Railway n'est pas passé au plan Pro.
+#   2. sinon EMAIL_HOST_USER défini -> SMTP classique (ne fonctionnera qu'une fois sur le plan Pro).
+#   3. sinon -> les emails sont écrits dans les logs du service au lieu d'échouer silencieusement
+#      à chaque tentative d'envoi (OTP, bienvenue, etc.) — utile pour un premier déploiement de
+#      test sans aucun fournisseur email branché. À retirer dès qu'un vrai fournisseur est
+#      configuré (voir docs/RAILWAY.md §4 et la checklist §9 avant l'ouverture aux membres).
+if BREVO_API_KEY:  # noqa: F405
+    EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+elif EMAIL_HOST_USER:  # noqa: F405
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 if SENTRY_DSN:  # noqa: F405
     import sentry_sdk

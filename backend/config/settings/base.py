@@ -43,6 +43,7 @@ THIRD_PARTY_APPS = [
     "django_otp.plugins.otp_totp",
     "axes",
     "encrypted_model_fields",
+    "anymail",  # ajouté le 2026-09-19 — voir EMAIL_BACKEND plus bas
 ]
 
 LOCAL_APPS = [
@@ -309,7 +310,9 @@ LANGUAGES = [
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
 # =============================================================================
-# Email — MailHog (dev) / SMTP (prod), voir settings/dev.py et prod.py
+# Email — MailHog (dev) / Brevo API HTTP (prod, recommandé) / SMTP (prod,
+# alternative) — voir settings/dev.py et settings/prod.py pour le choix du
+# backend selon les variables définies.
 # =============================================================================
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "mailhog")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 1025))
@@ -317,6 +320,17 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "False") == "True"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@clubistes.de")
+
+# Ajouté le 2026-09-19 — Railway bloque intégralement le SMTP sortant (ports 25/465/587/2525) sur
+# les plans Free/Trial/Hobby, débloqué uniquement sur le plan Pro (voir
+# Hosting_Migration_Vorschlag, doc projet). Pour pouvoir tester l'envoi d'email (confirmation
+# d'inscription, relances, etc.) sur un environnement Railway privé/gratuit AVANT la migration
+# Pro, BREVO_API_KEY fait basculer settings/prod.py sur l'API HTTPS de Brevo via django-anymail
+# au lieu du SMTP — fonctionne quel que soit le plan Railway, aucun port SMTP requis. Le SMTP
+# (EMAIL_HOST_USER, déjà configuré et domaine authentifié pour my-cid.de) reste utilisable tel
+# quel une fois sur le plan Pro, en laissant simplement BREVO_API_KEY non défini.
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
