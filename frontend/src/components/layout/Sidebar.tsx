@@ -18,6 +18,17 @@
  * réduisent d'autant la hauteur nécessaire (voir uiStore.collapsedGroups pour les valeurs par
  * défaut, notamment "Administration" replié d'entrée).
  *
+ * Un seul item actif à la fois, même quand deux `to` sont préfixes l'un de l'autre (bug corrigé
+ * le 2026-09-21, retour utilisateur : "Wenn ich auf Shop dann auf Meine Bestellungen klicke,
+ * bleiben beide highlighted") : "/boutique" et "/boutique/commandes" (ajoutée le 2026-09-19, voir
+ * plus bas) partagent ce préfixe, donc <NavLink> de react-router-dom les considérait tous les deux
+ * actifs sur "/boutique/commandes" (correspondance par défaut = "pathname commence par `to`",
+ * sans `end`). Passer `end` sur "/boutique" ne suffirait pas non plus : il resterait alors inactif
+ * sur ses propres sous-pages sans item dédié (ex. "/boutique/panier", "/boutique/commande/retour").
+ * `activeNavTo` ci-dessous calcule donc, pour tout le menu, LE seul item dont le `to` correspond
+ * ET qui est le plus spécifique (le plus long) — remplace le calcul d'activité intégré de
+ * <NavLink> par un simple <Link> + comparaison directe.
+ *
  * Le clic sur l'en-tête est la seule source de vérité pour replier/déplier un groupe (bug
  * corrigé : une première version forçait aussi le dépli du groupe contenant la page active, ce
  * qui rendait "Général" impossible à replier en pratique — il contient le tableau de bord, donc
@@ -62,7 +73,7 @@ import {
 } from "@tabler/icons-react";
 import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useMarquerLuesPrefixe, useNotificationsNonLues } from "../../hooks/useNotifications";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
@@ -268,8 +279,21 @@ export default function Sidebar() {
 
   const visibleItems = NAV_ITEMS.filter((item) => hasRoleAtLeast(user, item.minRoleLevel ?? 1));
 
+  // Le seul item réellement actif pour le pathname courant — voir docstring de module (bug
+  // "/boutique" + "/boutique/commandes" tous les deux surlignés). Parmi tous les items dont le
+  // `to` correspond (égal, ou préfixe de segment), on ne retient que le plus long, donc le plus
+  // spécifique : "/boutique/commandes" gagne sur "/boutique" quand les deux correspondent, mais
+  // "/boutique" reste actif sur une sous-page sans item dédié (ex. "/boutique/panier"), puisqu'il
+  // est alors seul candidat.
+  const activeTo = visibleItems.reduce<string | null>((best, item) => {
+    const correspond =
+      location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+    if (!correspond) return best;
+    return best === null || item.to.length > best.length ? item.to : best;
+  }, null);
+
   function isItemActive(item: NavItem): boolean {
-    return location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+    return item.to === activeTo;
   }
 
   function itemALeSignal(item: NavItem): boolean {
@@ -297,17 +321,19 @@ export default function Sidebar() {
   function renderItem(item: NavItem) {
     const Icon = item.icon;
     const signale = itemALeSignal(item);
+    // isItemActive(item) === item.to === activeTo (voir plus haut) : un seul item du menu entier
+    // peut être actif à la fois, jamais calculé par <NavLink> lui-même (voir docstring de module).
+    const active = isItemActive(item);
     return (
-      <NavLink
+      <Link
         key={item.to}
         to={item.to}
         onClick={() => handleClicItem(item)}
         title={collapsed ? t(item.labelKey) : undefined}
-        className={({ isActive }) =>
-          `flex items-center gap-3 rounded-cid px-3 py-2 text-sm transition ${
-            collapsed ? "justify-center px-0" : ""
-          } ${isActive ? "bg-ca font-semibold text-white" : "text-white/70 hover:bg-white/5"}`
-        }
+        aria-current={active ? "page" : undefined}
+        className={`flex items-center gap-3 rounded-cid px-3 py-2 text-sm transition ${
+          collapsed ? "justify-center px-0" : ""
+        } ${active ? "bg-ca font-semibold text-white" : "text-white/70 hover:bg-white/5"}`}
       >
         <span className="relative shrink-0">
           <Icon size={18} />
@@ -320,7 +346,7 @@ export default function Sidebar() {
           )}
         </span>
         {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
-      </NavLink>
+      </Link>
     );
   }
 

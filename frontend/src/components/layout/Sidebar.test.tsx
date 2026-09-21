@@ -139,6 +139,22 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
     // L'en-tête reste néanmoins mis en évidence pour indiquer que la page active s'y trouve.
     expect(screen.getByText("nav_groupe.general").closest("button")).toHaveClass("text-white/70");
   });
+
+  // Bug corrigé le 2026-09-21 (retour utilisateur : "Wenn ich auf Shop dann auf Meine
+  // Bestellungen klicke, bleiben beide highlighted") — "/boutique" et "/boutique/commandes"
+  // partagent un préfixe, <NavLink> les surlignait donc tous les deux.
+  it("ne surligne que l'item le plus spécifique quand deux routes partagent un préfixe (Boutique / Mes commandes)", () => {
+    renderWithProviders(<Sidebar />, { route: "/boutique/commandes", path: "/boutique/commandes" });
+
+    expect(screen.getByText("nav.mes_commandes").closest("a")).toHaveClass("bg-ca");
+    expect(screen.getByText("nav.boutique").closest("a")).not.toHaveClass("bg-ca");
+  });
+
+  it("reste actif sur Boutique pour une sous-page sans item dédié (ex. le panier)", () => {
+    renderWithProviders(<Sidebar />, { route: "/boutique/panier", path: "/boutique/panier" });
+
+    expect(screen.getByText("nav.boutique").closest("a")).toHaveClass("bg-ca");
+  });
 });
 
 describe("Sidebar — point d'activité par module (demande utilisateur du 2026-09-16)", () => {
