@@ -96,13 +96,14 @@
     "mode": {
       "carte": "Kreditkarte",
       "virement_sepa": "SEPA-Überweisung",
-      "paypal": "PayPal"
+      "paypal": "PayPal",
+      "especes": "Bar"
     },
     "confirmer": "Als bezahlt markieren",
     "en_cours": "Wird bestätigt…",
     "erreur_action": "Die Zahlung konnte nicht bestätigt werden.",
     "filtre_statut": "Status",
-    "filtre_tous": "Alle Status",
+    "filtre_tous": "Alle",
     "changer_statut_label": "Neuer Status",
     "changer_statut": "Status ändern",
     "motif_placeholder": "Grund (optional)",
@@ -110,7 +111,33 @@
     "masquer_historique": "Verlauf ausblenden",
     "erreur_historique": "Der Verlauf dieser Zahlung konnte nicht geladen werden.",
     "historique_vide": "Keine Statusänderung erfasst.",
-    "erreur_changement_statut": "Die Statusänderung ist fehlgeschlagen."
+    "erreur_changement_statut": "Die Statusänderung ist fehlgeschlagen.",
+    "filtre_recherche": "Suche",
+    "filtre_recherche_placeholder": "Name, Vorname, Mitgliedsnummer oder Bezeichnung…",
+    "filtre_type_article": "Artikeltyp",
+    "filtre_mode_paiement": "Zahlungsmethode",
+    "filtre_date_apres": "Erstellt ab",
+    "filtre_date_avant": "Erstellt bis",
+    "reinitialiser_filtres": "Filter zurücksetzen",
+    "type_article": {
+      "cotisation": "Jahresbeitrag",
+      "adhesion": "Beitrittsgebühr",
+      "evenement": "Veranstaltung",
+      "don": "Freie Spende",
+      "autre": "Katalogartikel"
+    },
+    "especes_ouvrir": "+ Barzahlung eintragen",
+    "especes_fermer": "Schließen",
+    "especes_titre": "Barzahlung eintragen",
+    "especes_champ_membre": "Mitglied",
+    "especes_rechercher_membre_placeholder": "Mitglied suchen…",
+    "especes_champ_type_article": "Artikeltyp",
+    "especes_champ_montant": "Betrag (€)",
+    "especes_champ_libelle": "Bezeichnung",
+    "especes_champ_article": "Artikel",
+    "especes_soumettre": "Speichern",
+    "especes_annuler": "Abbrechen",
+    "especes_erreur": "Die Barzahlung konnte nicht gespeichert werden."
   },
   "configuration_relance": {
     "titre": "Fälligkeitstermine",

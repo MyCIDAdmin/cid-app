@@ -9,8 +9,9 @@ import type {
   ChangerStatutCotisationPayload,
   ConfigurationRelancePayload,
   CotisationCreatePayload,
+  CotisationsGestionFiltres,
+  CotisationSaisieEspecesPayload,
   ModePaiement,
-  StatutCotisation,
 } from "../types/cotisation";
 
 const cotisationsKeys = {
@@ -18,8 +19,8 @@ const cotisationsKeys = {
   mesCotisations: () => [...cotisationsKeys.all, "mes-cotisations"] as const,
   detail: (id: string) => [...cotisationsKeys.all, "detail", id] as const,
   enAttenteDePaiement: () => [...cotisationsKeys.all, "en-attente-paiement"] as const,
-  gestion: (statut: StatutCotisation | "" = "") =>
-    [...cotisationsKeys.all, "gestion", statut] as const,
+  gestion: (filtres: CotisationsGestionFiltres = {}) =>
+    [...cotisationsKeys.all, "gestion", filtres] as const,
   historiqueStatuts: (id: string) => [...cotisationsKeys.all, "historique-statuts", id] as const,
   configurationsRelance: () => [...cotisationsKeys.all, "configurations-relance"] as const,
   articlesCatalogue: () => [...cotisationsKeys.all, "articles-catalogue"] as const,
@@ -84,13 +85,29 @@ export function useMarquerCotisationPayee() {
 }
 
 /**
- * Liste élargie pour la page "Ausstehende Zahlungen" (ajoutée le 2026-09-19) — un statut vide
- * renvoie toutes les cotisations, pour retrouver une cotisation déjà "payee" à corriger.
+ * Liste élargie pour la page "Ausstehende Zahlungen" (ajoutée le 2026-09-19, filtres élargis le
+ * 2026-09-21) — un statut vide renvoie toutes les cotisations, pour retrouver une cotisation
+ * déjà "payee" à corriger.
  */
-export function useCotisationsGestion(statut: StatutCotisation | "" = "") {
+export function useCotisationsGestion(filtres: CotisationsGestionFiltres = {}) {
   return useQuery({
-    queryKey: cotisationsKeys.gestion(statut),
-    queryFn: () => cotisationsApi.listCotisationsGestion(statut),
+    queryKey: cotisationsKeys.gestion(filtres),
+    queryFn: () => cotisationsApi.listCotisationsGestion(filtres),
+  });
+}
+
+/**
+ * Enregistrement direct d'un paiement en espèces (retour utilisateur du 2026-09-21) — voir
+ * cotisationsApi.enregistrerPaiementEspeces. Invalide toute la clé racine, même principe que les
+ * autres mutations de ce module (marquer_payee/changer_statut) : la nouvelle ligne doit
+ * apparaître dans la file "Ausstehende Zahlungen" et dans l'historique du membre concerné.
+ */
+export function useEnregistrerPaiementEspeces() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CotisationSaisieEspecesPayload) =>
+      cotisationsApi.enregistrerPaiementEspeces(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
   });
 }
 

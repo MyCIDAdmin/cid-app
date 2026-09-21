@@ -136,7 +136,18 @@ class CotisationViewSet(ModelViewSet):
                     "Seuls le Directeur Financier ou l'Administrateur peuvent enregistrer une "
                     "transaction pour le compte d'un autre membre."
                 )
-            serializer.save(membre=membre_cible, saisie_par=membre_self)
+            cotisation = serializer.save(membre=membre_cible, saisie_par=membre_self)
+            # Ajouté le 2026-09-21 (feature "Barzahlung eintragen" : enregistrer directement une
+            # transaction déjà reçue en espèces) — si le DF/Admin saisit une transaction DÉJÀ
+            # payee (ex. espèces remises en main propre), on déclenche les mêmes effets de bord
+            # qu'une confirmation via marquer_payee (email/notification "paiement confirmé", mise
+            # à jour du statut associatif annuel du membre, cascade adhésion/évènement liés — voir
+            # notifications.notifier_paiement_confirme) : le membre doit être informé et le reste
+            # du système doit réagir exactement comme si le DF avait confirmé un paiement
+            # en_attente existant. Aucun effet si la transaction saisie reste en_attente/echouee
+            # (ex. virement SEPA annoncé mais pas encore reçu, comportement inchangé).
+            if cotisation.statut == StatutCotisation.PAYEE:
+                _notifier_paiement_confirme(cotisation)
             return
 
         if membre_self is None:

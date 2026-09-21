@@ -7,7 +7,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.cotisations.models import ArticleCatalogue, StatutCotisation, TypeArticle
+from apps.cotisations.models import ArticleCatalogue, Cotisation, StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import ArticleCatalogueFactory, CotisationFactory
 from apps.membres.tests.factories import MembreFactory
 from apps.notifications.models import Notification, TypeNotification
@@ -391,6 +391,61 @@ def test_directeur_financier_peut_saisir_pour_un_autre_membre(api_client):
     assert str(resp.data["saisie_par"]) == str(_membre_dg.id)
 
 
+# --- Enregistrer un paiement en espèces (retour utilisateur du 2026-09-21, "Es soll möglich sein
+# eine Zahlung als Barzahlung einzutragen") ---
+
+
+def test_df_peut_enregistrer_un_paiement_en_especes_deja_payee_pour_un_autre_membre(api_client):
+    user, membre_df = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
+    autre_user, autre_membre = _user_avec_membre(Role.MEMBRE, "autre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.ADHESION,
+            "mode_paiement": "especes",
+            "statut": "payee",
+            "membre": str(autre_membre.id),
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["mode_paiement"] == "especes"
+    assert resp.data["statut"] == StatutCotisation.PAYEE
+    assert resp.data["reference_transaction"] is not None
+    assert str(resp.data["saisie_par"]) == str(membre_df.id)
+    # Effet de bord attendu, même principe que marquer_payee (voir
+    # views.CotisationViewSet.perform_create) : le membre concerné reçoit la notification
+    # "paiement confirmé", pas seulement le DF qui a saisi la transaction.
+    notification = Notification.objects.get(destinataire=autre_user)
+    assert notification.type_notification == TypeNotification.PAIEMENT_CONFIRME
+
+
+def test_saisie_especes_en_attente_ne_notifie_pas_de_paiement_confirme(api_client):
+    """Une transaction saisie en espèces mais laissée en_attente/echouee (cas rare mais possible,
+    ex. correction manuelle ultérieure prévue) ne doit pas déclencher la notification "paiement
+    confirmé" — seul un statut payee le doit (voir perform_create)."""
+    user, _membre_df = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
+    autre_user, autre_membre = _user_avec_membre(Role.MEMBRE, "autre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.ADHESION,
+            "mode_paiement": "especes",
+            "statut": "en_attente",
+            "membre": str(autre_membre.id),
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert not Notification.objects.filter(
+        destinataire=autre_user, type_notification=TypeNotification.PAIEMENT_CONFIRME
+    ).exists()
+
+
 # --- Scope liste / IDOR (SCD §2.3 A01) ---
 
 
@@ -487,6 +542,66 @@ def test_filtre_par_statut(api_client):
     assert resp.status_code == 200
     assert len(resp.data["results"]) == 1
     assert resp.data["results"][0]["statut"] == StatutCotisation.EN_ATTENTE
+
+
+# --- Filtres ajoutés le 2026-09-21 (page "Ausstehende Zahlungen", retour utilisateur : "Filter
+# Möglichkeiten hinzufügen") ---
+
+
+def test_filtre_par_mode_paiement(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    CotisationFactory(mode_paiement="especes", statut=StatutCotisation.PAYEE)
+    CotisationFactory(mode_paiement="carte", statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL), {"mode_paiement": "especes"})
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert resp.data["results"][0]["mode_paiement"] == "especes"
+
+
+def test_filtre_q_recherche_par_nom_de_membre(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    cible = MembreFactory(nom="Trabelsi", prenom="Sami")
+    CotisationFactory(membre=cible)
+    CotisationFactory()  # un autre membre, ne doit pas remonter
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL), {"q": "trabelsi"})
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert str(resp.data["results"][0]["membre"]) == str(cible.id)
+
+
+def test_filtre_q_recherche_par_libelle(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    CotisationFactory(libelle="Don libre exceptionnel")
+    CotisationFactory(libelle="Frais d'adhésion")
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL), {"q": "don libre"})
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert resp.data["results"][0]["libelle"] == "Don libre exceptionnel"
+
+
+def test_filtre_par_date_de_creation(api_client):
+    user, _membre = _user_avec_membre(Role.RH, "rh@example.de")
+    ancienne = CotisationFactory()
+    recente = CotisationFactory()
+
+    Cotisation.objects.filter(pk=ancienne.pk).update(created_at="2020-01-01T10:00:00Z")
+    Cotisation.objects.filter(pk=recente.pk).update(created_at="2026-06-15T10:00:00Z")
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL), {"date_creation_apres": "2025-01-01"})
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert str(resp.data["results"][0]["id"]) == str(recente.id)
 
 
 # --- Reçu PDF (AHM-17, RICEFW R-010) ---

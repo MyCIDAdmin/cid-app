@@ -13,7 +13,12 @@
 export type TypeArticleStepper = "cotisation" | "adhesion" | "don" | "autre";
 export type TypeArticle = TypeArticleStepper | "evenement";
 
-export type ModePaiement = "carte" | "virement_sepa" | "paypal";
+// "especes" ajouté le 2026-09-21 (retour utilisateur : "Es soll möglich sein eine Zahlung als
+// Barzahlung einzutragen") — jamais proposé en libre-service (voir CotisationStepperPage, qui
+// continue à n'utiliser que les 3 premiers), uniquement par le Directeur Financier/Admin pour
+// confirmer un paiement en_attente ou enregistrer directement une nouvelle transaction déjà
+// reçue en espèces (voir CotisationsEnAttentePage).
+export type ModePaiement = "carte" | "virement_sepa" | "paypal" | "especes";
 
 export type StatutCotisation = "en_attente" | "payee" | "echouee" | "remboursee" | "annulee";
 
@@ -146,4 +151,36 @@ export interface HistoriqueStatutCotisation {
 export interface ChangerStatutCotisationPayload {
   statut: StatutCotisation;
   motif?: string;
+}
+
+/**
+ * Filtres de la page "Ausstehende Zahlungen" (élargis le 2026-09-21, retour utilisateur : "Filter
+ * Möglichkeiten hinzufügen") — miroir de apps.cotisations.filters.CotisationFilter. `statut` est
+ * désormais piloté par les onglets (voir CotisationsEnAttentePage), les autres champs par une
+ * ligne de filtres additionnelle.
+ */
+export interface CotisationsGestionFiltres {
+  statut?: StatutCotisation | "";
+  type_article?: TypeArticle | "";
+  mode_paiement?: ModePaiement | "";
+  q?: string;
+  date_creation_apres?: string;
+  date_creation_avant?: string;
+}
+
+/**
+ * Payload de POST /cotisations/ pour enregistrer directement une transaction en espèces pour le
+ * compte d'un membre (F-015 étendu, retour utilisateur du 2026-09-21 : "Es soll möglich sein eine
+ * Zahlung als Barzahlung einzutragen") — réservé au Directeur Financier/Admin côté backend (voir
+ * CotisationViewSet.perform_create). Contrairement à CotisationCreatePayload (libre-service),
+ * `membre` et `statut` sont explicites : la transaction est déjà considérée reçue (statut=payee).
+ */
+export interface CotisationSaisieEspecesPayload {
+  membre: string;
+  type_article: TypeArticleStepper;
+  mode_paiement: "especes";
+  statut: "payee";
+  libelle?: string;
+  montant?: string;
+  article_catalogue?: string;
 }

@@ -14,26 +14,57 @@
  * y compris revenir en arrière depuis "payee" (décision actée avec l'utilisateur : "Admin kann
  * jeden Status ändern + volles Änderungsprotokoll").
  *
+ * Élargie une seconde fois le 2026-09-21 (retour utilisateur, 3 demandes) :
+ *  1. Le filtre de statut devient des onglets (un par statut + "Tous"), plus rapide à utiliser
+ *     qu'un menu déroulant pour un nombre de valeurs aussi restreint (5 statuts).
+ *  2. Une ligne de filtres additionnels (type d'article, mode de paiement, recherche libre sur
+ *     le membre/libellé, plage de date de création) vient compléter les onglets — voir
+ *     CotisationsGestionFiltres et apps.cotisations.filters.CotisationFilter côté backend.
+ *  3. Un formulaire "Enregistrer un paiement en espèces" (PaiementEspecesForm ci-dessous) permet
+ *     de saisir directement une transaction déjà reçue en main propre (Barzahlung), sans passer
+ *     par la confirmation d'une ligne en_attente préexistante — nouveau mode de paiement
+ *     ModePaiement.ESPECES, réservé au Directeur Financier/Admin (voir CotisationSaisieEspeces
+ *     Payload et CotisationViewSet.perform_create côté backend).
+ *
  * Chaque ligne résout le nom du membre via useMembre(cotisation.membre) — un composant séparé
  * par ligne (CotisationGestionRow), même raison que JustificatifQueueRow dans
  * AdminJustificatifsPage.tsx (règles des Hooks : pas d'appel de hook dans une boucle .map()).
  */
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useMembre } from "../../hooks/useMembres";
 import {
+  useArticlesCatalogue,
   useChangerStatutCotisation,
   useCotisationsGestion,
+  useEnregistrerPaiementEspeces,
   useHistoriqueStatutsCotisation,
   useMarquerCotisationPayee,
 } from "../../hooks/useCotisations";
-import type { Cotisation, ModePaiement, StatutCotisation } from "../../types/cotisation";
+import type {
+  Cotisation,
+  CotisationSaisieEspecesPayload,
+  ModePaiement,
+  StatutCotisation,
+  TypeArticle,
+  TypeArticleStepper,
+} from "../../types/cotisation";
+import type { MembreListItem } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
 
-const MODES_PAIEMENT: ModePaiement[] = ["carte", "virement_sepa", "paypal"];
+const MODES_PAIEMENT: ModePaiement[] = ["carte", "virement_sepa", "paypal", "especes"];
 const STATUTS: StatutCotisation[] = ["en_attente", "payee", "echouee", "remboursee", "annulee"];
 const STATUTS_CONFIRMABLES: StatutCotisation[] = ["en_attente", "echouee"];
+// Filtre "type d'article" : les 5 valeurs possibles côté backend (voir TypeArticle) — contrairement
+// à TYPES_ARTICLE_ESPECES ci-dessous, "evenement" est inclus (une cotisation liée à un événement
+// payant, voir apps.evenements.services.synchroniser_cotisation, doit rester filtrable ici).
+const TYPES_ARTICLE_FILTRE: TypeArticle[] = ["cotisation", "adhesion", "evenement", "don", "autre"];
+// Types proposés pour une saisie manuelle en espèces — "evenement" est délibérément exclu : une
+// Cotisation de ce type n'est jamais créée directement (toujours via la synchronisation depuis
+// une Inscription, voir apps.evenements.services), donc hors de portée de ce formulaire.
+const TYPES_ARTICLE_ESPECES: TypeArticleStepper[] = ["cotisation", "adhesion", "don", "autre"];
 
 function formatMontant(montant: string): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
@@ -207,38 +238,362 @@ function CotisationGestionRow({ cotisation }: CotisationGestionRowProps) {
   );
 }
 
-export default function CotisationsEnAttentePage() {
+interface TabButtonProps {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}
+
+function TabButton({ active, onClick, label }: TabButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-2 text-sm font-medium ${
+        active ? "border-b-2 border-ca text-ca" : "text-text-tertiary hover:text-text-secondary"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+interface PaiementEspecesFormProps {
+  onClose: () => void;
+}
+
+/**
+ * Formulaire "Enregistrer un paiement en espèces" (ajouté le 2026-09-21, voir docstring de
+ * module) — réutilise POST /cotisations/ (même endpoint que le stepper libre-service et que la
+ * saisie F-015 existante), avec mode_paiement="especes" et statut="payee" explicites : la
+ * transaction est considérée comme déjà reçue au moment de la saisie (contrairement à la
+ * confirmation d'une ligne en_attente déjà existante, gérée par CotisationGestionRow ci-dessus).
+ */
+function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
   const { t } = useTranslation("cotisations");
-  const [statutFiltre, setStatutFiltre] = useState<StatutCotisation | "">("en_attente");
-  const gestion = useCotisationsGestion(statutFiltre);
+  const [membre, setMembre] = useState<MembreListItem | null>(null);
+  const [typeArticle, setTypeArticle] = useState<TypeArticleStepper>("cotisation");
+  const [montant, setMontant] = useState("");
+  const [libelle, setLibelle] = useState("");
+  const [articleCatalogueId, setArticleCatalogueId] = useState("");
+
+  const mutation = useEnregistrerPaiementEspeces();
+  const articlesCatalogue = useArticlesCatalogue();
+  // Seuls les articles personnalisés (type_fixe=null) ont du sens ici — cotisation/adhésion sont
+  // déjà couverts par leurs propres options de type_article, pas par un article_catalogue.
+  const articlesPersonnalises =
+    articlesCatalogue.data?.results.filter((a) => a.type_fixe === null) ?? [];
+
+  const montantInvalide = typeArticle === "don" && (!montant || Number(montant) <= 0);
+  const articleManquant = typeArticle === "autre" && !articleCatalogueId;
+  const formulaireValide = Boolean(membre) && !montantInvalide && !articleManquant;
+
+  function soumettre(e: FormEvent) {
+    e.preventDefault();
+    if (!membre || !formulaireValide) return;
+
+    const payload: CotisationSaisieEspecesPayload = {
+      membre: membre.id,
+      type_article: typeArticle,
+      mode_paiement: "especes",
+      statut: "payee",
+    };
+    if (typeArticle === "don") {
+      payload.montant = montant;
+      payload.libelle = libelle || t("article.don_titre");
+    } else if (typeArticle === "autre") {
+      payload.article_catalogue = articleCatalogueId;
+    }
+
+    mutation.mutate(payload, {
+      onSuccess: () => {
+        setMembre(null);
+        setMontant("");
+        setLibelle("");
+        setArticleCatalogueId("");
+        onClose();
+      },
+    });
+  }
 
   return (
-    <div>
-      <h1 className="mb-4 text-xl font-bold text-text-primary">{t("en_attente_paiement.titre")}</h1>
-      <p className="mb-4 text-sm text-text-tertiary">{t("en_attente_paiement.sous_titre")}</p>
+    <form
+      onSubmit={soumettre}
+      className="mb-4 space-y-3 rounded-cid-lg bg-bg-primary p-4 shadow-sm"
+    >
+      <h2 className="text-sm font-bold text-text-primary">{t("en_attente_paiement.especes_titre")}</h2>
 
-      <div className="mb-4 flex items-end gap-3 rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+      <div>
+        <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+          {t("en_attente_paiement.especes_champ_membre")}
+        </label>
+        <MembreSearchPicker
+          selection={membre}
+          onSelect={setMembre}
+          placeholder={t("en_attente_paiement.especes_rechercher_membre_placeholder") ?? ""}
+        />
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label
-            htmlFor="cotisations-filtre-statut"
-            className="mb-1 block text-[10px] uppercase text-text-tertiary"
-          >
-            {t("en_attente_paiement.filtre_statut")}
+          <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+            {t("en_attente_paiement.especes_champ_type_article")}
           </label>
           <select
-            id="cotisations-filtre-statut"
-            value={statutFiltre}
-            onChange={(e) => setStatutFiltre(e.target.value as StatutCotisation | "")}
+            value={typeArticle}
+            onChange={(e) => setTypeArticle(e.target.value as TypeArticleStepper)}
             className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
           >
-            <option value="">{t("en_attente_paiement.filtre_tous")}</option>
-            {STATUTS.map((statut) => (
-              <option key={statut} value={statut}>
-                {t(`statut.${statut}`)}
+            {TYPES_ARTICLE_ESPECES.map((ta) => (
+              <option key={ta} value={ta}>
+                {t(`en_attente_paiement.type_article.${ta}`)}
               </option>
             ))}
           </select>
         </div>
+
+        {typeArticle === "don" && (
+          <>
+            <div>
+              <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+                {t("en_attente_paiement.especes_champ_montant")}
+              </label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={montant}
+                onChange={(e) => setMontant(e.target.value)}
+                className="w-28 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+                {t("en_attente_paiement.especes_champ_libelle")}
+              </label>
+              <input
+                value={libelle}
+                onChange={(e) => setLibelle(e.target.value)}
+                placeholder={t("article.don_titre") ?? ""}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+          </>
+        )}
+
+        {typeArticle === "autre" && (
+          <div>
+            <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+              {t("en_attente_paiement.especes_champ_article")}
+            </label>
+            <select
+              value={articleCatalogueId}
+              onChange={(e) => setArticleCatalogueId(e.target.value)}
+              className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            >
+              <option value="">—</option>
+              {articlesPersonnalises.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.libelle} ({formatMontant(a.montant)})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={!formulaireValide || mutation.isPending}
+          className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+        >
+          {mutation.isPending
+            ? t("en_attente_paiement.en_cours")
+            : t("en_attente_paiement.especes_soumettre")}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-cid px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+        >
+          {t("en_attente_paiement.especes_annuler")}
+        </button>
+      </div>
+
+      {mutation.isError && (
+        <p className="text-xs text-status-dangerText">
+          {extractApiErrorMessage(mutation.error, t("en_attente_paiement.especes_erreur"))}
+        </p>
+      )}
+    </form>
+  );
+}
+
+export default function CotisationsEnAttentePage() {
+  const { t } = useTranslation("cotisations");
+  const [statutFiltre, setStatutFiltre] = useState<StatutCotisation | "">("en_attente");
+  const [typeArticleFiltre, setTypeArticleFiltre] = useState<TypeArticle | "">("");
+  const [modePaiementFiltre, setModePaiementFiltre] = useState<ModePaiement | "">("");
+  const [q, setQ] = useState("");
+  const [dateCreationApres, setDateCreationApres] = useState("");
+  const [dateCreationAvant, setDateCreationAvant] = useState("");
+  const [especesOuvert, setEspecesOuvert] = useState(false);
+
+  const gestion = useCotisationsGestion({
+    statut: statutFiltre,
+    type_article: typeArticleFiltre,
+    mode_paiement: modePaiementFiltre,
+    q,
+    date_creation_apres: dateCreationApres,
+    date_creation_avant: dateCreationAvant,
+  });
+
+  const filtresActifs = Boolean(
+    typeArticleFiltre || modePaiementFiltre || q || dateCreationApres || dateCreationAvant,
+  );
+
+  function reinitialiserFiltres() {
+    setTypeArticleFiltre("");
+    setModePaiementFiltre("");
+    setQ("");
+    setDateCreationApres("");
+    setDateCreationAvant("");
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-text-primary">{t("en_attente_paiement.titre")}</h1>
+          <p className="text-sm text-text-tertiary">{t("en_attente_paiement.sous_titre")}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEspecesOuvert((v) => !v)}
+          className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
+        >
+          {especesOuvert
+            ? t("en_attente_paiement.especes_fermer")
+            : t("en_attente_paiement.especes_ouvrir")}
+        </button>
+      </div>
+
+      {especesOuvert && <PaiementEspecesForm onClose={() => setEspecesOuvert(false)} />}
+
+      {/* Onglets de statut (retour utilisateur du 2026-09-21) — remplacent le menu déroulant
+          précédent, le nombre de statuts (5 + "Tous") s'y prête mieux. */}
+      <div className="mb-3 flex flex-wrap gap-1 border-b border-text-tertiary/20">
+        <TabButton
+          active={statutFiltre === ""}
+          onClick={() => setStatutFiltre("")}
+          label={t("en_attente_paiement.filtre_tous")}
+        />
+        {STATUTS.map((statut) => (
+          <TabButton
+            key={statut}
+            active={statutFiltre === statut}
+            onClick={() => setStatutFiltre(statut)}
+            label={t(`statut.${statut}`)}
+          />
+        ))}
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+        <div>
+          <label
+            htmlFor="cotisations-filtre-q"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("en_attente_paiement.filtre_recherche")}
+          </label>
+          <input
+            id="cotisations-filtre-q"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("en_attente_paiement.filtre_recherche_placeholder") ?? ""}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="cotisations-filtre-type-article"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("en_attente_paiement.filtre_type_article")}
+          </label>
+          <select
+            id="cotisations-filtre-type-article"
+            value={typeArticleFiltre}
+            onChange={(e) => setTypeArticleFiltre(e.target.value as TypeArticle | "")}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          >
+            <option value="">{t("en_attente_paiement.filtre_tous")}</option>
+            {TYPES_ARTICLE_FILTRE.map((ta) => (
+              <option key={ta} value={ta}>
+                {t(`en_attente_paiement.type_article.${ta}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="cotisations-filtre-mode-paiement"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("en_attente_paiement.filtre_mode_paiement")}
+          </label>
+          <select
+            id="cotisations-filtre-mode-paiement"
+            value={modePaiementFiltre}
+            onChange={(e) => setModePaiementFiltre(e.target.value as ModePaiement | "")}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          >
+            <option value="">{t("en_attente_paiement.filtre_tous")}</option>
+            {MODES_PAIEMENT.map((mode) => (
+              <option key={mode} value={mode}>
+                {t(`en_attente_paiement.mode.${mode}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="cotisations-filtre-date-apres"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("en_attente_paiement.filtre_date_apres")}
+          </label>
+          <input
+            id="cotisations-filtre-date-apres"
+            type="date"
+            value={dateCreationApres}
+            onChange={(e) => setDateCreationApres(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="cotisations-filtre-date-avant"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
+            {t("en_attente_paiement.filtre_date_avant")}
+          </label>
+          <input
+            id="cotisations-filtre-date-avant"
+            type="date"
+            value={dateCreationAvant}
+            onChange={(e) => setDateCreationAvant(e.target.value)}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+        </div>
+        {filtresActifs && (
+          <button
+            type="button"
+            onClick={reinitialiserFiltres}
+            className="text-xs font-medium text-ca underline"
+          >
+            {t("en_attente_paiement.reinitialiser_filtres")}
+          </button>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">

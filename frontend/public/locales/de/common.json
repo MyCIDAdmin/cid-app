@@ -43,8 +43,11 @@
     "replier_sidebar": "Menü einklappen",
     "deplier_sidebar": "Menü ausklappen",
     "mode_sombre": "Dunkler Modus",
-    "mode_clair": "Heller Modus"
+    "mode_clair": "Heller Modus",
+    "changer": "Ändern"
   },
+  "chargement": "Wird geladen…",
+  "aucun_resultat": "Kein Ergebnis.",
   "langue": {
     "francais": "Auf Französisch wechseln",
     "allemand": "Auf Deutsch wechseln"

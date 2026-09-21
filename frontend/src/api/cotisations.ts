@@ -10,10 +10,11 @@ import type {
   ConfigurationRelancePayload,
   Cotisation,
   CotisationCreatePayload,
+  CotisationsGestionFiltres,
+  CotisationSaisieEspecesPayload,
   HistoriqueStatutCotisation,
   ModePaiement,
   PaiementEnLigneResponse,
-  StatutCotisation,
 } from "../types/cotisation";
 import type { CursorPage } from "../types/membre";
 
@@ -91,13 +92,34 @@ export async function listCotisationsEnAttenteDePaiement(): Promise<CursorPage<C
  * élargie le 2026-09-19 (demande utilisateur : correction rétroactive du statut) — un `statut`
  * omis/vide renvoie toutes les cotisations (RH+ voit tout, voir CotisationViewSet.get_queryset),
  * pour retrouver une cotisation déjà "payee" à corriger, pas seulement les "en_attente".
+ *
+ * Élargie une seconde fois le 2026-09-21 (retour utilisateur : "Filter Möglichkeiten
+ * hinzufügen") : `statut` reste géré séparément par les onglets côté page (voir
+ * CotisationsEnAttentePage), les autres filtres (type d'article, mode de paiement, recherche
+ * libre, plage de date de création) sont transmis tels quels au backend (CotisationFilter) — les
+ * filtres vides ne sont jamais envoyés, même principe que membresApi.listMembres.
  */
 export async function listCotisationsGestion(
-  statut?: StatutCotisation | "",
+  filtres: CotisationsGestionFiltres = {},
 ): Promise<CursorPage<Cotisation>> {
-  const { data } = await apiClient.get<CursorPage<Cotisation>>("/cotisations/", {
-    params: statut ? { statut } : {},
-  });
+  const params = Object.fromEntries(
+    Object.entries(filtres).filter(([, value]) => value !== undefined && value !== ""),
+  );
+  const { data } = await apiClient.get<CursorPage<Cotisation>>("/cotisations/", { params });
+  return data;
+}
+
+/**
+ * Enregistre directement une transaction en espèces déjà reçue pour le compte d'un membre
+ * (F-015 étendu, retour utilisateur du 2026-09-21 : "Es soll möglich sein eine Zahlung als
+ * Barzahlung einzutragen") — réutilise le même endpoint que le stepper libre-service, mais avec
+ * `membre`/`mode_paiement`/`statut` explicites ; réservé côté backend au Directeur
+ * Financier/Admin (CotisationViewSet.perform_create, branche "saisie pour autrui").
+ */
+export async function enregistrerPaiementEspeces(
+  payload: CotisationSaisieEspecesPayload,
+): Promise<Cotisation> {
+  const { data } = await apiClient.post<Cotisation>("/cotisations/", payload);
   return data;
 }
 

@@ -96,13 +96,14 @@
     "mode": {
       "carte": "Carte bancaire",
       "virement_sepa": "Virement SEPA",
-      "paypal": "PayPal"
+      "paypal": "PayPal",
+      "especes": "Espèces"
     },
     "confirmer": "Marquer comme payée",
     "en_cours": "Confirmation…",
     "erreur_action": "Le paiement n'a pas pu être confirmé.",
     "filtre_statut": "Statut",
-    "filtre_tous": "Tous les statuts",
+    "filtre_tous": "Tous",
     "changer_statut_label": "Nouveau statut",
     "changer_statut": "Changer le statut",
     "motif_placeholder": "Motif (optionnel)",
@@ -110,7 +111,33 @@
     "masquer_historique": "Masquer l'historique",
     "erreur_historique": "Impossible de charger l'historique de ce paiement.",
     "historique_vide": "Aucun changement de statut enregistré.",
-    "erreur_changement_statut": "Le changement de statut a échoué."
+    "erreur_changement_statut": "Le changement de statut a échoué.",
+    "filtre_recherche": "Recherche",
+    "filtre_recherche_placeholder": "Nom, prénom, n° de membre ou libellé…",
+    "filtre_type_article": "Type d'article",
+    "filtre_mode_paiement": "Mode de paiement",
+    "filtre_date_apres": "Créé à partir du",
+    "filtre_date_avant": "Créé jusqu'au",
+    "reinitialiser_filtres": "Réinitialiser les filtres",
+    "type_article": {
+      "cotisation": "Cotisation annuelle",
+      "adhesion": "Frais d'adhésion",
+      "evenement": "Évènement",
+      "don": "Don libre",
+      "autre": "Article du catalogue"
+    },
+    "especes_ouvrir": "+ Enregistrer un paiement en espèces",
+    "especes_fermer": "Fermer",
+    "especes_titre": "Enregistrer un paiement en espèces",
+    "especes_champ_membre": "Membre",
+    "especes_rechercher_membre_placeholder": "Rechercher un membre…",
+    "especes_champ_type_article": "Type d'article",
+    "especes_champ_montant": "Montant (€)",
+    "especes_champ_libelle": "Libellé",
+    "especes_champ_article": "Article",
+    "especes_soumettre": "Enregistrer",
+    "especes_annuler": "Annuler",
+    "especes_erreur": "Le paiement en espèces n'a pas pu être enregistré."
   },
   "configuration_relance": {
     "titre": "Échéances des relances",

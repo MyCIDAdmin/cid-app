@@ -89,11 +89,22 @@ class TypeArticle(models.TextChoices):
 
 
 class ModePaiement(models.TextChoices):
-    """Mode de paiement — FDD §3.2 étape 2, mockup #pg-cotisation (pm-opt)."""
+    """Mode de paiement — FDD §3.2 étape 2, mockup #pg-cotisation (pm-opt).
+
+    ESPECES ajouté le 2026-09-21 (retour utilisateur : "Es soll möglich sein eine Zahlung als
+    Barzahlung einzutragen") — jamais proposé en libre-service (le stepper membre, mockup
+    #pg-cotisation, ne propose que carte/virement_sepa/paypal, voir CotisationStepperPage) ni en
+    ligne (absent de MODES_PAIEMENT_EN_LIGNE côté views.py) : uniquement utilisable par le
+    Directeur Financier/Admin, soit pour confirmer un paiement déjà en_attente
+    (`marquer_payee`/`changer_statut`, ex. le membre avait annoncé un virement mais a finalement
+    payé en main propre), soit pour enregistrer directement une nouvelle transaction déjà reçue
+    en espèces pour le compte d'un membre (F-015, saisie_par renseigné — voir
+    CotisationViewSet.perform_create)."""
 
     CARTE = "carte", _("Carte bancaire")
     VIREMENT_SEPA = "virement_sepa", _("Virement SEPA")
     PAYPAL = "paypal", _("PayPal")
+    ESPECES = "especes", _("Espèces")
 
 
 class StatutCotisation(models.TextChoices):
