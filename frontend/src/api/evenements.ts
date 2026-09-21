@@ -9,6 +9,7 @@ import type {
   Evenement,
   EvenementPayload,
   Inscription,
+  InscrireEspecesPayload,
   InscrirePayload,
   RejoindreTrajetPayload,
   ReservationCovoiturage,
@@ -70,6 +71,20 @@ export async function annulerEvenement(id: string): Promise<Evenement> {
  */
 export async function inscrire(payload: InscrirePayload): Promise<Inscription> {
   const { data } = await apiClient.post<Inscription>("/evenements/evenements/inscrire/", payload);
+  return data;
+}
+
+/**
+ * Inscrit un AUTRE membre à un événement payant avec paiement cash immédiat (retour
+ * utilisateur du 2026-09-21 : "Event als Artikeltyp hinzufügen" dans le formulaire "Barzahlung
+ * eintragen" de CotisationsEnAttentePage) — réservé côté backend au Directeur Financier/Admin
+ * (voir InscrireEspecesPayload/EvenementViewSet.inscrire_especes).
+ */
+export async function inscrireEspeces(payload: InscrireEspecesPayload): Promise<Inscription> {
+  const { data } = await apiClient.post<Inscription>(
+    "/evenements/evenements/inscrire-especes/",
+    payload,
+  );
   return data;
 }
 

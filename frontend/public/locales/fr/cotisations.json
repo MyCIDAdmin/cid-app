@@ -124,7 +124,8 @@
       "adhesion": "Frais d'adhésion",
       "evenement": "Évènement",
       "don": "Don libre",
-      "autre": "Article du catalogue"
+      "autre": "Article boutique",
+      "autre_libre": "Autre"
     },
     "especes_ouvrir": "+ Enregistrer un paiement en espèces",
     "especes_fermer": "Fermer",
@@ -135,6 +136,12 @@
     "especes_champ_montant": "Montant (€)",
     "especes_champ_libelle": "Libellé",
     "especes_champ_article": "Article",
+    "especes_shop_aucun": "Aucun article boutique pour le moment — à créer dans « Articles de cotisation ».",
+    "especes_shop_erreur": "Impossible de charger les articles boutique.",
+    "especes_champ_evenement": "Évènement",
+    "especes_champ_places": "Places",
+    "especes_evenement_aucun": "Aucun évènement actif avec participation payante.",
+    "especes_evenement_erreur": "Impossible de charger les évènements.",
     "especes_soumettre": "Enregistrer",
     "especes_annuler": "Annuler",
     "especes_erreur": "Le paiement en espèces n'a pas pu être enregistré."

@@ -96,6 +96,17 @@ export interface InscrirePayload {
   remarques?: string;
 }
 
+/**
+ * Entrée de POST /evenements/evenements/inscrire-especes/ (ajouté le 2026-09-21, retour
+ * utilisateur : "Event als Artikeltyp hinzufügen" dans le formulaire "Barzahlung eintragen" de
+ * CotisationsEnAttentePage) — même forme que InscrirePayload, plus `membre` explicite :
+ * réservé au Directeur Financier/Admin pour inscrire un AUTRE membre avec paiement cash
+ * immédiat (voir apps.evenements.views.EvenementViewSet.inscrire_especes côté backend).
+ */
+export interface InscrireEspecesPayload extends InscrirePayload {
+  membre: string;
+}
+
 export interface Covoiturage {
   id: string;
   conducteur: string;

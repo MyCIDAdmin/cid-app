@@ -11,7 +11,11 @@
 // catalogue d'articles géré par l'App-Admin, voir ArticleCatalogue plus bas) —
 // vient s'ajouter aux 3 choix existants, jamais les remplacer.
 export type TypeArticleStepper = "cotisation" | "adhesion" | "don" | "autre";
-export type TypeArticle = TypeArticleStepper | "evenement";
+// "autre_libre" ajouté le 2026-09-21 (retour utilisateur : "Füge noch einen Artikeltyp 'anders'
+// mit einem Freitextfeld hinzu") — même mécanique libre (libellé/montant saisis à la main) que
+// "don", mais jamais proposé dans le stepper libre-service (TypeArticleStepper ci-dessus),
+// uniquement par le Directeur Financier/Admin (voir CotisationSaisieEspecesPayload plus bas).
+export type TypeArticle = TypeArticleStepper | "evenement" | "autre_libre";
 
 // "especes" ajouté le 2026-09-21 (retour utilisateur : "Es soll möglich sein eine Zahlung als
 // Barzahlung einzutragen") — jamais proposé en libre-service (voir CotisationStepperPage, qui
@@ -177,7 +181,11 @@ export interface CotisationsGestionFiltres {
  */
 export interface CotisationSaisieEspecesPayload {
   membre: string;
-  type_article: TypeArticleStepper;
+  // "evenement" est exclu : une inscription-évènement payée en espèces passe par un endpoint
+  // dédié (POST /evenements/evenements/inscrire-especes/, voir InscrireEspecesPayload et
+  // useInscrireEspeces) — jamais par POST /cotisations/, voir docstring de module de
+  // apps.evenements.services.
+  type_article: TypeArticleStepper | "autre_libre";
   mode_paiement: "especes";
   statut: "payee";
   libelle?: string;

@@ -344,6 +344,105 @@ def test_annuler_inscription_dun_autre_membre_refuse(api_client):
     assert resp.status_code in (403, 404)
 
 
+# --- Inscription payée en espèces par le Directeur Financier/Admin (ajoutée le 2026-09-21,
+# retour utilisateur : "Event als Artikeltyp hinzufügen. Beim Anklicken sollen aktive Events
+# angezeigt [werden]", dans le formulaire "Barzahlung eintragen" de CotisationsEnAttentePage) —
+# voir EvenementViewSet.inscrire_especes.
+
+INSCRIRE_ESPECES_URL = "evenements:evenement-inscrire-especes"
+
+
+def test_df_inscrit_un_autre_membre_et_confirme_le_paiement_en_especes(api_client):
+    from apps.cotisations.models import Cotisation, ModePaiement, StatutCotisation, TypeArticle
+    from apps.evenements.models import Inscription
+
+    user, _df = _user_avec_membre(Role.DIR_FINANCIER, "df1@example.de")
+    membre_cible = MembreFactory()
+    evenement = EvenementFactory(cout=Decimal("25.00"), places_max=10)
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_ESPECES_URL),
+        {"evenement": str(evenement.id), "membre": str(membre_cible.id), "places": 2},
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutInscription.CONFIRMEE
+
+    inscription = Inscription.objects.get(id=resp.data["id"])
+    assert inscription.membre_id == membre_cible.id
+    assert inscription.statut == StatutInscription.CONFIRMEE
+
+    cotisation = Cotisation.objects.get(id=inscription.cotisation_id)
+    assert cotisation.type_article == TypeArticle.EVENEMENT
+    assert cotisation.statut == StatutCotisation.PAYEE
+    assert cotisation.mode_paiement == ModePaiement.ESPECES
+    assert str(cotisation.montant) == "50.00"
+    assert cotisation.reference_transaction is not None
+    assert cotisation.date_paiement is not None
+
+    from apps.cotisations.models import HistoriqueStatutCotisation
+
+    historique = HistoriqueStatutCotisation.objects.get(cotisation=cotisation)
+    assert historique.ancien_statut == StatutCotisation.EN_ATTENTE
+    assert historique.nouveau_statut == StatutCotisation.PAYEE
+
+
+def test_inscrire_especes_refuse_a_un_role_insuffisant(api_client):
+    user, _ = _user_avec_membre(Role.RH, "rh1@example.de")
+    membre_cible = MembreFactory()
+    evenement = EvenementFactory()
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_ESPECES_URL),
+        {"evenement": str(evenement.id), "membre": str(membre_cible.id), "places": 1},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_inscrire_especes_gratuit_confirme_sans_cotisation(api_client):
+    user, _ = _user_avec_membre(Role.DIR_FINANCIER, "df2@example.de")
+    membre_cible = MembreFactory()
+    evenement = EvenementFactory(gratuit=True, cout=Decimal("0.00"))
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_ESPECES_URL),
+        {"evenement": str(evenement.id), "membre": str(membre_cible.id), "places": 1},
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutInscription.CONFIRMEE
+    assert resp.data["cotisation"] is None
+
+
+def test_inscrire_especes_respecte_la_capacite(api_client):
+    user, _ = _user_avec_membre(Role.DIR_FINANCIER, "df3@example.de")
+    membre_cible = MembreFactory()
+    evenement = EvenementFactory(places_max=1)
+    InscriptionFactory(evenement=evenement, places=1)
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_ESPECES_URL),
+        {"evenement": str(evenement.id), "membre": str(membre_cible.id), "places": 1},
+    )
+
+    assert resp.status_code == 400
+    assert "places" in resp.data["details"]
+
+
+def test_admin_peut_inscrire_especes(api_client):
+    user, _ = _user_avec_membre(Role.SUPER_ADMIN, "admin-inscrire-especes@example.de")
+    membre_cible = MembreFactory()
+    evenement = EvenementFactory(cout=Decimal("10.00"))
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_ESPECES_URL),
+        {"evenement": str(evenement.id), "membre": str(membre_cible.id), "places": 1},
+    )
+
+    assert resp.status_code == 200, resp.data
+
+
 # --- Covoiturage ---
 
 

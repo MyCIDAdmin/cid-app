@@ -7,6 +7,7 @@ import * as evenementsApi from "../api/evenements";
 import type {
   CovoituragePayload,
   EvenementPayload,
+  InscrireEspecesPayload,
   InscrirePayload,
   RejoindreTrajetPayload,
 } from "../types/evenements";
@@ -82,6 +83,26 @@ export function useInscrire() {
     onSuccess: () => {
       invalidateInscriptions(queryClient);
       invalidateEvenements(queryClient);
+    },
+  });
+}
+
+/**
+ * Inscription payante par le Directeur Financier/Admin pour un AUTRE membre, réglée cash sur
+ * place (retour utilisateur du 2026-09-21, voir apps.evenements.views.EvenementViewSet.
+ * inscrire_especes) — invalide aussi la clé racine "cotisations" (littérale : cotisationsKeys
+ * n'est pas exportée par useCotisations.ts) puisqu'une Cotisation est créée/confirmée payee en
+ * plus de l'Inscription, exactement comme useEnregistrerPaiementEspeces le fait déjà côté
+ * cotisations pour les autres types d'article.
+ */
+export function useInscrireEspeces() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: InscrireEspecesPayload) => evenementsApi.inscrireEspeces(payload),
+    onSuccess: () => {
+      invalidateInscriptions(queryClient);
+      invalidateEvenements(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["cotisations"] });
     },
   });
 }

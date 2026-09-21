@@ -35,6 +35,9 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
+from apps.cotisations.models import HistoriqueStatutCotisation, ModePaiement, StatutCotisation
+from apps.cotisations.notifications import notifier_paiement_confirme
+from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 
 from .filters import CovoiturageFilter, EvenementFilter, InscriptionFilter
 from .models import (
@@ -57,12 +60,18 @@ from .serializers import (
     CovoiturageSerializer,
     EvenementSerializer,
     InscriptionSerializer,
+    InscrireEspecesSerializer,
     InscrireSerializer,
     RejoindreTrajetSerializer,
     ReservationCovoiturageSerializer,
 )
 from .services import synchroniser_cotisation
 from .tasks import envoyer_annulation_evenement, envoyer_invitations_evenement
+
+# Statuts Cotisation considérés "pas encore payés" — voir inscrire_especes ci-dessous, même
+# constante que apps.cotisations.views.STATUTS_CONFIRMABLES_EN_PAYEE (dupliquée plutôt
+# qu'importée : ce sont deux vérifications indépendantes dans deux apps différentes).
+_STATUTS_COTISATION_NON_PAYEE = {StatutCotisation.EN_ATTENTE, StatutCotisation.ECHOUEE}
 
 
 class EvenementsCursorPagination(CursorPagination):
@@ -121,26 +130,19 @@ class EvenementViewSet(ModelViewSet):
         envoyer_annulation_evenement.delay(str(evenement.id))
         return Response(self.get_serializer(evenement).data)
 
-    @action(detail=False, methods=["post"])
-    def inscrire(self, request):
-        membre = getattr(request.user, "membre", None)
-        if membre is None:
-            raise ValidationError(
-                {"membre": "Aucune fiche membre associée à ce compte utilisateur."}
-            )
-
-        serializer = InscrireSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        places_demandees = serializer.validated_data["places"]
+    def _inscrire_avec_capacite_verifiee(self, membre, validated_data):
+        """Cœur partagé de `inscrire` (libre-service) et `inscrire_especes` (Directeur
+        Financier/Admin, saisie pour un autre membre, ajoutée le 2026-09-21) — extrait sans
+        changement de comportement pour `inscrire` (voir docstring de classe pour le
+        verrouillage transactionnel)."""
+        places_demandees = validated_data["places"]
 
         with transaction.atomic():
             # select_for_update verrouille la ligne Evenement pour la durée de la
             # transaction : deux inscriptions concurrentes sur le même événement sont
             # sérialisées, la vérification de capacité ci-dessous est donc fiable (même
             # principe que le stock atomique boutique, voir apps.boutique.views).
-            evenement = Evenement.objects.select_for_update().get(
-                pk=serializer.validated_data["evenement"].pk
-            )
+            evenement = Evenement.objects.select_for_update().get(pk=validated_data["evenement"].pk)
             if evenement.statut != StatutEvenement.PUBLIE:
                 raise ValidationError(
                     {"evenement": "Cet événement n'est pas ouvert aux inscriptions."}
@@ -170,10 +172,10 @@ class EvenementViewSet(ModelViewSet):
                     )
 
             inscription.places = places_demandees
-            inscription.regime_alimentaire = serializer.validated_data.get(
+            inscription.regime_alimentaire = validated_data.get(
                 "regime_alimentaire", inscription.regime_alimentaire
             )
-            inscription.remarques = serializer.validated_data.get("remarques", "")
+            inscription.remarques = validated_data.get("remarques", "")
             inscription.montant_paye = evenement.cout * places_demandees
             inscription.statut = (
                 StatutInscription.CONFIRMEE
@@ -187,6 +189,80 @@ class EvenementViewSet(ModelViewSet):
             # que select_for_update() ci-dessus : la Cotisation créée est donc, elle aussi,
             # cohérente avec la capacité/le montant vérifiés atomiquement.
             synchroniser_cotisation(inscription)
+
+        return inscription
+
+    @action(detail=False, methods=["post"])
+    def inscrire(self, request):
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            raise ValidationError(
+                {"membre": "Aucune fiche membre associée à ce compte utilisateur."}
+            )
+
+        serializer = InscrireSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        inscription = self._inscrire_avec_capacite_verifiee(membre, serializer.validated_data)
+
+        return Response(InscriptionSerializer(inscription).data)
+
+    @action(detail=False, methods=["post"], url_path="inscrire-especes")
+    def inscrire_especes(self, request):
+        """
+        POST /evenements/evenements/inscrire-especes/ (ajoutée le 2026-09-21, retour
+        utilisateur : "Event als Artikeltyp hinzufügen. Beim Anklicken sollen aktive Events
+        angezeigt [werden]", dans le formulaire "Barzahlung eintragen" de
+        CotisationsEnAttentePage) — réservée au Directeur Financier/Admin (même niveau que la
+        saisie pour autrui F-015, voir apps.cotisations.permissions.SAISIE_POUR_AUTRUI_MIN_
+        LEVEL) : inscrit un AUTRE membre à un événement payant ET confirme immédiatement le
+        paiement comme reçu en espèces — combine en un seul appel ce qui serait sinon 2 étapes
+        (inscription libre-service par le membre, puis marquer_payee côté Directeur Financier)
+        pour le cas d'un membre qui règle sur place, en main propre, au moment de l'inscription.
+
+        Réutilise la même vérification de capacité/montant atomique que `inscrire` ci-dessus
+        (voir _inscrire_avec_capacite_verifiee) puis, contrairement à `inscrire`, marque
+        immédiatement la Cotisation résultante comme payee (mode_paiement=especes) et déclenche
+        la même cascade que CotisationViewSet.marquer_payee : journalisation
+        HistoriqueStatutCotisation + notifier_paiement_confirme (qui fait elle-même passer
+        l'Inscription à "confirmee", voir apps.cotisations.notifications — pas d'appel
+        redondant ici). Un événement gratuit (cout=0) ne produit jamais de Cotisation
+        (synchroniser_cotisation ne fait rien dans ce cas) : l'inscription est alors
+        directement confirmée, sans paiement à enregistrer.
+        """
+        user = request.user
+        if ROLE_LEVELS.get(user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+            raise PermissionDenied(
+                "Seuls le Directeur Financier ou l'Administrateur peuvent inscrire un autre "
+                "membre avec paiement en espèces."
+            )
+
+        serializer = InscrireEspecesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        membre_cible = serializer.validated_data["membre"]
+        inscription = self._inscrire_avec_capacite_verifiee(membre_cible, serializer.validated_data)
+
+        cotisation = inscription.cotisation
+        if cotisation is not None and cotisation.statut in _STATUTS_COTISATION_NON_PAYEE:
+            ancien_statut = cotisation.statut
+            cotisation.mode_paiement = ModePaiement.ESPECES
+            cotisation.statut = StatutCotisation.PAYEE
+            cotisation.saisie_par = getattr(user, "membre", None)
+            # save() (voir apps.cotisations.models.Cotisation) génère la référence de
+            # transaction et la date de paiement puisque le statut passe à "payee" sans
+            # référence existante — même mécanique que CotisationViewSet.marquer_payee.
+            cotisation.save()
+            HistoriqueStatutCotisation.objects.create(
+                cotisation=cotisation,
+                ancien_statut=ancien_statut,
+                nouveau_statut=StatutCotisation.PAYEE,
+                modifie_par=getattr(user, "membre", None),
+            )
+            notifier_paiement_confirme(cotisation)
+            # notifier_paiement_confirme fait passer l'Inscription à "confirmee" en base (voir
+            # apps.cotisations.notifications) mais via une instance chargée séparément
+            # (cotisation.inscription_evenement) : sans ce refresh, la réponse renverrait encore
+            # l'ancien statut "en_attente_paiement" tenu par l'objet `inscription` en mémoire ici.
+            inscription.refresh_from_db()
 
         return Response(InscriptionSerializer(inscription).data)
 

@@ -124,6 +124,18 @@ class InscrireSerializer(serializers.Serializer):
         return evenement
 
 
+class InscrireEspecesSerializer(InscrireSerializer):
+    """Variante de InscrireSerializer pour EvenementViewSet.inscrire_especes (ajoutée le
+    2026-09-21, retour utilisateur : "Event als Artikeltyp hinzufügen. Beim Anklicken sollen
+    aktive Events angezeigt [werden]", dans le formulaire "Barzahlung eintragen" de
+    CotisationsEnAttentePage) — mêmes champs qu'une inscription libre-service, plus `membre`
+    explicite : contrairement à `inscrire` (toujours le membre du compte authentifié), le
+    Directeur Financier/Admin inscrit ici un AUTRE membre, même principe que la saisie pour
+    autrui F-015 côté apps.cotisations (CotisationViewSet.perform_create)."""
+
+    membre = serializers.PrimaryKeyRelatedField(queryset=Membre.objects.all())
+
+
 class CovoiturageSerializer(serializers.ModelSerializer):
     places_reservees = serializers.IntegerField(read_only=True)
     places_restantes = serializers.IntegerField(read_only=True)

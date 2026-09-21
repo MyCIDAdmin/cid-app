@@ -288,6 +288,47 @@ def test_evenement_sans_montant_refuse(api_client):
     assert "montant" in resp.data["details"]
 
 
+# --- Type "autre_libre" (ajouté le 2026-09-21, retour utilisateur : "Füge noch einen Artikeltyp
+# 'anders' mit einem Freitextfeld hinzu") — même mécanique que "don" (libellé/montant libres,
+# voir CotisationSerializer.validate), mais réservé à la saisie pour autrui par le Directeur
+# Financier/Admin (voir TYPES_ARTICLE_ESPECES côté frontend), jamais au stepper libre-service.
+
+
+def test_df_peut_saisir_un_paiement_autre_libre_pour_un_autre_membre(api_client):
+    user, membre_df = _user_avec_membre(Role.DIR_FINANCIER, "df-libre@example.de")
+    _autre_user, autre_membre = _user_avec_membre(Role.MEMBRE, "autre-libre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL),
+        {
+            "type_article": TypeArticle.AUTRE_LIBRE,
+            "libelle": "Remboursement frais essence",
+            "montant": "12.50",
+            "mode_paiement": "especes",
+            "statut": "payee",
+            "membre": str(autre_membre.id),
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["libelle"] == "Remboursement frais essence"
+    assert str(resp.data["montant"]) == "12.50"
+    assert str(resp.data["saisie_par"]) == str(membre_df.id)
+
+
+def test_autre_libre_sans_libelle_refuse(api_client):
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre-libre@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"type_article": TypeArticle.AUTRE_LIBRE, "montant": "12.50"}
+    )
+
+    assert resp.status_code == 400
+    assert "libelle" in resp.data["details"]
+
+
 # --- Article catalogue, type_article=autre (retour utilisateur du 2026-09-17) ---
 
 

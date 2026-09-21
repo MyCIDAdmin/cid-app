@@ -124,7 +124,8 @@
       "adhesion": "Beitrittsgebühr",
       "evenement": "Veranstaltung",
       "don": "Freie Spende",
-      "autre": "Katalogartikel"
+      "autre": "Shop-Artikel",
+      "autre_libre": "Sonstiges"
     },
     "especes_ouvrir": "+ Barzahlung eintragen",
     "especes_fermer": "Schließen",
@@ -135,6 +136,12 @@
     "especes_champ_montant": "Betrag (€)",
     "especes_champ_libelle": "Bezeichnung",
     "especes_champ_article": "Artikel",
+    "especes_shop_aucun": "Noch keine Shop-Artikel vorhanden — unter „Beitragsartikel“ anlegen.",
+    "especes_shop_erreur": "Die Shop-Artikel konnten nicht geladen werden.",
+    "especes_champ_evenement": "Veranstaltung",
+    "especes_champ_places": "Plätze",
+    "especes_evenement_aucun": "Keine aktive Veranstaltung mit Teilnahmegebühr.",
+    "especes_evenement_erreur": "Die Veranstaltungen konnten nicht geladen werden.",
     "especes_soumettre": "Speichern",
     "especes_annuler": "Abbrechen",
     "especes_erreur": "Die Barzahlung konnte nicht gespeichert werden."

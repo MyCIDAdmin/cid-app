@@ -86,6 +86,15 @@ class TypeArticle(models.TextChoices):
     # Ajouté le 2026-09-17 — voir ArticleCatalogue ci-dessous : un article personnalisé créé par
     # l'App-Admin, jamais un 5e tarif fixe géré par MONTANTS_CATALOGUE.
     AUTRE = "autre", _("Article personnalisé")
+    # Ajouté le 2026-09-21 (retour utilisateur : "Füge noch einen Artikeltyp 'anders' mit einem
+    # Freitextfeld hinzu") — même mécanique que DON (libellé/montant libres, saisis par le
+    # Directeur Financier/Admin, voir CotisationSerializer.validate qui les traite déjà tous les
+    # deux dans la même branche générique), mais sémantiquement distinct : DON reste réservé à un
+    # don volontaire à l'association, AUTRE_LIBRE couvre tout le reste (remboursement, article
+    # ponctuel non catalogué...). Uniquement proposé côté saisie manuelle (Directeur
+    # Financier/Admin) — jamais dans le stepper libre-service, voir TypeArticleStepper côté
+    # frontend.
+    AUTRE_LIBRE = "autre_libre", _("Autre (libre)")
 
 
 class ModePaiement(models.TextChoices):

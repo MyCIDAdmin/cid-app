@@ -42,13 +42,13 @@ import {
   useHistoriqueStatutsCotisation,
   useMarquerCotisationPayee,
 } from "../../hooks/useCotisations";
+import { useEvenements, useInscrireEspeces } from "../../hooks/useEvenements";
 import type {
   Cotisation,
   CotisationSaisieEspecesPayload,
   ModePaiement,
   StatutCotisation,
   TypeArticle,
-  TypeArticleStepper,
 } from "../../types/cotisation";
 import type { MembreListItem } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -57,14 +57,27 @@ import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
 const MODES_PAIEMENT: ModePaiement[] = ["carte", "virement_sepa", "paypal", "especes"];
 const STATUTS: StatutCotisation[] = ["en_attente", "payee", "echouee", "remboursee", "annulee"];
 const STATUTS_CONFIRMABLES: StatutCotisation[] = ["en_attente", "echouee"];
-// Filtre "type d'article" : les 5 valeurs possibles côté backend (voir TypeArticle) — contrairement
-// à TYPES_ARTICLE_ESPECES ci-dessous, "evenement" est inclus (une cotisation liée à un événement
-// payant, voir apps.evenements.services.synchroniser_cotisation, doit rester filtrable ici).
-const TYPES_ARTICLE_FILTRE: TypeArticle[] = ["cotisation", "adhesion", "evenement", "don", "autre"];
-// Types proposés pour une saisie manuelle en espèces — "evenement" est délibérément exclu : une
-// Cotisation de ce type n'est jamais créée directement (toujours via la synchronisation depuis
-// une Inscription, voir apps.evenements.services), donc hors de portée de ce formulaire.
-const TYPES_ARTICLE_ESPECES: TypeArticleStepper[] = ["cotisation", "adhesion", "don", "autre"];
+// Filtre "type d'article" : les 6 valeurs possibles côté backend (voir TypeArticle).
+const TYPES_ARTICLE_FILTRE: TypeArticle[] = [
+  "cotisation",
+  "adhesion",
+  "evenement",
+  "don",
+  "autre",
+  "autre_libre",
+];
+// Types proposés pour une saisie manuelle en espèces (retour utilisateur du 2026-09-21 : ajout de
+// "evenement" — l'inscription à un événement payant reste créée via un endpoint dédié,
+// /evenements/evenements/inscrire-especes/, jamais via POST /cotisations/, voir soumettre()
+// ci-dessous — et de "autre_libre", un type "divers" à libellé/montant libres distinct de "don").
+const TYPES_ARTICLE_ESPECES: TypeArticle[] = [
+  "cotisation",
+  "adhesion",
+  "evenement",
+  "don",
+  "autre",
+  "autre_libre",
+];
 
 function formatMontant(montant: string): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
@@ -268,29 +281,85 @@ interface PaiementEspecesFormProps {
  * saisie F-015 existante), avec mode_paiement="especes" et statut="payee" explicites : la
  * transaction est considérée comme déjà reçue au moment de la saisie (contrairement à la
  * confirmation d'une ligne en_attente déjà existante, gérée par CotisationGestionRow ci-dessus).
+ *
+ * Élargi le 2026-09-21 (retour utilisateur, 3 demandes) :
+ *  1. Le type "autre" (article du catalogue de paiement, voir ArticleCatalogue) est renommé
+ *     "Shop-Artikel"/"Article boutique" côté affichage (clé `type_article.autre`, plus parlante
+ *     que "Katalogartikel" pour un article personnalisé du type T-shirt/écharpe...) et filtre
+ *     désormais aussi sur `actif` (même filtre que CotisationStepperPage — un article désactivé
+ *     n'a jamais de raison d'apparaître dans une nouvelle saisie, ce qui produisait sinon un 400
+ *     silencieux côté serveur à la soumission) ; un état de chargement/erreur/liste vide est
+ *     affiché sous le menu plutôt qu'un simple "—" qui ne permettait pas de distinguer "en train
+ *     de charger" de "aucun article créé — voir la page Beitragsartikel".
+ *  2. Type "evenement" ajouté — contrairement aux autres types ci-dessous, il ne crée PAS de
+ *     Cotisation via ce même POST /cotisations/ (une Cotisation de type evenement n'est jamais
+ *     créée directement, voir apps.evenements.services) : sélectionner un événement affiche un
+ *     second menu (événements publiés et payants, voir useEvenements) et la soumission appelle
+ *     un endpoint dédié, POST /evenements/evenements/inscrire-especes/ (useInscrireEspeces), qui
+ *     inscrit le membre ET confirme le paiement en une seule fois.
+ *  3. Type "autre_libre" ajouté — même mécanique libre (libellé + montant saisis à la main) que
+ *     "don", mais distinct sémantiquement (un don volontaire n'est pas la même chose qu'un
+ *     article ponctuel non catalogué, ex. un remboursement) ; voir TypeArticle.AUTRE_LIBRE.
  */
 function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
   const { t } = useTranslation("cotisations");
   const [membre, setMembre] = useState<MembreListItem | null>(null);
-  const [typeArticle, setTypeArticle] = useState<TypeArticleStepper>("cotisation");
+  const [typeArticle, setTypeArticle] = useState<TypeArticle>("cotisation");
   const [montant, setMontant] = useState("");
   const [libelle, setLibelle] = useState("");
   const [articleCatalogueId, setArticleCatalogueId] = useState("");
+  const [evenementId, setEvenementId] = useState("");
+  const [places, setPlaces] = useState("1");
 
   const mutation = useEnregistrerPaiementEspeces();
+  const inscrireEspecesMutation = useInscrireEspeces();
   const articlesCatalogue = useArticlesCatalogue();
-  // Seuls les articles personnalisés (type_fixe=null) ont du sens ici — cotisation/adhésion sont
-  // déjà couverts par leurs propres options de type_article, pas par un article_catalogue.
+  const evenementsActifs = useEvenements({ statut: "publie" });
+  // Seuls les articles personnalisés (type_fixe=null) actuellement proposés ont du sens ici —
+  // cotisation/adhésion sont déjà couverts par leurs propres options de type_article, pas par un
+  // article_catalogue ; `actif` filtré comme dans CotisationStepperPage (voir docstring ci-dessus).
   const articlesPersonnalises =
-    articlesCatalogue.data?.results.filter((a) => a.type_fixe === null) ?? [];
+    articlesCatalogue.data?.results.filter((a) => a.actif && a.type_fixe === null) ?? [];
+  // Un événement gratuit n'a jamais de paiement à confirmer (voir apps.evenements.services.
+  // synchroniser_cotisation, qui ne crée pas de Cotisation dans ce cas) — hors de portée de ce
+  // formulaire de saisie cash, qui sert justement à confirmer un paiement.
+  const evenementsPayants = (evenementsActifs.data?.results ?? []).filter((ev) => !ev.gratuit);
 
-  const montantInvalide = typeArticle === "don" && (!montant || Number(montant) <= 0);
+  const montantInvalide =
+    (typeArticle === "don" || typeArticle === "autre_libre") &&
+    (!montant || Number(montant) <= 0);
+  const libelleManquant = typeArticle === "autre_libre" && !libelle.trim();
   const articleManquant = typeArticle === "autre" && !articleCatalogueId;
-  const formulaireValide = Boolean(membre) && !montantInvalide && !articleManquant;
+  const evenementManquant = typeArticle === "evenement" && !evenementId;
+  const placesInvalides = typeArticle === "evenement" && (!places || Number(places) < 1);
+  const formulaireValide =
+    Boolean(membre) &&
+    !montantInvalide &&
+    !libelleManquant &&
+    !articleManquant &&
+    !evenementManquant &&
+    !placesInvalides;
+
+  function reinitialiser() {
+    setMembre(null);
+    setMontant("");
+    setLibelle("");
+    setArticleCatalogueId("");
+    setEvenementId("");
+    setPlaces("1");
+  }
 
   function soumettre(e: FormEvent) {
     e.preventDefault();
     if (!membre || !formulaireValide) return;
+
+    if (typeArticle === "evenement") {
+      inscrireEspecesMutation.mutate(
+        { membre: membre.id, evenement: evenementId, places: Number(places) },
+        { onSuccess: () => { reinitialiser(); onClose(); } },
+      );
+      return;
+    }
 
     const payload: CotisationSaisieEspecesPayload = {
       membre: membre.id,
@@ -301,20 +370,22 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
     if (typeArticle === "don") {
       payload.montant = montant;
       payload.libelle = libelle || t("article.don_titre");
+    } else if (typeArticle === "autre_libre") {
+      payload.montant = montant;
+      payload.libelle = libelle;
     } else if (typeArticle === "autre") {
       payload.article_catalogue = articleCatalogueId;
     }
 
     mutation.mutate(payload, {
       onSuccess: () => {
-        setMembre(null);
-        setMontant("");
-        setLibelle("");
-        setArticleCatalogueId("");
+        reinitialiser();
         onClose();
       },
     });
   }
+
+  const mutationEnCours = mutation.isPending || inscrireEspecesMutation.isPending;
 
   return (
     <form
@@ -336,12 +407,16 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
 
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+          <label
+            htmlFor="cotisations-especes-type-article"
+            className="mb-1 block text-[10px] uppercase text-text-tertiary"
+          >
             {t("en_attente_paiement.especes_champ_type_article")}
           </label>
           <select
+            id="cotisations-especes-type-article"
             value={typeArticle}
-            onChange={(e) => setTypeArticle(e.target.value as TypeArticleStepper)}
+            onChange={(e) => setTypeArticle(e.target.value as TypeArticle)}
             className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
           >
             {TYPES_ARTICLE_ESPECES.map((ta) => (
@@ -352,13 +427,17 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
           </select>
         </div>
 
-        {typeArticle === "don" && (
+        {(typeArticle === "don" || typeArticle === "autre_libre") && (
           <>
             <div>
-              <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+              <label
+                htmlFor="cotisations-especes-montant"
+                className="mb-1 block text-[10px] uppercase text-text-tertiary"
+              >
                 {t("en_attente_paiement.especes_champ_montant")}
               </label>
               <input
+                id="cotisations-especes-montant"
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -368,13 +447,19 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+              <label
+                htmlFor="cotisations-especes-libelle"
+                className="mb-1 block text-[10px] uppercase text-text-tertiary"
+              >
                 {t("en_attente_paiement.especes_champ_libelle")}
               </label>
               <input
+                id="cotisations-especes-libelle"
                 value={libelle}
                 onChange={(e) => setLibelle(e.target.value)}
-                placeholder={t("article.don_titre") ?? ""}
+                placeholder={
+                  (typeArticle === "don" ? t("article.don_titre") : t("en_attente_paiement.especes_champ_libelle")) ?? ""
+                }
                 className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
               />
             </div>
@@ -383,12 +468,17 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
 
         {typeArticle === "autre" && (
           <div>
-            <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
+            <label
+              htmlFor="cotisations-especes-article"
+              className="mb-1 block text-[10px] uppercase text-text-tertiary"
+            >
               {t("en_attente_paiement.especes_champ_article")}
             </label>
             <select
+              id="cotisations-especes-article"
               value={articleCatalogueId}
               onChange={(e) => setArticleCatalogueId(e.target.value)}
+              disabled={articlesCatalogue.isLoading}
               className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             >
               <option value="">—</option>
@@ -398,15 +488,89 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
                 </option>
               ))}
             </select>
+            {articlesCatalogue.isLoading && (
+              <p className="mt-1 text-xs text-text-tertiary">
+                {t("en_attente_paiement.chargement")}
+              </p>
+            )}
+            {articlesCatalogue.isError && (
+              <p className="mt-1 text-xs text-status-dangerText">
+                {t("en_attente_paiement.especes_shop_erreur")}
+              </p>
+            )}
+            {articlesCatalogue.data && articlesPersonnalises.length === 0 && (
+              <p className="mt-1 max-w-xs text-xs text-text-tertiary">
+                {t("en_attente_paiement.especes_shop_aucun")}
+              </p>
+            )}
           </div>
+        )}
+
+        {typeArticle === "evenement" && (
+          <>
+            <div>
+              <label
+                htmlFor="cotisations-especes-evenement"
+                className="mb-1 block text-[10px] uppercase text-text-tertiary"
+              >
+                {t("en_attente_paiement.especes_champ_evenement")}
+              </label>
+              <select
+                id="cotisations-especes-evenement"
+                value={evenementId}
+                onChange={(e) => setEvenementId(e.target.value)}
+                disabled={evenementsActifs.isLoading}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              >
+                <option value="">—</option>
+                {evenementsPayants.map((ev) => (
+                  <option key={ev.id} value={ev.id}>
+                    {ev.titre} — {formatDate(ev.date_evenement)} ({formatMontant(ev.cout)})
+                  </option>
+                ))}
+              </select>
+              {evenementsActifs.isLoading && (
+                <p className="mt-1 text-xs text-text-tertiary">
+                  {t("en_attente_paiement.chargement")}
+                </p>
+              )}
+              {evenementsActifs.isError && (
+                <p className="mt-1 text-xs text-status-dangerText">
+                  {t("en_attente_paiement.especes_evenement_erreur")}
+                </p>
+              )}
+              {evenementsActifs.data && evenementsPayants.length === 0 && (
+                <p className="mt-1 max-w-xs text-xs text-text-tertiary">
+                  {t("en_attente_paiement.especes_evenement_aucun")}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="cotisations-especes-places"
+                className="mb-1 block text-[10px] uppercase text-text-tertiary"
+              >
+                {t("en_attente_paiement.especes_champ_places")}
+              </label>
+              <input
+                id="cotisations-especes-places"
+                type="number"
+                min="1"
+                step="1"
+                value={places}
+                onChange={(e) => setPlaces(e.target.value)}
+                className="w-20 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+          </>
         )}
 
         <button
           type="submit"
-          disabled={!formulaireValide || mutation.isPending}
+          disabled={!formulaireValide || mutationEnCours}
           className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
         >
-          {mutation.isPending
+          {mutationEnCours
             ? t("en_attente_paiement.en_cours")
             : t("en_attente_paiement.especes_soumettre")}
         </button>
@@ -422,6 +586,14 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
       {mutation.isError && (
         <p className="text-xs text-status-dangerText">
           {extractApiErrorMessage(mutation.error, t("en_attente_paiement.especes_erreur"))}
+        </p>
+      )}
+      {inscrireEspecesMutation.isError && (
+        <p className="text-xs text-status-dangerText">
+          {extractApiErrorMessage(
+            inscrireEspecesMutation.error,
+            t("en_attente_paiement.especes_erreur"),
+          )}
         </p>
       )}
     </form>
