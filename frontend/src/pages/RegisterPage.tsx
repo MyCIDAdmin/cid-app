@@ -21,6 +21,7 @@ import {
   register as registerCompte,
   resendRegistrationCode,
 } from "../api/auth";
+import DatenschutzhinweisModal from "../components/auth/DatenschutzhinweisModal";
 import BrandLogo from "../components/ui/BrandLogo";
 import { BUNDESLANDER } from "../types/membre";
 import { extractApiErrorMessage } from "../utils/apiError";
@@ -94,6 +95,10 @@ export default function RegisterPage() {
   const [erreurServeur, setErreurServeur] = useState<string | null>(null);
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [messageRenvoi, setMessageRenvoi] = useState<string | null>(null);
+  // Datenschutzhinweis (ajouté le 2026-09-21) : la case à cocher `consentement_rgpd` reste le
+  // seul mécanisme d'acceptation (obligatoire côté backend) — cette modale porte le texte réel
+  // que l'utilisateur accepte, voir DatenschutzhinweisModal.
+  const [datenschutzOuvert, setDatenschutzOuvert] = useState(false);
 
   const {
     register,
@@ -431,7 +436,17 @@ export default function RegisterPage() {
                 </Champ>
               </div>
 
-              <label className="mt-3 flex items-start gap-2 text-xs text-text-secondary">
+              {/* Le lien reste HORS du <label> ci-dessous à dessein : un texte supplémentaire
+                  à l'intérieur du <label> changerait le nom accessible de la case à cocher
+                  (voir RegisterPage.test.tsx, getByLabelText("register.consentement_rgpd")). */}
+              <button
+                type="button"
+                onClick={() => setDatenschutzOuvert(true)}
+                className="mt-3 text-left text-xs font-medium text-ca underline underline-offset-2"
+              >
+                {t("register.lire_datenschutzhinweis")}
+              </button>
+              <label className="mt-2 flex items-start gap-2 text-xs text-text-secondary">
                 <input
                   type="checkbox"
                   className="mt-0.5 accent-ca"
@@ -465,6 +480,9 @@ export default function RegisterPage() {
           </form>
         )}
       </div>
+      {datenschutzOuvert && (
+        <DatenschutzhinweisModal onClose={() => setDatenschutzOuvert(false)} />
+      )}
     </div>
   );
 }

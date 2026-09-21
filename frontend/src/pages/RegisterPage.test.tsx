@@ -164,6 +164,31 @@ describe("RegisterPage", () => {
     expect(await screen.findByText("Code invalide ou expiré.")).toBeInTheDocument();
   });
 
+  // Ajouté le 2026-09-21 (retour utilisateur : "Anmeldung: Datenschutzhinweis hinzufügen.
+  // Benutzer soll den bei der Registrierung annehmen") — voir DatenschutzhinweisModal.
+  it("affiche le Datenschutzhinweis dans une modale au clic sur le lien dédié", () => {
+    renderWithProviders(<RegisterPage />);
+
+    expect(screen.queryByText("register.datenschutz.titre")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("register.lire_datenschutzhinweis"));
+
+    expect(screen.getByText("register.datenschutz.titre")).toBeInTheDocument();
+    expect(screen.getByText("register.datenschutz.intro")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("register.datenschutz.fermer"));
+
+    expect(screen.queryByText("register.datenschutz.titre")).not.toBeInTheDocument();
+  });
+
+  // Non-régression : le lien vers le Datenschutzhinweis est HORS du <label> de la case à cocher
+  // (voir RegisterPage.tsx), donc ne doit jamais changer son nom accessible.
+  it("la case à cocher du consentement RGPD reste indépendamment ciblable après l'ajout du lien", () => {
+    renderWithProviders(<RegisterPage />);
+
+    expect(screen.getByLabelText("register.consentement_rgpd")).toBeInTheDocument();
+  });
+
   it("permet de renvoyer le code de confirmation", async () => {
     vi.mocked(authApi.register).mockResolvedValue(undefined);
     vi.mocked(authApi.resendRegistrationCode).mockResolvedValue({ message: "Nouveau code envoyé." });
