@@ -2,6 +2,8 @@ import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as useAdhesionsHooks from "../../hooks/useAdhesions";
+import * as useBoutiqueHooks from "../../hooks/useBoutique";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
 import * as useEvenementsHooks from "../../hooks/useEvenements";
 import * as useMembresHooks from "../../hooks/useMembres";
@@ -39,6 +41,26 @@ vi.mock("../../hooks/useEvenements", async () => {
     ...actual,
     useEvenements: vi.fn(),
     useInscrireEspeces: vi.fn(),
+  };
+});
+
+// Ajouté le 2026-09-21 (retour utilisateur : "Shop-Artikel soll für Artikel aus Boutique sein" /
+// "Füge mitgliedschaftsbeitrag hinzu"), même raison que ci-dessus pour useEvenements.
+vi.mock("../../hooks/useAdhesions", async () => {
+  const actual = await vi.importActual<typeof useAdhesionsHooks>("../../hooks/useAdhesions");
+  return {
+    ...actual,
+    useCampagneActive: vi.fn(),
+    useSouscrireEspeces: vi.fn(),
+  };
+});
+
+vi.mock("../../hooks/useBoutique", async () => {
+  const actual = await vi.importActual<typeof useBoutiqueHooks>("../../hooks/useBoutique");
+  return {
+    ...actual,
+    useProduits: vi.fn(),
+    useVendreEspeces: vi.fn(),
   };
 });
 
@@ -114,6 +136,26 @@ describe("CotisationsEnAttentePage", () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useEvenementsHooks.useInscrireEspeces>);
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useSouscrireEspeces).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrireEspeces>);
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+    vi.mocked(useBoutiqueHooks.useVendreEspeces).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVendreEspeces>);
   });
 
   it("affiche un message quand la file est vide", () => {
@@ -283,7 +325,7 @@ describe("CotisationsEnAttentePage", () => {
   // --- Paiement en espèces (ajouté le 2026-09-21, retour utilisateur : "Es soll möglich sein
   // eine Zahlung als Barzahlung einzutragen") ---
 
-  it("enregistre un paiement en espèces pour le membre sélectionné", () => {
+  it("enregistre un paiement en espèces de type 'don' pour le membre sélectionné", () => {
     const mutate = vi.fn();
     vi.mocked(useCotisationsHooks.useEnregistrerPaiementEspeces).mockReturnValue({
       mutate,
@@ -314,14 +356,23 @@ describe("CotisationsEnAttentePage", () => {
     );
     fireEvent.click(screen.getByText("Sami Trabelsi (CA-2026-009)"));
 
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.especes_champ_type_article"), {
+      target: { value: "don" },
+    });
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.especes_champ_montant"), {
+      target: { value: "50.00" },
+    });
+
     fireEvent.click(screen.getByText("en_attente_paiement.especes_soumettre"));
 
     expect(mutate).toHaveBeenCalledWith(
       {
         membre: "m9",
-        type_article: "cotisation",
+        type_article: "don",
         mode_paiement: "especes",
         statut: "payee",
+        montant: "50.00",
+        libelle: "article.don_titre",
       },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
@@ -337,7 +388,7 @@ describe("CotisationsEnAttentePage", () => {
 
   // --- Retour utilisateur du 2026-09-21, 3 demandes sur ce formulaire ---
 
-  it("affiche un message d'état vide sous le menu 'Shop-Artikel' quand aucun article personnalisé actif n'existe", () => {
+  it("affiche un message d'état vide sous le menu 'Beitragsartikel' quand aucun article personnalisé actif n'existe", () => {
     // useArticlesCatalogue renvoie déjà data: { results: [] } via le beforeEach — reproduit le
     // cas signalé ("keine Artikel werden angezeigt") : le menu ne doit plus rester silencieux,
     // voir docstring de PaiementEspecesForm.
@@ -348,10 +399,10 @@ describe("CotisationsEnAttentePage", () => {
       target: { value: "autre" },
     });
 
-    expect(screen.getByText("en_attente_paiement.especes_shop_aucun")).toBeInTheDocument();
+    expect(screen.getByText("en_attente_paiement.especes_beitragsartikel_aucun")).toBeInTheDocument();
   });
 
-  it("filtre les articles personnalisés désactivés du menu 'Shop-Artikel'", () => {
+  it("filtre les articles personnalisés désactivés du menu 'Beitragsartikel'", () => {
     vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
       data: {
         next: null,
@@ -522,6 +573,202 @@ describe("CotisationsEnAttentePage", () => {
         montant: "12.50",
         libelle: "Remboursement frais essence",
       },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  // --- Retour utilisateur du 2026-09-21 (2e élargissement) : "Shop-Artikel soll für Artikel aus
+  // Boutique sein" / "Füge mitgliedschaftsbeitrag hinzu mit den aktuellen Angebote" / "Jahres
+  // beitrag und Beitrittsbeitrag sind nicht vorhanden" ---
+
+  it("ne propose plus 'cotisation'/'adhesion' comme types de saisie en espèces", () => {
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.click(screen.getByText("en_attente_paiement.especes_ouvrir"));
+
+    const select = screen.getByLabelText(
+      "en_attente_paiement.especes_champ_type_article",
+    ) as HTMLSelectElement;
+    const valeurs = Array.from(select.options).map((o) => o.value);
+
+    expect(valeurs).not.toContain("cotisation");
+    expect(valeurs).not.toContain("adhesion");
+    expect(valeurs).toEqual(
+      expect.arrayContaining(["mitgliedschaftsbeitrag", "evenement", "boutique", "don", "autre", "autre_libre"]),
+    );
+  });
+
+  it("souscrit une offre d'adhésion pour un autre membre avec paiement cash immédiat", () => {
+    const mutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useSouscrireEspeces).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrireEspeces>);
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: {
+        id: "camp1",
+        nom: "Adhésion 2027",
+        annee: 2027,
+        date_debut: "2027-01-01",
+        date_fin: "2027-12-31",
+        description: "",
+        statut: "publiee",
+        created_by: "m-bureau",
+        created_at: "2026-01-01T00:00:00Z",
+        offres: [
+          {
+            id: "o1",
+            campagne: "camp1",
+            nom: "Basic",
+            prix_plein: "50.00",
+            description: "",
+            avantages: [],
+            condition_age_min: null,
+            condition_age_max: null,
+            visible: true,
+            ordre: 0,
+            rabais: [],
+          },
+          {
+            id: "o2",
+            campagne: "camp1",
+            nom: "Masquée",
+            prix_plein: "30.00",
+            description: "",
+            avantages: [],
+            condition_age_min: null,
+            condition_age_max: null,
+            visible: false,
+            ordre: 1,
+            rabais: [],
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useMembresHooks.useMembresList).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [{ id: "m9", prenom: "Sami", nom: "Trabelsi", numero_membre: "CA-2026-009" }],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembresList>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.click(screen.getByText("en_attente_paiement.especes_ouvrir"));
+    fireEvent.change(
+      screen.getByPlaceholderText("en_attente_paiement.especes_rechercher_membre_placeholder"),
+      { target: { value: "Tra" } },
+    );
+    fireEvent.click(screen.getByText("Sami Trabelsi (CA-2026-009)"));
+
+    // "mitgliedschaftsbeitrag" est le type par défaut à l'ouverture du formulaire.
+    expect(screen.queryByText(/Masquée/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.especes_champ_offre"), {
+      target: { value: "o1" },
+    });
+
+    fireEvent.click(screen.getByText("en_attente_paiement.especes_soumettre"));
+
+    expect(mutate).toHaveBeenCalledWith(
+      { membre: "m9", offre: "o1" },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  it("affiche un message quand aucune campagne d'adhésion n'est active", () => {
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.click(screen.getByText("en_attente_paiement.especes_ouvrir"));
+
+    // useCampagneActive().isError: true par défaut (beforeEach) — 404 tant qu'aucune campagne
+    // n'est publiée, même principe que useEvenements/useArticlesCatalogue ci-dessus.
+    expect(
+      screen.getByText("en_attente_paiement.especes_offre_aucune_campagne"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("en_attente_paiement.especes_soumettre")).toBeDisabled();
+  });
+
+  it("vend un article de la boutique en espèces et décrémente le stock côté serveur", () => {
+    const mutate = vi.fn();
+    vi.mocked(useBoutiqueHooks.useVendreEspeces).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVendreEspeces>);
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          {
+            id: "p1",
+            nom: "T-shirt CID",
+            categorie: "vetements",
+            description: "",
+            prix: "20.00",
+            pourcentage_reduction: null,
+            prix_final: "20.00",
+            image: null,
+            statut: "publie",
+            nouveaute: false,
+            seuil_alerte_stock: 5,
+            variantes: [
+              { id: "v1", produit: "p1", taille: "M", couleur: "Rouge", stock: 8 },
+              { id: "v2", produit: "p1", taille: "L", couleur: "Rouge", stock: 0 },
+            ],
+            stock_total: 8,
+            stock_faible: false,
+            en_rupture: false,
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+    vi.mocked(useMembresHooks.useMembresList).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [{ id: "m9", prenom: "Sami", nom: "Trabelsi", numero_membre: "CA-2026-009" }],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembresList>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.click(screen.getByText("en_attente_paiement.especes_ouvrir"));
+    fireEvent.change(
+      screen.getByPlaceholderText("en_attente_paiement.especes_rechercher_membre_placeholder"),
+      { target: { value: "Tra" } },
+    );
+    fireEvent.click(screen.getByText("Sami Trabelsi (CA-2026-009)"));
+
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.especes_champ_type_article"), {
+      target: { value: "boutique" },
+    });
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.especes_champ_produit"), {
+      target: { value: "p1" },
+    });
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.especes_champ_variante"), {
+      target: { value: "v1" },
+    });
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.especes_champ_quantite"), {
+      target: { value: "2" },
+    });
+
+    fireEvent.click(screen.getByText("en_attente_paiement.especes_soumettre"));
+
+    expect(mutate).toHaveBeenCalledWith(
+      { membre: "m9", variante: "v1", quantite: 2 },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
   });

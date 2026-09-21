@@ -43,6 +43,8 @@ import {
   useMarquerCotisationPayee,
 } from "../../hooks/useCotisations";
 import { useEvenements, useInscrireEspeces } from "../../hooks/useEvenements";
+import { useCampagneActive, useSouscrireEspeces } from "../../hooks/useAdhesions";
+import { useProduits, useVendreEspeces } from "../../hooks/useBoutique";
 import type {
   Cotisation,
   CotisationSaisieEspecesPayload,
@@ -53,6 +55,17 @@ import type {
 import type { MembreListItem } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
+
+/**
+ * Types proposés par le formulaire "Barzahlung eintragen" (PaiementEspecesForm ci-dessous) —
+ * distinct de TypeArticle (backend) : "boutique" et "mitgliedschaftsbeitrag" ne sont JAMAIS
+ * envoyés comme `type_article` à POST /cotisations/, ils déclenchent chacun un endpoint dédié
+ * (même principe que "evenement" déjà en place, voir soumettre() ci-dessous) — "boutique" un
+ * vrai produit/variante de la boutique (POST /boutique/commandes/vendre-especes/), "mitglied
+ * schaftsbeitrag" une vraie Souscription à une offre d'adhésion en cours (POST /adhesions/
+ * souscriptions/souscrire-especes/).
+ */
+type TypeArticleEspeces = TypeArticle | "boutique" | "mitgliedschaftsbeitrag";
 
 const MODES_PAIEMENT: ModePaiement[] = ["carte", "virement_sepa", "paypal", "especes"];
 const STATUTS: StatutCotisation[] = ["en_attente", "payee", "echouee", "remboursee", "annulee"];
@@ -66,14 +79,32 @@ const TYPES_ARTICLE_FILTRE: TypeArticle[] = [
   "autre",
   "autre_libre",
 ];
-// Types proposés pour une saisie manuelle en espèces (retour utilisateur du 2026-09-21 : ajout de
-// "evenement" — l'inscription à un événement payant reste créée via un endpoint dédié,
-// /evenements/evenements/inscrire-especes/, jamais via POST /cotisations/, voir soumettre()
-// ci-dessous — et de "autre_libre", un type "divers" à libellé/montant libres distinct de "don").
-const TYPES_ARTICLE_ESPECES: TypeArticle[] = [
-  "cotisation",
-  "adhesion",
+// Types proposés pour une saisie manuelle en espèces (formulaire "Barzahlung eintragen").
+//
+// Élargi le 2026-09-21 (retour utilisateur, 4 demandes) :
+//  1. "Shop-Artikel" (valeur "boutique") pointe désormais vers de VRAIS produits/variantes de
+//     la boutique (vente au comptoir/vereinfachter Kassenverkauf, stock décrémenté) — voir
+//     POST /boutique/commandes/vendre-especes/.
+//  2. "mitgliedschaftsbeitrag" ajouté — les offres d'adhésion en cours (campagne publiée), crée
+//     une vraie Souscription payée immédiatement — voir POST /adhesions/souscriptions/
+//     souscrire-especes/.
+//  3. "cotisation"/"adhesion" retirés de cette liste (ils y créaient une simple ligne de
+//     cotisation libre, sans jamais mettre à jour le statut associatif annuel ni une
+//     Souscription réelle) — remplacés par "mitgliedschaftsbeitrag" ci-dessus pour tout ce qui
+//     concerne l'adhésion ; la cotisation annuelle "classique" reste soit payée en libre-service
+//     (stepper), soit confirmée depuis une ligne "en_attente" déjà existante
+//     (CotisationGestionRow ci-dessus), jamais créée de toutes pièces ici.
+//  4. L'ancien type "autre" (articles du catalogue ArticleCatalogue.type_fixe=null, ex.
+//     T-shirt/écharpe personnalisés — PAS liés à la boutique) garde sa valeur mais est relabellé
+//     "Beitragsartikel" (clé `type_article.autre`, voir locales) pour ne plus se confondre avec
+//     le nouveau "Shop-Artikel" ci-dessus.
+//
+// "evenement" (ajouté le 2026-09-21 précédemment) et "autre_libre" restent inchangés — voir
+// soumettre() ci-dessous.
+const TYPES_ARTICLE_ESPECES: TypeArticleEspeces[] = [
+  "mitgliedschaftsbeitrag",
   "evenement",
+  "boutique",
   "don",
   "autre",
   "autre_libre",
@@ -300,21 +331,42 @@ interface PaiementEspecesFormProps {
  *  3. Type "autre_libre" ajouté — même mécanique libre (libellé + montant saisis à la main) que
  *     "don", mais distinct sémantiquement (un don volontaire n'est pas la même chose qu'un
  *     article ponctuel non catalogué, ex. un remboursement) ; voir TypeArticle.AUTRE_LIBRE.
+ *
+ * Élargi une seconde fois le 2026-09-21 (retour utilisateur, "Shop-Artikel soll für Artikel aus
+ * Boutique sein" / "Füge mitgliedschaftsbeitrag hinzu mit den aktuellen Angebote" / "Jahresbeitrag
+ * und Beitrittsbeitrag sind nicht vorhanden" / "Füge Beitragsartikel hinzu") — voir le commentaire
+ * de TYPES_ARTICLE_ESPECES ci-dessus pour le détail des 4 changements. Deux nouveaux types suivent
+ * le même principe que "evenement" ci-dessus (endpoint dédié, aucune Cotisation créée directement
+ * via ce POST /cotisations/) :
+ *  - "boutique" : sélectionner un produit puis une variante (voir useProduits) et une quantité
+ *    appelle POST /boutique/commandes/vendre-especes/ (useVendreEspeces) — vente au comptoir,
+ *    aucune adresse de livraison, stock décrémenté côté serveur.
+ *  - "mitgliedschaftsbeitrag" : sélectionner une offre de la campagne d'adhésion publiée en cours
+ *    (voir useCampagneActive) appelle POST /adhesions/souscriptions/souscrire-especes/
+ *    (useSouscrireEspeces) — crée une vraie Souscription et la paie immédiatement.
  */
 function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
   const { t } = useTranslation("cotisations");
   const [membre, setMembre] = useState<MembreListItem | null>(null);
-  const [typeArticle, setTypeArticle] = useState<TypeArticle>("cotisation");
+  const [typeArticle, setTypeArticle] = useState<TypeArticleEspeces>("mitgliedschaftsbeitrag");
   const [montant, setMontant] = useState("");
   const [libelle, setLibelle] = useState("");
   const [articleCatalogueId, setArticleCatalogueId] = useState("");
   const [evenementId, setEvenementId] = useState("");
   const [places, setPlaces] = useState("1");
+  const [offreId, setOffreId] = useState("");
+  const [produitId, setProduitId] = useState("");
+  const [varianteId, setVarianteId] = useState("");
+  const [quantiteBoutique, setQuantiteBoutique] = useState("1");
 
   const mutation = useEnregistrerPaiementEspeces();
   const inscrireEspecesMutation = useInscrireEspeces();
+  const souscrireEspecesMutation = useSouscrireEspeces();
+  const vendreEspecesMutation = useVendreEspeces();
   const articlesCatalogue = useArticlesCatalogue();
   const evenementsActifs = useEvenements({ statut: "publie" });
+  const campagneActive = useCampagneActive();
+  const produitsPublies = useProduits({ statut: "publie" });
   // Seuls les articles personnalisés (type_fixe=null) actuellement proposés ont du sens ici —
   // cotisation/adhésion sont déjà couverts par leurs propres options de type_article, pas par un
   // article_catalogue ; `actif` filtré comme dans CotisationStepperPage (voir docstring ci-dessus).
@@ -324,6 +376,13 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
   // synchroniser_cotisation, qui ne crée pas de Cotisation dans ce cas) — hors de portée de ce
   // formulaire de saisie cash, qui sert justement à confirmer un paiement.
   const evenementsPayants = (evenementsActifs.data?.results ?? []).filter((ev) => !ev.gratuit);
+  // Mêmes offres que celles proposées à un membre en libre-service (visible=true) — un rabais
+  // reste hors de portée ici (voir docstring de module), le prix plein de l'offre est toujours
+  // appliqué. `useCampagneActive` renvoie une 404 (isError) tant qu'aucune campagne n'est publiée.
+  const offresDisponibles = (campagneActive.data?.offres ?? []).filter((o) => o.visible);
+  const produitsDisponibles = produitsPublies.data?.results ?? [];
+  const produitSelectionne = produitsDisponibles.find((p) => p.id === produitId) ?? null;
+  const variantesDisponibles = produitSelectionne?.variantes ?? [];
 
   const montantInvalide =
     (typeArticle === "don" || typeArticle === "autre_libre") &&
@@ -332,13 +391,20 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
   const articleManquant = typeArticle === "autre" && !articleCatalogueId;
   const evenementManquant = typeArticle === "evenement" && !evenementId;
   const placesInvalides = typeArticle === "evenement" && (!places || Number(places) < 1);
+  const offreManquante = typeArticle === "mitgliedschaftsbeitrag" && !offreId;
+  const varianteManquante = typeArticle === "boutique" && !varianteId;
+  const quantiteBoutiqueInvalide =
+    typeArticle === "boutique" && (!quantiteBoutique || Number(quantiteBoutique) < 1);
   const formulaireValide =
     Boolean(membre) &&
     !montantInvalide &&
     !libelleManquant &&
     !articleManquant &&
     !evenementManquant &&
-    !placesInvalides;
+    !placesInvalides &&
+    !offreManquante &&
+    !varianteManquante &&
+    !quantiteBoutiqueInvalide;
 
   function reinitialiser() {
     setMembre(null);
@@ -347,6 +413,10 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
     setArticleCatalogueId("");
     setEvenementId("");
     setPlaces("1");
+    setOffreId("");
+    setProduitId("");
+    setVarianteId("");
+    setQuantiteBoutique("1");
   }
 
   function soumettre(e: FormEvent) {
@@ -356,6 +426,22 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
     if (typeArticle === "evenement") {
       inscrireEspecesMutation.mutate(
         { membre: membre.id, evenement: evenementId, places: Number(places) },
+        { onSuccess: () => { reinitialiser(); onClose(); } },
+      );
+      return;
+    }
+
+    if (typeArticle === "mitgliedschaftsbeitrag") {
+      souscrireEspecesMutation.mutate(
+        { membre: membre.id, offre: offreId },
+        { onSuccess: () => { reinitialiser(); onClose(); } },
+      );
+      return;
+    }
+
+    if (typeArticle === "boutique") {
+      vendreEspecesMutation.mutate(
+        { membre: membre.id, variante: varianteId, quantite: Number(quantiteBoutique) },
         { onSuccess: () => { reinitialiser(); onClose(); } },
       );
       return;
@@ -385,7 +471,11 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
     });
   }
 
-  const mutationEnCours = mutation.isPending || inscrireEspecesMutation.isPending;
+  const mutationEnCours =
+    mutation.isPending ||
+    inscrireEspecesMutation.isPending ||
+    souscrireEspecesMutation.isPending ||
+    vendreEspecesMutation.isPending;
 
   return (
     <form
@@ -416,7 +506,7 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
           <select
             id="cotisations-especes-type-article"
             value={typeArticle}
-            onChange={(e) => setTypeArticle(e.target.value as TypeArticle)}
+            onChange={(e) => setTypeArticle(e.target.value as TypeArticleEspeces)}
             className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
           >
             {TYPES_ARTICLE_ESPECES.map((ta) => (
@@ -495,15 +585,146 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
             )}
             {articlesCatalogue.isError && (
               <p className="mt-1 text-xs text-status-dangerText">
-                {t("en_attente_paiement.especes_shop_erreur")}
+                {t("en_attente_paiement.especes_beitragsartikel_erreur")}
               </p>
             )}
             {articlesCatalogue.data && articlesPersonnalises.length === 0 && (
               <p className="mt-1 max-w-xs text-xs text-text-tertiary">
-                {t("en_attente_paiement.especes_shop_aucun")}
+                {t("en_attente_paiement.especes_beitragsartikel_aucun")}
               </p>
             )}
           </div>
+        )}
+
+        {typeArticle === "mitgliedschaftsbeitrag" && (
+          <div>
+            <label
+              htmlFor="cotisations-especes-offre"
+              className="mb-1 block text-[10px] uppercase text-text-tertiary"
+            >
+              {t("en_attente_paiement.especes_champ_offre")}
+            </label>
+            <select
+              id="cotisations-especes-offre"
+              value={offreId}
+              onChange={(e) => setOffreId(e.target.value)}
+              disabled={campagneActive.isLoading}
+              className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            >
+              <option value="">—</option>
+              {offresDisponibles.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.nom} ({formatMontant(o.prix_plein)})
+                </option>
+              ))}
+            </select>
+            {campagneActive.isLoading && (
+              <p className="mt-1 text-xs text-text-tertiary">
+                {t("en_attente_paiement.chargement")}
+              </p>
+            )}
+            {campagneActive.isError && (
+              <p className="mt-1 max-w-xs text-xs text-status-dangerText">
+                {t("en_attente_paiement.especes_offre_aucune_campagne")}
+              </p>
+            )}
+            {campagneActive.data && offresDisponibles.length === 0 && (
+              <p className="mt-1 max-w-xs text-xs text-text-tertiary">
+                {t("en_attente_paiement.especes_offre_aucune")}
+              </p>
+            )}
+          </div>
+        )}
+
+        {typeArticle === "boutique" && (
+          <>
+            <div>
+              <label
+                htmlFor="cotisations-especes-produit"
+                className="mb-1 block text-[10px] uppercase text-text-tertiary"
+              >
+                {t("en_attente_paiement.especes_champ_produit")}
+              </label>
+              <select
+                id="cotisations-especes-produit"
+                value={produitId}
+                onChange={(e) => {
+                  setProduitId(e.target.value);
+                  setVarianteId("");
+                }}
+                disabled={produitsPublies.isLoading}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              >
+                <option value="">—</option>
+                {produitsDisponibles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nom} ({formatMontant(p.prix_final)})
+                  </option>
+                ))}
+              </select>
+              {produitsPublies.isLoading && (
+                <p className="mt-1 text-xs text-text-tertiary">
+                  {t("en_attente_paiement.chargement")}
+                </p>
+              )}
+              {produitsPublies.isError && (
+                <p className="mt-1 max-w-xs text-xs text-status-dangerText">
+                  {t("en_attente_paiement.especes_shop_erreur")}
+                </p>
+              )}
+              {produitsPublies.data && produitsDisponibles.length === 0 && (
+                <p className="mt-1 max-w-xs text-xs text-text-tertiary">
+                  {t("en_attente_paiement.especes_produit_aucun")}
+                </p>
+              )}
+            </div>
+            {produitSelectionne && (
+              <div>
+                <label
+                  htmlFor="cotisations-especes-variante"
+                  className="mb-1 block text-[10px] uppercase text-text-tertiary"
+                >
+                  {t("en_attente_paiement.especes_champ_variante")}
+                </label>
+                <select
+                  id="cotisations-especes-variante"
+                  value={varianteId}
+                  onChange={(e) => setVarianteId(e.target.value)}
+                  className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                >
+                  <option value="">—</option>
+                  {variantesDisponibles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {[v.taille, v.couleur].filter(Boolean).join(" / ") || "—"} (
+                      {t("en_attente_paiement.especes_stock", { stock: v.stock })})
+                    </option>
+                  ))}
+                </select>
+                {variantesDisponibles.length === 0 && (
+                  <p className="mt-1 max-w-xs text-xs text-text-tertiary">
+                    {t("en_attente_paiement.especes_variante_aucune")}
+                  </p>
+                )}
+              </div>
+            )}
+            <div>
+              <label
+                htmlFor="cotisations-especes-quantite"
+                className="mb-1 block text-[10px] uppercase text-text-tertiary"
+              >
+                {t("en_attente_paiement.especes_champ_quantite")}
+              </label>
+              <input
+                id="cotisations-especes-quantite"
+                type="number"
+                min="1"
+                step="1"
+                value={quantiteBoutique}
+                onChange={(e) => setQuantiteBoutique(e.target.value)}
+                className="w-20 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+          </>
         )}
 
         {typeArticle === "evenement" && (
@@ -592,6 +813,22 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
         <p className="text-xs text-status-dangerText">
           {extractApiErrorMessage(
             inscrireEspecesMutation.error,
+            t("en_attente_paiement.especes_erreur"),
+          )}
+        </p>
+      )}
+      {souscrireEspecesMutation.isError && (
+        <p className="text-xs text-status-dangerText">
+          {extractApiErrorMessage(
+            souscrireEspecesMutation.error,
+            t("en_attente_paiement.especes_erreur"),
+          )}
+        </p>
+      )}
+      {vendreEspecesMutation.isError && (
+        <p className="text-xs text-status-dangerText">
+          {extractApiErrorMessage(
+            vendreEspecesMutation.error,
             t("en_attente_paiement.especes_erreur"),
           )}
         </p>

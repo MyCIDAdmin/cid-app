@@ -163,3 +163,17 @@ export interface SouscrirePayload {
   offre: string;
   rabais?: string;
 }
+
+/**
+ * Payload de POST /adhesions/souscriptions/souscrire-especes/ (ajouté le 2026-09-21, retour
+ * utilisateur : "Füge mitgliedschaftsbeitrag hinzu mit den aktuellen Angebote", dans le
+ * formulaire "Barzahlung eintragen" de CotisationsEnAttentePage) — réservé au Directeur
+ * Financier/Admin App, voir SouscrireEspecesSerializer côté backend. Contrairement à
+ * SouscrirePayload : `membre` explicite (saisie pour autrui, F-015) et pas de `rabais` (un
+ * rabais nécessite un justificatif validé par RH avant paiement, incompatible avec une saisie
+ * immédiate en espèces).
+ */
+export interface SouscrireEspecesPayload {
+  membre: string;
+  offre: string;
+}

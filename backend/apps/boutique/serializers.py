@@ -10,6 +10,8 @@ views.py), sous verrou transactionnel pour un stock toujours cohérent.
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.membres.models import Membre
+
 from .models import (
     STATUTS_RETOURNABLES,
     Commande,
@@ -213,9 +215,7 @@ class ExpedierCommandeSerializer(serializers.Serializer):
     transporteur = serializers.CharField(max_length=100, required=False, allow_blank=True)
     date_expedition = serializers.DateTimeField(required=False)
     nacherfassement = serializers.BooleanField(default=False)
-    mode_paiement = serializers.ChoiceField(
-        choices=ModePaiementCommande.choices, required=False
-    )
+    mode_paiement = serializers.ChoiceField(choices=ModePaiementCommande.choices, required=False)
 
     def validate_date_expedition(self, value):
         if value > timezone.now():
@@ -271,6 +271,27 @@ class PasserCommandeSerializer(serializers.Serializer):
                     f"Le produit « {variante.produit.nom} » n'est plus disponible."
                 )
         return lignes
+
+
+class VendreEspecesCommandeSerializer(serializers.Serializer):
+    """Entrée de l'action `vendre-especes` (ajoutée le 2026-09-21, retour utilisateur :
+    "Shop-Artikel soll für Artikel aus Boutique sein", formulaire "Barzahlung eintragen") —
+    vente au comptoir/vereinfachter Kassenverkauf réservée au Directeur Financier/Admin App :
+    contrairement à `passer`, aucune adresse de livraison n'est demandée (retrait en main
+    propre, voir CommandeViewSet.vendre_especes qui renseigne des valeurs de livraison
+    fictives), mais le stock reste décrémenté atomiquement de la même façon (SELECT FOR
+    UPDATE)."""
+
+    membre = serializers.PrimaryKeyRelatedField(queryset=Membre.objects.all())
+    variante = serializers.PrimaryKeyRelatedField(queryset=VarianteProduit.objects.all())
+    quantite = serializers.IntegerField(min_value=1, default=1)
+
+    def validate_variante(self, variante):
+        if variante.produit.statut != "publie":
+            raise serializers.ValidationError(
+                f"Le produit « {variante.produit.nom} » n'est plus disponible."
+            )
+        return variante
 
 
 class ChangerStatutCommandeSerializer(serializers.Serializer):

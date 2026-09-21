@@ -12,6 +12,7 @@ import type {
   RabaisCreatePayload,
   RabaisOffre,
   Souscription,
+  SouscrireEspecesPayload,
   SouscrirePayload,
   ValiderJustificatifPayload,
 } from "../types/adhesion";
@@ -102,6 +103,18 @@ export async function annulerSouscription(id: string): Promise<Souscription> {
 export async function souscrire(payload: SouscrirePayload): Promise<Souscription> {
   const { data } = await apiClient.post<Souscription>(
     "/adhesions/souscriptions/souscrire/",
+    payload,
+  );
+  return data;
+}
+
+/**
+ * Souscription + paiement immédiat en espèces pour le compte d'un autre membre (ajouté le
+ * 2026-09-21, F-015) — voir SouscriptionViewSet.souscrire_especes côté backend.
+ */
+export async function souscrireEspeces(payload: SouscrireEspecesPayload): Promise<Souscription> {
+  const { data } = await apiClient.post<Souscription>(
+    "/adhesions/souscriptions/souscrire-especes/",
     payload,
   );
   return data;

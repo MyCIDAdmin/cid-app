@@ -8,6 +8,7 @@ import type {
   CampagneCreatePayload,
   OffreCreatePayload,
   RabaisCreatePayload,
+  SouscrireEspecesPayload,
   SouscrirePayload,
   ValiderJustificatifPayload,
 } from "../types/adhesion";
@@ -79,6 +80,25 @@ export function useSouscrire() {
     mutationFn: (payload: SouscrirePayload) => adhesionsApi.souscrire(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: adhesionsKeys.mesSouscriptions() }),
+  });
+}
+
+/**
+ * Souscription + paiement immédiat en espèces pour un autre membre (ajouté le 2026-09-21,
+ * F-015) — utilisé par PaiementEspecesForm (CotisationsEnAttentePage), voir
+ * adhesionsApi.souscrireEspeces. Invalide aussi les cotisations (la Cotisation liée créée/
+ * confirmée doit disparaître de "Ausstehende Zahlungen"), même principe que useInscrireEspeces
+ * (evenements).
+ */
+export function useSouscrireEspeces() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SouscrireEspecesPayload) => adhesionsApi.souscrireEspeces(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adhesionsKeys.campagnes() });
+      queryClient.invalidateQueries({ queryKey: adhesionsKeys.campagneActive() });
+      queryClient.invalidateQueries({ queryKey: ["cotisations"] });
+    },
   });
 }
 

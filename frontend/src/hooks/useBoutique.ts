@@ -13,6 +13,7 @@ import type {
   ProduitPayload,
   RetourPayload,
   VariantePayload,
+  VendreEspecesCommandePayload,
 } from "../types/boutique";
 
 const boutiqueKeys = {
@@ -165,6 +166,23 @@ export function usePasserCommande() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: PasserCommandePayload) => boutiqueApi.passerCommande(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "commandes"] });
+      invalidateProduits(queryClient);
+    },
+  });
+}
+
+/**
+ * Vente au comptoir/vereinfachter Kassenverkauf pour un autre membre (ajouté le 2026-09-21,
+ * F-015) — utilisé par PaiementEspecesForm (CotisationsEnAttentePage), voir
+ * boutiqueApi.vendreEspeces. Décrémente le stock côté serveur, d'où l'invalidation des
+ * produits en plus des commandes (même principe que usePasserCommande).
+ */
+export function useVendreEspeces() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: VendreEspecesCommandePayload) => boutiqueApi.vendreEspeces(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "commandes"] });
       invalidateProduits(queryClient);

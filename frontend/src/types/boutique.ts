@@ -164,6 +164,20 @@ export interface PasserCommandePayload {
   telephone_livraison?: string;
 }
 
+/**
+ * Payload de POST /boutique/commandes/vendre-especes/ (ajouté le 2026-09-21, retour
+ * utilisateur : "Shop-Artikel soll für Artikel aus Boutique sein", dans le formulaire
+ * "Barzahlung eintragen" de CotisationsEnAttentePage) — vente au comptoir réservée au
+ * Directeur Financier/Admin App, voir VendreEspecesCommandeSerializer côté backend.
+ * Contrairement à PasserCommandePayload : `membre` explicite (saisie pour autrui, F-015), pas
+ * d'adresse de livraison (retrait en main propre) et une seule ligne à la fois.
+ */
+export interface VendreEspecesCommandePayload {
+  membre: string;
+  variante: string;
+  quantite: number;
+}
+
 /** Entrée de POST /boutique/commandes/{id}/changer-statut/ (Bureau Admin+). */
 export interface ChangerStatutCommandePayload {
   statut: StatutCommande;

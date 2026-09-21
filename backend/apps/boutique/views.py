@@ -65,6 +65,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.gateways import GatewayError, creer_commande_paypal, creer_session_stripe
+from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 
 from .filters import CommandeFilter, ProduitFilter, RetourFilter
 from .models import (
@@ -75,6 +76,7 @@ from .models import (
     TRANSITIONS_STATUT_COMMANDE,
     Commande,
     LigneCommande,
+    ModePaiementCommande,
     Produit,
     Retour,
     StatutCommande,
@@ -105,6 +107,7 @@ from .serializers import (
     ProduitSerializer,
     RetourSerializer,
     VarianteProduitSerializer,
+    VendreEspecesCommandeSerializer,
 )
 
 
@@ -273,6 +276,76 @@ class CommandeViewSet(ModelViewSet):
 
         notifier_commande_confirmee(commande)
         notifier_nouvelle_commande_staff(commande)
+        return Response(self.get_serializer(commande).data, status=201)
+
+    @action(detail=False, methods=["post"], url_path="vendre-especes")
+    def vendre_especes(self, request):
+        """Vente au comptoir/vereinfachter Kassenverkauf (ajoutée le 2026-09-21, retour
+        utilisateur : "Shop-Artikel soll für Artikel aus Boutique sein", formulaire "Barzahlung
+        eintragen") — réservée au Directeur Financier/Admin App, même principe F-015 que
+        EvenementViewSet.inscrire_especes/SouscriptionViewSet.souscrire_especes.
+
+        Contrairement à `passer`, aucune adresse de livraison réelle n'est demandée (retrait en
+        main propre — des valeurs de livraison fictives sont enregistrées ci-dessous pour
+        satisfaire les champs obligatoires du modèle Commande) ; la commande est créée
+        directement confirmée avec paiement en espèces, en un seul appel plutôt que
+        `passer` + `confirmer_paiement`. Le stock reste décrémenté atomiquement (SELECT FOR
+        UPDATE), même principe que `passer` ci-dessus (FDD §3.4)."""
+        user = request.user
+        if ROLE_LEVELS.get(user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+            raise PermissionDenied(
+                "Seul le Directeur Financier ou l'Admin App peut saisir une vente en espèces "
+                "pour un autre membre."
+            )
+
+        serializer = VendreEspecesCommandeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        membre_cible = data["membre"]
+        quantite = data["quantite"]
+
+        with transaction.atomic():
+            # Même principe de verrouillage que `passer` ci-dessus (FDD §3.4).
+            variante = (
+                VarianteProduit.objects.select_for_update()
+                .select_related("produit")
+                .get(id=data["variante"].id)
+            )
+            if variante.stock < quantite:
+                raise ValidationError(
+                    {
+                        "variante": (
+                            f"Stock insuffisant pour « {variante} » "
+                            f"({variante.stock} disponible(s))."
+                        )
+                    }
+                )
+
+            commande = Commande.objects.create(
+                membre=membre_cible,
+                nom_destinataire=str(membre_cible),
+                adresse_livraison="Retrait en main propre (vente en espèces au comptoir)",
+                code_postal_livraison="00000",
+                ville_livraison="Vente au comptoir",
+                pays_livraison="Allemagne",
+                statut=StatutCommande.CONFIRMEE,
+                mode_paiement=ModePaiementCommande.ESPECES,
+                date_paiement_confirme=timezone.now(),
+                paiement_confirme_par=getattr(user, "membre", None),
+            )
+            # prix_final (jamais prix seul) : même principe que `passer` ci-dessus (CLAUDE.md §8).
+            prix_unitaire = variante.produit.prix_final
+            LigneCommande.objects.create(
+                commande=commande,
+                variante=variante,
+                quantite=quantite,
+                prix_unitaire=prix_unitaire,
+            )
+            variante.stock -= quantite
+            variante.save(update_fields=["stock"])
+            commande.montant_total = prix_unitaire * quantite
+            commande.save(update_fields=["montant_total"])
+
         return Response(self.get_serializer(commande).data, status=201)
 
     @action(detail=True, methods=["post"])

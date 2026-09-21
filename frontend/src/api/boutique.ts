@@ -19,6 +19,7 @@ import type {
   StatutProduit,
   VarianteProduit,
   VariantePayload,
+  VendreEspecesCommandePayload,
 } from "../types/boutique";
 
 export interface ProduitsFiltres {
@@ -127,6 +128,15 @@ export async function listCommandes(filtres: CommandesFiltres = {}): Promise<Cur
 
 export async function passerCommande(payload: PasserCommandePayload): Promise<Commande> {
   const { data } = await apiClient.post<Commande>("/boutique/commandes/passer/", payload);
+  return data;
+}
+
+/**
+ * Vente au comptoir/vereinfachter Kassenverkauf pour le compte d'un autre membre (ajouté le
+ * 2026-09-21, F-015) — voir CommandeViewSet.vendre_especes côté backend.
+ */
+export async function vendreEspeces(payload: VendreEspecesCommandePayload): Promise<Commande> {
+  const { data } = await apiClient.post<Commande>("/boutique/commandes/vendre-especes/", payload);
   return data;
 }
 

@@ -50,6 +50,9 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
+from apps.cotisations.models import HistoriqueStatutCotisation, ModePaiement, StatutCotisation
+from apps.cotisations.notifications import notifier_paiement_confirme
+from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 
 from .filters import (
     CampagneAdhesionFilter,
@@ -87,11 +90,17 @@ from .serializers import (
     OffreAdhesionSerializer,
     RabaisOffreSerializer,
     SouscriptionSerializer,
+    SouscrireEspecesSerializer,
     SouscrireSerializer,
     ValiderJustificatifSerializer,
 )
 from .services import synchroniser_cotisation
 from .tasks import envoyer_annonce_campagne
+
+#: Statuts Cotisation considérés "pas encore payés" — même définition que
+#: apps.adhesions.services._STATUTS_COTISATION_NON_PAYEE (non importée : module privé),
+#: même principe que apps.evenements.views pour inscrire_especes.
+_STATUTS_COTISATION_NON_PAYEE = {StatutCotisation.EN_ATTENTE, StatutCotisation.ECHOUEE}
 
 
 class AdhesionsCursorPagination(CursorPagination):
@@ -285,6 +294,71 @@ class SouscriptionViewSet(ModelViewSet):
         # — sans quoi une souscription en attente de paiement ne peut jamais apparaître dans
         # "Ausstehende Zahlungen").
         synchroniser_cotisation(souscription)
+
+        return Response(SouscriptionSerializer(souscription).data)
+
+    @action(detail=False, methods=["post"], url_path="souscrire-especes")
+    def souscrire_especes(self, request):
+        """Souscription + paiement immédiat en espèces pour le compte d'un AUTRE membre
+        (ajoutée le 2026-09-21, retour utilisateur : "Füge mitgliedschaftsbeitrag hinzu mit
+        den aktuellen Angebote", formulaire "Barzahlung eintragen") — réservée au Directeur
+        Financier/Admin App, même principe F-015 que EvenementViewSet.inscrire_especes.
+
+        Crée/actualise une vraie Souscription (jamais une simple ligne de cotisation libre),
+        puis confirme immédiatement le paiement de la Cotisation liée créée par
+        synchroniser_cotisation — même cascade que le parcours libre-service
+        (souscrire -> paiement en ligne/virement -> Directeur Financier confirme), simplement
+        les deux étapes sont ici déclenchées dans le même appel."""
+        user = request.user
+        if ROLE_LEVELS.get(user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+            raise PermissionDenied(
+                "Seul le Directeur Financier ou l'Admin App peut saisir une souscription "
+                "pour un autre membre."
+            )
+
+        serializer = SouscrireEspecesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        membre_cible = serializer.validated_data["membre"]
+        offre = serializer.validated_data["offre"]
+        campagne = offre.campagne
+
+        souscription, _created = Souscription.objects.get_or_create(
+            membre=membre_cible,
+            campagne=campagne,
+            defaults={"offre": offre, "prix_paye": 0},
+        )
+        if souscription.statut == StatutSouscription.PAYEE:
+            raise PermissionDenied("Ce membre a déjà payé sa souscription pour cette campagne.")
+
+        souscription.offre = offre
+        souscription.rabais = None
+        souscription.prix_paye = offre.prix_plein
+        souscription.statut = StatutSouscription.EN_ATTENTE_PAIEMENT
+        souscription.snapshot_avantages = offre.avantages
+        souscription.date_souscription = timezone.now()
+        souscription.save()
+        synchroniser_cotisation(souscription)
+
+        cotisation = souscription.cotisation
+        if cotisation is not None and cotisation.statut in _STATUTS_COTISATION_NON_PAYEE:
+            ancien_statut = cotisation.statut
+            cotisation.mode_paiement = ModePaiement.ESPECES
+            cotisation.statut = StatutCotisation.PAYEE
+            cotisation.saisie_par = getattr(user, "membre", None)
+            cotisation.save()
+            HistoriqueStatutCotisation.objects.create(
+                cotisation=cotisation,
+                ancien_statut=ancien_statut,
+                nouveau_statut=StatutCotisation.PAYEE,
+                modifie_par=getattr(user, "membre", None),
+            )
+            notifier_paiement_confirme(cotisation)
+            # notifier_paiement_confirme fait passer la Souscription à `payee` via une requête
+            # DB fraîche (cotisation.souscription_adhesion), pas via cette instance en mémoire
+            # — sans ce refresh, la réponse API renverrait encore l'ancien statut
+            # en_attente_paiement alors que la base est déjà à jour (bug identique déjà corrigé
+            # dans EvenementViewSet.inscrire_especes).
+            souscription.refresh_from_db()
 
         return Response(SouscriptionSerializer(souscription).data)
 

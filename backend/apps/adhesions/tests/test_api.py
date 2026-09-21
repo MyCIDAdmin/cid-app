@@ -795,3 +795,122 @@ def test_annuler_une_souscription_deja_annulee_refuse(api_client):
     resp = api_client.post(_annuler_url(souscription))
 
     assert resp.status_code == 400
+
+
+# --- Souscription payée en espèces par le Directeur Financier/Admin (ajoutée le 2026-09-21,
+# retour utilisateur : "Füge mitgliedschaftsbeitrag hinzu mit den aktuellen Angebote", dans le
+# formulaire "Barzahlung eintragen" de CotisationsEnAttentePage) — voir
+# SouscriptionViewSet.souscrire_especes.
+
+SOUSCRIRE_ESPECES_URL = "adhesions:souscription-souscrire-especes"
+
+
+def test_df_souscrit_pour_un_autre_membre_et_confirme_le_paiement_en_especes(api_client):
+    from apps.cotisations.models import (
+        Cotisation,
+        HistoriqueStatutCotisation,
+        ModePaiement,
+        StatutCotisation,
+        TypeArticle,
+    )
+
+    user, _df = _user_avec_membre(Role.DIR_FINANCIER, "df1@example.de")
+    membre_cible = MembreFactory()
+    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"))
+
+    resp = _auth(api_client, user).post(
+        reverse(SOUSCRIRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "offre": str(offre.id)},
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutSouscription.PAYEE
+
+    from apps.adhesions.models import Souscription
+
+    souscription = Souscription.objects.get(id=resp.data["id"])
+    assert souscription.membre_id == membre_cible.id
+    assert souscription.statut == StatutSouscription.PAYEE
+    assert str(souscription.prix_paye) == "50.00"
+
+    cotisation = Cotisation.objects.get(id=souscription.cotisation_id)
+    assert cotisation.type_article == TypeArticle.ADHESION
+    assert cotisation.statut == StatutCotisation.PAYEE
+    assert cotisation.mode_paiement == ModePaiement.ESPECES
+    assert str(cotisation.montant) == "50.00"
+
+    historique = HistoriqueStatutCotisation.objects.get(cotisation=cotisation)
+    assert historique.ancien_statut == StatutCotisation.EN_ATTENTE
+    assert historique.nouveau_statut == StatutCotisation.PAYEE
+
+
+def test_souscrire_especes_refuse_a_un_role_insuffisant(api_client):
+    user, _ = _user_avec_membre(Role.RH, "rh1@example.de")
+    membre_cible = MembreFactory()
+    offre = OffreAdhesionFactory()
+
+    resp = _auth(api_client, user).post(
+        reverse(SOUSCRIRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "offre": str(offre.id)},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_souscrire_especes_offre_masquee_refuse(api_client):
+    user, _ = _user_avec_membre(Role.DIR_FINANCIER, "df2@example.de")
+    membre_cible = MembreFactory()
+    offre = OffreAdhesionFactory(visible=False)
+
+    resp = _auth(api_client, user).post(
+        reverse(SOUSCRIRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "offre": str(offre.id)},
+    )
+
+    assert resp.status_code == 400
+
+
+def test_souscrire_especes_hors_condition_age_refuse(api_client):
+    user, _ = _user_avec_membre(Role.DIR_FINANCIER, "df3@example.de")
+    membre_cible = MembreFactory(
+        date_naissance=datetime.date.today().replace(year=datetime.date.today().year - 40)
+    )
+    offre = OffreAdhesionFactory(condition_age_max=17)
+
+    resp = _auth(api_client, user).post(
+        reverse(SOUSCRIRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "offre": str(offre.id)},
+    )
+
+    assert resp.status_code == 400
+
+
+def test_souscrire_especes_deja_payee_refuse(api_client):
+    user, _ = _user_avec_membre(Role.DIR_FINANCIER, "df4@example.de")
+    campagne = CampagneAdhesionFactory()
+    offre = OffreAdhesionFactory(campagne=campagne)
+    membre_cible = MembreFactory()
+    SouscriptionFactory(
+        membre=membre_cible, offre=offre, campagne=campagne, statut=StatutSouscription.PAYEE
+    )
+
+    resp = _auth(api_client, user).post(
+        reverse(SOUSCRIRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "offre": str(offre.id)},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_admin_peut_souscrire_especes(api_client):
+    user, _ = _user_avec_membre(Role.SUPER_ADMIN, "admin-souscrire-especes@example.de")
+    membre_cible = MembreFactory()
+    offre = OffreAdhesionFactory(prix_plein=Decimal("10.00"))
+
+    resp = _auth(api_client, user).post(
+        reverse(SOUSCRIRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "offre": str(offre.id)},
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["statut"] == StatutSouscription.PAYEE

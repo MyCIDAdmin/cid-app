@@ -11,6 +11,8 @@ import uuid
 import magic
 from rest_framework import serializers
 
+from apps.membres.models import Membre
+
 from .models import (
     CampagneAdhesion,
     JustificatifRabais,
@@ -193,6 +195,39 @@ class SouscrireSerializer(serializers.Serializer):
         if rabais is not None and rabais.offre_id != offre.id:
             raise serializers.ValidationError(
                 {"rabais": "Ce rabais ne correspond pas à l'offre sélectionnée."}
+            )
+
+        return attrs
+
+
+class SouscrireEspecesSerializer(serializers.Serializer):
+    """Entrée de l'action `souscrire-especes` (ajoutée le 2026-09-21, retour utilisateur :
+    "Füge mitgliedschaftsbeitrag hinzu mit den aktuellen Angebote", dans le formulaire
+    "Barzahlung eintragen" de CotisationsEnAttentePage) — réservée au Directeur Financier/Admin
+    App, mêmes principes que SouscrireSerializer plus `membre` explicite (saisie pour autrui,
+    F-015, même schéma que InscrireEspecesSerializer côté apps.evenements).
+
+    Pas de champ `rabais` ici volontairement : un rabais nécessite un justificatif validé par
+    RH avant paiement (FDD §4.2), un parcours incompatible avec une saisie immédiate en
+    espèces au guichet — un membre souhaitant un rabais reste sur le parcours libre-service
+    normal (souscrire()/JustificatifRabaisViewSet)."""
+
+    membre = serializers.PrimaryKeyRelatedField(queryset=Membre.objects.all())
+    offre = serializers.PrimaryKeyRelatedField(queryset=OffreAdhesion.objects.all())
+
+    def validate(self, attrs):
+        offre = attrs["offre"]
+        membre = attrs["membre"]
+
+        if not offre.visible:
+            raise serializers.ValidationError({"offre": "Cette offre n'est plus disponible."})
+        if offre.campagne.statut != StatutCampagne.PUBLIEE:
+            raise serializers.ValidationError(
+                {"offre": "La campagne de cette offre n'est pas ouverte aux souscriptions."}
+            )
+        if not offre.eligible_pour_age(membre.age):
+            raise serializers.ValidationError(
+                {"offre": "Ce membre ne remplit pas la condition d'âge de cette offre."}
             )
 
         return attrs

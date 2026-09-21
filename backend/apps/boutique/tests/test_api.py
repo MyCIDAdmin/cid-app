@@ -1076,3 +1076,100 @@ def test_list_retours_filtre_par_commande(api_client):
     assert resp.status_code == 200
     assert len(resp.data["results"]) == 1
     assert resp.data["results"][0]["commande"] == commande1.id
+
+
+# --- Vente au comptoir/vereinfachter Kassenverkauf par le Directeur Financier/Admin (ajoutée le
+# 2026-09-21, retour utilisateur : "Shop-Artikel soll für Artikel aus Boutique sein", dans le
+# formulaire "Barzahlung eintragen" de CotisationsEnAttentePage) — voir
+# CommandeViewSet.vendre_especes.
+
+VENDRE_ESPECES_URL = "boutique:commande-vendre-especes"
+
+
+def test_df_vend_un_article_en_especes_et_decremente_le_stock(api_client):
+    user, df = _user_avec_membre(Role.DIR_FINANCIER, "df1@example.de")
+    membre_cible = MembreFactory()
+    variante = VarianteProduitFactory(stock=5)
+    variante.produit.prix = Decimal("20.00")
+    variante.produit.save(update_fields=["prix"])
+
+    resp = _auth(api_client, user).post(
+        reverse(VENDRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "variante": str(variante.id), "quantite": 2},
+        format="json",
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["statut"] == StatutCommande.CONFIRMEE
+    assert resp.data["mode_paiement"] == "especes"
+    assert Decimal(resp.data["montant_total"]) == Decimal("40.00")
+
+    variante.refresh_from_db()
+    assert variante.stock == 3
+
+    from apps.boutique.models import Commande
+
+    commande = Commande.objects.get(id=resp.data["id"])
+    assert commande.membre_id == membre_cible.id
+    assert commande.paiement_confirme_par_id == df.id
+    assert commande.date_paiement_confirme is not None
+
+
+def test_vendre_especes_refuse_a_un_role_insuffisant(api_client):
+    user, _ = _user_avec_membre(Role.RH, "rh1@example.de")
+    membre_cible = MembreFactory()
+    variante = VarianteProduitFactory(stock=5)
+
+    resp = _auth(api_client, user).post(
+        reverse(VENDRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "variante": str(variante.id), "quantite": 1},
+        format="json",
+    )
+
+    assert resp.status_code == 403
+
+
+def test_vendre_especes_refuse_si_stock_insuffisant(api_client):
+    user, _ = _user_avec_membre(Role.DIR_FINANCIER, "df2@example.de")
+    membre_cible = MembreFactory()
+    variante = VarianteProduitFactory(stock=1)
+
+    resp = _auth(api_client, user).post(
+        reverse(VENDRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "variante": str(variante.id), "quantite": 2},
+        format="json",
+    )
+
+    assert resp.status_code == 400
+    variante.refresh_from_db()
+    assert variante.stock == 1
+
+
+def test_vendre_especes_produit_non_publie_refuse(api_client):
+    user, _ = _user_avec_membre(Role.DIR_FINANCIER, "df3@example.de")
+    membre_cible = MembreFactory()
+    variante = VarianteProduitFactory(stock=5)
+    variante.produit.statut = StatutProduit.ARCHIVE
+    variante.produit.save(update_fields=["statut"])
+
+    resp = _auth(api_client, user).post(
+        reverse(VENDRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "variante": str(variante.id), "quantite": 1},
+        format="json",
+    )
+
+    assert resp.status_code == 400
+
+
+def test_admin_peut_vendre_especes(api_client):
+    user, _ = _user_avec_membre(Role.SUPER_ADMIN, "admin-vendre-especes@example.de")
+    membre_cible = MembreFactory()
+    variante = VarianteProduitFactory(stock=5)
+
+    resp = _auth(api_client, user).post(
+        reverse(VENDRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "variante": str(variante.id), "quantite": 1},
+        format="json",
+    )
+
+    assert resp.status_code == 201, resp.data
