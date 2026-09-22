@@ -79,6 +79,7 @@ import {
   IconUsersGroup,
 } from "@tabler/icons-react";
 import { type ComponentType, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -457,7 +458,17 @@ export function NavAccordionList({
 /** Bouton-icône d'un groupe en mode rail (replié) + son flyout — voir docstring de module. Ouvert
  * au clic (jamais au survol seul : plus fiable au trackpad/tactile et bien plus simple à tester
  * qu'un délai d'ouverture/fermeture au survol), fermé au clic extérieur, sur Échap, ou après
- * avoir suivi un lien. */
+ * avoir suivi un lien.
+ *
+ * Bug corrigé le 2026-09-22 (retour utilisateur : "Wenn die Side zugeklappt ist und ich auf einem
+ * Icon der Gruppen Klicke, passiert nichts") : le flyout s'ouvrait bien (état React, DOM, tests —
+ * tout confirmait un clic fonctionnel), mais restait invisible en production. Cause : `<aside>`
+ * (voir Sidebar ci-dessous) porte `overflow-hidden` depuis l'introduction du rail repliable, pour
+ * contenir sa propre transition de largeur — un flyout `absolute left-full` (donc positionné hors
+ * de la boîte de 64px du rail) se retrouvait rogné par cet ancêtre, invisible malgré un rendu DOM
+ * correct. D'où son passage en portail (`createPortal` vers `document.body`) avec des coordonnées
+ * `fixed` calculées depuis `getBoundingClientRect()` du bouton — s'affranchit de tout ancêtre à
+ * `overflow`/`z-index` limité, comme un flyout de VS Code ou de Slack. */
 function RailGroupButton({
   group,
   isItemActive,
@@ -471,16 +482,26 @@ function RailGroupButton({
 }) {
   const { t } = useTranslation("common");
   const [ouvert, setOuvert] = useState(false);
-  const conteneurRef = useRef<HTMLDivElement>(null);
+  // Coordonnées écran du flyout portalé — recalculées à chaque ouverture (voir alterner
+  // ci-dessous) : le rail est en h-screen sans défilement propre (voir Sidebar), sa position ne
+  // bouge donc pas pendant qu'un flyout reste ouvert.
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const boutonRef = useRef<HTMLButtonElement>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
   const GroupIcon = GROUP_ICONS[group.key];
   const label = t(GROUP_LABEL_KEYS[group.key]);
 
   useEffect(() => {
     if (!ouvert) return undefined;
     function surClicExterieur(e: MouseEvent) {
-      if (conteneurRef.current && !conteneurRef.current.contains(e.target as Node)) {
-        setOuvert(false);
+      const cible = e.target as Node;
+      // Le flyout vit désormais dans un portail (document.body), donc hors de l'arbre DOM du
+      // bouton : un clic à l'intérieur du flyout doit aussi compter comme "à l'intérieur",
+      // sans quoi il se refermerait avant même qu'un lien ait pu être suivi.
+      if (boutonRef.current?.contains(cible) || flyoutRef.current?.contains(cible)) {
+        return;
       }
+      setOuvert(false);
     }
     function surTouche(e: KeyboardEvent) {
       if (e.key === "Escape") setOuvert(false);
@@ -493,11 +514,20 @@ function RailGroupButton({
     };
   }, [ouvert]);
 
+  function alterner() {
+    if (!ouvert) {
+      const rect = boutonRef.current?.getBoundingClientRect();
+      if (rect) setPosition({ top: rect.top, left: rect.right + 8 });
+    }
+    setOuvert((o) => !o);
+  }
+
   return (
-    <div ref={conteneurRef} className="relative w-full">
+    <div className="relative w-full">
       <button
+        ref={boutonRef}
         type="button"
-        onClick={() => setOuvert((o) => !o)}
+        onClick={alterner}
         title={label}
         aria-label={label}
         aria-haspopup="menu"
@@ -510,33 +540,34 @@ function RailGroupButton({
       >
         <GroupIcon size={20} />
       </button>
-      {ouvert && (
-        // Positionné hors du <nav> défilant (voir Sidebar ci-dessous : le rail n'a lui-même
-        // jamais besoin de défiler, donc pas d'overflow-y-auto ambiant qui risquerait de rogner
-        // ce flyout en absolute) — thin-scrollbar + max-h en filet de sécurité si un groupe
-        // finissait par contenir énormément d'items.
-        <div
-          role="menu"
-          aria-label={label}
-          className="thin-scrollbar absolute left-full top-0 z-20 ml-2 max-h-[70vh] w-56 space-y-1 overflow-y-auto rounded-cid-lg border border-white/10 bg-sb p-2 shadow-lg"
-        >
-          <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-            {label}
-          </div>
-          {group.items.map((item) => (
-            <NavItemLink
-              key={item.to}
-              item={item}
-              active={isItemActive(item)}
-              signale={itemALeSignal(item)}
-              onNavigate={() => {
-                onNavigate(item);
-                setOuvert(false);
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {ouvert &&
+        position &&
+        createPortal(
+          <div
+            ref={flyoutRef}
+            role="menu"
+            aria-label={label}
+            style={{ top: position.top, left: position.left }}
+            className="thin-scrollbar fixed z-20 max-h-[70vh] w-56 space-y-1 overflow-y-auto rounded-cid-lg border border-white/10 bg-sb p-2 shadow-lg"
+          >
+            <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
+              {label}
+            </div>
+            {group.items.map((item) => (
+              <NavItemLink
+                key={item.to}
+                item={item}
+                active={isItemActive(item)}
+                signale={itemALeSignal(item)}
+                onNavigate={() => {
+                  onNavigate(item);
+                  setOuvert(false);
+                }}
+              />
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

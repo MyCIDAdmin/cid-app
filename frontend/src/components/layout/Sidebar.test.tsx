@@ -130,6 +130,23 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
+  // Bug corrigé le 2026-09-22 (retour utilisateur : "Wenn die Side zugeklappt ist und ich auf
+  // einem Icon der Gruppen Klicke, passiert nichts") — le flyout s'ouvrait déjà dans le DOM
+  // (voir tests ci-dessus), mais restait invisible en production, rogné par `overflow-hidden`
+  // sur <aside>. Test de non-régression structurel : le flyout doit vivre hors de l'arbre DOM
+  // rendu par Sidebar (portalé sur document.body via createPortal), jamais comme descendant de
+  // <aside> — jsdom ne peut pas vérifier le rendu visuel/le clipping CSS lui-même.
+  it("rend le flyout hors de l'arbre de la sidebar (portail document.body), pour échapper à l'overflow-hidden de <aside>", () => {
+    useUiStore.setState({ sidebarCollapsed: true });
+    const { container } = renderWithProviders(<Sidebar />);
+
+    fireEvent.click(screen.getByTitle("nav_groupe.general"));
+
+    const flyout = screen.getByRole("menu");
+    expect(container.contains(flyout)).toBe(false);
+    expect(document.body.contains(flyout)).toBe(true);
+  });
+
   it("referme le flyout du groupe après avoir suivi un de ses liens", () => {
     useUiStore.setState({ sidebarCollapsed: true });
     renderWithProviders(<Sidebar />);
