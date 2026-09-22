@@ -46,7 +46,10 @@ interface UiState {
 export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
-      sidebarCollapsed: false,
+      // true par défaut depuis la refonte du 2026-09-22 (rail + flyout par groupe, voir
+      // Sidebar.tsx) : ne change rien pour qui a déjà une préférence enregistrée (localStorage),
+      // mais un nouveau compte démarre désormais en rail compact plutôt qu'en sidebar dépliée.
+      sidebarCollapsed: true,
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       collapsedGroups: DEFAULT_COLLAPSED_GROUPS,
       toggleGroup: (key) =>

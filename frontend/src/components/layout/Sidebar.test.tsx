@@ -94,15 +94,50 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
 
     expect(useUiStore.getState().sidebarCollapsed).toBe(true);
     expect(screen.queryByText("nav.dashboard")).not.toBeInTheDocument();
-    // Repliée, les items restent identifiables : icône toujours affichée (cf
-    // NAV_ITEMS.icon) + libellé exposé en `title` natif à la place du texte.
+    // Repliée (refonte du 2026-09-22, voir docstring de Sidebar.tsx) : le rail n'affiche plus
+    // les items à plat mais un bouton-icône par groupe — les items eux-mêmes ne réapparaissent
+    // qu'au clic sur ce bouton, dans son flyout.
     expect(container.querySelectorAll("nav svg").length).toBeGreaterThan(0);
-    expect(screen.getByTitle("nav.dashboard")).toBeInTheDocument();
+    const boutonGroupeGeneral = screen.getByTitle("nav_groupe.general");
+    expect(boutonGroupeGeneral).toBeInTheDocument();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    fireEvent.click(boutonGroupeGeneral);
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("action.deplier_sidebar"));
 
     expect(useUiStore.getState().sidebarCollapsed).toBe(false);
     expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
+  });
+
+  it("ouvre le flyout d'un groupe au clic, le referme au clic extérieur puis sur Échap", () => {
+    useUiStore.setState({ sidebarCollapsed: true });
+    renderWithProviders(<Sidebar />);
+
+    fireEvent.click(screen.getByTitle("nav_groupe.general"));
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    // Clic en dehors du conteneur du bouton/flyout — se referme (voir RailGroupButton).
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle("nav_groupe.general"));
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("referme le flyout du groupe après avoir suivi un de ses liens", () => {
+    useUiStore.setState({ sidebarCollapsed: true });
+    renderWithProviders(<Sidebar />);
+
+    fireEvent.click(screen.getByTitle("nav_groupe.general"));
+    fireEvent.click(screen.getByText("nav.dashboard"));
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("regroupe les modules par catégorie, le groupe Administration replié par défaut", () => {

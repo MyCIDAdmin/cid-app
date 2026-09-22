@@ -1,22 +1,27 @@
 /**
- * Sidebar principale — fond sombre --sb (#1A0000), cf mockup .sidebar.
- * La liste de navigation s'enrichit au fil des phases d'implémentation.
+ * Sidebar principale (desktop, ≥1024px — `hidden lg:flex`, voir `MobileNavDrawer.tsx` pour
+ * l'équivalent mobile) — fond sombre --sb (#1A0000), cf mockup .sidebar. La liste de navigation
+ * s'enrichit au fil des phases d'implémentation.
  *
- * Repliable ("Die Sidebar muss einklappbar sein") : repliée, elle se réduit à un rail étroit qui
- * n'affiche plus que les icônes (une par module, cf NAV_ITEMS.icon) — chaque item reste donc
- * cliquable et identifiable même sans libellé, avec le nom du module en `title` (tooltip natif)
- * pour compenser le texte masqué. Les icônes viennent de @tabler/icons-react, la même famille
- * que le mockup HTML de référence (webfont Tabler via CDN, ex. `ti ti-shopping-bag`), afin de
- * rester visuellement cohérent avec lui sans dépendre d'un CDN externe dans l'app React. La
- * préférence de repli est persistée (voir uiStore) et survit donc à un rechargement de page.
+ * Refonte du 2026-09-22 (retour utilisateur : "Die Sidebar mit der Scrollbar stört mich. Ich
+ * möchte eine modernere Darstellung als Menü-Button und/oder Tabs") : le nombre de modules a fini
+ * par dépasser la hauteur de l'écran même en mode rail (27 items pour un super_admin, ~40px
+ * chacun ≈ 1150px, largement au-delà d'un viewport desktop courant), d'où la scrollbar native
+ * disgracieuse remontée par l'utilisateur. Le mode rail (repliée) n'affiche donc plus les items
+ * à plat mais un icône PAR GROUPE (GROUP_ICONS) : cliquer sur un groupe ouvre un flyout listant
+ * ses items, comme la barre d'activité de VS Code ou la sidebar de Slack — 4 groupes tiennent
+ * toujours en hauteur sans défilement, quel que soit le rôle. Le mode déplié (accordéon par
+ * groupe, historique) reste inchangé et accessible via le même bouton de bascule qu'avant.
  *
- * Groupes en accordéon ("Kann man die Module clustern ?", pour se passer du défilement) : le
- * mockup de référence organise déjà sa nav en groupes nommés (sbg/sbl : Général, Communauté,
- * Contenu, Administration...) plutôt qu'en une seule liste plate — NAV_ITEMS reprend ce
- * découpage (adapté aux modules réellement construits) via son champ `group`. Dépliée, la
- * sidebar affiche donc des en-têtes de groupe cliquables ; repliés, ils masquent leurs items et
- * réduisent d'autant la hauteur nécessaire (voir uiStore.collapsedGroups pour les valeurs par
- * défaut, notamment "Administration" replié d'entrée).
+ * Repliable ("Die Sidebar muss einklappbar sein") : la préférence de repli est persistée (voir
+ * uiStore, désormais repliée par défaut) et survit donc à un rechargement de page.
+ *
+ * Groupes ("Kann man die Module clustern ?", pour se passer du défilement) : le mockup de
+ * référence organise déjà sa nav en groupes nommés (sbg/sbl : Général, Communauté, Contenu,
+ * Administration...) plutôt qu'en une seule liste plate — NAV_ITEMS reprend ce découpage (adapté
+ * aux modules réellement construits) via son champ `group`. Dépliée, la sidebar affiche des
+ * en-têtes de groupe cliquables (accordéon) ; repliée, chaque groupe devient un bouton-icône
+ * ouvrant son flyout (voir plus haut).
  *
  * Un seul item actif à la fois, même quand deux `to` sont préfixes l'un de l'autre (bug corrigé
  * le 2026-09-21, retour utilisateur : "Wenn ich auf Shop dann auf Meine Bestellungen klicke,
@@ -25,17 +30,17 @@
  * actifs sur "/boutique/commandes" (correspondance par défaut = "pathname commence par `to`",
  * sans `end`). Passer `end` sur "/boutique" ne suffirait pas non plus : il resterait alors inactif
  * sur ses propres sous-pages sans item dédié (ex. "/boutique/panier", "/boutique/commande/retour").
- * `activeNavTo` ci-dessous calcule donc, pour tout le menu, LE seul item dont le `to` correspond
- * ET qui est le plus spécifique (le plus long) — remplace le calcul d'activité intégré de
- * <NavLink> par un simple <Link> + comparaison directe.
+ * `useSidebarNav` (exporté pour `MobileNavDrawer.tsx`, qui a besoin exactement de la même logique
+ * plutôt que de la dupliquer) calcule donc, pour tout le menu, LE seul item dont le `to`
+ * correspond ET qui est le plus spécifique (le plus long) — remplace le calcul d'activité intégré
+ * de <NavLink> par un simple <Link> + comparaison directe.
  *
- * Le clic sur l'en-tête est la seule source de vérité pour replier/déplier un groupe (bug
- * corrigé : une première version forçait aussi le dépli du groupe contenant la page active, ce
- * qui rendait "Général" impossible à replier en pratique — il contient le tableau de bord, donc
- * quasiment toujours actif). Un groupe replié qui contient quand même la page active se contente
- * d'un en-tête mis en évidence (texte plus clair), sans forcer l'ouverture — la préférence de
- * l'utilisateur passe toujours avant. En mode rail (sidebar entière repliée), les groupes n'ont
- * plus de sens (pas de place pour un en-tête) : tous les items s'affichent alors à plat.
+ * Le clic sur l'en-tête est la seule source de vérité pour replier/déplier un groupe en mode
+ * déplié (bug corrigé : une première version forçait aussi le dépli du groupe contenant la page
+ * active, ce qui rendait "Général" impossible à replier en pratique — il contient le tableau de
+ * bord, donc quasiment toujours actif). Un groupe replié qui contient quand même la page active
+ * se contente d'un en-tête mis en évidence (texte plus clair), sans forcer l'ouverture — la
+ * préférence de l'utilisateur passe toujours avant.
  */
 import {
   IconBellRinging,
@@ -73,7 +78,7 @@ import {
   IconUsers,
   IconUsersGroup,
 } from "@tabler/icons-react";
-import type { ComponentType } from "react";
+import { type ComponentType, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -82,9 +87,9 @@ import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore
 import { type SidebarGroupKey, useUiStore } from "../../store/uiStore";
 import BrandLogo from "../ui/BrandLogo";
 
-type NavIcon = ComponentType<{ size?: number | string; className?: string }>;
+export type NavIcon = ComponentType<{ size?: number | string; className?: string }>;
 
-interface NavItem {
+export interface NavItem {
   to: string;
   labelKey: string;
   icon: NavIcon;
@@ -93,15 +98,30 @@ interface NavItem {
 }
 
 // Ordre d'affichage des groupes + libellé i18n de leur en-tête (nav_groupe.* dans common.json).
-const GROUP_ORDER: SidebarGroupKey[] = ["general", "communaute", "contenu", "administration"];
-const GROUP_LABEL_KEYS: Record<SidebarGroupKey, string> = {
+export const GROUP_ORDER: SidebarGroupKey[] = [
+  "general",
+  "communaute",
+  "contenu",
+  "administration",
+];
+export const GROUP_LABEL_KEYS: Record<SidebarGroupKey, string> = {
   general: "nav_groupe.general",
   communaute: "nav_groupe.communaute",
   contenu: "nav_groupe.contenu",
   administration: "nav_groupe.administration",
 };
 
-const NAV_ITEMS: NavItem[] = [
+// Icône représentative par groupe (mode rail replié uniquement, voir docstring de module) — un
+// seul bouton-icône par groupe plutôt qu'un par item, donc un choix distinct des icônes déjà
+// prises par les items eux-mêmes n'est pas nécessaire (jamais affichés côte à côte).
+const GROUP_ICONS: Record<SidebarGroupKey, NavIcon> = {
+  general: IconLayoutDashboard,
+  communaute: IconUsersGroup,
+  contenu: IconPhoto,
+  administration: IconSettings,
+};
+
+export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: IconLayoutDashboard, group: "general" },
   // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
   // voit que sa propre fiche), inutile de dupliquer cette règle ici.
@@ -263,24 +283,21 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export default function Sidebar() {
-  const { t } = useTranslation("common");
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const collapsed = useUiStore((s) => s.sidebarCollapsed);
-  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
-  const collapsedGroups = useUiStore((s) => s.collapsedGroups);
-  const toggleGroup = useUiStore((s) => s.toggleGroup);
-  const navigate = useNavigate();
-  const location = useLocation();
+export interface SidebarNavGroup {
+  key: SidebarGroupKey;
+  items: NavItem[];
+  hasActiveItem: boolean;
+}
 
-  function handleLogout() {
-    // logout() vide aussi le cache React Query (cf queryClient.ts) — sans
-    // quoi les données du compte qui se déconnecte resteraient visibles au
-    // prochain compte connecté dans le même onglet.
-    logout();
-    navigate("/login", { replace: true });
-  }
+/**
+ * Logique de navigation partagée entre `Sidebar` (desktop) et `MobileNavDrawer` (mobile) — un
+ * seul et même calcul d'item actif / de notifications par module / de groupement par rôle,
+ * plutôt que de le dupliquer dans les deux composants (source d'incohérences garantie sinon,
+ * ex. un item marqué actif sur desktop mais pas sur mobile).
+ */
+export function useSidebarNav() {
+  const user = useAuthStore((s) => s.user);
+  const location = useLocation();
 
   // Point d'activité par module (ajouté le 2026-09-16, demande utilisateur : "Für die Sidebar,
   // es soll ein zeichen ... geben, der hinweist dass es neuigkeiten bei dem Modul gibt") :
@@ -326,49 +343,228 @@ export default function Sidebar() {
   }
 
   // Groupes non vides, dans l'ordre fixe GROUP_ORDER, chacun sachant s'il contient la page
-  // active — sert uniquement à mettre l'en-tête en évidence, jamais à forcer le dépli (voir
-  // docstring : la préférence de repli de l'utilisateur reste toujours prioritaire).
-  const groups = GROUP_ORDER.map((key) => {
+  // active — sert uniquement à mettre l'en-tête (ou le bouton-icône en mode rail) en évidence,
+  // jamais à forcer le dépli (voir docstring : la préférence de repli de l'utilisateur reste
+  // toujours prioritaire).
+  const groups: SidebarNavGroup[] = GROUP_ORDER.map((key) => {
     const items = visibleItems.filter((item) => item.group === key);
     return { key, items, hasActiveItem: items.some(isItemActive) };
   }).filter((group) => group.items.length > 0);
 
-  function renderItem(item: NavItem) {
-    const Icon = item.icon;
-    const signale = itemALeSignal(item);
-    // isItemActive(item) === item.to === activeTo (voir plus haut) : un seul item du menu entier
-    // peut être actif à la fois, jamais calculé par <NavLink> lui-même (voir docstring de module).
-    const active = isItemActive(item);
-    return (
-      <Link
-        key={item.to}
-        to={item.to}
-        onClick={() => handleClicItem(item)}
-        title={collapsed ? t(item.labelKey) : undefined}
-        aria-current={active ? "page" : undefined}
-        className={`flex items-center gap-3 rounded-cid px-3 py-2 text-sm transition ${
-          collapsed ? "justify-center px-0" : ""
-        } ${active ? "bg-ca font-semibold text-white" : "text-white/70 hover:bg-white/5"}`}
+  return { visibleItems, groups, isItemActive, itemALeSignal, handleClicItem };
+}
+
+/** Lien de navigation avec icône, libellé et point d'activité — toujours avec libellé visible
+ * (jamais en mode icône seule + tooltip `title`, contrairement à l'ancienne version : ce rendu
+ * sert désormais à la fois à l'accordéon déplié, au flyout d'un groupe replié et au tiroir
+ * mobile, qui ont tous la place d'afficher le texte). */
+function NavItemLink({
+  item,
+  active,
+  signale,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  signale: boolean;
+  onNavigate: () => void;
+}) {
+  const { t } = useTranslation("common");
+  const Icon = item.icon;
+  return (
+    <Link
+      to={item.to}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      className={`flex items-center gap-3 rounded-cid px-3 py-2 text-sm transition ${
+        active ? "bg-ca font-semibold text-white" : "text-white/70 hover:bg-white/5"
+      }`}
+    >
+      <span className="relative shrink-0">
+        <Icon size={18} />
+        {signale && (
+          <span
+            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-ca ring-2 ring-sb"
+            aria-label={t("nav.point_activite", { module: t(item.labelKey) })}
+            role="status"
+          />
+        )}
+      </span>
+      <span className="truncate">{t(item.labelKey)}</span>
+    </Link>
+  );
+}
+
+/** Accordéon groupé (libellés visibles) — mode déplié de `Sidebar` ET tiroir mobile
+ * (`MobileNavDrawer`), d'où son export : même logique de dépli/repli par groupe (uiStore), donc
+ * mieux vaut un seul composant que deux implémentations qui pourraient diverger. */
+export function NavAccordionList({
+  groups,
+  isItemActive,
+  itemALeSignal,
+  onNavigate,
+}: {
+  groups: SidebarNavGroup[];
+  isItemActive: (item: NavItem) => boolean;
+  itemALeSignal: (item: NavItem) => boolean;
+  onNavigate: (item: NavItem) => void;
+}) {
+  const { t } = useTranslation("common");
+  const collapsedGroups = useUiStore((s) => s.collapsedGroups);
+  const toggleGroup = useUiStore((s) => s.toggleGroup);
+
+  return (
+    <>
+      {groups.map((group) => {
+        const expanded = !collapsedGroups[group.key];
+        return (
+          <div key={group.key} className="pt-1 first:pt-0">
+            <button
+              type="button"
+              onClick={() => toggleGroup(group.key)}
+              className={`flex w-full items-center justify-between rounded-cid px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition hover:text-white/70 ${
+                // Repliée mais contenant la page active : en-tête mis en évidence plutôt que
+                // forcer l'ouverture (voir docstring) — reste un simple repère visuel.
+                group.hasActiveItem ? "text-white/70" : "text-white/40"
+              }`}
+            >
+              <span className="truncate">{t(GROUP_LABEL_KEYS[group.key])}</span>
+              <IconChevronDown
+                size={14}
+                className={`shrink-0 transition-transform ${expanded ? "" : "-rotate-90"}`}
+              />
+            </button>
+            {expanded && (
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <NavItemLink
+                    key={item.to}
+                    item={item}
+                    active={isItemActive(item)}
+                    signale={itemALeSignal(item)}
+                    onNavigate={() => onNavigate(item)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/** Bouton-icône d'un groupe en mode rail (replié) + son flyout — voir docstring de module. Ouvert
+ * au clic (jamais au survol seul : plus fiable au trackpad/tactile et bien plus simple à tester
+ * qu'un délai d'ouverture/fermeture au survol), fermé au clic extérieur, sur Échap, ou après
+ * avoir suivi un lien. */
+function RailGroupButton({
+  group,
+  isItemActive,
+  itemALeSignal,
+  onNavigate,
+}: {
+  group: SidebarNavGroup;
+  isItemActive: (item: NavItem) => boolean;
+  itemALeSignal: (item: NavItem) => boolean;
+  onNavigate: (item: NavItem) => void;
+}) {
+  const { t } = useTranslation("common");
+  const [ouvert, setOuvert] = useState(false);
+  const conteneurRef = useRef<HTMLDivElement>(null);
+  const GroupIcon = GROUP_ICONS[group.key];
+  const label = t(GROUP_LABEL_KEYS[group.key]);
+
+  useEffect(() => {
+    if (!ouvert) return undefined;
+    function surClicExterieur(e: MouseEvent) {
+      if (conteneurRef.current && !conteneurRef.current.contains(e.target as Node)) {
+        setOuvert(false);
+      }
+    }
+    function surTouche(e: KeyboardEvent) {
+      if (e.key === "Escape") setOuvert(false);
+    }
+    document.addEventListener("mousedown", surClicExterieur);
+    document.addEventListener("keydown", surTouche);
+    return () => {
+      document.removeEventListener("mousedown", surClicExterieur);
+      document.removeEventListener("keydown", surTouche);
+    };
+  }, [ouvert]);
+
+  return (
+    <div ref={conteneurRef} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOuvert((o) => !o)}
+        title={label}
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={ouvert}
+        className={`flex w-full items-center justify-center rounded-cid p-2.5 transition ${
+          group.hasActiveItem
+            ? "bg-white/10 text-white"
+            : "text-white/60 hover:bg-white/5 hover:text-white"
+        }`}
       >
-        <span className="relative shrink-0">
-          <Icon size={18} />
-          {signale && (
-            <span
-              className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-ca ring-2 ring-sb"
-              aria-label={t("nav.point_activite", { module: t(item.labelKey) })}
-              role="status"
+        <GroupIcon size={20} />
+      </button>
+      {ouvert && (
+        // Positionné hors du <nav> défilant (voir Sidebar ci-dessous : le rail n'a lui-même
+        // jamais besoin de défiler, donc pas d'overflow-y-auto ambiant qui risquerait de rogner
+        // ce flyout en absolute) — thin-scrollbar + max-h en filet de sécurité si un groupe
+        // finissait par contenir énormément d'items.
+        <div
+          role="menu"
+          aria-label={label}
+          className="thin-scrollbar absolute left-full top-0 z-20 ml-2 max-h-[70vh] w-56 space-y-1 overflow-y-auto rounded-cid-lg border border-white/10 bg-sb p-2 shadow-lg"
+        >
+          <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
+            {label}
+          </div>
+          {group.items.map((item) => (
+            <NavItemLink
+              key={item.to}
+              item={item}
+              active={isItemActive(item)}
+              signale={itemALeSignal(item)}
+              onNavigate={() => {
+                onNavigate(item);
+                setOuvert(false);
+              }}
             />
-          )}
-        </span>
-        {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
-      </Link>
-    );
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Sidebar() {
+  const { t } = useTranslation("common");
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const navigate = useNavigate();
+  const { groups, isItemActive, itemALeSignal, handleClicItem } = useSidebarNav();
+
+  function handleLogout() {
+    // logout() vide aussi le cache React Query (cf queryClient.ts) — sans
+    // quoi les données du compte qui se déconnecte resteraient visibles au
+    // prochain compte connecté dans le même onglet.
+    logout();
+    navigate("/login", { replace: true });
   }
 
   return (
+    // hidden lg:flex (ajouté le 2026-09-22) : sous 1024px, la navigation passe par
+    // MobileNavDrawer (tiroir plein écran depuis le bouton menu de AppLayout) plutôt que cette
+    // sidebar persistante, qui prendrait une largeur disproportionnée sur un écran de téléphone.
     <aside
-      className={`flex h-screen flex-col overflow-hidden bg-sb text-white/90 transition-[width] duration-200 ${
-        collapsed ? "w-14" : "w-60"
+      className={`hidden h-screen flex-col overflow-hidden bg-sb text-white/90 transition-[width] duration-200 lg:flex ${
+        collapsed ? "w-16" : "w-60"
       }`}
     >
       <div className="flex items-center gap-2 px-4 py-5">
@@ -389,40 +585,42 @@ export default function Sidebar() {
           {collapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
         </button>
       </div>
-      {/* overflow-y-auto + min-h-0 : le nombre de modules a fini par dépasser la hauteur de
-          l'écran (bug remonté en test manuel — la sidebar sombre s'arrêtait avant la fin des
-          items, qui continuaient sur le fond clair de la page). Sans min-h-0, un enfant flex-1
-          ne se contracte jamais en dessous de son contenu, donc le overflow-y-auto n'avait
-          aucun effet (l'aside h-screen débordait silencieusement). Le groupement en accordéon
-          (voir docstring) réduit maintenant la hauteur nécessaire en amont ; ce défilement reste
-          le filet de sécurité si un groupe entièrement déplié dépasse quand même l'écran. */}
-      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2">
+      <nav
+        className={
+          collapsed
+            ? // Rail : au plus GROUP_ORDER.length boutons (4 aujourd'hui) — tient toujours dans
+              // la hauteur de l'écran, donc pas d'overflow-y-auto ici : un ancêtre qui défile
+              // rognerait le flyout positionné en absolute (voir RailGroupButton).
+              "flex flex-1 flex-col items-center gap-1 px-2 py-1"
+            : // overflow-y-auto + min-h-0 : le nombre de modules a fini par dépasser la hauteur
+              // de l'écran (bug remonté en test manuel — la sidebar sombre s'arrêtait avant la
+              // fin des items, qui continuaient sur le fond clair de la page). Sans min-h-0, un
+              // enfant flex-1 ne se contracte jamais en dessous de son contenu, donc
+              // overflow-y-auto n'avait aucun effet. thin-scrollbar (index.css) remplace la
+              // scrollbar native épaisse par la fine scrollbar déjà prévue dans le mockup
+              // (.sb::-webkit-scrollbar) mais jamais reprise ici jusqu'ici — retour utilisateur
+              // du 2026-09-22 ("Die Sidebar mit der Scrollbar stört mich").
+              "thin-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto px-2"
+        }
+      >
         {collapsed
-          ? // Rail étroit : pas de place pour un en-tête de groupe, tout à plat (voir docstring).
-            visibleItems.map(renderItem)
-          : groups.map((group) => {
-              const expanded = !collapsedGroups[group.key];
-              return (
-                <div key={group.key} className="pt-1 first:pt-0">
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(group.key)}
-                    className={`flex w-full items-center justify-between rounded-cid px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition hover:text-white/70 ${
-                      // Repliée mais contenant la page active : en-tête mis en évidence plutôt
-                      // que forcer l'ouverture (voir docstring) — reste un simple repère visuel.
-                      group.hasActiveItem ? "text-white/70" : "text-white/40"
-                    }`}
-                  >
-                    <span className="truncate">{t(GROUP_LABEL_KEYS[group.key])}</span>
-                    <IconChevronDown
-                      size={14}
-                      className={`shrink-0 transition-transform ${expanded ? "" : "-rotate-90"}`}
-                    />
-                  </button>
-                  {expanded && <div className="space-y-1">{group.items.map(renderItem)}</div>}
-                </div>
-              );
-            })}
+          ? groups.map((group) => (
+              <RailGroupButton
+                key={group.key}
+                group={group}
+                isItemActive={isItemActive}
+                itemALeSignal={itemALeSignal}
+                onNavigate={handleClicItem}
+              />
+            ))
+          : (
+              <NavAccordionList
+                groups={groups}
+                isItemActive={isItemActive}
+                itemALeSignal={itemALeSignal}
+                onNavigate={handleClicItem}
+              />
+            )}
       </nav>
       {user && (
         <div className={`border-t border-white/10 py-3 ${collapsed ? "px-2" : "px-4"}`}>

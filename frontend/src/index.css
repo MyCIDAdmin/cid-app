@@ -134,3 +134,32 @@ input:-webkit-autofill:focus {
   animation: cid-pulse-cible 0.7s ease-in-out 2;
   border-radius: 0.5rem;
 }
+
+/*
+ * Scrollbar fine (retour utilisateur du 2026-09-22 : "Die Sidebar mit der Scrollbar stört
+ * mich") — le mockup de référence prévoyait déjà une scrollbar fine et translucide pour la
+ * sidebar (`.sb::-webkit-scrollbar{width:2px}`), jamais reprise dans l'app React jusqu'ici, d'où
+ * la scrollbar native épaisse remontée par l'utilisateur. Classe utilitaire réutilisable (plutôt
+ * que scopée à `.sb`) : sert à la fois à la sidebar desktop, à son flyout de groupe et au tiroir
+ * mobile (voir Sidebar.tsx/MobileNavDrawer.tsx) — n'importe quelle zone défilante de l'app peut
+ * l'adopter au besoin. `scrollbar-width`/`scrollbar-color` couvrent Firefox, les pseudo-éléments
+ * `::-webkit-scrollbar-*` couvrent Chrome/Edge/Safari (WebKit/Blink n'implémentent pas les
+ * propriétés standard `scrollbar-*` avant leurs versions très récentes).
+ */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
