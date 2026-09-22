@@ -171,7 +171,11 @@ export default function ProjetsPage() {
         <p className="text-sm text-text-tertiary">{t("page.aucun_projet")}</p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Kacheln en pleine largeur, empilées les unes sous les autres (demande utilisateur
+          2026-09-22) — plus de grille multi-colonnes : chaque ProjetCard a désormais une hauteur
+          dynamique (basée sur le contenu, plus de hauteur fixe), une seule colonne évite que la
+          hauteur d'une kachel avec une longue description "tire" ses voisines de la même ligne. */}
+      <div className="flex flex-col gap-4">
         {projetsQuery.data?.results.map((projet) => (
           <ProjetCard
             key={projet.id}

@@ -74,23 +74,22 @@ export default function ProjetCard({
         aria-label={(flipped ? t("carte.retourner_devant") : t("carte.retourner")) ?? ""}
         onClick={basculer}
         onKeyDown={surTouche}
-        className="relative h-[30rem] w-full cursor-pointer transition-transform duration-700 ease-in-out [transform-style:preserve-3d]"
+        className="relative w-full cursor-pointer transition-transform duration-700 ease-in-out [transform-style:preserve-3d]"
         style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
       >
-        {/* Face avant */}
-        <div className="absolute inset-0 flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-bg-primary shadow-sm [backface-visibility:hidden]">
+        {/* Face avant — demande utilisateur 2026-09-22 : plus de hauteur fixe (h-[30rem]) ni de
+            scroll interne sur la description. Cette div reste dans le flux normal (plus en
+            `absolute inset-0`) : sa hauteur devient donc celle, naturelle, de son contenu, et
+            c'est CETTE hauteur qui dimensionne la kachel — la description s'affiche donc en
+            entier, jamais tronquée ni scrollable. `overflow-hidden` est conservé uniquement pour
+            rogner les coins carrés du carousel d'images sur les coins arrondis de la kachel (plus
+            aucun contenu ne dépasse la hauteur de cette div désormais, elle n'a donc plus de rôle
+            de découpe verticale). Voir la face arrière ci-dessous pour comment elle se cale sur
+            cette même hauteur, désormais dynamique. */}
+        <div className="flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-bg-primary shadow-sm [backface-visibility:hidden]">
           <ImageCarousel images={projet.images} titre={projet.titre} className="h-40 shrink-0" />
-          {/* min-h-0 est indispensable ici : un conteneur flex enfant (flex-1) sans min-height
-              explicite garde par défaut une hauteur minimale automatique basée sur son contenu
-              (min-content), même si SES PROPRES enfants savent rétrécir (ex. la description
-              ci-dessous avec overflow-y-auto). Sans ce min-h-0, cette div grandit donc au-delà
-              des 30rem de la kachel et pousse quand même les boutons hors de la zone visible —
-              c'est la cause exacte du bug remonté à nouveau le 2026-09-22 après un premier
-              correctif (flex-1/overflow-y-auto sur la description seule) qui n'avait traité que
-              le niveau le plus interne, pas ce conteneur intermédiaire. Confirmé par un repro
-              Playwright isolé avant ce correctif. */}
-          <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
-            <div className="flex shrink-0 items-start justify-between gap-2">
+          <div className="flex flex-col gap-2 p-4">
+            <div className="flex items-start justify-between gap-2">
               <h3 className="text-base font-semibold leading-snug text-text-primary">
                 {projet.titre}
               </h3>
@@ -102,7 +101,7 @@ export default function ProjetCard({
                     e.stopPropagation();
                     onModifier(projet);
                   }}
-                  className="shrink-0 rounded-cid p-1 text-text-tertiary hover:bg-bg-tertiary hover:text-text-primary"
+                  className="rounded-cid p-1 text-text-tertiary hover:bg-bg-tertiary hover:text-text-primary"
                 >
                   ✎
                 </button>
@@ -111,7 +110,7 @@ export default function ProjetCard({
             <StatutProjetBadge statut={projet.statut} />
 
             {projet.cagnote_active && (
-              <div className="mt-1 shrink-0 space-y-1">
+              <div className="mt-1 space-y-1">
                 {progression !== null ? (
                   <>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-bg-tertiary">
@@ -139,7 +138,7 @@ export default function ProjetCard({
 
             {projet.date_limite && (
               <p
-                className={`shrink-0 text-xs ${
+                className={`text-xs ${
                   projet.echeance_depassee ? "text-status-dangerText" : "text-text-tertiary"
                 }`}
               >
@@ -149,21 +148,18 @@ export default function ProjetCard({
               </p>
             )}
 
-            {/* flex-1 + overflow-y-auto (plutôt qu'un ancien `mt-auto` sans limite de hauteur) :
-                une description longue défile désormais À L'INTÉRIEUR de cette zone plutôt que de
-                pousser la rangée de boutons ci-dessous hors des limites de la kachel — bug
-                remonté le 2026-09-22 ("Der Button zum freien Beitrag ist unsichtbar"), la
-                hauteur fixe de la kachel (overflow-hidden sur la face avant) rognait alors
-                silencieusement le bouton "Contribuer" dès que le texte riche dépassait l'espace
-                restant. */}
+            {/* Plus de flex-1/overflow-y-auto ici (retiré le 2026-09-22) : la kachel n'a plus de
+                hauteur fixe (voir la face avant ci-dessus), donc plus besoin de faire défiler la
+                description dans une zone bornée — elle s'affiche simplement en entier, comme le
+                reste du contenu. */}
             <div
-              className="flex-1 overflow-y-auto text-sm text-text-primary"
+              className="text-sm text-text-primary"
               // Texte riche produit par l'éditeur type Word (demande utilisateur point 1.2) —
               // affiché tel quel, jamais retapé côté client (voir RichTextEditor.tsx).
               dangerouslySetInnerHTML={{ __html: projet.description_html }}
             />
 
-            <div className="mt-2 flex shrink-0 flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-2">
               {projet.cagnote_active && !projet.echeance_depassee && onContribuer && (
                 <button
                   type="button"
