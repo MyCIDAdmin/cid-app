@@ -83,7 +83,14 @@ export default function ImageCarousel({
         key={image.id}
         src={image.image}
         alt={t("carousel.image_alt", { titre, n: index + 1 }) ?? ""}
-        className="h-full w-full object-cover transition-opacity duration-500"
+        // object-contain (plutôt qu'object-cover, jusqu'au 2026-09-22) : la kachel étant
+        // désormais bien plus large qu'avant (pleine largeur de page), object-cover forçait un
+        // recadrage beaucoup plus agressif de l'image dans cette bande large et peu haute (h-40)
+        // — coupant une grande partie visible et donnant une impression de flou/pixellisation en
+        // zoomant sur une portion de l'image. object-contain affiche toujours l'image ENTIÈRE
+        // (letterboxée au besoin sur les côtés, sur le fond bg-bg-tertiary du conteneur), jamais
+        // recadrée.
+        className="h-full w-full object-contain transition-opacity duration-500"
       />
       {images.length > 1 && (
         <>

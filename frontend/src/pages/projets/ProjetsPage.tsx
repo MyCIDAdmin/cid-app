@@ -171,11 +171,17 @@ export default function ProjetsPage() {
         <p className="text-sm text-text-tertiary">{t("page.aucun_projet")}</p>
       )}
 
-      {/* Kacheln en pleine largeur, empilées les unes sous les autres (demande utilisateur
-          2026-09-22) — plus de grille multi-colonnes : chaque ProjetCard a désormais une hauteur
-          dynamique (basée sur le contenu, plus de hauteur fixe), une seule colonne évite que la
-          hauteur d'une kachel avec une longue description "tire" ses voisines de la même ligne. */}
-      <div className="flex flex-col gap-4">
+      {/* Kacheln empilées les unes sous les autres (demande utilisateur 2026-09-22) — plus de
+          grille multi-colonnes : chaque ProjetCard a désormais une hauteur dynamique (basée sur
+          le contenu, plus de hauteur fixe), une seule colonne évite que la hauteur d'une kachel
+          avec une longue description "tire" ses voisines de la même ligne.
+          max-w-2xl (ajouté le 2026-09-22, suite retour utilisateur) : la toute première version
+          allait jusqu'à la pleine largeur de page (edge-to-edge), mais une kachel aussi large
+          avec le carrousel d'images en hauteur fixe (h-40) forçait un recadrage/agrandissement
+          beaucoup trop agressif des images (floues, coupées) — voir aussi le passage à
+          object-contain dans ImageCarousel. Cette largeur plafonnée reste nettement plus large
+          que l'ancienne grille à 3 colonnes tout en gardant les images lisibles. */}
+      <div className="mx-auto flex max-w-2xl flex-col gap-4">
         {projetsQuery.data?.results.map((projet) => (
           <ProjetCard
             key={projet.id}
