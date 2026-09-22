@@ -13,8 +13,19 @@ import { useTranslation } from "react-i18next";
 import { useMembresList } from "../../hooks/useMembres";
 import type { MembreListItem } from "../../types/membre";
 
+/** Forme minimale affichable une fois un membre sélectionné — `MembreListItem` (issu de la
+ * recherche) la satisfait, mais aussi une identité déjà connue par ailleurs et plus légère (ex.
+ * Projet.responsable_detail, qui n'a pas de `numero_membre`) sans avoir à la compléter
+ * artificiellement avec des champs vides pour satisfaire le type complet. */
+interface MembreAffichable {
+  id: string;
+  prenom: string;
+  nom: string;
+  numero_membre?: string;
+}
+
 interface MembreSearchPickerProps {
-  selection: MembreListItem | null;
+  selection: MembreAffichable | null;
   onSelect: (membre: MembreListItem) => void;
   placeholder?: string;
 }
@@ -36,7 +47,8 @@ export default function MembreSearchPicker({
     return (
       <div className="flex items-center gap-2 rounded-cid border border-text-tertiary/30 bg-bg-secondary px-2 py-1.5 text-sm">
         <span className="flex-1 truncate">
-          {selection.prenom} {selection.nom} ({selection.numero_membre})
+          {selection.prenom} {selection.nom}
+          {selection.numero_membre ? ` (${selection.numero_membre})` : ""}
         </span>
         <button
           type="button"

@@ -76,7 +76,9 @@ def construire_evenement_stripe(payload: bytes, sig_header: str) -> stripe.Event
     raise derniere_erreur
 
 
-def creer_session_stripe(reference_id: str, libelle: str, montant, success_url: str, cancel_url: str) -> str:
+def creer_session_stripe(
+    reference_id: str, libelle: str, montant, success_url: str, cancel_url: str
+) -> str:
     """Crée une session Stripe Checkout et renvoie son URL de redirection.
 
     `reference_id` est l'identifiant (UUID) de l'objet métier (Cotisation ou Commande) — il

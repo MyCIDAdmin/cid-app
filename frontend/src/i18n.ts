@@ -33,6 +33,7 @@ i18n
       "notifications",
       "vote",
       "communaute",
+      "projets",
     ],
     defaultNS: "common",
     backend: {

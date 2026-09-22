@@ -115,7 +115,9 @@ def test_creer_commande_paypal_retourne_lien_approbation(settings):
 
     with patch.object(gateways, "_paypal_access_token", return_value="tok-123"):
         with patch("requests.post", return_value=reponse_commande) as mock_post:
-            url = gateways.creer_commande_paypal(REFERENCE_ID, LIBELLE, MONTANT, SUCCESS_URL, CANCEL_URL)
+            url = gateways.creer_commande_paypal(
+                REFERENCE_ID, LIBELLE, MONTANT, SUCCESS_URL, CANCEL_URL
+            )
 
     assert url == "https://sandbox.paypal.com/checkoutnow?token=ORDER-1"
     payload = mock_post.call_args.kwargs["json"]
@@ -132,7 +134,9 @@ def test_creer_commande_paypal_sans_lien_approbation(settings):
     with patch.object(gateways, "_paypal_access_token", return_value="tok-123"):
         with patch("requests.post", return_value=reponse_commande):
             with pytest.raises(gateways.GatewayError, match="lien d'approbation"):
-                gateways.creer_commande_paypal(REFERENCE_ID, LIBELLE, MONTANT, SUCCESS_URL, CANCEL_URL)
+                gateways.creer_commande_paypal(
+                    REFERENCE_ID, LIBELLE, MONTANT, SUCCESS_URL, CANCEL_URL
+                )
 
 
 def test_creer_commande_paypal_echec_http(settings):
@@ -142,7 +146,9 @@ def test_creer_commande_paypal_echec_http(settings):
     with patch.object(gateways, "_paypal_access_token", return_value="tok-123"):
         with patch("requests.post", return_value=reponse_commande):
             with pytest.raises(gateways.GatewayError):
-                gateways.creer_commande_paypal(REFERENCE_ID, LIBELLE, MONTANT, SUCCESS_URL, CANCEL_URL)
+                gateways.creer_commande_paypal(
+                    REFERENCE_ID, LIBELLE, MONTANT, SUCCESS_URL, CANCEL_URL
+                )
 
 
 # --- capturer_commande_paypal ---

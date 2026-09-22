@@ -15,7 +15,13 @@ export type TypeArticleStepper = "cotisation" | "adhesion" | "don" | "autre";
 // mit einem Freitextfeld hinzu") — même mécanique libre (libellé/montant saisis à la main) que
 // "don", mais jamais proposé dans le stepper libre-service (TypeArticleStepper ci-dessus),
 // uniquement par le Directeur Financier/Admin (voir CotisationSaisieEspecesPayload plus bas).
-export type TypeArticle = TypeArticleStepper | "evenement" | "autre_libre";
+// "projet" ajouté le 2026-09-22 (module Projets & Actions, demande utilisateur point 2 : "freie
+// Beiträge pro Projekt zu zahlen") — même mécanique libre que "don", mais toujours liée à un
+// projet précis via le champ `projet` ci-dessous ; voir types/projets.ts et
+// CotisationContribuerProjetPayload plus bas. Jamais proposée dans le stepper générique
+// (TypeArticleStepper) : la contribution se fait depuis la kachel du projet elle-même (voir
+// hooks/useProjets.useContribuerProjet), pas depuis CotisationStepperPage.
+export type TypeArticle = TypeArticleStepper | "evenement" | "autre_libre" | "projet";
 
 // "especes" ajouté le 2026-09-21 (retour utilisateur : "Es soll möglich sein eine Zahlung als
 // Barzahlung einzutragen") — jamais proposé en libre-service (voir CotisationStepperPage, qui
@@ -31,6 +37,9 @@ export interface Cotisation {
   membre: string;
   type_article: TypeArticle;
   article_catalogue: string | null;
+  /** Renseigné uniquement quand type_article="projet" (module Projets & Actions, voir
+   * types/projets.ts). */
+  projet: string | null;
   libelle: string;
   montant: string;
   mode_paiement: ModePaiement | "";
@@ -62,6 +71,22 @@ export interface CotisationCreatePayload {
   libelle?: string;
   montant?: string;
   article_catalogue?: string;
+}
+
+/**
+ * Payload de POST /cotisations/ pour une contribution libre à un projet (module Projets &
+ * Actions, demande utilisateur point 2 du 2026-09-22) — même principe que "don"
+ * (CotisationCreatePayload) : `membre` est résolu côté vue à partir du compte authentifié,
+ * `libelle` par défaut ("Contribution — <titre du projet>") si omis. Le serveur refuse la
+ * requête si `projet.cagnote_active` est faux ou si l'échéance du projet est dépassée — voir
+ * CotisationSerializer.validate, branche TypeArticle.PROJET.
+ */
+export interface CotisationContribuerProjetPayload {
+  type_article: "projet";
+  projet: string;
+  montant: string;
+  mode_paiement: ModePaiement;
+  libelle?: string;
 }
 
 // Tarifs de repli affichés avant le premier chargement de useArticlesCatalogue() (voir

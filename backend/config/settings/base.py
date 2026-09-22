@@ -57,6 +57,7 @@ LOCAL_APPS = [
     "apps.communaute",
     "apps.stats",
     "apps.notifications",
+    "apps.projets",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -269,6 +270,9 @@ AWS_STORAGE_BUCKET_NAME = os.environ.get("MINIO_BUCKET_DEFAULT", "cid-media")
 MINIO_BUCKET_JUSTIFICATIFS = os.environ.get("MINIO_BUCKET_JUSTIFICATIFS", "justificatifs")
 MINIO_BUCKET_PRODUITS = os.environ.get("MINIO_BUCKET_PRODUITS", "produits")
 MINIO_BUCKET_EXPORTS = os.environ.get("MINIO_BUCKET_EXPORTS", "exports")
+# Module Projets & Actions (voir apps.projets.storage.ProjetsStorage) — bucket isolé, même
+# principe que MINIO_BUCKET_PRODUITS.
+MINIO_BUCKET_PROJETS = os.environ.get("MINIO_BUCKET_PROJETS", "projets")
 
 # Endpoint PUBLIC (navigateur) du bucket produits — distinct de MINIO_ENDPOINT ci-dessus,
 # qui reste l'endpoint INTERNE utilisé par le backend pour parler à MinIO (ex. déploiement

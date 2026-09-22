@@ -7,6 +7,8 @@
     "evenements": "Évènements",
     "covoiturage": "Covoiturage",
     "admin_events": "Gestion évènements",
+    "projets": "Projets & Actions",
+    "admin_projets": "Gestion projets & actions",
     "inscriptions": "Inscriptions",
     "admin_adhesions": "Campagnes d'adhésion",
     "admin_justificatifs": "Justificatifs",
@@ -66,5 +68,22 @@
     "copier_lien": "Copier le lien",
     "lien_copie": "Lien copié !",
     "texte_partage": "Découvrez « {{titre}} » sur Clubistes in Deutschland."
+  },
+  "editeur": {
+    "barre_outils": "Barre de formatage",
+    "gras": "Gras",
+    "italique": "Italique",
+    "souligne": "Souligné",
+    "titre_2": "Titre 2",
+    "titre_3": "Titre 3",
+    "liste_puces": "Liste à puces",
+    "liste_numerotee": "Liste numérotée",
+    "aligner_gauche": "Aligner à gauche",
+    "centrer": "Centrer",
+    "aligner_droite": "Aligner à droite",
+    "lien": "Insérer/retirer un lien",
+    "lien_url": "URL du lien (laisser vide pour retirer)",
+    "annuler_saisie": "Annuler la saisie",
+    "retablir_saisie": "Rétablir la saisie"
   }
 }

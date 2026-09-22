@@ -447,6 +447,14 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
       return;
     }
 
+    if (typeArticle === "projet") {
+      // Une contribution "projet" (module Projets & Actions) n'est jamais saisie depuis ce
+      // formulaire générique — elle n'est pas proposée dans TYPES_ARTICLE_ESPECES ci-dessus, un
+      // paiement espèces pour un projet se fait depuis la kachel elle-même. Ce garde-fou
+      // n'existe que pour satisfaire l'exhaustivité de TypeScript sur TypeArticle.
+      return;
+    }
+
     const payload: CotisationSaisieEspecesPayload = {
       membre: membre.id,
       type_article: typeArticle,

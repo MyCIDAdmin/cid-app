@@ -52,6 +52,7 @@ import {
   IconClockDollar,
   IconCreditCard,
   IconFileCheck,
+  IconFolderCog,
   IconGavel,
   IconHelpCircle,
   IconIdBadge,
@@ -67,6 +68,7 @@ import {
   IconSettings,
   IconShoppingBag,
   IconTag,
+  IconTargetArrow,
   IconUserCog,
   IconUsers,
   IconUsersGroup,
@@ -111,6 +113,10 @@ const NAV_ITEMS: NavItem[] = [
   // publiés uniquement en dessous de Bureau Admin, voir EvenementViewSet.get_queryset).
   { to: "/evenements", labelKey: "nav.evenements", icon: IconCalendarEvent, group: "general" },
   { to: "/covoiturage", labelKey: "nav.covoiturage", icon: IconCar, group: "general" },
+  // Projets & Actions (module ajouté le 2026-09-22 sur demande utilisateur) — ouvert à tout
+  // authentifié, même principe que /evenements : le backend ne renvoie de toute façon pas les
+  // projets "en_preparation" à un rôle < Bureau Admin (voir ProjetViewSet.get_queryset).
+  { to: "/projets", labelKey: "nav.projets", icon: IconTargetArrow, group: "general" },
   // Catalogue boutique (mockup #pg-boutique) — ouvert à tout authentifié, même principe que
   // /mon-adhesion : le backend scope déjà le queryset (produits publiés uniquement en dessous
   // de Bureau Admin, voir ProduitViewSet.get_queryset).
@@ -245,6 +251,15 @@ const NAV_ITEMS: NavItem[] = [
     icon: IconMailCog,
     group: "administration",
     minRoleLevel: ROLE_LEVELS.super_admin,
+  },
+  // Gestion des projets & actions (module ajouté le 2026-09-22) — Bureau Admin+ seulement, même
+  // niveau que ProjetPermission (écriture) côté API.
+  {
+    to: "/admin/projets",
+    labelKey: "nav.admin_projets",
+    icon: IconFolderCog,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
 ];
 

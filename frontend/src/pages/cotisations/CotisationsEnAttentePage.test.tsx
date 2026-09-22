@@ -76,6 +76,7 @@ function cotisationEnAttente(overrides: Partial<Cotisation> = {}): Cotisation {
     membre: "m1",
     type_article: "adhesion",
     article_catalogue: null,
+    projet: null,
     libelle: "Frais d'adhésion",
     montant: "15.00",
     mode_paiement: "",

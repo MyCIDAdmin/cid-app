@@ -95,6 +95,14 @@ class TypeArticle(models.TextChoices):
     # Financier/Admin) — jamais dans le stepper libre-service, voir TypeArticleStepper côté
     # frontend.
     AUTRE_LIBRE = "autre_libre", _("Autre (libre)")
+    # Ajouté le 2026-09-22 (demande utilisateur : module "Projets & Aktionen", point 2 "Es
+    # muss möglich sein freie Beiträge pro Projekt zu zahlen") — même mécanique que DON
+    # (montant libre, saisi par le membre ou en son nom par le Directeur Financier/Admin,
+    # voir CotisationSerializer.validate), mais toujours lié à un projet précis via le champ
+    # `projet` ci-dessous. Disponible en libre-service ET en saisie manuelle, à la différence
+    # de AUTRE_LIBRE — voir apps.projets.models.Projet.cagnote_active/echeance_depassee pour
+    # les règles qui en conditionnent la disponibilité.
+    PROJET = "projet", _("Contribution à un projet")
 
 
 class ModePaiement(models.TextChoices):
@@ -248,6 +256,19 @@ class Cotisation(models.Model):
         max_digits=8,
         decimal_places=2,
         validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    # Renseigné uniquement quand type_article=projet (module Projets & Actions, ajouté le
+    # 2026-09-22) — voir apps.projets.models.Projet.montant_collecte/nb_contributeurs, qui
+    # interrogent ce champ, jamais l'inverse (référence par chaîne "projets.Projet", pas
+    # d'import direct, pour ne pas créer de dépendance circulaire entre apps au chargement).
+    # on_delete=PROTECT : un projet ayant déjà reçu au moins une contribution ne peut jamais
+    # être supprimé (même garantie que article_catalogue ci-dessus).
+    projet = models.ForeignKey(
+        "projets.Projet",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="contributions",
     )
     mode_paiement = models.CharField(max_length=20, choices=ModePaiement.choices, blank=True)
     statut = models.CharField(

@@ -33,6 +33,7 @@ function cotisation(overrides: Partial<Cotisation> = {}): Cotisation {
     membre: "m1",
     type_article: "cotisation",
     article_catalogue: null,
+    projet: null,
     libelle: "Cotisation annuelle 2025",
     montant: "45.00",
     mode_paiement: "carte",

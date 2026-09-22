@@ -56,6 +56,7 @@ class CotisationSerializer(serializers.ModelSerializer):
             "membre",
             "type_article",
             "article_catalogue",
+            "projet",
             "libelle",
             "montant",
             "mode_paiement",
@@ -83,6 +84,7 @@ class CotisationSerializer(serializers.ModelSerializer):
             "libelle": {"required": False},
             "montant": {"required": False},
             "article_catalogue": {"required": False},
+            "projet": {"required": False},
         }
 
     def validate(self, attrs):
@@ -117,6 +119,24 @@ class CotisationSerializer(serializers.ModelSerializer):
             else:
                 attrs["libelle"] = article.libelle
                 attrs["montant"] = article.montant
+        elif type_article == TypeArticle.PROJET:
+            # Ajouté le 2026-09-22 (module Projets & Actions, demande utilisateur point 2) —
+            # montant/libellé libres comme DON, mais avec 3 règles serveur supplémentaires
+            # propres au projet référencé (CLAUDE.md §8 : jamais fait confiance au client).
+            projet = attrs.get("projet")
+            if projet is None:
+                erreurs["projet"] = "Ce champ est requis pour ce type d'article."
+            else:
+                if not projet.cagnote_active:
+                    erreurs["projet"] = (
+                        "Les contributions libres ne sont pas activées pour ce projet."
+                    )
+                elif projet.echeance_depassee:
+                    erreurs["projet"] = "La date limite de ce projet est dépassée."
+                if not attrs.get("libelle", "").strip():
+                    attrs["libelle"] = f"Contribution — {projet.titre}"
+                if attrs.get("montant") is None:
+                    erreurs["montant"] = "Ce champ est requis pour ce type d'article."
         else:
             if not attrs.get("libelle", "").strip():
                 erreurs["libelle"] = "Ce champ est requis pour ce type d'article."

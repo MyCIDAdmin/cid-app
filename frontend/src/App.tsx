@@ -43,6 +43,8 @@ import MembreFormPage from "./pages/membres/MembreFormPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import AdminProjetsPage from "./pages/projets/AdminProjetsPage";
+import ProjetsPage from "./pages/projets/ProjetsPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import StatsPage from "./pages/stats/StatsPage";
@@ -304,6 +306,22 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
               <AdminEventsPage />
+            </RequireRole>
+          }
+        />
+        {/* Projets & Actions (module ajouté le 2026-09-22 sur demande utilisateur) — kacheln
+            ouvertes à tout authentifié, même principe que /evenements et /boutique : le backend
+            ne renvoie de toute façon pas les projets "en_preparation" à un rôle < Bureau Admin
+            (voir ProjetViewSet.get_queryset) et impose déjà l'IDOR sur le contenu de la kachel
+            (GestionContenuProjetPermission/est_gestionnaire_projet) ; gestion complète du Projet
+            lui-même (créer/modifier/statut/cagnote/échéance/responsable/images) réservée Bureau
+            Admin+, même niveau que ProjetPermission côté API. */}
+        <Route path="/projets" element={<ProjetsPage />} />
+        <Route
+          path="/admin/projets"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <AdminProjetsPage />
             </RequireRole>
           }
         />

@@ -8,6 +8,7 @@ import type {
   ArticleCataloguePayload,
   ChangerStatutCotisationPayload,
   ConfigurationRelancePayload,
+  CotisationContribuerProjetPayload,
   CotisationCreatePayload,
   CotisationsGestionFiltres,
   CotisationSaisieEspecesPayload,
@@ -51,6 +52,24 @@ export function useCreerCotisation() {
   return useMutation({
     mutationFn: (payload: CotisationCreatePayload) => cotisationsApi.creerCotisation(payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
+  });
+}
+
+/**
+ * Contribution libre à un projet (module Projets & Actions) — invalide aussi la clé racine
+ * "projets" (littérale : projetsKeys n'est pas exportée par useProjets.ts) puisque
+ * Projet.montant_collecte/nb_contributeurs/contributeurs dépendent de ce nouvel enregistrement,
+ * même principe que useInscrireEspeces (evenements) sur la clé "cotisations".
+ */
+export function useContribuerProjet() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CotisationContribuerProjetPayload) =>
+      cotisationsApi.contribuerProjet(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cotisationsKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["projets"] });
+    },
   });
 }
 

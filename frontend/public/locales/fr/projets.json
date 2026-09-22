@@ -1,0 +1,79 @@
+{
+  "statut": {
+    "en_preparation": "En préparation",
+    "en_cours": "En cours",
+    "termine": "Terminé",
+    "annule": "Annulé"
+  },
+  "carousel": {
+    "image_precedente": "Image précédente",
+    "image_suivante": "Image suivante",
+    "aller_a_image": "Aller à l'image {{n}}",
+    "image_alt": "{{titre}} — image {{n}}"
+  },
+  "carte": {
+    "retourner": "Voir les contributeurs",
+    "retourner_devant": "Revenir à la kachel"
+  },
+  "cagnote": {
+    "collecte": "{{montant}} collectés sur {{objectif}}",
+    "collecte_sans_objectif": "{{montant}} collectés",
+    "contribuer": "Contribuer"
+  },
+  "echeance": {
+    "limite": "Jusqu'au {{date}}",
+    "depassee": "Échéance dépassée"
+  },
+  "contributeurs": {
+    "titre": "Contributeurs",
+    "aucun": "Personne n'a encore contribué à ce projet.",
+    "chargement": "Chargement des contributeurs…"
+  },
+  "rapport": {
+    "voir": "Voir le rapport",
+    "titre": "Rapport d'avancement",
+    "aucune_mise_a_jour": "Aucune mise à jour pour le moment.",
+    "chargement": "Chargement du rapport…",
+    "ajouter": "Ajouter une mise à jour",
+    "titre_placeholder": "Titre de la mise à jour",
+    "contenu_placeholder": "Qu'est-ce qui a été fait ?",
+    "publier": "Publier",
+    "ajouter_photos": "Ajouter des photos"
+  },
+  "page": {
+    "titre": "Projets & Actions",
+    "aucun_projet": "Aucun projet pour le moment.",
+    "chargement": "Chargement des projets…",
+    "erreur_chargement": "Impossible de charger les projets."
+  },
+  "modal_contribution": {
+    "titre": "Contribuer à « {{titre}} »",
+    "montant": "Montant",
+    "mode_paiement": "Mode de paiement",
+    "libelle": "Message (optionnel)",
+    "libelle_placeholder": "Ex. : En mémoire de...",
+    "confirmer": "Confirmer et payer",
+    "erreur": "Impossible d'enregistrer votre contribution."
+  },
+  "admin": {
+    "titre": "Gestion des projets",
+    "nouveau_projet": "Nouveau projet",
+    "modifier_projet": "Modifier le projet",
+    "modifier": "Modifier",
+    "erreur_enregistrement": "Impossible d'enregistrer le projet.",
+    "champ_titre": "Titre",
+    "champ_description": "Description",
+    "champ_statut": "Statut",
+    "champ_responsable": "Responsable",
+    "champ_cagnote_active": "Activer les contributions libres",
+    "champ_objectif": "Objectif de la cagnote (€)",
+    "champ_date_limite": "Date limite",
+    "champ_ordre": "Ordre d'affichage",
+    "enregistrer": "Enregistrer",
+    "supprimer": "Supprimer",
+    "confirmer_suppression": "Supprimer ce projet et toutes ses images ?",
+    "images_titre": "Images de la kachel",
+    "ajouter_image": "Ajouter une image",
+    "aucun_responsable": "Aucun responsable"
+  }
+}

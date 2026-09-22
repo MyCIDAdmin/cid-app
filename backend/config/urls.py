@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/v1/stats/", include("apps.stats.urls")),
     path("api/v1/votes/", include("apps.vote.urls")),
     path("api/v1/communaute/", include("apps.communaute.urls")),
+    path("api/v1/projets/", include("apps.projets.urls")),
 ]
 
 if settings.DEBUG:

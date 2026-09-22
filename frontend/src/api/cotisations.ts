@@ -9,6 +9,7 @@ import type {
   ConfigurationRelance,
   ConfigurationRelancePayload,
   Cotisation,
+  CotisationContribuerProjetPayload,
   CotisationCreatePayload,
   CotisationsGestionFiltres,
   CotisationSaisieEspecesPayload,
@@ -32,6 +33,20 @@ export async function listMesCotisations(): Promise<CursorPage<Cotisation>> {
 }
 
 export async function creerCotisation(payload: CotisationCreatePayload): Promise<Cotisation> {
+  const { data } = await apiClient.post<Cotisation>("/cotisations/", payload);
+  return data;
+}
+
+/**
+ * Contribution libre à un projet (module Projets & Actions, demande utilisateur point 2) —
+ * réutilise le même endpoint générique que le reste du module (POST /cotisations/), voir
+ * CotisationContribuerProjetPayload. Toujours en_attente à la création (AHM-53, même règle que
+ * "don" en libre-service) : le paiement doit ensuite être confirmé (passerelle en ligne ou
+ * Directeur Financier), voir useInitierPaiementEnLigne/useMarquerCotisationPayee.
+ */
+export async function contribuerProjet(
+  payload: CotisationContribuerProjetPayload,
+): Promise<Cotisation> {
   const { data } = await apiClient.post<Cotisation>("/cotisations/", payload);
   return data;
 }

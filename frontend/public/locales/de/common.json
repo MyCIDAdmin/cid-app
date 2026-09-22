@@ -7,6 +7,8 @@
     "evenements": "Veranstaltungen",
     "covoiturage": "Fahrgemeinschaften",
     "admin_events": "Veranstaltungsverwaltung",
+    "projets": "Projekte & Aktionen",
+    "admin_projets": "Projekt- & Aktionsverwaltung",
     "inscriptions": "Registrierungen",
     "admin_adhesions": "Mitgliedschaftskampagnen",
     "admin_justificatifs": "Nachweise",
@@ -66,5 +68,22 @@
     "copier_lien": "Link kopieren",
     "lien_copie": "Link kopiert!",
     "texte_partage": "Entdecke „{{titre}}“ auf Clubistes in Deutschland."
+  },
+  "editeur": {
+    "barre_outils": "Formatierungsleiste",
+    "gras": "Fett",
+    "italique": "Kursiv",
+    "souligne": "Unterstrichen",
+    "titre_2": "Überschrift 2",
+    "titre_3": "Überschrift 3",
+    "liste_puces": "Aufzählungsliste",
+    "liste_numerotee": "Nummerierte Liste",
+    "aligner_gauche": "Linksbündig",
+    "centrer": "Zentriert",
+    "aligner_droite": "Rechtsbündig",
+    "lien": "Link einfügen/entfernen",
+    "lien_url": "Link-URL (leer lassen, um zu entfernen)",
+    "annuler_saisie": "Rückgängig",
+    "retablir_saisie": "Wiederholen"
   }
 }
