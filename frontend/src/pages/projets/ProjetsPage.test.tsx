@@ -157,4 +157,23 @@ describe("ProjetsPage", () => {
       expect(screen.getByText("rapport.aucune_mise_a_jour")).toBeInTheDocument();
     });
   });
+
+  it("ne propose jamais d'ajouter une mise à jour de rapport ici, même pour un·e gestionnaire du projet (retour utilisateur 2026-09-22 : réservé à /admin/projets)", async () => {
+    mockHooksParDefaut();
+    vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
+      data: page([projet({ est_gestionnaire: true })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
+
+    renderWithProviders(<ProjetsPage />);
+
+    fireEvent.click(screen.getByText("rapport.voir"));
+
+    await waitFor(() => {
+      expect(screen.getByText("rapport.aucune_mise_a_jour")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("rapport.ajouter")).not.toBeInTheDocument();
+    expect(screen.queryByText("rapport.publier")).not.toBeInTheDocument();
+  });
 });

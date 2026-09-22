@@ -7,7 +7,10 @@
  * rapport d'avancement (point 7, RapportModal). La gestion complète du Projet lui-même (créer/
  * modifier/statut/cagnote/échéance/responsable) est réservée à /admin/projets (Bureau Admin+,
  * tâche séparée) : ici, `onModifier` n'est volontairement PAS branché sur ProjetCard, cette page
- * cible l'usage membre.
+ * cible l'usage membre. Pour la même raison, `RapportModal` est utilisée en lecture seule ici
+ * (`autoriserAjout={false}`, voir sa docstring) : ajouter une mise à jour de rapport reste une
+ * action de gestion, réservée à /admin/projets, même pour un Bureau Admin+ qui consulterait cette
+ * page-ci.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -201,7 +204,14 @@ export default function ProjetsPage() {
       )}
 
       {projetRapport && (
-        <RapportModal projet={projetRapport} onClose={() => setProjetRapport(null)} />
+        <RapportModal
+          projet={projetRapport}
+          onClose={() => setProjetRapport(null)}
+          // Page membre : consultation du rapport uniquement, jamais d'ajout de mise à jour ici
+          // même pour un Bureau Admin+ (retour utilisateur 2026-09-22) — voir docstring
+          // RapportModal.
+          autoriserAjout={false}
+        />
       )}
     </div>
   );

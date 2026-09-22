@@ -392,7 +392,13 @@ export default function AdminProjetsPage() {
       </div>
 
       {projetRapport && (
-        <RapportModal projet={projetRapport} onClose={() => setProjetRapport(null)} />
+        <RapportModal
+          projet={projetRapport}
+          onClose={() => setProjetRapport(null)}
+          // Seul module où l'ajout de mise à jour est proposé (Projektverwaltung) — voir
+          // docstring RapportModal.
+          autoriserAjout
+        />
       )}
 
       <ConfirmDialog

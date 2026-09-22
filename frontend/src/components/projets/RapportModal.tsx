@@ -3,12 +3,21 @@
  * Bericht (Mit Bildern) zum Projekt / Aktion mit updates zu 'Was getan wurde' hinzuzufügen") —
  * ouverte depuis ProjetCard.onVoirRapport, jamais depuis le retournement de la kachel (voir sa
  * docstring). Liste les ProjetMiseAJour du projet (les plus récentes en premier, voir
- * MisesAJourCursorPagination côté backend) et, seulement pour le·la gestionnaire du projet
- * (`projet.est_gestionnaire`, calculé côté serveur — voir ProjetSerializer), propose un
+ * MisesAJourCursorPagination côté backend) et, seulement si `autoriserAjout` ET que le
+ * `projet.est_gestionnaire` renvoyé par le serveur sont tous les deux vrais, propose un
  * formulaire d'ajout : titre, texte riche (RichTextEditor, même éditeur que la description du
  * projet), photos. Les images sont uploadées séparément APRÈS la création de la mise à jour
  * elle-même (elle a besoin d'un id à référencer — voir ProjetMiseAJourImagePayload), une par une
  * via useAjouterImageMiseAJourProjet, jamais dans le même appel JSON.
+ *
+ * `autoriserAjout` (ajouté le 2026-09-22, retour utilisateur) : `projet.est_gestionnaire` est
+ * vrai pour tout Bureau Admin+ quel que soit l'écran (voir docstring AdminProjetsPage), donc ce
+ * champ seul ne suffit PAS à distinguer "je suis dans /admin/projets (Projektverwaltung)" de "je
+ * suis sur la page membre Projekte & Aktionen" — un Bureau Admin+ consultant ses PROPRES
+ * projets côté membre voyait donc, à tort, le formulaire d'ajout de mise à jour là où il ne doit
+ * servir qu'à la consultation. C'est à l'appelant (la page) de dire explicitement s'il est le
+ * contexte de gestion (AdminProjetsPage) ou de simple consultation (ProjetsPage) — jamais déduit
+ * du rôle de l'utilisateur.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,9 +39,13 @@ function formatDate(iso: string): string {
 interface RapportModalProps {
   projet: Projet;
   onClose: () => void;
+  /** true uniquement depuis /admin/projets (Projektverwaltung) — voir docstring plus haut.
+   * Volontairement sans valeur par défaut : chaque appelant doit trancher explicitement plutôt
+   * que de se reposer, à tort, sur `projet.est_gestionnaire` seul. */
+  autoriserAjout: boolean;
 }
 
-export default function RapportModal({ projet, onClose }: RapportModalProps) {
+export default function RapportModal({ projet, onClose, autoriserAjout }: RapportModalProps) {
   const { t } = useTranslation("projets");
   const misesAJourQuery = useMisesAJourProjet(projet.id);
   const creerMiseAJour = useCreerMiseAJourProjet();
@@ -122,7 +135,7 @@ export default function RapportModal({ projet, onClose }: RapportModalProps) {
           ))}
         </div>
 
-        {projet.est_gestionnaire && (
+        {autoriserAjout && projet.est_gestionnaire && (
           <div className="space-y-2 border-t border-text-tertiary/20 p-4">
             <h3 className="text-sm font-semibold text-text-primary">{t("rapport.ajouter")}</h3>
             <input
