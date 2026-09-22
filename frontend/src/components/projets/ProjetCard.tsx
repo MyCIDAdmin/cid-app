@@ -80,7 +80,16 @@ export default function ProjetCard({
         {/* Face avant */}
         <div className="absolute inset-0 flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-bg-primary shadow-sm [backface-visibility:hidden]">
           <ImageCarousel images={projet.images} titre={projet.titre} className="h-40 shrink-0" />
-          <div className="flex flex-1 flex-col gap-2 p-4">
+          {/* min-h-0 est indispensable ici : un conteneur flex enfant (flex-1) sans min-height
+              explicite garde par défaut une hauteur minimale automatique basée sur son contenu
+              (min-content), même si SES PROPRES enfants savent rétrécir (ex. la description
+              ci-dessous avec overflow-y-auto). Sans ce min-h-0, cette div grandit donc au-delà
+              des 30rem de la kachel et pousse quand même les boutons hors de la zone visible —
+              c'est la cause exacte du bug remonté à nouveau le 2026-09-22 après un premier
+              correctif (flex-1/overflow-y-auto sur la description seule) qui n'avait traité que
+              le niveau le plus interne, pas ce conteneur intermédiaire. Confirmé par un repro
+              Playwright isolé avant ce correctif. */}
+          <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
             <div className="flex shrink-0 items-start justify-between gap-2">
               <h3 className="text-base font-semibold leading-snug text-text-primary">
                 {projet.titre}
