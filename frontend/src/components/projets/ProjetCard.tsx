@@ -74,14 +74,14 @@ export default function ProjetCard({
         aria-label={(flipped ? t("carte.retourner_devant") : t("carte.retourner")) ?? ""}
         onClick={basculer}
         onKeyDown={surTouche}
-        className="relative h-[26rem] w-full cursor-pointer transition-transform duration-700 ease-in-out [transform-style:preserve-3d]"
+        className="relative h-[30rem] w-full cursor-pointer transition-transform duration-700 ease-in-out [transform-style:preserve-3d]"
         style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
       >
         {/* Face avant */}
         <div className="absolute inset-0 flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-bg-primary shadow-sm [backface-visibility:hidden]">
           <ImageCarousel images={projet.images} titre={projet.titre} className="h-40 shrink-0" />
           <div className="flex flex-1 flex-col gap-2 p-4">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex shrink-0 items-start justify-between gap-2">
               <h3 className="text-base font-semibold leading-snug text-text-primary">
                 {projet.titre}
               </h3>
@@ -102,7 +102,7 @@ export default function ProjetCard({
             <StatutProjetBadge statut={projet.statut} />
 
             {projet.cagnote_active && (
-              <div className="mt-1 space-y-1">
+              <div className="mt-1 shrink-0 space-y-1">
                 {progression !== null ? (
                   <>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-bg-tertiary">
@@ -130,7 +130,7 @@ export default function ProjetCard({
 
             {projet.date_limite && (
               <p
-                className={`text-xs ${
+                className={`shrink-0 text-xs ${
                   projet.echeance_depassee ? "text-status-dangerText" : "text-text-tertiary"
                 }`}
               >
@@ -140,14 +140,21 @@ export default function ProjetCard({
               </p>
             )}
 
+            {/* flex-1 + overflow-y-auto (plutôt qu'un ancien `mt-auto` sans limite de hauteur) :
+                une description longue défile désormais À L'INTÉRIEUR de cette zone plutôt que de
+                pousser la rangée de boutons ci-dessous hors des limites de la kachel — bug
+                remonté le 2026-09-22 ("Der Button zum freien Beitrag ist unsichtbar"), la
+                hauteur fixe de la kachel (overflow-hidden sur la face avant) rognait alors
+                silencieusement le bouton "Contribuer" dès que le texte riche dépassait l'espace
+                restant. */}
             <div
-              className="mt-auto text-sm text-text-primary"
+              className="flex-1 overflow-y-auto text-sm text-text-primary"
               // Texte riche produit par l'éditeur type Word (demande utilisateur point 1.2) —
               // affiché tel quel, jamais retapé côté client (voir RichTextEditor.tsx).
               dangerouslySetInnerHTML={{ __html: projet.description_html }}
             />
 
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2 flex shrink-0 flex-wrap gap-2">
               {projet.cagnote_active && !projet.echeance_depassee && onContribuer && (
                 <button
                   type="button"
