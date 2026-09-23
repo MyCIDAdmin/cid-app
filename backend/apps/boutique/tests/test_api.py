@@ -1236,3 +1236,75 @@ def test_admin_peut_vendre_especes(api_client):
     )
 
     assert resp.status_code == 201, resp.data
+
+
+# ---------------------------------------------------------------------------
+# Phase D (ajoutée le 2026-09-23) — page de gestion "Shop-Verwaltung" (page_boutique) désormais
+# pilotée par apps.rbac (real enforcement, y compris pour les rôles système eux-mêmes — voir
+# apps.rbac.services.has_admin_page_access). Couvre CatalogueBoutiquePermission (écriture
+# catalogue) ET CommandePermission.GESTION_ACTIONS (changer_statut) — même page. NE couvre PAS
+# confirmer_paiement/expedier (PAIEMENT_EXPEDITION_MIN_LEVEL, resté hartcodé Directeur
+# Financier+, hors scope Phase D).
+# ---------------------------------------------------------------------------
+
+
+def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+def test_phase_d_bureau_admin_perd_lacces_au_catalogue_si_matrice_le_dit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("bureau_admin", "page_boutique", NiveauAcces.AUCUN)
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "phased-boutique-restrict@example.de")
+
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL), {"nom": "Maillot", "categorie": "vetements", "prix": "30.00"}
+    )
+    assert resp.status_code == 403
+
+
+def test_phase_d_bureau_admin_perd_lacces_a_changer_statut_si_matrice_le_dit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("bureau_admin", "page_boutique", NiveauAcces.AUCUN)
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "phased-boutique-statut-restrict@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "phased-boutique-m1@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, admin).post(
+        _changer_statut_url(commande), {"statut": StatutCommande.EN_PREPARATION}
+    )
+    assert resp.status_code == 403
+
+
+def test_phase_d_role_personnalise_peut_gerer_le_catalogue_via_la_matrice(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-boutique-grant@example.de")
+    role_perso = RoleDefinitionFactory(slug="boutique-manager")
+    RoleModulePermissionFactory(role=role_perso, module="page_boutique", niveau_acces=NiveauAcces.LECTURE_ECRITURE)
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL), {"nom": "Maillot", "categorie": "vetements", "prix": "30.00"}
+    )
+    assert resp.status_code == 201
+
+
+def test_phase_d_super_admin_gere_toujours_le_catalogue_meme_si_matrice_dit_aucun(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("super_admin", "page_boutique", NiveauAcces.AUCUN)
+    user, _ = _user_avec_membre(Role.SUPER_ADMIN, "phased-boutique-super@example.de")
+
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL), {"nom": "Maillot", "categorie": "vetements", "prix": "30.00"}
+    )
+    assert resp.status_code == 201

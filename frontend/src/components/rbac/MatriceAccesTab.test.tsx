@@ -43,8 +43,31 @@ const roleVertrieb = {
 
 const matrice: MatriceReponse = {
   roles: [roleMembre, roleVertrieb],
-  modules: [{ slug: "membres", label: "Mitglieder" }],
+  modules: [{ slug: "membres", label: "Mitglieder", categorie: "donnees" }],
   cells: [{ role_id: "role-vertrieb", module: "membres", niveau_acces: "lecture" }],
+};
+
+const roleSuperAdmin = {
+  id: "role-super-admin",
+  slug: "super_admin",
+  nom: "App-Administrator",
+  description: "",
+  is_system: true,
+  ordre: 4,
+  actif: true,
+  created_at: "",
+  updated_at: "",
+};
+
+/** Phase D (2026-09-23) : matrice incluant une colonne "page_admin" pour vérifier le
+ * verrouillage de la cellule super_admin × page_admin (voir MatriceAccesTab.tsx). */
+const matricePhaseD: MatriceReponse = {
+  roles: [roleSuperAdmin, roleVertrieb],
+  modules: [
+    { slug: "membres", label: "Mitglieder", categorie: "donnees" },
+    { slug: "page_quiz", label: "Quiz-Verwaltung", categorie: "page_admin" },
+  ],
+  cells: [{ role_id: "role-vertrieb", module: "page_quiz", niveau_acces: "aucun" }],
 };
 
 describe("MatriceAccesTab", () => {
@@ -141,6 +164,40 @@ describe("MatriceAccesTab", () => {
       ),
     );
     expect(screen.getByText("acces.nouveau_role.succes")).toBeInTheDocument();
+  });
+
+  describe("verrouillage Administrateur App (Phase D)", () => {
+    beforeEach(() => {
+      vi.mocked(useRbacHooks.useRbacMatrice).mockReturnValue({
+        data: matricePhaseD,
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useRbacHooks.useRbacMatrice>);
+    });
+
+    it("désactive et force à lecture_ecriture la cellule super_admin d'une page de gestion", () => {
+      renderWithProviders(<MatriceAccesTab />);
+
+      const cellule = screen.getByLabelText("App-Administrator — Quiz-Verwaltung") as HTMLSelectElement;
+      expect(cellule).toBeDisabled();
+      expect(cellule.value).toBe("lecture_ecriture");
+      expect(cellule.title).toBe("acces.cellule.verrouillee_super_admin");
+    });
+
+    it("laisse modifiable la cellule super_admin d'un module de données classique", () => {
+      renderWithProviders(<MatriceAccesTab />);
+
+      const cellule = screen.getByLabelText("App-Administrator — Mitglieder") as HTMLSelectElement;
+      expect(cellule).not.toBeDisabled();
+    });
+
+    it("laisse modifiable la cellule d'un rôle personnalisé sur une page de gestion", () => {
+      renderWithProviders(<MatriceAccesTab />);
+
+      const cellule = screen.getByLabelText("Vertrieb — Quiz-Verwaltung") as HTMLSelectElement;
+      expect(cellule).not.toBeDisabled();
+      expect(cellule.value).toBe("aucun");
+    });
   });
 
   it("affiche une erreur si la création échoue", async () => {

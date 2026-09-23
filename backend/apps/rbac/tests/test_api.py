@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import AuditLogEntry, Role
 
 from apps.rbac.models import ModuleVisibiliteMembre, NiveauAcces, RoleDefinition, RoleModulePermission, UserRoleAssignment
-from apps.rbac.registry import MODULES
+from apps.rbac.registry import ALL_MODULES, MODULES, PAGES_ADMIN
 from apps.rbac.tests.factories import (
     RoleDefinitionFactory,
     RoleModulePermissionFactory,
@@ -167,17 +167,32 @@ def test_modules_list_reflete_le_registre(api_client):
 def test_matrix_get_auto_complete_les_cellules_manquantes(api_client):
     """Un rôle personnalisé fraîchement créé n'a AUCUNE RoleModulePermission en base — la vue
     doit tout de même renvoyer une cellule "aucun" pour chaque module (auto-extension, exigence
-    "la table doit s'étendre automatiquement")."""
+    "la table doit s'étendre automatiquement"). Depuis la Phase D (2026-09-23), la matrice
+    inclut aussi les 13 pages de gestion (registry.PAGES_ADMIN) — mêmes colonnes, une seule
+    matrice, voir ALL_MODULES."""
     admin = _super_admin()
     role = RoleDefinitionFactory(slug="sans-matrice")
 
     resp = _auth(api_client, admin).get(reverse(MATRIX_URL))
     assert resp.status_code == 200
-    assert [m["slug"] for m in resp.data["modules"]] == MODULES
+    assert [m["slug"] for m in resp.data["modules"]] == ALL_MODULES
 
     cellules_du_role = [c for c in resp.data["cells"] if str(c["role_id"]) == str(role.id)]
-    assert len(cellules_du_role) == len(MODULES)
+    assert len(cellules_du_role) == len(ALL_MODULES)
     assert all(c["niveau_acces"] == NiveauAcces.AUCUN for c in cellules_du_role)
+
+
+def test_matrix_get_expose_la_categorie_par_module(api_client):
+    """Phase D (2026-09-23) : le frontend a besoin de savoir quelles colonnes verrouiller pour
+    l'Administrateur App sans recopier PAGES_ADMIN côté TypeScript."""
+    admin = _super_admin()
+    resp = _auth(api_client, admin).get(reverse(MATRIX_URL))
+    assert resp.status_code == 200
+    categories = {m["slug"]: m["categorie"] for m in resp.data["modules"]}
+    for slug in MODULES:
+        assert categories[slug] == "donnees"
+    for slug in PAGES_ADMIN:
+        assert categories[slug] == "page_admin"
 
 
 def test_matrix_set_ecrit_une_cellule_et_journalise(api_client):
@@ -352,3 +367,76 @@ def test_user_roles_post_role_ids_inexistant_refuse(api_client):
         _user_roles_url(cible), {"role_ids": ["00000000-0000-0000-0000-000000000000"]}
     )
     assert resp.status_code == 400
+
+
+# --- Phase D (ajoutée le 2026-09-23) — pages de gestion --------------------------------------
+
+MES_ACCES_URL = "rbac:mes-acces"
+
+
+def test_mes_acces_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(MES_ACCES_URL))
+    assert resp.status_code == 401
+
+
+def test_mes_acces_super_admin_tout_vrai(api_client):
+    admin = _super_admin()
+    resp = _auth(api_client, admin).get(reverse(MES_ACCES_URL))
+    assert resp.status_code == 200
+    assert set(resp.data.keys()) == set(PAGES_ADMIN)
+    assert all(resp.data.values())
+
+
+def test_mes_acces_reflete_la_matrice_seedee_pour_un_role_systeme(api_client):
+    """Intégration avec la migration de données 0003 : Bureau Admin a lecture_ecriture sur
+    page_quiz (seedé, miroir de MODERATION_MIN_LEVEL) mais aucun accès sur page_articles_cotisation
+    (seedé Super Admin uniquement, miroir de GESTION_ARTICLES_MIN_LEVEL) — l'endpoint doit
+    refléter exactement ce que la migration a écrit, sans changement de comportement au rollout."""
+    bureau_admin = UserFactory(role=Role.BUREAU_ADMIN)
+    resp = _auth(api_client, bureau_admin).get(reverse(MES_ACCES_URL))
+    assert resp.status_code == 200
+    assert resp.data["page_quiz"] is True
+    assert resp.data["page_articles_cotisation"] is False
+
+
+def test_mes_acces_membre_normal_naccede_a_aucune_page_par_defaut(api_client):
+    membre = UserFactory(role=Role.MEMBRE)
+    resp = _auth(api_client, membre).get(reverse(MES_ACCES_URL))
+    assert resp.status_code == 200
+    assert all(v is False for v in resp.data.values())
+
+
+def test_matrix_set_refuse_de_modifier_une_cellule_super_admin_sur_une_page_admin(api_client):
+    """Garde de la Phase D : l'Administrateur App conserve toujours un accès total et hartcodé
+    aux 13 pages de gestion — refusé en 400 plutôt que silencieusement ignoré."""
+    admin = _super_admin()
+    role_super_admin = RoleDefinition.objects.get(slug="super_admin")
+
+    resp = _auth(api_client, admin).post(
+        reverse(MATRIX_SET_URL),
+        {"role_id": str(role_super_admin.id), "module": "page_quiz", "niveau_acces": NiveauAcces.AUCUN},
+    )
+    assert resp.status_code == 400
+    assert RoleModulePermission.objects.get(role=role_super_admin, module="page_quiz").niveau_acces == (
+        NiveauAcces.LECTURE_ECRITURE
+    )
+
+
+def test_matrix_set_autorise_de_modifier_une_cellule_bureau_admin_sur_une_page_admin(api_client):
+    """Contrepartie du test précédent : un rôle système AUTRE que super_admin reste bien
+    modifiable sur une page de gestion — c'est tout le sens de la Phase D."""
+    admin = _super_admin()
+    role_bureau_admin = RoleDefinition.objects.get(slug="bureau_admin")
+
+    resp = _auth(api_client, admin).post(
+        reverse(MATRIX_SET_URL),
+        {
+            "role_id": str(role_bureau_admin.id),
+            "module": "page_quiz",
+            "niveau_acces": NiveauAcces.AUCUN,
+        },
+    )
+    assert resp.status_code == 200
+    assert RoleModulePermission.objects.get(role=role_bureau_admin, module="page_quiz").niveau_acces == (
+        NiveauAcces.AUCUN
+    )

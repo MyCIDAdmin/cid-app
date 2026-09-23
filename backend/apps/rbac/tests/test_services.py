@@ -7,7 +7,12 @@ from django.contrib.auth.models import AnonymousUser
 from apps.accounts.models import Role
 
 from apps.rbac.models import NiveauAcces
-from apps.rbac.services import get_user_role_slugs, is_elevated_for_module, user_has_module_access
+from apps.rbac.services import (
+    get_user_role_slugs,
+    has_admin_page_access,
+    is_elevated_for_module,
+    user_has_module_access,
+)
 from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserFactory, UserRoleAssignmentFactory
 
 pytestmark = pytest.mark.django_db
@@ -150,3 +155,104 @@ def test_is_elevated_for_module_vrai_pour_un_role_systeme_avec_un_role_additionn
     UserRoleAssignmentFactory(user=user, role=role_perso)
 
     assert is_elevated_for_module(user, "boutique") is True
+
+
+# --- has_admin_page_access (Phase D, ajoutée le 2026-09-23) ----------------------------------
+#
+# Contrairement à is_elevated_for_module ci-dessus, cette fonction NE doit PAS exclure le rôle
+# système actuel de l'utilisateur — c'est justement le point de la Phase D : la matrice doit
+# faire autorité pour les rôles système eux-mêmes sur les 13 pages de gestion.
+
+
+def test_has_admin_page_access_anonyme_refuse():
+    assert has_admin_page_access(AnonymousUser(), "page_quiz") is False
+
+
+def test_has_admin_page_access_super_admin_toujours_vrai_meme_sans_ligne_matrice():
+    """Accès hartcodé — vrai même si la migration de seed n'a (par hypothèse) rien écrit pour ce
+    slug, contrairement à toutes les autres fonctions de ce module qui appliquent le défaut
+    "aucun" en l'absence de ligne."""
+    admin = UserFactory(role=Role.SUPER_ADMIN)
+    assert has_admin_page_access(admin, "page_quiz") is True
+    assert has_admin_page_access(admin, "un-slug-totalement-inconnu") is True
+
+
+def _set_matrice_cellule(role, module_slug, niveau_acces):
+    """Les 5 rôles système + les 13 pages admin ont déjà une ligne seedée par la migration 0003
+    — on met donc toujours à jour via update_or_create, jamais via la factory (qui créerait un
+    doublon de slug sur la contrainte unique_together)."""
+    from apps.rbac.models import RoleModulePermission
+
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+def test_has_admin_page_access_super_admin_toujours_vrai_meme_si_matrice_dit_aucun():
+    """Défense en profondeur : même si une ligne "aucun" existe explicitement pour super_admin
+    (ne devrait normalement jamais arriver, voir la garde côté RoleModuleMatrixSetView), le
+    bypass hartcodé reste prioritaire. Les 5 rôles système existent déjà (seed 0002) — on les
+    récupère via .get(), jamais via la factory (qui créerait un doublon de slug)."""
+    from apps.rbac.models import RoleDefinition
+
+    admin = UserFactory(role=Role.SUPER_ADMIN)
+    role_super_admin = RoleDefinition.objects.get(slug=Role.SUPER_ADMIN, is_system=True)
+    _set_matrice_cellule(role_super_admin, "page_quiz", NiveauAcces.AUCUN)
+    assert has_admin_page_access(admin, "page_quiz") is True
+
+
+def test_has_admin_page_access_role_systeme_suit_la_matrice_directement():
+    """Le coeur de la Phase D : contrairement à is_elevated_for_module, le rôle système ACTUEL
+    de l'utilisateur (pas seulement un rôle additionnel) détermine directement le résultat. Le
+    seed de migration 0003 donne déjà lecture_ecriture à Bureau Admin sur page_quiz (miroir de
+    MODERATION_MIN_LEVEL) — ce test part donc d'un "aucun" explicite pour vérifier les deux sens
+    plutôt que de supposer une absence de ligne."""
+    from apps.rbac.models import RoleDefinition
+
+    role_bureau_admin = RoleDefinition.objects.get(slug=Role.BUREAU_ADMIN, is_system=True)
+    user = UserFactory(role=Role.BUREAU_ADMIN)
+
+    _set_matrice_cellule(role_bureau_admin, "page_quiz", NiveauAcces.AUCUN)
+    assert has_admin_page_access(user, "page_quiz") is False
+
+    _set_matrice_cellule(role_bureau_admin, "page_quiz", NiveauAcces.LECTURE_ECRITURE)
+    assert has_admin_page_access(user, "page_quiz") is True
+
+
+def test_has_admin_page_access_restriction_reelle_dun_role_systeme():
+    """Nouveau par rapport à Phase B : une cellule peut désormais RETIRER un accès à un rôle
+    système, pas seulement en ajouter un — ici Bureau Admin, qui a lecture_ecriture par défaut
+    sur page_quiz depuis le seed de migration 0003 (miroir de MODERATION_MIN_LEVEL)."""
+    from apps.rbac.models import RoleDefinition
+
+    role_bureau_admin = RoleDefinition.objects.get(slug=Role.BUREAU_ADMIN, is_system=True)
+    user = UserFactory(role=Role.BUREAU_ADMIN)
+    assert has_admin_page_access(user, "page_quiz") is True  # valeur seedée par défaut
+
+    _set_matrice_cellule(role_bureau_admin, "page_quiz", NiveauAcces.AUCUN)
+    assert has_admin_page_access(user, "page_quiz") is False
+
+
+def test_has_admin_page_access_lecture_seule_suffit_pour_une_page_admin():
+    """Pour les pages de gestion, "lecture" et "lecture_ecriture" sont équivalents — seule la
+    distinction "aucun" vs "accès" compte (voir docstring de la fonction)."""
+    from apps.rbac.models import RoleDefinition
+
+    role_bureau_admin = RoleDefinition.objects.get(slug=Role.BUREAU_ADMIN, is_system=True)
+    user = UserFactory(role=Role.BUREAU_ADMIN)
+    _set_matrice_cellule(role_bureau_admin, "page_quiz", NiveauAcces.LECTURE)
+    assert has_admin_page_access(user, "page_quiz") is True
+
+
+def test_has_admin_page_access_role_additionnel_personnalise_peut_octroyer_lacces():
+    """Un rôle personnalisé additionnel avec accès sur une page de gestion suffit, même si le
+    rôle système actuel de l'utilisateur n'a lui-même aucun accès (union de tous les rôles,
+    comme user_has_module_access)."""
+    user = UserFactory(role=Role.MEMBRE)
+    role_perso = RoleDefinitionFactory(slug="quiz-master")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_quiz", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+
+    assert has_admin_page_access(user, "page_quiz") is True

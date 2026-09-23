@@ -13,7 +13,20 @@
     "communaute": "Communauté",
     "stats": "Statistiques",
     "notifications": "Notifications",
-    "projets": "Projets"
+    "projets": "Projets",
+    "page_quiz": "Gestion des quiz",
+    "page_boutique": "Gestion de la boutique",
+    "page_events": "Gestion des événements",
+    "page_stats": "Statistiques & KPI",
+    "page_inscriptions": "Inscriptions",
+    "page_justificatifs": "Justificatifs",
+    "page_campagnes_adhesion": "Campagnes d'adhésion",
+    "page_cotisations_attente": "Paiements en attente",
+    "page_cotisations_relances": "Échéances de relance",
+    "page_articles_cotisation": "Articles de cotisation",
+    "page_notifications_params": "Paramètres de notification",
+    "page_projets": "Gestion des projets & actions",
+    "page_albums": "Gestion des albums photo"
   },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",
@@ -40,6 +53,9 @@
     },
     "role_systeme": "Système",
     "role_personnalise": "Personnalisé",
+    "cellule": {
+      "verrouillee_super_admin": "L'Administrateur App conserve toujours un accès complet à cette page, quel que soit le contenu de la matrice."
+    },
     "nouveau_role": {
       "titre": "Créer un nouveau rôle",
       "nom_label": "Nom",

@@ -14,6 +14,13 @@
  * la valeur backend comme `defaultValue` (i18next), jamais le champ brut directement. Un rôle
  * personnalisé (is_system=false) n'a pas de clé de traduction — son nom, choisi librement par
  * l'admin, reste affiché tel quel dans toutes les langues, par nature.
+ *
+ * Verrouillage Administrateur App (Phase D, ajouté le 2026-09-23) : pour les colonnes
+ * `categorie === "page_admin"` (les 13 pages de gestion), la cellule "super_admin" est un
+ * `<select>` désactivé forcé sur "lecture_ecriture" avec tooltip — reflète le bypass hardcodé
+ * côté backend (rbac_services.has_admin_page_access ignore la matrice pour super_admin, voir
+ * POST /rbac/matrix/set/ qui refuse aussi ce couple avec 400). Même motif que le bouton
+ * Löschen désactivé pour is_system ci-dessous.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -135,24 +142,29 @@ export default function MatriceAccesTab() {
                     </span>
                   </div>
                 </td>
-                {matrice.modules.map((module) => (
-                  <td key={module.slug} className="px-3 py-2">
-                    <select
-                      aria-label={`${libelleRole(role)} — ${libelleModule(module)}`}
-                      value={celluleValeur(role.id, module.slug)}
-                      onChange={(e) =>
-                        changerCellule(role.id, module.slug, e.target.value as NiveauAcces)
-                      }
-                      className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
-                    >
-                      {NIVEAUX.map((niveau) => (
-                        <option key={niveau} value={niveau}>
-                          {t(`acces.niveau.${niveau}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                ))}
+                {matrice.modules.map((module) => {
+                  const verrouillee = role.slug === "super_admin" && module.categorie === "page_admin";
+                  return (
+                    <td key={module.slug} className="px-3 py-2">
+                      <select
+                        aria-label={`${libelleRole(role)} — ${libelleModule(module)}`}
+                        value={verrouillee ? "lecture_ecriture" : celluleValeur(role.id, module.slug)}
+                        disabled={verrouillee}
+                        title={verrouillee ? t("acces.cellule.verrouillee_super_admin") ?? "" : ""}
+                        onChange={(e) =>
+                          changerCellule(role.id, module.slug, e.target.value as NiveauAcces)
+                        }
+                        className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
+                      >
+                        {NIVEAUX.map((niveau) => (
+                          <option key={niveau} value={niveau}>
+                            {t(`acces.niveau.${niveau}`)}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  );
+                })}
                 <td className="px-3 py-2 text-right">
                   {confirmationSuppression === role.id ? (
                     <div className="flex items-center justify-end gap-1">

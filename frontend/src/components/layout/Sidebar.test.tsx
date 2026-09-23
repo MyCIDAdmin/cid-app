@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useNotificationsHooks from "../../hooks/useNotifications";
+import * as useRbacHooks from "../../hooks/useRbac";
 import { queryClient } from "../../queryClient";
 import { useAuthStore } from "../../store/authStore";
 import { DEFAULT_COLLAPSED_GROUPS, useUiStore } from "../../store/uiStore";
@@ -19,6 +20,22 @@ vi.mock("../../hooks/useNotifications", async () => {
     useMarquerLuesPrefixe: vi.fn(),
   };
 });
+
+// Phase D (ajoutée le 2026-09-23) : useMesAcces mocké partout (par défaut "aucune page de
+// gestion accessible, chargement terminé") pour ne jamais dépendre d'un vrai appel réseau dans
+// ces tests — describe dédié plus bas pour la logique de visibilité elle-même.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, useMesAcces: vi.fn() };
+});
+
+function mockMesAcces(overrides: Partial<ReturnType<typeof useRbacHooks.useMesAcces>> = {}) {
+  vi.mocked(useRbacHooks.useMesAcces).mockReturnValue({
+    data: {},
+    isLoading: false,
+    ...overrides,
+  } as unknown as ReturnType<typeof useRbacHooks.useMesAcces>);
+}
 
 function notification(overrides: Partial<Notification> = {}): Notification {
   return {
@@ -64,6 +81,7 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
     vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
       mutate: vi.fn(),
     } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
+    mockMesAcces();
   });
 
   it("affiche un bouton de déconnexion pour un utilisateur connecté", () => {
@@ -218,6 +236,7 @@ describe("Sidebar — point d'activité par module (demande utilisateur du 2026-
     vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
       mutate: marquerLuesPrefixeMock,
     } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
+    mockMesAcces();
   });
 
   it("affiche un point sur le module concerné par une notification non lue", () => {
@@ -252,8 +271,9 @@ describe("Sidebar — point d'activité par module (demande utilisateur du 2026-
     renderWithProviders(<Sidebar />);
 
     // "/cotisations" ne commence pas par "/cotisations/relances/" donc ne s'allume pas —
-    // seul le module "/cotisations/relances" lui-même (Échéances des relances, visible
-    // uniquement Directeur Financier+) le ferait, absent ici (utilisateur = simple membre).
+    // seul le module "/cotisations/relances" lui-même (Échéances des relances, piloté par la
+    // matrice depuis Phase D — page_cotisations_relances) le ferait, absent ici (mockMesAcces()
+    // par défaut = aucun accès, utilisateur = simple membre de toute façon).
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -277,5 +297,68 @@ describe("Sidebar — point d'activité par module (demande utilisateur du 2026-
     fireEvent.click(screen.getByText("nav.dashboard"));
 
     expect(marquerLuesPrefixeMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("Sidebar — visibilité pilotée par la matrice (Phase D, ajoutée le 2026-09-23)", () => {
+  const gestionnaire = { ...utilisateur, id: "u3", email: "gestion@example.com" };
+
+  beforeEach(() => {
+    useAuthStore.setState({
+      accessToken: "access",
+      refreshToken: "refresh",
+      user: gestionnaire,
+      isAuthenticated: true,
+    });
+    // Groupe "Administration" déjà déplié — ces tests portent sur la présence/absence des items
+    // eux-mêmes, pas sur le mécanisme d'accordéon (déjà couvert plus haut).
+    useUiStore.setState({
+      sidebarCollapsed: false,
+      collapsedGroups: { ...DEFAULT_COLLAPSED_GROUPS, administration: false },
+    });
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+    vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
+  });
+
+  it("affiche un item pageSlug quand la matrice l'autorise pour ce rôle, masque les autres", () => {
+    mockMesAcces({ data: { page_quiz: true, page_boutique: false } });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByText("nav.admin_quiz")).toBeInTheDocument();
+    expect(screen.queryByText("nav.admin_boutique")).not.toBeInTheDocument();
+  });
+
+  it("masque un item pageSlug tant qu'aucune entrée de matrice ne l'autorise (défaut fail-closed)", () => {
+    mockMesAcces({ data: {} });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.queryByText("nav.admin_quiz")).not.toBeInTheDocument();
+  });
+
+  it("masque les items pageSlug pendant le chargement de la matrice, plutôt que de les afficher puis les retirer", () => {
+    mockMesAcces({ data: undefined, isLoading: true });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.queryByText("nav.admin_quiz")).not.toBeInTheDocument();
+  });
+
+  it("l'Administrateur App voit toujours les items pageSlug, même si la matrice charge encore ou ne les mentionne pas", () => {
+    useAuthStore.setState({ user: administrateur });
+    mockMesAcces({ data: undefined, isLoading: true });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByText("nav.admin_quiz")).toBeInTheDocument();
+    expect(screen.getByText("nav.admin_boutique")).toBeInTheDocument();
+  });
+
+  it("'/admin/roles' reste hors matrice : masqué pour un rôle non-Admin App quel que soit mesAcces", () => {
+    mockMesAcces({ data: { page_quiz: true } });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.queryByText("nav.gestion_roles")).not.toBeInTheDocument();
   });
 });

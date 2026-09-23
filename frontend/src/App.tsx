@@ -114,21 +114,24 @@ export default function App() {
         {/* Confirmation manuelle des paiements en attente (virement SEPA en cours de
             réconciliation, etc., AHM-53) — Directeur Financier/Admin uniquement, même niveau
             que SAISIE_POUR_AUTRUI_MIN_LEVEL / marquer_payee côté API. */}
+        {/* Phase D (matrice de gestion, ajoutée le 2026-09-23) : accès désormais piloté par la
+            matrice apps.rbac (page_cotisations_attente) plutôt qu'un seuil ROLE_LEVELS statique
+            — même page, seuil de départ inchangé (Directeur Financier/Admin), mais un admin peut
+            désormais l'ouvrir/fermer par rôle système sans déploiement. */}
         <Route
           path="/cotisations/en-attente"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.dir_financier}>
+            <RequireRole pageSlug="page_cotisations_attente">
               <CotisationsEnAttentePage />
             </RequireRole>
           }
         />
         {/* Échéances des relances par année (AHM-54, suite retour utilisateur sur AHM-18) —
-            Directeur Financier/Admin uniquement, même niveau que ConfigurationRelancePermission
-            côté API. */}
+            Phase D : piloté par la matrice (page_cotisations_relances), voir note ci-dessus. */}
         <Route
           path="/cotisations/relances"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.dir_financier}>
+            <RequireRole pageSlug="page_cotisations_relances">
               <ConfigurationRelancePage />
             </RequireRole>
           }
@@ -138,30 +141,32 @@ export default function App() {
             souscription, historique) ; gestion des campagnes réservée
             Bureau Admin+ (même niveau que CataloguePermission côté API). */}
         <Route path="/mon-adhesion" element={<MonAdhesionPage />} />
+        {/* Phase D : piloté par la matrice (page_campagnes_adhesion), seuil de départ inchangé
+            (Bureau Admin+) — voir note Phase D plus haut. */}
         <Route
           path="/admin/campagnes-adhesion"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+            <RequireRole pageSlug="page_campagnes_adhesion">
               <AdminCampagnesPage />
             </RequireRole>
           }
         />
-        {/* File de validation des justificatifs (FDD §4.5, RICEFW R-ADH-05, AHM-20) — RH+,
-            même niveau que JustificatifPermission.RH_ONLY_ACTIONS côté API. */}
+        {/* File de validation des justificatifs (FDD §4.5, RICEFW R-ADH-05, AHM-20) — Phase D :
+            piloté par la matrice (page_justificatifs), seuil de départ inchangé (RH+). */}
         <Route
           path="/admin/justificatifs"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+            <RequireRole pageSlug="page_justificatifs">
               <AdminJustificatifsPage />
             </RequireRole>
           }
         />
-        {/* Validation des inscriptions libre-service (FDD §3.1, AHM-48) —
-            RH+ uniquement, même gate que PendingRegistrationsView côté API. */}
+        {/* Validation des inscriptions libre-service (FDD §3.1, AHM-48) — Phase D : piloté par
+            la matrice (page_inscriptions), seuil de départ inchangé (RH+). */}
         <Route
           path="/inscriptions"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+            <RequireRole pageSlug="page_inscriptions">
               <InscriptionsEnAttentePage />
             </RequireRole>
           }
@@ -176,23 +181,24 @@ export default function App() {
             </RequireRole>
           }
         />
-        {/* Catalogue d'articles de cotisation (retour utilisateur du 2026-09-17) — réservé à
-            l'Administrateur App, même gate que ArticleCataloguePermission côté API. */}
+        {/* Catalogue d'articles de cotisation (retour utilisateur du 2026-09-17) — Phase D :
+            piloté par la matrice (page_articles_cotisation), seuil de départ inchangé
+            (Administrateur App). */}
         <Route
           path="/admin/articles-cotisation"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
+            <RequireRole pageSlug="page_articles_cotisation">
               <ArticlesCatalogueCotisationPage />
             </RequireRole>
           }
         />
         {/* Activation/désactivation des emails de notification par module (ajouté le
-            2026-09-19) — Admin App uniquement, même gate que ParametresNotificationPermission
-            côté API. */}
+            2026-09-19) — Phase D : piloté par la matrice (page_notifications_params), seuil de
+            départ inchangé (Administrateur App). */}
         <Route
           path="/admin/notifications"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
+            <RequireRole pageSlug="page_notifications_params">
               <ParametresNotificationPage />
             </RequireRole>
           }
@@ -220,20 +226,22 @@ export default function App() {
             cancel_url (PayPal), voir apps.cotisations.gateways (partagé avec apps.boutique) —
             ouvert à tout authentifié, même scope IDOR que /boutique/commandes/{id}/. */}
         <Route path="/boutique/commande/retour" element={<CommandeRetourPage />} />
+        {/* Phase D : piloté par la matrice (page_boutique), seuil de départ inchangé (Bureau
+            Admin+) — voir note Phase D plus haut. */}
         <Route
           path="/admin/boutique"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+            <RequireRole pageSlug="page_boutique">
               <AdminBoutiquePage />
             </RequireRole>
           }
         />
-        {/* Statistiques & KPIs (mockup #pg-stats, FDD §5.3) — Admin/DG/Bureau Admin
-            uniquement, même niveau que StatsPermission (STATS_MIN_LEVEL) côté API. */}
+        {/* Statistiques & KPIs (mockup #pg-stats, FDD §5.3) — Phase D : piloté par la matrice
+            (page_stats), seuil de départ inchangé (Bureau Admin+). */}
         <Route
           path="/stats"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+            <RequireRole pageSlug="page_stats">
               <StatsPage />
             </RequireRole>
           }
@@ -287,10 +295,12 @@ export default function App() {
             qu'AlbumPermission/PhotoPermission côté API). */}
         <Route path="/albums" element={<AlbumsPage />} />
         <Route path="/albums/:id" element={<AlbumDetailPage />} />
+        {/* Phase D : piloté par la matrice (page_albums), seuil de départ inchangé (Bureau
+            Admin+) — voir note Phase D plus haut. */}
         <Route
           path="/admin/albums"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+            <RequireRole pageSlug="page_albums">
               <AdminAlbumsPage />
             </RequireRole>
           }
@@ -301,10 +311,12 @@ export default function App() {
             même niveau que GestionQuizPermission côté API. Corrige le bug remonté en test
             manuel Phase 4 ("beim Quiz ist es nicht möglich Quiz anzulegen") : jusqu'ici, cette
             gestion n'avait aucune UI (voir QuizPage — "gérée hors application pour l'instant"). */}
+        {/* Phase D : piloté par la matrice (page_quiz), seuil de départ inchangé (Bureau
+            Admin+) — voir note Phase D plus haut. */}
         <Route
           path="/admin/quiz"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+            <RequireRole pageSlug="page_quiz">
               <AdminQuizPage />
             </RequireRole>
           }
@@ -319,10 +331,12 @@ export default function App() {
             EvenementPermission côté API. */}
         <Route path="/evenements" element={<EvenementsPage />} />
         <Route path="/covoiturage" element={<CovoituragePage />} />
+        {/* Phase D : piloté par la matrice (page_events), seuil de départ inchangé (Bureau
+            Admin+) — voir note Phase D plus haut. */}
         <Route
           path="/admin/events"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+            <RequireRole pageSlug="page_events">
               <AdminEventsPage />
             </RequireRole>
           }
@@ -335,10 +349,12 @@ export default function App() {
             lui-même (créer/modifier/statut/cagnote/échéance/responsable/images) réservée Bureau
             Admin+, même niveau que ProjetPermission côté API. */}
         <Route path="/projets" element={<ProjetsPage />} />
+        {/* Phase D : piloté par la matrice (page_projets), seuil de départ inchangé (Bureau
+            Admin+) — voir note Phase D plus haut. */}
         <Route
           path="/admin/projets"
           element={
-            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+            <RequireRole pageSlug="page_projets">
               <AdminProjetsPage />
             </RequireRole>
           }

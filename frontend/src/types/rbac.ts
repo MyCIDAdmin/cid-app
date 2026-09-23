@@ -32,10 +32,27 @@ export interface CreerRolePayload {
 /** PATCH /rbac/roles/{id}/ — `slug`/`is_system` en lecture seule côté backend. */
 export type ModifierRolePayload = Partial<Omit<CreerRolePayload, "slug">>;
 
+/** "page_admin" pour une des 13 pages de gestion (Phase D), "donnees" pour un module métier
+ * "classique" (Phase A/B) — reflète apps.rbac.registry.categorie_module côté backend. Permet au
+ * frontend de verrouiller les cellules Administrateur App sur les pages de gestion sans avoir à
+ * recopier la liste PAGES_ADMIN en TypeScript. */
+export type CategorieModule = "donnees" | "page_admin";
+
 export interface ModuleInfo {
   slug: string;
   label: string;
+  categorie: CategorieModule;
 }
+
+/**
+ * GET /rbac/mes-acces/ — Phase D (ajoutée le 2026-09-23) : accès effectif de l'utilisateur
+ * COURANT aux 13 pages de gestion (`apps.rbac.registry.PAGES_ADMIN`), un booléen par slug.
+ * `IsAuthenticated` seul côté backend (pas `IsSuperAdmin`) — chaque utilisateur consulte cette
+ * route pour construire sa propre navigation (voir RequireRole en mode `pageSlug` et
+ * Sidebar.tsx). Les clés ne sont pas figées en TS (comme `ModuleInfo`) : un nouveau slug ajouté
+ * côté registry apparaît automatiquement, sans changement frontend requis.
+ */
+export type MesAccesReponse = Record<string, boolean>;
 
 export interface MatriceCell {
   role_id: string;

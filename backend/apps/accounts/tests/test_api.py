@@ -493,3 +493,60 @@ def test_changer_role_utilisateur_introuvable_echoue(api_client, super_admin_use
     url = reverse("accounts:user-change-role", args=[uuid.uuid4()])
     resp = api_client.post(url, {"role": "rh"}, format="json")
     assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Phase D (ajoutée le 2026-09-23) — page de gestion "Registrierungen" (page_inscriptions)
+# désormais pilotée par apps.rbac via HasInscriptionsAdminAccess (real enforcement, y compris
+# pour les rôles système eux-mêmes) — remplace IsRHOrAbove UNIQUEMENT sur les 3 vues de
+# validation d'inscription ; IsRHOrAbove lui-même reste inchangé pour membres import/export.
+# ---------------------------------------------------------------------------
+
+
+def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+def test_phase_d_rh_perd_lacces_aux_inscriptions_si_matrice_le_dit(api_client, rh_user, inscription_en_attente):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("rh", "page_inscriptions", NiveauAcces.AUCUN)
+    api_client.force_authenticate(user=rh_user)
+    resp = api_client.get(reverse("accounts:pending-registrations"))
+    assert resp.status_code == 403
+
+
+def test_phase_d_role_personnalise_peut_valider_les_inscriptions_via_la_matrice(
+    api_client, inscription_en_attente
+):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    user = User.objects.create_user(
+        email="phased-inscriptions-grant@example.com", password="Password123!", is_active=True
+    )
+    role_perso = RoleDefinitionFactory(slug="inscriptions-manager")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_inscriptions", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+
+    api_client.force_authenticate(user=user)
+    resp = api_client.get(reverse("accounts:pending-registrations"))
+    assert resp.status_code == 200
+
+
+def test_phase_d_super_admin_gere_toujours_les_inscriptions_meme_si_matrice_dit_aucun(
+    api_client, super_admin_user, inscription_en_attente
+):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("super_admin", "page_inscriptions", NiveauAcces.AUCUN)
+    api_client.force_authenticate(user=super_admin_user)
+    resp = api_client.get(reverse("accounts:pending-registrations"))
+    assert resp.status_code == 200

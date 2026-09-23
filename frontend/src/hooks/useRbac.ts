@@ -6,12 +6,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as rbacApi from "../api/rbac";
+import { useAuthStore } from "../store/authStore";
 import type { CreerRolePayload, ModifierRolePayload, SetMatriceCellulePayload } from "../types/rbac";
 
 const rbacKeys = {
   all: ["rbac"] as const,
   matrice: () => [...rbacKeys.all, "matrice"] as const,
   rolesUtilisateur: (userId: string) => [...rbacKeys.all, "utilisateur", userId] as const,
+  mesAcces: () => [...rbacKeys.all, "mes-acces"] as const,
 };
 
 export function useRbacMatrice() {
@@ -71,5 +73,23 @@ export function useAssignerRolesUtilisateur() {
       queryClient.invalidateQueries({ queryKey: rbacKeys.rolesUtilisateur(variables.userId) });
       queryClient.invalidateQueries({ queryKey: ["utilisateurs"] });
     },
+  });
+}
+
+/**
+ * Accès effectif de l'utilisateur courant aux 13 pages de gestion (Phase D) — utilisé par
+ * RequireRole (mode `pageSlug`) et Sidebar.tsx pour le gating de navigation. `enabled:
+ * isAuthenticated` : jamais appelé tant que le login n'est pas terminé (évite un 401 inutile au
+ * premier rendu de LoginPage). L'Administrateur App n'a pas besoin d'attendre cette requête —
+ * son accès est hartcodé côté backend ET vérifiable localement (voir RequireRole) — mais le
+ * hook reste appelable pour ce rôle aussi, simplement toujours résolu à `true` en pratique.
+ */
+export function useMesAcces() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return useQuery({
+    queryKey: rbacKeys.mesAcces(),
+    queryFn: rbacApi.getMesAcces,
+    enabled: isAuthenticated,
+    staleTime: 60_000,
   });
 }

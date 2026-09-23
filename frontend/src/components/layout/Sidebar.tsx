@@ -87,6 +87,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useMarquerLuesPrefixe, useNotificationsNonLues } from "../../hooks/useNotifications";
+import { useMesAcces } from "../../hooks/useRbac";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { type SidebarGroupKey, useUiStore } from "../../store/uiStore";
 import BrandLogo from "../ui/BrandLogo";
@@ -98,7 +99,15 @@ export interface NavItem {
   labelKey: string;
   icon: NavIcon;
   group: SidebarGroupKey;
+  /** Mutuellement exclusif avec `pageSlug` (même principe que RequireRole, voir
+   * components/RequireRole.tsx) — un item réservé à un rôle système fixe, jamais piloté par la
+   * matrice (ex. "/admin/roles", volontairement hors matrice). */
   minRoleLevel?: number;
+  /** Phase D (ajoutée le 2026-09-23) : visibilité pilotée par la matrice apps.rbac
+   * (`has_admin_page_access`, voir hooks/useRbac.ts::useMesAcces) plutôt que par un seuil
+   * `minRoleLevel` statique — l'item disparaît/apparaît selon ce qu'un Administrateur App a
+   * configuré pour le rôle courant, y compris pour un rôle système (real enforcement). */
+  pageSlug?: string;
 }
 
 // Ordre d'affichage des groupes + libellé i18n de leur en-tête (nav_groupe.* dans common.json).
@@ -168,87 +177,79 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/votes", labelKey: "nav.votes", icon: IconGavel, group: "contenu" },
   // Gestion des quiz (mockup #pg-quiz) — Bureau Admin+ seulement, même niveau que
   // GestionQuizPermission côté API.
+  // Phase D (ajoutée le 2026-09-23) : ces 13 items sont désormais pilotés par la matrice
+  // apps.rbac (`pageSlug`) plutôt qu'un `minRoleLevel` statique — le seuil de départ (valeur
+  // seedée par la migration 0003) reste identique à l'ancien `minRoleLevel` indiqué en
+  // commentaire, mais un Administrateur App peut désormais l'ouvrir/fermer par rôle système sans
+  // déploiement (voir useSidebarNav ci-dessous et RequireRole/App.tsx pour le gate de route
+  // correspondant). "/admin/roles" reste seul sur `minRoleLevel` (hors matrice, volontairement).
   {
     to: "/admin/quiz",
     labelKey: "nav.admin_quiz",
     icon: IconSettings,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_quiz", // seuil de départ : Bureau Admin
   },
-  // Gestion boutique (mockup #pg-admin-boutique) — Bureau Admin+ seulement, même niveau que
-  // CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API.
   {
     to: "/admin/boutique",
     labelKey: "nav.admin_boutique",
     icon: IconBuildingStore,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_boutique", // seuil de départ : Bureau Admin
   },
-  // Gestion des événements (mockup #pg-admin-events) — Bureau Admin+ seulement, même niveau que
-  // EvenementPermission (EVENEMENT_WRITE_ACTIONS) côté API.
   {
     to: "/admin/events",
     labelKey: "nav.admin_events",
     icon: IconCalendarPlus,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_events", // seuil de départ : Bureau Admin
   },
-  // Statistiques & KPIs (mockup #pg-stats, FDD §5.3) — Admin/DG/Bureau Admin seulement, même
-  // niveau que StatsPermission côté API.
   {
     to: "/stats",
     labelKey: "nav.stats",
     icon: IconChartArea,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_stats", // seuil de départ : Bureau Admin
   },
-  // Validation des inscriptions (AHM-48) — visible RH+ seulement, la route
-  // elle-même est aussi gated côté App.tsx (RequireRole).
+  // La route elle-même est aussi gated côté App.tsx (RequireRole, pageSlug="page_inscriptions").
   {
     to: "/inscriptions",
     labelKey: "nav.inscriptions",
     icon: IconClipboardCheck,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.rh,
+    pageSlug: "page_inscriptions", // seuil de départ : RH
   },
-  // File de validation des justificatifs de rabais (AHM-20) — RH+ seulement, même niveau que
-  // JustificatifPermission.RH_ONLY_ACTIONS côté API.
   {
     to: "/admin/justificatifs",
     labelKey: "nav.admin_justificatifs",
     icon: IconFileCheck,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.rh,
+    pageSlug: "page_justificatifs", // seuil de départ : RH
   },
-  // Gestion des campagnes d'adhésion (AHM-21) — Bureau Admin+ seulement,
-  // même niveau que CataloguePermission côté API.
   {
     to: "/admin/campagnes-adhesion",
     labelKey: "nav.admin_adhesions",
     icon: IconIdBadge2,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_campagnes_adhesion", // seuil de départ : Bureau Admin
   },
-  // Confirmation manuelle des paiements en attente (AHM-53) — Directeur Financier/Admin
-  // seulement, même niveau que marquer_payee côté API.
   {
     to: "/cotisations/en-attente",
     labelKey: "nav.cotisations_en_attente",
     icon: IconClockDollar,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.dir_financier,
+    pageSlug: "page_cotisations_attente", // seuil de départ : Directeur Financier
   },
-  // Échéances des relances par année (AHM-54) — Directeur Financier/Admin seulement, même
-  // niveau que ConfigurationRelancePermission côté API.
   {
     to: "/cotisations/relances",
     labelKey: "nav.configuration_relance",
     icon: IconBellRinging,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.dir_financier,
+    pageSlug: "page_cotisations_relances", // seuil de départ : Directeur Financier
   },
   // Gestion des rôles utilisateurs (SCD §4.2/§8.1) — Admin App seulement, même niveau que
-  // UsersListView/ChangeUserRoleView côté API.
+  // UsersListView/ChangeUserRoleView côté API. Volontairement HORS matrice (risque
+  // d'auto-escalade, décision confirmée avec l'utilisateur) — reste sur minRoleLevel.
   {
     to: "/admin/roles",
     labelKey: "nav.gestion_roles",
@@ -256,42 +257,33 @@ export const NAV_ITEMS: NavItem[] = [
     group: "administration",
     minRoleLevel: ROLE_LEVELS.super_admin,
   },
-  // Catalogue d'articles de cotisation (retour utilisateur du 2026-09-17) — Admin App
-  // exclusivement, même niveau que ArticleCataloguePermission (écriture) côté API.
   {
     to: "/admin/articles-cotisation",
     labelKey: "nav.articles_cotisation",
     icon: IconTag,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.super_admin,
+    pageSlug: "page_articles_cotisation", // seuil de départ : Administrateur App
   },
-  // Activation/désactivation des emails de notification par module (ajouté le 2026-09-19) —
-  // Admin App exclusivement, même niveau que ParametresNotificationPermission côté API.
   {
     to: "/admin/notifications",
     labelKey: "nav.parametres_notification",
     icon: IconMailCog,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.super_admin,
+    pageSlug: "page_notifications_params", // seuil de départ : Administrateur App
   },
-  // Gestion des projets & actions (module ajouté le 2026-09-22) — Bureau Admin+ seulement, même
-  // niveau que ProjetPermission (écriture) côté API.
   {
     to: "/admin/projets",
     labelKey: "nav.admin_projets",
     icon: IconFolderCog,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_projets", // seuil de départ : Bureau Admin
   },
-  // Gestion des albums photos (resserré le 2026-09-22, demande utilisateur : "Die Verwaltung der
-  // Albums soll im Bereich Admin stattfinden.") — Bureau Admin+ seulement, même niveau
-  // qu'AlbumPermission/PhotoPermission (écriture) côté API.
   {
     to: "/admin/albums",
     labelKey: "nav.admin_albums",
     icon: IconPhotoEdit,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_albums", // seuil de départ : Bureau Admin
   },
 ];
 
@@ -321,7 +313,25 @@ export function useSidebarNav() {
   const notificationsNonLues = useNotificationsNonLues().data?.results ?? [];
   const marquerLuesPrefixeMutation = useMarquerLuesPrefixe();
 
-  const visibleItems = NAV_ITEMS.filter((item) => hasRoleAtLeast(user, item.minRoleLevel ?? 1));
+  // Phase D (ajoutée le 2026-09-23) : accès effectif aux 13 pages de gestion pilotées par la
+  // matrice (item.pageSlug) — voir NAV_ITEMS ci-dessus et RequireRole pour l'équivalent côté
+  // route. L'Administrateur App n'attend jamais cette requête (accès hartcodé, comme
+  // RequireRole) ; pendant le chargement, un item `pageSlug` reste masqué plutôt que affiché
+  // puis retiré au premier rendu (même logique prudente que RequireRole : jamais laisser
+  // entrevoir une page finalement inaccessible).
+  const estSuperAdmin = user?.role === "super_admin";
+  const { data: mesAcces, isLoading: chargementAcces } = useMesAcces();
+
+  function aAccesPage(item: NavItem): boolean {
+    if (!item.pageSlug) return true;
+    if (estSuperAdmin) return true;
+    if (chargementAcces) return false;
+    return mesAcces?.[item.pageSlug] === true;
+  }
+
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => hasRoleAtLeast(user, item.minRoleLevel ?? 1) && aAccesPage(item),
+  );
 
   // Le seul item réellement actif pour le pathname courant — voir docstring de module (bug
   // "/boutique" + "/boutique/commandes" tous les deux surlignés). Parmi tous les items dont le

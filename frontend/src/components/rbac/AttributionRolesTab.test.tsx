@@ -62,7 +62,7 @@ const roleVertrieb = {
 
 const matrice: MatriceReponse = {
   roles: [roleMembre, roleVertrieb],
-  modules: [{ slug: "membres", label: "Mitglieder" }],
+  modules: [{ slug: "membres", label: "Mitglieder", categorie: "donnees" }],
   cells: [],
 };
 

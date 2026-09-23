@@ -42,7 +42,7 @@ from apps.membres.models import StatutMembre
 
 from . import services
 from .models import RegistrationDecision, Role
-from .permissions import IsRHOrAbove, IsSuperAdmin
+from .permissions import HasInscriptionsAdminAccess, IsSuperAdmin
 from .serializers import (
     ChangeRoleSerializer,
     LoginSerializer,
@@ -456,7 +456,10 @@ class PendingRegistrationsView(generics.ListAPIView):
     `registration_decision=EN_ATTENTE`.
     """
 
-    permission_classes = [IsRHOrAbove]
+    # Page de gestion "Registrierungen" (Phase D, ajoutée le 2026-09-23, slug
+    # `page_inscriptions`) — remplace IsRHOrAbove ICI UNIQUEMENT (voir docstring de
+    # HasInscriptionsAdminAccess) ; IsRHOrAbove reste inchangé pour membres import/export.
+    permission_classes = [HasInscriptionsAdminAccess]
     serializer_class = PendingRegistrationSerializer
     pagination_class = PendingRegistrationsCursorPagination
 
@@ -552,7 +555,10 @@ class ApproveRegistrationView(APIView):
     manuelle séparée à faire ici).
     """
 
-    permission_classes = [IsRHOrAbove]
+    # Page de gestion "Registrierungen" (Phase D, ajoutée le 2026-09-23, slug
+    # `page_inscriptions`) — remplace IsRHOrAbove ICI UNIQUEMENT (voir docstring de
+    # HasInscriptionsAdminAccess) ; IsRHOrAbove reste inchangé pour membres import/export.
+    permission_classes = [HasInscriptionsAdminAccess]
 
     def post(self, request, pk):
         target = User.objects.filter(
@@ -592,7 +598,10 @@ class RefuseRegistrationView(APIView):
     (DELETE /membres/{id}/, déjà réservé Bureau Admin+).
     """
 
-    permission_classes = [IsRHOrAbove]
+    # Page de gestion "Registrierungen" (Phase D, ajoutée le 2026-09-23, slug
+    # `page_inscriptions`) — remplace IsRHOrAbove ICI UNIQUEMENT (voir docstring de
+    # HasInscriptionsAdminAccess) ; IsRHOrAbove reste inchangé pour membres import/export.
+    permission_classes = [HasInscriptionsAdminAccess]
 
     def post(self, request, pk):
         target = User.objects.filter(

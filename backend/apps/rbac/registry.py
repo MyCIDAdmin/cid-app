@@ -44,3 +44,61 @@ MODULE_LABELS = {
     "notifications": "Notifications",
     "projets": "Projets",
 }
+
+# ---------------------------------------------------------------------------
+# Pages de gestion (Phase D, ajoutée le 2026-09-23, demande utilisateur : "Ich möchte dass du
+# alle Verwaltungsmodule zur Matrix hinzufügst [...] Es soll möglich sein Zugriff bei den
+# Systemrollen auch umzustellen (Außer App Admin)") — liste EXPLICITE des 13 Admin-Unterseiten
+# nommées par l'utilisateur (14 moins Rollenverwaltung, qui reste hors matrice, voir
+# accounts.permissions/GestionRolesPage, décision confirmée : risque d'auto-escalade).
+#
+# Constante SÉPARÉE de MODULES (et non fusionnée dedans) pour deux raisons : (1) éviter toute
+# collision de slug avec les 10 modules métier existants (ex. le module de données "stats" et la
+# page de gestion "Statistiken & KPIs" sont deux concepts différents, d'où le préfixe `page_`) ;
+# (2) la sémantique de niveau y est différente — pour ces 13 slugs, seule la distinction
+# "aucun" vs "accès" compte (`lecture` et `lecture_ecriture` sont équivalents, voir
+# services.has_admin_page_access), le 3ème niveau n'existe que parce que la même colonne/UI
+# `NiveauAcces` est réutilisée telle quelle que pour les 10 modules de données.
+PAGES_ADMIN = [
+    "page_quiz",
+    "page_boutique",
+    "page_events",
+    "page_stats",
+    "page_inscriptions",
+    "page_justificatifs",
+    "page_campagnes_adhesion",
+    "page_cotisations_attente",
+    "page_cotisations_relances",
+    "page_articles_cotisation",
+    "page_notifications_params",
+    "page_projets",
+    "page_albums",
+]
+
+PAGE_ADMIN_LABELS = {
+    "page_quiz": "Gestion des quiz",
+    "page_boutique": "Gestion de la boutique",
+    "page_events": "Gestion des événements",
+    "page_stats": "Statistiques & KPIs",
+    "page_inscriptions": "Validation des inscriptions",
+    "page_justificatifs": "Justificatifs (file RH)",
+    "page_campagnes_adhesion": "Campagnes d'adhésion",
+    "page_cotisations_attente": "Paiements en attente",
+    "page_cotisations_relances": "Échéances de relance",
+    "page_articles_cotisation": "Catalogue d'articles de cotisation",
+    "page_notifications_params": "Paramètres des e-mails de notification",
+    "page_projets": "Gestion des projets & actions",
+    "page_albums": "Gestion des albums photos",
+}
+
+# Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour
+# le frontend, qui n'a donc rien à changer pour afficher les nouvelles pages automatiquement.
+ALL_MODULES = MODULES + PAGES_ADMIN
+ALL_MODULE_LABELS = {**MODULE_LABELS, **PAGE_ADMIN_LABELS}
+
+
+def categorie_module(module: str) -> str:
+    """"page_admin" pour une des 13 pages de gestion, "donnees" pour un module métier — exposé
+    à la matrice (`GET /rbac/matrix/`) pour que le frontend sache quelles colonnes verrouiller
+    pour l'Administrateur App, sans avoir à recopier la liste PAGES_ADMIN côté TypeScript."""
+    return "page_admin" if module in PAGES_ADMIN else "donnees"

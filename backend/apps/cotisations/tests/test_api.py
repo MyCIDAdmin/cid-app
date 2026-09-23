@@ -1198,3 +1198,82 @@ def test_historique_statuts_refuse_pour_la_cotisation_dun_autre_membre(api_clien
     resp = api_client.get(_historique_statuts_url(cotisation_autrui))
 
     assert resp.status_code in (403, 404)
+
+
+# ---------------------------------------------------------------------------
+# Phase D (ajoutée le 2026-09-23) — page de gestion "Ausstehende Zahlungen"
+# (page_cotisations_attente) désormais pilotée par apps.rbac (real enforcement, y compris pour
+# les rôles système eux-mêmes) — couvre marquer_payee ET changer_statut, la même page.
+# ---------------------------------------------------------------------------
+
+
+def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+def test_phase_d_directeur_financier_perd_lacces_a_marquer_payee_si_matrice_le_dit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("dir_financier", "page_cotisations_attente", NiveauAcces.AUCUN)
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "phased-attente-restrict@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE)
+    _auth(api_client, user)
+
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 403
+
+
+def test_phase_d_directeur_financier_perd_lacces_a_changer_statut_si_matrice_le_dit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("dir_financier", "page_cotisations_attente", NiveauAcces.AUCUN)
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "phased-attente-statut-restrict@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
+    _auth(api_client, user)
+
+    resp = api_client.post(_changer_statut_url(cotisation), {"statut": "annulee"})
+    assert resp.status_code == 403
+
+
+def test_phase_d_role_personnalise_peut_marquer_payee_via_la_matrice(api_client):
+    """Vérifie le gate de page apporté par has_admin_page_access("page_cotisations_attente").
+    La visibilité au niveau du queryset (get_queryset de CotisationViewSet) reste pilotée par
+    is_elevated_for_module(user, "cotisations") — le module DATA "cotisations", pas la page
+    admin "page_cotisations_attente" — donc explicitement hors scope de cette phase (voir plan).
+    Comme pour les justificatifs, la cotisation ciblée appartient donc à la propre fiche membre
+    du user pour rester dans le queryset filtré "mes cotisations"."""
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "phased-attente-grant@example.de")
+    role_perso = RoleDefinitionFactory(slug="cotisations-attente-manager")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_cotisations_attente", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    cotisation = CotisationFactory(
+        membre=membre, statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+    )
+    _auth(api_client, user)
+
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 200, resp.data
+
+
+def test_phase_d_super_admin_marque_toujours_payee_meme_si_matrice_dit_aucun(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("super_admin", "page_cotisations_attente", NiveauAcces.AUCUN)
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "phased-attente-super@example.de")
+    cotisation = CotisationFactory(
+        statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+    )
+    _auth(api_client, user)
+
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp.status_code == 200, resp.data

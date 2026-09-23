@@ -28,6 +28,8 @@ bespoke des apps métier) :
     "primaire" vers le plus élevé des deux — voir views.py — donc ce cas ne se présente en
     pratique presque jamais après un passage par cette API)."""
 
+from apps.accounts.models import Role
+
 from .models import NiveauAcces, RoleModulePermission
 
 _NIVEAUX_ORDONNES = {
@@ -86,3 +88,26 @@ def is_elevated_for_module(user, module: str) -> bool:
         _NIVEAUX_ORDONNES[_niveau_acces_pour(slug, module)] >= _NIVEAUX_ORDONNES[NiveauAcces.LECTURE]
         for slug in autres_roles
     )
+
+
+def has_admin_page_access(user, page_slug: str) -> bool:
+    """Porte d'accès pour les 13 pages de gestion (Phase D, ajoutée le 2026-09-23, voir
+    registry.PAGES_ADMIN) — DÉLIBÉRÉMENT différente de is_elevated_for_module : ici la matrice
+    doit faire autorité pour le rôle système ACTUEL de l'utilisateur, pas seulement pour un rôle
+    additionnel (c'est le sens même de la demande "Zugriff bei den Systemrollen auch umzustellen
+    [...]"). On utilise donc `user_has_module_access`, qui prend l'union de TOUS les rôles
+    effectifs de l'utilisateur (`get_user_role_slugs`, legacy CharField inclus) — jamais
+    `is_elevated_for_module`, qui exclut ce rôle actuel par construction (Phase B, un besoin
+    différent : "toutes les données du module ou seulement les miennes").
+
+    Administrateur App (Super Admin) : accès total HARTCODÉ, jamais déterminé par la matrice,
+    même si une ligne RoleModulePermission existe et vaut "aucun" — décision utilisateur
+    confirmée ("Rollenverwaltung bleibt fest bei App-Administrator") étendue par prudence à
+    l'ensemble des 13 pages : aucune combinaison de cellules ne doit pouvoir mettre l'App-Admin
+    lui-même hors-jeu. Voir aussi RoleModuleMatrixSetView, qui empêche même d'écrire une telle
+    ligne pour ce rôle — défense en profondeur, cette fonction resterait sûre de toute façon."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if user.role == Role.SUPER_ADMIN:
+        return True
+    return user_has_module_access(user, page_slug, required=NiveauAcces.LECTURE)

@@ -8,6 +8,7 @@ import { apiClient } from "./client";
 import type {
   CreerRolePayload,
   MatriceReponse,
+  MesAccesReponse,
   ModifierRolePayload,
   RoleDefinition,
   SetMatriceCellulePayload,
@@ -58,5 +59,11 @@ export async function assignerRolesUtilisateur(
     `/rbac/utilisateurs/${userId}/roles/`,
     { role_ids: roleIds },
   );
+  return data;
+}
+
+/** GET /rbac/mes-acces/ — Phase D, voir types/rbac.ts::MesAccesReponse. */
+export async function getMesAcces(): Promise<MesAccesReponse> {
+  const { data } = await apiClient.get<MesAccesReponse>("/rbac/mes-acces/");
   return data;
 }

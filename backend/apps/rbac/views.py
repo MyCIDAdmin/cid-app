@@ -34,9 +34,10 @@ from apps.accounts import services as accounts_services
 from apps.accounts.models import ROLE_LEVELS, Role, User
 from apps.accounts.permissions import IsSuperAdmin
 
+from . import services as rbac_services
 from .exceptions import Conflict
 from .models import ModuleVisibiliteMembre, NiveauAcces, RoleDefinition, RoleModulePermission, UserRoleAssignment
-from .registry import MODULE_LABELS, MODULES
+from .registry import ALL_MODULE_LABELS, ALL_MODULES, MODULE_LABELS, MODULES, PAGES_ADMIN, categorie_module
 from .serializers import (
     ModuleVisibiliteSetSerializer,
     RoleDefinitionSerializer,
@@ -134,7 +135,7 @@ def _matrice_completee() -> list[dict]:
     }
     cellules = []
     for role in RoleDefinition.objects.all():
-        for module in MODULES:
+        for module in ALL_MODULES:
             cellules.append(
                 {
                     "role_id": role.id,
@@ -150,11 +151,21 @@ class RoleModuleMatrixView(APIView):
 
     def get(self, request):
         roles = RoleDefinitionSerializer(RoleDefinition.objects.all(), many=True).data
-        modules = [{"slug": m, "label": MODULE_LABELS.get(m, m)} for m in MODULES]
+        modules = [
+            {"slug": m, "label": ALL_MODULE_LABELS.get(m, m), "categorie": categorie_module(m)}
+            for m in ALL_MODULES
+        ]
         return Response({"roles": roles, "modules": modules, "cells": _matrice_completee()})
 
 
 class RoleModuleMatrixSetView(APIView):
+    """`POST /rbac/matrix/set/` — voir aussi la garde ci-dessous (Phase D, ajoutée le
+    2026-09-23) : l'Administrateur App (Super Admin) garde toujours un accès total et hartcodé
+    aux 13 pages de gestion (registry.PAGES_ADMIN, voir services.has_admin_page_access) — écrire
+    une cellule de matrice pour ce rôle sur une de ces pages n'aurait donc aucun effet réel et ne
+    ferait que suggérer, à tort, qu'elle est modifiable. Refusé en 400 plutôt que silencieusement
+    ignoré, pour ne jamais laisser croire à l'admin qu'un changement a été pris en compte."""
+
     permission_classes = [IsSuperAdmin]
 
     def post(self, request):
@@ -162,6 +173,11 @@ class RoleModuleMatrixSetView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         role = get_object_or_404(RoleDefinition, id=data["role_id"])
+        if role.slug == Role.SUPER_ADMIN and data["module"] in PAGES_ADMIN:
+            raise ValidationError(
+                "L'accès de l'Administrateur App aux pages de gestion n'est pas modifiable — "
+                "il conserve toujours un accès total."
+            )
         cellule, _created = RoleModulePermission.objects.update_or_create(
             role=role,
             module=data["module"],
@@ -311,4 +327,19 @@ class UserRolesView(APIView):
                 "role_primaire": target.role,
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class MesAccesView(APIView):
+    """GET /rbac/mes-acces/ — Phase D (ajoutée le 2026-09-23) : accès effectif de l'utilisateur
+    COURANT aux 13 pages de gestion (registry.PAGES_ADMIN), pour le gating frontend (RequireRole
+    en mode `pageSlug`, filtrage de Sidebar.tsx) — même principe d'ouverture `IsAuthenticated`
+    seul que ModuleVisibiliteEffectiveView ci-dessus : aucune donnée sensible n'est renvoyée,
+    seulement des booléens dérivés de services.has_admin_page_access pour ce seul utilisateur."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(
+            {slug: rbac_services.has_admin_page_access(request.user, slug) for slug in PAGES_ADMIN}
         )

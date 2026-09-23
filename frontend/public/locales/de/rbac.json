@@ -13,7 +13,20 @@
     "communaute": "Gemeinschaft",
     "stats": "Statistiken",
     "notifications": "Benachrichtigungen",
-    "projets": "Projekte"
+    "projets": "Projekte",
+    "page_quiz": "Quiz-Verwaltung",
+    "page_boutique": "Shop-Verwaltung",
+    "page_events": "Veranstaltungsverwaltung",
+    "page_stats": "Statistiken & KPIs",
+    "page_inscriptions": "Registrierungen",
+    "page_justificatifs": "Nachweise",
+    "page_campagnes_adhesion": "Mitgliedschaftskampagnen",
+    "page_cotisations_attente": "Ausstehende Zahlungen",
+    "page_cotisations_relances": "Fälligkeitstermine",
+    "page_articles_cotisation": "Beitragsartikel",
+    "page_notifications_params": "E-Mail-Benachrichtigungen",
+    "page_projets": "Projekt- & Aktionsverwaltung",
+    "page_albums": "Fotoalben-Verwaltung"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",
@@ -40,6 +53,9 @@
     },
     "role_systeme": "System",
     "role_personnalise": "Benutzerdefiniert",
+    "cellule": {
+      "verrouillee_super_admin": "Der App-Administrator behält immer vollen Zugriff auf diese Seite, unabhängig vom Inhalt der Matrix."
+    },
     "nouveau_role": {
       "titre": "Neue Rolle anlegen",
       "nom_label": "Name",

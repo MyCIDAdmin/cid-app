@@ -318,3 +318,65 @@ def test_membre_ne_peut_pas_modifier_une_ligne_type_fixe(api_client):
     assert resp.status_code == 403
     cotisation_fixe.refresh_from_db()
     assert str(cotisation_fixe.montant) == "45.00"
+
+
+# ---------------------------------------------------------------------------
+# Phase D (ajoutée le 2026-09-23) — page de gestion "Beitragsartikel"
+# (page_articles_cotisation) désormais pilotée par apps.rbac (real enforcement, y compris pour
+# les rôles système eux-mêmes).
+# ---------------------------------------------------------------------------
+
+
+def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+def test_phase_d_super_admin_garde_lacces_au_catalogue_meme_si_matrice_dit_aucun(api_client):
+    """Défense en profondeur : même en manipulant directement la matrice pour super_admin (ce
+    que l'UI/API interdit normalement, voir la garde de RoleModuleMatrixSetView), le bypass
+    hartcodé de has_admin_page_access pour l'Administrateur App tient toujours."""
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("super_admin", "page_articles_cotisation", NiveauAcces.AUCUN)
+    admin = User.objects.create_user(
+        email="phased-articles-super@example.de", password="Password123!", role=Role.SUPER_ADMIN, is_active=True
+    )
+    _auth(api_client, admin)
+
+    cotisation_fixe = ArticleCatalogue.objects.get(type_fixe=TypeArticle.COTISATION)
+    resp = api_client.patch(_detail_url(cotisation_fixe), {"montant": "50.00"}, format="json")
+    assert resp.status_code == 200, resp.data
+
+
+def test_phase_d_bureau_admin_perd_lacces_au_catalogue_par_defaut(api_client):
+    """Rollout-regression : Bureau Admin n'a jamais eu accès au catalogue d'articles
+    (GESTION_ARTICLES_MIN_LEVEL = Super Admin) — la matrice seedée par 0003 doit reproduire
+    exactement ce comportement par défaut, sans qu'aucun admin n'ait rien configuré."""
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "phased-articles-bureau@example.de")
+    _auth(api_client, user)
+
+    cotisation_fixe = ArticleCatalogue.objects.get(type_fixe=TypeArticle.COTISATION)
+    resp = api_client.patch(_detail_url(cotisation_fixe), {"montant": "50.00"}, format="json")
+    assert resp.status_code == 403
+
+
+def test_phase_d_role_personnalise_peut_gerer_le_catalogue_via_la_matrice(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    user, _membre = _user_avec_membre(Role.MEMBRE, "phased-articles-grant@example.de")
+    role_perso = RoleDefinitionFactory(slug="articles-manager")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_articles_cotisation", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    cotisation_fixe = ArticleCatalogue.objects.get(type_fixe=TypeArticle.COTISATION)
+    resp = api_client.patch(_detail_url(cotisation_fixe), {"montant": "50.00"}, format="json")
+    assert resp.status_code == 200, resp.data

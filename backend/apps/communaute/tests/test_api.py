@@ -1339,3 +1339,97 @@ def test_creer_question_et_choix_reserve_au_bureau_admin(api_client):
     )
     assert resp.status_code == 201
     assert resp.data["est_correct"] is True
+
+
+# ---------------------------------------------------------------------------
+# Phase D (ajoutée le 2026-09-23) — pages de gestion "Quiz-Verwaltung" (page_quiz) et
+# "Fotoalben-Verwaltung" (page_albums) désormais pilotées par apps.rbac (real enforcement, y
+# compris pour les rôles système eux-mêmes — voir apps.rbac.services.has_admin_page_access).
+# ---------------------------------------------------------------------------
+
+
+def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+@pytest.mark.django_db
+def test_phase_d_bureau_admin_perd_lacces_a_la_gestion_des_quiz_si_matrice_le_dit(api_client):
+    """Nouveau (real enforcement) : contrairement à Phase B, une cellule de matrice peut
+    désormais RETIRER un accès par défaut à un rôle système — ici Bureau Admin, qui gérait les
+    quiz avant cette phase."""
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("bureau_admin", "page_quiz", NiveauAcces.AUCUN)
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "phased-quiz-restrict@example.de")
+
+    resp = _auth(api_client, admin_user).get(reverse(QUESTION_QUIZ_LIST_URL))
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+def test_phase_d_role_personnalise_peut_gerer_les_quiz_via_la_matrice(api_client):
+    """Contrepartie : un rôle qui n'avait jamais accès (Membre Normal) peut désormais gérer les
+    quiz si la matrice le lui accorde explicitement. Utilise POST (comme
+    test_creer_question_et_choix_reserve_au_bureau_admin) plutôt que GET : le GET sur cet
+    endpoint bute sur un bug préexistant et hors-scope de pagination (CursorPagination par
+    défaut trie sur "-created", un champ que QuestionQuiz n'a pas — jamais exercé par un GET
+    avant cette phase, puisque seul le POST y était testé)."""
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    quiz = QuizFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-quiz-grant@example.de")
+    role_perso = RoleDefinitionFactory(slug="quiz-manager")
+    RoleModulePermissionFactory(role=role_perso, module="page_quiz", niveau_acces=NiveauAcces.LECTURE_ECRITURE)
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+
+    resp = _auth(api_client, user).post(
+        reverse(QUESTION_QUIZ_LIST_URL), {"quiz": str(quiz.id), "texte": "Question ?"}
+    )
+    assert resp.status_code == 201, resp.data
+
+
+@pytest.mark.django_db
+def test_phase_d_super_admin_gere_toujours_les_quiz_meme_si_matrice_dit_aucun(api_client):
+    """L'Administrateur App reste hartcodé, indépendamment du contenu de la matrice. Voir
+    docstring du test précédent pour le choix de POST plutôt que GET."""
+    from apps.rbac.models import NiveauAcces
+
+    quiz = QuizFactory()
+    _set_matrice_cellule("super_admin", "page_quiz", NiveauAcces.AUCUN)
+    admin_user, _ = _user_avec_membre(Role.SUPER_ADMIN, "phased-quiz-super@example.de")
+
+    resp = _auth(api_client, admin_user).post(
+        reverse(QUESTION_QUIZ_LIST_URL), {"quiz": str(quiz.id), "texte": "Question ?"}
+    )
+    assert resp.status_code == 201, resp.data
+
+
+@pytest.mark.django_db
+def test_phase_d_bureau_admin_perd_lacces_a_la_gestion_des_albums_si_matrice_le_dit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("bureau_admin", "page_albums", NiveauAcces.AUCUN)
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "phased-albums-restrict@example.de")
+
+    resp = _auth(api_client, admin_user).post(reverse(ALBUM_LIST_URL), {"nom": "Derby 2026"})
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+def test_phase_d_role_personnalise_peut_creer_un_album_via_la_matrice(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-albums-grant@example.de")
+    role_perso = RoleDefinitionFactory(slug="albums-manager")
+    RoleModulePermissionFactory(role=role_perso, module="page_albums", niveau_acces=NiveauAcces.LECTURE_ECRITURE)
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+
+    resp = _auth(api_client, user).post(reverse(ALBUM_LIST_URL), {"nom": "Derby 2026"})
+    assert resp.status_code == 201

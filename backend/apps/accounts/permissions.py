@@ -9,6 +9,15 @@ from rest_framework.permissions import BasePermission
 from .models import ROLE_LEVELS, Role
 
 
+def _has_admin_page_access(user, page_slug: str) -> bool:
+    """Import différé (et non en tête de module) — évite qu'un import circulaire au chargement
+    de l'app (apps.accounts est chargée très tôt, avant apps.rbac dans certains contextes,
+    notamment les migrations) ne casse le démarrage. Voir HasInscriptionsAdminAccess ci-dessous."""
+    from apps.rbac.services import has_admin_page_access
+
+    return has_admin_page_access(user, page_slug)
+
+
 class RoleAtLeast(BasePermission):
     """Permission générique paramétrable : rôle >= niveau minimum requis."""
 
@@ -35,6 +44,21 @@ class IsBureauAdminOrAbove(RoleAtLeast):
 
 class IsRHOrAbove(RoleAtLeast):
     min_level = ROLE_LEVELS[Role.RH]
+
+
+class HasInscriptionsAdminAccess(BasePermission):
+    """Page de gestion "Registrierungen" (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.
+    PAGES_ADMIN slug `page_inscriptions`) — dédiée aux 3 vues de validation des inscriptions
+    libre-service (PendingRegistrationsView/ApproveRegistrationView/RefuseRegistrationView,
+    apps/accounts/views.py). Remplace `IsRHOrAbove` UNIQUEMENT à ces 3 endroits : `IsRHOrAbove`
+    lui-même reste inchangé pour ses autres usages (apps.membres.import_views,
+    apps.membres.export_views), aucune des deux pages listées par l'utilisateur."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and user.is_authenticated and _has_admin_page_access(user, "page_inscriptions")
+        )
 
 
 class IsOwnerOrAdmin(BasePermission):

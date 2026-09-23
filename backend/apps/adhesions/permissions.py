@@ -29,7 +29,7 @@ Permissions API — app adhesions (FDD §2.2 matrice des permissions / §6.1) :
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
-from apps.rbac.services import is_elevated_for_module
+from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
 GESTION_CATALOGUE_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
 READ_ALL_SOUSCRIPTIONS_MIN_LEVEL = ROLE_LEVELS[Role.RH]
@@ -45,7 +45,10 @@ CATALOGUE_WRITE_ACTIONS = (
 
 
 class CataloguePermission(BasePermission):
-    """CampagneAdhesion / OffreAdhesion / RabaisOffre."""
+    """CampagneAdhesion / OffreAdhesion / RabaisOffre. Écriture = page de gestion
+    "Mitgliedschaftskampagnen" (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.PAGES_ADMIN
+    slug `page_campagnes_adhesion`) — remplace (et non complète) l'ancien seuil fixe
+    GESTION_CATALOGUE_MIN_LEVEL."""
 
     def has_permission(self, request, view):
         user = request.user
@@ -53,7 +56,7 @@ class CataloguePermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in CATALOGUE_WRITE_ACTIONS or request.method not in SAFE_METHODS:
-            return ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
+            return has_admin_page_access(user, "page_campagnes_adhesion")
         return True
 
 
@@ -76,7 +79,12 @@ class SouscriptionPermission(BasePermission):
 
 
 class JustificatifPermission(BasePermission):
-    """JustificatifRabais — voir le docstring du module pour la matrice par action."""
+    """JustificatifRabais — voir le docstring du module pour la matrice par action.
+    RH_ONLY_ACTIONS forme la page de gestion "Nachweise" (Phase D, ajoutée le 2026-09-23, slug
+    `page_justificatifs`) — remplace (et non complète) l'ancien seuil fixe
+    READ_ALL_SOUSCRIPTIONS_MIN_LEVEL À CET ENDROIT UNIQUEMENT ; l'usage de cette même constante
+    dans SouscriptionPermission.has_object_permission ci-dessus (visibilité générale "toutes les
+    souscriptions") reste inchangé, ce n'est pas une des pages listées par l'utilisateur."""
 
     RH_ONLY_ACTIONS = ("list", "valider")
 
@@ -85,7 +93,7 @@ class JustificatifPermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         if getattr(view, "action", None) in self.RH_ONLY_ACTIONS:
-            return ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL
+            return has_admin_page_access(user, "page_justificatifs")
         return True
 
     def has_object_permission(self, request, view, obj):

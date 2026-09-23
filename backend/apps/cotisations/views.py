@@ -63,7 +63,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import is_elevated_for_module
+from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
 from .filters import CotisationFilter
 from .gateways import GatewayError, creer_commande_paypal, creer_session_stripe
@@ -199,12 +199,14 @@ class CotisationViewSet(ModelViewSet):
         POST /cotisations/{id}/marquer-payee/ — confirme la réception d'un paiement effectué hors
         ligne (virement SEPA en attente de réconciliation, chèque, espèces...), AHM-53. get_object()
         applique le même scope IDOR que list/retrieve (propriétaire ou RH+), mais l'exécution de
-        l'action elle-même est réservée au Directeur Financier et à l'Administrateur App
-        (SAISIE_POUR_AUTRUI_MIN_LEVEL) : le RH garde un accès en lecture seule sur ce module.
+        l'action elle-même est la page de gestion "Ausstehende Zahlungen" (Phase D, ajoutée le
+        2026-09-23, apps.rbac.registry.PAGES_ADMIN slug `page_cotisations_attente`) — remplace
+        (et non complète) l'ancien seuil fixe SAISIE_POUR_AUTRUI_MIN_LEVEL : le RH garde un accès
+        en lecture seule sur ce module.
         """
         cotisation = self.get_object()
 
-        if ROLE_LEVELS.get(request.user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+        if not has_admin_page_access(request.user, "page_cotisations_attente"):
             raise PermissionDenied(
                 "Seuls le Directeur Financier ou l'Administrateur peuvent marquer un paiement "
                 "comme reçu."
@@ -275,7 +277,10 @@ class CotisationViewSet(ModelViewSet):
         """
         cotisation = self.get_object()
 
-        if ROLE_LEVELS.get(request.user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+        # Même page de gestion "Ausstehende Zahlungen" que marquer_payee ci-dessus (Phase D,
+        # slug `page_cotisations_attente`, voir le docstring d'action : "Bei 'Ausstehende
+        # Zahlungen'...") — remplace (et non complète) l'ancien seuil fixe SAISIE_POUR_AUTRUI_MIN_LEVEL.
+        if not has_admin_page_access(request.user, "page_cotisations_attente"):
             raise PermissionDenied(
                 "Seuls le Directeur Financier ou l'Administrateur peuvent modifier le statut "
                 "d'une cotisation."
@@ -380,14 +385,15 @@ class CotisationViewSet(ModelViewSet):
 
 
 class ConfigurationRelancePermission(BasePermission):
-    """AHM-54 — même niveau que marquer_payee : Directeur Financier et Administrateur App."""
+    """AHM-54 — page de gestion "Fälligkeitstermine" (Phase D, ajoutée le 2026-09-23, slug
+    `page_cotisations_relances`) — remplace (et non complète) l'ancien seuil fixe
+    SAISIE_POUR_AUTRUI_MIN_LEVEL (même niveau historique que marquer_payee, mais une page
+    distincte dans la matrice : les deux peuvent diverger à l'avenir)."""
 
     def has_permission(self, request, view):
         user = request.user
         return bool(
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= SAISIE_POUR_AUTRUI_MIN_LEVEL
+            user and user.is_authenticated and has_admin_page_access(user, "page_cotisations_relances")
         )
 
 

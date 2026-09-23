@@ -127,6 +127,67 @@ def test_bureau_admin_peut_creer_une_campagne(api_client):
     assert resp.data["statut"] == StatutCampagne.BROUILLON  # jamais publiée directement
 
 
+# ---------------------------------------------------------------------------
+# Phase D (ajoutée le 2026-09-23) — page de gestion "Mitgliedschaftskampagnen"
+# (page_campagnes_adhesion) désormais pilotée par apps.rbac (real enforcement, y compris pour
+# les rôles système eux-mêmes).
+# ---------------------------------------------------------------------------
+
+_CAMPAGNE_PAYLOAD = {
+    "nom": "Adhésion 2027",
+    "annee": 2027,
+    "date_debut": "2027-01-01",
+    "date_fin": "2027-12-31",
+}
+
+
+def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+def test_phase_d_bureau_admin_perd_lacces_aux_campagnes_si_matrice_le_dit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("bureau_admin", "page_campagnes_adhesion", NiveauAcces.AUCUN)
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "phased-campagnes-restrict@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(CAMPAGNE_LIST_URL), _CAMPAGNE_PAYLOAD)
+    assert resp.status_code == 403
+
+
+def test_phase_d_role_personnalise_peut_gerer_les_campagnes_via_la_matrice(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    user, _membre = _user_avec_membre(Role.MEMBRE, "phased-campagnes-grant@example.de")
+    role_perso = RoleDefinitionFactory(slug="campagnes-manager")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_campagnes_adhesion", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(CAMPAGNE_LIST_URL), _CAMPAGNE_PAYLOAD)
+    assert resp.status_code == 201, resp.data
+
+
+def test_phase_d_super_admin_gere_toujours_les_campagnes_meme_si_matrice_dit_aucun(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("super_admin", "page_campagnes_adhesion", NiveauAcces.AUCUN)
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "phased-campagnes-super@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(CAMPAGNE_LIST_URL), _CAMPAGNE_PAYLOAD)
+    assert resp.status_code == 201, resp.data
+
+
 def test_membre_ne_peut_pas_creer_d_offre(api_client):
     campagne = CampagneAdhesionFactory()
     user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")

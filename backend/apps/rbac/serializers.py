@@ -3,11 +3,22 @@
 from rest_framework import serializers
 
 from .models import ModuleVisibiliteMembre, NiveauAcces, RoleDefinition, RoleModulePermission
-from .registry import MODULES
+from .registry import ALL_MODULES, MODULES
 
 
-def _valider_module(value: str) -> str:
+def _valider_module_donnees(value: str) -> str:
+    """Pour ModuleVisibiliteSetSerializer UNIQUEMENT — la visibilité de menu (rôle Membre Normal)
+    ne concerne que les 10 modules de données, jamais les 13 pages de gestion de registry.
+    PAGES_ADMIN (concept séparé, voir docstring de ModuleVisibiliteMembre)."""
     if value not in MODULES:
+        raise serializers.ValidationError(f"Module inconnu : {value!r}.")
+    return value
+
+
+def _valider_module_matrice(value: str) -> str:
+    """Pour RoleModulePermissionSetSerializer — la matrice couvre les 10 modules de données ET
+    (depuis la Phase D) les 13 pages de gestion, voir registry.ALL_MODULES."""
+    if value not in ALL_MODULES:
         raise serializers.ValidationError(f"Module inconnu : {value!r}.")
     return value
 
@@ -49,7 +60,7 @@ class RoleModulePermissionSetSerializer(serializers.Serializer):
     """Écriture d'une cellule (`POST /rbac/matrix/set/`)."""
 
     role_id = serializers.UUIDField()
-    module = serializers.CharField(validators=[_valider_module])
+    module = serializers.CharField(validators=[_valider_module_matrice])
     niveau_acces = serializers.ChoiceField(choices=NiveauAcces.choices)
 
     def validate_role_id(self, value):
@@ -69,7 +80,7 @@ class ModuleVisibiliteCellSerializer(serializers.Serializer):
 class ModuleVisibiliteSetSerializer(serializers.Serializer):
     """Écriture d'une ligne de visibilité (`POST /rbac/visibilite-membre/set/`)."""
 
-    module = serializers.CharField(validators=[_valider_module])
+    module = serializers.CharField(validators=[_valider_module_donnees])
     visible = serializers.BooleanField()
 
 

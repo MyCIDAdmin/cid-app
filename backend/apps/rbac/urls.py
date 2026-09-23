@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    MesAccesView,
     ModulesListView,
     ModuleVisibiliteEffectiveView,
     ModuleVisibiliteSetView,
@@ -29,4 +30,5 @@ urlpatterns = [
         name="visibilite-membre-effective",
     ),
     path("utilisateurs/<uuid:pk>/roles/", UserRolesView.as_view(), name="user-roles"),
+    path("mes-acces/", MesAccesView.as_view(), name="mes-acces"),
 ] + router.urls

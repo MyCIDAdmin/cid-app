@@ -302,6 +302,70 @@ def test_rh_liste_tous_les_justificatifs(api_client):
     assert len(resp.data["results"]) == 2
 
 
+# ---------------------------------------------------------------------------
+# Phase D (ajoutée le 2026-09-23) — page de gestion "Nachweise" (page_justificatifs) désormais
+# pilotée par apps.rbac (real enforcement, y compris pour les rôles système eux-mêmes) — couvre
+# JustificatifPermission.RH_ONLY_ACTIONS (list/valider) UNIQUEMENT ; has_object_permission
+# (propriétaire ou RH+, "voir mon propre justificatif") reste inchangé.
+# ---------------------------------------------------------------------------
+
+
+def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+def test_phase_d_rh_perd_lacces_a_la_file_de_justificatifs_si_matrice_le_dit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("rh", "page_justificatifs", NiveauAcces.AUCUN)
+    user, _membre = _user_avec_membre(Role.RH, "phased-justificatifs-restrict@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(JUSTIFICATIF_LIST_URL))
+    assert resp.status_code == 403
+
+
+def test_phase_d_role_personnalise_peut_voir_la_file_via_la_matrice(api_client):
+    """Vérifie uniquement le nouveau gate de page (has_permission) apporté par la matrice — la
+    visibilité "toutes les souscriptions vs. les miennes" au niveau du queryset
+    (READ_ALL_SOUSCRIPTIONS_MIN_LEVEL, basé sur le rôle système legacy) reste explicitement hors
+    scope de cette phase (voir plan, section "bewusst NICHT angefasst"), donc ce test porte sur
+    la propre justificatif du user plutôt que sur "voit tout"."""
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    JustificatifRabaisFactory.create_batch(2)  # bruit : appartiennent à d'autres membres
+    user, membre = _user_avec_membre(Role.MEMBRE, "phased-justificatifs-grant@example.de")
+    mon_justificatif = JustificatifRabaisFactory(souscription=SouscriptionFactory(membre=membre))
+    role_perso = RoleDefinitionFactory(slug="justificatifs-manager")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_justificatifs", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(JUSTIFICATIF_LIST_URL))
+    assert resp.status_code == 200
+    ids = {r["id"] for r in resp.data["results"]}
+    assert str(mon_justificatif.id) in ids
+
+
+def test_phase_d_super_admin_voit_toujours_la_file_meme_si_matrice_dit_aucun(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("super_admin", "page_justificatifs", NiveauAcces.AUCUN)
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "phased-justificatifs-super@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.get(reverse(JUSTIFICATIF_LIST_URL))
+    assert resp.status_code == 200
+
+
 # --- Détail / téléchargement (RH+ ou propriétaire) ---
 
 

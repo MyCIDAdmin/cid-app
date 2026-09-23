@@ -512,3 +512,59 @@ def test_modifier_trajet_dun_autre_conducteur_refuse(api_client):
         reverse("evenements:covoiturage-detail", args=[trajet.id]), {"places_disponibles": 1}
     )
     assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Phase D (ajoutée le 2026-09-23) — page de gestion "Veranstaltungsverwaltung" (page_events)
+# désormais pilotée par apps.rbac (real enforcement, y compris pour les rôles système eux-mêmes).
+# ---------------------------------------------------------------------------
+
+_EVENEMENT_PAYLOAD = {
+    "titre": "Déplacement Munich",
+    "type_evenement": "deplacement",
+    "description": "desc",
+    "date_evenement": "2027-01-01",
+    "lieu": "Munich",
+}
+
+
+def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module=module_slug, defaults={"niveau_acces": niveau_acces}
+    )
+
+
+def test_phase_d_bureau_admin_perd_lacces_a_la_gestion_des_evenements_si_matrice_le_dit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("bureau_admin", "page_events", NiveauAcces.AUCUN)
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "phased-events-restrict@example.de")
+
+    resp = _auth(api_client, user).post(reverse(EVENEMENT_LIST_URL), _EVENEMENT_PAYLOAD)
+    assert resp.status_code == 403
+
+
+def test_phase_d_role_personnalise_peut_gerer_les_evenements_via_la_matrice(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-events-grant@example.de")
+    role_perso = RoleDefinitionFactory(slug="events-manager")
+    RoleModulePermissionFactory(role=role_perso, module="page_events", niveau_acces=NiveauAcces.LECTURE_ECRITURE)
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+
+    resp = _auth(api_client, user).post(reverse(EVENEMENT_LIST_URL), _EVENEMENT_PAYLOAD)
+    assert resp.status_code == 201
+
+
+def test_phase_d_super_admin_gere_toujours_les_evenements_meme_si_matrice_dit_aucun(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("super_admin", "page_events", NiveauAcces.AUCUN)
+    user, _ = _user_avec_membre(Role.SUPER_ADMIN, "phased-events-super@example.de")
+
+    resp = _auth(api_client, user).post(reverse(EVENEMENT_LIST_URL), _EVENEMENT_PAYLOAD)
+    assert resp.status_code == 201

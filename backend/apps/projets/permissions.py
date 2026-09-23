@@ -34,6 +34,7 @@ demande utilisateur, voir docstring de module de models.py pour le détail des 8
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.services import has_admin_page_access
 
 GESTION_PROJETS_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
 
@@ -55,8 +56,12 @@ def est_gestionnaire_projet(user, projet) -> bool:
 
 
 class ProjetPermission(BasePermission):
-    """Projet — lecture tout authentifié, écriture Bureau Admin+, `contributeurs`
-    ouverte à tout authentifié (voir docstring de module)."""
+    """Projet — lecture tout authentifié, écriture = page de gestion "Projekt- &
+    Aktionsverwaltung" (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.PAGES_ADMIN slug
+    `page_projets`) — remplace (et non complète) l'ancien seuil fixe GESTION_PROJETS_MIN_LEVEL.
+    `contributeurs` ouverte à tout authentifié (voir docstring de module). NE remplace PAS
+    `est_gestionnaire_projet` ci-dessous (exception objet-spécifique "responsable de CE projet",
+    utilisée par GestionContenuProjetPermission), qui reste inchangée."""
 
     def has_permission(self, request, view):
         user = request.user
@@ -67,7 +72,7 @@ class ProjetPermission(BasePermission):
         action = getattr(view, "action", None)
         if action == "contributeurs":
             return True
-        return ROLE_LEVELS.get(user.role, 0) >= GESTION_PROJETS_MIN_LEVEL
+        return has_admin_page_access(user, "page_projets")
 
 
 class GestionContenuProjetPermission(BasePermission):

@@ -22,7 +22,7 @@ Permissions API — app evenements (FDD §2.2) :
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
-from apps.rbac.services import is_elevated_for_module
+from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
 GESTION_EVENEMENTS_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
 
@@ -40,7 +40,10 @@ class EvenementPermission(BasePermission):
     """`inscrire` est un POST sur ce même ViewSet mais n'est PAS un acte de gestion du
     catalogue (n'importe quel authentifié doit pouvoir s'inscrire) — on gate donc
     explicitement sur la liste d'actions plutôt que sur `request.method` (qui inclurait
-    à tort ce POST), à la différence de CataloguePermission (adhesions) qui n'a pas ce cas."""
+    à tort ce POST), à la différence de CataloguePermission (adhesions) qui n'a pas ce cas.
+    Les actions de gestion (EVENEMENT_WRITE_ACTIONS) forment la page "Veranstaltungsverwaltung"
+    (Phase D, ajoutée le 2026-09-23, slug `page_events`) — remplace (et non complète) l'ancien
+    seuil fixe GESTION_EVENEMENTS_MIN_LEVEL."""
 
     def has_permission(self, request, view):
         user = request.user
@@ -48,7 +51,7 @@ class EvenementPermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in EVENEMENT_WRITE_ACTIONS:
-            return ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL
+            return has_admin_page_access(user, "page_events")
         return True
 
 
