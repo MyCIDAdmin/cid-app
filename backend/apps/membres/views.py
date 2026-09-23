@@ -22,6 +22,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.permissions import module_access_permission
+from apps.rbac.services import is_elevated_for_module
 
 from .filters import MembreFilter
 from .models import Membre, StatutMembre
@@ -39,7 +41,11 @@ class MembreCursorPagination(CursorPagination):
 
 
 class MembreViewSet(ModelViewSet):
-    permission_classes = [MembrePermission]
+    # apps.rbac Phase B (ajouté le 2026-09-23) : module_access_permission("membres") est une
+    # porte SUPPLÉMENTAIRE (DRF combine permission_classes en ET logique) — elle ouvre l'accès
+    # à un rôle personnalisé selon la matrice Rôle×Module, jamais à la place de MembrePermission
+    # qui reste la source de vérité pour les 5 rôles système et pour le scope objet par objet.
+    permission_classes = [MembrePermission, module_access_permission("membres")]
     pagination_class = MembreCursorPagination
     filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter]
     filterset_class = MembreFilter
@@ -53,7 +59,11 @@ class MembreViewSet(ModelViewSet):
         # Protection IDOR (SCD §2.3, A01) : sous le niveau RH, un membre ne
         # voit jamais la liste des autres — uniquement sa propre fiche, si
         # elle existe et est liée à son compte.
-        if ROLE_LEVELS.get(user.role, 0) < ROLE_LEVELS[Role.RH]:
+        # apps.rbac Phase B : sauf si un rôle personnalisé lui donne un accès élevé sur ce
+        # module (voir is_elevated_for_module) — même logique que MembrePermission ci-dessus.
+        if ROLE_LEVELS.get(user.role, 0) < ROLE_LEVELS[Role.RH] and not is_elevated_for_module(
+            user, "membres"
+        ):
             return queryset.filter(user=user)
         return queryset
 

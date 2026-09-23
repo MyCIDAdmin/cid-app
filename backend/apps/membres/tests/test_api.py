@@ -387,3 +387,46 @@ def test_date_naissance_requise_a_la_creation(api_client, rh_user):
     del payload["date_naissance"]
     resp = api_client.post(reverse("membres:membre-list"), payload, format="json")
     assert resp.status_code == 400
+
+
+# --- apps.rbac Phase B : rôle personnalisé élevé sur le module "membres" (IDOR régression) ---
+
+
+def test_list_comme_role_personnalise_eleve_retourne_toutes_les_fiches(api_client):
+    """Un rôle personnalisé avec au moins la lecture sur "membres" doit voir TOUTES les fiches,
+    exactement comme RH/Admin aujourd'hui — voir is_elevated_for_module et le plan approuvé
+    ("si j'ai la rôle Mitglieder ET Leseberechtigung sur Mitglieder, je vois seulement mes
+    propres données. Mais wenn ich Admin/HR bin, sehe ich alle Daten")."""
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user = _user(Role.MEMBRE, "vertrieb-idor@example.de")
+    role = RoleDefinitionFactory(slug="vertrieb-membres-idor")
+    RoleModulePermissionFactory(role=role, module="membres", niveau_acces=NiveauAcces.LECTURE)
+    UserRoleAssignmentFactory(user=user, role=role)
+    MembreFactory.create_batch(2)  # d'autres fiches, sans lien à `user`
+    ma_fiche = MembreFactory(user=user)
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse("membres:membre-list"))
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 3
+    ids = {r["id"] for r in resp.data["results"]}
+    assert str(ma_fiche.id) in ids
+
+
+def test_list_comme_membre_sans_role_eleve_ne_voit_toujours_que_sa_propre_fiche(api_client, membre_user):
+    """Régression explicite après le câblage Phase B : un rôle "membre" pur, sans aucune
+    UserRoleAssignment supplémentaire, continue de ne voir que sa propre fiche — le
+    comportement historique (SCD §2.3 A01) n'a pas bougé."""
+    MembreFactory.create_batch(2)
+    ma_fiche = MembreFactory(user=membre_user)
+    _auth(api_client, membre_user)
+    resp = api_client.get(reverse("membres:membre-list"))
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert resp.data["results"][0]["id"] == str(ma_fiche.id)
