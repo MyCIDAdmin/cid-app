@@ -5,6 +5,11 @@
  * "Normales Mitglied" reste toujours coché et verrouillé (plancher imposé côté backend,
  * UserRolesView.post). La liste des rôles disponibles vient de `useRbacMatrice()`
  * (`matrice.roles`, non paginée) plutôt que d'un nouvel appel à `GET /rbac/roles/`.
+ *
+ * Libellés (demande utilisateur du 2026-09-23) : pour un rôle système, `role.nom` (backend, une
+ * seule langue) est remplacé par la traduction existante "utilisateurs:role.<slug>" — même
+ * principe que MatriceAccesTab.tsx. Un rôle personnalisé garde son nom tel quel (pas de clé de
+ * traduction, choisi librement par l'admin).
  */
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,10 +18,14 @@ import { useUtilisateursList } from "../../hooks/useUtilisateurs";
 import { useAssignerRolesUtilisateur, useRbacMatrice, useRolesUtilisateur } from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import type { RoleDefinition } from "../../types/rbac";
 
 export default function AttributionRolesTab() {
   const { t } = useTranslation(["utilisateurs", "rbac"]);
   const moi = useAuthStore((s) => s.user);
+
+  const libelleRole = (role: RoleDefinition) =>
+    role.is_system ? t(`utilisateurs:role.${role.slug}`, role.nom) : role.nom;
 
   const [q, setQ] = useState("");
   const [rechercheAppliquee, setRechercheAppliquee] = useState("");
@@ -232,7 +241,7 @@ export default function AttributionRolesTab() {
                                     onChange={() => basculerRole(role.id)}
                                     className="rounded"
                                   />
-                                  {role.nom}
+                                  {libelleRole(role)}
                                 </label>
                               ))}
                             </div>

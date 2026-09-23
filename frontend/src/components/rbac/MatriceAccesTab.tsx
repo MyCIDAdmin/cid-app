@@ -6,6 +6,14 @@
  * ROLE_LEVELS existante (voir backend/apps/rbac/services.py::is_elevated_for_module) — modifier
  * la cellule d'un rôle système n'affecte jamais son propre comportement legacy (2FA, IsRHOrAbove…),
  * seulement les droits qu'un rôle ADDITIONNEL apporterait à un utilisateur qui le cumule.
+ *
+ * Libellés (demande utilisateur du 2026-09-23 : "Die Rollennamen sollen der eingestellten
+ * Sprache entsprechend") : `role.nom`/`module.label` viennent du backend dans une seule langue
+ * fixe (français, voir migrations/registry.py) — pour les 5 rôles système et les 10 modules
+ * connus on affiche donc la traduction ("utilisateurs:role.<slug>", "rbac:modules.<slug>") avec
+ * la valeur backend comme `defaultValue` (i18next), jamais le champ brut directement. Un rôle
+ * personnalisé (is_system=false) n'a pas de clé de traduction — son nom, choisi librement par
+ * l'admin, reste affiché tel quel dans toutes les langues, par nature.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,13 +24,17 @@ import {
   useSetMatriceCellule,
   useSupprimerRole,
 } from "../../hooks/useRbac";
-import type { NiveauAcces } from "../../types/rbac";
+import type { ModuleInfo, NiveauAcces, RoleDefinition } from "../../types/rbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 const NIVEAUX: NiveauAcces[] = ["aucun", "lecture", "lecture_ecriture"];
 
 export default function MatriceAccesTab() {
-  const { t } = useTranslation("rbac");
+  const { t } = useTranslation(["rbac", "utilisateurs"]);
+
+  const libelleRole = (role: RoleDefinition) =>
+    role.is_system ? t(`utilisateurs:role.${role.slug}`, role.nom) : role.nom;
+  const libelleModule = (module: ModuleInfo) => t(`modules.${module.slug}`, module.label);
 
   const { data: matrice, isLoading, isError } = useRbacMatrice();
   const setCelluleMutation = useSetMatriceCellule();
@@ -76,7 +88,7 @@ export default function MatriceAccesTab() {
     );
   }
 
-  function supprimerRole(roleId: string, nom: string) {
+  function supprimerRole(roleId: string) {
     setErreursSuppression((prev) => ({ ...prev, [roleId]: "" }));
     supprimerRoleMutation.mutate(roleId, {
       onSuccess: () => setConfirmationSuppression(null),
@@ -86,7 +98,6 @@ export default function MatriceAccesTab() {
           [roleId]: extractApiErrorMessage(error, t("acces.supprimer.erreur")),
         })),
     });
-    void nom;
   }
 
   return (
@@ -101,7 +112,7 @@ export default function MatriceAccesTab() {
               <th className="sticky left-0 bg-bg-primary px-4 py-2">{t("acces.col_role")}</th>
               {matrice.modules.map((module) => (
                 <th key={module.slug} className="whitespace-nowrap px-3 py-2">
-                  {module.label}
+                  {libelleModule(module)}
                 </th>
               ))}
               <th className="px-3 py-2" />
@@ -112,7 +123,7 @@ export default function MatriceAccesTab() {
               <tr key={role.id} className="border-b border-text-tertiary/10 last:border-0">
                 <td className="sticky left-0 bg-bg-primary px-4 py-2 font-medium text-text-primary">
                   <div className="flex items-center gap-2">
-                    <span>{role.nom}</span>
+                    <span>{libelleRole(role)}</span>
                     <span
                       className={`rounded-full px-1.5 py-0.5 text-[10px] uppercase ${
                         role.is_system
@@ -127,7 +138,7 @@ export default function MatriceAccesTab() {
                 {matrice.modules.map((module) => (
                   <td key={module.slug} className="px-3 py-2">
                     <select
-                      aria-label={`${role.nom} — ${module.label}`}
+                      aria-label={`${libelleRole(role)} — ${libelleModule(module)}`}
                       value={celluleValeur(role.id, module.slug)}
                       onChange={(e) =>
                         changerCellule(role.id, module.slug, e.target.value as NiveauAcces)
@@ -147,7 +158,7 @@ export default function MatriceAccesTab() {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"
-                        onClick={() => supprimerRole(role.id, role.nom)}
+                        onClick={() => supprimerRole(role.id)}
                         disabled={supprimerRoleMutation.isPending}
                         className="rounded-cid bg-status-dangerText px-2 py-1 text-xs font-medium text-white disabled:opacity-40"
                       >

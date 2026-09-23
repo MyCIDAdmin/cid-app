@@ -3,6 +3,18 @@
     "attribution": "Zuweisung",
     "acces": "Zugriff"
   },
+  "modules": {
+    "membres": "Mitglieder",
+    "cotisations": "Beiträge",
+    "adhesions": "Mitgliedschaften",
+    "evenements": "Veranstaltungen",
+    "boutique": "Boutique",
+    "vote": "Abstimmung",
+    "communaute": "Gemeinschaft",
+    "stats": "Statistiken",
+    "notifications": "Benachrichtigungen",
+    "projets": "Projekte"
+  },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",
     "gerer_roles": "Rollen verwalten",

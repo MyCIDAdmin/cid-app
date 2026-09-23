@@ -3,6 +3,18 @@
     "attribution": "Attribution",
     "acces": "Accès"
   },
+  "modules": {
+    "membres": "Membres",
+    "cotisations": "Cotisations",
+    "adhesions": "Adhésions",
+    "evenements": "Événements",
+    "boutique": "Boutique",
+    "vote": "Vote",
+    "communaute": "Communauté",
+    "stats": "Statistiques",
+    "notifications": "Notifications",
+    "projets": "Projets"
+  },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",
     "gerer_roles": "Gérer les rôles",
