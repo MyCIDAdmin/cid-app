@@ -21,7 +21,19 @@
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td width="48" valign="middle">
-                    <img src="{{ logo_url }}" alt="CID" width="40" height="40" style="display:block; border-radius:8px;">
+                    <!-- Badge "CID" en pur HTML/CSS — aucune balise image pour ce logo, voir la
+                         docstring de apps.boutique.emails pour l'historique des trois bugs
+                         successifs (troncature Gmail, pièce jointe inline rejetée par Brevo,
+                         puis URL hébergée que le proxy d'images de Brevo échoue à récupérer de
+                         façon fiable) qui ont mené à ce choix délibéré : aucune ressource
+                         externe à charger = imperméable aux trois à la fois. -->
+                    <table role="presentation" width="40" height="40" cellpadding="0" cellspacing="0" style="width:40px; height:40px; background-color:#ffffff; border-radius:8px;">
+                      <tr>
+                        <td align="center" valign="middle" style="width:40px; height:40px; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; font-size:12px; font-weight:800; letter-spacing:0.03em; color:#8B0000;">
+                          CID
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                   <td valign="middle" style="padding-left:12px;">
                     <span style="color:#ffffff; font-size:15px; font-weight:700; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">{{ t.assoc_name }}</span><br>

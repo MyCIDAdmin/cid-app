@@ -7,9 +7,8 @@ texte brut via send_mail) : la demande utilisateur qualifie explicitement CET em
 (soigné), contrairement aux autres emails de commande — pas de raison de généraliser ce
 traitement à tout le module, qui resterait hors du périmètre demandé.
 
-Logo — historique de deux bugs réels successifs en production le 2026-09-23, tous deux liés au
-même problème de fond (le logo, cotisations.assets.logo_cid.jpg, n'a pas sa place ENCODÉ DANS le
-message) :
+Logo — historique de TROIS bugs réels successifs en production le 2026-09-23, chacun corrigeant
+le précédent tout en révélant le suivant, jusqu'à abandonner complètement l'idée d'une image :
   1. `data:` URI inline (même technique que apps.cotisations.pdf, correcte pour un PDF —
      WeasyPrint rend le HTML localement — mais pas pour un email) : gonflait le message à lui
      seul à ~109 Ko (> seuil de troncature Gmail ~102 Ko, "[Message clipped]") ET était de toute
@@ -22,46 +21,32 @@ message) :
      `fail_silently` (qui ne couvre que `.send()`) → l'email entier ne partait jamais, ni erreur
      visible ni trace nulle part avant que tasks.envoyer_email_bon_achat_code soit entouré d'un
      try/except explicite (voir son docstring) pour révéler ce traceback.
+  3. URL hébergée sur MinIO (`https://.../produits/_emails/logo_cid_email.jpg`, bucket public,
+     déjà vérifié fonctionnel pour les photos produits), correctif du bug 2 : l'URL elle-même est
+     confirmée joignable (testée en direct, l'image s'affiche parfaitement) — mais l'email reçu
+     ne montrait toujours qu'une icône d'image cassée. Cause : l'API Brevo NE renvoie PAS l'URL
+     telle quelle, elle la réécrit systématiquement vers son propre domaine de tracking/cache
+     (`r.mail.<domaine>/im/...`, distinct des URLs `/tr/op/...` et `/tr/cl/...` d'ouverture/clic)
+     après être allée chercher elle-même l'image à l'URL d'origine — un comportement documenté et
+     non désactivable sur les comptes non-Enterprise (voir community.brevo.com, plusieurs
+     signalements d'images cassées malgré une URL source valide, sans cause unique identifiée
+     côté Brevo — SSL, délai, ou blocage réseau selon les cas). Autrement dit : même une URL
+     `https://` publique et fonctionnelle ne suffit pas, la fiabilité du récupérateur d'images de
+     Brevo échappe entièrement à notre contrôle.
 
-Corrigé définitivement en sortant le logo du message : hébergé une fois pour toutes sur MinIO
-(réutilise le bucket "produits", apps.boutique.storage.ProduitsStorage — déjà configuré en
-lecture publique et déjà vérifié fonctionnel, les photos produits s'affichant bien dans le
-navigateur des membres) et référencé par une simple URL `https://` dans le `<img src=...>`. Ce
-mécanisme ne dépend d'AUCUNE fonctionnalité MIME/ESP particulière (juste une chaîne de
-caractères dans du HTML) : le standard de facto de tout l'emailing transactionnel, imperméable
-aux deux bugs précédents (rien à télécharger côté client mail = pas de troncature possible, une
-URL n'est jamais strippée comme un `data:` URI, et Brevo n'a aucune pièce jointe à refuser).
-`logo_email_url()` auto-provisionne l'upload au premier appel (idempotent via `storage.exists`,
-aucune migration/commande manuelle requise — même philosophie que `setup_minio_buckets` déjà
-appelé au démarrage du conteneur, voir Dockerfile.prod).
+Corrigé définitivement en abandonnant toute image raster pour ce logo : remplacé par un badge
+"CID" en pur HTML/CSS (table + texte stylé, voir email_bon_achat.html) — aucune ressource externe
+à charger, donc imperméable aux TROIS bugs précédents à la fois (rien à tronquer, rien à refuser
+comme pièce jointe, rien à aller chercher). Seule perte : le logo n'est plus une image bitmap,
+juste les lettres "CID" sur fond blanc arrondi aux couleurs de la charte — un compromis délibéré
+pour un email transactionnel dont la fiabilité de livraison prime sur la fidélité graphique.
 """
 
-from functools import lru_cache
-from io import BytesIO
-from pathlib import Path
-
 from django.conf import settings
-from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from django.utils import timezone
-from PIL import Image
 
 from .models import BonAchat
-from .storage import ProduitsStorage
-
-_LOGO_PATH = (
-    Path(__file__).resolve().parent.parent / "cotisations" / "assets" / "logo_cid.jpg"
-)
-
-# Nom de l'objet dans le bucket "produits" (voir docstring module) — préfixe "_emails/" pour le
-# distinguer visuellement des photos produits réelles dans la console MinIO, sans pour autant
-# justifier un bucket dédié rien que pour ce seul fichier statique.
-_LOGO_EMAIL_STORAGE_NAME = "_emails/logo_cid_email.jpg"
-
-# Taille d'icône affichée dans le template (40x40, voir email_bon_achat.html) — 120px de long
-# côté suffit largement pour un rendu net même sur écran retina (3x), tout en gardant le fichier
-# hébergé léger (quelques Ko au lieu des ~80 Ko du logo source pleine résolution).
-_TAILLE_LOGO_EMAIL = (120, 120)
 
 TRADUCTIONS = {
     "fr": {
@@ -107,30 +92,6 @@ TRADUCTIONS = {
         "subject": "Ihr Gutschein {code} ist bereit!",
     },
 }
-
-
-def _redimensionner_logo() -> bytes:
-    with Image.open(_LOGO_PATH) as image:
-        image = image.convert("RGB")
-        image.thumbnail(_TAILLE_LOGO_EMAIL)
-        tampon = BytesIO()
-        image.save(tampon, format="JPEG", quality=85, optimize=True)
-        return tampon.getvalue()
-
-
-@lru_cache(maxsize=1)
-def logo_email_url() -> str:
-    """URL HTTPS publique et stable du logo redimensionné pour l'email — voir docstring module
-    pour pourquoi ce mécanisme (et pas un `data:` URI ni une pièce jointe inline) est le bon.
-    Auto-provisionne l'upload vers MinIO au tout premier appel, seulement si l'objet n'existe pas
-    encore (`storage.exists`, jamais un nouvel upload à chaque process — idempotent à travers les
-    redémarrages, pas seulement grâce au lru_cache qui lui ne survit qu'à la durée de vie d'un
-    process). Le contenu ne change jamais après le premier upload (fichier source figé dans le
-    dépôt) : pas de souci de cache/CDN à invalider."""
-    storage = ProduitsStorage()
-    if not storage.exists(_LOGO_EMAIL_STORAGE_NAME):
-        storage.save(_LOGO_EMAIL_STORAGE_NAME, ContentFile(_redimensionner_logo()))
-    return storage.url(_LOGO_EMAIL_STORAGE_NAME)
 
 
 def _formate_montant(montant) -> str:
@@ -179,7 +140,6 @@ def rendre_email_bon_achat(bon: BonAchat) -> tuple[str, str, str]:
         "boutique/email_bon_achat.html",
         {
             "t": t,
-            "logo_url": logo_email_url(),
             "code": bon.code,
             "montant_formate": montant_formate,
             "expiration_formatee": expiration_formatee,

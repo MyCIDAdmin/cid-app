@@ -23,26 +23,6 @@ from apps.membres.tests.factories import MembreFactory
 pytestmark = pytest.mark.django_db
 
 
-@pytest.fixture(autouse=True)
-def _logo_email_url_sans_reseau(monkeypatch):
-    """`apps.boutique.emails.logo_email_url` (voir docstring, appelée par
-    `rendre_email_bon_achat`) est mise en cache par process (`lru_cache`) et appelle
-    `ProduitsStorage.exists`/`.save` au tout premier appel — deux vrais appels réseau vers MinIO,
-    injoignable dans l'environnement de test. On simule ici l'objet déjà présent dans le bucket
-    (cas réel après le tout premier email envoyé en production), ce qui évite `.save()` — seule
-    `.url()` s'exécute alors, un pur assemblage de chaîne (voir test_storage.py), donc sûr sans
-    réseau. Le cache est vidé avant/après chaque test pour ne jamais faire fuiter l'URL d'un test
-    à l'autre (autrement le premier test à appeler la fonction figerait sa valeur pour tous les
-    suivants dans le même process pytest)."""
-    from apps.boutique.emails import logo_email_url
-    from apps.boutique.storage import ProduitsStorage
-
-    monkeypatch.setattr(ProduitsStorage, "exists", lambda self, name: True)
-    logo_email_url.cache_clear()
-    yield
-    logo_email_url.cache_clear()
-
-
 def _membre_avec_compte(email="riadh@example.de"):
     user = User.objects.create_user(email=email, password="Password123!", is_active=True)
     return MembreFactory(user=user)
@@ -141,17 +121,22 @@ def test_envoyer_email_bon_achat_code(mailoutbox):
     assert "80,00 €" in corps_html
 
 
-def test_envoyer_email_bon_achat_code_logo_en_url_hebergee_jamais_encode_dans_le_message(
+def test_envoyer_email_bon_achat_code_logo_est_un_badge_css_jamais_une_image_externe(
     mailoutbox,
 ):
-    # Régression — deux bugs réels successifs en production le 2026-09-23 (voir docstring de
+    # Régression — TROIS bugs réels successifs en production le 2026-09-23 (voir docstring de
     # apps.boutique.emails pour l'historique complet) : (1) `data:` URI inline — gonflait
     # l'email au-delà du seuil de troncature Gmail (~102 Ko) ET était de toute façon strippé du
     # HTML par Gmail, jamais affiché ; (2) pièce jointe inline (Content-ID) — fonctionne en SMTP
     # mais pas via l'API Brevo utilisée en prod (django-anymail : "Brevo does not support inline
-    # attachments", email jamais envoyé). Le logo ne doit donc plus jamais être ENCODÉ DANS le
-    # message, sous quelque forme que ce soit — seulement référencé par une URL HTTPS hébergée
-    # (voir apps.boutique.emails.logo_email_url, MinIO/ProduitsStorage).
+    # attachments", email jamais envoyé) ; (3) URL hébergée sur MinIO — l'URL elle-même
+    # fonctionnait parfaitement (vérifié manuellement), mais Brevo réécrit systématiquement les
+    # `<img src>` vers son propre domaine de cache/tracking (`r.mail.<domaine>/im/...`) en allant
+    # chercher l'image lui-même, et cette récupération s'est révélée non fiable (documenté,
+    # non désactivable hors compte Enterprise) — icône d'image cassée côté destinataire malgré
+    # une URL source valide. Le logo est donc désormais un badge "CID" en pur HTML/CSS (voir
+    # email_bon_achat.html) : plus AUCUNE ressource externe à charger pour l'afficher, donc
+    # imperméable aux trois bugs à la fois.
     membre = _membre_avec_compte()
     bon = BonAchatFactory(achete_par=membre, statut=StatutBonAchat.ACTIF)
 
@@ -162,14 +147,16 @@ def test_envoyer_email_bon_achat_code_logo_en_url_hebergee_jamais_encode_dans_le
     corps_html, _ = message.alternatives[0]
 
     assert "data:image" not in corps_html
-    assert 'src="http' in corps_html
+    # Aucune balise <img> du tout pour le logo : un badge CSS ne peut pas être tronqué, refusé
+    # en pièce jointe, ni échouer à être récupéré par un proxy d'images tiers.
+    assert "<img" not in corps_html
+    assert "CID" in corps_html
 
-    # Aucune pièce jointe : le logo n'est référencé que par URL, jamais encodé dans le message.
+    # Aucune pièce jointe : rien à encoder ni à héberger pour ce logo.
     assert message.attachments == []
 
-    # Le message complet reste minuscule (juste le texte + un petit HTML sans rien d'encodé),
-    # largement sous le seuil de troncature de Gmail (~102 Ko) — l'ancien data: URI faisait à
-    # lui seul ~109 Ko.
+    # Le message complet reste minuscule, largement sous le seuil de troncature de Gmail
+    # (~102 Ko) — l'ancien data: URI faisait à lui seul ~109 Ko.
     taille_totale = len(message.message().as_bytes())
     assert taille_totale < 20_000
 
