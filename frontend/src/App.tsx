@@ -10,12 +10,9 @@ import ParametresNotificationPage from "./pages/admin/ParametresNotificationPage
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
-import AcheterBonAchatPage from "./pages/boutique/AcheterBonAchatPage";
 import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
-import CataloguePage from "./pages/boutique/CataloguePage";
+import BoutiquePage from "./pages/boutique/BoutiquePage";
 import CommandeRetourPage from "./pages/boutique/CommandeRetourPage";
-import MesBonsAchatPage from "./pages/boutique/MesBonsAchatPage";
-import MesCommandesPage from "./pages/boutique/MesCommandesPage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
 import AdminAlbumsPage from "./pages/communaute/AdminAlbumsPage";
 import AdminQuizPage from "./pages/communaute/AdminQuizPage";
@@ -201,26 +198,23 @@ export default function App() {
           }
         />
         {/* Boutique (mockup #pg-boutique/#pg-boutique-panier/#pg-admin-boutique, FDD §3.4) —
-            catalogue et panier/commande ouverts à tout authentifié (le backend ne renvoie de
-            toute façon que les produits publiés à un rôle < Bureau Admin, voir
-            ProduitViewSet.get_queryset) ; gestion catalogue/commandes réservée Bureau Admin+,
-            même niveau que CatalogueBoutiquePermission/ORDER_VISIBILITY_MIN_LEVEL côté API. */}
-        <Route path="/boutique" element={<CataloguePage />} />
+            catalogue, "Mes commandes" et "Mes bons d'achat" fusionnés en un seul point d'entrée
+            depuis le 2026-09-23 (retour utilisateur : "'Meine Bestellungen' und 'Meine
+            Gutscheine' in die Boutique verschieben" — voir BoutiquePage, pilotée par `?onglet=`
+            plutôt que par des routes dédiées ; ?commande=/?bon= mettent en évidence l'élément
+            visé par une notification, voir useDeepLinkCible). Ouverte à tout authentifié (le
+            backend ne renvoie de toute façon que les produits publiés à un rôle < Bureau Admin,
+            voir ProduitViewSet.get_queryset ; même scope IDOR pour les commandes/bons du membre
+            courant, voir CommandeViewSet/BonAchatViewSet.get_queryset) ; gestion catalogue/
+            commandes réservée Bureau Admin+, même niveau que CatalogueBoutiquePermission/
+            ORDER_VISIBILITY_MIN_LEVEL côté API.
+            Un bon d'achat (demande utilisateur du 2026-09-23 : "Es soll möglich sein Gutscheine
+            zu Kaufen") n'a plus sa propre page d'achat depuis le même jour ("Gutschein soll als
+            Kategorie im shop auftauchen und nicht als eigenes Modul") : c'est désormais un
+            produit du catalogue comme un autre (voir CataloguePage), acheté via le panier/
+            passer() normal — /boutique/bon-achat/acheter est donc retirée. */}
+        <Route path="/boutique" element={<BoutiquePage />} />
         <Route path="/boutique/panier" element={<PanierCommandePage />} />
-        {/* "Mes commandes" (ajoutée le 2026-09-19) — corrige le lien de notification
-            "/boutique/commandes" (confirmation/annulation/expédition, voir
-            apps.boutique.notifications) qui ne pointait auparavant vers aucune route ;
-            ?commande= met en évidence la commande visée (voir useDeepLinkCible). Ouverte à
-            tout authentifié, même scope IDOR que le reste du module (CommandeViewSet.
-            get_queryset ne renvoie de toute façon que les commandes du membre courant en
-            dessous de Bureau Admin). */}
-        <Route path="/boutique/commandes" element={<MesCommandesPage />} />
-        {/* Bons d'achat (demande utilisateur du 2026-09-23 : "Es soll möglich sein Gutscheine
-            zu Kaufen") — ouverts à tout authentifié, même scope IDOR que le reste du module
-            (BonAchatViewSet.get_queryset ne renvoie que les bons du membre courant en dessous
-            de Bureau Admin). */}
-        <Route path="/boutique/bon-achat/acheter" element={<AcheterBonAchatPage />} />
-        <Route path="/boutique/bons-achat" element={<MesBonsAchatPage />} />
         {/* Retour de paiement en ligne (ajouté le 2026-09-17, même principe que
             /cotisation/retour) — cible de success_url/cancel_url (Stripe) et return_url/
             cancel_url (PayPal), voir apps.cotisations.gateways (partagé avec apps.boutique) —

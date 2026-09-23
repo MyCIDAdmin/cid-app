@@ -5,7 +5,8 @@
     "accessoires": "Accessoires",
     "articles_club": "Articles club",
     "cartes_docs": "Cartes & Docs",
-    "divers": "Divers"
+    "divers": "Divers",
+    "bon_achat": "Bons d'achat"
   },
   "statut_produit": {
     "brouillon": "Brouillon",
@@ -22,7 +23,6 @@
     "remboursee": "Remboursée"
   },
   "statut_bon_achat": {
-    "en_attente": "En attente de paiement",
     "actif": "Actif",
     "epuise": "Épuisé"
   },
@@ -45,7 +45,8 @@
     "en_stock": "{{stock}} en stock",
     "panier_flottant": "{{count}} article(s)",
     "regle_pourcentage": "-{{pct}}% dès {{seuil}} achetés",
-    "regle_article_offert": "1 offert dès {{seuil}} achetés"
+    "regle_article_offert": "1 offert dès {{seuil}} achetés",
+    "bon_achat_montant_label": "Montant ({{min}} – {{max}} €)"
   },
   "commande": {
     "titre": "Mon panier",
@@ -88,6 +89,7 @@
     "payer_hors_ligne_note": "Merci de régler le montant par virement ou PayPal. Le Directeur Financier confirmera manuellement la réception du paiement dans l'application dès qu'il sera reçu.",
     "article_offert_applique": "{{count}} article(s) offert(s)",
     "pourcentage_applique": "-{{pct}}% appliqué",
+    "article_bon_achat": "Bon d'achat",
     "bon_achat_label": "Bon d'achat (optionnel)",
     "bon_achat_placeholder": "Code du bon d'achat",
     "bon_achat_verifier": "Vérifier",
@@ -121,6 +123,11 @@
     "montant": "Montant",
     "statut": "Statut",
     "retour_catalogue": "Retour au catalogue"
+  },
+  "boutique_page": {
+    "onglet_catalogue": "Catalogue",
+    "onglet_commandes": "Mes commandes",
+    "onglet_bons_achat": "Mes bons d'achat"
   },
   "admin": {
     "titre": "Boutique — Administration",
@@ -218,6 +225,9 @@
     "image_en_cours": "Téléversement…",
     "image_erreur": "L'image n'a pas pu être téléversée.",
     "description_label": "Description",
+    "type_label": "Type de produit",
+    "type_physique": "Produit physique (stock, taille/couleur)",
+    "type_bon_achat": "Bon d'achat (montant libre, sans stock)",
     "nouveaute_label": "Marquer comme nouveauté",
     "erreur_creation": "Le produit n'a pas pu être créé.",
     "creer": "Créer le produit",
@@ -245,18 +255,6 @@
     "seuil_quantite_label": "Seuil (quantité)",
     "type_reduction_label": "Type",
     "ajouter_regle": "Ajouter"
-  },
-  "bon_achat_acheter": {
-    "titre": "Acheter un bon d'achat",
-    "description": "Choisissez librement le montant de votre bon d'achat CID — il pourra ensuite être utilisé, en une ou plusieurs fois, comme code promo dans la boutique.",
-    "montant_label": "Montant ({{min}} – {{max}} €)",
-    "erreur": "L'achat n'a pas pu être enregistré.",
-    "en_cours": "Enregistrement…",
-    "acheter": "Acheter ce bon d'achat",
-    "confirme_titre": "Bon d'achat créé !",
-    "confirme_montant": "Montant : {{montant}}",
-    "confirme_note": "Votre bon sera activé et le code vous sera envoyé par email dès que le paiement aura été confirmé.",
-    "voir_mes_bons": "Voir mes bons d'achat"
   },
   "mes_bons_achat": {
     "titre": "Mes bons d'achat",

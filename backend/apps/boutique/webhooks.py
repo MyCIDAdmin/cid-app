@@ -18,15 +18,17 @@ Contrairement à Cotisation, Commande n'a pas de statut "échouée" dans sa mach
 STATUTS_CONFIRMABLES_PAIEMENT côté models.py) : un paiement expiré/refusé laisse donc simplement
 la commande en_attente (le membre peut réessayer depuis la page de retour, ou payer par
 virement/espèces confirmé manuellement) — pas de transition à effectuer, juste une trace dans les
-logs. Même chose pour BonAchat (STATUTS_BON_ACHAT_CONFIRMABLES) depuis le 2026-09-23.
+logs.
 
-Résolution de la référence (`client_reference_id`/`custom_id`, voir _resoudre_reference) : une
-Commande et un BonAchat partagent le même compte marchand Stripe/PayPal, donc le même espace de
-webhooks. Plutôt que de risquer une collision d'UUID entre les deux tables (extrêmement
-improbable mais jamais formellement exclue), CommandeViewSet.initier_paiement_en_ligne envoie
-l'UUID brut de la Commande (comportement historique, inchangé) tandis que
-BonAchatViewSet.initier_paiement_en_ligne préfixe la référence par "BON-" — cette dernière est
-donc résolue en priorité, sans même toucher la table Commande.
+Résolution de la référence (`client_reference_id`/`custom_id`, voir _resoudre_reference) : plus
+simple depuis le 2026-09-23 qu'avant cette date — un bon d'achat s'achète désormais comme
+n'importe quel autre produit, via une Commande normale (voir docstring de tête de models.py), il
+n'y a donc plus qu'un seul type d'objet (Commande) à résoudre ici (l'ancien préfixe "BON-" pour
+distinguer un BonAchat payé séparément a été supprimé avec BonAchatViewSet.acheter/
+initier_paiement_en_ligne). `_confirmer_paiement_gateway` génère lui-même les BonAchat de la
+commande confirmée (voir `_generer_bons_achat`, importé depuis views.py pour éviter toute
+dépendance circulaire au chargement de l'app, même principe que l'import différé de
+`notifier_bon_achat_actif` ci-dessous historiquement).
 """
 
 import json
@@ -46,18 +48,9 @@ from apps.cotisations.gateways import (
     verifier_signature_webhook_paypal,
 )
 
-from .models import (
-    STATUTS_BON_ACHAT_CONFIRMABLES,
-    STATUTS_CONFIRMABLES_PAIEMENT,
-    BonAchat,
-    Commande,
-    ModePaiementCommande,
-    StatutCommande,
-)
+from .models import STATUTS_CONFIRMABLES_PAIEMENT, Commande, ModePaiementCommande, StatutCommande
 
 logger = logging.getLogger(__name__)
-
-_PREFIXE_BON_ACHAT = "BON-"
 
 
 def _confirmer_paiement_gateway(commande: Commande, reference: str) -> None:
@@ -77,61 +70,38 @@ def _confirmer_paiement_gateway(commande: Commande, reference: str) -> None:
             "statut",
         ]
     )
-    # Volontairement aucune notification ici, comme pour une confirmation manuelle via
-    # confirmer_paiement (voir docstring de apps.boutique.views) — comportement identique quel
-    # que soit le chemin de confirmation.
+    # Volontairement aucune notification de commande ici, comme pour une confirmation manuelle
+    # via confirmer_paiement (voir docstring de apps.boutique.views) — comportement identique
+    # quel que soit le chemin de confirmation. En revanche, les éventuelles lignes bon_achat de
+    # la commande doivent générer leur BonAchat ici (import différé — évite tout risque de
+    # dépendance circulaire au chargement de l'app, même convention que l'import de
+    # notifier_bon_achat_actif ci-dessous historiquement) : c'est cette garde d'idempotence
+    # (statut déjà CONFIRMEE -> return ci-dessus) qui empêche un rejeu webhook de dupliquer les
+    # bons générés.
+    from .views import _generer_bons_achat
 
-
-def _confirmer_paiement_bon_achat(bon: BonAchat, reference: str) -> None:
-    """Ajouté le 2026-09-23 — même principe d'idempotence que _confirmer_paiement_gateway, mais
-    déclenche en plus l'email/notification "bon prêt à l'emploi" (contrairement à une Commande,
-    voir apps.boutique.notifications.notifier_bon_achat_actif) : un BonAchat n'a aucune autre
-    notification à ce stade (pas d'équivalent "nouvelle commande" côté staff)."""
-    if bon.statut not in STATUTS_BON_ACHAT_CONFIRMABLES:
-        return  # idempotence : déjà traité (rejeu webhook, double notification...)
-    bon.mode_paiement = ModePaiementCommande.EN_LIGNE
-    bon.reference_paiement = reference
-    bon.activer()
-    bon.save(
-        update_fields=[
-            "mode_paiement",
-            "reference_paiement",
-            "statut",
-            "date_paiement_confirme",
-            "date_expiration",
-        ]
-    )
-    # Import différé — évite tout risque de dépendance circulaire au chargement de l'app, voir
-    # apps.boutique.tasks.envoyer_email_bon_achat_code pour la même convention.
-    from .notifications import notifier_bon_achat_actif
-
-    notifier_bon_achat_actif(bon)
+    _generer_bons_achat(commande)
 
 
 def _echouer_paiement(objet) -> None:
-    # Pas de statut "échouée" côté Commande/BonAchat (voir docstring module) : rien à faire,
-    # seulement une trace pour le suivi/debug.
+    # Pas de statut "échouée" côté Commande (voir docstring module) : rien à faire, seulement une
+    # trace pour le suivi/debug.
     logger.info(
         "boutique webhook: paiement échoué/expiré pour %s=%s", type(objet).__name__, objet.id
     )
 
 
 def _resoudre_reference(reference_id):
-    """Résout un `client_reference_id`/`custom_id` PSP vers ("commande", Commande),
-    ("bon", BonAchat), ou (None, None) si introuvable/non pertinent pour cette app (voir
-    docstring de module) — remplace l'ancien `_commande_ou_none`, désormais insuffisant depuis
-    l'ajout de BonAchat."""
+    """Résout un `client_reference_id`/`custom_id` PSP vers une Commande, ou None si
+    introuvable/non pertinent pour cette app (voir docstring de module) — simplifié le
+    2026-09-23 : un bon d'achat n'a plus son propre espace de références (voir ci-dessus), un
+    seul type d'objet à résoudre ici désormais."""
     if not reference_id:
-        return None, None
-    if reference_id.startswith(_PREFIXE_BON_ACHAT):
-        try:
-            return "bon", BonAchat.objects.get(id=reference_id[len(_PREFIXE_BON_ACHAT) :])
-        except (BonAchat.DoesNotExist, ValueError):
-            return None, None
+        return None
     try:
-        return "commande", Commande.objects.get(id=reference_id)
+        return Commande.objects.get(id=reference_id)
     except (Commande.DoesNotExist, ValueError):
-        return None, None
+        return None
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -148,8 +118,8 @@ class StripeWebhookView(View):
 
         type_ = event["type"]
         session = event["data"]["object"]
-        type_objet, objet = _resoudre_reference(session.get("client_reference_id"))
-        if objet is None:
+        commande = _resoudre_reference(session.get("client_reference_id"))
+        if commande is None:
             # Événement non pertinent pour cette app (ex. une session Cotisation, qui partage le
             # même compte Stripe — voir apps.cotisations.webhooks) : on répond 200 pour que
             # Stripe ne rejoue pas indéfiniment un événement qu'on ignore ici.
@@ -157,12 +127,9 @@ class StripeWebhookView(View):
 
         if type_ in ("checkout.session.completed", "checkout.session.async_payment_succeeded"):
             reference = session.get("payment_intent") or session.get("id")
-            if type_objet == "bon":
-                _confirmer_paiement_bon_achat(objet, f"STRIPE-{reference}")
-            else:
-                _confirmer_paiement_gateway(objet, f"STRIPE-{reference}")
+            _confirmer_paiement_gateway(commande, f"STRIPE-{reference}")
         elif type_ in ("checkout.session.expired", "checkout.session.async_payment_failed"):
-            _echouer_paiement(objet)
+            _echouer_paiement(commande)
 
         return HttpResponse(status=200)
 
@@ -187,15 +154,13 @@ class PayPalWebhookView(View):
         if type_ == "CHECKOUT.ORDER.APPROVED":
             self._capturer_et_confirmer(resource)
         elif type_ == "PAYMENT.CAPTURE.COMPLETED":
-            type_objet, objet = _resoudre_reference(resource.get("custom_id"))
-            if type_objet == "bon":
-                _confirmer_paiement_bon_achat(objet, f"PAYPAL-{resource.get('id')}")
-            elif type_objet == "commande":
-                _confirmer_paiement_gateway(objet, f"PAYPAL-{resource.get('id')}")
+            commande = _resoudre_reference(resource.get("custom_id"))
+            if commande is not None:
+                _confirmer_paiement_gateway(commande, f"PAYPAL-{resource.get('id')}")
         elif type_ == "PAYMENT.CAPTURE.DENIED":
-            _type_objet, objet = _resoudre_reference(resource.get("custom_id"))
-            if objet is not None:
-                _echouer_paiement(objet)
+            commande = _resoudre_reference(resource.get("custom_id"))
+            if commande is not None:
+                _echouer_paiement(commande)
 
         return HttpResponse(status=200)
 
@@ -203,17 +168,16 @@ class PayPalWebhookView(View):
         order_id = resource.get("id")
         purchase_units = resource.get("purchase_units", [])
         custom_id = purchase_units[0].get("custom_id") if purchase_units else None
-        type_objet, objet = _resoudre_reference(custom_id)
-        if not order_id or objet is None:
+        commande = _resoudre_reference(custom_id)
+        if not order_id or commande is None:
             return
         try:
             capture_data = capturer_commande_paypal(order_id)
         except GatewayError as exc:
             logger.warning(
-                "PayPalWebhookView (boutique): capture échouée order=%s %s=%s: %s",
+                "PayPalWebhookView (boutique): capture échouée order=%s commande=%s: %s",
                 order_id,
-                type_objet,
-                objet.id,
+                commande.id,
                 exc,
             )
             return
@@ -221,7 +185,4 @@ class PayPalWebhookView(View):
             capture_data.get("purchase_units", [{}])[0].get("payments", {}).get("captures", [])
         )
         capture_id = captures[0]["id"] if captures else order_id
-        if type_objet == "bon":
-            _confirmer_paiement_bon_achat(objet, f"PAYPAL-{capture_id}")
-        else:
-            _confirmer_paiement_gateway(objet, f"PAYPAL-{capture_id}")
+        _confirmer_paiement_gateway(commande, f"PAYPAL-{capture_id}")

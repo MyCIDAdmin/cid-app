@@ -14,9 +14,26 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import type { RegleReduction } from "../types/boutique";
+import type { RegleReduction, TypeProduit } from "../types/boutique";
+
+/** Identifiant unique d'une ligne panier — distinct de `varianteId` depuis le 2026-09-23 (voir
+ * TypeProduit) : un produit "bon_achat" partage une seule variante sentinelle pour tous les
+ * montants achetés, donc `varianteId` seul ne peut plus identifier une ligne de façon unique
+ * (deux bons de montants différents doivent rester deux lignes distinctes). Un produit
+ * "physique" garde `ligneId === varianteId` (stable, aucun changement de comportement). */
+function genererLigneId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `ligne-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 export interface ArticlePanier {
+  /** Clé stable de la ligne dans le panier — à utiliser pour `changerQuantite`/`retirer` et
+   * comme clé React, jamais `varianteId` seul (voir genererLigneId ci-dessus). Optionnel côté
+   * type uniquement pour ne pas casser un panier persisté avant son introduction
+   * (sessionStorage) — toujours présent en pratique dès `ajouter()` ; lire avec
+   * `a.ligneId ?? a.varianteId` pour cette raison. */
+  ligneId?: string;
   varianteId: string;
   produitId: string;
   nom: string;
@@ -25,6 +42,11 @@ export interface ArticlePanier {
   prixUnitaire: string;
   stockDisponible: number;
   quantite: number;
+  /** Voir TypeProduit — absent/"physique" : comportement panier inchangé (variantes,
+   * réductions quantité). "bon_achat" (demande utilisateur du 2026-09-23, "Gutschein wird ein
+   * echtes Produkt im Katalog") : montant choisi par l'acheteur au lieu du prix catalogue,
+   * jamais de taille/couleur/réduction quantité — voir CataloguePage/PanierCommandePage. */
+  typeProduit?: TypeProduit;
   /**
    * Instantané des paliers de réduction actifs du produit au moment de l'ajout (demande
    * utilisateur du 2026-09-23, "Beim Kauf von über 10 Artikeln... 10% Rabatt" etc.) — optionnel
@@ -32,15 +54,20 @@ export interface ArticlePanier {
    * indicatif : le calcul qui fait foi reste `calculer_reduction_quantite` côté serveur
    * (CLAUDE.md §8), voir aussi la revalidation de stock (`synchroniserStocks`) — ces paliers ne
    * sont eux jamais revalidés en direct (ils changent rarement, contrairement au stock).
+   * Toujours vide pour "bon_achat" (aucune réduction quantité ne s'y applique).
    */
   reglesReduction?: RegleReduction[];
 }
 
+export function estArticleBonAchat(article: ArticlePanier): boolean {
+  return article.typeProduit === "bon_achat";
+}
+
 interface PanierState {
   articles: ArticlePanier[];
-  ajouter: (article: Omit<ArticlePanier, "quantite">, quantite?: number) => void;
-  changerQuantite: (varianteId: string, quantite: number) => void;
-  retirer: (varianteId: string) => void;
+  ajouter: (article: Omit<ArticlePanier, "quantite" | "ligneId">, quantite?: number) => void;
+  changerQuantite: (ligneId: string, quantite: number) => void;
+  retirer: (ligneId: string) => void;
   vider: () => void;
   /**
    * Revalide `stockDisponible` contre le stock serveur ACTUEL (voir
@@ -60,7 +87,21 @@ export const usePanierStore = create<PanierState>()(
       articles: [],
       ajouter: (article, quantite = 1) =>
         set((state) => {
-          const existant = state.articles.find((a) => a.varianteId === article.varianteId);
+          // Un "bon_achat" n'est jamais fusionné avec une ligne existante (même variante
+          // sentinelle partagée par tous les montants de ce produit, voir docstring
+          // ArticlePanier/genererLigneId) : deux ajouts de montants différents doivent rester
+          // deux lignes distinctes plutôt que d'écraser le prix de la première.
+          if (article.typeProduit === "bon_achat") {
+            return {
+              articles: [...state.articles, { ...article, quantite, ligneId: genererLigneId() }],
+            };
+          }
+          // Pas de `ligneId` explicite pour un article "physique" — `varianteId` reste sa clé
+          // stable (comportement panier inchangé depuis avant le 2026-09-23, voir
+          // `a.ligneId ?? a.varianteId` partout où une ligne est ciblée).
+          const existant = state.articles.find(
+            (a) => a.typeProduit !== "bon_achat" && a.varianteId === article.varianteId,
+          );
           if (existant) {
             const nouvelleQuantite = Math.min(
               existant.quantite + quantite,
@@ -68,7 +109,9 @@ export const usePanierStore = create<PanierState>()(
             );
             return {
               articles: state.articles.map((a) =>
-                a.varianteId === article.varianteId ? { ...a, quantite: nouvelleQuantite } : a,
+                a.varianteId === article.varianteId && a.typeProduit !== "bon_achat"
+                  ? { ...a, quantite: nouvelleQuantite }
+                  : a,
               ),
             };
           }
@@ -79,21 +122,25 @@ export const usePanierStore = create<PanierState>()(
             ],
           };
         }),
-      changerQuantite: (varianteId, quantite) =>
+      changerQuantite: (ligneId, quantite) =>
         set((state) => {
           if (quantite <= 0) {
-            return { articles: state.articles.filter((a) => a.varianteId !== varianteId) };
+            return {
+              articles: state.articles.filter((a) => (a.ligneId ?? a.varianteId) !== ligneId),
+            };
           }
           return {
             articles: state.articles.map((a) =>
-              a.varianteId === varianteId
+              (a.ligneId ?? a.varianteId) === ligneId
                 ? { ...a, quantite: Math.min(quantite, a.stockDisponible) }
                 : a,
             ),
           };
         }),
-      retirer: (varianteId) =>
-        set((state) => ({ articles: state.articles.filter((a) => a.varianteId !== varianteId) })),
+      retirer: (ligneId) =>
+        set((state) => ({
+          articles: state.articles.filter((a) => (a.ligneId ?? a.varianteId) !== ligneId),
+        })),
       vider: () => set({ articles: [] }),
       synchroniserStocks: (stocksParVarianteId) =>
         set((state) => ({
@@ -130,6 +177,14 @@ export function calculerReductionArticle(article: ArticlePanier): {
   quantiteOfferte: number;
   pourcentageApplique: number | null;
 } {
+  // Un "bon_achat" n'est jamais concerné par les réductions quantité (montant libre, pas de
+  // catalogue à remiser) — défensif : reglesReduction est de toute façon toujours vide pour ce
+  // type de ligne (voir CataloguePage), mais on ne s'y fie pas seul (CLAUDE.md §8, même principe
+  // que la revalidation serveur : la source de vérité locale ne doit jamais dépendre d'un seul
+  // chemin de code pour un résultat qui affecte le montant affiché).
+  if (estArticleBonAchat(article)) {
+    return { quantiteOfferte: 0, pourcentageApplique: null };
+  }
   const regles = (article.reglesReduction ?? []).filter((r) => r.actif);
   const reglesOffertes = regles.filter(
     (r) => r.type_reduction === "article_offert" && r.seuil_quantite <= article.quantite,

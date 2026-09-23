@@ -4,10 +4,20 @@
  * changement de schéma.
  */
 
+/** "bon_achat" (demande utilisateur du 2026-09-23, "Gutschein soll als Kategorie im shop
+ * auftauchen") : catégorie du produit-bon-d'achat intégré au catalogue — voir TypeProduit
+ * ci-dessous pour la distinction structurelle (montant libre, sans stock). */
 export type CategorieProduit =
-  "vetements" | "accessoires" | "articles_club" | "cartes_docs" | "divers";
+  "vetements" | "accessoires" | "articles_club" | "cartes_docs" | "divers" | "bon_achat";
 
 export type StatutProduit = "brouillon" | "publie" | "archive";
+
+/** Voir apps.boutique.models.TypeProduit (ajouté le 2026-09-23). "physique" : stock réel par
+ * variante taille/couleur, prix catalogue fixe (prix_final). "bon_achat" : montant choisi par
+ * l'acheteur au moment de l'ajout au panier (borné à [5, 500] €, voir CataloguePage), sans
+ * stock — une seule variante "sentinelle" auto-créée côté serveur pour satisfaire le schéma
+ * LigneCommande existant, jamais affichée/sélectionnée en tant que variante. */
+export type TypeProduit = "physique" | "bon_achat";
 
 export type StatutCommande =
   "en_attente" | "confirmee" | "en_preparation" | "expediee" | "livree" | "annulee" | "remboursee";
@@ -86,6 +96,9 @@ export interface Produit {
   prix_final: string;
   image: string | null;
   statut: StatutProduit;
+  /** Voir TypeProduit — pilote l'affichage catalogue/panier (CataloguePage) : sélecteur de
+   * montant libre au lieu du sélecteur taille/couleur pour "bon_achat". */
+  type_produit: TypeProduit;
   nouveaute: boolean;
   seuil_alerte_stock: number;
   variantes: VarianteProduit[];
@@ -112,8 +125,12 @@ export interface ProduitPayload {
   nouveaute?: boolean;
   seuil_alerte_stock?: number;
   /** Écriture seule, à la création uniquement — crée une variante "unique" (taille/couleur
-   * vides) avec ce stock. Ignoré par le backend en modification (PATCH). */
+   * vides) avec ce stock. Ignoré par le backend en modification (PATCH), et pour un produit
+   * "bon_achat" (variante sentinelle auto-créée, voir TypeProduit). */
   stock_initial?: number;
+  /** Défaut "physique" côté serveur si omis. Voir TypeProduit — un produit "bon_achat" doit
+   * porter categorie="bon_achat" (GestionCatalogueTab impose les deux ensemble). */
+  type_produit?: TypeProduit;
 }
 
 /** Payload de POST/PATCH /boutique/variantes/ (Bureau Admin+). */
@@ -210,12 +227,17 @@ export interface Commande {
   updated_at: string;
 }
 
-/** Une ligne du panier envoyée à POST /boutique/commandes/passer/ — jamais de prix (CLAUDE.md §8,
- * voir PasserCommandeSerializer/CommandeViewSet.passer côté backend : prix entièrement
- * recalculé côté serveur à partir du produit lié à la variante). */
+/** Une ligne du panier envoyée à POST /boutique/commandes/passer/ — jamais de prix pour un
+ * produit physique (CLAUDE.md §8, voir PasserCommandeSerializer/CommandeViewSet.passer côté
+ * backend : prix entièrement recalculé côté serveur à partir du produit lié à la variante).
+ * `montant` fait exception pour un produit "bon_achat" (demande utilisateur du 2026-09-23,
+ * "Gutschein wird ein echtes Produkt im Katalog") : c'est le SEUL cas où le montant vient du
+ * client — le serveur le revalide quand même contre bon_achat_montant_min()/max() (CLAUDE.md
+ * §8), jamais fait confiance tel quel. Obligatoire pour une ligne "bon_achat", refusé sinon. */
 export interface LigneCommandeEntree {
   variante: string;
   quantite: number;
+  montant?: string;
 }
 
 export interface PasserCommandePayload {
@@ -244,6 +266,9 @@ export interface VendreEspecesCommandePayload {
   membre: string;
   variante: string;
   quantite: number;
+  /** Voir LigneCommandeEntree.montant — même exception/revalidation serveur pour une vente au
+   * comptoir d'un produit "bon_achat". */
+  montant?: string;
 }
 
 /** Entrée de POST /boutique/commandes/{id}/changer-statut/ (Bureau Admin+). */
@@ -336,13 +361,17 @@ export const STATUTS_RETOURNABLES: StatutCommande[] = [
 ];
 
 // --- Bons d'achat (demande utilisateur du 2026-09-23, voir docstring de tête de
-// apps.boutique.models côté backend : "Es soll möglich sein Gutscheine zu Kaufen") ---
+// apps.boutique.models côté backend : "Es soll möglich sein Gutscheine zu Kaufen" — achat
+// intégré au catalogue depuis le 2026-09-23, "Gutschein soll als Kategorie im shop auftauchen
+// und nicht als eigenes Modul" : un bon d'achat est désormais un Produit(type_produit=
+// bon_achat) comme un autre, acheté via le panier/passer() normal.) ---
 
-/** Voir apps.boutique.models.StatutBonAchat. `en_attente` : payé mais paiement pas encore
- * confirmé (bon inutilisable) ; `actif` : utilisable, avec du solde ; `epuise` : solde à 0 —
- * redevient `actif` automatiquement si une commande qui l'utilisait est annulée (voir
- * _restituer_bon_achat côté backend). */
-export type StatutBonAchat = "en_attente" | "actif" | "epuise";
+/** Voir apps.boutique.models.StatutBonAchat. Plus d'état "en_attente" depuis le 2026-09-23 :
+ * un bon n'existe qu'à partir de la confirmation de la commande qui l'a acheté (paiement déjà
+ * réglé à ce moment-là), donc toujours créé déjà `actif`. `actif` : utilisable, avec du
+ * solde ; `epuise` : solde à 0 — redevient `actif` automatiquement si une commande qui
+ * l'utilisait est annulée (voir _restituer_bon_achat côté backend). */
+export type StatutBonAchat = "actif" | "epuise";
 
 /** Voir apps.boutique.models.BonAchat / BonAchatSerializer — modèle "solde prépayé" :
  * `solde` (≠ `montant_initial`) peut être utilisé sur PLUSIEURS commandes tant qu'il en reste,
@@ -368,12 +397,6 @@ export interface BonAchat {
   updated_at: string;
 }
 
-/** Payload de POST /boutique/bons-achat/acheter/ — montant librement choisi par l'acheteur
- * (confirmé utilisateur), borné à [5, 500] € côté serveur (voir bon_achat_montant_min/max). */
-export interface AcheterBonAchatPayload {
-  montant: string;
-}
-
 /** Payload de POST /boutique/bons-achat/verifier/ — aperçu non-consommant d'un code au
  * checkout (PanierCommandePage), voir BonAchatVerification. */
 export interface VerifierBonAchatPayload {
@@ -391,7 +414,3 @@ export interface BonAchatVerification {
   date_expiration: string | null;
   utilisable: boolean;
 }
-
-/** Statuts depuis lesquels le paiement d'un bon d'achat peut encore être confirmé/initié —
- * miroir de STATUTS_BON_ACHAT_CONFIRMABLES côté backend. */
-export const STATUTS_BON_ACHAT_CONFIRMABLES: StatutBonAchat[] = ["en_attente"];

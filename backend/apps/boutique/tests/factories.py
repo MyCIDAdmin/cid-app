@@ -1,9 +1,11 @@
 from decimal import Decimal
 
 import factory
+from django.utils import timezone
 from factory.django import DjangoModelFactory
 
 from apps.boutique.models import (
+    DUREE_VALIDITE_BON_ACHAT,
     BonAchat,
     CategorieProduit,
     Commande,
@@ -13,6 +15,7 @@ from apps.boutique.models import (
     StatutBonAchat,
     StatutCommande,
     StatutProduit,
+    TypeProduit,
     TypeReduction,
     VarianteProduit,
 )
@@ -25,11 +28,22 @@ class ProduitFactory(DjangoModelFactory):
 
     nom = factory.Sequence(lambda n: f"Produit {n}")
     categorie = CategorieProduit.VETEMENTS
+    type_produit = TypeProduit.PHYSIQUE
     description = "Description du produit."
     prix = Decimal("25.00")
     statut = StatutProduit.PUBLIE
     nouveaute = False
     seuil_alerte_stock = 5
+
+
+class ProduitBonAchatFactory(ProduitFactory):
+    """Produit bon d'achat (demande utilisateur du 2026-09-23, achat intégré au catalogue) —
+    Produit.save() auto-crée sa VarianteProduit sentinelle, voir models.py."""
+
+    nom = factory.Sequence(lambda n: f"Bon d'achat CID {n}")
+    categorie = CategorieProduit.BON_ACHAT
+    type_produit = TypeProduit.BON_ACHAT
+    prix = Decimal("5.00")
 
 
 class VarianteProduitFactory(DjangoModelFactory):
@@ -79,10 +93,16 @@ class RegleReductionFactory(DjangoModelFactory):
 
 
 class BonAchatFactory(DjangoModelFactory):
+    """Un BonAchat n'est plus jamais créé "en attente" depuis le 2026-09-23 (voir
+    views._generer_bons_achat/StatutBonAchat) — cette factory produit donc par défaut un bon déjà
+    ACTIF, dates d'activation comprises, comme le serait tout bon généré par le vrai flux."""
+
     class Meta:
         model = BonAchat
 
     montant_initial = Decimal("50.00")
     solde = Decimal("50.00")
-    statut = StatutBonAchat.EN_ATTENTE
+    statut = StatutBonAchat.ACTIF
     achete_par = factory.SubFactory(MembreFactory)
+    date_paiement_confirme = factory.LazyFunction(timezone.now)
+    date_expiration = factory.LazyFunction(lambda: timezone.now() + DUREE_VALIDITE_BON_ACHAT)

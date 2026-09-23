@@ -36,6 +36,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     prix_final: "18.00",
     image: null,
     statut: "publie",
+    type_produit: "physique",
     nouveaute: false,
     seuil_alerte_stock: 5,
     variantes: [],
@@ -154,6 +155,34 @@ describe("GestionCatalogueTab", () => {
 
     expect(creerMock).toHaveBeenCalledWith(
       expect.objectContaining({ nom: "Écharpe CA", stock_initial: 12 }),
+      expect.anything(),
+    );
+  });
+
+  it("impose la catégorie 'bon_achat' et masque stock/rabais quand le type bon d'achat est choisi", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+
+    fireEvent.change(screen.getByLabelText("catalogue_admin.nom_label"), {
+      target: { value: "Bon d'achat CID" },
+    });
+    fireEvent.change(screen.getByLabelText("catalogue_admin.type_label"), {
+      target: { value: "bon_achat" },
+    });
+
+    // Le champ rabais existe aussi par produit dans la liste ci-dessous (aria-label "…—
+    // Mug CA 1920") — cibler l'id du champ du FORMULAIRE de création pour lever toute ambiguïté.
+    expect(document.getElementById("prod-stock-initial")).not.toBeInTheDocument();
+    expect(document.getElementById("prod-rabais")).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("categorie.bon_achat")).toBeDisabled();
+
+    fireEvent.click(screen.getByText("catalogue_admin.creer"));
+
+    expect(creerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nom: "Bon d'achat CID",
+        type_produit: "bon_achat",
+        categorie: "bon_achat",
+      }),
       expect.anything(),
     );
   });

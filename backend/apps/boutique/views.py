@@ -44,12 +44,10 @@ Vues API — app boutique (FDD §3.4) :
                                                     tous — inactifs/produit non publié réservés
                                                     Bureau Admin+ ; écriture: Bureau Admin+ —
                                                     ajouté le 2026-09-23)
-  POST       /boutique/bons-achat/acheter/       — acheter un bon d'achat (montant libre,
-                                                    ajouté le 2026-09-23, voir models.BonAchat)
-  POST       /boutique/bons-achat/{id}/initier-paiement-en-ligne/ — idem Commande, propriétaire
-                                                    uniquement
-  POST       /boutique/bons-achat/{id}/confirmer-paiement/ — paiement manuel (virement/
-                                                    espèces), Directeur Financier+
+  GET        /boutique/bons-achat/               — mes bons d'achat / vue d'ensemble Bureau
+                                                    Admin+ — désormais purement en lecture (voir
+                                                    ci-dessous, plus de création/confirmation
+                                                    dédiée)
   POST       /boutique/bons-achat/verifier/      — vérifie un code sans le consommer (aperçu
                                                     checkout), tout authentifié
 
@@ -62,14 +60,25 @@ email + une notification in-app — voir
 apps.notifications.models.TypeNotification.BOUTIQUE_COMMANDE_CONFIRMEE/EXPEDIEE.
 `confirmer_paiement` et la création d'un Retour ne déclenchent volontairement pas d'email
 (hors du périmètre demandé le 2026-09-15 — seules la confirmation de commande et l'expédition en
-ont un). Un BonAchat activé (webhook PSP ou confirmer_paiement manuel) déclenche lui aussi un
-email + une notification in-app — voir notifications.notifier_bon_achat_actif.
+ont un). Un BonAchat vient d'être créé (voir _generer_bons_achat ci-dessous) déclenche lui aussi
+un email + une notification in-app — voir notifications.notifier_bon_achat_actif.
 
-Offres personnalisées et bons d'achat (demande utilisateur du 2026-09-23, voir docstring de
-tête de models.py) : `passer`/`vendre_especes` appliquent désormais automatiquement les
-RegleReduction actives du produit de chaque ligne (calculer_reduction_quantite), et `passer`
-accepte en plus un `code_bon_achat` optionnel déduit du total — toujours recalculé/validé côté
-serveur sous verrou (CLAUDE.md §8), jamais fait confiance à un montant envoyé par le client.
+Offres personnalisées et bons d'achat (demande utilisateur du 2026-09-23, révisée le même jour :
+achat d'un bon d'achat intégré au catalogue plutôt que via un module séparé — voir docstring de
+tête de models.py) :
+  - `passer`/`vendre_especes` appliquent automatiquement les RegleReduction actives du produit de
+    chaque ligne (calculer_reduction_quantite) pour une ligne PHYSIQUE, et `passer` accepte en
+    plus un `code_bon_achat` optionnel déduit du total (dépense d'un bon existant) — toujours
+    recalculé/validé côté serveur sous verrou (CLAUDE.md §8), jamais fait confiance à un montant
+    envoyé par le client.
+  - Un bon d'achat s'achète désormais comme n'importe quel produit : une ligne dont la variante
+    appartient à un Produit `type_produit=BON_ACHAT` porte un `montant` choisi par l'acheteur
+    (revalidé côté serveur, voir serializers.py) au lieu du prix catalogue, ignore toute
+    RegleReduction et ne touche à aucun stock (voir `_construire_ligne_avec_reduction`). Dès que
+    la Commande qui la contient passe à CONFIRMEE — immédiatement dans `passer` si intégralement
+    couverte par un bon existant, dans `vendre_especes`, via `confirmer_paiement` manuel, ou via
+    le webhook PSP (`webhooks._confirmer_paiement_gateway`) — `_generer_bons_achat` crée le(s)
+    BonAchat correspondant(s), déjà ACTIF, et envoie l'email/notification existants.
 """
 
 from decimal import Decimal
@@ -91,7 +100,6 @@ from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 from .filters import CommandeFilter, ProduitFilter, RetourFilter
 from .models import (
     STATUTS_ANNULABLES,
-    STATUTS_BON_ACHAT_CONFIRMABLES,
     STATUTS_CONFIRMABLES_PAIEMENT,
     STATUTS_EXPEDIABLES_NACERFASSEMENT,
     STATUTS_EXPEDIABLES_NORMAL,
@@ -106,6 +114,7 @@ from .models import (
     StatutBonAchat,
     StatutCommande,
     StatutProduit,
+    TypeProduit,
     UtilisationBonAchat,
     VarianteProduit,
     calculer_reduction_quantite,
@@ -127,7 +136,6 @@ from .permissions import (
     RetourPermission,
 )
 from .serializers import (
-    AcheterBonAchatSerializer,
     BonAchatSerializer,
     BonAchatVerificationSerializer,
     ChangerStatutCommandeSerializer,
@@ -229,12 +237,18 @@ class VarianteProduitViewSet(ModelViewSet):
 
 def _restituer_stock(commande):
     """Restitue atomiquement le stock des lignes d'une commande annulée — verrouille les
-    variantes concernées, triées par id pour éviter tout interblocage avec `passer`."""
+    variantes concernées, triées par id pour éviter tout interblocage avec `passer`. Les lignes
+    bon_achat sont ignorées (aucun stock n'a jamais été décrémenté pour elles à la création, voir
+    _construire_ligne_avec_reduction/passer) — leur restituer du "stock" créerait une valeur
+    incohérente sur la VarianteProduit sentinelle sans aucune signification métier."""
     lignes = list(
         LigneCommande.objects.filter(commande=commande)
-        .select_related("variante")
+        .select_related("variante", "variante__produit")
         .order_by("variante_id")
     )
+    lignes = [l for l in lignes if l.variante.produit.type_produit != TypeProduit.BON_ACHAT]
+    if not lignes:
+        return
     variante_ids = sorted({ligne.variante_id for ligne in lignes})
     variantes = {
         v.id: v for v in VarianteProduit.objects.select_for_update().filter(id__in=variante_ids)
@@ -261,12 +275,31 @@ def _restituer_bon_achat(commande):
     bon.save(update_fields=["solde", "statut", "updated_at"])
 
 
-def _construire_ligne_avec_reduction(variante, quantite):
+def _construire_ligne_avec_reduction(variante, quantite, montant=None):
     """Calcule la ligne (kwargs prêts pour LigneCommande.objects.create) et le sous-total NET
     d'un article, réduction quantité comprise (demande utilisateur du 2026-09-23) — partagé par
     `passer` et `vendre_especes` pour ne jamais dupliquer cette logique entre les deux points
     d'entrée qui créent des LigneCommande (CLAUDE.md §8 : toujours recalculé côté serveur,
-    jamais fait confiance au frontend)."""
+    jamais fait confiance au frontend).
+
+    Pour un bon d'achat (variante.produit.type_produit=BON_ACHAT, ajouté le 2026-09-23) :
+    `montant` (déjà revalidé contre bon_achat_montant_min/max par le serializer appelant) sert de
+    prix_unitaire au lieu de prix_final, et aucune RegleReduction ne s'applique — un bon d'achat
+    n'a pas vocation à être soldé/offert par lot."""
+    est_bon_achat = variante.produit.type_produit == TypeProduit.BON_ACHAT
+    if est_bon_achat:
+        prix_unitaire = montant
+        sous_total_net = (prix_unitaire * quantite).quantize(Decimal("0.01"))
+        ligne_kwargs = {
+            "variante": variante,
+            "quantite": quantite,
+            "prix_unitaire": prix_unitaire,
+            "quantite_offerte": 0,
+            "pourcentage_reduction_quantite": None,
+            "reduction_quantite": Decimal("0.00"),
+        }
+        return ligne_kwargs, sous_total_net
+
     prix_unitaire = variante.produit.prix_final
     reduction = calculer_reduction_quantite(variante.produit, quantite)
 
@@ -290,6 +323,35 @@ def _construire_ligne_avec_reduction(variante, quantite):
         "reduction_quantite": reduction_quantite_montant,
     }
     return ligne_kwargs, sous_total_net
+
+
+def _generer_bons_achat(commande):
+    """Crée les BonAchat correspondant aux lignes bon_achat d'une Commande qui vient de passer à
+    CONFIRMEE (demande utilisateur du 2026-09-23, achat intégré au catalogue) — appelée depuis
+    les quatre chemins qui peuvent confirmer une commande : `passer` (couverture totale
+    immédiate par un bon existant), `vendre_especes`, `confirmer_paiement` manuel, et le webhook
+    PSP (`webhooks._confirmer_paiement_gateway`). Chaque ligne bon_achat produit `quantite`
+    BonAchat indépendants (un même montant peut donc être dupliqué en plusieurs codes distincts,
+    ex. quantite=2 à 50 € = deux bons de 50 € chacun, jamais un seul bon de 100 €). Chaque bon est
+    créé déjà ACTIF (voir BonAchat.activer/StatutBonAchat) et déclenche l'email/notification
+    existants — jamais appelée deux fois pour la même commande (chaque appelant transitionne le
+    statut sous verrou/garde d'idempotence juste avant, voir docstring de tête du fichier)."""
+    lignes_bon_achat = commande.lignes.select_related("variante__produit").filter(
+        variante__produit__type_produit=TypeProduit.BON_ACHAT
+    )
+    for ligne in lignes_bon_achat:
+        for _i in range(ligne.quantite):
+            bon = BonAchat(
+                montant_initial=ligne.prix_unitaire,
+                solde=ligne.prix_unitaire,
+                achete_par=commande.membre,
+                mode_paiement=commande.mode_paiement,
+                paiement_confirme_par=commande.paiement_confirme_par,
+                reference_paiement=commande.reference_paiement,
+            )
+            bon.activer()
+            bon.save()
+            notifier_bon_achat_actif(bon)
 
 
 class CommandeViewSet(ModelViewSet):
@@ -340,6 +402,11 @@ class CommandeViewSet(ModelViewSet):
 
             for ligne in lignes_demandees:
                 variante = variantes[ligne["variante"].id]
+                # Un bon d'achat n'a pas de stock réel — voir _construire_ligne_avec_reduction/
+                # docstring de tête du module — la VarianteProduit sentinelle qui l'ancre n'est
+                # jamais vérifiée ni décrémentée.
+                if variante.produit.type_produit == TypeProduit.BON_ACHAT:
+                    continue
                 if variante.stock < ligne["quantite"]:
                     raise ValidationError(
                         {
@@ -364,12 +431,17 @@ class CommandeViewSet(ModelViewSet):
             for ligne in lignes_demandees:
                 variante = variantes[ligne["variante"].id]
                 quantite = ligne["quantite"]
-                # prix_final + réduction quantité (jamais un total envoyé par le client) —
-                # voir _construire_ligne_avec_reduction/CLAUDE.md §8.
-                ligne_kwargs, sous_total_net = _construire_ligne_avec_reduction(variante, quantite)
+                est_bon_achat = variante.produit.type_produit == TypeProduit.BON_ACHAT
+                # prix_final + réduction quantité (jamais un total envoyé par le client) — ou,
+                # pour un bon d'achat, le montant choisi par l'acheteur (déjà revalidé par
+                # PasserCommandeSerializer) — voir _construire_ligne_avec_reduction/CLAUDE.md §8.
+                ligne_kwargs, sous_total_net = _construire_ligne_avec_reduction(
+                    variante, quantite, montant=ligne.get("montant") if est_bon_achat else None
+                )
                 LigneCommande.objects.create(commande=commande, **ligne_kwargs)
-                variante.stock -= quantite
-                variante.save(update_fields=["stock"])
+                if not est_bon_achat:
+                    variante.stock -= quantite
+                    variante.save(update_fields=["stock"])
                 montant_total += sous_total_net
 
             commande.montant_total = montant_total
@@ -410,9 +482,17 @@ class CommandeViewSet(ModelViewSet):
                 update_fields += ["statut", "mode_paiement", "date_paiement_confirme"]
 
             commande.save(update_fields=update_fields)
+            commande_confirmee_immediatement = commande.statut == StatutCommande.CONFIRMEE
 
         notifier_commande_confirmee(commande)
         notifier_nouvelle_commande_staff(commande)
+        # Bons d'achat éventuels (demande utilisateur du 2026-09-23) — seulement si la commande
+        # vient d'être confirmée dans ce même appel (couverture totale par un bon existant) ;
+        # sinon ce sera confirmer_paiement/le webhook PSP qui s'en chargera à la confirmation
+        # réelle du paiement (voir _generer_bons_achat, appelée après commit, jamais dans la
+        # transaction, même principe que les notifications ci-dessus).
+        if commande_confirmee_immediatement:
+            _generer_bons_achat(commande)
         return Response(self.get_serializer(commande).data, status=201)
 
     @action(detail=False, methods=["post"], url_path="vendre-especes")
@@ -441,14 +521,17 @@ class CommandeViewSet(ModelViewSet):
         membre_cible = data["membre"]
         quantite = data["quantite"]
 
+        est_bon_achat = data["variante"].produit.type_produit == TypeProduit.BON_ACHAT
+
         with transaction.atomic():
-            # Même principe de verrouillage que `passer` ci-dessus (FDD §3.4).
+            # Même principe de verrouillage que `passer` ci-dessus (FDD §3.4) — sauté pour un
+            # bon d'achat, qui n'a pas de stock réel (voir _construire_ligne_avec_reduction).
             variante = (
                 VarianteProduit.objects.select_for_update()
                 .select_related("produit")
                 .get(id=data["variante"].id)
             )
-            if variante.stock < quantite:
+            if not est_bon_achat and variante.stock < quantite:
                 raise ValidationError(
                     {
                         "variante": (
@@ -471,14 +554,20 @@ class CommandeViewSet(ModelViewSet):
                 paiement_confirme_par=getattr(user, "membre", None),
             )
             # prix_final + réduction quantité (même principe que `passer` ci-dessus, CLAUDE.md §8) —
-            # voir _construire_ligne_avec_reduction.
-            ligne_kwargs, sous_total_net = _construire_ligne_avec_reduction(variante, quantite)
+            # ou, pour un bon d'achat, le montant choisi (voir _construire_ligne_avec_reduction).
+            ligne_kwargs, sous_total_net = _construire_ligne_avec_reduction(
+                variante, quantite, montant=data.get("montant") if est_bon_achat else None
+            )
             LigneCommande.objects.create(commande=commande, **ligne_kwargs)
-            variante.stock -= quantite
-            variante.save(update_fields=["stock"])
+            if not est_bon_achat:
+                variante.stock -= quantite
+                variante.save(update_fields=["stock"])
             commande.montant_total = sous_total_net
             commande.save(update_fields=["montant_total"])
 
+        # Vente au comptoir toujours immédiatement confirmée — voir _generer_bons_achat
+        # (demande utilisateur du 2026-09-23, un Gutschein peut aussi se vendre en espèces).
+        _generer_bons_achat(commande)
         return Response(self.get_serializer(commande).data, status=201)
 
     @action(detail=True, methods=["post"])
@@ -617,7 +706,9 @@ class CommandeViewSet(ModelViewSet):
     def confirmer_paiement(self, request, pk=None):
         """Confirme la réception du paiement d'une commande encore en_attente
         (en_attente -> confirmee) — Directeur Financier+, voir permissions.py. Ne déclenche
-        volontairement aucune notification (voir docstring module)."""
+        volontairement aucune notification de commande (voir docstring module) — mais génère et
+        notifie les éventuels bons d'achat de la commande (voir _generer_bons_achat, demande
+        utilisateur du 2026-09-23)."""
         commande = self.get_object()
         if commande.statut not in STATUTS_CONFIRMABLES_PAIEMENT:
             raise ValidationError(
@@ -645,6 +736,7 @@ class CommandeViewSet(ModelViewSet):
                 "statut",
             ]
         )
+        _generer_bons_achat(commande)
         return Response(self.get_serializer(commande).data)
 
     @action(detail=True, methods=["post"])
@@ -747,9 +839,13 @@ class RetourViewSet(ModelViewSet):
 
 
 class BonAchatViewSet(ModelViewSet):
-    """Bons d'achat/Gutscheine (demande utilisateur du 2026-09-23) — voir docstring de tête du
-    fichier et de models.py. Pas d'update/destroy génériques : un bon n'évolue que via ses
-    actions dédiées (registre append-only, même convention que Commande)."""
+    """Bons d'achat/Gutscheine — voir docstring de tête du fichier et de models.py. Depuis le
+    2026-09-23 (achat intégré au catalogue), ce ViewSet est PUREMENT EN LECTURE côté API
+    publique : un BonAchat n'est plus jamais créé/confirmé ici, mais généré automatiquement par
+    `_generer_bons_achat` quand la Commande qui le contient est confirmée (voir
+    CommandeViewSet.passer/vendre_especes/confirmer_paiement et
+    apps.boutique.webhooks._confirmer_paiement_gateway). Seule `verifier` reste une action
+    dédiée (aperçu d'un code au checkout, sans lien avec la création)."""
 
     http_method_names = ["get", "post", "head", "options"]
     permission_classes = [BonAchatPermission]
@@ -768,20 +864,6 @@ class BonAchatViewSet(ModelViewSet):
         return queryset.filter(achete_par=membre) if membre else queryset.none()
 
     @action(detail=False, methods=["post"])
-    def acheter(self, request):
-        membre = getattr(request.user, "membre", None)
-        if membre is None:
-            raise ValidationError(
-                {"membre": "Aucune fiche membre associée à ce compte utilisateur."}
-            )
-        serializer = AcheterBonAchatSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        montant = serializer.validated_data["montant"]
-
-        bon = BonAchat.objects.create(montant_initial=montant, solde=montant, achete_par=membre)
-        return Response(self.get_serializer(bon).data, status=201)
-
-    @action(detail=False, methods=["post"])
     def verifier(self, request):
         """POST /boutique/bons-achat/verifier/ — vérifie un code sans le consommer (aperçu au
         checkout, voir PanierCommandePage frontend). Ouvert à tout authentifié : le détenteur
@@ -794,93 +876,3 @@ class BonAchatViewSet(ModelViewSet):
         except BonAchat.DoesNotExist as exc:
             raise NotFound({"code": "Code de bon d'achat invalide."}) from exc
         return Response(BonAchatVerificationSerializer(bon).data)
-
-    @action(detail=True, methods=["post"], url_path="initier-paiement-en-ligne")
-    def initier_paiement_en_ligne(self, request, pk=None):
-        """Même principe exact que CommandeViewSet.initier_paiement_en_ligne — réservé au
-        propriétaire du bon (même si BonAchatPermission.has_object_permission autorise aussi le
-        Bureau Admin+ à consulter/gérer le bon d'un autre, ce n'est jamais lui qui paie à sa
-        place, voir CommandePermission)."""
-        bon = self.get_object()
-        membre_self = getattr(request.user, "membre", None)
-
-        if membre_self is None or bon.achete_par_id != membre_self.id:
-            raise PermissionDenied(
-                "Seul l'acheteur de ce bon peut initier son paiement en ligne."
-            )
-        if bon.statut not in STATUTS_BON_ACHAT_CONFIRMABLES:
-            raise ValidationError(
-                {
-                    "statut": (
-                        "Seul un bon d'achat en attente peut être payé en ligne "
-                        f"(statut actuel : {bon.get_statut_display()})."
-                    )
-                }
-            )
-
-        serializer = InitierPaiementEnLigneCommandeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        passerelle = serializer.validated_data["passerelle"]
-
-        success_url = f"{settings.FRONTEND_URL}/boutique/bon-achat/retour?bon={bon.id}"
-        cancel_url = f"{settings.FRONTEND_URL}/boutique/bon-achat/retour?bon={bon.id}&annule=1"
-        # Préfixe "BON-" (voir apps.boutique.webhooks._resoudre_reference) : distingue sans
-        # ambiguïté une référence de BonAchat de celle d'une Commande côté webhook PSP, les deux
-        # partageant le même compte marchand Stripe/PayPal.
-        reference = f"BON-{bon.id}"
-        libelle = f"Bon d'achat Clubistes in Deutschland — {bon.montant_initial} €"
-        try:
-            if passerelle == "stripe":
-                redirect_url = creer_session_stripe(
-                    reference, libelle, bon.montant_initial, success_url, cancel_url
-                )
-            else:
-                redirect_url = creer_commande_paypal(
-                    reference, libelle, bon.montant_initial, success_url, cancel_url
-                )
-        except GatewayError as exc:
-            raise ValidationError(
-                {
-                    "gateway": (
-                        "Le paiement en ligne n'est pas disponible pour le moment. "
-                        "Contactez le Directeur Financier."
-                    )
-                }
-            ) from exc
-
-        return Response({"redirect_url": redirect_url})
-
-    @action(detail=True, methods=["post"], url_path="confirmer-paiement")
-    def confirmer_paiement(self, request, pk=None):
-        """Confirme la réception d'un paiement manuel (virement/espèces) d'un bon encore
-        EN_ATTENTE — Directeur Financier+ (voir BonAchatPermission), même principe que
-        CommandeViewSet.confirmer_paiement. Un paiement en ligne passe par le webhook PSP, pas
-        par cette action (voir apps.boutique.webhooks)."""
-        bon = self.get_object()
-        if bon.statut not in STATUTS_BON_ACHAT_CONFIRMABLES:
-            raise ValidationError(
-                {
-                    "statut": (
-                        "Le paiement ne peut être confirmé que pour un bon en attente "
-                        f"(statut actuel : {bon.get_statut_display()})."
-                    )
-                }
-            )
-        serializer = ConfirmerPaiementCommandeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        membre = getattr(request.user, "membre", None)
-        bon.mode_paiement = serializer.validated_data["mode_paiement"]
-        bon.paiement_confirme_par = membre
-        bon.activer()
-        bon.save(
-            update_fields=[
-                "mode_paiement",
-                "paiement_confirme_par",
-                "statut",
-                "date_paiement_confirme",
-                "date_expiration",
-            ]
-        )
-        notifier_bon_achat_actif(bon)
-        return Response(self.get_serializer(bon).data)

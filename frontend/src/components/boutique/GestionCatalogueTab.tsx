@@ -30,6 +30,7 @@ import type {
   Produit,
   ProduitPayload,
   StatutProduit,
+  TypeProduit,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import RegleReductionManager from "./RegleReductionManager";
@@ -58,6 +59,7 @@ function formulaireInitial(): ProduitPayload {
     prix: "0.00",
     pourcentage_reduction: null,
     statut: "brouillon",
+    type_produit: "physique",
     nouveaute: false,
     seuil_alerte_stock: 5,
     stock_initial: 0,
@@ -84,6 +86,22 @@ export default function GestionCatalogueTab() {
   function handleCreer(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     creerMutation.mutate(form, { onSuccess: () => setForm(formulaireInitial()) });
+  }
+
+  /**
+   * Bascule type "physique"/"bon_achat" (demande utilisateur du 2026-09-23, "Gutschein wird ein
+   * echtes Produkt im Katalog") — categorie="bon_achat" est imposée avec le type (voir
+   * CataloguePage/TypeProduit ci-dessus : les deux vont toujours ensemble dans cette UI, même si
+   * le backend ne les couple pas structurellement), et reste bloquée sur "vetements" par défaut
+   * si l'admin repasse en "physique" après avoir choisi "bon_achat" — une catégorie "Bons
+   * d'achat" n'aurait aucun sens pour un produit physique.
+   */
+  function handleChangerType(type: TypeProduit) {
+    setForm((f) => ({
+      ...f,
+      type_produit: type,
+      categorie: type === "bon_achat" ? "bon_achat" : f.categorie === "bon_achat" ? "vetements" : f.categorie,
+    }));
   }
 
   function toggleStatut(produit: Produit, statut: StatutProduit) {
@@ -138,23 +156,53 @@ export default function GestionCatalogueTab() {
           </div>
           <div>
             <label
+              htmlFor="prod-type"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("catalogue_admin.type_label")}
+            </label>
+            <select
+              id="prod-type"
+              value={form.type_produit ?? "physique"}
+              onChange={(e) => handleChangerType(e.target.value as TypeProduit)}
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            >
+              <option value="physique">{t("catalogue_admin.type_physique")}</option>
+              <option value="bon_achat">{t("catalogue_admin.type_bon_achat")}</option>
+            </select>
+          </div>
+          <div>
+            <label
               htmlFor="prod-categorie"
               className="mb-1 block text-xs font-medium text-text-secondary"
             >
               {t("catalogue_admin.categorie_label")}
             </label>
-            <select
-              id="prod-categorie"
-              value={form.categorie}
-              onChange={(e) => setForm({ ...form, categorie: e.target.value as CategorieProduit })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {t(`categorie.${cat}`)}
-                </option>
-              ))}
-            </select>
+            {form.type_produit === "bon_achat" ? (
+              // Imposée avec le type "bon_achat" (voir handleChangerType) — pas de choix
+              // pertinent à proposer ici, un produit "bon_achat" est toujours de cette catégorie.
+              <input
+                id="prod-categorie"
+                disabled
+                value={t("categorie.bon_achat")}
+                className="w-full rounded-cid border border-text-tertiary/30 bg-bg-tertiary px-2 py-1.5 text-sm text-text-tertiary"
+              />
+            ) : (
+              <select
+                id="prod-categorie"
+                value={form.categorie}
+                onChange={(e) =>
+                  setForm({ ...form, categorie: e.target.value as CategorieProduit })
+                }
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {t(`categorie.${cat}`)}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label
@@ -174,61 +222,70 @@ export default function GestionCatalogueTab() {
               className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             />
           </div>
-          <div>
-            <label
-              htmlFor="prod-seuil"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("catalogue_admin.seuil_label")}
-            </label>
-            <input
-              id="prod-seuil"
-              type="number"
-              min="0"
-              value={form.seuil_alerte_stock}
-              onChange={(e) => setForm({ ...form, seuil_alerte_stock: Number(e.target.value) })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="prod-stock-initial"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("catalogue_admin.stock_initial_label")}
-            </label>
-            <input
-              id="prod-stock-initial"
-              type="number"
-              min="0"
-              value={form.stock_initial ?? 0}
-              onChange={(e) => setForm({ ...form, stock_initial: Number(e.target.value) })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="prod-rabais"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("catalogue_admin.rabais_label")}
-            </label>
-            <input
-              id="prod-rabais"
-              type="number"
-              min="1"
-              max="90"
-              placeholder={t("catalogue_admin.rabais_placeholder")}
-              value={form.pourcentage_reduction ?? ""}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  pourcentage_reduction: e.target.value === "" ? null : Number(e.target.value),
-                })
-              }
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
+          {/* Stock, alerte et rabais n'ont pas de sens pour un "bon_achat" (montant choisi par
+              l'acheteur, jamais de stock/rabais catalogue — voir TypeProduit) — masqués plutôt
+              que désactivés, pour ne pas laisser croire qu'ils s'appliqueraient quand même. */}
+          {form.type_produit !== "bon_achat" && (
+            <>
+              <div>
+                <label
+                  htmlFor="prod-seuil"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("catalogue_admin.seuil_label")}
+                </label>
+                <input
+                  id="prod-seuil"
+                  type="number"
+                  min="0"
+                  value={form.seuil_alerte_stock}
+                  onChange={(e) =>
+                    setForm({ ...form, seuil_alerte_stock: Number(e.target.value) })
+                  }
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="prod-stock-initial"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("catalogue_admin.stock_initial_label")}
+                </label>
+                <input
+                  id="prod-stock-initial"
+                  type="number"
+                  min="0"
+                  value={form.stock_initial ?? 0}
+                  onChange={(e) => setForm({ ...form, stock_initial: Number(e.target.value) })}
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="prod-rabais"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("catalogue_admin.rabais_label")}
+                </label>
+                <input
+                  id="prod-rabais"
+                  type="number"
+                  min="1"
+                  max="90"
+                  placeholder={t("catalogue_admin.rabais_placeholder")}
+                  value={form.pourcentage_reduction ?? ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      pourcentage_reduction: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+            </>
+          )}
           <div className="md:col-span-2">
             <label
               htmlFor="prod-desc"

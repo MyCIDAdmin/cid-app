@@ -15,7 +15,6 @@ import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import type { BonAchat, StatutBonAchat } from "../../types/boutique";
 
 const STATUT_STYLES: Record<StatutBonAchat, string> = {
-  en_attente: "bg-status-warningBg text-status-warningText",
   actif: "bg-status-successBg text-status-successText",
   epuise: "bg-bg-tertiary text-text-secondary",
 };
@@ -84,7 +83,7 @@ export default function MesBonsAchatPage() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-text-primary">{t("mes_bons_achat.titre")}</h1>
         <Link
-          to="/boutique/bon-achat/acheter"
+          to="/boutique"
           className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
         >
           {t("mes_bons_achat.acheter_lien")}
@@ -100,10 +99,7 @@ export default function MesBonsAchatPage() {
       {bonsAchatQuery.data && bonsAchatQuery.data.results.length === 0 && (
         <div className="rounded-cid-lg bg-bg-primary p-8 text-center shadow-sm">
           <p className="mb-3 text-sm text-text-tertiary">{t("mes_bons_achat.aucun_bon")}</p>
-          <Link
-            to="/boutique/bon-achat/acheter"
-            className="text-sm font-medium text-ca hover:underline"
-          >
+          <Link to="/boutique" className="text-sm font-medium text-ca hover:underline">
             {t("mes_bons_achat.acheter_lien")}
           </Link>
         </div>

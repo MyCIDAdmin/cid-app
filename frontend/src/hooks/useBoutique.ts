@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as boutiqueApi from "../api/boutique";
 import type {
-  AcheterBonAchatPayload,
   ChangerStatutCommandePayload,
   ConfirmerPaiementCommandePayload,
   ExpedierCommandePayload,
@@ -224,6 +223,11 @@ export function usePasserCommande() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "commandes"] });
       invalidateProduits(queryClient);
+      // Une commande auto-confirmée (paiement déjà couvert par un bon d'achat, ou éligible à
+      // une confirmation immédiate) peut avoir généré de nouveaux bons d'achat si elle contient
+      // une ligne "bon_achat" (voir _generer_bons_achat côté backend) — sans quoi "Mes bons
+      // d'achat" resterait périmé jusqu'au prochain remontage de la page.
+      queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "bons-achat"] });
     },
   });
 }
@@ -232,7 +236,9 @@ export function usePasserCommande() {
  * Vente au comptoir/vereinfachter Kassenverkauf pour un autre membre (ajouté le 2026-09-21,
  * F-015) — utilisé par PaiementEspecesForm (CotisationsEnAttentePage), voir
  * boutiqueApi.vendreEspeces. Décrémente le stock côté serveur, d'où l'invalidation des
- * produits en plus des commandes (même principe que usePasserCommande).
+ * produits en plus des commandes (même principe que usePasserCommande) — toujours immédiatement
+ * confirmée, donc une ligne "bon_achat" y génère systématiquement son bon (voir
+ * usePasserCommande ci-dessus pour la même invalidation).
  */
 export function useVendreEspeces() {
   const queryClient = useQueryClient();
@@ -241,6 +247,7 @@ export function useVendreEspeces() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "commandes"] });
       invalidateProduits(queryClient);
+      queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "bons-achat"] });
     },
   });
 }
@@ -336,25 +343,15 @@ export function useCreerRetour() {
 
 // --- Bons d'achat (demande utilisateur du 2026-09-23) ---
 
-function invalidateBonsAchat(queryClient: ReturnType<typeof useQueryClient>) {
-  queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "bons-achat"] });
-}
-
-/** "Mes bons d'achat" (membre) / gestion (Bureau Admin+) — même scope IDOR géré côté backend
- * que useCommandes, voir MesBonsAchatPage/GestionBonsAchatTab. */
+/** "Mes bons d'achat" (membre) / oversight en lecture seule (Bureau Admin+) — même scope IDOR
+ * géré côté backend que useCommandes, voir MesBonsAchatPage/GestionBonsAchatTab. Un bon n'est
+ * plus acheté/confirmé via un endpoint dédié depuis le 2026-09-23 (voir docstring de tête de
+ * types/boutique.ts) : il naît déjà `actif`, généré automatiquement à la confirmation de la
+ * commande qui l'a acheté (voir usePasserCommande/useVendreEspeces plus haut). */
 export function useBonsAchat(filtres: boutiqueApi.BonsAchatFiltres = {}) {
   return useQuery({
     queryKey: boutiqueKeys.bonsAchat(filtres),
     queryFn: () => boutiqueApi.listBonsAchat(filtres),
-  });
-}
-
-/** Achat d'un bon d'achat (montant libre) — voir AcheterBonAchatPage. */
-export function useAcheterBonAchat() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: AcheterBonAchatPayload) => boutiqueApi.acheterBonAchat(payload),
-    onSuccess: () => invalidateBonsAchat(queryClient),
   });
 }
 
@@ -363,31 +360,5 @@ export function useAcheterBonAchat() {
 export function useVerifierBonAchat() {
   return useMutation({
     mutationFn: (payload: VerifierBonAchatPayload) => boutiqueApi.verifierBonAchat(payload),
-  });
-}
-
-/** Confirme la réception du paiement d'un bon d'achat (Directeur Financier+) — voir
- * GestionBonsAchatTab. */
-export function useConfirmerPaiementBonAchat() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ConfirmerPaiementCommandePayload }) =>
-      boutiqueApi.confirmerPaiementBonAchat(id, payload),
-    onSuccess: () => invalidateBonsAchat(queryClient),
-  });
-}
-
-/** Initie un paiement en ligne pour un bon d'achat (Stripe/PayPal Checkout) — conservé pour une
- * réactivation future (voir docstring boutiqueApi.initierPaiementEnLigneBonAchat), non câblé à
- * une UI pour le moment (même pause que PAIEMENT_EN_LIGNE_ACTIF côté PanierCommandePage). */
-export function useInitierPaiementEnLigneBonAchat() {
-  return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: InitierPaiementEnLigneCommandePayload;
-    }) => boutiqueApi.initierPaiementEnLigneBonAchat(id, payload),
   });
 }

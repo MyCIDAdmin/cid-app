@@ -25,8 +25,8 @@ class RegleReductionInline(admin.TabularInline):
 
 @admin.register(Produit)
 class ProduitAdmin(admin.ModelAdmin):
-    list_display = ("nom", "categorie", "prix", "statut", "stock_total", "nouveaute")
-    list_filter = ("statut", "categorie", "nouveaute")
+    list_display = ("nom", "categorie", "type_produit", "prix", "statut", "stock_total", "nouveaute")
+    list_filter = ("statut", "categorie", "type_produit", "nouveaute")
     search_fields = ("nom",)
     readonly_fields = ("id", "created_at", "updated_at")
     inlines = [VarianteProduitInline, RegleReductionInline]

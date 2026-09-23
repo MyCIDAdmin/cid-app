@@ -9,10 +9,13 @@ class ProduitFilter(django_filters.FilterSet):
     categorie = django_filters.CharFilter(field_name="categorie")
     statut = django_filters.ChoiceFilter(choices=StatutProduit.choices)
     nouveaute = django_filters.BooleanFilter(field_name="nouveaute")
+    # Ajouté le 2026-09-23 — permet au catalogue frontend de filtrer/exclure les bons d'achat
+    # sans dépendre uniquement de `categorie` (voir CataloguePage.tsx).
+    type_produit = django_filters.CharFilter(field_name="type_produit")
 
     class Meta:
         model = Produit
-        fields = ["categorie", "statut", "nouveaute"]
+        fields = ["categorie", "type_produit", "statut", "nouveaute"]
 
 
 class CommandeFilter(django_filters.FilterSet):

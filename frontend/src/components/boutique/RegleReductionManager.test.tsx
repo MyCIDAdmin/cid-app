@@ -28,6 +28,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     prix_final: "18.00",
     image: null,
     statut: "publie",
+    type_produit: "physique",
     nouveaute: false,
     seuil_alerte_stock: 5,
     variantes: [],

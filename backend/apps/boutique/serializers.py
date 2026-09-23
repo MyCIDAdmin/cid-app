@@ -22,6 +22,7 @@ from .models import (
     RegleReduction,
     Retour,
     StatutCommande,
+    TypeProduit,
     TypeReduction,
     VarianteProduit,
     bon_achat_montant_max,
@@ -96,6 +97,7 @@ class ProduitSerializer(serializers.ModelSerializer):
             "id",
             "nom",
             "categorie",
+            "type_produit",
             "description",
             "prix",
             "pourcentage_reduction",
@@ -298,10 +300,16 @@ class ExpedierCommandeSerializer(serializers.Serializer):
 
 class LigneCommandeEntreeSerializer(serializers.Serializer):
     """Une ligne du panier envoyée par le client — seule la quantité et l'identité de la
-    variante sont prises en compte ; aucun prix n'est jamais accepté en entrée."""
+    variante sont prises en compte ; aucun prix n'est jamais accepté en entrée, à une exception
+    près : `montant`, requis UNIQUEMENT pour une ligne portant sur un produit
+    `type_produit=BON_ACHAT` (demande utilisateur du 2026-09-23, achat de bon d'achat intégré au
+    catalogue) — c'est le montant choisi par l'acheteur pour CE bon, revalidé contre
+    bon_achat_montant_min/max dans PasserCommandeSerializer.validate_lignes (jamais fait confiance
+    tel quel, CLAUDE.md §8)."""
 
     variante = serializers.PrimaryKeyRelatedField(queryset=VarianteProduit.objects.all())
     quantite = serializers.IntegerField(min_value=1)
+    montant = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
 
 
 class PasserCommandeSerializer(serializers.Serializer):
@@ -336,6 +344,26 @@ class PasserCommandeSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     f"Le produit « {variante.produit.nom} » n'est plus disponible."
                 )
+            # Montant libre requis (et borné) UNIQUEMENT pour un bon d'achat (demande
+            # utilisateur du 2026-09-23) — voir LigneCommandeEntreeSerializer/CLAUDE.md §8, le
+            # montant final reste de toute façon revalidé ici, jamais fait confiance tel quel.
+            est_bon_achat = variante.produit.type_produit == TypeProduit.BON_ACHAT
+            montant = ligne.get("montant")
+            if est_bon_achat:
+                if montant is None:
+                    raise serializers.ValidationError(
+                        f"Un montant est requis pour le bon d'achat « {variante.produit.nom} »."
+                    )
+                if montant < bon_achat_montant_min() or montant > bon_achat_montant_max():
+                    raise serializers.ValidationError(
+                        "Le montant d'un bon d'achat doit être compris entre "
+                        f"{bon_achat_montant_min()} € et {bon_achat_montant_max()} €."
+                    )
+            elif montant is not None:
+                raise serializers.ValidationError(
+                    f"Le montant ne s'applique qu'aux bons d'achat (« {variante.produit.nom} » "
+                    "a un prix catalogue fixe)."
+                )
         return lignes
 
 
@@ -351,6 +379,10 @@ class VendreEspecesCommandeSerializer(serializers.Serializer):
     membre = serializers.PrimaryKeyRelatedField(queryset=Membre.objects.all())
     variante = serializers.PrimaryKeyRelatedField(queryset=VarianteProduit.objects.all())
     quantite = serializers.IntegerField(min_value=1, default=1)
+    # Montant libre requis pour la vente au comptoir d'un bon d'achat — même règle que
+    # LigneCommandeEntreeSerializer côté `passer` (demande utilisateur du 2026-09-23, un
+    # Gutschein peut aussi se vendre en espèces au comptoir).
+    montant = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
 
     def validate_variante(self, variante):
         if variante.produit.statut != "publie":
@@ -358,6 +390,35 @@ class VendreEspecesCommandeSerializer(serializers.Serializer):
                 f"Le produit « {variante.produit.nom} » n'est plus disponible."
             )
         return variante
+
+    def validate(self, attrs):
+        variante = attrs["variante"]
+        montant = attrs.get("montant")
+        est_bon_achat = variante.produit.type_produit == TypeProduit.BON_ACHAT
+        if est_bon_achat:
+            if montant is None:
+                raise serializers.ValidationError(
+                    {"montant": f"Un montant est requis pour le bon d'achat « {variante.produit.nom} »."}
+                )
+            if montant < bon_achat_montant_min() or montant > bon_achat_montant_max():
+                raise serializers.ValidationError(
+                    {
+                        "montant": (
+                            "Le montant d'un bon d'achat doit être compris entre "
+                            f"{bon_achat_montant_min()} € et {bon_achat_montant_max()} €."
+                        )
+                    }
+                )
+        elif montant is not None:
+            raise serializers.ValidationError(
+                {
+                    "montant": (
+                        f"Le montant ne s'applique qu'aux bons d'achat (« {variante.produit.nom} » "
+                        "a un prix catalogue fixe)."
+                    )
+                }
+            )
+        return attrs
 
 
 class ChangerStatutCommandeSerializer(serializers.Serializer):
@@ -393,21 +454,6 @@ class BonAchatSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
-
-
-class AcheterBonAchatSerializer(serializers.Serializer):
-    """Entrée de POST /boutique/bons-achat/acheter/ — tout membre authentifié, montant libre
-    (choix confirmé par l'utilisateur) borné à [5, 500] € — voir bon_achat_montant_min/max."""
-
-    montant = serializers.DecimalField(max_digits=8, decimal_places=2)
-
-    def validate_montant(self, montant):
-        if montant < bon_achat_montant_min() or montant > bon_achat_montant_max():
-            raise serializers.ValidationError(
-                f"Le montant doit être compris entre {bon_achat_montant_min()} € et "
-                f"{bon_achat_montant_max()} €."
-            )
-        return montant
 
 
 class VerifierBonAchatSerializer(serializers.Serializer):

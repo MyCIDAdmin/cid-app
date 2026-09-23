@@ -25,15 +25,18 @@
  *
  * Un seul item actif à la fois, même quand deux `to` sont préfixes l'un de l'autre (bug corrigé
  * le 2026-09-21, retour utilisateur : "Wenn ich auf Shop dann auf Meine Bestellungen klicke,
- * bleiben beide highlighted") : "/boutique" et "/boutique/commandes" (ajoutée le 2026-09-19, voir
- * plus bas) partagent ce préfixe, donc <NavLink> de react-router-dom les considérait tous les deux
- * actifs sur "/boutique/commandes" (correspondance par défaut = "pathname commence par `to`",
- * sans `end`). Passer `end` sur "/boutique" ne suffirait pas non plus : il resterait alors inactif
- * sur ses propres sous-pages sans item dédié (ex. "/boutique/panier", "/boutique/commande/retour").
- * `useSidebarNav` (exporté pour `MobileNavDrawer.tsx`, qui a besoin exactement de la même logique
- * plutôt que de la dupliquer) calcule donc, pour tout le menu, LE seul item dont le `to`
- * correspond ET qui est le plus spécifique (le plus long) — remplace le calcul d'activité intégré
- * de <NavLink> par un simple <Link> + comparaison directe.
+ * bleiben beide highlighted"). `useSidebarNav` (exporté pour `MobileNavDrawer.tsx`, qui a besoin
+ * exactement de la même logique plutôt que de la dupliquer) calcule donc, pour tout le menu, LE
+ * seul item dont le `to` correspond ET qui est le plus spécifique (le plus long) — remplace le
+ * calcul d'activité intégré de <NavLink> par un simple <Link> + comparaison directe.
+ *
+ * "Mes commandes"/"Mes bons d'achat" repliées dans Boutique (demande utilisateur du 2026-09-23 :
+ * "'Meine Bestellungen' und 'Meine Gutscheine' in die Boutique verschieben") : ces deux entrées,
+ * ajoutées respectivement le 2026-09-19 et le 2026-09-23 avec leurs propres routes/items, ont été
+ * retirées de NAV_ITEMS — elles vivent désormais comme onglets de BoutiquePage (`/boutique?
+ * onglet=commandes`/`?onglet=bons_achat`, voir App.tsx), le bug de double-highlight décrit
+ * ci-dessus n'a donc plus lieu d'être pour "/boutique" (plus de sous-route partageant son
+ * préfixe avec un item dédié).
  *
  * Le clic sur l'en-tête est la seule source de vérité pour replier/déplier un groupe en mode
  * déplié (bug corrigé : une première version forçait aussi le dépli du groupe contenant la page
@@ -59,7 +62,6 @@ import {
   IconFileCheck,
   IconFolderCog,
   IconGavel,
-  IconGiftCard,
   IconHelpCircle,
   IconIdBadge,
   IconIdBadge2,
@@ -71,7 +73,6 @@ import {
   IconNews,
   IconPhoto,
   IconPhotoEdit,
-  IconReceipt2,
   IconSettings,
   IconShoppingBag,
   IconTag,
@@ -143,20 +144,9 @@ export const NAV_ITEMS: NavItem[] = [
   // Catalogue boutique (mockup #pg-boutique) — ouvert à tout authentifié, même principe que
   // /mon-adhesion : le backend scope déjà le queryset (produits publiés uniquement en dessous
   // de Bureau Admin, voir ProduitViewSet.get_queryset).
+  // "Mes commandes" et "Mes bons d'achat" n'ont plus leur propre entrée depuis le 2026-09-23
+  // (voir docstring de module) — accessibles comme onglets de cette même page.
   { to: "/boutique", labelKey: "nav.boutique", icon: IconShoppingBag, group: "general" },
-  // "Mes commandes" (ajoutée le 2026-09-19) — suivi/gestion des commandes du membre courant,
-  // même principe que /mon-adhesion : le backend scope déjà le queryset (CommandeViewSet.
-  // get_queryset ne renvoie que les commandes du membre courant en dessous de Bureau Admin).
-  { to: "/boutique/commandes", labelKey: "nav.mes_commandes", icon: IconReceipt2, group: "general" },
-  // "Mes bons d'achat" (demande utilisateur du 2026-09-23) — même principe IDOR que
-  // /boutique/commandes (BonAchatViewSet.get_queryset ne renvoie que les bons du membre
-  // courant en dessous de Bureau Admin).
-  {
-    to: "/boutique/bons-achat",
-    labelKey: "nav.bons_achat",
-    icon: IconGiftCard,
-    group: "general",
-  },
   // Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) — ouverts à
   // tout authentifié, même principe que /mon-adhesion : le backend scope déjà la visibilité (voir
   // PublicationViewSet/SujetViewSet.get_queryset).

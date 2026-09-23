@@ -57,7 +57,9 @@ def notifier_commande_confirmee(commande: Commande) -> None:
         # "/boutique/commandes" n'existait comme route nulle part côté frontend — ajoutée avec
         # cette même page (voir MesCommandesPage.tsx), ?commande= rouvre directement la
         # commande concernée (même principe que ?evenement=/?publication=/?session= ailleurs).
-        lien=f"/boutique/commandes?commande={commande.id}",
+        # Route mise à jour le 2026-09-23 : "Mes commandes" n'est plus une page séparée mais un
+        # onglet de la Boutique (voir BoutiquePage.tsx/?onglet=).
+        lien=f"/boutique?onglet=commandes&commande={commande.id}",
     )
 
 
@@ -73,7 +75,7 @@ def notifier_commande_annulee(commande: Commande) -> None:
         TypeNotification.BOUTIQUE_COMMANDE_ANNULEE,
         titre=f"Commande {commande.numero_commande} annulée",
         message=f"Votre commande {commande.numero_commande} a été annulée.",
-        lien=f"/boutique/commandes?commande={commande.id}",  # voir notifier_commande_confirmee
+        lien=f"/boutique?onglet=commandes&commande={commande.id}",  # voir notifier_commande_confirmee
     )
 
 
@@ -97,17 +99,18 @@ def notifier_commande_expediee(commande: Commande) -> None:
         TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE,
         titre=f"Commande {commande.numero_commande} expédiée",
         message=f"Votre commande vient d'être expédiée.{suivi}",
-        lien=f"/boutique/commandes?commande={commande.id}",  # voir notifier_commande_confirmee
+        lien=f"/boutique?onglet=commandes&commande={commande.id}",  # voir notifier_commande_confirmee
     )
 
 
 def notifier_bon_achat_actif(bon: BonAchat) -> None:
-    """Appelée juste après qu'un BonAchat passe à ACTIF (paiement confirmé — webhook PSP OU
-    confirmer_paiement manuel, voir apps.boutique.webhooks/views.py), demande utilisateur du
-    2026-09-23 : "Der Code soll in einer schönen Email... geschickt werden". Contrairement aux
-    emails de commande (texte brut), celui-ci est HTML (voir tasks.envoyer_email_bon_achat_code/
-    emails.py) — seul point de la demande à explicitement qualifier l'email d'attendu comme
-    soigné ("schön")."""
+    """Appelée juste après la création d'un BonAchat, toujours déjà ACTIF depuis le 2026-09-23
+    (voir apps.boutique.views._generer_bons_achat, achat intégré au catalogue — remplace l'ancien
+    déclencheur "webhook PSP OU confirmer_paiement manuel d'un BonAchat séparé"), demande
+    utilisateur du 2026-09-23 : "Der Code soll in einer schönen Email... geschickt werden".
+    Contrairement aux emails de commande (texte brut), celui-ci est HTML (voir
+    tasks.envoyer_email_bon_achat_code/emails.py) — seul point de la demande à explicitement
+    qualifier l'email d'attendu comme soigné ("schön")."""
     user = getattr(bon.achete_par, "user", None)
     envoyer_email_bon_achat_code.delay(str(bon.id))
     notifier(
@@ -115,5 +118,7 @@ def notifier_bon_achat_actif(bon: BonAchat) -> None:
         TypeNotification.BOUTIQUE_BON_ACHAT_ACTIF,
         titre="Votre bon d'achat est prêt",
         message=f"Votre bon d'achat {bon.code} de {bon.montant_initial} € est prêt à l'emploi.",
-        lien="/boutique/bons-achat",
+        # "Mes bons d'achat" n'est plus une page séparée mais un onglet de la Boutique depuis le
+        # 2026-09-23 (voir BoutiquePage.tsx/?onglet=), même principe que notifier_commande_*.
+        lien=f"/boutique?onglet=bons_achat&bon={bon.id}",
     )

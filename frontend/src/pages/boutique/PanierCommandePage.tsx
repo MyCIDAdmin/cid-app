@@ -40,6 +40,7 @@ import {
 } from "../../hooks/useBoutique";
 import {
   calculerReductionArticle,
+  estArticleBonAchat,
   sousTotalNetArticle,
   totalPanierNet,
   usePanierStore,
@@ -182,7 +183,14 @@ export default function PanierCommandePage() {
 
   function handlePasserCommande() {
     const payload: PasserCommandePayload = {
-      lignes: articles.map((a) => ({ variante: a.varianteId, quantite: a.quantite })),
+      lignes: articles.map((a) => ({
+        variante: a.varianteId,
+        quantite: a.quantite,
+        // Seul cas où un montant part du client (demande utilisateur du 2026-09-23, "Gutschein
+        // wird ein echtes Produkt im Katalog") — revalidé quand même côté serveur contre
+        // bon_achat_montant_min()/max() (CLAUDE.md §8), voir LigneCommandeEntree.montant.
+        ...(estArticleBonAchat(a) && { montant: a.prixUnitaire }),
+      })),
       ...livraison,
       ...(bonAchatVerifie && { code_bon_achat: bonAchatVerifie.code }),
     };
@@ -348,15 +356,22 @@ export default function PanierCommandePage() {
           )}
           <div className="space-y-2">
             {articles.map((a) => {
+              const ligneId = a.ligneId ?? a.varianteId;
+              const bonAchat = estArticleBonAchat(a);
               const estEpuise = a.stockDisponible <= 0 || a.quantite <= 0;
               return (
                 <div
-                  key={a.varianteId}
+                  key={ligneId}
                   className="flex items-center gap-3 border-b border-text-tertiary/10 pb-2 last:border-0"
                 >
                   <div className="flex-1">
                     <div className="text-sm font-semibold text-text-primary">{a.nom}</div>
-                    {(a.taille || a.couleur) && (
+                    {bonAchat && (
+                      <div className="text-xs text-text-tertiary">
+                        🎁 {t("commande.article_bon_achat")}
+                      </div>
+                    )}
+                    {!bonAchat && (a.taille || a.couleur) && (
                       <div className="text-xs text-text-tertiary">
                         {[a.taille, a.couleur].filter(Boolean).join(" / ")}
                       </div>
@@ -387,7 +402,7 @@ export default function PanierCommandePage() {
                       type="button"
                       aria-label={t("commande.diminuer")}
                       disabled={estEpuise}
-                      onClick={() => changerQuantite(a.varianteId, a.quantite - 1)}
+                      onClick={() => changerQuantite(ligneId, a.quantite - 1)}
                       className="flex h-6 w-6 items-center justify-center rounded-cid bg-bg-tertiary text-text-secondary disabled:opacity-40"
                     >
                       −
@@ -397,7 +412,7 @@ export default function PanierCommandePage() {
                       type="button"
                       aria-label={t("commande.augmenter")}
                       disabled={estEpuise || a.quantite >= a.stockDisponible}
-                      onClick={() => changerQuantite(a.varianteId, a.quantite + 1)}
+                      onClick={() => changerQuantite(ligneId, a.quantite + 1)}
                       className="flex h-6 w-6 items-center justify-center rounded-cid bg-bg-tertiary text-text-secondary disabled:opacity-40"
                     >
                       +
@@ -425,7 +440,7 @@ export default function PanierCommandePage() {
                   <button
                     type="button"
                     aria-label={t("commande.retirer")}
-                    onClick={() => retirer(a.varianteId)}
+                    onClick={() => retirer(ligneId)}
                     className="text-text-tertiary hover:text-status-dangerText"
                   >
                     ✕
@@ -617,7 +632,7 @@ export default function PanierCommandePage() {
               <p className="mt-1 text-xs text-status-dangerText">{bonAchatErreur}</p>
             )}
             <Link
-              to="/boutique/bon-achat/acheter"
+              to="/boutique"
               className="mt-1 inline-block text-xs font-medium text-ca hover:underline"
             >
               {t("commande.bon_achat_acheter_lien")}

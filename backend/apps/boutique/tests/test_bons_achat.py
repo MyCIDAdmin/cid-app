@@ -1,25 +1,42 @@
 """
 Tests — bons d'achat/Gutscheine (demande utilisateur du 2026-09-23 : "Es soll möglich sein
-Gutscheine zu Kaufen. Diese sollen als Gutscheincodes im shop verwenden werden."). Couvre
-l'achat, la vérification, le paiement (en ligne + manuel), l'application au checkout
-(`passer`), et les permissions/IDOR (CLAUDE.md §8).
+Gutscheine zu Kaufen. Diese sollen als Gutscheincodes im shop verwenden werden." — révisée le
+même jour : "Gutschein soll als Kategorie im shop auftauchen und nicht als eigenes Modul" /
+"Gutschein wird ein echtes Produkt im Katalog"). Couvre :
+  - l'achat d'un bon d'achat intégré au catalogue (produit type_produit=BON_ACHAT, montant choisi
+    par l'acheteur, généré à la confirmation de la Commande — voir views._generer_bons_achat) ;
+  - la vérification d'un code (aperçu au checkout) ;
+  - l'application d'un bon existant au checkout d'une autre commande (`code_bon_achat`) ;
+  - les permissions/IDOR (CLAUDE.md §8).
+
+Les anciens points d'entrée dédiés (BonAchatViewSet.acheter/initier_paiement_en_ligne/
+confirmer_paiement) ont été supprimés avec cette révision — un bon d'achat n'a plus de flux de
+paiement propre, il suit exactement celui d'une Commande normale.
 """
 
+from datetime import timedelta
 from decimal import Decimal
-from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.boutique.models import BonAchat, ModePaiementCommande, StatutBonAchat, StatutCommande
+from apps.boutique.models import (
+    BonAchat,
+    ModePaiementCommande,
+    StatutBonAchat,
+    StatutCommande,
+    bon_achat_montant_max,
+    bon_achat_montant_min,
+)
 from apps.boutique.tests.factories import (
     BonAchatFactory,
+    ProduitBonAchatFactory,
     ProduitFactory,
     VarianteProduitFactory,
 )
-from apps.cotisations.gateways import GatewayError
 from apps.membres.tests.factories import MembreFactory
 
 pytestmark = pytest.mark.django_db
@@ -41,17 +58,13 @@ def _auth(api_client, user):
     return api_client
 
 
-ACHETER_URL = "boutique:bon-achat-acheter"
 VERIFIER_URL = "boutique:bon-achat-verifier"
 PASSER_URL = "boutique:commande-passer"
+VENDRE_ESPECES_URL = "boutique:commande-vendre-especes"
 
 
-def _initier_url(bon):
-    return reverse("boutique:bon-achat-initier-paiement-en-ligne", args=[bon.id])
-
-
-def _confirmer_url(bon):
-    return reverse("boutique:bon-achat-confirmer-paiement", args=[bon.id])
+def _confirmer_paiement_url(commande_id):
+    return reverse("boutique:commande-confirmer-paiement", args=[commande_id])
 
 
 def _detail_url(bon):
@@ -68,43 +81,285 @@ def _adresse_livraison():
     }
 
 
-# --- Achat ---
+# --- Achat d'un bon d'achat intégré au catalogue (demande utilisateur du 2026-09-23) ---
 
 
-def test_acheter_non_authentifie_refuse(api_client):
-    resp = api_client.post(reverse(ACHETER_URL), {"montant": "50.00"})
-    assert resp.status_code == 401
-
-
-def test_membre_peut_acheter_un_bon_achat(api_client):
+def test_passer_commande_bon_achat_reste_en_attente_sans_generer_de_bon(api_client):
+    """Un bon d'achat n'est jamais généré avant confirmation du paiement — voir
+    _generer_bons_achat, appelée uniquement aux points de confirmation d'une Commande."""
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
     user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(ACHETER_URL), {"montant": "50.00"})
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1, "montant": "80.00"}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
 
     assert resp.status_code == 201, resp.data
-    assert resp.data["statut"] == StatutBonAchat.EN_ATTENTE
-    assert Decimal(resp.data["solde"]) == Decimal("50.00")
-    assert resp.data["code"].startswith("BON-")
-    bon = BonAchat.objects.get(id=resp.data["id"])
-    assert bon.achete_par_id == membre.id
+    assert Decimal(resp.data["montant_total"]) == Decimal("80.00")
+    assert resp.data["statut"] == StatutCommande.EN_ATTENTE
+    assert BonAchat.objects.count() == 0
 
 
-def test_acheter_montant_hors_bornes_refuse(api_client):
+def test_confirmer_paiement_dune_commande_bon_achat_genere_le_bon(api_client):
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1, "montant": "80.00"}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    commande_id = resp.data["id"]
+
+    user_df, _membre_df = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
+    _auth(api_client, user_df)
+    resp_confirm = api_client.post(_confirmer_paiement_url(commande_id), {"mode_paiement": "virement"})
+
+    assert resp_confirm.status_code == 200, resp_confirm.data
+    bon = BonAchat.objects.get(achete_par=membre)
+    assert bon.montant_initial == Decimal("80.00")
+    assert bon.solde == Decimal("80.00")
+    assert bon.statut == StatutBonAchat.ACTIF
+    assert bon.code.startswith("BON-")
+    assert bon.date_expiration is not None
+    # Le contenu de l'email HTML "bon prêt à l'emploi" est testé indépendamment dans
+    # test_tasks.py (appel direct de la tâche, sans passer par .delay()/un broker Celery) — ici
+    # on vérifie seulement que le bon est bien généré et actif.
+
+
+def test_passer_commande_bon_achat_quantite_genere_plusieurs_bons_independants(api_client):
+    """quantite=2 sur une ligne bon_achat produit deux BonAchat distincts, jamais un seul bon
+    cumulé — voir docstring de _generer_bons_achat."""
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 2, "montant": "30.00"}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    commande_id = resp.data["id"]
+
+    user_df, _membre_df = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
+    _auth(api_client, user_df)
+    api_client.post(_confirmer_paiement_url(commande_id), {"mode_paiement": "especes"})
+
+    bons = list(BonAchat.objects.filter(achete_par=membre))
+    assert len(bons) == 2
+    assert {b.montant_initial for b in bons} == {Decimal("30.00")}
+    assert bons[0].code != bons[1].code
+
+
+def test_passer_commande_bon_achat_couvert_par_un_bon_existant_confirme_et_genere_immediatement(api_client):
+    """Un bon d'achat s'achète aussi via un bon existant appliqué au checkout — la commande est
+    alors confirmée immédiatement dans `passer` (montant_du<=0), qui doit générer le nouveau bon
+    dans la foulée, sans attendre confirmer_paiement."""
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    bon_existant = BonAchatFactory(solde=Decimal("100.00"))
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1, "montant": "40.00"}],
+            "code_bon_achat": bon_existant.code,
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["statut"] == StatutCommande.CONFIRMEE
+    nouveau_bon = BonAchat.objects.get(achete_par=membre)
+    assert nouveau_bon.montant_initial == Decimal("40.00")
+    assert nouveau_bon.statut == StatutBonAchat.ACTIF
+    bon_existant.refresh_from_db()
+    assert bon_existant.solde == Decimal("60.00")
+
+
+def test_vendre_especes_bon_achat_genere_le_bon_immediatement(api_client):
+    """Vente au comptoir (demande utilisateur du 2026-09-21, réutilisée ici) — toujours
+    confirmée immédiatement, donc le bon est généré dans le même appel."""
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    membre_cible = MembreFactory()
+    user_df, _membre_df = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
+    _auth(api_client, user_df)
+
+    resp = api_client.post(
+        reverse(VENDRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "variante": str(variante.id), "montant": "60.00"},
+        format="json",
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["statut"] == StatutCommande.CONFIRMEE
+    bon = BonAchat.objects.get(achete_par=membre_cible)
+    assert bon.montant_initial == Decimal("60.00")
+    assert bon.statut == StatutBonAchat.ACTIF
+
+
+def test_passer_commande_bon_achat_sans_montant_refuse(api_client):
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
     user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(ACHETER_URL), {"montant": "1000.00"})
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
 
     assert resp.status_code == 400
-    assert "montant" in resp.data["details"]
+    assert "lignes" in resp.data["details"]
 
 
-# --- Vérification ---
+def test_passer_commande_bon_achat_montant_hors_bornes_refuse(api_client):
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [
+                {
+                    "variante": str(variante.id),
+                    "quantite": 1,
+                    "montant": str(bon_achat_montant_max() + Decimal("1.00")),
+                }
+            ],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+
+    assert resp.status_code == 400
+    assert "lignes" in resp.data["details"]
+
+
+def test_passer_commande_bon_achat_montant_sous_le_minimum_refuse(api_client):
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [
+                {
+                    "variante": str(variante.id),
+                    "quantite": 1,
+                    "montant": str(bon_achat_montant_min() - Decimal("1.00")),
+                }
+            ],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+
+    assert resp.status_code == 400
+    assert "lignes" in resp.data["details"]
+
+
+def test_passer_commande_produit_physique_avec_montant_refuse(api_client):
+    """`montant` ne s'applique qu'à un bon d'achat — jamais un moyen détourné de fixer le prix
+    d'un produit physique (CLAUDE.md §8)."""
+    produit = ProduitFactory(prix=Decimal("30.00"))
+    variante = VarianteProduitFactory(produit=produit, stock=10)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1, "montant": "1.00"}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+
+    assert resp.status_code == 400
+    assert "lignes" in resp.data["details"]
+
+
+def test_passer_commande_bon_achat_ignore_le_stock(api_client):
+    """Un bon d'achat n'a pas de stock réel — la VarianteProduit sentinelle n'est jamais
+    vérifiée ni décrémentée, contrairement à un produit physique."""
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    stock_avant = variante.stock
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 5, "montant": "50.00"}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+
+    assert resp.status_code == 201, resp.data
+    variante.refresh_from_db()
+    assert variante.stock == stock_avant  # inchangé
+
+
+def test_annuler_commande_bon_achat_non_confirmee_ne_cree_pas_de_bon(api_client):
+    """Annuler une commande bon_achat encore en_attente ne doit ni crasher (stock ignoré par
+    _restituer_stock) ni générer de BonAchat (jamais confirmée)."""
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1, "montant": "20.00"}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    commande_id = resp.data["id"]
+
+    resp_annuler = api_client.post(reverse("boutique:commande-annuler", args=[commande_id]))
+
+    assert resp_annuler.status_code == 200, resp_annuler.data
+    assert BonAchat.objects.count() == 0
+
+
+# --- Vérification (aperçu au checkout, sans consommer le code) ---
 
 
 def test_verifier_code_valide_retourne_le_solde_sans_lidentite_de_lacheteur(api_client):
-    bon = BonAchatFactory(statut=StatutBonAchat.ACTIF, solde=Decimal("30.00"))
+    bon = BonAchatFactory(solde=Decimal("30.00"))
     user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
     _auth(api_client, user)
 
@@ -117,7 +372,7 @@ def test_verifier_code_valide_retourne_le_solde_sans_lidentite_de_lacheteur(api_
 
 
 def test_verifier_code_insensible_a_la_casse(api_client):
-    bon = BonAchatFactory(statut=StatutBonAchat.ACTIF)
+    bon = BonAchatFactory()
     user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
     _auth(api_client, user)
 
@@ -126,8 +381,19 @@ def test_verifier_code_insensible_a_la_casse(api_client):
     assert resp.status_code == 200
 
 
-def test_verifier_code_en_attente_de_paiement_nest_pas_utilisable(api_client):
-    bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE)
+def test_verifier_code_epuise_nest_pas_utilisable(api_client):
+    bon = BonAchatFactory(statut=StatutBonAchat.EPUISE, solde=Decimal("0.00"))
+    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(VERIFIER_URL), {"code": bon.code})
+
+    assert resp.status_code == 200
+    assert resp.data["utilisable"] is False
+
+
+def test_verifier_code_expire_nest_pas_utilisable(api_client):
+    bon = BonAchatFactory(date_expiration=timezone.now() - timedelta(days=1))
     user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
     _auth(api_client, user)
 
@@ -144,105 +410,6 @@ def test_verifier_code_inconnu_404(api_client):
     resp = api_client.post(reverse(VERIFIER_URL), {"code": "BON-INTROUVABLE"})
 
     assert resp.status_code == 404
-
-
-# --- Paiement en ligne ---
-
-
-def test_acheteur_peut_initier_paiement_stripe(api_client):
-    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    bon = BonAchatFactory(achete_par=membre, statut=StatutBonAchat.EN_ATTENTE, montant_initial=Decimal("50.00"))
-    _auth(api_client, user)
-
-    with patch(
-        "apps.boutique.views.creer_session_stripe",
-        return_value="https://checkout.stripe.com/session/abc",
-    ) as mock_creer:
-        resp = api_client.post(_initier_url(bon), {"passerelle": "stripe"})
-
-    assert resp.status_code == 200, resp.data
-    args = mock_creer.call_args.args
-    assert args[0] == f"BON-{bon.id}"
-    assert args[2] == bon.montant_initial
-
-
-def test_initier_paiement_refuse_si_pas_lacheteur(api_client):
-    # IDOR (SCD §2.3 A01) : un Membre normal ne voit même pas le bon d'un autre dans son
-    # queryset — get_object() 404 avant la vérification de propriétaire (même comportement que
-    # CommandeViewSet, voir test_api_paiement_en_ligne.test_refuse_si_pas_le_proprietaire).
-    autre_bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE)
-    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    _auth(api_client, user)
-
-    resp = api_client.post(_initier_url(autre_bon), {"passerelle": "stripe"})
-
-    assert resp.status_code == 404
-
-
-def test_initier_paiement_refuse_si_deja_actif(api_client):
-    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    bon = BonAchatFactory(achete_par=membre, statut=StatutBonAchat.ACTIF)
-    _auth(api_client, user)
-
-    resp = api_client.post(_initier_url(bon), {"passerelle": "stripe"})
-
-    assert resp.status_code == 400
-
-
-def test_initier_paiement_erreur_gateway_message_generique(api_client):
-    user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    bon = BonAchatFactory(achete_par=membre, statut=StatutBonAchat.EN_ATTENTE)
-    _auth(api_client, user)
-
-    with patch(
-        "apps.boutique.views.creer_session_stripe",
-        side_effect=GatewayError("STRIPE_SECRET_KEY manquant"),
-    ):
-        resp = api_client.post(_initier_url(bon), {"passerelle": "stripe"})
-
-    assert resp.status_code == 400
-    assert "STRIPE_SECRET_KEY" not in str(resp.data)
-
-
-# --- Confirmation manuelle (virement/espèces) ---
-
-
-def test_confirmer_paiement_directeur_financier_active_le_bon(api_client, mailoutbox):
-    membre_df = MembreFactory()
-    user_df = User.objects.create_user(
-        email="df@example.de", password="Password123!", role=Role.DIR_FINANCIER, is_active=True
-    )
-    user_df.membre = membre_df
-    bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE)
-    _auth(api_client, user_df)
-
-    resp = api_client.post(_confirmer_url(bon), {"mode_paiement": "virement"})
-
-    assert resp.status_code == 200, resp.data
-    bon.refresh_from_db()
-    assert bon.statut == StatutBonAchat.ACTIF
-    assert bon.date_expiration is not None
-    assert bon.mode_paiement == ModePaiementCommande.VIREMENT
-
-
-def test_confirmer_paiement_membre_refuse(api_client):
-    bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE)
-    user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    _auth(api_client, user)
-
-    resp = api_client.post(_confirmer_url(bon), {"mode_paiement": "virement"})
-
-    assert resp.status_code == 403
-
-
-def test_confirmer_paiement_deja_actif_refuse(api_client):
-    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
-    bon = BonAchatFactory(statut=StatutBonAchat.ACTIF)
-    _auth(api_client, user)
-
-    resp = api_client.post(_confirmer_url(bon), {"mode_paiement": "virement"})
-
-    assert resp.status_code == 400
 
 
 # --- list/retrieve — IDOR ---
@@ -282,14 +449,14 @@ def test_membre_ne_peut_pas_consulter_le_bon_dun_autre(api_client):
     assert resp.status_code == 404
 
 
-# --- Application au checkout (`passer`) ---
+# --- Application au checkout d'un bon existant (`code_bon_achat`, dépense) ---
 
 
 def test_passer_commande_avec_bon_achat_couvrant_partiellement(api_client):
     produit = ProduitFactory(prix=Decimal("30.00"))
     variante = VarianteProduitFactory(produit=produit, stock=10)
     user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    bon = BonAchatFactory(statut=StatutBonAchat.ACTIF, solde=Decimal("10.00"))
+    bon = BonAchatFactory(solde=Decimal("10.00"))
     _auth(api_client, user)
 
     resp = api_client.post(
@@ -316,7 +483,7 @@ def test_passer_commande_avec_bon_achat_couvrant_integralement_confirme_immediat
     produit = ProduitFactory(prix=Decimal("15.00"))
     variante = VarianteProduitFactory(produit=produit, stock=10)
     user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    bon = BonAchatFactory(statut=StatutBonAchat.ACTIF, solde=Decimal("50.00"))
+    bon = BonAchatFactory(solde=Decimal("50.00"))
     _auth(api_client, user)
 
     resp = api_client.post(
@@ -379,11 +546,11 @@ def test_passer_commande_code_bon_achat_epuise_refuse(api_client):
     assert "code_bon_achat" in resp.data["details"]
 
 
-def test_passer_commande_code_bon_achat_non_paye_refuse(api_client):
+def test_passer_commande_code_bon_achat_expire_refuse(api_client):
     produit = ProduitFactory(prix=Decimal("15.00"))
     variante = VarianteProduitFactory(produit=produit, stock=10)
     user, _membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE)
+    bon = BonAchatFactory(date_expiration=timezone.now() - timedelta(days=1))
     _auth(api_client, user)
 
     resp = api_client.post(
@@ -404,7 +571,7 @@ def test_annuler_commande_restitue_le_solde_du_bon_achat(api_client):
     produit = ProduitFactory(prix=Decimal("15.00"))
     variante = VarianteProduitFactory(produit=produit, stock=10)
     user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
-    bon = BonAchatFactory(statut=StatutBonAchat.ACTIF, solde=Decimal("10.00"))
+    bon = BonAchatFactory(solde=Decimal("10.00"))
     _auth(api_client, user)
 
     resp = api_client.post(

@@ -146,6 +146,51 @@ describe("PanierCommandePage", () => {
     );
   });
 
+  it("inclut le montant choisi pour une ligne bon d'achat et l'affiche sans taille/couleur", () => {
+    usePanierStore.setState({
+      articles: [
+        articleTest({
+          ligneId: "lb1",
+          varianteId: "vb1",
+          nom: "Bon d'achat CID",
+          taille: "",
+          couleur: "",
+          prixUnitaire: "75.00",
+          typeProduit: "bon_achat",
+          stockDisponible: 999999,
+        }),
+      ],
+    });
+    vi.mocked(useBoutiqueHooks.useVariantesParIds).mockReturnValue({
+      data: [{ id: "vb1", produit: "pb1", taille: "", couleur: "", stock: 999999 }],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVariantesParIds>);
+
+    renderWithProviders(<PanierCommandePage />);
+
+    expect(screen.getByText(/commande.article_bon_achat/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("commande.continuer_livraison"));
+    fireEvent.change(screen.getByLabelText("commande.adresse_label"), {
+      target: { value: "Musterstr. 1" },
+    });
+    fireEvent.change(screen.getByLabelText("commande.code_postal_label"), {
+      target: { value: "10115" },
+    });
+    fireEvent.change(screen.getByLabelText("commande.ville_label"), {
+      target: { value: "Berlin" },
+    });
+    fireEvent.click(screen.getByText("commande.continuer_confirmation"));
+    fireEvent.click(screen.getByText("commande.confirmer_commande"));
+
+    expect(passerCommandeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lignes: [{ variante: "vb1", quantite: 1, montant: "75.00" }],
+      }),
+      expect.anything(),
+    );
+  });
+
   it("affiche la réduction quantité appliquée et le total net dans le panier", () => {
     usePanierStore.setState({
       articles: [
@@ -398,11 +443,13 @@ describe("PanierCommandePage", () => {
     );
   });
 
-  it("propose un lien vers l'achat d'un bon d'achat à l'étape de confirmation", () => {
+  it("propose un lien vers le catalogue (catégorie bon d'achat) à l'étape de confirmation", () => {
+    // Depuis le 2026-09-23, un bon d'achat s'achète comme un produit du catalogue ordinaire
+    // (voir CataloguePage) — il n'y a plus de page d'achat dédiée à lier ici.
     allerEtapeConfirmation();
     expect(screen.getByText("commande.bon_achat_acheter_lien").closest("a")).toHaveAttribute(
       "href",
-      "/boutique/bon-achat/acheter",
+      "/boutique",
     );
   });
 });

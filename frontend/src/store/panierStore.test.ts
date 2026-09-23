@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   calculerReductionArticle,
+  estArticleBonAchat,
   nombreArticlesPanier,
   sousTotalNetArticle,
   totalPanier,
@@ -171,5 +172,72 @@ describe("panierStore", () => {
     ];
     // 80€ (net, article offert) + 22.50€ (sans règle) = 102.50€
     expect(totalPanierNet(articles)).toBeCloseTo(102.5);
+  });
+
+  // --- Bon d'achat intégré au catalogue (demande utilisateur du 2026-09-23, "Gutschein wird
+  // ein echtes Produkt im Katalog") ---
+
+  function articleBonAchat(overrides: Partial<Omit<ArticlePanier, "quantite">> = {}) {
+    return article({
+      varianteId: "vb1",
+      nom: "Bon d'achat CID",
+      taille: "",
+      couleur: "",
+      prixUnitaire: "25.00",
+      stockDisponible: 999999,
+      typeProduit: "bon_achat",
+      reglesReduction: [],
+      ...overrides,
+    });
+  }
+
+  it("estArticleBonAchat distingue un bon_achat d'un article physique", () => {
+    expect(estArticleBonAchat({ ...article(), quantite: 1 })).toBe(false);
+    expect(estArticleBonAchat({ ...articleBonAchat(), quantite: 1 })).toBe(true);
+  });
+
+  it("ajouter deux bons d'achat de la même variante sentinelle mais de montants différents crée deux lignes distinctes", () => {
+    usePanierStore.getState().ajouter(articleBonAchat({ prixUnitaire: "25.00" }));
+    usePanierStore.getState().ajouter(articleBonAchat({ prixUnitaire: "50.00" }));
+
+    const articles = usePanierStore.getState().articles;
+    expect(articles).toHaveLength(2);
+    expect(articles.map((a) => a.prixUnitaire)).toEqual(["25.00", "50.00"]);
+    // Chaque ligne reçoit un ligneId distinct (jamais fusionnées malgré la même varianteId).
+    expect(articles[0].ligneId).toBeTruthy();
+    expect(articles[0].ligneId).not.toBe(articles[1].ligneId);
+  });
+
+  it("ajouter un bon d'achat de montant identique à un bon existant crée quand même une ligne séparée", () => {
+    usePanierStore.getState().ajouter(articleBonAchat());
+    usePanierStore.getState().ajouter(articleBonAchat());
+    expect(usePanierStore.getState().articles).toHaveLength(2);
+  });
+
+  it("changerQuantite/retirer opèrent sur une ligne bon d'achat via son ligneId, pas varianteId", () => {
+    usePanierStore.getState().ajouter(articleBonAchat({ prixUnitaire: "25.00" }));
+    usePanierStore.getState().ajouter(articleBonAchat({ prixUnitaire: "50.00" }));
+    const [ligne25, ligne50] = usePanierStore.getState().articles;
+
+    usePanierStore.getState().changerQuantite(ligne25.ligneId as string, 3);
+    expect(usePanierStore.getState().articles.find((a) => a.ligneId === ligne25.ligneId)?.quantite).toBe(3);
+    expect(usePanierStore.getState().articles.find((a) => a.ligneId === ligne50.ligneId)?.quantite).toBe(1);
+
+    usePanierStore.getState().retirer(ligne25.ligneId as string);
+    const restants = usePanierStore.getState().articles;
+    expect(restants).toHaveLength(1);
+    expect(restants[0].ligneId).toBe(ligne50.ligneId);
+  });
+
+  it("calculerReductionArticle/sousTotalNetArticle ignorent toujours les paliers pour un bon d'achat", () => {
+    const a = {
+      ...articleBonAchat({ prixUnitaire: "25.00" }),
+      quantite: 10,
+      // Même si des règles étaient présentes par erreur, un bon_achat ne doit jamais en tenir
+      // compte (défensif, CLAUDE.md §8 — voir docstring calculerReductionArticle).
+      reglesReduction: [regle({ seuil_quantite: 5 })],
+    };
+    expect(calculerReductionArticle(a)).toEqual({ quantiteOfferte: 0, pourcentageApplique: null });
+    expect(sousTotalNetArticle(a)).toBeCloseTo(250);
   });
 });

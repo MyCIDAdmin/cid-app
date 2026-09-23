@@ -5,7 +5,8 @@
     "accessoires": "Accessoires",
     "articles_club": "Vereinsartikel",
     "cartes_docs": "Karten & Dokumente",
-    "divers": "Sonstiges"
+    "divers": "Sonstiges",
+    "bon_achat": "Gutscheine"
   },
   "statut_produit": {
     "brouillon": "Entwurf",
@@ -22,7 +23,6 @@
     "remboursee": "Erstattet"
   },
   "statut_bon_achat": {
-    "en_attente": "Zahlung ausstehend",
     "actif": "Aktiv",
     "epuise": "Aufgebraucht"
   },
@@ -45,7 +45,8 @@
     "en_stock": "{{stock}} auf Lager",
     "panier_flottant": "{{count}} Artikel",
     "regle_pourcentage": "-{{pct}}% ab {{seuil}} Stück",
-    "regle_article_offert": "1 gratis ab {{seuil}} Stück"
+    "regle_article_offert": "1 gratis ab {{seuil}} Stück",
+    "bon_achat_montant_label": "Betrag ({{min}} – {{max}} €)"
   },
   "commande": {
     "titre": "Mein Warenkorb",
@@ -88,6 +89,7 @@
     "payer_hors_ligne_note": "Bitte begleichen Sie den Betrag per Überweisung oder PayPal. Der Finanzverantwortliche bestätigt den Zahlungseingang manuell in der App, sobald er eingegangen ist.",
     "article_offert_applique": "{{count}} Artikel geschenkt",
     "pourcentage_applique": "-{{pct}}% angewendet",
+    "article_bon_achat": "Gutschein",
     "bon_achat_label": "Gutschein (optional)",
     "bon_achat_placeholder": "Gutscheincode",
     "bon_achat_verifier": "Prüfen",
@@ -121,6 +123,11 @@
     "montant": "Betrag",
     "statut": "Status",
     "retour_catalogue": "Zurück zum Shop"
+  },
+  "boutique_page": {
+    "onglet_catalogue": "Katalog",
+    "onglet_commandes": "Meine Bestellungen",
+    "onglet_bons_achat": "Meine Gutscheine"
   },
   "admin": {
     "titre": "Shop — Verwaltung",
@@ -218,6 +225,9 @@
     "image_en_cours": "Wird hochgeladen…",
     "image_erreur": "Das Bild konnte nicht hochgeladen werden.",
     "description_label": "Beschreibung",
+    "type_label": "Produkttyp",
+    "type_physique": "Physisches Produkt (Bestand, Größe/Farbe)",
+    "type_bon_achat": "Gutschein (freier Betrag, ohne Bestand)",
     "nouveaute_label": "Als Neuheit markieren",
     "erreur_creation": "Das Produkt konnte nicht erstellt werden.",
     "creer": "Produkt erstellen",
@@ -245,18 +255,6 @@
     "seuil_quantite_label": "Schwelle (Menge)",
     "type_reduction_label": "Typ",
     "ajouter_regle": "Hinzufügen"
-  },
-  "bon_achat_acheter": {
-    "titre": "Gutschein kaufen",
-    "description": "Wählen Sie den Betrag Ihres CID-Gutscheins frei — er kann anschließend, auch in mehreren Teilbeträgen, als Gutscheincode im Shop eingelöst werden.",
-    "montant_label": "Betrag ({{min}} – {{max}} €)",
-    "erreur": "Der Kauf konnte nicht gespeichert werden.",
-    "en_cours": "Wird gespeichert…",
-    "acheter": "Diesen Gutschein kaufen",
-    "confirme_titre": "Gutschein erstellt!",
-    "confirme_montant": "Betrag: {{montant}}",
-    "confirme_note": "Ihr Gutschein wird aktiviert und der Code Ihnen per E-Mail zugesandt, sobald die Zahlung bestätigt wurde.",
-    "voir_mes_bons": "Meine Gutscheine ansehen"
   },
   "mes_bons_achat": {
     "titre": "Meine Gutscheine",

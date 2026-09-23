@@ -20,13 +20,23 @@ import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { nombreArticlesPanier, totalPanier, usePanierStore } from "../../store/panierStore";
 import type { CategorieProduit, Produit, RegleReduction, VarianteProduit } from "../../types/boutique";
 
+// "bon_achat" en dernier (demande utilisateur du 2026-09-23, "Gutschein soll als Kategorie im
+// shop auftauchen") — un onglet de catégorie comme les autres, jamais un module séparé.
 const CATEGORIES: CategorieProduit[] = [
   "vetements",
   "accessoires",
   "articles_club",
   "cartes_docs",
   "divers",
+  "bon_achat",
 ];
+
+// Bornes d'un montant de bon d'achat — purement indicatif côté UI (le serveur reste seul juge,
+// voir bon_achat_montant_min/max, CLAUDE.md §8), miroir des bornes historiques de l'ancienne
+// AcheterBonAchatPage (retirée le 2026-09-23, fusionnée ici).
+const BON_ACHAT_MONTANT_MIN = 5;
+const BON_ACHAT_MONTANT_MAX = 500;
+const BON_ACHAT_MONTANTS_SUGGERES = [10, 25, 50, 100];
 
 function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
@@ -51,6 +61,119 @@ function labelRegleReduction(
   return regle.type_reduction === "pourcentage"
     ? t("catalogue.regle_pourcentage", { seuil: regle.seuil_quantite, pct: regle.pourcentage })
     : t("catalogue.regle_article_offert", { seuil: regle.seuil_quantite });
+}
+
+/**
+ * Carte "bon_achat" (demande utilisateur du 2026-09-23, "Gutschein wird ein echtes Produkt im
+ * Katalog") : montant librement choisi par l'acheteur au lieu du sélecteur taille/couleur —
+ * fusionne ici ce que faisait l'ancienne AcheterBonAchatPage (page/module séparé, retiré sur
+ * demande utilisateur explicite : "Gutschein soll als Kategorie im shop auftauchen und nicht
+ * als eigenes Modul"). Pas de stock à vérifier (voir Produit.en_rupture/stock_faible toujours
+ * false pour ce type côté backend) — uniquement les bornes de montant.
+ */
+function ProduitCarteBonAchat({
+  produit,
+  cardRef,
+}: {
+  produit: Produit;
+  cardRef?: (el: HTMLElement | null) => void;
+}) {
+  const { t } = useTranslation("boutique");
+  const ajouter = usePanierStore((s) => s.ajouter);
+  const varianteSentinelle = produit.variantes[0];
+  const [montant, setMontant] = useState("25.00");
+
+  const montantValide =
+    montant !== "" &&
+    !Number.isNaN(Number(montant)) &&
+    Number(montant) >= BON_ACHAT_MONTANT_MIN &&
+    Number(montant) <= BON_ACHAT_MONTANT_MAX;
+
+  function handleAjouter() {
+    if (!varianteSentinelle || !montantValide) return;
+    ajouter({
+      varianteId: varianteSentinelle.id,
+      produitId: produit.id,
+      nom: produit.nom,
+      taille: "",
+      couleur: "",
+      prixUnitaire: Number(montant).toFixed(2),
+      // Sentinelle très largement au-dessus de tout panier réaliste (voir
+      // STOCK_SENTINELLE_BON_ACHAT côté backend) — jamais vérifiée pour ce type.
+      stockDisponible: varianteSentinelle.stock,
+      typeProduit: "bon_achat",
+      reglesReduction: [],
+    });
+  }
+
+  return (
+    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
+      <div className="relative flex h-32 items-center justify-center bg-cal">
+        <div className="absolute bottom-2 right-2 rounded-full bg-bg-primary/80 backdrop-blur-sm">
+          <ShareButton path={`/boutique?produit=${produit.id}`} titre={produit.nom} />
+        </div>
+        {produit.image ? (
+          <img src={produit.image} alt={produit.nom} className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-4xl">🎁</span>
+        )}
+      </div>
+      <div className="p-3">
+        <div className="mb-0.5 text-sm font-bold text-text-primary">{produit.nom}</div>
+        <div className="mb-2 line-clamp-2 text-xs text-text-tertiary">{produit.description}</div>
+
+        <label
+          htmlFor={`bon-montant-${produit.id}`}
+          className="mb-1 block text-xs font-medium text-text-secondary"
+        >
+          {t("catalogue.bon_achat_montant_label", {
+            min: BON_ACHAT_MONTANT_MIN,
+            max: BON_ACHAT_MONTANT_MAX,
+          })}
+        </label>
+        <input
+          id={`bon-montant-${produit.id}`}
+          type="number"
+          min={BON_ACHAT_MONTANT_MIN}
+          max={BON_ACHAT_MONTANT_MAX}
+          step="0.01"
+          value={montant}
+          onChange={(e) => setMontant(e.target.value)}
+          className="mb-2 w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+        />
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {BON_ACHAT_MONTANTS_SUGGERES.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMontant(m.toFixed(2))}
+              className={`rounded-cid px-2 py-0.5 text-[11px] font-medium ${
+                Number(montant) === m
+                  ? "bg-ca text-white"
+                  : "bg-bg-tertiary text-text-secondary hover:bg-bg-tertiary/70"
+              }`}
+            >
+              {formatMontant(m)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-base font-bold text-ca">
+            {montantValide ? formatMontant(montant) : "—"}
+          </span>
+          <button
+            type="button"
+            onClick={handleAjouter}
+            disabled={!varianteSentinelle || !montantValide}
+            className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
+          >
+            {t("catalogue.ajouter")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ProduitCarte({
@@ -79,6 +202,7 @@ function ProduitCarte({
       // simple indicatif ici, le montant réel est de toute façon recalculé côté serveur).
       prixUnitaire: produit.prix_final,
       stockDisponible: varianteSelectionnee.stock,
+      typeProduit: "physique",
       // Instantané des paliers actifs (demande utilisateur du 2026-09-23) — voir
       // panierStore.calculerReductionArticle, purement indicatif.
       reglesReduction: produit.regles_reduction_actives,
@@ -222,9 +346,17 @@ export default function CataloguePage() {
 
       {produitsQuery.data && produitsQuery.data.results.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {produitsQuery.data.results.map((produit) => (
-            <ProduitCarte key={produit.id} produit={produit} cardRef={refCible(produit.id)} />
-          ))}
+          {produitsQuery.data.results.map((produit) =>
+            produit.type_produit === "bon_achat" ? (
+              <ProduitCarteBonAchat
+                key={produit.id}
+                produit={produit}
+                cardRef={refCible(produit.id)}
+              />
+            ) : (
+              <ProduitCarte key={produit.id} produit={produit} cardRef={refCible(produit.id)} />
+            ),
+          )}
         </div>
       )}
 

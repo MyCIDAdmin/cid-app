@@ -26,7 +26,6 @@ vi.mock("../../hooks/useBoutique", async () => {
     useModifierRegleReduction: vi.fn(),
     useSupprimerRegleReduction: vi.fn(),
     useBonsAchat: vi.fn(),
-    useConfirmerPaiementBonAchat: vi.fn(),
   };
 });
 
@@ -41,6 +40,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     prix_final: "45.00",
     image: null,
     statut: "publie",
+    type_produit: "physique",
     nouveaute: false,
     seuil_alerte_stock: 5,
     variantes: [],
@@ -91,14 +91,14 @@ function bonAchat(overrides: Partial<BonAchat> = {}): BonAchat {
     code: "BON-A1B2C3D4",
     montant_initial: "50.00",
     solde: "50.00",
-    statut: "en_attente",
+    statut: "actif",
     achete_par: "m1",
-    mode_paiement: "",
-    date_paiement_confirme: null,
+    mode_paiement: "en_ligne",
+    date_paiement_confirme: "2026-01-01T00:00:00Z",
     paiement_confirme_par: null,
     reference_paiement: "",
-    date_expiration: null,
-    utilisable: false,
+    date_expiration: "2029-01-01T00:00:00Z",
+    utilisable: true,
     est_expire: false,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -171,11 +171,6 @@ describe("AdminBoutiquePage", () => {
     vi.mocked(useBoutiqueHooks.useBonsAchat).mockReturnValue({
       data: { next: null, previous: null, results: [bonAchat()] },
     } as unknown as ReturnType<typeof useBoutiqueHooks.useBonsAchat>);
-    vi.mocked(useBoutiqueHooks.useConfirmerPaiementBonAchat).mockReturnValue({
-      mutate: vi.fn(),
-      isError: false,
-      isPending: false,
-    } as unknown as ReturnType<typeof useBoutiqueHooks.useConfirmerPaiementBonAchat>);
   });
 
   it("affiche les tuiles KPI calculées depuis les commandes/produits chargés", () => {

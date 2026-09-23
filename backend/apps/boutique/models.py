@@ -56,6 +56,29 @@ sein Gutscheine zu Kaufen") :
     passerelle de paiement en ligne (voir CommandeViewSet.initier_paiement_en_ligne). Une
     commande entièrement couverte par un bon d'achat (montant_du <= 0) est confirmée
     immédiatement (mode_paiement=BON_ACHAT), sans étape de paiement supplémentaire.
+
+Achat d'un bon d'achat intégré au catalogue (demande utilisateur du 2026-09-23, révisée le même
+jour : "Gutschein soll als Kategorie im shop auftauchen und nicht als eigenes Modul" / "Gutschein
+wird ein echtes Produkt im Katalog") : un bon d'achat n'est PLUS acheté via un point d'entrée
+dédié (BonAchatViewSet.acheter, supprimé) mais comme n'importe quel autre article — un Produit
+avec `type_produit=BON_ACHAT` (voir TypeProduit) et `categorie=BON_ACHAT`, ajouté au panier et
+payé via le flux normal `CommandeViewSet.passer`/`vendre_especes`. Deux différences de traitement
+pour une ligne portant sur un tel produit (voir `_construire_ligne_avec_reduction`/views.py) :
+  - le prix n'est pas `produit.prix_final` mais un montant choisi par l'acheteur, transmis par le
+    frontend (LigneCommandeEntreeSerializer.montant) et TOUJOURS revalidé côté serveur contre
+    `bon_achat_montant_min()`/`bon_achat_montant_max()` (CLAUDE.md §8, jamais fait confiance au
+    frontend) ;
+  - aucune réduction quantité (RegleReduction) ni décrément/vérification de stock ne s'applique —
+    un bon d'achat n'a pas de notion de stock épuisable (voir Produit.en_rupture/stock_faible,
+    toujours `False` pour ce type) ; `LigneCommande.variante` reste néanmoins renseignée (FK
+    obligatoire) via une VarianteProduit "sentinelle" unique auto-créée par `Produit.save()` pour
+    ancrer la ligne, jamais utilisée pour son stock.
+Au moment où la Commande passe à CONFIRMEE — quel que soit le chemin (couverture totale par un
+bon d'achat existant dans `passer`, `vendre_especes`, `confirmer_paiement` manuel, ou webhook PSP
+via `_confirmer_paiement_gateway`) — `_generer_bons_achat(commande)` (voir views.py) crée pour
+chaque ligne bon_achat de la commande `quantite` BonAchat déjà ACTIF (plus d'étape EN_ATTENTE
+intermédiaire, voir StatutBonAchat) et déclenche l'email/notification existants
+(`notifier_bon_achat_actif`) — même pipeline HTML que précédemment, seul le déclencheur change.
 """
 
 import uuid
@@ -76,13 +99,36 @@ DUREE_VALIDITE_BON_ACHAT = timedelta(days=365 * 3)
 
 
 class CategorieProduit(models.TextChoices):
-    """Mockup #m-newprod — liste déroulante "Catégorie"."""
+    """Mockup #m-newprod — liste déroulante "Catégorie". BON_ACHAT ajoutée le 2026-09-23 (voir
+    docstring de tête du module) : un produit de cette catégorie porte toujours
+    `type_produit=TypeProduit.BON_ACHAT`, mais les deux champs restent distincts (catégorie =
+    rangement/filtre catalogue, type_produit = comportement métier) au cas où un jour un bon
+    d'achat mériterait sa propre sous-catégorie sans changer son comportement."""
 
     VETEMENTS = "vetements", _("Vêtements")
     ACCESSOIRES = "accessoires", _("Accessoires")
     ARTICLES_CLUB = "articles_club", _("Articles club")
     CARTES_DOCS = "cartes_docs", _("Cartes & Docs")
     DIVERS = "divers", _("Divers")
+    BON_ACHAT = "bon_achat", _("Bons d'achat")
+
+
+class TypeProduit(models.TextChoices):
+    """Distingue un produit physique (stock/variantes réelles) d'un bon d'achat à montant libre
+    (demande utilisateur du 2026-09-23, voir docstring de tête du module) — pilote le
+    comportement de `_construire_ligne_avec_reduction`/`passer`/`vendre_especes` (montant choisi
+    par l'acheteur au lieu de prix_final, pas de réduction quantité, pas de stock)."""
+
+    PHYSIQUE = "physique", _("Produit physique")
+    BON_ACHAT = "bon_achat", _("Bon d'achat")
+
+
+# Stock "sentinelle" de la VarianteProduit unique auto-créée pour un produit bon_achat (voir
+# Produit.save()) — jamais lu pour une décision de stock réel (en_rupture/stock_faible sont
+# toujours False pour ce type, et passer/vendre_especes sautent la vérification/décrément de
+# stock pour ces lignes), une valeur élevée est purement défensive si un code non mis à jour
+# venait malgré tout à la consulter.
+STOCK_SENTINELLE_BON_ACHAT = 999_999
 
 
 class StatutProduit(models.TextChoices):
@@ -105,9 +151,26 @@ class Produit(models.Model):
 
     nom = models.CharField(max_length=200)
     categorie = models.CharField(max_length=20, choices=CategorieProduit.choices)
+    type_produit = models.CharField(
+        max_length=20,
+        choices=TypeProduit.choices,
+        default=TypeProduit.PHYSIQUE,
+        help_text=_(
+            "Physique (stock réel) ou bon d'achat (montant choisi par l'acheteur, sans stock) — "
+            "voir docstring de tête du module."
+        ),
+    )
     description = models.TextField(blank=True)
     prix = models.DecimalField(
-        max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_(
+            "Pour un bon d'achat (type_produit=BON_ACHAT), ce prix catalogue n'est qu'indicatif "
+            "(« à partir de ») — le montant réellement facturé est choisi par l'acheteur au "
+            "moment de l'ajout au panier, borné à [bon_achat_montant_min, bon_achat_montant_max] "
+            "et toujours revalidé côté serveur, jamais ce champ."
+        ),
     )
     image = models.ImageField(
         upload_to=produit_image_upload_path, storage=ProduitsStorage(), null=True, blank=True
@@ -144,6 +207,25 @@ class Produit(models.Model):
     def __str__(self):
         return self.nom
 
+    def save(self, *args, **kwargs):
+        """Un bon d'achat n'a pas de déclinaison réelle mais LigneCommande.variante reste une FK
+        obligatoire (voir docstring de tête du module) : on lui garantit ici une unique
+        VarianteProduit "sentinelle" (taille/couleur vides, jamais utilisée pour son stock),
+        même principe que `stock_initial` côté ProduitSerializer mais automatique et systématique
+        pour ce type — un Bureau Admin+ n'a jamais à y penser en créant un produit bon_achat."""
+        creation = self._state.adding
+        super().save(*args, **kwargs)
+        if (
+            self.type_produit == TypeProduit.BON_ACHAT
+            and (creation or not self.variantes.exists())
+        ):
+            VarianteProduit.objects.get_or_create(
+                produit=self,
+                taille="",
+                couleur="",
+                defaults={"stock": STOCK_SENTINELLE_BON_ACHAT},
+            )
+
     @property
     def stock_total(self) -> int:
         total = self.variantes.aggregate(total=models.Sum("stock"))["total"]
@@ -151,10 +233,14 @@ class Produit(models.Model):
 
     @property
     def stock_faible(self) -> bool:
+        if self.type_produit == TypeProduit.BON_ACHAT:
+            return False
         return 0 < self.stock_total < self.seuil_alerte_stock
 
     @property
     def en_rupture(self) -> bool:
+        if self.type_produit == TypeProduit.BON_ACHAT:
+            return False
         return self.stock_total <= 0
 
     @property
@@ -609,18 +695,13 @@ class Retour(models.Model):
 
 
 class StatutBonAchat(models.TextChoices):
-    """Machine à états d'un bon d'achat — voir docstring de tête du module. Pas de statut
-    "annulé" : un bon jamais payé (EN_ATTENTE) reste simplement inutilisé indéfiniment, même
-    principe que Commande sans statut "échouée" (voir apps.boutique.webhooks)."""
+    """Machine à états d'un bon d'achat — voir docstring de tête du module. Plus de statut
+    EN_ATTENTE depuis le 2026-09-23 : un BonAchat n'est désormais créé qu'au moment où la
+    Commande qui le contient est CONFIRMEE (voir views._generer_bons_achat), donc toujours déjà
+    ACTIF dès sa création — il n'existe plus de bon "en attente de paiement" à modéliser."""
 
-    EN_ATTENTE = "en_attente", _("En attente de paiement")
     ACTIF = "actif", _("Actif")
     EPUISE = "epuise", _("Épuisé")
-
-
-# Statuts depuis lesquels confirmer_paiement (EN_ATTENTE -> ACTIF) est autorisé — même principe
-# que STATUTS_CONFIRMABLES_PAIEMENT côté Commande.
-STATUTS_BON_ACHAT_CONFIRMABLES = {StatutBonAchat.EN_ATTENTE}
 
 
 def bon_achat_montant_min() -> Decimal:
@@ -634,9 +715,10 @@ def bon_achat_montant_max() -> Decimal:
 class BonAchat(models.Model):
     """
     Bon d'achat/Gutschein — voir docstring de tête du module pour la conception d'ensemble
-    (demande utilisateur du 2026-09-23). `code` est généré à l'achat (avant même la confirmation
-    du paiement, comme `numero_commande` sur Commande) mais n'est utilisable qu'une fois `statut`
-    passé à ACTIF (voir `utilisable`) — connaître un code non encore payé ne donne aucun droit.
+    (demande utilisateur du 2026-09-23, achat intégré au catalogue depuis la révision du même
+    jour). `code` est généré à la création, qui n'a lieu qu'au moment où la Commande contenant la
+    ligne bon_achat est CONFIRMEE (voir views._generer_bons_achat) — un BonAchat est donc
+    toujours déjà ACTIF dès sa création, plus d'état intermédiaire "acheté mais pas encore payé".
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -651,7 +733,13 @@ class BonAchat(models.Model):
         max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
     )
     statut = models.CharField(
-        max_length=20, choices=StatutBonAchat.choices, default=StatutBonAchat.EN_ATTENTE
+        max_length=20,
+        choices=StatutBonAchat.choices,
+        default=StatutBonAchat.ACTIF,
+        help_text=_(
+            "Toujours ACTIF dès la création depuis le 2026-09-23 — voir "
+            "views._generer_bons_achat/activer()."
+        ),
     )
 
     achete_par = models.ForeignKey(
@@ -719,10 +807,10 @@ class BonAchat(models.Model):
         return self.statut == StatutBonAchat.ACTIF and self.solde > 0 and not self.est_expire
 
     def activer(self) -> None:
-        """Fait passer le bon à ACTIF avec sa date d'expiration — appelée par
-        webhooks._confirmer_paiement_bon_achat ET BonAchatViewSet.confirmer_paiement (paiement
-        manuel), pour ne jamais dupliquer ce calcul entre les deux chemins de confirmation (même
-        raison que Commande.confirmer_paiement/webhooks._confirmer_paiement_gateway)."""
+        """Fixe la date d'expiration et (re)confirme le statut ACTIF — appelée par
+        views._generer_bons_achat juste après la création de chaque BonAchat, pour ne jamais
+        dupliquer ce calcul entre les quatre chemins de confirmation d'une Commande (paiement en
+        ligne immédiat, `vendre_especes`, `confirmer_paiement` manuel, webhook PSP)."""
         maintenant = timezone.now()
         self.date_paiement_confirme = maintenant
         self.date_expiration = maintenant + DUREE_VALIDITE_BON_ACHAT

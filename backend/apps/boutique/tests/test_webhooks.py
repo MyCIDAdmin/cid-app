@@ -4,17 +4,24 @@ apps.cotisations.webhooks/AHM-46). Les vues sont de simples vues Django (pas DRF
 d'authentification JWT, appelées ici via le client de test Django standard. La vérification de
 signature elle-même (stripe.Webhook.construct_event / verifier_signature_webhook_paypal) est
 mockée — elle est testée indépendamment dans apps.cotisations.tests.test_gateways.
+
+Depuis le 2026-09-23 (achat de bon d'achat intégré au catalogue, voir docstring de tête de
+models.py), un bon d'achat n'a plus son propre espace de webhooks (l'ancien préfixe "BON-" a été
+supprimé, voir _resoudre_reference) : ces webhooks ne confirment plus jamais qu'une Commande — un
+BonAchat est généré en conséquence, via `_generer_bons_achat`, quand cette commande contient des
+lignes bon_achat (voir la section dédiée en bas de fichier).
 """
 
 import json
+from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
 import stripe
 from django.urls import reverse
 
-from apps.boutique.models import Commande, ModePaiementCommande, StatutBonAchat, StatutCommande
-from apps.boutique.tests.factories import BonAchatFactory, CommandeFactory
+from apps.boutique.models import BonAchat, Commande, ModePaiementCommande, StatutCommande
+from apps.boutique.tests.factories import CommandeFactory, LigneCommandeFactory, ProduitBonAchatFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -28,10 +35,21 @@ def _commande_en_attente(**overrides):
     return CommandeFactory(**defaults)
 
 
-def _bon_en_attente(**overrides):
-    defaults = {"statut": StatutBonAchat.EN_ATTENTE}
-    defaults.update(overrides)
-    return BonAchatFactory(**defaults)
+def _ligne_bon_achat(commande, montant=Decimal("50.00"), quantite=1):
+    """Une ligne bon_achat rattachée à `commande` — même principe que
+    CommandeViewSet._construire_ligne_avec_reduction pour ce type de produit (montant choisi par
+    l'acheteur, pas de réduction quantité, voir docstring de tête de models.py)."""
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()  # sentinelle auto-créée par Produit.save()
+    return LigneCommandeFactory(
+        commande=commande,
+        variante=variante,
+        quantite=quantite,
+        prix_unitaire=montant,
+        quantite_offerte=0,
+        pourcentage_reduction_quantite=None,
+        reduction_quantite=Decimal("0.00"),
+    )
 
 
 def _post_json(client, url_name, body: dict, headers: dict | None = None):
@@ -237,141 +255,97 @@ def test_paypal_payment_capture_denied_laisse_la_commande_en_attente(client):
     assert commande.statut == StatutCommande.EN_ATTENTE
 
 
-# --- BonAchat (préfixe "BON-", demande utilisateur du 2026-09-23 — voir _resoudre_reference) ---
+# --- Bons d'achat générés à la confirmation (demande utilisateur du 2026-09-23, achat intégré
+# au catalogue — voir views._generer_bons_achat) : plus de webhook dédié à un BonAchat, c'est la
+# confirmation de LA COMMANDE qui contient une ligne bon_achat qui déclenche leur génération. Le
+# patch cible `apps.boutique.views.notifier_bon_achat_actif` (jamais
+# `apps.boutique.notifications.notifier_bon_achat_actif`) : _generer_bons_achat vit dans views.py
+# et y a importé son propre nom au chargement du module, patcher l'original ne l'atteindrait pas.
 
 
-def test_stripe_checkout_session_completed_confirme_un_bon_achat(client):
-    bon = _bon_en_attente()
+def test_stripe_checkout_session_completed_genere_les_bons_achat_de_la_commande(client):
+    commande = _commande_en_attente()
+    _ligne_bon_achat(commande, montant=Decimal("50.00"), quantite=2)
     event = {
         "type": "checkout.session.completed",
         "data": {
             "object": {
-                "client_reference_id": f"BON-{bon.id}",
+                "client_reference_id": str(commande.id),
                 "payment_intent": "pi_bon_1",
                 "id": "cs_bon_1",
             }
         },
     }
 
-    with patch("apps.boutique.notifications.notifier_bon_achat_actif") as mock_notifier:
+    with patch("apps.boutique.views.notifier_bon_achat_actif") as mock_notifier:
         with patch("stripe.Webhook.construct_event", return_value=event):
             resp = _post_json(client, STRIPE_WEBHOOK_URL, {})
 
     assert resp.status_code == 200
-    bon.refresh_from_db()
-    assert bon.statut == StatutBonAchat.ACTIF
-    assert bon.mode_paiement == ModePaiementCommande.EN_LIGNE
-    assert bon.reference_paiement == "STRIPE-pi_bon_1"
-    assert bon.date_paiement_confirme is not None
-    assert bon.date_expiration is not None
-    mock_notifier.assert_called_once_with(bon)
-    # Ne doit pas avoir créé/modifié de Commande au passage.
-    assert Commande.objects.count() == 0
+    commande.refresh_from_db()
+    assert commande.statut == StatutCommande.CONFIRMEE
+    bons = list(BonAchat.objects.filter(achete_par=commande.membre))
+    assert len(bons) == 2  # quantite=2 sur la ligne -> deux bons indépendants
+    for bon in bons:
+        assert bon.montant_initial == Decimal("50.00")
+        assert bon.solde == Decimal("50.00")
+        assert bon.statut == "actif"
+        assert bon.date_expiration is not None
+    assert mock_notifier.call_count == 2
 
 
-def test_stripe_rejeu_idempotent_bon_achat(client):
-    bon = _bon_en_attente()
+def test_stripe_rejeu_idempotent_ne_duplique_pas_les_bons_achat(client):
+    commande = _commande_en_attente()
+    _ligne_bon_achat(commande, montant=Decimal("50.00"), quantite=1)
     event = {
         "type": "checkout.session.completed",
         "data": {
-            "object": {"client_reference_id": f"BON-{bon.id}", "payment_intent": "pi_bon_2"}
+            "object": {"client_reference_id": str(commande.id), "payment_intent": "pi_bon_2"}
         },
     }
 
-    with patch("apps.boutique.notifications.notifier_bon_achat_actif") as mock_notifier:
+    with patch("apps.boutique.views.notifier_bon_achat_actif") as mock_notifier:
         with patch("stripe.Webhook.construct_event", return_value=event):
             _post_json(client, STRIPE_WEBHOOK_URL, {})
             _post_json(client, STRIPE_WEBHOOK_URL, {})
 
-    bon.refresh_from_db()
-    assert bon.reference_paiement == "STRIPE-pi_bon_2"  # inchangé au second appel
-    mock_notifier.assert_called_once()  # pas de second email pour un bon déjà actif
+    # La garde d'idempotence de _confirmer_paiement_gateway (commande déjà CONFIRMEE au second
+    # appel) empêche un second appel à _generer_bons_achat — un seul bon, un seul email.
+    assert BonAchat.objects.filter(achete_par=commande.membre).count() == 1
+    mock_notifier.assert_called_once()
 
 
-def test_stripe_session_expiree_laisse_le_bon_en_attente(client):
-    bon = _bon_en_attente()
-    event = {
-        "type": "checkout.session.expired",
-        "data": {"object": {"client_reference_id": f"BON-{bon.id}"}},
-    }
-
-    with patch("stripe.Webhook.construct_event", return_value=event):
-        resp = _post_json(client, STRIPE_WEBHOOK_URL, {})
-
-    assert resp.status_code == 200
-    bon.refresh_from_db()
-    assert bon.statut == StatutBonAchat.EN_ATTENTE
-
-
-def test_stripe_bon_introuvable_repond_200(client):
+def test_stripe_commande_sans_ligne_bon_achat_ne_genere_aucun_bon(client):
+    commande = _commande_en_attente()  # aucune ligne bon_achat
     event = {
         "type": "checkout.session.completed",
-        "data": {"object": {"client_reference_id": "BON-00000000-0000-0000-0000-000000000000"}},
-    }
-    with patch("stripe.Webhook.construct_event", return_value=event):
-        resp = _post_json(client, STRIPE_WEBHOOK_URL, {})
-    assert resp.status_code == 200
-
-
-def test_paypal_order_approved_capture_et_confirme_un_bon_achat(client):
-    bon = _bon_en_attente()
-    event = {
-        "event_type": "CHECKOUT.ORDER.APPROVED",
-        "resource": {
-            "id": "ORDER-BON-1",
-            "purchase_units": [{"custom_id": f"BON-{bon.id}"}],
+        "data": {
+            "object": {"client_reference_id": str(commande.id), "payment_intent": "pi_normal"}
         },
     }
-    capture_data = {
-        "purchase_units": [{"payments": {"captures": [{"id": "CAPTURE-BON-1"}]}}],
-    }
 
-    with patch("apps.boutique.notifications.notifier_bon_achat_actif") as mock_notifier:
-        with patch(
-            "apps.boutique.webhooks.verifier_signature_webhook_paypal", return_value=True
-        ):
-            with patch(
-                "apps.boutique.webhooks.capturer_commande_paypal", return_value=capture_data
-            ):
-                resp = _post_json(client, PAYPAL_WEBHOOK_URL, event)
+    with patch("stripe.Webhook.construct_event", return_value=event):
+        resp = _post_json(client, STRIPE_WEBHOOK_URL, {})
 
     assert resp.status_code == 200
-    bon.refresh_from_db()
-    assert bon.statut == StatutBonAchat.ACTIF
-    assert bon.reference_paiement == "PAYPAL-CAPTURE-BON-1"
-    mock_notifier.assert_called_once_with(bon)
+    assert BonAchat.objects.count() == 0
 
 
-def test_paypal_payment_capture_completed_confirme_un_bon_achat(client):
-    bon = _bon_en_attente()
+def test_paypal_payment_capture_completed_genere_les_bons_achat_de_la_commande(client):
+    commande = _commande_en_attente()
+    _ligne_bon_achat(commande, montant=Decimal("25.00"), quantite=1)
     event = {
         "event_type": "PAYMENT.CAPTURE.COMPLETED",
-        "resource": {"id": "CAPTURE-BON-2", "custom_id": f"BON-{bon.id}"},
+        "resource": {"id": "CAPTURE-BON-2", "custom_id": str(commande.id)},
     }
 
-    with patch("apps.boutique.notifications.notifier_bon_achat_actif") as mock_notifier:
-        with patch(
-            "apps.boutique.webhooks.verifier_signature_webhook_paypal", return_value=True
-        ):
+    with patch("apps.boutique.views.notifier_bon_achat_actif") as mock_notifier:
+        with patch("apps.boutique.webhooks.verifier_signature_webhook_paypal", return_value=True):
             resp = _post_json(client, PAYPAL_WEBHOOK_URL, event)
 
     assert resp.status_code == 200
-    bon.refresh_from_db()
-    assert bon.statut == StatutBonAchat.ACTIF
-    assert bon.reference_paiement == "PAYPAL-CAPTURE-BON-2"
+    commande.refresh_from_db()
+    assert commande.statut == StatutCommande.CONFIRMEE
+    bon = BonAchat.objects.get(achete_par=commande.membre)
+    assert bon.montant_initial == Decimal("25.00")
     mock_notifier.assert_called_once_with(bon)
-
-
-def test_paypal_payment_capture_denied_laisse_le_bon_en_attente(client):
-    bon = _bon_en_attente()
-    event = {
-        "event_type": "PAYMENT.CAPTURE.DENIED",
-        "resource": {"id": "CAPTURE-BON-3", "custom_id": f"BON-{bon.id}"},
-    }
-
-    with patch("apps.boutique.webhooks.verifier_signature_webhook_paypal", return_value=True):
-        resp = _post_json(client, PAYPAL_WEBHOOK_URL, event)
-
-    assert resp.status_code == 200
-    bon.refresh_from_db()
-    assert bon.statut == StatutBonAchat.EN_ATTENTE

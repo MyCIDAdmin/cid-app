@@ -4,7 +4,6 @@
 import { apiClient } from "./client";
 import type { CursorPage } from "../types/membre";
 import type {
-  AcheterBonAchatPayload,
   BonAchat,
   BonAchatVerification,
   ChangerStatutCommandePayload,
@@ -290,20 +289,15 @@ export interface BonsAchatFiltres {
 
 /**
  * Bureau Admin+ voit tous les bons d'achat ; en dessous, uniquement les siens — même principe
- * IDOR que listCommandes (voir BonAchatViewSet.get_queryset côté backend).
+ * IDOR que listCommandes (voir BonAchatViewSet.get_queryset côté backend). Un bon n'est plus
+ * acheté via un endpoint dédié depuis le 2026-09-23 (voir docstring de tête de types/boutique.ts)
+ * : c'est un Produit(type_produit=bon_achat) comme un autre, acheté via passerCommande/
+ * vendreEspeces — BonAchatViewSet est désormais en lecture seule (+ `verifier`) côté backend.
  */
 export async function listBonsAchat(filtres: BonsAchatFiltres = {}): Promise<CursorPage<BonAchat>> {
   const { data } = await apiClient.get<CursorPage<BonAchat>>("/boutique/bons-achat/", {
     params: filtres,
   });
-  return data;
-}
-
-/** POST /boutique/bons-achat/acheter/ — montant libre, tout membre authentifié. Le bon est créé
- * `en_attente` : `mode_paiement`/`confirmer-paiement` (Directeur Financier+) l'active ensuite —
- * voir GestionBonsAchatTab. */
-export async function acheterBonAchat(payload: AcheterBonAchatPayload): Promise<BonAchat> {
-  const { data } = await apiClient.post<BonAchat>("/boutique/bons-achat/acheter/", payload);
   return data;
 }
 
@@ -315,37 +309,6 @@ export async function verifierBonAchat(
 ): Promise<BonAchatVerification> {
   const { data } = await apiClient.post<BonAchatVerification>(
     "/boutique/bons-achat/verifier/",
-    payload,
-  );
-  return data;
-}
-
-/** Confirme la réception du paiement d'un bon d'achat (Directeur Financier+, voir
- * GestionBonsAchatTab) — active le bon et déclenche l'email du code (même principe que
- * confirmerPaiementCommande). */
-export async function confirmerPaiementBonAchat(
-  id: string,
-  payload: ConfirmerPaiementCommandePayload,
-): Promise<BonAchat> {
-  const { data } = await apiClient.post<BonAchat>(
-    `/boutique/bons-achat/${id}/confirmer-paiement/`,
-    payload,
-  );
-  return data;
-}
-
-/**
- * POST /boutique/bons-achat/{id}/initier-paiement-en-ligne/ — même principe que
- * initierPaiementEnLigneCommande (Stripe/PayPal Checkout), réservé à l'acheteur du bon. Conservé
- * pour une réactivation future du paiement en ligne (voir PAIEMENT_EN_LIGNE_ACTIF côté
- * PanierCommandePage/AcheterBonAchatPage), non câblé à une UI pour le moment.
- */
-export async function initierPaiementEnLigneBonAchat(
-  id: string,
-  payload: InitierPaiementEnLigneCommandePayload,
-): Promise<PaiementEnLigneCommandeResponse> {
-  const { data } = await apiClient.post<PaiementEnLigneCommandeResponse>(
-    `/boutique/bons-achat/${id}/initier-paiement-en-ligne/`,
     payload,
   );
   return data;

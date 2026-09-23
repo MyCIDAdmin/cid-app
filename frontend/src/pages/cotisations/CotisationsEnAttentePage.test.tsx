@@ -717,6 +717,7 @@ describe("CotisationsEnAttentePage", () => {
             prix_final: "20.00",
             image: null,
             statut: "publie",
+            type_produit: "physique",
             nouveaute: false,
             seuil_alerte_stock: 5,
             variantes: [

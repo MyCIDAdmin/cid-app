@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.boutique.models import (
+    BonAchat,
     Commande,
     ReductionQuantite,
     StatutBonAchat,
@@ -16,6 +17,7 @@ from apps.boutique.tests.factories import (
     BonAchatFactory,
     CommandeFactory,
     LigneCommandeFactory,
+    ProduitBonAchatFactory,
     ProduitFactory,
     RegleReductionFactory,
     VarianteProduitFactory,
@@ -43,6 +45,34 @@ def test_en_rupture_quand_stock_total_nul():
     VarianteProduitFactory(produit=produit, stock=0)
     assert produit.en_rupture is True
     assert produit.stock_faible is False
+
+
+# --- Produit bon d'achat (demande utilisateur du 2026-09-23, achat intégré au catalogue) ---
+
+
+def test_produit_bon_achat_cree_automatiquement_une_variante_sentinelle():
+    produit = ProduitBonAchatFactory()
+    assert produit.variantes.count() == 1
+    variante = produit.variantes.get()
+    assert variante.taille == ""
+    assert variante.couleur == ""
+
+
+def test_produit_bon_achat_nest_jamais_en_rupture_ni_stock_faible():
+    produit = ProduitBonAchatFactory(seuil_alerte_stock=5)
+    variante = produit.variantes.get()
+    variante.stock = 0
+    variante.save(update_fields=["stock"])
+    produit.refresh_from_db()
+    assert produit.en_rupture is False
+    assert produit.stock_faible is False
+
+
+def test_produit_bon_achat_save_ne_duplique_pas_la_variante_sentinelle():
+    produit = ProduitBonAchatFactory()
+    produit.nom = "Bon d'achat CID — renommé"
+    produit.save()
+    assert produit.variantes.count() == 1
 
 
 def test_numero_commande_genere_automatiquement_et_unique():
@@ -174,7 +204,10 @@ def test_bon_achat_code_genere_automatiquement_et_unique():
 
 
 def test_bon_achat_non_actif_nest_pas_utilisable():
-    bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE)
+    # Plus d'état EN_ATTENTE depuis le 2026-09-23 (un bon est toujours créé déjà ACTIF, voir
+    # StatutBonAchat) — seul EPUISE reste un statut "non actif" à tester ici ; `utilisable` se
+    # fie au statut seul, indépendamment du solde (voir test dédié ci-dessous).
+    bon = BonAchatFactory(statut=StatutBonAchat.EPUISE, solde=Decimal("10.00"))
     assert bon.utilisable is False
 
 
@@ -201,7 +234,10 @@ def test_bon_achat_actif_avec_solde_et_non_expire_est_utilisable():
 
 
 def test_bon_achat_activer_fixe_le_statut_et_lexpiration():
-    bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE, date_expiration=None)
+    # Instance non sauvegardée, hors factory (dont le statut par défaut est déjà ACTIF depuis le
+    # 2026-09-23) — pour tester le mécanisme de `.activer()` lui-même, tel qu'appelé par
+    # views._generer_bons_achat sur un BonAchat tout juste construit.
+    bon = BonAchat(montant_initial=Decimal("50.00"), solde=Decimal("50.00"))
     bon.activer()
     assert bon.statut == StatutBonAchat.ACTIF
     assert bon.date_paiement_confirme is not None

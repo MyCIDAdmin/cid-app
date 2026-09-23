@@ -192,16 +192,10 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
     expect(screen.getByText("nav_groupe.general").closest("button")).toHaveClass("text-white/70");
   });
 
-  // Bug corrigé le 2026-09-21 (retour utilisateur : "Wenn ich auf Shop dann auf Meine
-  // Bestellungen klicke, bleiben beide highlighted") — "/boutique" et "/boutique/commandes"
-  // partagent un préfixe, <NavLink> les surlignait donc tous les deux.
-  it("ne surligne que l'item le plus spécifique quand deux routes partagent un préfixe (Boutique / Mes commandes)", () => {
-    renderWithProviders(<Sidebar />, { route: "/boutique/commandes", path: "/boutique/commandes" });
-
-    expect(screen.getByText("nav.mes_commandes").closest("a")).toHaveClass("bg-ca");
-    expect(screen.getByText("nav.boutique").closest("a")).not.toHaveClass("bg-ca");
-  });
-
+  // "Mes commandes"/"Mes bons d'achat" repliées dans Boutique le 2026-09-23 (voir docstring de
+  // Sidebar.tsx) : "/boutique" n'a plus de sous-route partageant son préfixe avec un item dédié,
+  // le bug de double-highlight corrigé le 2026-09-21 n'a donc plus de scénario à tester ici — la
+  // couverture générale (sous-page sans item dédié) reste ci-dessous.
   it("reste actif sur Boutique pour une sous-page sans item dédié (ex. le panier)", () => {
     renderWithProviders(<Sidebar />, { route: "/boutique/panier", path: "/boutique/panier" });
 
