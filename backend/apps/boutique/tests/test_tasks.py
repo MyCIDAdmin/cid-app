@@ -154,6 +154,46 @@ def test_envoyer_email_bon_achat_code_logo_en_piece_jointe_inline_jamais_en_data
     assert taille_totale < 50_000
 
 
+def test_envoyer_email_bon_achat_code_echec_envoi_est_journalise_jamais_leve(mailoutbox, caplog):
+    # Régression (bug réel constaté en production le 2026-09-23 : email jamais reçu — ni boîte
+    # de réception ni spam — sans AUCUNE trace exploitable côté serveur). `fail_silently=True`
+    # (ancien comportement) n'aurait de toute façon jamais couvert une exception levée pendant la
+    # CONSTRUCTION du message (avant `.send()`) — seul un échec SMTP l'aurait été. Ce test
+    # simule les deux cas via un échec de `.send()` (le plus simple à déclencher depuis les
+    # tests) et vérifie : (a) aucune exception ne remonte (la tâche Celery ne doit jamais
+    # échouer pour un email raté — le bon reste utilisable) et (b) l'échec est bien journalisé
+    # (logger.exception), pour rester diagnosticable dans les logs du service celery_worker.
+    import logging
+
+    from django.core.mail.backends.locmem import EmailBackend
+
+    membre = _membre_avec_compte()
+    bon = BonAchatFactory(achete_par=membre, statut=StatutBonAchat.ACTIF)
+
+    def _send_qui_echoue(self, *args, **kwargs):
+        raise Exception("Simulated SMTP failure")
+
+    monkeypatch_cible = EmailBackend.send_messages
+    EmailBackend.send_messages = _send_qui_echoue
+    # Le handler par défaut de caplog n'est attaché qu'à la racine — config/settings/base.py met
+    # `propagate: False` sur le logger "apps" (donc "apps.boutique.tasks" en hérite), ce qui
+    # empêche tout enregistrement d'y remonter, même si `logger.exception` a bien été appelé
+    # (visible dans le flux stderr capturé par ailleurs). `caplog.at_level(..., logger=...)` ne
+    # fait que baisser le niveau du logger visé, il ne le fait PAS remonter à la racine — il
+    # faut donc attacher le handler de caplog directement dessus.
+    task_logger = logging.getLogger("apps.boutique.tasks")
+    task_logger.addHandler(caplog.handler)
+    try:
+        with caplog.at_level("ERROR", logger="apps.boutique.tasks"):
+            envoyer_email_bon_achat_code(str(bon.id))  # ne doit lever aucune exception
+    finally:
+        EmailBackend.send_messages = monkeypatch_cible
+        task_logger.removeHandler(caplog.handler)
+
+    assert len(mailoutbox) == 0
+    assert any(bon.code in record.getMessage() for record in caplog.records)
+
+
 def test_envoyer_email_bon_achat_code_respecte_la_langue_preferee(mailoutbox):
     membre = _membre_avec_compte()
     membre.user.langue_preferee = "de"

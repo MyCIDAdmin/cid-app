@@ -169,24 +169,44 @@ def envoyer_email_bon_achat_code(bon_achat_id) -> None:
     # convention que les imports locaux de apps.notifications.services dans les autres apps).
     from .emails import LOGO_CONTENT_ID, logo_email_attachment, rendre_email_bon_achat
 
-    sujet, corps_texte, corps_html = rendre_email_bon_achat(bon)
-    message = EmailMultiAlternatives(
-        subject=sujet,
-        body=corps_texte,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[email],
-    )
-    message.attach_alternative(corps_html, "text/html")
-    # Logo en pièce jointe inline (Content-ID), jamais en `data:` URI dans le HTML — voir
-    # docstring de apps.boutique.emails pour le bug réel (email tronqué par Gmail + logo jamais
-    # affiché) que ce mécanisme corrige. `mixed_subtype = "related"` fait générer un message
-    # `multipart/related` plutôt que `multipart/mixed` : requis pour qu'un client mail associe
-    # correctement la pièce jointe à la référence `cid:` dans l'alternative HTML plutôt que de
-    # l'afficher comme une pièce jointe séparée.
-    message.mixed_subtype = "related"
-    logo_bytes, logo_content_type = logo_email_attachment()
-    logo = MIMEImage(logo_bytes, _subtype=logo_content_type.removeprefix("image/"))
-    logo.add_header("Content-ID", f"<{LOGO_CONTENT_ID}>")
-    logo.add_header("Content-Disposition", "inline", filename="logo_cid.jpg")
-    message.attach(logo)
-    message.send(fail_silently=True)
+    # Contrairement aux autres tâches de ce fichier (`fail_silently=True` sur send_mail, jamais
+    # journalisé nulle part — acceptable pour elles, best-effort déjà établi dans tout le
+    # projet), CET envoi est entouré d'un try/except explicite avec `logger.exception` (bug réel
+    # constaté en production le 2026-09-23 : email non reçu, ni en boîte de réception ni en
+    # spam, aucune trace nulle part côté serveur pour diagnostiquer — `fail_silently=True`
+    # avalait silencieusement un éventuel échec SMTP, ET une exception Python levée pendant la
+    # construction du message — ex. lecture du logo, pièce jointe — n'était de toute façon PAS
+    # couverte par `fail_silently`, qui ne s'applique qu'à `.send()`, et remontait comme un échec
+    # de tâche Celery invisible sans consulter les logs du worker). Comportement inchangé
+    # (jamais de levée/retry, un email raté ne doit jamais faire échouer la commande sous-
+    # jacente) mais désormais visible dans les logs du service `celery_worker`.
+    try:
+        sujet, corps_texte, corps_html = rendre_email_bon_achat(bon)
+        message = EmailMultiAlternatives(
+            subject=sujet,
+            body=corps_texte,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email],
+        )
+        message.attach_alternative(corps_html, "text/html")
+        # Logo en pièce jointe inline (Content-ID), jamais en `data:` URI dans le HTML — voir
+        # docstring de apps.boutique.emails pour le bug réel (email tronqué par Gmail + logo
+        # jamais affiché) que ce mécanisme corrige. `mixed_subtype = "related"` fait générer un
+        # message `multipart/related` plutôt que `multipart/mixed` : requis pour qu'un client
+        # mail associe correctement la pièce jointe à la référence `cid:` dans l'alternative
+        # HTML plutôt que de l'afficher comme une pièce jointe séparée.
+        message.mixed_subtype = "related"
+        logo_bytes, logo_content_type = logo_email_attachment()
+        logo = MIMEImage(logo_bytes, _subtype=logo_content_type.removeprefix("image/"))
+        logo.add_header("Content-ID", f"<{LOGO_CONTENT_ID}>")
+        logo.add_header("Content-Disposition", "inline", filename="logo_cid.jpg")
+        message.attach(logo)
+        message.send(fail_silently=False)
+    except Exception:
+        logger.exception(
+            "Échec d'envoi de l'email de bon d'achat (bon_id=%s, code=%s, destinataire=%s) — "
+            "le bon reste ACTIF et utilisable, seul l'email a échoué.",
+            bon_achat_id,
+            bon.code,
+            email,
+        )
