@@ -1041,28 +1041,55 @@ def test_reactions_agregees_par_emoji_dans_le_detail_du_match(api_client):
 # --- Albums photos -------------------------------------------------------------------
 
 
-def test_creer_un_album_ouvert_a_tout_membre(api_client):
-    user, _ = _user_avec_membre(Role.MEMBRE, "alb1@example.de")
-    resp = _auth(api_client, user).post(reverse(ALBUM_LIST_URL), {"nom": "Derby 2026"})
-    assert resp.status_code == 201
-    assert resp.data["nom"] == "Derby 2026"
-
-
-def test_modifier_un_album_reserve_au_createur_ou_bureau_admin(api_client):
-    createur_user, createur = _user_avec_membre(Role.MEMBRE, "alb2@example.de")
-    album = AlbumFactory(createur=createur)
-    autre_user, _ = _user_avec_membre(Role.MEMBRE, "alb3@example.de")
-
-    resp = _auth(api_client, autre_user).patch(_album_detail_url(album), {"nom": "Piraté"})
+def test_creer_un_album_reserve_au_bureau_admin(api_client):
+    # Gestion d'album réservée à Bureau Admin+ depuis le 2026-09-22 (retour utilisateur : "Die
+    # Verwaltung der Albums soll im Bereich Admin stattfinden") — voir AlbumPermission.
+    membre_user, _ = _user_avec_membre(Role.MEMBRE, "alb1@example.de")
+    resp = _auth(api_client, membre_user).post(reverse(ALBUM_LIST_URL), {"nom": "Derby 2026"})
     assert resp.status_code == 403
 
-    resp = _auth(api_client, createur_user).patch(_album_detail_url(album), {"nom": "Renommé"})
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "alb1b@example.de")
+    resp = _auth(api_client, admin_user).post(
+        reverse(ALBUM_LIST_URL),
+        {"nom": "Derby 2026", "date": "2026-10-03", "lieu": "Berlin"},
+    )
+    assert resp.status_code == 201
+    assert resp.data["nom"] == "Derby 2026"
+    assert resp.data["date"] == "2026-10-03"
+    assert resp.data["lieu"] == "Berlin"
+
+
+def test_modifier_un_album_reserve_au_bureau_admin(api_client):
+    # Le créateur d'un album (toujours renseigné, voir AlbumSerializer.create) n'a plus de
+    # traitement de faveur ici — seul Bureau Admin+ peut modifier, même le créateur d'origine
+    # s'il ne l'est plus (voir docstring AlbumPermission).
+    createur_user, createur = _user_avec_membre(Role.MEMBRE, "alb2@example.de")
+    album = AlbumFactory(createur=createur)
+
+    resp = _auth(api_client, createur_user).patch(_album_detail_url(album), {"nom": "Piraté"})
+    assert resp.status_code == 403
+
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "alb3@example.de")
+    resp = _auth(api_client, admin_user).patch(_album_detail_url(album), {"nom": "Renommé"})
     assert resp.status_code == 200
     assert resp.data["nom"] == "Renommé"
 
 
+def test_upload_photo_reserve_au_bureau_admin(api_client):
+    # Même changement que la création d'album (2026-09-22) : un simple membre ne peut plus
+    # uploader de photo, seul Bureau Admin+ le peut désormais.
+    membre_user, _ = _user_avec_membre(Role.MEMBRE, "alb4@example.de")
+    album = AlbumFactory()
+    resp = _auth(api_client, membre_user).post(
+        reverse(PHOTO_LIST_URL),
+        {"album": str(album.id), "legende": "But de Hamza !", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 403
+
+
 def test_upload_photo_valide(api_client):
-    user, _ = _user_avec_membre(Role.MEMBRE, "alb4@example.de")
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "alb4b@example.de")
     album = AlbumFactory()
     resp = _auth(api_client, user).post(
         reverse(PHOTO_LIST_URL),
@@ -1075,7 +1102,7 @@ def test_upload_photo_valide(api_client):
 
 
 def test_upload_photo_rejette_fichier_non_image(api_client):
-    user, _ = _user_avec_membre(Role.MEMBRE, "alb5@example.de")
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "alb5@example.de")
     album = AlbumFactory()
     faux_fichier = SimpleUploadedFile("photo.jpg", b"ceci n'est pas une image", "image/jpeg")
     resp = _auth(api_client, user).post(
@@ -1091,7 +1118,7 @@ def test_upload_photo_rejette_fichier_trop_volumineux(api_client, monkeypatch):
     import apps.communaute.validators as validators_module
 
     monkeypatch.setattr(validators_module, "MAX_PHOTO_SIZE_BYTES", 10)  # 10 octets
-    user, _ = _user_avec_membre(Role.MEMBRE, "alb6@example.de")
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "alb6@example.de")
     album = AlbumFactory()
     resp = _auth(api_client, user).post(
         reverse(PHOTO_LIST_URL),

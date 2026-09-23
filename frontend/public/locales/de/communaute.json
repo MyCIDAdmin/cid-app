@@ -125,20 +125,11 @@
   },
   "albums": {
     "titre": "Fotoalben",
-    "nouvel_album": "Neues Album",
-    "nom_placeholder": "Albumname",
-    "description_placeholder": "Beschreibung (optional)…",
-    "creer": "Album erstellen",
-    "erreur_creation": "Das Album konnte nicht erstellt werden.",
     "chargement": "Alben werden geladen…",
     "erreur_chargement": "Die Alben konnten nicht geladen werden.",
     "aucun_album": "Noch kein Album.",
     "nombre_photos": "{{count}} Foto(s)",
     "retour_liste": "← Zurück zu den Alben",
-    "ajouter_photo": "Foto hinzufügen",
-    "legende_placeholder": "Bildunterschrift (optional)…",
-    "publier_photo": "Veröffentlichen",
-    "erreur_upload": "Das Foto konnte nicht gesendet werden.",
     "aucune_photo": "Noch kein Foto.",
     "masquee_badge": "Ausgeblendet",
     "masquer": "Ausblenden",
@@ -191,5 +182,22 @@
     "choix_placeholder": "Antwortmöglichkeit…",
     "est_correct": "Richtige Antwort",
     "ajouter_choix": "Hinzufügen"
+  },
+  "admin_albums": {
+    "titre": "Fotoalben-Verwaltung",
+    "nouvel_album": "Neues Album",
+    "modifier_album": "Album bearbeiten",
+    "champ_nom": "Name",
+    "champ_description": "Beschreibung",
+    "champ_date": "Datum",
+    "champ_lieu": "Ort",
+    "images_titre": "Fotos des Albums",
+    "ajouter_images": "Fotos hinzufügen",
+    "enregistrer": "Speichern",
+    "modifier": "Bearbeiten",
+    "supprimer": "Löschen",
+    "voir": "Ansehen",
+    "confirmer_suppression": "Dieses Album und alle seine Fotos löschen?",
+    "erreur_enregistrement": "Das Album konnte nicht gespeichert werden."
   }
 }

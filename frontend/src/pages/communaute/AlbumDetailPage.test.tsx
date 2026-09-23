@@ -13,7 +13,6 @@ vi.mock("../../hooks/useCommunaute", async () => {
     ...actual,
     useAlbum: vi.fn(),
     usePhotos: vi.fn(),
-    useUploaderPhoto: vi.fn(),
     useLikerPhoto: vi.fn(),
     useMasquerPhoto: vi.fn(),
     useSupprimerPhoto: vi.fn(),
@@ -67,6 +66,8 @@ describe("AlbumDetailPage", () => {
         id: "a1",
         nom: "Derby CA - ST 2026",
         description: "",
+        date: null,
+        lieu: "",
         evenement: null,
         createur: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
         created_at: "2026-01-01T10:00:00Z",
@@ -80,9 +81,6 @@ describe("AlbumDetailPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.usePhotos>);
-    vi.mocked(useCommunauteHooks.useUploaderPhoto).mockReturnValue(
-      mutationMock<ReturnType<typeof useCommunauteHooks.useUploaderPhoto>>(),
-    );
     vi.mocked(useCommunauteHooks.useLikerPhoto).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useLikerPhoto>>(),
     );
@@ -102,6 +100,33 @@ describe("AlbumDetailPage", () => {
 
     expect(screen.getByText("Derby CA - ST 2026")).toBeInTheDocument();
     expect(screen.getByAltText("But de la victoire !")).toBeInTheDocument();
+  });
+
+  it("affiche la date et le lieu de l'album quand ils sont renseignés", () => {
+    vi.mocked(useCommunauteHooks.useAlbum).mockReturnValue({
+      data: {
+        id: "a1",
+        nom: "Derby CA - ST 2026",
+        description: "",
+        date: "2026-10-03",
+        lieu: "Berlin",
+        evenement: null,
+        createur: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
+        created_at: "2026-01-01T10:00:00Z",
+        nombre_photos: 1,
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useAlbum>);
+
+    renderDetail();
+
+    expect(screen.getByText("2026-10-03 · Berlin")).toBeInTheDocument();
+  });
+
+  it("n'affiche aucun formulaire d'envoi de photo — l'upload est réservé à l'admin", () => {
+    renderDetail();
+    expect(screen.queryByLabelText("albums.ajouter_photo")).not.toBeInTheDocument();
   });
 
   it("like une photo", () => {

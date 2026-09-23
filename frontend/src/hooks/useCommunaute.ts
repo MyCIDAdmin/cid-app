@@ -437,6 +437,28 @@ export function useCreerAlbum() {
   });
 }
 
+// Modifier/supprimer un album — réservées à Bureau Admin+ côté backend (AlbumPermission),
+// utilisées uniquement par AdminAlbumsPage (voir docstring de tête models.py côté backend).
+export function useModifierAlbum() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: AlbumPayload }) =>
+      communauteApi.modifierAlbum(id, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "albums"] });
+      queryClient.invalidateQueries({ queryKey: communauteKeys.album(variables.id) });
+    },
+  });
+}
+
+export function useSupprimerAlbum() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.supprimerAlbum(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "albums"] }),
+  });
+}
+
 export function usePhotos(filtres: communauteApi.PhotosFiltres = {}) {
   return useQuery({
     queryKey: communauteKeys.photos(filtres),

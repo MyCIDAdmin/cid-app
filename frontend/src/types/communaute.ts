@@ -219,11 +219,15 @@ export interface MatchCommentaire {
 // --- Albums photos ---
 
 /** `evenement` est en lecture seule côté API (voir AlbumSerializer.get_evenement côté
- * backend) — aucun écran ne permet encore de le renseigner, seul l'admin Django le peut. */
+ * backend) — aucun écran ne permet encore de le renseigner, seul l'admin Django le peut.
+ * `date`/`lieu` (ajoutés le 2026-09-22, "Analog zum Modul Projekte eine Beschreibung zu
+ * erfassen, das Datum und den Ort") : saisie libre à la création, distincts de `evenement`. */
 export interface Album {
   id: string;
   nom: string;
   description: string;
+  date: string | null;
+  lieu: string;
   evenement: { id: string; titre: string } | null;
   createur: Auteur;
   created_at: string;
@@ -233,6 +237,8 @@ export interface Album {
 export interface AlbumPayload {
   nom: string;
   description?: string;
+  date?: string | null;
+  lieu?: string;
 }
 
 export interface PhotoCommentaire {

@@ -1,10 +1,13 @@
 /**
  * Page "Album photos" — détail (mockup #pg-albums, troisième lot Phase 4B).
  *
- * Grille de photos de l'album, upload collaboratif (tout membre authentifié — voir
- * AlbumPermission/PhotoPermission côté backend), likes/commentaires par photo, suppression
- * de sa propre photo, masquage réservé Bureau Admin+ (pas de modération sur les
- * likes/commentaires eux-mêmes pour ce sous-module, voir docstring de tête models.py).
+ * Grille de photos de l'album, likes/commentaires par photo, suppression de sa propre photo,
+ * masquage réservé Bureau Admin+ (pas de modération sur les likes/commentaires eux-mêmes pour
+ * ce sous-module, voir docstring de tête models.py). L'upload de nouvelles photos a été retiré
+ * le 2026-09-22 (demande utilisateur : "Die Verwaltung der Albums soll im Bereich Admin
+ * stattfinden.") — il vit désormais exclusivement dans AdminAlbumsPage (Bureau Admin+, voir
+ * PhotoPermission côté backend) ; ce qui reste ici (liker/commenter/supprimer sa propre photo)
+ * relève de l'usage ordinaire, pas de la "Verwaltung".
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,7 +20,6 @@ import {
   useMasquerPhoto,
   usePhotos,
   useSupprimerPhoto,
-  useUploaderPhoto,
 } from "../../hooks/useCommunaute";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Photo } from "../../types/communaute";
@@ -140,27 +142,6 @@ export default function AlbumDetailPage() {
 
   const albumQuery = useAlbum(id);
   const photosQuery = usePhotos({ album: id });
-  const uploader = useUploaderPhoto();
-
-  const [image, setImage] = useState<File | undefined>(undefined);
-  const [legende, setLegende] = useState("");
-  const [erreur, setErreur] = useState("");
-
-  function soumettre(e: React.FormEvent) {
-    e.preventDefault();
-    if (!image || !id) return;
-    uploader.mutate(
-      { album: id, image, legende },
-      {
-        onSuccess: () => {
-          setImage(undefined);
-          setLegende("");
-          setErreur("");
-        },
-        onError: (err) => setErreur(extractApiErrorMessage(err, t("albums.erreur_upload"))),
-      },
-    );
-  }
 
   return (
     <div>
@@ -171,38 +152,16 @@ export default function AlbumDetailPage() {
       {albumQuery.data && (
         <div className="mb-4">
           <h1 className="text-lg font-bold text-text-primary">{albumQuery.data.nom}</h1>
+          {(albumQuery.data.date || albumQuery.data.lieu) && (
+            <p className="text-xs text-text-tertiary">
+              {[albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ")}
+            </p>
+          )}
           {albumQuery.data.description && (
             <p className="text-sm text-text-tertiary">{albumQuery.data.description}</p>
           )}
         </div>
       )}
-
-      <form onSubmit={soumettre} className="mb-4 rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            aria-label={t("albums.ajouter_photo")}
-            onChange={(e) => setImage(e.target.files?.[0])}
-            className="text-xs text-text-tertiary"
-          />
-          <input
-            type="text"
-            value={legende}
-            onChange={(e) => setLegende(e.target.value)}
-            placeholder={t("albums.legende_placeholder")}
-            className="min-w-[10rem] flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-          />
-          <button
-            type="submit"
-            disabled={!image || uploader.isPending}
-            className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
-          >
-            {t("albums.publier_photo")}
-          </button>
-        </div>
-        {erreur && <p className="mt-1 text-xs text-status-dangerText">{erreur}</p>}
-      </form>
 
       {photosQuery.isLoading && <p className="text-sm text-text-tertiary">{t("albums.chargement")}</p>}
       {photosQuery.data?.results.length === 0 && (

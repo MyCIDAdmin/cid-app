@@ -525,6 +525,8 @@ class AlbumSerializer(serializers.ModelSerializer):
             "id",
             "nom",
             "description",
+            "date",
+            "lieu",
             "evenement",
             "createur",
             "created_at",

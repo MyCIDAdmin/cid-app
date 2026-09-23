@@ -165,6 +165,19 @@ def test_album_nombre_photos_exclut_les_masquees():
     assert album.nombre_photos == 1
 
 
+def test_album_date_et_lieu_optionnels():
+    # date/lieu (ajoutés le 2026-09-22, "Analog zum Modul Projekte eine Beschreibung zu
+    # erfassen, das Datum und den Ort") : saisie libre, jamais requise — un album créé sans
+    # les renseigner doit rester valide (voir docstring de classe Album).
+    album_sans = AlbumFactory()
+    assert album_sans.date is None
+    assert album_sans.lieu == ""
+
+    album_avec = AlbumFactory(date="2026-10-03", lieu="Berlin")
+    assert str(album_avec.date) == "2026-10-03"
+    assert album_avec.lieu == "Berlin"
+
+
 def test_photo_like_unicite():
     photo = PhotoFactory()
     membre = MembreFactory()

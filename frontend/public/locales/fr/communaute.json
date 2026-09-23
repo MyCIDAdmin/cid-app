@@ -125,20 +125,11 @@
   },
   "albums": {
     "titre": "Albums photos",
-    "nouvel_album": "Nouvel album",
-    "nom_placeholder": "Nom de l'album",
-    "description_placeholder": "Description (optionnelle)…",
-    "creer": "Créer l'album",
-    "erreur_creation": "La création de l'album a échoué.",
     "chargement": "Chargement des albums…",
     "erreur_chargement": "Impossible de charger les albums.",
     "aucun_album": "Aucun album pour le moment.",
     "nombre_photos": "{{count}} photo(s)",
     "retour_liste": "← Retour aux albums",
-    "ajouter_photo": "Ajouter une photo",
-    "legende_placeholder": "Légende (optionnelle)…",
-    "publier_photo": "Publier",
-    "erreur_upload": "L'envoi de la photo a échoué.",
     "aucune_photo": "Aucune photo pour le moment.",
     "masquee_badge": "Masquée",
     "masquer": "Masquer",
@@ -191,5 +182,22 @@
     "choix_placeholder": "Réponse…",
     "est_correct": "Bonne réponse",
     "ajouter_choix": "Ajouter"
+  },
+  "admin_albums": {
+    "titre": "Gestion des albums photos",
+    "nouvel_album": "Nouvel album",
+    "modifier_album": "Modifier l'album",
+    "champ_nom": "Nom",
+    "champ_description": "Description",
+    "champ_date": "Date",
+    "champ_lieu": "Lieu",
+    "images_titre": "Photos de l'album",
+    "ajouter_images": "Ajouter des photos",
+    "enregistrer": "Enregistrer",
+    "modifier": "Modifier",
+    "supprimer": "Supprimer",
+    "voir": "Voir",
+    "confirmer_suppression": "Supprimer cet album et toutes ses photos ?",
+    "erreur_enregistrement": "Impossible d'enregistrer l'album."
   }
 }

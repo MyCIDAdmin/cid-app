@@ -351,6 +351,17 @@ export async function creerAlbum(payload: AlbumPayload): Promise<Album> {
   return data;
 }
 
+// Gestion complète (modifier/supprimer) réservée à Bureau Admin+ depuis le 2026-09-22 (voir
+// AlbumPermission côté backend) — utilisées uniquement par AdminAlbumsPage.
+export async function modifierAlbum(id: string, payload: AlbumPayload): Promise<Album> {
+  const { data } = await apiClient.patch<Album>(`/communaute/albums/${id}/`, payload);
+  return data;
+}
+
+export async function supprimerAlbum(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/albums/${id}/`);
+}
+
 export interface PhotosFiltres {
   album?: string;
   cursor?: string;

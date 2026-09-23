@@ -199,26 +199,36 @@ class MatchCommentairePermission(BasePermission):
 
 
 class AlbumPermission(BasePermission):
-    """Lecture/création ouvertes à tout authentifié ("upload collaboratif" : un album se
-    crée comme n'importe quelle publication, voir docstring de tête models.py). Modifier ou
-    supprimer les MÉTADONNÉES d'un album (nom/description) : créateur ou Bureau Admin+."""
+    """Lecture ouverte à tout authentifié. Créer/modifier/supprimer un album (gestion) :
+    Bureau Admin+ exclusivement, depuis le 2026-09-22 (retour utilisateur : "Im Modul
+    Album, sollen Albums nur angezeigt werden. Die Verwaltung der Albums soll im Bereich
+    Admin stattfinden") — voir docstring de tête models.py. Avant cette date, la création
+    était ouverte à tout membre authentifié ("upload collaboratif") ; le module membre
+    (`AlbumsPage`/`AlbumDetailPage` côté frontend) n'expose donc plus aucune action de
+    gestion, seule `AdminAlbumsPage` (Bureau Admin+, comme `AdminProjetsPage`) le fait."""
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(user and user.is_authenticated)
+        if not user or not user.is_authenticated:
+            return False
+        if view.action == "create":
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action in ("update", "partial_update", "destroy"):
-            membre = _membre_de(user)
-            est_createur = membre is not None and obj.createur_id == membre.id
-            return est_createur or ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
         return True
 
 
 class PhotoPermission(BasePermission):
-    """Lecture/upload ouverts à tout authentifié. Modifier (légende) ou supprimer SA PROPRE
-    photo : le membre qui l'a uploadée, ou Bureau Admin+. `masquer` (modération) : Bureau
+    """Lecture ouverte à tout authentifié. Uploader une photo (create) : Bureau Admin+
+    exclusivement depuis le 2026-09-22, même changement que AlbumPermission ci-dessus — un
+    album se gère désormais entièrement depuis l'admin, upload de photos compris. Modifier
+    (légende) ou supprimer SA PROPRE photo (déjà uploadée avant ce changement, ou par un
+    admin) : le membre qui l'a uploadée, ou Bureau Admin+ — conservé tel quel, supprimer son
+    propre contenu n'est pas de la "gestion" d'album. `masquer` (modération) : Bureau
     Admin+ uniquement — voir docstring de tête models.py (pas de modération dédiée sur les
     likes/commentaires de photo, contrairement au Fil d'actualité — non documentée pour ce
     sous-module)."""
@@ -227,7 +237,7 @@ class PhotoPermission(BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        if view.action == "masquer":
+        if view.action in ("create", "masquer"):
             return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
         return True
 

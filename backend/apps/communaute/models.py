@@ -82,9 +82,15 @@ réactions emoji temps réel, membres connectés") :
 
 Albums photos (Release Plan §3.2 "Albums par événement, upload collaboratif, légende,
 likes, commentaires. Photos produits boutique utilisent déjà MinIO.") :
-  - `Album` : création ouverte à tout membre authentifié (mockup : le modal d'ajout de
-    photo propose "Nouveau album…" directement — "upload collaboratif" au sens le plus
-    large, pas réservé aux admins), rattachement optionnel à un `apps.evenements.Evenement`.
+  - `Album` : le Release Plan/mockup d'origine prévoyaient une création ouverte à tout
+    membre authentifié ("upload collaboratif" au sens le plus large). Revenu sur ce choix le
+    2026-09-22 sur demande utilisateur ("Die Verwaltung der Albums soll im Bereich Admin
+    stattfinden") : créer/modifier/supprimer un album, ou y uploader des photos, est
+    désormais réservé à Bureau Admin+ (voir AlbumPermission/PhotoPermission) — le module
+    membre reste consultation seule (+ likes/commentaires/suppression de sa propre photo,
+    conservés : ce n'est pas de la "gestion" d'album). Champs `date`/`lieu` ajoutés à cette
+    occasion (saisie libre, optionnels), distincts du rattachement optionnel à un
+    `apps.evenements.Evenement` existant (`evenement`, toujours géré via l'admin Django).
   - `Photo` : image toujours validée puis RE-ENCODÉE par `validators
     .valider_et_reencoder_photo` avant stockage (CID-SCD-001 §7.4 "Pillow redimensionne et
     re-encode les images avant stockage" — jamais les octets bruts envoyés par le client),
@@ -660,13 +666,26 @@ def photo_album_upload_path(instance, filename):
 
 
 class Album(models.Model):
-    """Album photos — voir docstring de tête ("upload collaboratif" : création ouverte à
-    tout membre authentifié)."""
+    """Album photos — gestion (créer/modifier/supprimer un album, y uploader des photos)
+    réservée à Bureau Admin+ depuis le 2026-09-22 (retour utilisateur : "Im Modul Album,
+    sollen Albums nur angezeigt werden. Die Verwaltung der Albums soll im Bereich Admin
+    stattfinden") — voir AlbumPermission/PhotoPermission. Le module membre ("Albums photos")
+    reste consultation seule (+ likes/commentaires/suppression de sa propre photo, qui ne
+    sont pas de la "gestion" d'album). Avant cette date, la création était ouverte à tout
+    membre authentifié ("upload collaboratif") — comportement abandonné sur demande."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     nom = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    # date/lieu (demande utilisateur du 2026-09-22, "Analog zum Modul Projekte eine
+    # Beschreibung zu erfassen, das Datum und den Ort") : renseignés librement à la création
+    # de l'album (l'album peut représenter un événement passé, une sortie improvisée, etc.),
+    # donc optionnels — distincts du lien `evenement` ci-dessous, qui référence un Évènement
+    # existant du module éponyme et reste géré uniquement via l'admin Django (aucun écran ne
+    # permet de le choisir, voir get_evenement côté serializer).
+    date = models.DateField(null=True, blank=True, verbose_name=_("Date"))
+    lieu = models.CharField(max_length=255, blank=True, verbose_name=_("Lieu"))
     evenement = models.ForeignKey(
         "evenements.Evenement",
         on_delete=models.SET_NULL,

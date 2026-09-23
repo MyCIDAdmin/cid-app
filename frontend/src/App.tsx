@@ -15,6 +15,7 @@ import CataloguePage from "./pages/boutique/CataloguePage";
 import CommandeRetourPage from "./pages/boutique/CommandeRetourPage";
 import MesCommandesPage from "./pages/boutique/MesCommandesPage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
+import AdminAlbumsPage from "./pages/communaute/AdminAlbumsPage";
 import AdminQuizPage from "./pages/communaute/AdminQuizPage";
 import AlbumDetailPage from "./pages/communaute/AlbumDetailPage";
 import AlbumsPage from "./pages/communaute/AlbumsPage";
@@ -275,8 +276,23 @@ export default function App() {
             useLiveMatchSocket, même principe que /groupes/:id. */}
         <Route path="/live" element={<LiveMatchPage />} />
         <Route path="/live/:id" element={<LiveMatchDetailPage />} />
+        {/* Albums photos (resserré le 2026-09-22 sur demande utilisateur : "Im Modul Album,
+            sollen Albums nur angezeigt werden. Die Verwaltung der Albums soll im Bereich Admin
+            stattfinden.") — la page membre reste ouverte à tout authentifié, en lecture seule
+            (+ like/commentaire/suppression de sa propre photo) ; la création/modification/
+            suppression d'album ET l'upload de photos passent désormais exclusivement par
+            /admin/albums, réservée Bureau Admin+ comme le reste de cette section (même niveau
+            qu'AlbumPermission/PhotoPermission côté API). */}
         <Route path="/albums" element={<AlbumsPage />} />
         <Route path="/albums/:id" element={<AlbumDetailPage />} />
+        <Route
+          path="/admin/albums"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <AdminAlbumsPage />
+            </RequireRole>
+          }
+        />
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/quiz/:id" element={<QuizDetailPage />} />
         {/* Gestion des quiz (mockup #pg-quiz, Bureau Admin+) — création de quiz/questions/choix,

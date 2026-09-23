@@ -69,6 +69,7 @@ import {
   IconMessageCircle2,
   IconNews,
   IconPhoto,
+  IconPhotoEdit,
   IconReceipt2,
   IconSettings,
   IconShoppingBag,
@@ -279,6 +280,16 @@ export const NAV_ITEMS: NavItem[] = [
     to: "/admin/projets",
     labelKey: "nav.admin_projets",
     icon: IconFolderCog,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.bureau_admin,
+  },
+  // Gestion des albums photos (resserré le 2026-09-22, demande utilisateur : "Die Verwaltung der
+  // Albums soll im Bereich Admin stattfinden.") — Bureau Admin+ seulement, même niveau
+  // qu'AlbumPermission/PhotoPermission (écriture) côté API.
+  {
+    to: "/admin/albums",
+    labelKey: "nav.admin_albums",
+    icon: IconPhotoEdit,
     group: "administration",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
