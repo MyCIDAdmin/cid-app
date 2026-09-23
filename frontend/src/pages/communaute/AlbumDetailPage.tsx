@@ -8,11 +8,20 @@
  * stattfinden.") — il vit désormais exclusivement dans AdminAlbumsPage (Bureau Admin+, voir
  * PhotoPermission côté backend) ; ce qui reste ici (liker/commenter/supprimer sa propre photo)
  * relève de l'usage ordinaire, pas de la "Verwaltung".
+ *
+ * Deux ajouts le 2026-09-23 (demande utilisateur) :
+ * 1. Cliquer sur une photo l'ouvre en grand dans PhotoLightbox (voir sa docstring) au lieu de
+ *    rester à la taille de la vignette de la grille.
+ * 2. ShareButton sur l'album lui-même (partage externe, même composant que le reste de
+ *    l'app — voir sa docstring) — `/albums/:id` est déjà la route de détail dédiée, donc
+ *    utilisée telle quelle comme `path`, sans query param comme les modules sans page dédiée.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
+import PhotoLightbox from "../../components/communaute/PhotoLightbox";
+import ShareButton from "../../components/ui/ShareButton";
 import {
   useAlbum,
   useCommenterPhoto,
@@ -29,7 +38,15 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
 }
 
-function PhotoCarte({ photo, peutModerer }: { photo: Photo; peutModerer: boolean }) {
+function PhotoCarte({
+  photo,
+  peutModerer,
+  onOuvrir,
+}: {
+  photo: Photo;
+  peutModerer: boolean;
+  onOuvrir: () => void;
+}) {
   const { t } = useTranslation("communaute");
   const liker = useLikerPhoto();
   const masquer = useMasquerPhoto();
@@ -54,14 +71,19 @@ function PhotoCarte({ photo, peutModerer }: { photo: Photo; peutModerer: boolean
 
   return (
     <div className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
-      <div className="relative">
+      <button
+        type="button"
+        onClick={onOuvrir}
+        aria-label={t("visionneuse.ouvrir") ?? ""}
+        className="relative block w-full"
+      >
         <img src={photo.image} alt={photo.legende} className="h-48 w-full object-cover" />
         {photo.est_masquee && (
           <span className="absolute right-2 top-2 rounded bg-status-dangerBg px-1.5 py-0.5 text-[9px] font-bold text-status-dangerText">
             {t("albums.masquee_badge")}
           </span>
         )}
-      </div>
+      </button>
       <div className="p-2">
         {photo.legende && <p className="mb-1 text-xs text-text-secondary">{photo.legende}</p>}
         <div className="flex items-center gap-3 text-xs text-text-tertiary">
@@ -142,6 +164,9 @@ export default function AlbumDetailPage() {
 
   const albumQuery = useAlbum(id);
   const photosQuery = usePhotos({ album: id });
+  const photos = photosQuery.data?.results ?? [];
+
+  const [indexOuvert, setIndexOuvert] = useState<number | null>(null);
 
   return (
     <div>
@@ -150,32 +175,53 @@ export default function AlbumDetailPage() {
       </Link>
 
       {albumQuery.data && (
-        <div className="mb-4">
-          <h1 className="text-lg font-bold text-text-primary">{albumQuery.data.nom}</h1>
-          {(albumQuery.data.date || albumQuery.data.lieu) && (
-            <p className="text-xs text-text-tertiary">
-              {[albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ")}
-            </p>
-          )}
-          {albumQuery.data.description && (
-            <p className="text-sm text-text-tertiary">{albumQuery.data.description}</p>
-          )}
+        <div className="mb-4 flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-text-primary">{albumQuery.data.nom}</h1>
+            {(albumQuery.data.date || albumQuery.data.lieu) && (
+              <p className="text-xs text-text-tertiary">
+                {[albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ")}
+              </p>
+            )}
+            {albumQuery.data.description && (
+              <p className="text-sm text-text-tertiary">{albumQuery.data.description}</p>
+            )}
+          </div>
+          <ShareButton
+            path={`/albums/${albumQuery.data.id}`}
+            titre={albumQuery.data.nom}
+            texte={[albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ") || undefined}
+          />
         </div>
       )}
 
       {photosQuery.isLoading && <p className="text-sm text-text-tertiary">{t("albums.chargement")}</p>}
-      {photosQuery.data?.results.length === 0 && (
+      {photos.length === 0 && !photosQuery.isLoading && (
         <p className="text-sm text-text-tertiary">{t("albums.aucune_photo")}</p>
       )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {photosQuery.data?.results.map((photo) => (
-          <PhotoCarte key={photo.id} photo={photo} peutModerer={peutModerer} />
+        {photos.map((photo, i) => (
+          <PhotoCarte
+            key={photo.id}
+            photo={photo}
+            peutModerer={peutModerer}
+            onOuvrir={() => setIndexOuvert(i)}
+          />
         ))}
       </div>
 
       {albumQuery.data && (
         <p className="mt-2 text-[10px] text-text-tertiary">{formatDate(albumQuery.data.created_at)}</p>
+      )}
+
+      {indexOuvert !== null && (
+        <PhotoLightbox
+          photos={photos}
+          index={indexOuvert}
+          onClose={() => setIndexOuvert(null)}
+          onNavigate={setIndexOuvert}
+        />
       )}
     </div>
   );

@@ -4,11 +4,18 @@
  * Albums nur angezeigt werden. Die Verwaltung der Albums soll im Bereich Admin stattfinden.") —
  * la création/modification/suppression d'un album vit désormais exclusivement dans
  * AdminAlbumsPage (Bureau Admin+, voir AlbumPermission côté backend). Le détail (grille de
- * photos, likes, commentaires) vit dans AlbumDetailPage.
+ * photos, likes, commentaires, visionneuse plein écran) vit dans AlbumDetailPage.
+ *
+ * ShareButton (ajouté le 2026-09-23, demande utilisateur "Man kann ein Album mitteilen") est
+ * un SIBLING du <Link> de la carte, jamais un enfant : ShareButton rend lui-même des <a> dans
+ * son menu de secours (WhatsApp/Facebook/X/email), et un <a> imbriqué dans le <Link> (qui rend
+ * aussi un <a>) serait un HTML invalide en plus de déclencher la navigation de la carte au clic
+ * — le bouton est donc positionné en superposition (absolute) plutôt qu'à l'intérieur du lien.
  */
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import ShareButton from "../../components/ui/ShareButton";
 import { useAlbums } from "../../hooks/useCommunaute";
 
 export default function AlbumsPage() {
@@ -29,24 +36,32 @@ export default function AlbumsPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {albumsQuery.data?.results.map((album) => (
-          <Link
-            key={album.id}
-            to={`/albums/${album.id}`}
-            className="block rounded-cid-lg bg-bg-primary p-3 shadow-sm hover:bg-bg-secondary"
-          >
-            <div className="text-sm font-bold text-text-primary">{album.nom}</div>
-            {album.evenement && (
-              <div className="text-xs text-text-tertiary">{album.evenement.titre}</div>
-            )}
-            {(album.date || album.lieu) && (
-              <div className="text-xs text-text-tertiary">
-                {[album.date, album.lieu].filter(Boolean).join(" · ")}
+          <div key={album.id} className="relative">
+            <Link
+              to={`/albums/${album.id}`}
+              className="block rounded-cid-lg bg-bg-primary p-3 shadow-sm hover:bg-bg-secondary"
+            >
+              <div className="pr-6 text-sm font-bold text-text-primary">{album.nom}</div>
+              {album.evenement && (
+                <div className="text-xs text-text-tertiary">{album.evenement.titre}</div>
+              )}
+              {(album.date || album.lieu) && (
+                <div className="text-xs text-text-tertiary">
+                  {[album.date, album.lieu].filter(Boolean).join(" · ")}
+                </div>
+              )}
+              <div className="mt-1 text-[10px] text-text-tertiary">
+                {t("albums.nombre_photos", { count: album.nombre_photos })}
               </div>
-            )}
-            <div className="mt-1 text-[10px] text-text-tertiary">
-              {t("albums.nombre_photos", { count: album.nombre_photos })}
+            </Link>
+            <div className="absolute right-2 top-2">
+              <ShareButton
+                path={`/albums/${album.id}`}
+                titre={album.nom}
+                texte={[album.date, album.lieu].filter(Boolean).join(" · ") || undefined}
+              />
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

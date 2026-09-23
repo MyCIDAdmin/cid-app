@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -167,5 +167,63 @@ describe("AlbumDetailPage", () => {
     renderDetail();
 
     expect(screen.getByText("albums.supprimer")).toBeInTheDocument();
+  });
+
+  describe("visionneuse plein écran (demande utilisateur du 2026-09-23)", () => {
+    it("ouvre la photo en grand au clic sur sa vignette", () => {
+      renderDetail();
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByLabelText("visionneuse.ouvrir"));
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      // La photo apparaît alors deux fois dans le DOM : la vignette de la grille ET la version
+      // grand format de la visionneuse.
+      expect(screen.getAllByAltText("But de la victoire !")).toHaveLength(2);
+    });
+
+    it("navigue vers la photo suivante avec les flèches, sans revenir à la grille", () => {
+      vi.mocked(useCommunauteHooks.usePhotos).mockReturnValue({
+        data: page([photo({ id: "p1", legende: "Premier but" }), photo({ id: "p2", legende: "Deuxième but" })]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.usePhotos>);
+
+      renderDetail();
+
+      fireEvent.click(screen.getAllByLabelText("visionneuse.ouvrir")[0]);
+      expect(screen.getAllByAltText("Premier but")).toHaveLength(2);
+
+      fireEvent.click(screen.getByLabelText("visionneuse.image_suivante"));
+
+      expect(screen.getAllByAltText("Deuxième but")).toHaveLength(2);
+      expect(screen.getAllByAltText("Premier but")).toHaveLength(1);
+    });
+
+    it("se ferme au clic sur le bouton fermer", () => {
+      renderDetail();
+
+      fireEvent.click(screen.getByLabelText("visionneuse.ouvrir"));
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByLabelText("visionneuse.fermer"));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  it("propose le partage externe de l'album, avec le lien de sa page de détail", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+
+    renderDetail();
+
+    fireEvent.click(screen.getByLabelText("partage.bouton_aria"));
+    fireEvent.click(screen.getByText("partage.copier_lien"));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0][0]).toContain("/albums/a1");
   });
 });

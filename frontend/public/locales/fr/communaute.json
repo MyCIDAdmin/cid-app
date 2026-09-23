@@ -123,6 +123,13 @@
     "annuler": "Annuler",
     "erreur_modification": "La mise à jour a échoué."
   },
+  "visionneuse": {
+    "ouvrir": "Agrandir la photo",
+    "fermer": "Fermer",
+    "image_precedente": "Photo précédente",
+    "image_suivante": "Photo suivante",
+    "compteur": "{{n}} / {{total}}"
+  },
   "albums": {
     "titre": "Albums photos",
     "chargement": "Chargement des albums…",

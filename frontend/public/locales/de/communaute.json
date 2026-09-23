@@ -123,6 +123,13 @@
     "annuler": "Abbrechen",
     "erreur_modification": "Die Aktualisierung ist fehlgeschlagen."
   },
+  "visionneuse": {
+    "ouvrir": "Foto vergrößern",
+    "fermer": "Schließen",
+    "image_precedente": "Vorheriges Foto",
+    "image_suivante": "Nächstes Foto",
+    "compteur": "{{n}} / {{total}}"
+  },
   "albums": {
     "titre": "Fotoalben",
     "chargement": "Alben werden geladen…",

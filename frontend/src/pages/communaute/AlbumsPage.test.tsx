@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -89,5 +89,43 @@ describe("AlbumsPage", () => {
     renderWithProviders(<AlbumsPage />);
 
     expect(screen.queryByText("albums.nouvel_album")).not.toBeInTheDocument();
+  });
+
+  describe("partage d'un album (demande utilisateur du 2026-09-23)", () => {
+    beforeEach(() => {
+      vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+        data: page([album()]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+    });
+
+    it("propose le partage externe de l'album, avec le lien de sa page de détail", async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+      Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+
+      renderWithProviders(<AlbumsPage />);
+
+      fireEvent.click(screen.getByLabelText("partage.bouton_aria"));
+      fireEvent.click(screen.getByText("partage.copier_lien"));
+
+      await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+      expect(writeText.mock.calls[0][0]).toContain("/albums/a1");
+    });
+
+    it("ne navigue pas vers le détail de l'album au clic sur le bouton de partage", () => {
+      Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+      Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn() }, configurable: true });
+
+      renderWithProviders(<AlbumsPage />);
+
+      fireEvent.click(screen.getByLabelText("partage.bouton_aria"));
+
+      // Le clic sur le bouton de partage (superposé, en dehors du <Link>) ne doit pas
+      // déclencher de navigation vers /albums/a1 : la liste reste affichée.
+      expect(screen.queryByTestId("route-fallback")).not.toBeInTheDocument();
+      expect(screen.getByText("Derby CA - ST 2026")).toBeInTheDocument();
+    });
   });
 });
