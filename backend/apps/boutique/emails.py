@@ -7,20 +7,33 @@ texte brut via send_mail) : la demande utilisateur qualifie explicitement CET em
 (soigné), contrairement aux autres emails de commande — pas de raison de généraliser ce
 traitement à tout le module, qui resterait hors du périmètre demandé.
 
-Réutilise apps.cotisations.assets.logo_cid.jpg (même identité visuelle CID, un seul fichier
-binaire à maintenir) mais PAS la technique base64 `data:` URI de apps.cotisations.pdf : ce
-choix est correct pour un PDF (WeasyPrint rend le HTML localement, pas de client mail entre les
-deux) mais cassait cet email — bug réel constaté en production le 2026-09-23 (rapport
-utilisateur : logo absent + email tronqué par Gmail, "[Message clipped] View entire message").
-Cause double, avec la même origine : le logo original (1131x1601, ~80 Ko) encodé en base64
-inline gonflait l'email à lui seul à ~109 Ko, dépassant le seuil de troncature de Gmail
-(~102 Ko) — et de toute façon Gmail (comme la plupart des webmails) supprime purement et
-simplement les `<img src="data:...">` du HTML pour des raisons de sécurité, contrairement à un
-`cid:` référencé sur une pièce jointe inline (mécanisme MIME standard, le seul fiable pour une
-image intégrée dans un email HTML). Corrigé en redimensionnant le logo à une taille d'icône
-(affiché 40x40 dans le template, voir `_logo_email_attachment`) et en l'attachant en pièce
-jointe inline via Content-ID — voir `LOGO_CONTENT_ID` et `tasks.envoyer_email_bon_achat_code`,
-seul appelant, pour l'attachement effectif au message.
+Logo — historique de deux bugs réels successifs en production le 2026-09-23, tous deux liés au
+même problème de fond (le logo, cotisations.assets.logo_cid.jpg, n'a pas sa place ENCODÉ DANS le
+message) :
+  1. `data:` URI inline (même technique que apps.cotisations.pdf, correcte pour un PDF —
+     WeasyPrint rend le HTML localement — mais pas pour un email) : gonflait le message à lui
+     seul à ~109 Ko (> seuil de troncature Gmail ~102 Ko, "[Message clipped]") ET était de toute
+     façon strippé du HTML par Gmail (sécurité) — jamais affiché.
+  2. Pièce jointe inline avec Content-ID (`cid:`), correctif du bug 1 : fonctionne très bien en
+     SMTP classique (testé et vérifié en local), MAIS la production envoie via l'API HTTP de
+     Brevo (django-anymail, voir EMAIL_BACKEND dans config/settings/prod.py) — dont le backend
+     Anymail ne supporte PAS les pièces jointes inline : `AnymailUnsupportedFeature: Brevo does
+     not support inline attachments`, levée à la CONSTRUCTION du message, jamais rattrapée par
+     `fail_silently` (qui ne couvre que `.send()`) → l'email entier ne partait jamais, ni erreur
+     visible ni trace nulle part avant que tasks.envoyer_email_bon_achat_code soit entouré d'un
+     try/except explicite (voir son docstring) pour révéler ce traceback.
+
+Corrigé définitivement en sortant le logo du message : hébergé une fois pour toutes sur MinIO
+(réutilise le bucket "produits", apps.boutique.storage.ProduitsStorage — déjà configuré en
+lecture publique et déjà vérifié fonctionnel, les photos produits s'affichant bien dans le
+navigateur des membres) et référencé par une simple URL `https://` dans le `<img src=...>`. Ce
+mécanisme ne dépend d'AUCUNE fonctionnalité MIME/ESP particulière (juste une chaîne de
+caractères dans du HTML) : le standard de facto de tout l'emailing transactionnel, imperméable
+aux deux bugs précédents (rien à télécharger côté client mail = pas de troncature possible, une
+URL n'est jamais strippée comme un `data:` URI, et Brevo n'a aucune pièce jointe à refuser).
+`logo_email_url()` auto-provisionne l'upload au premier appel (idempotent via `storage.exists`,
+aucune migration/commande manuelle requise — même philosophie que `setup_minio_buckets` déjà
+appelé au démarrage du conteneur, voir Dockerfile.prod).
 """
 
 from functools import lru_cache
@@ -28,25 +41,26 @@ from io import BytesIO
 from pathlib import Path
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from django.utils import timezone
 from PIL import Image
 
 from .models import BonAchat
+from .storage import ProduitsStorage
 
 _LOGO_PATH = (
     Path(__file__).resolve().parent.parent / "cotisations" / "assets" / "logo_cid.jpg"
 )
 
-# Content-ID de la pièce jointe inline du logo (voir docstring module) — référencé dans le
-# template via `cid:{{ logo_cid }}` et dans tasks.envoyer_email_bon_achat_code pour l'en-tête
-# MIME `Content-ID` de la pièce jointe. Constante fixe (jamais générée dynamiquement) : un seul
-# logo, un seul appelant, pas besoin d'unicité par email.
-LOGO_CONTENT_ID = "logo-cid-email"
+# Nom de l'objet dans le bucket "produits" (voir docstring module) — préfixe "_emails/" pour le
+# distinguer visuellement des photos produits réelles dans la console MinIO, sans pour autant
+# justifier un bucket dédié rien que pour ce seul fichier statique.
+_LOGO_EMAIL_STORAGE_NAME = "_emails/logo_cid_email.jpg"
 
 # Taille d'icône affichée dans le template (40x40, voir email_bon_achat.html) — 120px de long
-# côté suffit largement pour un rendu net même sur écran retina (3x), tout en gardant la pièce
-# jointe légère (quelques Ko au lieu des ~80 Ko du logo source pleine résolution).
+# côté suffit largement pour un rendu net même sur écran retina (3x), tout en gardant le fichier
+# hébergé léger (quelques Ko au lieu des ~80 Ko du logo source pleine résolution).
 _TAILLE_LOGO_EMAIL = (120, 120)
 
 TRADUCTIONS = {
@@ -95,18 +109,28 @@ TRADUCTIONS = {
 }
 
 
-@lru_cache(maxsize=1)
-def logo_email_attachment() -> tuple[bytes, str]:
-    """Bytes JPEG + type MIME du logo redimensionné pour l'email (voir docstring module) —
-    calculé une seule fois par process (lru_cache), le fichier source ne change pas en cours de
-    vie de l'app. Utilisé par tasks.envoyer_email_bon_achat_code pour construire la pièce
-    jointe inline (Content-ID = LOGO_CONTENT_ID)."""
+def _redimensionner_logo() -> bytes:
     with Image.open(_LOGO_PATH) as image:
         image = image.convert("RGB")
         image.thumbnail(_TAILLE_LOGO_EMAIL)
         tampon = BytesIO()
         image.save(tampon, format="JPEG", quality=85, optimize=True)
-        return tampon.getvalue(), "image/jpeg"
+        return tampon.getvalue()
+
+
+@lru_cache(maxsize=1)
+def logo_email_url() -> str:
+    """URL HTTPS publique et stable du logo redimensionné pour l'email — voir docstring module
+    pour pourquoi ce mécanisme (et pas un `data:` URI ni une pièce jointe inline) est le bon.
+    Auto-provisionne l'upload vers MinIO au tout premier appel, seulement si l'objet n'existe pas
+    encore (`storage.exists`, jamais un nouvel upload à chaque process — idempotent à travers les
+    redémarrages, pas seulement grâce au lru_cache qui lui ne survit qu'à la durée de vie d'un
+    process). Le contenu ne change jamais après le premier upload (fichier source figé dans le
+    dépôt) : pas de souci de cache/CDN à invalider."""
+    storage = ProduitsStorage()
+    if not storage.exists(_LOGO_EMAIL_STORAGE_NAME):
+        storage.save(_LOGO_EMAIL_STORAGE_NAME, ContentFile(_redimensionner_logo()))
+    return storage.url(_LOGO_EMAIL_STORAGE_NAME)
 
 
 def _formate_montant(montant) -> str:
@@ -155,7 +179,7 @@ def rendre_email_bon_achat(bon: BonAchat) -> tuple[str, str, str]:
         "boutique/email_bon_achat.html",
         {
             "t": t,
-            "logo_cid": LOGO_CONTENT_ID,
+            "logo_url": logo_email_url(),
             "code": bon.code,
             "montant_formate": montant_formate,
             "expiration_formatee": expiration_formatee,

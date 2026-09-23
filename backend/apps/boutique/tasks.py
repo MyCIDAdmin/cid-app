@@ -17,7 +17,6 @@ rapide, voir apps.notifications.services.notifier) mais l'email part désormais 
 """
 
 import logging
-from email.mime.image import MIMEImage
 
 from celery import shared_task
 from django.conf import settings
@@ -167,7 +166,7 @@ def envoyer_email_bon_achat_code(bon_achat_id) -> None:
 
     # Import différé (évite tout risque de dépendance circulaire au chargement de l'app, même
     # convention que les imports locaux de apps.notifications.services dans les autres apps).
-    from .emails import LOGO_CONTENT_ID, logo_email_attachment, rendre_email_bon_achat
+    from .emails import rendre_email_bon_achat
 
     # Contrairement aux autres tâches de ce fichier (`fail_silently=True` sur send_mail, jamais
     # journalisé nulle part — acceptable pour elles, best-effort déjà établi dans tout le
@@ -175,11 +174,16 @@ def envoyer_email_bon_achat_code(bon_achat_id) -> None:
     # constaté en production le 2026-09-23 : email non reçu, ni en boîte de réception ni en
     # spam, aucune trace nulle part côté serveur pour diagnostiquer — `fail_silently=True`
     # avalait silencieusement un éventuel échec SMTP, ET une exception Python levée pendant la
-    # construction du message — ex. lecture du logo, pièce jointe — n'était de toute façon PAS
-    # couverte par `fail_silently`, qui ne s'applique qu'à `.send()`, et remontait comme un échec
-    # de tâche Celery invisible sans consulter les logs du worker). Comportement inchangé
-    # (jamais de levée/retry, un email raté ne doit jamais faire échouer la commande sous-
-    # jacente) mais désormais visible dans les logs du service `celery_worker`.
+    # construction du message n'était de toute façon PAS couverte par `fail_silently`, qui ne
+    # s'applique qu'à `.send()`, et remontait comme un échec de tâche Celery invisible sans
+    # consulter les logs du worker — c'est très exactement ce qui s'est produit : le logo était
+    # alors joint en pièce jointe inline (Content-ID), une fonctionnalité que le backend Anymail/
+    # Brevo utilisé en prod (voir EMAIL_BACKEND, config/settings/prod.py) ne supporte pas du tout
+    # (`AnymailUnsupportedFeature: Brevo does not support inline attachments`, levée AVANT tout
+    # envoi réseau) — ce traceback n'est apparu que grâce à ce try/except, remplacé depuis par le
+    # logo hébergé en URL (voir apps.boutique.emails, aucune pièce jointe plus nécessaire).
+    # Comportement de ce bloc inchangé (jamais de levée/retry, un email raté ne doit jamais faire
+    # échouer la commande sous-jacente) mais désormais visible dans les logs de `celery_worker`.
     try:
         sujet, corps_texte, corps_html = rendre_email_bon_achat(bon)
         message = EmailMultiAlternatives(
@@ -189,18 +193,6 @@ def envoyer_email_bon_achat_code(bon_achat_id) -> None:
             to=[email],
         )
         message.attach_alternative(corps_html, "text/html")
-        # Logo en pièce jointe inline (Content-ID), jamais en `data:` URI dans le HTML — voir
-        # docstring de apps.boutique.emails pour le bug réel (email tronqué par Gmail + logo
-        # jamais affiché) que ce mécanisme corrige. `mixed_subtype = "related"` fait générer un
-        # message `multipart/related` plutôt que `multipart/mixed` : requis pour qu'un client
-        # mail associe correctement la pièce jointe à la référence `cid:` dans l'alternative
-        # HTML plutôt que de l'afficher comme une pièce jointe séparée.
-        message.mixed_subtype = "related"
-        logo_bytes, logo_content_type = logo_email_attachment()
-        logo = MIMEImage(logo_bytes, _subtype=logo_content_type.removeprefix("image/"))
-        logo.add_header("Content-ID", f"<{LOGO_CONTENT_ID}>")
-        logo.add_header("Content-Disposition", "inline", filename="logo_cid.jpg")
-        message.attach(logo)
         message.send(fail_silently=False)
     except Exception:
         logger.exception(
