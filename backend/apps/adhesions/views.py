@@ -53,6 +53,8 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.models import HistoriqueStatutCotisation, ModePaiement, StatutCotisation
 from apps.cotisations.notifications import notifier_paiement_confirme
 from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
+from apps.rbac.permissions import module_access_permission
+from apps.rbac.services import is_elevated_for_module
 
 from .filters import (
     CampagneAdhesionFilter,
@@ -221,7 +223,10 @@ STATUTS_SOUSCRIPTION_ANNULABLES = {
 
 class SouscriptionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [SouscriptionPermission]
+    # apps.rbac Phase B (ajouté le 2026-09-23) : module_access_permission("adhesions") est une
+    # porte SUPPLÉMENTAIRE (DRF combine en ET logique) — jamais à la place de
+    # SouscriptionPermission, qui reste la source de vérité pour les 5 rôles système.
+    permission_classes = [SouscriptionPermission, module_access_permission("adhesions")]
     serializer_class = SouscriptionSerializer
     pagination_class = AdhesionsCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -234,7 +239,9 @@ class SouscriptionViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL:
+        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL or is_elevated_for_module(
+            user, "adhesions"
+        ):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(membre=membre) if membre else queryset.none()
