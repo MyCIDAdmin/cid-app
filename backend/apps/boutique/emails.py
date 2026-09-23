@@ -1,0 +1,137 @@
+"""
+Rendu de l'email HTML de bon d'achat — app boutique (ajouté le 2026-09-23, demande
+utilisateur : "Der Code soll in einer schönen Email... geschickt werden").
+
+Seul email HTML de tout le projet (les 11+ autres types, voir apps.notifications, restent en
+texte brut via send_mail) : la demande utilisateur qualifie explicitement CET email de "schön"
+(soigné), contrairement aux autres emails de commande — pas de raison de généraliser ce
+traitement à tout le module, qui resterait hors du périmètre demandé.
+
+Suit le même principe que apps.cotisations.pdf (logo encodé en base64, dictionnaire de
+traductions FR/DE avec repli sur FR pour un membre sans compte lié ou préférant l'arabe — voir
+sa docstring pour le détail du choix R1/R2) plutôt que de dupliquer le fichier logo : le module
+boutique n'a pas son propre asset, apps.cotisations.assets.logo_cid.jpg est réutilisé tel quel
+(même identité visuelle CID, un seul fichier binaire à maintenir).
+"""
+
+import base64
+from functools import lru_cache
+from pathlib import Path
+
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils import timezone
+
+from .models import BonAchat
+
+_LOGO_PATH = (
+    Path(__file__).resolve().parent.parent / "cotisations" / "assets" / "logo_cid.jpg"
+)
+
+TRADUCTIONS = {
+    "fr": {
+        "assoc_name": "Clubistes in Deutschland",
+        "assoc_tagline": "Club Africain de Tunis — Supporters en Allemagne",
+        "preheader": "Votre bon d'achat CID est prêt à l'emploi.",
+        "titre": "Votre bon d'achat est prêt !",
+        "intro": "Merci pour votre achat — voici votre code, prêt à être utilisé dans la boutique CID.",
+        "montant_label": "Montant",
+        "code_label": "Votre code",
+        "expiration_label": "Valable jusqu'au",
+        "cta": "Découvrir la boutique",
+        "usage_note": (
+            "Saisissez ce code à l'étape « Livraison » de votre commande pour le déduire "
+            "automatiquement du total à payer. Il reste valable pour plusieurs achats tant "
+            "qu'il conserve du solde."
+        ),
+        "footer_note": (
+            "Cet email a été généré automatiquement suite à la confirmation de votre paiement. "
+            "Conservez ce code en lieu sûr — toute personne qui le connaît peut l'utiliser."
+        ),
+        "subject": "Votre bon d'achat {code} est prêt !",
+    },
+    "de": {
+        "assoc_name": "Clubistes in Deutschland",
+        "assoc_tagline": "Club Africain de Tunis — Anhänger in Deutschland",
+        "preheader": "Ihr CID-Gutschein ist einsatzbereit.",
+        "titre": "Ihr Gutschein ist bereit!",
+        "intro": "Vielen Dank für Ihren Kauf — hier ist Ihr Code, einsatzbereit im CID-Shop.",
+        "montant_label": "Betrag",
+        "code_label": "Ihr Code",
+        "expiration_label": "Gültig bis",
+        "cta": "Zum Shop",
+        "usage_note": (
+            "Geben Sie diesen Code im Schritt „Versand“ Ihrer Bestellung ein, um ihn automatisch "
+            "vom zu zahlenden Betrag abzuziehen. Er bleibt für mehrere Käufe gültig, solange "
+            "noch Guthaben vorhanden ist."
+        ),
+        "footer_note": (
+            "Diese E-Mail wurde automatisch nach der Bestätigung Ihrer Zahlung erstellt. "
+            "Bewahren Sie diesen Code sicher auf — jeder, der ihn kennt, kann ihn einlösen."
+        ),
+        "subject": "Ihr Gutschein {code} ist bereit!",
+    },
+}
+
+
+@lru_cache(maxsize=1)
+def _logo_data_uri() -> str:
+    contenu = _LOGO_PATH.read_bytes()
+    return f"data:image/jpeg;base64,{base64.b64encode(contenu).decode('ascii')}"
+
+
+def _formate_montant(montant) -> str:
+    valeur = f"{montant:,.2f}".replace(",", " ").replace(".", ",")
+    return f"{valeur} €"
+
+
+def _formate_date(date_expiration, langue: str) -> str:
+    date_locale = (
+        timezone.localtime(date_expiration)
+        if timezone.is_aware(date_expiration)
+        else date_expiration
+    )
+    return date_locale.strftime("%d.%m.%Y" if langue == "de" else "%d/%m/%Y")
+
+
+def _resoudre_langue(user) -> str:
+    """Même principe/mêmes raisons que apps.cotisations.pdf._resoudre_langue (portée FR/DE
+    volontairement limitée pour cette itération, l'arabe est Phase 5 — voir sa docstring)."""
+    return user.langue_preferee if user and user.langue_preferee in TRADUCTIONS else "fr"
+
+
+def rendre_email_bon_achat(bon: BonAchat) -> tuple[str, str, str]:
+    """Construit (sujet, corps texte brut, corps HTML) pour l'email d'un bon d'achat activé —
+    voir tasks.envoyer_email_bon_achat_code, seul appelant. Le corps texte brut sert de repli
+    (clients mail sans rendu HTML) et d'assertion la plus simple à tester."""
+    user = getattr(bon.achete_par, "user", None)
+    langue = _resoudre_langue(user)
+    t = TRADUCTIONS[langue]
+
+    montant_formate = _formate_montant(bon.solde)
+    expiration_formatee = _formate_date(bon.date_expiration, langue) if bon.date_expiration else ""
+
+    sujet = t["subject"].format(code=bon.code)
+
+    corps_texte = (
+        f"{t['titre']}\n\n"
+        f"{t['intro']}\n\n"
+        f"{t['code_label']} : {bon.code}\n"
+        f"{t['montant_label']} : {montant_formate}\n"
+        + (f"{t['expiration_label']} : {expiration_formatee}\n" if expiration_formatee else "")
+        + f"\n{t['usage_note']}\n\n{t['footer_note']}"
+    )
+
+    corps_html = render_to_string(
+        "boutique/email_bon_achat.html",
+        {
+            "t": t,
+            "logo_data_uri": _logo_data_uri(),
+            "code": bon.code,
+            "montant_formate": montant_formate,
+            "expiration_formatee": expiration_formatee,
+            "lien_boutique": f"{settings.FRONTEND_URL}/boutique",
+        },
+    )
+
+    return sujet, corps_texte, corps_html

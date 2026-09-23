@@ -15,6 +15,7 @@ vi.mock("../../hooks/useBoutique", async () => {
     usePasserCommande: vi.fn(),
     useVariantesParIds: vi.fn(),
     useInitierPaiementEnLigneCommande: vi.fn(),
+    useVerifierBonAchat: vi.fn(),
   };
 });
 
@@ -44,6 +45,9 @@ function commandeResultat(overrides: Partial<Commande> = {}): Commande {
     pays_livraison: "Allemagne",
     telephone_livraison: "",
     montant_total: "45.00",
+    bon_achat: null,
+    montant_bon_achat: "0.00",
+    montant_du: "45.00",
     statut: "confirmee",
     mode_paiement: "",
     date_paiement_confirme: null,
@@ -63,6 +67,7 @@ function commandeResultat(overrides: Partial<Commande> = {}): Commande {
 describe("PanierCommandePage", () => {
   let passerCommandeMock: ReturnType<typeof vi.fn>;
   let initierPaiementMock: ReturnType<typeof vi.fn>;
+  let verifierBonAchatMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     sessionStorage.clear();
@@ -93,6 +98,12 @@ describe("PanierCommandePage", () => {
       mutate: initierPaiementMock,
       isPending: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.useInitierPaiementEnLigneCommande>);
+
+    verifierBonAchatMock = vi.fn();
+    vi.mocked(useBoutiqueHooks.useVerifierBonAchat).mockReturnValue({
+      mutate: verifierBonAchatMock,
+      isPending: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVerifierBonAchat>);
   });
 
   it("affiche un message quand le panier est vide", () => {
@@ -133,6 +144,35 @@ describe("PanierCommandePage", () => {
       }),
       expect.anything(),
     );
+  });
+
+  it("affiche la réduction quantité appliquée et le total net dans le panier", () => {
+    usePanierStore.setState({
+      articles: [
+        articleTest({
+          prixUnitaire: "20.00",
+          quantite: 5,
+          stockDisponible: 10,
+          reglesReduction: [
+            {
+              id: "r1",
+              produit: "p1",
+              seuil_quantite: 5,
+              type_reduction: "article_offert",
+              pourcentage: null,
+              actif: true,
+              created_at: "2026-01-01T00:00:00Z",
+              updated_at: "2026-01-01T00:00:00Z",
+            },
+          ],
+        }),
+      ],
+    });
+    renderWithProviders(<PanierCommandePage />);
+
+    expect(screen.getByText(/commande.article_offert_applique/)).toBeInTheDocument();
+    // 5 x 20€ = 100€ brut, 1 offert (5 // 5) => 80€ net — affiché sur la ligne ET le total.
+    expect(screen.getAllByText("80,00 €")).toHaveLength(2);
   });
 
   it("marque un article ausverkauft quand le stock live est à 0 et bloque la suite", () => {
@@ -262,5 +302,107 @@ describe("PanierCommandePage", () => {
     expect(initierPaiementMock).not.toHaveBeenCalled();
     expect(window.location.href).toBe("");
     expect(screen.queryByText("commande.erreur_paiement")).not.toBeInTheDocument();
+  });
+
+  // --- Bon d'achat au checkout (demande utilisateur du 2026-09-23) ---
+
+  function allerEtapeConfirmation() {
+    usePanierStore.setState({ articles: [articleTest()] });
+    renderWithProviders(<PanierCommandePage />);
+    fireEvent.click(screen.getByText("commande.continuer_livraison"));
+    fireEvent.change(screen.getByLabelText("commande.adresse_label"), {
+      target: { value: "Musterstr. 1" },
+    });
+    fireEvent.change(screen.getByLabelText("commande.code_postal_label"), {
+      target: { value: "10115" },
+    });
+    fireEvent.change(screen.getByLabelText("commande.ville_label"), {
+      target: { value: "Berlin" },
+    });
+    fireEvent.click(screen.getByText("commande.continuer_confirmation"));
+  }
+
+  it("applique un bon d'achat vérifié et déduit son solde du total affiché", () => {
+    verifierBonAchatMock.mockImplementation((_payload, { onSuccess }) => {
+      onSuccess({
+        code: "BON-ABC12345",
+        solde: "20.00",
+        statut: "actif",
+        date_expiration: "2029-01-01T00:00:00Z",
+        utilisable: true,
+      });
+    });
+    allerEtapeConfirmation();
+
+    fireEvent.change(screen.getByPlaceholderText("commande.bon_achat_placeholder"), {
+      target: { value: "bon-abc12345" },
+    });
+    fireEvent.click(screen.getByText("commande.bon_achat_verifier"));
+
+    expect(verifierBonAchatMock).toHaveBeenCalledWith(
+      { code: "bon-abc12345" },
+      expect.anything(),
+    );
+    // 45,00 € (total du panier) - 20,00 € (solde du bon) = 25,00 €.
+    expect(screen.getByText("25,00 €")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("commande.confirmer_commande"));
+    expect(passerCommandeMock).toHaveBeenCalledWith(
+      expect.objectContaining({ code_bon_achat: "BON-ABC12345" }),
+      expect.anything(),
+    );
+  });
+
+  it("affiche une erreur si le code de bon d'achat n'est pas utilisable", () => {
+    verifierBonAchatMock.mockImplementation((_payload, { onSuccess }) => {
+      onSuccess({
+        code: "BON-EXPIRE",
+        solde: "10.00",
+        statut: "actif",
+        date_expiration: "2020-01-01T00:00:00Z",
+        utilisable: false,
+      });
+    });
+    allerEtapeConfirmation();
+
+    fireEvent.change(screen.getByPlaceholderText("commande.bon_achat_placeholder"), {
+      target: { value: "BON-EXPIRE" },
+    });
+    fireEvent.click(screen.getByText("commande.bon_achat_verifier"));
+
+    expect(screen.getByText("commande.bon_achat_inutilisable")).toBeInTheDocument();
+  });
+
+  it("retirer le bon d'achat appliqué revient au total plein", () => {
+    verifierBonAchatMock.mockImplementation((_payload, { onSuccess }) => {
+      onSuccess({
+        code: "BON-ABC12345",
+        solde: "20.00",
+        statut: "actif",
+        date_expiration: "2029-01-01T00:00:00Z",
+        utilisable: true,
+      });
+    });
+    allerEtapeConfirmation();
+
+    fireEvent.change(screen.getByPlaceholderText("commande.bon_achat_placeholder"), {
+      target: { value: "BON-ABC12345" },
+    });
+    fireEvent.click(screen.getByText("commande.bon_achat_verifier"));
+    fireEvent.click(screen.getByText("commande.bon_achat_retirer"));
+
+    fireEvent.click(screen.getByText("commande.confirmer_commande"));
+    expect(passerCommandeMock).toHaveBeenCalledWith(
+      expect.not.objectContaining({ code_bon_achat: expect.anything() }),
+      expect.anything(),
+    );
+  });
+
+  it("propose un lien vers l'achat d'un bon d'achat à l'étape de confirmation", () => {
+    allerEtapeConfirmation();
+    expect(screen.getByText("commande.bon_achat_acheter_lien").closest("a")).toHaveAttribute(
+      "href",
+      "/boutique/bon-achat/acheter",
+    );
   });
 });

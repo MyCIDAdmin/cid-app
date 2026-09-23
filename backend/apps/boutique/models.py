@@ -26,16 +26,53 @@ Cotisation.marquer_payee/AHM-53 ; AUCUN gateway de paiement réel ici, prévu s�
 AHM-27) et `numero_suivi`/`transporteur`/`date_expedition` (voir CommandeViewSet.expedier). Le
 modèle Retour journalise les retours (partiels, par ligne de commande) avec réintégration
 automatique du stock — voir CommandeViewSet et le nouveau RetourViewSet.
+
+Offres personnalisées et bons d'achat (demande utilisateur du 2026-09-23 : "Beim Kauf von über
+10 Artikeln... 10% Rabatt", "Beim Kauf von 5 Stück... geschenkten Artikel", "Es soll möglich
+sein Gutscheine zu Kaufen") :
+
+  - RegleReduction : système générique de paliers de réduction PAR PRODUIT (choix confirmé par
+    l'utilisateur — pas les deux exemples codés en dur, un Bureau Admin+ peut définir librement
+    des paliers par article), deux types indépendants (voir TypeReduction) : un pourcentage sur
+    la ligne à partir d'un seuil de quantité identique, OU un nombre d'articles offerts (calculé
+    par division entière quantité//seuil — voir calculer_reduction_quantite). Les deux types
+    peuvent coexister sur un même produit avec des seuils différents ; dans chaque type, seule la
+    règle au seuil le plus élevé atteint s'applique (pas de cumul de plusieurs paliers du même
+    type). Toujours recalculé côté serveur à `passer`/`vendre_especes` (CLAUDE.md §8), jamais
+    fait confiance à un total envoyé par le frontend — voir LigneCommande.reduction_quantite.
+  - BonAchat : bon d'achat/Gutschein à montant libre (5 à 500 €, choix confirmé par
+    l'utilisateur), payé en ligne (Stripe/PayPal, même passerelles que Commande — voir
+    apps.boutique.webhooks) ou par virement/espèces confirmé manuellement par le Directeur
+    Financier+ (même principe que Commande.confirmer_paiement). Porte un `solde` distinct de
+    `montant_initial` (choix confirmé par l'utilisateur : réutilisable partiellement sur
+    plusieurs commandes, comme un compte prépayé) décrémenté atomiquement à l'application d'un
+    code au checkout (voir CommandeViewSet.passer/UtilisationBonAchat, même verrouillage
+    SELECT FOR UPDATE que le stock). Le code n'est utilisable (`utilisable`) qu'une fois le
+    paiement confirmé (statut ACTIF) et avant sa date d'expiration (3 ans après activation,
+    pratique standard des CGV allemandes pour les Gutscheine).
+  - Commande.bon_achat/montant_bon_achat : trace le bon appliqué à une commande donnée ;
+    Commande.montant_du (montant_total - montant_bon_achat) est ce qui reste effectivement à
+    régler — c'est cette valeur, jamais montant_total seul, qui doit être transmise à la
+    passerelle de paiement en ligne (voir CommandeViewSet.initier_paiement_en_ligne). Une
+    commande entièrement couverte par un bon d'achat (montant_du <= 0) est confirmée
+    immédiatement (mode_paiement=BON_ACHAT), sans étape de paiement supplémentaire.
 """
 
 import uuid
+from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from .storage import ProduitsStorage
+
+# Durée de validité d'un bon d'achat à compter de son activation (paiement confirmé) — 3 ans,
+# pratique standard des CGV allemandes pour les Gutscheine (voir docstring module).
+DUREE_VALIDITE_BON_ACHAT = timedelta(days=365 * 3)
 
 
 class CategorieProduit(models.TextChoices):
@@ -157,6 +194,97 @@ class VarianteProduit(models.Model):
         return f"{self.produit.nom} — {details}"
 
 
+class TypeReduction(models.TextChoices):
+    """Les deux mécaniques indépendantes du système générique de paliers — voir
+    RegleReduction/calculer_reduction_quantite."""
+
+    POURCENTAGE = "pourcentage", _("Pourcentage de réduction")
+    ARTICLE_OFFERT = "article_offert", _("Article(s) offert(s)")
+
+
+class RegleReduction(models.Model):
+    """Palier de réduction par quantité, propre à un produit — voir docstring de tête du
+    module pour la conception générale (demande utilisateur du 2026-09-23). Plusieurs règles
+    peuvent coexister sur un même produit (types différents et/ou seuils différents) ;
+    `calculer_reduction_quantite` ne retient que la règle au seuil le plus élevé atteint pour
+    chaque type."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    produit = models.ForeignKey(Produit, on_delete=models.CASCADE, related_name="regles_reduction")
+    seuil_quantite = models.PositiveIntegerField(
+        validators=[MinValueValidator(2)],
+        help_text=_("Quantité du même produit à atteindre dans la commande pour déclencher la règle."),
+    )
+    type_reduction = models.CharField(max_length=20, choices=TypeReduction.choices)
+    pourcentage = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(90)],
+        help_text=_("Requis et unique sens pour type_reduction=pourcentage — voir clean()."),
+    )
+    actif = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "boutique_regles_reduction"
+        verbose_name = _("Règle de réduction")
+        verbose_name_plural = _("Règles de réduction")
+        ordering = ["produit", "seuil_quantite"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["produit", "seuil_quantite"], name="un_seul_palier_par_seuil_et_produit"
+            )
+        ]
+
+    def __str__(self):
+        if self.type_reduction == TypeReduction.POURCENTAGE:
+            detail = f"-{self.pourcentage}%"
+        else:
+            detail = "article offert"
+        return f"{self.produit.nom} — dès {self.seuil_quantite} : {detail}"
+
+
+@dataclass(frozen=True)
+class ReductionQuantite:
+    """Résultat de `calculer_reduction_quantite` — quantité d'articles offerts (division
+    entière quantite // seuil de la meilleure règle ARTICLE_OFFERT atteinte) et pourcentage de
+    la meilleure règle POURCENTAGE atteinte, indépendamment l'un de l'autre (voir docstring de
+    module)."""
+
+    quantite_offerte: int = 0
+    pourcentage_applique: int | None = None
+
+
+def calculer_reduction_quantite(produit: Produit, quantite: int) -> ReductionQuantite:
+    """Détermine la réduction quantité applicable à une ligne — appelée sous transaction par
+    CommandeViewSet.passer/vendre_especes (CLAUDE.md §8 : jamais fait confiance à un montant
+    envoyé par le client). `produit.regles_reduction` doit être préchargé par l'appelant
+    (prefetch_related) pour éviter le N+1 — voir views.py."""
+    regles_actives = [r for r in produit.regles_reduction.all() if r.actif]
+
+    regles_offertes = [
+        r
+        for r in regles_actives
+        if r.type_reduction == TypeReduction.ARTICLE_OFFERT and r.seuil_quantite <= quantite
+    ]
+    regles_pourcentage = [
+        r
+        for r in regles_actives
+        if r.type_reduction == TypeReduction.POURCENTAGE and r.seuil_quantite <= quantite
+    ]
+
+    meilleure_offerte = max(regles_offertes, key=lambda r: r.seuil_quantite, default=None)
+    meilleure_pourcentage = max(regles_pourcentage, key=lambda r: r.seuil_quantite, default=None)
+
+    return ReductionQuantite(
+        quantite_offerte=quantite // meilleure_offerte.seuil_quantite if meilleure_offerte else 0,
+        pourcentage_applique=meilleure_pourcentage.pourcentage if meilleure_pourcentage else None,
+    )
+
+
 class StatutCommande(models.TextChoices):
     """Machine à états d'une commande (7 statuts) — FDD §3.4."""
 
@@ -178,6 +306,7 @@ class ModePaiementCommande(models.TextChoices):
     EN_LIGNE = "en_ligne", _("Paiement en ligne")
     VIREMENT = "virement", _("Virement SEPA")
     ESPECES = "especes", _("Espèces")
+    BON_ACHAT = "bon_achat", _("Bon d'achat")
 
 
 class MotifRetour(models.TextChoices):
@@ -306,6 +435,23 @@ class Commande(models.Model):
         ),
     )
 
+    # --- Bon d'achat (demande utilisateur du 2026-09-23, voir docstring de tête du module) ---
+    bon_achat = models.ForeignKey(
+        "BonAchat",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="commandes",
+        help_text=_("Bon d'achat appliqué à cette commande, le cas échéant — voir montant_du."),
+    )
+    montant_bon_achat = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_("Montant déduit via bon_achat — voir UtilisationBonAchat pour le journal."),
+    )
+
     # --- Expédition (voir CommandeViewSet.expedier) ---
     numero_suivi = models.CharField(max_length=100, blank=True)
     transporteur = models.CharField(max_length=100, blank=True)
@@ -349,6 +495,15 @@ class Commande(models.Model):
         # Filet de sécurité en cas de collision improbable répétée — voir Cotisation.
         return f"CMD-{uuid.uuid4().hex[:12].upper()}"
 
+    @property
+    def montant_du(self) -> Decimal:
+        """Ce qu'il reste effectivement à régler après déduction d'un éventuel bon d'achat —
+        c'est CETTE valeur (jamais montant_total seul) qui doit être transmise à la passerelle
+        de paiement en ligne (voir CommandeViewSet.initier_paiement_en_ligne) : montant_total
+        reste le total brut de la commande (somme des lignes nettes de réduction quantité,
+        CLAUDE.md §8), montant_bon_achat une déduction séparée et traçable (UtilisationBonAchat)."""
+        return max(self.montant_total - self.montant_bon_achat, Decimal("0.00"))
+
 
 class LigneCommande(models.Model):
     """
@@ -369,6 +524,20 @@ class LigneCommande(models.Model):
         max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
     )
 
+    # --- Réduction quantité (demande utilisateur du 2026-09-23), gelée comme prix_unitaire —
+    # voir calculer_reduction_quantite/CommandeViewSet.passer. quantite_offerte/
+    # pourcentage_reduction_quantite sont purement informatifs pour l'affichage (reçu, admin) ;
+    # reduction_quantite (déjà en €, quantite_offerte*prix_unitaire + pourcentage sur le reste)
+    # est ce qui a réellement été déduit du sous_total pour obtenir montant_total.
+    quantite_offerte = models.PositiveIntegerField(default=0)
+    pourcentage_reduction_quantite = models.PositiveSmallIntegerField(null=True, blank=True)
+    reduction_quantite = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+
     class Meta:
         db_table = "boutique_lignes_commande"
         verbose_name = _("Ligne de commande")
@@ -380,6 +549,12 @@ class LigneCommande(models.Model):
     @property
     def sous_total(self) -> Decimal:
         return (self.prix_unitaire * self.quantite).quantize(Decimal("0.01"))
+
+    @property
+    def sous_total_net(self) -> Decimal:
+        """sous_total après déduction de la réduction quantité — c'est ce montant (jamais
+        sous_total seul) qui entre dans Commande.montant_total, voir CommandeViewSet.passer."""
+        return self.sous_total - self.reduction_quantite
 
     @property
     def quantite_retournee(self) -> int:
@@ -431,3 +606,156 @@ class Retour(models.Model):
 
     def __str__(self):
         return f"Retoure {self.quantite} × {self.ligne_commande.variante} ({self.commande.numero_commande})"
+
+
+class StatutBonAchat(models.TextChoices):
+    """Machine à états d'un bon d'achat — voir docstring de tête du module. Pas de statut
+    "annulé" : un bon jamais payé (EN_ATTENTE) reste simplement inutilisé indéfiniment, même
+    principe que Commande sans statut "échouée" (voir apps.boutique.webhooks)."""
+
+    EN_ATTENTE = "en_attente", _("En attente de paiement")
+    ACTIF = "actif", _("Actif")
+    EPUISE = "epuise", _("Épuisé")
+
+
+# Statuts depuis lesquels confirmer_paiement (EN_ATTENTE -> ACTIF) est autorisé — même principe
+# que STATUTS_CONFIRMABLES_PAIEMENT côté Commande.
+STATUTS_BON_ACHAT_CONFIRMABLES = {StatutBonAchat.EN_ATTENTE}
+
+
+def bon_achat_montant_min() -> Decimal:
+    return Decimal("5.00")
+
+
+def bon_achat_montant_max() -> Decimal:
+    return Decimal("500.00")
+
+
+class BonAchat(models.Model):
+    """
+    Bon d'achat/Gutschein — voir docstring de tête du module pour la conception d'ensemble
+    (demande utilisateur du 2026-09-23). `code` est généré à l'achat (avant même la confirmation
+    du paiement, comme `numero_commande` sur Commande) mais n'est utilisable qu'une fois `statut`
+    passé à ACTIF (voir `utilisable`) — connaître un code non encore payé ne donne aucun droit.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    code = models.CharField(max_length=20, unique=True, editable=False)
+    montant_initial = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(bon_achat_montant_min()), MaxValueValidator(bon_achat_montant_max())],
+    )
+    solde = models.DecimalField(
+        max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+    )
+    statut = models.CharField(
+        max_length=20, choices=StatutBonAchat.choices, default=StatutBonAchat.EN_ATTENTE
+    )
+
+    achete_par = models.ForeignKey(
+        "membres.Membre", on_delete=models.PROTECT, related_name="bons_achat_achetes"
+    )
+
+    # --- Paiement — même principe que les champs homonymes sur Commande (confirmation manuelle
+    # OU automatique via webhook PSP, voir apps.boutique.webhooks/CommandeViewSet) ---
+    mode_paiement = models.CharField(max_length=20, choices=ModePaiementCommande.choices, blank=True)
+    date_paiement_confirme = models.DateTimeField(null=True, blank=True)
+    paiement_confirme_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bons_achat_paiement_confirme",
+        help_text=_("Directeur Financier/Admin ayant confirmé un paiement manuel — vide pour un "
+                    "paiement en ligne confirmé automatiquement par webhook PSP."),
+    )
+    reference_paiement = models.CharField(max_length=64, blank=True)
+
+    date_expiration = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_("Renseignée à l'activation (statut=ACTIF) = date_paiement_confirme + "
+                    "DUREE_VALIDITE_BON_ACHAT."),
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "boutique_bons_achat"
+        verbose_name = _("Bon d'achat")
+        verbose_name_plural = _("Bons d'achat")
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["code"]), models.Index(fields=["achete_par", "statut"])]
+
+    def __str__(self):
+        return f"{self.code} — {self.solde} € (achete_par={self.achete_par})"
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = self._generate_code()
+        super().save(*args, **kwargs)
+
+    def _generate_code(self) -> str:
+        """Format BON-<8 hex majuscules>, ex. BON-A1B2C3D4 — même principe non prédictible que
+        Commande._generate_numero_commande."""
+        for _essai in range(5):
+            candidat = f"BON-{uuid.uuid4().hex[:8].upper()}"
+            if not BonAchat.objects.filter(code=candidat).exists():
+                return candidat
+        return f"BON-{uuid.uuid4().hex[:12].upper()}"
+
+    @property
+    def est_expire(self) -> bool:
+        return bool(self.date_expiration) and timezone.now() > self.date_expiration
+
+    @property
+    def utilisable(self) -> bool:
+        """Un code n'est présenté comme applicable au checkout que s'il est ACTIF (paiement
+        confirmé), non expiré, et a encore du solde — voir CommandeViewSet.passer/
+        BonAchatViewSet.verifier."""
+        return self.statut == StatutBonAchat.ACTIF and self.solde > 0 and not self.est_expire
+
+    def activer(self) -> None:
+        """Fait passer le bon à ACTIF avec sa date d'expiration — appelée par
+        webhooks._confirmer_paiement_bon_achat ET BonAchatViewSet.confirmer_paiement (paiement
+        manuel), pour ne jamais dupliquer ce calcul entre les deux chemins de confirmation (même
+        raison que Commande.confirmer_paiement/webhooks._confirmer_paiement_gateway)."""
+        maintenant = timezone.now()
+        self.date_paiement_confirme = maintenant
+        self.date_expiration = maintenant + DUREE_VALIDITE_BON_ACHAT
+        self.statut = StatutBonAchat.ACTIF
+
+
+class UtilisationBonAchat(models.Model):
+    """
+    Journal d'application d'un bon d'achat à une commande — append-only, même convention que
+    Retour : `solde`/`statut` sur BonAchat restent la source de vérité pour l'affichage rapide,
+    cette table est la trace auditable de chaque déduction (CLAUDE.md §8, plusieurs commandes
+    peuvent puiser dans le même bon tant qu'il reste du solde — voir docstring de tête du
+    module).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    bon_achat = models.ForeignKey(BonAchat, on_delete=models.PROTECT, related_name="utilisations")
+    commande = models.ForeignKey(
+        Commande, on_delete=models.PROTECT, related_name="utilisations_bon_achat"
+    )
+    montant = models.DecimalField(
+        max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "boutique_utilisations_bon_achat"
+        verbose_name = _("Utilisation de bon d'achat")
+        verbose_name_plural = _("Utilisations de bon d'achat")
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["bon_achat"])]
+
+    def __str__(self):
+        return f"{self.montant} € de {self.bon_achat.code} sur {self.commande.numero_commande}"

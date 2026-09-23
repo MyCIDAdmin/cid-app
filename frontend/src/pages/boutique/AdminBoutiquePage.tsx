@@ -13,11 +13,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import GestionBonsAchatTab from "../../components/boutique/GestionBonsAchatTab";
 import GestionCatalogueTab from "../../components/boutique/GestionCatalogueTab";
 import GestionCommandesTab from "../../components/boutique/GestionCommandesTab";
 import { useCommandes, useProduits } from "../../hooks/useBoutique";
 
-type Onglet = "commandes" | "catalogue";
+type Onglet = "commandes" | "catalogue" | "bons_achat";
 
 export default function AdminBoutiquePage() {
   const { t } = useTranslation("boutique");
@@ -90,9 +91,22 @@ export default function AdminBoutiquePage() {
         >
           {t("admin.onglet_catalogue")}
         </button>
+        <button
+          type="button"
+          onClick={() => setOnglet("bons_achat")}
+          className={`px-3 py-2 text-sm font-medium ${
+            onglet === "bons_achat"
+              ? "border-b-2 border-ca text-ca"
+              : "text-text-tertiary hover:text-text-secondary"
+          }`}
+        >
+          {t("admin.onglet_bons_achat")}
+        </button>
       </div>
 
-      {onglet === "commandes" ? <GestionCommandesTab /> : <GestionCatalogueTab />}
+      {onglet === "commandes" && <GestionCommandesTab />}
+      {onglet === "catalogue" && <GestionCatalogueTab />}
+      {onglet === "bons_achat" && <GestionBonsAchatTab />}
     </div>
   );
 }

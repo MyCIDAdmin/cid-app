@@ -5,15 +5,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as boutiqueApi from "../api/boutique";
 import type {
+  AcheterBonAchatPayload,
   ChangerStatutCommandePayload,
   ConfirmerPaiementCommandePayload,
   ExpedierCommandePayload,
   InitierPaiementEnLigneCommandePayload,
   PasserCommandePayload,
   ProduitPayload,
+  RegleReductionPayload,
   RetourPayload,
   VariantePayload,
   VendreEspecesCommandePayload,
+  VerifierBonAchatPayload,
 } from "../types/boutique";
 
 const boutiqueKeys = {
@@ -28,6 +31,10 @@ const boutiqueKeys = {
   commande: (id: string) => [...boutiqueKeys.all, "commande", id] as const,
   retours: (filtres: boutiqueApi.RetoursFiltres = {}) =>
     [...boutiqueKeys.all, "retours", filtres] as const,
+  reglesReduction: (filtres: boutiqueApi.ReglesReductionFiltres = {}) =>
+    [...boutiqueKeys.all, "regles-reduction", filtres] as const,
+  bonsAchat: (filtres: boutiqueApi.BonsAchatFiltres = {}) =>
+    [...boutiqueKeys.all, "bons-achat", filtres] as const,
 };
 
 function invalidateCommandes(queryClient: ReturnType<typeof useQueryClient>) {
@@ -162,6 +169,54 @@ export function useSupprimerVariante() {
   });
 }
 
+/** Paliers de réduction par quantité d'un produit donné (ou tous si `filtres.produit` omis) —
+ * voir RegleReductionManager (admin, dans GestionCatalogueTab). */
+export function useReglesReduction(filtres: boutiqueApi.ReglesReductionFiltres = {}) {
+  return useQuery({
+    queryKey: boutiqueKeys.reglesReduction(filtres),
+    queryFn: () => boutiqueApi.listReglesReduction(filtres),
+    enabled: !!filtres.produit,
+  });
+}
+
+function invalidateReglesReduction(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "regles-reduction"] });
+}
+
+export function useCreerRegleReduction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: RegleReductionPayload) => boutiqueApi.creerRegleReduction(payload),
+    onSuccess: () => {
+      invalidateReglesReduction(queryClient);
+      invalidateProduits(queryClient);
+    },
+  });
+}
+
+export function useModifierRegleReduction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<RegleReductionPayload> }) =>
+      boutiqueApi.modifierRegleReduction(id, payload),
+    onSuccess: () => {
+      invalidateReglesReduction(queryClient);
+      invalidateProduits(queryClient);
+    },
+  });
+}
+
+export function useSupprimerRegleReduction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => boutiqueApi.supprimerRegleReduction(id),
+    onSuccess: () => {
+      invalidateReglesReduction(queryClient);
+      invalidateProduits(queryClient);
+    },
+  });
+}
+
 export function usePasserCommande() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -276,5 +331,63 @@ export function useCreerRetour() {
       queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "retours"] });
       queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "variantes"] });
     },
+  });
+}
+
+// --- Bons d'achat (demande utilisateur du 2026-09-23) ---
+
+function invalidateBonsAchat(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "bons-achat"] });
+}
+
+/** "Mes bons d'achat" (membre) / gestion (Bureau Admin+) — même scope IDOR géré côté backend
+ * que useCommandes, voir MesBonsAchatPage/GestionBonsAchatTab. */
+export function useBonsAchat(filtres: boutiqueApi.BonsAchatFiltres = {}) {
+  return useQuery({
+    queryKey: boutiqueKeys.bonsAchat(filtres),
+    queryFn: () => boutiqueApi.listBonsAchat(filtres),
+  });
+}
+
+/** Achat d'un bon d'achat (montant libre) — voir AcheterBonAchatPage. */
+export function useAcheterBonAchat() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AcheterBonAchatPayload) => boutiqueApi.acheterBonAchat(payload),
+    onSuccess: () => invalidateBonsAchat(queryClient),
+  });
+}
+
+/** Aperçu non-consommant d'un code de bon d'achat au checkout — voir PanierCommandePage. Pas de
+ * cache/queryKey dédié : appelé à la demande (bouton "Vérifier"), jamais automatiquement. */
+export function useVerifierBonAchat() {
+  return useMutation({
+    mutationFn: (payload: VerifierBonAchatPayload) => boutiqueApi.verifierBonAchat(payload),
+  });
+}
+
+/** Confirme la réception du paiement d'un bon d'achat (Directeur Financier+) — voir
+ * GestionBonsAchatTab. */
+export function useConfirmerPaiementBonAchat() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ConfirmerPaiementCommandePayload }) =>
+      boutiqueApi.confirmerPaiementBonAchat(id, payload),
+    onSuccess: () => invalidateBonsAchat(queryClient),
+  });
+}
+
+/** Initie un paiement en ligne pour un bon d'achat (Stripe/PayPal Checkout) — conservé pour une
+ * réactivation future (voir docstring boutiqueApi.initierPaiementEnLigneBonAchat), non câblé à
+ * une UI pour le moment (même pause que PAIEMENT_EN_LIGNE_ACTIF côté PanierCommandePage). */
+export function useInitierPaiementEnLigneBonAchat() {
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: InitierPaiementEnLigneCommandePayload;
+    }) => boutiqueApi.initierPaiementEnLigneBonAchat(id, payload),
   });
 }

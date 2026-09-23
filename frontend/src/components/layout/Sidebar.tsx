@@ -59,6 +59,7 @@ import {
   IconFileCheck,
   IconFolderCog,
   IconGavel,
+  IconGiftCard,
   IconHelpCircle,
   IconIdBadge,
   IconIdBadge2,
@@ -147,6 +148,15 @@ export const NAV_ITEMS: NavItem[] = [
   // même principe que /mon-adhesion : le backend scope déjà le queryset (CommandeViewSet.
   // get_queryset ne renvoie que les commandes du membre courant en dessous de Bureau Admin).
   { to: "/boutique/commandes", labelKey: "nav.mes_commandes", icon: IconReceipt2, group: "general" },
+  // "Mes bons d'achat" (demande utilisateur du 2026-09-23) — même principe IDOR que
+  // /boutique/commandes (BonAchatViewSet.get_queryset ne renvoie que les bons du membre
+  // courant en dessous de Bureau Admin).
+  {
+    to: "/boutique/bons-achat",
+    labelKey: "nav.bons_achat",
+    icon: IconGiftCard,
+    group: "general",
+  },
   // Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) — ouverts à
   // tout authentifié, même principe que /mon-adhesion : le backend scope déjà la visibilité (voir
   // PublicationViewSet/SujetViewSet.get_queryset).

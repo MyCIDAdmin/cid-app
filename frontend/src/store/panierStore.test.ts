@@ -1,7 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { nombreArticlesPanier, totalPanier, usePanierStore } from "./panierStore";
+import {
+  calculerReductionArticle,
+  nombreArticlesPanier,
+  sousTotalNetArticle,
+  totalPanier,
+  totalPanierNet,
+  usePanierStore,
+} from "./panierStore";
 import type { ArticlePanier } from "./panierStore";
+import type { RegleReduction } from "../types/boutique";
 
 function article(overrides: Partial<Omit<ArticlePanier, "quantite">> = {}) {
   return {
@@ -98,5 +106,70 @@ describe("panierStore", () => {
     ];
     expect(totalPanier(articles)).toBeCloseTo(112.5);
     expect(nombreArticlesPanier(articles)).toBe(3);
+  });
+
+  // --- Réductions par quantité indicatives (demande utilisateur du 2026-09-23) ---
+
+  function regle(overrides: Partial<RegleReduction> = {}): RegleReduction {
+    return {
+      id: "r1",
+      produit: "p1",
+      seuil_quantite: 5,
+      type_reduction: "article_offert",
+      pourcentage: null,
+      actif: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      ...overrides,
+    };
+  }
+
+  it("calculerReductionArticle retourne aucune réduction sans règle ou sous le seuil", () => {
+    const a = { ...article({ prixUnitaire: "20.00" }), quantite: 4, reglesReduction: [regle()] };
+    expect(calculerReductionArticle(a)).toEqual({ quantiteOfferte: 0, pourcentageApplique: null });
+  });
+
+  it("calculerReductionArticle applique la division entière pour un article offert", () => {
+    const a = { ...article({ prixUnitaire: "20.00" }), quantite: 12, reglesReduction: [regle()] };
+    // 12 // 5 = 2 articles offerts
+    expect(calculerReductionArticle(a).quantiteOfferte).toBe(2);
+  });
+
+  it("calculerReductionArticle applique le pourcentage atteint", () => {
+    const a = {
+      ...article({ prixUnitaire: "10.00" }),
+      quantite: 10,
+      reglesReduction: [regle({ id: "r2", seuil_quantite: 10, type_reduction: "pourcentage", pourcentage: 10 })],
+    };
+    expect(calculerReductionArticle(a).pourcentageApplique).toBe(10);
+  });
+
+  it("calculerReductionArticle ignore les règles inactives", () => {
+    const a = {
+      ...article({ prixUnitaire: "20.00" }),
+      quantite: 10,
+      reglesReduction: [regle({ actif: false })],
+    };
+    expect(calculerReductionArticle(a).quantiteOfferte).toBe(0);
+  });
+
+  it("sousTotalNetArticle déduit l'article offert du sous-total brut", () => {
+    // 5 x 20€ = 100€, 1 article offert (5 // 5 = 1) => 80€.
+    const a = { ...article({ prixUnitaire: "20.00" }), quantite: 5, reglesReduction: [regle()] };
+    expect(sousTotalNetArticle(a)).toBeCloseTo(80);
+  });
+
+  it("sousTotalNetArticle sans règle égale le sous-total brut", () => {
+    const a = { ...article({ prixUnitaire: "45.00" }), quantite: 2 };
+    expect(sousTotalNetArticle(a)).toBeCloseTo(90);
+  });
+
+  it("totalPanierNet agrège le sous-total net de plusieurs articles", () => {
+    const articles = [
+      { ...article({ varianteId: "v1", prixUnitaire: "20.00" }), quantite: 5, reglesReduction: [regle()] },
+      { ...article({ varianteId: "v2", prixUnitaire: "22.50" }), quantite: 1 },
+    ];
+    // 80€ (net, article offert) + 22.50€ (sans règle) = 102.50€
+    expect(totalPanierNet(articles)).toBeCloseTo(102.5);
   });
 });

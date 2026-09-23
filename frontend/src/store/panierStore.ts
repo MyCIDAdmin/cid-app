@@ -14,6 +14,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import type { RegleReduction } from "../types/boutique";
+
 export interface ArticlePanier {
   varianteId: string;
   produitId: string;
@@ -23,6 +25,15 @@ export interface ArticlePanier {
   prixUnitaire: string;
   stockDisponible: number;
   quantite: number;
+  /**
+   * Instantané des paliers de réduction actifs du produit au moment de l'ajout (demande
+   * utilisateur du 2026-09-23, "Beim Kauf von über 10 Artikeln... 10% Rabatt" etc.) — optionnel
+   * pour ne pas casser les paniers déjà persistés avant cet ajout (sessionStorage). Uniquement
+   * indicatif : le calcul qui fait foi reste `calculer_reduction_quantite` côté serveur
+   * (CLAUDE.md §8), voir aussi la revalidation de stock (`synchroniserStocks`) — ces paliers ne
+   * sont eux jamais revalidés en direct (ils changent rarement, contrairement au stock).
+   */
+  reglesReduction?: RegleReduction[];
 }
 
 interface PanierState {
@@ -106,4 +117,57 @@ export function totalPanier(articles: ArticlePanier[]): number {
 
 export function nombreArticlesPanier(articles: ArticlePanier[]): number {
   return articles.reduce((total, a) => total + a.quantite, 0);
+}
+
+/**
+ * Réduction par quantité indicative pour un article du panier — même logique que
+ * `calculer_reduction_quantite` côté backend (apps/boutique/models.py) : les deux types de
+ * palier sont indépendants et peuvent s'appliquer simultanément, mais seule la règle au seuil
+ * le plus élevé ATTEINT de chaque type compte (jamais de cumul de plusieurs paliers d'un même
+ * type). Purement indicatif (CLAUDE.md §8) — le serveur reste seul juge au moment de `passer`.
+ */
+export function calculerReductionArticle(article: ArticlePanier): {
+  quantiteOfferte: number;
+  pourcentageApplique: number | null;
+} {
+  const regles = (article.reglesReduction ?? []).filter((r) => r.actif);
+  const reglesOffertes = regles.filter(
+    (r) => r.type_reduction === "article_offert" && r.seuil_quantite <= article.quantite,
+  );
+  const reglesPourcentage = regles.filter(
+    (r) => r.type_reduction === "pourcentage" && r.seuil_quantite <= article.quantite,
+  );
+  const meilleureOfferte = reglesOffertes.reduce<RegleReduction | null>(
+    (max, r) => (!max || r.seuil_quantite > max.seuil_quantite ? r : max),
+    null,
+  );
+  const meilleurPourcentage = reglesPourcentage.reduce<RegleReduction | null>(
+    (max, r) => (!max || r.seuil_quantite > max.seuil_quantite ? r : max),
+    null,
+  );
+  return {
+    quantiteOfferte: meilleureOfferte
+      ? Math.floor(article.quantite / meilleureOfferte.seuil_quantite)
+      : 0,
+    pourcentageApplique: meilleurPourcentage?.pourcentage ?? null,
+  };
+}
+
+/** Sous-total net (après réduction quantité indicative) d'un seul article — voir
+ * `calculerReductionArticle`. */
+export function sousTotalNetArticle(article: ArticlePanier): number {
+  const prixUnitaire = Number(article.prixUnitaire);
+  const { quantiteOfferte, pourcentageApplique } = calculerReductionArticle(article);
+  const quantitePayee = Math.max(article.quantite - quantiteOfferte, 0);
+  const sousTotalApresCadeau = prixUnitaire * quantitePayee;
+  return pourcentageApplique
+    ? sousTotalApresCadeau * ((100 - pourcentageApplique) / 100)
+    : sousTotalApresCadeau;
+}
+
+/** Total du panier NET des réductions quantité indicatives — à préférer à `totalPanier` (brut)
+ * partout où un montant "réellement à payer" est affiché (PanierCommandePage). Identique à
+ * `totalPanier` tant qu'aucun palier n'est atteint. */
+export function totalPanierNet(articles: ArticlePanier[]): number {
+  return articles.reduce((total, a) => total + sousTotalNetArticle(a), 0);
 }

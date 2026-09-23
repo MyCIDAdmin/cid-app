@@ -18,6 +18,10 @@ vi.mock("../../hooks/useBoutique", async () => {
     useCreerVariante: vi.fn(),
     useModifierVariante: vi.fn(),
     useSupprimerVariante: vi.fn(),
+    useReglesReduction: vi.fn(),
+    useCreerRegleReduction: vi.fn(),
+    useModifierRegleReduction: vi.fn(),
+    useSupprimerRegleReduction: vi.fn(),
   };
 });
 
@@ -38,6 +42,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     stock_total: 3,
     stock_faible: true,
     en_rupture: false,
+    regles_reduction_actives: [],
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
@@ -83,6 +88,20 @@ describe("GestionCatalogueTab", () => {
     vi.mocked(useBoutiqueHooks.useSupprimerVariante).mockReturnValue({
       mutate: vi.fn(),
     } as unknown as ReturnType<typeof useBoutiqueHooks.useSupprimerVariante>);
+    vi.mocked(useBoutiqueHooks.useReglesReduction).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useReglesReduction>);
+    vi.mocked(useBoutiqueHooks.useCreerRegleReduction).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCreerRegleReduction>);
+    vi.mocked(useBoutiqueHooks.useModifierRegleReduction).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useModifierRegleReduction>);
+    vi.mocked(useBoutiqueHooks.useSupprimerRegleReduction).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useSupprimerRegleReduction>);
   });
 
   it("affiche les produits existants avec leur alerte de stock faible", () => {
@@ -161,5 +180,42 @@ describe("GestionCatalogueTab", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
     renderWithProviders(<GestionCatalogueTab />);
     expect(screen.getByText("14,40 €")).toBeInTheDocument();
+  });
+
+  // --- RegleReductionManager (demande utilisateur du 2026-09-23) ---
+
+  it("déplie le panneau de gestion des réductions par quantité", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+    fireEvent.click(screen.getByText("catalogue_admin.gerer_regles_reduction"));
+    expect(screen.getByText("catalogue_admin.regles_reduction_titre")).toBeInTheDocument();
+  });
+
+  it("replie le panneau de gestion des réductions au second clic", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+    fireEvent.click(screen.getByText("catalogue_admin.gerer_regles_reduction"));
+    fireEvent.click(screen.getByText("catalogue_admin.masquer_regles_reduction"));
+    expect(screen.queryByText("catalogue_admin.regles_reduction_titre")).not.toBeInTheDocument();
+  });
+
+  it("ajoute un palier de réduction depuis le panneau déplié", () => {
+    const creerRegleMock = vi.fn();
+    vi.mocked(useBoutiqueHooks.useCreerRegleReduction).mockReturnValue({
+      mutate: creerRegleMock,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCreerRegleReduction>);
+
+    renderWithProviders(<GestionCatalogueTab />);
+    fireEvent.click(screen.getByText("catalogue_admin.gerer_regles_reduction"));
+
+    fireEvent.change(screen.getByLabelText("catalogue_admin.seuil_quantite_label"), {
+      target: { value: "5" },
+    });
+    fireEvent.click(screen.getByText("catalogue_admin.ajouter_regle"));
+
+    expect(creerRegleMock).toHaveBeenCalledWith(
+      { produit: "p1", seuil_quantite: 5, type_reduction: "article_offert", pourcentage: null },
+      expect.anything(),
+    );
   });
 });

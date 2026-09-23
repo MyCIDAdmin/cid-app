@@ -1,12 +1,23 @@
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from django.db import IntegrityError, transaction
+from django.utils import timezone
 
-from apps.boutique.models import Commande
+from apps.boutique.models import (
+    Commande,
+    ReductionQuantite,
+    StatutBonAchat,
+    TypeReduction,
+    calculer_reduction_quantite,
+)
 from apps.boutique.tests.factories import (
+    BonAchatFactory,
     CommandeFactory,
     LigneCommandeFactory,
     ProduitFactory,
+    RegleReductionFactory,
     VarianteProduitFactory,
 )
 
@@ -61,3 +72,138 @@ def test_prix_final_arrondi_a_deux_decimales():
     produit = ProduitFactory(prix=Decimal("9.99"), pourcentage_reduction=33)
     # 9.99 * 0.67 = 6.6933 -> arrondi à 6.69
     assert produit.prix_final == Decimal("6.69")
+
+
+# --- RegleReduction / calculer_reduction_quantite (demande utilisateur du 2026-09-23) ---
+
+
+def test_calculer_reduction_quantite_sans_regle_active():
+    produit = ProduitFactory()
+    assert calculer_reduction_quantite(produit, 100) == ReductionQuantite(0, None)
+
+
+def test_calculer_reduction_quantite_article_offert_sous_le_seuil():
+    produit = ProduitFactory()
+    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    assert calculer_reduction_quantite(produit, 4).quantite_offerte == 0
+
+
+def test_calculer_reduction_quantite_article_offert_division_entiere():
+    produit = ProduitFactory()
+    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    # 12 // 5 = 2 articles offerts
+    assert calculer_reduction_quantite(produit, 12).quantite_offerte == 2
+
+
+def test_calculer_reduction_quantite_pourcentage_atteint():
+    produit = ProduitFactory()
+    RegleReductionFactory(
+        produit=produit,
+        seuil_quantite=10,
+        type_reduction=TypeReduction.POURCENTAGE,
+        pourcentage=10,
+    )
+    resultat = calculer_reduction_quantite(produit, 10)
+    assert resultat.pourcentage_applique == 10
+    assert resultat.quantite_offerte == 0
+
+
+def test_calculer_reduction_quantite_retient_le_seuil_le_plus_eleve_atteint():
+    produit = ProduitFactory()
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.POURCENTAGE, pourcentage=5
+    )
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=10, type_reduction=TypeReduction.POURCENTAGE, pourcentage=15
+    )
+    assert calculer_reduction_quantite(produit, 10).pourcentage_applique == 15
+    assert calculer_reduction_quantite(produit, 7).pourcentage_applique == 5
+
+
+def test_calculer_reduction_quantite_cumule_les_deux_types_independamment():
+    produit = ProduitFactory()
+    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=10, type_reduction=TypeReduction.POURCENTAGE, pourcentage=10
+    )
+    resultat = calculer_reduction_quantite(produit, 10)
+    assert resultat.quantite_offerte == 2
+    assert resultat.pourcentage_applique == 10
+
+
+def test_calculer_reduction_quantite_ignore_les_regles_inactives():
+    produit = ProduitFactory()
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT, actif=False
+    )
+    assert calculer_reduction_quantite(produit, 10).quantite_offerte == 0
+
+
+def test_un_seul_palier_par_seuil_et_produit():
+    produit = ProduitFactory()
+    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            RegleReductionFactory(
+                produit=produit,
+                seuil_quantite=5,
+                type_reduction=TypeReduction.POURCENTAGE,
+                pourcentage=10,
+            )
+
+
+# --- LigneCommande.sous_total_net ---
+
+
+def test_ligne_commande_sous_total_net_deduit_la_reduction_quantite():
+    ligne = LigneCommandeFactory(
+        quantite=5, prix_unitaire=Decimal("10.00"), reduction_quantite=Decimal("10.00")
+    )
+    assert ligne.sous_total == Decimal("50.00")
+    assert ligne.sous_total_net == Decimal("40.00")
+
+
+# --- BonAchat (demande utilisateur du 2026-09-23) ---
+
+
+def test_bon_achat_code_genere_automatiquement_et_unique():
+    bon1 = BonAchatFactory()
+    bon2 = BonAchatFactory()
+    assert bon1.code.startswith("BON-")
+    assert bon1.code != bon2.code
+
+
+def test_bon_achat_non_actif_nest_pas_utilisable():
+    bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE)
+    assert bon.utilisable is False
+
+
+def test_bon_achat_sans_solde_nest_pas_utilisable():
+    bon = BonAchatFactory(statut=StatutBonAchat.ACTIF, solde=Decimal("0.00"))
+    assert bon.utilisable is False
+
+
+def test_bon_achat_expire_nest_pas_utilisable():
+    bon = BonAchatFactory(
+        statut=StatutBonAchat.ACTIF,
+        date_expiration=timezone.now() - timedelta(days=1),
+    )
+    assert bon.est_expire is True
+    assert bon.utilisable is False
+
+
+def test_bon_achat_actif_avec_solde_et_non_expire_est_utilisable():
+    bon = BonAchatFactory(
+        statut=StatutBonAchat.ACTIF,
+        date_expiration=timezone.now() + timedelta(days=30),
+    )
+    assert bon.utilisable is True
+
+
+def test_bon_achat_activer_fixe_le_statut_et_lexpiration():
+    bon = BonAchatFactory(statut=StatutBonAchat.EN_ATTENTE, date_expiration=None)
+    bon.activer()
+    assert bon.statut == StatutBonAchat.ACTIF
+    assert bon.date_paiement_confirme is not None
+    assert bon.date_expiration is not None
+    assert bon.date_expiration > timezone.now() + timedelta(days=365 * 2)

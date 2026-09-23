@@ -21,6 +21,15 @@
     "annulee": "Annulée",
     "remboursee": "Remboursée"
   },
+  "statut_bon_achat": {
+    "en_attente": "En attente de paiement",
+    "actif": "Actif",
+    "epuise": "Épuisé"
+  },
+  "type_reduction": {
+    "article_offert": "Article(s) offert(s)",
+    "pourcentage": "Pourcentage"
+  },
   "catalogue": {
     "titre": "Boutique",
     "categorie_toutes": "Toutes catégories",
@@ -34,7 +43,9 @@
     "rupture": "Rupture de stock",
     "stock_faible": "Stock limité ({{stock}} restant(s))",
     "en_stock": "{{stock}} en stock",
-    "panier_flottant": "{{count}} article(s)"
+    "panier_flottant": "{{count}} article(s)",
+    "regle_pourcentage": "-{{pct}}% dès {{seuil}} achetés",
+    "regle_article_offert": "1 offert dès {{seuil}} achetés"
   },
   "commande": {
     "titre": "Mon panier",
@@ -74,7 +85,22 @@
     "payer_en_cours": "Redirection…",
     "erreur_paiement": "Le paiement en ligne n'a pas pu être initié. Vous pouvez réessayer plus tard depuis le suivi de vos commandes.",
     "payer_hors_ligne_titre": "Comment régler votre commande",
-    "payer_hors_ligne_note": "Merci de régler le montant par virement ou PayPal. Le Directeur Financier confirmera manuellement la réception du paiement dans l'application dès qu'il sera reçu."
+    "payer_hors_ligne_note": "Merci de régler le montant par virement ou PayPal. Le Directeur Financier confirmera manuellement la réception du paiement dans l'application dès qu'il sera reçu.",
+    "article_offert_applique": "{{count}} article(s) offert(s)",
+    "pourcentage_applique": "-{{pct}}% appliqué",
+    "bon_achat_label": "Bon d'achat (optionnel)",
+    "bon_achat_placeholder": "Code du bon d'achat",
+    "bon_achat_verifier": "Vérifier",
+    "bon_achat_verification": "Vérification…",
+    "bon_achat_valide": "Bon {{code}} valide — solde {{solde}}",
+    "bon_achat_retirer": "Retirer",
+    "bon_achat_inutilisable": "Ce bon d'achat n'est plus utilisable (expiré, épuisé, ou paiement pas encore confirmé).",
+    "bon_achat_erreur": "Ce code de bon d'achat est introuvable.",
+    "bon_achat_acheter_lien": "Vous n'avez pas de bon d'achat ? En acheter un",
+    "bon_achat_deduit": "Bon d'achat déduit : -{{montant}}",
+    "total_a_payer": "Total à payer",
+    "bon_achat_applique": "Bon d'achat appliqué : -{{montant}} — il reste {{reste}} à régler.",
+    "bon_achat_couvre_tout": "Cette commande a été entièrement réglée par votre bon d'achat (-{{montant}}) — aucun paiement supplémentaire n'est nécessaire."
   },
   "retour_paiement": {
     "chargement": "Vérification du paiement…",
@@ -103,7 +129,8 @@
     "kpi_total_produits": "Produits au catalogue",
     "kpi_stocks_alerte": "Stocks en alerte",
     "onglet_commandes": "Commandes",
-    "onglet_catalogue": "Catalogue"
+    "onglet_catalogue": "Catalogue",
+    "onglet_bons_achat": "Bons d'achat"
   },
   "commandes_admin": {
     "tous": "Toutes",
@@ -207,6 +234,43 @@
     "couleur_label": "Couleur",
     "ajouter_variante": "Ajouter",
     "supprimer_variante": "Supprimer cette variante",
-    "aucune_variante": "Aucune variante — le produit n'a pas encore de stock."
+    "aucune_variante": "Aucune variante — le produit n'a pas encore de stock.",
+    "gerer_regles_reduction": "Gérer les réductions",
+    "masquer_regles_reduction": "Masquer les réductions",
+    "regles_reduction_titre": "Réductions par quantité",
+    "regle_active_label": "Active",
+    "supprimer_regle": "Supprimer ce palier",
+    "aucune_regle": "Aucun palier de réduction pour ce produit.",
+    "regle_erreur": "Le palier n'a pas pu être créé.",
+    "seuil_quantite_label": "Seuil (quantité)",
+    "type_reduction_label": "Type",
+    "ajouter_regle": "Ajouter"
+  },
+  "bon_achat_acheter": {
+    "titre": "Acheter un bon d'achat",
+    "description": "Choisissez librement le montant de votre bon d'achat CID — il pourra ensuite être utilisé, en une ou plusieurs fois, comme code promo dans la boutique.",
+    "montant_label": "Montant ({{min}} – {{max}} €)",
+    "erreur": "L'achat n'a pas pu être enregistré.",
+    "en_cours": "Enregistrement…",
+    "acheter": "Acheter ce bon d'achat",
+    "confirme_titre": "Bon d'achat créé !",
+    "confirme_montant": "Montant : {{montant}}",
+    "confirme_note": "Votre bon sera activé et le code vous sera envoyé par email dès que le paiement aura été confirmé.",
+    "voir_mes_bons": "Voir mes bons d'achat"
+  },
+  "mes_bons_achat": {
+    "titre": "Mes bons d'achat",
+    "acheter_lien": "Acheter un bon d'achat",
+    "chargement": "Chargement…",
+    "erreur": "Impossible de charger vos bons d'achat.",
+    "aucun_bon": "Vous n'avez pas encore de bon d'achat.",
+    "achete_le": "Acheté le {{date}}",
+    "sur_montant_initial": "sur {{montant}} initial",
+    "expire_le": "Expire le {{date}}"
+  },
+  "bons_achat_admin": {
+    "col_code": "Code",
+    "col_solde": "Solde",
+    "aucun_bon": "Aucun bon d'achat pour ce filtre."
   }
 }

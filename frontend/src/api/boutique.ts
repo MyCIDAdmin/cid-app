@@ -4,6 +4,9 @@
 import { apiClient } from "./client";
 import type { CursorPage } from "../types/membre";
 import type {
+  AcheterBonAchatPayload,
+  BonAchat,
+  BonAchatVerification,
   ChangerStatutCommandePayload,
   Commande,
   ConfirmerPaiementCommandePayload,
@@ -13,13 +16,17 @@ import type {
   PasserCommandePayload,
   Produit,
   ProduitPayload,
+  RegleReduction,
+  RegleReductionPayload,
   Retour,
   RetourPayload,
+  StatutBonAchat,
   StatutCommande,
   StatutProduit,
   VarianteProduit,
   VariantePayload,
   VendreEspecesCommandePayload,
+  VerifierBonAchatPayload,
 } from "../types/boutique";
 
 export interface ProduitsFiltres {
@@ -107,6 +114,48 @@ export async function modifierVariante(
 
 export async function supprimerVariante(id: string): Promise<void> {
   await apiClient.delete(`/boutique/variantes/${id}/`);
+}
+
+export interface ReglesReductionFiltres {
+  produit?: string;
+  cursor?: string;
+}
+
+/**
+ * Paliers de réduction par quantité (demande utilisateur du 2026-09-23) — lecture ouverte à
+ * tout authentifié (voir RegleReductionViewSet.get_queryset, un rôle < Bureau Admin ne reçoit
+ * de toute façon que les règles actives d'un produit publié) ; écriture Bureau Admin+, même
+ * permission que Produit/VarianteProduit (CatalogueBoutiquePermission).
+ */
+export async function listReglesReduction(
+  filtres: ReglesReductionFiltres = {},
+): Promise<CursorPage<RegleReduction>> {
+  const { data } = await apiClient.get<CursorPage<RegleReduction>>("/boutique/regles-reduction/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function creerRegleReduction(
+  payload: RegleReductionPayload,
+): Promise<RegleReduction> {
+  const { data } = await apiClient.post<RegleReduction>("/boutique/regles-reduction/", payload);
+  return data;
+}
+
+export async function modifierRegleReduction(
+  id: string,
+  payload: Partial<RegleReductionPayload>,
+): Promise<RegleReduction> {
+  const { data } = await apiClient.patch<RegleReduction>(
+    `/boutique/regles-reduction/${id}/`,
+    payload,
+  );
+  return data;
+}
+
+export async function supprimerRegleReduction(id: string): Promise<void> {
+  await apiClient.delete(`/boutique/regles-reduction/${id}/`);
 }
 
 export interface CommandesFiltres {
@@ -228,5 +277,76 @@ export async function listRetours(filtres: RetoursFiltres = {}): Promise<CursorP
 
 export async function creerRetour(payload: RetourPayload): Promise<Retour> {
   const { data } = await apiClient.post<Retour>("/boutique/retours/", payload);
+  return data;
+}
+
+// --- Bons d'achat (demande utilisateur du 2026-09-23 : "Es soll möglich sein Gutscheine zu
+// Kaufen") ---
+
+export interface BonsAchatFiltres {
+  statut?: StatutBonAchat;
+  cursor?: string;
+}
+
+/**
+ * Bureau Admin+ voit tous les bons d'achat ; en dessous, uniquement les siens — même principe
+ * IDOR que listCommandes (voir BonAchatViewSet.get_queryset côté backend).
+ */
+export async function listBonsAchat(filtres: BonsAchatFiltres = {}): Promise<CursorPage<BonAchat>> {
+  const { data } = await apiClient.get<CursorPage<BonAchat>>("/boutique/bons-achat/", {
+    params: filtres,
+  });
+  return data;
+}
+
+/** POST /boutique/bons-achat/acheter/ — montant libre, tout membre authentifié. Le bon est créé
+ * `en_attente` : `mode_paiement`/`confirmer-paiement` (Directeur Financier+) l'active ensuite —
+ * voir GestionBonsAchatTab. */
+export async function acheterBonAchat(payload: AcheterBonAchatPayload): Promise<BonAchat> {
+  const { data } = await apiClient.post<BonAchat>("/boutique/bons-achat/acheter/", payload);
+  return data;
+}
+
+/** POST /boutique/bons-achat/verifier/ — aperçu non-consommant d'un code au checkout (voir
+ * PanierCommandePage), ouvert à tout authentifié : n'importe quel détenteur du code peut
+ * l'interroger (bon d'achat transmissible). */
+export async function verifierBonAchat(
+  payload: VerifierBonAchatPayload,
+): Promise<BonAchatVerification> {
+  const { data } = await apiClient.post<BonAchatVerification>(
+    "/boutique/bons-achat/verifier/",
+    payload,
+  );
+  return data;
+}
+
+/** Confirme la réception du paiement d'un bon d'achat (Directeur Financier+, voir
+ * GestionBonsAchatTab) — active le bon et déclenche l'email du code (même principe que
+ * confirmerPaiementCommande). */
+export async function confirmerPaiementBonAchat(
+  id: string,
+  payload: ConfirmerPaiementCommandePayload,
+): Promise<BonAchat> {
+  const { data } = await apiClient.post<BonAchat>(
+    `/boutique/bons-achat/${id}/confirmer-paiement/`,
+    payload,
+  );
+  return data;
+}
+
+/**
+ * POST /boutique/bons-achat/{id}/initier-paiement-en-ligne/ — même principe que
+ * initierPaiementEnLigneCommande (Stripe/PayPal Checkout), réservé à l'acheteur du bon. Conservé
+ * pour une réactivation future du paiement en ligne (voir PAIEMENT_EN_LIGNE_ACTIF côté
+ * PanierCommandePage/AcheterBonAchatPage), non câblé à une UI pour le moment.
+ */
+export async function initierPaiementEnLigneBonAchat(
+  id: string,
+  payload: InitierPaiementEnLigneCommandePayload,
+): Promise<PaiementEnLigneCommandeResponse> {
+  const { data } = await apiClient.post<PaiementEnLigneCommandeResponse>(
+    `/boutique/bons-achat/${id}/initier-paiement-en-ligne/`,
+    payload,
+  );
   return data;
 }

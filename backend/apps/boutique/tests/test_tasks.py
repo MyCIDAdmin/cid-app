@@ -3,17 +3,21 @@ docstring de apps.boutique.tasks). Même principe que apps.adhesions.tests.test_
 est appelé directement (pas via .delay()) et `mailoutbox` (pytest-django) capture les envois
 sans jamais toucher un vrai serveur SMTP."""
 
-import pytest
+from datetime import timedelta
 from decimal import Decimal
 
+import pytest
+from django.utils import timezone
+
 from apps.accounts.models import User
-from apps.boutique.models import StatutCommande
+from apps.boutique.models import StatutBonAchat, StatutCommande
 from apps.boutique.tasks import (
+    envoyer_email_bon_achat_code,
     envoyer_email_commande_annulee,
     envoyer_email_commande_confirmee,
     envoyer_email_commande_expediee,
 )
-from apps.boutique.tests.factories import CommandeFactory
+from apps.boutique.tests.factories import BonAchatFactory, CommandeFactory
 from apps.membres.tests.factories import MembreFactory
 
 pytestmark = pytest.mark.django_db
@@ -84,3 +88,65 @@ def test_envoyer_email_commande_expediee_sans_numero_de_suivi(mailoutbox):
 
     assert len(mailoutbox) == 1
     assert "Numéro de suivi" not in mailoutbox[0].body
+
+
+# --- envoyer_email_bon_achat_code (demande utilisateur du 2026-09-23, seul email HTML du
+# module — voir apps.boutique.emails) ---
+
+
+def test_envoyer_email_bon_achat_code(mailoutbox):
+    membre = _membre_avec_compte()
+    bon = BonAchatFactory(
+        achete_par=membre,
+        statut=StatutBonAchat.ACTIF,
+        montant_initial=Decimal("80.00"),
+        solde=Decimal("80.00"),
+        date_expiration=timezone.now() + timedelta(days=365 * 3),
+    )
+
+    envoyer_email_bon_achat_code(str(bon.id))
+
+    assert len(mailoutbox) == 1
+    message = mailoutbox[0]
+    assert bon.code in message.subject
+    assert message.to == ["riadh@example.de"]
+    # Corps texte brut (repli) : code, montant, date d'expiration.
+    assert bon.code in message.body
+    assert "80,00 €" in message.body
+    # Seul email HTML de tout le projet : une alternative text/html doit être jointe.
+    assert len(message.alternatives) == 1
+    corps_html, mimetype = message.alternatives[0]
+    assert mimetype == "text/html"
+    assert bon.code in corps_html
+    assert "80,00 €" in corps_html
+
+
+def test_envoyer_email_bon_achat_code_respecte_la_langue_preferee(mailoutbox):
+    membre = _membre_avec_compte()
+    membre.user.langue_preferee = "de"
+    membre.user.save(update_fields=["langue_preferee"])
+    bon = BonAchatFactory(
+        achete_par=membre,
+        statut=StatutBonAchat.ACTIF,
+        date_expiration=timezone.now() + timedelta(days=365 * 3),
+    )
+
+    envoyer_email_bon_achat_code(str(bon.id))
+
+    assert len(mailoutbox) == 1
+    assert "Gutschein" in mailoutbox[0].subject
+
+
+def test_envoyer_email_bon_achat_code_sans_compte_utilisateur_ne_leve_pas(mailoutbox):
+    # Membre sans User lié (FK nullable) — comportement identique aux emails de commande.
+    membre = MembreFactory()
+    bon = BonAchatFactory(achete_par=membre, statut=StatutBonAchat.ACTIF)
+
+    envoyer_email_bon_achat_code(str(bon.id))
+
+    assert len(mailoutbox) == 0
+
+
+def test_envoyer_email_bon_achat_code_bon_introuvable_ne_leve_pas(mailoutbox):
+    envoyer_email_bon_achat_code("00000000-0000-0000-0000-000000000000")
+    assert len(mailoutbox) == 0

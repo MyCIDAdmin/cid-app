@@ -12,8 +12,9 @@ from apps.accounts.services import users_role_at_least
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import notifier
 
-from .models import Commande
+from .models import BonAchat, Commande
 from .tasks import (
+    envoyer_email_bon_achat_code,
     envoyer_email_commande_annulee,
     envoyer_email_commande_confirmee,
     envoyer_email_commande_expediee,
@@ -97,4 +98,22 @@ def notifier_commande_expediee(commande: Commande) -> None:
         titre=f"Commande {commande.numero_commande} expédiée",
         message=f"Votre commande vient d'être expédiée.{suivi}",
         lien=f"/boutique/commandes?commande={commande.id}",  # voir notifier_commande_confirmee
+    )
+
+
+def notifier_bon_achat_actif(bon: BonAchat) -> None:
+    """Appelée juste après qu'un BonAchat passe à ACTIF (paiement confirmé — webhook PSP OU
+    confirmer_paiement manuel, voir apps.boutique.webhooks/views.py), demande utilisateur du
+    2026-09-23 : "Der Code soll in einer schönen Email... geschickt werden". Contrairement aux
+    emails de commande (texte brut), celui-ci est HTML (voir tasks.envoyer_email_bon_achat_code/
+    emails.py) — seul point de la demande à explicitement qualifier l'email d'attendu comme
+    soigné ("schön")."""
+    user = getattr(bon.achete_par, "user", None)
+    envoyer_email_bon_achat_code.delay(str(bon.id))
+    notifier(
+        user,
+        TypeNotification.BOUTIQUE_BON_ACHAT_ACTIF,
+        titre="Votre bon d'achat est prêt",
+        message=f"Votre bon d'achat {bon.code} de {bon.montant_initial} € est prêt à l'emploi.",
+        lien="/boutique/bons-achat",
     )

@@ -34,6 +34,19 @@ Permissions API — app boutique (FDD §2.2 matrice des permissions) :
     réintégration de stock.
   - Pas de update/destroy génériques exposés sur Commande : elle n'évolue que via ses
     actions dédiées (registre append-only, même convention que Cotisation/Souscription).
+  - RegleReduction (paliers de réduction par quantité, demande utilisateur du 2026-09-23) :
+    même règle exacte que Produit/VarianteProduit ci-dessus — lecture ouverte (filtrée aux
+    règles actives d'un produit publié pour qui n'est pas Bureau Admin+, voir get_queryset côté
+    vues), écriture réservée au Bureau Admin+ — CatalogueBoutiquePermission est donc réutilisée
+    telle quelle pour RegleReductionViewSet plutôt que dupliquée.
+  - BonAchat (achat/gestion de bons d'achat, même demande) : `acheter`/`verifier` ouverts à tout
+    authentifié (un bon d'achat est nominatif à l'achat mais transmissible à l'usage — n'importe
+    qui en connaissant le code doit pouvoir vérifier sa validité, voir BonAchatSerializer/
+    BonAchatVerificationSerializer) ; `confirmer_paiement` (paiement manuel virement/espèces)
+    réservé à PAIEMENT_EXPEDITION_MIN_LEVEL, exactement comme Commande.confirmer_paiement — même
+    geste financier (réception d'argent). list/retrieve d'un bon : Bureau Admin+ voit tout,
+    sinon uniquement les bons achetés par soi-même (IDOR, même défense en profondeur que
+    CommandePermission).
 """
 
 from rest_framework.permissions import SAFE_METHODS, BasePermission
@@ -93,3 +106,25 @@ class RetourPermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         return ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL
+
+
+class BonAchatPermission(BasePermission):
+    """BonAchat — voir docstring de module."""
+
+    CONFIRMATION_ACTIONS = ("confirmer_paiement",)
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        action = getattr(view, "action", None)
+        if action in self.CONFIRMATION_ACTIONS:
+            return ROLE_LEVELS.get(user.role, 0) >= PAIEMENT_EXPEDITION_MIN_LEVEL
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL:
+            return True
+        membre = getattr(user, "membre", None)
+        return membre is not None and obj.achete_par_id == membre.id

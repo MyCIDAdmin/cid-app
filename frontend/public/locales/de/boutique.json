@@ -21,6 +21,15 @@
     "annulee": "Storniert",
     "remboursee": "Erstattet"
   },
+  "statut_bon_achat": {
+    "en_attente": "Zahlung ausstehend",
+    "actif": "Aktiv",
+    "epuise": "Aufgebraucht"
+  },
+  "type_reduction": {
+    "article_offert": "Geschenkte Artikel",
+    "pourcentage": "Prozentsatz"
+  },
   "catalogue": {
     "titre": "Shop",
     "categorie_toutes": "Alle Kategorien",
@@ -34,7 +43,9 @@
     "rupture": "Nicht auf Lager",
     "stock_faible": "Begrenzter Bestand ({{stock}} übrig)",
     "en_stock": "{{stock}} auf Lager",
-    "panier_flottant": "{{count}} Artikel"
+    "panier_flottant": "{{count}} Artikel",
+    "regle_pourcentage": "-{{pct}}% ab {{seuil}} Stück",
+    "regle_article_offert": "1 gratis ab {{seuil}} Stück"
   },
   "commande": {
     "titre": "Mein Warenkorb",
@@ -74,7 +85,22 @@
     "payer_en_cours": "Weiterleitung…",
     "erreur_paiement": "Die Online-Zahlung konnte nicht gestartet werden. Sie können es später über Ihre Bestellungen erneut versuchen.",
     "payer_hors_ligne_titre": "So bezahlen Sie",
-    "payer_hors_ligne_note": "Bitte begleichen Sie den Betrag per Überweisung oder PayPal. Der Finanzverantwortliche bestätigt den Zahlungseingang manuell in der App, sobald er eingegangen ist."
+    "payer_hors_ligne_note": "Bitte begleichen Sie den Betrag per Überweisung oder PayPal. Der Finanzverantwortliche bestätigt den Zahlungseingang manuell in der App, sobald er eingegangen ist.",
+    "article_offert_applique": "{{count}} Artikel geschenkt",
+    "pourcentage_applique": "-{{pct}}% angewendet",
+    "bon_achat_label": "Gutschein (optional)",
+    "bon_achat_placeholder": "Gutscheincode",
+    "bon_achat_verifier": "Prüfen",
+    "bon_achat_verification": "Wird geprüft…",
+    "bon_achat_valide": "Gutschein {{code}} gültig — Guthaben {{solde}}",
+    "bon_achat_retirer": "Entfernen",
+    "bon_achat_inutilisable": "Dieser Gutschein ist nicht mehr einlösbar (abgelaufen, aufgebraucht oder Zahlung noch nicht bestätigt).",
+    "bon_achat_erreur": "Dieser Gutscheincode wurde nicht gefunden.",
+    "bon_achat_acheter_lien": "Sie haben keinen Gutschein? Jetzt einen kaufen",
+    "bon_achat_deduit": "Gutschein abgezogen: -{{montant}}",
+    "total_a_payer": "Zu zahlender Betrag",
+    "bon_achat_applique": "Gutschein angewendet: -{{montant}} — es verbleiben {{reste}} zu zahlen.",
+    "bon_achat_couvre_tout": "Diese Bestellung wurde vollständig durch Ihren Gutschein beglichen (-{{montant}}) — es ist keine weitere Zahlung erforderlich."
   },
   "retour_paiement": {
     "chargement": "Zahlung wird überprüft…",
@@ -103,7 +129,8 @@
     "kpi_total_produits": "Produkte im Katalog",
     "kpi_stocks_alerte": "Bestandswarnungen",
     "onglet_commandes": "Bestellungen",
-    "onglet_catalogue": "Katalog"
+    "onglet_catalogue": "Katalog",
+    "onglet_bons_achat": "Gutscheine"
   },
   "commandes_admin": {
     "tous": "Alle",
@@ -207,6 +234,43 @@
     "couleur_label": "Farbe",
     "ajouter_variante": "Hinzufügen",
     "supprimer_variante": "Diese Variante löschen",
-    "aucune_variante": "Keine Variante — das Produkt hat noch keinen Bestand."
+    "aucune_variante": "Keine Variante — das Produkt hat noch keinen Bestand.",
+    "gerer_regles_reduction": "Rabatte verwalten",
+    "masquer_regles_reduction": "Rabatte ausblenden",
+    "regles_reduction_titre": "Mengenrabatte",
+    "regle_active_label": "Aktiv",
+    "supprimer_regle": "Diese Staffel löschen",
+    "aucune_regle": "Keine Rabattstaffel für dieses Produkt.",
+    "regle_erreur": "Die Staffel konnte nicht erstellt werden.",
+    "seuil_quantite_label": "Schwelle (Menge)",
+    "type_reduction_label": "Typ",
+    "ajouter_regle": "Hinzufügen"
+  },
+  "bon_achat_acheter": {
+    "titre": "Gutschein kaufen",
+    "description": "Wählen Sie den Betrag Ihres CID-Gutscheins frei — er kann anschließend, auch in mehreren Teilbeträgen, als Gutscheincode im Shop eingelöst werden.",
+    "montant_label": "Betrag ({{min}} – {{max}} €)",
+    "erreur": "Der Kauf konnte nicht gespeichert werden.",
+    "en_cours": "Wird gespeichert…",
+    "acheter": "Diesen Gutschein kaufen",
+    "confirme_titre": "Gutschein erstellt!",
+    "confirme_montant": "Betrag: {{montant}}",
+    "confirme_note": "Ihr Gutschein wird aktiviert und der Code Ihnen per E-Mail zugesandt, sobald die Zahlung bestätigt wurde.",
+    "voir_mes_bons": "Meine Gutscheine ansehen"
+  },
+  "mes_bons_achat": {
+    "titre": "Meine Gutscheine",
+    "acheter_lien": "Gutschein kaufen",
+    "chargement": "Wird geladen…",
+    "erreur": "Ihre Gutscheine konnten nicht geladen werden.",
+    "aucun_bon": "Sie haben noch keinen Gutschein.",
+    "achete_le": "Gekauft am {{date}}",
+    "sur_montant_initial": "von {{montant}} ursprünglich",
+    "expire_le": "Läuft ab am {{date}}"
+  },
+  "bons_achat_admin": {
+    "col_code": "Code",
+    "col_solde": "Guthaben",
+    "aucun_bon": "Kein Gutschein für diesen Filter."
   }
 }

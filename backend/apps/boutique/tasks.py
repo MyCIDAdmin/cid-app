@@ -20,11 +20,11 @@ import logging
 
 from celery import shared_task
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives, send_mail
 
 from apps.notifications.services import email_module_actif
 
-from .models import Commande
+from .models import BonAchat, Commande
 
 logger = logging.getLogger(__name__)
 
@@ -146,3 +146,34 @@ def envoyer_email_commande_expediee(commande_id) -> None:
         recipient_list=[email],
         fail_silently=True,
     )
+
+
+@shared_task
+def envoyer_email_bon_achat_code(bon_achat_id) -> None:
+    """Email de bon d'achat (demande utilisateur du 2026-09-23 : "Der Code soll in einer
+    schönen Email... geschickt werden") — appelée par notifications.notifier_bon_achat_actif dès
+    qu'un BonAchat passe à ACTIF. Seul email HTML du module (voir apps.boutique.emails pour le
+    pourquoi) : envoyé via EmailMultiAlternatives (texte brut + alternative HTML), plutôt que
+    send_mail (texte brut seul) utilisé par les autres tâches de ce fichier."""
+    try:
+        bon = BonAchat.objects.select_related("achete_par__user").get(id=bon_achat_id)
+    except BonAchat.DoesNotExist:
+        return
+    user = getattr(bon.achete_par, "user", None)
+    email = user.email if user and user.email else None
+    if not email or not email_module_actif("boutique"):
+        return
+
+    # Import différé (évite tout risque de dépendance circulaire au chargement de l'app, même
+    # convention que les imports locaux de apps.notifications.services dans les autres apps).
+    from .emails import rendre_email_bon_achat
+
+    sujet, corps_texte, corps_html = rendre_email_bon_achat(bon)
+    message = EmailMultiAlternatives(
+        subject=sujet,
+        body=corps_texte,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[email],
+    )
+    message.attach_alternative(corps_html, "text/html")
+    message.send(fail_silently=True)

@@ -1,6 +1,14 @@
 from django.contrib import admin
 
-from .models import Commande, LigneCommande, Produit, VarianteProduit
+from .models import (
+    BonAchat,
+    Commande,
+    LigneCommande,
+    Produit,
+    RegleReduction,
+    UtilisationBonAchat,
+    VarianteProduit,
+)
 
 
 class VarianteProduitInline(admin.TabularInline):
@@ -9,13 +17,28 @@ class VarianteProduitInline(admin.TabularInline):
     fields = ("taille", "couleur", "stock")
 
 
+class RegleReductionInline(admin.TabularInline):
+    model = RegleReduction
+    extra = 0
+    fields = ("seuil_quantite", "type_reduction", "pourcentage", "actif")
+
+
 @admin.register(Produit)
 class ProduitAdmin(admin.ModelAdmin):
     list_display = ("nom", "categorie", "prix", "statut", "stock_total", "nouveaute")
     list_filter = ("statut", "categorie", "nouveaute")
     search_fields = ("nom",)
     readonly_fields = ("id", "created_at", "updated_at")
-    inlines = [VarianteProduitInline]
+    inlines = [VarianteProduitInline, RegleReductionInline]
+
+
+@admin.register(RegleReduction)
+class RegleReductionAdmin(admin.ModelAdmin):
+    list_display = ("produit", "seuil_quantite", "type_reduction", "pourcentage", "actif")
+    list_filter = ("type_reduction", "actif")
+    search_fields = ("produit__nom",)
+    autocomplete_fields = ("produit",)
+    readonly_fields = ("id", "created_at", "updated_at")
 
 
 @admin.register(VarianteProduit)
@@ -43,3 +66,22 @@ class CommandeAdmin(admin.ModelAdmin):
     autocomplete_fields = ("membre",)
     readonly_fields = ("id", "numero_commande", "montant_total", "created_at", "updated_at")
     inlines = [LigneCommandeInline]
+
+
+class UtilisationBonAchatInline(admin.TabularInline):
+    model = UtilisationBonAchat
+    extra = 0
+    fields = ("commande", "montant", "created_at")
+    readonly_fields = ("commande", "montant", "created_at")
+    can_delete = False
+    autocomplete_fields = ("commande",)
+
+
+@admin.register(BonAchat)
+class BonAchatAdmin(admin.ModelAdmin):
+    list_display = ("code", "achete_par", "montant_initial", "solde", "statut", "date_expiration")
+    list_filter = ("statut", "mode_paiement")
+    search_fields = ("code", "achete_par__nom", "achete_par__prenom")
+    autocomplete_fields = ("achete_par", "paiement_confirme_par")
+    readonly_fields = ("id", "code", "created_at", "updated_at")
+    inlines = [UtilisationBonAchatInline]

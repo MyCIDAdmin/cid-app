@@ -56,8 +56,10 @@ class TypeNotification(models.TextChoices):
     le modèle n'ait pas à être remanié quand ce module sera construit. Les 8 types suivants
     (ADHESION_* à COMMUNAUTE_REPONSE_FORUM) puis les 6 suivants (ADHESION_JUSTIFICATIF_SOUMIS à
     COMMUNAUTE_COMMENTAIRE_FIL) ont été ajoutés le 2026-09-16, voir docstring de module. Les 2
-    derniers (MEMBRE_STATUT_*) ont été ajoutés le 2026-09-19 — voir
-    apps.membres.services.enregistrer_statut_annuel."""
+    suivants (MEMBRE_STATUT_*) ont été ajoutés le 2026-09-19 — voir
+    apps.membres.services.enregistrer_statut_annuel. Le dernier (BOUTIQUE_BON_ACHAT_ACTIF) a été
+    ajouté le 2026-09-23 (demande utilisateur : "Es soll möglich sein Gutscheine zu Kaufen... der
+    Code soll in einer schönen Email... geschickt werden") — voir apps.boutique.notifications."""
 
     BIENVENUE = "bienvenue", _("Bienvenue")
     PAIEMENT_CONFIRME = "paiement_confirme", _("Paiement confirmé")
@@ -84,6 +86,7 @@ class TypeNotification(models.TextChoices):
     COMMUNAUTE_COMMENTAIRE_FIL = "communaute_commentaire_fil", _("Nouveau commentaire")
     MEMBRE_STATUT_ACTIF = "membre_statut_actif", _("Statut de membre réactivé")
     MEMBRE_STATUT_INACTIF = "membre_statut_inactif", _("Statut de membre désactivé")
+    BOUTIQUE_BON_ACHAT_ACTIF = "boutique_bon_achat_actif", _("Bon d'achat prêt à l'emploi")
 
 
 class Notification(models.Model):

@@ -14,13 +14,18 @@ from apps.membres.models import Membre
 
 from .models import (
     STATUTS_RETOURNABLES,
+    BonAchat,
     Commande,
     LigneCommande,
     ModePaiementCommande,
     Produit,
+    RegleReduction,
     Retour,
     StatutCommande,
+    TypeReduction,
     VarianteProduit,
+    bon_achat_montant_max,
+    bon_achat_montant_min,
 )
 
 
@@ -31,12 +36,53 @@ class VarianteProduitSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
+class RegleReductionSerializer(serializers.ModelSerializer):
+    """CRUD des paliers de réduction par quantité (demande utilisateur du 2026-09-23) —
+    Bureau Admin+ en écriture, voir CatalogueBoutiquePermission (même classe que Produit/
+    VarianteProduit, réutilisée telle quelle pour RegleReductionViewSet)."""
+
+    class Meta:
+        model = RegleReduction
+        fields = [
+            "id",
+            "produit",
+            "seuil_quantite",
+            "type_reduction",
+            "pourcentage",
+            "actif",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        # merge avec l'instance existante pour un update partiel (PATCH ne renvoie pas
+        # forcément type_reduction si seul `actif` change, par ex.).
+        type_reduction = attrs.get(
+            "type_reduction", getattr(self.instance, "type_reduction", None)
+        )
+        pourcentage = attrs.get("pourcentage", getattr(self.instance, "pourcentage", None))
+        if type_reduction == TypeReduction.POURCENTAGE and not pourcentage:
+            raise serializers.ValidationError(
+                {"pourcentage": "Requis pour une règle de type pourcentage."}
+            )
+        if type_reduction == TypeReduction.ARTICLE_OFFERT and pourcentage:
+            raise serializers.ValidationError(
+                {"pourcentage": "Sans effet pour une règle « article offert » — laisser vide."}
+            )
+        return attrs
+
+
 class ProduitSerializer(serializers.ModelSerializer):
     variantes = VarianteProduitSerializer(many=True, read_only=True)
     stock_total = serializers.IntegerField(read_only=True)
     stock_faible = serializers.BooleanField(read_only=True)
     en_rupture = serializers.BooleanField(read_only=True)
     prix_final = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
+    # Uniquement les règles actives (demande utilisateur du 2026-09-23) — l'admin gère
+    # l'ensemble (actives et inactives) via /boutique/regles-reduction/?produit=<id>, ce champ
+    # nested sert seulement l'affichage catalogue/panier (CataloguePage, PanierCommandePage).
+    regles_reduction_actives = serializers.SerializerMethodField()
     # Écriture uniquement — pratique pour saisir le stock disponible dès la création du
     # produit (mockup #m-newprod) sans passer par le panneau "gérer les variantes" : crée
     # automatiquement une VarianteProduit "unique" (taille/couleur vides, voir docstring
@@ -63,10 +109,16 @@ class ProduitSerializer(serializers.ModelSerializer):
             "stock_total",
             "stock_faible",
             "en_rupture",
+            "regles_reduction_actives",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_regles_reduction_actives(self, produit):
+        regles = [r for r in produit.regles_reduction.all() if r.actif]
+        regles.sort(key=lambda r: r.seuil_quantite)
+        return RegleReductionSerializer(regles, many=True).data
 
     def create(self, validated_data):
         stock_initial = validated_data.pop("stock_initial", None)
@@ -85,6 +137,7 @@ class ProduitSerializer(serializers.ModelSerializer):
 
 class LigneCommandeSerializer(serializers.ModelSerializer):
     sous_total = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
+    sous_total_net = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
     quantite_retournee = serializers.IntegerField(read_only=True)
     quantite_retournable = serializers.IntegerField(read_only=True)
 
@@ -96,6 +149,10 @@ class LigneCommandeSerializer(serializers.ModelSerializer):
             "quantite",
             "prix_unitaire",
             "sous_total",
+            "quantite_offerte",
+            "pourcentage_reduction_quantite",
+            "reduction_quantite",
+            "sous_total_net",
             "quantite_retournee",
             "quantite_retournable",
         ]
@@ -154,6 +211,7 @@ class RetourSerializer(serializers.ModelSerializer):
 class CommandeSerializer(serializers.ModelSerializer):
     lignes = LigneCommandeSerializer(many=True, read_only=True)
     retours = RetourSerializer(many=True, read_only=True)
+    montant_du = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
 
     class Meta:
         model = Commande
@@ -168,6 +226,9 @@ class CommandeSerializer(serializers.ModelSerializer):
             "pays_livraison",
             "telephone_livraison",
             "montant_total",
+            "bon_achat",
+            "montant_bon_achat",
+            "montant_du",
             "statut",
             "mode_paiement",
             "date_paiement_confirme",
@@ -254,6 +315,11 @@ class PasserCommandeSerializer(serializers.Serializer):
     ville_livraison = serializers.CharField(max_length=100)
     pays_livraison = serializers.CharField(max_length=100, default="Allemagne")
     telephone_livraison = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    # Code de bon d'achat optionnel (demande utilisateur du 2026-09-23) — la validité (existe,
+    # ACTIF, non expiré, solde>0) n'est vérifiée que sous verrou dans CommandeViewSet.passer,
+    # jamais ici : un code peut être consommé par une commande concurrente entre la validation du
+    # serializer et l'exécution de la vue (même raison que le stock, voir CLAUDE.md §8).
+    code_bon_achat = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
     def validate_lignes(self, lignes):
         if not lignes:
@@ -298,3 +364,68 @@ class ChangerStatutCommandeSerializer(serializers.Serializer):
     """Entrée de POST /boutique/commandes/{id}/changer-statut/ — Bureau Admin+."""
 
     statut = serializers.ChoiceField(choices=StatutCommande.choices)
+
+
+# --- Bons d'achat (demande utilisateur du 2026-09-23, voir docstring de tête de models.py) ---
+
+
+class BonAchatSerializer(serializers.ModelSerializer):
+    utilisable = serializers.BooleanField(read_only=True)
+    est_expire = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = BonAchat
+        fields = [
+            "id",
+            "code",
+            "montant_initial",
+            "solde",
+            "statut",
+            "achete_par",
+            "mode_paiement",
+            "date_paiement_confirme",
+            "paiement_confirme_par",
+            "reference_paiement",
+            "date_expiration",
+            "utilisable",
+            "est_expire",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class AcheterBonAchatSerializer(serializers.Serializer):
+    """Entrée de POST /boutique/bons-achat/acheter/ — tout membre authentifié, montant libre
+    (choix confirmé par l'utilisateur) borné à [5, 500] € — voir bon_achat_montant_min/max."""
+
+    montant = serializers.DecimalField(max_digits=8, decimal_places=2)
+
+    def validate_montant(self, montant):
+        if montant < bon_achat_montant_min() or montant > bon_achat_montant_max():
+            raise serializers.ValidationError(
+                f"Le montant doit être compris entre {bon_achat_montant_min()} € et "
+                f"{bon_achat_montant_max()} €."
+            )
+        return montant
+
+
+class VerifierBonAchatSerializer(serializers.Serializer):
+    """Entrée de POST /boutique/bons-achat/verifier/ — vérification d'un code sans le
+    consommer, pour l'aperçu au checkout (voir PanierCommandePage frontend)."""
+
+    code = serializers.CharField(max_length=20)
+
+
+class BonAchatVerificationSerializer(serializers.ModelSerializer):
+    """Sortie de `verifier` — volontairement plus restreinte que BonAchatSerializer : n'importe
+    quel détenteur du code peut interroger cet endpoint (c'est le principe même d'un bon
+    d'achat, transmissible), il n'a donc jamais à voir l'identité de l'acheteur d'origine
+    (`achete_par`) ni les détails de paiement."""
+
+    utilisable = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = BonAchat
+        fields = ["code", "solde", "statut", "date_expiration", "utilisable"]
+        read_only_fields = fields

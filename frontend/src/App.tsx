@@ -10,9 +10,11 @@ import ParametresNotificationPage from "./pages/admin/ParametresNotificationPage
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
+import AcheterBonAchatPage from "./pages/boutique/AcheterBonAchatPage";
 import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
 import CataloguePage from "./pages/boutique/CataloguePage";
 import CommandeRetourPage from "./pages/boutique/CommandeRetourPage";
+import MesBonsAchatPage from "./pages/boutique/MesBonsAchatPage";
 import MesCommandesPage from "./pages/boutique/MesCommandesPage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
 import AdminAlbumsPage from "./pages/communaute/AdminAlbumsPage";
@@ -213,6 +215,12 @@ export default function App() {
             get_queryset ne renvoie de toute façon que les commandes du membre courant en
             dessous de Bureau Admin). */}
         <Route path="/boutique/commandes" element={<MesCommandesPage />} />
+        {/* Bons d'achat (demande utilisateur du 2026-09-23 : "Es soll möglich sein Gutscheine
+            zu Kaufen") — ouverts à tout authentifié, même scope IDOR que le reste du module
+            (BonAchatViewSet.get_queryset ne renvoie que les bons du membre courant en dessous
+            de Bureau Admin). */}
+        <Route path="/boutique/bon-achat/acheter" element={<AcheterBonAchatPage />} />
+        <Route path="/boutique/bons-achat" element={<MesBonsAchatPage />} />
         {/* Retour de paiement en ligne (ajouté le 2026-09-17, même principe que
             /cotisation/retour) — cible de success_url/cancel_url (Stripe) et return_url/
             cancel_url (PayPal), voir apps.cotisations.gateways (partagé avec apps.boutique) —

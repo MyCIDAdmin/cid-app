@@ -4,12 +4,16 @@ import factory
 from factory.django import DjangoModelFactory
 
 from apps.boutique.models import (
+    BonAchat,
     CategorieProduit,
     Commande,
     LigneCommande,
     Produit,
+    RegleReduction,
+    StatutBonAchat,
     StatutCommande,
     StatutProduit,
+    TypeReduction,
     VarianteProduit,
 )
 from apps.membres.tests.factories import MembreFactory
@@ -61,3 +65,24 @@ class LigneCommandeFactory(DjangoModelFactory):
     variante = factory.SubFactory(VarianteProduitFactory)
     quantite = 1
     prix_unitaire = Decimal("25.00")
+
+
+class RegleReductionFactory(DjangoModelFactory):
+    class Meta:
+        model = RegleReduction
+
+    produit = factory.SubFactory(ProduitFactory)
+    seuil_quantite = 5
+    type_reduction = TypeReduction.ARTICLE_OFFERT
+    pourcentage = None
+    actif = True
+
+
+class BonAchatFactory(DjangoModelFactory):
+    class Meta:
+        model = BonAchat
+
+    montant_initial = Decimal("50.00")
+    solde = Decimal("50.00")
+    statut = StatutBonAchat.EN_ATTENTE
+    achete_par = factory.SubFactory(MembreFactory)

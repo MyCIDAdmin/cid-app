@@ -32,6 +32,7 @@ import type {
   StatutProduit,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import RegleReductionManager from "./RegleReductionManager";
 import VariantesManager from "./VariantesManager";
 
 const CATEGORIES: CategorieProduit[] = [
@@ -72,6 +73,7 @@ export default function GestionCatalogueTab() {
 
   const [form, setForm] = useState<ProduitPayload>(formulaireInitial);
   const [produitDeplie, setProduitDeplie] = useState<string | null>(null);
+  const [produitReductionDeplie, setProduitReductionDeplie] = useState<string | null>(null);
   const [produitImageEnCours, setProduitImageEnCours] = useState<string | null>(null);
   const [produitImageErreur, setProduitImageErreur] = useState<{
     produitId: string;
@@ -378,6 +380,17 @@ export default function GestionCatalogueTab() {
                     ? t("catalogue_admin.masquer_variantes")
                     : t("catalogue_admin.gerer_variantes")}
                 </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setProduitReductionDeplie((cur) => (cur === produit.id ? null : produit.id))
+                  }
+                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+                >
+                  {produitReductionDeplie === produit.id
+                    ? t("catalogue_admin.masquer_regles_reduction")
+                    : t("catalogue_admin.gerer_regles_reduction")}
+                </button>
               </div>
               {produitImageErreur?.produitId === produit.id && (
                 <p className="mt-1 text-[11px] text-status-dangerText">
@@ -385,6 +398,9 @@ export default function GestionCatalogueTab() {
                 </p>
               )}
               {produitDeplie === produit.id && <VariantesManager produit={produit} />}
+              {produitReductionDeplie === produit.id && (
+                <RegleReductionManager produit={produit} />
+              )}
             </div>
           ))}
         </div>

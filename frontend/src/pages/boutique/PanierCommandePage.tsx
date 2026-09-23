@@ -36,10 +36,21 @@ import {
   useInitierPaiementEnLigneCommande,
   usePasserCommande,
   useVariantesParIds,
+  useVerifierBonAchat,
 } from "../../hooks/useBoutique";
-import { totalPanier, usePanierStore } from "../../store/panierStore";
+import {
+  calculerReductionArticle,
+  sousTotalNetArticle,
+  totalPanierNet,
+  usePanierStore,
+} from "../../store/panierStore";
 import { useAuthStore } from "../../store/authStore";
-import type { Commande, PasserCommandePayload, PasserelleCommande } from "../../types/boutique";
+import type {
+  BonAchatVerification,
+  Commande,
+  PasserCommandePayload,
+  PasserelleCommande,
+} from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 const PAIEMENT_EN_LIGNE_ACTIF = false;
@@ -95,6 +106,7 @@ export default function PanierCommandePage() {
   const synchroniserStocks = usePanierStore((s) => s.synchroniserStocks);
   const passerCommandeMutation = usePasserCommande();
   const paiementMutation = useInitierPaiementEnLigneCommande();
+  const verifierBonAchatMutation = useVerifierBonAchat();
 
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
   const [livraison, setLivraison] = useState(() =>
@@ -103,7 +115,47 @@ export default function PanierCommandePage() {
   const [commandeConfirmee, setCommandeConfirmee] = useState<Commande | null>(null);
   const [erreurPaiement, setErreurPaiement] = useState<string | null>(null);
 
-  const total = totalPanier(articles);
+  // Bon d'achat au checkout (demande utilisateur du 2026-09-23) — la vérification n'est qu'un
+  // aperçu non-consommant (voir useVerifierBonAchat) : la validité réelle n'est de toute façon
+  // revérifiée que côté serveur, sous verrou, au moment de `passer` (CLAUDE.md §8).
+  const [codeBonAchat, setCodeBonAchat] = useState("");
+  const [bonAchatVerifie, setBonAchatVerifie] = useState<BonAchatVerification | null>(null);
+  const [bonAchatErreur, setBonAchatErreur] = useState<string | null>(null);
+
+  // Total NET des réductions quantité indicatives (demande utilisateur du 2026-09-23) — jamais
+  // le montant qui fait foi (recalculé côté serveur), voir panierStore.totalPanierNet.
+  const total = totalPanierNet(articles);
+  const totalApresBonAchat = bonAchatVerifie
+    ? Math.max(total - Math.min(Number(bonAchatVerifie.solde), total), 0)
+    : total;
+
+  function handleVerifierBonAchat() {
+    if (!codeBonAchat.trim()) return;
+    setBonAchatErreur(null);
+    verifierBonAchatMutation.mutate(
+      { code: codeBonAchat.trim() },
+      {
+        onSuccess: (verification) => {
+          if (!verification.utilisable) {
+            setBonAchatVerifie(null);
+            setBonAchatErreur(t("commande.bon_achat_inutilisable"));
+            return;
+          }
+          setBonAchatVerifie(verification);
+        },
+        onError: (error) => {
+          setBonAchatVerifie(null);
+          setBonAchatErreur(extractApiErrorMessage(error, t("commande.bon_achat_erreur")));
+        },
+      },
+    );
+  }
+
+  function retirerBonAchat() {
+    setCodeBonAchat("");
+    setBonAchatVerifie(null);
+    setBonAchatErreur(null);
+  }
 
   // Revalidation live du stock (le panier ne conserve qu'un instantané figé pris à l'ajout) :
   // détecte dès l'ouverture du panier les articles devenus "ausverkauft" entre-temps (commandés
@@ -132,6 +184,7 @@ export default function PanierCommandePage() {
     const payload: PasserCommandePayload = {
       lignes: articles.map((a) => ({ variante: a.varianteId, quantite: a.quantite })),
       ...livraison,
+      ...(bonAchatVerifie && { code_bon_achat: bonAchatVerifie.code }),
     };
     passerCommandeMutation.mutate(payload, {
       onSuccess: (commande) => {
@@ -172,6 +225,19 @@ export default function PanierCommandePage() {
           {t("commande.confirmee_numero", { numero: commandeConfirmee.numero_commande })}
         </p>
         <p className="mb-5 text-xs text-text-tertiary">{t("commande.confirmee_email")}</p>
+
+        {Number(commandeConfirmee.montant_bon_achat) > 0 && (
+          <p className="mb-5 rounded-cid bg-status-successBg px-3 py-2 text-xs text-status-successText">
+            {Number(commandeConfirmee.montant_du) <= 0
+              ? t("commande.bon_achat_couvre_tout", {
+                  montant: formatMontant(commandeConfirmee.montant_bon_achat),
+                })
+              : t("commande.bon_achat_applique", {
+                  montant: formatMontant(commandeConfirmee.montant_bon_achat),
+                  reste: formatMontant(commandeConfirmee.montant_du),
+                })}
+          </p>
+        )}
 
         {peutPayerEnLigne && PAIEMENT_EN_LIGNE_ACTIF && (
           <div className="mb-5 rounded-cid border border-text-tertiary/10 p-4 text-left">
@@ -300,6 +366,21 @@ export default function PanierCommandePage() {
                         {t("commande.article_ausverkauft")}
                       </div>
                     )}
+                    {(() => {
+                      const { quantiteOfferte, pourcentageApplique } =
+                        calculerReductionArticle(a);
+                      if (quantiteOfferte <= 0 && !pourcentageApplique) return null;
+                      return (
+                        <div className="mt-0.5 text-[11px] font-medium text-cad">
+                          🎁{" "}
+                          {quantiteOfferte > 0 &&
+                            t("commande.article_offert_applique", { count: quantiteOfferte })}
+                          {quantiteOfferte > 0 && pourcentageApplique ? " · " : ""}
+                          {pourcentageApplique &&
+                            t("commande.pourcentage_applique", { pct: pourcentageApplique })}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -322,8 +403,24 @@ export default function PanierCommandePage() {
                       +
                     </button>
                   </div>
-                  <span className="min-w-[60px] text-right text-sm font-bold text-ca">
-                    {formatMontant(Number(a.prixUnitaire) * a.quantite)}
+                  <span className="min-w-[60px] text-right">
+                    {(() => {
+                      const brut = Number(a.prixUnitaire) * a.quantite;
+                      const net = sousTotalNetArticle(a);
+                      if (net >= brut) {
+                        return <span className="text-sm font-bold text-ca">{formatMontant(net)}</span>;
+                      }
+                      return (
+                        <span className="flex flex-col items-end">
+                          <span className="text-[11px] text-text-tertiary line-through">
+                            {formatMontant(brut)}
+                          </span>
+                          <span className="text-sm font-bold text-status-dangerText">
+                            {formatMontant(net)}
+                          </span>
+                        </span>
+                      );
+                    })()}
                   </span>
                   <button
                     type="button"
@@ -471,9 +568,86 @@ export default function PanierCommandePage() {
               {livraison.ville_livraison}, {livraison.pays_livraison}
             </dd>
           </dl>
-          <div className="mb-4 flex items-center justify-between border-t border-text-tertiary/20 pt-3">
-            <span className="text-sm font-semibold text-text-primary">{t("commande.total")}</span>
-            <span className="text-lg font-bold text-ca">{formatMontant(total)}</span>
+
+          <div className="mb-4 border-t border-text-tertiary/20 pt-3">
+            <label
+              htmlFor="code-bon-achat"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("commande.bon_achat_label")}
+            </label>
+            {bonAchatVerifie ? (
+              <div className="flex items-center justify-between rounded-cid bg-status-successBg px-3 py-2 text-xs text-status-successText">
+                <span>
+                  {t("commande.bon_achat_valide", {
+                    code: bonAchatVerifie.code,
+                    solde: formatMontant(bonAchatVerifie.solde),
+                  })}
+                </span>
+                <button
+                  type="button"
+                  onClick={retirerBonAchat}
+                  className="font-medium underline hover:no-underline"
+                >
+                  {t("commande.bon_achat_retirer")}
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  id="code-bon-achat"
+                  value={codeBonAchat}
+                  onChange={(e) => setCodeBonAchat(e.target.value)}
+                  placeholder={t("commande.bon_achat_placeholder")}
+                  className="flex-1 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm uppercase"
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifierBonAchat}
+                  disabled={!codeBonAchat.trim() || verifierBonAchatMutation.isPending}
+                  className="rounded-cid border border-ca px-3 py-1.5 text-sm font-medium text-ca hover:bg-cal/20 disabled:opacity-40"
+                >
+                  {verifierBonAchatMutation.isPending
+                    ? t("commande.bon_achat_verification")
+                    : t("commande.bon_achat_verifier")}
+                </button>
+              </div>
+            )}
+            {bonAchatErreur && (
+              <p className="mt-1 text-xs text-status-dangerText">{bonAchatErreur}</p>
+            )}
+            <Link
+              to="/boutique/bon-achat/acheter"
+              className="mt-1 inline-block text-xs font-medium text-ca hover:underline"
+            >
+              {t("commande.bon_achat_acheter_lien")}
+            </Link>
+          </div>
+
+          <div className="mb-4 flex flex-col gap-1 border-t border-text-tertiary/20 pt-3">
+            {bonAchatVerifie && (
+              <div className="flex items-center justify-between text-xs text-text-tertiary">
+                <span>{t("commande.total")}</span>
+                <span className="line-through">{formatMontant(total)}</span>
+              </div>
+            )}
+            {bonAchatVerifie && (
+              <div className="flex items-center justify-between text-xs text-status-successText">
+                <span>
+                  {t("commande.bon_achat_deduit", {
+                    montant: formatMontant(Math.min(Number(bonAchatVerifie.solde), total)),
+                  })}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-text-primary">
+                {bonAchatVerifie ? t("commande.total_a_payer") : t("commande.total")}
+              </span>
+              <span className="text-lg font-bold text-ca">
+                {formatMontant(totalApresBonAchat)}
+              </span>
+            </div>
           </div>
           {passerCommandeMutation.isError && (
             <p className="mb-3 text-xs text-status-dangerText">

@@ -18,7 +18,7 @@ import ShareButton from "../../components/ui/ShareButton";
 import { useProduits } from "../../hooks/useBoutique";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { nombreArticlesPanier, totalPanier, usePanierStore } from "../../store/panierStore";
-import type { CategorieProduit, Produit, VarianteProduit } from "../../types/boutique";
+import type { CategorieProduit, Produit, RegleReduction, VarianteProduit } from "../../types/boutique";
 
 const CATEGORIES: CategorieProduit[] = [
   "vetements",
@@ -35,6 +35,22 @@ function formatMontant(montant: string | number): string {
 function labelVariante(variante: VarianteProduit): string {
   const details = [variante.taille, variante.couleur].filter(Boolean).join(" / ");
   return details || "Unique";
+}
+
+/**
+ * Libellé court d'un palier de réduction par quantité (demande utilisateur du 2026-09-23,
+ * "Beim Kauf von über 10 Artikeln... 10% Rabatt" / "Beim Kauf von 5 Stück... geschenkten
+ * Artikel") — affiché en badge sous le prix, voir ProduitCarte. `t` est injecté plutôt
+ * qu'importé ici pour rester dans le composant (clé i18n interpolée).
+ */
+function labelRegleReduction(
+  regle: RegleReduction,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: (key: string, opts?: Record<string, unknown>) => any,
+): string {
+  return regle.type_reduction === "pourcentage"
+    ? t("catalogue.regle_pourcentage", { seuil: regle.seuil_quantite, pct: regle.pourcentage })
+    : t("catalogue.regle_article_offert", { seuil: regle.seuil_quantite });
 }
 
 function ProduitCarte({
@@ -63,6 +79,9 @@ function ProduitCarte({
       // simple indicatif ici, le montant réel est de toute façon recalculé côté serveur).
       prixUnitaire: produit.prix_final,
       stockDisponible: varianteSelectionnee.stock,
+      // Instantané des paliers actifs (demande utilisateur du 2026-09-23) — voir
+      // panierStore.calculerReductionArticle, purement indicatif.
+      reglesReduction: produit.regles_reduction_actives,
     });
   }
 
@@ -129,6 +148,18 @@ function ProduitCarte({
             {t("catalogue.ajouter")}
           </button>
         </div>
+        {produit.regles_reduction_actives.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {produit.regles_reduction_actives.map((regle) => (
+              <span
+                key={regle.id}
+                className="rounded-full bg-cal/30 px-1.5 py-0.5 text-[10px] font-medium text-cad"
+              >
+                🎁 {labelRegleReduction(regle, t)}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-1.5 text-[10px] text-text-tertiary">
           {produit.en_rupture
             ? t("catalogue.rupture")
