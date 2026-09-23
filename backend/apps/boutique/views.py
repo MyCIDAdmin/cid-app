@@ -96,6 +96,8 @@ from rest_framework.viewsets import ModelViewSet
 from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
+from apps.rbac.permissions import module_access_permission
+from apps.rbac.services import is_elevated_for_module
 
 from .filters import CommandeFilter, ProduitFilter, RetourFilter
 from .models import (
@@ -356,7 +358,10 @@ def _generer_bons_achat(commande):
 
 class CommandeViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [CommandePermission]
+    # apps.rbac Phase B (ajouté le 2026-09-23) : module_access_permission("boutique") est une
+    # porte SUPPLÉMENTAIRE (DRF combine en ET logique) — jamais à la place de
+    # CommandePermission, qui reste la source de vérité pour les 5 rôles système.
+    permission_classes = [CommandePermission, module_access_permission("boutique")]
     serializer_class = CommandeSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -369,7 +374,9 @@ class CommandeViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL:
+        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL or is_elevated_for_module(
+            user, "boutique"
+        ):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(membre=membre) if membre else queryset.none()

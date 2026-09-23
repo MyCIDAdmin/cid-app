@@ -52,6 +52,7 @@ Permissions API — app boutique (FDD §2.2 matrice des permissions) :
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.services import is_elevated_for_module
 
 GESTION_CATALOGUE_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
 ORDER_VISIBILITY_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
@@ -91,6 +92,11 @@ class CommandePermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         user = request.user
         if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL:
+            return True
+        # apps.rbac Phase B (ajouté le 2026-09-23) : un rôle personnalisé avec au moins la
+        # lecture sur le module "boutique" voit TOUTES les commandes, comme Bureau Admin+ —
+        # porte OUVERTE EN PLUS, jamais un remplacement de la condition ci-dessus.
+        if is_elevated_for_module(user, "boutique"):
             return True
         membre = getattr(user, "membre", None)
         return membre is not None and obj.membre_id == membre.id
