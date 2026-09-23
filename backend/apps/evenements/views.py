@@ -38,6 +38,8 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.models import HistoriqueStatutCotisation, ModePaiement, StatutCotisation
 from apps.cotisations.notifications import notifier_paiement_confirme
 from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
+from apps.rbac.permissions import module_access_permission
+from apps.rbac.services import is_elevated_for_module
 
 from .filters import CovoiturageFilter, EvenementFilter, InscriptionFilter
 from .models import (
@@ -269,7 +271,10 @@ class EvenementViewSet(ModelViewSet):
 
 class InscriptionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [InscriptionPermission]
+    # apps.rbac Phase B (ajouté le 2026-09-23) : module_access_permission("evenements") est une
+    # porte SUPPLÉMENTAIRE (DRF combine en ET logique) — jamais à la place de
+    # InscriptionPermission, qui reste la source de vérité pour les 5 rôles système.
+    permission_classes = [InscriptionPermission, module_access_permission("evenements")]
     serializer_class = InscriptionSerializer
     pagination_class = EvenementsCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -280,7 +285,9 @@ class InscriptionViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL:
+        if ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL or is_elevated_for_module(
+            user, "evenements"
+        ):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(membre=membre) if membre else queryset.none()

@@ -323,6 +323,43 @@ def test_membre_ne_voit_que_ses_propres_inscriptions(api_client):
     assert str(resp.data["results"][0]["membre"]) == str(membre1.id)
 
 
+def test_role_personnalise_eleve_voit_toutes_les_inscriptions(api_client):
+    """apps.rbac Phase B : un rôle personnalisé avec au moins la lecture sur "evenements" voit
+    TOUTES les inscriptions, comme Bureau Admin+ — voir is_elevated_for_module."""
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "vertrieb-idor@example.de")
+    _, membre2 = _user_avec_membre(Role.MEMBRE, "m-idor-autre@example.de")
+    role = RoleDefinitionFactory(slug="vertrieb-evenements-idor")
+    RoleModulePermissionFactory(role=role, module="evenements", niveau_acces=NiveauAcces.LECTURE)
+    UserRoleAssignmentFactory(user=user, role=role)
+    InscriptionFactory(membre=membre)
+    InscriptionFactory(membre=membre2)
+
+    resp = _auth(api_client, user).get(reverse(INSCRIPTION_LIST_URL))
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 2
+
+
+def test_membre_sans_role_eleve_ne_voit_toujours_que_ses_propres_inscriptions(api_client):
+    """Régression explicite après le câblage Phase B : sans UserRoleAssignment
+    supplémentaire, le comportement historique (SCD §2.3 A01) n'a pas bougé."""
+    user1, membre1 = _user_avec_membre(Role.MEMBRE, "m-idor-regression1@example.de")
+    _, membre2 = _user_avec_membre(Role.MEMBRE, "m-idor-regression2@example.de")
+    InscriptionFactory(membre=membre1)
+    InscriptionFactory(membre=membre2)
+
+    resp = _auth(api_client, user1).get(reverse(INSCRIPTION_LIST_URL))
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert str(resp.data["results"][0]["membre"]) == str(membre1.id)
+
+
 def test_bureau_admin_voit_toutes_les_inscriptions(api_client):
     admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau3@example.de")
     _, membre1 = _user_avec_membre(Role.MEMBRE, "m11@example.de")
