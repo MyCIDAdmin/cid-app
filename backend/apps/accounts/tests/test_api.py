@@ -138,6 +138,21 @@ def test_register_creates_inactive_member(api_client):
     assert membre.cin == "12345678"
 
 
+def test_register_attribue_automatiquement_le_role_rbac_membre(api_client):
+    """apps.rbac Phase A : "Ein neuer Benutzer erhält nach Genehmigung automatisch die Rolle
+    'Normales Mitglieder'" — la ligne UserRoleAssignment est créée dès l'inscription (avant même
+    la validation admin), en plus du CharField legacy `user.role` déjà à "membre" par défaut."""
+    from apps.rbac.models import RoleDefinition, UserRoleAssignment
+
+    url = reverse("accounts:register")
+    resp = api_client.post(url, payload_inscription(), format="json")
+    assert resp.status_code == 201
+
+    user = User.objects.get(email="nouveau@example.com")
+    role_membre = RoleDefinition.objects.get(slug="membre", is_system=True)
+    assert UserRoleAssignment.objects.filter(user=user, role=role_membre).exists()
+
+
 def test_register_without_rgpd_consent_fails(api_client):
     url = reverse("accounts:register")
     resp = api_client.post(

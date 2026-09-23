@@ -8,7 +8,11 @@ requirements/dev.txt) : chaque test synchrone pilote sa propre coroutine via
 `channels.db.database_sync_to_async`, qui exécute le code de base de données dans un
 thread séparé de la boucle asyncio — nécessite une vraie transaction validée en base
 (comme pour tout test Channels touchant l'ORM), pas la transaction de test habituelle
-que pytest-django annule en mémoire."""
+que pytest-django annule en mémoire.
+`serialized_rollback=True` (ajouté le 2026-09-23, apps.rbac) : sans ce flag, le FLUSH complet de
+la base effectué après chaque test `transaction=True` efface aussi les lignes seedées par les
+migrations de données (ex. apps.rbac.migrations.0002 — les 5 RoleDefinition système), sans les
+recréer, ce qui casse tous les tests exécutés après celui-ci dans la même session pytest."""
 
 import asyncio
 
@@ -28,7 +32,7 @@ from apps.vote.models import (
 from apps.vote.routing import websocket_urlpatterns
 from apps.vote.tests.factories import VoteOptionFactory, VoteSessionFactory, user_membre_avec_fiche
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = pytest.mark.django_db(transaction=True, serialized_rollback=True)
 
 
 def _application():

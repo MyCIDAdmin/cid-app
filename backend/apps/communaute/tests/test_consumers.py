@@ -4,7 +4,11 @@ pour ce dernier). Même principe que apps.vote.tests.test_consumer (voir son doc
 pas de pytest-asyncio dans ce projet,
 chaque test synchrone pilote sa propre coroutine via `asyncio.run(...)`, et
 `django_db(transaction=True)` est nécessaire car `database_sync_to_async` exécute l'ORM
-dans un thread séparé, qui a besoin d'une transaction réellement validée en base."""
+dans un thread séparé, qui a besoin d'une transaction réellement validée en base.
+`serialized_rollback=True` (ajouté le 2026-09-23, apps.rbac) : sans ce flag, le FLUSH complet de
+la base effectué après chaque test `transaction=True` efface aussi les lignes seedées par les
+migrations de données (ex. apps.rbac.migrations.0002 — les 5 RoleDefinition système), sans les
+recréer, ce qui casse tous les tests exécutés après celui-ci dans la même session pytest."""
 
 import asyncio
 
@@ -31,7 +35,7 @@ from apps.communaute.tests.factories import (
     user_membre_avec_fiche,
 )
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = pytest.mark.django_db(transaction=True, serialized_rollback=True)
 
 
 def _application():

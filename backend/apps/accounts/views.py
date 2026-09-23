@@ -41,7 +41,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.membres.models import StatutMembre
 
 from . import services
-from .models import RegistrationDecision
+from .models import RegistrationDecision, Role
 from .permissions import IsRHOrAbove, IsSuperAdmin
 from .serializers import (
     ChangeRoleSerializer,
@@ -238,6 +238,19 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
             user = serializer.save()
+            # Attribution automatique du rôle "Membre Normal" (demande utilisateur du
+            # 2026-09-23 : "Ein neuer Benutzer erhält nach Genehmigung die Rolle Normales
+            # Mitglieder") — import différé pour éviter tout couplage au chargement du module
+            # (apps.rbac dépend de apps.accounts, jamais l'inverse, voir apps.rbac.apps).
+            # `get_or_create` : idempotent, et le CharField `user.role` legacy vaut de toute
+            # façon déjà "membre" par défaut du modèle (voir services.get_user_role_slugs qui
+            # l'inclut systématiquement) — cette ligne ne fait qu'ajouter la ligne d'attribution
+            # explicite pour que la nouvelle UI de gestion des rôles la voie immédiatement.
+            from apps.rbac.models import RoleDefinition, UserRoleAssignment
+
+            role_membre = RoleDefinition.objects.filter(slug=Role.MEMBRE, is_system=True).first()
+            if role_membre:
+                UserRoleAssignment.objects.get_or_create(user=user, role=role_membre)
         code = services.generate_email_otp(user, purpose="email_verification")
         send_email_verification_code.delay(str(user.id), code)
         services.log_audit_event("register", user=user, ip_address=_client_ip(request))
