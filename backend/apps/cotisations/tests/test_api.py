@@ -503,6 +503,45 @@ def test_membre_ne_voit_que_ses_propres_cotisations(api_client):
     assert str(resp.data["results"][0]["membre"]) == str(membre.id)
 
 
+def test_role_personnalise_eleve_voit_toutes_les_cotisations(api_client):
+    """apps.rbac Phase B : un rôle personnalisé avec au moins la lecture sur "cotisations" voit
+    TOUTES les cotisations, comme RH/Admin — voir is_elevated_for_module."""
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "vertrieb-idor@example.de")
+    role = RoleDefinitionFactory(slug="vertrieb-cotisations-idor")
+    RoleModulePermissionFactory(role=role, module="cotisations", niveau_acces=NiveauAcces.LECTURE)
+    UserRoleAssignmentFactory(user=user, role=role)
+    CotisationFactory(membre=membre)
+    CotisationFactory()  # une autre fiche, sans lien avec `user`
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 2
+
+
+def test_membre_sans_role_eleve_ne_voit_toujours_que_ses_propres_cotisations(api_client):
+    """Régression explicite après le câblage Phase B : sans UserRoleAssignment
+    supplémentaire, le comportement historique (SCD §2.3 A01) n'a pas bougé."""
+    user, membre = _user_avec_membre(Role.MEMBRE, "membre-seul-idor@example.de")
+    CotisationFactory(membre=membre)
+    CotisationFactory()
+
+    _auth(api_client, user)
+    resp = api_client.get(reverse(LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert str(resp.data["results"][0]["membre"]) == str(membre.id)
+
+
 def test_membre_peut_recuperer_sa_propre_cotisation(api_client):
     user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
     cotisation = CotisationFactory(membre=membre)

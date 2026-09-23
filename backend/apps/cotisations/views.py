@@ -62,6 +62,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
+from apps.rbac.permissions import module_access_permission
+from apps.rbac.services import is_elevated_for_module
 
 from .filters import CotisationFilter
 from .gateways import GatewayError, creer_commande_paypal, creer_session_stripe
@@ -107,7 +109,10 @@ class CotisationCursorPagination(CursorPagination):
 
 class CotisationViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [CotisationPermission]
+    # apps.rbac Phase B (ajouté le 2026-09-23) : module_access_permission("cotisations") est
+    # une porte SUPPLÉMENTAIRE (DRF combine en ET logique) — jamais à la place de
+    # CotisationPermission, qui reste la source de vérité pour les 5 rôles système.
+    permission_classes = [CotisationPermission, module_access_permission("cotisations")]
     serializer_class = CotisationSerializer
     pagination_class = CotisationCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -118,7 +123,9 @@ class CotisationViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_MIN_LEVEL:
+        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_MIN_LEVEL or is_elevated_for_module(
+            user, "cotisations"
+        ):
             return queryset
         # Protection IDOR (SCD §2.3 A01) : sous RH, uniquement les cotisations de sa propre
         # fiche membre (si elle existe et est liée à son compte).
