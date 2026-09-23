@@ -146,6 +146,32 @@ def test_creer_produit_sans_stock_initial_ne_cree_pas_de_variante(api_client):
     assert len(resp.data["variantes"]) == 0
 
 
+def test_creer_produit_bon_achat_avec_stock_initial_ne_leve_pas_dintegrite(api_client):
+    # Régression (bug réel constaté en production le 2026-09-23) : GestionCatalogueTab envoie
+    # toujours `stock_initial` (0 par défaut) même pour un "bon_achat", champ pourtant masqué
+    # côté UI — sans la garde ajoutée dans ProduitSerializer.create, la VarianteProduit
+    # "sentinelle" auto-créée par Produit.save() (voir TypeProduit.BON_ACHAT) et celle demandée
+    # par `stock_initial` entrent toutes deux en collision sur (produit, taille="", couleur=""),
+    # violant la contrainte d'unicité "une_seule_variante_par_combinaison" (IntegrityError → 500
+    # brut, sans JSON, DEBUG=False en prod).
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau13@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL),
+        {
+            "nom": "Bon d'achat CID",
+            "categorie": "bon_achat",
+            "type_produit": "bon_achat",
+            "prix": "0.00",
+            "stock_initial": 0,
+        },
+    )
+    assert resp.status_code == 201, resp.data
+    # Une seule variante (la sentinelle) — jamais deux.
+    assert len(resp.data["variantes"]) == 1
+    assert resp.data["variantes"][0]["taille"] == ""
+    assert resp.data["variantes"][0]["couleur"] == ""
+
+
 def test_modifier_produit_ignore_stock_initial(api_client):
     user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau12@example.de")
     produit = ProduitFactory()

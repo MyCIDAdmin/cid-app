@@ -85,7 +85,15 @@ export default function GestionCatalogueTab() {
 
   function handleCreer(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    creerMutation.mutate(form, { onSuccess: () => setForm(formulaireInitial()) });
+    // stock_initial n'a aucun sens pour un "bon_achat" (pas de stock réel, voir champ masqué
+    // ci-dessous) et ne doit jamais être envoyé pour ce type : le backend a sa propre garde
+    // (ProduitSerializer.create ignore stock_initial pour BON_ACHAT depuis le correctif du
+    // 2026-09-23 — bug réel constaté en production, IntegrityError sur la contrainte d'unicité
+    // de VarianteProduit car ce champ restait à sa valeur par défaut 0 même masqué côté UI) mais
+    // on ne s'y fie pas seul (CLAUDE.md §8, même principe que partout ailleurs dans ce fichier).
+    const payload: ProduitPayload =
+      form.type_produit === "bon_achat" ? { ...form, stock_initial: undefined } : form;
+    creerMutation.mutate(payload, { onSuccess: () => setForm(formulaireInitial()) });
   }
 
   /**

@@ -125,7 +125,14 @@ class ProduitSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         stock_initial = validated_data.pop("stock_initial", None)
         produit = super().create(validated_data)
-        if stock_initial is not None:
+        # Un "bon_achat" a déjà sa VarianteProduit "sentinelle" unique auto-créée par
+        # Produit.save() (voir TypeProduit.BON_ACHAT) — stock_initial n'a aucun sens pour ce
+        # type (pas de stock réel) et DOIT être ignoré ici, sinon la création d'une seconde
+        # VarianteProduit(taille="", couleur="") viole la contrainte d'unicité
+        # "une_seule_variante_par_combinaison" (bug réel constaté en production le 2026-09-23 :
+        # GestionCatalogueTab envoie toujours stock_initial=0 par défaut, même masqué côté UI
+        # pour ce type — voir aussi le nettoyage côté payload dans handleChangerType/handleCreer).
+        if stock_initial is not None and produit.type_produit != TypeProduit.BON_ACHAT:
             VarianteProduit.objects.create(
                 produit=produit, taille="", couleur="", stock=stock_initial
             )
