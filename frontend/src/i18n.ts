@@ -26,6 +26,7 @@ i18n
       "cotisations",
       "inscriptions",
       "utilisateurs",
+      "rbac",
       "adhesions",
       "evenements",
       "boutique",

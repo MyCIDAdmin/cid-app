@@ -1,0 +1,51 @@
+{
+  "onglets": {
+    "attribution": "Zuweisung",
+    "acces": "Zugriff"
+  },
+  "attribution": {
+    "col_roles_attribues": "Zugewiesene Rollen",
+    "gerer_roles": "Rollen verwalten",
+    "fermer": "Schließen",
+    "chargement_roles": "Rollen werden geladen…",
+    "erreur_chargement_roles": "Die Rollen des Benutzers konnten nicht geladen werden.",
+    "role_membre_verrouille": "Normales Mitglied ist immer inbegriffen und kann nicht abgewählt werden.",
+    "enregistrer": "Speichern",
+    "annuler": "Abbrechen",
+    "succes_message": "Die Rollen von {{email}} wurden aktualisiert.",
+    "erreur_action": "Die Rollenzuweisung ist fehlgeschlagen, bitte erneut versuchen."
+  },
+  "acces": {
+    "titre": "Zugriffsmatrix",
+    "description": "Legen Sie fest, welchen Zugriff jede Rolle auf jedes Modul hat. Neue Module erscheinen hier automatisch als Spalte.",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Matrix konnte nicht geladen werden.",
+    "col_role": "Rolle",
+    "niveau": {
+      "aucun": "Kein Zugriff",
+      "lecture": "Lesen",
+      "lecture_ecriture": "Lesen & Schreiben"
+    },
+    "role_systeme": "System",
+    "role_personnalise": "Benutzerdefiniert",
+    "nouveau_role": {
+      "titre": "Neue Rolle anlegen",
+      "nom_label": "Name",
+      "nom_placeholder": "z. B. Vertrieb",
+      "slug_label": "Kennung (slug)",
+      "slug_placeholder": "z. B. vertrieb",
+      "description_label": "Beschreibung",
+      "description_placeholder": "Optional",
+      "creer": "Rolle anlegen",
+      "succes": "Die Rolle „{{nom}}“ wurde angelegt.",
+      "erreur": "Die Rolle konnte nicht angelegt werden."
+    },
+    "supprimer": {
+      "bouton": "Löschen",
+      "erreur_systeme": "Eine Systemrolle kann nicht gelöscht werden.",
+      "erreur_encore_attribuee": "Diese Rolle ist noch mindestens einem Benutzer zugewiesen — entfernen Sie sie zuerst.",
+      "succes": "Die Rolle wurde gelöscht.",
+      "erreur": "Die Rolle konnte nicht gelöscht werden."
+    }
+  }
+}

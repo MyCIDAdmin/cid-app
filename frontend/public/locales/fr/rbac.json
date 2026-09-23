@@ -1,0 +1,51 @@
+{
+  "onglets": {
+    "attribution": "Attribution",
+    "acces": "Accès"
+  },
+  "attribution": {
+    "col_roles_attribues": "Rôles attribués",
+    "gerer_roles": "Gérer les rôles",
+    "fermer": "Fermer",
+    "chargement_roles": "Chargement des rôles…",
+    "erreur_chargement_roles": "Impossible de charger les rôles de l'utilisateur.",
+    "role_membre_verrouille": "Membre Normal est toujours inclus et ne peut pas être décoché.",
+    "enregistrer": "Enregistrer",
+    "annuler": "Annuler",
+    "succes_message": "Les rôles de {{email}} ont été mis à jour.",
+    "erreur_action": "L'attribution des rôles a échoué, veuillez réessayer."
+  },
+  "acces": {
+    "titre": "Matrice d'accès",
+    "description": "Définissez l'accès de chaque rôle à chaque module. Les nouveaux modules apparaissent ici automatiquement comme colonne.",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger la matrice.",
+    "col_role": "Rôle",
+    "niveau": {
+      "aucun": "Aucun accès",
+      "lecture": "Lecture",
+      "lecture_ecriture": "Lecture et écriture"
+    },
+    "role_systeme": "Système",
+    "role_personnalise": "Personnalisé",
+    "nouveau_role": {
+      "titre": "Créer un nouveau rôle",
+      "nom_label": "Nom",
+      "nom_placeholder": "ex. Vertrieb",
+      "slug_label": "Identifiant (slug)",
+      "slug_placeholder": "ex. vertrieb",
+      "description_label": "Description",
+      "description_placeholder": "Optionnel",
+      "creer": "Créer le rôle",
+      "succes": "Le rôle « {{nom}} » a été créé.",
+      "erreur": "Le rôle n'a pas pu être créé."
+    },
+    "supprimer": {
+      "bouton": "Supprimer",
+      "erreur_systeme": "Un rôle système ne peut pas être supprimé.",
+      "erreur_encore_attribuee": "Ce rôle est encore attribué à au moins un utilisateur — retirez-le d'abord.",
+      "succes": "Le rôle a été supprimé.",
+      "erreur": "Le rôle n'a pas pu être supprimé."
+    }
+  }
+}
