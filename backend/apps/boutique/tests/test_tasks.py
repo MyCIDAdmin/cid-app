@@ -121,6 +121,39 @@ def test_envoyer_email_bon_achat_code(mailoutbox):
     assert "80,00 €" in corps_html
 
 
+def test_envoyer_email_bon_achat_code_logo_en_piece_jointe_inline_jamais_en_data_uri(mailoutbox):
+    # Régression (bug réel constaté en production le 2026-09-23, rapport utilisateur : logo non
+    # affiché + email tronqué par Gmail "[Message clipped]") — voir docstring de
+    # apps.boutique.emails. Le logo (~80 Ko en pleine résolution) ne doit plus jamais être
+    # encodé en `data:` URI dans le HTML (gonfle l'email au-delà du seuil de troncature Gmail
+    # ~102 Ko ET est de toute façon strippé par la plupart des clients mail) : il doit être une
+    # pièce jointe inline référencée par Content-ID (cid:).
+    membre = _membre_avec_compte()
+    bon = BonAchatFactory(achete_par=membre, statut=StatutBonAchat.ACTIF)
+
+    envoyer_email_bon_achat_code(str(bon.id))
+
+    assert len(mailoutbox) == 1
+    message = mailoutbox[0]
+    corps_html, _ = message.alternatives[0]
+
+    # Plus aucune image encodée en base64 dans le HTML.
+    assert "data:image" not in corps_html
+    assert "cid:logo-cid-email" in corps_html
+
+    # Le logo est bien joint en pièce jointe inline, avec le Content-ID correspondant.
+    assert len(message.attachments) == 1
+    logo = message.attachments[0]
+    content_id = logo.get("Content-ID", "")
+    assert content_id == "<logo-cid-email>"
+    assert logo.get("Content-Disposition", "").startswith("inline")
+
+    # Le message complet (texte + HTML + pièce jointe) reste largement sous le seuil de
+    # troncature de Gmail (~102 Ko) — l'ancien data: URI faisait à lui seul ~109 Ko.
+    taille_totale = len(message.message().as_bytes())
+    assert taille_totale < 50_000
+
+
 def test_envoyer_email_bon_achat_code_respecte_la_langue_preferee(mailoutbox):
     membre = _membre_avec_compte()
     membre.user.langue_preferee = "de"

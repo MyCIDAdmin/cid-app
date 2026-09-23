@@ -7,26 +7,47 @@ texte brut via send_mail) : la demande utilisateur qualifie explicitement CET em
 (soigné), contrairement aux autres emails de commande — pas de raison de généraliser ce
 traitement à tout le module, qui resterait hors du périmètre demandé.
 
-Suit le même principe que apps.cotisations.pdf (logo encodé en base64, dictionnaire de
-traductions FR/DE avec repli sur FR pour un membre sans compte lié ou préférant l'arabe — voir
-sa docstring pour le détail du choix R1/R2) plutôt que de dupliquer le fichier logo : le module
-boutique n'a pas son propre asset, apps.cotisations.assets.logo_cid.jpg est réutilisé tel quel
-(même identité visuelle CID, un seul fichier binaire à maintenir).
+Réutilise apps.cotisations.assets.logo_cid.jpg (même identité visuelle CID, un seul fichier
+binaire à maintenir) mais PAS la technique base64 `data:` URI de apps.cotisations.pdf : ce
+choix est correct pour un PDF (WeasyPrint rend le HTML localement, pas de client mail entre les
+deux) mais cassait cet email — bug réel constaté en production le 2026-09-23 (rapport
+utilisateur : logo absent + email tronqué par Gmail, "[Message clipped] View entire message").
+Cause double, avec la même origine : le logo original (1131x1601, ~80 Ko) encodé en base64
+inline gonflait l'email à lui seul à ~109 Ko, dépassant le seuil de troncature de Gmail
+(~102 Ko) — et de toute façon Gmail (comme la plupart des webmails) supprime purement et
+simplement les `<img src="data:...">` du HTML pour des raisons de sécurité, contrairement à un
+`cid:` référencé sur une pièce jointe inline (mécanisme MIME standard, le seul fiable pour une
+image intégrée dans un email HTML). Corrigé en redimensionnant le logo à une taille d'icône
+(affiché 40x40 dans le template, voir `_logo_email_attachment`) et en l'attachant en pièce
+jointe inline via Content-ID — voir `LOGO_CONTENT_ID` et `tasks.envoyer_email_bon_achat_code`,
+seul appelant, pour l'attachement effectif au message.
 """
 
-import base64
 from functools import lru_cache
+from io import BytesIO
 from pathlib import Path
 
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import timezone
+from PIL import Image
 
 from .models import BonAchat
 
 _LOGO_PATH = (
     Path(__file__).resolve().parent.parent / "cotisations" / "assets" / "logo_cid.jpg"
 )
+
+# Content-ID de la pièce jointe inline du logo (voir docstring module) — référencé dans le
+# template via `cid:{{ logo_cid }}` et dans tasks.envoyer_email_bon_achat_code pour l'en-tête
+# MIME `Content-ID` de la pièce jointe. Constante fixe (jamais générée dynamiquement) : un seul
+# logo, un seul appelant, pas besoin d'unicité par email.
+LOGO_CONTENT_ID = "logo-cid-email"
+
+# Taille d'icône affichée dans le template (40x40, voir email_bon_achat.html) — 120px de long
+# côté suffit largement pour un rendu net même sur écran retina (3x), tout en gardant la pièce
+# jointe légère (quelques Ko au lieu des ~80 Ko du logo source pleine résolution).
+_TAILLE_LOGO_EMAIL = (120, 120)
 
 TRADUCTIONS = {
     "fr": {
@@ -75,9 +96,17 @@ TRADUCTIONS = {
 
 
 @lru_cache(maxsize=1)
-def _logo_data_uri() -> str:
-    contenu = _LOGO_PATH.read_bytes()
-    return f"data:image/jpeg;base64,{base64.b64encode(contenu).decode('ascii')}"
+def logo_email_attachment() -> tuple[bytes, str]:
+    """Bytes JPEG + type MIME du logo redimensionné pour l'email (voir docstring module) —
+    calculé une seule fois par process (lru_cache), le fichier source ne change pas en cours de
+    vie de l'app. Utilisé par tasks.envoyer_email_bon_achat_code pour construire la pièce
+    jointe inline (Content-ID = LOGO_CONTENT_ID)."""
+    with Image.open(_LOGO_PATH) as image:
+        image = image.convert("RGB")
+        image.thumbnail(_TAILLE_LOGO_EMAIL)
+        tampon = BytesIO()
+        image.save(tampon, format="JPEG", quality=85, optimize=True)
+        return tampon.getvalue(), "image/jpeg"
 
 
 def _formate_montant(montant) -> str:
@@ -126,7 +155,7 @@ def rendre_email_bon_achat(bon: BonAchat) -> tuple[str, str, str]:
         "boutique/email_bon_achat.html",
         {
             "t": t,
-            "logo_data_uri": _logo_data_uri(),
+            "logo_cid": LOGO_CONTENT_ID,
             "code": bon.code,
             "montant_formate": montant_formate,
             "expiration_formatee": expiration_formatee,

@@ -17,6 +17,7 @@ rapide, voir apps.notifications.services.notifier) mais l'email part désormais 
 """
 
 import logging
+from email.mime.image import MIMEImage
 
 from celery import shared_task
 from django.conf import settings
@@ -166,7 +167,7 @@ def envoyer_email_bon_achat_code(bon_achat_id) -> None:
 
     # Import différé (évite tout risque de dépendance circulaire au chargement de l'app, même
     # convention que les imports locaux de apps.notifications.services dans les autres apps).
-    from .emails import rendre_email_bon_achat
+    from .emails import LOGO_CONTENT_ID, logo_email_attachment, rendre_email_bon_achat
 
     sujet, corps_texte, corps_html = rendre_email_bon_achat(bon)
     message = EmailMultiAlternatives(
@@ -176,4 +177,16 @@ def envoyer_email_bon_achat_code(bon_achat_id) -> None:
         to=[email],
     )
     message.attach_alternative(corps_html, "text/html")
+    # Logo en pièce jointe inline (Content-ID), jamais en `data:` URI dans le HTML — voir
+    # docstring de apps.boutique.emails pour le bug réel (email tronqué par Gmail + logo jamais
+    # affiché) que ce mécanisme corrige. `mixed_subtype = "related"` fait générer un message
+    # `multipart/related` plutôt que `multipart/mixed` : requis pour qu'un client mail associe
+    # correctement la pièce jointe à la référence `cid:` dans l'alternative HTML plutôt que de
+    # l'afficher comme une pièce jointe séparée.
+    message.mixed_subtype = "related"
+    logo_bytes, logo_content_type = logo_email_attachment()
+    logo = MIMEImage(logo_bytes, _subtype=logo_content_type.removeprefix("image/"))
+    logo.add_header("Content-ID", f"<{LOGO_CONTENT_ID}>")
+    logo.add_header("Content-Disposition", "inline", filename="logo_cid.jpg")
+    message.attach(logo)
     message.send(fail_silently=True)
