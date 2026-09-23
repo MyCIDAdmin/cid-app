@@ -34,8 +34,10 @@ ENV PATH=/home/django/.local/bin:$PATH \
 
 USER django
 
-# Railway injecte $PORT dynamiquement — collectstatic + migrate au démarrage
+# Railway injecte $PORT dynamiquement — collectstatic + migrate + configuration des buckets
+# MinIO (setup_minio_buckets, voir sa docstring) au démarrage.
 EXPOSE 8000
 CMD python manage.py collectstatic --noinput && \
     python manage.py migrate --noinput && \
+    python manage.py setup_minio_buckets && \
     daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application

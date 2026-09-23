@@ -93,6 +93,7 @@ services:
     command: >
       sh -c "python manage.py wait_for_db &&
              python manage.py migrate &&
+             python manage.py setup_minio_buckets &&
              daphne -b 0.0.0.0 -p 8000 config.asgi:application"
 
   # --- Worker Celery (emails, PDF, import, tâches async) ---
