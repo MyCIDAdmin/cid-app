@@ -71,11 +71,19 @@ export default function OffresManager({
     );
   }
 
+  // Garde de défense en profondeur (2026-09-24, retour utilisateur task #216) : le `disabled`
+  // sur les champs correspondants bloque déjà l'interaction utilisateur normale (un input/
+  // checkbox disabled ne peut recevoir ni focus ni clic réel) — mais ces deux handlers sont
+  // déclenchés par onBlur/onChange, pas par un <button disabled>, donc rien n'empêche un appel
+  // programmatique de les invoquer quand même. Le backend reste la seule source de vérité
+  // (rejette de toute façon en 403), mais ce garde évite un appel réseau inutile/trompeur.
   function toggleVisible(offreId: string, visible: boolean) {
+    if (!modifiable) return;
     modifierMutation.mutate({ id: offreId, payload: { visible } });
   }
 
   function modifierPrix(offreId: string, valeur: string) {
+    if (!modifiable) return;
     modifierMutation.mutate({ id: offreId, payload: { prix_plein: valeur } });
   }
 

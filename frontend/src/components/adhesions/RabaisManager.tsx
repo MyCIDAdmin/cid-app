@@ -67,7 +67,11 @@ export default function RabaisManager({
     );
   }
 
+  // Garde de défense en profondeur — voir OffresManager.toggleVisible/modifierPrix pour le
+  // raisonnement complet (onChange, pas un <button disabled>, donc rien n'empêche un appel
+  // programmatique malgré le `disabled` posé sur la case à cocher correspondante).
   function toggleJustificatifRequis(rabaisId: string, valeur: boolean) {
+    if (!modifiable) return;
     modifierMutation.mutate({ id: rabaisId, payload: { justificatif_requis: valeur } });
   }
 

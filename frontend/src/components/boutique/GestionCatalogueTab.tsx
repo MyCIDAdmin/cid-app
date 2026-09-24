@@ -120,11 +120,18 @@ export default function GestionCatalogueTab({
     }));
   }
 
+  // Garde de défense en profondeur (2026-09-24, retour utilisateur task #216) : le `disabled`
+  // sur les contrôles correspondants bloque déjà l'interaction utilisateur normale, mais ces
+  // handlers sont déclenchés par onChange (select/input file), pas par un <button disabled> —
+  // rien n'empêche donc un appel programmatique de les invoquer quand même. Le backend reste la
+  // seule source de vérité (rejette de toute façon en 403), ce garde évite un appel inutile.
   function toggleStatut(produit: Produit, statut: StatutProduit) {
+    if (!modifiable) return;
     modifierMutation.mutate({ id: produit.id, payload: { statut } });
   }
 
   function modifierRabais(produit: Produit, valeur: string) {
+    if (!modifiable) return;
     const pourcentage = valeur === "" ? null : Number(valeur);
     modifierMutation.mutate({ id: produit.id, payload: { pourcentage_reduction: pourcentage } });
   }
@@ -132,7 +139,7 @@ export default function GestionCatalogueTab({
   function handleImageChoisie(produit: Produit, e: ChangeEvent<HTMLInputElement>) {
     const fichier = e.target.files?.[0];
     e.target.value = "";
-    if (!fichier) return;
+    if (!fichier || !modifiable) return;
     setProduitImageEnCours(produit.id);
     setProduitImageErreur(null);
     televerserImageMutation.mutate(

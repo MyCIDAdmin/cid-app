@@ -286,7 +286,10 @@ export default function GestionCommandesTab({
                           disabled={!modifiable}
                           title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                           onChange={(e) => {
-                            if (!e.target.value) return;
+                            // Garde de défense en profondeur — voir
+                            // GestionCatalogueTab.toggleStatut pour le raisonnement (onChange,
+                            // pas un <button disabled>).
+                            if (!e.target.value || !modifiable) return;
                             changerStatutMutation.mutate({
                               id: commande.id,
                               payload: { statut: e.target.value as StatutCommande },

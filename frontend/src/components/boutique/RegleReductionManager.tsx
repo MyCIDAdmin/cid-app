@@ -84,7 +84,12 @@ export default function RegleReductionManager({
                 type="checkbox"
                 checked={r.actif}
                 aria-label={t("catalogue_admin.regle_active_label")}
-                onChange={(e) => modifierMutation.mutate({ id: r.id, payload: { actif: e.target.checked } })}
+                onChange={(e) => {
+                  // Garde de défense en profondeur — voir GestionCatalogueTab.toggleStatut pour
+                  // le raisonnement (onChange, pas un <button disabled>).
+                  if (!modifiable) return;
+                  modifierMutation.mutate({ id: r.id, payload: { actif: e.target.checked } });
+                }}
                 disabled={!modifiable}
                 title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
               />

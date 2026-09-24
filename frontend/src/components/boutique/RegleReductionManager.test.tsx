@@ -167,4 +167,16 @@ describe("RegleReductionManager", () => {
     fireEvent.click(screen.getByRole("button", { name: "catalogue_admin.supprimer_regle" }));
     expect(supprimerMock).toHaveBeenCalledWith("r1");
   });
+
+  // Bug remonté par l'utilisateur (2026-09-24, task #216) — voir GestionCatalogueTab.test.tsx.
+  it("en lecture seule (modifiable=false), désactive la case active et n'appelle jamais modifierMutation", () => {
+    renderWithProviders(<RegleReductionManager produit={produit()} modifiable={false} />);
+
+    const caseActive = screen.getByLabelText("catalogue_admin.regle_active_label");
+    expect(caseActive).toBeDisabled();
+    fireEvent.click(caseActive);
+
+    expect(modifierMock).not.toHaveBeenCalled();
+    expect(screen.getByText("catalogue_admin.ajouter_regle")).toBeDisabled();
+  });
 });

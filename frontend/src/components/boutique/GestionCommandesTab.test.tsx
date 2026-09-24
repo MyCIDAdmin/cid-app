@@ -406,4 +406,19 @@ describe("GestionCommandesTab", () => {
       unmount();
     }
   });
+
+  // Bug remonté par l'utilisateur (2026-09-24, task #216) — voir GestionCatalogueTab.test.tsx.
+  it("en lecture seule (modifiable=false), désactive le sélecteur de statut et n'appelle jamais changerStatutMutation", () => {
+    vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+      data: { next: null, previous: null, results: [commande({ statut: "confirmee" })] },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+
+    renderWithProviders(<GestionCommandesTab modifiable={false} />);
+
+    const selectStatut = screen.getByLabelText("commandes_admin.changer_statut");
+    expect(selectStatut).toBeDisabled();
+    fireEvent.change(selectStatut, { target: { value: "en_preparation" } });
+
+    expect(changerStatutMock).not.toHaveBeenCalled();
+  });
 });

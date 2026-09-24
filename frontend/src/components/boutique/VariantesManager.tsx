@@ -66,13 +66,16 @@ export default function VariantesManager({
               min={0}
               aria-label={t("catalogue_admin.stock_label")}
               value={v.stock}
-              onChange={(e) =>
+              onChange={(e) => {
+                // Garde de défense en profondeur — voir GestionCatalogueTab.toggleStatut pour
+                // le raisonnement (onChange, pas un <button disabled>).
+                if (!modifiable) return;
                 modifierMutation.mutate({
                   id: v.id,
                   produitId: produit.id,
                   payload: { stock: Number(e.target.value) },
-                })
-              }
+                });
+              }}
               disabled={!modifiable}
               title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
               className="w-16 rounded-cid border border-text-tertiary/30 px-1.5 py-0.5 text-right disabled:opacity-40"

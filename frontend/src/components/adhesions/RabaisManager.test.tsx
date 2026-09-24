@@ -156,4 +156,26 @@ describe("RabaisManager", () => {
 
     expect(modifierMutate).toHaveBeenCalledWith({ id: "r1", payload: { justificatif_requis: false } });
   });
+
+  // Même bug de classe que OffresManager (2026-09-24) : désactiver la case à cocher bloque déjà
+  // l'interaction réelle, mais ce garde évite tout appel réseau si le handler est malgré tout
+  // invoqué (ex. changement forcé programmatique).
+  it("en lecture seule (modifiable=false), désactive tout et n'appelle jamais modifierMutation", () => {
+    const modifierMutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useModifierRabais).mockReturnValue({
+      mutate: modifierMutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useModifierRabais>);
+
+    renderWithProviders(<RabaisManager offre={offre()} modifiable={false} />);
+
+    const checkbox = screen.getAllByLabelText("admin_rabais.justificatif_requis_label")[0];
+    expect(checkbox).toBeDisabled();
+    fireEvent.click(checkbox);
+    expect(modifierMutate).not.toHaveBeenCalled();
+
+    expect(screen.getByLabelText("admin_rabais.supprimer — Réduction étudiant")).toBeDisabled();
+    expect(screen.getByText("admin_rabais.ajouter")).toBeDisabled();
+  });
 });

@@ -137,4 +137,50 @@ describe("OffresManager", () => {
 
     expect(screen.getByText("admin_rabais.titre")).toBeInTheDocument();
   });
+
+  // Bug remonté par l'utilisateur (2026-09-24) : en accès lecture seule sur
+  // "page_campagnes_adhesion", le bouton "Neue Kampagne" était bien désactivé, mais les offres
+  // d'une campagne EXISTANTE restaient modifiables — ce test couvre exactement ce chemin
+  // (jamais exercé jusqu'ici : OffresManager.test.tsx ne testait que modifiable=true par défaut).
+  describe("accès lecture seule (modifiable=false)", () => {
+    it("désactive le prix, la visibilité et la suppression d'une offre existante", () => {
+      renderWithProviders(<OffresManager campagne={campagne()} modifiable={false} />);
+
+      expect(
+        screen.getByLabelText("admin_offres.prix_label — Basic"),
+      ).toBeDisabled();
+      expect(screen.getByLabelText("admin_offres.visible_label")).toBeDisabled();
+      expect(screen.getByLabelText("admin_offres.supprimer — Basic")).toBeDisabled();
+    });
+
+    it("n'appelle jamais modifierMutation même si on force un changement sur le prix désactivé", () => {
+      const modifierMutate = vi.fn();
+      vi.mocked(useAdhesionsHooks.useModifierOffre).mockReturnValue({
+        mutate: modifierMutate,
+        isPending: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useAdhesionsHooks.useModifierOffre>);
+
+      renderWithProviders(<OffresManager campagne={campagne()} modifiable={false} />);
+
+      const prixInput = screen.getByLabelText("admin_offres.prix_label — Basic");
+      fireEvent.change(prixInput, { target: { value: "999.00" } });
+      fireEvent.blur(prixInput);
+
+      expect(modifierMutate).not.toHaveBeenCalled();
+    });
+
+    it("désactive le formulaire d'ajout d'une nouvelle offre", () => {
+      renderWithProviders(<OffresManager campagne={campagne()} modifiable={false} />);
+
+      expect(screen.getByText("admin_offres.ajouter")).toBeDisabled();
+    });
+
+    it("laisse tout actif par défaut (modifiable non fourni = true, rétrocompatible)", () => {
+      renderWithProviders(<OffresManager campagne={campagne()} />);
+
+      expect(screen.getByLabelText("admin_offres.prix_label — Basic")).not.toBeDisabled();
+      expect(screen.getByText("admin_offres.ajouter")).not.toBeDisabled();
+    });
+  });
 });

@@ -247,4 +247,30 @@ describe("GestionCatalogueTab", () => {
       expect.anything(),
     );
   });
+
+  // Bug remonté par l'utilisateur (2026-09-24, task #216) : le `disabled` sur les champs bloque
+  // déjà l'interaction réelle, mais toggleStatut/modifierRabais étaient déclenchés par
+  // onChange/onBlur (pas un <button disabled>) et n'avaient jusqu'ici aucun garde interne — voir
+  // le même correctif sur OffresManager/RabaisManager.
+  describe("accès lecture seule (modifiable=false)", () => {
+    it("désactive le statut et le rabais d'un produit existant, et n'appelle jamais modifierMutation", () => {
+      renderWithProviders(<GestionCatalogueTab modifiable={false} />);
+
+      const selectStatut = screen.getByLabelText("catalogue_admin.changer_statut");
+      const champRabais = screen.getByLabelText("catalogue_admin.rabais_label — Mug CA 1920");
+      expect(selectStatut).toBeDisabled();
+      expect(champRabais).toBeDisabled();
+
+      fireEvent.change(selectStatut, { target: { value: "archive" } });
+      fireEvent.change(champRabais, { target: { value: "20" } });
+      fireEvent.blur(champRabais);
+
+      expect(modifierMock).not.toHaveBeenCalled();
+    });
+
+    it("désactive le formulaire de création de produit", () => {
+      renderWithProviders(<GestionCatalogueTab modifiable={false} />);
+      expect(screen.getByText("catalogue_admin.creer")).toBeDisabled();
+    });
+  });
 });
