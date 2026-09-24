@@ -5,6 +5,10 @@
  * en_attente) au moment de l'inscription — Accepter active le compte ET
  * fait passer la fiche à "actif" (elle apparaît alors dans /membres) ;
  * Refuser la laisse "inactif", conservée.
+ *
+ * Lecture seule (task #216, 2026-09-24) : "page_inscriptions" distingue désormais lecture/
+ * lecture_ecriture — `modifiable` (voir usePageAccess ci-dessous) désactive Accepter/Refuser ;
+ * la pagination reste une action de lecture, non gatée.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,12 +19,14 @@ import {
   usePendingRegistrations,
   useRefuseRegistration,
 } from "../../hooks/useInscriptions";
+import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 type Decision = { id: string; email: string; type: "approuver" | "refuser" };
 
 export default function InscriptionsEnAttentePage() {
-  const { t } = useTranslation("inscriptions");
+  const { t } = useTranslation(["inscriptions", "common"]);
+  const { accessible, modifiable } = usePageAccess("page_inscriptions");
 
   const [pageUrl, setPageUrl] = useState<string | null>(null);
   const [enCours, setEnCours] = useState<Decision | null>(null);
@@ -53,6 +59,12 @@ export default function InscriptionsEnAttentePage() {
     <div>
       <h1 className="mb-1 text-xl font-bold text-text-primary">{t("liste.titre")}</h1>
       <p className="mb-4 text-sm text-text-secondary">{t("liste.description")}</p>
+
+      {accessible && !modifiable && (
+        <div className="mb-4 rounded-cid border border-status-warningText/30 bg-status-warningBg px-3 py-2 text-sm text-status-warningText">
+          {t("common:acces.lecture_seule_banniere")}
+        </div>
+      )}
 
       {messageAccepte && (
         <div className="mb-4 rounded-cid border border-status-successText/30 bg-status-successBg px-3 py-2 text-sm text-status-successText">
@@ -119,7 +131,9 @@ export default function InscriptionsEnAttentePage() {
                       onClick={() =>
                         setEnCours({ id: inscription.id, email: inscription.email, type: "approuver" })
                       }
-                      className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:bg-cad"
+                      disabled={!modifiable}
+                      title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                      className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
                     >
                       {t("liste.accepter")}
                     </button>
@@ -128,7 +142,9 @@ export default function InscriptionsEnAttentePage() {
                       onClick={() =>
                         setEnCours({ id: inscription.id, email: inscription.email, type: "refuser" })
                       }
-                      className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                      disabled={!modifiable}
+                      title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                      className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                     >
                       {t("liste.refuser")}
                     </button>

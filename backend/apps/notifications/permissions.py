@@ -2,9 +2,10 @@
 ses propres notifications (IDOR — SCD §2.3 A01, même défense en profondeur que
 CotisationPermission/SouscriptionPermission/CommandePermission)."""
 
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access
 
 
@@ -30,10 +31,15 @@ class ParametresNotificationPermission(BasePermission):
     slug `page_notifications_params`) — contrairement à ArticleCataloguePermission (lecture
     ouverte), ce paramétrage n'a pas vocation à être consulté par un membre normal ni même par un
     rôle de gestion RH/Bureau/DF. Remplace (et non complète) l'ancien seuil fixe
-    PARAMETRES_NOTIFICATION_MIN_LEVEL."""
+    PARAMETRES_NOTIFICATION_MIN_LEVEL. Lecture (GET) et écriture (PATCH, voir
+    ParametresNotificationView) distinguées depuis le 2026-09-24 (retour utilisateur — voir
+    apps.communaute.permissions.QuizPermission pour le contexte complet)."""
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(
-            user and user.is_authenticated and has_admin_page_access(user, "page_notifications_params")
+        if not user or not user.is_authenticated:
+            return False
+        required = (
+            NiveauAcces.LECTURE if request.method in SAFE_METHODS else NiveauAcces.LECTURE_ECRITURE
         )
+        return has_admin_page_access(user, "page_notifications_params", required=required)

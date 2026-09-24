@@ -550,3 +550,125 @@ def test_phase_d_super_admin_gere_toujours_les_inscriptions_meme_si_matrice_dit_
     api_client.force_authenticate(user=super_admin_user)
     resp = api_client.get(reverse("accounts:pending-registrations"))
     assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Lecture vs écriture (ajouté le 2026-09-24, task #214, retour utilisateur sur Quiz-Verwaltung —
+# voir apps.rbac.services.has_admin_page_access) : PendingRegistrationsView (`lecture` suffit,
+# HasInscriptionsAdminAccess) reste inchangée ; Approve/RefuseRegistrationView requièrent
+# désormais `lecture_ecriture` (HasInscriptionsAdminWriteAccess). Le test 0002_seed_roles_et_
+# matrice/0003_seed_pages_admin_matrice ne seede jamais une cellule `lecture` seule (uniquement
+# aucun/lecture_ecriture) — on la force explicitement ici via _set_matrice_cellule pour couvrir
+# ce cas.
+# ---------------------------------------------------------------------------
+
+
+def _creer_inscription_en_attente(email):
+    from apps.membres.models import Membre, StatutMembre
+
+    user = User.objects.create_user(email=email, password="Password123!", email_verifie=True)
+    Membre.objects.create(
+        user=user,
+        email=user.email,
+        prenom="Amine",
+        nom="Trabelsi",
+        date_naissance="1992-03-01",
+        cin="87654321",
+        telephone="+49987654321",
+        adresse_de="Musterstr. 1",
+        ville_de="Hamburg",
+        statut=StatutMembre.EN_ATTENTE,
+    )
+    return user
+
+
+def test_rh_avec_lecture_seule_peut_lister_mais_pas_approuver_ni_refuser(
+    api_client, rh_user, inscription_en_attente
+):
+    """Requête explicite (voir plan) : le rôle système RH, avec seulement `lecture` sur
+    page_inscriptions, garde l'accès à PendingRegistrationsView (vue inchangée) mais perd
+    Approve/RefuseRegistrationView (désormais `lecture_ecriture`)."""
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("rh", "page_inscriptions", NiveauAcces.LECTURE)
+    api_client.force_authenticate(user=rh_user)
+
+    resp_list = api_client.get(reverse("accounts:pending-registrations"))
+    assert resp_list.status_code == 200
+    emails = [row["email"] for row in resp_list.data["results"]]
+    assert inscription_en_attente.email in emails
+
+    url_approve = reverse(
+        "accounts:pending-registration-approve", args=[inscription_en_attente.id]
+    )
+    resp_approve = api_client.post(url_approve)
+    assert resp_approve.status_code == 403
+
+    url_refuse = reverse("accounts:pending-registration-refuse", args=[inscription_en_attente.id])
+    resp_refuse = api_client.post(url_refuse)
+    assert resp_refuse.status_code == 403
+
+    inscription_en_attente.refresh_from_db()
+    assert inscription_en_attente.registration_decision == RegistrationDecision.EN_ATTENTE
+
+
+def test_role_personnalise_lecture_seule_peut_lister_mais_pas_approuver(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    inscription = _creer_inscription_en_attente("readonly-target@example.com")
+    user = User.objects.create_user(
+        email="readonly-inscriptions@example.com", password="Password123!", is_active=True
+    )
+    role_perso = RoleDefinitionFactory(slug="inscriptions-lecteur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_inscriptions", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    api_client.force_authenticate(user=user)
+
+    resp_list = api_client.get(reverse("accounts:pending-registrations"))
+    assert resp_list.status_code == 200
+
+    url_approve = reverse("accounts:pending-registration-approve", args=[inscription.id])
+    resp_approve = api_client.post(url_approve)
+    assert resp_approve.status_code == 403
+
+
+def test_role_personnalise_lecture_ecriture_peut_approuver_et_refuser(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    inscription_a_approuver = _creer_inscription_en_attente("readwrite-approve@example.com")
+    inscription_a_refuser = _creer_inscription_en_attente("readwrite-refuse@example.com")
+    user = User.objects.create_user(
+        email="readwrite-inscriptions@example.com", password="Password123!", is_active=True
+    )
+    role_perso = RoleDefinitionFactory(slug="inscriptions-editeur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_inscriptions", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    api_client.force_authenticate(user=user)
+
+    resp_approve = api_client.post(
+        reverse("accounts:pending-registration-approve", args=[inscription_a_approuver.id])
+    )
+    assert resp_approve.status_code == 200, resp_approve.data
+    inscription_a_approuver.refresh_from_db()
+    assert inscription_a_approuver.registration_decision == RegistrationDecision.APPROUVE
+
+    resp_refuse = api_client.post(
+        reverse("accounts:pending-registration-refuse", args=[inscription_a_refuser.id])
+    )
+    assert resp_refuse.status_code == 200, resp_refuse.data
+    inscription_a_refuser.refresh_from_db()
+    assert inscription_a_refuser.registration_decision == RegistrationDecision.REFUSE

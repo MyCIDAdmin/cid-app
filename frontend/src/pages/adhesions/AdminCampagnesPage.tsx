@@ -27,6 +27,7 @@ import {
   useCreerCampagne,
   usePublierCampagne,
 } from "../../hooks/useAdhesions";
+import { usePageAccess } from "../../hooks/useRbac";
 import type { CampagneAdhesion, CampagneCreatePayload, StatutCampagne } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -51,7 +52,11 @@ function formatDate(iso: string): string {
 }
 
 export default function AdminCampagnesPage() {
-  const { t } = useTranslation("adhesions");
+  const { t } = useTranslation(["adhesions", "common"]);
+  // Task #216 (2026-09-24) : "page_campagnes_adhesion" distingue désormais lecture/
+  // lecture_ecriture — désactive créer/publier/clôturer ci-dessous, et se propage à
+  // OffresManager/RabaisManager (CRUD offres/rabais fait partie de la même gestion).
+  const { accessible, modifiable } = usePageAccess("page_campagnes_adhesion");
 
   const [form, setForm] = useState<CampagneCreatePayload>(formulaireInitial);
   const [campagneACloturer, setCampagneACloturer] = useState<CampagneAdhesion | null>(null);
@@ -77,6 +82,12 @@ export default function AdminCampagnesPage() {
   return (
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("admin.titre")}</h1>
+
+      {accessible && !modifiable && (
+        <div className="mb-4 rounded-cid border border-status-warningText/30 bg-status-warningBg px-3 py-2 text-sm text-status-warningText">
+          {t("common:acces.lecture_seule_banniere")}
+        </div>
+      )}
 
       <div className="mb-5 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
         <h2 className="mb-3 text-xs font-bold text-text-primary">{t("admin.nouvelle_campagne")}</h2>
@@ -155,7 +166,8 @@ export default function AdminCampagnesPage() {
           <div className="md:col-span-2">
             <button
               type="submit"
-              disabled={creerMutation.isPending}
+              disabled={creerMutation.isPending || !modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
               className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
             >
               {t("admin.creer")}
@@ -219,7 +231,8 @@ export default function AdminCampagnesPage() {
                         <button
                           type="button"
                           onClick={() => publierMutation.mutate(c.id)}
-                          disabled={publierMutation.isPending}
+                          disabled={publierMutation.isPending || !modifiable}
+                          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                           className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
                         >
                           {t("admin.publier")}
@@ -229,7 +242,9 @@ export default function AdminCampagnesPage() {
                         <button
                           type="button"
                           onClick={() => setCampagneACloturer(c)}
-                          className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                          disabled={!modifiable}
+                          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                          className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                         >
                           {t("admin.cloturer")}
                         </button>
@@ -251,7 +266,7 @@ export default function AdminCampagnesPage() {
                 {campagneDepliee === c.id && (
                   <tr className="border-b border-text-tertiary/10 last:border-0">
                     <td colSpan={5} className="bg-bg-tertiary/20 px-4 py-3">
-                      <OffresManager campagne={c} />
+                      <OffresManager campagne={c} modifiable={modifiable} />
                     </td>
                   </tr>
                 )}

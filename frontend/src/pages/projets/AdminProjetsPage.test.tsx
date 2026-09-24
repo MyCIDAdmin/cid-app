@@ -1,11 +1,21 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useProjetsHooks from "../../hooks/useProjets";
+import * as useRbacHooks from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
 import type { Projet } from "../../types/projets";
 import AdminProjetsPage from "./AdminProjetsPage";
+
+// page_projets en lecture_ecriture par défaut (task #216) — describe dédié plus bas pour le
+// gating lecture seule lui-même. Ne concerne QUE le CRUD du Projet lui-même (titre/statut/...) —
+// la gestion du contenu (images/mises à jour, RapportModal) reste régie par
+// GestionContenuProjetPermission/est_gestionnaire_projet, hors matrice, voir AdminProjetsPage.tsx.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
+});
 
 vi.mock("../../hooks/useProjets", async () => {
   const actual = await vi.importActual<typeof useProjetsHooks>("../../hooks/useProjets");
@@ -95,6 +105,11 @@ describe("AdminProjetsPage", () => {
     vi.mocked(useProjetsHooks.useAjouterImageMiseAJourProjet).mockReturnValue(
       mutationMock<ReturnType<typeof useProjetsHooks.useAjouterImageMiseAJourProjet>>(),
     );
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
   }
 
   it("affiche la liste des projets avec leur statut, y compris en_preparation (Bureau Admin+)", () => {
@@ -170,5 +185,58 @@ describe("AdminProjetsPage", () => {
     // Bureau Admin+ est toujours est_gestionnaire (voir est_gestionnaire_projet côté backend) :
     // le formulaire d'ajout de mise à jour est donc déjà visible sans rôle supplémentaire.
     expect(screen.getByText("rapport.publier")).toBeInTheDocument();
+  });
+
+  describe("lecture seule (task #216 — page_projets en 'lecture' uniquement)", () => {
+    beforeEach(() => {
+      mockHooksParDefaut();
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+    });
+
+    it("affiche la bannière lecture seule et désactive création/modification/suppression du Projet", () => {
+      vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
+        data: page([projet()]),
+        isLoading: false,
+      } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
+      const supprimer = mutationMock<ReturnType<typeof useProjetsHooks.useSupprimerProjet>>();
+      vi.mocked(useProjetsHooks.useSupprimerProjet).mockReturnValue(supprimer);
+
+      renderWithProviders(<AdminProjetsPage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      expect(screen.getByText("admin.nouveau_projet")).toBeDisabled();
+      expect(screen.getByText("admin.modifier")).toBeDisabled();
+
+      const supprimerBouton = screen.getByText("admin.supprimer");
+      expect(supprimerBouton).toBeDisabled();
+      fireEvent.click(supprimerBouton);
+      expect(supprimer.mutate).not.toHaveBeenCalled();
+    });
+
+    it("garde la lecture ET la gestion du contenu (RapportModal) pleinement fonctionnelles — mécanisme distinct de page_projets", async () => {
+      vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
+        data: page([projet()]),
+        isLoading: false,
+      } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
+
+      renderWithProviders(<AdminProjetsPage />);
+
+      expect(screen.getByText("Rénovation du local associatif")).toBeInTheDocument();
+
+      // "Voir le rapport" n'est pas une action d'écriture sur le Projet lui-même — reste actif
+      // même en lecture seule sur page_projets, la gestion du contenu (RapportModal) étant régie
+      // par GestionContenuProjetPermission/est_gestionnaire_projet, un mécanisme volontairement
+      // distinct (voir docstring de AdminProjetsPage.tsx).
+      fireEvent.click(screen.getByText("rapport.voir"));
+
+      await waitFor(() => {
+        expect(screen.getByText("rapport.aucune_mise_a_jour")).toBeInTheDocument();
+      });
+      expect(screen.getByText("rapport.publier")).toBeInTheDocument();
+    });
   });
 });

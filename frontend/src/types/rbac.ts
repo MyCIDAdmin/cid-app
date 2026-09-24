@@ -46,13 +46,42 @@ export interface ModuleInfo {
 
 /**
  * GET /rbac/mes-acces/ — Phase D (ajoutée le 2026-09-23) : accès effectif de l'utilisateur
- * COURANT aux 13 pages de gestion (`apps.rbac.registry.PAGES_ADMIN`), un booléen par slug.
+ * COURANT aux 13 pages de gestion (`apps.rbac.registry.PAGES_ADMIN`), UN NIVEAU par slug.
  * `IsAuthenticated` seul côté backend (pas `IsSuperAdmin`) — chaque utilisateur consulte cette
  * route pour construire sa propre navigation (voir RequireRole en mode `pageSlug` et
  * Sidebar.tsx). Les clés ne sont pas figées en TS (comme `ModuleInfo`) : un nouveau slug ajouté
  * côté registry apparaît automatiquement, sans changement frontend requis.
+ *
+ * Format changé le 2026-09-24 (task #215, retour utilisateur — un booléen ne suffisait plus à
+ * savoir si les contrôles d'ÉCRITURE d'une page devaient être désactivés, depuis que `lecture`
+ * et `lecture_ecriture` ont un effet réellement différent côté backend, voir
+ * apps.rbac.services.has_admin_page_access) : auparavant `Record<string, boolean>`, désormais
+ * le niveau réel. Ne jamais comparer une valeur de cette réponse à `true`/`=== true` — utiliser
+ * `pageEstAccessible`/`pageEstModifiable` ci-dessous, qui sont la source unique de vérité pour
+ * interpréter ce niveau côté frontend.
  */
-export type MesAccesReponse = Record<string, boolean>;
+export type MesAccesReponse = Record<string, NiveauAcces>;
+
+/**
+ * "A accès à la page" au sens large (routing/Sidebar) — `lecture` ET `lecture_ecriture`
+ * suffisent tous les deux, un slug absent de la réponse ou `undefined` (chargement en cours)
+ * compte comme non accessible. Symétrique du défaut `required=NiveauAcces.LECTURE` côté
+ * `has_admin_page_access` (backend).
+ */
+export function pageEstAccessible(niveau: NiveauAcces | undefined): boolean {
+  return niveau !== undefined && niveau !== "aucun";
+}
+
+/**
+ * "Peut modifier" au sein d'une des 13 pages de gestion — SEUL `lecture_ecriture` suffit,
+ * contrairement à `pageEstAccessible` ci-dessus. C'est la question que les 13 pages posent pour
+ * savoir si leurs contrôles d'écriture (créer/modifier/supprimer...) doivent être désactivés en
+ * mode lecture seule (task #216). Symétrique de `required=NiveauAcces.LECTURE_ECRITURE` côté
+ * backend.
+ */
+export function pageEstModifiable(niveau: NiveauAcces | undefined): boolean {
+  return niveau === "lecture_ecriture";
+}
 
 export interface MatriceCell {
   role_id: string;

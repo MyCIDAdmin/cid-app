@@ -72,7 +72,7 @@ describe("RequireRole", () => {
     it("redirige quand la matrice refuse l'accès à cette page", async () => {
       setUser("membre");
       vi.mocked(useRbacHooks.useMesAcces).mockReturnValue({
-        data: { page_quiz: false },
+        data: { page_quiz: "aucun" },
         isLoading: false,
       } as unknown as ReturnType<typeof useRbacHooks.useMesAcces>);
       renderWithProviders(
@@ -84,10 +84,10 @@ describe("RequireRole", () => {
       expect(screen.queryByText("contenu protégé")).not.toBeInTheDocument();
     });
 
-    it("rend les enfants quand la matrice autorise l'accès à cette page", () => {
+    it("rend les enfants quand la matrice autorise l'accès à cette page (lecture seule incluse)", () => {
       setUser("membre");
       vi.mocked(useRbacHooks.useMesAcces).mockReturnValue({
-        data: { page_quiz: true },
+        data: { page_quiz: "lecture" },
         isLoading: false,
       } as unknown as ReturnType<typeof useRbacHooks.useMesAcces>);
       renderWithProviders(

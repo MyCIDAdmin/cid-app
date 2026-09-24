@@ -1,6 +1,9 @@
 /**
  * Gestion des variantes (taille/couleur/stock) d'un produit — panneau dépliable de
  * GestionCatalogueTab (mockup #m-edit-prod, FDD §3.4 "stock par variante").
+ *
+ * Lecture seule (task #216, 2026-09-24) : `modifiable` (optionnel, défaut `true`, voir
+ * GestionCatalogueTab) désactive l'ajout/modification/suppression de variantes.
  */
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,8 +16,14 @@ import {
 } from "../../hooks/useBoutique";
 import type { Produit } from "../../types/boutique";
 
-export default function VariantesManager({ produit }: { produit: Produit }) {
-  const { t } = useTranslation("boutique");
+export default function VariantesManager({
+  produit,
+  modifiable = true,
+}: {
+  produit: Produit;
+  modifiable?: boolean;
+}) {
+  const { t } = useTranslation(["boutique", "common"]);
   const variantesQuery = useVariantes(produit.id);
   const creerMutation = useCreerVariante();
   const modifierMutation = useModifierVariante();
@@ -64,12 +73,16 @@ export default function VariantesManager({ produit }: { produit: Produit }) {
                   payload: { stock: Number(e.target.value) },
                 })
               }
-              className="w-16 rounded-cid border border-text-tertiary/30 px-1.5 py-0.5 text-right"
+              disabled={!modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              className="w-16 rounded-cid border border-text-tertiary/30 px-1.5 py-0.5 text-right disabled:opacity-40"
             />
             <button
               type="button"
               onClick={() => supprimerMutation.mutate({ id: v.id, produitId: produit.id })}
-              className="text-text-tertiary hover:text-status-dangerText"
+              disabled={!modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              className="text-text-tertiary hover:text-status-dangerText disabled:opacity-40"
               aria-label={t("catalogue_admin.supprimer_variante")}
             >
               ✕
@@ -119,7 +132,8 @@ export default function VariantesManager({ produit }: { produit: Produit }) {
         </div>
         <button
           type="submit"
-          disabled={creerMutation.isPending}
+          disabled={creerMutation.isPending || !modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
           className="rounded-cid bg-ca px-2.5 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
         >
           {t("catalogue_admin.ajouter_variante")}

@@ -17,6 +17,7 @@ import {
   useModifierEvenement,
   usePublierEvenement,
 } from "../../hooks/useEvenements";
+import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Evenement, EvenementPayload, TypeEvenement } from "../../types/evenements";
 
@@ -46,11 +47,13 @@ const FORMULAIRE_VIDE: EvenementPayload = {
 function FormulaireEvenement({
   evenement,
   onTermine,
+  modifiable,
 }: {
   evenement: Evenement | null;
   onTermine: () => void;
+  modifiable: boolean;
 }) {
-  const { t } = useTranslation("evenements");
+  const { t } = useTranslation(["evenements", "common"]);
   const creer = useCreerEvenement();
   const modifier = useModifierEvenement();
   const [valeurs, setValeurs] = useState<EvenementPayload>(
@@ -267,7 +270,8 @@ function FormulaireEvenement({
         </button>
         <button
           type="submit"
-          disabled={enCours}
+          disabled={enCours || !modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
           className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
         >
           {evenement ? t("admin.enregistrer") : t("admin.creer_evenement")}
@@ -278,10 +282,11 @@ function FormulaireEvenement({
 }
 
 export default function AdminEventsPage() {
-  const { t } = useTranslation("evenements");
+  const { t } = useTranslation(["evenements", "common"]);
   const evenementsQuery = useEvenements();
   const publier = usePublierEvenement();
   const annuler = useAnnulerEvenement();
+  const { accessible, modifiable } = usePageAccess("page_events");
 
   const [afficherFormulaire, setAfficherFormulaire] = useState(false);
   const [evenementEnEdition, setEvenementEnEdition] = useState<Evenement | null>(null);
@@ -321,17 +326,29 @@ export default function AdminEventsPage() {
         {!afficherFormulaire && (
           <button
             type="button"
+            disabled={!modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
             onClick={ouvrirCreation}
-            className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad"
+            className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
           >
             {t("admin.creer_evenement")}
           </button>
         )}
       </div>
 
+      {accessible && !modifiable && (
+        <p className="mb-4 rounded-cid-lg bg-status-warningBg px-3 py-2 text-xs text-status-warningText">
+          {t("common:acces.lecture_seule_banniere")}
+        </p>
+      )}
+
       {afficherFormulaire && (
         <div className="mb-5">
-          <FormulaireEvenement evenement={evenementEnEdition} onTermine={fermerFormulaire} />
+          <FormulaireEvenement
+            evenement={evenementEnEdition}
+            onTermine={fermerFormulaire}
+            modifiable={modifiable}
+          />
         </div>
       )}
 
@@ -375,16 +392,20 @@ export default function AdminEventsPage() {
               <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => ouvrirEdition(evenement)}
-                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
+                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
                 >
                   {t("admin.modifier")}
                 </button>
                 {evenement.statut === "brouillon" && (
                   <button
                     type="button"
+                    disabled={!modifiable}
+                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                     onClick={() => surPublier(evenement.id)}
-                    className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad"
+                    className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
                   >
                     {t("admin.publier")}
                   </button>
@@ -392,8 +413,10 @@ export default function AdminEventsPage() {
                 {evenement.statut !== "annule" && (
                   <button
                     type="button"
+                    disabled={!modifiable}
+                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                     onClick={() => surAnnuler(evenement.id)}
-                    className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg"
+                    className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                   >
                     {t("admin.annuler_evenement")}
                   </button>

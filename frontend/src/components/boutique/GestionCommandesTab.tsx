@@ -14,6 +14,13 @@
  *     côté backend (le backend reste seul juge, ce gating n'est qu'un confort d'UI).
  *   - "Retoure erfassen" (création d'un Retour) reste au seuil Bureau Admin+, comme le
  *     reste de la gestion des commandes.
+ *
+ * Lecture seule (task #216, 2026-09-24) : `modifiable` (optionnel, défaut `true` pour ne pas
+ * casser les tests existants qui rendent ce composant seul) vient de la matrice "page_boutique"
+ * via AdminBoutiquePage/usePageAccess — désactive "changer_statut" et la création d'un Retour.
+ * "confirmer_paiement"/"expedier" restent EXCLUSIVEMENT sous `peutConfirmerPaiementEtExpedier`
+ * ci-dessus (hors périmètre de la matrice, voir docstring ci-dessus) : volontairement PAS gatés
+ * par `modifiable`.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -83,8 +90,10 @@ interface ExpeditionModalState {
   nacherfassement: boolean;
 }
 
-export default function GestionCommandesTab() {
-  const { t } = useTranslation("boutique");
+export default function GestionCommandesTab({
+  modifiable = true,
+}: { modifiable?: boolean } = {}) {
+  const { t } = useTranslation(["boutique", "common"]);
   const user = useAuthStore((s) => s.user);
   const peutConfirmerPaiementEtExpedier = hasRoleAtLeast(user, ROLE_LEVELS.dir_financier);
   const peutGererRetours = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
@@ -274,6 +283,8 @@ export default function GestionCommandesTab() {
                         <select
                           aria-label={t("commandes_admin.changer_statut")}
                           defaultValue=""
+                          disabled={!modifiable}
+                          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                           onChange={(e) => {
                             if (!e.target.value) return;
                             changerStatutMutation.mutate({
@@ -282,7 +293,7 @@ export default function GestionCommandesTab() {
                             });
                             e.target.value = "";
                           }}
-                          className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-[11px]"
+                          className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-[11px] disabled:opacity-40"
                         >
                           <option value="">{t("commandes_admin.changer_statut")}</option>
                           {transitions.map((s) => (
@@ -351,7 +362,9 @@ export default function GestionCommandesTab() {
                           <button
                             type="button"
                             onClick={() => ouvrirRetour(commande)}
-                            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary"
+                            disabled={!modifiable}
+                            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
                           >
                             {t("retour.bouton")}
                           </button>
@@ -580,8 +593,10 @@ export default function GestionCommandesTab() {
                   !ligneRetourId ||
                   quantiteRetour < 1 ||
                   quantiteRetour > (ligneRetourSelectionnee?.quantite_retournable ?? 0) ||
-                  creerRetourMutation.isPending
+                  creerRetourMutation.isPending ||
+                  !modifiable
                 }
+                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                 className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-50"
               >
                 {t("retour.confirmer")}

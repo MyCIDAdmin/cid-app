@@ -15,6 +15,12 @@
  * Image produit : upload multipart (validation MIME côté backend, CLAUDE.md §8) une fois le
  * produit créé — voir useTeleverserImageProduit / storage.py (MinIO). Les produits sans image
  * continuent d'afficher un pictogramme de substitution (voir CataloguePage).
+ *
+ * Lecture seule (task #216, 2026-09-24) : `modifiable` (optionnel, défaut `true` pour les tests
+ * existants qui rendent ce composant seul) vient de la matrice "page_boutique" via
+ * AdminBoutiquePage/usePageAccess — désactive la création/modification de produits (statut,
+ * rabais, image) et se propage à VariantesManager/RegleReductionManager, dont le CRUD fait
+ * partie de la même gestion catalogue.
  */
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
@@ -66,8 +72,10 @@ function formulaireInitial(): ProduitPayload {
   };
 }
 
-export default function GestionCatalogueTab() {
-  const { t } = useTranslation("boutique");
+export default function GestionCatalogueTab({
+  modifiable = true,
+}: { modifiable?: boolean } = {}) {
+  const { t } = useTranslation(["boutique", "common"]);
   const produitsQuery = useProduits();
   const creerMutation = useCreerProduit();
   const modifierMutation = useModifierProduit();
@@ -326,7 +334,8 @@ export default function GestionCatalogueTab() {
           <div className="md:col-span-2">
             <button
               type="submit"
-              disabled={creerMutation.isPending}
+              disabled={creerMutation.isPending || !modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
               className="rounded-cid bg-ca px-4 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
             >
               {t("catalogue_admin.creer")}
@@ -400,14 +409,18 @@ export default function GestionCatalogueTab() {
                     aria-label={`${t("catalogue_admin.rabais_label")} — ${produit.nom}`}
                     defaultValue={produit.pourcentage_reduction ?? ""}
                     onBlur={(e) => modifierRabais(produit, e.target.value)}
-                    className="w-14 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs"
+                    disabled={!modifiable}
+                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                    className="w-14 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
                   />
                 </label>
                 <select
                   aria-label={t("catalogue_admin.changer_statut")}
                   value={produit.statut}
                   onChange={(e) => toggleStatut(produit, e.target.value as StatutProduit)}
-                  className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-xs"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-xs disabled:opacity-40"
                 >
                   {STATUTS.map((s) => (
                     <option key={s} value={s}>
@@ -427,7 +440,8 @@ export default function GestionCatalogueTab() {
                 <button
                   type="button"
                   onClick={() => inputsFichierImage.current[produit.id]?.click()}
-                  disabled={produitImageEnCours === produit.id}
+                  disabled={produitImageEnCours === produit.id || !modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
                 >
                   {produitImageEnCours === produit.id
@@ -462,9 +476,11 @@ export default function GestionCatalogueTab() {
                   {produitImageErreur.message}
                 </p>
               )}
-              {produitDeplie === produit.id && <VariantesManager produit={produit} />}
+              {produitDeplie === produit.id && (
+                <VariantesManager produit={produit} modifiable={modifiable} />
+              )}
               {produitReductionDeplie === produit.id && (
-                <RegleReductionManager produit={produit} />
+                <RegleReductionManager produit={produit} modifiable={modifiable} />
               )}
             </div>
           ))}

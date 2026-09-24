@@ -1,8 +1,9 @@
 import { fireEvent, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useAdhesionsHooks from "../../hooks/useAdhesions";
+import * as useRbacHooks from "../../hooks/useRbac";
 import type { CampagneAdhesion } from "../../types/adhesion";
 import AdminCampagnesPage from "./AdminCampagnesPage";
 
@@ -15,6 +16,13 @@ vi.mock("../../hooks/useAdhesions", async () => {
     usePublierCampagne: vi.fn(),
     useCloturerCampagne: vi.fn(),
   };
+});
+
+// Task #216 (2026-09-24) : "page_campagnes_adhesion" lecture/lecture_ecriture — plein accès par
+// défaut pour ne pas casser les tests existants ; voir le describe dédié plus bas.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
 });
 
 function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
@@ -52,6 +60,14 @@ function setupMutationMocks(publierMutate = vi.fn(), cloturerMutate = vi.fn(), c
 }
 
 describe("AdminCampagnesPage", () => {
+  beforeEach(() => {
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
+  });
+
   it("affiche la liste des campagnes avec le bouton Publier pour un brouillon", () => {
     vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
       data: { next: null, previous: null, results: [campagne()] },
@@ -140,5 +156,44 @@ describe("AdminCampagnesPage", () => {
 
     expect(screen.getByText("admin_offres.titre")).toBeInTheDocument();
     expect(screen.getByText("admin.masquer_offres")).toBeInTheDocument();
+  });
+
+  describe("accès lecture seule (task #216)", () => {
+    it("n'affiche pas de bandeau et laisse Créer/Publier actifs quand modifiable=true", () => {
+      vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
+        data: { next: null, previous: null, results: [campagne()] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
+      setupMutationMocks();
+
+      renderWithProviders(<AdminCampagnesPage />);
+
+      expect(screen.queryByText("acces.lecture_seule_banniere")).not.toBeInTheDocument();
+      expect(screen.getByText("admin.creer")).not.toBeDisabled();
+      expect(screen.getByText("admin.publier")).not.toBeDisabled();
+    });
+
+    it("affiche un bandeau et désactive Créer/Publier/Clôturer quand modifiable=false", () => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+      vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
+        data: { next: null, previous: null, results: [campagne({ statut: "publiee" })] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
+      setupMutationMocks();
+
+      renderWithProviders(<AdminCampagnesPage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      // Lecture : la campagne reste visible.
+      expect(screen.getByText("Test 2026")).toBeInTheDocument();
+      expect(screen.getByText("admin.creer")).toBeDisabled();
+      expect(screen.getByText("admin.cloturer")).toBeDisabled();
+    });
   });
 });

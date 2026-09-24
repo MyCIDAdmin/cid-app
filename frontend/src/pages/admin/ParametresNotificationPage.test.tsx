@@ -3,8 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useNotificationsHooks from "../../hooks/useNotifications";
+import * as useRbacHooks from "../../hooks/useRbac";
 import type { ParametresNotification } from "../../types/notification";
 import ParametresNotificationPage from "./ParametresNotificationPage";
+
+// task #216 : usePageAccess mocké partout (accès complet par défaut) — describe dédié plus bas
+// pour le mode lecture seule.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
+});
 
 vi.mock("../../hooks/useNotifications", async () => {
   const actual = await vi.importActual<typeof useNotificationsHooks>("../../hooks/useNotifications");
@@ -35,6 +43,11 @@ describe("ParametresNotificationPage", () => {
 
   beforeEach(() => {
     modifierMock = vi.fn();
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
     vi.mocked(useNotificationsHooks.useModifierParametresNotification).mockReturnValue({
       mutate: modifierMock,
       isPending: false,
@@ -94,5 +107,38 @@ describe("ParametresNotificationPage", () => {
     renderWithProviders(<ParametresNotificationPage />);
 
     expect(screen.getByText("parametres.chargement")).toBeInTheDocument();
+  });
+
+  // --- Lecture seule (task #216, RBAC page_notifications_params : GET=lecture, PATCH=écriture) ---
+  describe("mode lecture seule", () => {
+    beforeEach(() => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+      vi.mocked(useNotificationsHooks.useParametresNotification).mockReturnValue({
+        data: parametres(),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useNotificationsHooks.useParametresNotification>);
+    });
+
+    it("affiche la bannière de lecture seule et désactive tous les interrupteurs", () => {
+      renderWithProviders(<ParametresNotificationPage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      screen.getAllByRole("switch").forEach((interrupteur) => {
+        expect(interrupteur).toBeDisabled();
+      });
+    });
+
+    it("n'appelle pas la mutation au clic sur un interrupteur désactivé", () => {
+      renderWithProviders(<ParametresNotificationPage />);
+
+      fireEvent.click(screen.getAllByRole("switch")[0]);
+
+      expect(modifierMock).not.toHaveBeenCalled();
+    });
   });
 });

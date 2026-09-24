@@ -57,11 +57,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
+from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
@@ -206,7 +207,9 @@ class CotisationViewSet(ModelViewSet):
         """
         cotisation = self.get_object()
 
-        if not has_admin_page_access(request.user, "page_cotisations_attente"):
+        if not has_admin_page_access(
+            request.user, "page_cotisations_attente", required=NiveauAcces.LECTURE_ECRITURE
+        ):
             raise PermissionDenied(
                 "Seuls le Directeur Financier ou l'Administrateur peuvent marquer un paiement "
                 "comme reçu."
@@ -280,7 +283,9 @@ class CotisationViewSet(ModelViewSet):
         # Même page de gestion "Ausstehende Zahlungen" que marquer_payee ci-dessus (Phase D,
         # slug `page_cotisations_attente`, voir le docstring d'action : "Bei 'Ausstehende
         # Zahlungen'...") — remplace (et non complète) l'ancien seuil fixe SAISIE_POUR_AUTRUI_MIN_LEVEL.
-        if not has_admin_page_access(request.user, "page_cotisations_attente"):
+        if not has_admin_page_access(
+            request.user, "page_cotisations_attente", required=NiveauAcces.LECTURE_ECRITURE
+        ):
             raise PermissionDenied(
                 "Seuls le Directeur Financier ou l'Administrateur peuvent modifier le statut "
                 "d'une cotisation."
@@ -388,13 +393,19 @@ class ConfigurationRelancePermission(BasePermission):
     """AHM-54 — page de gestion "Fälligkeitstermine" (Phase D, ajoutée le 2026-09-23, slug
     `page_cotisations_relances`) — remplace (et non complète) l'ancien seuil fixe
     SAISIE_POUR_AUTRUI_MIN_LEVEL (même niveau historique que marquer_payee, mais une page
-    distincte dans la matrice : les deux peuvent diverger à l'avenir)."""
+    distincte dans la matrice : les deux peuvent diverger à l'avenir). Lecture (GET) et écriture
+    (POST/PATCH/DELETE, voir ConfigurationRelanceViewSet.http_method_names) distinguées depuis
+    le 2026-09-24 (retour utilisateur — voir apps.communaute.permissions.QuizPermission pour le
+    contexte complet)."""
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(
-            user and user.is_authenticated and has_admin_page_access(user, "page_cotisations_relances")
+        if not user or not user.is_authenticated:
+            return False
+        required = (
+            NiveauAcces.LECTURE if request.method in SAFE_METHODS else NiveauAcces.LECTURE_ECRITURE
         )
+        return has_admin_page_access(user, "page_cotisations_relances", required=required)
 
 
 class ConfigurationRelanceCursorPagination(CursorPagination):

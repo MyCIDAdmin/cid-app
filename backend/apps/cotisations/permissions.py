@@ -21,6 +21,7 @@ Permissions API — app cotisations (FDD §2.2 matrice des permissions) :
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
 READ_ALL_MIN_LEVEL = ROLE_LEVELS[Role.RH]
@@ -50,7 +51,9 @@ class ArticleCataloguePermission(BasePermission):
     """ArticleCatalogue — lecture ouverte à tout authentifié, écriture = page de gestion
     "Beitragsartikel" (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.PAGES_ADMIN slug
     `page_articles_cotisation`) — remplace (et non complète) l'ancien seuil fixe
-    GESTION_ARTICLES_MIN_LEVEL (voir docstring de module)."""
+    GESTION_ARTICLES_MIN_LEVEL (voir docstring de module). Niveau `lecture_ecriture` requis
+    depuis le 2026-09-24 (retour utilisateur — voir
+    apps.communaute.permissions.QuizPermission pour le contexte complet)."""
 
     def has_permission(self, request, view):
         user = request.user
@@ -58,4 +61,6 @@ class ArticleCataloguePermission(BasePermission):
             return False
         if request.method in SAFE_METHODS:
             return True
-        return has_admin_page_access(user, "page_articles_cotisation")
+        return has_admin_page_access(
+            user, "page_articles_cotisation", required=NiveauAcces.LECTURE_ECRITURE
+        )

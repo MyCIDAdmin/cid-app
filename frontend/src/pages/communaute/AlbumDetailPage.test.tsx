@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
+import * as useRbacHooks from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
 import type { Photo } from "../../types/communaute";
 import AlbumDetailPage from "./AlbumDetailPage";
@@ -18,6 +19,14 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useSupprimerPhoto: vi.fn(),
     useCommenterPhoto: vi.fn(),
   };
+});
+
+// page_albums en lecture_ecriture par défaut (task #216 — `masquer` exige ce niveau côté backend
+// depuis le 2026-09-24, voir PhotoPermission) : ces tests ciblent la modération elle-même
+// (peutModerer), pas le gating en lecture seule, déjà couvert dans AdminAlbumsPage.test.tsx.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
 });
 
 const membre = {
@@ -93,6 +102,11 @@ describe("AlbumDetailPage", () => {
     vi.mocked(useCommunauteHooks.useCommenterPhoto).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useCommenterPhoto>>(),
     );
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
   });
 
   it("affiche la grille de photos de l'album", () => {
@@ -155,6 +169,24 @@ describe("AlbumDetailPage", () => {
     fireEvent.click(screen.getByText("albums.masquer"));
 
     expect(masquer.mutate).toHaveBeenCalledWith("p1");
+  });
+
+  it("désactive 'masquer' pour un Bureau Admin+ en lecture seule sur page_albums (task #216)", () => {
+    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: admin, isAuthenticated: true });
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: false,
+      isLoading: false,
+    });
+    const masquer = mutationMock<ReturnType<typeof useCommunauteHooks.useMasquerPhoto>>();
+    vi.mocked(useCommunauteHooks.useMasquerPhoto).mockReturnValue(masquer);
+
+    renderDetail();
+
+    const bouton = screen.getByText("albums.masquer");
+    expect(bouton).toBeDisabled();
+    fireEvent.click(bouton);
+    expect(masquer.mutate).not.toHaveBeenCalled();
   });
 
   it("propose 'supprimer' sur sa propre photo", () => {

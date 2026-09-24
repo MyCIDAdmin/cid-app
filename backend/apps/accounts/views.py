@@ -42,7 +42,7 @@ from apps.membres.models import StatutMembre
 
 from . import services
 from .models import RegistrationDecision, Role
-from .permissions import HasInscriptionsAdminAccess, IsSuperAdmin
+from .permissions import HasInscriptionsAdminAccess, HasInscriptionsAdminWriteAccess, IsSuperAdmin
 from .serializers import (
     ChangeRoleSerializer,
     LoginSerializer,
@@ -558,7 +558,9 @@ class ApproveRegistrationView(APIView):
     # Page de gestion "Registrierungen" (Phase D, ajoutée le 2026-09-23, slug
     # `page_inscriptions`) — remplace IsRHOrAbove ICI UNIQUEMENT (voir docstring de
     # HasInscriptionsAdminAccess) ; IsRHOrAbove reste inchangé pour membres import/export.
-    permission_classes = [HasInscriptionsAdminAccess]
+    # HasInscriptionsAdminWriteAccess (lecture_ecriture requis) depuis le 2026-09-24 — approuver
+    # une inscription est une action de gestion, pas une simple consultation.
+    permission_classes = [HasInscriptionsAdminWriteAccess]
 
     def post(self, request, pk):
         target = User.objects.filter(
@@ -601,7 +603,9 @@ class RefuseRegistrationView(APIView):
     # Page de gestion "Registrierungen" (Phase D, ajoutée le 2026-09-23, slug
     # `page_inscriptions`) — remplace IsRHOrAbove ICI UNIQUEMENT (voir docstring de
     # HasInscriptionsAdminAccess) ; IsRHOrAbove reste inchangé pour membres import/export.
-    permission_classes = [HasInscriptionsAdminAccess]
+    # HasInscriptionsAdminWriteAccess (lecture_ecriture requis) depuis le 2026-09-24 — refuser
+    # une inscription est une action de gestion, pas une simple consultation.
+    permission_classes = [HasInscriptionsAdminWriteAccess]
 
     def post(self, request, pk):
         target = User.objects.filter(

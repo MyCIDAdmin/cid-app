@@ -30,6 +30,7 @@ import {
   usePhotos,
   useSupprimerPhoto,
 } from "../../hooks/useCommunaute";
+import { usePageAccess } from "../../hooks/useRbac";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Photo } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -41,13 +42,19 @@ function formatDate(iso: string): string {
 function PhotoCarte({
   photo,
   peutModerer,
+  moderationModifiable,
   onOuvrir,
 }: {
   photo: Photo;
   peutModerer: boolean;
+  /** page_albums en lecture_ecriture (task #216) — `masquer` (PhotoPermission côté backend)
+   * exige ce niveau depuis le 2026-09-24, en plus de `peutModerer` (Bureau Admin+) déjà requis
+   * ci-dessus : les deux conditions s'appliquent, contrairement à AlbumPermission qui ne gère
+   * que le CRUD d'Album/upload depuis AdminAlbumsPage. */
+  moderationModifiable: boolean;
   onOuvrir: () => void;
 }) {
-  const { t } = useTranslation("communaute");
+  const { t } = useTranslation(["communaute", "common"]);
   const liker = useLikerPhoto();
   const masquer = useMasquerPhoto();
   const supprimer = useSupprimerPhoto();
@@ -114,8 +121,10 @@ function PhotoCarte({
             {peutModerer && !photo.est_proprietaire && (
               <button
                 type="button"
+                disabled={!moderationModifiable}
+                title={!moderationModifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                 onClick={() => masquer.mutate(photo.id)}
-                className="hover:underline"
+                className="hover:underline disabled:opacity-40"
               >
                 {t("albums.masquer")}
               </button>
@@ -161,6 +170,9 @@ export default function AlbumDetailPage() {
   const { id } = useParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
   const peutModerer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  // `masquer` exige page_albums en lecture_ecriture côté backend (PhotoPermission) depuis le
+  // 2026-09-24 — voir docstring de PhotoCarte.moderationModifiable ci-dessus.
+  const { modifiable: moderationModifiable } = usePageAccess("page_albums");
 
   const albumQuery = useAlbum(id);
   const photosQuery = usePhotos({ album: id });
@@ -206,6 +218,7 @@ export default function AlbumDetailPage() {
             key={photo.id}
             photo={photo}
             peutModerer={peutModerer}
+            moderationModifiable={moderationModifiable}
             onOuvrir={() => setIndexOuvert(i)}
           />
         ))}

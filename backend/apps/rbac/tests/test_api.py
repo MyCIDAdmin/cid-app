@@ -379,12 +379,15 @@ def test_mes_acces_non_authentifie_refuse(api_client):
     assert resp.status_code == 401
 
 
-def test_mes_acces_super_admin_tout_vrai(api_client):
+def test_mes_acces_super_admin_toujours_lecture_ecriture(api_client):
+    """Depuis le 2026-09-24 (task #215), la réponse expose le niveau réel, plus un booléen —
+    l'Administrateur App reste hartcodé, donc toujours `lecture_ecriture` sur les 13 pages,
+    quel que soit le contenu de la matrice (voir get_admin_page_niveau)."""
     admin = _super_admin()
     resp = _auth(api_client, admin).get(reverse(MES_ACCES_URL))
     assert resp.status_code == 200
     assert set(resp.data.keys()) == set(PAGES_ADMIN)
-    assert all(resp.data.values())
+    assert all(niveau == "lecture_ecriture" for niveau in resp.data.values())
 
 
 def test_mes_acces_reflete_la_matrice_seedee_pour_un_role_systeme(api_client):
@@ -395,15 +398,31 @@ def test_mes_acces_reflete_la_matrice_seedee_pour_un_role_systeme(api_client):
     bureau_admin = UserFactory(role=Role.BUREAU_ADMIN)
     resp = _auth(api_client, bureau_admin).get(reverse(MES_ACCES_URL))
     assert resp.status_code == 200
-    assert resp.data["page_quiz"] is True
-    assert resp.data["page_articles_cotisation"] is False
+    assert resp.data["page_quiz"] == "lecture_ecriture"
+    assert resp.data["page_articles_cotisation"] == "aucun"
 
 
 def test_mes_acces_membre_normal_naccede_a_aucune_page_par_defaut(api_client):
     membre = UserFactory(role=Role.MEMBRE)
     resp = _auth(api_client, membre).get(reverse(MES_ACCES_URL))
     assert resp.status_code == 200
-    assert all(v is False for v in resp.data.values())
+    assert all(niveau == "aucun" for niveau in resp.data.values())
+
+
+def test_mes_acces_distingue_lecture_et_lecture_ecriture(api_client):
+    """Le coeur du changement de contrat (task #215) : une cellule `lecture` seule ne doit plus
+    se confondre avec `lecture_ecriture` dans la réponse — c'est ce qui permet au frontend de
+    désactiver uniquement les contrôles d'écriture d'une page en lecture seule."""
+    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+
+    role = RoleDefinition.objects.get(slug="dir_financier", is_system=True)
+    RoleModulePermission.objects.update_or_create(
+        role=role, module="page_quiz", defaults={"niveau_acces": NiveauAcces.LECTURE}
+    )
+    dir_financier = UserFactory(role=Role.DIR_FINANCIER)
+    resp = _auth(api_client, dir_financier).get(reverse(MES_ACCES_URL))
+    assert resp.status_code == 200
+    assert resp.data["page_quiz"] == "lecture"
 
 
 def test_matrix_set_refuse_de_modifier_une_cellule_super_admin_sur_une_page_admin(api_client):

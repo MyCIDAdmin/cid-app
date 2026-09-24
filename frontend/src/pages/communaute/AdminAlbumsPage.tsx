@@ -28,6 +28,7 @@ import {
   useSupprimerPhoto,
   useUploaderPhoto,
 } from "../../hooks/useCommunaute";
+import { usePageAccess } from "../../hooks/useRbac";
 import type { Album, AlbumPayload } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -38,7 +39,15 @@ const FORMULAIRE_VIDE: AlbumPayload = {
   lieu: "",
 };
 
-function FormulaireAlbum({ album, onTermine }: { album: Album | null; onTermine: () => void }) {
+function FormulaireAlbum({
+  album,
+  onTermine,
+  modifiable,
+}: {
+  album: Album | null;
+  onTermine: () => void;
+  modifiable: boolean;
+}) {
   const { t } = useTranslation(["communaute", "common"]);
   const creer = useCreerAlbum();
   const modifier = useModifierAlbum();
@@ -164,9 +173,11 @@ function FormulaireAlbum({ album, onTermine }: { album: Album | null; onTermine:
                 <img src={photo.image} alt={photo.legende} className="h-full w-full object-cover" />
                 <button
                   type="button"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => supprimerPhoto.mutate(photo.id)}
                   aria-label={t("admin_albums.supprimer") ?? ""}
-                  className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl bg-black/60 text-[10px] text-white"
+                  className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl bg-black/60 text-[10px] text-white disabled:opacity-40"
                 >
                   ×
                 </button>
@@ -178,9 +189,11 @@ function FormulaireAlbum({ album, onTermine }: { album: Album | null; onTermine:
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple
+          disabled={!modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
           aria-label={t("admin_albums.ajouter_images") ?? ""}
           onChange={(e) => setNouvellesImages(Array.from(e.target.files ?? []))}
-          className="block w-full text-xs text-text-secondary"
+          className="block w-full text-xs text-text-secondary disabled:opacity-40"
         />
       </div>
 
@@ -196,7 +209,8 @@ function FormulaireAlbum({ album, onTermine }: { album: Album | null; onTermine:
         </button>
         <button
           type="submit"
-          disabled={enCours}
+          disabled={enCours || !modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
           className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
         >
           {album ? t("admin_albums.enregistrer") : t("admin_albums.nouvel_album")}
@@ -210,6 +224,7 @@ export default function AdminAlbumsPage() {
   const { t } = useTranslation(["communaute", "common"]);
   const albumsQuery = useAlbums();
   const supprimer = useSupprimerAlbum();
+  const { accessible, modifiable } = usePageAccess("page_albums");
 
   const [afficherFormulaire, setAfficherFormulaire] = useState(false);
   const [albumEnEdition, setAlbumEnEdition] = useState<Album | null>(null);
@@ -247,17 +262,25 @@ export default function AdminAlbumsPage() {
         {!afficherFormulaire && (
           <button
             type="button"
+            disabled={!modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
             onClick={ouvrirCreation}
-            className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad"
+            className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
           >
             {t("admin_albums.nouvel_album")}
           </button>
         )}
       </div>
 
+      {accessible && !modifiable && (
+        <p className="mb-4 rounded-cid-lg bg-status-warningBg px-3 py-2 text-xs text-status-warningText">
+          {t("common:acces.lecture_seule_banniere")}
+        </p>
+      )}
+
       {afficherFormulaire && (
         <div className="mb-5">
-          <FormulaireAlbum album={albumEnEdition} onTermine={fermerFormulaire} />
+          <FormulaireAlbum album={albumEnEdition} onTermine={fermerFormulaire} modifiable={modifiable} />
         </div>
       )}
 
@@ -289,15 +312,19 @@ export default function AdminAlbumsPage() {
                 </Link>
                 <button
                   type="button"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => ouvrirEdition(album)}
-                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
+                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
                 >
                   {t("admin_albums.modifier")}
                 </button>
                 <button
                   type="button"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => setAlbumASupprimer(album)}
-                  className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg"
+                  className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                 >
                   {t("admin_albums.supprimer")}
                 </button>

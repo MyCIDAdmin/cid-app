@@ -5,8 +5,16 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import * as adhesionsApi from "../../api/adhesions";
 import * as useAdhesionsHooks from "../../hooks/useAdhesions";
 import * as useMembresHooks from "../../hooks/useMembres";
+import * as useRbacHooks from "../../hooks/useRbac";
 import type { CampagneAdhesion, Souscription } from "../../types/adhesion";
 import AdminJustificatifsPage from "./AdminJustificatifsPage";
+
+// Task #216 (2026-09-24) : "page_justificatifs" lecture/lecture_ecriture — plein accès par
+// défaut pour ne pas casser les tests existants ; voir le describe dédié plus bas.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
+});
 
 vi.mock("../../hooks/useAdhesions", async () => {
   const actual = await vi.importActual<typeof useAdhesionsHooks>("../../hooks/useAdhesions");
@@ -110,6 +118,11 @@ function souscriptionAvecJustificatif(overrides: Partial<Souscription> = {}): So
 
 describe("AdminJustificatifsPage", () => {
   beforeEach(() => {
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
     vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
       data: { next: null, previous: null, results: [campagne()] },
     } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
@@ -300,6 +313,40 @@ describe("AdminJustificatifsPage", () => {
     expect(mutate.mock.calls[0][0]).toEqual({
       id: "j1",
       payload: { decision: "rejete", motif_rejet: "Carte étudiante expirée." },
+    });
+  });
+
+  describe("accès lecture seule (task #216)", () => {
+    beforeEach(() => {
+      vi.mocked(useAdhesionsHooks.useJustificatifsEnAttente).mockReturnValue({
+        data: { next: null, previous: null, results: [souscriptionAvecJustificatif()] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useAdhesionsHooks.useJustificatifsEnAttente>);
+    });
+
+    it("n'affiche pas de bandeau et laisse Approuver/Rejeter actifs quand modifiable=true", () => {
+      renderWithProviders(<AdminJustificatifsPage />);
+
+      expect(screen.queryByText("acces.lecture_seule_banniere")).not.toBeInTheDocument();
+      expect(screen.getByText("admin_justificatifs.approuver")).not.toBeDisabled();
+      expect(screen.getByText("admin_justificatifs.rejeter")).not.toBeDisabled();
+    });
+
+    it("affiche un bandeau et désactive Approuver/Rejeter quand modifiable=false", () => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+
+      renderWithProviders(<AdminJustificatifsPage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      // Lecture : la file reste visible.
+      expect(screen.getByText("Riadh Bchini (CA-2026-001)")).toBeInTheDocument();
+      expect(screen.getByText("admin_justificatifs.approuver")).toBeDisabled();
+      expect(screen.getByText("admin_justificatifs.rejeter")).toBeDisabled();
     });
   });
 });

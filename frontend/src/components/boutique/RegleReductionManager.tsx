@@ -10,6 +10,9 @@
  * demande utilisateur ne sont que des réglages possibles de ce système, pas des cas câblés en
  * dur. Deux règles peuvent coexister à des seuils différents pour un même type ; seule celle au
  * seuil le plus élevé ATTEINT s'applique (voir calculer_reduction_quantite côté backend).
+ *
+ * Lecture seule (task #216, 2026-09-24) : `modifiable` (optionnel, défaut `true`, voir
+ * GestionCatalogueTab) désactive l'ajout/activation/suppression des règles.
  */
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,8 +28,14 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 
 const TYPES_REDUCTION: TypeReduction[] = ["article_offert", "pourcentage"];
 
-export default function RegleReductionManager({ produit }: { produit: Produit }) {
-  const { t } = useTranslation("boutique");
+export default function RegleReductionManager({
+  produit,
+  modifiable = true,
+}: {
+  produit: Produit;
+  modifiable?: boolean;
+}) {
+  const { t } = useTranslation(["boutique", "common"]);
   const reglesQuery = useReglesReduction({ produit: produit.id });
   const creerMutation = useCreerRegleReduction();
   const modifierMutation = useModifierRegleReduction();
@@ -76,13 +85,17 @@ export default function RegleReductionManager({ produit }: { produit: Produit })
                 checked={r.actif}
                 aria-label={t("catalogue_admin.regle_active_label")}
                 onChange={(e) => modifierMutation.mutate({ id: r.id, payload: { actif: e.target.checked } })}
+                disabled={!modifiable}
+                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
               />
               {t("catalogue_admin.regle_active_label")}
             </label>
             <button
               type="button"
               onClick={() => supprimerMutation.mutate(r.id)}
-              className="text-text-tertiary hover:text-status-dangerText"
+              disabled={!modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              className="text-text-tertiary hover:text-status-dangerText disabled:opacity-40"
               aria-label={t("catalogue_admin.supprimer_regle")}
             >
               ✕
@@ -152,7 +165,8 @@ export default function RegleReductionManager({ produit }: { produit: Produit })
         )}
         <button
           type="submit"
-          disabled={creerMutation.isPending}
+          disabled={creerMutation.isPending || !modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
           className="rounded-cid bg-ca px-2.5 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
         >
           {t("catalogue_admin.ajouter_regle")}

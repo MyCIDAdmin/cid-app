@@ -32,6 +32,7 @@ import {
   useSupprimerImageProjet,
   useSupprimerProjet,
 } from "../../hooks/useProjets";
+import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { MembreListItem } from "../../types/membre";
 import type { MembreResumeProjet, Projet, ProjetPayload, StatutProjet } from "../../types/projets";
@@ -52,11 +53,19 @@ const FORMULAIRE_VIDE: ProjetPayload = {
 function FormulaireProjet({
   projet,
   onTermine,
+  modifiable,
 }: {
   projet: Projet | null;
   onTermine: () => void;
+  /** page_projets en lecture_ecriture (task #216) — gate UNIQUEMENT les champs du Projet
+   * lui-même (titre/statut/cagnote_active/objectif_montant/date_limite/responsable/ordre, voir
+   * ProjetPermission côté backend). Ne s'applique PAS à la gestion des images ci-dessous
+   * (ajouterImage/supprimerImage) : celle-ci reste régie par GestionContenuProjetPermission/
+   * est_gestionnaire_projet (Bureau Admin+ OU responsable assigné de CE projet), un mécanisme
+   * volontairement distinct de la matrice page_projets — voir docstring de tête de module. */
+  modifiable: boolean;
 }) {
-  const { t } = useTranslation("projets");
+  const { t } = useTranslation(["projets", "common"]);
   const creer = useCreerProjet();
   const modifier = useModifierProjet();
   const ajouterImage = useAjouterImageProjet();
@@ -270,7 +279,8 @@ function FormulaireProjet({
         </button>
         <button
           type="submit"
-          disabled={enCours}
+          disabled={enCours || !modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
           className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
         >
           {projet ? t("admin.enregistrer") : t("admin.nouveau_projet")}
@@ -284,6 +294,7 @@ export default function AdminProjetsPage() {
   const { t } = useTranslation(["projets", "common"]);
   const projetsQuery = useProjets();
   const supprimer = useSupprimerProjet();
+  const { accessible, modifiable } = usePageAccess("page_projets");
 
   const [afficherFormulaire, setAfficherFormulaire] = useState(false);
   const [projetEnEdition, setProjetEnEdition] = useState<Projet | null>(null);
@@ -321,17 +332,29 @@ export default function AdminProjetsPage() {
         {!afficherFormulaire && (
           <button
             type="button"
+            disabled={!modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
             onClick={ouvrirCreation}
-            className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad"
+            className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
           >
             {t("admin.nouveau_projet")}
           </button>
         )}
       </div>
 
+      {accessible && !modifiable && (
+        <p className="mb-4 rounded-cid-lg bg-status-warningBg px-3 py-2 text-xs text-status-warningText">
+          {t("common:acces.lecture_seule_banniere")}
+        </p>
+      )}
+
       {afficherFormulaire && (
         <div className="mb-5">
-          <FormulaireProjet projet={projetEnEdition} onTermine={fermerFormulaire} />
+          <FormulaireProjet
+            projet={projetEnEdition}
+            onTermine={fermerFormulaire}
+            modifiable={modifiable}
+          />
         </div>
       )}
 
@@ -373,15 +396,19 @@ export default function AdminProjetsPage() {
                 </button>
                 <button
                   type="button"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => ouvrirEdition(projet)}
-                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
+                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
                 >
                   {t("admin.modifier")}
                 </button>
                 <button
                   type="button"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => setProjetASupprimer(projet)}
-                  className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg"
+                  className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                 >
                   {t("admin.supprimer")}
                 </button>

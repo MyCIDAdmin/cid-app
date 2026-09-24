@@ -28,10 +28,11 @@ import {
   useSupprimerQuestionQuiz,
   useSupprimerQuiz,
 } from "../../hooks/useCommunaute";
+import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
-function NouveauQuizForm() {
-  const { t } = useTranslation("communaute");
+function NouveauQuizForm({ modifiable }: { modifiable: boolean }) {
+  const { t } = useTranslation(["communaute", "common"]);
   const creerQuiz = useCreerQuiz();
   const [titre, setTitre] = useState("");
   const [description, setDescription] = useState("");
@@ -75,7 +76,8 @@ function NouveauQuizForm() {
       />
       <button
         type="submit"
-        disabled={creerQuiz.isPending}
+        disabled={creerQuiz.isPending || !modifiable}
+        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
         className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
       >
         {t("admin_quiz.creer")}
@@ -85,8 +87,8 @@ function NouveauQuizForm() {
   );
 }
 
-function NouvelleQuestionForm({ quizId }: { quizId: string }) {
-  const { t } = useTranslation("communaute");
+function NouvelleQuestionForm({ quizId, modifiable }: { quizId: string; modifiable: boolean }) {
+  const { t } = useTranslation(["communaute", "common"]);
   const creerQuestion = useCreerQuestionQuiz();
   const [texte, setTexte] = useState("");
   const [points, setPoints] = useState(10);
@@ -118,7 +120,8 @@ function NouvelleQuestionForm({ quizId }: { quizId: string }) {
       />
       <button
         type="submit"
-        disabled={creerQuestion.isPending}
+        disabled={creerQuestion.isPending || !modifiable}
+        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
         className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
       >
         {t("admin_quiz.ajouter_question")}
@@ -127,8 +130,16 @@ function NouvelleQuestionForm({ quizId }: { quizId: string }) {
   );
 }
 
-function NouveauChoixForm({ questionId, quizId }: { questionId: string; quizId: string }) {
-  const { t } = useTranslation("communaute");
+function NouveauChoixForm({
+  questionId,
+  quizId,
+  modifiable,
+}: {
+  questionId: string;
+  quizId: string;
+  modifiable: boolean;
+}) {
+  const { t } = useTranslation(["communaute", "common"]);
   const creerChoix = useCreerChoixQuestion();
   const [texte, setTexte] = useState("");
   const [estCorrect, setEstCorrect] = useState(false);
@@ -166,7 +177,8 @@ function NouveauChoixForm({ questionId, quizId }: { questionId: string; quizId: 
       </label>
       <button
         type="submit"
-        disabled={creerChoix.isPending}
+        disabled={creerChoix.isPending || !modifiable}
+        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
         className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-text-primary hover:bg-text-tertiary/20 disabled:opacity-50"
       >
         {t("admin_quiz.ajouter_choix")}
@@ -175,8 +187,8 @@ function NouveauChoixForm({ questionId, quizId }: { questionId: string; quizId: 
   );
 }
 
-function DetailQuiz({ quizId }: { quizId: string }) {
-  const { t } = useTranslation("communaute");
+function DetailQuiz({ quizId, modifiable }: { quizId: string; modifiable: boolean }) {
+  const { t } = useTranslation(["communaute", "common"]);
   const quizQuery = useQuiz(quizId);
   const supprimerQuestion = useSupprimerQuestionQuiz();
   const supprimerChoix = useSupprimerChoixQuestion();
@@ -206,10 +218,12 @@ function DetailQuiz({ quizId }: { quizId: string }) {
               </span>
               <button
                 type="button"
+                disabled={!modifiable}
+                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                 onClick={() =>
                   supprimerQuestion.mutate({ id: question.id, quizId })
                 }
-                className="text-[10px] font-medium text-status-dangerText hover:underline"
+                className="text-[10px] font-medium text-status-dangerText hover:underline disabled:opacity-40"
               >
                 {t("admin_quiz.supprimer")}
               </button>
@@ -227,8 +241,10 @@ function DetailQuiz({ quizId }: { quizId: string }) {
                   </span>
                   <button
                     type="button"
+                    disabled={!modifiable}
+                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                     onClick={() => supprimerChoix.mutate({ id: choix.id, quizId })}
-                    className="text-[10px] font-medium text-status-dangerText hover:underline"
+                    className="text-[10px] font-medium text-status-dangerText hover:underline disabled:opacity-40"
                   >
                     {t("admin_quiz.supprimer")}
                   </button>
@@ -239,7 +255,7 @@ function DetailQuiz({ quizId }: { quizId: string }) {
               )}
             </ul>
 
-            <NouveauChoixForm questionId={question.id} quizId={quizId} />
+            <NouveauChoixForm questionId={question.id} quizId={quizId} modifiable={modifiable} />
           </div>
         ))}
         {quiz.questions.length === 0 && (
@@ -248,24 +264,31 @@ function DetailQuiz({ quizId }: { quizId: string }) {
       </div>
 
       <div className="rounded-cid border border-dashed border-text-tertiary/30 p-2">
-        <NouvelleQuestionForm quizId={quizId} />
+        <NouvelleQuestionForm quizId={quizId} modifiable={modifiable} />
       </div>
     </div>
   );
 }
 
 export default function AdminQuizPage() {
-  const { t } = useTranslation("communaute");
+  const { t } = useTranslation(["communaute", "common"]);
   const quizListeQuery = useQuizListe();
   const modifierQuiz = useModifierQuiz();
   const supprimerQuiz = useSupprimerQuiz();
   const [quizSelectionne, setQuizSelectionne] = useState<string | null>(null);
+  const { accessible, modifiable } = usePageAccess("page_quiz");
 
   return (
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("admin_quiz.titre")}</h1>
 
-      <NouveauQuizForm />
+      {accessible && !modifiable && (
+        <p className="mb-4 rounded-cid-lg bg-status-warningBg px-3 py-2 text-xs text-status-warningText">
+          {t("common:acces.lecture_seule_banniere")}
+        </p>
+      )}
+
+      <NouveauQuizForm modifiable={modifiable} />
 
       {quizListeQuery.isLoading && (
         <p className="text-sm text-text-tertiary">{t("admin_quiz.chargement")}</p>
@@ -308,20 +331,24 @@ export default function AdminQuizPage() {
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() =>
                     modifierQuiz.mutate({ id: quiz.id, payload: { est_actif: !quiz.est_actif } })
                   }
-                  className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-text-primary hover:bg-text-tertiary/20"
+                  className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-text-primary hover:bg-text-tertiary/20 disabled:opacity-40"
                 >
                   {t(quiz.est_actif ? "admin_quiz.desactiver" : "admin_quiz.activer")}
                 </button>
                 <button
                   type="button"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => {
                     supprimerQuiz.mutate(quiz.id);
                     if (quizSelectionne === quiz.id) setQuizSelectionne(null);
                   }}
-                  className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-status-dangerText hover:bg-text-tertiary/20"
+                  className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-status-dangerText hover:bg-text-tertiary/20 disabled:opacity-40"
                 >
                   {t("admin_quiz.supprimer")}
                 </button>
@@ -332,7 +359,7 @@ export default function AdminQuizPage() {
 
         <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
           {quizSelectionne ? (
-            <DetailQuiz quizId={quizSelectionne} />
+            <DetailQuiz quizId={quizSelectionne} modifiable={modifiable} />
           ) : (
             <p className="text-sm text-text-tertiary">{t("admin_quiz.selectionner_quiz")}</p>
           )}

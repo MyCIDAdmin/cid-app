@@ -17,12 +17,17 @@ import GestionBonsAchatTab from "../../components/boutique/GestionBonsAchatTab";
 import GestionCatalogueTab from "../../components/boutique/GestionCatalogueTab";
 import GestionCommandesTab from "../../components/boutique/GestionCommandesTab";
 import { useCommandes, useProduits } from "../../hooks/useBoutique";
+import { usePageAccess } from "../../hooks/useRbac";
 
 type Onglet = "commandes" | "catalogue" | "bons_achat";
 
 export default function AdminBoutiquePage() {
-  const { t } = useTranslation("boutique");
+  const { t } = useTranslation(["boutique", "common"]);
   const [onglet, setOnglet] = useState<Onglet>("commandes");
+  // Task #216 (2026-09-24) : "page_boutique" distingue désormais lecture/lecture_ecriture — les
+  // onglets ci-dessous reçoivent `modifiable` pour désactiver leurs contrôles d'écriture
+  // (l'onglet Bons d'achat est déjà purement lecture seule, rien à lui passer).
+  const { accessible, modifiable } = usePageAccess("page_boutique");
 
   // Requêtes légères juste pour les tuiles KPI de tête de page (mockup kg4) — les onglets
   // ci-dessous refont leur propre useCommandes/useProduits avec leurs filtres respectifs.
@@ -36,6 +41,12 @@ export default function AdminBoutiquePage() {
   return (
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("admin.titre")}</h1>
+
+      {accessible && !modifiable && (
+        <div className="mb-4 rounded-cid border border-status-warningText/30 bg-status-warningBg px-3 py-2 text-sm text-status-warningText">
+          {t("common:acces.lecture_seule_banniere")}
+        </div>
+      )}
 
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
         <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
@@ -104,8 +115,8 @@ export default function AdminBoutiquePage() {
         </button>
       </div>
 
-      {onglet === "commandes" && <GestionCommandesTab />}
-      {onglet === "catalogue" && <GestionCatalogueTab />}
+      {onglet === "commandes" && <GestionCommandesTab modifiable={modifiable} />}
+      {onglet === "catalogue" && <GestionCatalogueTab modifiable={modifiable} />}
       {onglet === "bons_achat" && <GestionBonsAchatTab />}
     </div>
   );

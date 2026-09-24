@@ -8,6 +8,10 @@
  * du textarea devient un avantage trilingue {ordre, texte_fr, texte_de: "", texte_ar: ""} —
  * seul le français est saisi ici, comme le reste de ce formulaire (label_de/ar restent éditables
  * via Django Admin si besoin, cf. RabaisManager).
+ *
+ * Lecture seule (task #216, 2026-09-24) : `modifiable` (optionnel, défaut `true`, voir
+ * AdminCampagnesPage) désactive l'ajout/modification/suppression d'offres et se propage à
+ * RabaisManager.
  */
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
@@ -43,8 +47,14 @@ function avantagesDepuisTexte(texte: string) {
     .map((texte_fr, index) => ({ ordre: index + 1, texte_fr, texte_de: "", texte_ar: "" }));
 }
 
-export default function OffresManager({ campagne }: { campagne: CampagneAdhesion }) {
-  const { t } = useTranslation("adhesions");
+export default function OffresManager({
+  campagne,
+  modifiable = true,
+}: {
+  campagne: CampagneAdhesion;
+  modifiable?: boolean;
+}) {
+  const { t } = useTranslation(["adhesions", "common"]);
   const creerMutation = useCreerOffre();
   const modifierMutation = useModifierOffre();
   const supprimerMutation = useSupprimerOffre();
@@ -87,7 +97,9 @@ export default function OffresManager({ campagne }: { campagne: CampagneAdhesion
                   aria-label={`${t("admin_offres.prix_label")} — ${offre.nom}`}
                   defaultValue={offre.prix_plein}
                   onBlur={(e) => modifierPrix(offre.id, e.target.value)}
-                  className="w-16 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  className="w-16 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
                 />
               </label>
               <label className="flex items-center gap-1 text-[10px] text-text-secondary">
@@ -95,6 +107,8 @@ export default function OffresManager({ campagne }: { campagne: CampagneAdhesion
                   type="checkbox"
                   checked={offre.visible}
                   onChange={(e) => toggleVisible(offre.id, e.target.checked)}
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                 />
                 {t("admin_offres.visible_label")}
               </label>
@@ -110,13 +124,17 @@ export default function OffresManager({ campagne }: { campagne: CampagneAdhesion
               <button
                 type="button"
                 onClick={() => supprimerMutation.mutate(offre.id)}
-                className="text-text-tertiary hover:text-status-dangerText"
+                disabled={!modifiable}
+                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                className="text-text-tertiary hover:text-status-dangerText disabled:opacity-40"
                 aria-label={`${t("admin_offres.supprimer")} — ${offre.nom}`}
               >
                 ✕
               </button>
             </div>
-            {offreDepliee === offre.id && <RabaisManager offre={offre} />}
+            {offreDepliee === offre.id && (
+              <RabaisManager offre={offre} modifiable={modifiable} />
+            )}
           </div>
         ))}
         {campagne.offres.length === 0 && (
@@ -240,7 +258,8 @@ export default function OffresManager({ campagne }: { campagne: CampagneAdhesion
         <div className="md:col-span-2">
           <button
             type="submit"
-            disabled={creerMutation.isPending}
+            disabled={creerMutation.isPending || !modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
             className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
           >
             {t("admin_offres.ajouter")}

@@ -153,3 +153,59 @@ def test_phase_d_super_admin_garde_lacces_meme_si_matrice_dit_aucun(api_client):
 
     resp = _auth(api_client, admin).get(reverse(URL))
     assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Lecture vs écriture (ajouté le 2026-09-24, task #214, retour utilisateur sur Quiz-Verwaltung —
+# voir apps.rbac.services.has_admin_page_access) : ParametresNotificationPermission distingue GET
+# (`lecture` suffit) de PATCH (`lecture_ecriture` requis) — voir apps.notifications.permissions.
+# ParametresNotificationPermission. Contrairement à ArticleCataloguePermission, la lecture ici est
+# elle-même gatée par la page (pas ouverte à tout authentifié), donc directement testable.
+# ---------------------------------------------------------------------------
+
+
+def test_role_lecture_seule_peut_lire_mais_pas_modifier_les_parametres(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user = UserFactory(role=Role.MEMBRE)
+    role_perso = RoleDefinitionFactory(slug="notifications-lecteur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_notifications_params", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp_get = api_client.get(reverse(URL))
+    assert resp_get.status_code == 200
+
+    resp_patch = api_client.patch(reverse(URL), {"email_boutique": False})
+    assert resp_patch.status_code == 403
+    assert ParametresNotification.get_solo().email_boutique is True
+
+
+def test_role_lecture_ecriture_peut_modifier_les_parametres(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user = UserFactory(role=Role.MEMBRE)
+    role_perso = RoleDefinitionFactory(slug="notifications-editeur")
+    RoleModulePermissionFactory(
+        role=role_perso,
+        module="page_notifications_params",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.patch(reverse(URL), {"email_boutique": False})
+    assert resp.status_code == 200, resp.data
+    assert ParametresNotification.get_solo().email_boutique is False

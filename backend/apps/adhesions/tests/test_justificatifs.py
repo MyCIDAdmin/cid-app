@@ -366,6 +366,75 @@ def test_phase_d_super_admin_voit_toujours_la_file_meme_si_matrice_dit_aucun(api
     assert resp.status_code == 200
 
 
+# ---------------------------------------------------------------------------
+# Lecture vs écriture (ajouté le 2026-09-24, task #214, retour utilisateur sur Quiz-Verwaltung —
+# voir apps.rbac.services.has_admin_page_access) : une cellule `lecture` seule sur
+# page_justificatifs donne accès à la file (action "list") mais ne doit plus permettre de statuer
+# sur un justificatif (action "valider") — voir JustificatifPermission.ACTIONS_ECRITURE.
+# ---------------------------------------------------------------------------
+
+
+def test_role_lecture_seule_peut_voir_la_file_mais_pas_valider(api_client):
+    """Comme test_phase_d_role_personnalise_peut_voir_la_file_via_la_matrice ci-dessus, le
+    justificatif ciblé appartient à la propre fiche membre du user : get_object() de
+    JustificatifRabaisViewSet reste scopé par READ_ALL_SOUSCRIPTIONS_MIN_LEVEL (rôle système
+    legacy, hors scope de cette phase), pas par la matrice page_justificatifs."""
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "readonly-justificatifs@example.de")
+    justificatif = JustificatifRabaisFactory(
+        souscription=SouscriptionFactory(
+            membre=membre, statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF
+        )
+    )
+    role_perso = RoleDefinitionFactory(slug="justificatifs-lecteur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_justificatifs", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp_list = api_client.get(reverse(JUSTIFICATIF_LIST_URL))
+    assert resp_list.status_code == 200
+    ids = {r["id"] for r in resp_list.data["results"]}
+    assert str(justificatif.id) in ids
+
+    resp_valider = api_client.post(_valider_url(justificatif), {"decision": "approuve"})
+    assert resp_valider.status_code == 403
+
+
+def test_role_lecture_ecriture_peut_valider_un_justificatif(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "readwrite-justificatifs@example.de")
+    justificatif = JustificatifRabaisFactory(
+        souscription=SouscriptionFactory(
+            membre=membre, statut=StatutSouscription.EN_ATTENTE_JUSTIFICATIF
+        )
+    )
+    role_perso = RoleDefinitionFactory(slug="justificatifs-editeur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_justificatifs", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.post(_valider_url(justificatif), {"decision": "approuve"})
+    assert resp.status_code == 200, resp.data
+    justificatif.refresh_from_db()
+    assert justificatif.statut == StatutJustificatif.APPROUVE
+
+
 # --- Détail / téléchargement (RH+ ou propriétaire) ---
 
 

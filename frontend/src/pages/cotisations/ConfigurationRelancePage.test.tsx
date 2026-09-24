@@ -4,8 +4,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
 import * as useMembresHooks from "../../hooks/useMembres";
+import * as useRbacHooks from "../../hooks/useRbac";
 import type { ConfigurationRelance } from "../../types/cotisation";
 import ConfigurationRelancePage from "./ConfigurationRelancePage";
+
+// task #216 : usePageAccess mocké partout (accès complet par défaut) — describe dédié plus bas
+// pour le mode lecture seule.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
+});
 
 vi.mock("../../hooks/useCotisations", async () => {
   const actual = await vi.importActual<typeof useCotisationsHooks>("../../hooks/useCotisations");
@@ -40,6 +48,11 @@ function configurationRelance(overrides: Partial<ConfigurationRelance> = {}): Co
 
 describe("ConfigurationRelancePage", () => {
   beforeEach(() => {
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
     vi.mocked(useMembresHooks.useMembre).mockReturnValue({
       data: { id: "m-dg", prenom: "Sami", nom: "Trabelsi" },
       isLoading: false,
@@ -191,5 +204,48 @@ describe("ConfigurationRelancePage", () => {
     fireEvent.click(screen.getByText("configuration_relance.supprimer"));
 
     expect(mutate).not.toHaveBeenCalled();
+  });
+
+  // --- Lecture seule (task #216, RBAC page_cotisations_relances : GET=lecture, POST/PATCH/
+  // DELETE=écriture côté backend) ---
+  describe("mode lecture seule", () => {
+    beforeEach(() => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+      vi.mocked(useCotisationsHooks.useConfigurationsRelance).mockReturnValue({
+        data: { next: null, previous: null, results: [configurationRelance()] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useConfigurationsRelance>);
+    });
+
+    it("affiche la bannière de lecture seule et désactive la création/modification/suppression", () => {
+      renderWithProviders(<ConfigurationRelancePage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      expect(screen.getByLabelText("configuration_relance.champ_annee")).toBeDisabled();
+      expect(screen.getByText("configuration_relance.ajouter")).toBeDisabled();
+      expect(screen.getByTestId("configuration-relance-date-2027")).toBeDisabled();
+      expect(screen.getByText("configuration_relance.enregistrer")).toBeDisabled();
+      expect(screen.getByText("configuration_relance.supprimer")).toBeDisabled();
+    });
+
+    it("n'appelle pas la mutation de suppression au clic sur le bouton désactivé", () => {
+      const mutate = vi.fn();
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      vi.mocked(useCotisationsHooks.useSupprimerConfigurationRelance).mockReturnValue({
+        mutate,
+        isPending: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useSupprimerConfigurationRelance>);
+
+      renderWithProviders(<ConfigurationRelancePage />);
+      fireEvent.click(screen.getByText("configuration_relance.supprimer"));
+
+      expect(mutate).not.toHaveBeenCalled();
+    });
   });
 });

@@ -483,3 +483,81 @@ def test_phase_d_super_admin_gere_toujours_les_projets_meme_si_matrice_dit_aucun
 
     resp = _auth(api_client, user).post(reverse(PROJET_LIST_URL), _PROJET_PAYLOAD)
     assert resp.status_code == 201, resp.data
+
+
+# ---------------------------------------------------------------------------
+# Lecture vs écriture (ajouté le 2026-09-24, task #214, retour utilisateur sur Quiz-Verwaltung —
+# voir apps.rbac.services.has_admin_page_access) : ProjetPermission laisse la lecture (GET) et
+# `contributeurs` ouvertes à tout authentifié indépendamment de la matrice ; seule l'écriture
+# (create/update/partial_update/destroy) requiert `lecture_ecriture`. GestionContenuProjetPermission
+# / est_gestionnaire_projet (responsable du projet) restent hors scope, inchangés.
+# ---------------------------------------------------------------------------
+
+
+def test_role_lecture_seule_peut_lister_les_projets_mais_pas_en_creer(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    ProjetFactory.create_batch(2)
+    user, _ = _user_avec_membre(Role.MEMBRE, "readonly-projets@example.de")
+    role_perso = RoleDefinitionFactory(slug="projets-lecteur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_projets", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp_list = api_client.get(reverse(PROJET_LIST_URL))
+    assert resp_list.status_code == 200
+    assert len(resp_list.data["results"]) == 2
+
+    resp_create = api_client.post(reverse(PROJET_LIST_URL), _PROJET_PAYLOAD)
+    assert resp_create.status_code == 403
+
+
+def test_role_lecture_ecriture_peut_creer_un_projet(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "readwrite-projets@example.de")
+    role_perso = RoleDefinitionFactory(slug="projets-editeur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_projets", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(PROJET_LIST_URL), _PROJET_PAYLOAD)
+    assert resp.status_code == 201, resp.data
+
+
+def test_role_lecture_seule_peut_quand_meme_voir_les_contributeurs(api_client):
+    """`contributeurs` reste ouverte à tout authentifié (voir docstring de module
+    ProjetPermission) — une cellule `lecture` seule n'y change rien, contrairement à
+    create/update/destroy."""
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    projet = ProjetFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "readonly-projets-contrib@example.de")
+    role_perso = RoleDefinitionFactory(slug="projets-lecteur-contrib")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_projets", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.get(_contributeurs_url(projet))
+    assert resp.status_code == 200

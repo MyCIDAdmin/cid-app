@@ -335,11 +335,21 @@ class MesAccesView(APIView):
     COURANT aux 13 pages de gestion (registry.PAGES_ADMIN), pour le gating frontend (RequireRole
     en mode `pageSlug`, filtrage de Sidebar.tsx) — même principe d'ouverture `IsAuthenticated`
     seul que ModuleVisibiliteEffectiveView ci-dessus : aucune donnée sensible n'est renvoyée,
-    seulement des booléens dérivés de services.has_admin_page_access pour ce seul utilisateur."""
+    seulement le niveau d'accès dérivé de services.get_admin_page_niveau pour ce seul
+    utilisateur.
+
+    Format de réponse changé le 2026-09-24 (task #215, retour utilisateur — voir
+    apps.communaute.permissions.QuizPermission pour le contexte complet du bug d'origine) :
+    auparavant un booléen par slug (`has_admin_page_access`, "a accès" tout court) — désormais
+    le niveau réel (`"aucun" | "lecture" | "lecture_ecriture"`), pour que le frontend puisse
+    désactiver spécifiquement les contrôles d'ÉCRITURE d'une page sans en masquer la
+    consultation. `page_slug in mesAcces && mesAcces[page_slug] !== "aucun"` reste la question
+    "a accès à la page" (routing/Sidebar) ; `mesAcces[page_slug] === "lecture_ecriture"` est la
+    nouvelle question "peut modifier"."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         return Response(
-            {slug: rbac_services.has_admin_page_access(request.user, slug) for slug in PAGES_ADMIN}
+            {slug: rbac_services.get_admin_page_niveau(request.user, slug) for slug in PAGES_ADMIN}
         )

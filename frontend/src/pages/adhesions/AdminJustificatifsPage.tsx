@@ -22,6 +22,12 @@
  *  - annulation ("stornieren") de la souscription elle-même, indépendamment de la décision sur le
  *    justificatif — toutes les souscriptions de cette file sont "en_attente_justificatif", donc
  *    toujours annulables (voir STATUTS_SOUSCRIPTION_ANNULABLES côté backend).
+ *
+ * Lecture seule (task #216, 2026-09-24) : "page_justificatifs" ne couvre QUE la décision de
+ * validation elle-même (approuver/rejeter, toutes deux via `useValiderJustificatif`) — `modifiable`
+ * (voir usePageAccess ci-dessous) gate donc uniquement ces deux actions. L'upload "pour le compte
+ * d'un membre" et l'annulation de souscription restent volontairement hors périmètre de cette
+ * matrice (portée acceptée avec l'utilisateur pour task #216) et ne sont pas gatés ici.
  */
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -36,6 +42,7 @@ import {
   useUploaderJustificatif,
   useValiderJustificatif,
 } from "../../hooks/useAdhesions";
+import { usePageAccess } from "../../hooks/useRbac";
 import type { CampagneAdhesion, Souscription } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -47,10 +54,11 @@ function formatDate(iso: string | null | undefined): string {
 interface JustificatifQueueRowProps {
   souscription: Souscription;
   campagnesById: Map<string, CampagneAdhesion>;
+  modifiable: boolean;
 }
 
-function JustificatifQueueRow({ souscription, campagnesById }: JustificatifQueueRowProps) {
-  const { t } = useTranslation("adhesions");
+function JustificatifQueueRow({ souscription, campagnesById, modifiable }: JustificatifQueueRowProps) {
+  const { t } = useTranslation(["adhesions", "common"]);
   const membre = useMembre(souscription.membre);
   const validerMutation = useValiderJustificatif();
   const uploaderMutation = useUploaderJustificatif();
@@ -158,7 +166,8 @@ function JustificatifQueueRow({ souscription, campagnesById }: JustificatifQueue
                 <button
                   type="button"
                   onClick={approuver}
-                  disabled={validerMutation.isPending}
+                  disabled={validerMutation.isPending || !modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   className="rounded-cid bg-status-successText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
                 >
                   {t("admin_justificatifs.approuver")}
@@ -166,7 +175,9 @@ function JustificatifQueueRow({ souscription, campagnesById }: JustificatifQueue
                 <button
                   type="button"
                   onClick={() => setRejetOuvert((cur) => !cur)}
-                  className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                  disabled={!modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                 >
                   {t("admin_justificatifs.rejeter")}
                 </button>
@@ -183,7 +194,8 @@ function JustificatifQueueRow({ souscription, campagnesById }: JustificatifQueue
                   <button
                     type="button"
                     onClick={confirmerRejet}
-                    disabled={!motifRejet.trim() || validerMutation.isPending}
+                    disabled={!motifRejet.trim() || validerMutation.isPending || !modifiable}
+                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                     className="mt-1 rounded-cid bg-status-dangerText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
                   >
                     {t("admin_justificatifs.confirmer_rejet")}
@@ -224,7 +236,10 @@ function JustificatifQueueRow({ souscription, campagnesById }: JustificatifQueue
 }
 
 export default function AdminJustificatifsPage() {
-  const { t } = useTranslation("adhesions");
+  const { t } = useTranslation(["adhesions", "common"]);
+  // Task #216 (2026-09-24) — voir docstring de tête pour le périmètre exact (uniquement
+  // approuver/rejeter, cf. JustificatifQueueRow).
+  const { accessible, modifiable } = usePageAccess("page_justificatifs");
 
   const enAttente = useJustificatifsEnAttente();
   // Catalogue complet pour résoudre les noms d'offre/rabais (mêmes limites que
@@ -241,6 +256,12 @@ export default function AdminJustificatifsPage() {
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("admin_justificatifs.titre")}</h1>
       <p className="mb-4 text-sm text-text-tertiary">{t("admin_justificatifs.sous_titre")}</p>
+
+      {accessible && !modifiable && (
+        <div className="mb-4 rounded-cid border border-status-warningText/30 bg-status-warningBg px-3 py-2 text-sm text-status-warningText">
+          {t("common:acces.lecture_seule_banniere")}
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
@@ -277,7 +298,12 @@ export default function AdminJustificatifsPage() {
               </tr>
             )}
             {enAttente.data?.results.map((s) => (
-              <JustificatifQueueRow key={s.id} souscription={s} campagnesById={campagnesById} />
+              <JustificatifQueueRow
+                key={s.id}
+                souscription={s}
+                campagnesById={campagnesById}
+                modifiable={modifiable}
+              />
             ))}
           </tbody>
         </table>

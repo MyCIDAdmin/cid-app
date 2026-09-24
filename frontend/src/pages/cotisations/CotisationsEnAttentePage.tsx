@@ -34,6 +34,7 @@ import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useMembre } from "../../hooks/useMembres";
+import { usePageAccess } from "../../hooks/useRbac";
 import {
   useArticlesCatalogue,
   useChangerStatutCotisation,
@@ -124,10 +125,14 @@ function formatDateHeure(iso: string): string {
 
 interface CotisationGestionRowProps {
   cotisation: Cotisation;
+  /** task #216 : seuls "marquer comme payée" et "changer le statut" sont des actions d'écriture
+   * sur cette page (page_cotisations_attente) — désactivés en lecture seule, transmis par le
+   * parent plutôt que ré-interrogé via usePageAccess ici (évite un hook par ligne). */
+  modifiable: boolean;
 }
 
-function CotisationGestionRow({ cotisation }: CotisationGestionRowProps) {
-  const { t } = useTranslation("cotisations");
+function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowProps) {
+  const { t } = useTranslation(["cotisations", "common"]);
   const membre = useMembre(cotisation.membre);
   const marquerPayeeMutation = useMarquerCotisationPayee();
   const changerStatutMutation = useChangerStatutCotisation();
@@ -172,7 +177,9 @@ function CotisationGestionRow({ cotisation }: CotisationGestionRowProps) {
               <select
                 value={modePaiement}
                 onChange={(e) => setModePaiement(e.target.value as ModePaiement)}
-                className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+                disabled={!modifiable}
+                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
               >
                 {MODES_PAIEMENT.map((mode) => (
                   <option key={mode} value={mode}>
@@ -183,7 +190,8 @@ function CotisationGestionRow({ cotisation }: CotisationGestionRowProps) {
               <button
                 type="button"
                 onClick={confirmerPaiement}
-                disabled={marquerPayeeMutation.isPending}
+                disabled={marquerPayeeMutation.isPending || !modifiable}
+                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                 className="rounded-cid bg-status-successText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
               >
                 {marquerPayeeMutation.isPending
@@ -203,7 +211,9 @@ function CotisationGestionRow({ cotisation }: CotisationGestionRowProps) {
               aria-label={t("en_attente_paiement.changer_statut_label")}
               value={nouveauStatut}
               onChange={(e) => setNouveauStatut(e.target.value as StatutCotisation)}
-              className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+              disabled={!modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
             >
               {STATUTS.map((statut) => (
                 <option key={statut} value={statut}>
@@ -215,12 +225,15 @@ function CotisationGestionRow({ cotisation }: CotisationGestionRowProps) {
               value={motif}
               onChange={(e) => setMotif(e.target.value)}
               placeholder={t("en_attente_paiement.motif_placeholder") ?? ""}
-              className="min-w-[8rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+              disabled={!modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              className="min-w-[8rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
             />
             <button
               type="button"
               onClick={appliquerChangementStatut}
-              disabled={changerStatutMutation.isPending || nouveauStatut === cotisation.statut}
+              disabled={changerStatutMutation.isPending || nouveauStatut === cotisation.statut || !modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
               className="rounded-cid border border-ca px-2 py-1 text-xs font-medium text-ca hover:bg-cal disabled:opacity-40"
             >
               {changerStatutMutation.isPending
@@ -846,7 +859,8 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
 }
 
 export default function CotisationsEnAttentePage() {
-  const { t } = useTranslation("cotisations");
+  const { t } = useTranslation(["cotisations", "common"]);
+  const { accessible, modifiable } = usePageAccess("page_cotisations_attente");
   const [statutFiltre, setStatutFiltre] = useState<StatutCotisation | "">("en_attente");
   const [typeArticleFiltre, setTypeArticleFiltre] = useState<TypeArticle | "">("");
   const [modePaiementFiltre, setModePaiementFiltre] = useState<ModePaiement | "">("");
@@ -893,6 +907,12 @@ export default function CotisationsEnAttentePage() {
             : t("en_attente_paiement.especes_ouvrir")}
         </button>
       </div>
+
+      {accessible && !modifiable && (
+        <p className="mb-4 rounded-cid-lg bg-bg-tertiary px-4 py-2 text-sm text-text-secondary">
+          {t("common:acces.lecture_seule_banniere")}
+        </p>
+      )}
 
       {especesOuvert && <PaiementEspecesForm onClose={() => setEspecesOuvert(false)} />}
 
@@ -1048,7 +1068,7 @@ export default function CotisationsEnAttentePage() {
               </tr>
             )}
             {gestion.data?.results.map((c) => (
-              <CotisationGestionRow key={c.id} cotisation={c} />
+              <CotisationGestionRow key={c.id} cotisation={c} modifiable={modifiable} />
             ))}
           </tbody>
         </table>

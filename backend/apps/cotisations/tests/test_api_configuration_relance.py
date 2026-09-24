@@ -206,3 +206,58 @@ def test_phase_d_super_admin_gere_toujours_les_relances_meme_si_matrice_dit_aucu
 
     resp = api_client.post(reverse(LIST_URL), {"annee": 2028, "date_echeance": "2028-01-01"})
     assert resp.status_code == 201, resp.data
+
+
+# ---------------------------------------------------------------------------
+# Lecture vs écriture (ajouté le 2026-09-24, task #214, retour utilisateur sur Quiz-Verwaltung —
+# voir apps.rbac.services.has_admin_page_access) : ConfigurationRelancePermission distingue GET
+# (SAFE_METHODS, `lecture` suffit) de POST/PATCH/DELETE (`lecture_ecriture` requis) — voir
+# apps.cotisations.views.ConfigurationRelancePermission.
+# ---------------------------------------------------------------------------
+
+
+def test_role_lecture_seule_peut_lister_mais_pas_creer_une_echeance(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    ConfigurationRelance.objects.create(annee=2027, date_echeance=date(2027, 1, 1))
+    user, _membre = _user_avec_membre(Role.MEMBRE, "readonly-relances@example.de")
+    role_perso = RoleDefinitionFactory(slug="relances-lecteur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_cotisations_relances", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp_list = api_client.get(reverse(LIST_URL))
+    assert resp_list.status_code == 200
+    assert resp_list.data["results"][0]["annee"] == 2027
+
+    resp_create = api_client.post(reverse(LIST_URL), {"annee": 2028, "date_echeance": "2028-01-01"})
+    assert resp_create.status_code == 403
+
+
+def test_role_lecture_ecriture_peut_creer_une_echeance(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, _membre = _user_avec_membre(Role.MEMBRE, "readwrite-relances@example.de")
+    role_perso = RoleDefinitionFactory(slug="relances-editeur")
+    RoleModulePermissionFactory(
+        role=role_perso,
+        module="page_cotisations_relances",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(LIST_URL), {"annee": 2028, "date_echeance": "2028-01-01"})
+    assert resp.status_code == 201, resp.data

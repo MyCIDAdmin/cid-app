@@ -7,8 +7,16 @@ import * as useBoutiqueHooks from "../../hooks/useBoutique";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
 import * as useEvenementsHooks from "../../hooks/useEvenements";
 import * as useMembresHooks from "../../hooks/useMembres";
+import * as useRbacHooks from "../../hooks/useRbac";
 import type { Cotisation } from "../../types/cotisation";
 import CotisationsEnAttentePage from "./CotisationsEnAttentePage";
+
+// task #216 : usePageAccess mocké partout (accès complet par défaut, comme avant l'introduction
+// de la distinction lecture/lecture_ecriture) — describe dédié plus bas pour le mode lecture seule.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
+});
 
 vi.mock("../../hooks/useCotisations", async () => {
   const actual = await vi.importActual<typeof useCotisationsHooks>("../../hooks/useCotisations");
@@ -93,6 +101,11 @@ function cotisationEnAttente(overrides: Partial<Cotisation> = {}): Cotisation {
 
 describe("CotisationsEnAttentePage", () => {
   beforeEach(() => {
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
     vi.mocked(useMembresHooks.useMembre).mockReturnValue({
       data: { id: "m1", prenom: "Riadh", nom: "Bchini", numero_membre: "CA-2026-001" },
       isLoading: false,
@@ -803,5 +816,44 @@ describe("CotisationsEnAttentePage", () => {
     fireEvent.click(screen.getByText("en_attente_paiement.voir_historique"));
 
     expect(screen.getByText(/Jean Dupont/)).toBeInTheDocument();
+  });
+
+  // --- Lecture seule (task #216, RBAC page_cotisations_attente : GET=lecture, écriture requise
+  // pour confirmer un paiement/changer un statut) ---
+  describe("mode lecture seule", () => {
+    beforeEach(() => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+      vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+        data: { next: null, previous: null, results: [cotisationEnAttente()] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+    });
+
+    it("affiche la bannière de lecture seule et désactive 'confirmer'/'changer le statut'", () => {
+      renderWithProviders(<CotisationsEnAttentePage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      expect(screen.getByText("en_attente_paiement.confirmer")).toBeDisabled();
+      expect(screen.getByText("en_attente_paiement.changer_statut")).toBeDisabled();
+    });
+
+    it("n'appelle pas la mutation de confirmation au clic sur le bouton désactivé", () => {
+      const mutate = vi.fn();
+      vi.mocked(useCotisationsHooks.useMarquerCotisationPayee).mockReturnValue({
+        mutate,
+        isPending: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useMarquerCotisationPayee>);
+
+      renderWithProviders(<CotisationsEnAttentePage />);
+      fireEvent.click(screen.getByText("en_attente_paiement.confirmer"));
+
+      expect(mutate).not.toHaveBeenCalled();
+    });
   });
 });

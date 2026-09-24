@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 
 import { useMesAcces } from "../hooks/useRbac";
 import { hasRoleAtLeast, useAuthStore } from "../store/authStore";
+import { pageEstAccessible } from "../types/rbac";
 
 type RequireRoleProps = PropsWithChildren<
   {
@@ -54,7 +55,7 @@ export default function RequireRole({
     if (chargementAcces) {
       return <p className="p-6 text-sm text-text-tertiary">{t("chargement")}</p>;
     }
-    if (!mesAcces?.[pageSlug]) {
+    if (!pageEstAccessible(mesAcces?.[pageSlug])) {
       return <Navigate to={redirectTo} replace />;
     }
     return <>{children}</>;

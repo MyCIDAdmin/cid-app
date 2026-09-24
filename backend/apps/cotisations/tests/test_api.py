@@ -1277,3 +1277,69 @@ def test_phase_d_super_admin_marque_toujours_payee_meme_si_matrice_dit_aucun(api
 
     resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
     assert resp.status_code == 200, resp.data
+
+
+# ---------------------------------------------------------------------------
+# Lecture vs écriture (ajouté le 2026-09-24, task #214, retour utilisateur sur Quiz-Verwaltung —
+# voir apps.rbac.services.has_admin_page_access) : marquer_payee/changer_statut n'ont pas
+# d'équivalent "lecture" gaté par page_cotisations_attente (list/retrieve de CotisationViewSet
+# restent gouvernés par CotisationPermission + le module DATA "cotisations", pas cette page —
+# voir docstring de test_phase_d_role_personnalise_peut_marquer_payee_via_la_matrice ci-dessus).
+# Ces tests vérifient donc uniquement qu'une cellule `lecture` seule sur page_cotisations_attente
+# ne débloque plus les deux actions d'écriture de cette page.
+# ---------------------------------------------------------------------------
+
+
+def test_role_lecture_seule_ne_peut_pas_marquer_payee_ni_changer_statut(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "readonly-attente@example.de")
+    role_perso = RoleDefinitionFactory(slug="attente-lecteur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_cotisations_attente", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    cotisation = CotisationFactory(
+        membre=membre, statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+    )
+    _auth(api_client, user)
+
+    resp_marquer = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp_marquer.status_code == 403
+
+    resp_changer = api_client.post(_changer_statut_url(cotisation), {"statut": "annulee"})
+    assert resp_changer.status_code == 403
+
+
+def test_role_lecture_ecriture_peut_marquer_payee_et_changer_statut(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, membre = _user_avec_membre(Role.MEMBRE, "readwrite-attente@example.de")
+    role_perso = RoleDefinitionFactory(slug="attente-editeur")
+    RoleModulePermissionFactory(
+        role=role_perso,
+        module="page_cotisations_attente",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    cotisation = CotisationFactory(
+        membre=membre, statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+    )
+    _auth(api_client, user)
+
+    resp_marquer = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    assert resp_marquer.status_code == 200, resp_marquer.data
+
+    autre_cotisation = CotisationFactory(membre=membre, statut=StatutCotisation.PAYEE)
+    resp_changer = api_client.post(_changer_statut_url(autre_cotisation), {"statut": "annulee"})
+    assert resp_changer.status_code == 200, resp_changer.data

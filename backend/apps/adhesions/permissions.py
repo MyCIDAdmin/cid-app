@@ -29,6 +29,7 @@ Permissions API — app adhesions (FDD §2.2 matrice des permissions / §6.1) :
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
 GESTION_CATALOGUE_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
@@ -48,7 +49,8 @@ class CataloguePermission(BasePermission):
     """CampagneAdhesion / OffreAdhesion / RabaisOffre. Écriture = page de gestion
     "Mitgliedschaftskampagnen" (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.PAGES_ADMIN
     slug `page_campagnes_adhesion`) — remplace (et non complète) l'ancien seuil fixe
-    GESTION_CATALOGUE_MIN_LEVEL."""
+    GESTION_CATALOGUE_MIN_LEVEL. Niveau `lecture_ecriture` requis depuis le 2026-09-24 (retour
+    utilisateur — voir apps.communaute.permissions.QuizPermission pour le contexte complet)."""
 
     def has_permission(self, request, view):
         user = request.user
@@ -56,7 +58,9 @@ class CataloguePermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in CATALOGUE_WRITE_ACTIONS or request.method not in SAFE_METHODS:
-            return has_admin_page_access(user, "page_campagnes_adhesion")
+            return has_admin_page_access(
+                user, "page_campagnes_adhesion", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
 
@@ -87,13 +91,23 @@ class JustificatifPermission(BasePermission):
     souscriptions") reste inchangé, ce n'est pas une des pages listées par l'utilisateur."""
 
     RH_ONLY_ACTIONS = ("list", "valider")
+    # Depuis le 2026-09-24 (retour utilisateur, voir apps.communaute.permissions.QuizPermission
+    # pour le contexte complet) : "list" (consulter la file) ne requiert que `lecture` ;
+    # "valider" (décision définitive sur un justificatif) requiert `lecture_ecriture`.
+    ACTIONS_ECRITURE = ("valider",)
 
     def has_permission(self, request, view):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        if getattr(view, "action", None) in self.RH_ONLY_ACTIONS:
-            return has_admin_page_access(user, "page_justificatifs")
+        action = getattr(view, "action", None)
+        if action in self.RH_ONLY_ACTIONS:
+            required = (
+                NiveauAcces.LECTURE_ECRITURE
+                if action in self.ACTIONS_ECRITURE
+                else NiveauAcces.LECTURE
+            )
+            return has_admin_page_access(user, "page_justificatifs", required=required)
         return True
 
     def has_object_permission(self, request, view, obj):

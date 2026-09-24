@@ -8,6 +8,7 @@ from apps.accounts.models import Role
 
 from apps.rbac.models import NiveauAcces
 from apps.rbac.services import (
+    get_admin_page_niveau,
     get_user_role_slugs,
     has_admin_page_access,
     is_elevated_for_module,
@@ -233,15 +234,36 @@ def test_has_admin_page_access_restriction_reelle_dun_role_systeme():
     assert has_admin_page_access(user, "page_quiz") is False
 
 
-def test_has_admin_page_access_lecture_seule_suffit_pour_une_page_admin():
-    """Pour les pages de gestion, "lecture" et "lecture_ecriture" sont équivalents — seule la
-    distinction "aucun" vs "accès" compte (voir docstring de la fonction)."""
+def test_has_admin_page_access_lecture_seule_suffit_pour_le_niveau_par_defaut():
+    """Par défaut (`required=NiveauAcces.LECTURE`, "a accès à la page" au sens large), "lecture"
+    seule suffit — c'est le sens de required=LECTURE_ECRITURE ci-dessous qui distingue désormais
+    réellement les deux niveaux (voir docstring de la fonction et test suivant)."""
     from apps.rbac.models import RoleDefinition
 
     role_bureau_admin = RoleDefinition.objects.get(slug=Role.BUREAU_ADMIN, is_system=True)
     user = UserFactory(role=Role.BUREAU_ADMIN)
     _set_matrice_cellule(role_bureau_admin, "page_quiz", NiveauAcces.LECTURE)
     assert has_admin_page_access(user, "page_quiz") is True
+
+
+def test_has_admin_page_access_lecture_seule_insuffisante_pour_lecture_ecriture_requise():
+    """Le coeur du fix du 2026-09-24 (retour utilisateur, bug Quiz/Finanzdirektor) : une cellule
+    `lecture` ne doit PLUS satisfaire un appel qui exige explicitement `lecture_ecriture`."""
+    from apps.rbac.models import RoleDefinition
+
+    role_dir_financier = RoleDefinition.objects.get(slug=Role.DIR_FINANCIER, is_system=True)
+    user = UserFactory(role=Role.DIR_FINANCIER)
+    _set_matrice_cellule(role_dir_financier, "page_quiz", NiveauAcces.LECTURE)
+
+    assert has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE) is True
+    assert (
+        has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE) is False
+    )
+
+    _set_matrice_cellule(role_dir_financier, "page_quiz", NiveauAcces.LECTURE_ECRITURE)
+    assert (
+        has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE) is True
+    )
 
 
 def test_has_admin_page_access_role_additionnel_personnalise_peut_octroyer_lacces():
@@ -256,3 +278,52 @@ def test_has_admin_page_access_role_additionnel_personnalise_peut_octroyer_lacce
     UserRoleAssignmentFactory(user=user, role=role_perso)
 
     assert has_admin_page_access(user, "page_quiz") is True
+
+
+# --- get_admin_page_niveau (extrait de has_admin_page_access le 2026-09-24, task #215) --------
+
+
+def test_get_admin_page_niveau_anonyme_vaut_aucun():
+    assert get_admin_page_niveau(AnonymousUser(), "page_quiz") == NiveauAcces.AUCUN
+
+
+def test_get_admin_page_niveau_super_admin_toujours_lecture_ecriture():
+    from apps.rbac.models import RoleDefinition
+
+    role_super_admin = RoleDefinition.objects.get(slug=Role.SUPER_ADMIN, is_system=True)
+    admin = UserFactory(role=Role.SUPER_ADMIN)
+    _set_matrice_cellule(role_super_admin, "page_quiz", NiveauAcces.AUCUN)
+    assert get_admin_page_niveau(admin, "page_quiz") == NiveauAcces.LECTURE_ECRITURE
+
+
+def test_get_admin_page_niveau_reflete_exactement_la_cellule_matrice():
+    from apps.rbac.models import RoleDefinition
+
+    role_bureau_admin = RoleDefinition.objects.get(slug=Role.BUREAU_ADMIN, is_system=True)
+    user = UserFactory(role=Role.BUREAU_ADMIN)
+
+    assert get_admin_page_niveau(user, "page_quiz") == NiveauAcces.LECTURE_ECRITURE  # seedé
+
+    _set_matrice_cellule(role_bureau_admin, "page_quiz", NiveauAcces.LECTURE)
+    assert get_admin_page_niveau(user, "page_quiz") == NiveauAcces.LECTURE
+
+    _set_matrice_cellule(role_bureau_admin, "page_quiz", NiveauAcces.AUCUN)
+    assert get_admin_page_niveau(user, "page_quiz") == NiveauAcces.AUCUN
+
+
+def test_get_admin_page_niveau_union_le_plus_permissif_gagne():
+    """Même sémantique d'union que user_has_module_access : le meilleur niveau parmi tous les
+    rôles effectifs de l'utilisateur l'emporte."""
+    from apps.rbac.models import RoleDefinition
+
+    user = UserFactory(role=Role.MEMBRE)
+    role_membre = RoleDefinition.objects.get(slug=Role.MEMBRE, is_system=True)
+    _set_matrice_cellule(role_membre, "page_quiz", NiveauAcces.LECTURE)
+
+    role_perso = RoleDefinitionFactory(slug="quiz-master-niveau")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_quiz", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+
+    assert get_admin_page_niveau(user, "page_quiz") == NiveauAcces.LECTURE_ECRITURE

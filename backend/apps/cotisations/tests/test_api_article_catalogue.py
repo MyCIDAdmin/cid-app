@@ -353,6 +353,64 @@ def test_phase_d_super_admin_garde_lacces_au_catalogue_meme_si_matrice_dit_aucun
     assert resp.status_code == 200, resp.data
 
 
+# ---------------------------------------------------------------------------
+# Lecture vs écriture (ajouté le 2026-09-24, task #214, retour utilisateur sur Quiz-Verwaltung —
+# voir apps.rbac.services.has_admin_page_access) : ArticleCataloguePermission laisse déjà la
+# lecture ouverte à tout authentifié (indépendamment de la matrice) ; ces tests vérifient qu'une
+# cellule `lecture` seule sur page_articles_cotisation ne débloque toujours pas l'écriture, alors
+# que `lecture_ecriture` le fait.
+# ---------------------------------------------------------------------------
+
+
+def test_role_lecture_seule_peut_lister_mais_pas_creer_un_article(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, _membre = _user_avec_membre(Role.MEMBRE, "readonly-articles@example.de")
+    role_perso = RoleDefinitionFactory(slug="articles-lecteur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_articles_cotisation", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp_list = api_client.get(reverse(LIST_URL))
+    assert resp_list.status_code == 200
+
+    resp_create = api_client.post(
+        reverse(LIST_URL), {"libelle": "Écusson brodé", "montant": "8.00"}, format="json"
+    )
+    assert resp_create.status_code == 403
+
+
+def test_role_lecture_ecriture_peut_creer_un_article(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, _membre = _user_avec_membre(Role.MEMBRE, "readwrite-articles@example.de")
+    role_perso = RoleDefinitionFactory(slug="articles-editeur")
+    RoleModulePermissionFactory(
+        role=role_perso,
+        module="page_articles_cotisation",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.post(
+        reverse(LIST_URL), {"libelle": "Écusson brodé", "montant": "8.00"}, format="json"
+    )
+    assert resp.status_code == 201, resp.data
+
+
 def test_phase_d_bureau_admin_perd_lacces_au_catalogue_par_defaut(api_client):
     """Rollout-regression : Bureau Admin n'a jamais eu accès au catalogue d'articles
     (GESTION_ARTICLES_MIN_LEVEL = Super Admin) — la matrice seedée par 0003 doit reproduire

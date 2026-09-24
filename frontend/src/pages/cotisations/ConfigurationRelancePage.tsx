@@ -18,6 +18,7 @@ import {
   useSupprimerConfigurationRelance,
 } from "../../hooks/useCotisations";
 import { useMembre } from "../../hooks/useMembres";
+import { usePageAccess } from "../../hooks/useRbac";
 import type { ConfigurationRelance } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -27,10 +28,13 @@ function formatDateTime(iso: string): string {
 
 interface ConfigurationRelanceRowProps {
   config: ConfigurationRelance;
+  /** task #216 : GET=lecture, POST/PATCH/DELETE=écriture côté backend (page_cotisations_relances)
+   * — modifier/supprimer une échéance sont donc toutes deux des actions d'écriture. */
+  modifiable: boolean;
 }
 
-function ConfigurationRelanceRow({ config }: ConfigurationRelanceRowProps) {
-  const { t } = useTranslation("cotisations");
+function ConfigurationRelanceRow({ config, modifiable }: ConfigurationRelanceRowProps) {
+  const { t } = useTranslation(["cotisations", "common"]);
   const modifiePar = useMembre(config.modifie_par ?? undefined);
   const modifierMutation = useModifierConfigurationRelance();
   const supprimerMutation = useSupprimerConfigurationRelance();
@@ -57,7 +61,9 @@ function ConfigurationRelanceRow({ config }: ConfigurationRelanceRowProps) {
           data-testid={`configuration-relance-date-${config.annee}`}
           value={dateEcheance}
           onChange={(e) => setDateEcheance(e.target.value)}
-          className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          disabled={!modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
         />
       </td>
       <td className="px-4 py-2 text-xs text-text-tertiary">
@@ -73,7 +79,8 @@ function ConfigurationRelanceRow({ config }: ConfigurationRelanceRowProps) {
           <button
             type="button"
             onClick={enregistrer}
-            disabled={!modifiee || modifierMutation.isPending}
+            disabled={!modifiee || modifierMutation.isPending || !modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
             className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
           >
             {modifierMutation.isPending
@@ -83,7 +90,8 @@ function ConfigurationRelanceRow({ config }: ConfigurationRelanceRowProps) {
           <button
             type="button"
             onClick={supprimer}
-            disabled={supprimerMutation.isPending}
+            disabled={supprimerMutation.isPending || !modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
             className="rounded-cid border border-status-dangerText px-2 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerText/10 disabled:opacity-40"
           >
             {t("configuration_relance.supprimer")}
@@ -102,8 +110,12 @@ function ConfigurationRelanceRow({ config }: ConfigurationRelanceRowProps) {
   );
 }
 
-function NouvelleEcheanceForm() {
-  const { t } = useTranslation("cotisations");
+interface NouvelleEcheanceFormProps {
+  modifiable: boolean;
+}
+
+function NouvelleEcheanceForm({ modifiable }: NouvelleEcheanceFormProps) {
+  const { t } = useTranslation(["cotisations", "common"]);
   const creerMutation = useCreerConfigurationRelance();
 
   const anneeParDefaut = new Date().getFullYear() + 1;
@@ -140,7 +152,9 @@ function NouvelleEcheanceForm() {
           type="number"
           value={annee}
           onChange={(e) => setAnnee(Number(e.target.value))}
-          className="w-28 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          disabled={!modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          className="w-28 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-30"
           required
         />
       </div>
@@ -156,13 +170,16 @@ function NouvelleEcheanceForm() {
           type="date"
           value={dateEcheance}
           onChange={(e) => setDateEcheance(e.target.value)}
-          className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          disabled={!modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-30"
           required
         />
       </div>
       <button
         type="submit"
-        disabled={creerMutation.isPending}
+        disabled={creerMutation.isPending || !modifiable}
+        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
         className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
       >
         {creerMutation.isPending
@@ -179,7 +196,8 @@ function NouvelleEcheanceForm() {
 }
 
 export default function ConfigurationRelancePage() {
-  const { t } = useTranslation("cotisations");
+  const { t } = useTranslation(["cotisations", "common"]);
+  const { accessible, modifiable } = usePageAccess("page_cotisations_relances");
   const configurations = useConfigurationsRelance();
 
   return (
@@ -187,7 +205,13 @@ export default function ConfigurationRelancePage() {
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("configuration_relance.titre")}</h1>
       <p className="mb-4 text-sm text-text-tertiary">{t("configuration_relance.sous_titre")}</p>
 
-      <NouvelleEcheanceForm />
+      {accessible && !modifiable && (
+        <p className="mb-4 rounded-cid-lg bg-bg-tertiary px-4 py-2 text-sm text-text-secondary">
+          {t("common:acces.lecture_seule_banniere")}
+        </p>
+      )}
+
+      <NouvelleEcheanceForm modifiable={modifiable} />
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
@@ -222,7 +246,7 @@ export default function ConfigurationRelancePage() {
               </tr>
             )}
             {configurations.data?.results.map((config) => (
-              <ConfigurationRelanceRow key={config.id} config={config} />
+              <ConfigurationRelanceRow key={config.id} config={config} modifiable={modifiable} />
             ))}
           </tbody>
         </table>

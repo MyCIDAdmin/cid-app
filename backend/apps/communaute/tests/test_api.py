@@ -1433,3 +1433,218 @@ def test_phase_d_role_personnalise_peut_creer_un_album_via_la_matrice(api_client
 
     resp = _auth(api_client, user).post(reverse(ALBUM_LIST_URL), {"nom": "Derby 2026"})
     assert resp.status_code == 201
+
+
+# ---------------------------------------------------------------------------
+# Phase D — distinction lecture/écriture réelle (2026-09-24) — apps.rbac.services.
+# has_admin_page_access(required=...). Les tests Phase D ci-dessus couvrent le retrait/octroi
+# TOTAL d'accès (AUCUN vs LECTURE_ECRITURE) ; ceux-ci couvrent spécifiquement LECTURE SEULE —
+# le cas exact du bug original (retour utilisateur : un rôle avec seulement "Lesen" sur
+# Quiz-Verwaltung pouvait quand même créer/modifier des quiz) — pour QuizPermission (l'objet
+# Quiz lui-même, le bug original), GestionQuizPermission (questions/choix imbriqués),
+# AlbumPermission et PhotoPermission.
+# ---------------------------------------------------------------------------
+
+
+def _assigner_role_perso(user, module_slug, niveau_acces):
+    """Crée un rôle personnalisé, lui donne `niveau_acces` sur `module_slug`, et l'assigne à
+    `user` — factorise le pattern répété par les tests Phase D ci-dessus (RoleDefinitionFactory
+    + RoleModulePermissionFactory + UserRoleAssignmentFactory)."""
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    role_perso = RoleDefinitionFactory()
+    RoleModulePermissionFactory(role=role_perso, module=module_slug, niveau_acces=niveau_acces)
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    return role_perso
+
+
+# --- QuizPermission (objet Quiz lui-même — le bug original) ----------------------------
+
+
+def test_phase_d_lecture_seule_page_quiz_permet_de_lister_les_quiz(api_client):
+    """Lecture non régressée par l'introduction du niveau `lecture_ecriture` : un rôle avec
+    seulement `lecture` sur page_quiz doit toujours pouvoir consulter la liste des quiz."""
+    from apps.rbac.models import NiveauAcces
+
+    QuizFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-quiz-read@example.de")
+    _assigner_role_perso(user, "page_quiz", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).get(reverse(QUIZ_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_phase_d_lecture_seule_page_quiz_refuse_creation_dun_quiz(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-quiz-write@example.de")
+    _assigner_role_perso(user, "page_quiz", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).post(reverse(QUIZ_LIST_URL), {"titre": "Quiz interdit"})
+    assert resp.status_code == 403
+
+
+def test_phase_d_lecture_ecriture_page_quiz_permet_de_creer_un_quiz(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-quiz-write-ok@example.de")
+    _assigner_role_perso(user, "page_quiz", NiveauAcces.LECTURE_ECRITURE)
+
+    resp = _auth(api_client, user).post(reverse(QUIZ_LIST_URL), {"titre": "Quiz autorisé"})
+    assert resp.status_code == 201
+    assert resp.data["titre"] == "Quiz autorisé"
+
+
+def test_phase_d_dir_financier_lecture_seule_page_quiz_ne_peut_pas_creer_de_quiz(api_client):
+    """Reproduction LITTÉRALE du rapport utilisateur original : un Directeur Financier (rôle
+    système, ROLE_LEVELS 4 — bien au-dessus de l'ancien seuil fixe MODERATION_MIN_LEVEL/Bureau
+    Admin que QuizPermission utilisait avant le 2026-09-24) avec SEULEMENT `lecture` sur
+    page_quiz via la matrice ne doit PAS pouvoir créer de quiz — voir docstring QuizPermission
+    pour l'historique complet du bug (la cellule de la matrice n'avait jamais d'effet réel sur
+    la création d'un Quiz avant cette correction)."""
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("dir_financier", "page_quiz", NiveauAcces.LECTURE)
+    user, _ = _user_avec_membre(Role.DIR_FINANCIER, "phased-dirfin-quiz-bug@example.de")
+
+    resp = _auth(api_client, user).post(
+        reverse(QUIZ_LIST_URL), {"titre": "Quiz Directeur Financier"}
+    )
+    assert resp.status_code == 403
+
+
+# --- GestionQuizPermission (QuestionQuiz/ChoixQuestion imbriqués) -----------------------
+
+
+def test_phase_d_lecture_seule_page_quiz_permet_de_consulter_une_question(api_client):
+    """GET sur le detail (pas le list — CursorPagination trie par défaut sur "-created", un
+    champ que QuestionQuiz n'a pas, bug préexistant hors-scope de cette phase — voir
+    test_phase_d_role_personnalise_peut_gerer_les_quiz_via_la_matrice ci-dessus pour le même
+    contournement)."""
+    from apps.rbac.models import NiveauAcces
+
+    question = QuestionQuizFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-question-read@example.de")
+    _assigner_role_perso(user, "page_quiz", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).get(
+        reverse("communaute:quiz-question-detail", args=[question.id])
+    )
+    assert resp.status_code == 200
+
+
+def test_phase_d_lecture_seule_page_quiz_refuse_creation_dune_question(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    quiz = QuizFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-question-write@example.de")
+    _assigner_role_perso(user, "page_quiz", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).post(
+        reverse(QUESTION_QUIZ_LIST_URL), {"quiz": str(quiz.id), "texte": "Question interdite ?"}
+    )
+    assert resp.status_code == 403
+
+
+def test_phase_d_lecture_ecriture_page_quiz_permet_de_creer_une_question(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    quiz = QuizFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-question-write-ok@example.de")
+    _assigner_role_perso(user, "page_quiz", NiveauAcces.LECTURE_ECRITURE)
+
+    resp = _auth(api_client, user).post(
+        reverse(QUESTION_QUIZ_LIST_URL), {"quiz": str(quiz.id), "texte": "Question autorisée ?"}
+    )
+    assert resp.status_code == 201
+
+
+# --- AlbumPermission / PhotoPermission --------------------------------------------------
+
+
+def test_phase_d_lecture_seule_page_albums_permet_de_lister_les_albums(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    AlbumFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-albums-read@example.de")
+    _assigner_role_perso(user, "page_albums", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).get(reverse(ALBUM_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_phase_d_lecture_seule_page_albums_refuse_creation_dun_album(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-albums-write@example.de")
+    _assigner_role_perso(user, "page_albums", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).post(reverse(ALBUM_LIST_URL), {"nom": "Album interdit"})
+    assert resp.status_code == 403
+
+
+def test_phase_d_lecture_ecriture_page_albums_permet_de_creer_un_album(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-albums-write-ok@example.de")
+    _assigner_role_perso(user, "page_albums", NiveauAcces.LECTURE_ECRITURE)
+
+    resp = _auth(api_client, user).post(reverse(ALBUM_LIST_URL), {"nom": "Album autorisé"})
+    assert resp.status_code == 201
+
+
+def test_phase_d_lecture_seule_page_albums_refuse_upload_dune_photo(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    album = AlbumFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-photo-write@example.de")
+    _assigner_role_perso(user, "page_albums", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).post(
+        reverse(PHOTO_LIST_URL),
+        {"album": str(album.id), "legende": "Interdite", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 403
+
+
+def test_phase_d_lecture_ecriture_page_albums_permet_upload_dune_photo(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    album = AlbumFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-photo-write-ok@example.de")
+    _assigner_role_perso(user, "page_albums", NiveauAcces.LECTURE_ECRITURE)
+
+    resp = _auth(api_client, user).post(
+        reverse(PHOTO_LIST_URL),
+        {"album": str(album.id), "legende": "Autorisée", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 201
+
+
+def test_phase_d_lecture_seule_page_albums_refuse_masquer_une_photo(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    photo = PhotoFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-photo-masquer@example.de")
+    _assigner_role_perso(user, "page_albums", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).post(_photo_masquer_url(photo))
+    assert resp.status_code == 403
+
+
+def test_phase_d_lecture_ecriture_page_albums_permet_de_masquer_une_photo(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    photo = PhotoFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-photo-masquer-ok@example.de")
+    _assigner_role_perso(user, "page_albums", NiveauAcces.LECTURE_ECRITURE)
+
+    resp = _auth(api_client, user).post(_photo_masquer_url(photo))
+    assert resp.status_code == 200
+    assert resp.data["est_masquee"] is True

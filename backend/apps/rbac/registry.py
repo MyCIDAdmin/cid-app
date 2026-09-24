@@ -55,10 +55,14 @@ MODULE_LABELS = {
 # Constante SÉPARÉE de MODULES (et non fusionnée dedans) pour deux raisons : (1) éviter toute
 # collision de slug avec les 10 modules métier existants (ex. le module de données "stats" et la
 # page de gestion "Statistiken & KPIs" sont deux concepts différents, d'où le préfixe `page_`) ;
-# (2) la sémantique de niveau y est différente — pour ces 13 slugs, seule la distinction
-# "aucun" vs "accès" compte (`lecture` et `lecture_ecriture` sont équivalents, voir
-# services.has_admin_page_access), le 3ème niveau n'existe que parce que la même colonne/UI
-# `NiveauAcces` est réutilisée telle quelle que pour les 10 modules de données.
+# (2) la sémantique de niveau y est PARTIELLEMENT différente de celle des 10 modules de données —
+# `lecture` donne accès en LECTURE SEULE à la page (voir chaque page/routing frontend), et
+# `lecture_ecriture` est nécessaire pour les actions de modification (create/update/destroy...)
+# au sein de la page — distinction réelle depuis le 2026-09-24 (retour utilisateur : une cellule
+# "Lesen" seule permettait quand même de créer des quiz, voir apps.rbac.services.
+# has_admin_page_access pour le détail). Certaines pages n'ont toutefois aucune notion d'écriture
+# distincte (ex. `page_stats`, entièrement en lecture) — `lecture` et `lecture_ecriture` y sont
+# alors équivalents en pratique, faute d'action de modification à gater.
 PAGES_ADMIN = [
     "page_quiz",
     "page_boutique",

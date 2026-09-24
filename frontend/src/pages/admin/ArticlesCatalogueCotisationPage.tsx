@@ -33,6 +33,7 @@ import {
   useCreerArticleCatalogue,
   useModifierArticleCatalogue,
 } from "../../hooks/useCotisations";
+import { usePageAccess } from "../../hooks/useRbac";
 import type { ArticleCatalogue } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -42,10 +43,13 @@ function formatDateTime(iso: string): string {
 
 interface ArticleCatalogueRowProps {
   article: ArticleCatalogue;
+  /** task #216 : créer/modifier/(dés)activer un article sont les actions d'écriture de cette
+   * page (page_articles_cotisation). */
+  modifiable: boolean;
 }
 
-function ArticleCatalogueRow({ article }: ArticleCatalogueRowProps) {
-  const { t } = useTranslation("cotisations");
+function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) {
+  const { t } = useTranslation(["cotisations", "common"]);
   const modifierMutation = useModifierArticleCatalogue();
 
   // Libellé fixe (2026-09-17) : pour une ligne type_fixe, l'API ignore toute écriture sur
@@ -87,7 +91,9 @@ function ArticleCatalogueRow({ article }: ArticleCatalogueRowProps) {
             data-testid={`article-catalogue-libelle-${article.id}`}
             value={libelle}
             onChange={(e) => setLibelle(e.target.value)}
-            className="w-full min-w-[10rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+            disabled={!modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            className="w-full min-w-[10rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
           />
         )}
       </td>
@@ -99,7 +105,9 @@ function ArticleCatalogueRow({ article }: ArticleCatalogueRowProps) {
           data-testid={`article-catalogue-montant-${article.id}`}
           value={montant}
           onChange={(e) => setMontant(e.target.value)}
-          className="w-24 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          disabled={!modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          className="w-24 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
         />
       </td>
       <td className="px-4 py-2">
@@ -119,7 +127,8 @@ function ArticleCatalogueRow({ article }: ArticleCatalogueRowProps) {
           <button
             type="button"
             onClick={enregistrer}
-            disabled={!modifiee || modifierMutation.isPending}
+            disabled={!modifiee || modifierMutation.isPending || !modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
             className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
           >
             {modifierMutation.isPending
@@ -129,7 +138,8 @@ function ArticleCatalogueRow({ article }: ArticleCatalogueRowProps) {
           <button
             type="button"
             onClick={basculerActif}
-            disabled={modifierMutation.isPending}
+            disabled={modifierMutation.isPending || !modifiable}
+            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
             className={`rounded-cid border px-2 py-1 text-xs font-medium disabled:opacity-40 ${
               article.actif
                 ? "border-status-dangerText text-status-dangerText hover:bg-status-dangerText/10"
@@ -149,8 +159,12 @@ function ArticleCatalogueRow({ article }: ArticleCatalogueRowProps) {
   );
 }
 
-function NouvelArticleForm() {
-  const { t } = useTranslation("cotisations");
+interface NouvelArticleFormProps {
+  modifiable: boolean;
+}
+
+function NouvelArticleForm({ modifiable }: NouvelArticleFormProps) {
+  const { t } = useTranslation(["cotisations", "common"]);
   const creerMutation = useCreerArticleCatalogue();
 
   const [libelle, setLibelle] = useState("");
@@ -186,7 +200,9 @@ function NouvelArticleForm() {
           type="text"
           value={libelle}
           onChange={(e) => setLibelle(e.target.value)}
-          className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          disabled={!modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-30"
           required
         />
       </div>
@@ -204,13 +220,16 @@ function NouvelArticleForm() {
           min="0.01"
           value={montant}
           onChange={(e) => setMontant(e.target.value)}
-          className="w-28 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          disabled={!modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          className="w-28 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-30"
           required
         />
       </div>
       <button
         type="submit"
-        disabled={creerMutation.isPending}
+        disabled={creerMutation.isPending || !modifiable}
+        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
         className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
       >
         {creerMutation.isPending ? t("catalogue_articles.en_cours") : t("catalogue_articles.ajouter")}
@@ -225,7 +244,8 @@ function NouvelArticleForm() {
 }
 
 export default function ArticlesCatalogueCotisationPage() {
-  const { t } = useTranslation("cotisations");
+  const { t } = useTranslation(["cotisations", "common"]);
+  const { accessible, modifiable } = usePageAccess("page_articles_cotisation");
   const articles = useArticlesCatalogue();
 
   // Les 2 lignes type_fixe (cotisation/adhésion) sont épinglées en tête de tableau (2026-09-17) —
@@ -243,7 +263,13 @@ export default function ArticlesCatalogueCotisationPage() {
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("catalogue_articles.titre")}</h1>
       <p className="mb-4 text-sm text-text-tertiary">{t("catalogue_articles.sous_titre")}</p>
 
-      <NouvelArticleForm />
+      {accessible && !modifiable && (
+        <p className="mb-4 rounded-cid-lg bg-bg-tertiary px-4 py-2 text-sm text-text-secondary">
+          {t("common:acces.lecture_seule_banniere")}
+        </p>
+      )}
+
+      <NouvelArticleForm modifiable={modifiable} />
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
@@ -278,7 +304,7 @@ export default function ArticlesCatalogueCotisationPage() {
               </tr>
             )}
             {articlesTries?.map((article) => (
-              <ArticleCatalogueRow key={article.id} article={article} />
+              <ArticleCatalogueRow key={article.id} article={article} modifiable={modifiable} />
             ))}
           </tbody>
         </table>

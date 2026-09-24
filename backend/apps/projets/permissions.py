@@ -34,6 +34,7 @@ demande utilisateur, voir docstring de module de models.py pour le détail des 8
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access
 
 GESTION_PROJETS_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
@@ -72,7 +73,9 @@ class ProjetPermission(BasePermission):
         action = getattr(view, "action", None)
         if action == "contributeurs":
             return True
-        return has_admin_page_access(user, "page_projets")
+        return has_admin_page_access(
+            user, "page_projets", required=NiveauAcces.LECTURE_ECRITURE
+        )
 
 
 class GestionContenuProjetPermission(BasePermission):

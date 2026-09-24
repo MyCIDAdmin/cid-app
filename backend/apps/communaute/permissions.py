@@ -17,6 +17,7 @@ Règle commune aux deux sous-modules :
 from rest_framework.permissions import BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access
 
 MODERATION_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
@@ -182,11 +183,25 @@ class GestionQuizPermission(BasePermission):
     lui sont exposées uniquement imbriquées dans `QuizSerializer` (avec `est_correct` masqué,
     voir `ChoixQuestionSerializer.to_representation`). Remplace (et non complète) l'ancien seuil
     fixe `MODERATION_MIN_LEVEL` — celui-ci reste inchangé pour `ContenuCommunautePermission`/
-    `GroupeChatPermission`/`MatchPermission` ci-dessus, qui n'en font PAS partie."""
+    `GroupeChatPermission`/`MatchPermission` ci-dessus, qui n'en font PAS partie.
+
+    Lecture/écriture distinguées depuis le 2026-09-24 (retour utilisateur, voir QuizPermission
+    ci-dessus pour le contexte complet) : `list`/`retrieve` (consulter les questions déjà créées)
+    ne requiert que `lecture` ; `create`/`update`/`partial_update`/`destroy` requiert
+    `lecture_ecriture`."""
+
+    ACTIONS_ECRITURE = ("create", "update", "partial_update", "destroy")
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(user and user.is_authenticated and has_admin_page_access(user, "page_quiz"))
+        if not user or not user.is_authenticated:
+            return False
+        required = (
+            NiveauAcces.LECTURE_ECRITURE
+            if view.action in self.ACTIONS_ECRITURE
+            else NiveauAcces.LECTURE
+        )
+        return has_admin_page_access(user, "page_quiz", required=required)
 
 
 class MatchCommentairePermission(BasePermission):
@@ -207,20 +222,26 @@ class AlbumPermission(BasePermission):
     Avant cette date, la création était ouverte à tout membre authentifié ("upload
     collaboratif") ; le module membre (`AlbumsPage`/`AlbumDetailPage` côté frontend) n'expose
     donc plus aucune action de gestion, seule `AdminAlbumsPage` le fait. Remplace (et non
-    complète) l'ancien seuil fixe `MODERATION_MIN_LEVEL`."""
+    complète) l'ancien seuil fixe `MODERATION_MIN_LEVEL`. Niveau `lecture_ecriture` requis
+    depuis le 2026-09-24 (voir QuizPermission pour le contexte complet du retour utilisateur) —
+    `lecture` seule ne suffit plus à gérer un album."""
 
     def has_permission(self, request, view):
         user = request.user
         if not user or not user.is_authenticated:
             return False
         if view.action == "create":
-            return has_admin_page_access(user, "page_albums")
+            return has_admin_page_access(
+                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action in ("update", "partial_update", "destroy"):
-            return has_admin_page_access(user, "page_albums")
+            return has_admin_page_access(
+                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
 
@@ -233,24 +254,32 @@ class PhotoPermission(BasePermission):
     de `page_albums` — conservé tel quel, supprimer son propre contenu n'est pas de la "gestion"
     d'album. `masquer` (modération) : `page_albums` uniquement — voir docstring de tête models.py
     (pas de modération dédiée sur les likes/commentaires de photo, contrairement au Fil
-    d'actualité — non documentée pour ce sous-module)."""
+    d'actualité — non documentée pour ce sous-module). Niveau `lecture_ecriture` requis depuis
+    le 2026-09-24 pour `create`/`masquer`/gestion d'une photo d'autrui, même raisonnement que
+    AlbumPermission ci-dessus."""
 
     def has_permission(self, request, view):
         user = request.user
         if not user or not user.is_authenticated:
             return False
         if view.action in ("create", "masquer"):
-            return has_admin_page_access(user, "page_albums")
+            return has_admin_page_access(
+                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action == "masquer":
-            return has_admin_page_access(user, "page_albums")
+            return has_admin_page_access(
+                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
+            )
         if view.action in ("update", "partial_update", "destroy"):
             membre = _membre_de(user)
             est_proprietaire = membre is not None and obj.membre_id == membre.id
-            return est_proprietaire or has_admin_page_access(user, "page_albums")
+            return est_proprietaire or has_admin_page_access(
+                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
 
@@ -269,19 +298,30 @@ class PhotoCommentairePermission(BasePermission):
 
 class QuizPermission(BasePermission):
     """Lecture (list/retrieve) et participation (`demarrer`/`repondre`/`classement`) : tout
-    authentifié. Gestion (create/update/destroy — questions et choix imbriqués) : Bureau
-    Admin+ uniquement, le mockup n'offrant aucune UI de création de quiz côté membre."""
+    authentifié. Gestion (create/update/destroy de l'objet Quiz lui-même) : page de gestion
+    "Quiz-Verwaltung" (Phase D, slug `page_quiz`), niveau ÉCRITURE requis (voir
+    GestionQuizPermission ci-dessous pour les questions/choix imbriqués — même page, même
+    niveau). BUG corrigé le 2026-09-24 (retour utilisateur : Directeur Financier avec
+    `page_quiz=lecture` pouvait quand même créer un quiz) : cette classe était restée sur
+    l'ancien seuil fixe `MODERATION_MIN_LEVEL` lors du passage Phase D — DIR_FINANCIER (niveau
+    4) dépasse MODERATION_MIN_LEVEL (Bureau Admin, niveau 3) indépendamment de la matrice, donc
+    la cellule de la matrice n'avait jamais d'effet réel sur la création d'un Quiz, seulement
+    sur ses questions/choix (GestionQuizPermission, elle bien migrée)."""
 
     def has_permission(self, request, view):
         user = request.user
         if not user or not user.is_authenticated:
             return False
         if view.action in ("create", "update", "partial_update", "destroy"):
-            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return has_admin_page_access(
+                user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action in ("update", "partial_update", "destroy"):
-            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return has_admin_page_access(
+                user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useEvenementsHooks from "../../hooks/useEvenements";
+import * as useRbacHooks from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
 import type { Evenement } from "../../types/evenements";
 import AdminEventsPage from "./AdminEventsPage";
@@ -17,6 +18,13 @@ vi.mock("../../hooks/useEvenements", async () => {
     usePublierEvenement: vi.fn(),
     useAnnulerEvenement: vi.fn(),
   };
+});
+
+// page_events en lecture_ecriture par défaut (task #216) — describe dédié plus bas pour le
+// gating lecture seule lui-même. Même convention que AdminBoutiquePage.test.tsx.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
 });
 
 const bureauAdmin = {
@@ -79,6 +87,11 @@ describe("AdminEventsPage", () => {
     vi.mocked(useEvenementsHooks.useAnnulerEvenement).mockReturnValue(
       mutationMock<ReturnType<typeof useEvenementsHooks.useAnnulerEvenement>>(),
     );
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
   });
 
   it("affiche la liste des événements avec leur statut", () => {
@@ -161,5 +174,51 @@ describe("AdminEventsPage", () => {
     fireEvent.click(screen.getByText("admin.annuler_evenement"));
 
     expect(annuler.mutate).toHaveBeenCalledWith("e1", expect.anything());
+  });
+
+  describe("lecture seule (task #216 — page_events en 'lecture' uniquement)", () => {
+    beforeEach(() => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+    });
+
+    it("affiche la bannière lecture seule et désactive création/modification/publication/annulation", () => {
+      const publier = mutationMock<ReturnType<typeof useEvenementsHooks.usePublierEvenement>>();
+      vi.mocked(useEvenementsHooks.usePublierEvenement).mockReturnValue(publier);
+      const annuler = mutationMock<ReturnType<typeof useEvenementsHooks.useAnnulerEvenement>>();
+      vi.mocked(useEvenementsHooks.useAnnulerEvenement).mockReturnValue(annuler);
+      vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+        data: page([evenement({ statut: "brouillon" })]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+      renderWithProviders(<AdminEventsPage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      expect(screen.getByText("admin.creer_evenement")).toBeDisabled();
+      expect(screen.getByText("admin.modifier")).toBeDisabled();
+
+      fireEvent.click(screen.getByText("admin.publier"));
+      expect(publier.mutate).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByText("admin.annuler_evenement"));
+      expect(annuler.mutate).not.toHaveBeenCalled();
+    });
+
+    it("garde la lecture pleinement fonctionnelle (liste des événements)", () => {
+      vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+        data: page([evenement()]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+      renderWithProviders(<AdminEventsPage />);
+
+      expect(screen.getByText("Déplacement Stuttgart")).toBeInTheDocument();
+    });
   });
 });

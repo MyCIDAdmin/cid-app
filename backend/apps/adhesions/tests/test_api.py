@@ -188,6 +188,61 @@ def test_phase_d_super_admin_gere_toujours_les_campagnes_meme_si_matrice_dit_auc
     assert resp.status_code == 201, resp.data
 
 
+# ---------------------------------------------------------------------------
+# Lecture vs écriture (ajouté le 2026-09-24, task #214, retour utilisateur sur Quiz-Verwaltung —
+# voir apps.rbac.services.has_admin_page_access) : une cellule `lecture` seule sur
+# page_campagnes_adhesion ne doit plus débloquer l'écriture (create/update/destroy/publier/
+# cloturer), seulement la lecture, déjà ouverte à tout authentifié par ailleurs.
+# ---------------------------------------------------------------------------
+
+
+def test_role_lecture_seule_peut_lister_les_campagnes_mais_pas_en_creer(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    CampagneAdhesionFactory.create_batch(2)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "readonly-campagnes@example.de")
+    role_perso = RoleDefinitionFactory(slug="campagnes-lecteur")
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_campagnes_adhesion", niveau_acces=NiveauAcces.LECTURE
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp_list = api_client.get(reverse(CAMPAGNE_LIST_URL))
+    assert resp_list.status_code == 200
+    assert len(resp_list.data["results"]) == 2
+
+    resp_create = api_client.post(reverse(CAMPAGNE_LIST_URL), _CAMPAGNE_PAYLOAD)
+    assert resp_create.status_code == 403
+
+
+def test_role_lecture_ecriture_peut_creer_une_campagne(api_client):
+    from apps.rbac.models import NiveauAcces
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    user, _membre = _user_avec_membre(Role.MEMBRE, "readwrite-campagnes@example.de")
+    role_perso = RoleDefinitionFactory(slug="campagnes-editeur")
+    RoleModulePermissionFactory(
+        role=role_perso,
+        module="page_campagnes_adhesion",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
+    )
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    _auth(api_client, user)
+
+    resp = api_client.post(reverse(CAMPAGNE_LIST_URL), _CAMPAGNE_PAYLOAD)
+    assert resp.status_code == 201, resp.data
+
+
 def test_membre_ne_peut_pas_creer_d_offre(api_client):
     campagne = CampagneAdhesionFactory()
     user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useInscriptionsHooks from "../../hooks/useInscriptions";
+import * as useRbacHooks from "../../hooks/useRbac";
 import type { PendingRegistrationsPage } from "../../types/inscription";
 import InscriptionsEnAttentePage from "./InscriptionsEnAttentePage";
 
@@ -15,6 +16,13 @@ vi.mock("../../hooks/useInscriptions", async () => {
     useApproveRegistration: vi.fn(),
     useRefuseRegistration: vi.fn(),
   };
+});
+
+// Task #216 (2026-09-24) : "page_inscriptions" lecture/lecture_ecriture — plein accès par
+// défaut pour ne pas casser les tests existants ; voir le describe dédié plus bas.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
 });
 
 const inscription = {
@@ -45,6 +53,11 @@ describe("InscriptionsEnAttentePage", () => {
   beforeEach(() => {
     approveMutate.mockReset();
     refuseMutate.mockReset();
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
     vi.mocked(useInscriptionsHooks.useApproveRegistration).mockReturnValue({
       mutate: approveMutate,
       isPending: false,
@@ -114,5 +127,33 @@ describe("InscriptionsEnAttentePage", () => {
     fireEvent.click(screen.getByText("action.confirmer"));
 
     expect(screen.getByText("liste.erreur_action")).toBeInTheDocument();
+  });
+
+  describe("accès lecture seule (task #216)", () => {
+    it("n'affiche pas de bandeau et laisse Accepter/Refuser actifs quand modifiable=true", () => {
+      mockList();
+      renderWithProviders(<InscriptionsEnAttentePage />);
+
+      expect(screen.queryByText("acces.lecture_seule_banniere")).not.toBeInTheDocument();
+      expect(screen.getByText("liste.accepter")).not.toBeDisabled();
+      expect(screen.getByText("liste.refuser")).not.toBeDisabled();
+    });
+
+    it("affiche un bandeau et désactive Accepter/Refuser quand modifiable=false", () => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+      mockList();
+
+      renderWithProviders(<InscriptionsEnAttentePage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      // Lecture : la liste reste visible.
+      expect(screen.getByText("candidat@example.com")).toBeInTheDocument();
+      expect(screen.getByText("liste.accepter")).toBeDisabled();
+      expect(screen.getByText("liste.refuser")).toBeDisabled();
+    });
   });
 });

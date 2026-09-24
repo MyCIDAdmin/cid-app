@@ -3,8 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
+import * as useRbacHooks from "../../hooks/useRbac";
 import type { ArticleCatalogue } from "../../types/cotisation";
 import ArticlesCatalogueCotisationPage from "./ArticlesCatalogueCotisationPage";
+
+// task #216 : usePageAccess mocké partout (accès complet par défaut) — describe dédié plus bas
+// pour le mode lecture seule.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
+});
 
 vi.mock("../../hooks/useCotisations", async () => {
   const actual = await vi.importActual<typeof useCotisationsHooks>("../../hooks/useCotisations");
@@ -31,6 +39,11 @@ function articleCatalogue(overrides: Partial<ArticleCatalogue> = {}): ArticleCat
 
 describe("ArticlesCatalogueCotisationPage", () => {
   beforeEach(() => {
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
     vi.mocked(useCotisationsHooks.useCreerArticleCatalogue).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
@@ -263,6 +276,48 @@ describe("ArticlesCatalogueCotisationPage", () => {
       expect(
         lignes[2].querySelector('[data-testid="article-catalogue-libelle-art-custom"]'),
       ).toHaveValue("T-shirt du club");
+    });
+  });
+
+  // --- Lecture seule (task #216, RBAC page_articles_cotisation) ---
+  describe("mode lecture seule", () => {
+    beforeEach(() => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+      vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+        data: { next: null, previous: null, results: [articleCatalogue()] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+    });
+
+    it("affiche la bannière de lecture seule et désactive la création/modification/bascule", () => {
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      expect(screen.getByLabelText("catalogue_articles.champ_libelle")).toBeDisabled();
+      expect(screen.getByText("catalogue_articles.ajouter")).toBeDisabled();
+      expect(screen.getByTestId("article-catalogue-libelle-art-1")).toBeDisabled();
+      expect(screen.getByTestId("article-catalogue-montant-art-1")).toBeDisabled();
+      expect(screen.getByText("catalogue_articles.enregistrer")).toBeDisabled();
+      expect(screen.getByText("catalogue_articles.desactiver")).toBeDisabled();
+    });
+
+    it("n'appelle pas la mutation de bascule au clic sur le bouton désactivé", () => {
+      const mutate = vi.fn();
+      vi.mocked(useCotisationsHooks.useModifierArticleCatalogue).mockReturnValue({
+        mutate,
+        isPending: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useModifierArticleCatalogue>);
+
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+      fireEvent.click(screen.getByText("catalogue_articles.desactiver"));
+
+      expect(mutate).not.toHaveBeenCalled();
     });
   });
 });

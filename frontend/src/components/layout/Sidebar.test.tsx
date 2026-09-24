@@ -325,7 +325,7 @@ describe("Sidebar — visibilité pilotée par la matrice (Phase D, ajoutée le 
   });
 
   it("affiche un item pageSlug quand la matrice l'autorise pour ce rôle, masque les autres", () => {
-    mockMesAcces({ data: { page_quiz: true, page_boutique: false } });
+    mockMesAcces({ data: { page_quiz: "lecture_ecriture", page_boutique: "aucun" } });
     renderWithProviders(<Sidebar />);
 
     expect(screen.getByText("nav.admin_quiz")).toBeInTheDocument();
@@ -356,9 +356,16 @@ describe("Sidebar — visibilité pilotée par la matrice (Phase D, ajoutée le 
   });
 
   it("'/admin/roles' reste hors matrice : masqué pour un rôle non-Admin App quel que soit mesAcces", () => {
-    mockMesAcces({ data: { page_quiz: true } });
+    mockMesAcces({ data: { page_quiz: "lecture_ecriture" } });
     renderWithProviders(<Sidebar />);
 
     expect(screen.queryByText("nav.gestion_roles")).not.toBeInTheDocument();
+  });
+
+  it("affiche un item pageSlug dès que la matrice donne au moins 'lecture' (task #215 : accès à la page ≠ droit d'écriture)", () => {
+    mockMesAcces({ data: { page_quiz: "lecture" } });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByText("nav.admin_quiz")).toBeInTheDocument();
   });
 });

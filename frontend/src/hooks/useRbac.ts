@@ -7,7 +7,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as rbacApi from "../api/rbac";
 import { useAuthStore } from "../store/authStore";
-import type { CreerRolePayload, ModifierRolePayload, SetMatriceCellulePayload } from "../types/rbac";
+import {
+  pageEstAccessible,
+  pageEstModifiable,
+  type CreerRolePayload,
+  type ModifierRolePayload,
+  type SetMatriceCellulePayload,
+} from "../types/rbac";
 
 const rbacKeys = {
   all: ["rbac"] as const,
@@ -92,4 +98,28 @@ export function useMesAcces() {
     enabled: isAuthenticated,
     staleTime: 60_000,
   });
+}
+
+/**
+ * Convenience hook (ajouté le 2026-09-24, task #216) au-dessus de useMesAcces() pour les 13
+ * pages de gestion elles-mêmes : répond aux DEUX questions dont une page a besoin pour son
+ * propre affichage — "puis-je voir cette page" (déjà tranché en amont par RequireRole/Sidebar au
+ * moment où la page s'affiche, donc `accessible` vaut ~toujours `true` ici en pratique) et
+ * surtout "dois-je désactiver mes contrôles d'écriture" (`modifiable`). Centralise le même
+ * hartcodage Administrateur App et le même état de chargement que RequireRole/Sidebar.tsx,
+ * plutôt que de le dupliquer dans chacune des 13 pages.
+ */
+export function usePageAccess(pageSlug: string) {
+  const estSuperAdmin = useAuthStore((s) => s.user?.role === "super_admin");
+  const { data: mesAcces, isLoading } = useMesAcces();
+
+  if (estSuperAdmin) {
+    return { accessible: true, modifiable: true, isLoading: false };
+  }
+  const niveau = mesAcces?.[pageSlug];
+  return {
+    accessible: pageEstAccessible(niveau),
+    modifiable: pageEstModifiable(niveau),
+    isLoading,
+  };
 }

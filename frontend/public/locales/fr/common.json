@@ -52,6 +52,10 @@
   },
   "chargement": "Chargement…",
   "aucun_resultat": "Aucun résultat.",
+  "acces": {
+    "lecture_seule_banniere": "Accès en lecture seule — vous pouvez consulter cette page, mais pas la modifier.",
+    "lecture_seule_tooltip": "Action indisponible : vous n'avez qu'un accès en lecture sur cette page."
+  },
   "langue": {
     "francais": "Passer en français",
     "allemand": "Auf Deutsch wechseln"

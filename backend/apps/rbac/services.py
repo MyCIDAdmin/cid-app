@@ -90,15 +90,53 @@ def is_elevated_for_module(user, module: str) -> bool:
     )
 
 
-def has_admin_page_access(user, page_slug: str) -> bool:
+def get_admin_page_niveau(user, page_slug: str) -> str:
+    """Niveau d'accès EFFECTIF de l'utilisateur sur UNE des 13 pages de gestion (Phase D, voir
+    registry.PAGES_ADMIN) — extrait de has_admin_page_access le 2026-09-24 (task #215, retour
+    utilisateur) pour que le frontend puisse exposer le niveau réel (`GET /rbac/mes-acces/`,
+    MesAccesView) et pas seulement un booléen "a accès" : un booléen ne suffit plus à décider si
+    les contrôles d'ÉCRITURE d'une page doivent être désactivés, depuis que `lecture` et
+    `lecture_ecriture` ont un effet réellement différent (voir has_admin_page_access ci-dessous).
+
+    Même raisonnement Administrateur App et `user_has_module_access` (union de tous les rôles
+    effectifs, legacy CharField inclus) que has_admin_page_access — voir sa docstring, qui reste
+    la référence complète pour le "pourquoi" de ce mécanisme."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return NiveauAcces.AUCUN
+    if user.role == Role.SUPER_ADMIN:
+        return NiveauAcces.LECTURE_ECRITURE
+    slugs = get_user_role_slugs(user)
+    if not slugs:
+        return NiveauAcces.AUCUN
+    meilleur_rang = max(_NIVEAUX_ORDONNES[_niveau_acces_pour(s, page_slug)] for s in slugs)
+    for niveau, rang in _NIVEAUX_ORDONNES.items():
+        if rang == meilleur_rang:
+            return niveau
+    return NiveauAcces.AUCUN  # pragma: no cover — inatteignable, _NIVEAUX_ORDONNES est exhaustif
+
+
+def has_admin_page_access(
+    user, page_slug: str, required: str = NiveauAcces.LECTURE
+) -> bool:
     """Porte d'accès pour les 13 pages de gestion (Phase D, ajoutée le 2026-09-23, voir
     registry.PAGES_ADMIN) — DÉLIBÉRÉMENT différente de is_elevated_for_module : ici la matrice
     doit faire autorité pour le rôle système ACTUEL de l'utilisateur, pas seulement pour un rôle
     additionnel (c'est le sens même de la demande "Zugriff bei den Systemrollen auch umzustellen
-    [...]"). On utilise donc `user_has_module_access`, qui prend l'union de TOUS les rôles
+    [...]"). On utilise donc `get_admin_page_niveau`, qui prend l'union de TOUS les rôles
     effectifs de l'utilisateur (`get_user_role_slugs`, legacy CharField inclus) — jamais
     `is_elevated_for_module`, qui exclut ce rôle actuel par construction (Phase B, un besoin
     différent : "toutes les données du module ou seulement les miennes").
+
+    `required` (ajouté le 2026-09-24, retour utilisateur : un rôle avec seulement "Lesen" sur
+    Quiz-Verwaltung pouvait quand même créer des quiz) — par défaut `NiveauAcces.LECTURE` : "a
+    accès à la page" (utilisé pour le routing/la sidebar côté frontend et les actions de lecture
+    côté backend, `lecture` ET `lecture_ecriture` suffisent). Passer explicitement
+    `NiveauAcces.LECTURE_ECRITURE` aux points d'appel qui gardent une action de MODIFICATION
+    (create/update/destroy et actions POST/PATCH assimilées) au sein d'une des 13 pages, pour
+    qu'une cellule "Lesen" seule ne débloque plus que la consultation, jamais la gestion — voir
+    chaque `permissions.py`/`views.py` bespoke des 13 sites pour le détail de la répartition
+    lecture/écriture par action (elle n'est pas uniforme : certaines pages n'ont aucune notion
+    d'écriture distincte, ex. `page_stats`, entièrement en lecture).
 
     Administrateur App (Super Admin) : accès total HARTCODÉ, jamais déterminé par la matrice,
     même si une ligne RoleModulePermission existe et vaut "aucun" — décision utilisateur
@@ -106,8 +144,5 @@ def has_admin_page_access(user, page_slug: str) -> bool:
     l'ensemble des 13 pages : aucune combinaison de cellules ne doit pouvoir mettre l'App-Admin
     lui-même hors-jeu. Voir aussi RoleModuleMatrixSetView, qui empêche même d'écrire une telle
     ligne pour ce rôle — défense en profondeur, cette fonction resterait sûre de toute façon."""
-    if not user or not getattr(user, "is_authenticated", False):
-        return False
-    if user.role == Role.SUPER_ADMIN:
-        return True
-    return user_has_module_access(user, page_slug, required=NiveauAcces.LECTURE)
+    niveau = get_admin_page_niveau(user, page_slug)
+    return _NIVEAUX_ORDONNES[niveau] >= _NIVEAUX_ORDONNES[required]

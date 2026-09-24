@@ -15,12 +15,16 @@ import {
   useModifierParametresNotification,
   useParametresNotification,
 } from "../../hooks/useNotifications";
+import { usePageAccess } from "../../hooks/useRbac";
 import { MODULES_NOTIFIABLES } from "../../types/notification";
 import type { ModuleNotifiable } from "../../types/notification";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 export default function ParametresNotificationPage() {
-  const { t } = useTranslation("notifications");
+  const { t } = useTranslation(["notifications", "common"]);
+  // task #216 : GET=lecture, PATCH=écriture côté backend (page_notifications_params) — seule
+  // l'action de bascule (toggleModule, ci-dessous) est une action d'écriture sur cette page.
+  const { accessible, modifiable } = usePageAccess("page_notifications_params");
   const { data, isLoading, isError } = useParametresNotification();
   const modifierMutation = useModifierParametresNotification();
 
@@ -32,6 +36,12 @@ export default function ParametresNotificationPage() {
     <div>
       <h1 className="mb-1 text-xl font-bold text-text-primary">{t("parametres.titre")}</h1>
       <p className="mb-4 text-sm text-text-secondary">{t("parametres.description")}</p>
+
+      {accessible && !modifiable && (
+        <p className="mb-4 rounded-cid-lg bg-bg-tertiary px-4 py-2 text-sm text-text-secondary">
+          {t("common:acces.lecture_seule_banniere")}
+        </p>
+      )}
 
       {isLoading && <p className="text-sm text-text-tertiary">{t("parametres.chargement")}</p>}
       {isError && (
@@ -63,7 +73,8 @@ export default function ParametresNotificationPage() {
                   role="switch"
                   aria-checked={actif}
                   aria-label={t(`parametres.module.${module}`)}
-                  disabled={modifierMutation.isPending}
+                  disabled={modifierMutation.isPending || !modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => toggleModule(module, actif)}
                   className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:opacity-40 ${
                     actif ? "border-ca bg-ca" : "border-text-tertiary bg-bg-tertiary"

@@ -568,3 +568,64 @@ def test_phase_d_super_admin_gere_toujours_les_evenements_meme_si_matrice_dit_au
 
     resp = _auth(api_client, user).post(reverse(EVENEMENT_LIST_URL), _EVENEMENT_PAYLOAD)
     assert resp.status_code == 201
+
+
+# ---------------------------------------------------------------------------
+# Phase D — distinction lecture/écriture réelle (2026-09-24) — apps.rbac.services.
+# has_admin_page_access(required=...) pour page_events (EvenementPermission.
+# EVENEMENT_WRITE_ACTIONS). Les tests Phase D ci-dessus couvrent le retrait/octroi TOTAL
+# d'accès (AUCUN vs LECTURE_ECRITURE) ; ceux-ci couvrent spécifiquement LECTURE SEULE — le cas
+# exact du bug original (voir apps.communaute.tests.test_api pour le rapport utilisateur
+# complet, page_quiz, et apps.rbac.services.has_admin_page_access pour le mécanisme).
+# ---------------------------------------------------------------------------
+
+
+def _assigner_role_perso(user, module_slug, niveau_acces):
+    """Voir apps.communaute.tests.test_api._assigner_role_perso — même helper, dupliqué ici
+    plutôt que partagé entre apps de test (pas de module de tests communs dans ce projet)."""
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    role_perso = RoleDefinitionFactory()
+    RoleModulePermissionFactory(role=role_perso, module=module_slug, niveau_acces=niveau_acces)
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    return role_perso
+
+
+def test_phase_d_lecture_seule_page_events_permet_de_lister_les_evenements(api_client):
+    """Lecture non régressée : un rôle avec seulement `lecture` sur page_events doit toujours
+    pouvoir consulter la liste des événements (list/retrieve ne sont d'ailleurs pas gatés par
+    page_events dans EvenementPermission — ouverts à tout authentifié — ce test garantit
+    qu'assigner un rôle personnalisé lecture seule n'introduit aucune régression de lecture)."""
+    from apps.rbac.models import NiveauAcces
+
+    EvenementFactory(statut=StatutEvenement.PUBLIE, titre="Match amical")
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-events-read@example.de")
+    _assigner_role_perso(user, "page_events", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).get(reverse(EVENEMENT_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_phase_d_lecture_seule_page_events_refuse_creation_dun_evenement(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-events-write@example.de")
+    _assigner_role_perso(user, "page_events", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).post(reverse(EVENEMENT_LIST_URL), _EVENEMENT_PAYLOAD)
+    assert resp.status_code == 403
+
+
+def test_phase_d_lecture_ecriture_page_events_permet_de_creer_un_evenement(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-events-write-ok@example.de")
+    _assigner_role_perso(user, "page_events", NiveauAcces.LECTURE_ECRITURE)
+
+    resp = _auth(api_client, user).post(reverse(EVENEMENT_LIST_URL), _EVENEMENT_PAYLOAD)
+    assert resp.status_code == 201
+    assert resp.data["titre"] == _EVENEMENT_PAYLOAD["titre"]

@@ -1308,3 +1308,164 @@ def test_phase_d_super_admin_gere_toujours_le_catalogue_meme_si_matrice_dit_aucu
         reverse(PRODUIT_LIST_URL), {"nom": "Maillot", "categorie": "vetements", "prix": "30.00"}
     )
     assert resp.status_code == 201
+
+
+# ---------------------------------------------------------------------------
+# Phase D — distinction lecture/écriture réelle (2026-09-24) — apps.rbac.services.
+# has_admin_page_access(required=...) pour page_boutique : CatalogueBoutiquePermission
+# (Produit), CommandePermission.GESTION_ACTIONS (changer_statut) et RetourPermission (création
+# d'un retour). Les tests Phase D ci-dessus couvrent le retrait/octroi TOTAL d'accès (AUCUN vs
+# LECTURE_ECRITURE) ; ceux-ci couvrent spécifiquement LECTURE SEULE — le cas exact du bug
+# original (voir apps.communaute.tests.test_api pour le rapport utilisateur complet, page_quiz,
+# et apps.rbac.services.has_admin_page_access pour le mécanisme).
+# ---------------------------------------------------------------------------
+
+
+def _assigner_role_perso(user, module_slug, niveau_acces):
+    """Voir apps.communaute.tests.test_api._assigner_role_perso — même helper, dupliqué ici
+    plutôt que partagé entre apps de test (pas de module de tests communs dans ce projet)."""
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
+
+    role_perso = RoleDefinitionFactory()
+    RoleModulePermissionFactory(role=role_perso, module=module_slug, niveau_acces=niveau_acces)
+    UserRoleAssignmentFactory(user=user, role=role_perso)
+    return role_perso
+
+
+# --- CatalogueBoutiquePermission (Produit) ----------------------------------------------
+
+
+def test_phase_d_lecture_seule_page_boutique_permet_de_lister_le_catalogue(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    ProduitFactory(statut=StatutProduit.PUBLIE)
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-boutique-read@example.de")
+    _assigner_role_perso(user, "page_boutique", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).get(reverse(PRODUIT_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_phase_d_lecture_seule_page_boutique_refuse_creation_produit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-boutique-write@example.de")
+    _assigner_role_perso(user, "page_boutique", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL),
+        {"nom": "Maillot interdit", "categorie": "vetements", "prix": "30.00"},
+    )
+    assert resp.status_code == 403
+
+
+def test_phase_d_lecture_ecriture_page_boutique_permet_creation_produit(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-boutique-write-ok@example.de")
+    _assigner_role_perso(user, "page_boutique", NiveauAcces.LECTURE_ECRITURE)
+
+    resp = _auth(api_client, user).post(
+        reverse(PRODUIT_LIST_URL),
+        {"nom": "Maillot autorisé", "categorie": "vetements", "prix": "30.00"},
+    )
+    assert resp.status_code == 201
+
+
+# --- CommandePermission.GESTION_ACTIONS (changer_statut) -------------------------------
+
+
+def test_phase_d_bureau_admin_lecture_seule_page_boutique_refuse_changer_statut(api_client):
+    """Bureau Admin (rôle système, dont has_object_permission passe déjà via ROLE_LEVELS >=
+    ORDER_VISIBILITY_MIN_LEVEL, indépendamment de la matrice) avec SEULEMENT `lecture` sur
+    page_boutique ne doit plus pouvoir changer le statut d'une commande — reproduit le même
+    bug que QuizPermission mais côté CommandePermission."""
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("bureau_admin", "page_boutique", NiveauAcces.LECTURE)
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "phased-rw-boutique-statut@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "phased-rw-boutique-m1@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, admin).post(
+        _changer_statut_url(commande), {"statut": StatutCommande.EN_PREPARATION}
+    )
+    assert resp.status_code == 403
+
+
+def test_phase_d_bureau_admin_lecture_ecriture_page_boutique_permet_changer_statut(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    _set_matrice_cellule("bureau_admin", "page_boutique", NiveauAcces.LECTURE_ECRITURE)
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "phased-rw-boutique-statut-ok@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "phased-rw-boutique-m2@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.CONFIRMEE)
+
+    resp = _auth(api_client, admin).post(
+        _changer_statut_url(commande), {"statut": StatutCommande.EN_PREPARATION}
+    )
+    assert resp.status_code == 200
+    assert resp.data["statut"] == StatutCommande.EN_PREPARATION
+
+
+# --- RetourPermission (création d'un retour) --------------------------------------------
+
+
+def test_phase_d_lecture_seule_page_boutique_permet_de_lister_les_retours(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-retour-read@example.de")
+    _assigner_role_perso(user, "page_boutique", NiveauAcces.LECTURE)
+
+    resp = _auth(api_client, user).get(reverse(RETOUR_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_phase_d_lecture_seule_page_boutique_refuse_creation_retour(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-retour-write@example.de")
+    _assigner_role_perso(user, "page_boutique", NiveauAcces.LECTURE)
+    _, membre = _user_avec_membre(Role.MEMBRE, "phased-rw-retour-m1@example.de")
+    variante = VarianteProduitFactory(stock=1)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
+
+    resp = _auth(api_client, user).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 403
+
+
+def test_phase_d_lecture_ecriture_page_boutique_permet_creation_retour(api_client):
+    from apps.rbac.models import NiveauAcces
+
+    user, _ = _user_avec_membre(Role.MEMBRE, "phased-rw-retour-write-ok@example.de")
+    _assigner_role_perso(user, "page_boutique", NiveauAcces.LECTURE_ECRITURE)
+    _, membre = _user_avec_membre(Role.MEMBRE, "phased-rw-retour-m2@example.de")
+    variante = VarianteProduitFactory(stock=1)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
+
+    resp = _auth(api_client, user).post(
+        reverse(RETOUR_LIST_URL),
+        {
+            "commande": str(commande.id),
+            "ligne_commande": str(ligne.id),
+            "quantite": 1,
+            "motif": "autre",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201

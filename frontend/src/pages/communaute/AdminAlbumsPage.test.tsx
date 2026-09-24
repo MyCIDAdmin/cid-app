@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
+import * as useRbacHooks from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
 import type { Album } from "../../types/communaute";
 import AdminAlbumsPage from "./AdminAlbumsPage";
@@ -19,6 +20,13 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useUploaderPhoto: vi.fn(),
     useSupprimerPhoto: vi.fn(),
   };
+});
+
+// page_albums en lecture_ecriture par défaut (task #216) — describe dédié plus bas pour le
+// gating lecture seule lui-même. Même convention que AdminBoutiquePage.test.tsx.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
 });
 
 const bureauAdmin = {
@@ -79,6 +87,11 @@ describe("AdminAlbumsPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.usePhotos>);
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
   }
 
   it("affiche la liste des albums avec date/lieu et nombre de photos", () => {
@@ -173,5 +186,50 @@ describe("AdminAlbumsPage", () => {
       "href",
       "/albums/a1",
     );
+  });
+
+  describe("lecture seule (task #216 — page_albums en 'lecture' uniquement)", () => {
+    beforeEach(() => {
+      mockHooksParDefaut();
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+    });
+
+    it("affiche la bannière lecture seule et désactive création/modification/suppression", () => {
+      vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+        data: page([album()]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+      const supprimer = mutationMock<ReturnType<typeof useCommunauteHooks.useSupprimerAlbum>>();
+      vi.mocked(useCommunauteHooks.useSupprimerAlbum).mockReturnValue(supprimer);
+
+      renderWithProviders(<AdminAlbumsPage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      expect(screen.getByText("admin_albums.nouvel_album")).toBeDisabled();
+      expect(screen.getByText("admin_albums.modifier")).toBeDisabled();
+
+      const supprimerBouton = screen.getByText("admin_albums.supprimer");
+      expect(supprimerBouton).toBeDisabled();
+      fireEvent.click(supprimerBouton);
+      expect(supprimer.mutate).not.toHaveBeenCalled();
+    });
+
+    it("garde la lecture pleinement fonctionnelle (liste des albums)", () => {
+      vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+        data: page([album({ date: "2026-10-03", lieu: "Berlin" })]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+
+      renderWithProviders(<AdminAlbumsPage />);
+
+      expect(screen.getByText("Derby CA - ST 2026")).toBeInTheDocument();
+      expect(screen.getByText(/2026-10-03 · Berlin/)).toBeInTheDocument();
+    });
   });
 });

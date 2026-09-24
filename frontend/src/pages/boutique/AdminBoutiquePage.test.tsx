@@ -3,8 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useBoutiqueHooks from "../../hooks/useBoutique";
+import * as useRbacHooks from "../../hooks/useRbac";
 import type { BonAchat, Commande, Produit } from "../../types/boutique";
 import AdminBoutiquePage from "./AdminBoutiquePage";
+
+// Task #216 (2026-09-24) : "page_boutique" lecture/lecture_ecriture — plein accès par défaut
+// pour ne pas casser les tests existants (comportement identique à avant l'ajout de la matrice) ;
+// voir le describe dédié plus bas pour le mode lecture seule.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
+});
 
 vi.mock("../../hooks/useBoutique", async () => {
   const actual = await vi.importActual<typeof useBoutiqueHooks>("../../hooks/useBoutique");
@@ -108,6 +117,11 @@ function bonAchat(overrides: Partial<BonAchat> = {}): BonAchat {
 
 describe("AdminBoutiquePage", () => {
   beforeEach(() => {
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
     vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
       data: { next: null, previous: null, results: [commande()] },
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
@@ -193,5 +207,35 @@ describe("AdminBoutiquePage", () => {
     fireEvent.click(screen.getByText("admin.onglet_bons_achat"));
     expect(screen.getByText("BON-A1B2C3D4")).toBeInTheDocument();
     expect(screen.queryByText("CMD-A1B2C3D4")).not.toBeInTheDocument();
+  });
+
+  describe("accès lecture seule (task #216)", () => {
+    it("n'affiche pas de bandeau et laisse les contrôles d'écriture actifs quand modifiable=true", () => {
+      renderWithProviders(<AdminBoutiquePage />);
+
+      expect(screen.queryByText("acces.lecture_seule_banniere")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("commandes_admin.changer_statut")).not.toBeDisabled();
+
+      fireEvent.click(screen.getByText("admin.onglet_catalogue"));
+      expect(screen.getByText("catalogue_admin.creer")).not.toBeDisabled();
+    });
+
+    it("affiche un bandeau et désactive les contrôles d'écriture quand modifiable=false", () => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+
+      renderWithProviders(<AdminBoutiquePage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      // Lecture : la commande reste visible.
+      expect(screen.getByText("CMD-A1B2C3D4")).toBeInTheDocument();
+      expect(screen.getByLabelText("commandes_admin.changer_statut")).toBeDisabled();
+
+      fireEvent.click(screen.getByText("admin.onglet_catalogue"));
+      expect(screen.getByText("catalogue_admin.creer")).toBeDisabled();
+    });
   });
 });

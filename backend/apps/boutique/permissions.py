@@ -52,6 +52,7 @@ Permissions API — app boutique (FDD §2.2 matrice des permissions) :
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
 GESTION_CATALOGUE_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
@@ -64,7 +65,10 @@ CATALOGUE_WRITE_ACTIONS = ("create", "update", "partial_update", "destroy")
 class CatalogueBoutiquePermission(BasePermission):
     """Produit / VarianteProduit. Écriture = page de gestion "Shop-Verwaltung" (Phase D, ajoutée
     le 2026-09-23, apps.rbac.registry.PAGES_ADMIN slug `page_boutique`) — remplace (et non
-    complète) l'ancien seuil fixe GESTION_CATALOGUE_MIN_LEVEL."""
+    complète) l'ancien seuil fixe GESTION_CATALOGUE_MIN_LEVEL. Niveau `lecture_ecriture` requis
+    depuis le 2026-09-24 (retour utilisateur : `lecture` seule ne doit plus permettre de
+    modifier le catalogue — voir apps.communaute.permissions.QuizPermission pour le contexte
+    complet)."""
 
     def has_permission(self, request, view):
         user = request.user
@@ -72,7 +76,9 @@ class CatalogueBoutiquePermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in CATALOGUE_WRITE_ACTIONS or request.method not in SAFE_METHODS:
-            return has_admin_page_access(user, "page_boutique")
+            return has_admin_page_access(
+                user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
 
@@ -91,8 +97,11 @@ class CommandePermission(BasePermission):
             return ROLE_LEVELS.get(user.role, 0) >= PAIEMENT_EXPEDITION_MIN_LEVEL
         if action in self.GESTION_ACTIONS:
             # `changer_statut` fait partie de la page "Shop-Verwaltung" (page_boutique) — voir
-            # CatalogueBoutiquePermission ci-dessus.
-            return has_admin_page_access(user, "page_boutique")
+            # CatalogueBoutiquePermission ci-dessus. lecture_ecriture requise depuis le
+            # 2026-09-24, même raisonnement.
+            return has_admin_page_access(
+                user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
     def has_object_permission(self, request, view, obj):
@@ -111,14 +120,22 @@ class CommandePermission(BasePermission):
 class RetourPermission(BasePermission):
     """Retour — voir docstring de module : fait partie de la page de gestion "Shop-Verwaltung"
     (Phase D, slug `page_boutique`, même page que CatalogueBoutiquePermission/
-    CommandePermission.GESTION_ACTIONS ci-dessus), lecture et création confondues (pas de cas
-    d'usage "un membre consulte ses propres retours" dans la demande — l'admin gère tout)."""
+    CommandePermission.GESTION_ACTIONS ci-dessus) ; pas de cas d'usage "un membre consulte ses
+    propres retours" dans la demande — l'admin gère tout. Lecture (list/retrieve) et création
+    distinguées depuis le 2026-09-24 : `lecture` suffit pour consulter les retours déjà
+    enregistrés, `lecture_ecriture` est requis pour en créer un (RetourViewSet n'expose que GET/
+    POST, voir http_method_names)."""
 
     def has_permission(self, request, view):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        return has_admin_page_access(user, "page_boutique")
+        required = (
+            NiveauAcces.LECTURE_ECRITURE
+            if request.method not in SAFE_METHODS
+            else NiveauAcces.LECTURE
+        )
+        return has_admin_page_access(user, "page_boutique", required=required)
 
 
 class BonAchatPermission(BasePermission):

@@ -90,6 +90,7 @@ import { useMarquerLuesPrefixe, useNotificationsNonLues } from "../../hooks/useN
 import { useMesAcces } from "../../hooks/useRbac";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { type SidebarGroupKey, useUiStore } from "../../store/uiStore";
+import { pageEstAccessible } from "../../types/rbac";
 import BrandLogo from "../ui/BrandLogo";
 
 export type NavIcon = ComponentType<{ size?: number | string; className?: string }>;
@@ -326,7 +327,7 @@ export function useSidebarNav() {
     if (!item.pageSlug) return true;
     if (estSuperAdmin) return true;
     if (chargementAcces) return false;
-    return mesAcces?.[item.pageSlug] === true;
+    return pageEstAccessible(mesAcces?.[item.pageSlug]);
   }
 
   const visibleItems = NAV_ITEMS.filter(

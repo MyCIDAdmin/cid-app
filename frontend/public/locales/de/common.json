@@ -52,6 +52,10 @@
   },
   "chargement": "Wird geladen…",
   "aucun_resultat": "Kein Ergebnis.",
+  "acces": {
+    "lecture_seule_banniere": "Nur Lesezugriff — Sie können diese Seite einsehen, aber nicht bearbeiten.",
+    "lecture_seule_tooltip": "Aktion nicht verfügbar: Sie haben für diese Seite nur Lesezugriff."
+  },
   "langue": {
     "francais": "Auf Französisch wechseln",
     "allemand": "Auf Deutsch wechseln"

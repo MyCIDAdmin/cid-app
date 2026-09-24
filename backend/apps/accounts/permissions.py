@@ -9,13 +9,17 @@ from rest_framework.permissions import BasePermission
 from .models import ROLE_LEVELS, Role
 
 
-def _has_admin_page_access(user, page_slug: str) -> bool:
+def _has_admin_page_access(user, page_slug: str, required: str | None = None) -> bool:
     """Import différé (et non en tête de module) — évite qu'un import circulaire au chargement
     de l'app (apps.accounts est chargée très tôt, avant apps.rbac dans certains contextes,
-    notamment les migrations) ne casse le démarrage. Voir HasInscriptionsAdminAccess ci-dessous."""
+    notamment les migrations) ne casse le démarrage. Voir HasInscriptionsAdminAccess ci-dessous.
+    `required` (ajouté le 2026-09-24) : None = valeur par défaut de has_admin_page_access
+    (`lecture`, import différé aussi pour NiveauAcces afin de ne pas casser l'ordre de chargement
+    ci-dessus)."""
+    from apps.rbac.models import NiveauAcces
     from apps.rbac.services import has_admin_page_access
 
-    return has_admin_page_access(user, page_slug)
+    return has_admin_page_access(user, page_slug, required=required or NiveauAcces.LECTURE)
 
 
 class RoleAtLeast(BasePermission):
@@ -52,12 +56,32 @@ class HasInscriptionsAdminAccess(BasePermission):
     libre-service (PendingRegistrationsView/ApproveRegistrationView/RefuseRegistrationView,
     apps/accounts/views.py). Remplace `IsRHOrAbove` UNIQUEMENT à ces 3 endroits : `IsRHOrAbove`
     lui-même reste inchangé pour ses autres usages (apps.membres.import_views,
-    apps.membres.export_views), aucune des deux pages listées par l'utilisateur."""
+    apps.membres.export_views), aucune des deux pages listées par l'utilisateur.
+
+    Niveau `lecture` (consultation de la file d'attente, PendingRegistrationsView) — voir
+    HasInscriptionsAdminWriteAccess ci-dessous pour Approve/RefuseRegistrationView, qui
+    requièrent `lecture_ecriture` depuis le 2026-09-24 (retour utilisateur — voir
+    apps.communaute.permissions.QuizPermission pour le contexte complet)."""
 
     def has_permission(self, request, view):
         user = request.user
         return bool(
             user and user.is_authenticated and _has_admin_page_access(user, "page_inscriptions")
+        )
+
+
+class HasInscriptionsAdminWriteAccess(HasInscriptionsAdminAccess):
+    """Approuver/refuser une inscription (ApproveRegistrationView/RefuseRegistrationView) — même
+    page que HasInscriptionsAdminAccess ci-dessus, mais niveau `lecture_ecriture` requis."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and _has_admin_page_access(
+                user, "page_inscriptions", required="lecture_ecriture"
+            )
         )
 
 

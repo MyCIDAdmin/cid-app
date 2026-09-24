@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
+import * as useRbacHooks from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
 import type { Quiz } from "../../types/communaute";
 import AdminQuizPage from "./AdminQuizPage";
@@ -21,6 +22,14 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useCreerChoixQuestion: vi.fn(),
     useSupprimerChoixQuestion: vi.fn(),
   };
+});
+
+// page_quiz en lecture_ecriture par défaut (task #216) — ces tests portent sur le comportement
+// habituel de la page, pas sur le gating lecture seule lui-même (describe dédié plus bas). Même
+// convention que AdminBoutiquePage.test.tsx : mock direct de usePageAccess.
+vi.mock("../../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
+  return { ...actual, usePageAccess: vi.fn() };
 });
 
 const bureauAdmin = {
@@ -86,6 +95,11 @@ describe("AdminQuizPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useQuiz>);
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
   });
 
   it("affiche la liste des quiz existants", () => {
@@ -198,5 +212,59 @@ describe("AdminQuizPage", () => {
     fireEvent.click(screen.getByText("admin_quiz.desactiver"));
 
     expect(modifier.mutate).toHaveBeenCalledWith({ id: "q1", payload: { est_actif: false } });
+  });
+
+  describe("lecture seule (task #216 — page_quiz en 'lecture' uniquement)", () => {
+    beforeEach(() => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+    });
+
+    it("affiche la bannière lecture seule et désactive les contrôles d'écriture", () => {
+      const creer = mutationMock<ReturnType<typeof useCommunauteHooks.useCreerQuiz>>();
+      vi.mocked(useCommunauteHooks.useCreerQuiz).mockReturnValue(creer);
+      const modifier = mutationMock<ReturnType<typeof useCommunauteHooks.useModifierQuiz>>();
+      vi.mocked(useCommunauteHooks.useModifierQuiz).mockReturnValue(modifier);
+      vi.mocked(useCommunauteHooks.useQuizListe).mockReturnValue({
+        data: page([quiz()]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useQuizListe>);
+
+      renderWithProviders(<AdminQuizPage />);
+
+      expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
+      expect(screen.getByText("admin_quiz.creer")).toBeDisabled();
+
+      fireEvent.click(screen.getByText("admin_quiz.desactiver"));
+      expect(modifier.mutate).not.toHaveBeenCalled();
+
+      fireEvent.change(screen.getByPlaceholderText("admin_quiz.titre_placeholder"), {
+        target: { value: "Anecdotes CA" },
+      });
+      fireEvent.click(screen.getByText("admin_quiz.creer"));
+      expect(creer.mutate).not.toHaveBeenCalled();
+    });
+
+    it("garde la lecture pleinement fonctionnelle (liste + sélection d'un quiz)", () => {
+      vi.mocked(useCommunauteHooks.useQuizListe).mockReturnValue({
+        data: page([quiz()]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useQuizListe>);
+      vi.mocked(useCommunauteHooks.useQuiz).mockReturnValue({
+        data: quiz(),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useQuiz>);
+
+      renderWithProviders(<AdminQuizPage />);
+      fireEvent.click(screen.getByText("Histoire du CA"));
+
+      expect(screen.getByText("admin_quiz.aucune_question")).toBeInTheDocument();
+    });
   });
 });

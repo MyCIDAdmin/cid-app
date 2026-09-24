@@ -6,6 +6,9 @@
  * rabais_montant_xor_pourcentage, voir models.py) : le formulaire n'expose donc qu'un seul champ
  * "valeur" avec un sélecteur de type, jamais les deux à la fois (même logique que l'étape 3 du
  * mockup #m-newcamp).
+ *
+ * Lecture seule (task #216, 2026-09-24) : `modifiable` (optionnel, défaut `true`, voir
+ * OffresManager) désactive l'ajout/modification/suppression de rabais.
  */
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
@@ -37,8 +40,14 @@ function formulaireInitial(offreId: string): RabaisCreatePayload & { type_valeur
   };
 }
 
-export default function RabaisManager({ offre }: { offre: OffreAdhesion }) {
-  const { t } = useTranslation("adhesions");
+export default function RabaisManager({
+  offre,
+  modifiable = true,
+}: {
+  offre: OffreAdhesion;
+  modifiable?: boolean;
+}) {
+  const { t } = useTranslation(["adhesions", "common"]);
   const creerMutation = useCreerRabais();
   const modifierMutation = useModifierRabais();
   const supprimerMutation = useSupprimerRabais();
@@ -80,13 +89,17 @@ export default function RabaisManager({ offre }: { offre: OffreAdhesion }) {
                 type="checkbox"
                 checked={r.justificatif_requis}
                 onChange={(e) => toggleJustificatifRequis(r.id, e.target.checked)}
+                disabled={!modifiable}
+                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
               />
               {t("admin_rabais.justificatif_requis_label")}
             </label>
             <button
               type="button"
               onClick={() => supprimerMutation.mutate(r.id)}
-              className="text-text-tertiary hover:text-status-dangerText"
+              disabled={!modifiable}
+              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              className="text-text-tertiary hover:text-status-dangerText disabled:opacity-40"
               aria-label={`${t("admin_rabais.supprimer")} — ${r.label_fr}`}
             >
               ✕
@@ -205,7 +218,8 @@ export default function RabaisManager({ offre }: { offre: OffreAdhesion }) {
         )}
         <button
           type="submit"
-          disabled={creerMutation.isPending}
+          disabled={creerMutation.isPending || !modifiable}
+          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
           className="self-start rounded-cid bg-ca px-2.5 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
         >
           {t("admin_rabais.ajouter")}
