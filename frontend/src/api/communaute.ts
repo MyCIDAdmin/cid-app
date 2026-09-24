@@ -42,6 +42,11 @@ import type {
   StatistiqueJoueur,
   Sujet,
   SujetPayload,
+  Tippspiel,
+  TippspielPayload,
+  TippspielTeilnahme,
+  TippspielTip,
+  TippspielTipPayload,
 } from "../types/communaute";
 
 // --- Fil d'actualité ---
@@ -375,6 +380,114 @@ export async function listMatchEvenements(
 
 export async function creerMatchEvenement(payload: MatchEvenementPayload): Promise<MatchEvenement> {
   const { data } = await apiClient.post<MatchEvenement>("/communaute/match-evenements/", payload);
+  return data;
+}
+
+// --- Tippspiel (pronostics Ligue 1, 2026-09-24) — voir backend apps.communaute.views
+// pour le détail des permissions par action. ---
+
+export interface TippspieleFiltres {
+  cursor?: string;
+}
+
+export async function listTippspiele(
+  filtres: TippspieleFiltres = {},
+): Promise<CursorPage<Tippspiel>> {
+  const { data } = await apiClient.get<CursorPage<Tippspiel>>("/communaute/tippspiel/", {
+    params: filtres,
+  });
+  return data;
+}
+
+// Réservé Administrateur App (super_admin) — voir TippspielPermission côté backend.
+export async function creerTippspiel(payload: TippspielPayload): Promise<Tippspiel> {
+  const { data } = await apiClient.post<Tippspiel>("/communaute/tippspiel/", payload);
+  return data;
+}
+
+export async function modifierTippspiel(
+  id: string,
+  payload: Partial<TippspielPayload>,
+): Promise<Tippspiel> {
+  const { data } = await apiClient.patch<Tippspiel>(`/communaute/tippspiel/${id}/`, payload);
+  return data;
+}
+
+// "Jeder Mitglied kann daran teilnehmen" (retour utilisateur) — tout authentifié.
+export async function teilnehmenTippspiel(id: string): Promise<TippspielTeilnahme> {
+  const { data } = await apiClient.post<TippspielTeilnahme>(
+    `/communaute/tippspiel/${id}/teilnehmen/`,
+  );
+  return data;
+}
+
+export interface TippspielTeilnahmenFiltres {
+  tippspiel: string;
+  /** `true` : ma propre inscription (quel que soit son statut de paiement). Omis ou
+   * `false` : classement (participations confirmées uniquement), sauf si
+   * `statutPaiement` est renseigné. */
+  mine?: boolean;
+  /** `"en_attente"` : liste des paiements à confirmer — réservé Directeur Financier+
+   * côté backend (voir TippspielTeilnahmeViewSet.get_queryset). */
+  statutPaiement?: "en_attente";
+  cursor?: string;
+}
+
+export async function listTippspielTeilnahmen(
+  filtres: TippspielTeilnahmenFiltres,
+): Promise<CursorPage<TippspielTeilnahme>> {
+  const { tippspiel, mine, statutPaiement, cursor } = filtres;
+  const { data } = await apiClient.get<CursorPage<TippspielTeilnahme>>(
+    "/communaute/tippspiel-teilnahmen/",
+    {
+      params: {
+        tippspiel,
+        mine: mine ? "true" : undefined,
+        statut_paiement: statutPaiement,
+        cursor,
+      },
+    },
+  );
+  return data;
+}
+
+// "bestätigt vom Finanzdirektor" (retour utilisateur) — réservé Directeur Financier+.
+export async function confirmerPaiementTeilnahme(id: string): Promise<TippspielTeilnahme> {
+  const { data } = await apiClient.post<TippspielTeilnahme>(
+    `/communaute/tippspiel-teilnahmen/${id}/confirmer-paiement/`,
+  );
+  return data;
+}
+
+export interface TippspielTippsFiltres {
+  tippspiel?: string;
+  cursor?: string;
+}
+
+// Toujours filtré côté backend sur mes propres pronostics (IDOR, voir
+// TippspielTipViewSet.get_queryset) — jamais ceux d'un autre membre.
+export async function listTippspielTipps(
+  filtres: TippspielTippsFiltres = {},
+): Promise<CursorPage<TippspielTip>> {
+  const { data } = await apiClient.get<CursorPage<TippspielTip>>("/communaute/tippspiel-tipps/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function creerTippspielTip(payload: TippspielTipPayload): Promise<TippspielTip> {
+  const { data } = await apiClient.post<TippspielTip>("/communaute/tippspiel-tipps/", payload);
+  return data;
+}
+
+export async function modifierTippspielTip(
+  id: string,
+  payload: Pick<TippspielTipPayload, "score_domicile" | "score_exterieur">,
+): Promise<TippspielTip> {
+  const { data } = await apiClient.patch<TippspielTip>(
+    `/communaute/tippspiel-tipps/${id}/`,
+    payload,
+  );
   return data;
 }
 

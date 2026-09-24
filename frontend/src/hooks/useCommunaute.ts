@@ -17,6 +17,8 @@ import type {
   QuizMiseAJourPayload,
   QuizPayload,
   SujetPayload,
+  TippspielPayload,
+  TippspielTipPayload,
 } from "../types/communaute";
 
 const communauteKeys = {
@@ -53,6 +55,12 @@ const communauteKeys = {
     [...communauteKeys.all, "quiz-liste", filtres] as const,
   quiz: (id: string) => [...communauteKeys.all, "quiz", id] as const,
   classementQuiz: (id: string) => [...communauteKeys.all, "quiz-classement", id] as const,
+  tippspiele: (filtres: communauteApi.TippspieleFiltres = {}) =>
+    [...communauteKeys.all, "tippspiele", filtres] as const,
+  tippspielTeilnahmen: (filtres: communauteApi.TippspielTeilnahmenFiltres) =>
+    [...communauteKeys.all, "tippspiel-teilnahmen", filtres] as const,
+  tippspielTipps: (filtres: communauteApi.TippspielTippsFiltres = {}) =>
+    [...communauteKeys.all, "tippspiel-tipps", filtres] as const,
 };
 
 function invalidatePublications(queryClient: ReturnType<typeof useQueryClient>) {
@@ -676,5 +684,103 @@ export function useSupprimerChoixQuestion() {
     mutationFn: ({ id }: { id: string; quizId: string }) =>
       communauteApi.supprimerChoixQuestion(id),
     onSuccess: (_data, variables) => invalidateQuiz(queryClient, variables.quizId),
+  });
+}
+
+// --- Tippspiel (pronostics Ligue 1, 2026-09-24) — onglet Ticker, voir
+// components/communaute/Tippspiel*.tsx ---
+
+function invalidateTippspiele(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "tippspiele"] });
+}
+
+function invalidateTippspielTeilnahmen(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "tippspiel-teilnahmen"] });
+}
+
+export function useTippspiele(filtres: communauteApi.TippspieleFiltres = {}) {
+  return useQuery({
+    queryKey: communauteKeys.tippspiele(filtres),
+    queryFn: () => communauteApi.listTippspiele(filtres),
+  });
+}
+
+// Réservé Administrateur App (super_admin) côté backend — voir TippspielPermission.
+export function useCreerTippspiel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: TippspielPayload) => communauteApi.creerTippspiel(payload),
+    onSuccess: () => invalidateTippspiele(queryClient),
+  });
+}
+
+export function useModifierTippspiel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<TippspielPayload> }) =>
+      communauteApi.modifierTippspiel(id, payload),
+    onSuccess: () => invalidateTippspiele(queryClient),
+  });
+}
+
+export function useTeilnehmenTippspiel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.teilnehmenTippspiel(id),
+    onSuccess: () => invalidateTippspielTeilnahmen(queryClient),
+  });
+}
+
+export function useTippspielTeilnahmen(filtres: communauteApi.TippspielTeilnahmenFiltres) {
+  return useQuery({
+    queryKey: communauteKeys.tippspielTeilnahmen(filtres),
+    queryFn: () => communauteApi.listTippspielTeilnahmen(filtres),
+    enabled: !!filtres.tippspiel,
+  });
+}
+
+// "bestätigt vom Finanzdirektor" (retour utilisateur) — réservé Directeur Financier+.
+export function useConfirmerPaiementTeilnahme() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.confirmerPaiementTeilnahme(id),
+    onSuccess: () => invalidateTippspielTeilnahmen(queryClient),
+  });
+}
+
+export function useTippspielTipps(filtres: communauteApi.TippspielTippsFiltres = {}) {
+  return useQuery({
+    queryKey: communauteKeys.tippspielTipps(filtres),
+    queryFn: () => communauteApi.listTippspielTipps(filtres),
+    enabled: !!filtres.tippspiel,
+  });
+}
+
+function invalidateTippspielTipps(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "tippspiel-tipps"] });
+  // Rejoindre le jeu au premier pronostic est implicite côté backend (voir
+  // TippspielTipSerializer.create) — invalider aussi le classement/ma participation.
+  invalidateTippspielTeilnahmen(queryClient);
+}
+
+export function useCreerTippspielTip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: TippspielTipPayload) => communauteApi.creerTippspielTip(payload),
+    onSuccess: () => invalidateTippspielTipps(queryClient),
+  });
+}
+
+export function useModifierTippspielTip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Pick<TippspielTipPayload, "score_domicile" | "score_exterieur">;
+    }) => communauteApi.modifierTippspielTip(id, payload),
+    onSuccess: () => invalidateTippspielTipps(queryClient),
   });
 }

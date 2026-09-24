@@ -120,7 +120,9 @@ Quiz (Release Plan §3.2 "Quiz histoire du CA avec score et classement.") :
 
 import re
 import uuid
+from decimal import Decimal
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedTextField
@@ -883,6 +885,275 @@ class MatchEvenement(models.Model):
 
     def __str__(self):
         return f"{self.get_type_evenement_display()} {self.minute}' @ {self.match_id}"
+
+
+# ---------------------------------------------------------------------------
+# Tippspiel (pronostics Ligue 1) — module Fan-Club, ajouté le 2026-09-24 (retour
+# utilisateur : jeu de pronostics sur les rencontres Ligue 1 de Club Africain, avec
+# classement, frais de participation optionnels et lots à définir par l'Administrateur
+# App). Périmètre volontairement limité aux rencontres de `RencontreCalendrier` dont
+# `competition == "Ligue 1"` (décision utilisateur explicite, voir AskUserQuestion du
+# 2026-09-24 : pas toute la Ligue 1, seulement les rencontres de Club Africain déjà
+# synchronisées — pas de nouvel appel GOAL API `/leagues/{id}/fixtures`, voir
+# services.py). Système de paiement volontairement autonome (décision utilisateur
+# explicite, même AskUserQuestion : pas de réutilisation de `apps.cotisations.
+# Cotisation`) : un simple statut payé/non payé confirmé manuellement par le Directeur
+# Financier, sans passerelle de paiement en ligne — voir StatutPaiementTeilnahme.
+# ---------------------------------------------------------------------------
+
+
+class StatutTippspiel(models.TextChoices):
+    """`brouillon` : créé par l'Administrateur App mais pas encore visible des membres
+    ("Anzeigbar nachdem es eingestellt und veröffentlicht wird", retour utilisateur — la
+    création et la publication sont deux étapes distinctes, voir TippspielPermission/
+    TippspielViewSet.get_queryset). `publie` : visible et ouvert à la participation.
+    `cloture` : terminé (plus de nouveaux pronostics possibles) — reste visible en
+    lecture seule pour consulter le classement final."""
+
+    BROUILLON = "brouillon", _("Brouillon")
+    PUBLIE = "publie", _("Publié")
+    CLOTURE = "cloture", _("Clôturé")
+
+
+class Tippspiel(models.Model):
+    """Un jeu de pronostics (typiquement un par saison) — créé exclusivement par
+    l'Administrateur App ("Nur der App Admin kann das Spiel einstellen", retour
+    utilisateur, voir TippspielPermission). `regles` est affiché côté frontend comme
+    rappel/indice ("Spielregeln als Hint zur Verfügung stellen"). Barème de points fixe
+    (non configurable, retour utilisateur donne des valeurs précises) : résultat exact
+    4 points, tordifférence correcte (avec vainqueur identique) 2 points, tendance
+    correcte (vainqueur/nul) seule 1 point, sinon 0 — voir
+    services.py::_points_tip. `montant_participation` NULL = jeu gratuit (toute
+    `TippspielTeilnahme` y est alors immédiatement confirmée, voir
+    TippspielTeilnahme.statut_paiement)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    titre = models.CharField(max_length=200)
+    saison = models.CharField(max_length=20, help_text=_('Ex. "2026-2027".'))
+    regles = models.TextField(
+        blank=True, help_text=_("Affiché aux membres comme rappel du barème de points.")
+    )
+    statut = models.CharField(
+        max_length=20, choices=StatutTippspiel.choices, default=StatutTippspiel.BROUILLON
+    )
+    montant_participation = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.01"))],
+        help_text=_("Vide = jeu gratuit."),
+    )
+
+    created_by = models.ForeignKey(
+        "accounts.User", on_delete=models.PROTECT, related_name="tippspiele_crees"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    maj_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_tippspiele"
+        verbose_name = _("Tippspiel")
+        verbose_name_plural = _("Tippspiele")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.titre} ({self.saison})"
+
+    @property
+    def est_payant(self) -> bool:
+        return self.montant_participation is not None
+
+
+class TypePrixTippspiel(models.TextChoices):
+    PRODUIT = "produit", _("Article boutique")
+    MONTANT_FIXE = "montant_fixe", _("Montant fixe")
+    POURCENTAGE = "pourcentage", _("Pourcentage de la cagnotte")
+
+
+class TippspielPrix(models.Model):
+    """Un lot pour un rang donné du classement final — défini à la création du
+    Tippspiel par l'Administrateur App (voir docstring de tête Tippspiel). Trois formes
+    possibles (voir TypePrixTippspiel), exactement les options citées par le retour
+    utilisateur : un article de la Boutique, un montant fixe, ou un pourcentage de la
+    cagnotte totale (somme des `montant_participation` des `TippspielTeilnahme`
+    confirmées) — calculé à l'affichage, jamais stocké en dur."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    tippspiel = models.ForeignKey(Tippspiel, on_delete=models.CASCADE, related_name="prix")
+    platz = models.PositiveSmallIntegerField(help_text=_("1 = première place, etc."))
+    type_prix = models.CharField(max_length=20, choices=TypePrixTippspiel.choices)
+    # on_delete=PROTECT : un produit du catalogue référencé par un lot ne peut pas être
+    # supprimé (même politique que Cotisation.article_catalogue) — related_name="+" :
+    # aucun accès inverse nécessaire depuis Produit, pour ne pas polluer apps.boutique.
+    produit = models.ForeignKey(
+        "boutique.Produit",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Renseigné uniquement si type_prix=produit."),
+    )
+    montant = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_("Renseigné uniquement si type_prix=montant_fixe."),
+    )
+    pourcentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.00")), MaxValueValidator(Decimal("100.00"))],
+        help_text=_("Renseigné uniquement si type_prix=pourcentage (0-100)."),
+    )
+
+    class Meta:
+        db_table = "communaute_tippspiel_prix"
+        verbose_name = _("Lot Tippspiel")
+        verbose_name_plural = _("Lots Tippspiel")
+        ordering = ["tippspiel", "platz"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tippspiel", "platz"], name="tippspiel_prix_rang_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.tippspiel.titre} — Platz {self.platz}"
+
+
+class StatutPaiementTeilnahme(models.TextChoices):
+    """Voir docstring de tête section Tippspiel : système de paiement autonome, sans
+    passerelle en ligne — confirmation manuelle par le Directeur Financier uniquement
+    ("die Teilnahme ist nur bestätigt, wenn der Beitrag eingegangen ist und bestätigt
+    vom Finanzdirektor", retour utilisateur)."""
+
+    SANS_FRAIS = "sans_frais", _("Sans frais")
+    EN_ATTENTE = "en_attente", _("En attente de paiement")
+    CONFIRMEE = "confirmee", _("Paiement confirmé")
+
+
+class TippspielTeilnahmeManager(models.Manager):
+    def rejoindre(self, tippspiel: "Tippspiel", membre):
+        """Inscrit `membre` à `tippspiel` (idempotent — get_or_create) : statut initial
+        `SANS_FRAIS` (jeu gratuit, confirmé d'emblée) ou `EN_ATTENTE` (jeu payant) selon
+        `tippspiel.est_payant`. Appelée à la fois par l'action `teilnehmen` explicite
+        (TippspielViewSet) ET implicitement à la création du tout premier pronostic
+        (TippspielTipSerializer.create) — un membre qui pronostique sans avoir cliqué
+        "Teilnehmen" au préalable ne doit jamais échouer."""
+        return self.get_or_create(
+            tippspiel=tippspiel,
+            membre=membre,
+            defaults={
+                "statut_paiement": (
+                    StatutPaiementTeilnahme.EN_ATTENTE
+                    if tippspiel.est_payant
+                    else StatutPaiementTeilnahme.SANS_FRAIS
+                )
+            },
+        )
+
+
+class TippspielTeilnahme(models.Model):
+    """Inscription d'un membre à un Tippspiel — un membre ne peut s'inscrire qu'une fois
+    par Tippspiel (contrainte unique), voir TippspielTeilnahmeManager.rejoindre.
+    Soumettre un pronostic (`TippspielTip`) reste possible même tant que le paiement
+    n'est pas confirmé (pour ne pas faire rater la date-limite d'un match pendant qu'un
+    virement bancaire est en cours) mais SEULES les inscriptions `est_confirmee`
+    apparaissent dans le classement (voir action `classement`,
+    TippspielTeilnahmeViewSet) — condition explicite du retour utilisateur."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    tippspiel = models.ForeignKey(
+        Tippspiel, on_delete=models.CASCADE, related_name="participations"
+    )
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="tippspiel_participations"
+    )
+    statut_paiement = models.CharField(
+        max_length=20,
+        choices=StatutPaiementTeilnahme.choices,
+        default=StatutPaiementTeilnahme.SANS_FRAIS,
+    )
+    confirmee_par = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tippspiel_paiements_confirmes",
+    )
+    confirmee_le = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = TippspielTeilnahmeManager()
+
+    class Meta:
+        db_table = "communaute_tippspiel_teilnahmen"
+        verbose_name = _("Participation Tippspiel")
+        verbose_name_plural = _("Participations Tippspiel")
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tippspiel", "membre"], name="tippspiel_teilnahme_membre_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.membre} — {self.tippspiel.titre}"
+
+    @property
+    def est_confirmee(self) -> bool:
+        return self.statut_paiement in (
+            StatutPaiementTeilnahme.SANS_FRAIS,
+            StatutPaiementTeilnahme.CONFIRMEE,
+        )
+
+
+class TippspielTip(models.Model):
+    """Le pronostic d'un membre pour UNE rencontre — score exact prédit. `points` reste
+    NULL tant que la rencontre n'est pas terminée ; recalculé après chaque
+    synchronisation GOAL API (voir services.py::recalculer_points_tippspiel, appelé
+    depuis synchroniser_donnees_football), jamais en direct ("Score Update muss nicht
+    live sein, sondern nur nachdem Update der Daten aus der API", retour utilisateur).
+    Modifiable jusqu'à la date-limite (1 jour avant le coup d'envoi, voir
+    TippspielTipSerializer.validate) — au-delà, le serializer refuse toute
+    création/modification, la ligne devient de facto en lecture seule."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    teilnahme = models.ForeignKey(
+        TippspielTeilnahme, on_delete=models.CASCADE, related_name="tipps"
+    )
+    rencontre = models.ForeignKey(
+        RencontreCalendrier, on_delete=models.CASCADE, related_name="tippspiel_tipps"
+    )
+    score_domicile = models.PositiveSmallIntegerField()
+    score_exterieur = models.PositiveSmallIntegerField()
+    points = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    maj_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_tippspiel_tipps"
+        verbose_name = _("Pronostic Tippspiel")
+        verbose_name_plural = _("Pronostics Tippspiel")
+        ordering = ["rencontre__date_heure"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["teilnahme", "rencontre"], name="tippspiel_tip_rencontre_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.teilnahme.membre} — {self.score_domicile}:{self.score_exterieur}"
 
 
 # ---------------------------------------------------------------------------

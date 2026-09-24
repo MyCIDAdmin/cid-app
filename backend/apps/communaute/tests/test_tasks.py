@@ -84,9 +84,19 @@ def test_synchroniser_donnees_football_relaie_le_resultat_du_service(monkeypatch
     monkeypatch.setattr(
         tasks_module.services,
         "synchroniser_donnees_football",
-        lambda: {"classement": 3, "calendrier": 5, "statistiques_joueurs": 7},
+        lambda: {
+            "classement": 3,
+            "calendrier": 5,
+            "statistiques_joueurs": 7,
+            "tippspiel_points_maj": 2,
+        },
     )
 
     resultat = synchroniser_donnees_football()
 
-    assert resultat == {"classement": 3, "calendrier": 5, "statistiques_joueurs": 7}
+    assert resultat == {
+        "classement": 3,
+        "calendrier": 5,
+        "statistiques_joueurs": 7,
+        "tippspiel_points_maj": 2,
+    }

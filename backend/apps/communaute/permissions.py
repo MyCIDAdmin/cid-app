@@ -250,17 +250,13 @@ class AlbumPermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         if view.action == "create":
-            return has_admin_page_access(
-                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
-            )
+            return has_admin_page_access(user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action in ("update", "partial_update", "destroy"):
-            return has_admin_page_access(
-                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
-            )
+            return has_admin_page_access(user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE)
         return True
 
 
@@ -282,17 +278,13 @@ class PhotoPermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         if view.action in ("create", "masquer"):
-            return has_admin_page_access(
-                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
-            )
+            return has_admin_page_access(user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action == "masquer":
-            return has_admin_page_access(
-                user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE
-            )
+            return has_admin_page_access(user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE)
         if view.action in ("update", "partial_update", "destroy"):
             membre = _membre_de(user)
             est_proprietaire = membre is not None and obj.membre_id == membre.id
@@ -332,15 +324,89 @@ class QuizPermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         if view.action in ("create", "update", "partial_update", "destroy"):
-            return has_admin_page_access(
-                user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE
-            )
+            return has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action in ("update", "partial_update", "destroy"):
-            return has_admin_page_access(
-                user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE
-            )
+            return has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE)
         return True
+
+
+# ---------------------------------------------------------------------------
+# Tippspiel (pronostics Ligue 1) — quatrième lot, ajouté le 2026-09-24. Seuils plats
+# (pas de matrice RBAC par page, décision cohérente avec MatchPermission/
+# MatchEvenementPermission ci-dessus) : décisions utilisateur explicites (AskUserQuestion
+# du 2026-09-24) — gestion du jeu réservée à l'Administrateur App (`super_admin`, PAS
+# seulement Bureau Admin+ comme pour Live Match : "Nur der App Admin kann das Spiel
+# einstellen"), confirmation de paiement réservée au Directeur Financier+.
+# ---------------------------------------------------------------------------
+
+SUPER_ADMIN_MIN_LEVEL = ROLE_LEVELS[Role.SUPER_ADMIN]
+DIR_FINANCIER_MIN_LEVEL = ROLE_LEVELS[Role.DIR_FINANCIER]
+
+
+class TippspielPermission(BasePermission):
+    """Lecture (list/retrieve) : tout authentifié — un Tippspiel `brouillon` n'est
+    cependant retourné qu'à l'Administrateur App, filtré dans
+    `TippspielViewSet.get_queryset` ("Anzeigbar nachdem es eingestellt und
+    veröffentlicht wird", retour utilisateur) ; ce contrôle-ci ne porte donc que sur
+    l'écriture. Créer/modifier/supprimer (y compris définir les lots imbriqués, voir
+    TippspielSerializer) : Administrateur App (`super_admin`) exclusivement — seuil
+    plus strict que `MODERATION_MIN_LEVEL` (Bureau Admin+) utilisé ailleurs dans ce
+    module, décision utilisateur explicite ("Nur der App Admin kann das Spiel
+    einstellen")."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if view.action in ("create", "update", "partial_update", "destroy"):
+            return ROLE_LEVELS.get(user.role, 0) >= SUPER_ADMIN_MIN_LEVEL
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if view.action in ("update", "partial_update", "destroy"):
+            return ROLE_LEVELS.get(user.role, 0) >= SUPER_ADMIN_MIN_LEVEL
+        return True
+
+
+class TippspielTeilnahmePermission(BasePermission):
+    """`teilnehmen` (rejoindre un Tippspiel) et `list` (classement, lecture seule — ne
+    contient jamais les pronostics d'autrui, uniquement membre+total de points, voir
+    TippspielTeilnahmeSerializer) : tout authentifié — "Jeder Mitglied kann daran
+    teilnehmen" (retour utilisateur). `confirmer-paiement` : Directeur Financier+
+    exclusivement ("bestätigt vom Finanzdirektor", retour utilisateur)."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if view.action == "confirmer_paiement":
+            return ROLE_LEVELS.get(user.role, 0) >= DIR_FINANCIER_MIN_LEVEL
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if view.action == "confirmer_paiement":
+            return ROLE_LEVELS.get(user.role, 0) >= DIR_FINANCIER_MIN_LEVEL
+        return True
+
+
+class TippspielTipPermission(BasePermission):
+    """Un membre gère STRICTEMENT ses propres pronostics — jamais ceux d'autrui, y
+    compris en lecture (éviter qu'un participant consulte/copie le pronostic d'un autre
+    avant la date-limite d'un match, ce qui viderait le jeu de son intérêt).
+    `TippspielTipViewSet.get_queryset` filtre déjà sur
+    `teilnahme__membre=request.user.membre` ; ce contrôle objet est une deuxième ligne
+    de défense (IDOR, CLAUDE.md §8)."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        membre = _membre_de(request.user)
+        return membre is not None and obj.teilnahme.membre_id == membre.id

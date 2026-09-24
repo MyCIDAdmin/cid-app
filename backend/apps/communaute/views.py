@@ -39,7 +39,8 @@ normaux ne sont volontairement PAS audités (pas plus que pour la Boutique), pou
 journaliser l'activité sociale ordinaire des membres (minimisation RGPD, même doc §résumé).
 """
 
-from django.db.models import Q
+from django.db.models import Q, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -81,11 +82,18 @@ from .models import (
     ReponseForum,
     ReponseQuiz,
     StatistiqueJoueur,
+    StatutPaiementTeilnahme,
+    StatutTippspiel,
     Sujet,
+    Tippspiel,
+    TippspielTeilnahme,
+    TippspielTip,
 )
 from .notifications import notifier_nouveau_commentaire_fil, notifier_nouvelle_reponse_forum
 from .permissions import (
+    DIR_FINANCIER_MIN_LEVEL,
     MODERATION_MIN_LEVEL,
+    SUPER_ADMIN_MIN_LEVEL,
     AlbumPermission,
     ContenuCommunautePermission,
     ConversationPermission,
@@ -99,6 +107,9 @@ from .permissions import (
     PhotoCommentairePermission,
     PhotoPermission,
     QuizPermission,
+    TippspielPermission,
+    TippspielTeilnahmePermission,
+    TippspielTipPermission,
 )
 from .serializers import (
     AlbumSerializer,
@@ -124,6 +135,9 @@ from .serializers import (
     ReponseQuizSerializer,
     StatistiqueJoueurSerializer,
     SujetSerializer,
+    TippspielSerializer,
+    TippspielTeilnahmeSerializer,
+    TippspielTipSerializer,
     nom_affiche_utilisateur,
 )
 
@@ -861,6 +875,165 @@ class MatchEvenementViewSet(
                 },
             },
         )
+
+
+# ---------------------------------------------------------------------------
+# Tippspiel (pronostics Ligue 1) — voir docstring de tête models.py, section Tippspiel.
+# ---------------------------------------------------------------------------
+
+
+class TippspielCursorPagination(CursorPagination):
+    ordering = ("-created_at", "id")
+
+
+class TippspielTeilnahmeCursorPagination(CursorPagination):
+    ordering = ("-total_points", "id")
+
+
+class TippspielTipCursorPagination(CursorPagination):
+    ordering = ("rencontre__date_heure", "id")
+
+
+class TippspielViewSet(viewsets.ModelViewSet):
+    """Le jeu de pronostics lui-même — CRUD réservé à l'Administrateur App (voir
+    TippspielPermission). Lecture ouverte à tout authentifié mais FILTRÉE : un membre
+    standard ne voit jamais un Tippspiel encore `brouillon` ("Anzeigbar nachdem es
+    eingestellt und veröffentlicht wird", retour utilisateur) — seul l'Administrateur
+    App (qui a créé/édite le brouillon) voit tout. `teilnehmen` : rejoindre le jeu, tout
+    authentifié (voir TippspielPermission.has_permission, "teilnehmen" n'est pas une
+    action d'écriture du jeu lui-même donc déjà ouverte à tous)."""
+
+    serializer_class = TippspielSerializer
+    permission_classes = [TippspielPermission]
+    pagination_class = TippspielCursorPagination
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        qs = Tippspiel.objects.prefetch_related("prix").select_related("created_by")
+        user = self.request.user
+        if ROLE_LEVELS.get(user.role, 0) >= SUPER_ADMIN_MIN_LEVEL:
+            return qs
+        return qs.exclude(statut=StatutTippspiel.BROUILLON)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=["post"])
+    def teilnehmen(self, request, pk=None):
+        tippspiel = self.get_object()
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            raise ValidationError("Aucune fiche membre associée à ce compte.")
+        if tippspiel.statut != StatutTippspiel.PUBLIE:
+            raise ValidationError("Ce Tippspiel n'est pas (ou plus) ouvert aux inscriptions.")
+        teilnahme, _cree = TippspielTeilnahme.objects.rejoindre(tippspiel, membre)
+        return Response(
+            TippspielTeilnahmeSerializer(teilnahme, context=self.get_serializer_context()).data
+        )
+
+
+class TippspielTeilnahmeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Classement (participations CONFIRMÉES d'un Tippspiel, annotées de leur total de
+    points) — filtré par `?tippspiel=<id>` (requis). `?mine=true` bascule sur la
+    participation du membre courant quel que soit son statut de paiement, pour afficher
+    "en attente de confirmation" côté frontend ("Eine Tabelle zeigt alle Teilnehmer",
+    retour utilisateur — mais seules les inscriptions confirmées y figurent, voir
+    docstring de tête TippspielTeilnahme dans models.py). `?statut_paiement=en_attente` :
+    liste (toutes membres confondus) des paiements à confirmer — réservée Directeur
+    Financier+ (contrôle explicite dans `get_queryset`, IDOR sinon puisque
+    `TippspielTeilnahmePermission.has_permission` ne gate que `confirmer_paiement` ;
+    CLAUDE.md §8), alimente l'écran de confirmation ("bestätigt vom Finanzdirektor",
+    retour utilisateur — jusqu'ici aucun endpoint ne permettait de RETROUVER les
+    paiements en attente, seulement de confirmer un id déjà connu). `confirmer-paiement` :
+    Directeur Financier+ uniquement, voir TippspielTeilnahmePermission."""
+
+    serializer_class = TippspielTeilnahmeSerializer
+    permission_classes = [TippspielTeilnahmePermission]
+    pagination_class = TippspielTeilnahmeCursorPagination
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_queryset(self):
+        # `total_points` toujours annoté : le serializer le lit comme un champ ordinaire
+        # (IntegerField), pas un SerializerMethodField — le laisser absent ferait échouer
+        # la sérialisation, y compris pour un accès détail (ex. `confirmer-paiement`).
+        qs = TippspielTeilnahme.objects.select_related("membre").annotate(
+            total_points=Coalesce(Sum("tipps__points"), 0)
+        )
+        # Le filtre `?tippspiel=` (requis) ne s'applique qu'au `list` : une action détail
+        # (ex. `confirmer-paiement`) identifie déjà la participation exacte via `pk`, et
+        # exiger `?tippspiel=` en plus casserait ces actions pour tout appelant qui ne
+        # passe pas ce paramètre redondant (cf. NoReverseMatch/400 rencontré en test).
+        if self.action != "list":
+            return qs
+        tippspiel_id = self.request.query_params.get("tippspiel")
+        if not tippspiel_id:
+            raise ValidationError({"tippspiel": "Ce paramètre est requis."})
+        qs = qs.filter(tippspiel_id=tippspiel_id)
+        if self.request.query_params.get("mine") == "true":
+            membre = getattr(self.request.user, "membre", None)
+            return qs.filter(membre=membre) if membre is not None else qs.none()
+        if self.request.query_params.get("statut_paiement") == "en_attente":
+            user = self.request.user
+            if ROLE_LEVELS.get(user.role, 0) < DIR_FINANCIER_MIN_LEVEL:
+                raise PermissionDenied(
+                    "Réservé au Directeur Financier pour la confirmation des paiements."
+                )
+            return qs.filter(statut_paiement=StatutPaiementTeilnahme.EN_ATTENTE).order_by(
+                "created_at"
+            )
+        return qs.filter(
+            statut_paiement__in=[
+                StatutPaiementTeilnahme.SANS_FRAIS,
+                StatutPaiementTeilnahme.CONFIRMEE,
+            ]
+        ).order_by("-total_points", "created_at")
+
+    @action(detail=True, methods=["post"], url_path="confirmer-paiement")
+    def confirmer_paiement(self, request, pk=None):
+        teilnahme = self.get_object()
+        if teilnahme.statut_paiement == StatutPaiementTeilnahme.SANS_FRAIS:
+            raise ValidationError(
+                "Ce Tippspiel est gratuit — aucune confirmation de paiement n'est nécessaire."
+            )
+        if teilnahme.statut_paiement == StatutPaiementTeilnahme.CONFIRMEE:
+            raise ValidationError("Ce paiement est déjà confirmé.")
+        teilnahme.statut_paiement = StatutPaiementTeilnahme.CONFIRMEE
+        teilnahme.confirmee_par = request.user
+        teilnahme.confirmee_le = timezone.now()
+        teilnahme.save(update_fields=["statut_paiement", "confirmee_par", "confirmee_le"])
+        return Response(
+            TippspielTeilnahmeSerializer(teilnahme, context=self.get_serializer_context()).data
+        )
+
+
+class TippspielTipViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Un membre gère STRICTEMENT ses propres pronostics — `get_queryset` filtre
+    toujours sur `teilnahme__membre=request.user.membre` ; aucun `?membre=` ou
+    équivalent exposé au client (IDOR, voir TippspielTipPermission pour le contrôle
+    objet en deuxième ligne de défense, CLAUDE.md §8). Filtrable par `?tippspiel=<id>`.
+    Points/date-limite/périmètre Ligue 1 toujours recalculés/validés côté serveur (voir
+    TippspielTipSerializer, services.py::recalculer_points_tippspiel) — jamais fait
+    confiance au frontend."""
+
+    serializer_class = TippspielTipSerializer
+    permission_classes = [TippspielTipPermission]
+    pagination_class = TippspielTipCursorPagination
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_queryset(self):
+        membre = getattr(self.request.user, "membre", None)
+        if membre is None:
+            return TippspielTip.objects.none()
+        qs = TippspielTip.objects.filter(teilnahme__membre=membre).select_related("rencontre")
+        tippspiel_id = self.request.query_params.get("tippspiel")
+        if tippspiel_id:
+            qs = qs.filter(teilnahme__tippspiel_id=tippspiel_id)
+        return qs
 
 
 class AlbumViewSet(viewsets.ModelViewSet):

@@ -346,6 +346,110 @@ export interface MatchEvenementPayload {
   description?: string;
 }
 
+// --- Tippspiel (pronostics Ligue 1) — voir backend apps.communaute.models, section
+// Tippspiel, ajouté le 2026-09-24 (retour utilisateur : barème de points fixe, périmètre
+// Club Africain/Ligue 1 uniquement, système de paiement autonome sans passerelle en
+// ligne — voir docstrings backend pour le détail complet des règles métier). ---
+
+/** `brouillon` : créé mais pas encore visible des membres standard (voir
+ * TippspielViewSet.get_queryset côté backend — un membre standard ne reçoit jamais un
+ * Tippspiel `brouillon`, ce statut n'apparaît donc en pratique que pour l'Administrateur
+ * App). `publie` : visible et ouvert à la participation. `cloture` : terminé, classement
+ * final consultable en lecture seule. */
+export type StatutTippspiel = "brouillon" | "publie" | "cloture";
+
+export type TypePrixTippspiel = "produit" | "montant_fixe" | "pourcentage";
+
+export type StatutPaiementTeilnahme = "sans_frais" | "en_attente" | "confirmee";
+
+export interface TippspielPrix {
+  id: string;
+  platz: number;
+  type_prix: TypePrixTippspiel;
+  /** Renseigné uniquement si `type_prix === "produit"` — id d'un `Produit` de la Boutique. */
+  produit: string | null;
+  /** Renseigné uniquement si `type_prix === "montant_fixe"`. */
+  montant: string | null;
+  /** Renseigné uniquement si `type_prix === "pourcentage"` (0-100), pourcentage de la
+   * cagnotte totale (somme des participations confirmées) — calculé à l'affichage côté
+   * backend, jamais stocké en dur. */
+  pourcentage: string | null;
+}
+
+export interface TippspielPrixPayload {
+  platz: number;
+  type_prix: TypePrixTippspiel;
+  produit?: string;
+  montant?: string;
+  pourcentage?: string;
+}
+
+/** `montant_participation` vide/absent = jeu gratuit ("Kann auch ein prozentuale Teil vom
+ * gesamt Teilnahme Beitrag sein", retour utilisateur — voir aussi `TippspielPrix`).
+ * Création/édition réservée à l'Administrateur App (`super_admin`), voir
+ * TippspielPermission côté backend. */
+export interface Tippspiel {
+  id: string;
+  titre: string;
+  saison: string;
+  /** Affiché aux membres comme rappel du barème de points ("Spielregeln als Hint zur
+   * Verfügung stellen", retour utilisateur). */
+  regles: string;
+  statut: StatutTippspiel;
+  montant_participation: string | null;
+  prix: TippspielPrix[];
+  created_by_nom: string;
+  created_at: string;
+  maj_le: string;
+}
+
+export interface TippspielPayload {
+  titre: string;
+  saison: string;
+  regles?: string;
+  statut?: StatutTippspiel;
+  montant_participation?: string | null;
+  prix?: TippspielPrixPayload[];
+}
+
+/** Une ligne du classement (participation confirmée) OU l'état de sa propre inscription
+ * (`?mine=true`) OU une ligne en attente de confirmation de paiement
+ * (`?statut_paiement=en_attente`, Directeur Financier+ uniquement) — voir
+ * TippspielTeilnahmeViewSet côté backend pour le détail des trois usages de ce même
+ * serializer. `total_points` toujours annoté côté backend (0 par défaut). */
+export interface TippspielTeilnahme {
+  id: string;
+  tippspiel: string;
+  membre_nom: string;
+  statut_paiement: StatutPaiementTeilnahme;
+  confirmee_le: string | null;
+  created_at: string;
+  total_points: number;
+}
+
+/** Le pronostic d'un membre pour une rencontre — `points` reste `null` tant que la
+ * rencontre n'est pas terminée (recalculé après chaque synchronisation GOAL API, jamais
+ * en direct : "Score Update muss nicht live sein", retour utilisateur). Modifiable
+ * jusqu'à la date-limite (1 jour avant le coup d'envoi) — au-delà le backend refuse toute
+ * création/modification (voir TippspielTipSerializer.validate). */
+export interface TippspielTip {
+  id: string;
+  rencontre: string;
+  rencontre_infos: RencontreCalendrier;
+  score_domicile: number;
+  score_exterieur: number;
+  points: number | null;
+  created_at: string;
+  maj_le: string;
+}
+
+export interface TippspielTipPayload {
+  tippspiel: string;
+  rencontre: string;
+  score_domicile: number;
+  score_exterieur: number;
+}
+
 // --- Albums photos ---
 
 /** `evenement` est en lecture seule côté API (voir AlbumSerializer.get_evenement côté

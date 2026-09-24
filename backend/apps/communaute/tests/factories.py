@@ -33,9 +33,16 @@ from apps.communaute.models import (
     ReponseQuiz,
     StatistiqueJoueur,
     StatutMatch,
+    StatutPaiementTeilnahme,
+    StatutTippspiel,
     Sujet,
+    Tippspiel,
+    TippspielPrix,
+    TippspielTeilnahme,
+    TippspielTip,
     TypeEvenementMatch,
     TypeGroupe,
+    TypePrixTippspiel,
     TypeReactionMatch,
 )
 from apps.membres.tests.factories import MembreFactory
@@ -334,3 +341,44 @@ class MatchEvenementFactory(DjangoModelFactory):
     equipe = EquipeEvenement.CA
     joueur = "Joueur de test"
     created_by = factory.SubFactory(UserFactory)
+
+
+class TippspielFactory(DjangoModelFactory):
+    class Meta:
+        model = Tippspiel
+
+    titre = factory.Sequence(lambda n: f"Tippspiel {n}")
+    saison = "2026-2027"
+    regles = "4 points résultat exact, 2 points tordifférence, 1 point tendance."
+    statut = StatutTippspiel.PUBLIE
+    montant_participation = None
+    created_by = factory.SubFactory(UserFactory)
+
+
+class TippspielPrixFactory(DjangoModelFactory):
+    class Meta:
+        model = TippspielPrix
+
+    tippspiel = factory.SubFactory(TippspielFactory)
+    platz = 1
+    type_prix = TypePrixTippspiel.MONTANT_FIXE
+    montant = "50.00"
+
+
+class TippspielTeilnahmeFactory(DjangoModelFactory):
+    class Meta:
+        model = TippspielTeilnahme
+
+    tippspiel = factory.SubFactory(TippspielFactory)
+    membre = factory.SubFactory(MembreFactory)
+    statut_paiement = StatutPaiementTeilnahme.SANS_FRAIS
+
+
+class TippspielTipFactory(DjangoModelFactory):
+    class Meta:
+        model = TippspielTip
+
+    teilnahme = factory.SubFactory(TippspielTeilnahmeFactory)
+    rencontre = factory.SubFactory(RencontreCalendrierFactory, competition="Ligue 1")
+    score_domicile = 2
+    score_exterieur = 1

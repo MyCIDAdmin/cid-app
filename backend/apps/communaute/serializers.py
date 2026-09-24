@@ -1,7 +1,10 @@
 """Serializers — app communaute, tous les lots (Fil d'actualité + Forum ; Messagerie +
 Groupes ; Live Match + Albums + Quiz — Phase 4B, voir docstring de tête models.py)."""
 
+from datetime import timedelta
+
 from django.db.models import Count
+from django.utils import timezone as django_timezone
 from rest_framework import serializers
 
 from apps.accounts.models import ROLE_LEVELS
@@ -33,7 +36,13 @@ from .models import (
     ReponseForum,
     ReponseQuiz,
     StatistiqueJoueur,
+    StatutRencontre,
     Sujet,
+    Tippspiel,
+    TippspielPrix,
+    TippspielTeilnahme,
+    TippspielTip,
+    TypePrixTippspiel,
     TypeReactionMatch,
 )
 from .permissions import MODERATION_MIN_LEVEL
@@ -854,3 +863,180 @@ class QuizSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data["created_by"] = self.context["request"].user
         return super().create(validated_data)
+
+
+# ---------------------------------------------------------------------------
+# Tippspiel (pronostics Ligue 1) — voir docstring de tête models.py, section Tippspiel,
+# pour le contexte complet (retour utilisateur du 2026-09-24).
+# ---------------------------------------------------------------------------
+
+
+class TippspielPrixSerializer(serializers.ModelSerializer):
+    """Un lot pour un rang du classement final — imbriqué en écriture dans
+    TippspielSerializer (jamais créé/modifié via un endpoint séparé)."""
+
+    class Meta:
+        model = TippspielPrix
+        fields = ["id", "platz", "type_prix", "produit", "montant", "pourcentage"]
+
+    def validate(self, attrs):
+        type_prix = attrs.get("type_prix")
+        if type_prix == TypePrixTippspiel.PRODUIT and not attrs.get("produit"):
+            raise serializers.ValidationError(
+                {"produit": "Un article boutique est requis pour ce type de lot."}
+            )
+        if type_prix == TypePrixTippspiel.MONTANT_FIXE and attrs.get("montant") is None:
+            raise serializers.ValidationError(
+                {"montant": "Un montant est requis pour ce type de lot."}
+            )
+        if type_prix == TypePrixTippspiel.POURCENTAGE and attrs.get("pourcentage") is None:
+            raise serializers.ValidationError(
+                {"pourcentage": "Un pourcentage est requis pour ce type de lot."}
+            )
+        return attrs
+
+
+class TippspielSerializer(serializers.ModelSerializer):
+    """Écriture réservée à l'Administrateur App (voir TippspielPermission) — les lots
+    (`prix`) sont définis à la création/modification en une seule requête imbriquée
+    ("Beim Erstellen des Spiels kann es möglich sein ... zu definieren", retour
+    utilisateur), jamais via un endpoint séparé : `create`/`update` remplacent
+    intégralement la liste des lots à chaque écriture (pas de PATCH partiel sur un lot
+    individuel — un Tippspiel encore en `brouillon` peut être réédité librement)."""
+
+    prix = TippspielPrixSerializer(many=True, required=False)
+    created_by_nom = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Tippspiel
+        fields = [
+            "id",
+            "titre",
+            "saison",
+            "regles",
+            "statut",
+            "montant_participation",
+            "prix",
+            "created_by_nom",
+            "created_at",
+            "maj_le",
+        ]
+        read_only_fields = ["id", "created_by_nom", "created_at", "maj_le"]
+
+    def get_created_by_nom(self, obj):
+        return getattr(obj.created_by, "email", "")
+
+    def create(self, validated_data):
+        # `created_by` arrive déjà dans validated_data (injecté par
+        # TippspielViewSet.perform_create via `serializer.save(created_by=...)`, même
+        # convention que QuizViewSet.perform_create) — jamais réinjecté ici, sous peine
+        # de "got multiple values for keyword argument 'created_by'".
+        prix_data = validated_data.pop("prix", [])
+        tippspiel = Tippspiel.objects.create(**validated_data)
+        for prix in prix_data:
+            TippspielPrix.objects.create(tippspiel=tippspiel, **prix)
+        return tippspiel
+
+    def update(self, instance, validated_data):
+        prix_data = validated_data.pop("prix", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        # Remplacement intégral plutôt qu'un diff fin (create/update/delete par id) —
+        # un Tippspiel `publie`/`cloture` n'a de toute façon plus vocation à voir ses
+        # lots réédités en pratique ; suffisant pour le cas d'usage réel (ajuster les
+        # lots d'un brouillon avant publication).
+        if prix_data is not None:
+            instance.prix.all().delete()
+            for prix in prix_data:
+                TippspielPrix.objects.create(tippspiel=instance, **prix)
+        return instance
+
+
+class TippspielTeilnahmeSerializer(serializers.ModelSerializer):
+    """Représente une ligne du classement (participation confirmée, voir action
+    `classement`) OU l'état de sa propre inscription (action `teilnehmen`/`?mine=true`,
+    voir TippspielTeilnahmeViewSet). `total_points` est annoté côté vue (somme des
+    points déjà notés de tous les pronostics de cette participation) — jamais recalculé
+    ici. Ne contient JAMAIS le détail des pronostics d'autrui (voir
+    TippspielTipPermission)."""
+
+    membre_nom = serializers.SerializerMethodField()
+    total_points = serializers.IntegerField(read_only=True, default=0)
+
+    class Meta:
+        model = TippspielTeilnahme
+        fields = [
+            "id",
+            "tippspiel",
+            "membre_nom",
+            "statut_paiement",
+            "confirmee_le",
+            "created_at",
+            "total_points",
+        ]
+        read_only_fields = fields
+
+    def get_membre_nom(self, obj):
+        return f"{obj.membre.prenom} {obj.membre.nom}".strip()
+
+
+class TippspielTipSerializer(serializers.ModelSerializer):
+    """Un membre gère STRICTEMENT ses propres pronostics (voir TippspielTipPermission).
+    `tippspiel` est write-only (sert uniquement à `create` pour retrouver/créer la
+    `TippspielTeilnahme` du membre courant, voir `TippspielTeilnahmeManager.rejoindre`)
+    — jamais de `teilnahme` brute acceptée en entrée (IDOR, CLAUDE.md §8). Validation de
+    périmètre et de date-limite dans `validate` : rencontre Ligue 1 de Club Africain,
+    pas déjà jouée/reportée/annulée, au moins 1 jour avant le coup d'envoi ("Frist der
+    Angabe der Tipps 1 Tag vor dem Spiel", retour utilisateur)."""
+
+    tippspiel = serializers.PrimaryKeyRelatedField(
+        queryset=Tippspiel.objects.all(), write_only=True
+    )
+    rencontre_infos = RencontreCalendrierSerializer(source="rencontre", read_only=True)
+
+    class Meta:
+        model = TippspielTip
+        fields = [
+            "id",
+            "tippspiel",
+            "rencontre",
+            "rencontre_infos",
+            "score_domicile",
+            "score_exterieur",
+            "points",
+            "created_at",
+            "maj_le",
+        ]
+        read_only_fields = ["id", "points", "created_at", "maj_le"]
+
+    def validate(self, attrs):
+        rencontre = attrs.get("rencontre") or getattr(self.instance, "rencontre", None)
+        if rencontre is None:
+            return attrs
+        if rencontre.competition != "Ligue 1":
+            raise serializers.ValidationError(
+                {"rencontre": "Les pronostics ne sont ouverts que pour les rencontres de Ligue 1."}
+            )
+        if rencontre.statut != StatutRencontre.PROGRAMMEE:
+            raise serializers.ValidationError(
+                {"rencontre": "Cette rencontre n'est plus ouverte aux pronostics."}
+            )
+        limite = rencontre.date_heure - timedelta(days=1)
+        if django_timezone.now() >= limite:
+            raise serializers.ValidationError(
+                {
+                    "rencontre": (
+                        "La date limite pour pronostiquer cette rencontre est dépassée "
+                        "(1 jour avant le coup d'envoi)."
+                    )
+                }
+            )
+        return attrs
+
+    def create(self, validated_data):
+        tippspiel = validated_data.pop("tippspiel")
+        request = self.context["request"]
+        membre = getattr(request.user, "membre", None)
+        teilnahme, _cree = TippspielTeilnahme.objects.rejoindre(tippspiel, membre)
+        return TippspielTip.objects.create(teilnahme=teilnahme, **validated_data)

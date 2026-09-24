@@ -436,14 +436,83 @@ def synchroniser_statistiques_joueurs() -> int:
     return _synchroniser_statistiques_joueurs_depuis(joueurs)
 
 
+def _points_tip(
+    tip_domicile: int, tip_exterieur: int, reel_domicile: int, reel_exterieur: int
+) -> int:
+    """Barème de points Tippspiel (retour utilisateur du 2026-09-24, voir docstring de
+    tête Tippspiel dans models.py) :
+      - Résultat exact (ex. tip 2:1, résultat 2:1) : 4 points.
+      - Tordifférence correcte AVEC vainqueur identique (ex. tip 2:0, résultat 3:1,
+        même différence +2 et même vainqueur) : 2 points. Règle explicitement limitée
+        aux victoires/défaites — un nul n'a pas de "vainqueur", voir ci-dessous.
+      - Tendance correcte seule (bon vainqueur/nul, différence ou score incorrects) :
+        1 point.
+      - Tendance incorrecte : 0 point.
+    Un nul correctement deviné (tendance=0 des deux côtés) mais avec un score exact
+    différent (ex. tip 0:0, résultat 1:1) ne peut recevoir que la règle "tendance" (1
+    point) : la règle "tordifférence" exige un vainqueur, qu'un nul n'a par définition
+    pas — sans ce garde-fou, un nul tomberait à tort dans la branche tordifférence
+    (différence de buts 0 des deux côtés)."""
+    if (tip_domicile, tip_exterieur) == (reel_domicile, reel_exterieur):
+        return 4
+
+    tendance_tip = (tip_domicile > tip_exterieur) - (tip_domicile < tip_exterieur)
+    tendance_reelle = (reel_domicile > reel_exterieur) - (reel_domicile < reel_exterieur)
+    if tendance_tip != tendance_reelle:
+        return 0
+    if tendance_tip == 0:
+        return 1
+    if (tip_domicile - tip_exterieur) == (reel_domicile - reel_exterieur):
+        return 2
+    return 1
+
+
+def recalculer_points_tippspiel() -> int:
+    """Recalcule `TippspielTip.points` pour tous les pronostics portant sur une
+    rencontre Ligue 1 de Club Africain déjà jouée (`RencontreCalendrier.statut=
+    TERMINEE`, score renseigné) — appelée après chaque synchronisation GOAL API (voir
+    `synchroniser_donnees_football` ci-dessous), jamais en direct ("Score Update muss
+    nicht live sein, sondern nur nachdem Update der Daten aus der API", retour
+    utilisateur). Recalcule TOUJOURS (pas seulement si `points` est encore NULL) pour
+    rester robuste à une correction de score tardive côté GOAL API — idempotent et bon
+    marché (quelques dizaines/centaines de lignes tout au plus). Retourne le nombre de
+    pronostics dont les points ont changé (0 si rien à recalculer, notamment tant
+    qu'aucun Tippspiel n'existe)."""
+    from .models import RencontreCalendrier, StatutRencontre, TippspielTip
+
+    rencontres_terminees = RencontreCalendrier.objects.filter(
+        statut=StatutRencontre.TERMINEE,
+        competition="Ligue 1",
+        score_domicile__isnull=False,
+        score_exterieur__isnull=False,
+    )
+    mis_a_jour = 0
+    for rencontre in rencontres_terminees:
+        for tip in TippspielTip.objects.filter(rencontre=rencontre):
+            points = _points_tip(
+                tip.score_domicile,
+                tip.score_exterieur,
+                rencontre.score_domicile,
+                rencontre.score_exterieur,
+            )
+            if tip.points != points:
+                tip.points = points
+                tip.save(update_fields=["points"])
+                mis_a_jour += 1
+    return mis_a_jour
+
+
 def synchroniser_donnees_football() -> dict:
     """Point d'entrée utilisé par tasks.py/Celery Beat — délègue à
     `synchroniser_classement()`/`synchroniser_calendrier()`/
-    `synchroniser_statistiques_joueurs()` (voir docstring de tête). Planifié via Celery
-    Beat, voir migrations/0007-0010 pour l'historique des fréquences (dernière en date :
-    migrations/0010, ajustée pour GOAL API)."""
+    `synchroniser_statistiques_joueurs()` (voir docstring de tête), puis recalcule les
+    points Tippspiel des rencontres Ligue 1 nouvellement terminées (voir
+    `recalculer_points_tippspiel`, ajouté le 2026-09-24 avec le module Tippspiel).
+    Planifié via Celery Beat, voir migrations/0007-0010 pour l'historique des
+    fréquences (dernière en date : migrations/0010, ajustée pour GOAL API)."""
     return {
         "classement": synchroniser_classement(),
         "calendrier": synchroniser_calendrier(),
         "statistiques_joueurs": synchroniser_statistiques_joueurs(),
+        "tippspiel_points_maj": recalculer_points_tippspiel(),
     }

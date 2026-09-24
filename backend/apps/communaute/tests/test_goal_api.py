@@ -226,6 +226,7 @@ def test_synchroniser_donnees_football_sans_cle_api_ne_fait_rien(settings, monke
         "classement": 0,
         "calendrier": 0,
         "statistiques_joueurs": 0,
+        "tippspiel_points_maj": 0,
     }
     assert appele == []
 
@@ -545,7 +546,15 @@ def test_synchroniser_donnees_football_combine_les_trois_synchronisations(settin
 
     resultat = services.synchroniser_donnees_football()
 
-    assert resultat == {"classement": 2, "calendrier": 2, "statistiques_joueurs": 2}
+    # tippspiel_points_maj=0 : aucun Tippspiel/TippspielTip en base dans ce test — voir
+    # test_recalculer_points_tippspiel_met_a_jour_les_pronostics_deja_joues ci-dessous
+    # pour le recalcul lui-même (module Tippspiel, ajouté le 2026-09-24).
+    assert resultat == {
+        "classement": 2,
+        "calendrier": 2,
+        "statistiques_joueurs": 2,
+        "tippspiel_points_maj": 0,
+    }
     assert ClassementLigue.objects.count() == 2
     assert RencontreCalendrier.objects.count() == 2
     assert StatistiqueJoueur.objects.count() == 2

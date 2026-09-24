@@ -15,6 +15,7 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useCreerMatch: vi.fn(),
     useClassementLigue: vi.fn(),
     useCalendrierRencontres: vi.fn(),
+    useTippspiele: vi.fn(),
   };
 });
 
@@ -69,6 +70,14 @@ describe("LiveMatchPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+    // TippspielSection (2026-09-24, onglet Ticker) : aucun jeu par défaut — un membre
+    // standard ne voit alors rien (voir TippspielSection.tsx), ce qui laisse les
+    // assertions existantes de ce fichier inchangées.
+    vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspiele>);
   });
 
   it("affiche la liste des matchs avec leur statut", () => {

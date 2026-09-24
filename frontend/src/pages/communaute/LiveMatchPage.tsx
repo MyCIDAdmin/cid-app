@@ -19,6 +19,7 @@ import { Link } from "react-router-dom";
 import CalendrierTab from "../../components/communaute/CalendrierTab";
 import ClassementTab from "../../components/communaute/ClassementTab";
 import StatistiquesTab from "../../components/communaute/StatistiquesTab";
+import TippspielSection from "../../components/communaute/TippspielSection";
 import { useCreerMatch, useMatchs } from "../../hooks/useCommunaute";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { StatutMatch } from "../../types/communaute";
@@ -202,6 +203,19 @@ export default function LiveMatchPage() {
                 </div>
               </Link>
             ))}
+          </div>
+
+          {/* Tippspiel (2026-09-24) — "zum Modul Fan-Club hinzufügen im Tab 'Ticker'",
+              retour utilisateur : placé sous la liste des matchs de ce même onglet plutôt
+              que dans un onglet séparé, voir TippspielSection pour le détail (règles,
+              inscription, pronostics, classement, gestion Administrateur App/Directeur
+              Financier). Ne s'affiche rien tant qu'aucun Tippspiel n'existe pour un membre
+              standard (voir TippspielSection). */}
+          <div className="mt-6 border-t border-text-tertiary/20 pt-4">
+            <h2 className="mb-3 text-sm font-bold uppercase text-text-tertiary">
+              {t("tippspiel.titre")}
+            </h2>
+            <TippspielSection />
           </div>
         </>
       )}

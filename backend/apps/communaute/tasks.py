@@ -139,9 +139,10 @@ def synchroniser_donnees_football():
     resultat = services.synchroniser_donnees_football()
     logger.info(
         "Synchronisation Fan-Club GOAL API : %s lignes de classement, %s rencontres, "
-        "%s statistiques joueurs.",
+        "%s statistiques joueurs, %s pronostics Tippspiel recalculés.",
         resultat["classement"],
         resultat["calendrier"],
         resultat["statistiques_joueurs"],
+        resultat["tippspiel_points_maj"],
     )
     return resultat
