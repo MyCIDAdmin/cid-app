@@ -26,6 +26,7 @@ import {
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { StatutTippspiel, Tippspiel } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import ShareButton from "../ui/ShareButton";
 import TippspielAdminForm from "./TippspielAdminForm";
 import TippspielTippAbgabe from "./TippspielTippAbgabe";
 
@@ -92,11 +93,19 @@ function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
                 : t("tippspiel.kostenlos")}
             </p>
           </div>
-          <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${BADGE_STATUT[tippspiel.statut]}`}
-          >
-            {t(`tippspiel.badge_${tippspiel.statut}`)}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${BADGE_STATUT[tippspiel.statut]}`}
+            >
+              {t(`tippspiel.badge_${tippspiel.statut}`)}
+            </span>
+            {/* Social-Media-Teilen (2026-09-24, Bug-Report "Es muss möglich sein, Tippspiel
+                in Social Media zu teilen") — `path="/live"` reicht : le Tippspiel vit dans
+                l'onglet "Ticker" du module Fan-Club, qui est l'onglet par défaut de
+                LiveMatchPage (pas de synchronisation d'onglet via l'URL, voir
+                LiveMatchPage.tsx), donc atterrir sur /live suffit à voir le Tippspiel. */}
+            <ShareButton path="/live" titre={tippspiel.titre} />
+          </div>
         </div>
 
         <details className="mt-2 text-sm">

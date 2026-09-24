@@ -192,6 +192,24 @@ describe("TippspielSection", () => {
     expect(screen.queryByText("tippspiel.teilnehmen_button")).not.toBeInTheDocument();
   });
 
+  it("propose de partager le Tippspiel en dehors de l'association", () => {
+    // Bug-Report 2026-09-24 : "Es muss möglich sein, Tippspiel in Social Media zu teilen".
+    vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
+      data: page([tippspiel()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspiele>);
+    vi.mocked(useCommunauteHooks.useTippspielTeilnahmen).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTeilnahmen>);
+
+    renderWithProviders(<TippspielSection />);
+
+    expect(screen.getByLabelText("partage.bouton_aria")).toBeInTheDocument();
+  });
+
   it("affiche le classement des participants confirmés", () => {
     vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
       data: page([tippspiel()]),
