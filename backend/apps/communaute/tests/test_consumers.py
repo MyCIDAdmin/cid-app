@@ -30,6 +30,7 @@ from apps.communaute.models import (
 from apps.communaute.routing import websocket_urlpatterns
 from apps.communaute.tests.factories import (
     GroupeChatFactory,
+    MatchEvenementFactory,
     MatchFactory,
     MembreGroupeFactory,
     user_membre_avec_fiche,
@@ -477,6 +478,39 @@ def test_mise_a_jour_du_score_par_lapi_rest_est_diffusee_au_websocket():
         recu = await communicator.receive_json_from()
         assert recu["type"] == "match"
         assert recu["score_ca"] == 1
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+    cache.clear()
+
+
+def test_ajout_dun_evenement_de_match_par_lapi_rest_est_diffuse_au_websocket():
+    """Module Fan-Club (2026-09-24) — même principe que le test ci-dessus pour
+    `match_update` : le journal d'événements du Live-Ticker (buts/cartons) est ajouté via
+    MatchEvenementViewSet (REST, Bureau Admin+), diffusé en direct via
+    `LiveMatchConsumer.match_evenement` (voir consumers.py)."""
+    _, m1 = user_membre_avec_fiche(email="live9@example.de")
+    match = MatchFactory()
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/live/{match.id}/", m1.user)
+        assert connected is True
+        await communicator.receive_json_from()  # présence
+
+        from channels.db import database_sync_to_async
+
+        from apps.communaute.views import MatchEvenementViewSet
+
+        evenement = await database_sync_to_async(MatchEvenementFactory)(
+            match=match, type_evenement="but", minute=45
+        )
+        await database_sync_to_async(MatchEvenementViewSet._broadcast_match_evenement)(evenement)
+
+        recu = await communicator.receive_json_from()
+        assert recu["type"] == "match_evenement"
+        assert recu["type_evenement"] == "but"
+        assert recu["minute"] == 45
 
         await communicator.disconnect()
 

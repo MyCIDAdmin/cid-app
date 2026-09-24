@@ -339,6 +339,19 @@ ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
+# Ajouté le 2026-09-24 — module "Fan-Club" (voir apps.communaute.services.thesportsdb) :
+# synchronisation périodique du classement/calendrier de Club Africain depuis l'API
+# gratuite TheSportsDB (compte Patreon gratuit requis pour obtenir une clé — aucune valeur
+# par défaut utilisable en production, tant que THESPORTSDB_API_KEY n'est pas définie le
+# service de synchronisation ne fait rien, voir services/thesportsdb.py). Jamais de secret
+# en dur dans le code (CLAUDE.md §8).
+THESPORTSDB_API_KEY = os.environ.get("THESPORTSDB_API_KEY", "")
+# Identifiant TheSportsDB de la "Tunisian Ligue Professionnelle 1" (championnat de Club
+# Africain) — configurable au cas où TheSportsDB le renumérote, sans toucher au code.
+THESPORTSDB_LEAGUE_ID = os.environ.get("THESPORTSDB_LEAGUE_ID", "4394")
+THESPORTSDB_SAISON = os.environ.get("THESPORTSDB_SAISON", "2025-2026")
+THESPORTSDB_EQUIPE = os.environ.get("THESPORTSDB_EQUIPE", "Club Africain")
+
 # =============================================================================
 # Passerelles de paiement (AHM-46) — Stripe Checkout et PayPal Checkout, tous deux hébergés
 # (voir apps.cotisations.gateways). Aucune valeur par défaut utilisable en production : tant que

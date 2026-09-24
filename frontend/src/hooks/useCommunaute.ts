@@ -8,6 +8,7 @@ import type {
   AlbumPayload,
   ChoixQuestionPayload,
   GroupeChatPayload,
+  MatchEvenementPayload,
   MatchMiseAJourPayload,
   MatchPayload,
   PhotoUploadPayload,
@@ -38,6 +39,10 @@ const communauteKeys = {
   match: (id: string) => [...communauteKeys.all, "match", id] as const,
   matchCommentaires: (matchId: string) =>
     [...communauteKeys.all, "match-commentaires", matchId] as const,
+  classement: () => [...communauteKeys.all, "classement"] as const,
+  calendrier: () => [...communauteKeys.all, "calendrier"] as const,
+  matchEvenements: (matchId: string) =>
+    [...communauteKeys.all, "match-evenements", matchId] as const,
   albums: (filtres: communauteApi.AlbumsFiltres = {}) =>
     [...communauteKeys.all, "albums", filtres] as const,
   album: (id: string) => [...communauteKeys.all, "album", id] as const,
@@ -241,8 +246,7 @@ export function useCreerConversation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (destinataire: string) => communauteApi.creerConversation(destinataire),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: communauteKeys.conversations() }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: communauteKeys.conversations() }),
   });
 }
 
@@ -409,6 +413,40 @@ export function useMatchCommentaires(matchId: string | undefined) {
     queryKey: communauteKeys.matchCommentaires(matchId ?? ""),
     queryFn: () => communauteApi.listMatchCommentaires(matchId as string),
     enabled: !!matchId,
+  });
+}
+
+// --- Fan-Club — classement/calendrier/événements (extension du Live Match, 2026-09-24) ---
+
+export function useClassementLigue() {
+  return useQuery({
+    queryKey: communauteKeys.classement(),
+    queryFn: () => communauteApi.listClassementLigue(),
+  });
+}
+
+export function useCalendrierRencontres() {
+  return useQuery({
+    queryKey: communauteKeys.calendrier(),
+    queryFn: () => communauteApi.listCalendrierRencontres(),
+  });
+}
+
+export function useMatchEvenements(matchId: string | undefined) {
+  return useQuery({
+    queryKey: communauteKeys.matchEvenements(matchId ?? ""),
+    queryFn: () => communauteApi.listMatchEvenements(matchId as string),
+    enabled: !!matchId,
+  });
+}
+
+export function useCreerMatchEvenement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: MatchEvenementPayload) => communauteApi.creerMatchEvenement(payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: communauteKeys.matchEvenements(variables.match) });
+    },
   });
 }
 
@@ -610,8 +648,7 @@ export function useCreerQuestionQuiz() {
 export function useSupprimerQuestionQuiz() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id }: { id: string; quizId: string }) =>
-      communauteApi.supprimerQuestionQuiz(id),
+    mutationFn: ({ id }: { id: string; quizId: string }) => communauteApi.supprimerQuestionQuiz(id),
     onSuccess: (_data, variables) => invalidateQuiz(queryClient, variables.quizId),
   });
 }

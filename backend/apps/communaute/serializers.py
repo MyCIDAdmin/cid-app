@@ -10,11 +10,13 @@ from apps.membres.models import Membre
 from .models import (
     Album,
     ChoixQuestion,
+    ClassementLigue,
     Commentaire,
     Conversation,
     GroupeChat,
     Match,
     MatchCommentaire,
+    MatchEvenement,
     MembreGroupe,
     MessageGroupe,
     MessagePrive,
@@ -27,6 +29,7 @@ from .models import (
     PublicationPartage,
     Quiz,
     QuestionQuiz,
+    RencontreCalendrier,
     ReponseForum,
     ReponseQuiz,
     Sujet,
@@ -499,6 +502,97 @@ class MatchCommentaireSerializer(serializers.ModelSerializer):
         model = MatchCommentaire
         fields = ["id", "match", "auteur", "contenu", "created_at"]
         read_only_fields = fields
+
+
+# ---------------------------------------------------------------------------
+# Fan-Club — extension du Live Match (2026-09-24, voir docstring de tête models.py)
+# ---------------------------------------------------------------------------
+
+
+class ClassementLigueSerializer(serializers.ModelSerializer):
+    """Lecture seule — toujours synchronisé depuis TheSportsDB, voir services.py."""
+
+    class Meta:
+        model = ClassementLigue
+        fields = [
+            "id",
+            "saison",
+            "equipe",
+            "rang",
+            "joues",
+            "victoires",
+            "nuls",
+            "defaites",
+            "buts_pour",
+            "buts_contre",
+            "difference",
+            "points",
+            "forme_recente",
+            "maj_le",
+        ]
+        read_only_fields = fields
+
+
+class RencontreCalendrierSerializer(serializers.ModelSerializer):
+    """Lecture seule — toujours synchronisé depuis TheSportsDB, voir services.py."""
+
+    est_a_venir = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = RencontreCalendrier
+        fields = [
+            "id",
+            "competition",
+            "equipe_domicile",
+            "equipe_exterieur",
+            "date_heure",
+            "score_domicile",
+            "score_exterieur",
+            "est_a_venir",
+            "maj_le",
+        ]
+        read_only_fields = fields
+
+
+def nom_affiche_utilisateur(user) -> str:
+    """Nom affichable pour un `accounts.User` (pas nécessairement lié à un
+    `membres.Membre` — un compte Bureau Admin+ créé via `createsuperuser` n'en a pas
+    forcément). Partagé entre `MatchEvenementSerializer` et la diffusion WebSocket
+    (voir views.py::MatchEvenementViewSet._broadcast_match_evenement), pour ne pas
+    dupliquer cette règle à deux endroits."""
+    membre = getattr(user, "membre", None)
+    if membre is not None:
+        return f"{membre.prenom} {membre.nom}"
+    return user.email
+
+
+class MatchEvenementSerializer(serializers.ModelSerializer):
+    """Journal d'événements du Live-Ticker (buts/cartons/etc.) — création réservée à
+    Bureau Admin+ (voir MatchEvenementPermission), diffusée en direct via
+    `LiveMatchConsumer` (voir views.py::MatchEvenementViewSet.perform_create).
+    `created_by_nom` en SerializerMethodField plutôt qu'un AuteurSerializer imbriqué :
+    `created_by` référence `accounts.User` (pas `membres.Membre`, contrairement à
+    `auteur` ailleurs dans ce module)."""
+
+    created_by_nom = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MatchEvenement
+        fields = [
+            "id",
+            "match",
+            "type_evenement",
+            "minute",
+            "equipe",
+            "joueur",
+            "description",
+            "created_by_nom",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_by_nom", "created_at"]
+
+    def get_created_by_nom(self, obj) -> str:
+        return nom_affiche_utilisateur(obj.created_by)
 
 
 # ---------------------------------------------------------------------------

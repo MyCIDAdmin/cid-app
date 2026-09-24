@@ -3,10 +3,12 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AlbumViewSet,
     ChoixQuestionViewSet,
+    ClassementLigueViewSet,
     CommentaireViewSet,
     ConversationViewSet,
     GroupeChatViewSet,
     MatchCommentaireViewSet,
+    MatchEvenementViewSet,
     MatchViewSet,
     MembreRechercheViewSet,
     MessageGroupeViewSet,
@@ -16,6 +18,7 @@ from .views import (
     PublicationViewSet,
     QuestionQuizViewSet,
     QuizViewSet,
+    RencontreCalendrierViewSet,
     ReponseForumViewSet,
     SujetViewSet,
 )
@@ -40,5 +43,8 @@ router.register("photo-commentaires", PhotoCommentaireViewSet, basename="photo-c
 router.register("quiz", QuizViewSet, basename="quiz")
 router.register("quiz-questions", QuestionQuizViewSet, basename="quiz-question")
 router.register("quiz-choix", ChoixQuestionViewSet, basename="quiz-choix")
+router.register("classement", ClassementLigueViewSet, basename="classement")
+router.register("calendrier", RencontreCalendrierViewSet, basename="calendrier")
+router.register("match-evenements", MatchEvenementViewSet, basename="match-evenement")
 
 urlpatterns = router.urls

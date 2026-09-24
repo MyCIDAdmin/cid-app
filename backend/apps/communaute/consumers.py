@@ -413,6 +413,14 @@ class LiveMatchConsumer(AsyncJsonWebsocketConsumer):
         # modérateur), voir docstring de tête.
         await self.send_json({"type": "match", **event["payload"]})
 
+    async def match_evenement(self, event):
+        # Module Fan-Club (2026-09-24) — diffusé depuis MatchEvenementViewSet (REST, ajout
+        # d'un but/carton par un modérateur), voir views.py
+        # ::MatchEvenementViewSet._broadcast_match_evenement. Même mécanisme REST -> WS que
+        # match_update ci-dessus, groupe séparé conceptuellement (payload différent) mais
+        # même canal `live_{match_id}`.
+        await self.send_json({"type": "match_evenement", **event["payload"]})
+
     # --- accès base de données ---
 
     @database_sync_to_async

@@ -657,6 +657,139 @@ class MatchReaction(models.Model):
 
 
 # ---------------------------------------------------------------------------
+# Fan-Club — extension du Live Match (2026-09-24, demande utilisateur : renommer
+# "Live-Spiel" en "Fan-Club" et ajouter classement/calendrier/statistiques réels de Club
+# Africain). Décision retenue (hybride, voir plan approuvé) : `ClassementLigue` et
+# `RencontreCalendrier` sont synchronisés automatiquement depuis l'API TheSportsDB (voir
+# services/thesportsdb.py) — aucune API gratuite ne fournissant de données live pour la
+# Ligue 1 tunisienne. Le Live-Ticker (score/chrono déjà géré par `Match` ci-dessus) reste
+# piloté par un modérateur (Bureau Admin+), et `MatchEvenement` ajoute un journal
+# d'événements (buts/cartons) diffusé en direct via `LiveMatchConsumer` — voir
+# consumers.py, `MatchEvenementPermission` reprend délibérément le même seuil plat
+# (`MODERATION_MIN_LEVEL`) que `MatchPermission`, sans passer par la matrice RBAC par
+# page (apps.rbac), pour rester cohérent avec l'exclusion déjà documentée de Live Match.
+# ---------------------------------------------------------------------------
+
+
+class ClassementLigue(models.Model):
+    """Une ligne de tableau de classement (une équipe, une saison) — synchronisée
+    périodiquement depuis TheSportsDB, jamais éditée manuellement (voir
+    services/thesportsdb.py::synchroniser_classement)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    saison = models.CharField(max_length=20, help_text=_('Ex. "2025-2026".'))
+    equipe = models.CharField(max_length=200)
+    rang = models.PositiveSmallIntegerField()
+    joues = models.PositiveSmallIntegerField(default=0)
+    victoires = models.PositiveSmallIntegerField(default=0)
+    nuls = models.PositiveSmallIntegerField(default=0)
+    defaites = models.PositiveSmallIntegerField(default=0)
+    buts_pour = models.PositiveSmallIntegerField(default=0)
+    buts_contre = models.PositiveSmallIntegerField(default=0)
+    difference = models.SmallIntegerField(default=0)
+    points = models.PositiveSmallIntegerField(default=0)
+    forme_recente = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text=_('Cinq derniers résultats, ex. "VVNDV" (le plus récent en dernier).'),
+    )
+
+    maj_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_classement_ligue"
+        verbose_name = _("Classement de ligue")
+        verbose_name_plural = _("Classements de ligue")
+        ordering = ["saison", "rang"]
+        constraints = [
+            models.UniqueConstraint(fields=["saison", "equipe"], name="classement_saison_equipe_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.rang}. {self.equipe} ({self.saison})"
+
+
+class RencontreCalendrier(models.Model):
+    """Un match du calendrier (passé ou à venir) synchronisé depuis TheSportsDB —
+    distinct de `Match` ci-dessus, qui reste réservé aux matchs pilotés en direct par un
+    modérateur (Live-Ticker). `thesportsdb_event_id` est la clé d'upsert idempotente."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    thesportsdb_event_id = models.CharField(max_length=50, unique=True)
+    competition = models.CharField(max_length=200, blank=True)
+    equipe_domicile = models.CharField(max_length=200)
+    equipe_exterieur = models.CharField(max_length=200)
+    date_heure = models.DateTimeField()
+    score_domicile = models.PositiveSmallIntegerField(null=True, blank=True)
+    score_exterieur = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    maj_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_calendrier_rencontres"
+        verbose_name = _("Rencontre au calendrier")
+        verbose_name_plural = _("Calendrier des rencontres")
+        ordering = ["date_heure"]
+        indexes = [models.Index(fields=["date_heure"])]
+
+    def __str__(self):
+        return f"{self.equipe_domicile} vs {self.equipe_exterieur} — {self.date_heure:%Y-%m-%d}"
+
+    @property
+    def est_a_venir(self) -> bool:
+        from django.utils import timezone
+
+        return self.date_heure >= timezone.now()
+
+
+class TypeEvenementMatch(models.TextChoices):
+    COUP_ENVOI = "coup_envoi", _("Coup d'envoi")
+    BUT = "but", _("But")
+    CARTON_JAUNE = "carton_jaune", _("Carton jaune")
+    CARTON_ROUGE = "carton_rouge", _("Carton rouge")
+    REMPLACEMENT = "remplacement", _("Remplacement")
+    MI_TEMPS = "mi_temps", _("Mi-temps")
+    FIN_MATCH = "fin_match", _("Fin du match")
+
+
+class EquipeEvenement(models.TextChoices):
+    CA = "ca", _("Club Africain")
+    ADVERSAIRE = "adversaire", _("Adversaire")
+
+
+class MatchEvenement(models.Model):
+    """Journal d'événements du Live-Ticker (buts/cartons/etc.) — saisi par un modérateur
+    (Bureau Admin+, voir MatchEvenementPermission), diffusé en direct via
+    `LiveMatchConsumer` (nouveau group handler `match_evenement`, voir consumers.py)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="evenements")
+    type_evenement = models.CharField(max_length=20, choices=TypeEvenementMatch.choices)
+    minute = models.PositiveSmallIntegerField()
+    equipe = models.CharField(max_length=10, choices=EquipeEvenement.choices, blank=True)
+    joueur = models.CharField(max_length=200, blank=True)
+    description = models.CharField(max_length=255, blank=True)
+
+    created_by = models.ForeignKey(
+        "accounts.User", on_delete=models.PROTECT, related_name="match_evenements_crees"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_match_evenements"
+        verbose_name = _("Événement de match")
+        verbose_name_plural = _("Événements de match")
+        ordering = ["minute", "created_at"]
+        indexes = [models.Index(fields=["match", "minute"])]
+
+    def __str__(self):
+        return f"{self.get_type_evenement_display()} {self.minute}' @ {self.match_id}"
+
+
+# ---------------------------------------------------------------------------
 # Albums photos (troisième lot, Phase 4B — voir docstring de tête)
 # ---------------------------------------------------------------------------
 

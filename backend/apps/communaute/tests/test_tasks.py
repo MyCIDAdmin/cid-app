@@ -7,7 +7,7 @@ GroupeChatConsumer déclenche bien l'appel `.delay()` correspondant."""
 import pytest
 
 from apps.accounts.models import User
-from apps.communaute.tasks import envoyer_notification_message_groupe
+from apps.communaute.tasks import envoyer_notification_message_groupe, synchroniser_donnees_football
 from apps.communaute.tests.factories import GroupeChatFactory, MembreGroupeFactory
 from apps.membres.tests.factories import MembreFactory
 from apps.notifications.models import Notification, TypeNotification
@@ -66,3 +66,20 @@ def test_auteur_introuvable_ne_leve_pas():
         envoyer_notification_message_groupe(str(groupe.id), "00000000-0000-0000-0000-000000000000")
         == 0
     )
+
+
+# ---------------------------------------------------------------------------
+# Fan-Club — synchroniser_donnees_football (2026-09-24, voir services.py pour le détail des
+# deux sous-fonctions déjà testées individuellement dans test_thesportsdb.py)
+# ---------------------------------------------------------------------------
+
+
+def test_synchroniser_donnees_football_agrege_les_deux_compteurs(monkeypatch):
+    from apps.communaute import tasks as tasks_module
+
+    monkeypatch.setattr(tasks_module.services, "synchroniser_classement", lambda: 3)
+    monkeypatch.setattr(tasks_module.services, "synchroniser_calendrier", lambda: 5)
+
+    resultat = synchroniser_donnees_football()
+
+    assert resultat == {"classement": 3, "calendrier": 5}

@@ -5,10 +5,12 @@ from apps.communaute.models import Conversation, extraire_hashtags
 from apps.communaute.tests.factories import (
     AlbumFactory,
     ChoixQuestionFactory,
+    ClassementLigueFactory,
     CommentaireFactory,
     ConversationFactory,
     GroupeChatFactory,
     MatchCommentaireFactory,
+    MatchEvenementFactory,
     MatchFactory,
     MatchReactionFactory,
     MembreGroupeFactory,
@@ -21,6 +23,7 @@ from apps.communaute.tests.factories import (
     PublicationFactory,
     QuestionQuizFactory,
     QuizFactory,
+    RencontreCalendrierFactory,
     ReponseForumFactory,
     ReponseQuizFactory,
     SujetFactory,
@@ -236,3 +239,46 @@ def test_participation_quiz_temps_total_secondes_calcule_une_fois_terminee():
     # `timezone.now()` importé ici uniquement pour rendre explicite que `terminee_le` est
     # bien un datetime aware (cohérence de fuseau horaire, USE_TZ=True) — pas utilisé au-delà.
     assert timezone.is_aware(participation.terminee_le)
+
+
+# ---------------------------------------------------------------------------
+# Fan-Club — extension du Live Match (2026-09-24)
+# ---------------------------------------------------------------------------
+
+
+def test_classement_ligue_unicite_par_saison_et_equipe():
+    ClassementLigueFactory(saison="2025-2026", equipe="Club Africain")
+    with pytest.raises(IntegrityError):
+        ClassementLigueFactory(saison="2025-2026", equipe="Club Africain")
+
+
+def test_classement_ligue_meme_equipe_saisons_differentes_autorise():
+    ClassementLigueFactory(saison="2024-2025", equipe="Club Africain")
+    # Ne doit pas lever — l'unicité porte sur (saison, equipe), pas sur equipe seule.
+    ClassementLigueFactory(saison="2025-2026", equipe="Club Africain")
+    assert ClassementLigueFactory._meta.model.objects.filter(equipe="Club Africain").count() == 2
+
+
+def test_rencontre_calendrier_thesportsdb_event_id_unique():
+    RencontreCalendrierFactory(thesportsdb_event_id="evt-1")
+    with pytest.raises(IntegrityError):
+        RencontreCalendrierFactory(thesportsdb_event_id="evt-1")
+
+
+def test_rencontre_calendrier_est_a_venir():
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    future = RencontreCalendrierFactory(date_heure=timezone.now() + timedelta(days=5))
+    passee = RencontreCalendrierFactory(date_heure=timezone.now() - timedelta(days=5))
+    assert future.est_a_venir is True
+    assert passee.est_a_venir is False
+
+
+def test_match_evenement_ordre_par_minute():
+    match = MatchFactory()
+    second = MatchEvenementFactory(match=match, minute=60)
+    premier = MatchEvenementFactory(match=match, minute=10)
+    ids = list(match.evenements.values_list("id", flat=True))
+    assert ids == [premier.id, second.id]

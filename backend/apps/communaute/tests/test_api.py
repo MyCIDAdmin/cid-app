@@ -20,10 +20,12 @@ from apps.communaute.models import (
 from apps.communaute.tests.factories import (
     AlbumFactory,
     ChoixQuestionFactory,
+    ClassementLigueFactory,
     CommentaireFactory,
     ConversationFactory,
     GroupeChatFactory,
     MatchCommentaireFactory,
+    MatchEvenementFactory,
     MatchFactory,
     MatchReactionFactory,
     MembreGroupeFactory,
@@ -34,6 +36,7 @@ from apps.communaute.tests.factories import (
     PublicationFactory,
     QuestionQuizFactory,
     QuizFactory,
+    RencontreCalendrierFactory,
     ReponseForumFactory,
     SujetFactory,
 )
@@ -1036,6 +1039,98 @@ def test_reactions_agregees_par_emoji_dans_le_detail_du_match(api_client):
     assert resp.data["reactions"]["coeur"] == 2
     assert resp.data["reactions"]["feu"] == 1
     assert resp.data["reactions"]["etoile"] == 0  # présent même à 0, voir serializer
+
+
+# --- Fan-Club (classement/calendrier/événements de match, module ajouté le 2026-09-24) ---
+
+CLASSEMENT_LIST_URL = "communaute:classement-list"
+CALENDRIER_LIST_URL = "communaute:calendrier-list"
+MATCH_EVENEMENT_LIST_URL = "communaute:match-evenement-list"
+
+
+def test_classement_lecture_ouverte_a_tout_authentifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc1@example.de")
+    ClassementLigueFactory(equipe="Club Africain", rang=1)
+    resp = _auth(api_client, user).get(reverse(CLASSEMENT_LIST_URL))
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["equipe"] == "Club Africain"
+
+
+def test_classement_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(CLASSEMENT_LIST_URL))
+    assert resp.status_code == 401
+
+
+def test_classement_lecture_seule_pas_de_creation_via_api(api_client):
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fc2@example.de")
+    resp = _auth(api_client, admin_user).post(
+        reverse(CLASSEMENT_LIST_URL), {"saison": "2025-2026", "equipe": "Club Africain", "rang": 1}
+    )
+    # Aucune action POST exposée (mixins.ListModelMixin seul) — toujours synchronisé
+    # depuis TheSportsDB, voir services.py.
+    assert resp.status_code == 405
+
+
+def test_calendrier_lecture_ouverte_a_tout_authentifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc3@example.de")
+    RencontreCalendrierFactory(equipe_domicile="Club Africain", equipe_exterieur="EST")
+    resp = _auth(api_client, user).get(reverse(CALENDRIER_LIST_URL))
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["equipe_exterieur"] == "EST"
+
+
+def test_match_evenements_necessite_le_parametre_match(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc4@example.de")
+    resp = _auth(api_client, user).get(reverse(MATCH_EVENEMENT_LIST_URL))
+    assert resp.status_code == 400
+
+
+def test_match_evenements_liste_lhistorique(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc5@example.de")
+    match = MatchFactory()
+    MatchEvenementFactory(match=match, type_evenement="but", minute=12)
+    resp = _auth(api_client, user).get(reverse(MATCH_EVENEMENT_LIST_URL), {"match": str(match.id)})
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["type_evenement"] == "but"
+    assert resp.data["results"][0]["minute"] == 12
+
+
+def test_creer_un_match_evenement_reserve_au_bureau_admin(api_client):
+    # IDOR/permission — un membre standard ne doit JAMAIS pouvoir ajouter un événement au
+    # Live-Ticker, même sur un match existant qu'il peut consulter (voir
+    # MatchEvenementPermission, même seuil que MatchPermission).
+    match = MatchFactory()
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc6@example.de")
+    payload = {"match": str(match.id), "type_evenement": "but", "minute": 34, "equipe": "ca"}
+    resp = _auth(api_client, user).post(reverse(MATCH_EVENEMENT_LIST_URL), payload)
+    assert resp.status_code == 403
+    assert match.evenements.count() == 0
+
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fc7@example.de")
+    resp = _auth(api_client, admin_user).post(reverse(MATCH_EVENEMENT_LIST_URL), payload)
+    assert resp.status_code == 201
+    assert resp.data["type_evenement"] == "but"
+    assert resp.data["minute"] == 34
+    assert match.evenements.count() == 1
+
+
+def test_creer_un_match_evenement_diffuse_au_groupe_websocket(api_client, monkeypatch):
+    # Même mécanisme REST -> WS que MatchViewSet._broadcast_match_update (voir
+    # test_consumers.py pour le test bout-en-bout côté consumer).
+    from apps.communaute import views as communaute_views
+
+    appels = []
+    monkeypatch.setattr(
+        communaute_views.MatchEvenementViewSet,
+        "_broadcast_match_evenement",
+        staticmethod(lambda evenement: appels.append(evenement)),
+    )
+    match = MatchFactory()
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fc8@example.de")
+    payload = {"match": str(match.id), "type_evenement": "carton_jaune", "minute": 55}
+    resp = _auth(api_client, admin_user).post(reverse(MATCH_EVENEMENT_LIST_URL), payload)
+    assert resp.status_code == 201
+    assert len(appels) == 1
 
 
 # --- Albums photos -------------------------------------------------------------------

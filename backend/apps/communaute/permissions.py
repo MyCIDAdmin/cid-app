@@ -176,6 +176,25 @@ class MatchPermission(BasePermission):
         return True
 
 
+class MatchEvenementPermission(BasePermission):
+    """Journal d'événements du Live-Ticker (module Fan-Club, 2026-09-24) — lecture (list)
+    ouverte à tout authentifié, comme `MatchCommentairePermission`. Création (`create`)
+    réservée à Bureau Admin+, EXACTEMENT le même seuil plat `MODERATION_MIN_LEVEL` que
+    `MatchPermission` — délibérément NON migré vers la matrice RBAC par page
+    (`apps.rbac.services.has_admin_page_access`), pour rester cohérent avec le Live Match
+    lui-même (voir docstring de tête models.py et le commentaire équivalent sur
+    MatchPermission ci-dessus). Aucune modification/suppression exposée pour l'instant (le
+    Live-Ticker est un journal d'événements, pas un historique éditable)."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if view.action == "create":
+            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return True
+
+
 class GestionQuizPermission(BasePermission):
     """CRUD des questions/choix (endpoints d'administration séparés, voir views.py) — page de
     gestion "Quiz-Verwaltung" (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.PAGES_ADMIN

@@ -152,7 +152,15 @@ export interface MessageGroupe {
 // --- Messages WebSocket (miroir de apps.communaute.consumers) ---
 
 export type MessagerieSocketMessage =
-  | { type: "message"; id: string; conversation: string; expediteur: string; contenu: string; est_lu: boolean; created_at: string }
+  | {
+      type: "message";
+      id: string;
+      conversation: string;
+      expediteur: string;
+      contenu: string;
+      est_lu: boolean;
+      created_at: string;
+    }
   | { type: "lu"; conversation: string; lu_par: string }
   // Diffusé par MessagePriveViewSet (REST, expéditeur uniquement — demande utilisateur du
   // 2026-09-16) via MessagerieConsumer.message_supprime, voir hooks/useMessagerieSocket.ts.
@@ -160,7 +168,14 @@ export type MessagerieSocketMessage =
   | { type: "erreur"; message: string };
 
 export type GroupeChatSocketMessage =
-  | { type: "message"; id: string; groupe: string; auteur: Auteur; contenu: string; created_at: string }
+  | {
+      type: "message";
+      id: string;
+      groupe: string;
+      auteur: Auteur;
+      contenu: string;
+      created_at: string;
+    }
   // Diffusé par MessageGroupeViewSet (REST, auteur uniquement) via
   // GroupeChatConsumer.message_supprime, voir hooks/useGroupeChatSocket.ts.
   | { type: "message_supprime"; id: string }
@@ -214,6 +229,77 @@ export interface MatchCommentaire {
   auteur: Auteur;
   contenu: string;
   created_at: string;
+}
+
+// --- Fan-Club — extension du Live Match (2026-09-24), miroir de
+// apps.communaute.models/serializers (ClassementLigue/RencontreCalendrier/MatchEvenement) ---
+
+/** Ligne de tableau de classement — toujours en lecture seule côté frontend, synchronisée
+ * périodiquement depuis TheSportsDB (voir backend apps.communaute.services). */
+export interface ClassementLigue {
+  id: string;
+  saison: string;
+  equipe: string;
+  rang: number;
+  joues: number;
+  victoires: number;
+  nuls: number;
+  defaites: number;
+  buts_pour: number;
+  buts_contre: number;
+  difference: number;
+  points: number;
+  forme_recente: string;
+  maj_le: string;
+}
+
+/** Une rencontre du calendrier (passée ou à venir) — distincte de `Match` ci-dessus, qui
+ * reste réservé aux matchs pilotés en direct par un modérateur (Live-Ticker). */
+export interface RencontreCalendrier {
+  id: string;
+  competition: string;
+  equipe_domicile: string;
+  equipe_exterieur: string;
+  date_heure: string;
+  score_domicile: number | null;
+  score_exterieur: number | null;
+  est_a_venir: boolean;
+  maj_le: string;
+}
+
+export type TypeEvenementMatch =
+  | "coup_envoi"
+  | "but"
+  | "carton_jaune"
+  | "carton_rouge"
+  | "remplacement"
+  | "mi_temps"
+  | "fin_match";
+
+export type EquipeEvenement = "ca" | "adversaire" | "";
+
+/** Journal d'événements du Live-Ticker (buts/cartons/etc.) — voir
+ * apps.communaute.models.MatchEvenement, diffusé en direct via LiveMatchConsumer. */
+export interface MatchEvenement {
+  id: string;
+  match: string;
+  type_evenement: TypeEvenementMatch;
+  minute: number;
+  equipe: EquipeEvenement;
+  joueur: string;
+  description: string;
+  created_by_nom: string;
+  created_at: string;
+}
+
+/** Payload de création — réservé Bureau Admin+ (voir MatchEvenementPermission). */
+export interface MatchEvenementPayload {
+  match: string;
+  type_evenement: TypeEvenementMatch;
+  minute: number;
+  equipe?: EquipeEvenement;
+  joueur?: string;
+  description?: string;
 }
 
 // --- Albums photos ---
@@ -375,4 +461,7 @@ export type LiveMatchSocketMessage =
       score_adversaire: number;
       minute_chrono: number;
     }
+  // Module Fan-Club (2026-09-24) — diffusé par MatchEvenementViewSet (REST, Bureau
+  // Admin+) via LiveMatchConsumer.match_evenement, voir hooks/useLiveMatchSocket.ts.
+  | ({ type: "match_evenement" } & MatchEvenement)
   | { type: "erreur"; message: string };

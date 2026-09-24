@@ -14,7 +14,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAuthStore } from "../store/authStore";
-import type { LiveMatchSocketMessage, ReactionsMatch, TypeReactionMatch } from "../types/communaute";
+import type {
+  LiveMatchSocketMessage,
+  ReactionsMatch,
+  TypeReactionMatch,
+} from "../types/communaute";
 
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000/ws";
 
@@ -26,6 +30,10 @@ export interface UseLiveMatchSocketResult {
   reactions: ReactionsMatch | null;
   connectes: number;
   miseAJourMatch: Extract<LiveMatchSocketMessage, { type: "match" }> | null;
+  // Module Fan-Club (2026-09-24) — événements du Live-Ticker (buts/cartons/etc.) reçus en
+  // direct, accumulés dans l'ordre d'arrivée (voir LiveMatchDetailPage pour la fusion avec
+  // l'historique REST initial, même principe que `commentaires` ci-dessus).
+  evenements: Extract<LiveMatchSocketMessage, { type: "match_evenement" }>[];
   erreur: string | null;
   envoyerCommentaire: (contenu: string) => void;
   envoyerReaction: (emoji: TypeReactionMatch) => void;
@@ -39,9 +47,13 @@ export function useLiveMatchSocket(matchId: string | undefined): UseLiveMatchSoc
   >([]);
   const [reactions, setReactions] = useState<ReactionsMatch | null>(null);
   const [connectes, setConnectes] = useState(0);
-  const [miseAJourMatch, setMiseAJourMatch] = useState<
-    Extract<LiveMatchSocketMessage, { type: "match" }> | null
-  >(null);
+  const [miseAJourMatch, setMiseAJourMatch] = useState<Extract<
+    LiveMatchSocketMessage,
+    { type: "match" }
+  > | null>(null);
+  const [evenements, setEvenements] = useState<
+    Extract<LiveMatchSocketMessage, { type: "match_evenement" }>[]
+  >([]);
   const [erreur, setErreur] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -54,6 +66,7 @@ export function useLiveMatchSocket(matchId: string | undefined): UseLiveMatchSoc
     setReactions(null);
     setConnectes(0);
     setMiseAJourMatch(null);
+    setEvenements([]);
 
     const url = `${WS_BASE_URL}/live/${matchId}/?token=${encodeURIComponent(accessToken)}`;
     const ws = new WebSocket(url);
@@ -80,6 +93,9 @@ export function useLiveMatchSocket(matchId: string | undefined): UseLiveMatchSoc
           break;
         case "match":
           setMiseAJourMatch(message);
+          break;
+        case "match_evenement":
+          setEvenements((precedents) => [...precedents, message]);
           break;
         case "erreur":
           setErreur(message.message);
@@ -118,6 +134,7 @@ export function useLiveMatchSocket(matchId: string | undefined): UseLiveMatchSoc
     reactions,
     connectes,
     miseAJourMatch,
+    evenements,
     erreur,
     envoyerCommentaire,
     envoyerReaction,

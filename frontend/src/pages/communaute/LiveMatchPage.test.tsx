@@ -9,7 +9,13 @@ import LiveMatchPage from "./LiveMatchPage";
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
-  return { ...actual, useMatchs: vi.fn(), useCreerMatch: vi.fn() };
+  return {
+    ...actual,
+    useMatchs: vi.fn(),
+    useCreerMatch: vi.fn(),
+    useClassementLigue: vi.fn(),
+    useCalendrierRencontres: vi.fn(),
+  };
 });
 
 const membre = {
@@ -53,6 +59,16 @@ describe("LiveMatchPage", () => {
     vi.mocked(useCommunauteHooks.useCreerMatch).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useCreerMatch>>(),
     );
+    vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
   });
 
   it("affiche la liste des matchs avec leur statut", () => {
@@ -117,5 +133,65 @@ describe("LiveMatchPage", () => {
       expect.objectContaining({ adversaire: "ES Tunis" }),
       expect.anything(),
     );
+  });
+
+  // --- Fan-Club — conteneur à onglets (2026-09-24) ---
+
+  it("affiche l'onglet Ticker par défaut et masque les autres contenus", () => {
+    vi.mocked(useCommunauteHooks.useMatchs).mockReturnValue({
+      data: page([match()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMatchs>);
+
+    renderWithProviders(<LiveMatchPage />);
+
+    expect(screen.getByText(/ES Tunis/)).toBeInTheDocument();
+    expect(screen.queryByText("live.classement_vide")).not.toBeInTheDocument();
+  });
+
+  it("bascule vers l'onglet Tabelle et masque le bouton de création de match", () => {
+    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: admin, isAuthenticated: true });
+    vi.mocked(useCommunauteHooks.useMatchs).mockReturnValue({
+      data: page([match()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMatchs>);
+
+    renderWithProviders(<LiveMatchPage />);
+
+    fireEvent.click(screen.getByText("live.onglet_tabelle"));
+
+    expect(screen.getByText("live.classement_vide")).toBeInTheDocument();
+    expect(screen.queryByText(/ES Tunis/)).not.toBeInTheDocument();
+    expect(screen.queryByText("live.nouveau_match")).not.toBeInTheDocument();
+  });
+
+  it("bascule vers l'onglet Spielplan", () => {
+    vi.mocked(useCommunauteHooks.useMatchs).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMatchs>);
+
+    renderWithProviders(<LiveMatchPage />);
+
+    fireEvent.click(screen.getByText("live.onglet_spielplan"));
+
+    expect(screen.getByText("live.calendrier_vide")).toBeInTheDocument();
+  });
+
+  it("bascule vers l'onglet Statistiken", () => {
+    vi.mocked(useCommunauteHooks.useMatchs).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMatchs>);
+
+    renderWithProviders(<LiveMatchPage />);
+
+    fireEvent.click(screen.getByText("live.onglet_statistiken"));
+
+    expect(screen.getByText("live.statistiques_vide")).toBeInTheDocument();
   });
 });

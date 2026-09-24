@@ -132,6 +132,33 @@ describe("useLiveMatchSocket", () => {
     await waitFor(() => expect(result.current.miseAJourMatch?.score_ca).toBe(2));
   });
 
+  // --- Fan-Club — journal d'événements du Live-Ticker (2026-09-24) ---
+
+  it("accumule les événements de match (buts/cartons) reçus", async () => {
+    const { result } = renderHook(() => useLiveMatchSocket("match-1"));
+    const ws = FakeWebSocket.instances[0];
+
+    act(() => {
+      ws.ouvrir();
+      ws.recevoir({
+        type: "match_evenement",
+        id: "e1",
+        match: "match-1",
+        type_evenement: "but",
+        minute: 23,
+        equipe: "ca",
+        joueur: "Hamza Jelassi",
+        description: "",
+        created_by_nom: "Admin CID",
+        created_at: "2026-01-01T10:23:00Z",
+      });
+    });
+
+    await waitFor(() => expect(result.current.evenements).toHaveLength(1));
+    expect(result.current.evenements[0].type_evenement).toBe("but");
+    expect(result.current.evenements[0].joueur).toBe("Hamza Jelassi");
+  });
+
   it("envoie {type: 'commentaire', contenu} au format attendu par le consumer", () => {
     const { result } = renderHook(() => useLiveMatchSocket("match-1"));
     const ws = FakeWebSocket.instances[0];

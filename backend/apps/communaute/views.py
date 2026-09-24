@@ -59,11 +59,13 @@ from .notifications import notifier_nouveau_commentaire_fil, notifier_nouvelle_r
 from .models import (
     Album,
     ChoixQuestion,
+    ClassementLigue,
     Commentaire,
     Conversation,
     GroupeChat,
     Match,
     MatchCommentaire,
+    MatchEvenement,
     MembreGroupe,
     MessageGroupe,
     MessagePrive,
@@ -76,6 +78,7 @@ from .models import (
     PublicationPartage,
     Quiz,
     QuestionQuiz,
+    RencontreCalendrier,
     ReponseForum,
     ReponseQuiz,
     Sujet,
@@ -88,6 +91,7 @@ from .permissions import (
     GestionQuizPermission,
     GroupeChatPermission,
     MatchCommentairePermission,
+    MatchEvenementPermission,
     MatchPermission,
     MessageGroupePermission,
     MessagePrivePermission,
@@ -99,10 +103,12 @@ from .serializers import (
     AlbumSerializer,
     AuteurSerializer,
     ChoixQuestionSerializer,
+    ClassementLigueSerializer,
     CommentaireSerializer,
     ConversationSerializer,
     GroupeChatSerializer,
     MatchCommentaireSerializer,
+    MatchEvenementSerializer,
     MatchSerializer,
     MessageGroupeSerializer,
     MessagePriveSerializer,
@@ -112,9 +118,11 @@ from .serializers import (
     PublicationSerializer,
     QuestionQuizSerializer,
     QuizSerializer,
+    RencontreCalendrierSerializer,
     ReponseForumSerializer,
     ReponseQuizSerializer,
     SujetSerializer,
+    nom_affiche_utilisateur,
 )
 
 
@@ -727,6 +735,103 @@ class MatchCommentaireViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             raise ValidationError({"match": "Ce paramètre est requis."})
         get_object_or_404(Match, pk=match_id)
         return MatchCommentaire.objects.filter(match_id=match_id).select_related("auteur")
+
+
+# ---------------------------------------------------------------------------
+# Fan-Club — extension du Live Match (2026-09-24) :
+#
+#   GET          /communaute/classement/            — tableau de classement (lecture seule,
+#                                                       synchronisé périodiquement, voir
+#                                                       apps.communaute.services.thesportsdb)
+#   GET          /communaute/calendrier/             — calendrier des rencontres (idem)
+#   GET          /communaute/match-evenements/?match= — journal d'événements du Live-Ticker
+#   POST         /communaute/match-evenements/        — ajouter un événement (Bureau Admin+),
+#                                                        diffusé en direct au groupe WebSocket
+#                                                        live_{match_id}
+# ---------------------------------------------------------------------------
+
+
+class ClassementCursorPagination(CursorPagination):
+    ordering = ("saison", "rang", "id")
+
+
+class CalendrierCursorPagination(CursorPagination):
+    ordering = ("date_heure", "id")
+
+
+class MatchEvenementCursorPagination(CursorPagination):
+    ordering = ("minute", "created_at", "id")
+
+
+class ClassementLigueViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py."""
+
+    serializer_class = ClassementLigueSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = ClassementCursorPagination
+    queryset = ClassementLigue.objects.all()
+
+
+class RencontreCalendrierViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py."""
+
+    serializer_class = RencontreCalendrierSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = CalendrierCursorPagination
+    queryset = RencontreCalendrier.objects.all()
+
+
+class MatchEvenementViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+    """Journal d'événements du Live-Ticker (buts/cartons/etc., module Fan-Club) — liste
+    filtrée par `?match=`, création réservée à Bureau Admin+ (voir
+    MatchEvenementPermission), diffusée en direct au groupe WebSocket `live_{match_id}`
+    (même mécanisme REST -> WS que `MatchViewSet._broadcast_match_update` ci-dessus)."""
+
+    serializer_class = MatchEvenementSerializer
+    permission_classes = [MatchEvenementPermission]
+    pagination_class = MatchEvenementCursorPagination
+
+    def get_queryset(self):
+        match_id = self.request.query_params.get("match")
+        if not match_id:
+            raise ValidationError({"match": "Ce paramètre est requis."})
+        get_object_or_404(Match, pk=match_id)
+        return MatchEvenement.objects.filter(match_id=match_id).select_related("created_by__membre")
+
+    def perform_create(self, serializer):
+        evenement = serializer.save(created_by=self.request.user)
+        self._broadcast_match_evenement(evenement)
+
+    @staticmethod
+    def _broadcast_match_evenement(evenement):
+        # Payload construit à la main (id/match en str, created_at en isoformat) plutôt que
+        # `MatchEvenementSerializer(evenement).data` brut : le groupe WebSocket sérialise en
+        # JSON (voir LiveMatchConsumer.match_evenement/send_json), qui ne sait pas encoder un
+        # UUID/datetime — même convention que `receive_json` (voir consumers.py, payload du
+        # commentaire construit à la main pour la même raison).
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            return
+        async_to_sync(channel_layer.group_send)(
+            f"live_{evenement.match_id}",
+            {
+                "type": "match_evenement",
+                "payload": {
+                    "id": str(evenement.id),
+                    "match": str(evenement.match_id),
+                    "type_evenement": evenement.type_evenement,
+                    "minute": evenement.minute,
+                    "equipe": evenement.equipe,
+                    "joueur": evenement.joueur,
+                    "description": evenement.description,
+                    "created_by_nom": nom_affiche_utilisateur(evenement.created_by),
+                    "created_at": evenement.created_at.isoformat(),
+                },
+            },
+        )
 
 
 class AlbumViewSet(viewsets.ModelViewSet):

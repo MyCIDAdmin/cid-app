@@ -49,6 +49,18 @@ export default {
         cid: "8px",
         "cid-lg": "12px",
       },
+      // Module Fan-Club (2026-09-24) — animation d'apparition du journal d'événements du
+      // Live-Ticker (voir LiveMatchDetailPage.tsx), en CSS pur plutôt qu'une bibliothèque
+      // d'animation (frontend/package.json n'en contient encore aucune, voir plan approuvé).
+      keyframes: {
+        "slide-in-fade": {
+          "0%": { opacity: "0", transform: "translateY(-6px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "slide-in-fade": "slide-in-fade 0.35s ease-out",
+      },
     },
   },
   plugins: [],

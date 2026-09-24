@@ -27,6 +27,8 @@ from apps.membres.models import Membre
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import email_module_actif, notifier
 
+from . import services
+
 logger = logging.getLogger(__name__)
 
 
@@ -121,3 +123,21 @@ def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
         envoyes += 1
 
     return envoyes
+
+
+@shared_task
+def synchroniser_donnees_football():
+    """Module Fan-Club (2026-09-24) — synchronise `ClassementLigue` et
+    `RencontreCalendrier` depuis TheSportsDB (voir services.py pour le détail, et
+    l'approche "hybride" documentée dans models.py). Planifiée via Celery Beat, voir
+    migrations/0007_planifier_synchronisation_football.py. Chaque sous-fonction est déjà
+    protégée individuellement (aucune levée d'exception attendue ici) — ce wrapper ne fait
+    que journaliser le résultat global."""
+    lignes_classement = services.synchroniser_classement()
+    rencontres = services.synchroniser_calendrier()
+    logger.info(
+        "Synchronisation Fan-Club TheSportsDB : %s lignes de classement, %s rencontres.",
+        lignes_classement,
+        rencontres,
+    )
+    return {"classement": lignes_classement, "calendrier": rencontres}

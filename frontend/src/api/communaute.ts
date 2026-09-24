@@ -11,12 +11,15 @@ import type {
   CategorieForum,
   ChoixQuestion,
   ChoixQuestionPayload,
+  ClassementLigue,
   Commentaire,
   Conversation,
   GroupeChat,
   GroupeChatPayload,
   Match,
   MatchCommentaire,
+  MatchEvenement,
+  MatchEvenementPayload,
   MatchMiseAJourPayload,
   MatchPayload,
   MessageGroupe,
@@ -33,6 +36,7 @@ import type {
   QuizClassement,
   QuizMiseAJourPayload,
   QuizPayload,
+  RencontreCalendrier,
   ReponseForum,
   ReponseQuiz,
   Sujet,
@@ -177,9 +181,7 @@ export async function masquerReponseForum(id: string): Promise<ReponseForum> {
 
 // --- Messagerie privée (REST = historique seul, voir hooks/useMessagerieSocket.ts) ---
 
-export async function listConversations(
-  cursor?: string,
-): Promise<CursorPage<Conversation>> {
+export async function listConversations(cursor?: string): Promise<CursorPage<Conversation>> {
   const { data } = await apiClient.get<CursorPage<Conversation>>("/communaute/conversations/", {
     params: { cursor },
   });
@@ -260,10 +262,9 @@ export async function listMessagesGroupe(
   groupeId: string,
   cursor?: string,
 ): Promise<CursorPage<MessageGroupe>> {
-  const { data } = await apiClient.get<CursorPage<MessageGroupe>>(
-    "/communaute/messages-groupe/",
-    { params: { groupe: groupeId, cursor } },
-  );
+  const { data } = await apiClient.get<CursorPage<MessageGroupe>>("/communaute/messages-groupe/", {
+    params: { groupe: groupeId, cursor },
+  });
   return data;
 }
 
@@ -325,6 +326,43 @@ export async function listMatchCommentaires(
     "/communaute/match-commentaires/",
     { params: { match: matchId, cursor } },
   );
+  return data;
+}
+
+// --- Fan-Club — classement/calendrier/événements (extension du Live Match, 2026-09-24,
+// voir backend apps.communaute.services pour la synchronisation TheSportsDB) ---
+
+export async function listClassementLigue(cursor?: string): Promise<CursorPage<ClassementLigue>> {
+  const { data } = await apiClient.get<CursorPage<ClassementLigue>>("/communaute/classement/", {
+    params: { cursor },
+  });
+  return data;
+}
+
+export async function listCalendrierRencontres(
+  cursor?: string,
+): Promise<CursorPage<RencontreCalendrier>> {
+  const { data } = await apiClient.get<CursorPage<RencontreCalendrier>>("/communaute/calendrier/", {
+    params: { cursor },
+  });
+  return data;
+}
+
+export async function listMatchEvenements(
+  matchId: string,
+  cursor?: string,
+): Promise<CursorPage<MatchEvenement>> {
+  const { data } = await apiClient.get<CursorPage<MatchEvenement>>(
+    "/communaute/match-evenements/",
+    {
+      params: { match: matchId, cursor },
+    },
+  );
+  return data;
+}
+
+export async function creerMatchEvenement(payload: MatchEvenementPayload): Promise<MatchEvenement> {
+  const { data } = await apiClient.post<MatchEvenement>("/communaute/match-evenements/", payload);
   return data;
 }
 

@@ -10,7 +10,14 @@ import LiveMatchDetailPage from "./LiveMatchDetailPage";
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
-  return { ...actual, useMatch: vi.fn(), useMatchCommentaires: vi.fn(), useModifierMatch: vi.fn() };
+  return {
+    ...actual,
+    useMatch: vi.fn(),
+    useMatchCommentaires: vi.fn(),
+    useModifierMatch: vi.fn(),
+    useMatchEvenements: vi.fn(),
+    useCreerMatchEvenement: vi.fn(),
+  };
 });
 
 vi.mock("../../hooks/useLiveMatchSocket", () => ({ useLiveMatchSocket: vi.fn() }));
@@ -70,12 +77,21 @@ describe("LiveMatchDetailPage", () => {
     vi.mocked(useCommunauteHooks.useModifierMatch).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useModifierMatch>>(),
     );
+    vi.mocked(useCommunauteHooks.useMatchEvenements).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMatchEvenements>);
+    vi.mocked(useCommunauteHooks.useCreerMatchEvenement).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useCreerMatchEvenement>>(),
+    );
     vi.mocked(useLiveMatchSocketHook.useLiveMatchSocket).mockReturnValue({
       statut: "ouvert",
       commentaires: [],
       reactions: null,
       connectes: 12,
       miseAJourMatch: null,
+      evenements: [],
       erreur: null,
       envoyerCommentaire: vi.fn(),
       envoyerReaction: vi.fn(),
@@ -103,6 +119,7 @@ describe("LiveMatchDetailPage", () => {
         score_adversaire: 1,
         minute_chrono: 77,
       },
+      evenements: [],
       erreur: null,
       envoyerCommentaire: vi.fn(),
       envoyerReaction: vi.fn(),
@@ -121,6 +138,7 @@ describe("LiveMatchDetailPage", () => {
       reactions: null,
       connectes: 0,
       miseAJourMatch: null,
+      evenements: [],
       erreur: null,
       envoyerCommentaire,
       envoyerReaction: vi.fn(),
@@ -144,6 +162,7 @@ describe("LiveMatchDetailPage", () => {
       reactions: null,
       connectes: 0,
       miseAJourMatch: null,
+      evenements: [],
       erreur: null,
       envoyerCommentaire: vi.fn(),
       envoyerReaction,
@@ -173,6 +192,104 @@ describe("LiveMatchDetailPage", () => {
 
     expect(modifier.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ id: "m1" }),
+      expect.anything(),
+    );
+  });
+
+  // --- Fan-Club — journal d'événements du Live-Ticker (2026-09-24) ---
+
+  it("affiche l'historique REST des événements fusionné au flux WebSocket sans doublon", () => {
+    vi.mocked(useCommunauteHooks.useMatchEvenements).mockReturnValue({
+      data: page([
+        {
+          id: "e1",
+          match: "m1",
+          type_evenement: "but",
+          minute: 12,
+          equipe: "ca",
+          joueur: "Joueur A",
+          description: "",
+          created_by_nom: "Admin",
+          created_at: "2026-03-01T18:12:00Z",
+        },
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMatchEvenements>);
+    vi.mocked(useLiveMatchSocketHook.useLiveMatchSocket).mockReturnValue({
+      statut: "ouvert",
+      commentaires: [],
+      reactions: null,
+      connectes: 0,
+      miseAJourMatch: null,
+      evenements: [
+        // Même id que l'historique REST — ne doit pas être compté deux fois (même principe
+        // de déduplication que tousLesCommentaires).
+        {
+          type: "match_evenement",
+          id: "e1",
+          match: "m1",
+          type_evenement: "but",
+          minute: 12,
+          equipe: "ca",
+          joueur: "Joueur A",
+          description: "",
+          created_by_nom: "Admin",
+          created_at: "2026-03-01T18:12:00Z",
+        },
+        {
+          type: "match_evenement",
+          id: "e2",
+          match: "m1",
+          type_evenement: "carton_jaune",
+          minute: 30,
+          equipe: "adversaire",
+          joueur: "",
+          description: "",
+          created_by_nom: "Admin",
+          created_at: "2026-03-01T18:30:00Z",
+        },
+      ],
+      erreur: null,
+      envoyerCommentaire: vi.fn(),
+      envoyerReaction: vi.fn(),
+    });
+
+    renderDetail();
+
+    expect(screen.getAllByText("live.evenement_but")).toHaveLength(1);
+    expect(screen.getByText("live.evenement_carton_jaune")).toBeInTheDocument();
+    expect(screen.getByText(/Joueur A/)).toBeInTheDocument();
+  });
+
+  it("affiche le message d'absence d'événement quand la liste est vide", () => {
+    renderDetail();
+    expect(screen.getByText("live.evenements_aucun")).toBeInTheDocument();
+  });
+
+  it("masque l'ajout d'événement à un membre standard", () => {
+    renderDetail();
+    expect(screen.queryByText("live.ajouter_evenement")).not.toBeInTheDocument();
+  });
+
+  it("permet à un Bureau Admin+ d'ajouter un événement au Live-Ticker", () => {
+    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: admin, isAuthenticated: true });
+    const creerEvenement = mutationMock<ReturnType<typeof useCommunauteHooks.useCreerMatchEvenement>>();
+    vi.mocked(useCommunauteHooks.useCreerMatchEvenement).mockReturnValue(creerEvenement);
+
+    renderDetail();
+
+    fireEvent.click(screen.getByText("live.ajouter_evenement"));
+    fireEvent.change(screen.getByPlaceholderText("live.evenement_joueur_placeholder"), {
+      target: { value: "Joueur B" },
+    });
+    // Seul le champ "minute" du formulaire d'événement est un <input type="number"> tant que
+    // le formulaire de pilotage du score (autre bloc, non ouvert ici) ne l'est pas.
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "60" } });
+    fireEvent.click(screen.getByText("live.evenement_ajouter"));
+
+    expect(creerEvenement.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ match: "m1", minute: 60, joueur: "Joueur B" }),
       expect.anything(),
     );
   });

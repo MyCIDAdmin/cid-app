@@ -9,11 +9,14 @@ from apps.communaute.models import (
     Album,
     CategorieForum,
     ChoixQuestion,
+    ClassementLigue,
     Commentaire,
     Conversation,
+    EquipeEvenement,
     GroupeChat,
     Match,
     MatchCommentaire,
+    MatchEvenement,
     MatchReaction,
     MembreGroupe,
     MessageGroupe,
@@ -25,10 +28,12 @@ from apps.communaute.models import (
     Publication,
     Quiz,
     QuestionQuiz,
+    RencontreCalendrier,
     ReponseForum,
     ReponseQuiz,
     StatutMatch,
     Sujet,
+    TypeEvenementMatch,
     TypeGroupe,
     TypeReactionMatch,
 )
@@ -265,3 +270,49 @@ class ReponseQuizFactory(DjangoModelFactory):
     choix = factory.SubFactory(ChoixQuestionFactory)
     est_correct = False
     points_obtenus = 0
+
+
+# ---------------------------------------------------------------------------
+# Fan-Club — extension du Live Match (2026-09-24)
+# ---------------------------------------------------------------------------
+
+
+class ClassementLigueFactory(DjangoModelFactory):
+    class Meta:
+        model = ClassementLigue
+
+    saison = "2025-2026"
+    equipe = factory.Sequence(lambda n: f"Équipe {n}")
+    rang = factory.Sequence(lambda n: n + 1)
+    joues = 10
+    victoires = 5
+    nuls = 3
+    defaites = 2
+    buts_pour = 15
+    buts_contre = 8
+    difference = 7
+    points = 18
+    forme_recente = "VVNDV"
+
+
+class RencontreCalendrierFactory(DjangoModelFactory):
+    class Meta:
+        model = RencontreCalendrier
+
+    thesportsdb_event_id = factory.Sequence(lambda n: f"event-{n}")
+    competition = "Ligue 1 Tunisie"
+    equipe_domicile = "Club Africain"
+    equipe_exterieur = factory.Sequence(lambda n: f"Adversaire {n}")
+    date_heure = factory.Faker("future_datetime", end_date="+30d", tzinfo=timezone.utc)
+
+
+class MatchEvenementFactory(DjangoModelFactory):
+    class Meta:
+        model = MatchEvenement
+
+    match = factory.SubFactory(MatchFactory)
+    type_evenement = TypeEvenementMatch.BUT
+    minute = 23
+    equipe = EquipeEvenement.CA
+    joueur = "Joueur de test"
+    created_by = factory.SubFactory(UserFactory)
