@@ -249,6 +249,11 @@ export default function AdminCampagnesPage() {
                           {t("admin.cloturer")}
                         </button>
                       )}
+                      {/* Retour utilisateur (2026-09-24, task #216) : ce bouton n'est volontairement
+                          jamais désactivé par `modifiable` — c'est un simple dépli/repli d'affichage,
+                          pas une action d'écriture (les contrôles dans OffresManager le sont, eux,
+                          correctement désactivés). Il restait cependant intitulé "Gérer" même en
+                          lecture seule, ce qui laissait croire à tort à une capacité d'édition. */}
                       <button
                         type="button"
                         onClick={() =>
@@ -258,7 +263,9 @@ export default function AdminCampagnesPage() {
                       >
                         {campagneDepliee === c.id
                           ? t("admin.masquer_offres")
-                          : t("admin.gerer_offres")}
+                          : modifiable
+                            ? t("admin.gerer_offres")
+                            : t("admin.voir_offres")}
                       </button>
                     </div>
                   </td>

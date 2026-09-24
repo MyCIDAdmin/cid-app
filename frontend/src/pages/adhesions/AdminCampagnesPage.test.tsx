@@ -195,5 +195,33 @@ describe("AdminCampagnesPage", () => {
       expect(screen.getByText("admin.creer")).toBeDisabled();
       expect(screen.getByText("admin.cloturer")).toBeDisabled();
     });
+
+    // Retour utilisateur (2026-09-24) : "Der Button [Angebote verwalten] ist immer noch aktiv"
+    // — ce bouton est intentionnellement toujours cliquable (c'est un dépli d'affichage, pas une
+    // écriture ; les contrôles dans OffresManager sont eux bien désactivés, voir OffresManager.test.tsx).
+    // Fix apporté : le libellé change en lecture seule pour ne plus suggérer une capacité d'édition.
+    it("libellé 'voir les offres' (pas 'gérer') quand modifiable=false, bouton toujours cliquable", () => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+      vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
+        data: { next: null, previous: null, results: [campagne()] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
+      setupMutationMocks();
+
+      renderWithProviders(<AdminCampagnesPage />);
+
+      expect(screen.queryByText("admin.gerer_offres")).not.toBeInTheDocument();
+      const bouton = screen.getByText("admin.voir_offres");
+      expect(bouton).not.toBeDisabled();
+
+      fireEvent.click(bouton);
+      expect(screen.getByText("admin_offres.titre")).toBeInTheDocument();
+      expect(screen.getByText("admin.masquer_offres")).toBeInTheDocument();
+    });
   });
 });

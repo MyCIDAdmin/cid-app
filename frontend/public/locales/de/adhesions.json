@@ -114,6 +114,7 @@
     "chargement": "Wird geladen…",
     "erreur_chargement": "Kampagnen konnten nicht geladen werden.",
     "gerer_offres": "Angebote verwalten",
+    "voir_offres": "Angebote ansehen",
     "masquer_offres": "Angebote ausblenden"
   },
   "admin_offres": {
@@ -121,6 +122,7 @@
     "prix_label": "Vollpreis (€)",
     "visible_label": "Sichtbar",
     "gerer_rabais": "Rabatte verwalten",
+    "voir_rabais": "Rabatte ansehen",
     "masquer_rabais": "Rabatte ausblenden",
     "supprimer": "Angebot löschen",
     "aucune": "Noch kein Angebot für diese Kampagne.",

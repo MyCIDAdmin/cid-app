@@ -272,5 +272,21 @@ describe("GestionCatalogueTab", () => {
       renderWithProviders(<GestionCatalogueTab modifiable={false} />);
       expect(screen.getByText("catalogue_admin.creer")).toBeDisabled();
     });
+
+    // Même correctif de libellé que sur AdminCampagnesPage/OffresManager : ces deux boutons
+    // sont des dépli/repli d'affichage jamais désactivés par `modifiable`, mais leur libellé
+    // en lecture seule doit refléter qu'aucune modification n'est possible derrière.
+    it("libellé 'voir' (pas 'gérer') pour variantes et réductions quand modifiable=false", () => {
+      renderWithProviders(<GestionCatalogueTab modifiable={false} />);
+
+      expect(screen.queryByText("catalogue_admin.gerer_variantes")).not.toBeInTheDocument();
+      const boutonVariantes = screen.getByText("catalogue_admin.voir_variantes");
+      expect(boutonVariantes).not.toBeDisabled();
+      fireEvent.click(boutonVariantes);
+      expect(screen.getByText("catalogue_admin.variantes_titre")).toBeInTheDocument();
+
+      expect(screen.queryByText("catalogue_admin.gerer_regles_reduction")).not.toBeInTheDocument();
+      expect(screen.getByText("catalogue_admin.voir_regles_reduction")).not.toBeDisabled();
+    });
   });
 });

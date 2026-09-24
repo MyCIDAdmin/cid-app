@@ -120,6 +120,10 @@ export default function OffresManager({
                 />
                 {t("admin_offres.visible_label")}
               </label>
+              {/* Retour utilisateur (2026-09-24, task #216) : même principe que le bouton
+                  "gérer les offres" de AdminCampagnesPage — c'est un dépli/repli d'affichage,
+                  pas une action d'écriture, mais le libellé en lecture seule doit refléter
+                  qu'aucune modification n'est possible derrière. */}
               <button
                 type="button"
                 onClick={() => setOffreDepliee((cur) => (cur === offre.id ? null : offre.id))}
@@ -127,7 +131,9 @@ export default function OffresManager({
               >
                 {offreDepliee === offre.id
                   ? t("admin_offres.masquer_rabais")
-                  : t("admin_offres.gerer_rabais")}
+                  : modifiable
+                    ? t("admin_offres.gerer_rabais")
+                    : t("admin_offres.voir_rabais")}
               </button>
               <button
                 type="button"

@@ -114,6 +114,7 @@
     "chargement": "Chargement…",
     "erreur_chargement": "Impossible de charger les campagnes.",
     "gerer_offres": "Gérer les offres",
+    "voir_offres": "Voir les offres",
     "masquer_offres": "Masquer les offres"
   },
   "admin_offres": {
@@ -121,6 +122,7 @@
     "prix_label": "Prix plein (€)",
     "visible_label": "Visible",
     "gerer_rabais": "Gérer les rabais",
+    "voir_rabais": "Voir les rabais",
     "masquer_rabais": "Masquer les rabais",
     "supprimer": "Supprimer l'offre",
     "aucune": "Aucune offre pour cette campagne.",

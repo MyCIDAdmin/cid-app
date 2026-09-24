@@ -182,5 +182,19 @@ describe("OffresManager", () => {
       expect(screen.getByLabelText("admin_offres.prix_label — Basic")).not.toBeDisabled();
       expect(screen.getByText("admin_offres.ajouter")).not.toBeDisabled();
     });
+
+    // Suite au retour utilisateur sur le bouton équivalent "Angebote verwalten"
+    // (AdminCampagnesPage.test.tsx) : même correctif de libellé ici pour "Gérer les rabais",
+    // qui est du même type (dépli d'affichage non désactivé, mais libellé trompeur).
+    it("libellé 'voir les rabais' (pas 'gérer') quand modifiable=false, bouton toujours cliquable", () => {
+      renderWithProviders(<OffresManager campagne={campagne()} modifiable={false} />);
+
+      expect(screen.queryByText("admin_offres.gerer_rabais")).not.toBeInTheDocument();
+      const bouton = screen.getByText("admin_offres.voir_rabais");
+      expect(bouton).not.toBeDisabled();
+
+      fireEvent.click(bouton);
+      expect(screen.getByText("admin_rabais.titre")).toBeInTheDocument();
+    });
   });
 });

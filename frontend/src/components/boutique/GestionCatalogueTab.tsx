@@ -455,6 +455,10 @@ export default function GestionCatalogueTab({
                     ? t("catalogue_admin.image_en_cours")
                     : t("catalogue_admin.image_televerser")}
                 </button>
+                {/* Retour utilisateur (2026-09-24, task #216) : même principe que le bouton
+                    "gérer les offres" de AdminCampagnesPage — dépli/repli d'affichage, pas une
+                    action d'écriture, mais le libellé en lecture seule doit refléter qu'aucune
+                    modification n'est possible derrière. */}
                 <button
                   type="button"
                   onClick={() =>
@@ -464,7 +468,9 @@ export default function GestionCatalogueTab({
                 >
                   {produitDeplie === produit.id
                     ? t("catalogue_admin.masquer_variantes")
-                    : t("catalogue_admin.gerer_variantes")}
+                    : modifiable
+                      ? t("catalogue_admin.gerer_variantes")
+                      : t("catalogue_admin.voir_variantes")}
                 </button>
                 <button
                   type="button"
@@ -475,7 +481,9 @@ export default function GestionCatalogueTab({
                 >
                   {produitReductionDeplie === produit.id
                     ? t("catalogue_admin.masquer_regles_reduction")
-                    : t("catalogue_admin.gerer_regles_reduction")}
+                    : modifiable
+                      ? t("catalogue_admin.gerer_regles_reduction")
+                      : t("catalogue_admin.voir_regles_reduction")}
                 </button>
               </div>
               {produitImageErreur?.produitId === produit.id && (
