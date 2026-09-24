@@ -939,13 +939,18 @@ class TippspielTeilnahmeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     "en attente de confirmation" côté frontend ("Eine Tabelle zeigt alle Teilnehmer",
     retour utilisateur — mais seules les inscriptions confirmées y figurent, voir
     docstring de tête TippspielTeilnahme dans models.py). `?statut_paiement=en_attente` :
-    liste (toutes membres confondus) des paiements à confirmer — réservée Directeur
-    Financier+ (contrôle explicite dans `get_queryset`, IDOR sinon puisque
-    `TippspielTeilnahmePermission.has_permission` ne gate que `confirmer_paiement` ;
-    CLAUDE.md §8), alimente l'écran de confirmation ("bestätigt vom Finanzdirektor",
-    retour utilisateur — jusqu'ici aucun endpoint ne permettait de RETROUVER les
-    paiements en attente, seulement de confirmer un id déjà connu). `confirmer-paiement` :
-    Directeur Financier+ uniquement, voir TippspielTeilnahmePermission."""
+    liste (toutes membres confondus, tous Tippspiele confondus) des paiements à confirmer
+    — réservée Directeur Financier+ (contrôle explicite dans `get_queryset`, IDOR sinon
+    puisque `TippspielTeilnahmePermission.has_permission` ne gate que
+    `confirmer_paiement` ; CLAUDE.md §8). Alimente désormais le module "Ausstehende
+    Zahlungen" (`TippspielZahlungenPanel.tsx`) plutôt qu'un panneau interne au module
+    Fan-Club ("Die Ausstehende Zahlung ... soll im Modul 'Ausstehende Zahlungen'
+    auftauchen ... und nicht im Fan-Club Modul", retour utilisateur du 2026-09-24) — cette
+    branche est donc volontairement EXEMPTÉE du `?tippspiel=` requis ci-dessous : le
+    Directeur Financier doit pouvoir retrouver tous les paiements en attente sans
+    connaître à l'avance l'id de chaque Tippspiel (un seul actif en pratique, mais rien ne
+    l'impose). `confirmer-paiement` : Directeur Financier+ uniquement, voir
+    TippspielTeilnahmePermission."""
 
     serializer_class = TippspielTeilnahmeSerializer
     permission_classes = [TippspielTeilnahmePermission]
@@ -956,14 +961,32 @@ class TippspielTeilnahmeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # `total_points` toujours annoté : le serializer le lit comme un champ ordinaire
         # (IntegerField), pas un SerializerMethodField — le laisser absent ferait échouer
         # la sérialisation, y compris pour un accès détail (ex. `confirmer-paiement`).
-        qs = TippspielTeilnahme.objects.select_related("membre").annotate(
+        qs = TippspielTeilnahme.objects.select_related("membre", "tippspiel").annotate(
             total_points=Coalesce(Sum("tipps__points"), 0)
         )
-        # Le filtre `?tippspiel=` (requis) ne s'applique qu'au `list` : une action détail
-        # (ex. `confirmer-paiement`) identifie déjà la participation exacte via `pk`, et
-        # exiger `?tippspiel=` en plus casserait ces actions pour tout appelant qui ne
-        # passe pas ce paramètre redondant (cf. NoReverseMatch/400 rencontré en test).
+        # Le filtre `?tippspiel=` (requis pour le classement/`?mine=`) ne s'applique qu'au
+        # `list` : une action détail (ex. `confirmer-paiement`) identifie déjà la
+        # participation exacte via `pk`, et exiger `?tippspiel=` en plus casserait ces
+        # actions pour tout appelant qui ne passe pas ce paramètre redondant (cf.
+        # NoReverseMatch/400 rencontré en test).
         if self.action != "list":
+            return qs
+        # `?statut_paiement=en_attente` est traité EN PREMIER, avant le filtre
+        # `?tippspiel=` requis ci-dessous — voir docstring de tête : cette branche liste
+        # volontairement à travers tous les Tippspiele, `?tippspiel=` y reste un filtre
+        # optionnel plutôt qu'obligatoire.
+        if self.request.query_params.get("statut_paiement") == "en_attente":
+            user = self.request.user
+            if ROLE_LEVELS.get(user.role, 0) < DIR_FINANCIER_MIN_LEVEL:
+                raise PermissionDenied(
+                    "Réservé au Directeur Financier pour la confirmation des paiements."
+                )
+            qs = qs.filter(statut_paiement=StatutPaiementTeilnahme.EN_ATTENTE).order_by(
+                "created_at"
+            )
+            tippspiel_id = self.request.query_params.get("tippspiel")
+            if tippspiel_id:
+                qs = qs.filter(tippspiel_id=tippspiel_id)
             return qs
         tippspiel_id = self.request.query_params.get("tippspiel")
         if not tippspiel_id:
@@ -972,15 +995,6 @@ class TippspielTeilnahmeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if self.request.query_params.get("mine") == "true":
             membre = getattr(self.request.user, "membre", None)
             return qs.filter(membre=membre) if membre is not None else qs.none()
-        if self.request.query_params.get("statut_paiement") == "en_attente":
-            user = self.request.user
-            if ROLE_LEVELS.get(user.role, 0) < DIR_FINANCIER_MIN_LEVEL:
-                raise PermissionDenied(
-                    "Réservé au Directeur Financier pour la confirmation des paiements."
-                )
-            return qs.filter(statut_paiement=StatutPaiementTeilnahme.EN_ATTENTE).order_by(
-                "created_at"
-            )
         return qs.filter(
             statut_paiement__in=[
                 StatutPaiementTeilnahme.SANS_FRAIS,

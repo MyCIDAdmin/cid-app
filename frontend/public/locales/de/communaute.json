@@ -303,6 +303,7 @@
     "status_bestaetigt": "Ihre Teilnahme ist bestätigt.",
     "tipps_titel": "Meine Tipps",
     "tipps_leer": "Aktuell stehen keine Spiele zur Abgabe eines Tipps zur Verfügung.",
+    "tipps_gesperrt_zahlung": "Ihre Tipps werden verfügbar, sobald Ihre Zahlung vom Finanzdirektor bestätigt wurde.",
     "tipp_heim_label": "Tipp Tore {{equipe}} (Heim)",
     "tipp_gast_label": "Tipp Tore {{equipe}} (Auswärts)",
     "tipp_speichern": "Speichern",
@@ -339,9 +340,14 @@
     "admin_abbrechen": "Abbrechen",
     "admin_erstellen_fehler": "Das Tippspiel konnte nicht erstellt werden.",
     "admin_speichern_fehler": "Die Änderungen konnten nicht gespeichert werden.",
-    "zahlungen_titel": "Zahlungen bestätigen",
+    "zahlungen_titel": "Tippspiel-Teilnahmegebühren",
+    "zahlungen_untertitel": "Ausstehende Zahlungen für alle Tippspiele.",
     "zahlungen_leer": "Keine offenen Zahlungen.",
     "zahlungen_bestaetigen": "Bestätigen",
-    "zahlungen_fehler": "Die Bestätigung ist fehlgeschlagen."
+    "zahlungen_fehler": "Die Bestätigung ist fehlgeschlagen.",
+    "zahlungen_spalte_mitglied": "Mitglied",
+    "zahlungen_spalte_spiel": "Tippspiel",
+    "zahlungen_spalte_betrag": "Betrag",
+    "zahlungen_spalte_datum": "Angemeldet am"
   }
 }

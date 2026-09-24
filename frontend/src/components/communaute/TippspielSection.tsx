@@ -8,12 +8,16 @@
  * filtrer lui-même). N'affiche que le Tippspiel le plus récent (`useTippspiele()` est
  * trié `-created_at` côté backend) — cas d'usage réel "typiquement un par saison" (voir
  * docstring de tête Tippspiel).
+ *
+ * La confirmation des paiements en attente (`ZahlungenPanel`) a été RETIRÉE d'ici le
+ * 2026-09-24 (retour utilisateur : "Die Ausstehende Zahlung ... soll im Modul
+ * 'Ausstehende Zahlungen' auftauchen ... und nicht im Fan-Club Modul") — voir désormais
+ * `TippspielZahlungenPanel` dans `pages/cotisations/CotisationsEnAttentePage.tsx`.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
-  useConfirmerPaiementTeilnahme,
   useModifierTippspiel,
   useTeilnehmenTippspiel,
   useTippspielTeilnahmen,
@@ -51,57 +55,10 @@ function PreisLigne({ prix }: { prix: Tippspiel["prix"][number] }) {
   );
 }
 
-function ZahlungenPanel({ tippspielId }: { tippspielId: string }) {
-  const { t } = useTranslation("communaute");
-  const enAttenteQuery = useTippspielTeilnahmen({
-    tippspiel: tippspielId,
-    statutPaiement: "en_attente",
-  });
-  const confirmer = useConfirmerPaiementTeilnahme();
-  const [erreur, setErreur] = useState("");
-
-  const lignes = enAttenteQuery.data?.results ?? [];
-  if (enAttenteQuery.isLoading) return null;
-
-  return (
-    <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-      <h3 className="mb-2 text-xs font-bold uppercase text-text-tertiary">
-        {t("tippspiel.zahlungen_titel")}
-      </h3>
-      {lignes.length === 0 && (
-        <p className="text-sm text-text-tertiary">{t("tippspiel.zahlungen_leer")}</p>
-      )}
-      <div className="space-y-1.5">
-        {lignes.map((ligne) => (
-          <div key={ligne.id} className="flex items-center justify-between gap-2 text-sm">
-            <span className="text-text-primary">{ligne.membre_nom}</span>
-            <button
-              type="button"
-              disabled={confirmer.isPending}
-              onClick={() => {
-                setErreur("");
-                confirmer.mutate(ligne.id, {
-                  onError: (err) =>
-                    setErreur(extractApiErrorMessage(err, t("tippspiel.zahlungen_fehler"))),
-                });
-              }}
-              className="rounded-cid bg-ca px-2.5 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
-            >
-              {t("tippspiel.zahlungen_bestaetigen")}
-            </button>
-          </div>
-        ))}
-      </div>
-      {erreur && <p className="mt-1.5 text-xs text-status-dangerText">{erreur}</p>}
-    </div>
-  );
-}
-
 function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
   const { t } = useTranslation("communaute");
   const user = useAuthStore((s) => s.user);
   const peutGerer = hasRoleAtLeast(user, ROLE_LEVELS.super_admin);
-  const peutBestaetigen = hasRoleAtLeast(user, ROLE_LEVELS.dir_financier);
   const estPayant = tippspiel.montant_participation !== null;
 
   const [modifierForm, setModifierForm] = useState(false);
@@ -243,13 +200,26 @@ function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
             )}
           </div>
 
-          {tippspiel.statut === "publie" && (
-            <div>
-              <h3 className="mb-2 text-xs font-bold uppercase text-text-tertiary">
-                {t("tippspiel.tipps_titel")}
-              </h3>
-              <TippspielTippAbgabe tippspielId={tippspiel.id} />
-            </div>
+          {tippspiel.statut === "publie" && meineTeilnahme && (
+            <>
+              {meineTeilnahme.statut_paiement === "en_attente" ? (
+                // Retour utilisateur du 2026-09-24 : "Für Beitragspflichtige Spiele,
+                // müssen Tipps verfügbar sein, nachdem die Bezahlung bestätigt wird" —
+                // les pronostics restent masqués tant que le paiement n'est pas
+                // confirmé (voir aussi TippspielTipSerializer.create côté backend, qui
+                // applique la même règle en seconde ligne de défense).
+                <p className="rounded-cid-lg bg-bg-primary p-3 text-sm text-text-tertiary shadow-sm">
+                  {t("tippspiel.tipps_gesperrt_zahlung")}
+                </p>
+              ) : (
+                <div>
+                  <h3 className="mb-2 text-xs font-bold uppercase text-text-tertiary">
+                    {t("tippspiel.tipps_titel")}
+                  </h3>
+                  <TippspielTippAbgabe tippspielId={tippspiel.id} />
+                </div>
+              )}
+            </>
           )}
 
           <div className="rounded-cid-lg bg-bg-primary shadow-sm">
@@ -283,8 +253,6 @@ function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
               </table>
             )}
           </div>
-
-          {peutBestaetigen && estPayant && <ZahlungenPanel tippspielId={tippspiel.id} />}
         </>
       )}
     </div>

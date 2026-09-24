@@ -1063,10 +1063,11 @@ class TippspielTeilnahmeManager(models.Manager):
 class TippspielTeilnahme(models.Model):
     """Inscription d'un membre à un Tippspiel — un membre ne peut s'inscrire qu'une fois
     par Tippspiel (contrainte unique), voir TippspielTeilnahmeManager.rejoindre.
-    Soumettre un pronostic (`TippspielTip`) reste possible même tant que le paiement
-    n'est pas confirmé (pour ne pas faire rater la date-limite d'un match pendant qu'un
-    virement bancaire est en cours) mais SEULES les inscriptions `est_confirmee`
-    apparaissent dans le classement (voir action `classement`,
+    Soumettre un pronostic (`TippspielTip`) est bloqué tant que le paiement n'est pas
+    confirmé pour un Tippspiel payant (revirement du 2026-09-24, retour utilisateur :
+    "Für Beitragspflichtige Spiele, müssen Tipps verfügbar sein, nachdem die Bezahlung
+    bestätigt wird" — voir TippspielTipSerializer.create) et SEULES les inscriptions
+    `est_confirmee` apparaissent dans le classement (voir action `classement`,
     TippspielTeilnahmeViewSet) — condition explicite du retour utilisateur."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

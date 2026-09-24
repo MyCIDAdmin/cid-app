@@ -347,6 +347,33 @@ def test_liste_paiements_en_attente_pour_le_directeur_financier(api_client):
     assert ids == [str(en_attente.id)]
 
 
+def test_liste_paiements_en_attente_couvre_tous_les_tippspiele_sans_filtre(api_client):
+    # Retour utilisateur du 2026-09-24 : la confirmation doit se faire depuis le module
+    # "Ausstehende Zahlungen", pas depuis le module Fan-Club — ce module ne connaît a
+    # priori pas l'id d'un Tippspiel particulier, `?tippspiel=` devient donc optionnel
+    # pour cette branche (voir TippspielTeilnahmeViewSet.get_queryset).
+    dirfin_user, _ = _user_avec_membre(Role.DIR_FINANCIER, "tp-pending-all@example.de")
+    tippspiel_a = TippspielFactory(titre="Tippspiel A", montant_participation="10.00")
+    tippspiel_b = TippspielFactory(titre="Tippspiel B", montant_participation="5.00")
+    en_attente_a = TippspielTeilnahmeFactory(
+        tippspiel=tippspiel_a, statut_paiement=StatutPaiementTeilnahme.EN_ATTENTE
+    )
+    en_attente_b = TippspielTeilnahmeFactory(
+        tippspiel=tippspiel_b, statut_paiement=StatutPaiementTeilnahme.EN_ATTENTE
+    )
+
+    resp = _auth(api_client, dirfin_user).get(
+        reverse("communaute:tippspiel-teilnahme-list") + "?statut_paiement=en_attente"
+    )
+
+    assert resp.status_code == 200
+    ids = {ligne["id"] for ligne in resp.data["results"]}
+    assert ids == {str(en_attente_a.id), str(en_attente_b.id)}
+    ligne_a = next(ligne for ligne in resp.data["results"] if ligne["id"] == str(en_attente_a.id))
+    assert ligne_a["tippspiel_titre"] == str(tippspiel_a)
+    assert ligne_a["montant_participation"] == "10.00"
+
+
 # ---------------------------------------------------------------------------
 # API — pronostics (TippspielTip) : périmètre Ligue 1, date-limite, IDOR
 # ---------------------------------------------------------------------------
@@ -385,6 +412,53 @@ def test_creer_un_pronostic_cree_automatiquement_la_participation(api_client):
     tip = TippspielTip.objects.get(teilnahme__membre=membre, rencontre=rencontre)
     assert (tip.score_domicile, tip.score_exterieur) == (2, 1)
     assert tip.points is None  # pas encore joué
+
+
+def test_pronostic_refuse_pour_jeu_payant_tant_que_paiement_non_confirme(api_client):
+    # Retour utilisateur du 2026-09-24 : "Für Beitragspflichtige Spiele, müssen Tipps
+    # verfügbar sein, nachdem die Bezahlung bestätigt wird" — la participation est bien
+    # auto-créée (même comportement qu'avant), mais le pronostic lui-même est refusé.
+    user, membre = _user_avec_membre(Role.MEMBRE, "tp-tip-non-confirme@example.de")
+    tippspiel = TippspielFactory(montant_participation="10.00")
+    rencontre = _rencontre_dans_3_jours()
+
+    resp = _auth(api_client, user).post(
+        reverse(TIPPSPIEL_TIP_LIST_URL),
+        {
+            "tippspiel": str(tippspiel.id),
+            "rencontre": str(rencontre.id),
+            "score_domicile": 2,
+            "score_exterieur": 1,
+        },
+        format="json",
+    )
+
+    assert resp.status_code == 400
+    teilnahme = TippspielTeilnahme.objects.get(tippspiel=tippspiel, membre=membre)
+    assert teilnahme.statut_paiement == StatutPaiementTeilnahme.EN_ATTENTE
+    assert not TippspielTip.objects.filter(teilnahme=teilnahme).exists()
+
+
+def test_pronostic_autorise_pour_jeu_payant_une_fois_le_paiement_confirme(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "tp-tip-confirme@example.de")
+    tippspiel = TippspielFactory(montant_participation="10.00")
+    TippspielTeilnahmeFactory(
+        tippspiel=tippspiel, membre=membre, statut_paiement=StatutPaiementTeilnahme.CONFIRMEE
+    )
+    rencontre = _rencontre_dans_3_jours()
+
+    resp = _auth(api_client, user).post(
+        reverse(TIPPSPIEL_TIP_LIST_URL),
+        {
+            "tippspiel": str(tippspiel.id),
+            "rencontre": str(rencontre.id),
+            "score_domicile": 2,
+            "score_exterieur": 1,
+        },
+        format="json",
+    )
+
+    assert resp.status_code == 201
 
 
 def test_pronostic_refuse_hors_ligue1(api_client):

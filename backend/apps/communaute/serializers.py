@@ -959,9 +959,15 @@ class TippspielTeilnahmeSerializer(serializers.ModelSerializer):
     voir TippspielTeilnahmeViewSet). `total_points` est annoté côté vue (somme des
     points déjà notés de tous les pronostics de cette participation) — jamais recalculé
     ici. Ne contient JAMAIS le détail des pronostics d'autrui (voir
-    TippspielTipPermission)."""
+    TippspielTipPermission). `tippspiel_titre`/`montant_participation` ajoutés le
+    2026-09-24 pour l'écran "Ausstehende Zahlungen" (`?statut_paiement=en_attente`
+    liste désormais tous les Tippspiele confondus, voir TippspielTeilnahmeViewSet) —
+    sans ces deux champs, cette liste transversale ne permettrait pas de savoir à quel
+    jeu ni quel montant chaque paiement en attente se rapporte."""
 
     membre_nom = serializers.SerializerMethodField()
+    tippspiel_titre = serializers.SerializerMethodField()
+    montant_participation = serializers.SerializerMethodField()
     total_points = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
@@ -969,8 +975,10 @@ class TippspielTeilnahmeSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "tippspiel",
+            "tippspiel_titre",
             "membre_nom",
             "statut_paiement",
+            "montant_participation",
             "confirmee_le",
             "created_at",
             "total_points",
@@ -980,6 +988,13 @@ class TippspielTeilnahmeSerializer(serializers.ModelSerializer):
     def get_membre_nom(self, obj):
         return f"{obj.membre.prenom} {obj.membre.nom}".strip()
 
+    def get_tippspiel_titre(self, obj):
+        return str(obj.tippspiel)
+
+    def get_montant_participation(self, obj):
+        montant = obj.tippspiel.montant_participation
+        return str(montant) if montant is not None else None
+
 
 class TippspielTipSerializer(serializers.ModelSerializer):
     """Un membre gère STRICTEMENT ses propres pronostics (voir TippspielTipPermission).
@@ -988,7 +1003,17 @@ class TippspielTipSerializer(serializers.ModelSerializer):
     — jamais de `teilnahme` brute acceptée en entrée (IDOR, CLAUDE.md §8). Validation de
     périmètre et de date-limite dans `validate` : rencontre Ligue 1 de Club Africain,
     pas déjà jouée/reportée/annulée, au moins 1 jour avant le coup d'envoi ("Frist der
-    Angabe der Tipps 1 Tag vor dem Spiel", retour utilisateur)."""
+    Angabe der Tipps 1 Tag vor dem Spiel", retour utilisateur).
+
+    `create` refuse tout nouveau pronostic tant que la participation n'est pas
+    `est_confirmee` (2026-09-24, retour utilisateur : "Für Beitragspflichtige Spiele,
+    müssen Tipps verfügbar sein, nachdem die Bezahlung bestätigt wird") — CONTREDIT la
+    décision précédente documentée dans TippspielTeilnahme.models.py ("pronostiquer
+    reste possible même paiement non confirmé, pour ne pas rater la date-limite pendant
+    un virement en cours") : l'usage réel a montré que des membres pronostiquaient sans
+    jamais régulariser leur paiement, d'où ce revirement explicite côté utilisateur.
+    Un Tippspiel gratuit (`SANS_FRAIS`, confirmé d'emblée par `rejoindre`) n'est donc
+    jamais bloqué ici."""
 
     tippspiel = serializers.PrimaryKeyRelatedField(
         queryset=Tippspiel.objects.all(), write_only=True
@@ -1039,4 +1064,9 @@ class TippspielTipSerializer(serializers.ModelSerializer):
         request = self.context["request"]
         membre = getattr(request.user, "membre", None)
         teilnahme, _cree = TippspielTeilnahme.objects.rejoindre(tippspiel, membre)
+        if not teilnahme.est_confirmee:
+            raise serializers.ValidationError(
+                "Les pronostics ne sont disponibles qu'une fois le paiement de la "
+                "participation confirmé par le Directeur Financier."
+            )
         return TippspielTip.objects.create(teilnahme=teilnahme, **validated_data)

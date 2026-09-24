@@ -10,16 +10,20 @@
  * inféré depuis la présence d'un score.
  *
  * Ordre des rencontres (2026-09-24, correctif suite retour utilisateur "Es werden aber
- * alte Spiele von vorherigen Saisons dargestellt") : `useCalendrierRencontres()` ne
- * récupère qu'UNE page (PAGE_SIZE, voir settings/base.py) triée décroissant par
- * `date_heure` côté API (voir CalendrierCursorPagination dans views.py) — nécessaire
- * depuis que le calendrier synchronisé couvre tout l'historique disponible (198
- * rencontres, 2021 → saison en cours+à venir) : en ordre croissant, cette unique page ne
- * montrait jamais que les rencontres les plus anciennes. En décroissant, les rencontres à
- * venir (date future) arrivent systématiquement en tête ; on les réaffiche ensuite dans
- * l'ordre chronologique naturel (la plus proche en premier) via `.slice().reverse()` sur
- * le sous-ensemble déjà filtré — les résultats restent tels quels (le plus récent en
+ * alte Spiele von vorherigen Saisons dargestellt") : côté API, triée décroissant par
+ * `date_heure` (voir CalendrierCursorPagination dans views.py) — les rencontres à venir
+ * (date future) arrivent systématiquement en tête ; on les réaffiche ensuite dans l'ordre
+ * chronologique naturel (la plus proche en premier) via `.slice().reverse()` sur le
+ * sous-ensemble déjà filtré — les résultats restent tels quels (le plus récent en
  * premier, déjà l'ordre attendu).
+ *
+ * Pagination (2026-09-24, second correctif suite retour utilisateur "Es sind nur die
+ * Spiele der Hin Runde ... verfügbar") : `useCalendrierRencontres()` parcourt désormais
+ * TOUTES les pages (voir listCalendrierRencontres côté api/communaute.ts), plus une
+ * seule — le calendrier couvre toutes compétitions/saisons confondues (~200+ rencontres,
+ * PAGE_SIZE=20) ; s'arrêter à la première page décroissante ne montrait que les
+ * rencontres les PLUS lointaines dans le temps (ex. un match amical daté loin dans le
+ * futur), jamais celles, pourtant plus proches, de la seconde moitié de saison en cours.
  */
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";

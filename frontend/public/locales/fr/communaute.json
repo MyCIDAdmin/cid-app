@@ -303,6 +303,7 @@
     "status_bestaetigt": "Votre participation est confirmée.",
     "tipps_titel": "Mes pronostics",
     "tipps_leer": "Aucun match n'est actuellement ouvert aux pronostics.",
+    "tipps_gesperrt_zahlung": "Vos pronostics seront disponibles dès que votre paiement aura été confirmé par le Directeur Financier.",
     "tipp_heim_label": "Pronostic buts {{equipe}} (domicile)",
     "tipp_gast_label": "Pronostic buts {{equipe}} (extérieur)",
     "tipp_speichern": "Enregistrer",
@@ -339,9 +340,14 @@
     "admin_abbrechen": "Annuler",
     "admin_erstellen_fehler": "Le jeu de pronostics n'a pas pu être créé.",
     "admin_speichern_fehler": "Les modifications n'ont pas pu être enregistrées.",
-    "zahlungen_titel": "Confirmer les paiements",
+    "zahlungen_titel": "Frais de participation Tippspiel",
+    "zahlungen_untertitel": "Paiements en attente pour tous les jeux de pronostics.",
     "zahlungen_leer": "Aucun paiement en attente.",
     "zahlungen_bestaetigen": "Confirmer",
-    "zahlungen_fehler": "La confirmation a échoué."
+    "zahlungen_fehler": "La confirmation a échoué.",
+    "zahlungen_spalte_mitglied": "Membre",
+    "zahlungen_spalte_spiel": "Tippspiel",
+    "zahlungen_spalte_betrag": "Montant",
+    "zahlungen_spalte_datum": "Inscrit le"
   }
 }

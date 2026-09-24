@@ -14,10 +14,11 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useTippspiele: vi.fn(),
     useTippspielTeilnahmen: vi.fn(),
     useTeilnehmenTippspiel: vi.fn(),
-    useConfirmerPaiementTeilnahme: vi.fn(),
     useModifierTippspiel: vi.fn(),
     useCalendrierRencontres: vi.fn(),
     useTippspielTipps: vi.fn(),
+    useCreerTippspielTip: vi.fn(),
+    useModifierTippspielTip: vi.fn(),
   };
 });
 
@@ -29,7 +30,6 @@ const membre = {
 };
 
 const superAdmin = { ...membre, id: "u2", role: "super_admin" as const };
-const dirFinancier = { ...membre, id: "u3", role: "dir_financier" as const };
 
 function page<T>(results: T[]) {
   return { count: results.length, next: null, previous: null, results };
@@ -59,8 +59,10 @@ function teilnahme(overrides: Partial<TippspielTeilnahme> = {}): TippspielTeilna
   return {
     id: "t1",
     tippspiel: "tp1",
+    tippspiel_titre: "Tippspiel Ligue 1 (2026-2027)",
     membre_nom: "Membre Test",
     statut_paiement: "sans_frais",
+    montant_participation: null,
     confirmee_le: null,
     created_at: "2026-08-02T10:00:00Z",
     total_points: 0,
@@ -70,12 +72,14 @@ function teilnahme(overrides: Partial<TippspielTeilnahme> = {}): TippspielTeilna
 
 describe("TippspielSection", () => {
   beforeEach(() => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: membre, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: membre,
+      isAuthenticated: true,
+    });
     vi.mocked(useCommunauteHooks.useTeilnehmenTippspiel).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useTeilnehmenTippspiel>>(),
-    );
-    vi.mocked(useCommunauteHooks.useConfirmerPaiementTeilnahme).mockReturnValue(
-      mutationMock<ReturnType<typeof useCommunauteHooks.useConfirmerPaiementTeilnahme>>(),
     );
     vi.mocked(useCommunauteHooks.useModifierTippspiel).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspiel>>(),
@@ -90,6 +94,12 @@ describe("TippspielSection", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTipps>);
+    vi.mocked(useCommunauteHooks.useCreerTippspielTip).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useCreerTippspielTip>>(),
+    );
+    vi.mocked(useCommunauteHooks.useModifierTippspielTip).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspielTip>>(),
+    );
   });
 
   it("n'affiche rien à un membre standard quand aucun Tippspiel n'existe", () => {
@@ -105,7 +115,12 @@ describe("TippspielSection", () => {
   });
 
   it("propose la création d'un Tippspiel à l'Administrateur App quand aucun n'existe", () => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: superAdmin, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: superAdmin,
+      isAuthenticated: true,
+    });
     vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
       data: page([]),
       isLoading: false,
@@ -139,9 +154,8 @@ describe("TippspielSection", () => {
   });
 
   it("permet de rejoindre le Tippspiel", () => {
-    const teilnehmenMutation = mutationMock<
-      ReturnType<typeof useCommunauteHooks.useTeilnehmenTippspiel>
-    >();
+    const teilnehmenMutation =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useTeilnehmenTippspiel>>();
     vi.mocked(useCommunauteHooks.useTeilnehmenTippspiel).mockReturnValue(teilnehmenMutation);
     vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
       data: page([tippspiel()]),
@@ -218,10 +232,14 @@ describe("TippspielSection", () => {
   });
 
   it("propose de publier un brouillon à l'Administrateur App", () => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: superAdmin, isAuthenticated: true });
-    const modifierMutation = mutationMock<
-      ReturnType<typeof useCommunauteHooks.useModifierTippspiel>
-    >();
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: superAdmin,
+      isAuthenticated: true,
+    });
+    const modifierMutation =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspiel>>();
     vi.mocked(useCommunauteHooks.useModifierTippspiel).mockReturnValue(modifierMutation);
     vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
       data: page([tippspiel({ statut: "brouillon" })]),
@@ -243,36 +261,64 @@ describe("TippspielSection", () => {
     });
   });
 
-  it("affiche le panneau des paiements en attente au Directeur Financier pour un jeu payant", () => {
-    useAuthStore.setState({
-      accessToken: "t",
-      refreshToken: "r",
-      user: dirFinancier,
-      isAuthenticated: true,
-    });
+  // Le panneau de confirmation des paiements a été déplacé vers le module "Ausstehende
+  // Zahlungen" le 2026-09-24 (retour utilisateur) — voir désormais
+  // components/cotisations/TippspielZahlungenPanel.test.tsx.
+
+  // Retour utilisateur du 2026-09-24 : "Die Tipps sind verfügbar bevor ich auf teilnehmen
+  // klicke. Für Beitragspflichtige Spiele, müssen Tipps verfügbar sein, nachdem die
+  // Bezahlung bestätigt wird" — les trois tests suivants couvrent les trois états.
+  it("masque les pronostics tant que le membre n'a pas rejoint le Tippspiel", () => {
     vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
       data: page([tippspiel({ montant_participation: "10.00" })]),
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useTippspiele>);
-    vi.mocked(useCommunauteHooks.useTippspielTeilnahmen).mockImplementation((filtres) => {
-      if (filtres.statutPaiement === "en_attente") {
-        return {
-          data: page([teilnahme({ id: "t-pending", membre_nom: "En Attente" })]),
-          isLoading: false,
-          isError: false,
-        } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTeilnahmen>;
-      }
-      return {
-        data: page([]),
-        isLoading: false,
-        isError: false,
-      } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTeilnahmen>;
-    });
+    vi.mocked(useCommunauteHooks.useTippspielTeilnahmen).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTeilnahmen>);
 
     renderWithProviders(<TippspielSection />);
 
-    expect(screen.getByText("tippspiel.zahlungen_titel")).toBeInTheDocument();
-    expect(screen.getByText("En Attente")).toBeInTheDocument();
+    expect(screen.queryByText("tippspiel.tipps_titel")).not.toBeInTheDocument();
+    expect(screen.queryByText("tippspiel.tipps_gesperrt_zahlung")).not.toBeInTheDocument();
+  });
+
+  it("masque les pronostics et affiche un message tant que le paiement n'est pas confirmé", () => {
+    vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
+      data: page([tippspiel({ montant_participation: "10.00" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspiele>);
+    vi.mocked(useCommunauteHooks.useTippspielTeilnahmen).mockReturnValue({
+      data: page([teilnahme({ statut_paiement: "en_attente" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTeilnahmen>);
+
+    renderWithProviders(<TippspielSection />);
+
+    expect(screen.getByText("tippspiel.tipps_gesperrt_zahlung")).toBeInTheDocument();
+    expect(screen.queryByText("tippspiel.tipps_titel")).not.toBeInTheDocument();
+  });
+
+  it("affiche les pronostics une fois la participation confirmée", () => {
+    vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue({
+      data: page([tippspiel({ montant_participation: "10.00" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspiele>);
+    vi.mocked(useCommunauteHooks.useTippspielTeilnahmen).mockReturnValue({
+      data: page([teilnahme({ statut_paiement: "confirmee" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTeilnahmen>);
+
+    renderWithProviders(<TippspielSection />);
+
+    expect(screen.getByText("tippspiel.tipps_titel")).toBeInTheDocument();
+    expect(screen.queryByText("tippspiel.tipps_gesperrt_zahlung")).not.toBeInTheDocument();
   });
 });

@@ -414,14 +414,20 @@ export interface TippspielPayload {
 
 /** Une ligne du classement (participation confirmée) OU l'état de sa propre inscription
  * (`?mine=true`) OU une ligne en attente de confirmation de paiement
- * (`?statut_paiement=en_attente`, Directeur Financier+ uniquement) — voir
- * TippspielTeilnahmeViewSet côté backend pour le détail des trois usages de ce même
- * serializer. `total_points` toujours annoté côté backend (0 par défaut). */
+ * (`?statut_paiement=en_attente`, Directeur Financier+ uniquement, désormais listable à
+ * travers tous les Tippspiele — voir docstring de tête TippspielTeilnahmeViewSet côté
+ * backend) — voir TippspielTeilnahmeViewSet côté backend pour le détail des trois usages
+ * de ce même serializer. `total_points` toujours annoté côté backend (0 par défaut).
+ * `tippspiel_titre`/`montant_participation` (ajoutés le 2026-09-24) n'ont d'intérêt
+ * réel que pour la liste transversale des paiements en attente, voir
+ * `TippspielZahlungenPanel`. */
 export interface TippspielTeilnahme {
   id: string;
   tippspiel: string;
+  tippspiel_titre: string;
   membre_nom: string;
   statut_paiement: StatutPaiementTeilnahme;
+  montant_participation: string | null;
   confirmee_le: string | null;
   created_at: string;
   total_points: number;

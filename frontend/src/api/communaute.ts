@@ -346,13 +346,28 @@ export async function listClassementLigue(cursor?: string): Promise<CursorPage<C
   return data;
 }
 
-export async function listCalendrierRencontres(
-  cursor?: string,
-): Promise<CursorPage<RencontreCalendrier>> {
-  const { data } = await apiClient.get<CursorPage<RencontreCalendrier>>("/communaute/calendrier/", {
-    params: { cursor },
-  });
-  return data;
+// Une seule page (PAGE_SIZE=20, voir settings/base.py) ne couvre plus le calendrier
+// synchronisé depuis GOAL API (toutes compétitions/saisons confondues, ~200+ rencontres,
+// voir docstring de tête services.py) : parcourt donc systématiquement toutes les pages
+// (`next`, une URL absolue générée par CursorPagination) — correctif suite retour
+// utilisateur "Es sind nur die Spiele der Hin Runde im Spielplan ... verfügbar" : au-delà
+// d'une page, l'ancien fetch à page unique + tri décroissant ne montrait que les
+// rencontres les PLUS lointaines dans le temps (toutes compétitions confondues, y compris
+// des matchs amicaux/coupes datés bien après la fin de la Ligue 1), jamais celles de la
+// Rückrunde pourtant plus proches. `CALENDRIER_MAX_PAGES` est un garde-fou, pas une
+// limite attendue (20 pages × 20 lignes = 400, largement au-dessus du volume réel connu).
+const CALENDRIER_MAX_PAGES = 20;
+
+export async function listCalendrierRencontres(): Promise<CursorPage<RencontreCalendrier>> {
+  let url: string | null = "/communaute/calendrier/";
+  let toutes: RencontreCalendrier[] = [];
+  for (let page = 0; page < CALENDRIER_MAX_PAGES && url; page += 1) {
+    const { data }: { data: CursorPage<RencontreCalendrier> } =
+      await apiClient.get<CursorPage<RencontreCalendrier>>(url);
+    toutes = toutes.concat(data.results);
+    url = data.next;
+  }
+  return { next: null, previous: null, results: toutes };
 }
 
 export async function listStatistiquesJoueurs(
@@ -422,7 +437,10 @@ export async function teilnehmenTippspiel(id: string): Promise<TippspielTeilnahm
 }
 
 export interface TippspielTeilnahmenFiltres {
-  tippspiel: string;
+  /** Requis pour le classement/`?mine=` — optionnel pour `statutPaiement:"en_attente"`,
+   * qui liste alors les paiements en attente à travers TOUS les Tippspiele (voir
+   * docstring de tête TippspielTeilnahmeViewSet côté backend, 2026-09-24). */
+  tippspiel?: string;
   /** `true` : ma propre inscription (quel que soit son statut de paiement). Omis ou
    * `false` : classement (participations confirmées uniquement), sauf si
    * `statutPaiement` est renseigné. */

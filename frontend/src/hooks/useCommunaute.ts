@@ -735,7 +735,10 @@ export function useTippspielTeilnahmen(filtres: communauteApi.TippspielTeilnahme
   return useQuery({
     queryKey: communauteKeys.tippspielTeilnahmen(filtres),
     queryFn: () => communauteApi.listTippspielTeilnahmen(filtres),
-    enabled: !!filtres.tippspiel,
+    // `tippspiel` est requis pour le classement/`?mine=`, mais optionnel pour
+    // `statutPaiement:"en_attente"` (liste désormais transversale à tous les
+    // Tippspiele, voir TippspielTeilnahmenFiltres/TippspielZahlungenPanel).
+    enabled: !!filtres.tippspiel || filtres.statutPaiement === "en_attente",
   });
 }
 

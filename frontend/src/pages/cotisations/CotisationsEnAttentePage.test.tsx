@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useAdhesionsHooks from "../../hooks/useAdhesions";
 import * as useBoutiqueHooks from "../../hooks/useBoutique";
+import * as useCommunauteHooks from "../../hooks/useCommunaute";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
 import * as useEvenementsHooks from "../../hooks/useEvenements";
 import * as useMembresHooks from "../../hooks/useMembres";
@@ -69,6 +70,18 @@ vi.mock("../../hooks/useBoutique", async () => {
     ...actual,
     useProduits: vi.fn(),
     useVendreEspeces: vi.fn(),
+  };
+});
+
+// Ajouté le 2026-09-24 (retour utilisateur : le panneau de confirmation des paiements de
+// participation au Tippspiel, `TippspielZahlungenPanel`, vit désormais ici — voir docstring de
+// module) — même raison que ci-dessus pour useEvenements/useAdhesions/useBoutique.
+vi.mock("../../hooks/useCommunaute", async () => {
+  const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
+  return {
+    ...actual,
+    useTippspielTeilnahmen: vi.fn(),
+    useConfirmerPaiementTeilnahme: vi.fn(),
   };
 });
 
@@ -170,6 +183,16 @@ describe("CotisationsEnAttentePage", () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.useVendreEspeces>);
+    vi.mocked(useCommunauteHooks.useTippspielTeilnahmen).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTeilnahmen>);
+    vi.mocked(useCommunauteHooks.useConfirmerPaiementTeilnahme).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useConfirmerPaiementTeilnahme>);
   });
 
   it("affiche un message quand la file est vide", () => {
@@ -413,7 +436,9 @@ describe("CotisationsEnAttentePage", () => {
       target: { value: "autre" },
     });
 
-    expect(screen.getByText("en_attente_paiement.especes_beitragsartikel_aucun")).toBeInTheDocument();
+    expect(
+      screen.getByText("en_attente_paiement.especes_beitragsartikel_aucun"),
+    ).toBeInTheDocument();
   });
 
   it("filtre les articles personnalisés désactivés du menu 'Beitragsartikel'", () => {
@@ -608,7 +633,14 @@ describe("CotisationsEnAttentePage", () => {
     expect(valeurs).not.toContain("cotisation");
     expect(valeurs).not.toContain("adhesion");
     expect(valeurs).toEqual(
-      expect.arrayContaining(["mitgliedschaftsbeitrag", "evenement", "boutique", "don", "autre", "autre_libre"]),
+      expect.arrayContaining([
+        "mitgliedschaftsbeitrag",
+        "evenement",
+        "boutique",
+        "don",
+        "autre",
+        "autre_libre",
+      ]),
     );
   });
 

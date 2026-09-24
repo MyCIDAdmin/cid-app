@@ -29,6 +29,15 @@
  * Chaque ligne résout le nom du membre via useMembre(cotisation.membre) — un composant séparé
  * par ligne (CotisationGestionRow), même raison que JustificatifQueueRow dans
  * AdminJustificatifsPage.tsx (règles des Hooks : pas d'appel de hook dans une boucle .map()).
+ *
+ * Élargie une troisième fois le 2026-09-24 (retour utilisateur : "Die Ausstehende Zahlung
+ * für die Teilnahme im Tippspiel soll im Modul 'Ausstehende Zahlungen' auftauchen und
+ * genehmigt werden und nicht im Fan-Club Modul") : `TippspielZahlungenPanel` affiche et
+ * confirme désormais ici les paiements de participation au Tippspiel (module Fan-Club) —
+ * un système de paiement volontairement autonome, distinct du modèle `Cotisation` qui
+ * structure le reste de cette page (décision utilisateur d'origine : "Eigenständiges
+ * einfaches System"), d'où une section séparée plutôt qu'une ligne de plus dans le tableau
+ * ci-dessous. Voir `components/cotisations/TippspielZahlungenPanel.tsx`.
  */
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -56,6 +65,7 @@ import type {
 import type { MembreListItem } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
+import TippspielZahlungenPanel from "../../components/cotisations/TippspielZahlungenPanel";
 
 /**
  * Types proposés par le formulaire "Barzahlung eintragen" (PaiementEspecesForm ci-dessous) —
@@ -178,7 +188,7 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
                 value={modePaiement}
                 onChange={(e) => setModePaiement(e.target.value as ModePaiement)}
                 disabled={!modifiable}
-                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
               >
                 {MODES_PAIEMENT.map((mode) => (
@@ -191,7 +201,7 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
                 type="button"
                 onClick={confirmerPaiement}
                 disabled={marquerPayeeMutation.isPending || !modifiable}
-                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 className="rounded-cid bg-status-successText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
               >
                 {marquerPayeeMutation.isPending
@@ -202,7 +212,10 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
           )}
           {marquerPayeeMutation.isError && (
             <p className="mb-2 text-xs text-status-dangerText">
-              {extractApiErrorMessage(marquerPayeeMutation.error, t("en_attente_paiement.erreur_action"))}
+              {extractApiErrorMessage(
+                marquerPayeeMutation.error,
+                t("en_attente_paiement.erreur_action"),
+              )}
             </p>
           )}
 
@@ -212,7 +225,7 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
               value={nouveauStatut}
               onChange={(e) => setNouveauStatut(e.target.value as StatutCotisation)}
               disabled={!modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
             >
               {STATUTS.map((statut) => (
@@ -226,14 +239,18 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
               onChange={(e) => setMotif(e.target.value)}
               placeholder={t("en_attente_paiement.motif_placeholder") ?? ""}
               disabled={!modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="min-w-[8rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
             />
             <button
               type="button"
               onClick={appliquerChangementStatut}
-              disabled={changerStatutMutation.isPending || nouveauStatut === cotisation.statut || !modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              disabled={
+                changerStatutMutation.isPending ||
+                nouveauStatut === cotisation.statut ||
+                !modifiable
+              }
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="rounded-cid border border-ca px-2 py-1 text-xs font-medium text-ca hover:bg-cal disabled:opacity-40"
             >
               {changerStatutMutation.isPending
@@ -398,8 +415,7 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
   const variantesDisponibles = produitSelectionne?.variantes ?? [];
 
   const montantInvalide =
-    (typeArticle === "don" || typeArticle === "autre_libre") &&
-    (!montant || Number(montant) <= 0);
+    (typeArticle === "don" || typeArticle === "autre_libre") && (!montant || Number(montant) <= 0);
   const libelleManquant = typeArticle === "autre_libre" && !libelle.trim();
   const articleManquant = typeArticle === "autre" && !articleCatalogueId;
   const evenementManquant = typeArticle === "evenement" && !evenementId;
@@ -439,7 +455,12 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
     if (typeArticle === "evenement") {
       inscrireEspecesMutation.mutate(
         { membre: membre.id, evenement: evenementId, places: Number(places) },
-        { onSuccess: () => { reinitialiser(); onClose(); } },
+        {
+          onSuccess: () => {
+            reinitialiser();
+            onClose();
+          },
+        },
       );
       return;
     }
@@ -447,7 +468,12 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
     if (typeArticle === "mitgliedschaftsbeitrag") {
       souscrireEspecesMutation.mutate(
         { membre: membre.id, offre: offreId },
-        { onSuccess: () => { reinitialiser(); onClose(); } },
+        {
+          onSuccess: () => {
+            reinitialiser();
+            onClose();
+          },
+        },
       );
       return;
     }
@@ -455,7 +481,12 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
     if (typeArticle === "boutique") {
       vendreEspecesMutation.mutate(
         { membre: membre.id, variante: varianteId, quantite: Number(quantiteBoutique) },
-        { onSuccess: () => { reinitialiser(); onClose(); } },
+        {
+          onSuccess: () => {
+            reinitialiser();
+            onClose();
+          },
+        },
       );
       return;
     }
@@ -503,7 +534,9 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
       onSubmit={soumettre}
       className="mb-4 space-y-3 rounded-cid-lg bg-bg-primary p-4 shadow-sm"
     >
-      <h2 className="text-sm font-bold text-text-primary">{t("en_attente_paiement.especes_titre")}</h2>
+      <h2 className="text-sm font-bold text-text-primary">
+        {t("en_attente_paiement.especes_titre")}
+      </h2>
 
       <div>
         <label className="mb-1 block text-[10px] uppercase text-text-tertiary">
@@ -569,7 +602,9 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
                 value={libelle}
                 onChange={(e) => setLibelle(e.target.value)}
                 placeholder={
-                  (typeArticle === "don" ? t("article.don_titre") : t("en_attente_paiement.especes_champ_libelle")) ?? ""
+                  (typeArticle === "don"
+                    ? t("article.don_titre")
+                    : t("en_attente_paiement.especes_champ_libelle")) ?? ""
                 }
                 className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
               />
@@ -913,6 +948,8 @@ export default function CotisationsEnAttentePage() {
           {t("common:acces.lecture_seule_banniere")}
         </p>
       )}
+
+      <TippspielZahlungenPanel />
 
       {especesOuvert && <PaiementEspecesForm onClose={() => setEspecesOuvert(false)} />}
 
