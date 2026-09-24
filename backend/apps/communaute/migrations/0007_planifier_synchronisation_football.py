@@ -1,9 +1,13 @@
 """
 Data migration — planifie la synchronisation périodique du classement/calendrier Fan-Club
-depuis API-Football (module "Fan-Club", 2026-09-24, fournisseur changé de TheSportsDB à
-API-Football le même jour — voir services.py) dans django-celery-beat, même principe
-que apps.evenements.migrations.0002_planifier_rappels_evenements (voir son docstring pour
-le détail du fonctionnement de DatabaseScheduler).
+(module "Fan-Club", 2026-09-24 ; fournisseur de données changé deux fois le même jour :
+TheSportsDB → API-Football → SerpApi/Google Sports, voir docstring de tête services.py)
+dans django-celery-beat, même principe que
+apps.evenements.migrations.0002_planifier_rappels_evenements (voir son docstring pour
+le détail du fonctionnement de DatabaseScheduler). Le passage à SerpApi n'a PAS changé la
+fréquence de planification (toujours toutes les 6h) : la requête combinée retenue
+(services.py::synchroniser_donnees_football) ne fait qu'UN SEUL appel SerpApi par
+exécution, ce qui reste large sous le quota gratuit de 250 recherches/mois.
 
 Idempotent (get_or_create) et réversible (la tâche Celery elle-même, tasks.py, n'est pas
 affectée par le retrait de sa planification). Toutes les 6 heures : le classement/calendrier
@@ -11,6 +15,7 @@ d'un championnat de football ne change pas plus souvent qu'à la fin de chaque j
 championnat — une fréquence horaire serait inutile et solliciterait l'API gratuite sans
 raison.
 """
+
 from django.db import migrations
 
 TASK_NAME = "communaute.synchroniser_donnees_football"
@@ -36,7 +41,7 @@ def creer_planification(apps, schema_editor):
             "enabled": True,
             "description": (
                 "Module Fan-Club — synchronise ClassementLigue/RencontreCalendrier depuis "
-                "API-Football toutes les 6h (voir services.py)."
+                "SerpApi/Google Sports toutes les 6h (voir services.py)."
             ),
         },
     )

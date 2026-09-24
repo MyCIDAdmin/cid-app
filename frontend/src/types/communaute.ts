@@ -235,7 +235,7 @@ export interface MatchCommentaire {
 // apps.communaute.models/serializers (ClassementLigue/RencontreCalendrier/MatchEvenement) ---
 
 /** Ligne de tableau de classement — toujours en lecture seule côté frontend, synchronisée
- * périodiquement depuis API-Football (voir backend apps.communaute.services). */
+ * périodiquement depuis SerpApi/Google Sports (voir backend apps.communaute.services). */
 export interface ClassementLigue {
   id: string;
   saison: string;

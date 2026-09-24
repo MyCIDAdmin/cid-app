@@ -1067,7 +1067,7 @@ def test_classement_lecture_seule_pas_de_creation_via_api(api_client):
         reverse(CLASSEMENT_LIST_URL), {"saison": "2025-2026", "equipe": "Club Africain", "rang": 1}
     )
     # Aucune action POST exposée (mixins.ListModelMixin seul) — toujours synchronisé
-    # depuis API-Football, voir services.py.
+    # depuis SerpApi/Google Sports, voir services.py.
     assert resp.status_code == 405
 
 
@@ -1475,12 +1475,18 @@ def test_phase_d_role_personnalise_peut_gerer_les_quiz_via_la_matrice(api_client
     défaut trie sur "-created", un champ que QuestionQuiz n'a pas — jamais exercé par un GET
     avant cette phase, puisque seul le POST y était testé)."""
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     quiz = QuizFactory()
     user, _ = _user_avec_membre(Role.MEMBRE, "phased-quiz-grant@example.de")
     role_perso = RoleDefinitionFactory(slug="quiz-manager")
-    RoleModulePermissionFactory(role=role_perso, module="page_quiz", niveau_acces=NiveauAcces.LECTURE_ECRITURE)
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_quiz", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
     UserRoleAssignmentFactory(user=user, role=role_perso)
 
     resp = _auth(api_client, user).post(
@@ -1519,11 +1525,17 @@ def test_phase_d_bureau_admin_perd_lacces_a_la_gestion_des_albums_si_matrice_le_
 @pytest.mark.django_db
 def test_phase_d_role_personnalise_peut_creer_un_album_via_la_matrice(api_client):
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     user, _ = _user_avec_membre(Role.MEMBRE, "phased-albums-grant@example.de")
     role_perso = RoleDefinitionFactory(slug="albums-manager")
-    RoleModulePermissionFactory(role=role_perso, module="page_albums", niveau_acces=NiveauAcces.LECTURE_ECRITURE)
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_albums", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
     UserRoleAssignmentFactory(user=user, role=role_perso)
 
     resp = _auth(api_client, user).post(reverse(ALBUM_LIST_URL), {"nom": "Derby 2026"})

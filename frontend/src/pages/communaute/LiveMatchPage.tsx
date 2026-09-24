@@ -7,7 +7,7 @@
  * troisième lot Phase 4B) — lecture ouverte à tout authentifié, création d'un match
  * réservée Bureau Admin+ (voir MatchPermission côté backend). Les nouveaux onglets
  * "Tabelle"/"Spielplan"/"Statistiken" affichent les données Club Africain synchronisées
- * automatiquement depuis API-Football (voir backend apps.communaute.services, décision
+ * automatiquement depuis SerpApi/Google Sports (voir backend apps.communaute.services, décision
  * "hybride" du plan approuvé) — purement en lecture, aucune action de gestion. Le détail
  * d'un match (score/chrono en direct, commentaires, réactions, événements du Live-Ticker)
  * vit toujours dans LiveMatchDetailPage.

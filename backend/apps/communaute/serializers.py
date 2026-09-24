@@ -27,8 +27,8 @@ from .models import (
     Publication,
     PublicationLike,
     PublicationPartage,
-    Quiz,
     QuestionQuiz,
+    Quiz,
     RencontreCalendrier,
     ReponseForum,
     ReponseQuiz,
@@ -510,7 +510,7 @@ class MatchCommentaireSerializer(serializers.ModelSerializer):
 
 
 class ClassementLigueSerializer(serializers.ModelSerializer):
-    """Lecture seule — toujours synchronisé depuis API-Football, voir services.py."""
+    """Lecture seule — toujours synchronisé depuis SerpApi/Google Sports, voir services.py."""
 
     class Meta:
         model = ClassementLigue
@@ -534,7 +534,7 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
 
 
 class RencontreCalendrierSerializer(serializers.ModelSerializer):
-    """Lecture seule — toujours synchronisé depuis API-Football, voir services.py."""
+    """Lecture seule — toujours synchronisé depuis SerpApi/Google Sports, voir services.py."""
 
     est_a_venir = serializers.BooleanField(read_only=True)
 

@@ -69,16 +69,22 @@ def test_auteur_introuvable_ne_leve_pas():
 
 
 # ---------------------------------------------------------------------------
-# Fan-Club — synchroniser_donnees_football (2026-09-24, voir services.py pour le détail des
-# deux sous-fonctions déjà testées individuellement dans test_api_football.py)
+# Fan-Club — synchroniser_donnees_football (2026-09-24, bascule SerpApi le même jour, voir
+# services.py pour le détail — un seul appel SerpApi partagé, déjà testé de bout en bout
+# dans test_serpapi.py::test_synchroniser_donnees_football_ne_fait_quun_seul_appel_http).
+# Ici, la tâche Celery se contente de déléguer et journaliser : on vérifie uniquement
+# qu'elle relaie fidèlement le résultat de services.synchroniser_donnees_football().
 # ---------------------------------------------------------------------------
 
 
-def test_synchroniser_donnees_football_agrege_les_deux_compteurs(monkeypatch):
+def test_synchroniser_donnees_football_relaie_le_resultat_du_service(monkeypatch):
     from apps.communaute import tasks as tasks_module
 
-    monkeypatch.setattr(tasks_module.services, "synchroniser_classement", lambda: 3)
-    monkeypatch.setattr(tasks_module.services, "synchroniser_calendrier", lambda: 5)
+    monkeypatch.setattr(
+        tasks_module.services,
+        "synchroniser_donnees_football",
+        lambda: {"classement": 3, "calendrier": 5},
+    )
 
     resultat = synchroniser_donnees_football()
 

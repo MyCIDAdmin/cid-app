@@ -1,6 +1,6 @@
 /**
  * Onglet "Spielplan"/"Calendrier" — module Fan-Club (2026-09-24, extension du Live Match).
- * Lecture seule, synchronisé depuis API-Football (voir backend apps.communaute.services) —
+ * Lecture seule, synchronisé depuis SerpApi/Google Sports (voir backend apps.communaute.services) —
  * distinct des matchs du Live-Ticker (onglet "Ticker", voir LiveMatchPage.tsx).
  */
 import { useMemo } from "react";

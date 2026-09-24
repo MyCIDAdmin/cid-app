@@ -660,12 +660,13 @@ class MatchReaction(models.Model):
 # Fan-Club — extension du Live Match (2026-09-24, demande utilisateur : renommer
 # "Live-Spiel" en "Fan-Club" et ajouter classement/calendrier/statistiques réels de Club
 # Africain). Décision retenue (hybride, voir plan approuvé) : `ClassementLigue` et
-# `RencontreCalendrier` sont synchronisés automatiquement depuis l'API API-Football (voir
-# services.py — remplace TheSportsDB le 2026-09-24 : la clé publique gratuite de
-# TheSportsDB s'est révélée inutilisable pour la Ligue 1 tunisienne/Club Africain une fois
-# testée en conditions réelles — recherche tenue avec l'utilisateur, voir historique) —
-# aucune API gratuite ne fournissant de données live pour la Ligue 1 tunisienne. Le
-# Live-Ticker (score/chrono déjà géré par `Match` ci-dessus) reste
+# `RencontreCalendrier` sont synchronisés automatiquement depuis SerpApi/Google Sports (voir
+# services.py — remplace API-Football le 2026-09-24, lui-même remplaçant TheSportsDB
+# quelques heures plus tôt le même jour : TheSportsDB s'est révélé inutilisable pour la
+# Ligue 1 tunisienne/Club Africain, puis le plan gratuit d'API-Football s'est révélé
+# bloquer l'accès aux saisons récentes/en cours — recherche tenue avec l'utilisateur, voir
+# historique) — aucune API gratuite ne fournissant de données live pour la Ligue 1
+# tunisienne. Le Live-Ticker (score/chrono déjà géré par `Match` ci-dessus) reste
 # piloté par un modérateur (Bureau Admin+), et `MatchEvenement` ajoute un journal
 # d'événements (buts/cartons) diffusé en direct via `LiveMatchConsumer` — voir
 # consumers.py, `MatchEvenementPermission` reprend délibérément le même seuil plat
@@ -676,7 +677,7 @@ class MatchReaction(models.Model):
 
 class ClassementLigue(models.Model):
     """Une ligne de tableau de classement (une équipe, une saison) — synchronisée
-    périodiquement depuis API-Football, jamais éditée manuellement (voir
+    périodiquement depuis SerpApi/Google Sports, jamais éditée manuellement (voir
     services.py::synchroniser_classement)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -706,7 +707,9 @@ class ClassementLigue(models.Model):
         verbose_name_plural = _("Classements de ligue")
         ordering = ["saison", "rang"]
         constraints = [
-            models.UniqueConstraint(fields=["saison", "equipe"], name="classement_saison_equipe_unique")
+            models.UniqueConstraint(
+                fields=["saison", "equipe"], name="classement_saison_equipe_unique"
+            )
         ]
 
     def __str__(self):
@@ -714,10 +717,12 @@ class ClassementLigue(models.Model):
 
 
 class RencontreCalendrier(models.Model):
-    """Un match du calendrier (passé ou à venir) synchronisé depuis API-Football —
+    """Un match du calendrier (à venir) synchronisé depuis SerpApi/Google Sports —
     distinct de `Match` ci-dessus, qui reste réservé aux matchs pilotés en direct par un
-    modérateur (Live-Ticker). `evenement_externe_id` (identifiant "fixture" côté
-    API-Football) est la clé d'upsert idempotente."""
+    modérateur (Live-Ticker). `evenement_externe_id` (identifiant "kgmid" Google) est la
+    clé d'upsert idempotente. `score_domicile`/`score_exterieur` restent NULL pour
+    l'instant — SerpApi ne renvoie pas de résultats passés avec la requête retenue (voir
+    docstring de tête services.py)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
