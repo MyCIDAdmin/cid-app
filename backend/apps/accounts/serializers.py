@@ -167,6 +167,13 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
     device_fingerprint = serializers.CharField(required=False, allow_blank=True)
+    # Distinct de `device_fingerprint` ci-dessus (qui sert uniquement à la détection "nouvel
+    # appareil" du 2FA conditionnel, SCD §3.3, voir services.requires_2fa) — volontairement séparé
+    # pour ne jamais interagir avec cette logique existante. `device_id` sert exclusivement à
+    # "une seule session active par appareil" (task #218, 2026-09-24, voir
+    # services.enforce_single_session_per_device). Un identifiant STABLE par navigateur
+    # (généré une fois côté frontend et persisté), pas une empreinte technique.
+    device_id = serializers.CharField(required=False, allow_blank=True)
 
 
 class SendOTPSerializer(serializers.Serializer):

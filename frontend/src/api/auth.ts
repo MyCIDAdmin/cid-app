@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import type { CidUser } from "../store/authStore";
+import { getDeviceId } from "../utils/deviceId";
 
 export interface LoginResponse {
   requires_2fa?: boolean;
@@ -11,7 +12,13 @@ export interface LoginResponse {
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const { data } = await apiClient.post<LoginResponse>("/auth/login/", { email, password });
+  // task #218 (2026-09-24) : `device_id` permet au backend de terminer toute session encore
+  // active sur ce même appareil — voir utils/deviceId.ts.
+  const { data } = await apiClient.post<LoginResponse>("/auth/login/", {
+    email,
+    password,
+    device_id: getDeviceId(),
+  });
   return data;
 }
 

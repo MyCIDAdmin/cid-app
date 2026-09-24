@@ -113,6 +113,163 @@ def test_login_bureau_admin_requires_2fa(api_client):
     assert "login_ticket" in resp.data
 
 
+# --- task #218 (2026-09-24) : "wenn ein Benutzer sich einloggt und eine Session auf einem
+# Gerät aufmacht, müssen alle laufende Sessions im selben Gerät beendet werden" — une seule
+# session active par appareil (identifié par `device_fingerprint`, déjà utilisé pour la
+# détection "nouvel appareil" du 2FA conditionnel). Un refresh token révoqué reste valable
+# jusqu'à sa prochaine utilisation (blacklist vérifié seulement au refresh, jamais sur l'access
+# token en cours — même mécanisme que LogoutView) : on vérifie donc la révocation via
+# /auth/token/refresh/, pas via une requête authentifiée classique.
+
+
+def test_login_meme_appareil_revoque_la_session_precedente(api_client, membre_actif):
+    url = reverse("accounts:login")
+    premiere = api_client.post(
+        url,
+        {"email": "membre@example.com", "password": "Password123!", "device_id": "fp-a"},
+        format="json",
+    )
+    assert premiere.status_code == 200
+    ancien_refresh = premiere.data["refresh"]
+
+    seconde = api_client.post(
+        url,
+        {"email": "membre@example.com", "password": "Password123!", "device_id": "fp-a"},
+        format="json",
+    )
+    assert seconde.status_code == 200
+
+    refresh_resp = api_client.post(
+        reverse("accounts:token-refresh"), {"refresh": ancien_refresh}, format="json"
+    )
+    assert refresh_resp.status_code == 401
+
+    # La nouvelle session, elle, doit rester utilisable.
+    nouveau_refresh = seconde.data["refresh"]
+    refresh_resp_nouveau = api_client.post(
+        reverse("accounts:token-refresh"), {"refresh": nouveau_refresh}, format="json"
+    )
+    assert refresh_resp_nouveau.status_code == 200
+
+
+def test_login_appareil_different_ne_revoque_rien(api_client, membre_actif):
+    url = reverse("accounts:login")
+    sur_telephone = api_client.post(
+        url,
+        {
+            "email": "membre@example.com",
+            "password": "Password123!",
+            "device_id": "fp-telephone",
+        },
+        format="json",
+    )
+    assert sur_telephone.status_code == 200
+
+    sur_ordinateur = api_client.post(
+        url,
+        {
+            "email": "membre@example.com",
+            "password": "Password123!",
+            "device_id": "fp-ordinateur",
+        },
+        format="json",
+    )
+    assert sur_ordinateur.status_code == 200
+
+    # Les deux appareils restent connectés — un utilisateur multi-appareils n'est pas affecté.
+    for resp in (sur_telephone, sur_ordinateur):
+        refresh_resp = api_client.post(
+            reverse("accounts:token-refresh"), {"refresh": resp.data["refresh"]}, format="json"
+        )
+        assert refresh_resp.status_code == 200
+
+
+def test_login_sans_empreinte_ne_revoque_rien(api_client, membre_actif):
+    """Un client qui n'envoie pas `device_fingerprint` (rétrocompatibilité) ne doit jamais
+    déclencher de révocation — impossible de savoir en toute sécurité qu'il s'agit du même
+    appareil, voir services.enforce_single_session_per_device."""
+    url = reverse("accounts:login")
+    premiere = api_client.post(
+        url, {"email": "membre@example.com", "password": "Password123!"}, format="json"
+    )
+    assert premiere.status_code == 200
+
+    seconde = api_client.post(
+        url, {"email": "membre@example.com", "password": "Password123!"}, format="json"
+    )
+    assert seconde.status_code == 200
+
+    refresh_resp = api_client.post(
+        reverse("accounts:token-refresh"), {"refresh": premiere.data["refresh"]}, format="json"
+    )
+    assert refresh_resp.status_code == 200
+
+
+def test_login_meme_appareil_journalise_laudit(api_client, membre_actif):
+    from apps.accounts.models import AuditLogEntry
+
+    url = reverse("accounts:login")
+    api_client.post(
+        url,
+        {"email": "membre@example.com", "password": "Password123!", "device_id": "fp-a"},
+        format="json",
+    )
+    api_client.post(
+        url,
+        {"email": "membre@example.com", "password": "Password123!", "device_id": "fp-a"},
+        format="json",
+    )
+
+    entry = AuditLogEntry.objects.filter(action="device_sessions_revoked").first()
+    assert entry is not None
+    assert entry.metadata["count"] == 1
+
+
+def test_verify_2fa_meme_appareil_revoque_la_session_precedente(api_client):
+    """Même comportement après 2FA (Bureau Admin+) — la révocation n'a lieu qu'une fois la
+    connexion entièrement vérifiée, jamais dès l'étape 1 (login_ticket)."""
+    from apps.accounts import services
+
+    User.objects.create_user(
+        email="bureau@example.com",
+        password="Password123!",
+        role=Role.BUREAU_ADMIN,
+        is_active=True,
+    )
+
+    def se_connecter():
+        login_resp = api_client.post(
+            reverse("accounts:login"),
+            {
+                "email": "bureau@example.com",
+                "password": "Password123!",
+                "device_id": "fp-a",
+            },
+            format="json",
+        )
+        assert login_resp.status_code == 200
+        assert login_resp.data["requires_2fa"] is True
+        ticket = login_resp.data["login_ticket"]
+
+        user = User.objects.get(email="bureau@example.com")
+        code = services.generate_email_otp(user, purpose="login_2fa")
+        verify_resp = api_client.post(
+            reverse("accounts:2fa-verify"),
+            {"login_ticket": ticket, "method": "email_otp", "code": code},
+            format="json",
+        )
+        assert verify_resp.status_code == 200
+        return verify_resp.data["refresh"]
+
+    ancien_refresh = se_connecter()
+    se_connecter()
+
+    refresh_resp = api_client.post(
+        reverse("accounts:token-refresh"), {"refresh": ancien_refresh}, format="json"
+    )
+    assert refresh_resp.status_code == 401
+
+
 def test_me_requires_authentication(api_client):
     url = reverse("accounts:me")
     resp = api_client.get(url)

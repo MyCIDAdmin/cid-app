@@ -135,6 +135,72 @@ def fingerprint_hash(raw_fingerprint: str) -> str:
     return hashlib.sha256(raw_fingerprint.encode()).hexdigest()
 
 
+def enforce_single_session_per_device(user, device_fingerprint_hash: str | None) -> int:
+    """
+    Révoque (blackliste) tous les refresh tokens encore actifs de `user` sur
+    CE MÊME appareil (même empreinte) — une seule session active par
+    appareil (retour utilisateur du 2026-09-24). N'affecte jamais les
+    sessions d'un AUTRE appareil : un membre connecté à la fois sur son
+    téléphone et son ordinateur garde les deux — seul un doublon sur le
+    même appareil (onglet oublié ouvert, reconnexion) est visé.
+
+    Le refresh token révoqué reste valable jusqu'à sa prochaine utilisation
+    (le blacklist n'est vérifié qu'au refresh, jamais sur l'access token en
+    cours — même mécanisme que LogoutView) : la session concernée se
+    termine donc au plus tard à l'expiration de son access token courant
+    (JWT_ACCESS_TOKEN_LIFETIME_MIN, 15 min par défaut).
+
+    Sans empreinte (client qui n'en envoie pas), impossible de déterminer
+    "le même appareil" en toute sécurité — on ne révoque rien, comme pour la
+    détection "nouvel appareil" du 2FA conditionnel (requires_2fa ci-dessus).
+    Retourne le nombre de sessions révoquées (pour l'audit log).
+    """
+    if not device_fingerprint_hash:
+        return 0
+
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
+    a_revoquer = OutstandingToken.objects.filter(
+        device_session__user=user,
+        device_session__device_fingerprint_hash=device_fingerprint_hash,
+        expires_at__gt=timezone.now(),
+        blacklistedtoken__isnull=True,
+    )
+
+    count = 0
+    for token in a_revoquer:
+        BlacklistedToken.objects.create(token=token)
+        count += 1
+    return count
+
+
+def track_device_session(user, refresh_token, device_fingerprint_hash: str | None) -> None:
+    """
+    Enregistre l'empreinte d'appareil du refresh token qui vient d'être émis
+    — permet à la PROCHAINE connexion sur ce même appareil de le retrouver
+    via enforce_single_session_per_device ci-dessus. `refresh_token` est le
+    `RefreshToken` (simplejwt) tout juste créé par `RefreshToken.for_user` —
+    son OutstandingToken correspondant existe donc déjà (créé
+    automatiquement par BlacklistMixin.for_user). Sans empreinte, rien à
+    enregistrer (voir enforce_single_session_per_device).
+    """
+    if not device_fingerprint_hash:
+        return
+
+    from rest_framework_simplejwt.settings import api_settings
+    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
+    from .models import DeviceSession
+
+    jti = refresh_token[api_settings.JTI_CLAIM]
+    outstanding = OutstandingToken.objects.get(jti=jti)
+    DeviceSession.objects.create(
+        user=user,
+        outstanding_token=outstanding,
+        device_fingerprint_hash=device_fingerprint_hash,
+    )
+
+
 def _password_fingerprint(user) -> str:
     """
     Empreinte à sens unique du hash de mot de passe courant — jamais le hash

@@ -81,9 +81,20 @@ def _client_ip(request) -> str:
     return request.META.get("REMOTE_ADDR", "")
 
 
-def _issue_tokens(user: User) -> dict:
+def _issue_tokens(user: User, device_hash: str | None = None) -> dict:
+    """Émet les tokens JWT. `device_hash` (hash de `LoginSerializer.device_id`, distinct de
+    `device_fingerprint`/2FA — voir ce serializer) : si fourni, applique d'abord "une seule
+    session active par appareil" (retour utilisateur du 2026-09-24, task #218) : toute session
+    encore active sur CE MÊME appareil est révoquée avant l'émission de la nouvelle — voir
+    services.enforce_single_session_per_device."""
+    if device_hash:
+        revoked = services.enforce_single_session_per_device(user, device_hash)
+        if revoked:
+            services.log_audit_event("device_sessions_revoked", user=user, count=revoked)
+
     refresh = RefreshToken.for_user(user)
     refresh["role"] = user.role
+    services.track_device_session(user, refresh, device_hash)
     return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
 
@@ -116,9 +127,14 @@ class LoginView(APIView):
         fp_raw = data.get("device_fingerprint", "")
         fp_hash = services.fingerprint_hash(fp_raw) if fp_raw else None
 
+        # `device_id` (task #218) : identifiant de session distinct de `device_fingerprint`
+        # ci-dessus — voir LoginSerializer pour la raison de cette séparation.
+        device_id_raw = data.get("device_id", "")
+        device_hash = services.fingerprint_hash(device_id_raw) if device_id_raw else None
+
         if services.requires_2fa(user, ip, fp_hash):
             ticket = signing.dumps(
-                {"user_id": str(user.id), "ip": ip, "fp": fp_hash},
+                {"user_id": str(user.id), "ip": ip, "fp": fp_hash, "did": device_hash},
                 salt=LOGIN_TICKET_SALT,
             )
             services.log_audit_event(
@@ -137,7 +153,7 @@ class LoginView(APIView):
             )
 
         user.mark_login(ip)
-        tokens = _issue_tokens(user)
+        tokens = _issue_tokens(user, device_hash)
         services.log_audit_event(
             "login_success",
             user=user,
@@ -215,7 +231,7 @@ class Verify2FAView(APIView):
         if new_ip:
             send_new_ip_alert_email.delay(str(user.id), ip)
 
-        tokens = _issue_tokens(user)
+        tokens = _issue_tokens(user, payload.get("did"))
         services.log_audit_event(
             "login_2fa_success", user=user, ip_address=ip, metadata={"method": data["method"]}
         )

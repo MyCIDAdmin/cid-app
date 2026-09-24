@@ -204,6 +204,47 @@ class AuditLogEntry(models.Model):
         return f"{self.action} — {self.user_id} — {self.created_at:%Y-%m-%d %H:%M}"
 
 
+class DeviceSession(models.Model):
+    """
+    Associe un refresh token émis (OutstandingToken, app
+    rest_framework_simplejwt.token_blacklist déjà utilisée pour le logout —
+    voir views.LogoutView) à l'empreinte de l'appareil qui l'a demandé.
+
+    Sert une seule chose : à la connexion, retrouver et révoquer les
+    sessions encore actives d'un utilisateur sur CE MÊME appareil (retour
+    utilisateur du 2026-09-24 — "wenn ein Benutzer sich einloggt und eine
+    Session auf einem Gerät aufmacht, müssen alle laufende Sessions im
+    selben Gerät beendet werden"). Un même utilisateur connecté depuis
+    plusieurs appareils différents (téléphone + ordinateur) n'est PAS
+    affecté — seul un doublon sur le même appareil (onglet oublié,
+    reconnexion) l'est. Voir services.enforce_single_session_per_device /
+    services.track_device_session, appelés depuis views._issue_tokens.
+
+    L'empreinte est fournie par le frontend (`device_fingerprint`, déjà
+    utilisé pour la détection "nouvel appareil" du 2FA conditionnel, SCD
+    §3.3 — voir services.requires_2fa) et n'est jamais stockée en clair,
+    seul son hash SHA-256 (services.fingerprint_hash) l'est, comme pour
+    User.trusted_device_token.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="device_sessions")
+    outstanding_token = models.OneToOneField(
+        "token_blacklist.OutstandingToken",
+        on_delete=models.CASCADE,
+        related_name="device_session",
+    )
+    device_fingerprint_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "device_sessions"
+        indexes = [models.Index(fields=["user", "device_fingerprint_hash"])]
+
+    def __str__(self):
+        return f"DeviceSession({self.user_id}, {self.device_fingerprint_hash[:8]}…)"
+
+
 class EmailOTP(models.Model):
     """
     OTP 6 chiffres envoyé par email — méthode de secours 2FA (SCD §3.2).
