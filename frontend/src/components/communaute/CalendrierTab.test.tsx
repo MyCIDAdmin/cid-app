@@ -89,4 +89,90 @@ describe("CalendrierTab", () => {
     expect(screen.getByText(/CS Sfaxien/)).toBeInTheDocument();
     expect(screen.getByText("2 : 1")).toBeInTheDocument();
   });
+
+  // Badge de résultat (2026-09-24, "Ich möchte mehr Statistiken darstellen") — les scores
+  // réels arrivent désormais via la requête SerpApi "<ligue> results" (voir services.py),
+  // qui couvre TOUTE la ligue, pas seulement Club Africain : le badge ne doit apparaître
+  // que pour les rencontres où Club Africain joue effectivement.
+  it("affiche un badge Sieg quand Club Africain gagne à domicile", () => {
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([
+        rencontre({
+          equipe_domicile: "Club Africain",
+          equipe_exterieur: "Zarzis",
+          est_a_venir: false,
+          score_domicile: 1,
+          score_exterieur: 0,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+
+    renderWithProviders(<CalendrierTab />);
+
+    expect(screen.getByText("live.calendrier_resultat_sieg")).toBeInTheDocument();
+  });
+
+  it("affiche un badge Niederlage quand Club Africain perd à l'extérieur", () => {
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([
+        rencontre({
+          equipe_domicile: "CS Sfaxien",
+          equipe_exterieur: "Club Africain",
+          est_a_venir: false,
+          score_domicile: 2,
+          score_exterieur: 0,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+
+    renderWithProviders(<CalendrierTab />);
+
+    expect(screen.getByText("live.calendrier_resultat_niederlage")).toBeInTheDocument();
+  });
+
+  it("n'affiche aucun badge de résultat pour un match sans Club Africain", () => {
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([
+        rencontre({
+          equipe_domicile: "Ben Guerdane",
+          equipe_exterieur: "CS Hammam-Lif",
+          est_a_venir: false,
+          score_domicile: 1,
+          score_exterieur: 0,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+
+    renderWithProviders(<CalendrierTab />);
+
+    expect(screen.queryByText("live.calendrier_resultat_sieg")).not.toBeInTheDocument();
+    expect(screen.queryByText("live.calendrier_resultat_niederlage")).not.toBeInTheDocument();
+    expect(screen.queryByText("live.calendrier_resultat_unentschieden")).not.toBeInTheDocument();
+  });
+
+  it("n'affiche aucun badge de résultat tant que le match n'est pas encore joué", () => {
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([
+        rencontre({
+          equipe_domicile: "Club Africain",
+          equipe_exterieur: "TP Mazembe",
+          est_a_venir: true,
+          score_domicile: null,
+          score_exterieur: null,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+
+    renderWithProviders(<CalendrierTab />);
+
+    expect(screen.queryByText("live.calendrier_resultat_sieg")).not.toBeInTheDocument();
+  });
 });

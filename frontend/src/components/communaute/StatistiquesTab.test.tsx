@@ -74,4 +74,24 @@ describe("StatistiquesTab", () => {
     expect(screen.getAllByText("N")).toHaveLength(1);
     expect(screen.getAllByText("D")).toHaveLength(1);
   });
+
+  // Enrichissement 2026-09-24 ("Ich möchte mehr Statistiken darstellen") : comparaison à
+  // la moyenne de la ligue + tordifférence de toutes les équipes — les deux graphiques
+  // s'appuient sur le tableau COMPLET désormais synchronisé (patch "3 requêtes SerpApi"),
+  // pas seulement Club Africain.
+  it("affiche les titres des graphiques de comparaison ligue et de tordifférence", () => {
+    vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
+      data: page([
+        ligne({ equipe: "Club Africain", rang: 1, difference: 12 }),
+        ligne({ equipe: "ES Tunis", rang: 2, difference: 3, buts_pour: 14, buts_contre: 9 }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
+
+    renderWithProviders(<StatistiquesTab />);
+
+    expect(screen.getByText("live.statistiques_buts_titre")).toBeInTheDocument();
+    expect(screen.getByText("live.statistiques_tordifferenz_titre")).toBeInTheDocument();
+  });
 });
