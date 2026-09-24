@@ -339,45 +339,39 @@ export async function listMatchCommentaires(
 // Match, 2026-09-24, voir backend apps.communaute.services pour la synchronisation GOAL
 // API) ---
 
-export async function listClassementLigue(cursor?: string): Promise<CursorPage<ClassementLigue>> {
-  const { data } = await apiClient.get<CursorPage<ClassementLigue>>("/communaute/classement/", {
-    params: { cursor },
-  });
-  return data;
-}
+// Une seule page (PAGE_SIZE=20, voir settings/base.py) ne couvre pas forcément un
+// classement (jusqu'à ~20 équipes) ni surtout l'effectif complet (73 joueurs testés) : ces
+// deux endpoints parcourent donc systématiquement toutes les pages (`next`, une URL
+// absolue générée par CursorPagination) — même correctif que `listCalendrierRencontres()`
+// ci-dessous, suite au même type de retour utilisateur ("Tabelle ist falsch und Listet
+// Daten aus alten Säsons", 2026-09-24) : le backend filtre désormais par saison courante
+// par défaut (`ClassementLigueViewSet`/`StatistiqueJoueurViewSet.get_queryset()`), mais une
+// page unique aurait quand même tronqué l'effectif/la tableau une fois plusieurs
+// équipes/joueurs synchronisés. `PAGINATION_MAX_PAGES` est un garde-fou, pas une limite
+// attendue.
+const PAGINATION_MAX_PAGES = 20;
 
-// Une seule page (PAGE_SIZE=20, voir settings/base.py) ne couvre plus le calendrier
-// synchronisé depuis GOAL API (toutes compétitions/saisons confondues, ~200+ rencontres,
-// voir docstring de tête services.py) : parcourt donc systématiquement toutes les pages
-// (`next`, une URL absolue générée par CursorPagination) — correctif suite retour
-// utilisateur "Es sind nur die Spiele der Hin Runde im Spielplan ... verfügbar" : au-delà
-// d'une page, l'ancien fetch à page unique + tri décroissant ne montrait que les
-// rencontres les PLUS lointaines dans le temps (toutes compétitions confondues, y compris
-// des matchs amicaux/coupes datés bien après la fin de la Ligue 1), jamais celles de la
-// Rückrunde pourtant plus proches. `CALENDRIER_MAX_PAGES` est un garde-fou, pas une
-// limite attendue (20 pages × 20 lignes = 400, largement au-dessus du volume réel connu).
-const CALENDRIER_MAX_PAGES = 20;
-
-export async function listCalendrierRencontres(): Promise<CursorPage<RencontreCalendrier>> {
-  let url: string | null = "/communaute/calendrier/";
-  let toutes: RencontreCalendrier[] = [];
-  for (let page = 0; page < CALENDRIER_MAX_PAGES && url; page += 1) {
-    const { data }: { data: CursorPage<RencontreCalendrier> } =
-      await apiClient.get<CursorPage<RencontreCalendrier>>(url);
-    toutes = toutes.concat(data.results);
+async function listerToutesLesPages<T>(urlInitiale: string): Promise<CursorPage<T>> {
+  let url: string | null = urlInitiale;
+  let tous: T[] = [];
+  for (let page = 0; page < PAGINATION_MAX_PAGES && url; page += 1) {
+    const { data }: { data: CursorPage<T> } = await apiClient.get<CursorPage<T>>(url);
+    tous = tous.concat(data.results);
     url = data.next;
   }
-  return { next: null, previous: null, results: toutes };
+  return { next: null, previous: null, results: tous };
 }
 
-export async function listStatistiquesJoueurs(
-  cursor?: string,
-): Promise<CursorPage<StatistiqueJoueur>> {
-  const { data } = await apiClient.get<CursorPage<StatistiqueJoueur>>(
-    "/communaute/statistiques-joueurs/",
-    { params: { cursor } },
-  );
-  return data;
+export async function listClassementLigue(): Promise<CursorPage<ClassementLigue>> {
+  return listerToutesLesPages<ClassementLigue>("/communaute/classement/");
+}
+
+export async function listCalendrierRencontres(): Promise<CursorPage<RencontreCalendrier>> {
+  return listerToutesLesPages<RencontreCalendrier>("/communaute/calendrier/");
+}
+
+export async function listStatistiquesJoueurs(): Promise<CursorPage<StatistiqueJoueur>> {
+  return listerToutesLesPages<StatistiqueJoueur>("/communaute/statistiques-joueurs/");
 }
 
 export async function listMatchEvenements(

@@ -10,6 +10,7 @@ from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
+from apps.communaute import services
 from apps.communaute.models import (
     CategorieForum,
     Commentaire,
@@ -1052,7 +1053,10 @@ MATCH_EVENEMENT_LIST_URL = "communaute:match-evenement-list"
 
 def test_classement_lecture_ouverte_a_tout_authentifie(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "fc1@example.de")
-    ClassementLigueFactory(equipe="Club Africain", rang=1)
+    # Saison en cours explicite : le queryset ne montre plus que la saison courante par
+    # défaut (voir tests dédiés ci-dessous), le défaut de fabrique ("2025-2026", voir
+    # factories.py) ne correspond pas forcément à la saison réelle du jour du test.
+    ClassementLigueFactory(saison=services._saison_actuelle(), equipe="Club Africain", rang=1)
     resp = _auth(api_client, user).get(reverse(CLASSEMENT_LIST_URL))
     assert resp.status_code == 200
     assert resp.data["results"][0]["equipe"] == "Club Africain"
@@ -1073,6 +1077,43 @@ def test_classement_lecture_seule_pas_de_creation_via_api(api_client):
     assert resp.status_code == 405
 
 
+def test_classement_masque_les_anciennes_saisons_par_defaut(api_client):
+    # Correctif bug utilisateur "Tabelle ist falsch und Listet Daten aus alten Säsons"
+    # (2026-09-24) : `ClassementCursorPagination` trie par saison croissante, donc une
+    # ancienne saison pouvait dominer la première page une fois 2+ saisons synchronisées.
+    # `get_queryset()` filtre désormais sur la saison en cours par défaut.
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc1b@example.de")
+    saison_actuelle = services._saison_actuelle()
+    ClassementLigueFactory(saison="2019-2020", equipe="Ancienne Saison", rang=1)
+    ClassementLigueFactory(saison=saison_actuelle, equipe="Club Africain", rang=1)
+
+    resp = _auth(api_client, user).get(reverse(CLASSEMENT_LIST_URL))
+    assert resp.status_code == 200
+    equipes = [ligne["equipe"] for ligne in resp.data["results"]]
+    assert equipes == ["Club Africain"]
+
+
+def test_classement_parametre_saison_explicite(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc1c@example.de")
+    ClassementLigueFactory(saison="2019-2020", equipe="Ancienne Saison", rang=1)
+    ClassementLigueFactory(saison=services._saison_actuelle(), equipe="Club Africain", rang=1)
+
+    resp = _auth(api_client, user).get(reverse(CLASSEMENT_LIST_URL), {"saison": "2019-2020"})
+    assert resp.status_code == 200
+    assert [ligne["equipe"] for ligne in resp.data["results"]] == ["Ancienne Saison"]
+
+
+def test_classement_parametre_saison_toutes(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc1d@example.de")
+    ClassementLigueFactory(saison="2019-2020", equipe="Ancienne Saison", rang=1)
+    ClassementLigueFactory(saison=services._saison_actuelle(), equipe="Club Africain", rang=1)
+
+    resp = _auth(api_client, user).get(reverse(CLASSEMENT_LIST_URL), {"saison": "toutes"})
+    assert resp.status_code == 200
+    equipes = {ligne["equipe"] for ligne in resp.data["results"]}
+    assert equipes == {"Ancienne Saison", "Club Africain"}
+
+
 def test_calendrier_lecture_ouverte_a_tout_authentifie(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "fc3@example.de")
     RencontreCalendrierFactory(equipe_domicile="Club Africain", equipe_exterieur="EST")
@@ -1083,10 +1124,40 @@ def test_calendrier_lecture_ouverte_a_tout_authentifie(api_client):
 
 def test_statistiques_joueurs_lecture_ouverte_a_tout_authentifie(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "fc3b@example.de")
-    StatistiqueJoueurFactory(nom="Sadok Kadida", buts=4)
+    # Même remarque que test_classement_lecture_ouverte_a_tout_authentifie ci-dessus.
+    StatistiqueJoueurFactory(saison=services._saison_actuelle(), nom="Sadok Kadida", buts=4)
     resp = _auth(api_client, user).get(reverse(STATISTIQUE_JOUEUR_LIST_URL))
     assert resp.status_code == 200
     assert resp.data["results"][0]["nom"] == "Sadok Kadida"
+
+
+def test_statistiques_joueurs_masque_les_anciennes_saisons_par_defaut(api_client):
+    # Même correctif que test_classement_masque_les_anciennes_saisons_par_defaut ci-dessus.
+    # Défense en profondeur seulement pour ce modèle : `StatistiqueJoueur.goal_api_id` est
+    # la SEULE contrainte d'unicité (pas saison+goal_api_id, voir models.py) — un joueur
+    # d'une saison révolue ne devrait normalement plus exister en base une fois resynchro-
+    # nisé (écrasé par `update_or_create`), mais ce filtre protège quand même contre toute
+    # ligne au champ `saison` resté périmé (ex. resynchronisation partielle/interrompue).
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc3d@example.de")
+    saison_actuelle = services._saison_actuelle()
+    StatistiqueJoueurFactory(saison="2019-2020", nom="Vieux Joueur", buts=1)
+    StatistiqueJoueurFactory(saison=saison_actuelle, nom="Sadok Kadida", buts=4)
+
+    resp = _auth(api_client, user).get(reverse(STATISTIQUE_JOUEUR_LIST_URL))
+    assert resp.status_code == 200
+    noms = [ligne["nom"] for ligne in resp.data["results"]]
+    assert noms == ["Sadok Kadida"]
+
+
+def test_statistiques_joueurs_parametre_saison_toutes(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc3e@example.de")
+    StatistiqueJoueurFactory(saison="2019-2020", nom="Vieux Joueur", buts=1)
+    StatistiqueJoueurFactory(saison=services._saison_actuelle(), nom="Sadok Kadida", buts=4)
+
+    resp = _auth(api_client, user).get(reverse(STATISTIQUE_JOUEUR_LIST_URL), {"saison": "toutes"})
+    assert resp.status_code == 200
+    noms = {ligne["nom"] for ligne in resp.data["results"]}
+    assert noms == {"Vieux Joueur", "Sadok Kadida"}
 
 
 def test_statistiques_joueurs_non_authentifie_refuse(api_client):

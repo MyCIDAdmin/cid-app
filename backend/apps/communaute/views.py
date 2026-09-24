@@ -55,6 +55,7 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 
+from . import services
 from .filters import PublicationFilter, SujetFilter
 from .models import (
     Album,
@@ -789,12 +790,27 @@ class MatchEvenementCursorPagination(CursorPagination):
 
 
 class ClassementLigueViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py."""
+    """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py.
+
+    Filtrée par défaut sur la saison EN COURS (2026-09-24, retour utilisateur : "Tabelle
+    ist falsch und Listet Daten aus alten Säsons") — `ClassementLigue` accumule une ligne
+    par saison/équipe au fil des synchronisations (jamais purgée automatiquement), et sans
+    ce filtre la page 1 (triée par `saison` croissant, voir `ClassementCursorPagination`)
+    pouvait être entièrement remplie par la saison la PLUS ANCIENNE une fois 2+ saisons en
+    base, jamais la saison en cours. `?saison=<valeur>` cible une saison précise (ex. pour
+    un historique) ; `?saison=toutes` lève le filtre. Même principe que
+    `StatistiqueJoueurViewSet` ci-dessous."""
 
     serializer_class = ClassementLigueSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = ClassementCursorPagination
-    queryset = ClassementLigue.objects.all()
+
+    def get_queryset(self):
+        qs = ClassementLigue.objects.all()
+        saison = self.request.query_params.get("saison")
+        if saison == "toutes":
+            return qs
+        return qs.filter(saison=saison or services._saison_actuelle())
 
 
 class RencontreCalendrierViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -812,14 +828,31 @@ class StatistiqueJoueurCursorPagination(CursorPagination):
 
 class StatistiqueJoueurViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py.
-    Alimente les listes Torschützen/Kartenstatistik de l'onglet Statistiken (tri par buts
-    décroissants par défaut ; le frontend re-trie côté client pour la vue Kartenstatistik,
-    voir StatistiquesTab.tsx)."""
+    Alimente les listes Torschützen/Kartenstatistik/le kader complet de l'onglet
+    Statistiken (tri par buts décroissants par défaut ; le frontend re-trie côté client
+    pour les autres vues, voir StatistiquesTab.tsx).
+
+    Filtrée par défaut sur la saison EN COURS (2026-09-24, retour utilisateur : "Tabelle
+    ist falsch und Listet Daten aus alten Säsons") — même principe que
+    `ClassementLigueViewSet` ci-dessus. Contrairement à `ClassementLigue`, `goal_api_id`
+    est la SEULE clé d'upsert de `StatistiqueJoueur` (pas de contrainte unique sur
+    saison+goal_api_id, voir models.py) : une seule ligne par joueur existe jamais en
+    base, donc ce filtre ne changera rien tant que `services.synchroniser_statistiques_
+    joueurs` continue de synchroniser une saison différente de celle calculée localement
+    (voir tentative de correctif côté GOAL API dans services.py) — mais reste la bonne
+    défense en profondeur si la clé d'upsert évolue un jour vers saison+goal_api_id.
+    `?saison=<valeur>`/`?saison=toutes` : mêmes règles que ClassementLigueViewSet."""
 
     serializer_class = StatistiqueJoueurSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = StatistiqueJoueurCursorPagination
-    queryset = StatistiqueJoueur.objects.all()
+
+    def get_queryset(self):
+        qs = StatistiqueJoueur.objects.all()
+        saison = self.request.query_params.get("saison")
+        if saison == "toutes":
+            return qs
+        return qs.filter(saison=saison or services._saison_actuelle())
 
 
 class MatchEvenementViewSet(

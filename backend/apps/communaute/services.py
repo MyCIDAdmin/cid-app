@@ -201,6 +201,25 @@ def _saison_actuelle() -> str:
     return f"{annee_debut}-{annee_debut + 1}"
 
 
+def _annee_saison_debut() -> int:
+    """Année de début de la saison en cours (ex. 2026 pour "2026-2027"), même convention/
+    override que `_saison_actuelle()` — sert à envoyer un paramètre `season` défensif sur
+    les appels GOAL API standings/players (voir `synchroniser_classement()`/
+    `synchroniser_statistiques_joueurs()` ci-dessous).
+
+    ⚠️ NON VÉRIFIÉ : contrairement aux trois endpoints eux-mêmes (voir docstring de tête),
+    l'utilisateur n'a jamais testé de paramètre `season` en curl/PowerShell — GOAL API ne
+    documente pas publiquement ce paramètre pour ces deux endpoints. Ajouté quand même en
+    défense en profondeur du bug "Tabelle ist falsch und Listet Daten aus alten Säsons"
+    (2026-09-24) : si GOAL API l'ignore (comportement usuel pour un paramètre de requête
+    inconnu), coût nul — la réponse reste celle de la saison en cours par défaut, comme
+    aujourd'hui ; s'il est reconnu, la synchronisation ne recevra plus jamais de lignes
+    d'anciennes saisons. À confirmer avec la vraie clé `GOAL_API_KEY` de l'utilisateur après
+    déploiement (comparer le nombre de lignes/joueurs synchronisés avant/après)."""
+    saison = _saison_actuelle()
+    return int(saison.split("-")[0])
+
+
 def _parser_kickoff(fixture: dict):
     """Préfère `kickoffUtc` (horodatage ISO 8601 confirmé sur les réponses réelles
     testées par l'utilisateur — déjà en UTC, sans ambiguïté) ; se rabat sur
@@ -400,10 +419,18 @@ def _synchroniser_statistiques_joueurs_depuis(joueurs) -> int:
 def synchroniser_classement() -> int:
     """Tableau complet de la ligue (`GOAL_API_LEAGUE_ID`), avec répartition domicile/
     extérieur native — une seule requête GOAL API, non paginée (une ligue compte au plus
-    quelques dizaines d'équipes)."""
+    quelques dizaines d'équipes).
+
+    Envoie `season=<année de début>` en paramètre de requête (défense en profondeur contre
+    le bug "Tabelle ist falsch ... alten Säsons" — voir `_annee_saison_debut()`, NON
+    VÉRIFIÉ contre la vraie API) ; `ClassementLigueViewSet.get_queryset()` filtre en plus
+    par saison côté Django, indépendamment du comportement réel de ce paramètre."""
     if not _api_key_configuree():
         return 0
-    corps = _get(f"/leagues/{settings.GOAL_API_LEAGUE_ID}/standings")
+    corps = _get(
+        f"/leagues/{settings.GOAL_API_LEAGUE_ID}/standings",
+        {"season": _annee_saison_debut()},
+    )
     if corps is None:
         return 0
     lignes, _pagination = _extraire_liste(corps)
@@ -429,10 +456,19 @@ def synchroniser_calendrier() -> int:
 def synchroniser_statistiques_joueurs() -> int:
     """Effectif complet de l'équipe suivie (`GOAL_API_TEAM_ID`) avec statistiques
     individuelles (buts/passes décisives/cartons) — alimente les listes Torschützen/
-    Kartenstatistik de l'onglet Statistiken, indisponibles sous SerpApi."""
+    Kartenstatistik de l'onglet Statistiken, indisponibles sous SerpApi.
+
+    Envoie `season=<année de début>` en paramètre de requête, même défense en profondeur
+    NON VÉRIFIÉE qu'au-dessus (voir `synchroniser_classement()`/`_annee_saison_debut()`) ;
+    `StatistiqueJoueurViewSet.get_queryset()` filtre en plus par saison côté Django — seul
+    filet réellement fiable ici, puisque `StatistiqueJoueur.goal_api_id` est la SEULE
+    contrainte d'unicité du modèle (pas `saison+goal_api_id`), voir docstring de la
+    viewset."""
     if not _api_key_configuree():
         return 0
-    joueurs = _paginer(f"/teams/{settings.GOAL_API_TEAM_ID}/players")
+    joueurs = _paginer(
+        f"/teams/{settings.GOAL_API_TEAM_ID}/players", {"season": _annee_saison_debut()}
+    )
     return _synchroniser_statistiques_joueurs_depuis(joueurs)
 
 

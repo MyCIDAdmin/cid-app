@@ -276,8 +276,14 @@ def test_synchroniser_classement_upsert_avec_repartition_domicile_exterieur(sett
     total = services.synchroniser_classement()
 
     assert total == 2
+    # `season` : paramètre défensif NON VÉRIFIÉ contre la vraie GOAL API, voir
+    # `_annee_saison_debut()`/docstring de `synchroniser_classement()` dans services.py —
+    # ajouté suite au bug "Tabelle ist falsch und Listet Daten aus alten Säsons".
     assert appels == [
-        (f"{services.GOAL_API_URL}/leagues/{settings.GOAL_API_LEAGUE_ID}/standings", {})
+        (
+            f"{services.GOAL_API_URL}/leagues/{settings.GOAL_API_LEAGUE_ID}/standings",
+            {"season": 2026},
+        )
     ]
 
     club_africain = ClassementLigue.objects.get(saison="2026-2027", equipe="Club Africain")
@@ -381,6 +387,12 @@ def test_synchroniser_calendrier_parcourt_toutes_les_pages(settings, monkeypatch
     assert RencontreCalendrier.objects.count() == 3
     # Deux appels : offset=0 (hasMore=True) puis offset=50 (hasMore=False, arrêt).
     assert [params["offset"] for _url, params in appels] == [0, 50]
+    # Contrairement à `synchroniser_classement()`/`synchroniser_statistiques_joueurs()`, le
+    # calendrier ne doit JAMAIS être restreint à la saison en cours — il sert au
+    # Spielplan/Tippspiel qui ont besoin de l'historique/futur complet toutes compétitions
+    # confondues (voir docstring de tête services.py + correctif pagination frontend patch
+    # 0056) : pas de paramètre `season` ici.
+    assert all("season" not in params for _url, params in appels)
 
     joue = RencontreCalendrier.objects.get(evenement_externe_id="fix-1")
     assert joue.equipe_domicile == "Club Africain"
@@ -485,6 +497,8 @@ def test_synchroniser_statistiques_joueurs_parcourt_toutes_les_pages(settings, m
 
     assert total == 2
     assert [params["offset"] for _url, params in appels] == [0, 50]
+    # `season` : même paramètre défensif NON VÉRIFIÉ qu'au-dessus, envoyé sur chaque page.
+    assert all(params["season"] == 2026 for _url, params in appels)
 
     buteur = StatistiqueJoueur.objects.get(goal_api_id="player-1")
     assert buteur.nom == "Sadok Kadida"
