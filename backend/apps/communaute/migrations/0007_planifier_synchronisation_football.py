@@ -1,6 +1,7 @@
 """
 Data migration — planifie la synchronisation périodique du classement/calendrier Fan-Club
-depuis TheSportsDB (module "Fan-Club", 2026-09-24) dans django-celery-beat, même principe
+depuis API-Football (module "Fan-Club", 2026-09-24, fournisseur changé de TheSportsDB à
+API-Football le même jour — voir services.py) dans django-celery-beat, même principe
 que apps.evenements.migrations.0002_planifier_rappels_evenements (voir son docstring pour
 le détail du fonctionnement de DatabaseScheduler).
 
@@ -35,7 +36,7 @@ def creer_planification(apps, schema_editor):
             "enabled": True,
             "description": (
                 "Module Fan-Club — synchronise ClassementLigue/RencontreCalendrier depuis "
-                "TheSportsDB toutes les 6h (voir services.py)."
+                "API-Football toutes les 6h (voir services.py)."
             ),
         },
     )

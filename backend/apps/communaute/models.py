@@ -660,9 +660,12 @@ class MatchReaction(models.Model):
 # Fan-Club — extension du Live Match (2026-09-24, demande utilisateur : renommer
 # "Live-Spiel" en "Fan-Club" et ajouter classement/calendrier/statistiques réels de Club
 # Africain). Décision retenue (hybride, voir plan approuvé) : `ClassementLigue` et
-# `RencontreCalendrier` sont synchronisés automatiquement depuis l'API TheSportsDB (voir
-# services/thesportsdb.py) — aucune API gratuite ne fournissant de données live pour la
-# Ligue 1 tunisienne. Le Live-Ticker (score/chrono déjà géré par `Match` ci-dessus) reste
+# `RencontreCalendrier` sont synchronisés automatiquement depuis l'API API-Football (voir
+# services.py — remplace TheSportsDB le 2026-09-24 : la clé publique gratuite de
+# TheSportsDB s'est révélée inutilisable pour la Ligue 1 tunisienne/Club Africain une fois
+# testée en conditions réelles — recherche tenue avec l'utilisateur, voir historique) —
+# aucune API gratuite ne fournissant de données live pour la Ligue 1 tunisienne. Le
+# Live-Ticker (score/chrono déjà géré par `Match` ci-dessus) reste
 # piloté par un modérateur (Bureau Admin+), et `MatchEvenement` ajoute un journal
 # d'événements (buts/cartons) diffusé en direct via `LiveMatchConsumer` — voir
 # consumers.py, `MatchEvenementPermission` reprend délibérément le même seuil plat
@@ -673,8 +676,8 @@ class MatchReaction(models.Model):
 
 class ClassementLigue(models.Model):
     """Une ligne de tableau de classement (une équipe, une saison) — synchronisée
-    périodiquement depuis TheSportsDB, jamais éditée manuellement (voir
-    services/thesportsdb.py::synchroniser_classement)."""
+    périodiquement depuis API-Football, jamais éditée manuellement (voir
+    services.py::synchroniser_classement)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -711,13 +714,14 @@ class ClassementLigue(models.Model):
 
 
 class RencontreCalendrier(models.Model):
-    """Un match du calendrier (passé ou à venir) synchronisé depuis TheSportsDB —
+    """Un match du calendrier (passé ou à venir) synchronisé depuis API-Football —
     distinct de `Match` ci-dessus, qui reste réservé aux matchs pilotés en direct par un
-    modérateur (Live-Ticker). `thesportsdb_event_id` est la clé d'upsert idempotente."""
+    modérateur (Live-Ticker). `evenement_externe_id` (identifiant "fixture" côté
+    API-Football) est la clé d'upsert idempotente."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    thesportsdb_event_id = models.CharField(max_length=50, unique=True)
+    evenement_externe_id = models.CharField(max_length=50, unique=True)
     competition = models.CharField(max_length=200, blank=True)
     equipe_domicile = models.CharField(max_length=200)
     equipe_exterieur = models.CharField(max_length=200)

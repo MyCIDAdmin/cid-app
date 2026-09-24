@@ -339,18 +339,25 @@ ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
-# Ajouté le 2026-09-24 — module "Fan-Club" (voir apps.communaute.services.thesportsdb) :
+# Ajouté le 2026-09-24 — module "Fan-Club" (voir apps.communaute.services) :
 # synchronisation périodique du classement/calendrier de Club Africain depuis l'API
-# gratuite TheSportsDB (compte Patreon gratuit requis pour obtenir une clé — aucune valeur
-# par défaut utilisable en production, tant que THESPORTSDB_API_KEY n'est pas définie le
-# service de synchronisation ne fait rien, voir services/thesportsdb.py). Jamais de secret
-# en dur dans le code (CLAUDE.md §8).
-THESPORTSDB_API_KEY = os.environ.get("THESPORTSDB_API_KEY", "")
-# Identifiant TheSportsDB de la "Tunisian Ligue Professionnelle 1" (championnat de Club
-# Africain) — configurable au cas où TheSportsDB le renumérote, sans toucher au code.
-THESPORTSDB_LEAGUE_ID = os.environ.get("THESPORTSDB_LEAGUE_ID", "4394")
-THESPORTSDB_SAISON = os.environ.get("THESPORTSDB_SAISON", "2025-2026")
-THESPORTSDB_EQUIPE = os.environ.get("THESPORTSDB_EQUIPE", "Club Africain")
+# gratuite API-Football (api-football.com, 100 requêtes/jour sur le plan gratuit, compte
+# gratuit sans carte bancaire requis pour obtenir une clé — aucune valeur par défaut
+# utilisable en production, tant que API_FOOTBALL_KEY n'est pas définie le service de
+# synchronisation ne fait rien, voir services.py). Remplace TheSportsDB (décision du
+# 2026-09-24 : la clé publique gratuite de TheSportsDB s'est révélée limitée à l'équipe
+# "Arsenal"/la Premier League une fois testée en conditions réelles — inutilisable pour la
+# Ligue 1 tunisienne/Club Africain). Jamais de secret en dur dans le code (CLAUDE.md §8).
+API_FOOTBALL_KEY = os.environ.get("API_FOOTBALL_KEY", "")
+API_FOOTBALL_EQUIPE = os.environ.get("API_FOOTBALL_EQUIPE", "Club Africain")
+# Pays de la ligue à retenir parmi toutes celles où l'équipe ci-dessus est enregistrée
+# (nécessaire car une équipe peut apparaître dans plusieurs compétitions — coupe nationale,
+# compétitions continentales — voir services.py::_resoudre_ligue).
+API_FOOTBALL_PAYS = os.environ.get("API_FOOTBALL_PAYS", "Tunisia")
+# Saison à synchroniser (année de début, ex. "2025" pour la saison 2025-2026) —
+# généralement laissé vide : la saison "en cours" déclarée par API-Football est alors
+# utilisée automatiquement. À ne renseigner qu'en cas de bascule de saison ambiguë.
+API_FOOTBALL_SAISON = os.environ.get("API_FOOTBALL_SAISON", "")
 
 # =============================================================================
 # Passerelles de paiement (AHM-46) — Stripe Checkout et PayPal Checkout, tous deux hébergés

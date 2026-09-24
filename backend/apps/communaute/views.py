@@ -742,7 +742,7 @@ class MatchCommentaireViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 #
 #   GET          /communaute/classement/            — tableau de classement (lecture seule,
 #                                                       synchronisé périodiquement, voir
-#                                                       apps.communaute.services.thesportsdb)
+#                                                       apps.communaute.services)
 #   GET          /communaute/calendrier/             — calendrier des rencontres (idem)
 #   GET          /communaute/match-evenements/?match= — journal d'événements du Live-Ticker
 #   POST         /communaute/match-evenements/        — ajouter un événement (Bureau Admin+),

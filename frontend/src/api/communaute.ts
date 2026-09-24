@@ -330,7 +330,7 @@ export async function listMatchCommentaires(
 }
 
 // --- Fan-Club — classement/calendrier/événements (extension du Live Match, 2026-09-24,
-// voir backend apps.communaute.services pour la synchronisation TheSportsDB) ---
+// voir backend apps.communaute.services pour la synchronisation API-Football) ---
 
 export async function listClassementLigue(cursor?: string): Promise<CursorPage<ClassementLigue>> {
   const { data } = await apiClient.get<CursorPage<ClassementLigue>>("/communaute/classement/", {

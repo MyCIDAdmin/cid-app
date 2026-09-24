@@ -299,7 +299,7 @@ class RencontreCalendrierFactory(DjangoModelFactory):
     class Meta:
         model = RencontreCalendrier
 
-    thesportsdb_event_id = factory.Sequence(lambda n: f"event-{n}")
+    evenement_externe_id = factory.Sequence(lambda n: f"event-{n}")
     competition = "Ligue 1 Tunisie"
     equipe_domicile = "Club Africain"
     equipe_exterieur = factory.Sequence(lambda n: f"Adversaire {n}")

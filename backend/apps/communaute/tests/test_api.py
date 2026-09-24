@@ -1067,7 +1067,7 @@ def test_classement_lecture_seule_pas_de_creation_via_api(api_client):
         reverse(CLASSEMENT_LIST_URL), {"saison": "2025-2026", "equipe": "Club Africain", "rang": 1}
     )
     # Aucune action POST exposée (mixins.ListModelMixin seul) — toujours synchronisé
-    # depuis TheSportsDB, voir services.py.
+    # depuis API-Football, voir services.py.
     assert resp.status_code == 405
 
 

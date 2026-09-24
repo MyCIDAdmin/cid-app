@@ -510,7 +510,7 @@ class MatchCommentaireSerializer(serializers.ModelSerializer):
 
 
 class ClassementLigueSerializer(serializers.ModelSerializer):
-    """Lecture seule — toujours synchronisé depuis TheSportsDB, voir services.py."""
+    """Lecture seule — toujours synchronisé depuis API-Football, voir services.py."""
 
     class Meta:
         model = ClassementLigue
@@ -534,7 +534,7 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
 
 
 class RencontreCalendrierSerializer(serializers.ModelSerializer):
-    """Lecture seule — toujours synchronisé depuis TheSportsDB, voir services.py."""
+    """Lecture seule — toujours synchronisé depuis API-Football, voir services.py."""
 
     est_a_venir = serializers.BooleanField(read_only=True)
 

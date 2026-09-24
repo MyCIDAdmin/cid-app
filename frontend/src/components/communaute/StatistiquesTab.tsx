@@ -1,6 +1,6 @@
 /**
  * Onglet "Statistiken"/"Statistiques" — module Fan-Club (2026-09-24, extension du Live
- * Match). Dérivé de `ClassementLigue` (même source synchronisée TheSportsDB que l'onglet
+ * Match). Dérivé de `ClassementLigue` (même source synchronisée API-Football que l'onglet
  * Tabelle) — pas d'endpoint dédié, une ligne de classement porte déjà toutes les stats
  * d'équipe utiles (buts, forme récente).
  */

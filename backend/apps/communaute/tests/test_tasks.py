@@ -70,7 +70,7 @@ def test_auteur_introuvable_ne_leve_pas():
 
 # ---------------------------------------------------------------------------
 # Fan-Club — synchroniser_donnees_football (2026-09-24, voir services.py pour le détail des
-# deux sous-fonctions déjà testées individuellement dans test_thesportsdb.py)
+# deux sous-fonctions déjà testées individuellement dans test_api_football.py)
 # ---------------------------------------------------------------------------
 
 

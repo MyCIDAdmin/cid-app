@@ -259,10 +259,10 @@ def test_classement_ligue_meme_equipe_saisons_differentes_autorise():
     assert ClassementLigueFactory._meta.model.objects.filter(equipe="Club Africain").count() == 2
 
 
-def test_rencontre_calendrier_thesportsdb_event_id_unique():
-    RencontreCalendrierFactory(thesportsdb_event_id="evt-1")
+def test_rencontre_calendrier_evenement_externe_id_unique():
+    RencontreCalendrierFactory(evenement_externe_id="evt-1")
     with pytest.raises(IntegrityError):
-        RencontreCalendrierFactory(thesportsdb_event_id="evt-1")
+        RencontreCalendrierFactory(evenement_externe_id="evt-1")
 
 
 def test_rencontre_calendrier_est_a_venir():

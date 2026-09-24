@@ -128,7 +128,7 @@ def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
 @shared_task
 def synchroniser_donnees_football():
     """Module Fan-Club (2026-09-24) — synchronise `ClassementLigue` et
-    `RencontreCalendrier` depuis TheSportsDB (voir services.py pour le détail, et
+    `RencontreCalendrier` depuis API-Football (voir services.py pour le détail, et
     l'approche "hybride" documentée dans models.py). Planifiée via Celery Beat, voir
     migrations/0007_planifier_synchronisation_football.py. Chaque sous-fonction est déjà
     protégée individuellement (aucune levée d'exception attendue ici) — ce wrapper ne fait
@@ -136,7 +136,7 @@ def synchroniser_donnees_football():
     lignes_classement = services.synchroniser_classement()
     rencontres = services.synchroniser_calendrier()
     logger.info(
-        "Synchronisation Fan-Club TheSportsDB : %s lignes de classement, %s rencontres.",
+        "Synchronisation Fan-Club API-Football : %s lignes de classement, %s rencontres.",
         lignes_classement,
         rencontres,
     )

@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
                         default=uuid.uuid4, editable=False, primary_key=True, serialize=False
                     ),
                 ),
-                ("thesportsdb_event_id", models.CharField(max_length=50, unique=True)),
+                ("evenement_externe_id", models.CharField(max_length=50, unique=True)),
                 ("competition", models.CharField(blank=True, max_length=200)),
                 ("equipe_domicile", models.CharField(max_length=200)),
                 ("equipe_exterieur", models.CharField(max_length=200)),

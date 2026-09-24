@@ -1,6 +1,6 @@
 /**
  * Onglet "Tabelle"/"Classement" — module Fan-Club (2026-09-24, extension du Live Match).
- * Lecture seule : le classement est toujours synchronisé automatiquement depuis TheSportsDB
+ * Lecture seule : le classement est toujours synchronisé automatiquement depuis API-Football
  * (voir backend apps.communaute.services), jamais éditable ici.
  */
 import { useTranslation } from "react-i18next";
