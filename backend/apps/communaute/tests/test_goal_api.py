@@ -7,16 +7,13 @@ dans la suite de tests. Le mock dispatche sur la fin de l'URL appelée (`/standi
 `/fixtures`, `/players`) et simule la pagination `offset`/`limit`/`hasMore` en renvoyant
 une page différente à chaque appel successif pour un même endpoint.
 
-Les champs de fixture pour `/fixtures` et `/players` reprennent EXACTEMENT les noms
-confirmés par l'utilisateur sur des réponses réelles (voir docstring de tête services.py :
-`matchStatus`, `homeTeamScore`, `matchDate`, `matchTime`, `kickoffUtc`, `matchPlayed`,
-`goals`, `assists`, `yellowCards`, `redCards`...). Les champs de fixture pour `/standings`
-(`overallLeague*`/`homeLeague*`/`awayLeague*`) reprennent les noms candidats retenus par
-`_valeur()` dans services.py — non confirmés champ par champ sur une réponse GOAL API
-réelle (voir avertissement de tête services.py) : ces tests valident donc que le CODE
-mappe correctement CES noms-là, pas que GOAL API les utilise réellement. À ajuster
-conjointement avec `_valeur(...)` si les logs Railway révèlent un mapping incorrect après
-le premier sync réel.
+Les champs de fixture pour `/fixtures`, `/players` ET `/standings` reprennent EXACTEMENT
+les noms confirmés par l'utilisateur sur des réponses réelles (voir docstring de tête
+services.py : `matchStatus`, `homeTeamScore`, `matchDate`, `matchTime`, `kickoffUtc`,
+`matchPlayed`, `goals`, `assists`, `yellowCards`, `redCards`, et pour `/standings` —
+confirmé le 2026-09-24 après un premier déploiement ayant révélé un mapping incorrect,
+voir docstring de tête services.py — `overallLeaguePosition`/`Played`/`W`/`D`/`L`/`GF`/
+`GA`/`PTS`, mêmes suffixes préfixés `homeLeague*`/`awayLeague*`, `overallPromotion`).
 
 `django_timezone.localdate` est monkeypatché sur les tests touchant à la saison calculée
 (GOAL API ne renvoie pas de façon garantie un champ saison directement exploitable) pour un
@@ -96,26 +93,26 @@ _STANDINGS_COMPLET = [
         "team": {"name": "Club Africain"},
         "overallLeaguePosition": "1",
         "overallLeaguePlayed": "3",
-        "overallLeagueWon": "3",
-        "overallLeagueDraw": "0",
-        "overallLeagueLost": "0",
-        "overallLeagueGoalsFor": "9",
-        "overallLeagueGoalsAgainst": "2",
-        "overallLeaguePoints": "9",
+        "overallLeagueW": "3",
+        "overallLeagueD": "0",
+        "overallLeagueL": "0",
+        "overallLeagueGF": "9",
+        "overallLeagueGA": "2",
+        "overallLeaguePTS": "9",
         "homeLeaguePlayed": "2",
-        "homeLeagueWon": "2",
-        "homeLeagueDraw": "0",
-        "homeLeagueLost": "0",
-        "homeLeagueGoalsFor": "6",
-        "homeLeagueGoalsAgainst": "1",
-        "homeLeaguePoints": "6",
+        "homeLeagueW": "2",
+        "homeLeagueD": "0",
+        "homeLeagueL": "0",
+        "homeLeagueGF": "6",
+        "homeLeagueGA": "1",
+        "homeLeaguePTS": "6",
         "awayLeaguePlayed": "1",
-        "awayLeagueWon": "1",
-        "awayLeagueDraw": "0",
-        "awayLeagueLost": "0",
-        "awayLeagueGoalsFor": "3",
-        "awayLeagueGoalsAgainst": "1",
-        "awayLeaguePoints": "3",
+        "awayLeagueW": "1",
+        "awayLeagueD": "0",
+        "awayLeagueL": "0",
+        "awayLeagueGF": "3",
+        "awayLeagueGA": "1",
+        "awayLeaguePTS": "3",
         "overallPromotion": "Promotion - CAF Champions League (Qualification)",
     },
     {
@@ -124,12 +121,12 @@ _STANDINGS_COMPLET = [
         "team": {"name": "ES Tunis"},
         "overallLeaguePosition": "2",
         "overallLeaguePlayed": "4",
-        "overallLeagueWon": "3",
-        "overallLeagueDraw": "0",
-        "overallLeagueLost": "1",
-        "overallLeagueGoalsFor": "7",
-        "overallLeagueGoalsAgainst": "6",
-        "overallLeaguePoints": "9",
+        "overallLeagueW": "3",
+        "overallLeagueD": "0",
+        "overallLeagueL": "1",
+        "overallLeagueGF": "7",
+        "overallLeagueGA": "6",
+        "overallLeaguePTS": "9",
     },
 ]
 

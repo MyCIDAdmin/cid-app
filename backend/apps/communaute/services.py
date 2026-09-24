@@ -32,18 +32,19 @@ curl/PowerShell réels et confirmé que TOUTES ces lacunes sont comblées :
     passes décisives/cartons par joueur — alimente les nouvelles listes Torschützen/
     Kartenstatistik (`StatistiqueJoueur`), impossibles sous SerpApi.
 
-AVERTISSEMENT SUR LE MAPPING DES CHAMPS STANDINGS : contrairement aux champs
-fixtures/joueurs ci-dessous (noms confirmés verbatim sur les réponses réelles testées par
-l'utilisateur : `matchStatus`, `homeTeamScore`, `matchDate`, `matchTime`, `kickoffUtc`,
-`matchPlayed`, `goals`, `assists`, `yellowCards`, `redCards`...), les noms EXACTS des
-champs `overallLeague*`/`homeLeague*`/`awayLeague*` sur l'endpoint standings n'ont été
-décrits que par leur INTITULÉ (Position/Played/W/D/L/GF/GA/PTS), pas confirmés champ par
-champ sur une réponse brute. `_valeur()` ci-dessous tente donc plusieurs orthographes
-plausibles par champ plutôt qu'un nom unique supposé certain — en cas de mapping incorrect,
-le classement se synchronisera avec des zéros (jamais d'exception, voir principe défensif
-plus bas) : à vérifier sur les logs Railway après le premier sync réel, ajuster les
-candidats dans `_valeur(...)` si besoin (patch de suivi rapide, pas une remise en cause de
-l'approche).
+MAPPING DES CHAMPS STANDINGS (confirmé le 2026-09-24 sur une réponse brute réelle de
+`/leagues/{id}/standings`, via la clé GOAL_API_KEY de l'utilisateur en production
+Railway — la première tentative de mapping, faute de confirmation verbatim, avait
+synchronisé les colonnes W/D/L/GF/GA/PTS à zéro ; corrigé une fois la réponse brute
+obtenue) : `overallLeaguePosition`, `overallLeaguePlayed`,
+`overallLeagueW`/`D`/`L`/`GF`/`GA`/`PTS`, mêmes suffixes préfixés `homeLeague*`/
+`awayLeague*` pour les répartitions domicile/extérieur, `overallPromotion` (texte de zone
+qualification/relégation, ex. "Promotion - CAF Champions League (Qualification)"). Pas de
+champ "forme récente" sur cet endpoint (confirmé sur la même réponse brute) :
+`forme_recente` reste volontairement vide, voir models.py. `_valeur()` ci-dessous conserve
+malgré tout plusieurs orthographes candidates par champ (le nom confirmé en premier,
+d'anciennes suppositions en repli) — coût nul, robustesse en cas de variation du schéma
+GOAL API sur une autre ligue/saison.
 
 `GOAL_API_KEY` (voir config/settings/base.py, jamais de secret en dur — CLAUDE.md §8) doit
 être obtenue par l'utilisateur lui-même (compte gratuit sur https://goal-api.com, 1000
@@ -251,8 +252,12 @@ def _synchroniser_classement_depuis(lignes: list) -> int:
     for ligne in lignes:
         try:
             equipe = _nom_equipe(ligne, "team", "teamName")
-            buts_pour = _entier(_valeur(ligne, "overallLeagueGoalsFor", "goalsFor"))
-            buts_contre = _entier(_valeur(ligne, "overallLeagueGoalsAgainst", "goalsAgainst"))
+            buts_pour = _entier(
+                _valeur(ligne, "overallLeagueGF", "overallLeagueGoalsFor", "goalsFor")
+            )
+            buts_contre = _entier(
+                _valeur(ligne, "overallLeagueGA", "overallLeagueGoalsAgainst", "goalsAgainst")
+            )
 
             ClassementLigue.objects.update_or_create(
                 saison=saison,
@@ -260,28 +265,50 @@ def _synchroniser_classement_depuis(lignes: list) -> int:
                 defaults={
                     "rang": _entier(_valeur(ligne, "overallLeaguePosition", "position", "rang")),
                     "joues": _entier(_valeur(ligne, "overallLeaguePlayed", "played")),
-                    "victoires": _entier(_valeur(ligne, "overallLeagueWon", "won")),
-                    "nuls": _entier(_valeur(ligne, "overallLeagueDraw", "drawn", "draw")),
-                    "defaites": _entier(_valeur(ligne, "overallLeagueLost", "lost")),
+                    "victoires": _entier(
+                        _valeur(ligne, "overallLeagueW", "overallLeagueWon", "won")
+                    ),
+                    "nuls": _entier(
+                        _valeur(ligne, "overallLeagueD", "overallLeagueDraw", "drawn", "draw")
+                    ),
+                    "defaites": _entier(
+                        _valeur(ligne, "overallLeagueL", "overallLeagueLost", "lost")
+                    ),
                     "buts_pour": buts_pour,
                     "buts_contre": buts_contre,
                     "difference": buts_pour - buts_contre,
-                    "points": _entier(_valeur(ligne, "overallLeaguePoints", "points")),
+                    "points": _entier(
+                        _valeur(ligne, "overallLeaguePTS", "overallLeaguePoints", "points")
+                    ),
                     "forme_recente": "",
                     "joues_domicile": _entier(_valeur(ligne, "homeLeaguePlayed")),
-                    "victoires_domicile": _entier(_valeur(ligne, "homeLeagueWon")),
-                    "nuls_domicile": _entier(_valeur(ligne, "homeLeagueDraw", "homeLeagueDrawn")),
-                    "defaites_domicile": _entier(_valeur(ligne, "homeLeagueLost")),
-                    "buts_pour_domicile": _entier(_valeur(ligne, "homeLeagueGoalsFor")),
-                    "buts_contre_domicile": _entier(_valeur(ligne, "homeLeagueGoalsAgainst")),
-                    "points_domicile": _entier(_valeur(ligne, "homeLeaguePoints")),
+                    "victoires_domicile": _entier(_valeur(ligne, "homeLeagueW", "homeLeagueWon")),
+                    "nuls_domicile": _entier(
+                        _valeur(ligne, "homeLeagueD", "homeLeagueDraw", "homeLeagueDrawn")
+                    ),
+                    "defaites_domicile": _entier(_valeur(ligne, "homeLeagueL", "homeLeagueLost")),
+                    "buts_pour_domicile": _entier(
+                        _valeur(ligne, "homeLeagueGF", "homeLeagueGoalsFor")
+                    ),
+                    "buts_contre_domicile": _entier(
+                        _valeur(ligne, "homeLeagueGA", "homeLeagueGoalsAgainst")
+                    ),
+                    "points_domicile": _entier(_valeur(ligne, "homeLeaguePTS", "homeLeaguePoints")),
                     "joues_exterieur": _entier(_valeur(ligne, "awayLeaguePlayed")),
-                    "victoires_exterieur": _entier(_valeur(ligne, "awayLeagueWon")),
-                    "nuls_exterieur": _entier(_valeur(ligne, "awayLeagueDraw", "awayLeagueDrawn")),
-                    "defaites_exterieur": _entier(_valeur(ligne, "awayLeagueLost")),
-                    "buts_pour_exterieur": _entier(_valeur(ligne, "awayLeagueGoalsFor")),
-                    "buts_contre_exterieur": _entier(_valeur(ligne, "awayLeagueGoalsAgainst")),
-                    "points_exterieur": _entier(_valeur(ligne, "awayLeaguePoints")),
+                    "victoires_exterieur": _entier(_valeur(ligne, "awayLeagueW", "awayLeagueWon")),
+                    "nuls_exterieur": _entier(
+                        _valeur(ligne, "awayLeagueD", "awayLeagueDraw", "awayLeagueDrawn")
+                    ),
+                    "defaites_exterieur": _entier(_valeur(ligne, "awayLeagueL", "awayLeagueLost")),
+                    "buts_pour_exterieur": _entier(
+                        _valeur(ligne, "awayLeagueGF", "awayLeagueGoalsFor")
+                    ),
+                    "buts_contre_exterieur": _entier(
+                        _valeur(ligne, "awayLeagueGA", "awayLeagueGoalsAgainst")
+                    ),
+                    "points_exterieur": _entier(
+                        _valeur(ligne, "awayLeaguePTS", "awayLeaguePoints")
+                    ),
                     "zone_texte": ligne.get("overallPromotion") or "",
                 },
             )
