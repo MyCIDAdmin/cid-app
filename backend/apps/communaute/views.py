@@ -760,7 +760,14 @@ class ClassementCursorPagination(CursorPagination):
 
 
 class CalendrierCursorPagination(CursorPagination):
-    ordering = ("date_heure", "id")
+    # Ordre décroissant (2026-09-24, bascule GOAL API) : le calendrier synchronisé couvre
+    # désormais tout l'historique disponible (198 rencontres, 2021 → saison en cours+à
+    # venir, voir services.py) — avec l'ancien ordre croissant, la première page (PAGE_SIZE
+    # dans settings/base.py) ne montrait QUE les rencontres les plus anciennes, jamais les
+    # rencontres à venir ni les résultats récents. Décroissant place systématiquement les
+    # rencontres à venir (date future) en tête, suivies des résultats les plus récents —
+    # même convention que MatchCursorPagination (onglet Ticker) ci-dessus.
+    ordering = ("-date_heure", "id")
 
 
 class MatchEvenementCursorPagination(CursorPagination):

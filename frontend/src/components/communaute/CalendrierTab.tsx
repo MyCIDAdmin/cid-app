@@ -8,6 +8,18 @@
  * Badge "reportée"/"annulée" ajouté lors de la bascule GOAL API (2026-09-24) : `statut`
  * (`matchStatus` GOAL API) est désormais fiable pour toute rencontre, pas seulement
  * inféré depuis la présence d'un score.
+ *
+ * Ordre des rencontres (2026-09-24, correctif suite retour utilisateur "Es werden aber
+ * alte Spiele von vorherigen Saisons dargestellt") : `useCalendrierRencontres()` ne
+ * récupère qu'UNE page (PAGE_SIZE, voir settings/base.py) triée décroissant par
+ * `date_heure` côté API (voir CalendrierCursorPagination dans views.py) — nécessaire
+ * depuis que le calendrier synchronisé couvre tout l'historique disponible (198
+ * rencontres, 2021 → saison en cours+à venir) : en ordre croissant, cette unique page ne
+ * montrait jamais que les rencontres les plus anciennes. En décroissant, les rencontres à
+ * venir (date future) arrivent systématiquement en tête ; on les réaffiche ensuite dans
+ * l'ordre chronologique naturel (la plus proche en premier) via `.slice().reverse()` sur
+ * le sous-ensemble déjà filtré — les résultats restent tels quels (le plus récent en
+ * premier, déjà l'ordre attendu).
  */
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -101,7 +113,10 @@ export default function CalendrierTab() {
   const rencontres = useMemo(() => data?.results ?? [], [data]);
 
   const { aVenir, resultats } = useMemo(() => {
-    const aVenirListe = rencontres.filter((r) => r.est_a_venir);
+    // La page vient triée décroissant (voir docstring de tête) : les rencontres à venir
+    // en sortent classées de la plus lointaine à la plus proche — inversé ici pour un
+    // affichage chronologique naturel (prochain match en premier).
+    const aVenirListe = rencontres.filter((r) => r.est_a_venir).slice().reverse();
     const resultatsListe = rencontres.filter((r) => !r.est_a_venir);
     return { aVenir: aVenirListe, resultats: resultatsListe };
   }, [rencontres]);

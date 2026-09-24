@@ -203,6 +203,40 @@ describe("CalendrierTab", () => {
     expect(screen.queryByText("live.calendrier_resultat_sieg")).not.toBeInTheDocument();
   });
 
+  // Ordre chronologique des rencontres à venir (2026-09-24, correctif suite retour
+  // utilisateur "Es werden aber alte Spiele... dargestellt") — voir docstring de tête
+  // CalendrierTab.tsx : la page arrive triée décroissant (rencontre la plus lointaine en
+  // tête), le composant doit la réafficher avec la PROCHAINE rencontre en premier.
+  it("affiche les rencontres à venir de la plus proche à la plus lointaine", () => {
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([
+        // Page déjà triée décroissant par date_heure, comme la renvoie l'API.
+        rencontre({
+          id: "r1",
+          equipe_exterieur: "Adversaire lointain",
+          date_heure: "2026-12-30T18:00:00Z",
+          est_a_venir: true,
+        }),
+        rencontre({
+          id: "r2",
+          equipe_exterieur: "Adversaire proche",
+          date_heure: "2026-10-01T18:00:00Z",
+          est_a_venir: true,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+
+    const { container } = renderWithProviders(<CalendrierTab />);
+
+    const positionProche = container.innerHTML.indexOf("Adversaire proche");
+    const positionLointain = container.innerHTML.indexOf("Adversaire lointain");
+    expect(positionProche).toBeGreaterThan(-1);
+    expect(positionLointain).toBeGreaterThan(-1);
+    expect(positionProche).toBeLessThan(positionLointain);
+  });
+
   it("affiche un badge Abgesagt pour une rencontre annulée", () => {
     vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
       data: page([
