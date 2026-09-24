@@ -2,11 +2,14 @@
  * Onglet "Statistiken"/"Statistiques" — module Fan-Club (2026-09-24, extension du Live
  * Match ; enrichi le même jour — demande utilisateur "Ich möchte mehr Statistiken
  * darstellen" — avec la comparaison à la moyenne de la ligue et la tordifférence de
- * toutes les équipes). Dérivé de `ClassementLigue` (même source synchronisée SerpApi/Google
- * Sports que l'onglet Tabelle, tableau COMPLET depuis le patch "3 requêtes SerpApi") — pas
- * d'endpoint dédié, une ligne de classement porte déjà toutes les stats d'équipe utiles.
- * Torschützen/Kartenstatistik/Kader volontairement absents ici — dépendent d'une nouvelle
- * source de données SerpApi dont la disponibilité reste à confirmer (voir conversation).
+ * toutes les équipes). Forme/comparaison/tordifférence dérivés de `ClassementLigue` (même
+ * source synchronisée que l'onglet Tabelle) — une ligne de classement porte déjà toutes
+ * les stats d'équipe utiles, pas d'endpoint dédié.
+ *
+ * Torschützen (buteurs)/Kartenstatistik (cartons) ajoutés lors de la bascule SerpApi →
+ * GOAL API (2026-09-24, voir services.py) : indisponibles sous SerpApi/Google Sports faute
+ * de données joueur pour la Ligue 1 tunisienne, désormais dérivés de `StatistiqueJoueur`
+ * (effectif de Club Africain synchronisé depuis GOAL API).
  */
 import { useTranslation } from "react-i18next";
 import {
@@ -21,7 +24,39 @@ import {
   YAxis,
 } from "recharts";
 
-import { useClassementLigue } from "../../hooks/useCommunaute";
+import { useClassementLigue, useStatistiquesJoueurs } from "../../hooks/useCommunaute";
+import type { StatistiqueJoueur } from "../../types/communaute";
+
+// Poste GOAL API (`StatistiqueJoueur.poste`, ex. "Goalkeepers") → clé i18n. Valeur brute
+// affichée telle quelle si absente de cette table (nouveau poste GOAL API non prévu).
+const CLE_LABEL_POSTE: Record<string, string> = {
+  Goalkeepers: "live.statistiques_poste_gardien",
+  Defenders: "live.statistiques_poste_defenseur",
+  Midfielders: "live.statistiques_poste_milieu",
+  Forwards: "live.statistiques_poste_attaquant",
+};
+
+const NOMBRE_TORSCHUETZEN = 10;
+const NOMBRE_CARTONS = 10;
+
+function meilleursButeurs(joueurs: StatistiqueJoueur[]): StatistiqueJoueur[] {
+  return [...joueurs]
+    .filter((joueur) => joueur.buts > 0)
+    .sort((a, b) => b.buts - a.buts || a.nom.localeCompare(b.nom))
+    .slice(0, NOMBRE_TORSCHUETZEN);
+}
+
+function joueursLesPlusSanctionnes(joueurs: StatistiqueJoueur[]): StatistiqueJoueur[] {
+  return [...joueurs]
+    .filter((joueur) => joueur.cartons_jaunes > 0 || joueur.cartons_rouges > 0)
+    .sort(
+      (a, b) =>
+        b.cartons_rouges - a.cartons_rouges ||
+        b.cartons_jaunes - a.cartons_jaunes ||
+        a.nom.localeCompare(b.nom),
+    )
+    .slice(0, NOMBRE_CARTONS);
+}
 
 const COULEUR_FORME: Record<string, string> = {
   V: "bg-status-successBg text-status-successText",
@@ -49,6 +84,7 @@ function moyenne(valeurs: number[]): number {
 export default function StatistiquesTab() {
   const { t } = useTranslation("communaute");
   const { data, isLoading, isError } = useClassementLigue();
+  const joueursQuery = useStatistiquesJoueurs();
   const lignes = data?.results ?? [];
   const clubAfricain = lignes.find((ligne) => ligne.equipe === "Club Africain");
 
@@ -58,6 +94,10 @@ export default function StatistiquesTab() {
   if (isError || !clubAfricain) {
     return <p className="text-sm text-text-tertiary">{t("live.statistiques_vide")}</p>;
   }
+
+  const joueurs = joueursQuery.data?.results ?? [];
+  const buteurs = meilleursButeurs(joueurs);
+  const sanctionnes = joueursLesPlusSanctionnes(joueurs);
 
   const forme = clubAfricain.forme_recente.split("").filter(Boolean);
 
@@ -149,6 +189,77 @@ export default function StatistiquesTab() {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+      </div>
+
+      <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+        <h2 className="mb-3 text-xs font-bold text-text-primary">
+          {t("live.statistiques_torschuetzen_titre")}
+        </h2>
+        {joueursQuery.isLoading ? (
+          <p className="text-sm text-text-tertiary">{t("live.statistiques_chargement")}</p>
+        ) : buteurs.length === 0 ? (
+          <p className="text-sm text-text-tertiary">{t("live.statistiques_vide")}</p>
+        ) : (
+          <ol className="space-y-1.5">
+            {buteurs.map((joueurButeur, index) => (
+              <li key={joueurButeur.id} className="flex items-center gap-2 text-sm">
+                <span className="w-4 shrink-0 text-right text-xs tabular-nums text-text-tertiary">
+                  {index + 1}
+                </span>
+                <span className="flex-1 truncate font-bold text-text-primary">
+                  {joueurButeur.nom}
+                </span>
+                <span className="shrink-0 tabular-nums font-bold text-cad">
+                  {joueurButeur.buts}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+        <h2 className="mb-3 text-xs font-bold text-text-primary">
+          {t("live.statistiques_karten_titre")}
+        </h2>
+        {joueursQuery.isLoading ? (
+          <p className="text-sm text-text-tertiary">{t("live.statistiques_chargement")}</p>
+        ) : sanctionnes.length === 0 ? (
+          <p className="text-sm text-text-tertiary">{t("live.statistiques_vide")}</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[10px] uppercase text-text-tertiary">
+                <th className="py-1.5">{t("live.statistiques_joueur")}</th>
+                <th className="py-1.5">{t("live.statistiques_poste")}</th>
+                <th className="py-1.5 text-center">{t("live.statistiques_carton_jaune")}</th>
+                <th className="py-1.5 text-center">{t("live.statistiques_carton_rouge")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sanctionnes.map((joueur) => (
+                <tr key={joueur.id} className="border-t border-text-tertiary/10">
+                  <td className="py-1.5 font-bold text-text-primary">{joueur.nom}</td>
+                  <td className="py-1.5 text-xs text-text-tertiary">
+                    {CLE_LABEL_POSTE[joueur.poste] ? t(CLE_LABEL_POSTE[joueur.poste]) : joueur.poste}
+                  </td>
+                  <td className="py-1.5 text-center tabular-nums">
+                    {joueur.cartons_jaunes > 0 && (
+                      <span className="inline-block h-4 w-3 rounded-sm bg-yellow-400" />
+                    )}
+                    <span className="ml-1">{joueur.cartons_jaunes || ""}</span>
+                  </td>
+                  <td className="py-1.5 text-center tabular-nums">
+                    {joueur.cartons_rouges > 0 && (
+                      <span className="inline-block h-4 w-3 rounded-sm bg-status-dangerText" />
+                    )}
+                    <span className="ml-1">{joueur.cartons_rouges || ""}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

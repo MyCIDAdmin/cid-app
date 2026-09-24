@@ -41,6 +41,7 @@ const communauteKeys = {
     [...communauteKeys.all, "match-commentaires", matchId] as const,
   classement: () => [...communauteKeys.all, "classement"] as const,
   calendrier: () => [...communauteKeys.all, "calendrier"] as const,
+  statistiquesJoueurs: () => [...communauteKeys.all, "statistiques-joueurs"] as const,
   matchEvenements: (matchId: string) =>
     [...communauteKeys.all, "match-evenements", matchId] as const,
   albums: (filtres: communauteApi.AlbumsFiltres = {}) =>
@@ -429,6 +430,13 @@ export function useCalendrierRencontres() {
   return useQuery({
     queryKey: communauteKeys.calendrier(),
     queryFn: () => communauteApi.listCalendrierRencontres(),
+  });
+}
+
+export function useStatistiquesJoueurs() {
+  return useQuery({
+    queryKey: communauteKeys.statistiquesJoueurs(),
+    queryFn: () => communauteApi.listStatistiquesJoueurs(),
   });
 }
 

@@ -38,6 +38,7 @@ from apps.communaute.tests.factories import (
     QuizFactory,
     RencontreCalendrierFactory,
     ReponseForumFactory,
+    StatistiqueJoueurFactory,
     SujetFactory,
 )
 from apps.membres.models import StatutMembre
@@ -1045,6 +1046,7 @@ def test_reactions_agregees_par_emoji_dans_le_detail_du_match(api_client):
 
 CLASSEMENT_LIST_URL = "communaute:classement-list"
 CALENDRIER_LIST_URL = "communaute:calendrier-list"
+STATISTIQUE_JOUEUR_LIST_URL = "communaute:statistique-joueur-list"
 MATCH_EVENEMENT_LIST_URL = "communaute:match-evenement-list"
 
 
@@ -1067,7 +1069,7 @@ def test_classement_lecture_seule_pas_de_creation_via_api(api_client):
         reverse(CLASSEMENT_LIST_URL), {"saison": "2025-2026", "equipe": "Club Africain", "rang": 1}
     )
     # Aucune action POST exposée (mixins.ListModelMixin seul) — toujours synchronisé
-    # depuis SerpApi/Google Sports, voir services.py.
+    # depuis GOAL API, voir services.py.
     assert resp.status_code == 405
 
 
@@ -1077,6 +1079,29 @@ def test_calendrier_lecture_ouverte_a_tout_authentifie(api_client):
     resp = _auth(api_client, user).get(reverse(CALENDRIER_LIST_URL))
     assert resp.status_code == 200
     assert resp.data["results"][0]["equipe_exterieur"] == "EST"
+
+
+def test_statistiques_joueurs_lecture_ouverte_a_tout_authentifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc3b@example.de")
+    StatistiqueJoueurFactory(nom="Sadok Kadida", buts=4)
+    resp = _auth(api_client, user).get(reverse(STATISTIQUE_JOUEUR_LIST_URL))
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["nom"] == "Sadok Kadida"
+
+
+def test_statistiques_joueurs_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(STATISTIQUE_JOUEUR_LIST_URL))
+    assert resp.status_code == 401
+
+
+def test_statistiques_joueurs_lecture_seule_pas_de_creation_via_api(api_client):
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fc3c@example.de")
+    resp = _auth(api_client, admin_user).post(
+        reverse(STATISTIQUE_JOUEUR_LIST_URL), {"goal_api_id": "player-x", "nom": "Test"}
+    )
+    # Aucune action POST exposée (mixins.ListModelMixin seul) — toujours synchronisé
+    # depuis GOAL API, voir services.py.
+    assert resp.status_code == 405
 
 
 def test_match_evenements_necessite_le_parametre_match(api_client):

@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -30,6 +30,21 @@ function ligne(overrides: Partial<ClassementLigue> = {}): ClassementLigue {
     difference: 9,
     points: 20,
     forme_recente: "VVNDV",
+    joues_domicile: 5,
+    victoires_domicile: 4,
+    nuls_domicile: 1,
+    defaites_domicile: 0,
+    buts_pour_domicile: 11,
+    buts_contre_domicile: 3,
+    points_domicile: 13,
+    joues_exterieur: 5,
+    victoires_exterieur: 2,
+    nuls_exterieur: 1,
+    defaites_exterieur: 2,
+    buts_pour_exterieur: 7,
+    buts_contre_exterieur: 6,
+    points_exterieur: 7,
+    zone_texte: "",
     maj_le: "2026-03-01T10:00:00Z",
     ...overrides,
   };
@@ -88,5 +103,51 @@ describe("ClassementTab", () => {
     expect(screen.getByText("ES Tunis")).toBeInTheDocument();
     expect(screen.getByText("24")).toBeInTheDocument();
     expect(screen.getByText("VVVND")).toBeInTheDocument();
+  });
+
+  // Bascule Gesamt/Heim/Auswärts (2026-09-24, bascule SerpApi → GOAL API) — voir docstring
+  // de tête ClassementTab.tsx : GOAL API fournit nativement une répartition domicile/
+  // extérieur, absente sous SerpApi.
+  it("bascule vers les statistiques à domicile au clic sur Heim", () => {
+    vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
+      data: page([
+        ligne({
+          id: "l1",
+          equipe: "Club Africain",
+          points: 24,
+          points_domicile: 15,
+          joues_domicile: 5,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
+
+    renderWithProviders(<ClassementTab />);
+
+    expect(screen.getByText("24")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("live.classement_vue_domicile"));
+
+    expect(screen.getByText("15")).toBeInTheDocument();
+    expect(screen.queryByText("24")).not.toBeInTheDocument();
+  });
+
+  it("affiche le texte de zone qualificative/relégation quand présent", () => {
+    vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
+      data: page([
+        ligne({
+          id: "l1",
+          equipe: "Club Africain",
+          zone_texte: "Promotion - CAF Champions League",
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
+
+    renderWithProviders(<ClassementTab />);
+
+    expect(screen.getByText("Promotion - CAF Champions League")).toBeInTheDocument();
   });
 });

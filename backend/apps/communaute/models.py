@@ -677,8 +677,16 @@ class MatchReaction(models.Model):
 
 class ClassementLigue(models.Model):
     """Une ligne de tableau de classement (une équipe, une saison) — synchronisée
-    périodiquement depuis SerpApi/Google Sports, jamais éditée manuellement (voir
-    services.py::synchroniser_classement)."""
+    périodiquement depuis GOAL API (goal-api.com), jamais éditée manuellement (voir
+    services.py::synchroniser_classement).
+
+    Champs `*_domicile`/`*_exterieur` ajoutés lors de la bascule SerpApi → GOAL API
+    (2026-09-24, décision utilisateur "Komplett auf GOAL API umstellen") : GOAL API
+    renvoie nativement trois séries par équipe (ensemble/domicile/extérieur), ce que
+    SerpApi/Google Sports ne fournissait pas — voir docstring de tête services.py.
+    `forme_recente` reste alimenté seulement si GOAL API l'expose sur l'endpoint
+    standings (non confirmé au moment de l'implémentation) ; laissé vide sinon plutôt
+    que d'inventer une valeur."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -699,6 +707,29 @@ class ClassementLigue(models.Model):
         help_text=_('Cinq derniers résultats, ex. "VVNDV" (le plus récent en dernier).'),
     )
 
+    # Répartition domicile (GOAL API "homeLeague*", voir services.py).
+    joues_domicile = models.PositiveSmallIntegerField(default=0)
+    victoires_domicile = models.PositiveSmallIntegerField(default=0)
+    nuls_domicile = models.PositiveSmallIntegerField(default=0)
+    defaites_domicile = models.PositiveSmallIntegerField(default=0)
+    buts_pour_domicile = models.PositiveSmallIntegerField(default=0)
+    buts_contre_domicile = models.PositiveSmallIntegerField(default=0)
+    points_domicile = models.PositiveSmallIntegerField(default=0)
+
+    # Répartition extérieur (GOAL API "awayLeague*", voir services.py).
+    joues_exterieur = models.PositiveSmallIntegerField(default=0)
+    victoires_exterieur = models.PositiveSmallIntegerField(default=0)
+    nuls_exterieur = models.PositiveSmallIntegerField(default=0)
+    defaites_exterieur = models.PositiveSmallIntegerField(default=0)
+    buts_pour_exterieur = models.PositiveSmallIntegerField(default=0)
+    buts_contre_exterieur = models.PositiveSmallIntegerField(default=0)
+    points_exterieur = models.PositiveSmallIntegerField(default=0)
+
+    # Texte de zone qualificative/relégation tel que renvoyé par GOAL API (ex.
+    # "Promotion - CAF Champions League (Qualification)", "Relegation - Ligue 2") — affiché
+    # tel quel, jamais traduit côté backend (contenu variable non couvert par i18n Django).
+    zone_texte = models.CharField(max_length=200, blank=True)
+
     maj_le = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -716,14 +747,30 @@ class ClassementLigue(models.Model):
         return f"{self.rang}. {self.equipe} ({self.saison})"
 
 
+class StatutRencontre(models.TextChoices):
+    """Valeurs reprises telles quelles du champ `matchStatus` de GOAL API (voir
+    services.py) — pas de traduction/remappage de valeur, seul le libellé humain change
+    par langue (`get_statut_display()`)."""
+
+    PROGRAMMEE = "SCHEDULED", _("Programmée")
+    TERMINEE = "FINISHED", _("Terminée")
+    REPORTEE = "POSTPONED", _("Reportée")
+    ANNULEE = "CANCELLED", _("Annulée")
+
+
 class RencontreCalendrier(models.Model):
-    """Un match du calendrier (dernier résultat connu ou prochain match — jamais le
-    calendrier complet d'une saison, voir docstring de tête services.py) synchronisé
-    depuis SerpApi/Google Sports — distinct de `Match` ci-dessus, qui reste réservé aux
+    """Un match du calendrier de Club Africain (toutes compétitions confondues), synchronisé
+    depuis GOAL API (goal-api.com) — distinct de `Match` ci-dessus, qui reste réservé aux
     matchs pilotés en direct par un modérateur (Live-Ticker). `evenement_externe_id`
-    (identifiant "kgmid" Google) est la clé d'upsert idempotente.
-    `score_domicile`/`score_exterieur` sont renseignés pour les matchs déjà joués (requête
-    "résultats récents"), NULL pour le prochain match à venir."""
+    (identifiant GOAL API, ex. "cmxxxxxxxxxxxxxxxxxxxxxxxx") est la clé d'upsert idempotente.
+    `score_domicile`/`score_exterieur` sont renseignés pour les matchs déjà joués, NULL sinon.
+
+    Contrairement à SerpApi/Google Sports (qui ne renvoyait jamais que quelques matchs —
+    derniers résultats + prochain match, voir ancienne docstring de tête services.py), GOAL
+    API renvoie le calendrier COMPLET de l'équipe (198 rencontres testées par l'utilisateur,
+    toutes compétitions) : `statut` (ex-inféré uniquement depuis `date_heure`/le score) est
+    donc désormais fiable, notamment pour distinguer un match reporté/annulé d'un match à
+    venir normal."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -734,6 +781,9 @@ class RencontreCalendrier(models.Model):
     date_heure = models.DateTimeField()
     score_domicile = models.PositiveSmallIntegerField(null=True, blank=True)
     score_exterieur = models.PositiveSmallIntegerField(null=True, blank=True)
+    statut = models.CharField(
+        max_length=20, choices=StatutRencontre.choices, default=StatutRencontre.PROGRAMMEE
+    )
 
     maj_le = models.DateTimeField(auto_now=True)
 
@@ -751,7 +801,43 @@ class RencontreCalendrier(models.Model):
     def est_a_venir(self) -> bool:
         from django.utils import timezone
 
-        return self.date_heure >= timezone.now()
+        return self.statut == StatutRencontre.PROGRAMMEE and self.date_heure >= timezone.now()
+
+
+class StatistiqueJoueur(models.Model):
+    """Statistiques individuelles d'un joueur (saison en cours), synchronisées depuis GOAL
+    API (`GET /v1/teams/{id}/players`, voir services.py) — alimente les listes Torschützen
+    (buts)/Kartenstatistik (cartons) de l'onglet Statistiken, absentes du module tant qu'il
+    reposait sur SerpApi/Google Sports (aucune donnée joueur disponible pour la Ligue 1
+    tunisienne sur ce fournisseur, voir ancienne docstring de tête services.py).
+    `goal_api_id` est la clé d'upsert idempotente."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    goal_api_id = models.CharField(max_length=50, unique=True)
+    saison = models.CharField(max_length=20, help_text=_('Ex. "2025-2026".'))
+    equipe = models.CharField(max_length=200)
+    nom = models.CharField(max_length=200)
+    numero = models.PositiveSmallIntegerField(null=True, blank=True)
+    # Valeur brute GOAL API (ex. "Goalkeepers"/"Defenders"/"Midfielders"/"Forwards") —
+    # traduite côté frontend (i18n), jamais remappée en dur côté backend.
+    poste = models.CharField(max_length=50, blank=True)
+    matchs_joues = models.PositiveSmallIntegerField(default=0)
+    buts = models.PositiveSmallIntegerField(default=0)
+    passes_decisives = models.PositiveSmallIntegerField(default=0)
+    cartons_jaunes = models.PositiveSmallIntegerField(default=0)
+    cartons_rouges = models.PositiveSmallIntegerField(default=0)
+
+    maj_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_statistiques_joueurs"
+        verbose_name = _("Statistique joueur")
+        verbose_name_plural = _("Statistiques joueurs")
+        ordering = ["-buts", "nom"]
+
+    def __str__(self):
+        return f"{self.nom} ({self.equipe}, {self.saison})"
 
 
 class TypeEvenementMatch(models.TextChoices):

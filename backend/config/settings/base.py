@@ -339,31 +339,37 @@ ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
-# Ajouté le 2026-09-24 — module "Fan-Club" (voir apps.communaute.services) :
-# synchronisation périodique du classement/calendrier de Club Africain depuis le panneau
-# Sports de Google, interrogé via SerpApi (serpapi.com, 250 recherches/mois sur le plan
-# gratuit, compte gratuit sans carte bancaire requis pour obtenir une clé — aucune valeur
-# par défaut utilisable en production, tant que SERPAPI_KEY n'est pas définie le service de
-# synchronisation ne fait rien, voir services.py). Remplace API-Football (décision du
-# 2026-09-24, quelques heures après avoir déjà remplacé TheSportsDB le même jour : testé en
-# conditions réelles sur Railway, le plan gratuit d'API-Football bloque l'accès aux saisons
-# récentes/en cours — inutilisable pour un module qui doit justement afficher la saison en
-# cours). Testé ad-hoc avec la clé réelle de l'utilisateur avant toute implémentation (à sa
-# demande explicite) : confirmé fonctionnel pour Club Africain/Ligue 1 tunisienne, y compris
-# tableau complet et scores réels des derniers résultats (voir services.py pour le détail
-# des 3 requêtes SerpApi par synchronisation). Jamais de secret en dur dans le code
-# (CLAUDE.md §8).
-SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "")
-SERPAPI_EQUIPE = os.environ.get("SERPAPI_EQUIPE", "Club Africain")
-# Nom de la ligue tel que reconnu par le panneau Sports de Google (utilisé pour le tableau
-# complet et les derniers résultats — une requête sur le nom de l'ÉQUIPE ne renvoie qu'un
-# extrait de 5 lignes autour d'elle, jamais le tableau complet, voir services.py).
-SERPAPI_LIGUE = os.environ.get("SERPAPI_LIGUE", "Tunisian Ligue Professionnelle 1")
-# Saison à synchroniser (année de début, ex. "2025" pour la saison 2025-2026) —
-# généralement laissé vide : calculée automatiquement (convention "juillet → juin", voir
-# services.py::_saison_actuelle) car SerpApi ne renvoie pas de champ saison fiable.
-# À ne renseigner qu'en cas de bascule de saison ambiguë.
-SERPAPI_SAISON = os.environ.get("SERPAPI_SAISON", "")
+# Ajouté le 2026-09-24 — module "Fan-Club" (voir apps.communaute.services) : synchronisation
+# périodique du classement/calendrier/statistiques joueurs de Club Africain depuis GOAL API
+# (goal-api.com, 1000 requêtes/jour sur le plan gratuit, compte gratuit sans carte bancaire
+# requis pour obtenir une clé — aucune valeur par défaut utilisable en production, tant que
+# GOAL_API_KEY n'est pas définie le service de synchronisation ne fait rien, voir services.py).
+# Remplace SerpApi/Google Sports (décision utilisateur "Komplett auf GOAL API umstellen",
+# même jour que la bascule précédente TheSportsDB → API-Football → SerpApi) : le panneau
+# Sports de Google ne fournit ni Torschützen (buteurs), ni Kartenstatistik (cartons), ni
+# répartition domicile/extérieur du classement, ni calendrier complet pour la Ligue 1
+# tunisienne — testé ad-hoc AVANT cette bascule (résultat négatif sur les 5 formulations
+# essayées). Testé ad-hoc avec la clé réelle de l'utilisateur avant toute implémentation (à
+# sa demande explicite, puis testé indépendamment par l'utilisateur lui-même avec curl/
+# PowerShell) : confirmé fonctionnel pour Club Africain/Ligue 1 tunisienne, y compris
+# classement complet avec répartition domicile/extérieur native, calendrier complet toutes
+# compétitions (198 rencontres) et statistiques individuelles par joueur (buts/passes/
+# cartons). Jamais de secret en dur dans le code (CLAUDE.md §8).
+GOAL_API_KEY = os.environ.get("GOAL_API_KEY", "")
+# Identifiants GOAL API (CUID internes, pas des secrets) de la Ligue 1 tunisienne et de Club
+# Africain — confirmés par l'utilisateur via `/v1/countries/{id}/leagues` et la liste des
+# équipes de la ligue (voir conversation). Valeurs par défaut déjà correctes ; override
+# seulement utile en cas de changement côté GOAL API.
+GOAL_API_LEAGUE_ID = os.environ.get("GOAL_API_LEAGUE_ID", "cmr77dx4200qhrx069ia9gdbp")
+GOAL_API_TEAM_ID = os.environ.get("GOAL_API_TEAM_ID", "cmril1uumg7qjs10736m3925t")
+# Nom d'affichage de l'équipe suivie (comparaisons/mise en évidence côté frontend, ex.
+# ClassementTab/CalendrierTab) — indépendant de GOAL_API_TEAM_ID.
+GOAL_API_EQUIPE_NOM = os.environ.get("GOAL_API_EQUIPE_NOM", "Club Africain")
+# Saison à synchroniser (année de début, ex. "2025" pour la saison 2025-2026) — généralement
+# laissé vide : calculée automatiquement (convention "juillet → juin", voir
+# services.py::_saison_actuelle), même logique que sous SerpApi. À ne renseigner qu'en cas de
+# bascule de saison ambiguë.
+GOAL_API_SAISON = os.environ.get("GOAL_API_SAISON", "")
 
 # =============================================================================
 # Passerelles de paiement (AHM-46) — Stripe Checkout et PayPal Checkout, tous deux hébergés

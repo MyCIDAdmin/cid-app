@@ -24,6 +24,7 @@ function rencontre(overrides: Partial<RencontreCalendrier> = {}): RencontreCalen
     date_heure: "2026-04-01T18:00:00Z",
     score_domicile: null,
     score_exterieur: null,
+    statut: "SCHEDULED",
     est_a_venir: true,
     maj_le: "2026-03-01T10:00:00Z",
     ...overrides,
@@ -101,6 +102,7 @@ describe("CalendrierTab", () => {
           equipe_domicile: "Club Africain",
           equipe_exterieur: "Zarzis",
           est_a_venir: false,
+          statut: "FINISHED",
           score_domicile: 1,
           score_exterieur: 0,
         }),
@@ -121,6 +123,7 @@ describe("CalendrierTab", () => {
           equipe_domicile: "CS Sfaxien",
           equipe_exterieur: "Club Africain",
           est_a_venir: false,
+          statut: "FINISHED",
           score_domicile: 2,
           score_exterieur: 0,
         }),
@@ -141,6 +144,7 @@ describe("CalendrierTab", () => {
           equipe_domicile: "Ben Guerdane",
           equipe_exterieur: "CS Hammam-Lif",
           est_a_venir: false,
+          statut: "FINISHED",
           score_domicile: 1,
           score_exterieur: 0,
         }),
@@ -174,5 +178,47 @@ describe("CalendrierTab", () => {
     renderWithProviders(<CalendrierTab />);
 
     expect(screen.queryByText("live.calendrier_resultat_sieg")).not.toBeInTheDocument();
+  });
+
+  // Statut GOAL API (2026-09-24, bascule SerpApi → GOAL API) — voir docstring de tête
+  // CalendrierTab.tsx : un match reporté/annulé affiche un badge dédié plutôt qu'un
+  // résultat calculé (même si un score resterait par erreur renseigné côté API).
+  it("affiche un badge Verschoben pour une rencontre reportée", () => {
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([
+        rencontre({
+          equipe_domicile: "Stade Tunisien",
+          equipe_exterieur: "Club Africain",
+          est_a_venir: false,
+          statut: "POSTPONED",
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+
+    renderWithProviders(<CalendrierTab />);
+
+    expect(screen.getByText("live.calendrier_statut_reportee")).toBeInTheDocument();
+    expect(screen.queryByText("live.calendrier_resultat_sieg")).not.toBeInTheDocument();
+  });
+
+  it("affiche un badge Abgesagt pour une rencontre annulée", () => {
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([
+        rencontre({
+          equipe_domicile: "Club Africain",
+          equipe_exterieur: "EST",
+          est_a_venir: false,
+          statut: "CANCELLED",
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+
+    renderWithProviders(<CalendrierTab />);
+
+    expect(screen.getByText("live.calendrier_statut_annulee")).toBeInTheDocument();
   });
 });

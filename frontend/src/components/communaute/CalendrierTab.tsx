@@ -1,7 +1,13 @@
 /**
  * Onglet "Spielplan"/"Calendrier" — module Fan-Club (2026-09-24, extension du Live Match).
- * Lecture seule, synchronisé depuis SerpApi/Google Sports (voir backend apps.communaute.services) —
- * distinct des matchs du Live-Ticker (onglet "Ticker", voir LiveMatchPage.tsx).
+ * Lecture seule, synchronisé depuis GOAL API (voir backend apps.communaute.services) —
+ * distinct des matchs du Live-Ticker (onglet "Ticker", voir LiveMatchPage.tsx). Calendrier
+ * désormais COMPLET (toutes compétitions confondues), contrairement à SerpApi qui ne
+ * renvoyait qu'une poignée de matchs — voir docstring de tête services.py.
+ *
+ * Badge "reportée"/"annulée" ajouté lors de la bascule GOAL API (2026-09-24) : `statut`
+ * (`matchStatus` GOAL API) est désormais fiable pour toute rencontre, pas seulement
+ * inféré depuis la présence d'un score.
  */
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,6 +33,12 @@ const CLE_LABEL_RESULTAT: Record<Resultat, string> = {
   unentschieden: "live.calendrier_resultat_unentschieden",
 };
 
+// Reportée/annulée : badge dédié plutôt qu'un résultat calculé — voir docstring de tête.
+const CLE_LABEL_STATUT: Partial<Record<RencontreCalendrier["statut"], string>> = {
+  POSTPONED: "live.calendrier_statut_reportee",
+  CANCELLED: "live.calendrier_statut_annulee",
+};
+
 // Issue du match du point de vue de Club Africain (voir services.py — score renseigné
 // uniquement pour les rencontres déjà jouées, retournées par la requête "<ligue> results" :
 // couvre TOUTE la ligue, pas seulement Club Africain, d'où le null explicite quand l'équipe
@@ -47,7 +59,8 @@ function resultatClubAfricain(rencontre: RencontreCalendrier): Resultat | null {
 function RencontreLigne({ rencontre }: { rencontre: RencontreCalendrier }) {
   const { t } = useTranslation("communaute");
   const aScore = rencontre.score_domicile !== null && rencontre.score_exterieur !== null;
-  const resultat = resultatClubAfricain(rencontre);
+  const labelStatut = CLE_LABEL_STATUT[rencontre.statut];
+  const resultat = labelStatut ? null : resultatClubAfricain(rencontre);
 
   return (
     <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
@@ -56,6 +69,11 @@ function RencontreLigne({ rencontre }: { rencontre: RencontreCalendrier }) {
           {rencontre.equipe_domicile} — {rencontre.equipe_exterieur}
         </span>
         <div className="flex shrink-0 items-center gap-2">
+          {labelStatut && (
+            <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase text-text-tertiary">
+              {t(labelStatut)}
+            </span>
+          )}
           {resultat && (
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${COULEUR_RESULTAT[resultat]}`}
@@ -63,7 +81,7 @@ function RencontreLigne({ rencontre }: { rencontre: RencontreCalendrier }) {
               {t(CLE_LABEL_RESULTAT[resultat])}
             </span>
           )}
-          {aScore && (
+          {aScore && !labelStatut && (
             <span className="text-sm font-bold tabular-nums text-text-primary">
               {rencontre.score_domicile} : {rencontre.score_exterieur}
             </span>

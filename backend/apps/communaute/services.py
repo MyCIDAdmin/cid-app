@@ -3,336 +3,420 @@ Services — app communaute, module Fan-Club (2026-09-24, retour utilisateur : r
 "Live-Spiel" en "Fan-Club" et ajouter classement/calendrier/statistiques réels de Club
 Africain, voir docstring de tête de models.py).
 
-Synchronisation périodique de `ClassementLigue`/`RencontreCalendrier` depuis le panneau
-Sports de Google, interrogé via SerpApi (https://serpapi.com/google-sports-api) — décision
-"hybride" toujours valide : aucune API gratuite ne fournit de données EN DIRECT (live
-in-play) pour la Ligue 1 tunisienne, seuls le classement/calendrier (données rafraîchies
-1x/jour) sont disponibles gratuitement. Le Live-Ticker (score/chrono/événements pendant un
-match) reste donc piloté manuellement par un modérateur (voir `Match`/`MatchEvenement` dans
-models.py) — ce service ne les touche jamais.
+Synchronisation périodique de `ClassementLigue`/`RencontreCalendrier`/`StatistiqueJoueur`
+depuis **GOAL API** (https://goal-api.com, base REST `https://api.goal-api.com/v1`,
+authentification `Authorization: Bearer <clé>`) — décision "hybride" toujours valide :
+aucune API gratuite ne fournit de données EN DIRECT (live in-play) pour la Ligue 1
+tunisienne, le Live-Ticker (score/chrono/événements pendant un match) reste donc piloté
+manuellement par un modérateur (voir `Match`/`MatchEvenement` dans models.py) — ce service
+ne les touche jamais.
 
-Remplace API-Football (bascule décidée le 2026-09-24, quelques heures après le
-remplacement de TheSportsDB par API-Football le même jour) : testé en conditions réelles
-sur Railway (Django shell, clé réelle de l'utilisateur), le plan gratuit d'API-Football
-bloque l'accès aux saisons récentes/en cours (`{"errors": {"plan": "Free plans do not
-have access to this season, try from 2022 to 2024."}}`) — inutilisable pour un module qui
-doit justement afficher la saison EN COURS.
+Remplace SerpApi/Google Sports (décision utilisateur "Komplett auf GOAL API umstellen",
+2026-09-24, après plusieurs séries de tests ad-hoc AVEC LA CLÉ SERPAPI RÉELLE de
+l'utilisateur ayant montré que le panneau Sports de Google ne fournit, pour un petit
+championnat comme la Ligue 1 tunisienne, NI buteurs (Torschützen) NI cartons
+(Kartenstatistik) NI répartition domicile/extérieur du classement NI calendrier complet
+d'une saison — seulement un tableau complet et une poignée de résultats/prochain match,
+voir historique git de ce fichier pour le détail des tests). L'utilisateur a ensuite testé
+lui-même GOAL API (clé gratuite, 1000 requêtes/jour, aucune carte bancaire) avec des appels
+curl/PowerShell réels et confirmé que TOUTES ces lacunes sont comblées :
+  - `GET /leagues/{id}/standings` → tableau complet AVEC répartition domicile/extérieur
+    native (`homeLeague*`/`awayLeague*` en plus de `overallLeague*`, voir
+    `_synchroniser_classement_depuis`).
+  - `GET /teams/{id}/fixtures` (paginé) → calendrier COMPLET de Club Africain, TOUTES
+    compétitions confondues (198 rencontres testées : Ligue 1, Coupe, Ligue des Champions
+    CAF, matchs amicaux), avec statut explicite (`matchStatus`) — contrairement à SerpApi,
+    plus besoin de deux requêtes séparées "résultats récents"/"prochain match" ni de
+    deviner si un match est passé/à venir/reporté depuis sa seule date.
+  - `GET /teams/{id}/players` (paginé) → effectif complet (73 joueurs testés) avec buts/
+    passes décisives/cartons par joueur — alimente les nouvelles listes Torschützen/
+    Kartenstatistik (`StatistiqueJoueur`), impossibles sous SerpApi.
 
-Conçu à partir de plusieurs séries de tests ad-hoc (à la demande explicite de
-l'utilisateur, AVANT toute implémentation, avec sa clé SerpApi réelle depuis la console
-Railway) qui ont révélé qu'une SEULE requête Google (`engine=google`, jamais besoin d'un
-identifiant Knowledge Graph/`kgmid` obtenu séparément) ne suffit PAS à tout couvrir — le
-panneau Sports de Google se comporte différemment selon la requête :
-  - "<ligue> standings"/"table" → tableau COMPLET (16 équipes testées) mais AUCUN match.
-  - "<ligue> results" → plusieurs matchs RÉCEMMENT JOUÉS avec score réel par équipe
-    (`status: "FT"`) — permet enfin de renseigner score_domicile/score_exterieur.
-  - "<équipe> schedule" → le PROCHAIN match de l'équipe (toutes compétitions confondues,
-    pas seulement le championnat national) — utile pour "à venir" même quand la ligue
-    elle-même est entre deux journées.
-Aucune formulation ne renvoie la liste COMPLÈTE des matchs d'une saison (~30 par équipe) —
-limite du panneau Sports de Google lui-même (identique à ce qu'un navigateur affiche pour
-la même recherche), pas de SerpApi. Le calendrier synchronisé reste donc volontairement
-partiel : derniers résultats connus + prochain match, jamais l'intégralité du calendrier.
+AVERTISSEMENT SUR LE MAPPING DES CHAMPS STANDINGS : contrairement aux champs
+fixtures/joueurs ci-dessous (noms confirmés verbatim sur les réponses réelles testées par
+l'utilisateur : `matchStatus`, `homeTeamScore`, `matchDate`, `matchTime`, `kickoffUtc`,
+`matchPlayed`, `goals`, `assists`, `yellowCards`, `redCards`...), les noms EXACTS des
+champs `overallLeague*`/`homeLeague*`/`awayLeague*` sur l'endpoint standings n'ont été
+décrits que par leur INTITULÉ (Position/Played/W/D/L/GF/GA/PTS), pas confirmés champ par
+champ sur une réponse brute. `_valeur()` ci-dessous tente donc plusieurs orthographes
+plausibles par champ plutôt qu'un nom unique supposé certain — en cas de mapping incorrect,
+le classement se synchronisera avec des zéros (jamais d'exception, voir principe défensif
+plus bas) : à vérifier sur les logs Railway après le premier sync réel, ajuster les
+candidats dans `_valeur(...)` si besoin (patch de suivi rapide, pas une remise en cause de
+l'approche).
 
-Trois requêtes SerpApi par synchronisation (`_recherche_classement`,
-`_recherche_resultats_recents`, `_recherche_prochain_match`, voir `synchroniser_classement`/
-`synchroniser_calendrier`) — décision utilisateur du 2026-09-24 (revue le même jour après
-avoir d'abord tenté une requête unique mutualisée, insuffisante en pratique) : planifiée
-1x/jour (migrations/0007, mis à jour par migrations/0008) pour rester large sous le quota
-gratuit SerpApi (250 recherches/mois — 3 requêtes/jour ≈ 90/mois).
+`GOAL_API_KEY` (voir config/settings/base.py, jamais de secret en dur — CLAUDE.md §8) doit
+être obtenue par l'utilisateur lui-même (compte gratuit sur https://goal-api.com, 1000
+requêtes/jour sans carte bancaire) : sans clé, les fonctions ci-dessous ne font rien (log
+d'avertissement) plutôt que d'échouer bruyamment — permet de déployer le module avant que
+la clé ne soit configurée. `GOAL_API_LEAGUE_ID`/`GOAL_API_TEAM_ID` (Ligue 1 tunisienne/Club
+Africain) sont des identifiants GOAL API confirmés par l'utilisateur — pas des secrets,
+préremplis par défaut dans settings/base.py, mais overridables par variable d'env.
 
-`SERPAPI_KEY` (voir config/settings/base.py, jamais de secret en dur — CLAUDE.md §8) doit
-être obtenue par l'utilisateur lui-même (compte gratuit sur https://serpapi.com/users/sign_up,
-250 recherches/mois sans carte bancaire) : sans clé, les fonctions ci-dessous ne font rien
-(log d'avertissement) plutôt que d'échouer bruyamment — permet de déployer le module avant
-que la clé ne soit configurée.
-
-SerpApi ne renvoie ni saison explicite fiable (le champ "season" n'apparaît que sur
-certaines formulations de requête) ni identifiant de ligue/équipe à résoudre au préalable
-(contrairement à API-Football) : la saison est calculée localement (convention
-"juillet → juin" pour un championnat nord-africain/européen), avec un override optionnel
-`SERPAPI_SAISON` en cas de bascule ambiguë. Chaque rencontre est identifiée par son
-`kgmid` Google (ex. "/g/11zypstbsb"), utilisé comme `evenement_externe_id` (champ déjà
-générique, aucune migration de schéma nécessaire).
+GOAL API ne renvoie pas de champ saison fiable et directement exploitable sur tous les
+endpoints utilisés ici : la saison est calculée localement (même convention "juillet →
+juin" que sous SerpApi), avec un override optionnel `GOAL_API_SAISON`. Chaque
+rencontre/joueur est identifié par son `id` GOAL API (CUID), utilisé comme
+`evenement_externe_id`/`goal_api_id` — upsert idempotent.
 
 Chaque synchronisation est idempotente (`update_or_create`) et résiliente : une erreur sur
-UNE équipe/UN événement (réponse API inattendue, champ manquant) est capturée et journalisée
-sans interrompre le reste de la synchronisation — même principe défensif que les envois email
-protégés par try/except dans tasks.py (apps.evenements, apps.communaute).
+UNE équipe/UNE rencontre/UN joueur (réponse API inattendue, champ manquant) est capturée et
+journalisée sans interrompre le reste de la synchronisation — même principe défensif que
+les envois email protégés par try/except dans tasks.py (apps.evenements, apps.communaute),
+et que l'ancienne implémentation SerpApi de ce fichier.
 """
 
 import logging
-from datetime import date, datetime
+from datetime import datetime
 
 import requests
 from django.conf import settings
 from django.utils import timezone as django_timezone
 
-from .models import ClassementLigue, RencontreCalendrier
+from .models import ClassementLigue, RencontreCalendrier, StatistiqueJoueur, StatutRencontre
 
 logger = logging.getLogger(__name__)
 
-SERPAPI_URL = "https://serpapi.com/search.json"
+GOAL_API_URL = "https://api.goal-api.com/v1"
 TIMEOUT_SECONDES = 15
-
-# SerpApi (panneau Sports Google) renvoie la forme récente en anglais, y compris des
-# entrées "not played" pour les matchs futurs affichés en avance dans last_5 — traduites en
-# chaîne vide (silencieusement ignorées) plutôt que propagées telles quelles, le frontend
-# (StatistiquesTab, COULEUR_FORME) n'attendant que des lettres V/N/D.
-_TRADUCTION_FORME = {"win": "V", "tie": "N", "loss": "D"}
-
-_MOIS_ABBR = {
-    "Jan": 1,
-    "Feb": 2,
-    "Mar": 3,
-    "Apr": 4,
-    "May": 5,
-    "Jun": 6,
-    "Jul": 7,
-    "Aug": 8,
-    "Sep": 9,
-    "Oct": 10,
-    "Nov": 11,
-    "Dec": 12,
-}
-
-# "<ligue> results" renvoie des dates préfixées du jour de semaine (ex. "Sun, Sep 20"),
-# contrairement à "<équipe> schedule" (ex. "Oct 17" sans préfixe) — préfixe retiré avant
-# parsing, voir _parser_date_heure.
-_JOURS_ABBR = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
+LIMITE_PAGINATION = 50
+MAX_PAGES = 50  # garde-fou (198 rencontres/73 joueurs testés ≈ 4/2 pages à 50/page)
 
 
 def _api_key_configuree() -> bool:
-    if not settings.SERPAPI_KEY:
+    if not settings.GOAL_API_KEY:
         logger.warning(
-            "SERPAPI_KEY non configurée — synchronisation Fan-Club ignorée (voir .env.example)."
+            "GOAL_API_KEY non configurée — synchronisation Fan-Club ignorée (voir .env.example)."
         )
         return False
     return True
 
 
-def _get_sports_results(query: str) -> dict | None:
-    """Un appel SerpApi (`engine=google`) pour la requête donnée. `hl=en`/`gl=us` forcés
-    pour un format de réponse anglais stable (dates "Oct 17"/"Sun, Sep 20", pas
-    d'arabe/français à parser)."""
+def _get(path: str, params: dict | None = None) -> dict | list | None:
+    """Un appel GOAL API authentifié (`Authorization: Bearer`). Retourne le corps JSON
+    parsé (dict ou liste selon l'endpoint) ou None en cas d'échec réseau/HTTP/JSON —
+    jamais d'exception propagée, voir principe défensif de tête."""
     try:
         reponse = requests.get(
-            SERPAPI_URL,
-            params={
-                "engine": "google",
-                "q": query,
-                "hl": "en",
-                "gl": "us",
-                "api_key": settings.SERPAPI_KEY,
-            },
+            f"{GOAL_API_URL}{path}",
+            headers={"Authorization": f"Bearer {settings.GOAL_API_KEY}"},
+            params=params or {},
             timeout=TIMEOUT_SECONDES,
         )
         reponse.raise_for_status()
-        corps = reponse.json()
+        return reponse.json()
     except (requests.RequestException, ValueError) as exc:
-        logger.warning("Échec requête SerpApi (%s) : %s", query, exc)
+        logger.warning("Échec requête GOAL API (%s) : %s", path, exc)
         return None
 
-    if corps.get("error"):
-        logger.warning("Erreur SerpApi (%s) : %s", query, corps["error"])
+
+def _extraire_liste(corps) -> tuple[list, dict]:
+    """GOAL API enveloppe généralement les listes dans `{"data": [...], "pagination":
+    {...}}` — tolère aussi une réponse qui serait directement une liste."""
+    if isinstance(corps, dict):
+        return (corps.get("data") or []), (corps.get("pagination") or {})
+    if isinstance(corps, list):
+        return corps, {}
+    return [], {}
+
+
+def _paginer(path: str, params: dict | None = None):
+    """Parcourt toutes les pages d'un endpoint GOAL API paginé (`offset`/`limit`/
+    `hasMore`, voir docstring de tête), jusqu'à `MAX_PAGES` par sécurité. S'arrête
+    silencieusement (générateur vide) si le premier appel échoue — déjà journalisé par
+    `_get`."""
+    offset = 0
+    for _page in range(MAX_PAGES):
+        corps = _get(path, {**(params or {}), "limit": LIMITE_PAGINATION, "offset": offset})
+        if corps is None:
+            return
+        liste, pagination = _extraire_liste(corps)
+        if not liste:
+            return
+        yield from liste
+        if not pagination.get("hasMore"):
+            return
+        offset += LIMITE_PAGINATION
+
+
+def _valeur(source: dict, *cles):
+    """Retourne la première valeur non None parmi plusieurs orthographes candidates d'un
+    même champ — voir avertissement de tête sur l'incertitude du mapping standings."""
+    for cle in cles:
+        valeur = source.get(cle)
+        if valeur is not None:
+            return valeur
+    return None
+
+
+def _entier(valeur, defaut: int = 0) -> int:
+    if valeur is None:
+        return defaut
+    try:
+        return int(valeur)
+    except (TypeError, ValueError):
+        return defaut
+
+
+def _score(valeur):
+    """Comme `_entier`, mais retourne None (score non renseigné) plutôt que 0 — un score
+    manquant (match non joué) n'est pas un score nul."""
+    if valeur is None:
+        return None
+    try:
+        return int(valeur)
+    except (TypeError, ValueError):
         return None
 
-    resultats = corps.get("sports_results")
-    if not resultats:
-        logger.warning("Aucun sports_results SerpApi pour la requête : %s", query)
-        return None
-    return resultats
 
-
-def _traduire_forme(derniers) -> str:
-    return "".join(_TRADUCTION_FORME.get(resultat, "") for resultat in (derniers or []))
+def _nom_equipe(source: dict, cle_imbriquee: str, cle_plate: str) -> str:
+    """GOAL API imbrique généralement l'équipe (`{"team": {"name": ...}}` sur standings,
+    `{"homeTeam": {"name": ...}}` sur fixtures) — tolère aussi un champ plat au cas où."""
+    imbrique = source.get(cle_imbriquee)
+    if isinstance(imbrique, dict):
+        nom = imbrique.get("name")
+        if nom:
+            return nom
+    plat = source.get(cle_plate)
+    if plat:
+        return plat
+    raise KeyError(cle_imbriquee)
 
 
 def _saison_actuelle() -> str:
-    """SerpApi ne renvoie pas de façon fiable un champ "season" exploitable : calculée
-    localement selon la convention "juillet → juin" d'une saison de football, sauf
-    override explicite `SERPAPI_SAISON` (année de début, ex. "2025" pour 2025-2026)."""
-    if settings.SERPAPI_SAISON:
+    """GOAL API ne renvoie pas de façon garantie un champ saison directement exploitable
+    sur tous les endpoints utilisés ici : calculée localement selon la convention "juillet
+    → juin" d'une saison de football, sauf override explicite `GOAL_API_SAISON` (année de
+    début, ex. "2025" pour 2025-2026)."""
+    if settings.GOAL_API_SAISON:
         try:
-            annee = int(settings.SERPAPI_SAISON)
+            annee = int(settings.GOAL_API_SAISON)
             return f"{annee}-{annee + 1}"
         except ValueError:
-            logger.warning("SERPAPI_SAISON invalide, ignorée : %s", settings.SERPAPI_SAISON)
+            logger.warning("GOAL_API_SAISON invalide, ignorée : %s", settings.GOAL_API_SAISON)
 
     aujourdhui = django_timezone.localdate()
     annee_debut = aujourdhui.year if aujourdhui.month >= 7 else aujourdhui.year - 1
     return f"{annee_debut}-{annee_debut + 1}"
 
 
-def _parser_date_heure(date_str: str, heure_str: str):
-    """SerpApi ne renvoie jamais l'année (ex. date="Oct 17" ou "Sun, Sep 20",
-    time="11:00 AM" ou absent) — et le jour/mois seuls sont ambigus selon la requête
-    d'origine : "<ligue> results" renvoie des matchs RÉCEMMENT PASSÉS (quelques jours avant
-    aujourd'hui), "<équipe> schedule" un match À VENIR (quelques jours/semaines après). Les
-    deux ne s'écartent jamais de plusieurs mois d'aujourd'hui (limite du panneau Sports de
-    Google lui-même, voir docstring de tête) : on retient donc, parmi les trois
-    interprétations possibles (année-1/année/année+1), celle dont la date obtenue est la
-    PLUS PROCHE d'aujourd'hui — fonctionne aussi bien pour un résultat de quelques jours
-    dans le passé que pour un prochain match de quelques semaines dans le futur, y compris
-    à la bascule de fin d'année (ex. "Jan 3" trouvé en décembre désigne l'année suivante).
-    Retourne None si le format est illisible."""
-    if not date_str:
-        return None
-    morceaux = date_str.replace(",", "").split()
-    if morceaux and morceaux[0] in _JOURS_ABBR:
-        morceaux = morceaux[1:]
-    if len(morceaux) != 2 or morceaux[0] not in _MOIS_ABBR:
-        return None
-    mois = _MOIS_ABBR[morceaux[0]]
-    try:
-        jour = int(morceaux[1])
-    except ValueError:
-        return None
-
-    aujourdhui = django_timezone.localdate()
-    candidats = []
-    for annee_possible in (aujourdhui.year - 1, aujourdhui.year, aujourdhui.year + 1):
+def _parser_kickoff(fixture: dict):
+    """Préfère `kickoffUtc` (horodatage ISO 8601 confirmé sur les réponses réelles
+    testées par l'utilisateur — déjà en UTC, sans ambiguïté) ; se rabat sur
+    `matchDate`("YYYY-MM-DD")+`matchTime` sinon. Contrairement à SerpApi, GOAL API renvoie
+    l'année complète : plus besoin de deviner l'année la plus proche d'aujourd'hui. Retourne
+    None si aucun format n'est exploitable."""
+    kickoff = fixture.get("kickoffUtc")
+    if isinstance(kickoff, str) and kickoff:
         try:
-            candidats.append(date(annee_possible, mois, jour))
-        except ValueError:
-            continue
-    if not candidats:
-        return None
-    candidate = min(candidats, key=lambda d: abs((d - aujourdhui).days))
-    annee = candidate.year
-
-    # Heure de coup d'envoi inconnue ("<ligue> results" ne la renvoie jamais, seul le
-    # statut "FT") : midi plutôt que minuit — minuit heure locale (Europe/Berlin) tombe la
-    # veille une fois converti en UTC (stockage USE_TZ=True), ce qui décalerait la date
-    # affichée d'un jour ; midi reste toujours le même jour calendaire dans les deux fuseaux.
-    heure, minute = 12, 0
-    if heure_str:
-        try:
-            heure_parsee = datetime.strptime(heure_str.strip(), "%I:%M %p")
-            heure, minute = heure_parsee.hour, heure_parsee.minute
+            dt = datetime.fromisoformat(kickoff.replace("Z", "+00:00"))
+            if django_timezone.is_naive(dt):
+                dt = django_timezone.make_aware(dt)
+            return dt
         except ValueError:
             pass
 
-    naif = datetime(annee, mois, jour, heure, minute)
+    date_str = fixture.get("matchDate")
+    if not date_str:
+        return None
+    try:
+        base = datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        return None
+
+    # Heure de coup d'envoi manquante : midi plutôt que minuit — minuit heure locale
+    # (Europe/Berlin) tombe la veille une fois converti en UTC (stockage USE_TZ=True), ce
+    # qui décalerait la date affichée d'un jour ; midi reste toujours le même jour
+    # calendaire dans les deux fuseaux (même raisonnement que l'ancienne implémentation
+    # SerpApi).
+    heure, minute = 12, 0
+    time_str = fixture.get("matchTime")
+    if time_str:
+        for format_heure in ("%H:%M:%S", "%H:%M"):
+            try:
+                parsee = datetime.strptime(time_str.strip(), format_heure)
+                heure, minute = parsee.hour, parsee.minute
+                break
+            except ValueError:
+                continue
+
+    naif = base.replace(hour=heure, minute=minute)
     return django_timezone.make_aware(naif)
 
 
-def _score_equipe(equipe: dict):
-    """`score` n'est présent que sur un match terminé ("status": "FT") — absent (postposé,
-    à venir) : None plutôt que de lever, voir _synchroniser_calendrier_depuis."""
-    score = equipe.get("score")
-    if score is None:
-        return None
-    try:
-        return int(score)
-    except (TypeError, ValueError):
-        return None
-
-
-def _synchroniser_classement_depuis(resultats: dict) -> int:
-    lignes = ((resultats.get("league") or {}).get("standings")) or []
+def _synchroniser_classement_depuis(lignes: list) -> int:
     saison = _saison_actuelle()
 
     synchronisees = 0
     for ligne in lignes:
         try:
+            equipe = _nom_equipe(ligne, "team", "teamName")
+            buts_pour = _entier(_valeur(ligne, "overallLeagueGoalsFor", "goalsFor"))
+            buts_contre = _entier(_valeur(ligne, "overallLeagueGoalsAgainst", "goalsAgainst"))
+
             ClassementLigue.objects.update_or_create(
                 saison=saison,
-                equipe=ligne["team"]["name"],
+                equipe=equipe,
                 defaults={
-                    "rang": int(ligne.get("pos") or 0),
-                    "joues": int(ligne.get("mp") or 0),
-                    "victoires": int(ligne.get("w") or 0),
-                    "nuls": int(ligne.get("d") or 0),
-                    "defaites": int(ligne.get("l") or 0),
-                    "buts_pour": int(ligne.get("gf") or 0),
-                    "buts_contre": int(ligne.get("ga") or 0),
-                    "difference": int(ligne.get("gd") or 0),
-                    "points": int(ligne.get("pts") or 0),
-                    "forme_recente": _traduire_forme(ligne.get("last_5")),
+                    "rang": _entier(_valeur(ligne, "overallLeaguePosition", "position", "rang")),
+                    "joues": _entier(_valeur(ligne, "overallLeaguePlayed", "played")),
+                    "victoires": _entier(_valeur(ligne, "overallLeagueWon", "won")),
+                    "nuls": _entier(_valeur(ligne, "overallLeagueDraw", "drawn", "draw")),
+                    "defaites": _entier(_valeur(ligne, "overallLeagueLost", "lost")),
+                    "buts_pour": buts_pour,
+                    "buts_contre": buts_contre,
+                    "difference": buts_pour - buts_contre,
+                    "points": _entier(_valeur(ligne, "overallLeaguePoints", "points")),
+                    "forme_recente": "",
+                    "joues_domicile": _entier(_valeur(ligne, "homeLeaguePlayed")),
+                    "victoires_domicile": _entier(_valeur(ligne, "homeLeagueWon")),
+                    "nuls_domicile": _entier(_valeur(ligne, "homeLeagueDraw", "homeLeagueDrawn")),
+                    "defaites_domicile": _entier(_valeur(ligne, "homeLeagueLost")),
+                    "buts_pour_domicile": _entier(_valeur(ligne, "homeLeagueGoalsFor")),
+                    "buts_contre_domicile": _entier(_valeur(ligne, "homeLeagueGoalsAgainst")),
+                    "points_domicile": _entier(_valeur(ligne, "homeLeaguePoints")),
+                    "joues_exterieur": _entier(_valeur(ligne, "awayLeaguePlayed")),
+                    "victoires_exterieur": _entier(_valeur(ligne, "awayLeagueWon")),
+                    "nuls_exterieur": _entier(_valeur(ligne, "awayLeagueDraw", "awayLeagueDrawn")),
+                    "defaites_exterieur": _entier(_valeur(ligne, "awayLeagueLost")),
+                    "buts_pour_exterieur": _entier(_valeur(ligne, "awayLeagueGoalsFor")),
+                    "buts_contre_exterieur": _entier(_valeur(ligne, "awayLeagueGoalsAgainst")),
+                    "points_exterieur": _entier(_valeur(ligne, "awayLeaguePoints")),
+                    "zone_texte": ligne.get("overallPromotion") or "",
                 },
             )
             synchronisees += 1
         except (KeyError, TypeError, ValueError) as exc:
-            logger.warning("Ligne de classement SerpApi ignorée (format inattendu) : %s", exc)
+            logger.warning("Ligne de classement GOAL API ignorée (format inattendu) : %s", exc)
 
     return synchronisees
 
 
-def _synchroniser_calendrier_depuis(resultats: dict) -> int:
-    """Traite indifféremment les `games` d'une réponse "results" (matchs terminés, score
-    présent par équipe) ou "schedule" (prochain match, généralement sans score) — même
-    forme de bloc `games`, seule la présence du score diffère. Convention observée sur les
-    données réelles : teams[0] = équipe à domicile, teams[1] = équipe à l'extérieur."""
-    jeux = resultats.get("games") or []
-
+def _synchroniser_calendrier_depuis(fixtures) -> int:
     synchronisees = 0
-    for jeu in jeux:
+    for fixture in fixtures:
         try:
-            event_id = jeu["kgmid"]
-            equipes = jeu["teams"]
-            if len(equipes) != 2:
-                raise ValueError("nombre d'équipes inattendu")
-            date_heure = _parser_date_heure(jeu.get("date", ""), jeu.get("time", ""))
+            event_id = fixture["id"]
+            equipe_domicile = _nom_equipe(fixture, "homeTeam", "homeTeamName")
+            equipe_exterieur = _nom_equipe(fixture, "awayTeam", "awayTeamName")
+
+            date_heure = _parser_kickoff(fixture)
             if date_heure is None:
-                raise ValueError("date SerpApi illisible")
+                raise ValueError("date GOAL API illisible")
+
+            competition_brute = fixture.get("league")
+            if isinstance(competition_brute, dict):
+                competition = competition_brute.get("name") or ""
+            else:
+                competition = fixture.get("competition") or ""
+
+            statut_brut = str(fixture.get("matchStatus") or "").upper()
+            statut = (
+                statut_brut if statut_brut in StatutRencontre.values else StatutRencontre.PROGRAMMEE
+            )
 
             RencontreCalendrier.objects.update_or_create(
                 evenement_externe_id=event_id,
                 defaults={
-                    "competition": jeu.get("tournament") or "",
-                    "equipe_domicile": equipes[0]["name"],
-                    "equipe_exterieur": equipes[1]["name"],
+                    "competition": competition,
+                    "equipe_domicile": equipe_domicile,
+                    "equipe_exterieur": equipe_exterieur,
                     "date_heure": date_heure,
-                    "score_domicile": _score_equipe(equipes[0]),
-                    "score_exterieur": _score_equipe(equipes[1]),
+                    "score_domicile": _score(fixture.get("homeTeamScore")),
+                    "score_exterieur": _score(fixture.get("awayTeamScore")),
+                    "statut": statut,
                 },
             )
             synchronisees += 1
         except (KeyError, TypeError, ValueError) as exc:
-            logger.warning("Rencontre SerpApi ignorée (format inattendu) : %s", exc)
+            logger.warning("Rencontre GOAL API ignorée (format inattendu) : %s", exc)
+
+    return synchronisees
+
+
+def _synchroniser_statistiques_joueurs_depuis(joueurs) -> int:
+    saison = _saison_actuelle()
+    equipe_nom = settings.GOAL_API_EQUIPE_NOM
+
+    synchronisees = 0
+    for joueur in joueurs:
+        try:
+            goal_api_id = joueur["id"]
+            nom = joueur["name"]
+            numero_brut = joueur.get("number")
+            numero = None
+            if numero_brut not in (None, ""):
+                numero = int(numero_brut)
+
+            StatistiqueJoueur.objects.update_or_create(
+                goal_api_id=goal_api_id,
+                defaults={
+                    "saison": saison,
+                    "equipe": equipe_nom,
+                    "nom": nom,
+                    "numero": numero,
+                    "poste": joueur.get("type") or "",
+                    "matchs_joues": _entier(joueur.get("matchPlayed")),
+                    "buts": _entier(joueur.get("goals")),
+                    "passes_decisives": _entier(joueur.get("assists")),
+                    "cartons_jaunes": _entier(joueur.get("yellowCards")),
+                    "cartons_rouges": _entier(joueur.get("redCards")),
+                },
+            )
+            synchronisees += 1
+        except (KeyError, TypeError, ValueError) as exc:
+            logger.warning("Statistique joueur GOAL API ignorée (format inattendu) : %s", exc)
 
     return synchronisees
 
 
 def synchroniser_classement() -> int:
-    """Table complète de la ligue (`SERPAPI_LIGUE`) — une requête SerpApi dédiée, voir
-    docstring de tête (une requête sur le nom de l'équipe ne renvoie qu'un extrait de 5
-    lignes autour d'elle, jamais le tableau complet)."""
+    """Tableau complet de la ligue (`GOAL_API_LEAGUE_ID`), avec répartition domicile/
+    extérieur native — une seule requête GOAL API, non paginée (une ligue compte au plus
+    quelques dizaines d'équipes)."""
     if not _api_key_configuree():
         return 0
-    resultats = _get_sports_results(f"{settings.SERPAPI_LIGUE} standings")
-    if not resultats:
+    corps = _get(f"/leagues/{settings.GOAL_API_LEAGUE_ID}/standings")
+    if corps is None:
         return 0
-    return _synchroniser_classement_depuis(resultats)
+    lignes, _pagination = _extraire_liste(corps)
+    if not lignes:
+        logger.warning(
+            "Aucune ligne de classement GOAL API pour la ligue %s.", settings.GOAL_API_LEAGUE_ID
+        )
+        return 0
+    return _synchroniser_classement_depuis(lignes)
 
 
 def synchroniser_calendrier() -> int:
-    """Deux requêtes SerpApi : derniers résultats connus de la ligue (avec scores réels) +
-    prochain match de l'équipe configurée (`SERPAPI_EQUIPE`, toutes compétitions
-    confondues) — voir docstring de tête pour pourquoi la liste complète d'une saison
-    n'est pas atteignable."""
+    """Calendrier COMPLET de l'équipe suivie (`GOAL_API_TEAM_ID`), toutes compétitions
+    confondues — remplace les deux requêtes SerpApi "résultats récents"/"prochain match"
+    par un seul endpoint paginé qui couvre l'intégralité de la saison (voir docstring de
+    tête pour pourquoi ce n'était pas possible sous SerpApi)."""
     if not _api_key_configuree():
         return 0
+    fixtures = _paginer(f"/teams/{settings.GOAL_API_TEAM_ID}/fixtures")
+    return _synchroniser_calendrier_depuis(fixtures)
 
-    total = 0
-    resultats_recents = _get_sports_results(f"{settings.SERPAPI_LIGUE} results")
-    if resultats_recents:
-        total += _synchroniser_calendrier_depuis(resultats_recents)
 
-    prochain_match = _get_sports_results(f"{settings.SERPAPI_EQUIPE} schedule")
-    if prochain_match:
-        total += _synchroniser_calendrier_depuis(prochain_match)
-
-    return total
+def synchroniser_statistiques_joueurs() -> int:
+    """Effectif complet de l'équipe suivie (`GOAL_API_TEAM_ID`) avec statistiques
+    individuelles (buts/passes décisives/cartons) — alimente les listes Torschützen/
+    Kartenstatistik de l'onglet Statistiken, indisponibles sous SerpApi."""
+    if not _api_key_configuree():
+        return 0
+    joueurs = _paginer(f"/teams/{settings.GOAL_API_TEAM_ID}/players")
+    return _synchroniser_statistiques_joueurs_depuis(joueurs)
 
 
 def synchroniser_donnees_football() -> dict:
     """Point d'entrée utilisé par tasks.py/Celery Beat — délègue à
-    `synchroniser_classement()`/`synchroniser_calendrier()` (3 appels SerpApi au total,
-    voir docstring de tête). Planifié 1x/jour (migrations/0007, mis à jour par
-    migrations/0008) pour rester large sous le quota gratuit SerpApi."""
+    `synchroniser_classement()`/`synchroniser_calendrier()`/
+    `synchroniser_statistiques_joueurs()` (voir docstring de tête). Planifié via Celery
+    Beat, voir migrations/0007-0010 pour l'historique des fréquences (dernière en date :
+    migrations/0010, ajustée pour GOAL API)."""
     return {
         "classement": synchroniser_classement(),
         "calendrier": synchroniser_calendrier(),
+        "statistiques_joueurs": synchroniser_statistiques_joueurs(),
     }

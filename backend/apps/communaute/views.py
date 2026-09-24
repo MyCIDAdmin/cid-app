@@ -55,7 +55,6 @@ from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 
 from .filters import PublicationFilter, SujetFilter
-from .notifications import notifier_nouveau_commentaire_fil, notifier_nouvelle_reponse_forum
 from .models import (
     Album,
     ChoixQuestion,
@@ -76,13 +75,15 @@ from .models import (
     Publication,
     PublicationLike,
     PublicationPartage,
-    Quiz,
     QuestionQuiz,
+    Quiz,
     RencontreCalendrier,
     ReponseForum,
     ReponseQuiz,
+    StatistiqueJoueur,
     Sujet,
 )
+from .notifications import notifier_nouveau_commentaire_fil, notifier_nouvelle_reponse_forum
 from .permissions import (
     MODERATION_MIN_LEVEL,
     AlbumPermission,
@@ -121,6 +122,7 @@ from .serializers import (
     RencontreCalendrierSerializer,
     ReponseForumSerializer,
     ReponseQuizSerializer,
+    StatistiqueJoueurSerializer,
     SujetSerializer,
     nom_affiche_utilisateur,
 )
@@ -744,6 +746,8 @@ class MatchCommentaireViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 #                                                       synchronisé périodiquement, voir
 #                                                       apps.communaute.services)
 #   GET          /communaute/calendrier/             — calendrier des rencontres (idem)
+#   GET          /communaute/statistiques-joueurs/    — statistiques individuelles (buts/
+#                                                        passes/cartons, idem)
 #   GET          /communaute/match-evenements/?match= — journal d'événements du Live-Ticker
 #   POST         /communaute/match-evenements/        — ajouter un événement (Bureau Admin+),
 #                                                        diffusé en direct au groupe WebSocket
@@ -781,7 +785,25 @@ class RencontreCalendrierViewSet(mixins.ListModelMixin, viewsets.GenericViewSet)
     queryset = RencontreCalendrier.objects.all()
 
 
-class MatchEvenementViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+class StatistiqueJoueurCursorPagination(CursorPagination):
+    ordering = ("-buts", "nom", "id")
+
+
+class StatistiqueJoueurViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py.
+    Alimente les listes Torschützen/Kartenstatistik de l'onglet Statistiken (tri par buts
+    décroissants par défaut ; le frontend re-trie côté client pour la vue Kartenstatistik,
+    voir StatistiquesTab.tsx)."""
+
+    serializer_class = StatistiqueJoueurSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = StatistiqueJoueurCursorPagination
+    queryset = StatistiqueJoueur.objects.all()
+
+
+class MatchEvenementViewSet(
+    mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet
+):
     """Journal d'événements du Live-Ticker (buts/cartons/etc., module Fan-Club) — liste
     filtrée par `?match=`, création réservée à Bureau Admin+ (voir
     MatchEvenementPermission), diffusée en direct au groupe WebSocket `live_{match_id}`

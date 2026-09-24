@@ -39,6 +39,7 @@ import type {
   RencontreCalendrier,
   ReponseForum,
   ReponseQuiz,
+  StatistiqueJoueur,
   Sujet,
   SujetPayload,
 } from "../types/communaute";
@@ -329,8 +330,9 @@ export async function listMatchCommentaires(
   return data;
 }
 
-// --- Fan-Club — classement/calendrier/événements (extension du Live Match, 2026-09-24,
-// voir backend apps.communaute.services pour la synchronisation SerpApi/Google Sports) ---
+// --- Fan-Club — classement/calendrier/statistiques joueurs/événements (extension du Live
+// Match, 2026-09-24, voir backend apps.communaute.services pour la synchronisation GOAL
+// API) ---
 
 export async function listClassementLigue(cursor?: string): Promise<CursorPage<ClassementLigue>> {
   const { data } = await apiClient.get<CursorPage<ClassementLigue>>("/communaute/classement/", {
@@ -345,6 +347,16 @@ export async function listCalendrierRencontres(
   const { data } = await apiClient.get<CursorPage<RencontreCalendrier>>("/communaute/calendrier/", {
     params: { cursor },
   });
+  return data;
+}
+
+export async function listStatistiquesJoueurs(
+  cursor?: string,
+): Promise<CursorPage<StatistiqueJoueur>> {
+  const { data } = await apiClient.get<CursorPage<StatistiqueJoueur>>(
+    "/communaute/statistiques-joueurs/",
+    { params: { cursor } },
+  );
   return data;
 }
 

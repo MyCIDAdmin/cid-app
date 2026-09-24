@@ -32,6 +32,7 @@ from .models import (
     RencontreCalendrier,
     ReponseForum,
     ReponseQuiz,
+    StatistiqueJoueur,
     Sujet,
     TypeReactionMatch,
 )
@@ -510,7 +511,7 @@ class MatchCommentaireSerializer(serializers.ModelSerializer):
 
 
 class ClassementLigueSerializer(serializers.ModelSerializer):
-    """Lecture seule — toujours synchronisé depuis SerpApi/Google Sports, voir services.py."""
+    """Lecture seule — toujours synchronisé depuis GOAL API, voir services.py."""
 
     class Meta:
         model = ClassementLigue
@@ -528,13 +529,28 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
             "difference",
             "points",
             "forme_recente",
+            "joues_domicile",
+            "victoires_domicile",
+            "nuls_domicile",
+            "defaites_domicile",
+            "buts_pour_domicile",
+            "buts_contre_domicile",
+            "points_domicile",
+            "joues_exterieur",
+            "victoires_exterieur",
+            "nuls_exterieur",
+            "defaites_exterieur",
+            "buts_pour_exterieur",
+            "buts_contre_exterieur",
+            "points_exterieur",
+            "zone_texte",
             "maj_le",
         ]
         read_only_fields = fields
 
 
 class RencontreCalendrierSerializer(serializers.ModelSerializer):
-    """Lecture seule — toujours synchronisé depuis SerpApi/Google Sports, voir services.py."""
+    """Lecture seule — toujours synchronisé depuis GOAL API, voir services.py."""
 
     est_a_venir = serializers.BooleanField(read_only=True)
 
@@ -548,7 +564,30 @@ class RencontreCalendrierSerializer(serializers.ModelSerializer):
             "date_heure",
             "score_domicile",
             "score_exterieur",
+            "statut",
             "est_a_venir",
+            "maj_le",
+        ]
+        read_only_fields = fields
+
+
+class StatistiqueJoueurSerializer(serializers.ModelSerializer):
+    """Lecture seule — toujours synchronisé depuis GOAL API, voir services.py."""
+
+    class Meta:
+        model = StatistiqueJoueur
+        fields = [
+            "id",
+            "saison",
+            "equipe",
+            "nom",
+            "numero",
+            "poste",
+            "matchs_joues",
+            "buts",
+            "passes_decisives",
+            "cartons_jaunes",
+            "cartons_rouges",
             "maj_le",
         ]
         read_only_fields = fields

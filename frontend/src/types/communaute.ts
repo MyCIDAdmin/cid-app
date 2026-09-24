@@ -232,10 +232,13 @@ export interface MatchCommentaire {
 }
 
 // --- Fan-Club — extension du Live Match (2026-09-24), miroir de
-// apps.communaute.models/serializers (ClassementLigue/RencontreCalendrier/MatchEvenement) ---
+// apps.communaute.models/serializers (ClassementLigue/RencontreCalendrier/
+// StatistiqueJoueur/MatchEvenement) ---
 
 /** Ligne de tableau de classement — toujours en lecture seule côté frontend, synchronisée
- * périodiquement depuis SerpApi/Google Sports (voir backend apps.communaute.services). */
+ * périodiquement depuis GOAL API (voir backend apps.communaute.services). Champs
+ * `*_domicile`/`*_exterieur`/`zone_texte` ajoutés lors de la bascule SerpApi → GOAL API
+ * (2026-09-24, GOAL API renvoie nativement la répartition domicile/extérieur). */
 export interface ClassementLigue {
   id: string;
   saison: string;
@@ -250,11 +253,33 @@ export interface ClassementLigue {
   difference: number;
   points: number;
   forme_recente: string;
+  joues_domicile: number;
+  victoires_domicile: number;
+  nuls_domicile: number;
+  defaites_domicile: number;
+  buts_pour_domicile: number;
+  buts_contre_domicile: number;
+  points_domicile: number;
+  joues_exterieur: number;
+  victoires_exterieur: number;
+  nuls_exterieur: number;
+  defaites_exterieur: number;
+  buts_pour_exterieur: number;
+  buts_contre_exterieur: number;
+  points_exterieur: number;
+  zone_texte: string;
   maj_le: string;
 }
 
-/** Une rencontre du calendrier (passée ou à venir) — distincte de `Match` ci-dessus, qui
- * reste réservé aux matchs pilotés en direct par un modérateur (Live-Ticker). */
+/** Reprend telles quelles les valeurs `matchStatus` de GOAL API (voir
+ * apps.communaute.models.StatutRencontre). */
+export type StatutRencontre = "SCHEDULED" | "FINISHED" | "POSTPONED" | "CANCELLED";
+
+/** Une rencontre du calendrier (passée ou à venir), toutes compétitions confondues —
+ * distincte de `Match` ci-dessus, qui reste réservé aux matchs pilotés en direct par un
+ * modérateur (Live-Ticker). `statut` ajouté lors de la bascule SerpApi → GOAL API
+ * (2026-09-24) : calendrier désormais complet (GOAL API), le statut de chaque rencontre
+ * est fiable plutôt qu'inféré depuis la seule date. */
 export interface RencontreCalendrier {
   id: string;
   competition: string;
@@ -263,7 +288,26 @@ export interface RencontreCalendrier {
   date_heure: string;
   score_domicile: number | null;
   score_exterieur: number | null;
+  statut: StatutRencontre;
   est_a_venir: boolean;
+  maj_le: string;
+}
+
+/** Statistiques individuelles d'un joueur (saison en cours), synchronisées depuis GOAL API
+ * — voir apps.communaute.models.StatistiqueJoueur. Alimente les listes Torschützen/
+ * Kartenstatistik, indisponibles tant que le module reposait sur SerpApi/Google Sports. */
+export interface StatistiqueJoueur {
+  id: string;
+  saison: string;
+  equipe: string;
+  nom: string;
+  numero: number | null;
+  poste: string;
+  matchs_joues: number;
+  buts: number;
+  passes_decisives: number;
+  cartons_jaunes: number;
+  cartons_rouges: number;
   maj_le: string;
 }
 

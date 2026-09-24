@@ -26,11 +26,12 @@ from apps.communaute.models import (
     PhotoCommentaire,
     PhotoLike,
     Publication,
-    Quiz,
     QuestionQuiz,
+    Quiz,
     RencontreCalendrier,
     ReponseForum,
     ReponseQuiz,
+    StatistiqueJoueur,
     StatutMatch,
     Sujet,
     TypeEvenementMatch,
@@ -304,6 +305,23 @@ class RencontreCalendrierFactory(DjangoModelFactory):
     equipe_domicile = "Club Africain"
     equipe_exterieur = factory.Sequence(lambda n: f"Adversaire {n}")
     date_heure = factory.Faker("future_datetime", end_date="+30d", tzinfo=timezone.utc)
+
+
+class StatistiqueJoueurFactory(DjangoModelFactory):
+    class Meta:
+        model = StatistiqueJoueur
+
+    goal_api_id = factory.Sequence(lambda n: f"player-{n}")
+    saison = "2025-2026"
+    equipe = "Club Africain"
+    nom = factory.Sequence(lambda n: f"Joueur {n}")
+    numero = factory.Sequence(lambda n: n + 1)
+    poste = "Forwards"
+    matchs_joues = 10
+    buts = 5
+    passes_decisives = 2
+    cartons_jaunes = 1
+    cartons_rouges = 0
 
 
 class MatchEvenementFactory(DjangoModelFactory):
