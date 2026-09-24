@@ -717,12 +717,13 @@ class ClassementLigue(models.Model):
 
 
 class RencontreCalendrier(models.Model):
-    """Un match du calendrier (à venir) synchronisé depuis SerpApi/Google Sports —
-    distinct de `Match` ci-dessus, qui reste réservé aux matchs pilotés en direct par un
-    modérateur (Live-Ticker). `evenement_externe_id` (identifiant "kgmid" Google) est la
-    clé d'upsert idempotente. `score_domicile`/`score_exterieur` restent NULL pour
-    l'instant — SerpApi ne renvoie pas de résultats passés avec la requête retenue (voir
-    docstring de tête services.py)."""
+    """Un match du calendrier (dernier résultat connu ou prochain match — jamais le
+    calendrier complet d'une saison, voir docstring de tête services.py) synchronisé
+    depuis SerpApi/Google Sports — distinct de `Match` ci-dessus, qui reste réservé aux
+    matchs pilotés en direct par un modérateur (Live-Ticker). `evenement_externe_id`
+    (identifiant "kgmid" Google) est la clé d'upsert idempotente.
+    `score_domicile`/`score_exterieur` sont renseignés pour les matchs déjà joués (requête
+    "résultats récents"), NULL pour le prochain match à venir."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 

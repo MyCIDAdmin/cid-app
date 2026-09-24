@@ -129,13 +129,13 @@ def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
 def synchroniser_donnees_football():
     """Module Fan-Club (2026-09-24) — synchronise `ClassementLigue` et
     `RencontreCalendrier` depuis SerpApi/Google Sports (voir services.py pour le détail, et
-    l'approche "hybride" documentée dans models.py). Planifiée via Celery Beat, voir
-    migrations/0007_planifier_synchronisation_football.py. Délègue directement à
-    `services.synchroniser_donnees_football()`, qui ne fait qu'UN SEUL appel SerpApi
-    partagé entre classement et calendrier (décision utilisateur 2026-09-24, quota gratuit
-    resserré — voir docstring de tête services.py) — déjà protégée individuellement
-    (aucune levée d'exception attendue ici) ; ce wrapper ne fait que journaliser le
-    résultat global."""
+    l'approche "hybride" documentée dans models.py). Planifiée via Celery Beat 1x/jour, voir
+    migrations/0007_planifier_synchronisation_football.py et
+    migrations/0008_ajuster_frequence_sync_football_quotidienne.py. Délègue directement à
+    `services.synchroniser_donnees_football()`, qui fait 3 appels SerpApi (tableau complet,
+    résultats récents, prochain match — voir docstring de tête services.py) — déjà
+    protégée individuellement (aucune levée d'exception attendue ici) ; ce wrapper ne fait
+    que journaliser le résultat global."""
     resultat = services.synchroniser_donnees_football()
     logger.info(
         "Synchronisation Fan-Club SerpApi : %s lignes de classement, %s rencontres.",

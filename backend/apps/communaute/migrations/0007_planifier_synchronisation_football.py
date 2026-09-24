@@ -4,16 +4,19 @@ Data migration — planifie la synchronisation périodique du classement/calendr
 TheSportsDB → API-Football → SerpApi/Google Sports, voir docstring de tête services.py)
 dans django-celery-beat, même principe que
 apps.evenements.migrations.0002_planifier_rappels_evenements (voir son docstring pour
-le détail du fonctionnement de DatabaseScheduler). Le passage à SerpApi n'a PAS changé la
-fréquence de planification (toujours toutes les 6h) : la requête combinée retenue
-(services.py::synchroniser_donnees_football) ne fait qu'UN SEUL appel SerpApi par
-exécution, ce qui reste large sous le quota gratuit de 250 recherches/mois.
+le détail du fonctionnement de DatabaseScheduler).
+
+Crée la planification initiale à toutes les 6 heures. NOTE (2026-09-24, même jour) : cette
+fréquence s'est révélée trop optimiste une fois les besoins réels affinés par les tests
+ad-hoc SerpApi — la synchronisation complète nécessite 3 requêtes SerpApi (tableau complet,
+résultats récents, prochain match, voir services.py), pas une seule comme envisagé ici au
+départ. Fréquence corrigée à 1x/jour par
+migrations/0008_ajuster_frequence_sync_football_quotidienne.py — laissé tel quel ici plutôt
+que réécrit, une migration de données déjà appliquée ne devant jamais être modifiée
+rétroactivement (voir historique du projet).
 
 Idempotent (get_or_create) et réversible (la tâche Celery elle-même, tasks.py, n'est pas
-affectée par le retrait de sa planification). Toutes les 6 heures : le classement/calendrier
-d'un championnat de football ne change pas plus souvent qu'à la fin de chaque journée de
-championnat — une fréquence horaire serait inutile et solliciterait l'API gratuite sans
-raison.
+affectée par le retrait de sa planification).
 """
 
 from django.db import migrations

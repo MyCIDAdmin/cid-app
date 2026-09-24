@@ -349,10 +349,16 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 # conditions réelles sur Railway, le plan gratuit d'API-Football bloque l'accès aux saisons
 # récentes/en cours — inutilisable pour un module qui doit justement afficher la saison en
 # cours). Testé ad-hoc avec la clé réelle de l'utilisateur avant toute implémentation (à sa
-# demande explicite) : confirmé fonctionnel pour Club Africain/Ligue 1 tunisienne. Jamais de
-# secret en dur dans le code (CLAUDE.md §8).
+# demande explicite) : confirmé fonctionnel pour Club Africain/Ligue 1 tunisienne, y compris
+# tableau complet et scores réels des derniers résultats (voir services.py pour le détail
+# des 3 requêtes SerpApi par synchronisation). Jamais de secret en dur dans le code
+# (CLAUDE.md §8).
 SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "")
 SERPAPI_EQUIPE = os.environ.get("SERPAPI_EQUIPE", "Club Africain")
+# Nom de la ligue tel que reconnu par le panneau Sports de Google (utilisé pour le tableau
+# complet et les derniers résultats — une requête sur le nom de l'ÉQUIPE ne renvoie qu'un
+# extrait de 5 lignes autour d'elle, jamais le tableau complet, voir services.py).
+SERPAPI_LIGUE = os.environ.get("SERPAPI_LIGUE", "Tunisian Ligue Professionnelle 1")
 # Saison à synchroniser (année de début, ex. "2025" pour la saison 2025-2026) —
 # généralement laissé vide : calculée automatiquement (convention "juillet → juin", voir
 # services.py::_saison_actuelle) car SerpApi ne renvoie pas de champ saison fiable.
