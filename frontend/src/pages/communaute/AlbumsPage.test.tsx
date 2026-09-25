@@ -34,13 +34,19 @@ function album(overrides: Partial<Album> = {}): Album {
     createur: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
     created_at: "2026-01-01T10:00:00Z",
     nombre_photos: 3,
+    photo_couverture: null,
     ...overrides,
   };
 }
 
 describe("AlbumsPage", () => {
   beforeEach(() => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: membre, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: membre,
+      isAuthenticated: true,
+    });
   });
 
   it("affiche la liste des albums", () => {
@@ -65,6 +71,35 @@ describe("AlbumsPage", () => {
     renderWithProviders(<AlbumsPage />);
 
     expect(screen.getByText("2026-10-03 · Berlin")).toBeInTheDocument();
+  });
+
+  it("affiche la bannière de prévisualisation quand l'album a une photo (demande utilisateur 2026-09-25)", () => {
+    vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+      data: page([album({ photo_couverture: "https://cdn.example.de/albums/a1/cover.jpg" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+
+    const { container } = renderWithProviders(<AlbumsPage />);
+
+    // `alt=""` (image décorative, le titre de l'album porte déjà le nom accessible du lien) —
+    // exclue de l'arbre d'accessibilité, donc interrogée directement plutôt que via getByRole.
+    expect(container.querySelector("img")).toHaveAttribute(
+      "src",
+      "https://cdn.example.de/albums/a1/cover.jpg",
+    );
+  });
+
+  it("n'affiche aucune bannière pour un album sans photo", () => {
+    vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+      data: page([album({ photo_couverture: null })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+
+    const { container } = renderWithProviders(<AlbumsPage />);
+
+    expect(container.querySelector("img")).not.toBeInTheDocument();
   });
 
   it("affiche un message si aucun album", () => {
@@ -116,7 +151,10 @@ describe("AlbumsPage", () => {
 
     it("ne navigue pas vers le détail de l'album au clic sur le bouton de partage", () => {
       Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
-      Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn() }, configurable: true });
+      Object.defineProperty(navigator, "clipboard", {
+        value: { writeText: vi.fn() },
+        configurable: true,
+      });
 
       renderWithProviders(<AlbumsPage />);
 

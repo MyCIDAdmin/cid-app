@@ -740,6 +740,11 @@ class AlbumSerializer(serializers.ModelSerializer):
     # renvoie {id, titre} plutôt que l'UUID brut — seul moyen d'afficher un nom lisible.
     # Reste modifiable via l'admin Django tant qu'aucune UI de liaison n'existe.
     evenement = serializers.SerializerMethodField()
+    # Vignette de prévisualisation (demande utilisateur 2026-09-25) — voir
+    # Album.photo_couverture ; SerializerMethodField plutôt qu'un ImageField `source=` direct
+    # car la source est la photo la plus RÉCENTE de l'album, pas un champ du modèle Album
+    # lui-même, voir sa docstring.
+    photo_couverture = serializers.SerializerMethodField()
 
     class Meta:
         model = Album
@@ -753,13 +758,22 @@ class AlbumSerializer(serializers.ModelSerializer):
             "createur",
             "created_at",
             "nombre_photos",
+            "photo_couverture",
         ]
-        read_only_fields = ["id", "createur", "created_at", "nombre_photos"]
+        read_only_fields = ["id", "createur", "created_at", "nombre_photos", "photo_couverture"]
 
     def get_evenement(self, obj):
         if not obj.evenement_id:
             return None
         return {"id": str(obj.evenement_id), "titre": obj.evenement.titre}
+
+    def get_photo_couverture(self, obj):
+        photo = obj.photo_couverture
+        if photo is None or not photo.image:
+            return None
+        request = self.context.get("request")
+        url = photo.image.url
+        return request.build_absolute_uri(url) if request else url
 
     def create(self, validated_data):
         validated_data["createur"] = self.context["request"].user.membre

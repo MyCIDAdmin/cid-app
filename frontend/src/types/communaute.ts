@@ -518,6 +518,10 @@ export interface Album {
   createur: Auteur;
   created_at: string;
   nombre_photos: number;
+  /** URL absolue de la photo la plus récente non masquée, ou `null` si l'album n'a pas
+   * encore de photo — voir Album.photo_couverture côté backend (demande utilisateur
+   * 2026-09-25, module "Fotoalben" : bannière de prévisualisation dans la kachel). */
+  photo_couverture: string | null;
 }
 
 export interface AlbumPayload {

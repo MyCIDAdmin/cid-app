@@ -2,10 +2,12 @@
 Groupes ; Live Match + Albums + Quiz — Phase 4B, CID-SCD-001 §résumé "Forum / Fil — RBAC")."""
 
 import io
+from datetime import timedelta
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient
 
@@ -20,6 +22,7 @@ from apps.communaute.models import (
     MessageGroupe,
     MessageGroupeLike,
     MessagePriveLike,
+    Photo,
 )
 from apps.communaute.tests.factories import (
     AlbumFactory,
@@ -1400,6 +1403,36 @@ def test_modifier_un_album_reserve_au_bureau_admin(api_client):
     resp = _auth(api_client, admin_user).patch(_album_detail_url(album), {"nom": "Renommé"})
     assert resp.status_code == 200
     assert resp.data["nom"] == "Renommé"
+
+
+def test_photo_couverture_est_absente_pour_un_album_sans_photo(api_client):
+    # Demande utilisateur 2026-09-25, module "Fotoalben" : "Fotoalben sollen mit einem
+    # Vorschau dargestellt werden als Banner in der Kachel" — voir Album.photo_couverture.
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb9@example.de")
+    AlbumFactory()
+    resp = _auth(api_client, user).get(reverse(ALBUM_LIST_URL))
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["photo_couverture"] is None
+
+
+def test_photo_couverture_renvoie_la_photo_la_plus_recente_non_masquee(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "alb10@example.de")
+    album = AlbumFactory()
+    ancienne = PhotoFactory(album=album)
+    # `created_at` est `auto_now_add=True` (voir Photo) : toujours écrasé par `.save()`, donc
+    # passer `created_at=` au factory n'a aucun effet — seul `.update()` (SQL brut, pas de
+    # pre_save) permet de la reculer dans le temps, même principe que
+    # apps.cotisations.tests.test_api pour un champ équivalent.
+    Photo.objects.filter(id=ancienne.id).update(created_at=timezone.now() - timedelta(days=1))
+    recente = PhotoFactory(album=album)
+    masquee_plus_recente = PhotoFactory(album=album, est_masquee=True)
+
+    resp = _auth(api_client, user).get(reverse(ALBUM_LIST_URL))
+    assert resp.status_code == 200
+    # URL absolue (voir AlbumSerializer.get_photo_couverture, `request.build_absolute_uri`) —
+    # même convention que le champ `image` natif de PhotoSerializer.
+    assert resp.data["results"][0]["photo_couverture"].endswith(recente.image.url)
+    assert masquee_plus_recente.image.url not in (resp.data["results"][0]["photo_couverture"] or "")
 
 
 def test_upload_photo_reserve_au_bureau_admin(api_client):

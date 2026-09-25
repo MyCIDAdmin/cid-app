@@ -1328,6 +1328,14 @@ class Album(models.Model):
     def nombre_photos(self) -> int:
         return self.photos.filter(est_masquee=False).count()
 
+    @property
+    def photo_couverture(self):
+        """Photo la plus récente non masquée — utilisée comme vignette de prévisualisation
+        dans la liste (demande utilisateur 2026-09-25, module "Fotoalben" : "Fotoalben sollen
+        mit einem Vorschau dargestellt werden als Banner in der Kachel"). `None` pour un album
+        sans photo — voir AlbumSerializer.get_photo_couverture."""
+        return self.photos.filter(est_masquee=False).order_by("-created_at").first()
+
 
 class Photo(models.Model):
     """Photo d'un album — `image` toujours écrite via `validators

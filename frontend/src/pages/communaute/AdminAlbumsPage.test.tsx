@@ -55,6 +55,7 @@ function album(overrides: Partial<Album> = {}): Album {
     createur: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
     created_at: "2026-01-01T10:00:00Z",
     nombre_photos: 3,
+    photo_couverture: null,
     ...overrides,
   };
 }
