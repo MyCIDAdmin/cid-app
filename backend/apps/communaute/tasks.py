@@ -127,22 +127,23 @@ def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
 
 @shared_task
 def synchroniser_donnees_football():
-    """Module Fan-Club (2026-09-24) — synchronise `ClassementLigue`, `RencontreCalendrier`
-    et `StatistiqueJoueur` depuis GOAL API (voir services.py pour le détail, et l'approche
-    "hybride" documentée dans models.py). Planifiée via Celery Beat, voir
+    """Module Fan-Club (2026-09-24) — synchronise `ClassementLigue`, `RencontreCalendrier`,
+    `StatistiqueJoueur` et `EquipeInfo` depuis GOAL API (voir services.py pour le détail, et
+    l'approche "hybride" documentée dans models.py). Planifiée via Celery Beat, voir
     migrations/0007-0010 pour l'historique des fréquences (dernière en date :
     migrations/0010_migrer_vers_goal_api.py, qui bascule aussi la description de la
     planification). Délègue directement à `services.synchroniser_donnees_football()`
-    (standings + fixtures paginés + effectif paginé — voir docstring de tête services.py)
-    — déjà protégée individuellement (aucune levée d'exception attendue ici) ; ce wrapper
-    ne fait que journaliser le résultat global."""
+    (standings + fixtures paginés + effectif paginé + fiche équipe — voir docstring de tête
+    services.py) — déjà protégée individuellement (aucune levée d'exception attendue ici) ;
+    ce wrapper ne fait que journaliser le résultat global."""
     resultat = services.synchroniser_donnees_football()
     logger.info(
         "Synchronisation Fan-Club GOAL API : %s lignes de classement, %s rencontres, "
-        "%s statistiques joueurs, %s pronostics Tippspiel recalculés.",
+        "%s statistiques joueurs, équipe-info %s, %s pronostics Tippspiel recalculés.",
         resultat["classement"],
         resultat["calendrier"],
         resultat["statistiques_joueurs"],
+        resultat["equipe_info"],
         resultat["tippspiel_points_maj"],
     )
     return resultat

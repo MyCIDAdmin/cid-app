@@ -63,6 +63,7 @@ from .models import (
     ClassementLigue,
     Commentaire,
     Conversation,
+    EquipeInfo,
     GroupeChat,
     Match,
     MatchCommentaire,
@@ -119,6 +120,7 @@ from .serializers import (
     ClassementLigueSerializer,
     CommentaireSerializer,
     ConversationSerializer,
+    EquipeInfoSerializer,
     GroupeChatSerializer,
     MatchCommentaireSerializer,
     MatchEvenementSerializer,
@@ -853,6 +855,26 @@ class StatistiqueJoueurViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if saison == "toutes":
             return qs
         return qs.filter(saison=saison or services._saison_actuelle())
+
+
+class EquipeInfoViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Fiche d'identité de l'équipe suivie (Club Africain) — lecture seule, jamais éditable
+    manuellement, synchronisée depuis GOAL API `GET /teams/{id}` (voir
+    services.py::synchroniser_equipe_info — endpoint JAMAIS testé avec une clé réelle avant
+    ce déploiement, voir docstring de classe `EquipeInfo` dans models.py).
+
+    Singleton : `list()` est surchargée pour renvoyer directement l'objet (pas de
+    pagination/liste, un seul enregistrement existe jamais) — la ligne est créée à la volée
+    (champs vides) via `get_or_create` si aucune synchronisation n'a encore eu lieu, pour
+    que le frontend distingue "pas encore synchronisé" par un champ `nom` vide plutôt que
+    par un code HTTP 404 à gérer séparément."""
+
+    serializer_class = EquipeInfoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        info, _cree = EquipeInfo.objects.get_or_create(pk=EquipeInfo.PK_UNIQUE)
+        return Response(self.get_serializer(info).data)
 
 
 class MatchEvenementViewSet(

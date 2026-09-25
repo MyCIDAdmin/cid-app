@@ -14,6 +14,7 @@ import type {
   ClassementLigue,
   Commentaire,
   Conversation,
+  EquipeInfo,
   GroupeChat,
   GroupeChatPayload,
   Match,
@@ -372,6 +373,13 @@ export async function listCalendrierRencontres(): Promise<CursorPage<RencontreCa
 
 export async function listStatistiquesJoueurs(): Promise<CursorPage<StatistiqueJoueur>> {
   return listerToutesLesPages<StatistiqueJoueur>("/communaute/statistiques-joueurs/");
+}
+
+// Singleton (pas de pagination — voir EquipeInfoViewSet.list côté backend, qui renvoie
+// directement l'objet).
+export async function getEquipeInfo(): Promise<EquipeInfo> {
+  const { data } = await apiClient.get<EquipeInfo>("/communaute/equipe-info/");
+  return data;
 }
 
 export async function listMatchEvenements(

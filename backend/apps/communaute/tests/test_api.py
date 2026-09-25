@@ -15,6 +15,7 @@ from apps.communaute.models import (
     CategorieForum,
     Commentaire,
     Conversation,
+    EquipeInfo,
     MembreGroupe,
     MessageGroupe,
 )
@@ -1048,6 +1049,7 @@ def test_reactions_agregees_par_emoji_dans_le_detail_du_match(api_client):
 CLASSEMENT_LIST_URL = "communaute:classement-list"
 CALENDRIER_LIST_URL = "communaute:calendrier-list"
 STATISTIQUE_JOUEUR_LIST_URL = "communaute:statistique-joueur-list"
+EQUIPE_INFO_LIST_URL = "communaute:equipe-info-list"
 MATCH_EVENEMENT_LIST_URL = "communaute:match-evenement-list"
 
 
@@ -1170,6 +1172,70 @@ def test_statistiques_joueurs_lecture_seule_pas_de_creation_via_api(api_client):
     resp = _auth(api_client, admin_user).post(
         reverse(STATISTIQUE_JOUEUR_LIST_URL), {"goal_api_id": "player-x", "nom": "Test"}
     )
+    # Aucune action POST exposée (mixins.ListModelMixin seul) — toujours synchronisé
+    # depuis GOAL API, voir services.py.
+    assert resp.status_code == 405
+
+
+# --- EquipeInfo (2026-09-24, redesign dashboard Statistiken) ---
+# Singleton `pk=EquipeInfo.PK_UNIQUE` alimenté par `services.synchroniser_equipe_info()`
+# (GOAL API `/teams/{id}`, endpoint marqué NON VÉRIFIÉ, voir services.py). Pas de
+# EquipeInfoFactory : un seul enregistrement possible, créé directement ici.
+
+
+def test_equipe_info_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(EQUIPE_INFO_LIST_URL))
+    assert resp.status_code == 401
+
+
+def test_equipe_info_cree_a_la_premiere_consultation_si_absent(api_client):
+    # `EquipeInfoViewSet.list()` fait un `get_or_create` : avant toute synchronisation
+    # GOAL API, l'endpoint ne doit pas 404/500 mais renvoyer un singleton vide.
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc6a@example.de")
+    assert not EquipeInfo.objects.exists()
+
+    resp = _auth(api_client, user).get(reverse(EQUIPE_INFO_LIST_URL))
+
+    assert resp.status_code == 200
+    assert resp.data["nom"] == ""
+    assert EquipeInfo.objects.count() == 1
+
+
+def test_equipe_info_retourne_les_donnees_synchronisees(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc6b@example.de")
+    EquipeInfo.objects.create(
+        pk=EquipeInfo.PK_UNIQUE,
+        nom="Club Africain",
+        stade="Stade Olympique de Radès",
+        ville="Radès",
+        pays="Tunisie",
+        entraineur="Faouzi Benzarti",
+        fondee_en=1920,
+    )
+
+    resp = _auth(api_client, user).get(reverse(EQUIPE_INFO_LIST_URL))
+
+    assert resp.status_code == 200
+    assert resp.data["nom"] == "Club Africain"
+    assert resp.data["stade"] == "Stade Olympique de Radès"
+    assert resp.data["fondee_en"] == 1920
+    # Champs internes jamais exposés (voir EquipeInfoSerializer).
+    assert "id" not in resp.data
+    assert "donnees_brutes" not in resp.data
+
+
+def test_equipe_info_reste_singleton_apres_plusieurs_appels(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc6c@example.de")
+
+    _auth(api_client, user).get(reverse(EQUIPE_INFO_LIST_URL))
+    _auth(api_client, user).get(reverse(EQUIPE_INFO_LIST_URL))
+
+    assert EquipeInfo.objects.count() == 1
+
+
+def test_equipe_info_lecture_seule_pas_de_creation_via_api(api_client):
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fc6d@example.de")
+    resp = _auth(api_client, admin_user).post(reverse(EQUIPE_INFO_LIST_URL), {"nom": "Test"})
     # Aucune action POST exposée (mixins.ListModelMixin seul) — toujours synchronisé
     # depuis GOAL API, voir services.py.
     assert resp.status_code == 405

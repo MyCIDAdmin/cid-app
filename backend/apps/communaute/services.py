@@ -74,7 +74,13 @@ import requests
 from django.conf import settings
 from django.utils import timezone as django_timezone
 
-from .models import ClassementLigue, RencontreCalendrier, StatistiqueJoueur, StatutRencontre
+from .models import (
+    ClassementLigue,
+    EquipeInfo,
+    RencontreCalendrier,
+    StatistiqueJoueur,
+    StatutRencontre,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -472,6 +478,78 @@ def synchroniser_statistiques_joueurs() -> int:
     return _synchroniser_statistiques_joueurs_depuis(joueurs)
 
 
+def _valeur_imbriquee(source: dict, cle_imbriquee: str, sous_cle: str, *cles_plates):
+    """Comme `_valeur()`, mais tolère en plus un champ imbriqué (ex.
+    `{"venue": {"name": ...}}`) avant de retomber sur plusieurs orthographes candidates à
+    plat — même principe défensif que `_nom_equipe()` (équipes de fixtures/standings)."""
+    imbrique = source.get(cle_imbriquee)
+    if isinstance(imbrique, dict):
+        valeur = imbrique.get(sous_cle)
+        if valeur is not None:
+            return valeur
+    return _valeur(source, *cles_plates)
+
+
+def _synchroniser_equipe_info_depuis(corps: dict) -> bool:
+    try:
+        fondee_brute = _valeur(corps, "founded", "foundedYear", "establishedYear", "yearFounded")
+        fondee_en = None
+        if fondee_brute not in (None, ""):
+            try:
+                fondee_en = int(fondee_brute)
+            except (TypeError, ValueError):
+                fondee_en = None
+
+        EquipeInfo.objects.update_or_create(
+            pk=EquipeInfo.PK_UNIQUE,
+            defaults={
+                "nom": _valeur(corps, "name", "teamName", "shortName") or "",
+                "logo_url": _valeur(corps, "logo", "logoUrl", "crest", "badge", "image") or "",
+                "fondee_en": fondee_en,
+                "stade": _valeur_imbriquee(
+                    corps, "venue", "name", "venue", "venueName", "stadium"
+                )
+                or "",
+                "ville": _valeur_imbriquee(corps, "venue", "city", "city") or "",
+                "pays": _valeur(corps, "country", "countryName", "nationality") or "",
+                "entraineur": _valeur_imbriquee(corps, "coach", "name", "coachName", "manager")
+                or "",
+                "donnees_brutes": corps,
+            },
+        )
+        return True
+    except (TypeError, ValueError) as exc:
+        logger.warning("Réponse GOAL API /teams/{id} ignorée (format inattendu) : %s", exc)
+        return False
+
+
+def synchroniser_equipe_info() -> int:
+    """Fiche d'identité de l'équipe suivie (`GOAL_API_TEAM_ID`) — alimente l'en-tête de
+    l'onglet Statistiken (2026-09-24, retour utilisateur : "Team-Info der aktuellen Saison
+    aus /teams/{id} extrahieren und oben in der Seite zeigen") : nom/logo/stade/ville/pays/
+    entraîneur/année de fondation. Singleton (`EquipeInfo.PK_UNIQUE`) — une seule ligne,
+    toujours écrasée (`update_or_create`).
+
+    ⚠️ NON VÉRIFIÉ (voir docstring de classe `EquipeInfo` dans models.py) : contrairement
+    aux trois endpoints standings/fixtures/players (curl-testés par l'utilisateur avec sa
+    clé réelle), `GET /teams/{id}` lui-même n'a JAMAIS été appelé avant ce déploiement —
+    mapping des champs par analogie, pas sur une réponse brute observée. `donnees_brutes`
+    (réponse complète conservée telle quelle) permet de corriger le mapping ultérieurement
+    sans attendre un nouveau cycle de synchronisation, même principe que la mésaventure de
+    mapping du classement standings documentée en tête de ce fichier."""
+    if not _api_key_configuree():
+        return 0
+    corps = _get(f"/teams/{settings.GOAL_API_TEAM_ID}")
+    if not isinstance(corps, dict):
+        logger.warning("Réponse GOAL API /teams/{id} vide ou inattendue.")
+        return 0
+    # Certaines API enveloppent un objet unique dans {"data": {...}} (voir _extraire_liste
+    # pour l'équivalent listes) — tolère les deux formes plutôt que de deviner laquelle
+    # GOAL API utilise réellement ici (jamais observé, voir avertissement ci-dessus).
+    corps_effectif = corps.get("data") if isinstance(corps.get("data"), dict) else corps
+    return 1 if _synchroniser_equipe_info_depuis(corps_effectif) else 0
+
+
 def _points_tip(
     tip_domicile: int, tip_exterieur: int, reel_domicile: int, reel_exterieur: int
 ) -> int:
@@ -541,14 +619,15 @@ def recalculer_points_tippspiel() -> int:
 def synchroniser_donnees_football() -> dict:
     """Point d'entrée utilisé par tasks.py/Celery Beat — délègue à
     `synchroniser_classement()`/`synchroniser_calendrier()`/
-    `synchroniser_statistiques_joueurs()` (voir docstring de tête), puis recalcule les
-    points Tippspiel des rencontres Ligue 1 nouvellement terminées (voir
-    `recalculer_points_tippspiel`, ajouté le 2026-09-24 avec le module Tippspiel).
-    Planifié via Celery Beat, voir migrations/0007-0010 pour l'historique des
+    `synchroniser_statistiques_joueurs()`/`synchroniser_equipe_info()` (voir docstring de
+    tête), puis recalcule les points Tippspiel des rencontres Ligue 1 nouvellement
+    terminées (voir `recalculer_points_tippspiel`, ajouté le 2026-09-24 avec le module
+    Tippspiel). Planifié via Celery Beat, voir migrations/0007-0010 pour l'historique des
     fréquences (dernière en date : migrations/0010, ajustée pour GOAL API)."""
     return {
         "classement": synchroniser_classement(),
         "calendrier": synchroniser_calendrier(),
         "statistiques_joueurs": synchroniser_statistiques_joueurs(),
+        "equipe_info": synchroniser_equipe_info(),
         "tippspiel_points_maj": recalculer_points_tippspiel(),
     }

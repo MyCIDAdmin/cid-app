@@ -1,14 +1,25 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
-import type { ClassementLigue, StatistiqueJoueur } from "../../types/communaute";
+import type {
+  ClassementLigue,
+  EquipeInfo,
+  RencontreCalendrier,
+  StatistiqueJoueur,
+} from "../../types/communaute";
 import StatistiquesTab from "./StatistiquesTab";
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
-  return { ...actual, useClassementLigue: vi.fn(), useStatistiquesJoueurs: vi.fn() };
+  return {
+    ...actual,
+    useClassementLigue: vi.fn(),
+    useStatistiquesJoueurs: vi.fn(),
+    useEquipeInfo: vi.fn(),
+    useCalendrierRencontres: vi.fn(),
+  };
 });
 
 function page<T>(results: T[]) {
@@ -68,6 +79,36 @@ function joueur(overrides: Partial<StatistiqueJoueur> = {}): StatistiqueJoueur {
   };
 }
 
+function rencontre(overrides: Partial<RencontreCalendrier> = {}): RencontreCalendrier {
+  return {
+    id: "r1",
+    competition: "Ligue 1",
+    equipe_domicile: "Club Africain",
+    equipe_exterieur: "ES Tunis",
+    date_heure: "2026-01-01T18:00:00Z",
+    score_domicile: 2,
+    score_exterieur: 0,
+    statut: "FINISHED",
+    est_a_venir: false,
+    maj_le: "2026-01-01T20:00:00Z",
+    ...overrides,
+  };
+}
+
+function equipeInfo(overrides: Partial<EquipeInfo> = {}): EquipeInfo {
+  return {
+    nom: "Club Africain",
+    logo_url: "",
+    fondee_en: 1920,
+    stade: "Stade Olympique de Radès",
+    ville: "Radès",
+    pays: "Tunisie",
+    entraineur: "Faouzi Benzarti",
+    maj_le: "2026-09-24T10:00:00Z",
+    ...overrides,
+  };
+}
+
 function mockClassement(...lignes: ClassementLigue[]) {
   vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
     data: page(lignes),
@@ -84,6 +125,22 @@ function mockJoueurs(joueurs: StatistiqueJoueur[] = [], isLoading = false) {
   } as unknown as ReturnType<typeof useCommunauteHooks.useStatistiquesJoueurs>);
 }
 
+function mockEquipeInfo(info?: EquipeInfo) {
+  vi.mocked(useCommunauteHooks.useEquipeInfo).mockReturnValue({
+    data: info,
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof useCommunauteHooks.useEquipeInfo>);
+}
+
+function mockCalendrier(rencontres: RencontreCalendrier[] = []) {
+  vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+    data: page(rencontres),
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+}
+
 describe("StatistiquesTab", () => {
   it("affiche un message de chargement", () => {
     vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
@@ -92,6 +149,8 @@ describe("StatistiquesTab", () => {
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
     mockJoueurs();
+    mockEquipeInfo(undefined);
+    mockCalendrier();
 
     renderWithProviders(<StatistiquesTab />);
 
@@ -101,95 +160,184 @@ describe("StatistiquesTab", () => {
   it("affiche un message si Club Africain est absent du classement", () => {
     mockClassement(ligne({ equipe: "ES Tunis" }));
     mockJoueurs();
+    mockEquipeInfo(undefined);
+    mockCalendrier();
 
     renderWithProviders(<StatistiquesTab />);
 
     expect(screen.getByText("live.statistiques_vide")).toBeInTheDocument();
   });
 
-  it("affiche la forme récente de Club Africain sous forme de badges", () => {
-    mockClassement(ligne({ forme_recente: "VVNDV" }));
+  it("affiche les six cartes KPI dérivées de la ligne de classement de Club Africain", () => {
+    mockClassement(ligne());
     mockJoueurs();
+    mockEquipeInfo(undefined);
+    mockCalendrier();
 
     renderWithProviders(<StatistiquesTab />);
 
-    expect(screen.getByText("live.statistiques_forme_titre")).toBeInTheDocument();
-    expect(screen.getAllByText("V")).toHaveLength(3);
-    expect(screen.getAllByText("N")).toHaveLength(1);
-    expect(screen.getAllByText("D")).toHaveLength(1);
+    expect(screen.getByText("live.kpi_spiele")).toBeInTheDocument();
+    expect(screen.getByText("live.kpi_gegentore")).toBeInTheDocument();
+    // joues=10, victoires=7, nuls=2, defaites=1, buts_pour=20, buts_contre=8.
+    expect(screen.getByText("10")).toBeInTheDocument();
+    expect(screen.getByText("7")).toBeInTheDocument();
+    expect(screen.getByText("20")).toBeInTheDocument();
+    expect(screen.getByText("8")).toBeInTheDocument();
   });
 
-  // Enrichissement 2026-09-24 ("Ich möchte mehr Statistiken darstellen") : comparaison à
-  // la moyenne de la ligue + tordifférence de toutes les équipes — les deux graphiques
-  // s'appuient sur le tableau COMPLET synchronisé depuis GOAL API, pas seulement Club
-  // Africain.
-  it("affiche les titres des graphiques de comparaison ligue et de tordifférence", () => {
-    mockClassement(
-      ligne({ equipe: "Club Africain", rang: 1, difference: 12 }),
-      ligne({ equipe: "ES Tunis", rang: 2, difference: 3, buts_pour: 14, buts_contre: 9 }),
-    );
+  it("masque l'en-tête équipe tant qu'aucune synchronisation n'a encore eu lieu", () => {
+    mockClassement(ligne());
     mockJoueurs();
+    mockEquipeInfo(equipeInfo({ nom: "" }));
+    mockCalendrier();
 
     renderWithProviders(<StatistiquesTab />);
 
-    expect(screen.getByText("live.statistiques_buts_titre")).toBeInTheDocument();
-    expect(screen.getByText("live.statistiques_tordifferenz_titre")).toBeInTheDocument();
+    expect(screen.queryByText("Stade Olympique de Radès")).not.toBeInTheDocument();
   });
 
-  // Torschützen/Kartenstatistik (2026-09-24, bascule SerpApi → GOAL API) — voir docstring
-  // de tête StatistiquesTab.tsx : dérivés de StatistiqueJoueur (effectif de Club Africain),
-  // indisponibles sous SerpApi faute de données joueur pour la Ligue 1 tunisienne.
-  it("affiche un message de chargement pour les listes joueurs tant qu'elles ne sont pas prêtes", () => {
+  it("affiche l'en-tête équipe une fois EquipeInfo synchronisée", () => {
     mockClassement(ligne());
-    mockJoueurs([], true);
+    mockJoueurs();
+    mockEquipeInfo(equipeInfo());
+    mockCalendrier();
 
     renderWithProviders(<StatistiquesTab />);
 
-    expect(screen.getByText("live.statistiques_torschuetzen_titre")).toBeInTheDocument();
-    expect(screen.getByText("live.statistiques_karten_titre")).toBeInTheDocument();
+    expect(screen.getByText("Club Africain")).toBeInTheDocument();
+    expect(
+      screen.getByText("Stade Olympique de Radès · Radès · Tunisie"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/live.equipe_entraineur/)).toBeInTheDocument();
   });
 
-  it("affiche un message vide quand aucun joueur n'a marqué ni été sanctionné", () => {
+  it("calcule la série de points cumulés de Club Africain à partir des rencontres Ligue 1 terminées", () => {
     mockClassement(ligne());
-    mockJoueurs([joueur({ buts: 0, cartons_jaunes: 0, cartons_rouges: 0 })]);
-
-    renderWithProviders(<StatistiquesTab />);
-
-    expect(screen.getAllByText("live.statistiques_vide")).toHaveLength(2);
-  });
-
-  it("classe les buteurs par nombre de buts décroissant", () => {
-    mockClassement(ligne());
-    mockJoueurs([
-      joueur({ id: "j1", nom: "Sadok Kadida", buts: 4 }),
-      joueur({ id: "j2", nom: "Taddeus Nkeng", buts: 6 }),
-      joueur({ id: "j3", nom: "Ismaila Simpara", buts: 0 }),
-    ]);
-
-    renderWithProviders(<StatistiquesTab />);
-
-    expect(screen.getByText("Sadok Kadida")).toBeInTheDocument();
-    expect(screen.getByText("Taddeus Nkeng")).toBeInTheDocument();
-    expect(screen.queryByText("Ismaila Simpara")).not.toBeInTheDocument();
-  });
-
-  it("affiche les joueurs sanctionnés avec leur poste traduit", () => {
-    mockClassement(ligne());
-    mockJoueurs([
-      joueur({
-        id: "j2",
-        nom: "Taddeus Nkeng",
-        poste: "Midfielders",
-        buts: 3,
-        cartons_jaunes: 1,
-        cartons_rouges: 0,
+    mockJoueurs();
+    mockEquipeInfo(undefined);
+    mockCalendrier([
+      // Victoire à domicile (3 pts), puis match nul à l'extérieur (1 pt) => cumul 4.
+      rencontre({
+        id: "r1",
+        date_heure: "2026-01-01T18:00:00Z",
+        equipe_domicile: "Club Africain",
+        equipe_exterieur: "ES Tunis",
+        score_domicile: 2,
+        score_exterieur: 0,
+      }),
+      rencontre({
+        id: "r2",
+        date_heure: "2026-01-08T18:00:00Z",
+        equipe_domicile: "Stade Tunisien",
+        equipe_exterieur: "Club Africain",
+        score_domicile: 1,
+        score_exterieur: 1,
+      }),
+      // Ignorée : autre compétition (pas Ligue 1).
+      rencontre({
+        id: "r3",
+        competition: "Coupe de Tunisie",
+        date_heure: "2026-01-15T18:00:00Z",
+      }),
+      // Ignorée : pas encore jouée.
+      rencontre({
+        id: "r4",
+        date_heure: "2026-01-22T18:00:00Z",
+        statut: "SCHEDULED",
+        score_domicile: null,
+        score_exterieur: null,
       }),
     ]);
 
     renderWithProviders(<StatistiquesTab />);
 
-    // Apparaît à la fois dans Torschützen (3 buts) et Kartenstatistik (1 carton jaune).
-    expect(screen.getAllByText("Taddeus Nkeng")).toHaveLength(2);
-    expect(screen.getByText("live.statistiques_poste_milieu")).toBeInTheDocument();
+    expect(screen.getByText("live.punkte_verlauf_titel")).toBeInTheDocument();
+    // Repère textuel direct (Liga-Ø=23, Bestes Team=23 — un seul point de classement ici).
+    expect(screen.getByText("live.punkte_verlauf_hinweis")).toBeInTheDocument();
+  });
+
+  it("affiche un message vide pour le graphique tant qu'aucune rencontre Ligue 1 n'est terminée", () => {
+    mockClassement(ligne());
+    mockJoueurs();
+    mockEquipeInfo(undefined);
+    mockCalendrier([rencontre({ statut: "SCHEDULED", score_domicile: null, score_exterieur: null })]);
+
+    renderWithProviders(<StatistiquesTab />);
+
+    expect(screen.getAllByText("live.statistiques_vide").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("affiche un message de chargement pour le kader tant qu'il n'est pas prêt", () => {
+    mockClassement(ligne());
+    mockJoueurs([], true);
+    mockEquipeInfo(undefined);
+    mockCalendrier();
+
+    renderWithProviders(<StatistiquesTab />);
+
+    expect(screen.getByText("live.kader_titel")).toBeInTheDocument();
+  });
+
+  it("affiche le kader complet (pas seulement un top 10) avec ses colonnes triables", () => {
+    mockClassement(ligne());
+    mockJoueurs([
+      joueur({ id: "j1", nom: "Sadok Kadida", buts: 4, poste: "Forwards" }),
+      joueur({ id: "j2", nom: "Taddeus Nkeng", buts: 6, poste: "Midfielders" }),
+      joueur({ id: "j3", nom: "Ismaila Simpara", buts: 0, poste: "Defenders" }),
+    ]);
+    mockEquipeInfo(undefined);
+    mockCalendrier();
+
+    renderWithProviders(<StatistiquesTab />);
+
+    // Contrairement à l'ancien Torschützen (top 10, buts > 0 seulement), le kader complet
+    // liste TOUS les joueurs, y compris ceux à 0 but.
+    expect(screen.getByText("Sadok Kadida")).toBeInTheDocument();
+    expect(screen.getByText("Taddeus Nkeng")).toBeInTheDocument();
+    expect(screen.getByText("Ismaila Simpara")).toBeInTheDocument();
+    expect(screen.getByText("live.statistiques_poste_defenseur")).toBeInTheDocument();
+  });
+
+  it("trie le kader par une colonne au clic sur son en-tête", () => {
+    mockClassement(ligne());
+    mockJoueurs([
+      joueur({ id: "j1", nom: "Sadok Kadida", buts: 4 }),
+      joueur({ id: "j2", nom: "Taddeus Nkeng", buts: 6 }),
+    ]);
+    mockEquipeInfo(undefined);
+    mockCalendrier();
+
+    renderWithProviders(<StatistiquesTab />);
+
+    // Tri par défaut : buts décroissant => Taddeus Nkeng (6) avant Sadok Kadida (4).
+    let lignesTexte = screen.getAllByRole("row").map((r) => r.textContent);
+    expect(lignesTexte.findIndex((t) => t?.includes("Taddeus Nkeng"))).toBeLessThan(
+      lignesTexte.findIndex((t) => t?.includes("Sadok Kadida")),
+    );
+
+    // Un clic sur "Name" trie par nom croissant : Sadok Kadida avant Taddeus Nkeng.
+    fireEvent.click(screen.getByText("live.statistiques_joueur"));
+    lignesTexte = screen.getAllByRole("row").map((r) => r.textContent);
+    expect(lignesTexte.findIndex((t) => t?.includes("Sadok Kadida"))).toBeLessThan(
+      lignesTexte.findIndex((t) => t?.includes("Taddeus Nkeng")),
+    );
+
+    // Un second clic sur "Name" inverse la direction : Taddeus Nkeng avant Sadok Kadida.
+    fireEvent.click(screen.getByText("live.statistiques_joueur"));
+    lignesTexte = screen.getAllByRole("row").map((r) => r.textContent);
+    expect(lignesTexte.findIndex((t) => t?.includes("Taddeus Nkeng"))).toBeLessThan(
+      lignesTexte.findIndex((t) => t?.includes("Sadok Kadida")),
+    );
+  });
+
+  it("affiche un message vide pour le kader quand l'effectif est vide", () => {
+    mockClassement(ligne());
+    mockJoueurs([]);
+    mockEquipeInfo(undefined);
+    mockCalendrier();
+
+    renderWithProviders(<StatistiquesTab />);
+
+    expect(screen.getAllByText("live.statistiques_vide").length).toBeGreaterThanOrEqual(1);
   });
 });

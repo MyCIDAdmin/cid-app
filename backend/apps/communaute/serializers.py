@@ -16,6 +16,7 @@ from .models import (
     ClassementLigue,
     Commentaire,
     Conversation,
+    EquipeInfo,
     GroupeChat,
     Match,
     MatchCommentaire,
@@ -597,6 +598,27 @@ class StatistiqueJoueurSerializer(serializers.ModelSerializer):
             "passes_decisives",
             "cartons_jaunes",
             "cartons_rouges",
+            "maj_le",
+        ]
+        read_only_fields = fields
+
+
+class EquipeInfoSerializer(serializers.ModelSerializer):
+    """Lecture seule — toujours synchronisé depuis GOAL API (`GET /teams/{id}`), voir
+    services.py::synchroniser_equipe_info. `donnees_brutes` volontairement EXCLU des champs
+    exposés — filet de sécurité interne pour une correction de mapping ultérieure (voir
+    docstring de classe `EquipeInfo` dans models.py), pas une donnée destinée au frontend."""
+
+    class Meta:
+        model = EquipeInfo
+        fields = [
+            "nom",
+            "logo_url",
+            "fondee_en",
+            "stade",
+            "ville",
+            "pays",
+            "entraineur",
             "maj_le",
         ]
         read_only_fields = fields

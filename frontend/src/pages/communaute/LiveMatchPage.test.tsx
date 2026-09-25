@@ -15,6 +15,8 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useCreerMatch: vi.fn(),
     useClassementLigue: vi.fn(),
     useCalendrierRencontres: vi.fn(),
+    useStatistiquesJoueurs: vi.fn(),
+    useEquipeInfo: vi.fn(),
     useTippspiele: vi.fn(),
   };
 });
@@ -70,6 +72,19 @@ describe("LiveMatchPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+    // StatistiquesTab (2026-09-24, redesign dashboard) — appelés inconditionnellement par
+    // le composant même quand le classement est vide (garde précoce sur clubAfricain
+    // absent), voir StatistiquesTab.test.tsx pour la couverture détaillée de ces hooks.
+    vi.mocked(useCommunauteHooks.useStatistiquesJoueurs).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useStatistiquesJoueurs>);
+    vi.mocked(useCommunauteHooks.useEquipeInfo).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useEquipeInfo>);
     // TippspielSection (2026-09-24, onglet Ticker) : aucun jeu par défaut — un membre
     // standard ne voit alors rien (voir TippspielSection.tsx), ce qui laisse les
     // assertions existantes de ce fichier inchangées.

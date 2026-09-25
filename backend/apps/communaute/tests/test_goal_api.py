@@ -30,7 +30,12 @@ import pytest
 import requests
 
 from apps.communaute import services
-from apps.communaute.models import ClassementLigue, RencontreCalendrier, StatistiqueJoueur
+from apps.communaute.models import (
+    ClassementLigue,
+    EquipeInfo,
+    RencontreCalendrier,
+    StatistiqueJoueur,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -190,6 +195,20 @@ _JOUEUR_SANS_NUMERO = {
     "redCards": "0",
 }
 
+# `/teams/{id}` (fiche d'identité équipe) : endpoint JAMAIS testé par l'utilisateur avec une
+# clé réelle (voir avertissement docstring `EquipeInfo`/`services.synchroniser_equipe_info`)
+# — champs choisis par analogie/convention d'API sportive usuelle, PAS confirmés. Ce corps
+# de test documente donc uniquement le mapping tel qu'implémenté, pas la réalité de GOAL API.
+_EQUIPE_INFO = {
+    "id": "equipe-test",
+    "name": "Club Africain",
+    "founded": "1920",
+    "venue": {"name": "Stade Olympique de Radès", "city": "Radès"},
+    "country": "Tunisie",
+    "coach": {"name": "Faouzi Benzarti"},
+    "logo": "https://cdn.goal-api.com/teams/equipe-test/logo.png",
+}
+
 
 # --- clé API absente ---
 
@@ -226,6 +245,7 @@ def test_synchroniser_donnees_football_sans_cle_api_ne_fait_rien(settings, monke
         "classement": 0,
         "calendrier": 0,
         "statistiques_joueurs": 0,
+        "equipe_info": 0,
         "tippspiel_points_maj": 0,
     }
     assert appele == []
@@ -540,6 +560,101 @@ def test_synchroniser_statistiques_joueurs_ignore_un_joueur_au_format_inattendu(
     assert StatistiqueJoueur.objects.count() == 0
 
 
+# --- synchroniser_equipe_info (`GET /teams/{id}`, JAMAIS testé avec une clé réelle) ---
+
+
+def test_synchroniser_equipe_info_upsert_singleton(settings, monkeypatch):
+    _configurer_cle_api(settings)
+    appels = []
+    monkeypatch.setattr(
+        requests,
+        "get",
+        _dispatch({f"/teams/{settings.GOAL_API_TEAM_ID}": _EQUIPE_INFO}, appels=appels),
+    )
+
+    total = services.synchroniser_equipe_info()
+
+    assert total == 1
+    assert appels == [(f"{services.GOAL_API_URL}/teams/{settings.GOAL_API_TEAM_ID}", {})]
+
+    info = EquipeInfo.objects.get(pk=EquipeInfo.PK_UNIQUE)
+    assert info.nom == "Club Africain"
+    assert info.fondee_en == 1920
+    assert info.stade == "Stade Olympique de Radès"
+    assert info.ville == "Radès"
+    assert info.pays == "Tunisie"
+    assert info.entraineur == "Faouzi Benzarti"
+    assert info.logo_url == "https://cdn.goal-api.com/teams/equipe-test/logo.png"
+    # Filet de sécurité en cas de mapping incorrect (endpoint jamais vérifié, voir docstring
+    # de classe EquipeInfo) : la réponse brute complète reste consultable/corrigible.
+    assert info.donnees_brutes == _EQUIPE_INFO
+
+
+def test_synchroniser_equipe_info_appele_deux_fois_reste_singleton(settings, monkeypatch):
+    _configurer_cle_api(settings)
+    monkeypatch.setattr(
+        requests,
+        "get",
+        _dispatch({f"/teams/{settings.GOAL_API_TEAM_ID}": _EQUIPE_INFO}),
+    )
+    services.synchroniser_equipe_info()
+    services.synchroniser_equipe_info()
+
+    assert EquipeInfo.objects.count() == 1
+
+
+def test_synchroniser_equipe_info_tolere_une_reponse_enveloppee_dans_data(settings, monkeypatch):
+    # Certaines API sportives enveloppent un objet unique dans {"data": {...}} (comme les
+    # listes paginées ici, voir _extraire_liste) — jamais confirmé sur CET endpoint
+    # précisément (jamais testé), mais toléré au même titre que la forme plate.
+    _configurer_cle_api(settings)
+    monkeypatch.setattr(
+        requests,
+        "get",
+        _dispatch({f"/teams/{settings.GOAL_API_TEAM_ID}": {"data": _EQUIPE_INFO}}),
+    )
+
+    total = services.synchroniser_equipe_info()
+
+    assert total == 1
+    assert EquipeInfo.objects.get(pk=EquipeInfo.PK_UNIQUE).nom == "Club Africain"
+
+
+def test_synchroniser_equipe_info_ignore_un_champ_manquant_sans_lever(settings, monkeypatch):
+    # Champ "founded" illisible : ne doit pas faire échouer toute la synchronisation, juste
+    # laisser `fondee_en` vide (même principe défensif que le reste du fichier).
+    _configurer_cle_api(settings)
+    corps = dict(_EQUIPE_INFO, founded="pas-un-nombre")
+    monkeypatch.setattr(requests, "get", _dispatch({f"/teams/{settings.GOAL_API_TEAM_ID}": corps}))
+
+    total = services.synchroniser_equipe_info()
+
+    assert total == 1
+    assert EquipeInfo.objects.get(pk=EquipeInfo.PK_UNIQUE).fondee_en is None
+
+
+def test_synchroniser_equipe_info_sans_cle_api_ne_fait_rien(settings, monkeypatch):
+    settings.GOAL_API_KEY = ""
+    appele = []
+    monkeypatch.setattr(requests, "get", lambda *a, **k: appele.append(1))
+
+    assert services.synchroniser_equipe_info() == 0
+    assert appele == []
+    assert EquipeInfo.objects.count() == 0
+
+
+def test_synchroniser_equipe_info_erreur_reseau_ne_leve_pas(settings, monkeypatch):
+    _configurer_cle_api(settings)
+
+    def _get_qui_echoue(*_args, **_kwargs):
+        raise requests.ConnectionError("réseau down")
+
+    monkeypatch.setattr(requests, "get", _get_qui_echoue)
+
+    assert services.synchroniser_equipe_info() == 0
+    assert EquipeInfo.objects.count() == 0
+
+
 # --- synchroniser_donnees_football (point d'entrée Celery) ---
 
 
@@ -554,6 +669,7 @@ def test_synchroniser_donnees_football_combine_les_trois_synchronisations(settin
                 "/standings": _page(_STANDINGS_COMPLET),
                 "/fixtures": [_page([_FIXTURE_JOUEE, _FIXTURE_A_VENIR])],
                 "/players": [_page([_JOUEUR_BUTEUR, _JOUEUR_SANS_NUMERO])],
+                f"/teams/{settings.GOAL_API_TEAM_ID}": _EQUIPE_INFO,
             }
         ),
     )
@@ -567,6 +683,7 @@ def test_synchroniser_donnees_football_combine_les_trois_synchronisations(settin
         "classement": 2,
         "calendrier": 2,
         "statistiques_joueurs": 2,
+        "equipe_info": 1,
         "tippspiel_points_maj": 0,
     }
     assert ClassementLigue.objects.count() == 2

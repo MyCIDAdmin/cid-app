@@ -88,6 +88,7 @@ def test_synchroniser_donnees_football_relaie_le_resultat_du_service(monkeypatch
             "classement": 3,
             "calendrier": 5,
             "statistiques_joueurs": 7,
+            "equipe_info": 1,
             "tippspiel_points_maj": 2,
         },
     )
@@ -98,5 +99,6 @@ def test_synchroniser_donnees_football_relaie_le_resultat_du_service(monkeypatch
         "classement": 3,
         "calendrier": 5,
         "statistiques_joueurs": 7,
+        "equipe_info": 1,
         "tippspiel_points_maj": 2,
     }

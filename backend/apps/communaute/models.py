@@ -842,6 +842,58 @@ class StatistiqueJoueur(models.Model):
         return f"{self.nom} ({self.equipe}, {self.saison})"
 
 
+class EquipeInfo(models.Model):
+    """Fiche d'identité de l'équipe suivie (Club Africain) — SINGLETON (une seule ligne,
+    `pk` fixe `PK_UNIQUE`) : contrairement à `ClassementLigue`/`StatistiqueJoueur`, il n'y a
+    qu'une seule équipe suivie ici, pas de raison d'accumuler une ligne par saison.
+    Synchronisée depuis GOAL API (`GET /teams/{id}`, voir
+    services.py::synchroniser_equipe_info) — alimente l'en-tête de l'onglet Statistiken
+    (2026-09-24, retour utilisateur : "Team-Info der aktuellen Saison aus /teams/{id}
+    extrahieren und oben in der Seite zeigen").
+
+    ⚠️ NON VÉRIFIÉ (2026-09-24) : contrairement aux trois endpoints standings/fixtures/
+    players (curl-testés par l'utilisateur avec sa clé réelle, voir docstring de tête
+    services.py), `GET /teams/{id}` lui-même n'a JAMAIS été appelé avec une clé réelle au
+    moment de cette implémentation — mapping des champs fait par analogie avec les
+    endpoints confirmés (mêmes conventions de nommage `_valeur()`-style) et avec l'usage
+    courant des API sportives (nom/logo/stade/entraîneur/année de fondation), PAS sur une
+    réponse brute observée. `donnees_brutes` conserve donc la réponse JSON telle quelle :
+    en cas de mapping incorrect une fois la clé réelle utilisée (même mésaventure que le
+    classement standings, voir tête de services.py — la première tentative de mapping
+    standings avait synchronisé des colonnes à zéro), une correction pourra relire cette
+    colonne sans attendre un nouveau cycle de synchronisation."""
+
+    PK_UNIQUE = 1
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=PK_UNIQUE, editable=False)
+
+    nom = models.CharField(max_length=200, blank=True)
+    logo_url = models.URLField(max_length=500, blank=True)
+    fondee_en = models.PositiveSmallIntegerField(null=True, blank=True)
+    stade = models.CharField(max_length=200, blank=True)
+    ville = models.CharField(max_length=200, blank=True)
+    pays = models.CharField(max_length=100, blank=True)
+    entraineur = models.CharField(max_length=200, blank=True)
+    donnees_brutes = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=_(
+            "Réponse GOAL API brute (`GET /teams/{id}`) telle quelle — filet de sécurité "
+            "en cas de mapping de champ incorrect, voir docstring de classe."
+        ),
+    )
+
+    maj_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_equipe_info"
+        verbose_name = _("Informations équipe")
+        verbose_name_plural = _("Informations équipe")
+
+    def __str__(self):
+        return self.nom or "Équipe (non synchronisée)"
+
+
 class TypeEvenementMatch(models.TextChoices):
     COUP_ENVOI = "coup_envoi", _("Coup d'envoi")
     BUT = "but", _("But")

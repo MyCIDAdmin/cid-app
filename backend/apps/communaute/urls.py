@@ -6,6 +6,7 @@ from .views import (
     ClassementLigueViewSet,
     CommentaireViewSet,
     ConversationViewSet,
+    EquipeInfoViewSet,
     GroupeChatViewSet,
     MatchCommentaireViewSet,
     MatchEvenementViewSet,
@@ -50,6 +51,7 @@ router.register("quiz-choix", ChoixQuestionViewSet, basename="quiz-choix")
 router.register("classement", ClassementLigueViewSet, basename="classement")
 router.register("calendrier", RencontreCalendrierViewSet, basename="calendrier")
 router.register("statistiques-joueurs", StatistiqueJoueurViewSet, basename="statistique-joueur")
+router.register("equipe-info", EquipeInfoViewSet, basename="equipe-info")
 router.register("match-evenements", MatchEvenementViewSet, basename="match-evenement")
 router.register("tippspiel", TippspielViewSet, basename="tippspiel")
 router.register("tippspiel-teilnahmen", TippspielTeilnahmeViewSet, basename="tippspiel-teilnahme")

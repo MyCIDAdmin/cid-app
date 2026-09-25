@@ -311,6 +311,23 @@ export interface StatistiqueJoueur {
   maj_le: string;
 }
 
+/** Fiche d'identité de l'équipe suivie (Club Africain, singleton) — voir
+ * apps.communaute.models.EquipeInfo. Synchronisée depuis GOAL API `GET /teams/{id}`
+ * (2026-09-24, endpoint JAMAIS testé avec une clé réelle avant ce déploiement, voir
+ * docstring de classe côté backend). Tous les champs sont des chaînes vides/`null` tant
+ * qu'aucune synchronisation n'a encore eu lieu — pas de code HTTP 404 à gérer, voir
+ * EquipeInfoViewSet. */
+export interface EquipeInfo {
+  nom: string;
+  logo_url: string;
+  fondee_en: number | null;
+  stade: string;
+  ville: string;
+  pays: string;
+  entraineur: string;
+  maj_le: string;
+}
+
 export type TypeEvenementMatch =
   | "coup_envoi"
   | "but"
