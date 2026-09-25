@@ -104,11 +104,18 @@ class VoteSession(models.Model):
     duree_minutes = models.PositiveIntegerField(
         validators=[MinValueValidator(10), MaxValueValidator(10080)]
     )
-    quorum_pct = models.PositiveSmallIntegerField(
+    seuil_victoire_pct = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
-        help_text=_("% minimum de participation requis — null = pas de quorum."),
+        help_text=_(
+            "% des voix exprimées que l'option arrivée en tête doit dépasser STRICTEMENT "
+            "pour que le vote soit considéré comme décidé — null = pas de seuil (la "
+            "majorité simple/relative suffit). Champ renommé le 2026-09-25 (retour "
+            "utilisateur : l'ancien champ `quorum_pct`, un quorum de PARTICIPATION comparé "
+            "avec >=, ne correspondait pas au besoin réel — un seuil sur la PART DES VOIX "
+            "du gagnant, comparé avec > strict) — voir services.calculer_resultats."
+        ),
     )
     resultats_visibles_avant_cloture = models.BooleanField(
         default=False,

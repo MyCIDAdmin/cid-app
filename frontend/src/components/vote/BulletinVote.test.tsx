@@ -15,7 +15,7 @@ function session(overrides: Partial<VoteSession> = {}): VoteSession {
     nb_choix_max: 1,
     eligibilite: "tous_actifs",
     duree_minutes: 30,
-    quorum_pct: null,
+    seuil_victoire_pct: null,
     statut: "ouverte",
     date_ouverture: "2026-01-01T10:00:00Z",
     date_fin: "2026-01-01T10:30:00Z",

@@ -83,7 +83,21 @@ def calculer_resultats(session) -> dict:
     taux_participation = (
         round(100 * total_participants / total_eligibles, 1) if total_eligibles else 0.0
     )
-    quorum_atteint = session.quorum_pct is None or taux_participation >= session.quorum_pct
+    # Seuil de victoire (renommé/repensé le 2026-09-25, retour utilisateur — remplace
+    # l'ancien "quorum" de PARTICIPATION, comparé avec >=, qui ne correspondait pas au
+    # besoin réel) : l'option arrivée en tête doit dépasser STRICTEMENT `seuil_victoire_pct`
+    # % DES VOIX EXPRIMÉES pour que le vote soit considéré comme décidé. Comparaison sur la
+    # fraction brute (pas sur `pct` déjà arrondi à 1 décimale plus bas) pour ne pas laisser
+    # un arrondi décider artificiellement d'un cas limite (ex. seuil=50, 50.04% arrondi à
+    # 50.0% doit quand même compter comme "> 50%"). En cas d'égalité au sommet (plusieurs
+    # options à `meilleur_score`), toutes partagent le même pourcentage — géré au même
+    # endroit que le reste des ex-aequo, côté frontend (voir ResultatsPodium.tsx).
+    meilleur_score = comptages[0]["nombre"] if comptages else 0
+    seuil_victoire_atteint = session.seuil_victoire_pct is None or (
+        meilleur_score > 0
+        and total_participants > 0
+        and (100 * meilleur_score / total_participants) > session.seuil_victoire_pct
+    )
 
     return {
         "session_id": str(session.id),
@@ -91,8 +105,8 @@ def calculer_resultats(session) -> dict:
         "total_participants": total_participants,
         "total_eligibles": total_eligibles,
         "taux_participation": taux_participation,
-        "quorum_requis": session.quorum_pct,
-        "quorum_atteint": quorum_atteint,
+        "seuil_victoire_requis": session.seuil_victoire_pct,
+        "seuil_victoire_atteint": seuil_victoire_atteint,
         "resultats": [
             {
                 "option_id": str(c["option_id"]),

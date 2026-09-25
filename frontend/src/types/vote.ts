@@ -57,7 +57,11 @@ export interface VoteSession {
   nb_choix_max: number;
   eligibilite: EligibiliteVote;
   duree_minutes: number;
-  quorum_pct: number | null;
+  /** % des voix exprimées que l'option en tête doit dépasser STRICTEMENT pour que le vote
+   * soit considéré comme décidé — null = pas de seuil (majorité simple/relative suffit).
+   * Renommé le 2026-09-25 (ex `quorum_pct`, un quorum de PARTICIPATION comparé avec >= —
+   * ne correspondait pas au besoin réel, voir apps.vote.models.VoteSession côté backend). */
+  seuil_victoire_pct: number | null;
   statut: StatutSession;
   date_ouverture: string;
   date_fin: string;
@@ -80,7 +84,7 @@ export interface VoteSessionCreatePayload {
   eligibilite: EligibiliteVote;
   membres_selectionnes?: string[];
   duree_minutes: number;
-  quorum_pct?: number | null;
+  seuil_victoire_pct?: number | null;
   resultats_visibles_avant_cloture?: boolean;
   options: VoteOptionInput[];
 }
@@ -101,8 +105,8 @@ export interface Resultats {
   total_participants: number;
   total_eligibles: number;
   taux_participation: number;
-  quorum_requis: number | null;
-  quorum_atteint: boolean;
+  seuil_victoire_requis: number | null;
+  seuil_victoire_atteint: boolean;
   resultats: ResultatOption[];
 }
 

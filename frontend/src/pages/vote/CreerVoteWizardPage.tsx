@@ -66,7 +66,7 @@ export default function CreerVoteWizardPage() {
   const [dureeMinutes, setDureeMinutes] = useState(30);
   const [modeAnonymat, setModeAnonymat] = useState<ModeAnonymat>("anonyme");
   const [eligibilite, setEligibilite] = useState<EligibiliteVote>("tous_actifs");
-  const [quorumPct, setQuorumPct] = useState<string>("");
+  const [seuilVictoirePct, setSeuilVictoirePct] = useState<string>("");
   // Sélection manuelle (FDD §5.2 "Sélection manuelle…") — un vote peut aussi être réservé à un
   // groupe précis de membres (un comité, une commission…), pas seulement aux 3 catégories
   // génériques ci-dessus ou à un unique membre à la fois.
@@ -203,7 +203,7 @@ export default function CreerVoteWizardPage() {
         membres_selectionnes:
           eligibilite === "selection_manuelle" ? membresSelectionnes : undefined,
         duree_minutes: dureeMinutes,
-        quorum_pct: quorumPct ? Number(quorumPct) : null,
+        seuil_victoire_pct: seuilVictoirePct ? Number(seuilVictoirePct) : null,
         resultats_visibles_avant_cloture: false,
         options: optionsPreparees(),
       },
@@ -394,17 +394,23 @@ export default function CreerVoteWizardPage() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-text-secondary">
-                  {t("wizard.quorum")}
+                  {t("wizard.quote")}
                 </label>
                 <input
                   type="number"
                   min={0}
                   max={100}
-                  value={quorumPct}
-                  onChange={(e) => setQuorumPct(e.target.value)}
-                  placeholder={t("wizard.quorum_placeholder")}
+                  value={seuilVictoirePct}
+                  onChange={(e) => setSeuilVictoirePct(e.target.value)}
+                  placeholder={t("wizard.quote_placeholder")}
                   className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
                 />
+                {/* Sémantique changée le 2026-09-25 (retour utilisateur) : ce n'est plus un
+                    quorum de participation, mais le pourcentage de voix exprimées que
+                    l'option en tête doit dépasser STRICTEMENT pour que le vote soit
+                    considéré comme décidé — micro-copie explicative directement sous le
+                    champ, comportement moins évident que l'ancien libellé "Quorum". */}
+                <p className="mt-1 text-[11px] text-text-tertiary">{t("wizard.quote_aide")}</p>
               </div>
             </div>
 

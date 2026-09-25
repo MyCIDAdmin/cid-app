@@ -11,8 +11,8 @@ const resultats: Resultats = {
   total_participants: 94,
   total_eligibles: 312,
   taux_participation: 30.1,
-  quorum_requis: 25,
-  quorum_atteint: true,
+  seuil_victoire_requis: 25,
+  seuil_victoire_atteint: true,
   resultats: [
     { option_id: "o1", label: "Riadh Bchini", nombre_voix: 38, pct: 40.4, candidats: [] },
     { option_id: "o2", label: "Sana Werfelli", nombre_voix: 29, pct: 30.9, candidats: [] },
@@ -27,16 +27,31 @@ describe("ResultatsPodium", () => {
     expect(screen.getByText("★ resultats.elu", { exact: false })).toBeInTheDocument();
   });
 
-  it("affiche le taux de participation et l'état du quorum", () => {
+  it("affiche le taux de participation et l'état de la quote de victoire", () => {
     renderWithProviders(<ResultatsPodium resultats={resultats} />);
-    expect(screen.getByText("resultats.quorum_atteint", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("resultats.quote_atteint", { exact: false })).toBeInTheDocument();
   });
 
-  it("signale un quorum non atteint", () => {
+  // --- Seuil de victoire (2026-09-25, renommage + changement de sémantique : remplace
+  // l'ancien "quorum" de participation — voir docstring de tête de ResultatsPodium.tsx) ---
+
+  it("signale une quote non atteinte et retire le badge Élu de toutes les options", () => {
     renderWithProviders(
-      <ResultatsPodium resultats={{ ...resultats, quorum_atteint: false }} />,
+      <ResultatsPodium resultats={{ ...resultats, seuil_victoire_atteint: false }} />,
     );
-    expect(screen.getByText("resultats.quorum_non_atteint", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("resultats.quote_non_atteint", { exact: false })).toBeInTheDocument();
+    // Aucune option n'est marquée "Élu(e)" quand la quote requise n'est pas atteinte, même
+    // celle en tête du classement — voir estGagnant dans ResultatsPodium.tsx.
+    expect(screen.queryByText("resultats.elu", { exact: false })).not.toBeInTheDocument();
+    expect(screen.getByText("resultats.non_decide", { exact: false })).toBeInTheDocument();
+  });
+
+  it("n'affiche aucune mention de quote quand aucun seuil n'est configuré", () => {
+    renderWithProviders(
+      <ResultatsPodium resultats={{ ...resultats, seuil_victoire_requis: null }} />,
+    );
+    expect(screen.getByText("resultats.pas_de_quote", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("★ resultats.elu", { exact: false })).toBeInTheDocument();
   });
 
   it("affiche la composition d'une liste gagnante", () => {

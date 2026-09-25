@@ -56,7 +56,7 @@ class VoteSessionSerializer(serializers.ModelSerializer):
             "nb_choix_max",
             "eligibilite",
             "duree_minutes",
-            "quorum_pct",
+            "seuil_victoire_pct",
             "statut",
             "date_ouverture",
             "date_fin",
@@ -101,7 +101,7 @@ class VoteSessionCreateSerializer(serializers.ModelSerializer):
             "eligibilite",
             "membres_selectionnes",
             "duree_minutes",
-            "quorum_pct",
+            "seuil_victoire_pct",
             "resultats_visibles_avant_cloture",
             "options",
         ]
@@ -148,5 +148,5 @@ class ResultatsSerializer(serializers.Serializer):
     total_participants = serializers.IntegerField()
     total_eligibles = serializers.IntegerField()
     taux_participation = serializers.FloatField()
-    quorum_requis = serializers.IntegerField(allow_null=True)
-    quorum_atteint = serializers.BooleanField()
+    seuil_victoire_requis = serializers.IntegerField(allow_null=True)
+    seuil_victoire_atteint = serializers.BooleanField()

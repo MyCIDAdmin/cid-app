@@ -9,6 +9,13 @@
  * arbitrairement laquelle apparaît en premier. Toutes les options à égalité avec le meilleur
  * score (> 0) sont donc marquées "Élu(e)", et leur rang affiché est également partagé (1, 1, 3 —
  * classement "1224", pas 1, 2, 3) plutôt que de laisser croire à un gagnant unique inexistant.
+ *
+ * Seuil de victoire (renommé/repensé le 2026-09-25, retour utilisateur — remplace l'ancien
+ * "quorum" de PARTICIPATION, comparé avec >=) : `resultats.seuil_victoire_atteint`, déjà
+ * calculé côté backend (voir services.calculer_resultats, comparaison STRICTE >, pas >=),
+ * conditionne désormais `estGagnant` en plus de l'égalité — si un seuil est configuré et non
+ * atteint, AUCUNE option n'est marquée "Élu(e)" et le vote est présenté comme non décidé
+ * (une seule source de vérité pour "qui a gagné", jamais recalculée indépendamment ici).
  */
 import { useTranslation } from "react-i18next";
 
@@ -22,9 +29,12 @@ export default function ResultatsPodium({ resultats }: ResultatsPodiumProps) {
   const { t } = useTranslation("vote");
   const classement = [...resultats.resultats].sort((a, b) => b.nombre_voix - a.nombre_voix);
   const meilleurScore = classement[0]?.nombre_voix ?? 0;
-  const nombreGagnants = classement.filter(
-    (r) => r.nombre_voix > 0 && r.nombre_voix === meilleurScore,
-  ).length;
+  const seuilAtteintOuAbsent =
+    resultats.seuil_victoire_requis === null || resultats.seuil_victoire_atteint;
+  const nombreGagnants = seuilAtteintOuAbsent
+    ? classement.filter((r) => r.nombre_voix > 0 && r.nombre_voix === meilleurScore).length
+    : 0;
+  const nonDecide = resultats.seuil_victoire_requis !== null && !resultats.seuil_victoire_atteint;
 
   return (
     <div>
@@ -37,25 +47,28 @@ export default function ResultatsPodium({ resultats }: ResultatsPodiumProps) {
         </span>
         <span>
           {t("resultats.taux_participation", { taux: resultats.taux_participation })} ·{" "}
-          {resultats.quorum_requis !== null ? (
+          {resultats.seuil_victoire_requis !== null ? (
             <span
               className={
-                resultats.quorum_atteint ? "text-status-successText" : "text-status-dangerText"
+                resultats.seuil_victoire_atteint
+                  ? "text-status-successText"
+                  : "text-status-dangerText"
               }
             >
-              {resultats.quorum_atteint
-                ? t("resultats.quorum_atteint", { pct: resultats.quorum_requis })
-                : t("resultats.quorum_non_atteint", { pct: resultats.quorum_requis })}
+              {resultats.seuil_victoire_atteint
+                ? t("resultats.quote_atteint", { pct: resultats.seuil_victoire_requis })
+                : t("resultats.quote_non_atteint", { pct: resultats.seuil_victoire_requis })}
             </span>
           ) : (
-            t("resultats.pas_de_quorum")
+            t("resultats.pas_de_quote")
           )}
         </span>
       </div>
 
       <div className="space-y-2">
         {classement.map((r) => {
-          const estGagnant = r.nombre_voix > 0 && r.nombre_voix === meilleurScore;
+          const estGagnant =
+            seuilAtteintOuAbsent && r.nombre_voix > 0 && r.nombre_voix === meilleurScore;
           // Classement "1224" : le rang affiché est le nombre d'options strictement devant
           // + 1, donc partagé entre ex-aequo (1, 1, 3) plutôt qu'un simple index+1 (1, 2, 3)
           // qui casserait artificiellement une égalité réelle.
@@ -109,6 +122,12 @@ export default function ResultatsPodium({ resultats }: ResultatsPodiumProps) {
       {nombreGagnants > 1 && (
         <p className="mt-2 rounded-cid bg-status-warningBg px-3 py-2 text-center text-[11px] text-status-warningText">
           ⚠ {t("resultats.egalite", { count: nombreGagnants })}
+        </p>
+      )}
+
+      {nonDecide && (
+        <p className="mt-2 rounded-cid bg-status-warningBg px-3 py-2 text-center text-[11px] text-status-warningText">
+          ⚠ {t("resultats.non_decide", { pct: resultats.seuil_victoire_requis })}
         </p>
       )}
 

@@ -94,14 +94,64 @@ def test_calculer_resultats_expose_la_composition_des_listes():
     assert par_label["Candidat indépendant"] == []
 
 
-def test_calculer_resultats_quorum_atteint():
-    session = VoteSessionFactory(quorum_pct=50)
-    MembreFactory(statut=StatutMembre.ACTIF)
-    MembreFactory(statut=StatutMembre.ACTIF)
-    VoteExprime.objects.create(session=session, voter_token_hash=_rand_hash())
+# --- Seuil de victoire (2026-09-25, renommage + changement de sémantique — voir docstring
+# de VoteSession.seuil_victoire_pct/services.calculer_resultats : remplace l'ancien "quorum"
+# de PARTICIPATION par un seuil sur la PART DES VOIX du gagnant, comparé STRICTEMENT (>),
+# pas avec >=) ---
+
+
+def test_calculer_resultats_sans_seuil_toujours_atteint():
+    session = VoteSessionFactory(seuil_victoire_pct=None)
+    bulletin = VoteExprime.objects.create(session=session, voter_token_hash=_rand_hash())
+    option = VoteOptionFactory(session=session)
+    ChoixExprime.objects.create(bulletin=bulletin, option=option)
+
     resultats = calculer_resultats(session)
-    assert resultats["taux_participation"] == 50.0
-    assert resultats["quorum_atteint"] is True
+
+    assert resultats["seuil_victoire_requis"] is None
+    assert resultats["seuil_victoire_atteint"] is True
+
+
+def test_calculer_resultats_seuil_victoire_atteint_si_strictement_superieur():
+    session = VoteSessionFactory(seuil_victoire_pct=50)
+    option_a = VoteOptionFactory(session=session)
+    VoteOptionFactory(session=session)
+    # 2 voix sur 3 bulletins => 66,7% > 50% : seuil dépassé.
+    for _ in range(2):
+        bulletin = VoteExprime.objects.create(session=session, voter_token_hash=_rand_hash())
+        ChoixExprime.objects.create(bulletin=bulletin, option=option_a)
+    autre_bulletin = VoteExprime.objects.create(session=session, voter_token_hash=_rand_hash())
+    ChoixExprime.objects.create(bulletin=autre_bulletin, option=VoteOptionFactory(session=session))
+
+    resultats = calculer_resultats(session)
+
+    assert resultats["seuil_victoire_requis"] == 50
+    assert resultats["seuil_victoire_atteint"] is True
+
+
+def test_calculer_resultats_seuil_victoire_non_atteint_a_egalite_exacte():
+    # Comparaison STRICTE (>) : un score exactement égal au seuil ne suffit PAS (correctif
+    # explicite demandé par l'utilisateur — "aktuell ist = 50%", doit devenir "> 50%").
+    session = VoteSessionFactory(seuil_victoire_pct=50)
+    option_a = VoteOptionFactory(session=session)
+    option_b = VoteOptionFactory(session=session)
+    bulletin_a = VoteExprime.objects.create(session=session, voter_token_hash=_rand_hash())
+    ChoixExprime.objects.create(bulletin=bulletin_a, option=option_a)
+    bulletin_b = VoteExprime.objects.create(session=session, voter_token_hash=_rand_hash())
+    ChoixExprime.objects.create(bulletin=bulletin_b, option=option_b)
+
+    resultats = calculer_resultats(session)
+
+    assert resultats["seuil_victoire_requis"] == 50
+    assert resultats["seuil_victoire_atteint"] is False
+
+
+def test_calculer_resultats_seuil_victoire_non_atteint_sans_aucun_vote():
+    session = VoteSessionFactory(seuil_victoire_pct=50)
+
+    resultats = calculer_resultats(session)
+
+    assert resultats["seuil_victoire_atteint"] is False
 
 
 def test_calculer_resultats_ne_retourne_jamais_de_token():
