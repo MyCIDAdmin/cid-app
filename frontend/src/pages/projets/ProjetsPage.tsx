@@ -183,8 +183,11 @@ export default function ProjetsPage() {
           avec le carrousel d'images en hauteur fixe (h-40) forçait un recadrage/agrandissement
           beaucoup trop agressif des images (floues, coupées) — voir aussi le passage à
           object-contain dans ImageCarousel. Cette largeur plafonnée reste nettement plus large
-          que l'ancienne grille à 3 colonnes tout en gardant les images lisibles. */}
-      <div className="mx-auto flex max-w-2xl flex-col gap-4">
+          que l'ancienne grille à 3 colonnes tout en gardant les images lisibles.
+          stagger-children (repris de MyCID, merge de design 2026-09-25) : simple apparition
+          échelonnée à l'affichage de la liste, n'affecte ni la largeur ni l'empilement
+          ci-dessus. */}
+      <div className="mx-auto flex max-w-2xl flex-col gap-4 stagger-children">
         {projetsQuery.data?.results.map((projet) => (
           <ProjetCard
             key={projet.id}

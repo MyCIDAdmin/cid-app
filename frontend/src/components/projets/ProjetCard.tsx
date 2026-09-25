@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import AnimatedProgress from "../ui/AnimatedProgress";
 import ShareButton from "../ui/ShareButton";
 import { useContributeursProjet } from "../../hooks/useProjets";
 import type { Projet } from "../../types/projets";
@@ -87,7 +88,7 @@ export default function ProjetCard({
             aucun contenu ne dépasse la hauteur de cette div désormais, elle n'a donc plus de rôle
             de découpe verticale). Voir la face arrière ci-dessous pour comment elle se cale sur
             cette même hauteur, désormais dynamique. */}
-        <div className="flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-bg-primary shadow-sm [backface-visibility:hidden]">
+        <div className="flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-card-gradient shadow-card [backface-visibility:hidden]">
           <ImageCarousel images={projet.images} titre={projet.titre} className="h-40 shrink-0" />
           <div className="flex flex-col gap-2 p-4">
             <div className="flex items-start justify-between gap-2">
@@ -125,12 +126,10 @@ export default function ProjetCard({
               <div className="mt-1 space-y-1">
                 {progression !== null ? (
                   <>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-bg-tertiary">
-                      <div
-                        className="h-full rounded-full bg-ca transition-all"
-                        style={{ width: `${progression}%` }}
-                      />
-                    </div>
+                    {/* Barre de progression animée reprise de MyCID (merge de design
+                        2026-09-25) — s'anime de 0 à `progression` dès l'entrée dans le
+                        viewport, voir components/ui/AnimatedProgress.tsx. */}
+                    <AnimatedProgress value={progression} />
                     <p className="text-xs text-text-secondary">
                       {t("cagnote.collecte", {
                         montant: formatMontant(projet.montant_collecte),
@@ -202,7 +201,7 @@ export default function ProjetCard({
 
         {/* Face arrière — demande utilisateur point 5 */}
         <div
-          className="absolute inset-0 flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-bg-primary p-4 shadow-sm [backface-visibility:hidden]"
+          className="absolute inset-0 flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-card-gradient p-4 shadow-card [backface-visibility:hidden]"
           style={{ transform: "rotateY(180deg)" }}
         >
           <h3 className="text-base font-semibold text-text-primary">{t("contributeurs.titre")}</h3>
