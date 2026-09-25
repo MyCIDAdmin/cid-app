@@ -54,3 +54,7 @@ secrets/
 !frontend/public/**/*.jpg
 !docs/**/*.png
 !backend/apps/cotisations/assets/*.jpg
+
+# Documentation générée localement — peut contenir des secrets d'infra
+# (voir CID_10_Deployment_Config_Railway.md) : ne jamais committer.
+Documentation/
