@@ -58,6 +58,21 @@ describe("ProjetCard", () => {
     expect(barre.style.width).toBe("25%");
   });
 
+  it("permet de partager le projet sans retourner la kachel (demande utilisateur 2026-09-25)", () => {
+    vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
+      data: undefined,
+      isPending: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useContributeursProjet>);
+
+    renderWithProviders(<ProjetCard projet={projet()} />);
+
+    const boutonPartage = screen.getByLabelText("partage.bouton_aria");
+    expect(boutonPartage).toBeInTheDocument();
+
+    fireEvent.click(boutonPartage);
+    expect(screen.getByRole("button", { pressed: false })).toBeInTheDocument();
+  });
+
   it("n'interroge PAS les contributeurs avant le premier retournement (chargement paresseux)", () => {
     const mock = vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
       data: undefined,

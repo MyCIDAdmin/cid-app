@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import ShareButton from "../ui/ShareButton";
 import { useContributeursProjet } from "../../hooks/useProjets";
 import type { Projet } from "../../types/projets";
 import ImageCarousel from "./ImageCarousel";
@@ -93,19 +94,30 @@ export default function ProjetCard({
               <h3 className="text-base font-semibold leading-snug text-text-primary">
                 {projet.titre}
               </h3>
-              {onModifier && (
-                <button
-                  type="button"
-                  aria-label="Modifier"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onModifier(projet);
-                  }}
-                  className="rounded-cid p-1 text-text-tertiary hover:bg-bg-tertiary hover:text-text-primary"
-                >
-                  ✎
-                </button>
-              )}
+              {/* Partage social (demande utilisateur 2026-09-25, "Es soll möglich sein Elemente
+                  in Social Media zu Teilen") — ShareButton stoppe déjà lui-même la propagation
+                  du clic (voir son implémentation), donc le retournement de la kachel (au clic
+                  sur son corps) n'est pas déclenché par erreur. */}
+              <div className="flex shrink-0 items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                <ShareButton
+                  path={`/projets?projet=${projet.id}`}
+                  titre={projet.titre}
+                  texte={projet.titre}
+                />
+                {onModifier && (
+                  <button
+                    type="button"
+                    aria-label="Modifier"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onModifier(projet);
+                    }}
+                    className="rounded-cid p-1 text-text-tertiary hover:bg-bg-tertiary hover:text-text-primary"
+                  >
+                    ✎
+                  </button>
+                )}
+              </div>
             </div>
             <StatutProjetBadge statut={projet.statut} />
 
