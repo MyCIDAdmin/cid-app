@@ -116,6 +116,9 @@ export interface Covoiturage {
   destination: string;
   date_trajet: string;
   heure_trajet: string;
+  /** Point de rendez-vous fixé par le conducteur pour l'ensemble du trajet ("Treffpunkt") —
+   * distinct de ReservationCovoiturage.point_prise_en_charge (propre à chaque passager). */
+  lieu_rendez_vous: string;
   places_disponibles: number;
   prix_par_place: string | null;
   vehicule: string;
@@ -132,6 +135,7 @@ export interface CovoituragePayload {
   destination: string;
   date_trajet: string;
   heure_trajet: string;
+  lieu_rendez_vous?: string;
   places_disponibles: number;
   prix_par_place?: string | null;
   vehicule?: string;
@@ -141,6 +145,7 @@ export interface ReservationCovoiturage {
   id: string;
   trajet: string;
   membre: string;
+  membre_detail: MembreResume | null;
   places_reservees: number;
   point_prise_en_charge: string;
   statut: StatutReservationCovoiturage;

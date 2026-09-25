@@ -8,7 +8,12 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
 from apps.evenements.models import StatutEvenement, StatutInscription
-from apps.evenements.tests.factories import CovoiturageFactory, EvenementFactory, InscriptionFactory
+from apps.evenements.tests.factories import (
+    CovoiturageFactory,
+    EvenementFactory,
+    InscriptionFactory,
+    ReservationCovoiturageFactory,
+)
 from apps.membres.tests.factories import MembreFactory
 
 pytestmark = pytest.mark.django_db
@@ -34,6 +39,7 @@ EVENEMENT_LIST_URL = "evenements:evenement-list"
 INSCRIRE_URL = "evenements:evenement-inscrire"
 INSCRIPTION_LIST_URL = "evenements:inscription-list"
 COVOITURAGE_LIST_URL = "evenements:covoiturage-list"
+RESERVATION_COVOITURAGE_LIST_URL = "evenements:reservation-covoiturage-list"
 
 
 def _evenement_detail_url(evenement):
@@ -512,6 +518,82 @@ def test_modifier_trajet_dun_autre_conducteur_refuse(api_client):
         reverse("evenements:covoiturage-detail", args=[trajet.id]), {"places_disponibles": 1}
     )
     assert resp.status_code == 403
+
+
+# --- Tuile Fahrgemeinschaft (2026-09-25) : lieu_rendez_vous (conducteur, sur le trajet) +
+# membre_detail (participants, exposé en lecture) — signalé par un utilisateur, voir
+# CovoituragePage.tsx pour l'utilisation frontend. ---
+
+
+def test_creer_un_trajet_avec_lieu_de_rendez_vous(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "cond4@example.de")
+
+    resp = _auth(api_client, user).post(
+        reverse(COVOITURAGE_LIST_URL),
+        {
+            "depart": "Berlin Hbf",
+            "destination": "Stuttgart",
+            "date_trajet": "2099-05-31",
+            "heure_trajet": "06:00",
+            "places_disponibles": 3,
+            "lieu_rendez_vous": "Devant la gare, sortie Nord",
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["lieu_rendez_vous"] == "Devant la gare, sortie Nord"
+
+
+def test_modifier_le_lieu_de_rendez_vous_par_le_conducteur(api_client):
+    user, conducteur = _user_avec_membre(Role.MEMBRE, "cond5@example.de")
+    trajet = CovoiturageFactory(conducteur=conducteur, lieu_rendez_vous="")
+
+    resp = _auth(api_client, user).patch(
+        reverse("evenements:covoiturage-detail", args=[trajet.id]),
+        {"lieu_rendez_vous": "Parking Décathlon"},
+    )
+
+    assert resp.status_code == 200, resp.data
+    trajet.refresh_from_db()
+    assert trajet.lieu_rendez_vous == "Parking Décathlon"
+
+
+def test_reservations_covoiturage_expose_le_nom_du_passager(api_client):
+    # Le conducteur doit pouvoir voir qui a réservé sur son propre trajet (tuile
+    # Fahrgemeinschaft) — la queryset le permet déjà (Q(membre=...) | Q(trajet__conducteur=...)),
+    # ce test couvre le nouveau champ `membre_detail` de ReservationCovoiturageSerializer.
+    user, conducteur = _user_avec_membre(Role.MEMBRE, "cond6@example.de")
+    passager = MembreFactory(prenom="Amina", nom="Ben Salah")
+    trajet = CovoiturageFactory(conducteur=conducteur)
+    ReservationCovoiturageFactory(trajet=trajet, membre=passager)
+
+    resp = _auth(api_client, user).get(
+        reverse(RESERVATION_COVOITURAGE_LIST_URL), {"trajet": str(trajet.id)}
+    )
+
+    assert resp.status_code == 200
+    assert resp.data["results"][0]["membre_detail"] == {
+        "id": str(passager.id),
+        "prenom": "Amina",
+        "nom": "Ben Salah",
+    }
+
+
+def test_reservations_covoiturage_invisible_pour_un_tiers(api_client):
+    # Défense en profondeur déjà en place côté queryset (ReservationCovoiturageViewSet.
+    # get_queryset) : un membre qui n'est ni le conducteur ni un passager du trajet ne voit
+    # rien — non-régression explicitement couverte ici pour la nouvelle tuile Fahrgemeinschaft.
+    _, conducteur = _user_avec_membre(Role.MEMBRE, "cond7@example.de")
+    trajet = CovoiturageFactory(conducteur=conducteur)
+    ReservationCovoiturageFactory(trajet=trajet)
+    tiers, _ = _user_avec_membre(Role.MEMBRE, "tiers@example.de")
+
+    resp = _auth(api_client, tiers).get(
+        reverse(RESERVATION_COVOITURAGE_LIST_URL), {"trajet": str(trajet.id)}
+    )
+
+    assert resp.status_code == 200
+    assert resp.data["results"] == []
 
 
 # ---------------------------------------------------------------------------

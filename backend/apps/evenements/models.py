@@ -220,6 +220,16 @@ class Covoiturage(models.Model):
     destination = models.CharField(max_length=255)
     date_trajet = models.DateField()
     heure_trajet = models.TimeField()
+    lieu_rendez_vous = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text=_(
+            "Point de rendez-vous fixé par le conducteur pour l'ensemble du trajet (« "
+            "Treffpunkt », signalé par un utilisateur — 2026-09-25) — distinct du point de "
+            "prise en charge propre à chaque passager (voir "
+            "ReservationCovoiturage.point_prise_en_charge)."
+        ),
+    )
 
     places_disponibles = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     prix_par_place = models.DecimalField(

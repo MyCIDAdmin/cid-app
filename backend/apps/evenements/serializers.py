@@ -152,6 +152,7 @@ class CovoiturageSerializer(serializers.ModelSerializer):
             "destination",
             "date_trajet",
             "heure_trajet",
+            "lieu_rendez_vous",
             "places_disponibles",
             "prix_par_place",
             "vehicule",
@@ -163,12 +164,17 @@ class CovoiturageSerializer(serializers.ModelSerializer):
 
 
 class ReservationCovoiturageSerializer(serializers.ModelSerializer):
+    # Affiché sur la tuile Fahrgemeinschaft ("qui a réservé", signalé par un utilisateur —
+    # 2026-09-25) — même principe que conducteur_detail ci-dessus.
+    membre_detail = MembreResumeSerializer(source="membre", read_only=True)
+
     class Meta:
         model = ReservationCovoiturage
         fields = [
             "id",
             "trajet",
             "membre",
+            "membre_detail",
             "places_reservees",
             "point_prise_en_charge",
             "statut",

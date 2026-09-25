@@ -14,9 +14,42 @@ import {
   useCreerCovoiturage,
   useEvenements,
   useRejoindreTrajet,
+  useReservationsCovoiturage,
 } from "../../hooks/useEvenements";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Covoiturage } from "../../types/evenements";
+
+/** Qui a réservé sur ce trajet — tuile Fahrgemeinschaft (signalé par un utilisateur,
+ * 2026-09-25). Le backend filtre déjà par IDOR (ReservationCovoiturageViewSet.get_queryset) :
+ * seuls le conducteur du trajet, ses passagers et le personnel de gestion voient les
+ * réservations, tout autre membre reçoit une liste vide — donc rien à vérifier ici côté
+ * client (même remarque que pour "est-ce mon propre trajet ?" plus bas). */
+function ParticipantsCovoiturage({ trajetId }: { trajetId: string }) {
+  const { t } = useTranslation("evenements");
+  const reservationsQuery = useReservationsCovoiturage({ trajet: trajetId });
+  const reservations = (reservationsQuery.data?.results ?? []).filter(
+    (reservation) => reservation.statut === "confirmee",
+  );
+
+  if (reservationsQuery.isLoading) return null;
+
+  if (reservations.length === 0) {
+    return <p className="mt-1.5 text-[10px] text-text-tertiary">{t("covoiturage.aucune_reservation")}</p>;
+  }
+
+  return (
+    <p className="mt-1.5 text-[10px] text-text-tertiary">
+      <span className="font-medium text-text-secondary">{t("covoiturage.participants_label")}</span>{" "}
+      {reservations
+        .map((reservation) =>
+          reservation.membre_detail
+            ? `${reservation.membre_detail.prenom} ${reservation.membre_detail.nom}`
+            : "—",
+        )
+        .join(", ")}
+    </p>
+  );
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { day: "2-digit", month: "long" });
@@ -82,6 +115,14 @@ function ModaleRejoindre({ trajet, onClose }: { trajet: Covoiturage; onClose: ()
               ? t("covoiturage.prix_par_pers", { prix: formatMontant(trajet.prix_par_place) })
               : t("covoiturage.gratuit")}
           </div>
+          {trajet.lieu_rendez_vous && (
+            <div className="mt-1 text-xs text-text-tertiary">
+              <span className="font-medium text-text-secondary">
+                {t("covoiturage.treffpunkt_label")}
+              </span>{" "}
+              {trajet.lieu_rendez_vous}
+            </div>
+          )}
         </div>
 
         <div className="mb-2">
@@ -157,6 +198,7 @@ export default function CovoituragePage() {
   const [placesDisponibles, setPlacesDisponibles] = useState(3);
   const [prixParPlace, setPrixParPlace] = useState("");
   const [vehicule, setVehicule] = useState("");
+  const [lieuRendezVous, setLieuRendezVous] = useState("");
   const [evenementLie, setEvenementLie] = useState("");
   const [erreurCreation, setErreurCreation] = useState("");
   const [trajetARejoindre, setTrajetARejoindre] = useState<Covoiturage | null>(null);
@@ -173,6 +215,7 @@ export default function CovoituragePage() {
         places_disponibles: placesDisponibles,
         prix_par_place: prixParPlace || null,
         vehicule,
+        lieu_rendez_vous: lieuRendezVous,
         evenement: evenementLie || null,
       },
       {
@@ -184,6 +227,7 @@ export default function CovoituragePage() {
           setPlacesDisponibles(3);
           setPrixParPlace("");
           setVehicule("");
+          setLieuRendezVous("");
           setEvenementLie("");
           setAfficherFormulaire(false);
         },
@@ -269,6 +313,13 @@ export default function CovoituragePage() {
               className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             />
           </div>
+          <input
+            type="text"
+            value={lieuRendezVous}
+            onChange={(e) => setLieuRendezVous(e.target.value)}
+            placeholder={t("covoiturage.treffpunkt_placeholder")}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
           <select
             value={evenementLie}
             onChange={(e) => setEvenementLie(e.target.value)}
@@ -344,6 +395,15 @@ export default function CovoituragePage() {
                     : t("covoiturage.gratuit")}
                 </span>
               </div>
+              {trajet.lieu_rendez_vous && (
+                <p className="mt-1.5 text-[10px] text-text-tertiary">
+                  <span className="font-medium text-text-secondary">
+                    {t("covoiturage.treffpunkt_label")}
+                  </span>{" "}
+                  {trajet.lieu_rendez_vous}
+                </p>
+              )}
+              <ParticipantsCovoiturage trajetId={trajet.id} />
             </div>
           );
         })}
