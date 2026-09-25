@@ -13,16 +13,22 @@
  *      backend, voir ClassementLigueViewSet.get_queryset).
  *   3. Liniendiagramm (évolution des points par journée) : la ligne "Club Africain" est une
  *      VRAIE série calculée à partir des rencontres Ligue 1 déjà synchronisées
- *      (`RencontreCalendrier`, barème 3/1/0 points) — "Liga-Durchschnitt"/"Bestes Team der
- *      Liga" sont deux lignes de référence PLATES (instantané du classement actuel, pas une
- *      tendance) : décision explicite de l'utilisateur (AskUserQuestion du 2026-09-24, choix
- *      "Nur Club Africain als echte Linie") après que la recherche a montré que GOAL API ne
- *      fournit qu'un instantané du classement, jamais l'historique points-par-journée de
- *      toutes les équipes de la ligue.
+ *      (`RencontreCalendrier`, barème 3/1/0 points), RESTREINTE À LA SAISON EN COURS (voir
+ *      `limitesSaison`/`construireSeriePointsClubAfricain` — correctif du 2026-09-25 : le
+ *      calendrier synchronisé couvre TOUTES les saisons, voir docstring de
+ *      RencontreCalendrier côté backend, donc sans ce filtre le cumul mélangeait plusieurs
+ *      saisons) — "Liga-Durchschnitt"/"Bestes Team der Liga" sont deux lignes de référence
+ *      PLATES (instantané du classement actuel, pas une tendance) : décision explicite de
+ *      l'utilisateur (AskUserQuestion du 2026-09-24, choix "Nur Club Africain als echte
+ *      Linie") après que la recherche a montré que GOAL API ne fournit qu'un instantané du
+ *      classement, jamais l'historique points-par-journée de toutes les équipes de la ligue.
  *   4. Tableau du kader complet, trIABLE par colonne (Name/Position/cartons/buts/matchs/
  *      assists), à partir de `StatistiqueJoueur` — remplace les anciennes listes séparées
  *      Torschützen (top 10)/Kartenstatistik (top 10) : le tri interactif couvre les deux vues
- *      (et bien plus) avec une seule table, sur l'effectif ENTIER (pas seulement le top 10).
+ *      (et bien plus) avec une seule table, sur l'effectif ENTIER (pas seulement le top 10),
+ *      limité aux joueurs ayant disputé au moins un match cette saison (correctif du
+ *      2026-09-25, voir commentaire sur `joueurs` ci-dessous — retour utilisateur : des
+ *      joueurs qui ne font plus partie de l'effectif actuel restaient listés).
  *
  * Palette du Liniendiagramm validée via la skill dataviz (3 séries identitaires, pas un
  * accent + neutre) :
@@ -98,18 +104,44 @@ function pointsMatch(rencontre: RencontreCalendrier): number {
   return 0;
 }
 
-/** Série cumulative points/journée pour l'équipe suivie — seules les rencontres Ligue 1
- * déjà TERMINÉES avec un score renseigné comptent comme une "journée" (voir constante
- * COMPETITION_LIGUE_1 ci-dessus), triées chronologiquement. */
-function construireSeriePointsClubAfricain(rencontres: RencontreCalendrier[]) {
+/** Bornes [début, fin[ de la saison "juillet → juin", dérivées de la chaîne `saison` d'une
+ * ligne `ClassementLigue` déjà filtrée à la saison en cours côté backend (ex. "2026-2027" =>
+ * [2026-07-01, 2027-07-01[). `RencontreCalendrier` ne porte pas de champ `saison` propre
+ * (voir docstring de tête apps.communaute.models.RencontreCalendrier — la synchronisation
+ * ramène volontairement le calendrier COMPLET, toutes saisons, pour l'onglet Spielplan) : on
+ * réutilise donc ici la même convention "juillet → juin" que `services._saison_actuelle()`
+ * côté backend, mais indirectement via la valeur déjà calculée là-bas plutôt qu'en la
+ * réimplémentant indépendamment — une seule source de vérité pour la saison en cours. */
+function limitesSaison(saison: string | undefined): { debut: number; fin: number } | null {
+  if (!saison) return null;
+  const anneeDebut = Number(saison.split("-")[0]);
+  if (!Number.isFinite(anneeDebut)) return null;
+  return {
+    debut: Date.UTC(anneeDebut, 6, 1),
+    fin: Date.UTC(anneeDebut + 1, 6, 1),
+  };
+}
+
+/** Série cumulative points/journée pour l'équipe suivie — seules les rencontres Ligue 1 de
+ * la SAISON EN COURS déjà TERMINÉES avec un score renseigné comptent comme une "journée"
+ * (voir constante COMPETITION_LIGUE_1 et `limitesSaison` ci-dessus), triées
+ * chronologiquement. Filtre saison ajouté le 2026-09-25 (retour utilisateur : le graphique
+ * cumulait à tort les points de TOUTES les saisons synchronisées, même bug que le classement/
+ * effectif corrigé la veille — voir "Tabelle ist falsch und Listet Daten aus alten Säsons"). */
+function construireSeriePointsClubAfricain(
+  rencontres: RencontreCalendrier[],
+  saisonActuelle: string | undefined,
+) {
+  const limites = limitesSaison(saisonActuelle);
   const terminees = rencontres
-    .filter(
-      (rencontre) =>
-        rencontre.competition === COMPETITION_LIGUE_1 &&
-        rencontre.statut === "FINISHED" &&
-        rencontre.score_domicile !== null &&
-        rencontre.score_exterieur !== null,
-    )
+    .filter((rencontre) => {
+      if (rencontre.competition !== COMPETITION_LIGUE_1) return false;
+      if (rencontre.statut !== "FINISHED") return false;
+      if (rencontre.score_domicile === null || rencontre.score_exterieur === null) return false;
+      if (limites === null) return true;
+      const horodatage = new Date(rencontre.date_heure).getTime();
+      return horodatage >= limites.debut && horodatage < limites.fin;
+    })
     .sort((a, b) => a.date_heure.localeCompare(b.date_heure));
 
   let cumul = 0;
@@ -215,13 +247,19 @@ export default function StatistiquesTab() {
 
   const lignes = classementQuery.data?.results ?? [];
   const clubAfricain = lignes.find((ligne) => ligne.equipe === EQUIPE_SUIVIE);
-  const joueurs = joueursQuery.data?.results ?? [];
+  // Kader (2026-09-25) : le backend filtre déjà StatistiqueJoueur à la saison en cours par
+  // défaut (voir StatistiqueJoueurViewSet.get_queryset), mais un joueur peut y rester listé
+  // sans avoir encore joué un seul match cette saison (transfert entre-temps, données source
+  // imparfaites — retour utilisateur explicite, ex. joueurs restés au kader alors qu'ils ne
+  // font plus partie de l'effectif actuel). Filtre défensif supplémentaire côté client : un
+  // joueur n'apparaît dans le tableau que s'il a disputé au moins un match cette saison.
+  const joueurs = (joueursQuery.data?.results ?? []).filter((joueur) => joueur.matchs_joues >= 1);
   const rencontres = calendrierQuery.data?.results ?? [];
 
   // Pas de useMemo ici : quelques dizaines de lignes/joueurs/rencontres au plus (effectif
   // complet + calendrier Ligue 1 d'une saison) — le coût de recalcul à chaque rendu est
   // négligeable, la mémoisation n'apporterait rien d'autre que des dépendances à maintenir.
-  const serieClubAfricain = construireSeriePointsClubAfricain(rencontres);
+  const serieClubAfricain = construireSeriePointsClubAfricain(rencontres, clubAfricain?.saison);
   const ligaMoyenne =
     lignes.length === 0
       ? 0

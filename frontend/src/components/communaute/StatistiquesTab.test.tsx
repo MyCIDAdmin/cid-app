@@ -256,6 +256,29 @@ describe("StatistiquesTab", () => {
     expect(screen.getByText("live.punkte_verlauf_hinweis")).toBeInTheDocument();
   });
 
+  it("exclut du graphique les rencontres d'une saison précédente (correctif 2026-09-25)", () => {
+    // Classement filtré à la saison en cours "2025-2026" (juillet 2025 → juin 2026, voir
+    // ligne() par défaut) : un match Ligue 1 terminé mais daté hors de cette fenêtre (ici
+    // juin 2025, saison précédente) ne doit plus compter dans le cumul de points.
+    mockClassement(ligne());
+    mockJoueurs();
+    mockEquipeInfo(undefined);
+    mockCalendrier([
+      rencontre({
+        id: "r-ancienne-saison",
+        date_heure: "2025-06-15T18:00:00Z",
+        score_domicile: 3,
+        score_exterieur: 0,
+      }),
+    ]);
+
+    renderWithProviders(<StatistiquesTab />);
+
+    // Aucune rencontre de la saison en cours => graphique vide, comme s'il n'y avait aucune
+    // rencontre du tout (même message que le test suivant).
+    expect(screen.getAllByText("live.statistiques_vide").length).toBeGreaterThanOrEqual(1);
+  });
+
   it("affiche un message vide pour le graphique tant qu'aucune rencontre Ligue 1 n'est terminée", () => {
     mockClassement(ligne());
     mockJoueurs();
@@ -296,6 +319,23 @@ describe("StatistiquesTab", () => {
     expect(screen.getByText("Taddeus Nkeng")).toBeInTheDocument();
     expect(screen.getByText("Ismaila Simpara")).toBeInTheDocument();
     expect(screen.getByText("live.statistiques_poste_defenseur")).toBeInTheDocument();
+  });
+
+  it("masque du kader les joueurs sans aucun match joué cette saison (correctif 2026-09-25)", () => {
+    // Retour utilisateur : des joueurs comme "S. Khalifa" restaient listés bien qu'ils ne
+    // fassent plus partie de l'effectif actuel — filtre défensif matchs_joues >= 1.
+    mockClassement(ligne());
+    mockJoueurs([
+      joueur({ id: "j1", nom: "Sadok Kadida", matchs_joues: 7 }),
+      joueur({ id: "j2", nom: "S. Khalifa", matchs_joues: 0 }),
+    ]);
+    mockEquipeInfo(undefined);
+    mockCalendrier();
+
+    renderWithProviders(<StatistiquesTab />);
+
+    expect(screen.getByText("Sadok Kadida")).toBeInTheDocument();
+    expect(screen.queryByText("S. Khalifa")).not.toBeInTheDocument();
   });
 
   it("trie le kader par une colonne au clic sur son en-tête", () => {
