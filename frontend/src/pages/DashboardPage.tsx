@@ -23,11 +23,26 @@
  * ce dépôt (voir CLAUDE.md §3) — jamais construite malgré sa mention au FDD/Release Plan comme
  * lecture seule R1/gestion R2. Remplacée par une tuile "Votes en cours" (apps.vote, déjà
  * implémenté) plutôt que de laisser une tuile vide ou d'inventer un module non demandé.
+ *
+ * Animations (demande utilisateur 2026-09-25, "dynamischer und bewegender Kacheln und
+ * Kennzahlen") : voir KpiTile ci-dessous pour le détail (count-up via useCountUp, icône,
+ * survol) ; les listes (événements, ma situation, publications) gagnent une légère
+ * apparition en fondu (animate-slide-in-fade, déjà utilisée par le Live-Ticker) à leur
+ * montage. Pas de légende ajoutée : aucune couleur de cette page ne porte seule une
+ * information — chaque badge de statut affiche déjà son texte (voir STATUT_STYLES).
  */
+import {
+  IconCalendarEvent,
+  IconChecklist,
+  IconClockHour4,
+  IconReceipt2,
+  IconUsers,
+} from "@tabler/icons-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import { useCountUp } from "../hooks/useCountUp";
 import { useMesCotisations } from "../hooks/useCotisations";
 import { usePublications } from "../hooks/useCommunaute";
 import { useEvenements, useInscriptions } from "../hooks/useEvenements";
@@ -68,19 +83,44 @@ const STATUT_STYLES: Record<StatutCotisation, string> = {
   annulee: "bg-bg-tertiary text-text-secondary",
 };
 
+// "dynamischer und bewegender" (demande utilisateur 2026-09-25) — chaque tuile anime sa valeur
+// numérique (useCountUp, l'ancienne -> la nouvelle valeur) plutôt que de se contenter d'un
+// remplacement instantané, gagne une légère élévation au survol, et porte une icône propre à sa
+// nature pour rester identifiable en un coup d'œil même sans lire le libellé. Pas de flèche de
+// tendance (hausse/baisse) : aucune donnée de période précédente n'existe côté API pour ces
+// indicateurs (voir apps.stats) — en ajouter une aurait exigé d'inventer une comparaison
+// fictive, ce qu'on évite plutôt que de l'implémenter à moitié.
 function KpiTile({
   label,
   value,
+  suffix,
   delta,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
+  suffix?: string;
   delta?: string;
+  icon: typeof IconUsers;
 }) {
+  const valeurNumerique = typeof value === "number" ? value : undefined;
+  const valeurAnimee = useCountUp(valeurNumerique);
+  const texteValeur =
+    typeof value === "number"
+      ? `${Math.round(valeurAnimee ?? value).toLocaleString("de-DE")}${suffix ?? ""}`
+      : value;
+
   return (
-    <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-      <div className="text-xs text-text-secondary">{label}</div>
-      <div className="text-xl font-bold text-text-primary">{value}</div>
+    <div className="group rounded-cid-lg bg-bg-primary p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="text-xs text-text-secondary">{label}</span>
+        <Icon
+          size={16}
+          className="shrink-0 text-cad/50 transition-transform duration-200 group-hover:scale-110 group-hover:text-cad"
+          aria-hidden="true"
+        />
+      </div>
+      <div className="text-xl font-bold tabular-nums text-text-primary">{texteValeur}</div>
       {delta && <div className="mt-0.5 text-[11px] text-text-tertiary">{delta}</div>}
     </div>
   );
@@ -155,12 +195,15 @@ export default function DashboardPage() {
         {estGestion ? (
           <>
             <KpiTile
+              icon={IconUsers}
               label={t("kpi.membres_actifs")}
               value={statsMembresQuery.data?.actifs ?? "—"}
             />
             <KpiTile
+              icon={IconReceipt2}
               label={t("kpi.taux_collecte")}
-              value={statsFinancierQuery.data ? `${statsFinancierQuery.data.taux_collecte} %` : "—"}
+              value={statsFinancierQuery.data?.taux_collecte ?? "—"}
+              suffix=" %"
               delta={
                 statsFinancierQuery.data
                   ? t("kpi.cotisations_en_attente", {
@@ -170,6 +213,7 @@ export default function DashboardPage() {
               }
             />
             <KpiTile
+              icon={IconCalendarEvent}
               label={t("kpi.evenements_a_venir")}
               value={evenementsAVenirNombre}
               delta={
@@ -179,6 +223,7 @@ export default function DashboardPage() {
               }
             />
             <KpiTile
+              icon={IconChecklist}
               label={t("kpi.votes_en_cours")}
               value={voteOuvert ? 1 : 0}
               delta={voteOuvert ? t("kpi.vote_ouvert") : t("kpi.aucun_vote")}
@@ -187,6 +232,7 @@ export default function DashboardPage() {
         ) : (
           <>
             <KpiTile
+              icon={IconCalendarEvent}
               label={t("kpi.evenements_a_venir")}
               value={evenementsAVenirNombre}
               delta={
@@ -196,10 +242,12 @@ export default function DashboardPage() {
               }
             />
             <KpiTile
+              icon={IconClockHour4}
               label={t("kpi.mes_inscriptions_attente")}
               value={inscriptionsEnAttente.length}
             />
             <KpiTile
+              icon={IconChecklist}
               label={t("kpi.votes_en_cours")}
               value={voteOuvert ? 1 : 0}
               delta={voteOuvert ? t("kpi.vote_ouvert") : t("kpi.aucun_vote")}
@@ -225,7 +273,7 @@ export default function DashboardPage() {
               {prochainsEvenements.map((evenement) => (
                 <li
                   key={evenement.id}
-                  className="flex items-center justify-between border-b border-bg-tertiary pb-2 text-sm last:border-0 last:pb-0"
+                  className="flex animate-slide-in-fade items-center justify-between rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
                 >
                   <div className="min-w-0">
                     <div className="truncate font-medium text-text-primary">{evenement.titre}</div>
@@ -254,7 +302,7 @@ export default function DashboardPage() {
           ) : (
             <ul className="space-y-2 text-sm">
               {cotisationAnnuelle && (
-                <li className="flex items-center justify-between">
+                <li className="flex animate-slide-in-fade items-center justify-between">
                   <span>{t("ma_situation.cotisation_annuelle", { annee: anneeCourante })}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_STYLES[cotisationAnnuelle.statut]}`}
@@ -264,7 +312,7 @@ export default function DashboardPage() {
                 </li>
               )}
               {fraisAdhesion && (
-                <li className="flex items-center justify-between">
+                <li className="flex animate-slide-in-fade items-center justify-between">
                   <span>{t("ma_situation.frais_adhesion", { annee: anneeCourante })}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_STYLES[fraisAdhesion.statut]}`}
@@ -274,7 +322,10 @@ export default function DashboardPage() {
                 </li>
               )}
               {inscriptionsEnAttente.map((inscription) => (
-                <li key={inscription.id} className="flex items-center justify-between">
+                <li
+                  key={inscription.id}
+                  className="flex animate-slide-in-fade items-center justify-between"
+                >
                   <span className="truncate">
                     {inscription.evenement_detail?.titre ?? inscription.evenement}
                   </span>
@@ -311,7 +362,7 @@ export default function DashboardPage() {
             {publications.map((publication) => (
               <li
                 key={publication.id}
-                className="flex items-start gap-2 border-b border-bg-tertiary pb-2 text-sm last:border-0 last:pb-0"
+                className="flex animate-slide-in-fade items-start gap-2 rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
               >
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cal text-[11px] font-bold text-cad">
                   {publication.auteur.prenom.charAt(0)}
