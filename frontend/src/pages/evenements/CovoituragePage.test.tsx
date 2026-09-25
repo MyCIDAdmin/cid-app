@@ -48,6 +48,7 @@ function trajet(overrides: Partial<Covoiturage> = {}): Covoiturage {
     places_disponibles: 3,
     prix_par_place: "25.00",
     vehicule: "VW Passat",
+    remarques: "",
     places_reservees: 1,
     places_restantes: 2,
     created_at: "2026-01-01T10:00:00Z",
@@ -219,6 +220,66 @@ describe("CovoituragePage", () => {
       expect.objectContaining({ lieu_rendez_vous: "Parking Décathlon" }),
       expect.anything(),
     );
+  });
+
+  it("affiche la remarque libre laissée par le conducteur (demande utilisateur 2026-09-25)", () => {
+    vi.mocked(useEvenementsHooks.useCovoiturages).mockReturnValue({
+      data: page([trajet({ remarques: "Non-fumeur, arrêt possible à Leipzig." })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useCovoiturages>);
+
+    renderWithProviders(<CovoituragePage />);
+
+    expect(screen.getByText("Non-fumeur, arrêt possible à Leipzig.")).toBeInTheDocument();
+  });
+
+  it("propose un trajet avec une remarque libre", () => {
+    const creer = mutationMock<ReturnType<typeof useEvenementsHooks.useCreerCovoiturage>>();
+    vi.mocked(useEvenementsHooks.useCreerCovoiturage).mockReturnValue(creer);
+    vi.mocked(useEvenementsHooks.useCovoiturages).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useCovoiturages>);
+
+    renderWithProviders(<CovoituragePage />);
+
+    fireEvent.click(screen.getByText("covoiturage.proposer_trajet"));
+    fireEvent.change(screen.getByPlaceholderText("covoiturage.depart_placeholder"), {
+      target: { value: "Hambourg" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("covoiturage.destination_placeholder"), {
+      target: { value: "Stuttgart" },
+    });
+    fireEvent.change(screen.getByLabelText("covoiturage.champ_date_label"), {
+      target: { value: "2099-06-14" },
+    });
+    fireEvent.change(screen.getByLabelText("covoiturage.champ_heure_label"), {
+      target: { value: "06:00" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("covoiturage.remarques_placeholder"), {
+      target: { value: "1 valise max par personne." },
+    });
+
+    fireEvent.click(screen.getByText("covoiturage.publier_trajet"));
+
+    expect(creer.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ remarques: "1 valise max par personne." }),
+      expect.anything(),
+    );
+  });
+
+  it("permet de partager un trajet sur les réseaux sociaux (demande utilisateur 2026-09-25)", () => {
+    vi.mocked(useEvenementsHooks.useCovoiturages).mockReturnValue({
+      data: page([trajet()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useCovoiturages>);
+
+    renderWithProviders(<CovoituragePage />);
+
+    expect(screen.getByLabelText("partage.bouton_aria")).toBeInTheDocument();
   });
 
   it("affiche les passagers qui ont réservé sur un trajet", () => {

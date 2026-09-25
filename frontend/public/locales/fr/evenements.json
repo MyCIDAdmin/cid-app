@@ -76,7 +76,11 @@
     "modal_point_prise_en_charge": "Point de prise en charge",
     "modal_point_prise_en_charge_placeholder": "Adresse ou station",
     "modal_confirmer": "Confirmer",
-    "erreur_rejoindre": "Impossible de rejoindre ce trajet."
+    "erreur_rejoindre": "Impossible de rejoindre ce trajet.",
+    "remarques_placeholder": "Description / remarque (optionnel) — ex. arrêts en route, bagages, non-fumeur…",
+    "remarques_label": "Description",
+    "partage_titre": "Covoiturage {{depart}} → {{destination}}",
+    "partage_texte": "Covoiturage {{depart}} → {{destination}} le {{date}}"
   },
   "admin": {
     "titre": "Gestion des évènements",

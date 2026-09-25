@@ -241,6 +241,16 @@ class Covoiturage(models.Model):
         help_text=_("Vide = trajet gratuit."),
     )
     vehicule = models.CharField(max_length=100, blank=True)
+    remarques = models.TextField(
+        blank=True,
+        help_text=_(
+            "Description / remarque libre laissée par le conducteur à la création du trajet "
+            "(demande utilisateur 2026-09-25, « Beschreibung / Anmerkung erfassen ») — ex. "
+            "arrêts prévus en route, préférences (non-fumeur, musique), bagages acceptés. "
+            "Distincte de lieu_rendez_vous (point de RDV structuré) : texte libre affiché tel "
+            "quel aux passagers potentiels avant qu'ils ne rejoignent le trajet."
+        ),
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 

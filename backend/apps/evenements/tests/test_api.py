@@ -558,6 +558,33 @@ def test_modifier_le_lieu_de_rendez_vous_par_le_conducteur(api_client):
     assert trajet.lieu_rendez_vous == "Parking Décathlon"
 
 
+# --- Partage social + remarque libre (demande utilisateur 2026-09-25, "Es soll möglich sein
+# eine Beschreibung / Anmerkung zu erfassen") : le champ n'a pas de logique métier propre, il
+# transite tel quel — un seul test suffit pour couvrir la création et l'exposition. ---
+
+
+def test_creer_un_trajet_avec_une_remarque(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "cond7@example.de")
+
+    resp = _auth(api_client, user).post(
+        reverse(COVOITURAGE_LIST_URL),
+        {
+            "depart": "Berlin Hbf",
+            "destination": "Stuttgart",
+            "date_trajet": "2099-05-31",
+            "heure_trajet": "06:00",
+            "places_disponibles": 3,
+            "remarques": "Arrêt possible à Leipzig, non-fumeur, 1 valise max par personne.",
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert (
+        resp.data["remarques"]
+        == "Arrêt possible à Leipzig, non-fumeur, 1 valise max par personne."
+    )
+
+
 def test_reservations_covoiturage_expose_le_nom_du_passager(api_client):
     # Le conducteur doit pouvoir voir qui a réservé sur son propre trajet (tuile
     # Fahrgemeinschaft) — la queryset le permet déjà (Q(membre=...) | Q(trajet__conducteur=...)),

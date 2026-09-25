@@ -5,10 +5,17 @@
  * existant (mockup #m-rejoindre). Les places restantes sont toujours recalculées côté serveur
  * (CLAUDE.md §8, verrouillage SELECT FOR UPDATE), même principe que l'inscription aux
  * événements — voir EvenementsPage.
+ *
+ * Partage social + remarque libre (demande utilisateur 2026-09-25, "Es soll möglich sein
+ * Fahrgemeinschaften in Social Media zu Teilen" / "eine Beschreibung / Anmerkung zu erfassen") :
+ * ShareButton (déjà utilisé sur Événements/Boutique/Fil/Vote) posé sur chaque tuile de trajet ;
+ * `remarques`, un champ texte libre distinct de `lieu_rendez_vous` (point de RDV structuré),
+ * saisi à la création et affiché tel quel sur la tuile.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import ShareButton from "../../components/ui/ShareButton";
 import {
   useCovoiturages,
   useCreerCovoiturage,
@@ -199,6 +206,7 @@ export default function CovoituragePage() {
   const [prixParPlace, setPrixParPlace] = useState("");
   const [vehicule, setVehicule] = useState("");
   const [lieuRendezVous, setLieuRendezVous] = useState("");
+  const [remarques, setRemarques] = useState("");
   const [evenementLie, setEvenementLie] = useState("");
   const [erreurCreation, setErreurCreation] = useState("");
   const [trajetARejoindre, setTrajetARejoindre] = useState<Covoiturage | null>(null);
@@ -216,6 +224,7 @@ export default function CovoituragePage() {
         prix_par_place: prixParPlace || null,
         vehicule,
         lieu_rendez_vous: lieuRendezVous,
+        remarques,
         evenement: evenementLie || null,
       },
       {
@@ -228,6 +237,7 @@ export default function CovoituragePage() {
           setPrixParPlace("");
           setVehicule("");
           setLieuRendezVous("");
+          setRemarques("");
           setEvenementLie("");
           setAfficherFormulaire(false);
         },
@@ -320,6 +330,13 @@ export default function CovoituragePage() {
             placeholder={t("covoiturage.treffpunkt_placeholder")}
             className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
           />
+          <textarea
+            value={remarques}
+            onChange={(e) => setRemarques(e.target.value)}
+            placeholder={t("covoiturage.remarques_placeholder")}
+            rows={2}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
           <select
             value={evenementLie}
             onChange={(e) => setEvenementLie(e.target.value)}
@@ -385,6 +402,18 @@ export default function CovoituragePage() {
                   >
                     {complet ? t("complet") : t("covoiturage.rejoindre")}
                   </button>
+                  <ShareButton
+                    path={`/covoiturage?trajet=${trajet.id}`}
+                    titre={t("covoiturage.partage_titre", {
+                      depart: trajet.depart,
+                      destination: trajet.destination,
+                    })}
+                    texte={t("covoiturage.partage_texte", {
+                      depart: trajet.depart,
+                      destination: trajet.destination,
+                      date: formatDate(trajet.date_trajet),
+                    })}
+                  />
                 </div>
               </div>
               <div className="mt-1.5 flex gap-3 text-[10px] text-text-tertiary">
@@ -401,6 +430,14 @@ export default function CovoituragePage() {
                     {t("covoiturage.treffpunkt_label")}
                   </span>{" "}
                   {trajet.lieu_rendez_vous}
+                </p>
+              )}
+              {trajet.remarques && (
+                <p className="mt-1.5 text-[10px] text-text-tertiary">
+                  <span className="font-medium text-text-secondary">
+                    {t("covoiturage.remarques_label")}
+                  </span>{" "}
+                  {trajet.remarques}
                 </p>
               )}
               <ParticipantsCovoiturage trajetId={trajet.id} />

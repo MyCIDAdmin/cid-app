@@ -156,6 +156,7 @@ class CovoiturageSerializer(serializers.ModelSerializer):
             "places_disponibles",
             "prix_par_place",
             "vehicule",
+            "remarques",
             "places_reservees",
             "places_restantes",
             "created_at",

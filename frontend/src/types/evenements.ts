@@ -122,6 +122,9 @@ export interface Covoiturage {
   places_disponibles: number;
   prix_par_place: string | null;
   vehicule: string;
+  /** Description / remarque libre du conducteur (demande utilisateur 2026-09-25, "Beschreibung
+   * / Anmerkung erfassen") — texte libre, distinct de lieu_rendez_vous. */
+  remarques: string;
   places_reservees: number;
   places_restantes: number;
   created_at: string;
@@ -139,6 +142,7 @@ export interface CovoituragePayload {
   places_disponibles: number;
   prix_par_place?: string | null;
   vehicule?: string;
+  remarques?: string;
 }
 
 export interface ReservationCovoiturage {

@@ -76,7 +76,11 @@
     "modal_point_prise_en_charge": "Abholpunkt",
     "modal_point_prise_en_charge_placeholder": "Adresse oder Haltestelle",
     "modal_confirmer": "Bestätigen",
-    "erreur_rejoindre": "Dieser Fahrt konnte nicht beigetreten werden."
+    "erreur_rejoindre": "Dieser Fahrt konnte nicht beigetreten werden.",
+    "remarques_placeholder": "Beschreibung / Anmerkung (optional) — z. B. Zwischenstopps, Gepäck, Nichtraucher…",
+    "remarques_label": "Beschreibung",
+    "partage_titre": "Fahrgemeinschaft {{depart}} → {{destination}}",
+    "partage_texte": "Fahrgemeinschaft {{depart}} → {{destination}} am {{date}}"
   },
   "admin": {
     "titre": "Veranstaltungsverwaltung",
