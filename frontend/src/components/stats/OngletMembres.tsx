@@ -2,12 +2,18 @@
  * Onglet "Membres" — Statistiques & KPIs (mockup #pg-stats, FDD §5.3). Répartition
  * professionnelle volontairement absente (voir apps.stats.services docstring — Membre ne porte
  * pas ce champ).
+ *
+ * Kacheln animées (AnimatedKpiTile) + detail-box triable sous chaque graphique agrégé, mêmes
+ * conventions que OngletFinancier.tsx (voir sa docstring) — pas de <Legend/> (une seule série
+ * par graphique, déjà identifiée par les axes/le titre).
  */
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { useStatsMembres } from "../../hooks/useStats";
-import type { StatsFiltres } from "../../types/stats";
+import type { RepartitionVille, StatsFiltres, TrancheAge } from "../../types/stats";
+import AnimatedKpiTile from "./AnimatedKpiTile";
+import DetailBoxTriable, { type ColonneDetailBox } from "./DetailBoxTriable";
 
 export default function OngletMembres({ filtres }: { filtres: StatsFiltres }) {
   const { t } = useTranslation("stats");
@@ -23,21 +29,22 @@ export default function OngletMembres({ filtres }: { filtres: StatsFiltres }) {
   if (isLoading) return <p className="text-sm text-text-tertiary">{t("chargement")}</p>;
   if (isError || !data) return <p className="text-sm text-status-dangerText">{t("erreur")}</p>;
 
+  const colonnesVille: ColonneDetailBox<RepartitionVille>[] = [
+    { cle: "ville_de", label: t("membres.col_ville") },
+    { cle: "nombre", label: t("membres.col_nombre"), align: "right" },
+  ];
+
+  const colonnesAges: ColonneDetailBox<TrancheAge>[] = [
+    { cle: "tranche", label: t("membres.col_tranche") },
+    { cle: "nombre", label: t("membres.col_nombre"), align: "right" },
+  ];
+
   return (
     <div>
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <div className="rounded-cid-lg bg-ca p-3 text-white shadow-sm">
-          <div className="text-[10px] uppercase text-white/70">{t("membres.total")}</div>
-          <div className="text-lg font-bold">{data.total}</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">{t("membres.actifs")}</div>
-          <div className="text-lg font-bold text-status-successText">{data.actifs}</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">{t("membres.inactifs")}</div>
-          <div className="text-lg font-bold text-text-primary">{data.inactifs}</div>
-        </div>
+        <AnimatedKpiTile label={t("membres.total")} value={data.total} accent />
+        <AnimatedKpiTile label={t("membres.actifs")} value={data.actifs} />
+        <AnimatedKpiTile label={t("membres.inactifs")} value={data.inactifs} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -46,15 +53,27 @@ export default function OngletMembres({ filtres }: { filtres: StatsFiltres }) {
           {data.par_ville.length === 0 ? (
             <p className="text-sm text-text-tertiary">{t("membres.aucune_donnee")}</p>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={data.par_ville} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--BR, #e5e7eb)" />
-                <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
-                <YAxis type="category" dataKey="ville_de" tick={{ fontSize: 10 }} width={70} />
-                <Tooltip />
-                <Bar dataKey="nombre" fill="#CC0000" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={data.par_ville} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--BR, #e5e7eb)" />
+                  <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="ville_de" tick={{ fontSize: 10 }} width={70} />
+                  <Tooltip />
+                  <Bar dataKey="nombre" fill="#CC0000" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-3">
+                <DetailBoxTriable
+                  colonnes={colonnesVille}
+                  lignes={data.par_ville}
+                  getRowKey={(r) => r.ville_de}
+                  triInitial="nombre"
+                  directionInitiale="desc"
+                  messageVide={t("membres.aucune_donnee")}
+                />
+              </div>
+            </>
           )}
         </div>
 
@@ -69,6 +88,16 @@ export default function OngletMembres({ filtres }: { filtres: StatsFiltres }) {
               <Bar dataKey="nombre" fill="#8B0000" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <div className="mt-3">
+            <DetailBoxTriable
+              colonnes={colonnesAges}
+              lignes={data.pyramide_ages}
+              getRowKey={(r) => r.tranche}
+              triInitial="nombre"
+              directionInitiale="desc"
+              messageVide={t("membres.aucune_donnee")}
+            />
+          </div>
         </div>
       </div>
     </div>

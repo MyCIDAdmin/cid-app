@@ -44,6 +44,27 @@ from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle, m
 from apps.evenements.models import Evenement, Inscription, StatutEvenement, StatutInscription
 from apps.membres.models import Membre, StatutMembre
 
+# Types de transaction exposés par finances_liste() (onglet "Finanzdaten", module "Statistiken &
+# KPIs", demande utilisateur du 2026-09-25 : "Tab für alle Finanzdaten (filterbar/sortierbar)").
+# Traduits côté frontend (finances.type_<valeur>), même convention que type_evenement.
+TYPE_TRANSACTION_COTISATION = "cotisation"
+TYPE_TRANSACTION_DON = "don"
+TYPE_TRANSACTION_ADHESION = "adhesion"
+TYPE_TRANSACTION_EVENEMENT = "evenement"
+TYPE_TRANSACTION_BOUTIQUE = "boutique"
+TYPE_TRANSACTION_AUTRE = "autre"
+TYPE_TRANSACTION_PROJET = "projet"
+TYPES_TRANSACTION = {
+    TYPE_TRANSACTION_COTISATION,
+    TYPE_TRANSACTION_DON,
+    TYPE_TRANSACTION_ADHESION,
+    TYPE_TRANSACTION_EVENEMENT,
+    TYPE_TRANSACTION_BOUTIQUE,
+    TYPE_TRANSACTION_AUTRE,
+    TYPE_TRANSACTION_PROJET,
+}
+_CHAMPS_TRI_FINANCES = {"date", "montant", "membre_nom", "type", "statut"}
+
 # Tranches de la pyramide des âges (mockup #st-membres) — bornes inclusives en années.
 TRANCHES_AGE = [(18, 25), (26, 35), (36, 45), (46, 55), (56, None)]
 
@@ -401,3 +422,165 @@ def kpis_evenements(
         "par_type": par_type,
         "participation_par_evenement": participation_par_evenement,
     }
+
+
+def finances_liste(
+    *,
+    annee=None,
+    type_transaction=None,
+    ville=None,
+    statut=None,
+    land=None,
+    pays=None,
+    date_adhesion_apres=None,
+    date_adhesion_avant=None,
+    tri="date",
+    ordre="desc",
+) -> list:
+    """
+    Onglet "Finanzdaten" (module "Statistiken & KPIs", demande utilisateur du 2026-09-25 :
+    "Tab für alle Finanzdaten (filterbar/sortierbar)") — registre unifié de TOUTES les écritures
+    financières individuelles, quel que soit leur statut (payée, en attente, annulée...) :
+    contrairement à kpis_financier ci-dessus (qui n'agrège que les montants déjà encaissés), ici
+    chaque ligne reste visible pour donner une vue d'audit complète.
+
+    Source canonique par type, exactement comme kpis_financier, pour ne jamais compter deux fois
+    la même transaction : une Inscription payante et une Souscription payée génèrent chacune leur
+    propre Cotisation liée (voir apps.evenements.services.synchroniser_cotisation /
+    Souscription.cotisation) — Cotisation(type_article=EVENEMENT/ADHESION) est donc volontairement
+    EXCLUE ici, ces lignes provenant uniquement d'Inscription/Souscription. Les types cotisation/
+    don/autre/projet n'ont pas de modèle source alternatif : ils viennent bien de Cotisation.
+
+    `tri` ∈ {date, montant, membre_nom, type, statut} (défaut "date"), `ordre` ∈ {asc, desc}
+    (défaut "desc") — tri effectué en Python, les lignes provenant de 4 modèles distincts.
+    """
+    annee = _annee_ou_courante(annee)
+    filtres_membre = {
+        "land": land,
+        "pays": pays,
+        "date_adhesion_apres": date_adhesion_apres,
+        "date_adhesion_avant": date_adhesion_avant,
+    }
+    lignes = []
+
+    def _ajoute(
+        type_transaction_ligne, obj_id, date_valeur, membre, description, montant, statut_ligne
+    ):
+        if membre is None:
+            return
+        lignes.append(
+            {
+                # Préfixé par le type : les UUID sont propres à chaque table, mais un préfixe
+                # évite toute ambiguïté si jamais deux tables généraient la même valeur.
+                "id": f"{type_transaction_ligne}:{obj_id}",
+                "type": type_transaction_ligne,
+                "date": date_valeur,
+                "membre_id": str(membre.id),
+                "membre_nom": f"{membre.prenom} {membre.nom}",
+                "description": description,
+                "montant": montant,
+                "statut": statut_ligne,
+            }
+        )
+
+    _TYPE_ARTICLE_VERS_TRANSACTION = {
+        TypeArticle.COTISATION: TYPE_TRANSACTION_COTISATION,
+        TypeArticle.DON: TYPE_TRANSACTION_DON,
+        TypeArticle.AUTRE: TYPE_TRANSACTION_AUTRE,
+        TypeArticle.AUTRE_LIBRE: TYPE_TRANSACTION_AUTRE,
+        TypeArticle.PROJET: TYPE_TRANSACTION_PROJET,
+    }
+
+    if type_transaction is None or type_transaction in _TYPE_ARTICLE_VERS_TRANSACTION.values():
+        types_article_recherches = [
+            type_article
+            for type_article, transaction in _TYPE_ARTICLE_VERS_TRANSACTION.items()
+            if type_transaction is None or transaction == type_transaction
+        ]
+        cotisations = _filtrer_par_membre(
+            Cotisation.objects.filter(
+                type_article__in=types_article_recherches, created_at__year=annee
+            ).select_related("membre"),
+            "membre",
+            ville,
+            statut,
+            **filtres_membre,
+        )
+        for cotisation in cotisations:
+            _ajoute(
+                _TYPE_ARTICLE_VERS_TRANSACTION[cotisation.type_article],
+                cotisation.id,
+                cotisation.created_at.date(),
+                cotisation.membre,
+                cotisation.libelle,
+                cotisation.montant,
+                cotisation.statut,
+            )
+
+    if type_transaction is None or type_transaction == TYPE_TRANSACTION_ADHESION:
+        souscriptions = _filtrer_par_membre(
+            Souscription.objects.filter(date_souscription__year=annee)
+            .exclude(statut=StatutSouscription.BROUILLON)
+            .select_related("membre", "offre"),
+            "membre",
+            ville,
+            statut,
+            **filtres_membre,
+        )
+        for souscription in souscriptions:
+            _ajoute(
+                TYPE_TRANSACTION_ADHESION,
+                souscription.id,
+                souscription.date_souscription.date(),
+                souscription.membre,
+                souscription.offre.nom,
+                souscription.prix_paye,
+                souscription.statut,
+            )
+
+    if type_transaction is None or type_transaction == TYPE_TRANSACTION_EVENEMENT:
+        inscriptions = _filtrer_par_membre(
+            Inscription.objects.filter(evenement__date_evenement__year=annee, montant_paye__gt=0)
+            .exclude(statut=StatutInscription.ANNULEE)
+            .select_related("membre", "evenement"),
+            "membre",
+            ville,
+            statut,
+            **filtres_membre,
+        )
+        for inscription in inscriptions:
+            _ajoute(
+                TYPE_TRANSACTION_EVENEMENT,
+                inscription.id,
+                inscription.evenement.date_evenement,
+                inscription.membre,
+                inscription.evenement.titre,
+                inscription.montant_paye,
+                inscription.statut,
+            )
+
+    if type_transaction is None or type_transaction == TYPE_TRANSACTION_BOUTIQUE:
+        commandes = _filtrer_par_membre(
+            Commande.objects.filter(created_at__year=annee)
+            .exclude(statut__in=[StatutCommande.ANNULEE, StatutCommande.REMBOURSEE])
+            .select_related("membre"),
+            "membre",
+            ville,
+            statut,
+            **filtres_membre,
+        )
+        for commande in commandes:
+            _ajoute(
+                TYPE_TRANSACTION_BOUTIQUE,
+                commande.id,
+                commande.created_at.date(),
+                commande.membre,
+                commande.numero_commande,
+                commande.montant_total,
+                commande.statut,
+            )
+
+    tri = tri if tri in _CHAMPS_TRI_FINANCES else "date"
+    inverse = ordre != "asc"
+    lignes.sort(key=lambda ligne: ligne[tri], reverse=inverse)
+    return lignes

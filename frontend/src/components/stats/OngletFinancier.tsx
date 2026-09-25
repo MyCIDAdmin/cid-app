@@ -1,14 +1,31 @@
 /**
  * Onglet "Financier" — Statistiques & KPIs (mockup #pg-stats, FDD §5.3).
+ *
+ * Kacheln comptage/pourcentage animées via AnimatedKpiTile (demande utilisateur du 2026-09-25) ;
+ * les montants (solde/recettes/dépenses/cotisations en attente) restent statiques, même
+ * convention que KpiTile côté DashboardPage (voir sa docstring). Pas de <Legend/> ajoutée au
+ * graphique "revenus_par_source" : une seule série, déjà identifiée par l'axe X et le titre — la
+ * skill dataviz ne l'exige que pour ≥2 séries. Detail-box triable ajoutée sous chaque graphique
+ * agrégé ("Detail-Box (sortierbare Tabelle) pro aggregiertem Graphen mit globalem Filter") : le
+ * filtre global est déjà appliqué en amont via `filtres` (partagé par les 4 onglets, voir
+ * StatsPage.tsx), la detail-box ne fait que trier les lignes déjà filtrées.
  */
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { useStatsFinancier } from "../../hooks/useStats";
-import type { StatsFiltres } from "../../types/stats";
+import type { StatsFiltres, TopContributeur } from "../../types/stats";
+import AnimatedKpiTile from "./AnimatedKpiTile";
+import DetailBoxTriable, { type ColonneDetailBox } from "./DetailBoxTriable";
 
 function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
+}
+
+interface RevenuSource {
+  cle: string;
+  nom: string;
+  montant: number;
 }
 
 export default function OngletFinancier({ filtres }: { filtres: StatsFiltres }) {
@@ -18,33 +35,73 @@ export default function OngletFinancier({ filtres }: { filtres: StatsFiltres }) 
   if (isLoading) return <p className="text-sm text-text-tertiary">{t("chargement")}</p>;
   if (isError || !data) return <p className="text-sm text-status-dangerText">{t("erreur")}</p>;
 
-  const revenus = [
-    { nom: t("financier.revenus_boutique"), montant: Number(data.revenus_boutique) },
-    { nom: t("financier.revenus_adhesions"), montant: Number(data.revenus_adhesions) },
-    { nom: t("financier.revenus_evenements"), montant: Number(data.revenus_evenements) },
+  const revenus: RevenuSource[] = [
+    { cle: "boutique", nom: t("financier.revenus_boutique"), montant: Number(data.revenus_boutique) },
+    {
+      cle: "adhesions",
+      nom: t("financier.revenus_adhesions"),
+      montant: Number(data.revenus_adhesions),
+    },
+    {
+      cle: "evenements",
+      nom: t("financier.revenus_evenements"),
+      montant: Number(data.revenus_evenements),
+    },
+  ];
+
+  const colonnesRevenus: ColonneDetailBox<RevenuSource>[] = [
+    { cle: "nom", label: t("financier.col_quelle") },
+    {
+      cle: "montant",
+      label: t("financier.col_total"),
+      align: "right",
+      render: (r) => formatMontant(r.montant),
+    },
+  ];
+
+  const colonnesContributeurs: ColonneDetailBox<TopContributeur>[] = [
+    { cle: "nom", label: t("financier.col_membre") },
+    {
+      cle: "cotisations",
+      label: t("financier.col_cotisations"),
+      align: "right",
+      render: (r) => formatMontant(r.cotisations),
+      valeurTri: (r) => Number(r.cotisations),
+    },
+    {
+      cle: "evenements",
+      label: t("financier.col_evenements"),
+      align: "right",
+      render: (r) => formatMontant(r.evenements),
+      valeurTri: (r) => Number(r.evenements),
+    },
+    {
+      cle: "dons",
+      label: t("financier.col_dons"),
+      align: "right",
+      render: (r) => formatMontant(r.dons),
+      valeurTri: (r) => Number(r.dons),
+    },
+    {
+      cle: "total",
+      label: t("financier.col_total"),
+      align: "right",
+      render: (r) => formatMontant(r.total),
+      valeurTri: (r) => Number(r.total),
+    },
   ];
 
   return (
     <div>
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-cid-lg bg-ca p-3 text-white shadow-sm">
-          <div className="text-[10px] uppercase text-white/70">{t("financier.solde")}</div>
-          <div className="text-lg font-bold">{formatMontant(data.solde)}</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">{t("financier.recettes")}</div>
-          <div className="text-lg font-bold text-text-primary">{formatMontant(data.recettes)}</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">{t("financier.depenses")}</div>
-          <div className="text-lg font-bold text-text-primary">{formatMontant(data.depenses)}</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">
-            {t("financier.taux_collecte")}
-          </div>
-          <div className="text-lg font-bold text-text-primary">{data.taux_collecte} %</div>
-        </div>
+        <AnimatedKpiTile label={t("financier.solde")} value={formatMontant(data.solde)} accent />
+        <AnimatedKpiTile label={t("financier.recettes")} value={formatMontant(data.recettes)} />
+        <AnimatedKpiTile label={t("financier.depenses")} value={formatMontant(data.depenses)} />
+        <AnimatedKpiTile
+          label={t("financier.taux_collecte")}
+          value={data.taux_collecte}
+          suffix=" %"
+        />
       </div>
 
       <div className="mb-4 rounded-cid-lg bg-bg-primary p-3 shadow-sm">
@@ -70,32 +127,30 @@ export default function OngletFinancier({ filtres }: { filtres: StatsFiltres }) 
               <Bar dataKey="montant" fill="#CC0000" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <div className="mt-3">
+            <DetailBoxTriable
+              colonnes={colonnesRevenus}
+              lignes={revenus}
+              getRowKey={(r) => r.cle}
+              triInitial="montant"
+              directionInitiale="desc"
+              messageVide={t("financier.aucune_donnee")}
+            />
+          </div>
         </div>
 
         <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
           <h2 className="mb-3 text-xs font-bold text-text-primary">
             {t("financier.top_contributeurs")}
           </h2>
-          {data.top_contributeurs.length === 0 ? (
-            <p className="text-sm text-text-tertiary">{t("financier.aucun_contributeur")}</p>
-          ) : (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
-                  <th className="py-1">{t("financier.col_membre")}</th>
-                  <th className="py-1 text-right">{t("financier.col_total")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.top_contributeurs.map((c) => (
-                  <tr key={c.membre_id} className="border-b border-text-tertiary/10 last:border-0">
-                    <td className="py-1">{c.nom}</td>
-                    <td className="py-1 text-right font-bold text-ca">{formatMontant(c.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <DetailBoxTriable
+            colonnes={colonnesContributeurs}
+            lignes={data.top_contributeurs}
+            getRowKey={(r) => r.membre_id}
+            triInitial="total"
+            directionInitiale="desc"
+            messageVide={t("financier.aucun_contributeur")}
+          />
         </div>
       </div>
     </div>

@@ -1,11 +1,18 @@
 /**
  * Onglet "Événements" — Statistiques & KPIs (mockup #pg-stats, FDD §5.3).
+ *
+ * Kacheln animées (AnimatedKpiTile) + detail-box triable sous chaque graphique agrégé, mêmes
+ * conventions que OngletFinancier.tsx (voir sa docstring). "revenus" reste un montant statique
+ * (même convention que KpiTile/Dashboard) ; "nombre_evenements"/"taux_remplissage_moyen"/
+ * "inscriptions_totales" sont des compteurs, animés.
  */
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { useStatsEvenements } from "../../hooks/useStats";
-import type { StatsFiltres } from "../../types/stats";
+import type { ParticipationEvenement, RepartitionType, StatsFiltres } from "../../types/stats";
+import AnimatedKpiTile from "./AnimatedKpiTile";
+import DetailBoxTriable, { type ColonneDetailBox } from "./DetailBoxTriable";
 
 function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
@@ -18,29 +25,36 @@ export default function OngletEvenements({ filtres }: { filtres: StatsFiltres })
   if (isLoading) return <p className="text-sm text-text-tertiary">{t("chargement")}</p>;
   if (isError || !data) return <p className="text-sm text-status-dangerText">{t("erreur")}</p>;
 
+  const colonnesType: ColonneDetailBox<RepartitionType>[] = [
+    { cle: "type_evenement", label: t("evenements.col_type") },
+    { cle: "nombre", label: t("evenements.col_nombre"), align: "right" },
+  ];
+
+  const colonnesParticipation: ColonneDetailBox<ParticipationEvenement>[] = [
+    { cle: "titre", label: t("evenements.col_titre") },
+    {
+      cle: "places_reservees",
+      label: t("evenements.col_places"),
+      align: "right",
+      render: (r) => `${r.places_reservees}${r.places_max ? ` / ${r.places_max}` : ""}`,
+    },
+  ];
+
   return (
     <div>
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-cid-lg bg-ca p-3 text-white shadow-sm">
-          <div className="text-[10px] uppercase text-white/70">{t("evenements.nombre")}</div>
-          <div className="text-lg font-bold">{data.nombre_evenements}</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">
-            {t("evenements.taux_remplissage")}
-          </div>
-          <div className="text-lg font-bold text-text-primary">{data.taux_remplissage_moyen} %</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">
-            {t("evenements.inscriptions")}
-          </div>
-          <div className="text-lg font-bold text-text-primary">{data.inscriptions_totales}</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">{t("evenements.revenus")}</div>
-          <div className="text-lg font-bold text-text-primary">{formatMontant(data.revenus)}</div>
-        </div>
+        <AnimatedKpiTile
+          label={t("evenements.nombre")}
+          value={data.nombre_evenements}
+          accent
+        />
+        <AnimatedKpiTile
+          label={t("evenements.taux_remplissage")}
+          value={data.taux_remplissage_moyen}
+          suffix=" %"
+        />
+        <AnimatedKpiTile label={t("evenements.inscriptions")} value={data.inscriptions_totales} />
+        <AnimatedKpiTile label={t("evenements.revenus")} value={formatMontant(data.revenus)} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -49,15 +63,27 @@ export default function OngletEvenements({ filtres }: { filtres: StatsFiltres })
           {data.par_type.length === 0 ? (
             <p className="text-sm text-text-tertiary">{t("evenements.aucune_donnee")}</p>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={data.par_type}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--BR, #e5e7eb)" />
-                <XAxis dataKey="type_evenement" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="nombre" fill="#CC0000" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={data.par_type}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--BR, #e5e7eb)" />
+                  <XAxis dataKey="type_evenement" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="nombre" fill="#CC0000" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-3">
+                <DetailBoxTriable
+                  colonnes={colonnesType}
+                  lignes={data.par_type}
+                  getRowKey={(r) => r.type_evenement}
+                  triInitial="nombre"
+                  directionInitiale="desc"
+                  messageVide={t("evenements.aucune_donnee")}
+                />
+              </div>
+            </>
           )}
         </div>
 
@@ -65,29 +91,14 @@ export default function OngletEvenements({ filtres }: { filtres: StatsFiltres })
           <h2 className="mb-3 text-xs font-bold text-text-primary">
             {t("evenements.participation")}
           </h2>
-          {data.participation_par_evenement.length === 0 ? (
-            <p className="text-sm text-text-tertiary">{t("evenements.aucune_donnee")}</p>
-          ) : (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
-                  <th className="py-1">{t("evenements.col_titre")}</th>
-                  <th className="py-1 text-right">{t("evenements.col_places")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.participation_par_evenement.map((ev) => (
-                  <tr key={ev.id} className="border-b border-text-tertiary/10 last:border-0">
-                    <td className="py-1">{ev.titre}</td>
-                    <td className="py-1 text-right">
-                      {ev.places_reservees}
-                      {ev.places_max ? ` / ${ev.places_max}` : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <DetailBoxTriable
+            colonnes={colonnesParticipation}
+            lignes={data.participation_par_evenement}
+            getRowKey={(r) => r.id}
+            triInitial="places_reservees"
+            directionInitiale="desc"
+            messageVide={t("evenements.aucune_donnee")}
+          />
         </div>
       </div>
     </div>

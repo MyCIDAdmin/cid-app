@@ -79,3 +79,28 @@ export interface KpisEvenements {
   par_type: RepartitionType[];
   participation_par_evenement: ParticipationEvenement[];
 }
+
+/**
+ * Onglet "Finanzdaten" (ajouté le 2026-09-25, demande utilisateur : "Tab für alle Finanzdaten
+ * (filterbar/sortierbar)") — miroir de apps.stats.services.TYPES_TRANSACTION/finances_liste
+ * côté backend.
+ */
+export type TypeTransaction =
+  | "cotisation"
+  | "don"
+  | "adhesion"
+  | "evenement"
+  | "boutique"
+  | "autre"
+  | "projet";
+
+export interface FinanceRecord {
+  id: string;
+  type: TypeTransaction;
+  date: string;
+  membre_id: string;
+  membre_nom: string;
+  description: string;
+  montant: string;
+  statut: string;
+}

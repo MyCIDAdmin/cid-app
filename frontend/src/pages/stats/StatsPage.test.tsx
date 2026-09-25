@@ -1,9 +1,10 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as statsApi from "../../api/stats";
 import * as useStatsHooks from "../../hooks/useStats";
-import type { KpisEvenements, KpisFinancier, KpisMembres } from "../../types/stats";
+import type { FinanceRecord, KpisEvenements, KpisFinancier, KpisMembres } from "../../types/stats";
 import StatsPage from "./StatsPage";
 
 vi.mock("../../hooks/useStats", async () => {
@@ -13,6 +14,20 @@ vi.mock("../../hooks/useStats", async () => {
     useStatsFinancier: vi.fn(),
     useStatsMembres: vi.fn(),
     useStatsEvenements: vi.fn(),
+    useStatsFinances: vi.fn(),
+  };
+});
+
+// Export PDF/Excel du dashboard (demande utilisateur du 2026-09-25, module "Statistiken & KPIs" :
+// "Export als PDF/Excel-Dashboard") — mockés au niveau du client API, même principe que
+// GestionCommandesTab.test.tsx/exporterCommandesExcel : ces fonctions déclenchent un vrai appel
+// réseau (axios) hors du périmètre de ce composant.
+vi.mock("../../api/stats", async () => {
+  const actual = await vi.importActual<typeof statsApi>("../../api/stats");
+  return {
+    ...actual,
+    exporterStatsPdf: vi.fn(),
+    exporterStatsExcel: vi.fn(),
   };
 });
 
@@ -51,6 +66,31 @@ const evenements: KpisEvenements = {
   ],
 };
 
+// Onglet "Finanzdaten" (ajouté le 2026-09-25) — deux lignes de sources différentes pour vérifier
+// que le tableau agrège bien plusieurs types de transaction.
+const finances: FinanceRecord[] = [
+  {
+    id: "cotisation:c1",
+    type: "cotisation",
+    date: "2026-03-01",
+    membre_id: "m1",
+    membre_nom: "Sana W.",
+    description: "Cotisation annuelle 2026",
+    montant: "45.00",
+    statut: "payee",
+  },
+  {
+    id: "boutique:b1",
+    type: "boutique",
+    date: "2026-04-10",
+    membre_id: "m2",
+    membre_nom: "Karim B.",
+    description: "Commande #CMD-1",
+    montant: "30.00",
+    statut: "confirmee",
+  },
+];
+
 describe("StatsPage", () => {
   beforeEach(() => {
     vi.mocked(useStatsHooks.useStatsFinancier).mockReturnValue({
@@ -68,6 +108,13 @@ describe("StatsPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useStatsHooks.useStatsEvenements>);
+    vi.mocked(useStatsHooks.useStatsFinances).mockReturnValue({
+      data: { results: finances },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useStatsHooks.useStatsFinances>);
+    window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    window.URL.revokeObjectURL = vi.fn();
   });
 
   it("affiche l'onglet Financier par défaut avec ses KPIs", () => {
@@ -132,6 +179,58 @@ describe("StatsPage", () => {
 
       fireEvent.click(screen.getByText("onglets.evenements"));
       expect(useStatsHooks.useStatsEvenements).toHaveBeenLastCalledWith(filtresAttendus);
+    });
+  });
+
+  describe("onglet Finanzdaten et export PDF/Excel (demande utilisateur du 2026-09-25)", () => {
+    it("bascule vers l'onglet Finanzdaten et affiche les lignes de toutes les sources", () => {
+      renderWithProviders(<StatsPage />);
+      fireEvent.click(screen.getByText("onglets.finances"));
+      expect(screen.getByText("Sana W.")).toBeInTheDocument();
+      expect(screen.getByText("Karim B.")).toBeInTheDocument();
+      expect(screen.getByLabelText("finances.filtre_type")).toBeInTheDocument();
+    });
+
+    it("transmet le type de transaction choisi au hook", () => {
+      renderWithProviders(<StatsPage />);
+      fireEvent.click(screen.getByText("onglets.finances"));
+      fireEvent.change(screen.getByLabelText("finances.filtre_type"), {
+        target: { value: "boutique" },
+      });
+      expect(useStatsHooks.useStatsFinances).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type_transaction: "boutique" }),
+      );
+    });
+
+    it("exporte en PDF au clic sur le bouton dédié", async () => {
+      const blob = new Blob(["%PDF-1.4"], { type: "application/pdf" });
+      vi.mocked(statsApi.exporterStatsPdf).mockResolvedValue(blob);
+      renderWithProviders(<StatsPage />);
+
+      fireEvent.click(screen.getByText("export.pdf"));
+      await waitFor(() => expect(statsApi.exporterStatsPdf).toHaveBeenCalled());
+      expect(window.URL.createObjectURL).toHaveBeenCalledWith(blob);
+    });
+
+    it("exporte en Excel au clic sur le bouton dédié", async () => {
+      const blob = new Blob(["classeur"]);
+      vi.mocked(statsApi.exporterStatsExcel).mockResolvedValue({
+        blob,
+        nomFichier: "dashboard_stats_2026.xlsx",
+      });
+      renderWithProviders(<StatsPage />);
+
+      fireEvent.click(screen.getByText("export.excel"));
+      await waitFor(() => expect(statsApi.exporterStatsExcel).toHaveBeenCalled());
+      expect(window.URL.createObjectURL).toHaveBeenCalledWith(blob);
+    });
+
+    it("affiche un message d'erreur si l'export échoue", async () => {
+      vi.mocked(statsApi.exporterStatsPdf).mockRejectedValue(new Error("réseau indisponible"));
+      renderWithProviders(<StatsPage />);
+
+      fireEvent.click(screen.getByText("export.pdf"));
+      await waitFor(() => expect(screen.getByText("export.erreur")).toBeInTheDocument());
     });
   });
 });

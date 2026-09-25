@@ -18,10 +18,17 @@
     "adhesion_apres": "Adhésion après le",
     "adhesion_avant": "Adhésion avant le"
   },
+  "export": {
+    "pdf": "Exporter en PDF",
+    "excel": "Exporter en Excel",
+    "en_cours": "Export en cours…",
+    "erreur": "L'export a échoué."
+  },
   "onglets": {
     "financier": "Financier",
     "membres": "Membres",
-    "evenements": "Évènements"
+    "evenements": "Évènements",
+    "finances": "Données financières"
   },
   "financier": {
     "solde": "Solde",
@@ -35,8 +42,13 @@
     "revenus_evenements": "Évènements",
     "top_contributeurs": "Top contributeurs",
     "aucun_contributeur": "Aucun contributeur pour cette période.",
+    "aucune_donnee": "Aucune donnée disponible.",
     "col_membre": "Membre",
-    "col_total": "Total"
+    "col_total": "Total",
+    "col_quelle": "Source",
+    "col_cotisations": "Cotisations",
+    "col_dons": "Dons",
+    "col_evenements": "Évènements"
   },
   "membres": {
     "total": "Total membres",
@@ -44,7 +56,10 @@
     "inactifs": "Inactifs",
     "par_ville": "Répartition par ville",
     "pyramide_ages": "Pyramide des âges",
-    "aucune_donnee": "Aucune donnée disponible."
+    "aucune_donnee": "Aucune donnée disponible.",
+    "col_ville": "Ville",
+    "col_nombre": "Nombre",
+    "col_tranche": "Tranche d'âge"
   },
   "evenements": {
     "nombre": "Évènements",
@@ -55,6 +70,26 @@
     "participation": "Participation par évènement",
     "aucune_donnee": "Aucune donnée disponible.",
     "col_titre": "Évènement",
-    "col_places": "Places réservées"
+    "col_places": "Places réservées",
+    "col_type": "Type",
+    "col_nombre": "Nombre"
+  },
+  "finances": {
+    "filtre_type": "Type de transaction",
+    "filtre_type_tous": "Tous les types",
+    "type_cotisation": "Cotisation",
+    "type_don": "Don",
+    "type_adhesion": "Adhésion",
+    "type_evenement": "Évènement",
+    "type_boutique": "Boutique",
+    "type_autre": "Autre",
+    "type_projet": "Projet",
+    "col_date": "Date",
+    "col_type": "Type",
+    "col_membre": "Membre",
+    "col_description": "Description",
+    "col_montant": "Montant",
+    "col_statut": "Statut",
+    "aucune_donnee": "Aucune donnée financière pour cette période."
   }
 }

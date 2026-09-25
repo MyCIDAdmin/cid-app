@@ -8,6 +8,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
+from apps.cotisations.models import StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.evenements.models import StatutEvenement
 from apps.evenements.tests.factories import EvenementFactory, InscriptionFactory
@@ -36,6 +37,9 @@ def _auth(api_client, user):
 FINANCIER_URL = "stats:financier"
 MEMBRES_URL = "stats:membres"
 EVENEMENTS_URL = "stats:evenements"
+FINANCES_URL = "stats:finances"
+EXPORT_EXCEL_URL = "stats:export-excel"
+EXPORT_PDF_URL = "stats:export-pdf"
 
 
 def test_financier_non_authentifie_refuse(api_client):
@@ -121,6 +125,113 @@ def test_filtre_pays_et_dates_adhesion_transmis_aux_stats_membres(api_client):
 
 
 # ---------------------------------------------------------------------------
+# Onglet "Finanzdaten" + exports PDF/Excel (module "Statistiken & KPIs", ajouté le 2026-09-25 :
+# "Tab für alle Finanzdaten (filterbar/sortierbar)" / "Export als PDF/Excel-Dashboard").
+# ---------------------------------------------------------------------------
+
+
+def test_finances_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(FINANCES_URL))
+    assert resp.status_code == 401
+
+
+def test_membre_normal_ne_peut_pas_voir_les_finances(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fin-membre@example.de")
+    resp = _auth(api_client, user).get(reverse(FINANCES_URL))
+    assert resp.status_code == 403
+
+
+def test_bureau_admin_voit_les_finances(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "fin-bureau@example.de")
+    CotisationFactory(
+        membre=membre,
+        type_article=TypeArticle.DON,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("20.00"),
+    )
+
+    resp = _auth(api_client, user).get(reverse(FINANCES_URL))
+    assert resp.status_code == 200
+    assert any(ligne["type"] == "don" for ligne in resp.data["results"])
+
+
+def test_finances_type_transaction_invalide_refuse(api_client):
+    user, _ = _user_avec_membre(Role.SUPER_ADMIN, "fin-invalide@example.de")
+    resp = _auth(api_client, user).get(reverse(FINANCES_URL), {"type_transaction": "inexistant"})
+    assert resp.status_code == 400
+
+
+def test_finances_filtre_type_transaction(api_client):
+    user, membre = _user_avec_membre(Role.SUPER_ADMIN, "fin-filtre@example.de")
+    CotisationFactory(
+        membre=membre,
+        type_article=TypeArticle.DON,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("20.00"),
+    )
+    CotisationFactory(
+        membre=membre,
+        type_article=TypeArticle.COTISATION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("45.00"),
+    )
+
+    resp = _auth(api_client, user).get(reverse(FINANCES_URL), {"type_transaction": "don"})
+    assert resp.status_code == 200
+    assert all(ligne["type"] == "don" for ligne in resp.data["results"])
+
+
+def test_export_excel_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(EXPORT_EXCEL_URL))
+    assert resp.status_code == 401
+
+
+def test_membre_normal_ne_peut_pas_exporter(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "export-membre@example.de")
+    resp = _auth(api_client, user).get(reverse(EXPORT_EXCEL_URL))
+    assert resp.status_code == 403
+
+
+def test_export_excel_retourne_un_classeur_xlsx(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "export-bureau@example.de")
+    CotisationFactory(membre=membre, type_article=TypeArticle.COTISATION, montant=Decimal("45.00"))
+
+    resp = _auth(api_client, user).get(reverse(EXPORT_EXCEL_URL))
+    assert resp.status_code == 200
+    assert (
+        resp["Content-Type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    import io
+
+    from openpyxl import load_workbook
+
+    classeur = load_workbook(io.BytesIO(resp.content))
+    assert classeur.sheetnames == ["KPIs", "Finanzdaten"]
+
+
+def test_export_pdf_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse(EXPORT_PDF_URL))
+    assert resp.status_code == 401
+
+
+def test_membre_normal_ne_peut_pas_exporter_pdf(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "export-pdf-membre@example.de")
+    resp = _auth(api_client, user).get(reverse(EXPORT_PDF_URL))
+    assert resp.status_code == 403
+
+
+def test_export_pdf_retourne_un_pdf(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "export-pdf-bureau@example.de")
+    CotisationFactory(membre=membre, type_article=TypeArticle.COTISATION, montant=Decimal("45.00"))
+
+    resp = _auth(api_client, user).get(reverse(EXPORT_PDF_URL))
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert resp.content.startswith(b"%PDF-")
+
+
+# ---------------------------------------------------------------------------
 # Phase D (ajoutée le 2026-09-23) — page de gestion "Statistiken & KPIs" (page_stats) désormais
 # pilotée par apps.rbac (real enforcement, y compris pour les rôles système eux-mêmes).
 # ---------------------------------------------------------------------------
@@ -147,11 +258,17 @@ def test_phase_d_bureau_admin_perd_lacces_aux_stats_si_matrice_le_dit(api_client
 
 def test_phase_d_role_personnalise_peut_voir_les_stats_via_la_matrice(api_client):
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     user, _ = _user_avec_membre(Role.MEMBRE, "phased-stats-grant@example.de")
     role_perso = RoleDefinitionFactory(slug="stats-viewer")
-    RoleModulePermissionFactory(role=role_perso, module="page_stats", niveau_acces=NiveauAcces.LECTURE)
+    RoleModulePermissionFactory(
+        role=role_perso, module="page_stats", niveau_acces=NiveauAcces.LECTURE
+    )
     UserRoleAssignmentFactory(user=user, role=role_perso)
 
     resp = _auth(api_client, user).get(reverse(FINANCIER_URL))

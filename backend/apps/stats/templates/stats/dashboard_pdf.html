@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="{{ langue }}">
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: A4;
+        margin: 2.2cm 2cm;
+        @bottom-center {
+            content: "{{ t.footer_page }}";
+            font-size: 8px;
+            color: #8a8a8a;
+        }
+    }
+    * { box-sizing: border-box; }
+    body {
+        font-family: "DejaVu Sans", "Helvetica Neue", Arial, sans-serif;
+        color: #1a1a1a;
+        font-size: 11px;
+        line-height: 1.5;
+    }
+    .header {
+        display: flex;
+        align-items: center;
+        border-bottom: 2px solid #CC0000;
+        padding-bottom: 14px;
+        margin-bottom: 24px;
+    }
+    .header img {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        margin-right: 14px;
+    }
+    .header .assoc-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #8B0000;
+    }
+    .header .assoc-tagline {
+        font-size: 10px;
+        color: #555;
+        margin-top: 2px;
+    }
+    h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 4px 0;
+    }
+    .subtitle {
+        font-size: 10px;
+        color: #666;
+        margin-bottom: 22px;
+    }
+    h2.section {
+        font-size: 13px;
+        font-weight: 700;
+        color: #8B0000;
+        margin: 22px 0 8px 0;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+    }
+    h2.section:first-of-type { border-top: none; padding-top: 0; }
+    table.kpis {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 6px;
+    }
+    table.kpis th {
+        text-align: left;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #888;
+        border-bottom: 1px solid #ddd;
+        padding: 6px 8px;
+    }
+    table.kpis td {
+        padding: 7px 8px;
+        border-bottom: 1px solid #eee;
+        font-size: 11px;
+    }
+    table.kpis .num { text-align: right; font-weight: 700; }
+    .footer-note {
+        margin-top: 30px;
+        padding-top: 12px;
+        border-top: 1px solid #ddd;
+        font-size: 9px;
+        color: #888;
+    }
+</style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="{{ logo_data_uri }}" alt="CID">
+        <div>
+            <div class="assoc-name">{{ t.assoc_name }}</div>
+            <div class="assoc-tagline">{{ t.assoc_tagline }}</div>
+        </div>
+    </div>
+
+    <h1>{{ t.title }}</h1>
+    <div class="subtitle">{{ subtitre_filtres }}</div>
+
+    <h2 class="section">{{ t.section_financier }}</h2>
+    <table class="kpis">
+        <thead><tr><th>{{ t.indicateur }}</th><th class="num">{{ t.valeur }}</th></tr></thead>
+        <tbody>
+            {% for libelle, valeur in lignes_financier %}
+            <tr><td>{{ libelle }}</td><td class="num">{{ valeur }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2 class="section">{{ t.section_membres }}</h2>
+    <table class="kpis">
+        <thead><tr><th>{{ t.indicateur }}</th><th class="num">{{ t.valeur }}</th></tr></thead>
+        <tbody>
+            {% for libelle, valeur in lignes_membres %}
+            <tr><td>{{ libelle }}</td><td class="num">{{ valeur }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2 class="section">{{ t.section_evenements }}</h2>
+    <table class="kpis">
+        <thead><tr><th>{{ t.indicateur }}</th><th class="num">{{ t.valeur }}</th></tr></thead>
+        <tbody>
+            {% for libelle, valeur in lignes_evenements %}
+            <tr><td>{{ libelle }}</td><td class="num">{{ valeur }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if top_contributeurs %}
+    <h2 class="section">{{ t.section_top_contributeurs }}</h2>
+    <table class="kpis">
+        <thead><tr><th>{{ t.membre }}</th><th class="num">{{ t.total }}</th></tr></thead>
+        <tbody>
+            {% for ligne in top_contributeurs %}
+            <tr><td>{{ ligne.nom }}</td><td class="num">{{ ligne.total_formate }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="footer-note">{{ t.footer_note }}</div>
+
+</body>
+</html>

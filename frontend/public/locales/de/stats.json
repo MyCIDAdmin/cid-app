@@ -18,10 +18,17 @@
     "adhesion_apres": "Beitritt nach dem",
     "adhesion_avant": "Beitritt vor dem"
   },
+  "export": {
+    "pdf": "PDF exportieren",
+    "excel": "Excel exportieren",
+    "en_cours": "Export läuft…",
+    "erreur": "Der Export ist fehlgeschlagen."
+  },
   "onglets": {
     "financier": "Finanzen",
     "membres": "Mitglieder",
-    "evenements": "Veranstaltungen"
+    "evenements": "Veranstaltungen",
+    "finances": "Finanzdaten"
   },
   "financier": {
     "solde": "Saldo",
@@ -35,8 +42,13 @@
     "revenus_evenements": "Veranstaltungen",
     "top_contributeurs": "Top-Beitragende",
     "aucun_contributeur": "Keine Beitragenden in diesem Zeitraum.",
+    "aucune_donnee": "Keine Daten verfügbar.",
     "col_membre": "Mitglied",
-    "col_total": "Gesamt"
+    "col_total": "Gesamt",
+    "col_quelle": "Quelle",
+    "col_cotisations": "Beiträge",
+    "col_dons": "Spenden",
+    "col_evenements": "Veranstaltungen"
   },
   "membres": {
     "total": "Mitglieder gesamt",
@@ -44,7 +56,10 @@
     "inactifs": "Inaktiv",
     "par_ville": "Verteilung nach Stadt",
     "pyramide_ages": "Alterspyramide",
-    "aucune_donnee": "Keine Daten verfügbar."
+    "aucune_donnee": "Keine Daten verfügbar.",
+    "col_ville": "Stadt",
+    "col_nombre": "Anzahl",
+    "col_tranche": "Altersgruppe"
   },
   "evenements": {
     "nombre": "Veranstaltungen",
@@ -55,6 +70,26 @@
     "participation": "Teilnahme pro Veranstaltung",
     "aucune_donnee": "Keine Daten verfügbar.",
     "col_titre": "Veranstaltung",
-    "col_places": "Reservierte Plätze"
+    "col_places": "Reservierte Plätze",
+    "col_type": "Typ",
+    "col_nombre": "Anzahl"
+  },
+  "finances": {
+    "filtre_type": "Transaktionstyp",
+    "filtre_type_tous": "Alle Typen",
+    "type_cotisation": "Mitgliedsbeitrag",
+    "type_don": "Spende",
+    "type_adhesion": "Mitgliedschaft",
+    "type_evenement": "Veranstaltung",
+    "type_boutique": "Shop",
+    "type_autre": "Sonstiges",
+    "type_projet": "Projekt",
+    "col_date": "Datum",
+    "col_type": "Typ",
+    "col_membre": "Mitglied",
+    "col_description": "Beschreibung",
+    "col_montant": "Betrag",
+    "col_statut": "Status",
+    "aucune_donnee": "Keine Finanzdaten für diesen Zeitraum."
   }
 }

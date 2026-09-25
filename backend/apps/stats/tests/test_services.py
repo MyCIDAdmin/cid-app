@@ -15,7 +15,7 @@ from apps.evenements.models import StatutEvenement, StatutInscription
 from apps.evenements.tests.factories import EvenementFactory, InscriptionFactory
 from apps.membres.models import StatutMembre
 from apps.membres.tests.factories import MembreFactory
-from apps.stats.services import kpis_evenements, kpis_financier, kpis_membres
+from apps.stats.services import finances_liste, kpis_evenements, kpis_financier, kpis_membres
 
 pytestmark = pytest.mark.django_db
 
@@ -315,3 +315,108 @@ def test_repartition_par_type():
     par_type = {ligne["type_evenement"]: ligne["nombre"] for ligne in resultat["par_type"]}
     assert par_type["fete"] == 2
     assert par_type["tournoi"] == 1
+
+
+# --- finances_liste (module "Statistiken & KPIs", ajouté le 2026-09-25 : "Tab für alle
+# Finanzdaten (filterbar/sortierbar)") ---
+
+
+def test_finances_liste_couvre_toutes_les_sources_sans_double_compte():
+    """Une Inscription/Souscription payante génère aussi sa propre Cotisation liée
+    (synchroniser_cotisation / Souscription.cotisation) — finances_liste ne doit donc jamais
+    produire 2 lignes pour la même transaction (voir docstring de la fonction)."""
+    annee = _aujourdhui().year
+    CotisationFactory(
+        type_article=TypeArticle.COTISATION, statut=StatutCotisation.PAYEE, montant=Decimal("45.00")
+    )
+    CotisationFactory(
+        type_article=TypeArticle.DON, statut=StatutCotisation.PAYEE, montant=Decimal("20.00")
+    )
+    souscription = SouscriptionFactory(statut=StatutSouscription.PAYEE, prix_paye=Decimal("50.00"))
+    # Simule la Cotisation liée créée par le flux d'adhésion réel (voir Souscription.cotisation)
+    # — si finances_liste comptait aussi cette ligne, le total serait faux.
+    CotisationFactory(
+        type_article=TypeArticle.ADHESION,
+        statut=StatutCotisation.PAYEE,
+        montant=Decimal("50.00"),
+        membre=souscription.membre,
+    )
+    CommandeFactory(statut=StatutCommande.CONFIRMEE, montant_total=Decimal("30.00"))
+    evenement = EvenementFactory(date_evenement=_aujourdhui())
+    InscriptionFactory(evenement=evenement, montant_paye=Decimal("15.00"))
+    # Une Cotisation(type_article=EVENEMENT) "miroir" de l'inscription ci-dessus — exclue elle
+    # aussi, exactement comme ADHESION ci-dessus.
+    CotisationFactory(
+        type_article=TypeArticle.EVENEMENT, statut=StatutCotisation.PAYEE, montant=Decimal("15.00")
+    )
+
+    lignes = finances_liste(annee=annee)
+
+    montants_par_type = {}
+    for ligne in lignes:
+        montants_par_type.setdefault(ligne["type"], Decimal("0"))
+        montants_par_type[ligne["type"]] += ligne["montant"]
+
+    assert montants_par_type["cotisation"] == Decimal("45.00")
+    assert montants_par_type["don"] == Decimal("20.00")
+    assert montants_par_type["adhesion"] == Decimal("50.00")
+    assert montants_par_type["boutique"] == Decimal("30.00")
+    assert montants_par_type["evenement"] == Decimal("15.00")
+    # 6 lignes attendues : cotisation, don, adhesion (Souscription), boutique, événement
+    # (Inscription) — jamais les 2 Cotisation "miroir" ADHESION/EVENEMENT créées ci-dessus.
+    assert len(lignes) == 5
+
+
+def test_finances_liste_filtre_par_type_transaction():
+    CotisationFactory(type_article=TypeArticle.DON, statut=StatutCotisation.PAYEE)
+    CommandeFactory(statut=StatutCommande.CONFIRMEE, montant_total=Decimal("10.00"))
+
+    lignes = finances_liste(annee=_aujourdhui().year, type_transaction="don")
+
+    assert len(lignes) == 1
+    assert lignes[0]["type"] == "don"
+
+
+def test_finances_liste_autre_regroupe_autre_et_autre_libre():
+    CotisationFactory(type_article=TypeArticle.AUTRE, statut=StatutCotisation.PAYEE)
+    CotisationFactory(type_article=TypeArticle.AUTRE_LIBRE, statut=StatutCotisation.PAYEE)
+
+    lignes = finances_liste(annee=_aujourdhui().year, type_transaction="autre")
+
+    assert len(lignes) == 2
+    assert all(ligne["type"] == "autre" for ligne in lignes)
+
+
+def test_finances_liste_tri_par_montant():
+    CotisationFactory(
+        type_article=TypeArticle.DON, statut=StatutCotisation.PAYEE, montant=Decimal("5.00")
+    )
+    CotisationFactory(
+        type_article=TypeArticle.DON, statut=StatutCotisation.PAYEE, montant=Decimal("50.00")
+    )
+
+    croissant = finances_liste(
+        annee=_aujourdhui().year, type_transaction="don", tri="montant", ordre="asc"
+    )
+    assert [ligne["montant"] for ligne in croissant] == [Decimal("5.00"), Decimal("50.00")]
+
+    decroissant = finances_liste(
+        annee=_aujourdhui().year, type_transaction="don", tri="montant", ordre="desc"
+    )
+    assert [ligne["montant"] for ligne in decroissant] == [Decimal("50.00"), Decimal("5.00")]
+
+
+def test_finances_liste_inscription_gratuite_exclue():
+    aujourdhui = _aujourdhui()
+    evenement = EvenementFactory(date_evenement=aujourdhui, gratuit=True, cout=Decimal("0.00"))
+    InscriptionFactory(evenement=evenement, montant_paye=Decimal("0.00"))
+
+    lignes = finances_liste(annee=aujourdhui.year, type_transaction="evenement")
+    assert lignes == []
+
+
+def test_finances_liste_souscription_brouillon_exclue():
+    SouscriptionFactory(statut=StatutSouscription.BROUILLON)
+
+    lignes = finances_liste(annee=_aujourdhui().year, type_transaction="adhesion")
+    assert lignes == []
