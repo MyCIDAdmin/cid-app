@@ -1,7 +1,8 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as boutiqueApi from "../../api/boutique";
 import * as useBoutiqueHooks from "../../hooks/useBoutique";
 import { useAuthStore } from "../../store/authStore";
 import type { Commande } from "../../types/boutique";
@@ -17,6 +18,20 @@ vi.mock("../../hooks/useBoutique", async () => {
     useConfirmerPaiementCommande: vi.fn(),
     useExpedierCommande: vi.fn(),
     useCreerRetour: vi.fn(),
+  };
+});
+
+// Documents PDF (confirmation/facture) et export Excel (demande utilisateur du 2026-09-25,
+// module "Shop-Verwaltung") — mockés au niveau du client API, même principe que
+// CotisationStepperPage.test.tsx/telechargerRecuCotisation : ces fonctions déclenchent un vrai
+// appel réseau (axios) hors du périmètre de ce composant.
+vi.mock("../../api/boutique", async () => {
+  const actual = await vi.importActual<typeof boutiqueApi>("../../api/boutique");
+  return {
+    ...actual,
+    telechargerConfirmationCommande: vi.fn(),
+    telechargerFactureCommande: vi.fn(),
+    exporterCommandesExcel: vi.fn(),
   };
 });
 
@@ -112,6 +127,9 @@ describe("GestionCommandesTab", () => {
       isError: false,
       isPending: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCreerRetour>);
+
+    window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    window.URL.revokeObjectURL = vi.fn();
   });
 
   it("affiche la commande avec son numéro et son montant", () => {
@@ -420,5 +438,87 @@ describe("GestionCommandesTab", () => {
     fireEvent.change(selectStatut, { target: { value: "en_preparation" } });
 
     expect(changerStatutMock).not.toHaveBeenCalled();
+  });
+
+  // --- Documents PDF (confirmation/facture) et export Excel, filtres destinataire/dates
+  // (demande utilisateur du 2026-09-25, module "Shop-Verwaltung") ---
+
+  it("télécharge la confirmation de commande", async () => {
+    const blob = new Blob(["%PDF-"], { type: "application/pdf" });
+    vi.mocked(boutiqueApi.telechargerConfirmationCommande).mockResolvedValue(blob);
+
+    renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByLabelText("commandes_admin.telecharger_confirmation_aria"));
+
+    await waitFor(() =>
+      expect(boutiqueApi.telechargerConfirmationCommande).toHaveBeenCalledWith("c1"),
+    );
+    expect(window.URL.createObjectURL).toHaveBeenCalledWith(blob);
+  });
+
+  it("propose le téléchargement de la facture uniquement si le paiement est confirmé", () => {
+    renderWithProviders(<GestionCommandesTab />);
+    // commande() par défaut : date_paiement_confirme=null.
+    expect(
+      screen.queryByLabelText("commandes_admin.telecharger_facture_aria"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("télécharge la facture quand le paiement est confirmé", async () => {
+    vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [commande({ date_paiement_confirme: "2026-01-02T10:00:00Z" })],
+      },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+    const blob = new Blob(["%PDF-"], { type: "application/pdf" });
+    vi.mocked(boutiqueApi.telechargerFactureCommande).mockResolvedValue(blob);
+
+    renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByLabelText("commandes_admin.telecharger_facture_aria"));
+
+    await waitFor(() => expect(boutiqueApi.telechargerFactureCommande).toHaveBeenCalledWith("c1"));
+  });
+
+  it("filtre les commandes par destinataire et intervalle de dates", () => {
+    renderWithProviders(<GestionCommandesTab />);
+
+    fireEvent.change(
+      screen.getByPlaceholderText("commandes_admin.filtre_destinataire_placeholder"),
+      {
+        target: { value: "Bchini" },
+      },
+    );
+    fireEvent.change(screen.getByLabelText("commandes_admin.filtre_date_apres_label"), {
+      target: { value: "2026-01-01" },
+    });
+    fireEvent.change(screen.getByLabelText("commandes_admin.filtre_date_avant_label"), {
+      target: { value: "2026-01-31" },
+    });
+
+    expect(vi.mocked(useBoutiqueHooks.useCommandes)).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        destinataire: "Bchini",
+        date_apres: "2026-01-01",
+        date_avant: "2026-01-31",
+      }),
+    );
+  });
+
+  it("exporte les commandes filtrées en Excel", async () => {
+    const blob = new Blob(["xlsx"], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    vi.mocked(boutiqueApi.exporterCommandesExcel).mockResolvedValue({
+      blob,
+      nomFichier: "export_commandes_202601011200.xlsx",
+    });
+
+    renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByText("commandes_admin.exporter_excel"));
+
+    await waitFor(() => expect(boutiqueApi.exporterCommandesExcel).toHaveBeenCalled());
+    expect(window.URL.createObjectURL).toHaveBeenCalledWith(blob);
   });
 });

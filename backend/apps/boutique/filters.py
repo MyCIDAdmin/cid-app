@@ -21,6 +21,14 @@ class ProduitFilter(django_filters.FilterSet):
 class CommandeFilter(django_filters.FilterSet):
     statut = django_filters.ChoiceFilter(choices=StatutCommande.choices)
     membre = django_filters.UUIDFilter(field_name="membre_id")
+    # Ajoutés le 2026-09-25 (demande utilisateur, module "Shop-Verwaltung" : "Filtermöglichkeiten
+    # hinzufügen z.B. Datumsintervall, Empfänger") — même convention que
+    # apps.membres.filters.MembreFilter.date_adhesion_apres/avant. `date__gte`/`date__lte` (et
+    # non `gte`/`lte` seuls) car `created_at` est un DateTimeField : comparer directement à une
+    # date bornerait `date_avant` à minuit et exclurait toute commande passée ce jour-là.
+    date_apres = django_filters.DateFilter(field_name="created_at", lookup_expr="date__gte")
+    date_avant = django_filters.DateFilter(field_name="created_at", lookup_expr="date__lte")
+    destinataire = django_filters.CharFilter(field_name="nom_destinataire", lookup_expr="icontains")
 
     class Meta:
         model = Commande

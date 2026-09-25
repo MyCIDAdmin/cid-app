@@ -27,6 +27,11 @@ import { useTranslation } from "react-i18next";
 
 import ConfirmDialog from "../ui/ConfirmDialog";
 import {
+  exporterCommandesExcel,
+  telechargerConfirmationCommande,
+  telechargerFactureCommande,
+} from "../../api/boutique";
+import {
   useAnnulerCommande,
   useChangerStatutCommande,
   useCommandes,
@@ -47,6 +52,19 @@ import {
   type StatutCommande,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+
+/** Déclenche le téléchargement d'un blob côté navigateur — même pattern que
+ * CotisationStepperPage.telechargerRecu/MembresListPage.exporter. */
+function declencherTelechargement(blob: Blob, nomFichier: string) {
+  const url = window.URL.createObjectURL(blob);
+  const lien = document.createElement("a");
+  lien.href = url;
+  lien.download = nomFichier;
+  document.body.appendChild(lien);
+  lien.click();
+  lien.remove();
+  window.URL.revokeObjectURL(url);
+}
 
 const MODES_PAIEMENT: ModePaiementCommande[] = ["en_ligne", "virement", "especes"];
 const MOTIFS_RETOUR: MotifRetour[] = [
@@ -90,19 +108,31 @@ interface ExpeditionModalState {
   nacherfassement: boolean;
 }
 
-export default function GestionCommandesTab({
-  modifiable = true,
-}: { modifiable?: boolean } = {}) {
+export default function GestionCommandesTab({ modifiable = true }: { modifiable?: boolean } = {}) {
   const { t } = useTranslation(["boutique", "common"]);
   const user = useAuthStore((s) => s.user);
   const peutConfirmerPaiementEtExpedier = hasRoleAtLeast(user, ROLE_LEVELS.dir_financier);
   const peutGererRetours = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
 
   const [filtreStatut, setFiltreStatut] = useState<StatutCommande | "">("");
+  // Filtres destinataire/intervalle de dates (demande utilisateur du 2026-09-25, module
+  // "Shop-Verwaltung" : "Filtermöglichkeiten hinzufügen z.B. Datumsintervall, Empfänger") — même
+  // convention (état contrôlé directement branché sur la query, sans debounce) que
+  // MembresListPage.tsx.
+  const [filtreDestinataire, setFiltreDestinataire] = useState("");
+  const [filtreDateApres, setFiltreDateApres] = useState("");
+  const [filtreDateAvant, setFiltreDateAvant] = useState("");
   const [commandeAAnnuler, setCommandeAAnnuler] = useState<Commande | null>(null);
   const [modePaiementParCommande, setModePaiementParCommande] = useState<
     Record<string, ModePaiementCommande>
   >({});
+
+  // Téléchargement des documents PDF (confirmation/facture, demande utilisateur du 2026-09-25) —
+  // `documentEnCours` retient "<commandeId>-<type>" pour ne désactiver que le bouton concerné.
+  const [documentEnCours, setDocumentEnCours] = useState<string | null>(null);
+  const [erreurDocument, setErreurDocument] = useState<string | null>(null);
+  const [exportEnCours, setExportEnCours] = useState(false);
+  const [erreurExport, setErreurExport] = useState<string | null>(null);
 
   const [expeditionModal, setExpeditionModal] = useState<ExpeditionModalState | null>(null);
   const [numeroSuivi, setNumeroSuivi] = useState("");
@@ -117,12 +147,61 @@ export default function GestionCommandesTab({
   const [motifRetour, setMotifRetour] = useState<MotifRetour>("autre");
   const [commentaireRetour, setCommentaireRetour] = useState("");
 
-  const commandesQuery = useCommandes({ statut: filtreStatut || undefined });
+  const commandesQuery = useCommandes({
+    statut: filtreStatut || undefined,
+    destinataire: filtreDestinataire || undefined,
+    date_apres: filtreDateApres || undefined,
+    date_avant: filtreDateAvant || undefined,
+  });
   const changerStatutMutation = useChangerStatutCommande();
   const annulerMutation = useAnnulerCommande();
   const confirmerPaiementMutation = useConfirmerPaiementCommande();
   const expedierMutation = useExpedierCommande();
   const creerRetourMutation = useCreerRetour();
+
+  async function telechargerConfirmation(commande: Commande) {
+    setErreurDocument(null);
+    setDocumentEnCours(`${commande.id}-confirmation`);
+    try {
+      const blob = await telechargerConfirmationCommande(commande.id);
+      declencherTelechargement(blob, `bestellbestaetigung-${commande.numero_commande}.pdf`);
+    } catch (error) {
+      setErreurDocument(extractApiErrorMessage(error, t("commandes_admin.erreur_document")));
+    } finally {
+      setDocumentEnCours(null);
+    }
+  }
+
+  async function telechargerFacture(commande: Commande) {
+    setErreurDocument(null);
+    setDocumentEnCours(`${commande.id}-facture`);
+    try {
+      const blob = await telechargerFactureCommande(commande.id);
+      declencherTelechargement(blob, `rechnung-${commande.numero_commande}.pdf`);
+    } catch (error) {
+      setErreurDocument(extractApiErrorMessage(error, t("commandes_admin.erreur_document")));
+    } finally {
+      setDocumentEnCours(null);
+    }
+  }
+
+  async function exporterExcel() {
+    setErreurExport(null);
+    setExportEnCours(true);
+    try {
+      const { blob, nomFichier } = await exporterCommandesExcel({
+        statut: filtreStatut || undefined,
+        destinataire: filtreDestinataire || undefined,
+        date_apres: filtreDateApres || undefined,
+        date_avant: filtreDateAvant || undefined,
+      });
+      declencherTelechargement(blob, nomFichier);
+    } catch (error) {
+      setErreurExport(extractApiErrorMessage(error, t("commandes_admin.export_erreur")));
+    } finally {
+      setExportEnCours(false);
+    }
+  }
 
   function confirmerAnnulation() {
     if (!commandeAAnnuler) return;
@@ -216,6 +295,47 @@ export default function GestionCommandesTab({
         ))}
       </div>
 
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <input
+          type="text"
+          value={filtreDestinataire}
+          onChange={(e) => setFiltreDestinataire(e.target.value)}
+          placeholder={t("commandes_admin.filtre_destinataire_placeholder") ?? ""}
+          className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-xs"
+        />
+        <label className="flex flex-col text-[10px] font-medium text-text-secondary">
+          {t("commandes_admin.filtre_date_apres_label")}
+          <input
+            type="date"
+            value={filtreDateApres}
+            onChange={(e) => setFiltreDateApres(e.target.value)}
+            className="mt-0.5 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        </label>
+        <label className="flex flex-col text-[10px] font-medium text-text-secondary">
+          {t("commandes_admin.filtre_date_avant_label")}
+          <input
+            type="date"
+            value={filtreDateAvant}
+            onChange={(e) => setFiltreDateAvant(e.target.value)}
+            className="mt-0.5 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={exporterExcel}
+          disabled={exportEnCours}
+          className="ml-auto rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-tertiary disabled:opacity-50"
+        >
+          {exportEnCours
+            ? t("commandes_admin.export_en_cours")
+            : t("commandes_admin.exporter_excel")}
+        </button>
+      </div>
+
+      {erreurExport && <p className="mb-2 text-xs text-status-dangerText">{erreurExport}</p>}
+      {erreurDocument && <p className="mb-2 text-xs text-status-dangerText">{erreurDocument}</p>}
+
       {changerStatutMutation.isError && (
         <p className="mb-2 text-xs text-status-dangerText">
           {extractApiErrorMessage(changerStatutMutation.error, t("commandes_admin.erreur_statut"))}
@@ -246,6 +366,8 @@ export default function GestionCommandesTab({
               <th className="px-3 py-2">{t("commandes_admin.col_montant")}</th>
               <th className="px-3 py-2">{t("commandes_admin.col_statut")}</th>
               <th className="px-3 py-2">{t("commandes_admin.col_date")}</th>
+              <th className="px-3 py-2">{t("commandes_admin.col_confirmation")}</th>
+              <th className="px-3 py-2">{t("commandes_admin.col_facture")}</th>
               <th className="px-3 py-2">{t("commandes_admin.col_actions")}</th>
             </tr>
           </thead>
@@ -278,13 +400,39 @@ export default function GestionCommandesTab({
                   </td>
                   <td className="px-3 py-2">{formatDate(commande.created_at)}</td>
                   <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      aria-label={t("commandes_admin.telecharger_confirmation_aria")}
+                      onClick={() => telechargerConfirmation(commande)}
+                      disabled={documentEnCours === `${commande.id}-confirmation`}
+                      className="font-medium text-ca hover:underline disabled:opacity-40"
+                    >
+                      PDF
+                    </button>
+                  </td>
+                  <td className="px-3 py-2">
+                    {commande.date_paiement_confirme ? (
+                      <button
+                        type="button"
+                        aria-label={t("commandes_admin.telecharger_facture_aria")}
+                        onClick={() => telechargerFacture(commande)}
+                        disabled={documentEnCours === `${commande.id}-facture`}
+                        className="font-medium text-ca hover:underline disabled:opacity-40"
+                      >
+                        PDF
+                      </button>
+                    ) : (
+                      <span className="text-text-tertiary">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       {transitions.length > 0 && (
                         <select
                           aria-label={t("commandes_admin.changer_statut")}
                           defaultValue=""
                           disabled={!modifiable}
-                          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                           onChange={(e) => {
                             // Garde de défense en profondeur — voir
                             // GestionCatalogueTab.toggleStatut pour le raisonnement (onChange,
@@ -366,7 +514,9 @@ export default function GestionCommandesTab({
                             type="button"
                             onClick={() => ouvrirRetour(commande)}
                             disabled={!modifiable}
-                            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                            title={
+                              !modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""
+                            }
                             className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
                           >
                             {t("retour.bouton")}
@@ -599,7 +749,7 @@ export default function GestionCommandesTab({
                   creerRetourMutation.isPending ||
                   !modifiable
                 }
-                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-50"
               >
                 {t("retour.confirmer")}

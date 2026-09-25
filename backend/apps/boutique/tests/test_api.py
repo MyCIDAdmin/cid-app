@@ -1,5 +1,6 @@
 """Tests API — app boutique (FDD §2.2/§3.4, SCD §2.3 A01 : IDOR)."""
 
+import io
 from decimal import Decimal
 
 import pytest
@@ -8,7 +9,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.boutique.models import StatutCommande, StatutProduit
+from apps.boutique.models import Commande, StatutCommande, StatutProduit
 from apps.boutique.tests.factories import (
     CommandeFactory,
     LigneCommandeFactory,
@@ -1469,3 +1470,183 @@ def test_phase_d_lecture_ecriture_page_boutique_permet_creation_retour(api_clien
         format="json",
     )
     assert resp.status_code == 201
+
+
+# --- Filtres commandes : date_apres/date_avant, destinataire (demande utilisateur du
+# 2026-09-25, module "Shop-Verwaltung" : "Filtermöglichkeiten hinzufügen z.B. Datumsintervall,
+# Empfänger") ---
+
+
+def test_filtre_commandes_par_destinataire(api_client):
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "filtre-dest-admin@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "filtre-dest-m1@example.de")
+    CommandeFactory(membre=membre, nom_destinataire="Sana Werfelli")
+    CommandeFactory(membre=membre, nom_destinataire="Karim Jomaa")
+
+    resp = _auth(api_client, admin).get(reverse(COMMANDE_LIST_URL), {"destinataire": "sana"})
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+    assert resp.data["results"][0]["nom_destinataire"] == "Sana Werfelli"
+
+
+def test_filtre_commandes_par_intervalle_de_dates(api_client):
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "filtre-date-admin@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "filtre-date-m1@example.de")
+    ancienne = CommandeFactory(membre=membre)
+    recente = CommandeFactory(membre=membre)
+    # auto_now_add=True : passer created_at au factory n'a aucun effet, voir
+    # apps.communaute.tests.test_api (même contournement — .update() bypass save()/pre_save).
+    Commande.objects.filter(id=ancienne.id).update(
+        created_at=timezone.now() - timezone.timedelta(days=30)
+    )
+
+    resp = _auth(api_client, admin).get(
+        reverse(COMMANDE_LIST_URL),
+        {"date_apres": (timezone.now() - timezone.timedelta(days=1)).date().isoformat()},
+    )
+    assert resp.status_code == 200
+    ids = {r["id"] for r in resp.data["results"]}
+    assert ids == {str(recente.id)}
+
+
+# --- Documents PDF : confirmation (Bestellbestätigung) / facture (Rechnung), demande
+# utilisateur du 2026-09-25, module "Shop-Verwaltung" ---
+
+
+def _confirmation_url(commande):
+    return reverse("boutique:commande-confirmation", args=[commande.id])
+
+
+def _facture_url(commande):
+    return reverse("boutique:commande-facture", args=[commande.id])
+
+
+def test_confirmation_pdf_disponible_pour_le_proprietaire_meme_en_attente(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "pdf-conf-m1@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+    LigneCommandeFactory(commande=commande)
+
+    resp = _auth(api_client, user).get(_confirmation_url(commande))
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert resp.content.startswith(b"%PDF-")
+
+
+def test_confirmation_pdf_disponible_pour_bureau_admin(api_client):
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "pdf-conf-admin@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "pdf-conf-m2@example.de")
+    commande = CommandeFactory(membre=membre)
+
+    resp = _auth(api_client, admin).get(_confirmation_url(commande))
+    assert resp.status_code == 200
+
+
+def test_confirmation_pdf_refuse_pour_un_autre_membre(api_client):
+    user1, _ = _user_avec_membre(Role.MEMBRE, "pdf-conf-m3@example.de")
+    _, membre2 = _user_avec_membre(Role.MEMBRE, "pdf-conf-m4@example.de")
+    commande = CommandeFactory(membre=membre2)
+
+    resp = _auth(api_client, user1).get(_confirmation_url(commande))
+    assert resp.status_code in (403, 404)
+
+
+def test_facture_pdf_refuse_si_paiement_non_confirme(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "pdf-fact-m1@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, user).get(_facture_url(commande))
+    assert resp.status_code == 400
+
+
+def test_facture_pdf_disponible_apres_confirmation_paiement(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "pdf-fact-m2@example.de")
+    commande = CommandeFactory(
+        membre=membre,
+        statut=StatutCommande.CONFIRMEE,
+        mode_paiement="virement",
+        date_paiement_confirme=timezone.now(),
+    )
+    LigneCommandeFactory(commande=commande)
+
+    resp = _auth(api_client, user).get(_facture_url(commande))
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert resp.content.startswith(b"%PDF-")
+
+
+def test_facture_pdf_refuse_pour_un_autre_membre(api_client):
+    user1, _ = _user_avec_membre(Role.MEMBRE, "pdf-fact-m3@example.de")
+    _, membre2 = _user_avec_membre(Role.MEMBRE, "pdf-fact-m4@example.de")
+    commande = CommandeFactory(
+        membre=membre2,
+        statut=StatutCommande.CONFIRMEE,
+        mode_paiement="virement",
+        date_paiement_confirme=timezone.now(),
+    )
+
+    resp = _auth(api_client, user1).get(_facture_url(commande))
+    assert resp.status_code in (403, 404)
+
+
+# --- Export Excel (demande utilisateur du 2026-09-25) ---
+
+
+def _export_url():
+    return reverse("boutique:commande-export")
+
+
+def test_export_commandes_retourne_un_classeur_xlsx(api_client):
+    from openpyxl import load_workbook
+
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "export-admin1@example.de")
+    _, membre1 = _user_avec_membre(Role.MEMBRE, "export-m1@example.de")
+    _, membre2 = _user_avec_membre(Role.MEMBRE, "export-m2@example.de")
+    CommandeFactory(membre=membre1, nom_destinataire="Export Un")
+    CommandeFactory(membre=membre2, nom_destinataire="Export Deux")
+
+    resp = _auth(api_client, admin).get(_export_url())
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    classeur = load_workbook(io.BytesIO(resp.content))
+    feuille = classeur.active
+    entetes = [c.value for c in feuille[1]]
+    assert entetes[0] == "N° commande"
+    destinataires = {feuille.cell(row=r, column=2).value for r in (2, 3)}
+    assert destinataires == {"Export Un", "Export Deux"}
+
+
+def test_export_commandes_respecte_le_filtre_statut(api_client):
+    from openpyxl import load_workbook
+
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "export-admin2@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "export-m3@example.de")
+    CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE, nom_destinataire="Attente")
+    CommandeFactory(membre=membre, statut=StatutCommande.ANNULEE, nom_destinataire="Annulee")
+
+    resp = _auth(api_client, admin).get(_export_url(), {"statut": StatutCommande.EN_ATTENTE})
+    assert resp.status_code == 200
+
+    classeur = load_workbook(io.BytesIO(resp.content))
+    feuille = classeur.active
+    assert feuille.max_row == 2  # en-tête + 1 seule commande
+    assert feuille.cell(row=2, column=2).value == "Attente"
+
+
+def test_export_commandes_scope_membre_ne_voit_que_les_siennes(api_client):
+    from openpyxl import load_workbook
+
+    user, membre1 = _user_avec_membre(Role.MEMBRE, "export-m4@example.de")
+    _, membre2 = _user_avec_membre(Role.MEMBRE, "export-m5@example.de")
+    CommandeFactory(membre=membre1, nom_destinataire="Mine")
+    CommandeFactory(membre=membre2, nom_destinataire="PasMoi")
+
+    resp = _auth(api_client, user).get(_export_url())
+    assert resp.status_code == 200
+
+    classeur = load_workbook(io.BytesIO(resp.content))
+    feuille = classeur.active
+    assert feuille.max_row == 2
+    assert feuille.cell(row=2, column=2).value == "Mine"

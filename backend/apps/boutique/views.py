@@ -37,6 +37,15 @@ Vues API — app boutique (FDD §3.4) :
                                                     `nacherfassement=true` saute
                                                     directement à expediee pour une
                                                     commande gérée hors flux normal
+  GET        /boutique/commandes/{id}/confirmation/ — Bestellbestätigung PDF, disponible
+                                                    pour toute commande quel que soit son
+                                                    statut (ajouté le 2026-09-25)
+  GET        /boutique/commandes/{id}/facture/   — Rechnung PDF, disponible uniquement
+                                                    après confirmation du paiement (ajouté
+                                                    le 2026-09-25)
+  GET        /boutique/commandes/export/         — export Excel des commandes, mêmes
+                                                    filtres/scope que la liste (ajouté le
+                                                    2026-09-25)
   GET/POST   /boutique/retours/                  — retours partiels par ligne de
                                                     commande (Bureau Admin+), réintègre le
                                                     stock atomiquement
@@ -85,6 +94,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
+from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
@@ -96,9 +106,11 @@ from rest_framework.viewsets import ModelViewSet
 from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
+from apps.membres.utils_http import xlsx_response
 from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import is_elevated_for_module
 
+from .exports import construire_classeur_commandes
 from .filters import CommandeFilter, ProduitFilter, RetourFilter
 from .models import (
     STATUTS_ANNULABLES,
@@ -128,6 +140,7 @@ from .notifications import (
     notifier_commande_expediee,
     notifier_nouvelle_commande_staff,
 )
+from .pdf import generate_confirmation_pdf, generate_facture_pdf
 from .permissions import (
     GESTION_CATALOGUE_MIN_LEVEL,
     ORDER_VISIBILITY_MIN_LEVEL,
@@ -796,6 +809,64 @@ class CommandeViewSet(ModelViewSet):
         commande.save(update_fields=update_fields)
         notifier_commande_expediee(commande)
         return Response(self.get_serializer(commande).data)
+
+    @action(detail=True, methods=["get"])
+    def confirmation(self, request, pk=None):
+        """
+        GET /boutique/commandes/{id}/confirmation/ — Bestellbestätigung PDF (demande
+        utilisateur du 2026-09-25, module "Shop-Verwaltung"). Disponible pour TOUTE commande
+        quel que soit son statut (comme une confirmation de commande e-commerce classique,
+        envoyée dès la passation) — get_object() applique le même scope IDOR que list/retrieve
+        (CommandePermission.has_object_permission : propriétaire ou Bureau Admin+/élevé sur le
+        module boutique).
+        """
+        commande = self.get_object()
+        pdf_bytes = generate_confirmation_pdf(commande)
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'attachment; filename="bestellbestaetigung-{commande.numero_commande}.pdf"'
+        )
+        return response
+
+    @action(detail=True, methods=["get"])
+    def facture(self, request, pk=None):
+        """
+        GET /boutique/commandes/{id}/facture/ — Rechnung PDF (demande utilisateur du
+        2026-09-25), disponible uniquement une fois le paiement confirmé
+        (date_paiement_confirme renseignée, par confirmer_paiement/le webhook PSP/expedier en
+        nacherfassement) — même principe que CotisationViewSet.receipt (AHM-17). get_object()
+        applique le même scope IDOR que confirmation ci-dessus.
+        """
+        commande = self.get_object()
+        if commande.date_paiement_confirme is None:
+            raise ValidationError(
+                "La facture n'est disponible qu'une fois le paiement de la commande confirmé "
+                f"(statut actuel : {commande.get_statut_display()})."
+            )
+        pdf_bytes = generate_facture_pdf(commande)
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'attachment; filename="rechnung-{commande.numero_commande}.pdf"'
+        )
+        return response
+
+    @action(detail=False, methods=["get"])
+    def export(self, request):
+        """
+        GET /boutique/commandes/export/ — export Excel des commandes (demande utilisateur du
+        2026-09-25, module "Shop-Verwaltung" : "Es soll möglich sein die Bestellungen als Excel
+        zu exportieren"). Réutilise exactement le même scope IDOR (get_queryset) et les mêmes
+        filtres (statut, membre, date_apres/date_avant, destinataire — voir CommandeFilter) que
+        GET /boutique/commandes/, pour que l'export corresponde toujours à ce que l'écran de
+        liste montre avec les mêmes filtres — même principe que
+        apps.membres.export_views.MembreExportView. Non paginé (self.filter_queryset, pas
+        self.paginate_queryset) : l'export contient toute la sélection filtrée, pas une seule
+        page du cursor.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        classeur = construire_classeur_commandes(queryset)
+        nom_fichier = f"export_commandes_{timezone.localtime():%Y%m%d_%H%M}.xlsx"
+        return xlsx_response(classeur, nom_fichier)
 
 
 class RetourViewSet(ModelViewSet):

@@ -146,6 +146,8 @@
     "col_montant": "Betrag",
     "col_statut": "Status",
     "col_date": "Datum",
+    "col_confirmation": "Bestätigung",
+    "col_facture": "Rechnung",
     "col_actions": "Aktionen",
     "changer_statut": "Status ändern",
     "annuler": "Stornieren",
@@ -153,7 +155,16 @@
     "erreur_statut": "Die Statusänderung ist fehlgeschlagen.",
     "confirmer_annulation_titre": "Diese Bestellung stornieren?",
     "confirmer_annulation_message": "Die Bestellung {{numero}} wird storniert und der Bestand wird zurückgebucht.",
-    "confirmer_annulation": "Bestellung stornieren"
+    "confirmer_annulation": "Bestellung stornieren",
+    "filtre_destinataire_placeholder": "Nach Empfänger suchen…",
+    "filtre_date_apres_label": "Von",
+    "filtre_date_avant_label": "Bis",
+    "telecharger_confirmation_aria": "Bestellbestätigung herunterladen",
+    "telecharger_facture_aria": "Rechnung herunterladen",
+    "erreur_document": "Das Dokument konnte nicht heruntergeladen werden.",
+    "exporter_excel": "Als Excel exportieren",
+    "export_en_cours": "Export läuft…",
+    "export_erreur": "Der Export ist fehlgeschlagen."
   },
   "mes_commandes": {
     "titre": "Meine Bestellungen",

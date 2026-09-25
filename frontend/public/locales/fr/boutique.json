@@ -146,6 +146,8 @@
     "col_montant": "Montant",
     "col_statut": "Statut",
     "col_date": "Date",
+    "col_confirmation": "Confirmation",
+    "col_facture": "Facture",
     "col_actions": "Actions",
     "changer_statut": "Changer le statut",
     "annuler": "Annuler",
@@ -153,7 +155,16 @@
     "erreur_statut": "Le changement de statut a échoué.",
     "confirmer_annulation_titre": "Annuler cette commande ?",
     "confirmer_annulation_message": "La commande {{numero}} sera annulée et le stock restitué.",
-    "confirmer_annulation": "Annuler la commande"
+    "confirmer_annulation": "Annuler la commande",
+    "filtre_destinataire_placeholder": "Rechercher par destinataire…",
+    "filtre_date_apres_label": "Du",
+    "filtre_date_avant_label": "Au",
+    "telecharger_confirmation_aria": "Télécharger la confirmation de commande",
+    "telecharger_facture_aria": "Télécharger la facture",
+    "erreur_document": "Le document n'a pas pu être téléchargé.",
+    "exporter_excel": "Exporter en Excel",
+    "export_en_cours": "Export en cours…",
+    "export_erreur": "L'export a échoué."
   },
   "mes_commandes": {
     "titre": "Mes commandes",

@@ -135,9 +135,7 @@ export async function listReglesReduction(
   return data;
 }
 
-export async function creerRegleReduction(
-  payload: RegleReductionPayload,
-): Promise<RegleReduction> {
+export async function creerRegleReduction(payload: RegleReductionPayload): Promise<RegleReduction> {
   const { data } = await apiClient.post<RegleReduction>("/boutique/regles-reduction/", payload);
   return data;
 }
@@ -159,6 +157,15 @@ export async function supprimerRegleReduction(id: string): Promise<void> {
 
 export interface CommandesFiltres {
   statut?: StatutCommande;
+  /** Recherche libre sur le nom du destinataire (icontains côté backend) — ajouté le
+   * 2026-09-25, demande utilisateur module "Shop-Verwaltung" ("Filtermöglichkeiten hinzufügen
+   * z.B. Datumsintervall, Empfänger"). */
+  destinataire?: string;
+  /** Bornes de l'intervalle de dates de commande (ISO "AAAA-MM-JJ"), voir
+   * apps.boutique.filters.CommandeFilter.date_apres/date_avant — comparées à la DATE de
+   * Commande.created_at, jamais à l'heure exacte. */
+  date_apres?: string;
+  date_avant?: string;
   cursor?: string;
 }
 
@@ -259,6 +266,66 @@ export async function expedierCommande(
 ): Promise<Commande> {
   const { data } = await apiClient.post<Commande>(`/boutique/commandes/${id}/expedier/`, payload);
   return data;
+}
+
+/**
+ * GET /boutique/commandes/{id}/confirmation/ (ajouté le 2026-09-25, demande utilisateur module
+ * "Shop-Verwaltung") — Bestellbestätigung PDF, disponible pour toute commande quel que soit son
+ * statut. Même principe que cotisationsApi.telechargerRecuCotisation (blob + téléchargement
+ * déclenché côté composant).
+ */
+export async function telechargerConfirmationCommande(id: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/boutique/commandes/${id}/confirmation/`, {
+    responseType: "blob",
+  });
+  return data;
+}
+
+/**
+ * GET /boutique/commandes/{id}/facture/ (ajouté le 2026-09-25) — Rechnung PDF, disponible
+ * uniquement une fois le paiement de la commande confirmé ; 400 côté backend sinon (le bouton
+ * associé n'est de toute façon affiché que pour une commande dont `date_paiement_confirme` est
+ * renseignée, voir GestionCommandesTab).
+ */
+export async function telechargerFactureCommande(id: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/boutique/commandes/${id}/facture/`, {
+    responseType: "blob",
+  });
+  return data;
+}
+
+/** Nom de fichier suggéré par le serveur (Content-Disposition) — même repli que
+ * membresApi (voir sa docstring) : un téléchargement ne doit jamais échouer pour un simple
+ * souci de nommage. */
+function nomFichierDepuisContentDisposition(contentDisposition: unknown, repli: string): string {
+  const valeur = typeof contentDisposition === "string" ? contentDisposition : "";
+  const correspondance = /filename="?([^"]+)"?/.exec(valeur);
+  return correspondance?.[1] ?? repli;
+}
+
+/**
+ * GET /boutique/commandes/export/ (ajouté le 2026-09-25, demande utilisateur module
+ * "Shop-Verwaltung" : "Es soll möglich sein die Bestellungen als Excel zu exportieren") — export
+ * Excel, mêmes filtres/scope que listCommandes (statut, destinataire, date_apres/date_avant —
+ * jamais paginé, voir CommandeViewSet.export côté backend).
+ */
+export async function exporterCommandesExcel(
+  filtres: CommandesFiltres = {},
+): Promise<{ blob: Blob; nomFichier: string }> {
+  // `cursor` n'a pas de sens pour un export (jamais paginé, voir CommandeViewSet.export) —
+  // omis explicitement plutôt que transmis tel quel au cas où l'appelant le fournirait.
+  const { statut, destinataire, date_apres, date_avant } = filtres;
+  const { data, headers } = await apiClient.get("/boutique/commandes/export/", {
+    params: { statut, destinataire, date_apres, date_avant },
+    responseType: "blob",
+  });
+  return {
+    blob: data,
+    nomFichier: nomFichierDepuisContentDisposition(
+      headers["content-disposition"],
+      "export_commandes.xlsx",
+    ),
+  };
 }
 
 export interface RetoursFiltres {
