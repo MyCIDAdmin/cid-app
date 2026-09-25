@@ -40,6 +40,17 @@
   --color-text-primary: #1a1a1a;
   --color-text-secondary: #555555;
   --color-text-tertiary: #999999;
+
+  /* Palette catégorielle (dataviz skill, palette de référence validée) — sert à différencier
+     visuellement des éléments de même nature sans hiérarchie entre eux (demande utilisateur
+     2026-09-25, "Mitgliedschaftspakete Färblich differenzieren" — voir MonAdhesionPage.tsx).
+     Seuls les 3 premiers slots (bleu/orange/aqua) sont repris : c'est le sous-ensemble que la
+     palette de référence valide "all-pairs" (toute paire simultanément visible, pas seulement
+     adjacente) — au-delà de 3 éléments distincts, on replie sur un style neutre plutôt que
+     d'inventer un 4ᵉ slot non validé. Ordre fixe, jamais recyclé arbitrairement. */
+  --color-cat-1: #2a78d6; /* bleu */
+  --color-cat-2: #eb6834; /* orange */
+  --color-cat-3: #1baf7a; /* aqua */
 }
 
 .dark {
@@ -68,6 +79,12 @@
   --color-text-primary: #f0f0f0;
   --color-text-secondary: #b8b8b8;
   --color-text-tertiary: #8a8a8a;
+
+  /* Mêmes hue que le clair, marches assombries pour la surface sombre (palette de référence
+     dataviz — voir le commentaire de :root ci-dessus). */
+  --color-cat-1: #3987e5;
+  --color-cat-2: #d95926;
+  --color-cat-3: #199e70;
 }
 
 html[dir="rtl"] {

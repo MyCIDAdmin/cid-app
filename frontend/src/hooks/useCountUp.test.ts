@@ -21,9 +21,12 @@ describe("useCountUp", () => {
   });
 
   it("laisse passer telle quelle une valeur non numérique (ex. chargement en cours)", () => {
-    const { result, rerender } = renderHook(({ v }: { v: number | string }) => useCountUp(v as never), {
-      initialProps: { v: "—" },
-    });
+    const { result, rerender } = renderHook(
+      ({ v }: { v: number | string }) => useCountUp(v as never),
+      {
+        initialProps: { v: "—" },
+      },
+    );
     expect(result.current).toBe("—");
     rerender({ v: "—" });
     expect(result.current).toBe("—");

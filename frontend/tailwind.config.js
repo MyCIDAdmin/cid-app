@@ -41,6 +41,13 @@ export default {
           secondary: "var(--color-text-secondary)",
           tertiary: "var(--color-text-tertiary)",
         },
+        // Palette catégorielle (voir index.css) — différencie des éléments de même nature
+        // (ex. offres d'adhésion) sans hiérarchie entre eux.
+        cat: {
+          1: "var(--color-cat-1)",
+          2: "var(--color-cat-2)",
+          3: "var(--color-cat-3)",
+        },
       },
       fontFamily: {
         sans: ["Segoe UI", "system-ui", "sans-serif"],

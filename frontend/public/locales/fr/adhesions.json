@@ -39,7 +39,11 @@
     "souscrire": "Souscrire à cette offre",
     "changer": "Changer pour cette offre",
     "deja_payee": "Votre adhésion est déjà payée et ne peut plus être modifiée.",
-    "erreur": "La souscription n'a pas pu être enregistrée."
+    "erreur": "La souscription n'a pas pu être enregistrée.",
+    "avantages_titre": "Avantages",
+    "condition_age_min_max": "De {{min}} à {{max}} ans",
+    "condition_age_min": "À partir de {{min}} ans",
+    "condition_age_max": "Jusqu'à {{max}} ans"
   },
   "historique": {
     "titre": "Historique d'adhésion",

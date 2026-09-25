@@ -294,6 +294,55 @@ describe("MonAdhesionPage", () => {
     expect(mutate).toHaveBeenCalledWith("s1", expect.anything());
   });
 
+  it("affiche les avantages et la tranche d'âge de chaque offre, avec une couleur propre à chacune (demande utilisateur 2026-09-25)", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne({
+        offres: [
+          offre({
+            id: "o1",
+            nom: "Basic",
+            avantages: [{ ordre: 1, texte_fr: "Accès au fil d'actualité" }],
+            condition_age_min: 18,
+          }),
+          offre({
+            id: "o2",
+            nom: "Famille",
+            prix_plein: "200.00",
+            avantages: [{ ordre: 1, texte_fr: "Jusqu'à 4 membres" }],
+            condition_age_min: 0,
+            condition_age_max: 17,
+          }),
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.getByText("Accès au fil d'actualité")).toBeInTheDocument();
+    expect(screen.getByText("Jusqu'à 4 membres")).toBeInTheDocument();
+    expect(screen.getByText("offres.condition_age_min")).toBeInTheDocument();
+    expect(screen.getByText("offres.condition_age_min_max")).toBeInTheDocument();
+
+    // Chaque offre porte un liseré de couleur distinct et fixe (palette catégorielle, pas de
+    // recyclage arbitraire) — repéré ici via la carte englobant son nom.
+    const carteBasic = screen.getByText("Basic").closest("div.rounded-cid");
+    const carteFamille = screen.getByText("Famille").closest("div.rounded-cid");
+    expect(carteBasic).toHaveClass("border-l-cat-1");
+    expect(carteFamille).toHaveClass("border-l-cat-2");
+  });
+
   it("ne propose pas de retirer une adhésion déjà payée", () => {
     vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
       data: campagne(),

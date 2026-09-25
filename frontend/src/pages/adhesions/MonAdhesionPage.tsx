@@ -22,6 +22,16 @@
  * propre souscription tant qu'elle n'est pas payée (brouillon/en_attente_justificatif/
  * en_attente_paiement/rabais_refuse — voir STATUTS_SOUSCRIPTION_ANNULABLES côté backend, qui
  * reste seul juge du statut autorisé).
+ *
+ * Différenciation par couleur + détails/avantages (demande utilisateur 2026-09-25,
+ * "Mitgliedschaftspakete Färblich differenzieren" / "Details und Vorteile zur Mitgliedschaft
+ * auflisten") : chaque carte d'offre visible reçoit un liseré coloré fixe selon sa position
+ * (ACCENTS_OFFRE, palette catégorielle validée — voir index.css) — la couleur ne porte jamais
+ * seule l'information (le nom de l'offre reste le premier repère), elle aide juste à repérer
+ * une même offre d'un coup d'œil entre la liste et l'historique. Au-delà de 3 offres visibles,
+ * repli sur un style neutre plutôt que d'inventer une 4ᵉ couleur non validée. Les avantages
+ * (offre.avantages) et la tranche d'âge éligible sont désormais affichés directement sur
+ * chaque carte, plutôt qu'uniquement après souscription (snapshot_avantages du hero).
  */
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -35,7 +45,12 @@ import {
   useSouscrire,
   useUploaderJustificatif,
 } from "../../hooks/useAdhesions";
-import type { CampagneAdhesion, OffreAdhesion, Souscription, StatutSouscription } from "../../types/adhesion";
+import type {
+  CampagneAdhesion,
+  OffreAdhesion,
+  Souscription,
+  StatutSouscription,
+} from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 const STATUTS_RETIRABLES: StatutSouscription[] = [
@@ -44,6 +59,19 @@ const STATUTS_RETIRABLES: StatutSouscription[] = [
   "en_attente_paiement",
   "rabais_refuse",
 ];
+
+// Palette catégorielle fixe (jamais recyclée arbitrairement) — voir le docstring de tête pour
+// le choix des 3 slots. `puce` colore le repère "✓" devant chaque avantage listé.
+const ACCENTS_OFFRE = [
+  { liseret: "border-l-cat-1", puce: "text-cat-1" },
+  { liseret: "border-l-cat-2", puce: "text-cat-2" },
+  { liseret: "border-l-cat-3", puce: "text-cat-3" },
+] as const;
+const ACCENT_NEUTRE = { liseret: "border-l-text-tertiary/30", puce: "text-ca" } as const;
+
+function accentOffre(index: number): (typeof ACCENTS_OFFRE)[number] | typeof ACCENT_NEUTRE {
+  return ACCENTS_OFFRE[index] ?? ACCENT_NEUTRE;
+}
 
 const STATUT_STYLES: Record<StatutSouscription, string> = {
   brouillon: "bg-bg-tertiary text-text-secondary",
@@ -105,9 +133,9 @@ export default function MonAdhesionPage() {
   const rabaisSelectionne = rabaisOptions.find((r) => r.id === rabaisSelectionneId) ?? null;
 
   const offreActuelle = souscriptionActuelle
-    ? campagnesById.get(souscriptionActuelle.campagne)?.offres.find(
-        (o) => o.id === souscriptionActuelle.offre,
-      )
+    ? campagnesById
+        .get(souscriptionActuelle.campagne)
+        ?.offres.find((o) => o.id === souscriptionActuelle.offre)
     : undefined;
 
   // Rabais choisi pour la souscription en cours — sert à afficher les instructions membre
@@ -173,7 +201,9 @@ export default function MonAdhesionPage() {
           <div className="mt-3 flex flex-wrap items-center gap-4">
             <div>
               <div className="text-xs uppercase text-white/70">{t("hero.prix_paye")}</div>
-              <div className="text-lg font-bold">{formatMontant(souscriptionActuelle.prix_paye)}</div>
+              <div className="text-lg font-bold">
+                {formatMontant(souscriptionActuelle.prix_paye)}
+              </div>
             </div>
             <div className="text-xs uppercase text-white/70">
               {t("hero.souscrit_le", { date: formatDate(souscriptionActuelle.date_souscription) })}
@@ -186,7 +216,9 @@ export default function MonAdhesionPage() {
           </div>
           {souscriptionActuelle.snapshot_avantages.length > 0 && (
             <div className="mt-3">
-              <div className="mb-1 text-xs uppercase text-white/70">{t("hero.avantages_titre")}</div>
+              <div className="mb-1 text-xs uppercase text-white/70">
+                {t("hero.avantages_titre")}
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {souscriptionActuelle.snapshot_avantages
                   .slice()
@@ -246,9 +278,7 @@ export default function MonAdhesionPage() {
               disabled={!fichierJustificatif || uploaderJustificatifMutation.isPending}
               className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
             >
-              {justificatifActuel
-                ? t("justificatif.remplacer")
-                : t("justificatif.envoyer")}
+              {justificatifActuel ? t("justificatif.remplacer") : t("justificatif.envoyer")}
             </button>
           </div>
           {uploaderJustificatifMutation.isError && (
@@ -269,7 +299,9 @@ export default function MonAdhesionPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
           <h2 className="mb-3 text-xs font-bold text-text-primary">
-            {campagne ? t("offres.titre", { annee: campagne.annee }) : t("offres.titre_sans_campagne")}
+            {campagne
+              ? t("offres.titre", { annee: campagne.annee })
+              : t("offres.titre_sans_campagne")}
           </h2>
 
           {campagneActive.isLoading && (
@@ -287,71 +319,120 @@ export default function MonAdhesionPage() {
 
           {campagne && !dejaPayee && offresVisibles.length > 0 && (
             <div className="space-y-2">
-              {offresVisibles.map((offre) => (
-                <div
-                  key={offre.id}
-                  className={`rounded-cid border px-3 py-2 ${
-                    offreSelectionneeId === offre.id ? "border-ca bg-cal/20" : "border-text-tertiary/20"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => choisirOffre(offre.id)}
-                    className="flex w-full items-center justify-between gap-2 text-left"
+              {offresVisibles.map((offre, index) => {
+                const accent = accentOffre(index);
+                const avantagesOffre = offre.avantages.slice().sort((a, b) => a.ordre - b.ordre);
+                const texteConditionAge =
+                  offre.condition_age_min != null && offre.condition_age_max != null
+                    ? t("offres.condition_age_min_max", {
+                        min: offre.condition_age_min,
+                        max: offre.condition_age_max,
+                      })
+                    : offre.condition_age_min != null
+                      ? t("offres.condition_age_min", { min: offre.condition_age_min })
+                      : offre.condition_age_max != null
+                        ? t("offres.condition_age_max", { max: offre.condition_age_max })
+                        : null;
+
+                return (
+                  <div
+                    key={offre.id}
+                    className={`rounded-cid border border-l-4 px-3 py-2 ${accent.liseret} ${
+                      offreSelectionneeId === offre.id
+                        ? "border-ca bg-cal/20"
+                        : "border-text-tertiary/20"
+                    }`}
                   >
-                    <div>
-                      <div className="text-sm font-semibold text-text-primary">{offre.nom}</div>
-                      <div className="text-xs text-text-tertiary">{offre.description}</div>
-                    </div>
-                    <div className="whitespace-nowrap text-sm font-bold text-ca">
-                      {t("offres.prix_plein")} : {formatMontant(offre.prix_plein)}
-                    </div>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => choisirOffre(offre.id)}
+                      className="flex w-full items-center justify-between gap-2 text-left"
+                    >
+                      <div>
+                        <div className="text-sm font-semibold text-text-primary">{offre.nom}</div>
+                        <div className="text-xs text-text-tertiary">{offre.description}</div>
+                      </div>
+                      <div className="whitespace-nowrap text-sm font-bold text-ca">
+                        {t("offres.prix_plein")} : {formatMontant(offre.prix_plein)}
+                      </div>
+                    </button>
 
-                  {offreSelectionneeId === offre.id && (
-                    <div className="mt-2 border-t border-text-tertiary/10 pt-2">
-                      {offre.rabais.length > 0 && (
-                        <div className="mb-2">
-                          <label
-                            htmlFor={`rabais-${offre.id}`}
-                            className="mb-1 block text-xs font-medium text-text-secondary"
-                          >
-                            {t("offres.rabais_label")}
-                          </label>
-                          <select
-                            id={`rabais-${offre.id}`}
-                            value={rabaisSelectionneId ?? ""}
-                            onChange={(e) => setRabaisSelectionneId(e.target.value || null)}
-                            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                          >
-                            <option value="">{t("offres.rabais_aucun")}</option>
-                            {offre.rabais.map((r) => (
-                              <option key={r.id} value={r.id}>
-                                {r.label_fr}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                    {(avantagesOffre.length > 0 || texteConditionAge) && (
+                      <div className="mt-2 space-y-1 border-t border-text-tertiary/10 pt-2">
+                        {texteConditionAge && (
+                          <div className="text-[11px] text-text-tertiary">{texteConditionAge}</div>
+                        )}
+                        {avantagesOffre.length > 0 && (
+                          <div>
+                            <div className="mb-0.5 text-[11px] font-semibold uppercase text-text-tertiary">
+                              {t("offres.avantages_titre")}
+                            </div>
+                            <ul className="space-y-0.5">
+                              {avantagesOffre.map((av) => (
+                                <li
+                                  key={av.ordre}
+                                  className="flex items-start gap-1.5 text-xs text-text-secondary"
+                                >
+                                  <span
+                                    className={`shrink-0 font-bold ${accent.puce}`}
+                                    aria-hidden="true"
+                                  >
+                                    ✓
+                                  </span>
+                                  {av.texte_fr}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                      {souscrireMutation.isError && (
-                        <p className="mb-2 text-xs text-status-dangerText">
-                          {extractApiErrorMessage(souscrireMutation.error, t("offres.erreur"))}
-                        </p>
-                      )}
+                    {offreSelectionneeId === offre.id && (
+                      <div className="mt-2 border-t border-text-tertiary/10 pt-2">
+                        {offre.rabais.length > 0 && (
+                          <div className="mb-2">
+                            <label
+                              htmlFor={`rabais-${offre.id}`}
+                              className="mb-1 block text-xs font-medium text-text-secondary"
+                            >
+                              {t("offres.rabais_label")}
+                            </label>
+                            <select
+                              id={`rabais-${offre.id}`}
+                              value={rabaisSelectionneId ?? ""}
+                              onChange={(e) => setRabaisSelectionneId(e.target.value || null)}
+                              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                            >
+                              <option value="">{t("offres.rabais_aucun")}</option>
+                              {offre.rabais.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                  {r.label_fr}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
 
-                      <button
-                        type="button"
-                        onClick={handleSouscrire}
-                        disabled={souscrireMutation.isPending}
-                        className="w-full rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
-                      >
-                        {souscriptionActuelle ? t("offres.changer") : t("offres.souscrire")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+                        {souscrireMutation.isError && (
+                          <p className="mb-2 text-xs text-status-dangerText">
+                            {extractApiErrorMessage(souscrireMutation.error, t("offres.erreur"))}
+                          </p>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleSouscrire}
+                          disabled={souscrireMutation.isPending}
+                          className="w-full rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+                        >
+                          {souscriptionActuelle ? t("offres.changer") : t("offres.souscrire")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

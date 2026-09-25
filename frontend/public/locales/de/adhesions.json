@@ -39,7 +39,11 @@
     "souscrire": "Dieses Angebot wählen",
     "changer": "Zu diesem Angebot wechseln",
     "deja_payee": "Ihre Mitgliedschaft ist bereits bezahlt und kann nicht mehr geändert werden.",
-    "erreur": "Die Anmeldung konnte nicht gespeichert werden."
+    "erreur": "Die Anmeldung konnte nicht gespeichert werden.",
+    "avantages_titre": "Vorteile",
+    "condition_age_min_max": "Ab {{min}} bis {{max}} Jahren",
+    "condition_age_min": "Ab {{min}} Jahren",
+    "condition_age_max": "Bis {{max}} Jahren"
   },
   "historique": {
     "titre": "Mitgliedschaftsverlauf",
