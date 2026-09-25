@@ -66,16 +66,36 @@ function ModaleInscription({
   const { t } = useTranslation("evenements");
   const inscrire = useInscrire();
   const [places, setPlaces] = useState(1);
+  const [accompagnantsAdultes, setAccompagnantsAdultes] = useState(0);
+  const [accompagnantsEnfants, setAccompagnantsEnfants] = useState(0);
   const [regime, setRegime] = useState<RegimeAlimentaire>("aucun");
   const [remarques, setRemarques] = useState("");
   const [erreur, setErreur] = useState("");
 
   const maxPlaces =
     evenement.places_restantes !== null ? Math.min(4, Math.max(evenement.places_restantes, 1)) : 4;
+  const maxAccompagnants =
+    evenement.places_restantes !== null ? Math.max(evenement.places_restantes - places, 0) : 8;
+
+  // Estimation affichée à titre purement indicatif — le montant réel est toujours recalculé et
+  // vérifié côté serveur, jamais fait confiance au frontend (CLAUDE.md §8).
+  const montantEstime =
+    Number(evenement.gratuit ? 0 : evenement.cout) * places +
+    (evenement.accompagnants_payants
+      ? Number(evenement.prix_accompagnant_adulte) * accompagnantsAdultes +
+        Number(evenement.prix_accompagnant_enfant) * accompagnantsEnfants
+      : 0);
 
   function confirmer() {
     inscrire.mutate(
-      { evenement: evenement.id, places, regime_alimentaire: regime, remarques },
+      {
+        evenement: evenement.id,
+        places,
+        nombre_accompagnants_adultes: accompagnantsAdultes,
+        nombre_accompagnants_enfants: accompagnantsEnfants,
+        regime_alimentaire: regime,
+        remarques,
+      },
       {
         onSuccess: (inscription) => {
           onClose();
@@ -119,9 +139,9 @@ function ModaleInscription({
           </div>
           <div className="text-right">
             <div className="text-lg font-extrabold text-ca">
-              {evenement.gratuit ? t("gratuit") : formatMontant(evenement.cout)}
+              {montantEstime > 0 ? formatMontant(montantEstime) : t("gratuit")}
             </div>
-            {!evenement.gratuit && <div className="text-[10px] text-text-tertiary">/ pers.</div>}
+            <div className="text-[10px] text-text-tertiary">{t("modal_montant_estime")}</div>
           </div>
         </div>
 
@@ -158,6 +178,70 @@ function ModaleInscription({
           </div>
         </div>
 
+        {/* Begleitpersonen (module "Veranstaltungsverwaltung", 2026-09-25) — décomptes par
+            palier adulte/enfant, jamais l'âge exact de chaque accompagnant (la limite d'âge
+            n'est ici qu'une indication pour aider le membre à choisir le bon palier). */}
+        <div className="mb-2 rounded-cid bg-bg-secondary p-2.5">
+          <div className="mb-1.5 text-xs font-medium text-text-secondary">
+            {t("modal_accompagnants_titre")}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label
+                htmlFor="modal-inscription-accompagnants-adultes"
+                className="mb-1 block text-[11px] text-text-tertiary"
+              >
+                {t("modal_accompagnants_adultes")}
+                {evenement.accompagnants_payants &&
+                  ` (${formatMontant(evenement.prix_accompagnant_adulte)})`}
+              </label>
+              <input
+                id="modal-inscription-accompagnants-adultes"
+                type="number"
+                min={0}
+                max={maxAccompagnants}
+                value={accompagnantsAdultes}
+                onChange={(e) =>
+                  setAccompagnantsAdultes(
+                    Math.max(0, Math.min(maxAccompagnants, Number(e.target.value) || 0)),
+                  )
+                }
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="modal-inscription-accompagnants-enfants"
+                className="mb-1 block text-[11px] text-text-tertiary"
+              >
+                {t("modal_accompagnants_enfants", {
+                  age: evenement.age_limite_accompagnant_enfant,
+                })}
+                {evenement.accompagnants_payants &&
+                  ` (${formatMontant(evenement.prix_accompagnant_enfant)})`}
+              </label>
+              <input
+                id="modal-inscription-accompagnants-enfants"
+                type="number"
+                min={0}
+                max={maxAccompagnants}
+                value={accompagnantsEnfants}
+                onChange={(e) =>
+                  setAccompagnantsEnfants(
+                    Math.max(0, Math.min(maxAccompagnants, Number(e.target.value) || 0)),
+                  )
+                }
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+          </div>
+          {!evenement.accompagnants_payants && (
+            <p className="mt-1 text-[10px] text-text-tertiary">
+              {t("modal_accompagnants_gratuits")}
+            </p>
+          )}
+        </div>
+
         <div className="mb-3">
           <label className="mb-1 block text-xs font-medium text-text-secondary">
             {t("modal_remarques")}
@@ -187,7 +271,7 @@ function ModaleInscription({
             disabled={inscrire.isPending}
             className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
           >
-            {evenement.gratuit ? t("modal_confirmer") : t("modal_confirmer_payer")}
+            {montantEstime > 0 ? t("modal_confirmer_payer") : t("modal_confirmer")}
           </button>
         </div>
       </div>

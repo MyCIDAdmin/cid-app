@@ -55,6 +55,10 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     places_max: 45,
     gratuit: false,
     cout: "35.00",
+    accompagnants_payants: false,
+    prix_accompagnant_adulte: "0.00",
+    prix_accompagnant_enfant: "0.00",
+    age_limite_accompagnant_enfant: 12,
     organisateur: "m1",
     organisateur_detail: { id: "m1", prenom: "Sami", nom: "Trabelsi" },
     statut: "publie",
@@ -83,6 +87,8 @@ function inscription(overrides: Partial<Inscription> = {}): Inscription {
     },
     membre: "m2",
     places: 1,
+    nombre_accompagnants_adultes: 0,
+    nombre_accompagnants_enfants: 0,
     regime_alimentaire: "aucun",
     remarques: "",
     montant_paye: "35.00",
@@ -155,7 +161,51 @@ describe("EvenementsPage", () => {
     fireEvent.click(screen.getByText("modal_confirmer_payer"));
 
     expect(inscrire.mutate).toHaveBeenCalledWith(
-      { evenement: "e1", places: 1, regime_alimentaire: "aucun", remarques: "" },
+      {
+        evenement: "e1",
+        places: 1,
+        nombre_accompagnants_adultes: 0,
+        nombre_accompagnants_enfants: 0,
+        regime_alimentaire: "aucun",
+        remarques: "",
+      },
+      expect.anything(),
+    );
+  });
+
+  it("inscrit avec des accompagnants payants et calcule le montant estimé côté client (indicatif)", () => {
+    const inscrire = mutationMock<ReturnType<typeof useEvenementsHooks.useInscrire>>();
+    vi.mocked(useEvenementsHooks.useInscrire).mockReturnValue(inscrire);
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([
+        evenement({
+          accompagnants_payants: true,
+          prix_accompagnant_adulte: "10.00",
+          prix_accompagnant_enfant: "5.00",
+          age_limite_accompagnant_enfant: 12,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    fireEvent.click(screen.getByText("sinscrire_payer"));
+    fireEvent.change(screen.getByLabelText("modal_accompagnants_adultes (10,00 €)"), {
+      target: { value: "2" },
+    });
+    fireEvent.click(screen.getByText("modal_confirmer_payer"));
+
+    expect(inscrire.mutate).toHaveBeenCalledWith(
+      {
+        evenement: "e1",
+        places: 1,
+        nombre_accompagnants_adultes: 2,
+        nombre_accompagnants_enfants: 0,
+        regime_alimentaire: "aucun",
+        remarques: "",
+      },
       expect.anything(),
     );
   });

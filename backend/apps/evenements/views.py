@@ -138,6 +138,15 @@ class EvenementViewSet(ModelViewSet):
         changement de comportement pour `inscrire` (voir docstring de classe pour le
         verrouillage transactionnel)."""
         places_demandees = validated_data["places"]
+        # Begleitpersonen (module "Veranstaltungsverwaltung", 2026-09-25) : décomptes adulte/
+        # enfant, jamais fait confiance au frontend au-delà du simple nombre — le tarif est
+        # recalculé ci-dessous via Inscription.montant_accompagnants (CLAUDE.md §8). Elles
+        # comptent aussi dans la capacité (voir Evenement.places_reservees).
+        nb_accompagnants_adultes = validated_data.get("nombre_accompagnants_adultes", 0)
+        nb_accompagnants_enfants = validated_data.get("nombre_accompagnants_enfants", 0)
+        total_places_demandees = (
+            places_demandees + nb_accompagnants_adultes + nb_accompagnants_enfants
+        )
 
         with transaction.atomic():
             # select_for_update verrouille la ligne Evenement pour la durée de la
@@ -156,13 +165,17 @@ class EvenementViewSet(ModelViewSet):
                 defaults={"places": 0, "statut": StatutInscription.CONFIRMEE},
             )
             if inscription.statut != StatutInscription.ANNULEE:
-                places_existantes = inscription.places
+                places_existantes = (
+                    inscription.places
+                    + inscription.nombre_accompagnants_adultes
+                    + inscription.nombre_accompagnants_enfants
+                )
             else:
                 places_existantes = 0
 
             if evenement.places_max is not None:
                 places_autres = evenement.places_reservees - places_existantes
-                if places_autres + places_demandees > evenement.places_max:
+                if places_autres + total_places_demandees > evenement.places_max:
                     raise ValidationError(
                         {
                             "places": (
@@ -174,14 +187,24 @@ class EvenementViewSet(ModelViewSet):
                     )
 
             inscription.places = places_demandees
+            inscription.nombre_accompagnants_adultes = nb_accompagnants_adultes
+            inscription.nombre_accompagnants_enfants = nb_accompagnants_enfants
             inscription.regime_alimentaire = validated_data.get(
                 "regime_alimentaire", inscription.regime_alimentaire
             )
             inscription.remarques = validated_data.get("remarques", "")
-            inscription.montant_paye = evenement.cout * places_demandees
+            # inscription.montant_accompagnants lit evenement.accompagnants_payants (déjà
+            # verrouillé ci-dessus) — jamais fait confiance au frontend (CLAUDE.md §8).
+            inscription.montant_paye = (
+                evenement.cout * places_demandees + inscription.montant_accompagnants
+            )
+            # Le statut dépend désormais du montant total dû (membre + accompagnants), pas
+            # seulement de evenement.gratuit/cout : un événement gratuit pour le membre peut
+            # tout de même facturer ses accompagnants (accompagnants_payants indépendant de
+            # gratuit/cout, voir Evenement — module "Veranstaltungsverwaltung" 2026-09-25).
             inscription.statut = (
                 StatutInscription.CONFIRMEE
-                if evenement.gratuit or evenement.cout == 0
+                if inscription.montant_paye <= 0
                 else StatutInscription.EN_ATTENTE_PAIEMENT
             )
             inscription.save()

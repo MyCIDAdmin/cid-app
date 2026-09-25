@@ -81,6 +81,45 @@ class Evenement(models.Model):
         help_text=_("Ignoré (toujours 0) si gratuit=True — voir Evenement.save()."),
     )
 
+    # --- Begleitpersonen / accompagnants (demande utilisateur du 2026-09-25, module
+    # "Veranstaltungsverwaltung" : "Begleitpersonen definieren (Anzahl, ob sie zahlen, Preis —
+    # Erwachsene/Kinder mit Altersgrenze)"). Réponse à la question de clarification posée avant
+    # ce module : 2 paliers fixes adulte/enfant (pas de tarification par âge individuel), avec
+    # une limite d'âge configurable par événement (défaut 12 ans). Indépendant de gratuit/cout
+    # (qui restent le tarif du membre lui-même) — un événement gratuit pour le membre peut très
+    # bien facturer ses accompagnants, et inversement. Voir Inscription.montant_accompagnants
+    # pour le calcul, jamais fait confiance au frontend (CLAUDE.md §8).
+    accompagnants_payants = models.BooleanField(
+        default=False,
+        help_text=_(
+            "Si activé, un accompagnant inscrit avec un membre est facturé au tarif "
+            "adulte/enfant ci-dessous. Sinon toujours gratuit, quels que soient ces tarifs."
+        ),
+    )
+    prix_accompagnant_adulte = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_("Ignoré si accompagnants_payants=False."),
+    )
+    prix_accompagnant_enfant = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_("Ignoré si accompagnants_payants=False."),
+    )
+    age_limite_accompagnant_enfant = models.PositiveSmallIntegerField(
+        default=12,
+        validators=[MinValueValidator(1)],
+        help_text=_(
+            "Âge strictement inférieur à cette limite = tarif enfant (purement indicatif côté "
+            "formulaire d'inscription, qui ne demande que des décomptes adulte/enfant, jamais "
+            "l'âge exact de chaque accompagnant)."
+        ),
+    )
+
     organisateur = models.ForeignKey(
         "membres.Membre",
         on_delete=models.SET_NULL,
@@ -122,9 +161,17 @@ class Evenement(models.Model):
     @property
     def places_reservees(self) -> int:
         """Somme des places des inscriptions actives (ni annulée) — jamais mise en cache,
-        toujours recalculée pour rester exacte malgré des annulations concurrentes."""
+        toujours recalculée pour rester exacte malgré des annulations concurrentes. Inclut les
+        accompagnants (Begleitpersonen) : ils occupent physiquement une place à l'événement au
+        même titre que le membre inscrit (décision d'interprétation, module
+        "Veranstaltungsverwaltung" du 2026-09-25 — le champ places_max représente la capacité
+        physique du lieu)."""
         total = self.inscriptions.exclude(statut=StatutInscription.ANNULEE).aggregate(
-            total=models.Sum("places")
+            total=models.Sum(
+                models.F("places")
+                + models.F("nombre_accompagnants_adultes")
+                + models.F("nombre_accompagnants_enfants")
+            )
         )["total"]
         return total or 0
 
@@ -161,12 +208,22 @@ class Inscription(models.Model):
     )
     remarques = models.TextField(blank=True)
 
+    # --- Begleitpersonen / accompagnants — décomptes par palier (adulte/enfant), jamais l'âge
+    # individuel de chaque accompagnant (voir Evenement.age_limite_accompagnant_enfant : la
+    # limite n'est qu'une indication affichée au membre lors de l'inscription). Valeurs par
+    # défaut à 0 — rétrocompatible avec les inscriptions existantes.
+    nombre_accompagnants_adultes = models.PositiveSmallIntegerField(default=0)
+    nombre_accompagnants_enfants = models.PositiveSmallIntegerField(default=0)
+
     montant_paye = models.DecimalField(
         max_digits=8,
         decimal_places=2,
         default=Decimal("0.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
-        help_text=_("Recalculé côté serveur = evenement.cout * places (CLAUDE.md §8)."),
+        help_text=_(
+            "Recalculé côté serveur = evenement.cout * places + montant_accompagnants "
+            "(CLAUDE.md §8)."
+        ),
     )
     statut = models.CharField(
         max_length=20, choices=StatutInscription.choices, default=StatutInscription.CONFIRMEE
@@ -198,6 +255,18 @@ class Inscription(models.Model):
 
     def __str__(self):
         return f"{self.membre} — {self.evenement.titre}"
+
+    @property
+    def montant_accompagnants(self) -> Decimal:
+        """Montant dû pour les accompagnants — 0 si evenement.accompagnants_payants=False,
+        sinon nombre_accompagnants_adultes * prix_accompagnant_adulte + (idem enfants).
+        Toujours recalculé côté serveur, jamais fait confiance au frontend (CLAUDE.md §8)."""
+        if not self.evenement.accompagnants_payants:
+            return Decimal("0.00")
+        return (
+            self.evenement.prix_accompagnant_adulte * self.nombre_accompagnants_adultes
+            + self.evenement.prix_accompagnant_enfant * self.nombre_accompagnants_enfants
+        )
 
 
 class Covoiturage(models.Model):

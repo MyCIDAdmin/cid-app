@@ -55,6 +55,10 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     places_max: 45,
     gratuit: false,
     cout: "35.00",
+    accompagnants_payants: false,
+    prix_accompagnant_adulte: "0.00",
+    prix_accompagnant_enfant: "0.00",
+    age_limite_accompagnant_enfant: 12,
     organisateur: "m1",
     organisateur_detail: { id: "m1", prenom: "Sami", nom: "Trabelsi" },
     statut: "brouillon",
@@ -139,6 +143,55 @@ describe("AdminEventsPage", () => {
         description: "Match aller au Bayern.",
         date_evenement: "2099-06-14",
         lieu: "Munich",
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("crée un événement avec accompagnants payants (module Begleitpersonen)", () => {
+    const creer = mutationMock<ReturnType<typeof useEvenementsHooks.useCreerEvenement>>();
+    vi.mocked(useEvenementsHooks.useCreerEvenement).mockReturnValue(creer);
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<AdminEventsPage />);
+
+    fireEvent.click(screen.getByText("admin.creer_evenement"));
+    fireEvent.change(screen.getByPlaceholderText("admin.champ_titre_placeholder"), {
+      target: { value: "Déplacement Munich" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("admin.champ_description_placeholder"), {
+      target: { value: "Match aller au Bayern." },
+    });
+    fireEvent.change(screen.getByLabelText("admin.champ_date", { exact: false }), {
+      target: { value: "2099-06-14" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("admin.champ_lieu_placeholder"), {
+      target: { value: "Munich" },
+    });
+
+    fireEvent.click(screen.getByLabelText("admin.champ_accompagnants_payants"));
+    fireEvent.change(screen.getByLabelText("admin.champ_prix_accompagnant_adulte"), {
+      target: { value: "10.00" },
+    });
+    fireEvent.change(screen.getByLabelText("admin.champ_prix_accompagnant_enfant"), {
+      target: { value: "5.00" },
+    });
+    fireEvent.change(screen.getByLabelText("admin.champ_age_limite_accompagnant_enfant"), {
+      target: { value: "14" },
+    });
+
+    fireEvent.click(screen.getByText("admin.creer_evenement"));
+
+    expect(creer.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accompagnants_payants: true,
+        prix_accompagnant_adulte: "10.00",
+        prix_accompagnant_enfant: "5.00",
+        age_limite_accompagnant_enfant: 14,
       }),
       expect.anything(),
     );

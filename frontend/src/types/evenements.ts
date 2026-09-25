@@ -31,6 +31,15 @@ export interface Evenement {
   places_max: number | null;
   gratuit: boolean;
   cout: string;
+  /** Begleitpersonen (module "Veranstaltungsverwaltung", 2026-09-25) — indépendant de
+   * gratuit/cout : un événement gratuit pour le membre peut tout de même facturer ses
+   * accompagnants, et inversement. */
+  accompagnants_payants: boolean;
+  prix_accompagnant_adulte: string;
+  prix_accompagnant_enfant: string;
+  /** Purement indicatif côté formulaire d'inscription — celui-ci ne demande que des décomptes
+   * adulte/enfant, jamais l'âge exact de chaque accompagnant. */
+  age_limite_accompagnant_enfant: number;
   organisateur: string | null;
   organisateur_detail: MembreResume | null;
   statut: StatutEvenement;
@@ -54,6 +63,10 @@ export interface EvenementPayload {
   places_max?: number | null;
   gratuit?: boolean;
   cout?: string;
+  accompagnants_payants?: boolean;
+  prix_accompagnant_adulte?: string;
+  prix_accompagnant_enfant?: string;
+  age_limite_accompagnant_enfant?: number;
   organisateur?: string | null;
 }
 
@@ -76,10 +89,14 @@ export interface Inscription {
   evenement_detail: EvenementResume | null;
   membre: string;
   places: number;
+  /** Begleitpersonen — décomptes par palier, jamais l'âge individuel de chaque accompagnant
+   * (voir Evenement.age_limite_accompagnant_enfant, purement indicatif). */
+  nombre_accompagnants_adultes: number;
+  nombre_accompagnants_enfants: number;
   regime_alimentaire: RegimeAlimentaire;
   remarques: string;
-  /** Recalculé côté serveur = evenement.cout * places — jamais fait confiance au frontend
-   * (CLAUDE.md §8). */
+  /** Recalculé côté serveur = evenement.cout * places + montant des accompagnants — jamais
+   * fait confiance au frontend (CLAUDE.md §8). */
   montant_paye: string;
   statut: StatutInscription;
   cotisation: string | null;
@@ -92,6 +109,8 @@ export interface Inscription {
 export interface InscrirePayload {
   evenement: string;
   places: number;
+  nombre_accompagnants_adultes?: number;
+  nombre_accompagnants_enfants?: number;
   regime_alimentaire?: RegimeAlimentaire;
   remarques?: string;
 }

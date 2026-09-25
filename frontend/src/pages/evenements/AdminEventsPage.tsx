@@ -42,6 +42,10 @@ const FORMULAIRE_VIDE: EvenementPayload = {
   places_max: null,
   gratuit: false,
   cout: "0.00",
+  accompagnants_payants: false,
+  prix_accompagnant_adulte: "0.00",
+  prix_accompagnant_enfant: "0.00",
+  age_limite_accompagnant_enfant: 12,
 };
 
 function FormulaireEvenement({
@@ -69,6 +73,10 @@ function FormulaireEvenement({
           places_max: evenement.places_max,
           gratuit: evenement.gratuit,
           cout: evenement.cout,
+          accompagnants_payants: evenement.accompagnants_payants,
+          prix_accompagnant_adulte: evenement.prix_accompagnant_adulte,
+          prix_accompagnant_enfant: evenement.prix_accompagnant_enfant,
+          age_limite_accompagnant_enfant: evenement.age_limite_accompagnant_enfant,
         }
       : FORMULAIRE_VIDE,
   );
@@ -256,6 +264,84 @@ function FormulaireEvenement({
           placeholder={t("admin.champ_point_rdv_placeholder")}
           className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
         />
+      </div>
+
+      {/* Begleitpersonen (module "Veranstaltungsverwaltung", 2026-09-25) — indépendant de
+          gratuit/cout ci-dessus : un événement gratuit pour le membre peut tout de même
+          facturer ses accompagnants. */}
+      <div className="rounded-cid border border-text-tertiary/20 p-3">
+        <label
+          htmlFor="admin-event-accompagnants-payants"
+          className="mb-2 flex items-center gap-2 text-xs font-medium text-text-secondary"
+        >
+          <input
+            id="admin-event-accompagnants-payants"
+            type="checkbox"
+            checked={valeurs.accompagnants_payants ?? false}
+            onChange={(e) => champ("accompagnants_payants", e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-text-tertiary/40"
+          />
+          {t("admin.champ_accompagnants_payants")}
+        </label>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div>
+            <label
+              htmlFor="admin-event-prix-accompagnant-adulte"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("admin.champ_prix_accompagnant_adulte")}
+            </label>
+            <input
+              id="admin-event-prix-accompagnant-adulte"
+              type="number"
+              min={0}
+              step="0.01"
+              disabled={!valeurs.accompagnants_payants}
+              value={valeurs.prix_accompagnant_adulte ?? ""}
+              onChange={(e) => champ("prix_accompagnant_adulte", e.target.value)}
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-50"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="admin-event-prix-accompagnant-enfant"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("admin.champ_prix_accompagnant_enfant")}
+            </label>
+            <input
+              id="admin-event-prix-accompagnant-enfant"
+              type="number"
+              min={0}
+              step="0.01"
+              disabled={!valeurs.accompagnants_payants}
+              value={valeurs.prix_accompagnant_enfant ?? ""}
+              onChange={(e) => champ("prix_accompagnant_enfant", e.target.value)}
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-50"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="admin-event-age-limite-accompagnant-enfant"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("admin.champ_age_limite_accompagnant_enfant")}
+            </label>
+            <input
+              id="admin-event-age-limite-accompagnant-enfant"
+              type="number"
+              min={1}
+              value={valeurs.age_limite_accompagnant_enfant ?? 12}
+              onChange={(e) =>
+                champ("age_limite_accompagnant_enfant", Number(e.target.value) || 1)
+              }
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            />
+          </div>
+        </div>
+        <p className="mt-1 text-[11px] text-text-tertiary">
+          {t("admin.aide_accompagnants")}
+        </p>
       </div>
 
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}

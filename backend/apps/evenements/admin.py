@@ -6,7 +6,15 @@ from .models import Covoiturage, Evenement, Inscription, ReservationCovoiturage
 class InscriptionInline(admin.TabularInline):
     model = Inscription
     extra = 0
-    fields = ("membre", "places", "regime_alimentaire", "statut", "montant_paye")
+    fields = (
+        "membre",
+        "places",
+        "nombre_accompagnants_adultes",
+        "nombre_accompagnants_enfants",
+        "regime_alimentaire",
+        "statut",
+        "montant_paye",
+    )
     readonly_fields = ("montant_paye",)
 
 
@@ -20,8 +28,9 @@ class EvenementAdmin(admin.ModelAdmin):
         "places_max",
         "places_reservees",
         "organisateur",
+        "accompagnants_payants",
     )
-    list_filter = ("statut", "type_evenement", "date_evenement")
+    list_filter = ("statut", "type_evenement", "date_evenement", "accompagnants_payants")
     search_fields = ("titre", "lieu")
     autocomplete_fields = ("organisateur", "created_by")
     readonly_fields = ("id", "created_at", "updated_at")
@@ -30,7 +39,16 @@ class EvenementAdmin(admin.ModelAdmin):
 
 @admin.register(Inscription)
 class InscriptionAdmin(admin.ModelAdmin):
-    list_display = ("membre", "evenement", "places", "statut", "montant_paye", "created_at")
+    list_display = (
+        "membre",
+        "evenement",
+        "places",
+        "nombre_accompagnants_adultes",
+        "nombre_accompagnants_enfants",
+        "statut",
+        "montant_paye",
+        "created_at",
+    )
     list_filter = ("statut",)
     search_fields = ("membre__nom", "membre__prenom", "evenement__titre")
     autocomplete_fields = ("membre", "evenement", "cotisation")

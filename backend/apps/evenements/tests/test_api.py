@@ -223,6 +223,99 @@ def test_annuler_inscription_libere_la_capacite(api_client):
     assert resp3.status_code == 200
 
 
+# --- Begleitpersonen / accompagnants (module "Veranstaltungsverwaltung", 2026-09-25) ---
+
+
+def test_inscrire_avec_accompagnants_payants_calcule_le_montant_cote_serveur(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "acc1@example.de")
+    evenement = EvenementFactory(
+        cout=Decimal("0.00"),
+        gratuit=True,
+        places_max=10,
+        accompagnants_payants=True,
+        prix_accompagnant_adulte=Decimal("10.00"),
+        prix_accompagnant_enfant=Decimal("5.00"),
+    )
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_URL),
+        {
+            "evenement": str(evenement.id),
+            "places": 1,
+            "nombre_accompagnants_adultes": 2,
+            "nombre_accompagnants_enfants": 1,
+            "montant_paye": "0.01",
+        },
+    )
+    assert resp.status_code == 200, resp.data
+    # Événement gratuit pour le membre (cout=0) mais accompagnants payants :
+    # 0 (membre) + 2*10.00 + 1*5.00 = 25.00 — jamais fait confiance au montant_paye envoyé.
+    assert Decimal(resp.data["montant_paye"]) == Decimal("25.00")
+    assert resp.data["statut"] == StatutInscription.EN_ATTENTE_PAIEMENT
+    assert resp.data["nombre_accompagnants_adultes"] == 2
+    assert resp.data["nombre_accompagnants_enfants"] == 1
+
+
+def test_inscrire_avec_accompagnants_non_payants_reste_gratuit(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "acc2@example.de")
+    evenement = EvenementFactory(
+        cout=Decimal("0.00"),
+        gratuit=True,
+        places_max=10,
+        accompagnants_payants=False,
+        prix_accompagnant_adulte=Decimal("10.00"),
+        prix_accompagnant_enfant=Decimal("5.00"),
+    )
+
+    resp = _auth(api_client, user).post(
+        reverse(INSCRIRE_URL),
+        {
+            "evenement": str(evenement.id),
+            "places": 1,
+            "nombre_accompagnants_adultes": 3,
+            "nombre_accompagnants_enfants": 2,
+        },
+    )
+    assert resp.status_code == 200, resp.data
+    assert Decimal(resp.data["montant_paye"]) == Decimal("0.00")
+    assert resp.data["statut"] == StatutInscription.CONFIRMEE
+
+
+def test_inscrire_accompagnants_comptent_dans_la_capacite(api_client):
+    user1, _ = _user_avec_membre(Role.MEMBRE, "acc3@example.de")
+    user2, _ = _user_avec_membre(Role.MEMBRE, "acc4@example.de")
+    evenement = EvenementFactory(places_max=3)
+
+    # user1 : 1 place pour lui-même + 2 accompagnants adultes = 3 places, capacité pleine.
+    resp1 = _auth(api_client, user1).post(
+        reverse(INSCRIRE_URL),
+        {"evenement": str(evenement.id), "places": 1, "nombre_accompagnants_adultes": 2},
+    )
+    assert resp1.status_code == 200, resp1.data
+
+    resp2 = _auth(api_client, user2).post(
+        reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}
+    )
+    assert resp2.status_code == 400
+    assert "places" in resp2.data["details"]
+
+
+def test_evenement_expose_les_champs_accompagnants(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "acc5@example.de")
+    evenement = EvenementFactory(
+        accompagnants_payants=True,
+        prix_accompagnant_adulte=Decimal("12.50"),
+        prix_accompagnant_enfant=Decimal("6.00"),
+        age_limite_accompagnant_enfant=14,
+    )
+    resp = _auth(api_client, user).get(_evenement_detail_url(evenement))
+    assert resp.status_code == 200
+    assert resp.data["accompagnants_payants"] is True
+    assert Decimal(resp.data["prix_accompagnant_adulte"]) == Decimal("12.50")
+    assert Decimal(resp.data["prix_accompagnant_enfant"]) == Decimal("6.00")
+    assert resp.data["age_limite_accompagnant_enfant"] == 14
+
+
 # --- Synchronisation Cotisation liée (ajoutée le 2026-09-20, retour utilisateur : "Wenn ich auf
 # 'Confirmer et payer' clicke, ich soll direkt zur Zahlung springen") — voir apps.evenements.
 # services.synchroniser_cotisation, appelée depuis inscrire()/InscriptionViewSet.annuler().

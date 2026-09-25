@@ -53,6 +53,10 @@ class EvenementSerializer(serializers.ModelSerializer):
             "places_max",
             "gratuit",
             "cout",
+            "accompagnants_payants",
+            "prix_accompagnant_adulte",
+            "prix_accompagnant_enfant",
+            "age_limite_accompagnant_enfant",
             "organisateur",
             "organisateur_detail",
             "statut",
@@ -84,6 +88,8 @@ class InscriptionSerializer(serializers.ModelSerializer):
             "evenement_detail",
             "membre",
             "places",
+            "nombre_accompagnants_adultes",
+            "nombre_accompagnants_enfants",
             "regime_alimentaire",
             "remarques",
             "montant_paye",
@@ -97,6 +103,8 @@ class InscriptionSerializer(serializers.ModelSerializer):
             "evenement",
             "membre",
             "places",
+            "nombre_accompagnants_adultes",
+            "nombre_accompagnants_enfants",
             "regime_alimentaire",
             "remarques",
             "montant_paye",
@@ -113,6 +121,8 @@ class InscrireSerializer(serializers.Serializer):
 
     evenement = serializers.PrimaryKeyRelatedField(queryset=Evenement.objects.all())
     places = serializers.IntegerField(min_value=1, default=1)
+    nombre_accompagnants_adultes = serializers.IntegerField(min_value=0, default=0)
+    nombre_accompagnants_enfants = serializers.IntegerField(min_value=0, default=0)
     regime_alimentaire = serializers.ChoiceField(
         choices=Inscription._meta.get_field("regime_alimentaire").choices, required=False
     )
