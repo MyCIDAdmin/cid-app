@@ -49,24 +49,49 @@ export default {
           3: "var(--color-cat-3)",
         },
       },
+      // Paire typographique reprise de MyCID dans le cadre du merge de design (2026-09-25,
+      // voir rapport de comparaison "CID vs MyCID") : Oswald pour les titres (font-display),
+      // Inter remplace Segoe UI comme police de texte courant — les deux chargées via Google
+      // Fonts dans index.css. Fallbacks système conservés en dernier recours.
       fontFamily: {
-        sans: ["Segoe UI", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Oswald", "system-ui", "sans-serif"],
       },
       borderRadius: {
         cid: "8px",
         "cid-lg": "12px",
       },
-      // Module Fan-Club (2026-09-24) — animation d'apparition du journal d'événements du
-      // Live-Ticker (voir LiveMatchDetailPage.tsx), en CSS pur plutôt qu'une bibliothèque
-      // d'animation (frontend/package.json n'en contient encore aucune, voir plan approuvé).
       keyframes: {
+        // Module Fan-Club (2026-09-24) — animation d'apparition du journal d'événements du
+        // Live-Ticker (voir LiveMatchDetailPage.tsx), en CSS pur plutôt qu'une bibliothèque
+        // d'animation (frontend/package.json n'en contient encore aucune, voir plan approuvé).
         "slide-in-fade": {
           "0%": { opacity: "0", transform: "translateY(-6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        // Repris de MyCID (merge de design 2026-09-25) — apparition douce pour cartes/listes
+        // (voir .stagger-children dans index.css) et titres de section.
+        "fade-up": {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "scale(0.96)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        // Pastille de statut "actif" avec pulsation — même principe que le keyframe existant
+        // cid-pulse-cible dans index.css (box-shadow solide → transparent, pas de couleur avec
+        // alpha à maintenir en double pour chaque thème).
+        "badge-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 0 var(--color-ca)" },
+          "50%": { boxShadow: "0 0 0 4px transparent" },
+        },
       },
       animation: {
         "slide-in-fade": "slide-in-fade 0.35s ease-out",
+        "fade-up": "fade-up 0.5s ease-out both",
+        "scale-in": "scale-in 0.35s ease-out both",
+        "badge-pulse": "badge-pulse 2s ease-in-out infinite",
       },
     },
   },
