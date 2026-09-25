@@ -103,6 +103,70 @@ def test_envoi_dun_message_prive_est_enregistre_chiffre_et_diffuse():
     assert message.expediteur_id == m1.id
 
 
+def test_envoi_dun_message_prive_avec_reponse_inclut_le_detail_cite(monkeypatch):
+    # "Antworten" (demande utilisateur 2026-09-25). m1 n'est pas connecté -> déclenche la
+    # notification "hors ligne" (voir _notifier_si_hors_ligne) : monkeypatché comme dans
+    # test_absence_en_ligne_declenche_la_notification_hors_ligne pour ne jamais toucher le
+    # vrai broker Celery/Redis en test.
+    monkeypatch.setattr(
+        "apps.communaute.tasks.envoyer_notification_message_prive.delay",
+        lambda *args, **kwargs: None,
+    )
+    _, m1 = user_membre_avec_fiche(email="msg14@example.de")
+    _, m2 = user_membre_avec_fiche(email="msg15@example.de")
+    conversation = Conversation.get_or_create_entre(m1, m2)
+    original = MessagePrive.objects.create(
+        conversation=conversation, expediteur=m1, contenu="Salut !"
+    )
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/messagerie/{conversation.id}/", m2.user)
+        assert connected is True
+
+        await communicator.send_json_to(
+            {"type": "message", "contenu": "Ça va !", "repond_a": str(original.id)}
+        )
+        recu = await communicator.receive_json_from()
+        assert recu["repond_a"] == str(original.id)
+        assert recu["repond_a_detail"]["contenu"] == "Salut !"
+        assert recu["repond_a_detail"]["expediteur"]["id"] == str(m1.id)
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
+def test_repond_a_dun_message_prive_dune_autre_conversation_est_ignore(monkeypatch):
+    """IDOR : un `repond_a` pointant vers le message d'une conversation ÉTRANGÈRE ne doit
+    jamais être suivi — le message est créé sans citation plutôt que de fuiter le contenu
+    d'une conversation à laquelle l'expéditeur n'appartient pas."""
+    monkeypatch.setattr(
+        "apps.communaute.tasks.envoyer_notification_message_prive.delay",
+        lambda *args, **kwargs: None,
+    )
+    _, m1 = user_membre_avec_fiche(email="msg16@example.de")
+    _, m2 = user_membre_avec_fiche(email="msg17@example.de")
+    conversation = Conversation.get_or_create_entre(m1, m2)
+    _, intrus1 = user_membre_avec_fiche(email="msg18@example.de")
+    _, intrus2 = user_membre_avec_fiche(email="msg19@example.de")
+    autre_conversation = Conversation.get_or_create_entre(intrus1, intrus2)
+    message_etranger = MessagePrive.objects.create(
+        conversation=autre_conversation, expediteur=intrus1, contenu="Secret"
+    )
+
+    async def run():
+        communicator, _ = await _connect(f"/ws/messagerie/{conversation.id}/", m1.user)
+        await communicator.send_json_to(
+            {"type": "message", "contenu": "Coucou", "repond_a": str(message_etranger.id)}
+        )
+        recu = await communicator.receive_json_from()
+        assert recu["repond_a"] is None
+        assert recu["repond_a_detail"] is None
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
 def test_marquer_lu_diffuse_un_accuse_de_lecture():
     _, m1 = user_membre_avec_fiche(email="msg6@example.de")
     _, m2 = user_membre_avec_fiche(email="msg7@example.de")
@@ -148,6 +212,40 @@ def test_suppression_dun_message_prive_par_lapi_rest_est_diffusee_au_websocket()
         )
         recu = await communicator.receive_json_from()
         assert recu == {"type": "message_supprime", "id": str(message.id)}
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
+def test_like_dun_message_prive_par_lapi_rest_est_diffuse_au_websocket():
+    """Comme la suppression ci-dessus, le "like" passe exclusivement par
+    MessagePriveViewSet.liker (REST) — même principe que
+    test_suppression_dun_message_prive_par_lapi_rest_est_diffusee_au_websocket."""
+    _, m1 = user_membre_avec_fiche(email="msg20@example.de")
+    _, m2 = user_membre_avec_fiche(email="msg21@example.de")
+    conversation = Conversation.get_or_create_entre(m1, m2)
+    message = MessagePrive.objects.create(conversation=conversation, expediteur=m1, contenu="Salut")
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/messagerie/{conversation.id}/", m2.user)
+        assert connected is True
+
+        from channels.db import database_sync_to_async
+
+        from apps.communaute.views import _broadcast_message_like
+
+        await database_sync_to_async(_broadcast_message_like)(
+            f"messagerie_{conversation.id}", str(message.id), 1, m1.id, True
+        )
+        recu = await communicator.receive_json_from()
+        assert recu == {
+            "type": "message_like",
+            "id": str(message.id),
+            "nombre_likes": 1,
+            "membre_id": str(m1.id),
+            "aime": True,
+        }
 
         await communicator.disconnect()
 
@@ -242,6 +340,34 @@ def test_connexion_groupe_acceptee_pour_un_membre_puis_message_diffuse():
     assert MessageGroupe.objects.filter(groupe=groupe).count() == 1
 
 
+def test_envoi_dun_message_de_groupe_avec_reponse_inclut_le_detail_cite(monkeypatch):
+    # GroupeChatConsumer notifie systématiquement (pas de condition de présence) — voir
+    # test_envoi_dun_message_de_groupe_declenche_la_notification ci-dessous.
+    monkeypatch.setattr(
+        "apps.communaute.tasks.envoyer_notification_message_groupe.delay",
+        lambda *args, **kwargs: None,
+    )
+    _, m1 = user_membre_avec_fiche(email="grp5@example.de")
+    groupe = GroupeChatFactory()
+    MembreGroupeFactory(groupe=groupe, membre=m1)
+    original = MessageGroupe.objects.create(groupe=groupe, auteur=m1, contenu="Premier message")
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/groupes/{groupe.id}/", m1.user)
+        assert connected is True
+
+        await communicator.send_json_to(
+            {"type": "message", "contenu": "Réponse", "repond_a": str(original.id)}
+        )
+        recu = await communicator.receive_json_from()
+        assert recu["repond_a"] == str(original.id)
+        assert recu["repond_a_detail"]["contenu"] == "Premier message"
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
 def test_envoi_dun_message_de_groupe_declenche_la_notification(monkeypatch):
     """Ajouté le 2026-09-16 (retour utilisateur : couverture "Messaging und Austausch
     Module") — contrairement à MessagerieConsumer, aucune vérification de présence :
@@ -289,6 +415,37 @@ def test_suppression_dun_message_de_groupe_par_lapi_rest_est_diffusee_au_websock
         )
         recu = await communicator.receive_json_from()
         assert recu == {"type": "message_supprime", "id": str(message.id)}
+
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
+def test_like_dun_message_de_groupe_par_lapi_rest_est_diffuse_au_websocket():
+    _, m1 = user_membre_avec_fiche(email="grp6@example.de")
+    groupe = GroupeChatFactory()
+    MembreGroupeFactory(groupe=groupe, membre=m1)
+    message = MessageGroupe.objects.create(groupe=groupe, auteur=m1, contenu="Salut")
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/groupes/{groupe.id}/", m1.user)
+        assert connected is True
+
+        from channels.db import database_sync_to_async
+
+        from apps.communaute.views import _broadcast_message_like
+
+        await database_sync_to_async(_broadcast_message_like)(
+            f"groupe_{groupe.id}", str(message.id), 1, m1.id, True
+        )
+        recu = await communicator.receive_json_from()
+        assert recu == {
+            "type": "message_like",
+            "id": str(message.id),
+            "nombre_likes": 1,
+            "membre_id": str(m1.id),
+            "aime": True,
+        }
 
         await communicator.disconnect()
 

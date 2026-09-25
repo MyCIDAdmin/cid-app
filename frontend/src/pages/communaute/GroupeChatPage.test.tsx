@@ -16,6 +16,7 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useQuitterGroupe: vi.fn(),
     useSupprimerGroupe: vi.fn(),
     useSupprimerMessageGroupe: vi.fn(),
+    useLikerMessageGroupe: vi.fn(),
   };
 });
 
@@ -34,6 +35,34 @@ function page<T>(results: T[]) {
 
 function mutationMock<T>(): T {
   return { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false } as unknown as T;
+}
+
+function socketMock(overrides: Partial<useGroupeChatSocketHook.UseGroupeChatSocketResult> = {}) {
+  return {
+    statut: "ouvert",
+    messages: [],
+    messagesSupprimesIds: [],
+    likesRecus: [],
+    erreur: null,
+    envoyer: vi.fn(),
+    ...overrides,
+  } as useGroupeChatSocketHook.UseGroupeChatSocketResult;
+}
+
+function messageGroupe(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: "m1",
+    groupe: "g1",
+    auteur: { id: "m2", prenom: "Hamza", nom: "Meddeb", photo: null },
+    contenu: "Bienvenue !",
+    created_at: "2026-01-01T10:00:00Z",
+    est_auteur: false,
+    nombre_likes: 0,
+    jaime: false,
+    repond_a: null,
+    repond_a_detail: null,
+    ...overrides,
+  };
 }
 
 function renderGroupe() {
@@ -67,27 +96,15 @@ describe("GroupeChatPage", () => {
     vi.mocked(useCommunauteHooks.useSupprimerMessageGroupe).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useSupprimerMessageGroupe>>(),
     );
-    vi.mocked(useGroupeChatSocketHook.useGroupeChatSocket).mockReturnValue({
-      statut: "ouvert",
-      messages: [],
-      messagesSupprimesIds: [],
-      erreur: null,
-      envoyer: vi.fn(),
-    });
+    vi.mocked(useCommunauteHooks.useLikerMessageGroupe).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useLikerMessageGroupe>>(),
+    );
+    vi.mocked(useGroupeChatSocketHook.useGroupeChatSocket).mockReturnValue(socketMock());
   });
 
   it("affiche l'historique des messages avec le nom de l'auteur", () => {
     vi.mocked(useCommunauteHooks.useMessagesGroupe).mockReturnValue({
-      data: page([
-        {
-          id: "m1",
-          groupe: "g1",
-          auteur: { id: "m2", prenom: "Hamza", nom: "Meddeb", photo: null },
-          contenu: "Bienvenue !",
-          created_at: "2026-01-01T10:00:00Z",
-          est_auteur: false,
-        },
-      ]),
+      data: page([messageGroupe()]),
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useMessagesGroupe>);
@@ -100,13 +117,7 @@ describe("GroupeChatPage", () => {
 
   it("envoie un message via le WebSocket", () => {
     const envoyer = vi.fn();
-    vi.mocked(useGroupeChatSocketHook.useGroupeChatSocket).mockReturnValue({
-      statut: "ouvert",
-      messages: [],
-      messagesSupprimesIds: [],
-      erreur: null,
-      envoyer,
-    });
+    vi.mocked(useGroupeChatSocketHook.useGroupeChatSocket).mockReturnValue(socketMock({ envoyer }));
 
     renderGroupe();
 
@@ -115,7 +126,7 @@ describe("GroupeChatPage", () => {
     });
     fireEvent.click(screen.getByText("groupes.envoyer"));
 
-    expect(envoyer).toHaveBeenCalledWith("Coucou tout le monde");
+    expect(envoyer).toHaveBeenCalledWith("Coucou tout le monde", undefined);
   });
 
   it("quitter le groupe appelle la mutation", () => {
@@ -142,7 +153,8 @@ describe("GroupeChatPage", () => {
   });
 
   it("le créateur voit 'supprimer le groupe' et la mutation est appelée au clic (demande utilisateur du 2026-09-16)", () => {
-    const supprimerGroupe = mutationMock<ReturnType<typeof useCommunauteHooks.useSupprimerGroupe>>();
+    const supprimerGroupe =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useSupprimerGroupe>>();
     vi.mocked(useCommunauteHooks.useSupprimerGroupe).mockReturnValue(supprimerGroupe);
     vi.mocked(useCommunauteHooks.useGroupe).mockReturnValue({
       data: { id: "g1", nom: "Supporters", est_createur: true },
@@ -162,22 +174,17 @@ describe("GroupeChatPage", () => {
     vi.mocked(useCommunauteHooks.useSupprimerMessageGroupe).mockReturnValue(supprimerMessage);
     vi.mocked(useCommunauteHooks.useMessagesGroupe).mockReturnValue({
       data: page([
-        {
+        messageGroupe({
           id: "m1",
-          groupe: "g1",
           auteur: { id: "u1", prenom: "Moi", nom: "Même", photo: null },
           contenu: "Le mien",
-          created_at: "2026-01-01T10:00:00Z",
           est_auteur: true,
-        },
-        {
+        }),
+        messageGroupe({
           id: "m2",
-          groupe: "g1",
-          auteur: { id: "m2", prenom: "Hamza", nom: "Meddeb", photo: null },
           contenu: "Celui de l'autre",
           created_at: "2026-01-01T10:01:00Z",
-          est_auteur: false,
-        },
+        }),
       ]),
       isLoading: false,
       isError: false,
@@ -188,5 +195,70 @@ describe("GroupeChatPage", () => {
     expect(screen.getAllByText("groupes.supprimer_message")).toHaveLength(1);
     fireEvent.click(screen.getByText("groupes.supprimer_message"));
     expect(supprimerMessage.mutate).toHaveBeenCalledWith("m1");
+  });
+
+  it("like un message de groupe et affiche le compteur (demande utilisateur 2026-09-25)", () => {
+    const liker = mutationMock<ReturnType<typeof useCommunauteHooks.useLikerMessageGroupe>>();
+    vi.mocked(useCommunauteHooks.useLikerMessageGroupe).mockReturnValue(liker);
+    vi.mocked(useCommunauteHooks.useMessagesGroupe).mockReturnValue({
+      data: page([messageGroupe({ nombre_likes: 3, jaime: true })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMessagesGroupe>);
+
+    renderGroupe();
+
+    expect(screen.getByText("3")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("messagerie.liker_aria"));
+    expect(liker.mutate).toHaveBeenCalledWith("m1");
+  });
+
+  it("prépare une réponse citant le message puis l'envoie avec repond_a", () => {
+    const envoyer = vi.fn();
+    vi.mocked(useCommunauteHooks.useMessagesGroupe).mockReturnValue({
+      data: page([messageGroupe({ contenu: "Premier message du groupe" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMessagesGroupe>);
+    vi.mocked(useGroupeChatSocketHook.useGroupeChatSocket).mockReturnValue(socketMock({ envoyer }));
+
+    renderGroupe();
+
+    fireEvent.click(screen.getByText("messagerie.repondre"));
+    fireEvent.change(screen.getByPlaceholderText("groupes.placeholder_message"), {
+      target: { value: "Ma réponse" },
+    });
+    fireEvent.click(screen.getByText("groupes.envoyer"));
+
+    expect(envoyer).toHaveBeenCalledWith("Ma réponse", "m1");
+  });
+
+  it("met en forme les mentions '@' dans le contenu affiché", () => {
+    vi.mocked(useCommunauteHooks.useMessagesGroupe).mockReturnValue({
+      data: page([messageGroupe({ contenu: "Salut @Hamza, tu viens ?" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMessagesGroupe>);
+
+    renderGroupe();
+
+    expect(screen.getByText("@Hamza")).toBeInTheDocument();
+  });
+
+  it("suggère les auteurs connus lors de la frappe d'une mention '@'", () => {
+    vi.mocked(useCommunauteHooks.useMessagesGroupe).mockReturnValue({
+      data: page([messageGroupe()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useMessagesGroupe>);
+
+    renderGroupe();
+
+    fireEvent.change(screen.getByPlaceholderText("groupes.placeholder_message"), {
+      target: { value: "Salut @Ha" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Hamza Meddeb" }));
+
+    expect(screen.getByPlaceholderText("groupes.placeholder_message")).toHaveValue("Salut @Hamza ");
   });
 });

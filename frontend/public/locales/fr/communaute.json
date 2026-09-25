@@ -68,7 +68,11 @@
     "retour_liste": "← Retour à la messagerie",
     "placeholder_message": "Écrire un message…",
     "envoyer": "Envoyer",
-    "supprimer_message": "Supprimer"
+    "supprimer_message": "Supprimer",
+    "liker_aria": "Aimer le message",
+    "repondre": "Répondre",
+    "reponse_a": "Réponse à : {{texte}}",
+    "annuler_reponse": "Annuler la réponse"
   },
   "groupes": {
     "titre": "Groupes de chat",
@@ -92,6 +96,9 @@
     "placeholder_message": "Écrire un message…",
     "envoyer": "Envoyer",
     "supprimer_message": "Supprimer"
+  },
+  "emoji": {
+    "bouton_aria": "Insérer un emoji"
   },
   "live": {
     "titre": "Fan-Club",

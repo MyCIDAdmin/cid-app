@@ -106,7 +106,12 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
             contenu = (content.get("contenu") or "").strip()
             if not contenu:
                 return
-            message = await self._creer_message(contenu)
+            # "Antworten" (demande utilisateur 2026-09-25) — repond_a est optionnel et
+            # entièrement revalidé côté serveur (_creer_message ne résout que dans la MÊME
+            # conversation, voir sa docstring) : un id arbitraire envoyé par un client ne
+            # permet donc jamais de citer un message d'une autre conversation.
+            repond_a_id = content.get("repond_a")
+            message, repond_a_detail = await self._creer_message(contenu, repond_a_id)
             if message is None:
                 await self.send_json({"type": "erreur", "message": "Conversation introuvable."})
                 return
@@ -117,6 +122,9 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
                 "contenu": contenu,
                 "est_lu": False,
                 "created_at": message.created_at.isoformat(),
+                "nombre_likes": 0,
+                "repond_a": str(message.repond_a_id) if message.repond_a_id else None,
+                "repond_a_detail": repond_a_detail,
             }
             await self.channel_layer.group_send(
                 self.group_name, {"type": "message_recu", "payload": payload}
@@ -152,6 +160,12 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
         # mécanisme REST -> WS que LiveMatchConsumer.match_update.
         await self.send_json({"type": "message_supprime", **event["payload"]})
 
+    async def message_like(self, event):
+        # Diffusé depuis MessagePriveViewSet.liker (REST — voir views.py
+        # ::_broadcast_message_like). Chaque client applique `aime` seulement s'il
+        # correspond à son propre membre_id — voir docstring de MessagePriveSerializer.get_jaime.
+        await self.send_json({"type": "message_like", **event["payload"]})
+
     # --- accès base de données ---
 
     @database_sync_to_async
@@ -169,13 +183,38 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
         return self.membre_id in (conversation.membre_a_id, conversation.membre_b_id)
 
     @database_sync_to_async
-    def _creer_message(self, contenu):
+    def _creer_message(self, contenu, repond_a_id=None):
         conversation = Conversation.objects.filter(id=self.conversation_id).first()
         if conversation is None:
-            return None
-        return MessagePrive.objects.create(
-            conversation=conversation, expediteur_id=self.membre_id, contenu=contenu
+            return None, None
+        # Revalidation IDOR : `repond_a` n'est résolu que DANS la conversation courante — un
+        # id arbitraire pointant vers le message d'une autre conversation est ignoré (le
+        # message est simplement créé sans citation), jamais suivi.
+        repond_a = None
+        if repond_a_id:
+            repond_a = (
+                MessagePrive.objects.filter(id=repond_a_id, conversation_id=self.conversation_id)
+                .select_related("expediteur")
+                .first()
+            )
+        message = MessagePrive.objects.create(
+            conversation=conversation,
+            expediteur_id=self.membre_id,
+            contenu=contenu,
+            repond_a=repond_a,
         )
+        repond_a_detail = None
+        if repond_a is not None:
+            repond_a_detail = {
+                "id": str(repond_a.id),
+                "expediteur": {
+                    "id": str(repond_a.expediteur_id),
+                    "prenom": repond_a.expediteur.prenom,
+                    "nom": repond_a.expediteur.nom,
+                },
+                "contenu": repond_a.contenu,
+            }
+        return message, repond_a_detail
 
     @database_sync_to_async
     def _marquer_lu(self):
@@ -251,7 +290,10 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
         contenu = (content.get("contenu") or "").strip()
         if not contenu:
             return
-        message = await self._creer_message(contenu)
+        # "Antworten" (demande utilisateur 2026-09-25) — même revalidation IDOR que
+        # MessagerieConsumer._creer_message : repond_a n'est résolu que dans CE groupe.
+        repond_a_id = content.get("repond_a")
+        message, repond_a_detail = await self._creer_message(contenu, repond_a_id)
         if message is None:
             await self.send_json({"type": "erreur", "message": "Groupe introuvable."})
             return
@@ -262,6 +304,9 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
             "auteur": auteur,
             "contenu": contenu,
             "created_at": message.created_at.isoformat(),
+            "nombre_likes": 0,
+            "repond_a": str(message.repond_a_id) if message.repond_a_id else None,
+            "repond_a_detail": repond_a_detail,
         }
         await self.channel_layer.group_send(
             self.group_name, {"type": "message_recu", "payload": payload}
@@ -279,6 +324,11 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
         # MessagerieConsumer.message_supprime ci-dessus.
         await self.send_json({"type": "message_supprime", **event["payload"]})
 
+    async def message_like(self, event):
+        # Diffusé depuis MessageGroupeViewSet.liker — même mécanisme que
+        # MessagerieConsumer.message_like ci-dessus.
+        await self.send_json({"type": "message_like", **event["payload"]})
+
     @database_sync_to_async
     def _get_membre_id(self, user):
         from apps.membres.models import Membre
@@ -292,13 +342,32 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
         ).exists()
 
     @database_sync_to_async
-    def _creer_message(self, contenu):
+    def _creer_message(self, contenu, repond_a_id=None):
         groupe = GroupeChat.objects.filter(id=self.groupe_id).first()
         if groupe is None:
-            return None
-        return MessageGroupe.objects.create(
-            groupe=groupe, auteur_id=self.membre_id, contenu=contenu
+            return None, None
+        repond_a = None
+        if repond_a_id:
+            repond_a = (
+                MessageGroupe.objects.filter(id=repond_a_id, groupe_id=self.groupe_id)
+                .select_related("auteur")
+                .first()
+            )
+        message = MessageGroupe.objects.create(
+            groupe=groupe, auteur_id=self.membre_id, contenu=contenu, repond_a=repond_a
         )
+        repond_a_detail = None
+        if repond_a is not None:
+            repond_a_detail = {
+                "id": str(repond_a.id),
+                "auteur": {
+                    "id": str(repond_a.auteur_id),
+                    "prenom": repond_a.auteur.prenom,
+                    "nom": repond_a.auteur.nom,
+                },
+                "contenu": repond_a.contenu,
+            }
+        return message, repond_a_detail
 
     @database_sync_to_async
     def _auteur_infos(self):

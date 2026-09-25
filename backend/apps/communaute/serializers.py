@@ -287,12 +287,27 @@ class ConversationSerializer(serializers.ModelSerializer):
         return obj.messages.filter(est_lu=False).exclude(expediteur_id=membre.id).count()
 
 
+class MessagePriveApercuSerializer(serializers.ModelSerializer):
+    """Aperçu minimal d'un message privé cité par une réponse (demande utilisateur
+    2026-09-25, "antworten") — pas de `est_lu`/`lu_le` ni d'autre champ que ceux
+    nécessaires à afficher la citation dans la bulle."""
+
+    expediteur = AuteurSerializer(read_only=True)
+
+    class Meta:
+        model = MessagePrive
+        fields = ["id", "expediteur", "contenu"]
+
+
 class MessagePriveSerializer(serializers.ModelSerializer):
     """Liste seule (voir vue) — l'envoi passe par le WebSocket. `contenu` est déchiffré
     automatiquement à la lecture par `EncryptedTextField` (transparent pour DRF, comme
     `Membre.cin` — voir apps.membres.serializers)."""
 
     est_expediteur = serializers.SerializerMethodField()
+    nombre_likes = serializers.IntegerField(source="likes.count", read_only=True)
+    jaime = serializers.SerializerMethodField()
+    repond_a_detail = MessagePriveApercuSerializer(source="repond_a", read_only=True)
 
     class Meta:
         model = MessagePrive
@@ -305,6 +320,10 @@ class MessagePriveSerializer(serializers.ModelSerializer):
             "lu_le",
             "created_at",
             "est_expediteur",
+            "nombre_likes",
+            "jaime",
+            "repond_a",
+            "repond_a_detail",
         ]
         read_only_fields = fields
 
@@ -314,6 +333,13 @@ class MessagePriveSerializer(serializers.ModelSerializer):
             return False
         membre = getattr(request.user, "membre", None)
         return membre is not None and obj.expediteur_id == membre.id
+
+    def get_jaime(self, obj) -> bool:
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        membre = getattr(request.user, "membre", None)
+        return membre is not None and obj.likes.filter(membre=membre).exists()
 
 
 class MembreGroupeSerializer(serializers.ModelSerializer):
@@ -390,15 +416,40 @@ class GroupeChatSerializer(serializers.ModelSerializer):
         return groupe
 
 
+class MessageGroupeApercuSerializer(serializers.ModelSerializer):
+    """Aperçu minimal d'un message de groupe cité par une réponse — voir
+    MessagePriveApercuSerializer ci-dessus."""
+
+    auteur = AuteurSerializer(read_only=True)
+
+    class Meta:
+        model = MessageGroupe
+        fields = ["id", "auteur", "contenu"]
+
+
 class MessageGroupeSerializer(serializers.ModelSerializer):
     """Liste seule (voir vue) — l'envoi passe par le WebSocket (`GroupeChatConsumer`)."""
 
     auteur = AuteurSerializer(read_only=True)
     est_auteur = serializers.SerializerMethodField()
+    nombre_likes = serializers.IntegerField(source="likes.count", read_only=True)
+    jaime = serializers.SerializerMethodField()
+    repond_a_detail = MessageGroupeApercuSerializer(source="repond_a", read_only=True)
 
     class Meta:
         model = MessageGroupe
-        fields = ["id", "groupe", "auteur", "contenu", "created_at", "est_auteur"]
+        fields = [
+            "id",
+            "groupe",
+            "auteur",
+            "contenu",
+            "created_at",
+            "est_auteur",
+            "nombre_likes",
+            "jaime",
+            "repond_a",
+            "repond_a_detail",
+        ]
         read_only_fields = fields
 
     def get_est_auteur(self, obj) -> bool:
@@ -407,6 +458,13 @@ class MessageGroupeSerializer(serializers.ModelSerializer):
             return False
         membre = getattr(request.user, "membre", None)
         return membre is not None and obj.auteur_id == membre.id
+
+    def get_jaime(self, obj) -> bool:
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        membre = getattr(request.user, "membre", None)
+        return membre is not None and obj.likes.filter(membre=membre).exists()
 
 
 class SujetSerializer(serializers.ModelSerializer):

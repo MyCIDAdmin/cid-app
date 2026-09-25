@@ -219,6 +219,13 @@ export async function supprimerMessagePrive(id: string): Promise<void> {
   await apiClient.delete(`/communaute/messages-prives/${id}/`);
 }
 
+// "Like" (demande utilisateur 2026-09-25) — bascule le like du membre courant, diffusé en
+// temps réel aux 2 participants via MessagerieConsumer.message_like.
+export async function likerMessagePrive(id: string): Promise<MessagePrive> {
+  const { data } = await apiClient.post<MessagePrive>(`/communaute/messages-prives/${id}/liker/`);
+  return data;
+}
+
 // --- Groupes de chat (REST = liste/gestion, voir hooks/useGroupeChatSocket.ts pour l'envoi) ---
 
 export interface GroupesFiltres {
@@ -280,6 +287,12 @@ export async function listMessagesGroupe(
 // GroupeChatConsumer.message_supprime.
 export async function supprimerMessageGroupe(id: string): Promise<void> {
   await apiClient.delete(`/communaute/messages-groupe/${id}/`);
+}
+
+// "Like" (demande utilisateur 2026-09-25) — voir likerMessagePrive ci-dessus.
+export async function likerMessageGroupe(id: string): Promise<MessageGroupe> {
+  const { data } = await apiClient.post<MessageGroupe>(`/communaute/messages-groupe/${id}/liker/`);
+  return data;
 }
 
 // --- Recherche de membres (démarrer une conversation, inviter dans un groupe) — distinct de

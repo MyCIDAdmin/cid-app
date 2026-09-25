@@ -70,7 +70,9 @@ from .models import (
     MatchEvenement,
     MembreGroupe,
     MessageGroupe,
+    MessageGroupeLike,
     MessagePrive,
+    MessagePriveLike,
     ParticipationQuiz,
     Photo,
     PhotoCommentaire,
@@ -396,6 +398,11 @@ class ReponseForumViewSet(
 #                                                             diffusée en temps réel au
 #                                                             WebSocket de la conversation
 #                                                             (voir _broadcast_message_supprime)
+#   POST       /communaute/messages-prives/{id}/liker/     — bascule un like (demande
+#                                                             utilisateur 2026-09-25),
+#                                                             réservé aux 2 participants,
+#                                                             diffusé en temps réel (voir
+#                                                             _broadcast_message_like)
 #
 #   GET/POST   /communaute/groupes/                        — liste (publics + les miens) /
 #                                                             création
@@ -412,7 +419,39 @@ class ReponseForumViewSet(
 #                                                             utilisateur du 2026-09-16),
 #                                                             diffusée en temps réel au
 #                                                             WebSocket du groupe
+#   POST       /communaute/messages-groupe/{id}/liker/     — bascule un like (demande
+#                                                             utilisateur 2026-09-25), même
+#                                                             principe que ci-dessus
 # ---------------------------------------------------------------------------
+
+
+def _broadcast_message_like(
+    group_name: str, message_id: str, nombre_likes: int, membre_id, aime: bool
+) -> None:
+    """Diffuse le nouveau compte de "likes" d'un message (privé ou de groupe) au groupe
+    WebSocket concerné — même mécanisme que `_broadcast_message_supprime` ci-dessous.
+    `membre_id`/`aime` permettent à CHAQUE client de mettre à jour son propre `jaime` (état
+    par viewer, jamais diffusable tel quel) sans re-fetch : si `membre_id` correspond au
+    membre connecté sur ce client, il applique `aime` localement ; sinon il ne met à jour
+    que le compteur, partagé par tous."""
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            "type": "message_like",
+            "payload": {
+                "id": message_id,
+                "nombre_likes": nombre_likes,
+                "membre_id": str(membre_id),
+                "aime": aime,
+            },
+        },
+    )
 
 
 def _broadcast_message_supprime(group_name: str, message_id: str) -> None:
@@ -482,11 +521,14 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
     pagination_class = MessagePriveCursorPagination
 
     def get_queryset(self):
-        if self.action == "destroy":
-            # Pas de filtre par conversation ici (contrairement au `list` ci-dessous) — la
-            # permission objet (MessagePrivePermission, expéditeur uniquement) est le seul
-            # contrôle nécessaire, même principe que ContenuCommunautePermission pour
-            # Publication/Commentaire (queryset large, IDOR géré par has_object_permission).
+        if self.action in ("destroy", "liker"):
+            # Pas de filtre par conversation ici (contrairement au `list` ci-dessous) — pour
+            # "destroy" la permission objet (MessagePrivePermission, expéditeur uniquement)
+            # est le seul contrôle nécessaire (même principe que ContenuCommunautePermission
+            # pour Publication/Commentaire) ; pour "liker" (demande utilisateur 2026-09-25),
+            # l'appartenance à la conversation est vérifiée explicitement dans l'action
+            # elle-même (voir liker() ci-dessous), get_object() ne suffit pas seul ici car
+            # has_object_permission renvoie True pour toute action autre que "destroy".
             return MessagePrive.objects.select_related("expediteur", "conversation")
         conversation_id = self.request.query_params.get("conversation")
         if not conversation_id:
@@ -505,6 +547,28 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
         message_id = str(instance.id)
         super().perform_destroy(instance)
         _broadcast_message_supprime(f"messagerie_{conversation_id}", message_id)
+
+    @action(detail=True, methods=["post"])
+    def liker(self, request, pk=None):
+        """Bascule un "like" sur un message privé (demande utilisateur 2026-09-25) — réservé
+        aux 2 participants de la conversation (même contrôle que le `list`)."""
+        message = self.get_object()
+        membre = request.user.membre
+        if not message.conversation.participant(membre):
+            raise PermissionDenied("Vous n'êtes pas participant de cette conversation.")
+        like, cree = MessagePriveLike.objects.get_or_create(message=message, membre=membre)
+        aime = cree
+        if not cree:
+            like.delete()
+        message.refresh_from_db()  # voir PublicationViewSet.liker : vide le cache de prefetch
+        _broadcast_message_like(
+            f"messagerie_{message.conversation_id}",
+            str(message.id),
+            message.likes.count(),
+            membre.id,
+            aime,
+        )
+        return Response(self.get_serializer(message).data)
 
 
 class GroupeChatViewSet(
@@ -573,9 +637,10 @@ class MessageGroupeViewSet(
     pagination_class = MessageGroupeCursorPagination
 
     def get_queryset(self):
-        if self.action == "destroy":
+        if self.action in ("destroy", "liker"):
             # Même raisonnement que MessagePriveViewSet.get_queryset : queryset large, IDOR
-            # géré par la permission objet (auteur uniquement).
+            # géré pour "destroy" par la permission objet (auteur uniquement) et pour
+            # "liker" (demande utilisateur 2026-09-25) explicitement dans l'action.
             return MessageGroupe.objects.select_related("auteur", "groupe")
         groupe_id = self.request.query_params.get("groupe")
         if not groupe_id:
@@ -592,6 +657,29 @@ class MessageGroupeViewSet(
         message_id = str(instance.id)
         super().perform_destroy(instance)
         _broadcast_message_supprime(f"groupe_{groupe_id}", message_id)
+
+    @action(detail=True, methods=["post"])
+    def liker(self, request, pk=None):
+        """Bascule un "like" sur un message de groupe (demande utilisateur 2026-09-25) —
+        réservé aux membres du groupe (ou tout authentifié si le groupe est public, même
+        règle que la lecture de l'historique)."""
+        message = self.get_object()
+        membre = request.user.membre
+        groupe = message.groupe
+        if (
+            groupe.type_groupe != "public"
+            and not groupe.membres_groupe.filter(membre=membre).exists()
+        ):
+            raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
+        like, cree = MessageGroupeLike.objects.get_or_create(message=message, membre=membre)
+        aime = cree
+        if not cree:
+            like.delete()
+        message.refresh_from_db()
+        _broadcast_message_like(
+            f"groupe_{message.groupe_id}", str(message.id), message.likes.count(), membre.id, aime
+        )
+        return Response(self.get_serializer(message).data)
 
 
 class MembreRechercheCursorPagination(CursorPagination):

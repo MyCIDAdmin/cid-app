@@ -108,6 +108,15 @@ export interface Conversation {
   created_at: string;
 }
 
+/** Aperçu minimal du message cité par une réponse ("Antworten", demande utilisateur
+ * 2026-09-25) — miroir de MessagePriveApercuSerializer / MessageGroupeApercuSerializer. */
+export interface MessageApercu {
+  id: string;
+  expediteur?: Auteur;
+  auteur?: Auteur;
+  contenu: string;
+}
+
 export interface MessagePrive {
   id: string;
   conversation: string;
@@ -117,6 +126,10 @@ export interface MessagePrive {
   lu_le: string | null;
   created_at: string;
   est_expediteur: boolean;
+  nombre_likes: number;
+  jaime: boolean;
+  repond_a: string | null;
+  repond_a_detail: MessageApercu | null;
 }
 
 export interface GroupeChat {
@@ -147,6 +160,10 @@ export interface MessageGroupe {
   contenu: string;
   created_at: string;
   est_auteur: boolean;
+  nombre_likes: number;
+  jaime: boolean;
+  repond_a: string | null;
+  repond_a_detail: MessageApercu | null;
 }
 
 // --- Messages WebSocket (miroir de apps.communaute.consumers) ---
@@ -160,11 +177,19 @@ export type MessagerieSocketMessage =
       contenu: string;
       est_lu: boolean;
       created_at: string;
+      nombre_likes: number;
+      repond_a: string | null;
+      repond_a_detail: MessageApercu | null;
     }
   | { type: "lu"; conversation: string; lu_par: string }
   // Diffusé par MessagePriveViewSet (REST, expéditeur uniquement — demande utilisateur du
   // 2026-09-16) via MessagerieConsumer.message_supprime, voir hooks/useMessagerieSocket.ts.
   | { type: "message_supprime"; id: string }
+  // "Like" (demande utilisateur 2026-09-25) — diffusé par MessagePriveViewSet.liker via
+  // MessagerieConsumer.message_like. `membre_id` identifie QUI a (dé)liké — `aime` ne
+  // s'applique qu'au membre courant, `nombre_likes` est le compteur partagé (voir
+  // hooks/useMessagerieSocket.ts).
+  | { type: "message_like"; id: string; nombre_likes: number; membre_id: string; aime: boolean }
   | { type: "erreur"; message: string };
 
 export type GroupeChatSocketMessage =
@@ -175,10 +200,14 @@ export type GroupeChatSocketMessage =
       auteur: Auteur;
       contenu: string;
       created_at: string;
+      nombre_likes: number;
+      repond_a: string | null;
+      repond_a_detail: MessageApercu | null;
     }
   // Diffusé par MessageGroupeViewSet (REST, auteur uniquement) via
   // GroupeChatConsumer.message_supprime, voir hooks/useGroupeChatSocket.ts.
   | { type: "message_supprime"; id: string }
+  | { type: "message_like"; id: string; nombre_likes: number; membre_id: string; aime: boolean }
   | { type: "erreur"; message: string };
 
 // --- Live Match, Albums, Quiz (troisième lot — Phase 4B, miroir de

@@ -112,6 +112,25 @@ describe("useGroupeChatSocket", () => {
     expect(result.current.messagesSupprimesIds).toEqual(["m1"]);
   });
 
+  it("accumule les évènements message_like reçus (demande utilisateur 2026-09-25)", async () => {
+    const { result } = renderHook(() => useGroupeChatSocket("groupe-1"));
+    const ws = FakeWebSocket.instances[0];
+
+    act(() => {
+      ws.ouvrir();
+      ws.recevoir({ type: "message_like", id: "m1", nombre_likes: 1, membre_id: "u1", aime: true });
+    });
+
+    await waitFor(() => expect(result.current.likesRecus).toHaveLength(1));
+    expect(result.current.likesRecus[0]).toEqual({
+      type: "message_like",
+      id: "m1",
+      nombre_likes: 1,
+      membre_id: "u1",
+      aime: true,
+    });
+  });
+
   it("envoie {type: 'message', contenu} au format attendu par le consumer", () => {
     const { result } = renderHook(() => useGroupeChatSocket("groupe-1"));
     const ws = FakeWebSocket.instances[0];
@@ -120,7 +139,25 @@ describe("useGroupeChatSocket", () => {
     act(() => result.current.envoyer("Coucou tout le monde"));
 
     expect(ws.sent).toHaveLength(1);
-    expect(JSON.parse(ws.sent[0])).toEqual({ type: "message", contenu: "Coucou tout le monde" });
+    expect(JSON.parse(ws.sent[0])).toEqual({
+      type: "message",
+      contenu: "Coucou tout le monde",
+      repond_a: null,
+    });
+  });
+
+  it("envoie repond_a quand une réponse est fournie (demande utilisateur 2026-09-25)", () => {
+    const { result } = renderHook(() => useGroupeChatSocket("groupe-1"));
+    const ws = FakeWebSocket.instances[0];
+    act(() => ws.ouvrir());
+
+    act(() => result.current.envoyer("Ma réponse", "m0"));
+
+    expect(JSON.parse(ws.sent[0])).toEqual({
+      type: "message",
+      contenu: "Ma réponse",
+      repond_a: "m0",
+    });
   });
 
   it("expose un message d'erreur reçu du serveur", async () => {

@@ -68,7 +68,11 @@
     "retour_liste": "← Zurück zu den Nachrichten",
     "placeholder_message": "Nachricht schreiben…",
     "envoyer": "Senden",
-    "supprimer_message": "Löschen"
+    "supprimer_message": "Löschen",
+    "liker_aria": "Nachricht liken",
+    "repondre": "Antworten",
+    "reponse_a": "Antwort auf: {{texte}}",
+    "annuler_reponse": "Antwort abbrechen"
   },
   "groupes": {
     "titre": "Chatgruppen",
@@ -92,6 +96,9 @@
     "placeholder_message": "Nachricht schreiben…",
     "envoyer": "Senden",
     "supprimer_message": "Löschen"
+  },
+  "emoji": {
+    "bouton_aria": "Emoji einfügen"
   },
   "live": {
     "titre": "Fan-Club",

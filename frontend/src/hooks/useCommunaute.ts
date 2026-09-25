@@ -281,6 +281,16 @@ export function useSupprimerMessagePrive() {
   });
 }
 
+// "Like" (demande utilisateur 2026-09-25) — pas d'invalidation de cache ici : la mise à
+// jour visible à l'écran passe par le broadcast WebSocket (message_like, reçu par
+// l'expéditeur lui-même aussi — voir MessagerieConsumer.message_like), cette mutation ne
+// sert qu'à déclencher l'action côté serveur.
+export function useLikerMessagePrive() {
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.likerMessagePrive(id),
+  });
+}
+
 // --- Groupes de chat (REST = liste/gestion, voir hooks/useGroupeChatSocket.ts pour l'envoi) ---
 
 function invalidateGroupes(queryClient: ReturnType<typeof useQueryClient>) {
@@ -363,6 +373,13 @@ export function useSupprimerMessageGroupe() {
     // Même raisonnement que useSupprimerMessagePrive ci-dessus.
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "messages-groupe"] }),
+  });
+}
+
+// "Like" (demande utilisateur 2026-09-25) — même raisonnement que useLikerMessagePrive.
+export function useLikerMessageGroupe() {
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.likerMessageGroupe(id),
   });
 }
 

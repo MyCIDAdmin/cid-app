@@ -19,6 +19,8 @@ const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000/ws"
 
 type StatutConnexion = "connexion" | "ouvert" | "ferme" | "erreur";
 
+type EvenementLike = Extract<MessagerieSocketMessage, { type: "message_like" }>;
+
 export interface UseMessagerieSocketResult {
   statut: StatutConnexion;
   messages: Extract<MessagerieSocketMessage, { type: "message" }>[];
@@ -26,18 +28,23 @@ export interface UseMessagerieSocketResult {
    * utilisateur du 2026-09-16) — à soustraire par la page à l'historique REST ET aux
    * messages temps réel ci-dessus, voir MessagerieConversationPage. */
   messagesSupprimesIds: string[];
+  /** Évènements "like" (demande utilisateur 2026-09-25) reçus depuis l'ouverture de cette
+   * connexion — la page les applique à l'historique REST ET aux messages temps réel
+   * ci-dessus (voir MessagerieConversationPage), chacun appliqué une seule fois. */
+  likesRecus: EvenementLike[];
   erreur: string | null;
-  envoyer: (contenu: string) => void;
+  envoyer: (contenu: string, repondAId?: string) => void;
   marquerLu: () => void;
 }
 
 export function useMessagerieSocket(conversationId: string | undefined): UseMessagerieSocketResult {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [statut, setStatut] = useState<StatutConnexion>("connexion");
-  const [messages, setMessages] = useState<
-    Extract<MessagerieSocketMessage, { type: "message" }>[]
-  >([]);
+  const [messages, setMessages] = useState<Extract<MessagerieSocketMessage, { type: "message" }>[]>(
+    [],
+  );
   const [messagesSupprimesIds, setMessagesSupprimesIds] = useState<string[]>([]);
+  const [likesRecus, setLikesRecus] = useState<EvenementLike[]>([]);
   const [erreur, setErreur] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -48,6 +55,7 @@ export function useMessagerieSocket(conversationId: string | undefined): UseMess
     setErreur(null);
     setMessages([]);
     setMessagesSupprimesIds([]);
+    setLikesRecus([]);
 
     const url = `${WS_BASE_URL}/messagerie/${conversationId}/?token=${encodeURIComponent(accessToken)}`;
     const ws = new WebSocket(url);
@@ -70,6 +78,9 @@ export function useMessagerieSocket(conversationId: string | undefined): UseMess
           setMessages((precedents) => precedents.filter((m) => m.id !== message.id));
           setMessagesSupprimesIds((precedents) => [...precedents, message.id]);
           break;
+        case "message_like":
+          setLikesRecus((precedents) => [...precedents, message]);
+          break;
         case "erreur":
           setErreur(message.message);
           break;
@@ -89,14 +100,14 @@ export function useMessagerieSocket(conversationId: string | undefined): UseMess
     };
   }, [conversationId, accessToken]);
 
-  const envoyer = useCallback((contenu: string) => {
+  const envoyer = useCallback((contenu: string, repondAId?: string) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       setErreur("Connexion à la messagerie perdue — veuillez réessayer dans un instant.");
       return;
     }
     setErreur(null);
-    ws.send(JSON.stringify({ type: "message", contenu }));
+    ws.send(JSON.stringify({ type: "message", contenu, repond_a: repondAId ?? null }));
   }, []);
 
   const marquerLu = useCallback(() => {
@@ -105,5 +116,5 @@ export function useMessagerieSocket(conversationId: string | undefined): UseMess
     ws.send(JSON.stringify({ type: "lu" }));
   }, []);
 
-  return { statut, messages, messagesSupprimesIds, erreur, envoyer, marquerLu };
+  return { statut, messages, messagesSupprimesIds, likesRecus, erreur, envoyer, marquerLu };
 }

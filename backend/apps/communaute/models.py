@@ -462,6 +462,16 @@ class MessagePrive(models.Model):
     est_lu = models.BooleanField(default=False)
     lu_le = models.DateTimeField(null=True, blank=True)
 
+    # "Antworten" (demande utilisateur 2026-09-25, "auf einzelnen Nachrichten zu reagieren
+    # (Like oder antworten)") — référence légère vers le message cité, pas un fil de
+    # discussion imbriqué (contrairement à Commentaire.parent) : une citation à un seul
+    # niveau au-dessus du message, affichée comme aperçu dans la bulle (voir
+    # MessagePriveApercuSerializer). SET_NULL : la suppression d'un message cité (DELETE,
+    # déjà permis à l'expéditeur) ne doit jamais entraîner celle des réponses qui le citent.
+    repond_a = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="reponses"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -473,6 +483,29 @@ class MessagePrive(models.Model):
 
     def __str__(self):
         return f"{self.expediteur} @ {self.conversation_id}"
+
+
+class MessagePriveLike(models.Model):
+    """ "Like" sur un message privé (demande utilisateur 2026-09-25) — même patron que
+    `PublicationLike` (bascule create/delete, un seul like par membre et par message)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message = models.ForeignKey(MessagePrive, on_delete=models.CASCADE, related_name="likes")
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="likes_messages_prives"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_message_prive_likes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["message", "membre"], name="un_seul_like_message_prive_par_membre"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.membre} ♥ {self.message_id}"
 
 
 class TypeGroupe(models.TextChoices):
@@ -544,6 +577,12 @@ class MessageGroupe(models.Model):
     )
     contenu = models.TextField()
 
+    # "Antworten" — même principe que MessagePrive.repond_a ci-dessus (citation à un seul
+    # niveau, jamais de fil imbriqué).
+    repond_a = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="reponses"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -555,6 +594,29 @@ class MessageGroupe(models.Model):
 
     def __str__(self):
         return f"{self.auteur} @ {self.groupe_id}"
+
+
+class MessageGroupeLike(models.Model):
+    """ "Like" sur un message de groupe (demande utilisateur 2026-09-25) — même patron que
+    `MessagePriveLike` ci-dessus / `PublicationLike`."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message = models.ForeignKey(MessageGroupe, on_delete=models.CASCADE, related_name="likes")
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="likes_messages_groupe"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_message_groupe_likes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["message", "membre"], name="un_seul_like_message_groupe_par_membre"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.membre} ♥ {self.message_id}"
 
 
 # ---------------------------------------------------------------------------

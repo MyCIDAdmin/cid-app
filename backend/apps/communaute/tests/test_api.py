@@ -18,6 +18,8 @@ from apps.communaute.models import (
     EquipeInfo,
     MembreGroupe,
     MessageGroupe,
+    MessageGroupeLike,
+    MessagePriveLike,
 )
 from apps.communaute.tests.factories import (
     AlbumFactory,
@@ -696,6 +698,35 @@ def test_un_tiers_ne_peut_pas_supprimer_un_message_prive_dune_conversation_etran
     assert resp.status_code == 403
 
 
+def _message_prive_liker_url(message):
+    return reverse("communaute:message-prive-liker", args=[message.id])
+
+
+def test_liker_un_message_prive_puis_le_deliker(api_client):
+    # Demande utilisateur 2026-09-25 ("auf einzelnen Nachrichten zu reagieren (Like)").
+    user, membre = _user_avec_membre(Role.MEMBRE, "c11@example.de")
+    conversation = ConversationFactory(membre_a=membre)
+    message = MessagePriveFactory(conversation=conversation)
+
+    resp = _auth(api_client, user).post(_message_prive_liker_url(message))
+    assert resp.status_code == 200, resp.data
+    assert resp.data["jaime"] is True
+    assert resp.data["nombre_likes"] == 1
+
+    resp = _auth(api_client, user).post(_message_prive_liker_url(message))
+    assert resp.status_code == 200
+    assert resp.data["jaime"] is False
+    assert resp.data["nombre_likes"] == 0
+
+
+def test_liker_un_message_prive_refuse_a_un_non_participant(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "c12@example.de")
+    message = MessagePriveFactory()  # conversation totalement étrangère
+    resp = _auth(api_client, user).post(_message_prive_liker_url(message))
+    assert resp.status_code == 403
+    assert not MessagePriveLike.objects.filter(message=message).exists()
+
+
 # --- Annuaire de recherche de membres (démarrer une conversation / inviter dans un groupe
 # privé) — distinct de apps.membres, voir MembreRechercheViewSet ---
 
@@ -924,6 +955,45 @@ def test_un_bureau_admin_ne_peut_pas_supprimer_le_message_de_groupe_dautrui(api_
     message = MessageGroupeFactory()
     resp = _auth(api_client, user).delete(_message_groupe_detail_url(message))
     assert resp.status_code == 403
+
+
+def _message_groupe_liker_url(message):
+    return reverse("communaute:message-groupe-liker", args=[message.id])
+
+
+def test_liker_un_message_de_groupe_puis_le_deliker(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "g19@example.de")
+    groupe = GroupeChatFactory()
+    MembreGroupeFactory(groupe=groupe, membre=membre)
+    message = MessageGroupeFactory(groupe=groupe)
+
+    resp = _auth(api_client, user).post(_message_groupe_liker_url(message))
+    assert resp.status_code == 200, resp.data
+    assert resp.data["jaime"] is True
+    assert resp.data["nombre_likes"] == 1
+
+    resp = _auth(api_client, user).post(_message_groupe_liker_url(message))
+    assert resp.status_code == 200
+    assert resp.data["jaime"] is False
+    assert resp.data["nombre_likes"] == 0
+
+
+def test_liker_un_message_de_groupe_prive_refuse_a_un_non_membre(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "g20@example.de")
+    groupe = GroupeChatFactory(type_groupe="prive")
+    message = MessageGroupeFactory(groupe=groupe)
+    resp = _auth(api_client, user).post(_message_groupe_liker_url(message))
+    assert resp.status_code == 403
+    assert not MessageGroupeLike.objects.filter(message=message).exists()
+
+
+def test_liker_un_message_de_groupe_public_autorise_a_tout_authentifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "g21@example.de")
+    groupe = GroupeChatFactory()  # public par défaut
+    message = MessageGroupeFactory(groupe=groupe)
+    resp = _auth(api_client, user).post(_message_groupe_liker_url(message))
+    assert resp.status_code == 200
+    assert resp.data["jaime"] is True
 
 
 # ---------------------------------------------------------------------------

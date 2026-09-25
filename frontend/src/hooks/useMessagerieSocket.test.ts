@@ -114,6 +114,25 @@ describe("useMessagerieSocket", () => {
     expect(result.current.messagesSupprimesIds).toEqual(["m1"]);
   });
 
+  it("accumule les évènements message_like reçus (demande utilisateur 2026-09-25)", async () => {
+    const { result } = renderHook(() => useMessagerieSocket("conv-1"));
+    const ws = FakeWebSocket.instances[0];
+
+    act(() => {
+      ws.ouvrir();
+      ws.recevoir({ type: "message_like", id: "m1", nombre_likes: 1, membre_id: "u1", aime: true });
+    });
+
+    await waitFor(() => expect(result.current.likesRecus).toHaveLength(1));
+    expect(result.current.likesRecus[0]).toEqual({
+      type: "message_like",
+      id: "m1",
+      nombre_likes: 1,
+      membre_id: "u1",
+      aime: true,
+    });
+  });
+
   it("envoie {type: 'message', contenu} au format attendu par le consumer", () => {
     const { result } = renderHook(() => useMessagerieSocket("conv-1"));
     const ws = FakeWebSocket.instances[0];
@@ -122,7 +141,21 @@ describe("useMessagerieSocket", () => {
     act(() => result.current.envoyer("Coucou"));
 
     expect(ws.sent).toHaveLength(1);
-    expect(JSON.parse(ws.sent[0])).toEqual({ type: "message", contenu: "Coucou" });
+    expect(JSON.parse(ws.sent[0])).toEqual({ type: "message", contenu: "Coucou", repond_a: null });
+  });
+
+  it("envoie repond_a quand une réponse est fournie (demande utilisateur 2026-09-25)", () => {
+    const { result } = renderHook(() => useMessagerieSocket("conv-1"));
+    const ws = FakeWebSocket.instances[0];
+    act(() => ws.ouvrir());
+
+    act(() => result.current.envoyer("Ma réponse", "m0"));
+
+    expect(JSON.parse(ws.sent[0])).toEqual({
+      type: "message",
+      contenu: "Ma réponse",
+      repond_a: "m0",
+    });
   });
 
   it("marquerLu envoie {type: 'lu'}", () => {
@@ -141,7 +174,10 @@ describe("useMessagerieSocket", () => {
 
     act(() => {
       ws.ouvrir();
-      ws.recevoir({ type: "erreur", message: "Vous n'êtes pas participant de cette conversation." });
+      ws.recevoir({
+        type: "erreur",
+        message: "Vous n'êtes pas participant de cette conversation.",
+      });
     });
 
     await waitFor(() =>

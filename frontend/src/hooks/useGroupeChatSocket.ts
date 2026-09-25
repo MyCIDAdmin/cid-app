@@ -19,23 +19,28 @@ const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000/ws"
 
 type StatutConnexion = "connexion" | "ouvert" | "ferme" | "erreur";
 
+type EvenementLike = Extract<GroupeChatSocketMessage, { type: "message_like" }>;
+
 export interface UseGroupeChatSocketResult {
   statut: StatutConnexion;
   messages: Extract<GroupeChatSocketMessage, { type: "message" }>[];
   /** Id des messages supprimés reçus depuis l'ouverture de cette connexion (demande
    * utilisateur du 2026-09-16) — voir GroupeChatPage. */
   messagesSupprimesIds: string[];
+  /** Évènements "like" (demande utilisateur 2026-09-25) — voir useMessagerieSocket.ts. */
+  likesRecus: EvenementLike[];
   erreur: string | null;
-  envoyer: (contenu: string) => void;
+  envoyer: (contenu: string, repondAId?: string) => void;
 }
 
 export function useGroupeChatSocket(groupeId: string | undefined): UseGroupeChatSocketResult {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [statut, setStatut] = useState<StatutConnexion>("connexion");
-  const [messages, setMessages] = useState<
-    Extract<GroupeChatSocketMessage, { type: "message" }>[]
-  >([]);
+  const [messages, setMessages] = useState<Extract<GroupeChatSocketMessage, { type: "message" }>[]>(
+    [],
+  );
   const [messagesSupprimesIds, setMessagesSupprimesIds] = useState<string[]>([]);
+  const [likesRecus, setLikesRecus] = useState<EvenementLike[]>([]);
   const [erreur, setErreur] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -46,6 +51,7 @@ export function useGroupeChatSocket(groupeId: string | undefined): UseGroupeChat
     setErreur(null);
     setMessages([]);
     setMessagesSupprimesIds([]);
+    setLikesRecus([]);
 
     const url = `${WS_BASE_URL}/groupes/${groupeId}/?token=${encodeURIComponent(accessToken)}`;
     const ws = new WebSocket(url);
@@ -68,6 +74,9 @@ export function useGroupeChatSocket(groupeId: string | undefined): UseGroupeChat
           setMessages((precedents) => precedents.filter((m) => m.id !== message.id));
           setMessagesSupprimesIds((precedents) => [...precedents, message.id]);
           break;
+        case "message_like":
+          setLikesRecus((precedents) => [...precedents, message]);
+          break;
         case "erreur":
           setErreur(message.message);
           break;
@@ -83,15 +92,15 @@ export function useGroupeChatSocket(groupeId: string | undefined): UseGroupeChat
     };
   }, [groupeId, accessToken]);
 
-  const envoyer = useCallback((contenu: string) => {
+  const envoyer = useCallback((contenu: string, repondAId?: string) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       setErreur("Connexion au groupe perdue — veuillez réessayer dans un instant.");
       return;
     }
     setErreur(null);
-    ws.send(JSON.stringify({ type: "message", contenu }));
+    ws.send(JSON.stringify({ type: "message", contenu, repond_a: repondAId ?? null }));
   }, []);
 
-  return { statut, messages, messagesSupprimesIds, erreur, envoyer };
+  return { statut, messages, messagesSupprimesIds, likesRecus, erreur, envoyer };
 }
