@@ -38,10 +38,20 @@
  * structure le reste de cette page (décision utilisateur d'origine : "Eigenständiges
  * einfaches System"), d'où une section séparée plutôt qu'une ligne de plus dans le tableau
  * ci-dessous. Voir `components/cotisations/TippspielZahlungenPanel.tsx`.
+ *
+ * Renommée le 2026-09-25 (demande utilisateur, module "Ausstehende Zahlungen" : "Modul
+ * 'Ausstehende Zahlungen' in 'Zahlungen' umbenennen") : label-only (nav.cotisations_en_attente,
+ * en_attente_paiement.titre, rbac.page_cotisations_attente — voir les locales), aucune URL ni
+ * nom de fichier/variable ne change. Cohérent avec le contenu réel de la page depuis le
+ * 2026-09-21 : les onglets couvrent déjà tous les statuts, pas seulement les paiements en
+ * attente. Un bouton "Excel exportieren" (même demande) exporte la sélection filtrée via
+ * GET /cotisations/export/ — mêmes filtres que le tableau, même principe blob+téléchargement que
+ * GestionCommandesTab.tsx (module Shop-Verwaltung).
  */
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { exporterCotisationsExcel } from "../../api/cotisations";
 import { useMembre } from "../../hooks/useMembres";
 import { usePageAccess } from "../../hooks/useRbac";
 import {
@@ -131,6 +141,19 @@ function formatDate(iso: string): string {
 
 function formatDateHeure(iso: string): string {
   return new Date(iso).toLocaleString();
+}
+
+/** Déclenche le téléchargement d'un blob côté navigateur — même pattern que
+ * GestionCommandesTab.declencherTelechargement. */
+function declencherTelechargement(blob: Blob, nomFichier: string) {
+  const url = window.URL.createObjectURL(blob);
+  const lien = document.createElement("a");
+  lien.href = url;
+  lien.download = nomFichier;
+  document.body.appendChild(lien);
+  lien.click();
+  lien.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 interface CotisationGestionRowProps {
@@ -903,15 +926,18 @@ export default function CotisationsEnAttentePage() {
   const [dateCreationApres, setDateCreationApres] = useState("");
   const [dateCreationAvant, setDateCreationAvant] = useState("");
   const [especesOuvert, setEspecesOuvert] = useState(false);
+  const [exportEnCours, setExportEnCours] = useState(false);
+  const [erreurExport, setErreurExport] = useState<string | null>(null);
 
-  const gestion = useCotisationsGestion({
+  const filtresGestion = {
     statut: statutFiltre,
     type_article: typeArticleFiltre,
     mode_paiement: modePaiementFiltre,
     q,
     date_creation_apres: dateCreationApres,
     date_creation_avant: dateCreationAvant,
-  });
+  };
+  const gestion = useCotisationsGestion(filtresGestion);
 
   const filtresActifs = Boolean(
     typeArticleFiltre || modePaiementFiltre || q || dateCreationApres || dateCreationAvant,
@@ -925,6 +951,19 @@ export default function CotisationsEnAttentePage() {
     setDateCreationAvant("");
   }
 
+  async function exporterExcel() {
+    setErreurExport(null);
+    setExportEnCours(true);
+    try {
+      const { blob, nomFichier } = await exporterCotisationsExcel(filtresGestion);
+      declencherTelechargement(blob, nomFichier);
+    } catch (error) {
+      setErreurExport(extractApiErrorMessage(error, t("en_attente_paiement.export_erreur")));
+    } finally {
+      setExportEnCours(false);
+    }
+  }
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -932,15 +971,27 @@ export default function CotisationsEnAttentePage() {
           <h1 className="text-xl font-bold text-text-primary">{t("en_attente_paiement.titre")}</h1>
           <p className="text-sm text-text-tertiary">{t("en_attente_paiement.sous_titre")}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setEspecesOuvert((v) => !v)}
-          className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
-        >
-          {especesOuvert
-            ? t("en_attente_paiement.especes_fermer")
-            : t("en_attente_paiement.especes_ouvrir")}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={exporterExcel}
+            disabled={exportEnCours}
+            className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm font-medium text-text-secondary hover:bg-bg-tertiary disabled:opacity-50"
+          >
+            {exportEnCours
+              ? t("en_attente_paiement.export_en_cours")
+              : t("en_attente_paiement.export_excel")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEspecesOuvert((v) => !v)}
+            className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
+          >
+            {especesOuvert
+              ? t("en_attente_paiement.especes_fermer")
+              : t("en_attente_paiement.especes_ouvrir")}
+          </button>
+        </div>
       </div>
 
       {accessible && !modifiable && (
@@ -948,6 +999,8 @@ export default function CotisationsEnAttentePage() {
           {t("common:acces.lecture_seule_banniere")}
         </p>
       )}
+
+      {erreurExport && <p className="mb-4 text-xs text-status-dangerText">{erreurExport}</p>}
 
       <TippspielZahlungenPanel />
 

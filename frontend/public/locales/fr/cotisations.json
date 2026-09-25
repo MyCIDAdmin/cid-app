@@ -81,7 +81,7 @@
     "erreur": "Impossible de télécharger le reçu."
   },
   "en_attente_paiement": {
-    "titre": "Paiements en attente",
+    "titre": "Paiements",
     "sous_titre": "Cotisations en attente d'un paiement reçu hors ligne (virement SEPA, chèque, espèces…) — confirmez la réception pour les marquer comme payées. Le filtre ci-dessous permet aussi de retrouver n'importe quelle cotisation pour corriger son statut.",
     "col_date": "Date",
     "col_membre": "Membre",
@@ -91,8 +91,11 @@
     "col_mode": "Mode de paiement",
     "col_actions": "Actions",
     "chargement": "Chargement…",
-    "erreur_chargement": "Impossible de charger la file des paiements en attente.",
+    "erreur_chargement": "Impossible de charger la liste des paiements.",
     "aucun": "Aucun paiement pour ce filtre.",
+    "export_excel": "Exporter en Excel",
+    "export_en_cours": "Export en cours…",
+    "export_erreur": "L'export a échoué.",
     "mode": {
       "carte": "Carte bancaire",
       "virement_sepa": "Virement SEPA",

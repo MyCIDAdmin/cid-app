@@ -1,7 +1,8 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as cotisationsApi from "../../api/cotisations";
 import * as useAdhesionsHooks from "../../hooks/useAdhesions";
 import * as useBoutiqueHooks from "../../hooks/useBoutique";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
@@ -29,6 +30,18 @@ vi.mock("../../hooks/useCotisations", async () => {
     useHistoriqueStatutsCotisation: vi.fn(),
     useArticlesCatalogue: vi.fn(),
     useEnregistrerPaiementEspeces: vi.fn(),
+  };
+});
+
+// Export Excel des paiements (demande utilisateur du 2026-09-25, module "Ausstehende Zahlungen"
+// renommé "Zahlungen" : "Excel-Export der Zahlungen") — mocké au niveau du client API, même
+// principe que StatsPage.test.tsx/exporterStatsExcel : ce déclenchement fait un vrai appel réseau
+// (axios) hors du périmètre de ce composant.
+vi.mock("../../api/cotisations", async () => {
+  const actual = await vi.importActual<typeof cotisationsApi>("../../api/cotisations");
+  return {
+    ...actual,
+    exporterCotisationsExcel: vi.fn(),
   };
 });
 
@@ -114,6 +127,8 @@ function cotisationEnAttente(overrides: Partial<Cotisation> = {}): Cotisation {
 
 describe("CotisationsEnAttentePage", () => {
   beforeEach(() => {
+    window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    window.URL.revokeObjectURL = vi.fn();
     vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
       accessible: true,
       modifiable: true,
@@ -848,6 +863,52 @@ describe("CotisationsEnAttentePage", () => {
     fireEvent.click(screen.getByText("en_attente_paiement.voir_historique"));
 
     expect(screen.getByText(/Jean Dupont/)).toBeInTheDocument();
+  });
+
+  // --- Export Excel (ajouté le 2026-09-25, retour utilisateur : "Ausstehende Zahlungen"
+  // renommé "Zahlungen" + "Excel-Export der Zahlungen") ---
+
+  it("exporte en Excel au clic sur le bouton dédié, avec les filtres courants", async () => {
+    const blob = new Blob(["classeur"]);
+    vi.mocked(cotisationsApi.exporterCotisationsExcel).mockResolvedValue({
+      blob,
+      nomFichier: "export_zahlungen_20260925_1200.xlsx",
+    });
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.click(screen.getByText("statut.payee"));
+    fireEvent.click(screen.getByText("en_attente_paiement.export_excel"));
+
+    await waitFor(() => expect(cotisationsApi.exporterCotisationsExcel).toHaveBeenCalled());
+    expect(cotisationsApi.exporterCotisationsExcel).toHaveBeenCalledWith(
+      expect.objectContaining({ statut: "payee" }),
+    );
+    expect(window.URL.createObjectURL).toHaveBeenCalledWith(blob);
+  });
+
+  it("affiche un message d'erreur si l'export Excel échoue", async () => {
+    vi.mocked(cotisationsApi.exporterCotisationsExcel).mockRejectedValue(
+      new Error("réseau indisponible"),
+    );
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.click(screen.getByText("en_attente_paiement.export_excel"));
+
+    await waitFor(() =>
+      expect(screen.getByText("en_attente_paiement.export_erreur")).toBeInTheDocument(),
+    );
   });
 
   // --- Lecture seule (task #216, RBAC page_cotisations_attente : GET=lecture, écriture requise

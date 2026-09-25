@@ -53,6 +53,7 @@ CLAUDE.md §8).
 from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -62,10 +63,12 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
+from apps.membres.utils_http import xlsx_response
 from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
+from .exports import construire_classeur_cotisations
 from .filters import CotisationFilter
 from .gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 from .models import (
@@ -321,6 +324,24 @@ class CotisationViewSet(ModelViewSet):
         cotisation = self.get_object()
         historique = cotisation.historique_statuts.select_related("modifie_par")
         return Response(HistoriqueStatutCotisationSerializer(historique, many=True).data)
+
+    @action(detail=False, methods=["get"])
+    def export(self, request):
+        """
+        GET /cotisations/export/ — export Excel des paiements (demande utilisateur du
+        2026-09-25, module "Ausstehende Zahlungen"/"Zahlungen" : "Excel-Export der Zahlungen").
+        Réutilise exactement le même scope IDOR (get_queryset) et les mêmes filtres (statut,
+        type_article, mode_paiement, annee, membre, dates, recherche libre — voir
+        CotisationFilter) que GET /cotisations/, pour que l'export corresponde toujours à ce que
+        l'écran de gestion montre avec les mêmes filtres — même principe que
+        apps.boutique.views.CommandeViewSet.export. Non paginé (self.filter_queryset, pas
+        self.paginate_queryset) : l'export contient toute la sélection filtrée, pas une seule
+        page du cursor.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        classeur = construire_classeur_cotisations(queryset)
+        nom_fichier = f"export_zahlungen_{timezone.localtime():%Y%m%d_%H%M}.xlsx"
+        return xlsx_response(classeur, nom_fichier)
 
     @action(detail=True, methods=["post"], url_path="initier-paiement-en-ligne")
     def initier_paiement_en_ligne(self, request, pk=None):

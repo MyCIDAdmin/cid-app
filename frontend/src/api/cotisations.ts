@@ -138,6 +138,39 @@ export async function enregistrerPaiementEspeces(
   return data;
 }
 
+/** Nom de fichier suggéré par le serveur (Content-Disposition) — même repli que
+ * boutiqueApi.exporterCommandesExcel (voir sa docstring). */
+function nomFichierDepuisContentDisposition(contentDisposition: unknown, repli: string): string {
+  const valeur = typeof contentDisposition === "string" ? contentDisposition : "";
+  const correspondance = /filename="?([^"]+)"?/.exec(valeur);
+  return correspondance?.[1] ?? repli;
+}
+
+/**
+ * GET /cotisations/export/ (ajouté le 2026-09-25, module "Ausstehende Zahlungen" renommé
+ * "Zahlungen" — demande utilisateur : "Excel-Export der Zahlungen") — export Excel, mêmes
+ * filtres/scope que listCotisationsGestion (statut, type d'article, mode de paiement, recherche
+ * libre, plage de date — voir CotisationViewSet.export côté backend).
+ */
+export async function exporterCotisationsExcel(
+  filtres: CotisationsGestionFiltres = {},
+): Promise<{ blob: Blob; nomFichier: string }> {
+  const params = Object.fromEntries(
+    Object.entries(filtres).filter(([, value]) => value !== undefined && value !== ""),
+  );
+  const { data, headers } = await apiClient.get("/cotisations/export/", {
+    params,
+    responseType: "blob",
+  });
+  return {
+    blob: data,
+    nomFichier: nomFichierDepuisContentDisposition(
+      headers["content-disposition"],
+      "export_zahlungen.xlsx",
+    ),
+  };
+}
+
 /**
  * POST /cotisations/{id}/changer-statut/ (ajouté le 2026-09-19) — corrige le statut vers
  * n'importe lequel des 5 statuts, avec motif optionnel, réservé au Directeur Financier/Admin

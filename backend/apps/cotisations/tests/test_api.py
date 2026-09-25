@@ -1232,7 +1232,9 @@ def test_phase_d_directeur_financier_perd_lacces_a_changer_statut_si_matrice_le_
     from apps.rbac.models import NiveauAcces
 
     _set_matrice_cellule("dir_financier", "page_cotisations_attente", NiveauAcces.AUCUN)
-    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "phased-attente-statut-restrict@example.de")
+    user, _membre = _user_avec_membre(
+        Role.DIR_FINANCIER, "phased-attente-statut-restrict@example.de"
+    )
     cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
     _auth(api_client, user)
 
@@ -1248,16 +1250,25 @@ def test_phase_d_role_personnalise_peut_marquer_payee_via_la_matrice(api_client)
     Comme pour les justificatifs, la cotisation ciblée appartient donc à la propre fiche membre
     du user pour rester dans le queryset filtré "mes cotisations"."""
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     user, membre = _user_avec_membre(Role.MEMBRE, "phased-attente-grant@example.de")
     role_perso = RoleDefinitionFactory(slug="cotisations-attente-manager")
     RoleModulePermissionFactory(
-        role=role_perso, module="page_cotisations_attente", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+        role=role_perso,
+        module="page_cotisations_attente",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
     )
     UserRoleAssignmentFactory(user=user, role=role_perso)
     cotisation = CotisationFactory(
-        membre=membre, statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+        membre=membre,
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="",
+        reference_transaction=None,
     )
     _auth(api_client, user)
 
@@ -1305,11 +1316,16 @@ def test_role_lecture_seule_ne_peut_pas_marquer_payee_ni_changer_statut(api_clie
     )
     UserRoleAssignmentFactory(user=user, role=role_perso)
     cotisation = CotisationFactory(
-        membre=membre, statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+        membre=membre,
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="",
+        reference_transaction=None,
     )
     _auth(api_client, user)
 
-    resp_marquer = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    resp_marquer = api_client.post(
+        _marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"}
+    )
     assert resp_marquer.status_code == 403
 
     resp_changer = api_client.post(_changer_statut_url(cotisation), {"statut": "annulee"})
@@ -1333,13 +1349,103 @@ def test_role_lecture_ecriture_peut_marquer_payee_et_changer_statut(api_client):
     )
     UserRoleAssignmentFactory(user=user, role=role_perso)
     cotisation = CotisationFactory(
-        membre=membre, statut=StatutCotisation.EN_ATTENTE, mode_paiement="", reference_transaction=None
+        membre=membre,
+        statut=StatutCotisation.EN_ATTENTE,
+        mode_paiement="",
+        reference_transaction=None,
     )
     _auth(api_client, user)
 
-    resp_marquer = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+    resp_marquer = api_client.post(
+        _marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"}
+    )
     assert resp_marquer.status_code == 200, resp_marquer.data
 
     autre_cotisation = CotisationFactory(membre=membre, statut=StatutCotisation.PAYEE)
     resp_changer = api_client.post(_changer_statut_url(autre_cotisation), {"statut": "annulee"})
     assert resp_changer.status_code == 200, resp_changer.data
+
+
+# ---------------------------------------------------------------------------
+# Export Excel des paiements (module "Ausstehende Zahlungen"/"Zahlungen", ajouté le 2026-09-25,
+# demande utilisateur : "Excel-Export der Zahlungen") — même principe que
+# apps.boutique.tests.test_api::test_export_commandes_* (même scope IDOR/filtres que la liste).
+# ---------------------------------------------------------------------------
+
+
+def _export_url():
+    return reverse("cotisations:cotisation-export")
+
+
+def test_export_non_authentifie_refuse(api_client):
+    resp = api_client.get(_export_url())
+    assert resp.status_code == 401
+
+
+def test_export_retourne_un_classeur_xlsx(api_client):
+    import io
+
+    from openpyxl import load_workbook
+
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "export-cot-admin1@example.de")
+    _, membre1 = _user_avec_membre(Role.MEMBRE, "export-cot-m1@example.de")
+    _, membre2 = _user_avec_membre(Role.MEMBRE, "export-cot-m2@example.de")
+    CotisationFactory(membre=membre1, libelle="Export Un")
+    CotisationFactory(membre=membre2, libelle="Export Deux")
+
+    resp = _auth(api_client, admin).get(_export_url())
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    classeur = load_workbook(io.BytesIO(resp.content))
+    assert classeur.sheetnames == ["Zahlungen"]
+    feuille = classeur.active
+    entetes = [c.value for c in feuille[1]]
+    assert entetes[0] == "Membre"
+    libelles = {feuille.cell(row=r, column=5).value for r in (2, 3)}
+    assert libelles == {"Export Un", "Export Deux"}
+
+
+def test_export_respecte_le_filtre_statut(api_client):
+    import io
+
+    from openpyxl import load_workbook
+
+    admin, _ = _user_avec_membre(Role.BUREAU_ADMIN, "export-cot-admin2@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "export-cot-m3@example.de")
+    CotisationFactory(
+        membre=membre,
+        statut=StatutCotisation.EN_ATTENTE,
+        libelle="Attente",
+        reference_transaction=None,
+    )
+    CotisationFactory(membre=membre, statut=StatutCotisation.PAYEE, libelle="Payee")
+
+    resp = _auth(api_client, admin).get(_export_url(), {"statut": StatutCotisation.EN_ATTENTE})
+    assert resp.status_code == 200
+
+    classeur = load_workbook(io.BytesIO(resp.content))
+    feuille = classeur.active
+    assert feuille.max_row == 2  # en-tête + 1 seule cotisation
+    assert feuille.cell(row=2, column=5).value == "Attente"
+
+
+def test_export_scope_membre_ne_voit_que_les_siennes(api_client):
+    import io
+
+    from openpyxl import load_workbook
+
+    user, membre1 = _user_avec_membre(Role.MEMBRE, "export-cot-m4@example.de")
+    _, membre2 = _user_avec_membre(Role.MEMBRE, "export-cot-m5@example.de")
+    CotisationFactory(membre=membre1, libelle="Mine")
+    CotisationFactory(membre=membre2, libelle="PasMoi")
+
+    resp = _auth(api_client, user).get(_export_url())
+    assert resp.status_code == 200
+
+    classeur = load_workbook(io.BytesIO(resp.content))
+    feuille = classeur.active
+    assert feuille.max_row == 2
+    assert feuille.cell(row=2, column=5).value == "Mine"
