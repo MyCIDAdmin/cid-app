@@ -15,12 +15,20 @@
  * mockup (panneaux dépliables persistants, modifiables à tout moment,
  * plutôt qu'un flux de création unique) : le CRUD backend (AHM-19) le
  * permettait déjà, seule l'UI manquait.
+ *
+ * Éditeur de description converti en éditeur riche type Word le 2026-09-25 (demande
+ * utilisateur : "Beschreibungs-Editor zu word-like editor umwandeln") — même composant
+ * RichTextEditor (TipTap) que le module Projets & Actions, voir sa docstring. Le champ
+ * `description` stocke désormais du HTML ; l'email d'annonce de campagne
+ * (apps.adhesions.tasks.envoyer_annonce_campagne), qui reste du texte brut, en supprime les
+ * balises côté serveur avant envoi.
  */
 import { Fragment, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import OffresManager from "../../components/adhesions/OffresManager";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import RichTextEditor from "../../components/ui/RichTextEditor";
 import {
   useCampagnes,
   useCloturerCampagne,
@@ -145,15 +153,13 @@ export default function AdminCampagnesPage() {
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="camp-desc" className="mb-1 block text-xs font-medium text-text-secondary">
+            <label className="mb-1 block text-xs font-medium text-text-secondary">
               {t("admin.description_label")}
             </label>
-            <textarea
-              id="camp-desc"
-              rows={2}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            <RichTextEditor
+              value={form.description ?? ""}
+              onChange={(html) => setForm({ ...form, description: html })}
+              ariaLabel={t("admin.description_label") ?? ""}
             />
           </div>
 

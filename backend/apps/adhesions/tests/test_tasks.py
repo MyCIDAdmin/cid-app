@@ -50,3 +50,25 @@ def test_annonce_ignore_les_membres_inactifs(mailoutbox):
 
 def test_annonce_campagne_introuvable_ne_leve_pas():
     assert envoyer_annonce_campagne("00000000-0000-0000-0000-000000000000") == 0
+
+
+def test_annonce_supprime_le_html_de_la_description(mailoutbox):
+    # Ajouté le 2026-09-25 (demande utilisateur, module "Verwaltung der
+    # Mitgliedschaftskampagnen" : "Beschreibungs-Editor zu word-like editor umwandeln") —
+    # campagne.description contient désormais du HTML (éditeur TipTap côté AdminCampagnesPage),
+    # cet email reste du texte brut : les balises ne doivent jamais fuiter telles quelles dans la
+    # boîte de réception d'un membre.
+    _membre_actif_avec_compte("m1@example.de")
+    campagne = CampagneAdhesionFactory(
+        nom="Campagne 2027",
+        description="<p>Nouvelle <strong>campagne</strong> annuelle.</p><p>Inscrivez-vous !</p>",
+    )
+
+    envoyer_annonce_campagne(str(campagne.id))
+
+    assert len(mailoutbox) == 1
+    corps = mailoutbox[0].body
+    assert "<p>" not in corps
+    assert "<strong>" not in corps
+    assert "Nouvelle campagne annuelle." in corps
+    assert "Inscrivez-vous !" in corps

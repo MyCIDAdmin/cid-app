@@ -8,6 +8,13 @@ seule fois, au moment où la campagne passe de brouillon à publiée — même p
 notification in-app à tous les membres actifs, chaque envoi email individuel protégé
 (fail_silently/try-except) pour qu'un échec isolé n'interrompe jamais la boucle, la notification
 in-app créée indépendamment de l'email.
+
+`campagne.description` contient désormais du HTML (éditeur "word-like" TipTap côté
+AdminCampagnesPage, demande utilisateur du 2026-09-25 : "Beschreibungs-Editor zu word-like editor
+umwandeln") — cet email reste un `send_mail` texte brut (pas de version HTML), donc `strip_tags`
+avant interpolation, sinon les balises brutes apparaîtraient telles quelles dans la boîte de
+réception du membre. `strip_tags` sur une ancienne description en texte brut (sans balises,
+créées avant ce changement) est un no-op, donc rétro-compatible.
 """
 
 import logging
@@ -15,6 +22,7 @@ import logging
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
+from django.utils.html import strip_tags
 
 from apps.membres.models import Membre, StatutMembre
 from apps.notifications.models import TypeNotification
@@ -53,7 +61,7 @@ def envoyer_annonce_campagne(campagne_id) -> int:
                         f"La campagne d'adhésion {campagne.nom} ({campagne.annee}) vient d'être "
                         f"publiée, du {campagne.date_debut:%d/%m/%Y} au "
                         f"{campagne.date_fin:%d/%m/%Y}.\n\n"
-                        f"{campagne.description}\n\n"
+                        f"{strip_tags(campagne.description).strip()}\n\n"
                         f"Offres disponibles :\n{offres}\n\n"
                         "Consultez la page Mon adhésion pour souscrire."
                     ),

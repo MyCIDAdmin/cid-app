@@ -141,6 +141,23 @@ describe("AdminCampagnesPage", () => {
     });
   });
 
+  // Ajouté le 2026-09-25 (demande utilisateur : "Beschreibungs-Editor zu word-like editor
+  // umwandeln") — la description n'est plus un <textarea> mais RichTextEditor (TipTap), qui
+  // expose sa barre d'outils de formatage.
+  it("affiche l'éditeur de description sous forme d'éditeur riche (barre d'outils)", () => {
+    vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
+    setupMutationMocks();
+
+    renderWithProviders(<AdminCampagnesPage />);
+
+    expect(screen.getByRole("toolbar", { name: "editeur.barre_outils" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "admin.description_label" })).toBeInTheDocument();
+  });
+
   it("déplie la gestion des offres d'une campagne (demande utilisateur du 2026-09-16)", () => {
     vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
       data: { next: null, previous: null, results: [campagne()] },
