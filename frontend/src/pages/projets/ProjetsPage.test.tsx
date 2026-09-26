@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -141,7 +141,7 @@ describe("ProjetsPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/cotisation?paiement=cot-1");
   });
 
-  it("ouvre le rapport d'avancement depuis la kachel (point 7)", async () => {
+  it("navigue vers la page de détail /projets/:id au clic sur \"Voir le rapport\" (demande utilisateur 2026-09-26 : porter le comportement de mycid.org, page dédiée plutôt que modale)", () => {
     mockHooksParDefaut();
     vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
       data: page([projet()]),
@@ -153,27 +153,48 @@ describe("ProjetsPage", () => {
 
     fireEvent.click(screen.getByText("rapport.voir"));
 
-    await waitFor(() => {
-      expect(screen.getByText("rapport.aucune_mise_a_jour")).toBeInTheDocument();
-    });
+    expect(navigateMock).toHaveBeenCalledWith("/projets/proj-1");
   });
 
-  it("ne propose jamais d'ajouter une mise à jour de rapport ici, même pour un·e gestionnaire du projet (retour utilisateur 2026-09-22 : réservé à /admin/projets)", async () => {
+  it("affiche les tuiles KPI calculées sur la liste complète, avant tout filtrage", () => {
     mockHooksParDefaut();
     vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
-      data: page([projet({ est_gestionnaire: true })]),
+      data: page([
+        projet({ id: "p1", statut: "en_cours" }),
+        projet({ id: "p2", statut: "termine" }),
+      ]),
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
 
     renderWithProviders(<ProjetsPage />);
 
-    fireEvent.click(screen.getByText("rapport.voir"));
+    expect(screen.getByText("kpi.total")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument(); // kpi.total
+    expect(screen.getAllByText("1")).toHaveLength(2); // kpi.actifs et kpi.termines
+  });
 
-    await waitFor(() => {
-      expect(screen.getByText("rapport.aucune_mise_a_jour")).toBeInTheDocument();
-    });
-    expect(screen.queryByText("rapport.ajouter")).not.toBeInTheDocument();
-    expect(screen.queryByText("rapport.publier")).not.toBeInTheDocument();
+  it("filtre la grille via les onglets All/Active/Completed sans changer les tuiles KPI (demande utilisateur 2026-09-26)", () => {
+    mockHooksParDefaut();
+    vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
+      data: page([
+        projet({ id: "p1", titre: "Projet actif", statut: "en_cours" }),
+        projet({ id: "p2", titre: "Projet terminé", statut: "termine" }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
+
+    renderWithProviders(<ProjetsPage />);
+
+    expect(screen.getByText("Projet actif")).toBeInTheDocument();
+    expect(screen.getByText("Projet terminé")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("filtre.actifs"));
+
+    expect(screen.getByText("Projet actif")).toBeInTheDocument();
+    expect(screen.queryByText("Projet terminé")).not.toBeInTheDocument();
+    // Les tuiles KPI restent sur la liste complète, non filtrée (voir docstring ProjetsKpiTiles).
+    expect(screen.getByText("kpi.total")).toBeInTheDocument();
   });
 });

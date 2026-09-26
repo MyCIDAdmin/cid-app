@@ -16,9 +16,10 @@
     "retourner_devant": "Revenir à la kachel"
   },
   "cagnote": {
-    "collecte": "{{montant}} collectés sur {{objectif}}",
     "collecte_sans_objectif": "{{montant}} collectés",
-    "contribuer": "Contribuer"
+    "contribuer": "Contribuer",
+    "objectif_atteint": "Objectif atteint",
+    "nb_contributeurs": "{{count}} contributeur(s)"
   },
   "echeance": {
     "limite": "Jusqu'au {{date}}",
@@ -42,9 +43,26 @@
   },
   "page": {
     "titre": "Projets & Actions",
+    "sous_titre": "Suivez et soutenez les projets de l'association",
     "aucun_projet": "Aucun projet pour le moment.",
     "chargement": "Chargement des projets…",
     "erreur_chargement": "Impossible de charger les projets."
+  },
+  "kpi": {
+    "total": "Projets au total",
+    "actifs": "Projets actifs",
+    "termines": "Projets terminés",
+    "total_collecte": "Total collecté"
+  },
+  "filtre": {
+    "tous": "Tous les projets",
+    "actifs": "Actifs",
+    "termines": "Terminés"
+  },
+  "detail": {
+    "retour_liste": "← Retour aux projets",
+    "responsable": "Responsable : {{nom}}",
+    "a_propos": "À propos du projet"
   },
   "modal_contribution": {
     "titre": "Contribuer à « {{titre}} »",
