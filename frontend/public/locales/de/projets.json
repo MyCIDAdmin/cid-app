@@ -16,9 +16,10 @@
     "retourner_devant": "Zurück zur Kachel"
   },
   "cagnote": {
-    "collecte": "{{montant}} von {{objectif}} gesammelt",
     "collecte_sans_objectif": "{{montant}} gesammelt",
-    "contribuer": "Beitragen"
+    "contribuer": "Beitragen",
+    "objectif_atteint": "Ziel erreicht",
+    "nb_contributeurs": "{{count}} Beitragende(r)"
   },
   "echeance": {
     "limite": "Bis {{date}}",
@@ -42,9 +43,26 @@
   },
   "page": {
     "titre": "Projekte & Aktionen",
+    "sous_titre": "Verfolgen und unterstützen Sie die Projekte des Vereins",
     "aucun_projet": "Noch kein Projekt vorhanden.",
     "chargement": "Projekte werden geladen…",
     "erreur_chargement": "Projekte konnten nicht geladen werden."
+  },
+  "kpi": {
+    "total": "Projekte insgesamt",
+    "actifs": "Laufende Projekte",
+    "termines": "Abgeschlossene Projekte",
+    "total_collecte": "Insgesamt gesammelt"
+  },
+  "filtre": {
+    "tous": "Alle Projekte",
+    "actifs": "Laufend",
+    "termines": "Abgeschlossen"
+  },
+  "detail": {
+    "retour_liste": "← Zurück zu den Projekten",
+    "responsable": "Verantwortlich: {{nom}}",
+    "a_propos": "Über dieses Projekt"
   },
   "modal_contribution": {
     "titre": "Zu „{{titre}}“ beitragen",

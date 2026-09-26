@@ -44,6 +44,7 @@ import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AdminProjetsPage from "./pages/projets/AdminProjetsPage";
+import ProjetDetailPage from "./pages/projets/ProjetDetailPage";
 import ProjetsPage from "./pages/projets/ProjetsPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
@@ -349,6 +350,11 @@ export default function App() {
             lui-même (créer/modifier/statut/cagnote/échéance/responsable/images) réservée Bureau
             Admin+, même niveau que ProjetPermission côté API. */}
         <Route path="/projets" element={<ProjetsPage />} />
+        {/* Détail d'un projet (demande utilisateur 2026-09-26 : porter la structure de
+            https://www.mycid.org/projects — "View Project" ouvre une page dédiée, jamais une
+            modale) — même niveau d'accès que /projets ci-dessus, voir docstring
+            ProjetDetailPage. */}
+        <Route path="/projets/:id" element={<ProjetDetailPage />} />
         {/* Phase D : piloté par la matrice (page_projets), seuil de départ inchangé (Bureau
             Admin+) — voir note Phase D plus haut. */}
         <Route

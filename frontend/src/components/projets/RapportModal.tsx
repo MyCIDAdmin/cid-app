@@ -1,23 +1,28 @@
 /**
  * Modale "Rapport d'avancement" (demande utilisateur point 7 : "Es muss möglich sein einen
  * Bericht (Mit Bildern) zum Projekt / Aktion mit updates zu 'Was getan wurde' hinzuzufügen") —
- * ouverte depuis ProjetCard.onVoirRapport, jamais depuis le retournement de la kachel (voir sa
- * docstring). Liste les ProjetMiseAJour du projet (les plus récentes en premier, voir
- * MisesAJourCursorPagination côté backend) et, seulement si `autoriserAjout` ET que le
- * `projet.est_gestionnaire` renvoyé par le serveur sont tous les deux vrais, propose un
- * formulaire d'ajout : titre, texte riche (RichTextEditor, même éditeur que la description du
- * projet), photos. Les images sont uploadées séparément APRÈS la création de la mise à jour
- * elle-même (elle a besoin d'un id à référencer — voir ProjetMiseAJourImagePayload), une par une
- * via useAjouterImageMiseAJourProjet, jamais dans le même appel JSON.
+ * réservée depuis le 2026-09-26 à AdminProjetsPage (Gestion des projets) : côté page membre,
+ * ProjetCard.onVoirRapport navigue désormais vers /projets/:id (pages/projets/ProjetDetailPage.tsx)
+ * plutôt que d'ouvrir cette modale (demande utilisateur : porter la structure/le comportement de
+ * https://www.mycid.org/projects, où "View Project" ouvre une page dédiée, jamais une superposition
+ * — voir docstring ProjetDetailPage). Le rendu de la liste des mises à jour lui-même (lecture seule)
+ * est partagé avec ProjetDetailPage via RapportListe — cette modale n'en garde que le conteneur et,
+ * seulement si `autoriserAjout` ET que le `projet.est_gestionnaire` renvoyé par le serveur sont
+ * tous les deux vrais, le formulaire d'ajout : titre, texte riche (RichTextEditor, même éditeur que
+ * la description du projet), photos. Les images sont uploadées séparément APRÈS la création de la
+ * mise à jour elle-même (elle a besoin d'un id à référencer — voir ProjetMiseAJourImagePayload),
+ * une par une via useAjouterImageMiseAJourProjet, jamais dans le même appel JSON.
  *
  * `autoriserAjout` (ajouté le 2026-09-22, retour utilisateur) : `projet.est_gestionnaire` est
  * vrai pour tout Bureau Admin+ quel que soit l'écran (voir docstring AdminProjetsPage), donc ce
  * champ seul ne suffit PAS à distinguer "je suis dans /admin/projets (Projektverwaltung)" de "je
- * suis sur la page membre Projekte & Aktionen" — un Bureau Admin+ consultant ses PROPRES
- * projets côté membre voyait donc, à tort, le formulaire d'ajout de mise à jour là où il ne doit
- * servir qu'à la consultation. C'est à l'appelant (la page) de dire explicitement s'il est le
- * contexte de gestion (AdminProjetsPage) ou de simple consultation (ProjetsPage) — jamais déduit
- * du rôle de l'utilisateur.
+ * suis ailleurs" — c'est à l'appelant de dire explicitement s'il est le contexte de gestion,
+ * jamais déduit du rôle de l'utilisateur. Depuis que cette modale n'est plus utilisée que par
+ * AdminProjetsPage, `autoriserAjout` y est toujours `true` en pratique, mais le paramètre reste
+ * explicite (sans valeur par défaut) plutôt que supprimé : ProjetDetailPage prouve, en important
+ * RapportListe plutôt que cette modale, qu'un contexte de consultation ne peut structurellement
+ * PAS afficher le formulaire d'ajout — bien plus sûr qu'un booléen qu'il faudrait se souvenir de
+ * passer à `false`.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,11 +35,7 @@ import {
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Projet } from "../../types/projets";
 import RichTextEditor from "../ui/RichTextEditor";
-import ImageCarousel from "./ImageCarousel";
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
-}
+import RapportListe from "./RapportListe";
 
 interface RapportModalProps {
   projet: Projet;
@@ -101,38 +102,11 @@ export default function RapportModal({ projet, onClose, autoriserAjout }: Rappor
           </button>
         </div>
 
-        <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {misesAJourQuery.isLoading && (
-            <p className="text-sm text-text-tertiary">{t("rapport.chargement")}</p>
-          )}
-          {!misesAJourQuery.isLoading && misesAJourQuery.data?.results.length === 0 && (
-            <p className="text-sm text-text-tertiary">{t("rapport.aucune_mise_a_jour")}</p>
-          )}
-          {misesAJourQuery.data?.results.map((maj) => (
-            <article
-              key={maj.id}
-              className="space-y-2 rounded-cid border border-text-tertiary/20 p-3"
-            >
-              <div className="flex items-baseline justify-between gap-2">
-                <h3 className="text-sm font-semibold text-text-primary">{maj.titre}</h3>
-                <span className="shrink-0 text-xs text-text-tertiary">
-                  {formatDate(maj.created_at)}
-                </span>
-              </div>
-              {maj.images.length > 0 && (
-                <ImageCarousel images={maj.images} titre={maj.titre} className="h-40" />
-              )}
-              <div
-                className="prose prose-sm max-w-none text-text-primary"
-                dangerouslySetInnerHTML={{ __html: maj.contenu_html }}
-              />
-              {maj.created_by_detail && (
-                <p className="text-xs text-text-tertiary">
-                  {maj.created_by_detail.prenom} {maj.created_by_detail.nom}
-                </p>
-              )}
-            </article>
-          ))}
+        <div className="flex-1 overflow-y-auto p-4">
+          <RapportListe
+            misesAJour={misesAJourQuery.data?.results}
+            chargement={misesAJourQuery.isLoading}
+          />
         </div>
 
         {autoriserAjout && projet.est_gestionnaire && (
