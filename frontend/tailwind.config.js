@@ -69,12 +69,14 @@ export default {
           "0%": { opacity: "0", transform: "translateY(-6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
-        // Repris de MyCID (merge de design 2026-09-25) — apparition douce pour cartes/listes
-        // (voir .stagger-children dans index.css) et titres de section.
-        "fade-up": {
-          "0%": { opacity: "0", transform: "translateY(16px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
+        // "fade-up" (apparition douce pour cartes/listes) est déclaré en CSS brut directement
+        // dans index.css (@keyframes fade-up, à côté de .stagger-children), PAS ici : un
+        // @keyframes Tailwind n'est émis dans le CSS de production que si la classe utilitaire
+        // correspondante (.animate-fade-up) est détectée par le content-scan JIT dans un fichier
+        // .tsx, or elle n'est utilisée nulle part (seule la propriété `animation: fade-up` en CSS
+        // brut de .stagger-children la référence) — la déclarer ici sans jamais utiliser
+        // .animate-fade-up produisait un @keyframes fantôme, absent du build (bug constaté le
+        // 2026-09-26 : modules Shop/Projets & Actions vides en production, voir index.css).
         "scale-in": {
           "0%": { opacity: "0", transform: "scale(0.96)" },
           "100%": { opacity: "1", transform: "scale(1)" },
@@ -89,7 +91,6 @@ export default {
       },
       animation: {
         "slide-in-fade": "slide-in-fade 0.35s ease-out",
-        "fade-up": "fade-up 0.5s ease-out both",
         "scale-in": "scale-in 0.35s ease-out both",
         "badge-pulse": "badge-pulse 2s ease-in-out infinite",
       },
