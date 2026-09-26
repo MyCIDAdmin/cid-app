@@ -60,6 +60,7 @@ class EvenementSerializer(serializers.ModelSerializer):
             "organisateur",
             "organisateur_detail",
             "statut",
+            "visible_public",
             "places_reservees",
             "places_restantes",
             "created_by",

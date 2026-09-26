@@ -1137,9 +1137,35 @@ def test_classement_lecture_ouverte_a_tout_authentifie(api_client):
     assert resp.data["results"][0]["equipe"] == "Club Africain"
 
 
-def test_classement_non_authentifie_refuse(api_client):
+def test_classement_non_authentifie_autorise(api_client):
+    """AllowAny depuis le 2026-09-26 (widget "Club Africain Live" de la page d'accueil
+    publique, demande utilisateur) — données sportives tierces, rien de sensible. Remplace
+    l'ancien test qui attendait un refus 401 pur."""
     resp = api_client.get(reverse(CLASSEMENT_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_rencontre_calendrier_non_authentifie_autorise(api_client):
+    """Même changement que ClassementLigueViewSet ci-dessus (AllowAny, 2026-09-26)."""
+    resp = api_client.get(reverse(CALENDRIER_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_liste_albums_non_authentifie_autorise(api_client):
+    """Onglet Galerie de la page d'accueil publique (demande utilisateur 2026-09-26) — Album
+    n'a pas de notion de brouillon/publié, donc rien à filtrer en plus pour un anonyme."""
+    resp = api_client.get(reverse(ALBUM_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_creer_album_non_authentifie_refuse(api_client):
+    resp = api_client.post(reverse(ALBUM_LIST_URL), {"nom": "x"}, format="json")
     assert resp.status_code == 401
+
+
+def test_liste_photos_non_authentifie_autorise(api_client):
+    resp = api_client.get(reverse(PHOTO_LIST_URL))
+    assert resp.status_code == 200
 
 
 def test_classement_lecture_seule_pas_de_creation_via_api(api_client):

@@ -113,6 +113,8 @@
     "champ_prix_accompagnant_enfant": "Prix enfant (€)",
     "champ_age_limite_accompagnant_enfant": "Limite d'âge enfant",
     "aide_accompagnants": "La limite d'âge n'est qu'indicative : le formulaire d'inscription ne demande que le nombre d'accompagnants adultes et enfants, jamais leur âge exact.",
+    "champ_visible_public": "Visible pour les non-membres",
+    "aide_visible_public": "Affiche aussi cet événement (une fois publié) sur la page d'accueil publique, pour les visiteurs non connectés.",
     "annuler_formulaire": "Annuler",
     "enregistrer": "Enregistrer",
     "erreur_publication": "Impossible de publier l'évènement.",

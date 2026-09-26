@@ -113,6 +113,8 @@
     "champ_prix_accompagnant_enfant": "Preis Kinder (€)",
     "champ_age_limite_accompagnant_enfant": "Altersgrenze Kind",
     "aide_accompagnants": "Altersgrenze nur zur Orientierung: Das Anmeldeformular fragt lediglich nach der Anzahl erwachsener und kindlicher Begleitpersonen, nicht nach dem genauen Alter.",
+    "champ_visible_public": "Für Nicht-Mitglieder sichtbar",
+    "aide_visible_public": "Zeigt diese Veranstaltung (nach Veröffentlichung) auch auf der öffentlichen Startseite für nicht angemeldete Besucher.",
     "annuler_formulaire": "Abbrechen",
     "enregistrer": "Speichern",
     "erreur_publication": "Veranstaltung konnte nicht veröffentlicht werden.",

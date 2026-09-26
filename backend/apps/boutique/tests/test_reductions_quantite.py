@@ -60,8 +60,16 @@ def _adresse_livraison():
 # --- CRUD / permissions ---
 
 
-def test_list_regles_non_authentifie_refuse(api_client):
+def test_list_regles_non_authentifie_autorise(api_client):
+    """RegleReductionViewSet réutilise CatalogueBoutiquePermission (voir docstring de module) —
+    lecture ouverte à tout le monde depuis le 2026-09-26, même changement que Produit/
+    VarianteProduit. Remplace l'ancien test qui attendait un refus 401 pur."""
     resp = api_client.get(reverse(REGLE_LIST_URL))
+    assert resp.status_code == 200
+
+
+def test_creer_regle_non_authentifie_refuse(api_client):
+    resp = api_client.post(reverse(REGLE_LIST_URL), {"produit": "x"}, format="json")
     assert resp.status_code == 401
 
 

@@ -63,23 +63,26 @@ CATALOGUE_WRITE_ACTIONS = ("create", "update", "partial_update", "destroy")
 
 
 class CatalogueBoutiquePermission(BasePermission):
-    """Produit / VarianteProduit. Écriture = page de gestion "Shop-Verwaltung" (Phase D, ajoutée
-    le 2026-09-23, apps.rbac.registry.PAGES_ADMIN slug `page_boutique`) — remplace (et non
-    complète) l'ancien seuil fixe GESTION_CATALOGUE_MIN_LEVEL. Niveau `lecture_ecriture` requis
-    depuis le 2026-09-24 (retour utilisateur : `lecture` seule ne doit plus permettre de
-    modifier le catalogue — voir apps.communaute.permissions.QuizPermission pour le contexte
-    complet)."""
+    """Produit / VarianteProduit. Lecture (list/retrieve) ouverte à tout le monde, y compris un
+    visiteur anonyme depuis le 2026-09-26 (onglet Shop de la page d'accueil publique, demande
+    utilisateur) — les ViewSets filtrent déjà sur `statut=publie` pour qui n'est pas Bureau
+    Admin+ (voir get_queryset), ce qui s'applique donc aussi à un anonyme sans changement
+    supplémentaire ; le prix affiché reste toujours le prix standard sans compte membre actif
+    (voir Produit.prix_pour_membre, inchangé). Écriture = page de gestion "Shop-Verwaltung"
+    (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.PAGES_ADMIN slug `page_boutique`) —
+    remplace (et non complète) l'ancien seuil fixe GESTION_CATALOGUE_MIN_LEVEL. Niveau
+    `lecture_ecriture` requis depuis le 2026-09-24 (retour utilisateur : `lecture` seule ne doit
+    plus permettre de modifier le catalogue — voir apps.communaute.permissions.QuizPermission
+    pour le contexte complet)."""
 
     def has_permission(self, request, view):
+        action = getattr(view, "action", None)
+        if action not in CATALOGUE_WRITE_ACTIONS and request.method in SAFE_METHODS:
+            return True
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        action = getattr(view, "action", None)
-        if action in CATALOGUE_WRITE_ACTIONS or request.method not in SAFE_METHODS:
-            return has_admin_page_access(
-                user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE
-            )
-        return True
+        return has_admin_page_access(user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE)
 
 
 class CommandePermission(BasePermission):

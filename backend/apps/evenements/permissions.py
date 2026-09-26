@@ -46,13 +46,22 @@ class EvenementPermission(BasePermission):
     (Phase D, ajoutée le 2026-09-23, slug `page_events`) — remplace (et non complète) l'ancien
     seuil fixe GESTION_EVENEMENTS_MIN_LEVEL. Niveau `lecture_ecriture` requis depuis le
     2026-09-24 (retour utilisateur — voir apps.communaute.permissions.QuizPermission pour le
-    contexte complet)."""
+    contexte complet).
+
+    `list`/`retrieve` sont ouverts à un visiteur anonyme depuis le 2026-09-26 (page d'accueil
+    publique façon mycid.org/events, demande utilisateur) — `EvenementViewSet.get_queryset`
+    se charge de ne renvoyer, pour un anonyme, que les événements PUBLIE + `visible_public=True`
+    (jamais un brouillon, jamais un événement réservé aux membres). `inscrire` reste réservé à
+    un authentifié (un visiteur anonyme ne peut pas s'inscrire) — d'où le if/else explicite
+    plutôt qu'un simple AllowAny global sur la vue."""
 
     def has_permission(self, request, view):
+        action = getattr(view, "action", None)
+        if action in ("list", "retrieve"):
+            return True
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        action = getattr(view, "action", None)
         if action in EVENEMENT_WRITE_ACTIONS:
             return has_admin_page_access(user, "page_events", required=NiveauAcces.LECTURE_ECRITURE)
         return True

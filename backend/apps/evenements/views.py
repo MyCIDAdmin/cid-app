@@ -98,7 +98,13 @@ class EvenementViewSet(ModelViewSet):
             and ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL
         ):
             return queryset
-        return queryset.filter(statut=StatutEvenement.PUBLIE)
+        queryset = queryset.filter(statut=StatutEvenement.PUBLIE)
+        if not user or not user.is_authenticated:
+            # Visiteur anonyme (page d'accueil publique, demande utilisateur 2026-09-26) :
+            # en plus de PUBLIE, seuls les événements explicitement ouverts aux non-membres
+            # sont renvoyés — voir Evenement.visible_public et EvenementPermission.
+            return queryset.filter(visible_public=True)
+        return queryset
 
     def perform_create(self, serializer):
         membre = getattr(self.request.user, "membre", None)

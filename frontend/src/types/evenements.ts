@@ -43,6 +43,10 @@ export interface Evenement {
   organisateur: string | null;
   organisateur_detail: MembreResume | null;
   statut: StatutEvenement;
+  /** Page d'accueil publique façon mycid.org/events (demande utilisateur 2026-09-26) : ouvre
+   * cet événement (une fois publié) aux visiteurs non connectés/non-membres. Ne remplace
+   * jamais `statut` — un brouillon reste toujours invisible, voir EvenementViewSet.get_queryset. */
+  visible_public: boolean;
   /** Toujours recalculées côté serveur (CLAUDE.md §8) — jamais déduites côté client. */
   places_reservees: number;
   places_restantes: number | null;
@@ -68,6 +72,7 @@ export interface EvenementPayload {
   prix_accompagnant_enfant?: string;
   age_limite_accompagnant_enfant?: number;
   organisateur?: string | null;
+  visible_public?: boolean;
 }
 
 /** Résumé minimal d'un événement, imbriqué en lecture dans Inscription (voir

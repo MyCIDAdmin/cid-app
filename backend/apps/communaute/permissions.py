@@ -14,7 +14,7 @@ Règle commune aux deux sous-modules :
     apps.boutique.permissions.GESTION_CATALOGUE_MIN_LEVEL.
 """
 
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.models import NiveauAcces
@@ -234,18 +234,23 @@ class MatchCommentairePermission(BasePermission):
 
 
 class AlbumPermission(BasePermission):
-    """Lecture ouverte à tout authentifié. Créer/modifier/supprimer un album (gestion) : page de
-    gestion "Fotoalben-Verwaltung" (Phase D, ajoutée le 2026-09-23, slug `page_albums`) — depuis
-    le 2026-09-22 (retour utilisateur : "Im Modul Album, sollen Albums nur angezeigt werden. Die
-    Verwaltung der Albums soll im Bereich Admin stattfinden") — voir docstring de tête models.py.
-    Avant cette date, la création était ouverte à tout membre authentifié ("upload
-    collaboratif") ; le module membre (`AlbumsPage`/`AlbumDetailPage` côté frontend) n'expose
-    donc plus aucune action de gestion, seule `AdminAlbumsPage` le fait. Remplace (et non
-    complète) l'ancien seuil fixe `MODERATION_MIN_LEVEL`. Niveau `lecture_ecriture` requis
+    """Lecture ouverte à tout le monde, y compris un visiteur anonyme depuis le 2026-09-26
+    (onglet Galerie de la page d'accueil publique, demande utilisateur) — Album n'a aucune
+    notion de brouillon/publié (voir docstring de tête models.py), donc rien à filtrer en plus
+    pour un anonyme : tous les albums existants sont déjà "publiés" de fait. Créer/modifier/
+    supprimer un album (gestion) : page de gestion "Fotoalben-Verwaltung" (Phase D, ajoutée le
+    2026-09-23, slug `page_albums`) — depuis le 2026-09-22 (retour utilisateur : "Im Modul
+    Album, sollen Albums nur angezeigt werden. Die Verwaltung der Albums soll im Bereich Admin
+    stattfinden"). Avant cette date, la création était ouverte à tout membre authentifié
+    ("upload collaboratif") ; le module membre (`AlbumsPage`/`AlbumDetailPage` côté frontend)
+    n'expose donc plus aucune action de gestion, seule `AdminAlbumsPage` le fait. Remplace (et
+    non complète) l'ancien seuil fixe `MODERATION_MIN_LEVEL`. Niveau `lecture_ecriture` requis
     depuis le 2026-09-24 (voir QuizPermission pour le contexte complet du retour utilisateur) —
     `lecture` seule ne suffit plus à gérer un album."""
 
     def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
         user = request.user
         if not user or not user.is_authenticated:
             return False
@@ -274,6 +279,8 @@ class PhotoPermission(BasePermission):
     AlbumPermission ci-dessus."""
 
     def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
         user = request.user
         if not user or not user.is_authenticated:
             return False
