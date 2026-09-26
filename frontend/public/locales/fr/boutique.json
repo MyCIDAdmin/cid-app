@@ -32,11 +32,13 @@
   },
   "catalogue": {
     "titre": "Boutique",
+    "sous_titre": "Articles officiels, cartes et bons d'achat du club",
     "categorie_toutes": "Toutes catégories",
     "chargement": "Chargement…",
     "erreur": "Impossible de charger le catalogue.",
     "aucun_produit": "Aucun produit disponible pour le moment.",
     "badge_nouveaute": "NOUVEAUTÉ",
+    "badge_prix_membre": "Prix membre",
     "badge_rabais": "-{{pct}}%",
     "variante_label": "Choisir une variante",
     "ajouter": "Ajouter",
@@ -123,6 +125,11 @@
     "montant": "Montant",
     "statut": "Statut",
     "retour_catalogue": "Retour au catalogue"
+  },
+  "detail": {
+    "retour_catalogue": "Retour au catalogue",
+    "quantite_label": "Quantité",
+    "choisir_montant_catalogue": "Choisir un montant depuis le catalogue"
   },
   "boutique_page": {
     "onglet_catalogue": "Catalogue",
@@ -232,6 +239,8 @@
     "stock_initial_label": "Stock initial",
     "rabais_label": "Rabais (%)",
     "rabais_placeholder": "Aucun",
+    "prix_membre_label": "Prix membre (€)",
+    "prix_membre_placeholder": "Identique au prix standard",
     "image_televerser": "Téléverser une image",
     "image_en_cours": "Téléversement…",
     "image_erreur": "L'image n'a pas pu être téléversée.",

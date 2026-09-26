@@ -88,6 +88,17 @@ class ProduitSerializer(serializers.ModelSerializer):
     # module) portant ce stock. Ignoré en modification (`update`) pour ne pas perturber la
     # gestion fine des variantes existantes.
     stock_initial = serializers.IntegerField(write_only=True, required=False, min_value=0)
+    # Prix membre/non-membre (demande utilisateur, mycid.org/shop) — `prix_affiche`/
+    # `est_prix_membre` sont calculés ici à partir de request.user (context, injecté
+    # automatiquement par ProduitViewSet/GenericAPIView.get_serializer_context) plutôt que dans
+    # Produit.prix_pour_membre seul : c'est la SEULE information que le frontend doit utiliser
+    # pour afficher un prix (jamais recalculer lui-même à partir de `prix_membre` brut + un
+    # statut membre qu'il connaîtrait par ailleurs — CLAUDE.md §8, même principe que prix_final).
+    # Le montant réellement facturé à la commande est résolu séparément, avec le même
+    # Produit.prix_pour_membre, par CommandeViewSet._construire_ligne_avec_reduction — jamais à
+    # partir de ces deux champs en lecture seule.
+    prix_affiche = serializers.SerializerMethodField()
+    est_prix_membre = serializers.SerializerMethodField()
 
     class Meta:
         model = Produit
@@ -100,6 +111,9 @@ class ProduitSerializer(serializers.ModelSerializer):
             "prix",
             "pourcentage_reduction",
             "prix_final",
+            "prix_membre",
+            "prix_affiche",
+            "est_prix_membre",
             "image",
             "statut",
             "nouveaute",
@@ -114,6 +128,23 @@ class ProduitSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def _membre_courant(self):
+        """Le membre du user de la requête en cours, ou None (visiteur non lié à une fiche
+        Membre) — voir Produit.prix_pour_membre. `context["request"]` est absent dans certains
+        contextes de sérialisation hors requête (ex. tests directs du serializer) : traité
+        alors comme un visiteur anonyme (prix_final), jamais une erreur."""
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return getattr(user, "membre", None) if user is not None else None
+
+    def get_prix_affiche(self, produit):
+        prix, _est_prix_membre = produit.prix_pour_membre(self._membre_courant())
+        return str(prix)
+
+    def get_est_prix_membre(self, produit):
+        _prix, est_prix_membre = produit.prix_pour_membre(self._membre_courant())
+        return est_prix_membre
 
     def get_regles_reduction_actives(self, produit):
         regles = [r for r in produit.regles_reduction.all() if r.actif]

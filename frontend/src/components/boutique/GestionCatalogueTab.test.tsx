@@ -26,7 +26,7 @@ vi.mock("../../hooks/useBoutique", async () => {
 });
 
 function produit(overrides: Partial<Produit> = {}): Produit {
-  return {
+  const base: Omit<Produit, "prix_affiche" | "est_prix_membre"> = {
     id: "p1",
     nom: "Mug CA 1920",
     categorie: "articles_club",
@@ -34,6 +34,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     prix: "18.00",
     pourcentage_reduction: null,
     prix_final: "18.00",
+    prix_membre: null,
     image: null,
     statut: "publie",
     type_produit: "physique",
@@ -47,6 +48,13 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
+  };
+  // prix_affiche/est_prix_membre par défaut = même valeur que prix_final (aucun prix membre) —
+  // sauf si le test les précise explicitement dans `overrides` (voir tests prix membre ci-dessous).
+  return {
+    ...base,
+    prix_affiche: overrides.prix_affiche ?? base.prix_final,
+    est_prix_membre: overrides.est_prix_membre ?? false,
   };
 }
 

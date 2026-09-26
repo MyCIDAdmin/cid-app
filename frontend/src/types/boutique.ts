@@ -94,6 +94,19 @@ export interface Produit {
   /** Prix effectivement facturé (lecture seule) — prix avec le rabais appliqué s'il y en a un ;
    * c'est TOUJOURS cette valeur qui doit être affichée/utilisée, jamais `prix` seul. */
   prix_final: string;
+  /** Prix membre optionnel (demande utilisateur, mycid.org/shop — badge "Mitglieder Preis").
+   * Voir Produit.prix_membre côté backend : ne PAS utiliser cette valeur directement pour
+   * décider quoi afficher — c'est `prix_affiche`/`est_prix_membre` (ci-dessous) qui portent la
+   * décision déjà résolue côté serveur (CLAUDE.md §8). Exposé surtout pour l'admin (édition). */
+  prix_membre: string | null;
+  /** Prix à AFFICHER (et qui sera réellement facturé) pour l'utilisateur courant — déjà résolu
+   * côté serveur entre `prix_membre` et `prix_final` selon son statut membre (voir
+   * ProduitSerializer.get_prix_affiche / Produit.prix_pour_membre). C'est TOUJOURS cette valeur
+   * qui doit être affichée dans le catalogue/panier, jamais `prix_final` seul. */
+  prix_affiche: string;
+  /** true si `prix_affiche` est le prix membre (badge "Mitglieder Preis" — voir CataloguePage/
+   * ProduitDetailPage). Toujours résolu côté serveur, jamais déduit du frontend. */
+  est_prix_membre: boolean;
   image: string | null;
   statut: StatutProduit;
   /** Voir TypeProduit — pilote l'affichage catalogue/panier (CataloguePage) : sélecteur de
@@ -121,6 +134,9 @@ export interface ProduitPayload {
   description?: string;
   prix: string;
   pourcentage_reduction?: number | null;
+  /** Voir Produit.prix_membre — optionnel, réservé aux produits "physique" (sans objet pour un
+   * "bon_achat", voir GestionCatalogueTab). */
+  prix_membre?: string | null;
   statut?: StatutProduit;
   nouveaute?: boolean;
   seuil_alerte_stock?: number;

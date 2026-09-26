@@ -30,6 +30,7 @@ class ProduitAdmin(admin.ModelAdmin):
         "categorie",
         "type_produit",
         "prix",
+        "prix_membre",
         "statut",
         "stock_total",
         "nouveaute",

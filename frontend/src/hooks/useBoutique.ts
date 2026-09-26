@@ -22,6 +22,7 @@ const boutiqueKeys = {
   all: ["boutique"] as const,
   produits: (filtres: boutiqueApi.ProduitsFiltres = {}) =>
     [...boutiqueKeys.all, "produits", filtres] as const,
+  produit: (id: string) => [...boutiqueKeys.all, "produit", id] as const,
   variantes: (produitId: string) => [...boutiqueKeys.all, "variantes", produitId] as const,
   variantesParIds: (ids: string[]) =>
     [...boutiqueKeys.all, "variantes-par-ids", [...ids].sort()] as const,
@@ -44,6 +45,19 @@ export function useProduits(filtres: boutiqueApi.ProduitsFiltres = {}) {
   return useQuery({
     queryKey: boutiqueKeys.produits(filtres),
     queryFn: () => boutiqueApi.listProduits(filtres),
+  });
+}
+
+/**
+ * Détail d'un produit (ProduitDetailPage, `/boutique/:id`) — `prix_affiche`/`est_prix_membre`
+ * proviennent de cette même requête, déjà résolus côté serveur (voir ProduitSerializer),
+ * jamais recalculés dans la page (CLAUDE.md §8).
+ */
+export function useProduit(id: string | undefined) {
+  return useQuery({
+    queryKey: boutiqueKeys.produit(id ?? ""),
+    queryFn: () => boutiqueApi.getProduit(id as string),
+    enabled: Boolean(id),
   });
 }
 

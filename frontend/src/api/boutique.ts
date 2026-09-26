@@ -47,6 +47,17 @@ export async function listProduits(filtres: ProduitsFiltres = {}): Promise<Curso
   return data;
 }
 
+/**
+ * Détail d'un produit (page ProduitDetailPage, `/boutique/:id`, demande utilisateur du
+ * 2026-09-26 : porter la page de détail de https://www.mycid.org/shop) — même règle d'accès
+ * que listProduits (CatalogueBoutiquePermission ; le backend ne renvoie de toute façon que les
+ * produits publiés à un rôle < Bureau Admin, voir ProduitViewSet.get_queryset).
+ */
+export async function getProduit(id: string): Promise<Produit> {
+  const { data } = await apiClient.get<Produit>(`/boutique/produits/${id}/`);
+  return data;
+}
+
 export async function creerProduit(payload: ProduitPayload): Promise<Produit> {
   const { data } = await apiClient.post<Produit>("/boutique/produits/", payload);
   return data;

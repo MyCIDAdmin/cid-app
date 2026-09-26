@@ -14,6 +14,7 @@ import AdminBoutiquePage from "./pages/boutique/AdminBoutiquePage";
 import BoutiquePage from "./pages/boutique/BoutiquePage";
 import CommandeRetourPage from "./pages/boutique/CommandeRetourPage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
+import ProduitDetailPage from "./pages/boutique/ProduitDetailPage";
 import AdminAlbumsPage from "./pages/communaute/AdminAlbumsPage";
 import AdminQuizPage from "./pages/communaute/AdminQuizPage";
 import AlbumDetailPage from "./pages/communaute/AlbumDetailPage";
@@ -227,6 +228,13 @@ export default function App() {
             cancel_url (PayPal), voir apps.cotisations.gateways (partagé avec apps.boutique) —
             ouvert à tout authentifié, même scope IDOR que /boutique/commandes/{id}/. */}
         <Route path="/boutique/commande/retour" element={<CommandeRetourPage />} />
+        {/* Détail d'un produit (demande utilisateur 2026-09-26, voir docstring ProduitDetailPage
+            — porte la structure de https://www.mycid.org/shop/:id) ; React Router priorise déjà
+            les segments statiques (/boutique/panier, /boutique/commande/retour) sur ce `:id`
+            quel que soit l'ordre de déclaration, donc pas de conflit de route. Même scope
+            d'accès que /boutique (le backend ne renvoie de toute façon que les produits publiés
+            à un rôle < Bureau Admin, voir ProduitViewSet.get_queryset). */}
+        <Route path="/boutique/:id" element={<ProduitDetailPage />} />
         {/* Phase D : piloté par la matrice (page_boutique), seuil de départ inchangé (Bureau
             Admin+) — voir note Phase D plus haut. */}
         <Route
