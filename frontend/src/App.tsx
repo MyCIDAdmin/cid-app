@@ -40,6 +40,7 @@ import CovoituragePage from "./pages/evenements/CovoituragePage";
 import EvenementsPage from "./pages/evenements/EvenementsPage";
 import LoginPage from "./pages/LoginPage";
 import MembreDetailPage from "./pages/membres/MembreDetailPage";
+import HomeRoute from "./pages/public/HomeRoute";
 import MembreFormPage from "./pages/membres/MembreFormPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
@@ -374,7 +375,11 @@ export default function App() {
           }
         />
       </Route>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      {/* Page d'accueil publique façon mycid.org (demande utilisateur du 2026-09-26, voir
+          HomeRoute.tsx/PublicHomePage.tsx) — remplace l'ancien "/" -> /dashboard systématique :
+          seul un membre actif connecté est encore redirigé vers /dashboard, tout le monde
+          d'autre (visiteur non connecté, membre non-actif) voit la nouvelle page d'accueil. */}
+      <Route path="/" element={<HomeRoute />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );

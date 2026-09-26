@@ -8,7 +8,7 @@ import { queryClient } from "../../queryClient";
 import { useAuthStore } from "../../store/authStore";
 import { DEFAULT_COLLAPSED_GROUPS, useUiStore } from "../../store/uiStore";
 import type { Notification } from "../../types/notification";
-import Sidebar from "./Sidebar";
+import Sidebar, { getGroupForPath } from "./Sidebar";
 
 vi.mock("../../hooks/useNotifications", async () => {
   const actual = await vi.importActual<typeof useNotificationsHooks>(
@@ -367,5 +367,35 @@ describe("Sidebar — visibilité pilotée par la matrice (Phase D, ajoutée le 
     renderWithProviders(<Sidebar />);
 
     expect(screen.getByText("nav.admin_quiz")).toBeInTheDocument();
+  });
+});
+
+// Ajouté le 2026-09-26 (plan "Öffentliche mycid.org-Startseite" section B) — AppLayout.tsx s'en
+// sert pour décider si le PublicFooter apparaît sous la page courante. Fonction pure, testée
+// directement plutôt qu'en passant par un rendu complet de Sidebar/AppLayout.
+describe("getGroupForPath", () => {
+  it("retrouve le groupe d'un item exact", () => {
+    expect(getGroupForPath("/dashboard")).toBe("general");
+    expect(getGroupForPath("/fil")).toBe("communaute");
+    expect(getGroupForPath("/albums")).toBe("contenu");
+    expect(getGroupForPath("/admin/boutique")).toBe("administration");
+  });
+
+  it("retrouve le groupe d'une sous-page via le préfixe le plus spécifique", () => {
+    expect(getGroupForPath("/boutique/panier")).toBe("general");
+    expect(getGroupForPath("/membres/123/modifier")).toBe("general");
+    expect(getGroupForPath("/forum/42")).toBe("communaute");
+  });
+
+  it("ne confond pas un préfixe partiel non séparé par '/' (ex. /cotisation vs /cotisations)", () => {
+    // "/cotisations/en-attente" a son propre item dédié (groupe administration) — ne doit
+    // jamais matcher le préfixe de "/cotisation" (groupe general) malgré le préfixe textuel
+    // commun sans séparateur.
+    expect(getGroupForPath("/cotisations/en-attente")).toBe("administration");
+  });
+
+  it("renvoie null pour une route sans item Sidebar correspondant", () => {
+    expect(getGroupForPath("/login")).toBeNull();
+    expect(getGroupForPath("/route-inconnue")).toBeNull();
   });
 });

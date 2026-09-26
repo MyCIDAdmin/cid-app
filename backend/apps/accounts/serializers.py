@@ -14,10 +14,19 @@ class UserSerializer(serializers.ModelSerializer):
     /auth/me/. prenom/nom (AHM-52) viennent de la fiche Membre liée quand
     elle existe — un compte sans fiche (superuser, RH créé hors
     auto-inscription) renvoie simplement des chaînes vides, à charge du
-    frontend de retomber sur l'email dans ce cas (cf DashboardPage)."""
+    frontend de retomber sur l'email dans ce cas (cf DashboardPage).
+
+    statut_membre (ajouté le 2026-09-26, plan "Öffentliche mycid.org-Startseite" section A) :
+    le statut ACTIF/EN_ATTENTE/INACTIF de la fiche Membre liée — permet à HomeRoute.tsx de
+    décider si un utilisateur connecté doit voir la nouvelle page d'accueil publique (statut
+    non-actif, traité comme un visiteur) ou son tableau de bord habituel (statut actif). `None`
+    pour un compte sans fiche Membre (superuser, RH créé hors auto-inscription) — HomeRoute
+    traite ce cas comme un accès non restreint (voir docstring frontend), jamais comme un
+    visiteur, pour ne pas priver un compte de gestion de la sidebar."""
 
     prenom = serializers.SerializerMethodField()
     nom = serializers.SerializerMethodField()
+    statut_membre = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -31,6 +40,7 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at",
             "prenom",
             "nom",
+            "statut_membre",
         ]
         read_only_fields = [
             "id",
@@ -40,6 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at",
             "prenom",
             "nom",
+            "statut_membre",
         ]
 
     def get_prenom(self, obj):
@@ -47,6 +58,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_nom(self, obj):
         return obj.membre.nom if hasattr(obj, "membre") else ""
+
+    def get_statut_membre(self, obj):
+        return obj.membre.statut if hasattr(obj, "membre") else None
 
 
 class RegisterSerializer(serializers.Serializer):

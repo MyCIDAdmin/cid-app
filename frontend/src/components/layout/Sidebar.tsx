@@ -301,6 +301,26 @@ export interface SidebarNavGroup {
 }
 
 /**
+ * Groupe (`SidebarGroupKey`) de la page correspondant à `pathname`, ou `null` si aucun item de
+ * NAV_ITEMS ne correspond (ex. `/login`, `/register`, la nouvelle page d'accueil publique elle-
+ * même) — ajouté le 2026-09-26 (plan "Öffentliche mycid.org-Startseite" section B) pour qu'
+ * AppLayout.tsx sache si le PublicFooter doit apparaître sous la page courante (uniquement pour
+ * les groupes "general"/"communaute"/"contenu", jamais "administration", décision utilisateur).
+ * Même comparaison de préfixe le-plus-long que `useSidebarNav.activeTo` ci-dessous, mais SANS
+ * filtrer par rôle/accès matrice : le footer est une question de mise en page, pas de permission
+ * (une page déjà rendue est par définition accessible à l'utilisateur courant).
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- voir commentaire GROUP_ORDER
+export function getGroupForPath(pathname: string): SidebarGroupKey | null {
+  const meilleur = NAV_ITEMS.reduce<NavItem | null>((best, item) => {
+    const correspond = pathname === item.to || pathname.startsWith(`${item.to}/`);
+    if (!correspond) return best;
+    return best === null || item.to.length > best.to.length ? item : best;
+  }, null);
+  return meilleur?.group ?? null;
+}
+
+/**
  * Logique de navigation partagée entre `Sidebar` (desktop) et `MobileNavDrawer` (mobile) — un
  * seul et même calcul d'item actif / de notifications par module / de groupement par rôle,
  * plutôt que de le dupliquer dans les deux composants (source d'incohérences garantie sinon,

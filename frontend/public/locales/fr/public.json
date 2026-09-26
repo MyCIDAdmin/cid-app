@@ -1,0 +1,38 @@
+{
+  "nav": {
+    "aria_label": "Navigation principale",
+    "accueil": "Accueil",
+    "evenements": "Événements",
+    "projets": "Projets",
+    "shop": "Boutique",
+    "galerie": "Galerie",
+    "apropos": "À propos"
+  },
+  "action": {
+    "connexion": "Connexion / Inscription",
+    "mode_sombre": "Mode sombre",
+    "mode_clair": "Mode clair"
+  },
+  "hero": {
+    "titre": "Un club. Un cœur. Une famille.",
+    "sous_titre": "L'association officielle des supporters du Club Africain en Allemagne. Rejoignez notre communauté et faites partie de quelque chose de spécial.",
+    "cta_mitglied_werden": "Devenir membre"
+  },
+  "onglet_a_venir": {
+    "description": "Cette section sera bientôt disponible."
+  },
+  "footer": {
+    "depuis_2019": "Depuis 2019",
+    "claim": "L'association officielle des supporters du Club Africain en Allemagne. Rejoignez notre communauté et faites partie de quelque chose de spécial.",
+    "rechtliches_titre": "Mentions légales",
+    "impressum": "Mentions légales",
+    "datenschutz": "Confidentialité",
+    "agb": "Conditions d'utilisation",
+    "erstattung": "Politique de remboursement",
+    "kontakt_titre": "Contact",
+    "pays": "Allemagne",
+    "folgen_titre": "Suivez-nous",
+    "facebook": "Facebook",
+    "instagram": "Instagram"
+  }
+}

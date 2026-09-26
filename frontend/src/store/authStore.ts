@@ -10,6 +10,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 
 import { queryClient } from "../queryClient";
+import type { StatutMembre } from "../types/membre";
 
 const AUTH_STORAGE_KEY = "cid-auth";
 const REMEMBER_ME_KEY = "cid-remember-me";
@@ -80,6 +81,13 @@ export interface CidUser {
   // backend. Le frontend doit retomber sur l'email dans ce cas.
   prenom?: string;
   nom?: string;
+  // Ajouté le 2026-09-26 (plan "Öffentliche mycid.org-Startseite" section A) — statut de la
+  // fiche Membre liée, `null` sans fiche liée (superuser, RH créé hors auto-inscription) : voir
+  // UserSerializer.get_statut_membre côté backend. Consommé par HomeRoute.tsx pour décider si un
+  // utilisateur connecté voit son tableau de bord habituel (statut actif, ou aucune fiche liée —
+  // ne jamais priver un compte de gestion de la sidebar) ou la page d'accueil publique (statut
+  // non-actif, traité comme un visiteur).
+  statut_membre?: StatutMembre | null;
 }
 
 interface AuthState {

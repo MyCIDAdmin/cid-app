@@ -1,0 +1,38 @@
+{
+  "nav": {
+    "aria_label": "Hauptnavigation",
+    "accueil": "Startseite",
+    "evenements": "Veranstaltungen",
+    "projets": "Projekte",
+    "shop": "Shop",
+    "galerie": "Galerie",
+    "apropos": "Über uns"
+  },
+  "action": {
+    "connexion": "Anmelden / Registrieren",
+    "mode_sombre": "Dunkler Modus",
+    "mode_clair": "Heller Modus"
+  },
+  "hero": {
+    "titre": "Ein Club. Ein Herz. Eine Familie.",
+    "sous_titre": "Der offizielle Fanverband für Club Africain Unterstützer in Deutschland. Werde Teil unserer Gemeinschaft und sei Teil von etwas Besonderem.",
+    "cta_mitglied_werden": "Mitglied werden"
+  },
+  "onglet_a_venir": {
+    "description": "Dieser Bereich wird in Kürze verfügbar sein."
+  },
+  "footer": {
+    "depuis_2019": "Since 2019",
+    "claim": "Der offizielle Fanverband für Club Africain Unterstützer in Deutschland. Werde Teil unserer Gemeinschaft und sei Teil von etwas Besonderem.",
+    "rechtliches_titre": "Rechtliches",
+    "impressum": "Impressum",
+    "datenschutz": "Datenschutz",
+    "agb": "Nutzungsbedingungen",
+    "erstattung": "Erstattungsrichtlinie",
+    "kontakt_titre": "Kontakt",
+    "pays": "Germany",
+    "folgen_titre": "Folge uns",
+    "facebook": "Facebook",
+    "instagram": "Instagram"
+  }
+}
