@@ -24,6 +24,20 @@ vi.mock("../../hooks/useCommunaute", async () => {
   return { ...actual, useClassementLigue: vi.fn(), useCalendrierRencontres: vi.fn() };
 });
 
+// Les 5 autres onglets (Phase D) ont chacun leurs propres tests dédiés (PublicEvenementsTab.test.tsx,
+// UeberUnsTab.test.tsx, ProjetsPage.test.tsx, CataloguePage.test.tsx, AlbumsPage.test.tsx) — ici on
+// ne vérifie que le SWITCHING entre onglets (nav/footer toujours présents), jamais leur contenu
+// interne, donc chacun est remplacé par un stub reconnaissable.
+vi.mock("../../components/public/PublicEvenementsTab", () => ({
+  default: () => <div data-testid="evenements-stub" />,
+}));
+vi.mock("../../components/public/UeberUnsTab", () => ({
+  default: () => <div data-testid="apropos-stub" />,
+}));
+vi.mock("../projets/ProjetsPage", () => ({ default: () => <div data-testid="projets-stub" /> }));
+vi.mock("../boutique/CataloguePage", () => ({ default: () => <div data-testid="shop-stub" /> }));
+vi.mock("../communaute/AlbumsPage", () => ({ default: () => <div data-testid="galerie-stub" /> }));
+
 function videQuery() {
   return { data: undefined, isLoading: false, isError: true } as never;
 }
@@ -53,11 +67,11 @@ describe("PublicHomePage", () => {
     expect(screen.getByText("footer.rechtliches_titre")).toBeInTheDocument();
   });
 
-  it("bascule vers un onglet pas encore construit sans faire disparaître nav/footer", () => {
+  it("bascule vers un autre onglet sans faire disparaître nav/footer", () => {
     renderWithProviders(<PublicHomePage />);
     fireEvent.click(screen.getByRole("button", { name: "nav.evenements" }));
 
-    expect(screen.getByText("onglet_a_venir.description")).toBeInTheDocument();
+    expect(screen.getByTestId("evenements-stub")).toBeInTheDocument();
     expect(screen.queryByText("hero.titre")).not.toBeInTheDocument();
     expect(screen.getByText("action.connexion")).toBeInTheDocument();
     expect(screen.getByText("footer.rechtliches_titre")).toBeInTheDocument();
@@ -65,9 +79,25 @@ describe("PublicHomePage", () => {
 
   it("revient à l'accueil au clic sur le logo", () => {
     renderWithProviders(<PublicHomePage />, { route: "/?onglet=projets" });
-    expect(screen.getByText("onglet_a_venir.description")).toBeInTheDocument();
+    expect(screen.getByTestId("projets-stub")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Clubistes in Deutschland"));
     expect(screen.getByText("hero.titre")).toBeInTheDocument();
+  });
+
+  it("affiche chacun des 5 onglets Phase D à son tour", () => {
+    renderWithProviders(<PublicHomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "nav.projets" }));
+    expect(screen.getByTestId("projets-stub")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "nav.shop" }));
+    expect(screen.getByTestId("shop-stub")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "nav.galerie" }));
+    expect(screen.getByTestId("galerie-stub")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "nav.apropos" }));
+    expect(screen.getByTestId("apropos-stub")).toBeInTheDocument();
   });
 });

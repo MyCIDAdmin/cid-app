@@ -5,19 +5,29 @@
  * BoutiquePage/ProjetsPage/LiveMatchPage : PAS de routes dédiées, pour ne jamais entrer en
  * collision avec les routes authentifiées existantes (/evenements, /projets, /boutique, /albums).
  *
- * La barre de nav et le pied de page (plan section A+B) sont posés une bonne fois pour toutes
- * ici. Le contenu de chaque onglet arrive ensuite par des commits séparés suivant le plan :
- *   - "accueil" : section C (hero, adhésion, kennzahlen, Fan-Club) — voir AccueilTab.tsx
- *   - "evenements" / "projets" / "shop" / "galerie" / "apropos" : section D, pas encore
- *     construits — affichent un espace réservé sobre plutôt qu'une page vide (jamais un onglet
- *     manquant dans la nav elle-même, voir ONGLETS dans PublicTopNav.tsx).
+ * Onglets (plan sections C+D) :
+ *   - "accueil" : hero, adhésion, kennzahlen, Fan-Club — voir AccueilTab.tsx.
+ *   - "evenements" : kacheln façon mycid.org/events, 3 sous-onglets — voir PublicEvenementsTab.tsx.
+ *   - "projets" / "shop" / "galerie" : embarquent RESPECTIVEMENT les pages membre existantes
+ *     ProjetsPage/CataloguePage/AlbumsPage (déjà lisibles anonymement côté backend depuis la
+ *     Phase Backend-Sichtbarkeit) — ProjetsPage/CataloguePage redirigent elles-mêmes vers
+ *     /login au moment d'un acte d'écriture (contribuer/ajouter au panier) pour un visiteur
+ *     anonyme, voir leurs docstrings respectives ; AlbumsPage est déjà purement lecture seule,
+ *     embarquée sans aucune modification.
+ *   - "apropos" : contenu statique reconstruit (pas un simple lien externe, demande utilisateur)
+ *     — voir UeberUnsTab.tsx.
  */
-import { useTranslation } from "react-i18next";
+import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import AccueilTab from "../../components/public/AccueilTab";
+import PublicEvenementsTab from "../../components/public/PublicEvenementsTab";
 import PublicFooter from "../../components/public/PublicFooter";
 import PublicTopNav, { type OngletPublic } from "../../components/public/PublicTopNav";
+import UeberUnsTab from "../../components/public/UeberUnsTab";
+import AlbumsPage from "../communaute/AlbumsPage";
+import CataloguePage from "../boutique/CataloguePage";
+import ProjetsPage from "../projets/ProjetsPage";
 
 function ongletDepuisParam(valeur: string | null): OngletPublic {
   return valeur === "evenements" ||
@@ -29,14 +39,11 @@ function ongletDepuisParam(valeur: string | null): OngletPublic {
     : "accueil";
 }
 
-function EspaceReserve({ labelKey }: { labelKey: string }) {
-  const { t } = useTranslation("public");
-  return (
-    <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4 py-24 text-center sm:px-6">
-      <p className="text-lg font-semibold text-text-primary">{t(labelKey)}</p>
-      <p className="text-sm text-text-tertiary">{t("onglet_a_venir.description")}</p>
-    </div>
-  );
+/** Enveloppe une page membre embarquée (ProjetsPage/CataloguePage/AlbumsPage) avec le même
+ * gabarit d'espacement que le `<main className="p-6">` d'AppLayout — ces pages sont conçues pour
+ * y vivre, jamais collées aux bords de la fenêtre. */
+function PageEmbarquee({ children }: { children: ReactNode }) {
+  return <div className="mx-auto max-w-6xl p-6">{children}</div>;
 }
 
 export default function PublicHomePage() {
@@ -59,11 +66,23 @@ export default function PublicHomePage() {
 
       <main className="flex-1">
         {onglet === "accueil" && <AccueilTab />}
-        {onglet === "evenements" && <EspaceReserve labelKey="nav.evenements" />}
-        {onglet === "projets" && <EspaceReserve labelKey="nav.projets" />}
-        {onglet === "shop" && <EspaceReserve labelKey="nav.shop" />}
-        {onglet === "galerie" && <EspaceReserve labelKey="nav.galerie" />}
-        {onglet === "apropos" && <EspaceReserve labelKey="nav.apropos" />}
+        {onglet === "evenements" && <PublicEvenementsTab />}
+        {onglet === "projets" && (
+          <PageEmbarquee>
+            <ProjetsPage />
+          </PageEmbarquee>
+        )}
+        {onglet === "shop" && (
+          <PageEmbarquee>
+            <CataloguePage />
+          </PageEmbarquee>
+        )}
+        {onglet === "galerie" && (
+          <PageEmbarquee>
+            <AlbumsPage />
+          </PageEmbarquee>
+        )}
+        {onglet === "apropos" && <UeberUnsTab />}
       </main>
 
       <PublicFooter />

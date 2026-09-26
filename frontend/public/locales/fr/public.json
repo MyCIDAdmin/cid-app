@@ -40,6 +40,38 @@
     "onglet_classement": "Classement",
     "onglet_calendrier": "Calendrier"
   },
+  "evenements_public": {
+    "titre": "Événements",
+    "sous_titre": "Découvrez nos prochaines rencontres, voyages et fêtes — et retrouvez ce que vous avez déjà réservé.",
+    "connexion_requise_titre": "Connectez-vous pour voir vos inscriptions",
+    "connexion_requise_text": "Une fois connecté·e, vous retrouverez ici tous les événements auxquels vous vous êtes inscrit·e.",
+    "connexion_bouton": "Se connecter"
+  },
+  "apropos": {
+    "titre": "À propos de MyCID",
+    "intro": "Qui nous sommes, d'où nous venons, et ce que nous défendons.",
+    "geschichte_titre": "Notre histoire",
+    "geschichte_text": "Clubistes in Deutschland a été fondée en 2019 par une poignée de supporters vivant en Allemagne mais restés fidèles à leur club de cœur. De quelques rencontres organisées entre amis est né un véritable club, comptant aujourd'hui des membres dans toute l'Allemagne — avec ses propres événements, sa boutique, des déplacements collectifs et une solidarité qui dépasse largement le football.",
+    "club_titre": "Club Africain de Tunis",
+    "club_text": "Le Club Africain de Tunis, fondé en 1920, est l'un des clubs de football les plus riches d'histoire d'Afrique du Nord. Son palmarès est le socle sur lequel notre communauté en Allemagne construit sa passion.",
+    "kennzahl_meistertitel_valeur": "14",
+    "kennzahl_meistertitel_label": "Titres de champion",
+    "kennzahl_pokalsiege_valeur": "13",
+    "kennzahl_pokalsiege_label": "Coupes remportées",
+    "kennzahl_caf_valeur": "1",
+    "kennzahl_caf_label": "Ligue des champions CAF",
+    "werte_titre": "Nos valeurs",
+    "wert_leidenschaft_titre": "Passion",
+    "wert_leidenschaft_text": "Le Club Africain est bien plus qu'un club — il fait partie de notre identité, que nous portons fièrement.",
+    "wert_gemeinschaft_titre": "Communauté",
+    "wert_gemeinschaft_text": "Nous rassemblons les Clubistes de toute l'Allemagne, que ce soit lors d'une fête, d'un voyage ou tout simplement pour le prochain match.",
+    "wert_kultur_titre": "Culture",
+    "wert_kultur_text": "Nous entretenons notre culture tunisienne et la transmettons à la prochaine génération de Clubistes en Allemagne.",
+    "wert_exzellenz_titre": "Excellence",
+    "wert_exzellenz_text": "Nous organisons nos événements, notre boutique et nos projets avec la même exigence que celle que nous attendons du club lui-même.",
+    "kontakt_titre": "Contact",
+    "kontakt_text": "Des questions sur l'association ou l'adhésion ? Écrivez-nous — les coordonnées se trouvent dans le pied de page de chaque page."
+  },
   "footer": {
     "depuis_2019": "Depuis 2019",
     "claim": "L'association officielle des supporters du Club Africain en Allemagne. Rejoignez notre communauté et faites partie de quelque chose de spécial.",

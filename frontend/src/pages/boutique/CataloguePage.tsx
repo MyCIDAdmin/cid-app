@@ -21,11 +21,12 @@
  */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import ShareButton from "../../components/ui/ShareButton";
 import { useProduits } from "../../hooks/useBoutique";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
+import { useAuthStore } from "../../store/authStore";
 import { nombreArticlesPanier, totalPanier, usePanierStore } from "../../store/panierStore";
 import type { CategorieProduit, Produit, RegleReduction, VarianteProduit } from "../../types/boutique";
 
@@ -129,6 +130,8 @@ function ProduitCarteBonAchat({
   cardRef?: (el: HTMLElement | null) => void;
 }) {
   const { t } = useTranslation("boutique");
+  const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const ajouter = usePanierStore((s) => s.ajouter);
   const varianteSentinelle = produit.variantes[0];
   const [montant, setMontant] = useState("25.00");
@@ -139,7 +142,16 @@ function ProduitCarteBonAchat({
     Number(montant) >= BON_ACHAT_MONTANT_MIN &&
     Number(montant) <= BON_ACHAT_MONTANT_MAX;
 
+  // Cette page est désormais aussi embarquée dans l'onglet public "Shop" (Phase D, page
+  // d'accueil publique, demande utilisateur : "'Hinzufügen' bei anonymem Besucher führt auf
+  // /login statt in den Warenkorb") — un visiteur anonyme ne peut de toute façon pas passer
+  // commande (voir PanierCommandePage, réservée aux authentifiés), autant l'envoyer se connecter
+  // tout de suite plutôt que de le laisser remplir un panier inutilisable.
   function handleAjouter() {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
     if (!varianteSentinelle || !montantValide) return;
     ajouter({
       varianteId: varianteSentinelle.id,
@@ -237,6 +249,8 @@ function ProduitCarte({
   cardRef?: (el: HTMLElement | null) => void;
 }) {
   const { t } = useTranslation("boutique");
+  const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const ajouter = usePanierStore((s) => s.ajouter);
   const variantesEnStock = produit.variantes.filter((v) => v.stock > 0);
   const [varianteId, setVarianteId] = useState<string>(variantesEnStock[0]?.id ?? "");
@@ -250,7 +264,12 @@ function ProduitCarte({
     setQuantite(1);
   }
 
+  // Voir la docstring de ProduitCarteBonAchat.handleAjouter ci-dessus (même gate, même raison).
   function handleAjouter() {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
     if (!varianteSelectionnee) return;
     ajouter(
       {
