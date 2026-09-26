@@ -21,6 +21,25 @@
   "onglet_a_venir": {
     "description": "Dieser Bereich wird in Kürze verfügbar sein."
   },
+  "membership": {
+    "titre": "Mitgliedschaft {{annee}}",
+    "sous_titre": "Wähle das Paket, das am besten zu dir passt, und werde offizielles Mitglied von Clubistes in Deutschland.",
+    "badge_populaire": "Beliebt",
+    "choisir": "Mitglied werden",
+    "deja_membre_titre": "Deine Mitgliedschaft",
+    "deja_membre_expire_le": "Gültig bis {{date}}",
+    "gerer_lien": "Meine Mitgliedschaft verwalten"
+  },
+  "kennzahlen": {
+    "donateurs": "Spender",
+    "collecte": "Gesammelt",
+    "projets": "Projekte"
+  },
+  "fanclub": {
+    "titre": "Club Africain Live",
+    "onglet_classement": "Tabelle",
+    "onglet_calendrier": "Spielplan"
+  },
   "footer": {
     "depuis_2019": "Since 2019",
     "claim": "Der offizielle Fanverband für Club Africain Unterstützer in Deutschland. Werde Teil unserer Gemeinschaft und sei Teil von etwas Besonderem.",

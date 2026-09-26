@@ -67,8 +67,30 @@ MES_SOUSCRIPTIONS_URL = "adhesions:souscription-mes-souscriptions"
 # --- Authentification ---
 
 
-def test_list_campagnes_non_authentifie_refuse(api_client):
+def test_list_campagnes_non_authentifie_ne_voit_que_les_campagnes_publiees(api_client):
+    """Lecture ouverte à l'anonyme depuis le 2026-09-26 (plan "Öffentliche mycid.org-Startseite"
+    section C.2 — l'onglet "Startseite" affiche la campagne active à un visiteur non connecté),
+    voir CataloguePermission ; une campagne brouillon/clôturée reste masquée, même principe que
+    OffreAdhesionViewSet.get_queryset ci-dessous."""
+    CampagneAdhesionFactory(statut=StatutCampagne.PUBLIEE)
+    CampagneAdhesionFactory(statut=StatutCampagne.BROUILLON)
+
     resp = api_client.get(reverse(CAMPAGNE_LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+
+
+def test_active_campagne_non_authentifie_autorise(api_client):
+    CampagneAdhesionFactory(statut=StatutCampagne.PUBLIEE)
+
+    resp = api_client.get(reverse("adhesions:campagne-active"))
+
+    assert resp.status_code == 200
+
+
+def test_creer_campagne_non_authentifie_refuse(api_client):
+    resp = api_client.post(reverse(CAMPAGNE_LIST_URL), {})
     assert resp.status_code == 401
 
 
@@ -284,6 +306,24 @@ def test_offres_masquees_visibles_pour_bureau_admin(api_client):
 
     assert resp.status_code == 200
     assert len(resp.data["results"]) == 2
+
+
+def test_list_offres_non_authentifie_ne_voit_que_les_offres_visibles(api_client):
+    """Même ouverture que la campagne ci-dessus (section C.2 du plan) — un visiteur anonyme voit
+    les offres visibles d'une campagne publiée, jamais une offre masquée."""
+    campagne = CampagneAdhesionFactory(statut=StatutCampagne.PUBLIEE)
+    OffreAdhesionFactory(campagne=campagne, visible=True)
+    OffreAdhesionFactory(campagne=campagne, visible=False)
+
+    resp = api_client.get(reverse(OFFRE_LIST_URL))
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+
+
+def test_creer_offre_non_authentifie_refuse(api_client):
+    resp = api_client.post(reverse(OFFRE_LIST_URL), {})
+    assert resp.status_code == 401
 
 
 # --- Cycle de vie d'une campagne ---

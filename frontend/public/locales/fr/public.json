@@ -21,6 +21,25 @@
   "onglet_a_venir": {
     "description": "Cette section sera bientôt disponible."
   },
+  "membership": {
+    "titre": "Adhésion {{annee}}",
+    "sous_titre": "Choisissez la formule qui vous convient et devenez membre officiel de Clubistes in Deutschland.",
+    "badge_populaire": "Populaire",
+    "choisir": "Devenir membre",
+    "deja_membre_titre": "Votre adhésion",
+    "deja_membre_expire_le": "Valable jusqu'au {{date}}",
+    "gerer_lien": "Gérer mon adhésion"
+  },
+  "kennzahlen": {
+    "donateurs": "Donateurs",
+    "collecte": "Collecté",
+    "projets": "Projets"
+  },
+  "fanclub": {
+    "titre": "Club Africain Live",
+    "onglet_classement": "Classement",
+    "onglet_calendrier": "Calendrier"
+  },
   "footer": {
     "depuis_2019": "Depuis 2019",
     "claim": "L'association officielle des supporters du Club Africain en Allemagne. Rejoignez notre communauté et faites partie de quelque chose de spécial.",

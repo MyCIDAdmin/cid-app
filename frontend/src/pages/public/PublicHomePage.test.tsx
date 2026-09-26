@@ -1,10 +1,43 @@
 import { fireEvent, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as useAdhesionsHooks from "../../hooks/useAdhesions";
+import * as useCommunauteHooks from "../../hooks/useCommunaute";
+import * as useProjetsHooks from "../../hooks/useProjets";
 import PublicHomePage from "./PublicHomePage";
 
+// L'onglet "accueil" embarque MembershipSection/KennzahlenBar/FanClubPreview (voir AccueilTab),
+// chacun avec ses propres tests dédiés (MembershipSection.test.tsx, KennzahlenBar.test.tsx,
+// FanClubPreview.test.tsx) — ici, seuls des retours vides/neutres pour ne jamais dépendre d'un
+// vrai appel réseau dans ces tests de navigation/onglets.
+vi.mock("../../hooks/useAdhesions", async () => {
+  const actual = await vi.importActual<typeof useAdhesionsHooks>("../../hooks/useAdhesions");
+  return { ...actual, useCampagneActive: vi.fn(), useMesSouscriptions: vi.fn() };
+});
+vi.mock("../../hooks/useProjets", async () => {
+  const actual = await vi.importActual<typeof useProjetsHooks>("../../hooks/useProjets");
+  return { ...actual, useKennzahlenProjets: vi.fn() };
+});
+vi.mock("../../hooks/useCommunaute", async () => {
+  const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
+  return { ...actual, useClassementLigue: vi.fn(), useCalendrierRencontres: vi.fn() };
+});
+
+function videQuery() {
+  return { data: undefined, isLoading: false, isError: true } as never;
+}
+
 describe("PublicHomePage", () => {
+  beforeEach(() => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue(videQuery());
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue(videQuery());
+    vi.mocked(useProjetsHooks.useKennzahlenProjets).mockReturnValue(videQuery());
+    vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue(videQuery());
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue(videQuery());
+  });
+
+
   it("affiche l'onglet 'accueil' par défaut avec le CTA d'adhésion", () => {
     renderWithProviders(<PublicHomePage />);
     expect(screen.getByText("hero.titre")).toBeInTheDocument();

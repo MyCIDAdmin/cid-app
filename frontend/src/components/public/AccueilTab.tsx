@@ -1,0 +1,43 @@
+/**
+ * Contenu de l'onglet "Startseite" de la page d'accueil publique (demande utilisateur du
+ * 2026-09-26, plan "Öffentliche mycid.org-Startseite" section C) — dans l'ordre exact demandé :
+ *   1. Hero (bannière + CTA "Mitglied werden" → /mon-adhesion ; PAS de boutons "Projekte"/
+ *      "Veranstaltungen", déjà des onglets de la nav, voir docstring PublicTopNav.tsx)
+ *   2. Adhésion (MembershipSection — offres façon mycid.org/membership OU récapitulatif "déjà
+ *      membre" selon la souscription en cours)
+ *   3. Kennzahlen (Donateurs/Collecté/Projets)
+ *   4. Fan-Club (classement + calendrier, réutilisation pure du module existant)
+ * Le point "Aktives Projekt" du mockup mycid.org n'est PAS repris ici (décision utilisateur
+ * explicite, point 2.1.6) — le footer applicatif est déjà posé par PublicHomePage.tsx.
+ */
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+
+import FanClubPreview from "./FanClubPreview";
+import KennzahlenBar from "./KennzahlenBar";
+import MembershipSection from "./MembershipSection";
+
+export default function AccueilTab() {
+  const { t } = useTranslation("public");
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-10 px-4 py-16 sm:px-6">
+      <div>
+        <h1 className="font-display text-3xl font-bold text-text-primary sm:text-4xl">
+          {t("hero.titre")}
+        </h1>
+        <p className="mt-3 max-w-2xl text-base text-text-secondary">{t("hero.sous_titre")}</p>
+        <Link
+          to="/mon-adhesion"
+          className="mt-6 inline-block rounded-cid bg-ca px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cad"
+        >
+          {t("hero.cta_mitglied_werden")}
+        </Link>
+      </div>
+
+      <MembershipSection />
+      <KennzahlenBar />
+      <FanClubPreview />
+    </div>
+  );
+}

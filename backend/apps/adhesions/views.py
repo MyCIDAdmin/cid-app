@@ -126,7 +126,23 @@ class CampagneAdhesionViewSet(ModelViewSet):
     pagination_class = AdhesionsCursorPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = CampagneAdhesionFilter
-    queryset = CampagneAdhesion.objects.prefetch_related("offres", "offres__rabais").all()
+
+    def get_queryset(self):
+        # Restriction ajoutée le 2026-09-26 (plan "Öffentliche mycid.org-Startseite" section
+        # C.2/E) en même temps que l'ouverture de la lecture à l'anonyme (voir
+        # CataloguePermission ci-dessus) : un rôle < Bureau Admin — anonyme compris — ne doit
+        # jamais voir une campagne brouillon/clôturée, même principe que
+        # OffreAdhesionViewSet.get_queryset ci-dessous. `active` filtre déjà sur PUBLIEE de son
+        # côté, cette restriction couvre en plus list/retrieve.
+        queryset = CampagneAdhesion.objects.prefetch_related("offres", "offres__rabais").all()
+        user = self.request.user
+        if (
+            user
+            and user.is_authenticated
+            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
+        ):
+            return queryset
+        return queryset.filter(statut=StatutCampagne.PUBLIEE)
 
     def perform_create(self, serializer):
         membre = getattr(self.request.user, "membre", None)

@@ -13,6 +13,7 @@ import type {
   ProjetMiseAJourImagePayload,
   ProjetMiseAJourPayload,
   ProjetPayload,
+  ProjetsKennzahlen,
   StatutProjet,
 } from "../types/projets";
 
@@ -62,6 +63,16 @@ export async function supprimerProjet(id: string): Promise<void> {
  */
 export async function getContributeursProjet(id: string): Promise<Contributeur[]> {
   const { data } = await apiClient.get<Contributeur[]>(`/projets/projets/${id}/contributeurs/`);
+  return data;
+}
+
+/**
+ * Kennzahlen "Donators / Gesammelt / Projekte" de la page d'accueil publique (demande
+ * utilisateur du 2026-09-26, plan section C.3) — lecture ouverte à tout le monde, y compris non
+ * authentifié, voir ProjetViewSet.kennzahlen côté backend.
+ */
+export async function getKennzahlenProjets(): Promise<ProjetsKennzahlen> {
+  const { data } = await apiClient.get<ProjetsKennzahlen>("/projets/projets/kennzahlen/");
   return data;
 }
 
