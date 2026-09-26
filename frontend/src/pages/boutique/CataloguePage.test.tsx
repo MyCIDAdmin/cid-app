@@ -13,7 +13,7 @@ vi.mock("../../hooks/useBoutique", async () => {
 });
 
 function produit(overrides: Partial<Produit> = {}): Produit {
-  return {
+  const base: Omit<Produit, "prix_affiche" | "est_prix_membre"> = {
     id: "p1",
     nom: "Maillot domicile CA 2026",
     categorie: "vetements",
@@ -21,6 +21,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     prix: "45.00",
     pourcentage_reduction: null,
     prix_final: "45.00",
+    prix_membre: null,
     image: null,
     statut: "publie",
     type_produit: "physique",
@@ -34,6 +35,13 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
+  };
+  // prix_affiche/est_prix_membre par défaut = même valeur que prix_final (aucun prix membre) —
+  // sauf si le test les précise explicitement dans `overrides` (voir tests prix membre ci-dessous).
+  return {
+    ...base,
+    prix_affiche: overrides.prix_affiche ?? base.prix_final,
+    est_prix_membre: overrides.est_prix_membre ?? false,
   };
 }
 
@@ -56,7 +64,7 @@ describe("CataloguePage", () => {
 
   it("ajoute un article au panier au clic sur Ajouter", () => {
     renderWithProviders(<CataloguePage />);
-    fireEvent.click(screen.getByText("catalogue.ajouter"));
+    fireEvent.click(screen.getByText(/catalogue.ajouter/));
     expect(usePanierStore.getState().articles).toHaveLength(1);
     expect(usePanierStore.getState().articles[0].varianteId).toBe("v1");
   });
@@ -79,7 +87,10 @@ describe("CataloguePage", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
 
     renderWithProviders(<CataloguePage />);
-    expect(screen.getByText("catalogue.ajouter")).toBeDisabled();
+    // Bouton "Ajouter" façon mycid.org : affiche désormais "Rupture de stock" (au lieu de rester
+    // sur "Ajouter") quand la variante sélectionnée est épuisée — voir ProduitCarte/`epuise`.
+    // getByRole (et non getByText) car "catalogue.rupture" apparaît aussi dans le texte de stock.
+    expect(screen.getByRole("button", { name: /catalogue.rupture/ })).toBeDisabled();
   });
 
   it("affiche le prix soldé (barré + réduit) quand un rabais est actif", () => {
@@ -110,7 +121,7 @@ describe("CataloguePage", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
 
     renderWithProviders(<CataloguePage />);
-    fireEvent.click(screen.getByText("catalogue.ajouter"));
+    fireEvent.click(screen.getByText(/catalogue.ajouter/));
     expect(usePanierStore.getState().articles[0].prixUnitaire).toBe("40.00");
   });
 
@@ -182,7 +193,7 @@ describe("CataloguePage", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
 
     renderWithProviders(<CataloguePage />);
-    fireEvent.click(screen.getByText("catalogue.ajouter"));
+    fireEvent.click(screen.getByText(/catalogue.ajouter/));
     expect(usePanierStore.getState().articles[0].reglesReduction).toHaveLength(1);
   });
 
@@ -227,7 +238,7 @@ describe("CataloguePage", () => {
     fireEvent.change(screen.getByLabelText(/catalogue.bon_achat_montant_label/), {
       target: { value: "75.00" },
     });
-    fireEvent.click(screen.getByText("catalogue.ajouter"));
+    fireEvent.click(screen.getByText(/catalogue.ajouter/));
 
     const [article] = usePanierStore.getState().articles;
     expect(article.varianteId).toBe("vb1");
@@ -247,7 +258,7 @@ describe("CataloguePage", () => {
     fireEvent.change(screen.getByLabelText(/catalogue.bon_achat_montant_label/), {
       target: { value: "1000" },
     });
-    expect(screen.getByText("catalogue.ajouter")).toBeDisabled();
+    expect(screen.getByText(/catalogue.ajouter/)).toBeDisabled();
   });
 
   it("crée une ligne distincte par montant de bon d'achat ajouté (jamais fusionnées)", () => {
@@ -261,11 +272,11 @@ describe("CataloguePage", () => {
     fireEvent.change(screen.getByLabelText(/catalogue.bon_achat_montant_label/), {
       target: { value: "25.00" },
     });
-    fireEvent.click(screen.getByText("catalogue.ajouter"));
+    fireEvent.click(screen.getByText(/catalogue.ajouter/));
     fireEvent.change(screen.getByLabelText(/catalogue.bon_achat_montant_label/), {
       target: { value: "50.00" },
     });
-    fireEvent.click(screen.getByText("catalogue.ajouter"));
+    fireEvent.click(screen.getByText(/catalogue.ajouter/));
 
     const articles = usePanierStore.getState().articles;
     expect(articles).toHaveLength(2);

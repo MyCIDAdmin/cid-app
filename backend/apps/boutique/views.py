@@ -291,7 +291,7 @@ def _restituer_bon_achat(commande):
     bon.save(update_fields=["solde", "statut", "updated_at"])
 
 
-def _construire_ligne_avec_reduction(variante, quantite, montant=None):
+def _construire_ligne_avec_reduction(variante, quantite, montant=None, membre=None):
     """Calcule la ligne (kwargs prêts pour LigneCommande.objects.create) et le sous-total NET
     d'un article, réduction quantité comprise (demande utilisateur du 2026-09-23) — partagé par
     `passer` et `vendre_especes` pour ne jamais dupliquer cette logique entre les deux points
@@ -301,7 +301,14 @@ def _construire_ligne_avec_reduction(variante, quantite, montant=None):
     Pour un bon d'achat (variante.produit.type_produit=BON_ACHAT, ajouté le 2026-09-23) :
     `montant` (déjà revalidé contre bon_achat_montant_min/max par le serializer appelant) sert de
     prix_unitaire au lieu de prix_final, et aucune RegleReduction ne s'applique — un bon d'achat
-    n'a pas vocation à être soldé/offert par lot."""
+    n'a pas vocation à être soldé/offert par lot.
+
+    `membre` (demande utilisateur, mycid.org/shop — prix membre/non-membre) : le Membre pour qui
+    cette ligne est facturée — celui de request.user dans `passer` (achat pour soi), ou le
+    membre_cible dans `vendre_especes` (vente au comptoir pour autrui, le prix membre suit alors
+    ce membre-là, jamais le staff qui saisit la vente). Résolu via Produit.prix_pour_membre — SEUL
+    point qui décide entre `prix_membre` et `prix_final` (CLAUDE.md §8), jamais un indicateur
+    envoyé par le client. Sans objet pour un bon d'achat (montant déjà libre, voir ci-dessus)."""
     est_bon_achat = variante.produit.type_produit == TypeProduit.BON_ACHAT
     if est_bon_achat:
         prix_unitaire = montant
@@ -316,7 +323,7 @@ def _construire_ligne_avec_reduction(variante, quantite, montant=None):
         }
         return ligne_kwargs, sous_total_net
 
-    prix_unitaire = variante.produit.prix_final
+    prix_unitaire, _est_prix_membre = variante.produit.prix_pour_membre(membre)
     reduction = calculer_reduction_quantite(variante.produit, quantite)
 
     quantite_payee = quantite - reduction.quantite_offerte
@@ -453,11 +460,15 @@ class CommandeViewSet(ModelViewSet):
                 variante = variantes[ligne["variante"].id]
                 quantite = ligne["quantite"]
                 est_bon_achat = variante.produit.type_produit == TypeProduit.BON_ACHAT
-                # prix_final + réduction quantité (jamais un total envoyé par le client) — ou,
-                # pour un bon d'achat, le montant choisi par l'acheteur (déjà revalidé par
-                # PasserCommandeSerializer) — voir _construire_ligne_avec_reduction/CLAUDE.md §8.
+                # prix_final (ou prix_membre si `membre` est actif) + réduction quantité (jamais
+                # un total envoyé par le client) — ou, pour un bon d'achat, le montant choisi par
+                # l'acheteur (déjà revalidé par PasserCommandeSerializer) — voir
+                # _construire_ligne_avec_reduction/CLAUDE.md §8.
                 ligne_kwargs, sous_total_net = _construire_ligne_avec_reduction(
-                    variante, quantite, montant=ligne.get("montant") if est_bon_achat else None
+                    variante,
+                    quantite,
+                    montant=ligne.get("montant") if est_bon_achat else None,
+                    membre=membre,
                 )
                 LigneCommande.objects.create(commande=commande, **ligne_kwargs)
                 if not est_bon_achat:
@@ -581,10 +592,15 @@ class CommandeViewSet(ModelViewSet):
                 date_paiement_confirme=timezone.now(),
                 paiement_confirme_par=getattr(user, "membre", None),
             )
-            # prix_final + réduction quantité (même principe que `passer` ci-dessus, CLAUDE.md §8) —
-            # ou, pour un bon d'achat, le montant choisi (voir _construire_ligne_avec_reduction).
+            # prix_final (ou prix_membre si membre_cible est actif) + réduction quantité (même
+            # principe que `passer` ci-dessus, CLAUDE.md §8) — ou, pour un bon d'achat, le montant
+            # choisi (voir _construire_ligne_avec_reduction). Le prix membre suit toujours
+            # membre_cible (le bénéficiaire de la vente), jamais `user` (qui saisit la vente).
             ligne_kwargs, sous_total_net = _construire_ligne_avec_reduction(
-                variante, quantite, montant=data.get("montant") if est_bon_achat else None
+                variante,
+                quantite,
+                montant=data.get("montant") if est_bon_achat else None,
+                membre=membre_cible,
             )
             LigneCommande.objects.create(commande=commande, **ligne_kwargs)
             if not est_bon_achat:

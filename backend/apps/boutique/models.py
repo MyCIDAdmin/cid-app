@@ -91,6 +91,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from apps.membres.models import StatutMembre
+
 from .storage import ProduitsStorage
 
 # Durée de validité d'un bon d'achat à compter de son activation (paiement confirmé) — 3 ans,
@@ -191,6 +193,23 @@ class Produit(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(90)],
         help_text=_("Rabais optionnel (1 à 90 %) appliqué au prix catalogue — voir prix_final."),
     )
+    prix_membre = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_(
+            "Prix optionnel réservé aux membres actifs (demande utilisateur, mycid.org/shop — "
+            "badge « Mitglieder Preis »). Quand il est défini, un membre CONNECTÉ et ACTIF "
+            "(StatutMembre.ACTIF) voit et paie CE prix au lieu de prix_final ; tout autre "
+            "acheteur (non connecté, non-membre, membre en_attente/inactif) continue de payer "
+            "prix_final, sans lien avec ce champ. Ne se cumule jamais avec pourcentage_reduction "
+            "— voir prix_pour_membre(), seul point qui résout laquelle des deux remises "
+            "s'applique, toujours recalculé côté serveur (CLAUDE.md §8, même choke point que "
+            "prix_final : CommandeViewSet._construire_ligne_avec_reduction)."
+        ),
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -249,6 +268,27 @@ class Produit(models.Model):
             return self.prix
         facteur = Decimal(100 - self.pourcentage_reduction) / Decimal(100)
         return (self.prix * facteur).quantize(Decimal("0.01"))
+
+    def prix_pour_membre(self, membre) -> tuple[Decimal, bool]:
+        """Résout le prix EFFECTIF pour `membre` (instance apps.membres.Membre, ou None pour un
+        visiteur/anonyme) — SEUL point qui doit décider entre `prix_membre` et `prix_final`, à
+        appeler aussi bien pour l'affichage (ProduitSerializer.get_prix_affiche) que pour le
+        montant réellement facturé (CommandeViewSet._construire_ligne_avec_reduction), afin de ne
+        jamais dupliquer cette logique entre les deux (CLAUDE.md §8 — la résolution reste
+        entièrement côté serveur, `membre` vient toujours de request.user.membre ou d'un membre
+        cible explicite côté serveur, jamais d'un indicateur envoyé par le client).
+
+        Retourne (prix, est_prix_membre) : `prix_membre` s'applique uniquement si défini ET que
+        `membre` est actif (StatutMembre.ACTIF) — jamais de cumul avec `pourcentage_reduction`,
+        contrairement à la réduction par quantité qui continue elle de s'appliquer par-dessus
+        (voir _construire_ligne_avec_reduction)."""
+        if (
+            self.prix_membre is not None
+            and membre is not None
+            and membre.statut == StatutMembre.ACTIF
+        ):
+            return self.prix_membre, True
+        return self.prix_final, False
 
 
 class VarianteProduit(models.Model):

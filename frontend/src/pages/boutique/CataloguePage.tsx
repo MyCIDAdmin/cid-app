@@ -1,10 +1,19 @@
 /**
- * Page membre "Boutique — Catalogue" (mockup #pg-boutique, FDD §3.4).
+ * Page membre "Boutique — Catalogue" (mockup #pg-boutique, FDD §3.4). Restructurée le 2026-09-26
+ * (demande utilisateur : porter la structure/le layout/le style de https://www.mycid.org/shop) :
+ * bandeau d'en-tête, cartes produit façon mycid.org (badge image "Mitglieder Preis"/rupture,
+ * stepper de quantité, bouton pleine largeur), lien vers une page de détail dédiée par produit
+ * (voir ProduitDetailPage) — le clic sur l'image/le titre navigue désormais vers `/boutique/:id`
+ * au lieu de rester uniquement sur la kachel, même principe que le "View Project" de
+ * https://www.mycid.org/projects porté sur /projets le même jour (voir ProjetsPage/
+ * ProjetDetailPage). Le panier (store Zustand persisté en session, voir panierStore.ts), les
+ * variantes taille/couleur, les paliers de réduction quantité (RegleReduction) et le type
+ * "bon_achat" restent EXACTEMENT les mêmes qu'avant — seule la présentation change.
  *
- * Grille de produits publiés avec filtre par catégorie, sélecteur de variante (taille/couleur)
- * et ajout au panier (store Zustand persisté en session, voir panierStore.ts). Le prix affiché
- * n'est qu'indicatif — comme pour les autres modules (cotisations, adhésions), le montant
- * réellement facturé est toujours recalculé côté serveur à la commande (CLAUDE.md §8).
+ * Prix membre/non-membre (demande utilisateur, "Preise für Mitglieder und nicht Mitglieder zu
+ * definieren") : `produit.prix_affiche`/`produit.est_prix_membre` sont déjà résolus côté serveur
+ * (ProduitSerializer.get_prix_affiche, à partir du statut du membre connecté) — cette page les
+ * affiche tels quels, jamais recalculés ici (CLAUDE.md §8, même principe que prix_final avant).
  *
  * Portée : uniquement les produits `statut=publie` (le backend ne renvoie de toute façon que
  * ceux-ci à un rôle < Bureau Admin, voir ProduitViewSet.get_queryset) — pas de recherche texte
@@ -63,13 +72,54 @@ function labelRegleReduction(
     : t("catalogue.regle_article_offert", { seuil: regle.seuil_quantite });
 }
 
+/** Stepper de quantité (−/count/+, mycid.org/shop) — bornée à [1, max]. Partagé par ProduitCarte
+ * et ProduitDetailPage. */
+function StepperQuantite({
+  quantite,
+  max,
+  onChange,
+  labelDiminuer,
+  labelAugmenter,
+}: {
+  quantite: number;
+  max: number;
+  onChange: (quantite: number) => void;
+  labelDiminuer: string;
+  labelAugmenter: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        aria-label={labelDiminuer}
+        onClick={() => onChange(Math.max(1, quantite - 1))}
+        disabled={quantite <= 1}
+        className="flex h-7 w-7 items-center justify-center rounded-cid border border-text-tertiary/30 text-sm font-bold text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
+      >
+        −
+      </button>
+      <span className="w-6 text-center text-sm font-semibold text-text-primary">{quantite}</span>
+      <button
+        type="button"
+        aria-label={labelAugmenter}
+        onClick={() => onChange(Math.min(max, quantite + 1))}
+        disabled={quantite >= max}
+        className="flex h-7 w-7 items-center justify-center rounded-cid border border-text-tertiary/30 text-sm font-bold text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
 /**
  * Carte "bon_achat" (demande utilisateur du 2026-09-23, "Gutschein wird ein echtes Produkt im
  * Katalog") : montant librement choisi par l'acheteur au lieu du sélecteur taille/couleur —
  * fusionne ici ce que faisait l'ancienne AcheterBonAchatPage (page/module séparé, retiré sur
  * demande utilisateur explicite : "Gutschein soll als Kategorie im shop auftauchen und nicht
  * als eigenes Modul"). Pas de stock à vérifier (voir Produit.en_rupture/stock_faible toujours
- * false pour ce type côté backend) — uniquement les bornes de montant.
+ * false pour ce type côté backend) — uniquement les bornes de montant. Jamais concernée par le
+ * prix membre (voir Produit.prix_pour_membre côté backend : montant déjà libre).
  */
 function ProduitCarteBonAchat({
   produit,
@@ -107,18 +157,21 @@ function ProduitCarteBonAchat({
   }
 
   return (
-    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-card-gradient shadow-card">
-      <div className="relative flex h-32 items-center justify-center bg-cal">
+    <div
+      ref={cardRef}
+      className="flex flex-col overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm"
+    >
+      <div className="relative flex h-40 items-center justify-center bg-cal">
         <div className="absolute bottom-2 right-2 rounded-full bg-bg-primary/80 backdrop-blur-sm">
-          <ShareButton path={`/boutique?produit=${produit.id}`} titre={produit.nom} />
+          <ShareButton path={`/boutique/${produit.id}`} titre={produit.nom} />
         </div>
         {produit.image ? (
           <img src={produit.image} alt={produit.nom} className="h-full w-full object-cover" />
         ) : (
-          <span className="text-4xl">🎁</span>
+          <span className="text-5xl">🎁</span>
         )}
       </div>
-      <div className="p-3">
+      <div className="flex flex-1 flex-col p-3">
         <div className="mb-0.5 text-sm font-bold text-text-primary">{produit.nom}</div>
         <div className="mb-2 line-clamp-2 text-xs text-text-tertiary">{produit.description}</div>
 
@@ -141,7 +194,7 @@ function ProduitCarteBonAchat({
           onChange={(e) => setMontant(e.target.value)}
           className="mb-2 w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
         />
-        <div className="mb-2 flex flex-wrap gap-1.5">
+        <div className="mb-3 flex flex-wrap gap-1.5">
           {BON_ACHAT_MONTANTS_SUGGERES.map((m) => (
             <button
               key={m}
@@ -158,19 +211,19 @@ function ProduitCarteBonAchat({
           ))}
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-ca">
+        <div className="mt-auto flex items-center justify-between gap-2">
+          <span className="text-lg font-bold text-ca">
             {montantValide ? formatMontant(montant) : "—"}
           </span>
-          <button
-            type="button"
-            onClick={handleAjouter}
-            disabled={!varianteSentinelle || !montantValide}
-            className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
-          >
-            {t("catalogue.ajouter")}
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={handleAjouter}
+          disabled={!varianteSentinelle || !montantValide}
+          className="mt-2 w-full rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+        >
+          🛒 {t("catalogue.ajouter")}
+        </button>
       </div>
     </div>
   );
@@ -187,59 +240,95 @@ function ProduitCarte({
   const ajouter = usePanierStore((s) => s.ajouter);
   const variantesEnStock = produit.variantes.filter((v) => v.stock > 0);
   const [varianteId, setVarianteId] = useState<string>(variantesEnStock[0]?.id ?? "");
+  const [quantite, setQuantite] = useState(1);
 
   const varianteSelectionnee = produit.variantes.find((v) => v.id === varianteId);
+  const epuise = !varianteSelectionnee || varianteSelectionnee.stock <= 0;
+
+  function handleChangerVariante(id: string) {
+    setVarianteId(id);
+    setQuantite(1);
+  }
 
   function handleAjouter() {
     if (!varianteSelectionnee) return;
-    ajouter({
-      varianteId: varianteSelectionnee.id,
-      produitId: produit.id,
-      nom: produit.nom,
-      taille: varianteSelectionnee.taille,
-      couleur: varianteSelectionnee.couleur,
-      // prix_final (jamais prix seul) : reflète un éventuel rabais actif (CLAUDE.md §8 —
-      // simple indicatif ici, le montant réel est de toute façon recalculé côté serveur).
-      prixUnitaire: produit.prix_final,
-      stockDisponible: varianteSelectionnee.stock,
-      typeProduit: "physique",
-      // Instantané des paliers actifs (demande utilisateur du 2026-09-23) — voir
-      // panierStore.calculerReductionArticle, purement indicatif.
-      reglesReduction: produit.regles_reduction_actives,
-    });
+    ajouter(
+      {
+        varianteId: varianteSelectionnee.id,
+        produitId: produit.id,
+        nom: produit.nom,
+        taille: varianteSelectionnee.taille,
+        couleur: varianteSelectionnee.couleur,
+        // prix_affiche (jamais prix/prix_final seuls) : déjà résolu côté serveur — prix membre
+        // si applicable (produit.est_prix_membre), sinon prix soldé/catalogue (CLAUDE.md §8 —
+        // simple indicatif ici, le montant réel est de toute façon recalculé côté serveur).
+        prixUnitaire: produit.prix_affiche,
+        stockDisponible: varianteSelectionnee.stock,
+        typeProduit: "physique",
+        // Instantané des paliers actifs (demande utilisateur du 2026-09-23) — voir
+        // panierStore.calculerReductionArticle, purement indicatif.
+        reglesReduction: produit.regles_reduction_actives,
+      },
+      quantite,
+    );
   }
 
   return (
-    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-card-gradient shadow-card">
-      <div className="relative flex h-32 items-center justify-center bg-cal">
+    <div
+      ref={cardRef}
+      className="flex flex-col overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm"
+    >
+      <div className="relative flex h-40 items-center justify-center bg-cal">
         {produit.nouveaute && (
           <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-ca">
             {t("catalogue.badge_nouveaute")}
           </span>
         )}
-        {produit.pourcentage_reduction && (
-          <span className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-status-dangerText">
-            {t("catalogue.badge_rabais", { pct: produit.pourcentage_reduction })}
+        {/* Badge coin (mycid.org/shop) : "Mitglieder Preis" a priorité sur le rabais générique —
+            c'est LUI qui détermine le montant réellement facturé (voir prix_pour_membre côté
+            backend), afficher les deux à la fois serait trompeur. */}
+        {produit.est_prix_membre ? (
+          <span className="absolute right-2 top-2 rounded-full bg-status-dangerText px-2 py-0.5 text-[9px] font-bold text-white shadow">
+            👑 {t("catalogue.badge_prix_membre")}
+          </span>
+        ) : (
+          produit.pourcentage_reduction && (
+            <span className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-status-dangerText">
+              {t("catalogue.badge_rabais", { pct: produit.pourcentage_reduction })}
+            </span>
+          )
+        )}
+        {epuise && (
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/70 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+            {t("catalogue.rupture")}
           </span>
         )}
         <div className="absolute bottom-2 right-2 rounded-full bg-bg-primary/80 backdrop-blur-sm">
-          <ShareButton path={`/boutique?produit=${produit.id}`} titre={produit.nom} />
+          <ShareButton path={`/boutique/${produit.id}`} titre={produit.nom} />
         </div>
-        {produit.image ? (
-          <img src={produit.image} alt={produit.nom} className="h-full w-full object-cover" />
-        ) : (
-          <span className="text-4xl">🛍️</span>
-        )}
+        <Link
+          to={`/boutique/${produit.id}`}
+          className="absolute inset-0"
+          aria-label={produit.nom}
+        >
+          {produit.image ? (
+            <img src={produit.image} alt={produit.nom} className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full items-center justify-center text-5xl">🛍️</span>
+          )}
+        </Link>
       </div>
-      <div className="p-3">
-        <div className="mb-0.5 text-sm font-bold text-text-primary">{produit.nom}</div>
+      <div className="flex flex-1 flex-col p-3">
+        <Link to={`/boutique/${produit.id}`} className="mb-0.5 text-sm font-bold text-text-primary hover:underline">
+          {produit.nom}
+        </Link>
         <div className="mb-2 line-clamp-2 text-xs text-text-tertiary">{produit.description}</div>
 
         {produit.variantes.length > 1 && (
           <select
             aria-label={t("catalogue.variante_label")}
             value={varianteId}
-            onChange={(e) => setVarianteId(e.target.value)}
+            onChange={(e) => handleChangerVariante(e.target.value)}
             className="mb-2 w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
           >
             {produit.variantes.map((v) => (
@@ -250,30 +339,44 @@ function ProduitCarte({
           </select>
         )}
 
-        <div className="flex items-center justify-between">
-          {produit.pourcentage_reduction ? (
+        <div className="mb-2 flex items-center justify-between gap-2">
+          {produit.est_prix_membre ? (
+            <span className="flex flex-wrap items-baseline gap-1.5">
+              <span className="text-base font-bold text-status-dangerText">
+                {formatMontant(produit.prix_affiche)}
+              </span>
+              <span className="text-xs text-text-tertiary line-through">
+                {formatMontant(produit.prix_final)}
+              </span>
+              <span className="rounded-full bg-status-successBg px-1.5 py-0.5 text-[9px] font-bold text-status-successText">
+                {t("catalogue.badge_prix_membre")}
+              </span>
+            </span>
+          ) : produit.pourcentage_reduction ? (
             <span className="flex items-baseline gap-1.5">
               <span className="text-xs text-text-tertiary line-through">
                 {formatMontant(produit.prix)}
               </span>
               <span className="text-base font-bold text-status-dangerText">
-                {formatMontant(produit.prix_final)}
+                {formatMontant(produit.prix_affiche)}
               </span>
             </span>
           ) : (
-            <span className="text-base font-bold text-ca">{formatMontant(produit.prix)}</span>
+            <span className="text-base font-bold text-ca">{formatMontant(produit.prix_affiche)}</span>
           )}
-          <button
-            type="button"
-            onClick={handleAjouter}
-            disabled={!varianteSelectionnee || varianteSelectionnee.stock <= 0}
-            className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
-          >
-            {t("catalogue.ajouter")}
-          </button>
+          {!epuise && (
+            <StepperQuantite
+              quantite={quantite}
+              max={varianteSelectionnee?.stock ?? 1}
+              onChange={setQuantite}
+              labelDiminuer={t("commande.diminuer")}
+              labelAugmenter={t("commande.augmenter")}
+            />
+          )}
         </div>
+
         {produit.regles_reduction_actives.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
+          <div className="mb-2 flex flex-wrap gap-1">
             {produit.regles_reduction_actives.map((regle) => (
               <span
                 key={regle.id}
@@ -284,19 +387,22 @@ function ProduitCarte({
             ))}
           </div>
         )}
-        {produit.en_rupture ? (
-          <span className="mt-1.5 inline-block rounded-full bg-status-dangerBg px-2 py-0.5 text-[10px] font-medium text-status-dangerText">
-            {t("catalogue.rupture")}
-          </span>
-        ) : produit.stock_faible ? (
-          <span className="mt-1.5 inline-block rounded-full bg-status-warningBg px-2 py-0.5 text-[10px] font-medium text-status-warningText">
-            {t("catalogue.stock_faible", { stock: produit.stock_total })}
-          </span>
-        ) : (
-          <div className="mt-1.5 text-[10px] text-text-tertiary">
-            {t("catalogue.en_stock", { stock: produit.stock_total })}
-          </div>
-        )}
+        <div className="mb-2 text-[10px] text-text-tertiary">
+          {produit.en_rupture
+            ? t("catalogue.rupture")
+            : produit.stock_faible
+              ? t("catalogue.stock_faible", { stock: produit.stock_total })
+              : t("catalogue.en_stock", { stock: produit.stock_total })}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAjouter}
+          disabled={epuise}
+          className="mt-auto w-full rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+        >
+          🛒 {epuise ? t("catalogue.rupture") : t("catalogue.ajouter")}
+        </button>
       </div>
     </div>
   );
@@ -314,7 +420,13 @@ export default function CataloguePage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-bold text-text-primary">{t("catalogue.titre")}</h1>
+      {/* Bandeau d'en-tête (demande utilisateur 2026-09-26 : porter la structure de
+          https://www.mycid.org/shop) — titre + sous-titre centrés, même principe que
+          ProjetsPage (mycid.org/projects). */}
+      <div className="mb-6 text-center">
+        <h1 className="text-xl font-bold text-text-primary">{t("catalogue.titre")}</h1>
+        <p className="mt-1 text-sm text-text-secondary">{t("catalogue.sous_titre")}</p>
+      </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <button
@@ -351,7 +463,7 @@ export default function CataloguePage() {
       )}
 
       {produitsQuery.data && produitsQuery.data.results.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
+        <div className="grid gap-4 stagger-children sm:grid-cols-2 lg:grid-cols-3">
           {produitsQuery.data.results.map((produit) =>
             produit.type_produit === "bon_achat" ? (
               <ProduitCarteBonAchat
@@ -380,3 +492,10 @@ export default function CataloguePage() {
     </div>
   );
 }
+
+// Constantes/fonctions volontairement co-localisées avec les composants (réutilisées par
+// ProduitDetailPage) plutôt que déplacées dans un fichier séparé — react-refresh/only-export-
+// components ne dégrade que le Fast Refresh en dev, pas le comportement runtime (même choix que
+// Sidebar.tsx/GROUP_ORDER).
+// eslint-disable-next-line react-refresh/only-export-components
+export { ProduitCarte, ProduitCarteBonAchat, StepperQuantite, formatMontant, labelVariante, labelRegleReduction };

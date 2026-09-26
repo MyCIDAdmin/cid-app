@@ -16,6 +16,7 @@ from apps.boutique.tests.factories import (
     ProduitFactory,
     VarianteProduitFactory,
 )
+from apps.membres.models import StatutMembre
 from apps.membres.tests.factories import MembreFactory
 from apps.notifications.models import Notification, TypeNotification
 
@@ -97,6 +98,44 @@ def test_bureau_admin_voit_les_brouillons(api_client):
     assert "Brouillon" in noms
 
 
+# --- Prix membre/non-membre (demande utilisateur, mycid.org/shop — badge "Mitglieder Preis") ---
+
+
+def test_prix_affiche_est_le_prix_membre_pour_un_membre_actif_connecte(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "m-prix-membre@example.de")
+    ProduitFactory(nom="Mug CID", prix=Decimal("15.00"), prix_membre=Decimal("12.00"))
+
+    resp = _auth(api_client, user).get(reverse(PRODUIT_LIST_URL))
+    assert resp.status_code == 200
+    produit_data = next(p for p in resp.data["results"] if p["nom"] == "Mug CID")
+    assert produit_data["est_prix_membre"] is True
+    assert Decimal(produit_data["prix_affiche"]) == Decimal("12.00")
+
+
+def test_prix_affiche_reste_le_prix_standard_pour_un_membre_en_attente(api_client):
+    user, membre = _user_avec_membre(
+        Role.MEMBRE, "m-prix-attente@example.de", statut=StatutMembre.EN_ATTENTE
+    )
+    ProduitFactory(nom="Mug CID", prix=Decimal("15.00"), prix_membre=Decimal("12.00"))
+
+    resp = _auth(api_client, user).get(reverse(PRODUIT_LIST_URL))
+    assert resp.status_code == 200
+    produit_data = next(p for p in resp.data["results"] if p["nom"] == "Mug CID")
+    assert produit_data["est_prix_membre"] is False
+    assert Decimal(produit_data["prix_affiche"]) == Decimal("15.00")
+
+
+def test_prix_affiche_reste_le_prix_standard_sans_prix_membre_defini(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "m-prix-sans@example.de")
+    ProduitFactory(nom="Écharpe", prix=Decimal("20.00"), prix_membre=None)
+
+    resp = _auth(api_client, user).get(reverse(PRODUIT_LIST_URL))
+    assert resp.status_code == 200
+    produit_data = next(p for p in resp.data["results"] if p["nom"] == "Écharpe")
+    assert produit_data["est_prix_membre"] is False
+    assert Decimal(produit_data["prix_affiche"]) == Decimal("20.00")
+
+
 def test_membre_normal_ne_peut_pas_creer_produit(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "m2@example.de")
     resp = _auth(api_client, user).post(
@@ -114,6 +153,16 @@ def test_bureau_admin_peut_creer_produit(api_client):
     )
     assert resp.status_code == 201
     assert resp.data["statut"] == StatutProduit.BROUILLON
+
+
+def test_bureau_admin_peut_definir_le_prix_membre(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-prix-membre@example.de")
+    produit = ProduitFactory(prix=Decimal("30.00"))
+    resp = _auth(api_client, user).patch(_produit_detail_url(produit), {"prix_membre": "24.00"})
+    assert resp.status_code == 200, resp.data
+    assert Decimal(resp.data["prix_membre"]) == Decimal("24.00")
+    produit.refresh_from_db()
+    assert produit.prix_membre == Decimal("24.00")
 
 
 def test_rh_ne_peut_pas_modifier_produit(api_client):
@@ -294,6 +343,52 @@ def test_passer_commande_applique_le_prix_solde(api_client):
     assert resp.status_code == 201
     assert Decimal(resp.data["lignes"][0]["prix_unitaire"]) == Decimal("30.00")
     assert Decimal(resp.data["montant_total"]) == Decimal("60.00")
+
+
+def test_passer_commande_facture_le_prix_membre_a_un_membre_actif(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "m-passer-membre@example.de")
+    variante = VarianteProduitFactory(stock=5)
+    variante.produit.prix = Decimal("15.00")
+    variante.produit.prix_membre = Decimal("12.00")
+    variante.produit.save(update_fields=["prix", "prix_membre"])
+
+    resp = _auth(api_client, user).post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 2}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert Decimal(resp.data["lignes"][0]["prix_unitaire"]) == Decimal("12.00")
+    assert Decimal(resp.data["montant_total"]) == Decimal("24.00")
+
+
+def test_passer_commande_ignore_toute_pretention_de_prix_membre_dun_non_membre_actif(api_client):
+    """Sécurité (CLAUDE.md §8, même principe que test_passer_commande_ignore_le_prix_envoye_par_
+    le_client) : un membre en_attente ne doit JAMAIS pouvoir obtenir le prix membre, quoi qu'il
+    envoie dans la requête — le serveur seul décide, à partir de request.user.membre.statut."""
+    user, membre = _user_avec_membre(
+        Role.MEMBRE, "m-passer-en-attente@example.de", statut=StatutMembre.EN_ATTENTE
+    )
+    variante = VarianteProduitFactory(stock=5)
+    variante.produit.prix = Decimal("15.00")
+    variante.produit.prix_membre = Decimal("12.00")
+    variante.produit.save(update_fields=["prix", "prix_membre"])
+
+    resp = _auth(api_client, user).post(
+        reverse(PASSER_URL),
+        {
+            # Tentative de manipulation : un champ arbitraire ne changeant rien côté serializer,
+            # mais on vérifie explicitement qu'aucun mécanisme ne laisse passer le prix membre.
+            "lignes": [{"variante": str(variante.id), "quantite": 1, "prix_unitaire": "12.00"}],
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert Decimal(resp.data["lignes"][0]["prix_unitaire"]) == Decimal("15.00")
 
 
 def test_passer_commande_refuse_si_stock_insuffisant(api_client):
@@ -1177,6 +1272,43 @@ def test_df_vend_un_article_en_especes_et_decremente_le_stock(api_client):
     assert commande.membre_id == membre_cible.id
     assert commande.paiement_confirme_par_id == df.id
     assert commande.date_paiement_confirme is not None
+
+
+def test_vendre_especes_suit_le_statut_du_membre_cible_jamais_celui_du_staff(api_client):
+    # Le Directeur Financier (staff) qui saisit la vente n'a lui-même aucune fiche membre — le
+    # prix membre doit malgré tout s'appliquer, car c'est le statut de membre_cible qui compte.
+    user, _df = _user_avec_membre(Role.DIR_FINANCIER, "df-prix-membre@example.de")
+    membre_cible = MembreFactory(statut=StatutMembre.ACTIF)
+    variante = VarianteProduitFactory(stock=5)
+    variante.produit.prix = Decimal("15.00")
+    variante.produit.prix_membre = Decimal("12.00")
+    variante.produit.save(update_fields=["prix", "prix_membre"])
+
+    resp = _auth(api_client, user).post(
+        reverse(VENDRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "variante": str(variante.id), "quantite": 2},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert Decimal(resp.data["lignes"][0]["prix_unitaire"]) == Decimal("12.00")
+    assert Decimal(resp.data["montant_total"]) == Decimal("24.00")
+
+
+def test_vendre_especes_pour_un_membre_cible_non_actif_facture_le_prix_standard(api_client):
+    user, _df = _user_avec_membre(Role.DIR_FINANCIER, "df-prix-standard@example.de")
+    membre_cible = MembreFactory(statut=StatutMembre.INACTIF)
+    variante = VarianteProduitFactory(stock=5)
+    variante.produit.prix = Decimal("15.00")
+    variante.produit.prix_membre = Decimal("12.00")
+    variante.produit.save(update_fields=["prix", "prix_membre"])
+
+    resp = _auth(api_client, user).post(
+        reverse(VENDRE_ESPECES_URL),
+        {"membre": str(membre_cible.id), "variante": str(variante.id), "quantite": 1},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert Decimal(resp.data["lignes"][0]["prix_unitaire"]) == Decimal("15.00")
 
 
 def test_vendre_especes_refuse_a_un_role_insuffisant(api_client):

@@ -64,6 +64,7 @@ function formulaireInitial(): ProduitPayload {
     description: "",
     prix: "0.00",
     pourcentage_reduction: null,
+    prix_membre: null,
     statut: "brouillon",
     type_produit: "physique",
     nouveaute: false,
@@ -134,6 +135,11 @@ export default function GestionCatalogueTab({
     if (!modifiable) return;
     const pourcentage = valeur === "" ? null : Number(valeur);
     modifierMutation.mutate({ id: produit.id, payload: { pourcentage_reduction: pourcentage } });
+  }
+
+  function modifierPrixMembre(produit: Produit, valeur: string) {
+    if (!modifiable) return;
+    modifierMutation.mutate({ id: produit.id, payload: { prix_membre: valeur === "" ? null : valeur } });
   }
 
   function handleImageChoisie(produit: Produit, e: ChangeEvent<HTMLInputElement>) {
@@ -307,6 +313,29 @@ export default function GestionCatalogueTab({
                   className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
                 />
               </div>
+              <div>
+                <label
+                  htmlFor="prod-prix-membre"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("catalogue_admin.prix_membre_label")}
+                </label>
+                <input
+                  id="prod-prix-membre"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder={t("catalogue_admin.prix_membre_placeholder")}
+                  value={form.prix_membre ?? ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      prix_membre: e.target.value === "" ? null : e.target.value,
+                    })
+                  }
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
             </>
           )}
           <div className="md:col-span-2">
@@ -421,6 +450,23 @@ export default function GestionCatalogueTab({
                     className="w-14 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
                   />
                 </label>
+                {produit.type_produit !== "bon_achat" && (
+                  <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                    {t("catalogue_admin.prix_membre_label")}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder={t("catalogue_admin.prix_membre_placeholder")}
+                      aria-label={`${t("catalogue_admin.prix_membre_label")} — ${produit.nom}`}
+                      defaultValue={produit.prix_membre ?? ""}
+                      onBlur={(e) => modifierPrixMembre(produit, e.target.value)}
+                      disabled={!modifiable}
+                      title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                      className="w-16 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
+                    />
+                  </label>
+                )}
                 <select
                   aria-label={t("catalogue_admin.changer_statut")}
                   value={produit.statut}

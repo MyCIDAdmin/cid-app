@@ -22,6 +22,8 @@ from apps.boutique.tests.factories import (
     RegleReductionFactory,
     VarianteProduitFactory,
 )
+from apps.membres.models import StatutMembre
+from apps.membres.tests.factories import MembreFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -102,6 +104,42 @@ def test_prix_final_arrondi_a_deux_decimales():
     produit = ProduitFactory(prix=Decimal("9.99"), pourcentage_reduction=33)
     # 9.99 * 0.67 = 6.6933 -> arrondi à 6.69
     assert produit.prix_final == Decimal("6.69")
+
+
+# --- Produit.prix_pour_membre (demande utilisateur : prix membre/non-membre, mycid.org/shop) ---
+
+
+def test_prix_pour_membre_sans_prix_membre_defini_retombe_sur_prix_final():
+    produit = ProduitFactory(prix=Decimal("50.00"), pourcentage_reduction=20, prix_membre=None)
+    membre_actif = MembreFactory(statut=StatutMembre.ACTIF)
+    assert produit.prix_pour_membre(membre_actif) == (Decimal("40.00"), False)
+
+
+def test_prix_pour_membre_applique_le_prix_membre_pour_un_membre_actif():
+    produit = ProduitFactory(prix=Decimal("15.00"), prix_membre=Decimal("12.00"))
+    membre_actif = MembreFactory(statut=StatutMembre.ACTIF)
+    assert produit.prix_pour_membre(membre_actif) == (Decimal("12.00"), True)
+
+
+@pytest.mark.parametrize("statut", [StatutMembre.EN_ATTENTE, StatutMembre.INACTIF])
+def test_prix_pour_membre_refuse_le_prix_membre_a_un_membre_non_actif(statut):
+    produit = ProduitFactory(prix=Decimal("15.00"), prix_membre=Decimal("12.00"))
+    membre = MembreFactory(statut=statut)
+    assert produit.prix_pour_membre(membre) == (Decimal("15.00"), False)
+
+
+def test_prix_pour_membre_refuse_le_prix_membre_a_un_visiteur_anonyme():
+    produit = ProduitFactory(prix=Decimal("15.00"), prix_membre=Decimal("12.00"))
+    assert produit.prix_pour_membre(None) == (Decimal("15.00"), False)
+
+
+def test_prix_pour_membre_ne_se_cumule_jamais_avec_pourcentage_reduction():
+    # Le prix membre remplace prix_final, il ne s'applique pas EN PLUS du rabais général.
+    produit = ProduitFactory(
+        prix=Decimal("50.00"), pourcentage_reduction=20, prix_membre=Decimal("35.00")
+    )
+    membre_actif = MembreFactory(statut=StatutMembre.ACTIF)
+    assert produit.prix_pour_membre(membre_actif) == (Decimal("35.00"), True)
 
 
 # --- RegleReduction / calculer_reduction_quantite (demande utilisateur du 2026-09-23) ---
