@@ -234,7 +234,27 @@ input:-webkit-autofill:focus {
   }
 
   /* Repris de MyCID (Projects.tsx, Shop.tsx) — apparition échelonnée pour une grille de cartes.
-     Chaque enfant direct utilise l'animation "fade-up" définie dans tailwind.config.js. */
+     Le @keyframes est écrit ici en CSS brut (même principe que cid-pulse-cible ci-dessus),
+     PAS dans tailwind.config.js theme.extend.keyframes/animation : un @keyframes déclaré côté
+     Tailwind n'est émis dans le build de production que si la classe utilitaire correspondante
+     (ici .animate-fade-up) est détectée par le content-scan JIT dans un fichier .tsx — or cette
+     classe n'est utilisée nulle part, on applique la règle `animation:` directement en CSS. Bug
+     constaté le 2026-09-26 : les modules "Shop" et "Projets & Actions" (tous deux utilisant
+     .stagger-children, voir CataloguePage.tsx/ProjetsPage.tsx) semblaient vides en production —
+     en réalité les données étaient bien chargées (confirmé côté logs backend Railway), mais
+     `@keyframes fade-up` était absent du CSS buildé (npm run build), donc l'animation ne
+     démarrait jamais et `opacity: 0` restait appliqué indéfiniment à chaque carte. */
+  @keyframes fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .stagger-children > * {
     opacity: 0;
     animation: fade-up 0.5s ease-out forwards;
