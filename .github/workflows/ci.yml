@@ -24,7 +24,7 @@ jobs:
         working-directory: backend
     env:
       SECRET_KEY: ci-test-secret-key
-      SECRET_FIELD_KEY: 8w6C9y2z1v5b8n3m6q9r2t5y8u1i4o7p0a3s6d9f2g5h8=
+      SECRET_FIELD_KEY: OvTiaQlxOszi6NOfHZ2QoE5zpgt5wmvGCGw9wBX8aqo=
       DATABASE_URL: sqlite:///ci_test.db
       ALLOWED_HOSTS: localhost
       CORS_ALLOWED_ORIGINS: http://localhost:5173

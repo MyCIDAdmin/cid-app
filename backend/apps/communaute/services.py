@@ -506,9 +506,7 @@ def _synchroniser_equipe_info_depuis(corps: dict) -> bool:
                 "nom": _valeur(corps, "name", "teamName", "shortName") or "",
                 "logo_url": _valeur(corps, "logo", "logoUrl", "crest", "badge", "image") or "",
                 "fondee_en": fondee_en,
-                "stade": _valeur_imbriquee(
-                    corps, "venue", "name", "venue", "venueName", "stadium"
-                )
+                "stade": _valeur_imbriquee(corps, "venue", "name", "venue", "venueName", "stadium")
                 or "",
                 "ville": _valeur_imbriquee(corps, "venue", "city", "city") or "",
                 "pays": _valeur(corps, "country", "countryName", "nationality") or "",

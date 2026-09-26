@@ -79,9 +79,7 @@ class HasInscriptionsAdminWriteAccess(HasInscriptionsAdminAccess):
         return bool(
             user
             and user.is_authenticated
-            and _has_admin_page_access(
-                user, "page_inscriptions", required="lecture_ecriture"
-            )
+            and _has_admin_page_access(user, "page_inscriptions", required="lecture_ecriture")
         )
 
 

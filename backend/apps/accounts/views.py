@@ -311,7 +311,10 @@ class RegisterConfirmView(APIView):
         services.log_audit_event("email_verified", user=user, ip_address=_client_ip(request))
         return Response(
             {
-                "message": "Email confirmé. Votre inscription doit maintenant être validée par un administrateur."
+                "message": (
+                    "Email confirmé. Votre inscription doit maintenant être validée par un "
+                    "administrateur."
+                )
             }
         )
 
@@ -338,13 +341,17 @@ class RegisterResendCodeView(APIView):
             try:
                 code = services.generate_email_otp(user, purpose="email_verification")
             except ValueError:
-                pass  # limite anti-spam atteinte (OTP_EMAIL_MAX_PER_10MIN) — réponse générique quand même
+                # limite anti-spam atteinte (OTP_EMAIL_MAX_PER_10MIN) — réponse générique quand même
+                pass
             else:
                 send_email_verification_code.delay(str(user.id), code)
 
         return Response(
             {
-                "message": "Si un compte en attente de confirmation existe, un nouveau code vient d'être envoyé."
+                "message": (
+                    "Si un compte en attente de confirmation existe, un nouveau code vient "
+                    "d'être envoyé."
+                )
             }
         )
 

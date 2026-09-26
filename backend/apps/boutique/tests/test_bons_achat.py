@@ -125,7 +125,9 @@ def test_confirmer_paiement_dune_commande_bon_achat_genere_le_bon(api_client):
 
     user_df, _membre_df = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
     _auth(api_client, user_df)
-    resp_confirm = api_client.post(_confirmer_paiement_url(commande_id), {"mode_paiement": "virement"})
+    resp_confirm = api_client.post(
+        _confirmer_paiement_url(commande_id), {"mode_paiement": "virement"}
+    )
 
     assert resp_confirm.status_code == 200, resp_confirm.data
     bon = BonAchat.objects.get(achete_par=membre)
@@ -167,7 +169,9 @@ def test_passer_commande_bon_achat_quantite_genere_plusieurs_bons_independants(a
     assert bons[0].code != bons[1].code
 
 
-def test_passer_commande_bon_achat_couvert_par_un_bon_existant_confirme_et_genere_immediatement(api_client):
+def test_passer_commande_bon_achat_couvert_par_un_bon_existant_confirme_et_genere_immediatement(
+    api_client,
+):
     """Un bon d'achat s'achète aussi via un bon existant appliqué au checkout — la commande est
     alors confirmée immédiatement dans `passer` (montant_du<=0), qui doit générer le nouveau bon
     dans la foulée, sans attendre confirmer_paiement."""

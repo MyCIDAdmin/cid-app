@@ -2,8 +2,13 @@ import factory
 from factory.django import DjangoModelFactory
 
 from apps.accounts.models import Role, User
-
-from apps.rbac.models import ModuleVisibiliteMembre, NiveauAcces, RoleDefinition, RoleModulePermission, UserRoleAssignment
+from apps.rbac.models import (
+    ModuleVisibiliteMembre,
+    NiveauAcces,
+    RoleDefinition,
+    RoleModulePermission,
+    UserRoleAssignment,
+)
 
 
 class UserFactory(DjangoModelFactory):

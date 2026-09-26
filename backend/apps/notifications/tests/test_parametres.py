@@ -113,7 +113,7 @@ def test_email_module_actif_module_inconnu_fail_open(db):
 
 
 def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
-    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+    from apps.rbac.models import RoleDefinition, RoleModulePermission
 
     role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
     RoleModulePermission.objects.update_or_create(
@@ -132,12 +132,18 @@ def test_phase_d_bureau_admin_refuse_par_defaut_rollout_regression(api_client):
 
 def test_phase_d_role_personnalise_peut_gerer_les_parametres_via_la_matrice(api_client):
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     user = UserFactory(role=Role.MEMBRE)
     role_perso = RoleDefinitionFactory(slug="notifications-manager")
     RoleModulePermissionFactory(
-        role=role_perso, module="page_notifications_params", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+        role=role_perso,
+        module="page_notifications_params",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
     )
     UserRoleAssignmentFactory(user=user, role=role_perso)
 

@@ -112,10 +112,13 @@ def test_message_prive_contenu_est_chiffre_en_base():
     message = MessagePriveFactory(contenu="Salut, ça va ?")
     from django.db import connection
 
+    # Voir apps.membres.tests.test_models.test_cin_et_passeport_sont_chiffres_en_base : un
+    # UUIDField est stocké avec tirets sur les backends à support natif (PostgreSQL) mais en
+    # hexadécimal sans tirets sinon (SQLite, utilisé en CI) — la requête brute doit matcher
+    # la représentation réellement stockée.
+    id_brut = str(message.id) if connection.features.has_native_uuid_field else message.id.hex
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT contenu FROM communaute_messages_prives WHERE id = %s", [str(message.id)]
-        )
+        cursor.execute("SELECT contenu FROM communaute_messages_prives WHERE id = %s", [id_brut])
         (valeur_brute,) = cursor.fetchone()
 
     assert valeur_brute != "Salut, ça va ?"

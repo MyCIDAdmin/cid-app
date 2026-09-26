@@ -43,7 +43,7 @@ function projet(overrides: Partial<Projet> = {}): Projet {
 }
 
 describe("ProjetCard", () => {
-  it("affiche le titre, le statut et la barre de progression de la cagnote sur la face avant", () => {
+  it("affiche le titre, le statut et la barre de progression de la cagnote sur la face avant", async () => {
     vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
       data: undefined,
       isPending: false,
@@ -53,9 +53,17 @@ describe("ProjetCard", () => {
 
     expect(screen.getByText("Rénovation du local associatif")).toBeInTheDocument();
     expect(screen.getByText("statut.en_cours")).toBeInTheDocument();
-    // Barre de progression : 250/1000 = 25 %.
-    const barre = document.querySelector(".bg-ca.rounded-full") as HTMLElement;
-    expect(barre.style.width).toBe("25%");
+    // Barre de progression : 250/1000 = 25 %. Depuis le merge de design MyCID (2026-09-25),
+    // AnimatedProgress anime la largeur de 0 jusqu'à cette valeur cible sur ~1s (voir
+    // components/ui/AnimatedProgress.tsx) plutôt que de l'afficher immédiatement — d'où le
+    // waitFor plutôt qu'une assertion synchrone.
+    await waitFor(
+      () => {
+        const barre = document.querySelector(".bg-ca.rounded-full") as HTMLElement;
+        expect(barre.style.width).toBe("25%");
+      },
+      { timeout: 2000 },
+    );
   });
 
   it("permet de partager le projet sans retourner la kachel (demande utilisateur 2026-09-25)", () => {

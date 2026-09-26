@@ -6,8 +6,13 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.accounts.models import AuditLogEntry, Role
-
-from apps.rbac.models import ModuleVisibiliteMembre, NiveauAcces, RoleDefinition, RoleModulePermission, UserRoleAssignment
+from apps.rbac.models import (
+    ModuleVisibiliteMembre,
+    NiveauAcces,
+    RoleDefinition,
+    RoleModulePermission,
+    UserRoleAssignment,
+)
 from apps.rbac.registry import ALL_MODULES, MODULES, PAGES_ADMIN
 from apps.rbac.tests.factories import (
     RoleDefinitionFactory,
@@ -201,7 +206,11 @@ def test_matrix_set_ecrit_une_cellule_et_journalise(api_client):
 
     resp = _auth(api_client, admin).post(
         reverse(MATRIX_SET_URL),
-        {"role_id": str(role.id), "module": "membres", "niveau_acces": NiveauAcces.LECTURE_ECRITURE},
+        {
+            "role_id": str(role.id),
+            "module": "membres",
+            "niveau_acces": NiveauAcces.LECTURE_ECRITURE,
+        },
     )
     assert resp.status_code == 200
     assert RoleModulePermission.objects.get(role=role, module="membres").niveau_acces == (
@@ -216,7 +225,11 @@ def test_matrix_set_module_inconnu_refuse(api_client):
 
     resp = _auth(api_client, admin).post(
         reverse(MATRIX_SET_URL),
-        {"role_id": str(role.id), "module": "module-inexistant", "niveau_acces": NiveauAcces.LECTURE},
+        {
+            "role_id": str(role.id),
+            "module": "module-inexistant",
+            "niveau_acces": NiveauAcces.LECTURE,
+        },
     )
     assert resp.status_code == 400
 
@@ -252,7 +265,9 @@ def test_visibilite_membre_get_defaut_tout_visible(api_client):
 
 def test_visibilite_membre_set_masque_un_module(api_client):
     admin = _super_admin()
-    resp = _auth(api_client, admin).post(reverse(VISIBILITE_SET_URL), {"module": "vote", "visible": False})
+    resp = _auth(api_client, admin).post(
+        reverse(VISIBILITE_SET_URL), {"module": "vote", "visible": False}
+    )
     assert resp.status_code == 200
     assert ModuleVisibiliteMembre.objects.get(module="vote").visible is False
     assert AuditLogEntry.objects.filter(action="rbac_module_visibilite_set").exists()
@@ -303,7 +318,7 @@ def test_user_roles_post_attribue_plusieurs_roles(api_client):
 
 
 def test_user_roles_post_force_toujours_le_plancher_membre(api_client):
-    """"Ein neuer Benutzer erhält [...] die Rolle Normales Mitglieder" — et cette rôle ne doit
+    """ "Ein neuer Benutzer erhält [...] die Rolle Normales Mitglieder" — et cette rôle ne doit
     jamais pouvoir être retirée via cette API, même en l'omettant explicitement du payload."""
     admin = _super_admin()
     cible = UserFactory(role=Role.MEMBRE)
@@ -353,7 +368,9 @@ def test_user_roles_post_role_primaire_redescend_a_membre_si_role_eleve_retire(a
     cible.refresh_from_db()
     assert cible.role == Role.RH
 
-    resp = _auth(api_client, admin).post(_user_roles_url(cible), {"role_ids": [str(role_membre.id)]})
+    resp = _auth(api_client, admin).post(
+        _user_roles_url(cible), {"role_ids": [str(role_membre.id)]}
+    )
     assert resp.status_code == 200
     cible.refresh_from_db()
     assert cible.role == Role.MEMBRE
@@ -433,12 +450,16 @@ def test_matrix_set_refuse_de_modifier_une_cellule_super_admin_sur_une_page_admi
 
     resp = _auth(api_client, admin).post(
         reverse(MATRIX_SET_URL),
-        {"role_id": str(role_super_admin.id), "module": "page_quiz", "niveau_acces": NiveauAcces.AUCUN},
+        {
+            "role_id": str(role_super_admin.id),
+            "module": "page_quiz",
+            "niveau_acces": NiveauAcces.AUCUN,
+        },
     )
     assert resp.status_code == 400
-    assert RoleModulePermission.objects.get(role=role_super_admin, module="page_quiz").niveau_acces == (
-        NiveauAcces.LECTURE_ECRITURE
-    )
+    assert RoleModulePermission.objects.get(
+        role=role_super_admin, module="page_quiz"
+    ).niveau_acces == (NiveauAcces.LECTURE_ECRITURE)
 
 
 def test_matrix_set_autorise_de_modifier_une_cellule_bureau_admin_sur_une_page_admin(api_client):
@@ -456,6 +477,6 @@ def test_matrix_set_autorise_de_modifier_une_cellule_bureau_admin_sur_une_page_a
         },
     )
     assert resp.status_code == 200
-    assert RoleModulePermission.objects.get(role=role_bureau_admin, module="page_quiz").niveau_acces == (
-        NiveauAcces.AUCUN
-    )
+    assert RoleModulePermission.objects.get(
+        role=role_bureau_admin, module="page_quiz"
+    ).niveau_acces == (NiveauAcces.AUCUN)

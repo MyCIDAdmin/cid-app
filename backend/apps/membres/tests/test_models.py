@@ -81,8 +81,14 @@ def test_cin_et_passeport_sont_chiffres_en_base():
     passeport_en_clair = "TN1234567"
     membre = MembreFactory(cin=cin_en_clair, passeport=passeport_en_clair)
 
+    # Un UUIDField est stocké sous forme native (avec tirets) sur les backends qui le
+    # supportent (PostgreSQL — la réalité de production) mais sous forme hexadécimale sans
+    # tirets sur les autres (SQLite — utilisé en CI pour la rapidité, voir ci.yml) : voir
+    # Field.get_db_prep_value dans Django. La requête SQL brute doit donc utiliser la même
+    # représentation que celle réellement stockée, sans quoi elle ne trouve aucune ligne.
+    id_brut = str(membre.id) if connection.features.has_native_uuid_field else membre.id.hex
     with connection.cursor() as cursor:
-        cursor.execute("SELECT cin, passeport FROM membres WHERE id = %s", [str(membre.id)])
+        cursor.execute("SELECT cin, passeport FROM membres WHERE id = %s", [id_brut])
         cin_brut, passeport_brut = cursor.fetchone()
 
     assert cin_brut != cin_en_clair

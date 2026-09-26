@@ -12,10 +12,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.membres.imports_historique import (
-    ImportHistoriqueSchemaError,
-    importer_historique_statuts,
-)
+from apps.membres.imports_historique import ImportHistoriqueSchemaError, importer_historique_statuts
 from apps.membres.models import HistoriqueStatutMembre, RaisonChangementStatut, StatutMembre
 from apps.membres.tests.factories import MembreFactory
 

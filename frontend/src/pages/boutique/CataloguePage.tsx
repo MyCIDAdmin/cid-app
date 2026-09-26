@@ -107,7 +107,7 @@ function ProduitCarteBonAchat({
   }
 
   return (
-    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
+    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-card-gradient shadow-card">
       <div className="relative flex h-32 items-center justify-center bg-cal">
         <div className="absolute bottom-2 right-2 rounded-full bg-bg-primary/80 backdrop-blur-sm">
           <ShareButton path={`/boutique?produit=${produit.id}`} titre={produit.nom} />
@@ -210,7 +210,7 @@ function ProduitCarte({
   }
 
   return (
-    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
+    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-card-gradient shadow-card">
       <div className="relative flex h-32 items-center justify-center bg-cal">
         {produit.nouveaute && (
           <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-ca">
@@ -284,13 +284,19 @@ function ProduitCarte({
             ))}
           </div>
         )}
-        <div className="mt-1.5 text-[10px] text-text-tertiary">
-          {produit.en_rupture
-            ? t("catalogue.rupture")
-            : produit.stock_faible
-              ? t("catalogue.stock_faible", { stock: produit.stock_total })
-              : t("catalogue.en_stock", { stock: produit.stock_total })}
-        </div>
+        {produit.en_rupture ? (
+          <span className="mt-1.5 inline-block rounded-full bg-status-dangerBg px-2 py-0.5 text-[10px] font-medium text-status-dangerText">
+            {t("catalogue.rupture")}
+          </span>
+        ) : produit.stock_faible ? (
+          <span className="mt-1.5 inline-block rounded-full bg-status-warningBg px-2 py-0.5 text-[10px] font-medium text-status-warningText">
+            {t("catalogue.stock_faible", { stock: produit.stock_total })}
+          </span>
+        ) : (
+          <div className="mt-1.5 text-[10px] text-text-tertiary">
+            {t("catalogue.en_stock", { stock: produit.stock_total })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -345,7 +351,7 @@ export default function CataloguePage() {
       )}
 
       {produitsQuery.data && produitsQuery.data.results.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
           {produitsQuery.data.results.map((produit) =>
             produit.type_produit === "bon_achat" ? (
               <ProduitCarteBonAchat

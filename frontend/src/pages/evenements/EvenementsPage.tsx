@@ -29,6 +29,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import AnimatedProgress from "../../components/ui/AnimatedProgress";
 import ShareButton from "../../components/ui/ShareButton";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import {
@@ -298,7 +299,7 @@ function EvenementCarte({
   const complet = evenement.places_restantes !== null && evenement.places_restantes <= 0;
 
   return (
-    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm">
+    <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-card-gradient shadow-card">
       <div className="flex items-center justify-between bg-ca px-3 py-2 text-white">
         <span className="text-sm font-bold">{evenement.titre}</span>
         <div className="flex items-center gap-1.5">
@@ -334,9 +335,9 @@ function EvenementCarte({
             <div className="mb-0.5 text-[10px] text-text-tertiary">
               {t("remplissage", { pct: remplissage })}
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-bg-secondary">
-              <div className="h-full bg-ca" style={{ width: `${remplissage}%` }} />
-            </div>
+            {/* AnimatedProgress reprise de MyCID (merge de design 2026-09-25, voir ProjetCard) —
+                même animation d'entrée dans le viewport que la barre de collecte des projets. */}
+            <AnimatedProgress value={remplissage} />
           </div>
         )}
 
@@ -433,7 +434,7 @@ export default function EvenementsPage() {
               {onglet === "avenir" ? t("aucun_evenement") : t("aucun_evenement_passe")}
             </p>
           )}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
             {(onglet === "avenir" ? avenirQuery : passesQuery).data?.results.map((evenement) => (
               <EvenementCarte
                 key={evenement.id}
@@ -473,13 +474,13 @@ export default function EvenementsPage() {
                     : formatMontant(inscription.montant_paye)}
                   {" · "}
                   <span
-                    className={
+                    className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
                       inscription.statut === "confirmee"
-                        ? "font-medium text-status-successText"
+                        ? "bg-status-successBg text-status-successText"
                         : inscription.statut === "en_attente_paiement"
-                          ? "font-medium text-status-warningText"
-                          : "font-medium text-text-tertiary"
-                    }
+                          ? "bg-status-warningBg text-status-warningText"
+                          : "bg-bg-tertiary text-text-tertiary"
+                    }`}
                   >
                     {t(`inscription_statut_${inscription.statut}`)}
                   </span>

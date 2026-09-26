@@ -352,18 +352,41 @@ export default function FilPage() {
           rows={3}
           className="w-full resize-none rounded-cid border border-text-tertiary/30 p-2 text-sm"
         />
-        <div className="mt-2 flex items-center justify-between">
-          <input
-            type="file"
-            accept="image/*,application/pdf"
-            aria-label={t("fil.joindre_fichier")}
-            onChange={(e) => setFichier(e.target.files?.[0])}
-            className="text-xs text-text-tertiary"
-          />
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {/* Le <input type="file"> natif affiche le libellé de son bouton dans la langue du
+                NAVIGATEUR (ex. "Datei auswählen" avec un navigateur en allemand), indépendamment
+                de la langue choisie dans l'app — ce n'est pas une chaîne i18n qu'on peut traduire
+                côté React (voir rapport de comparaison MyCID, 2026-09-25, section "Nebenbei
+                bemerkt"). On masque donc l'input natif (sr-only, toujours focusable/actionnable
+                au clavier) et on déclenche l'ouverture du sélecteur via un <label> stylé qui, lui,
+                porte notre propre texte traduit. */}
+            <label
+              htmlFor="fil-fichier-input"
+              className="flex-none cursor-pointer whitespace-nowrap rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
+            >
+              {t("fil.joindre_fichier")}
+            </label>
+            <input
+              id="fil-fichier-input"
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => setFichier(e.target.files?.[0])}
+              className="sr-only"
+            />
+            {fichier && (
+              <span
+                className="min-w-0 truncate text-xs text-text-tertiary"
+                title={fichier.name}
+              >
+                {fichier.name}
+              </span>
+            )}
+          </div>
           <button
             type="submit"
             disabled={creer.isPending}
-            className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
+            className="flex-none rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
           >
             {t("fil.publier")}
           </button>

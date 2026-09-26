@@ -127,7 +127,9 @@ class RoleModulePermission(models.Model):
         verbose_name = _("Permission de module")
         verbose_name_plural = _("Permissions de module")
         constraints = [
-            models.UniqueConstraint(fields=["role", "module"], name="une_seule_cellule_par_role_module")
+            models.UniqueConstraint(
+                fields=["role", "module"], name="une_seule_cellule_par_role_module"
+            )
         ]
 
     def __str__(self):

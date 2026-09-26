@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from .models import ModuleVisibiliteMembre, NiveauAcces, RoleDefinition, RoleModulePermission
+from .models import NiveauAcces, RoleDefinition
 from .registry import ALL_MODULES, MODULES
 
 
@@ -31,8 +31,15 @@ class RoleDefinitionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoleDefinition
         fields = [
-            "id", "slug", "nom", "description", "is_system", "ordre", "actif",
-            "created_at", "updated_at",
+            "id",
+            "slug",
+            "nom",
+            "description",
+            "is_system",
+            "ordre",
+            "actif",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = ["id", "is_system", "created_at", "updated_at"]
 
@@ -96,5 +103,7 @@ class UserRolesAssignSerializer(serializers.Serializer):
         )
         manquants = set(value) - trouves
         if manquants:
-            raise serializers.ValidationError(f"Rôle(s) introuvable(s) ou inactif(s) : {manquants}.")
+            raise serializers.ValidationError(
+                f"Rôle(s) introuvable(s) ou inactif(s) : {manquants}."
+            )
         return value

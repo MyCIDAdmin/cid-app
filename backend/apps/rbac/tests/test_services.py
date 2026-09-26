@@ -5,7 +5,6 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 
 from apps.accounts.models import Role
-
 from apps.rbac.models import NiveauAcces
 from apps.rbac.services import (
     get_admin_page_niveau,
@@ -14,7 +13,12 @@ from apps.rbac.services import (
     is_elevated_for_module,
     user_has_module_access,
 )
-from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserFactory, UserRoleAssignmentFactory
+from apps.rbac.tests.factories import (
+    RoleDefinitionFactory,
+    RoleModulePermissionFactory,
+    UserFactory,
+    UserRoleAssignmentFactory,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -70,7 +74,9 @@ def test_user_has_module_access_semantique_union_le_plus_permissif_gagne():
     user = UserFactory(role=Role.MEMBRE)
     role_lecture = RoleDefinitionFactory(slug="lecteur")
     role_ecriture = RoleDefinitionFactory(slug="editeur")
-    RoleModulePermissionFactory(role=role_lecture, module="projets", niveau_acces=NiveauAcces.LECTURE)
+    RoleModulePermissionFactory(
+        role=role_lecture, module="projets", niveau_acces=NiveauAcces.LECTURE
+    )
     RoleModulePermissionFactory(
         role=role_ecriture, module="projets", niveau_acces=NiveauAcces.LECTURE_ECRITURE
     )
@@ -84,7 +90,9 @@ def test_user_has_module_access_semantique_union_le_plus_permissif_gagne():
 def test_user_has_module_access_lecture_seule_insuffisante_pour_ecriture():
     user = UserFactory(role=Role.MEMBRE)
     role_lecture = RoleDefinitionFactory(slug="lecteur-seul")
-    RoleModulePermissionFactory(role=role_lecture, module="projets", niveau_acces=NiveauAcces.LECTURE)
+    RoleModulePermissionFactory(
+        role=role_lecture, module="projets", niveau_acces=NiveauAcces.LECTURE
+    )
     UserRoleAssignmentFactory(user=user, role=role_lecture)
 
     assert user_has_module_access(user, "projets", NiveauAcces.LECTURE) is True
@@ -152,7 +160,9 @@ def test_is_elevated_for_module_vrai_pour_un_role_systeme_avec_un_role_additionn
     lui donne un accès sur le module — seul son propre rôle système actuel est exclu."""
     user = UserFactory(role=Role.RH)
     role_perso = RoleDefinitionFactory(slug="vertrieb-plus-rh")
-    RoleModulePermissionFactory(role=role_perso, module="boutique", niveau_acces=NiveauAcces.LECTURE)
+    RoleModulePermissionFactory(
+        role=role_perso, module="boutique", niveau_acces=NiveauAcces.LECTURE
+    )
     UserRoleAssignmentFactory(user=user, role=role_perso)
 
     assert is_elevated_for_module(user, "boutique") is True
@@ -256,14 +266,10 @@ def test_has_admin_page_access_lecture_seule_insuffisante_pour_lecture_ecriture_
     _set_matrice_cellule(role_dir_financier, "page_quiz", NiveauAcces.LECTURE)
 
     assert has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE) is True
-    assert (
-        has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE) is False
-    )
+    assert has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE) is False
 
     _set_matrice_cellule(role_dir_financier, "page_quiz", NiveauAcces.LECTURE_ECRITURE)
-    assert (
-        has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE) is True
-    )
+    assert has_admin_page_access(user, "page_quiz", required=NiveauAcces.LECTURE_ECRITURE) is True
 
 
 def test_has_admin_page_access_role_additionnel_personnalise_peut_octroyer_lacces():

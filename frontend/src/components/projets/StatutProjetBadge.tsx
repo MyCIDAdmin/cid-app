@@ -16,7 +16,11 @@ export default function StatutProjetBadge({ statut }: { statut: StatutProjet }) 
   const { t } = useTranslation("projets");
   return (
     <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STYLES[statut]}`}
+      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STYLES[statut]} ${
+        // Pulsation reprise de MyCID (merge de design 2026-09-25) — signale visuellement un
+        // projet actif ; uniquement pour ce statut, jamais préparation/terminé/annulé.
+        statut === "en_cours" ? "animate-badge-pulse" : ""
+      }`}
     >
       {t(`statut.${statut}`)}
     </span>

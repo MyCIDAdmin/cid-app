@@ -96,12 +96,8 @@ def test_enforce_single_session_per_device_revoque_uniquement_le_meme_appareil()
     count = services.enforce_single_session_per_device(user, "fp-a")
 
     assert count == 1
-    assert BlacklistedToken.objects.filter(
-        token__jti=refresh_meme_appareil["jti"]
-    ).exists()
-    assert not BlacklistedToken.objects.filter(
-        token__jti=refresh_autre_appareil["jti"]
-    ).exists()
+    assert BlacklistedToken.objects.filter(token__jti=refresh_meme_appareil["jti"]).exists()
+    assert not BlacklistedToken.objects.filter(token__jti=refresh_autre_appareil["jti"]).exists()
 
 
 def test_enforce_single_session_per_device_sans_empreinte_ne_revoque_rien():

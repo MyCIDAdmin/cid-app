@@ -661,7 +661,7 @@ def test_changer_role_utilisateur_introuvable_echoue(api_client, super_admin_use
 
 
 def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
-    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+    from apps.rbac.models import RoleDefinition, RoleModulePermission
 
     role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
     RoleModulePermission.objects.update_or_create(
@@ -669,7 +669,9 @@ def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
     )
 
 
-def test_phase_d_rh_perd_lacces_aux_inscriptions_si_matrice_le_dit(api_client, rh_user, inscription_en_attente):
+def test_phase_d_rh_perd_lacces_aux_inscriptions_si_matrice_le_dit(
+    api_client, rh_user, inscription_en_attente
+):
     from apps.rbac.models import NiveauAcces
 
     _set_matrice_cellule("rh", "page_inscriptions", NiveauAcces.AUCUN)
@@ -682,7 +684,11 @@ def test_phase_d_role_personnalise_peut_valider_les_inscriptions_via_la_matrice(
     api_client, inscription_en_attente
 ):
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     user = User.objects.create_user(
         email="phased-inscriptions-grant@example.com", password="Password123!", is_active=True
@@ -755,9 +761,7 @@ def test_rh_avec_lecture_seule_peut_lister_mais_pas_approuver_ni_refuser(
     emails = [row["email"] for row in resp_list.data["results"]]
     assert inscription_en_attente.email in emails
 
-    url_approve = reverse(
-        "accounts:pending-registration-approve", args=[inscription_en_attente.id]
-    )
+    url_approve = reverse("accounts:pending-registration-approve", args=[inscription_en_attente.id])
     resp_approve = api_client.post(url_approve)
     assert resp_approve.status_code == 403
 

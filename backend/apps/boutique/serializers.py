@@ -59,9 +59,7 @@ class RegleReductionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # merge avec l'instance existante pour un update partiel (PATCH ne renvoie pas
         # forcément type_reduction si seul `actif` change, par ex.).
-        type_reduction = attrs.get(
-            "type_reduction", getattr(self.instance, "type_reduction", None)
-        )
+        type_reduction = attrs.get("type_reduction", getattr(self.instance, "type_reduction", None))
         pourcentage = attrs.get("pourcentage", getattr(self.instance, "pourcentage", None))
         if type_reduction == TypeReduction.POURCENTAGE and not pourcentage:
             raise serializers.ValidationError(
@@ -405,7 +403,12 @@ class VendreEspecesCommandeSerializer(serializers.Serializer):
         if est_bon_achat:
             if montant is None:
                 raise serializers.ValidationError(
-                    {"montant": f"Un montant est requis pour le bon d'achat « {variante.produit.nom} »."}
+                    {
+                        "montant": (
+                            "Un montant est requis pour le bon d'achat "
+                            f"« {variante.produit.nom} »."
+                        )
+                    }
                 )
             if montant < bon_achat_montant_min() or montant > bon_achat_montant_max():
                 raise serializers.ValidationError(
