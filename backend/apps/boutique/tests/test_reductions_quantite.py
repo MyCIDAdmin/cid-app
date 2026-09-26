@@ -67,7 +67,9 @@ def test_list_regles_non_authentifie_refuse(api_client):
 
 def test_membre_normal_voit_les_regles_actives_dun_produit_publie(api_client):
     produit = ProduitFactory()
-    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT
+    )
     RegleReductionFactory(
         produit=produit, seuil_quantite=8, type_reduction=TypeReduction.ARTICLE_OFFERT, actif=False
     )
@@ -173,7 +175,9 @@ def test_rh_ne_peut_pas_modifier_une_regle(api_client):
 def test_passer_commande_article_offert_deduit_le_prix_de_larticle_gratuit(api_client):
     produit = ProduitFactory(prix=Decimal("20.00"))
     variante = VarianteProduitFactory(produit=produit, stock=20)
-    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT
+    )
     user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
     _auth(api_client, user)
 
@@ -214,7 +218,9 @@ def test_passer_commande_pourcentage_sappplique_sur_toute_la_ligne(api_client):
 def test_passer_commande_sous_le_seuil_naucune_reduction(api_client):
     produit = ProduitFactory(prix=Decimal("10.00"))
     variante = VarianteProduitFactory(produit=produit, stock=20)
-    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT
+    )
     user, membre = _user_avec_membre(Role.MEMBRE, "a@example.de")
     _auth(api_client, user)
 
@@ -251,7 +257,9 @@ def test_passer_commande_regle_inactive_ignoree(api_client):
 def test_vendre_especes_applique_aussi_la_reduction_quantite(api_client):
     produit = ProduitFactory(prix=Decimal("20.00"))
     variante = VarianteProduitFactory(produit=produit, stock=20)
-    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT
+    )
     df_user, _df_membre = _user_avec_membre(Role.DIR_FINANCIER, "df@example.de")
     _client_user, client_membre = _user_avec_membre(Role.MEMBRE, "client@example.de")
     _auth(api_client, df_user)

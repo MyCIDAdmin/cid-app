@@ -21,7 +21,11 @@ import stripe
 from django.urls import reverse
 
 from apps.boutique.models import BonAchat, Commande, ModePaiementCommande, StatutCommande
-from apps.boutique.tests.factories import CommandeFactory, LigneCommandeFactory, ProduitBonAchatFactory
+from apps.boutique.tests.factories import (
+    CommandeFactory,
+    LigneCommandeFactory,
+    ProduitBonAchatFactory,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -299,9 +303,7 @@ def test_stripe_rejeu_idempotent_ne_duplique_pas_les_bons_achat(client):
     _ligne_bon_achat(commande, montant=Decimal("50.00"), quantite=1)
     event = {
         "type": "checkout.session.completed",
-        "data": {
-            "object": {"client_reference_id": str(commande.id), "payment_intent": "pi_bon_2"}
-        },
+        "data": {"object": {"client_reference_id": str(commande.id), "payment_intent": "pi_bon_2"}},
     }
 
     with patch("apps.boutique.views.notifier_bon_achat_actif") as mock_notifier:

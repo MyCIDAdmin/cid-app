@@ -64,7 +64,6 @@ export function useCountUp(cible: number | undefined | null): number | undefined
     return () => {
       if (frameRef.current != null) cancelAnimationFrame(frameRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cible]);
 
   return valeurAffichee;

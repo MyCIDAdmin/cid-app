@@ -85,7 +85,8 @@ def is_elevated_for_module(user, module: str) -> bool:
     if not autres_roles:
         return False
     return any(
-        _NIVEAUX_ORDONNES[_niveau_acces_pour(slug, module)] >= _NIVEAUX_ORDONNES[NiveauAcces.LECTURE]
+        _NIVEAUX_ORDONNES[_niveau_acces_pour(slug, module)]
+        >= _NIVEAUX_ORDONNES[NiveauAcces.LECTURE]
         for slug in autres_roles
     )
 
@@ -115,9 +116,7 @@ def get_admin_page_niveau(user, page_slug: str) -> str:
     return NiveauAcces.AUCUN  # pragma: no cover — inatteignable, _NIVEAUX_ORDONNES est exhaustif
 
 
-def has_admin_page_access(
-    user, page_slug: str, required: str = NiveauAcces.LECTURE
-) -> bool:
+def has_admin_page_access(user, page_slug: str, required: str = NiveauAcces.LECTURE) -> bool:
     """Porte d'accès pour les 13 pages de gestion (Phase D, ajoutée le 2026-09-23, voir
     registry.PAGES_ADMIN) — DÉLIBÉRÉMENT différente de is_elevated_for_module : ici la matrice
     doit faire autorité pour le rôle système ACTUEL de l'utilisateur, pas seulement pour un rôle

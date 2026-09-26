@@ -114,13 +114,17 @@ def test_calculer_reduction_quantite_sans_regle_active():
 
 def test_calculer_reduction_quantite_article_offert_sous_le_seuil():
     produit = ProduitFactory()
-    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT
+    )
     assert calculer_reduction_quantite(produit, 4).quantite_offerte == 0
 
 
 def test_calculer_reduction_quantite_article_offert_division_entiere():
     produit = ProduitFactory()
-    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT
+    )
     # 12 // 5 = 2 articles offerts
     assert calculer_reduction_quantite(produit, 12).quantite_offerte == 2
 
@@ -152,7 +156,9 @@ def test_calculer_reduction_quantite_retient_le_seuil_le_plus_eleve_atteint():
 
 def test_calculer_reduction_quantite_cumule_les_deux_types_independamment():
     produit = ProduitFactory()
-    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT
+    )
     RegleReductionFactory(
         produit=produit, seuil_quantite=10, type_reduction=TypeReduction.POURCENTAGE, pourcentage=10
     )
@@ -171,7 +177,9 @@ def test_calculer_reduction_quantite_ignore_les_regles_inactives():
 
 def test_un_seul_palier_par_seuil_et_produit():
     produit = ProduitFactory()
-    RegleReductionFactory(produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT)
+    RegleReductionFactory(
+        produit=produit, seuil_quantite=5, type_reduction=TypeReduction.ARTICLE_OFFERT
+    )
     with pytest.raises(IntegrityError):
         with transaction.atomic():
             RegleReductionFactory(

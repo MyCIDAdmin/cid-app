@@ -215,10 +215,7 @@ class Produit(models.Model):
         pour ce type — un Bureau Admin+ n'a jamais à y penser en créant un produit bon_achat."""
         creation = self._state.adding
         super().save(*args, **kwargs)
-        if (
-            self.type_produit == TypeProduit.BON_ACHAT
-            and (creation or not self.variantes.exists())
-        ):
+        if self.type_produit == TypeProduit.BON_ACHAT and (creation or not self.variantes.exists()):
             VarianteProduit.objects.get_or_create(
                 produit=self,
                 taille="",
@@ -300,7 +297,9 @@ class RegleReduction(models.Model):
     produit = models.ForeignKey(Produit, on_delete=models.CASCADE, related_name="regles_reduction")
     seuil_quantite = models.PositiveIntegerField(
         validators=[MinValueValidator(2)],
-        help_text=_("Quantité du même produit à atteindre dans la commande pour déclencher la règle."),
+        help_text=_(
+            "Quantité du même produit à atteindre dans la commande pour déclencher la règle."
+        ),
     )
     type_reduction = models.CharField(max_length=20, choices=TypeReduction.choices)
     pourcentage = models.PositiveSmallIntegerField(
@@ -691,7 +690,10 @@ class Retour(models.Model):
         indexes = [models.Index(fields=["commande"])]
 
     def __str__(self):
-        return f"Retoure {self.quantite} × {self.ligne_commande.variante} ({self.commande.numero_commande})"
+        return (
+            f"Retoure {self.quantite} × {self.ligne_commande.variante} "
+            f"({self.commande.numero_commande})"
+        )
 
 
 class StatutBonAchat(models.TextChoices):
@@ -727,7 +729,10 @@ class BonAchat(models.Model):
     montant_initial = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        validators=[MinValueValidator(bon_achat_montant_min()), MaxValueValidator(bon_achat_montant_max())],
+        validators=[
+            MinValueValidator(bon_achat_montant_min()),
+            MaxValueValidator(bon_achat_montant_max()),
+        ],
     )
     solde = models.DecimalField(
         max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
@@ -748,7 +753,9 @@ class BonAchat(models.Model):
 
     # --- Paiement — même principe que les champs homonymes sur Commande (confirmation manuelle
     # OU automatique via webhook PSP, voir apps.boutique.webhooks/CommandeViewSet) ---
-    mode_paiement = models.CharField(max_length=20, choices=ModePaiementCommande.choices, blank=True)
+    mode_paiement = models.CharField(
+        max_length=20, choices=ModePaiementCommande.choices, blank=True
+    )
     date_paiement_confirme = models.DateTimeField(null=True, blank=True)
     paiement_confirme_par = models.ForeignKey(
         "membres.Membre",
@@ -756,16 +763,20 @@ class BonAchat(models.Model):
         null=True,
         blank=True,
         related_name="bons_achat_paiement_confirme",
-        help_text=_("Directeur Financier/Admin ayant confirmé un paiement manuel — vide pour un "
-                    "paiement en ligne confirmé automatiquement par webhook PSP."),
+        help_text=_(
+            "Directeur Financier/Admin ayant confirmé un paiement manuel — vide pour un "
+            "paiement en ligne confirmé automatiquement par webhook PSP."
+        ),
     )
     reference_paiement = models.CharField(max_length=64, blank=True)
 
     date_expiration = models.DateTimeField(
         null=True,
         blank=True,
-        help_text=_("Renseignée à l'activation (statut=ACTIF) = date_paiement_confirme + "
-                    "DUREE_VALIDITE_BON_ACHAT."),
+        help_text=_(
+            "Renseignée à l'activation (statut=ACTIF) = date_paiement_confirme + "
+            "DUREE_VALIDITE_BON_ACHAT."
+        ),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

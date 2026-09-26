@@ -10,11 +10,7 @@ les tâches d'email (apps.membres.tasks) tenterait de publier sur le broker Cele
 import pytest
 
 from apps.accounts.models import User
-from apps.membres.models import (
-    HistoriqueStatutMembre,
-    RaisonChangementStatut,
-    StatutMembre,
-)
+from apps.membres.models import HistoriqueStatutMembre, RaisonChangementStatut, StatutMembre
 from apps.membres.services import enregistrer_statut_annuel
 from apps.membres.tests.factories import MembreFactory
 from apps.notifications.models import Notification, TypeNotification

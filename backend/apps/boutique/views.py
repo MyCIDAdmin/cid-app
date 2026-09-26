@@ -144,7 +144,6 @@ from .pdf import generate_confirmation_pdf, generate_facture_pdf
 from .permissions import (
     GESTION_CATALOGUE_MIN_LEVEL,
     ORDER_VISIBILITY_MIN_LEVEL,
-    PAIEMENT_EXPEDITION_MIN_LEVEL,
     BonAchatPermission,
     CatalogueBoutiquePermission,
     CommandePermission,
@@ -261,7 +260,9 @@ def _restituer_stock(commande):
         .select_related("variante", "variante__produit")
         .order_by("variante_id")
     )
-    lignes = [l for l in lignes if l.variante.produit.type_produit != TypeProduit.BON_ACHAT]
+    lignes = [
+        ligne for ligne in lignes if ligne.variante.produit.type_produit != TypeProduit.BON_ACHAT
+    ]
     if not lignes:
         return
     variante_ids = sorted({ligne.variante_id for ligne in lignes})
@@ -474,10 +475,17 @@ class CommandeViewSet(ModelViewSet):
                 try:
                     bon = BonAchat.objects.select_for_update().get(code__iexact=code_bon_achat)
                 except BonAchat.DoesNotExist as exc:
-                    raise ValidationError({"code_bon_achat": "Code de bon d'achat invalide."}) from exc
+                    raise ValidationError(
+                        {"code_bon_achat": "Code de bon d'achat invalide."}
+                    ) from exc
                 if not bon.utilisable:
                     raise ValidationError(
-                        {"code_bon_achat": "Ce bon d'achat n'est plus utilisable (expiré, épuisé ou paiement non confirmé)."}
+                        {
+                            "code_bon_achat": (
+                                "Ce bon d'achat n'est plus utilisable (expiré, épuisé ou "
+                                "paiement non confirmé)."
+                            )
+                        }
                     )
                 montant_applique = min(bon.solde, montant_total)
                 bon.solde -= montant_applique
@@ -682,7 +690,12 @@ class CommandeViewSet(ModelViewSet):
             # la validation du serializer pour ne jamais masquer une erreur de saisie (ex.
             # `passerelle` invalide) derrière ce cas limite.
             raise ValidationError(
-                {"statut": "Cette commande n'a rien à régler en ligne (déjà couverte par un bon d'achat)."}
+                {
+                    "statut": (
+                        "Cette commande n'a rien à régler en ligne (déjà couverte par un "
+                        "bon d'achat)."
+                    )
+                }
             )
 
         success_url = f"{settings.FRONTEND_URL}/boutique/commande/retour?commande={commande.id}"

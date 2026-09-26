@@ -36,8 +36,21 @@ from apps.accounts.permissions import IsSuperAdmin
 
 from . import services as rbac_services
 from .exceptions import Conflict
-from .models import ModuleVisibiliteMembre, NiveauAcces, RoleDefinition, RoleModulePermission, UserRoleAssignment
-from .registry import ALL_MODULE_LABELS, ALL_MODULES, MODULE_LABELS, MODULES, PAGES_ADMIN, categorie_module
+from .models import (
+    ModuleVisibiliteMembre,
+    NiveauAcces,
+    RoleDefinition,
+    RoleModulePermission,
+    UserRoleAssignment,
+)
+from .registry import (
+    ALL_MODULE_LABELS,
+    ALL_MODULES,
+    MODULE_LABELS,
+    MODULES,
+    PAGES_ADMIN,
+    categorie_module,
+)
 from .serializers import (
     ModuleVisibiliteSetSerializer,
     RoleDefinitionSerializer,
@@ -130,8 +143,7 @@ def _matrice_completee() -> list[dict]:
     """Toutes les cellules (rôle actif × module) avec valeur par défaut "aucun" pour les couples
     sans ligne en base — voir docstring de RoleModulePermission."""
     existantes = {
-        (str(p.role_id), p.module): p.niveau_acces
-        for p in RoleModulePermission.objects.all()
+        (str(p.role_id), p.module): p.niveau_acces for p in RoleModulePermission.objects.all()
     }
     cellules = []
     for role in RoleDefinition.objects.all():
@@ -205,9 +217,7 @@ class ModuleVisibiliteView(APIView):
 
     def get(self, request):
         existantes = {v.module: v.visible for v in ModuleVisibiliteMembre.objects.all()}
-        return Response(
-            [{"module": m, "visible": existantes.get(m, True)} for m in MODULES]
-        )
+        return Response([{"module": m, "visible": existantes.get(m, True)} for m in MODULES])
 
 
 class ModuleVisibiliteSetView(APIView):
@@ -272,9 +282,7 @@ class UserRolesView(APIView):
         if role_membre and role_membre.id not in nouveaux_ids:
             nouveaux_ids.add(role_membre.id)
 
-        anciens_ids = set(
-            target.role_assignments.values_list("role_id", flat=True)
-        )
+        anciens_ids = set(target.role_assignments.values_list("role_id", flat=True))
         ancien_role_primaire = target.role
 
         with transaction.atomic():

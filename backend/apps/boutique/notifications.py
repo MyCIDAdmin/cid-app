@@ -75,7 +75,8 @@ def notifier_commande_annulee(commande: Commande) -> None:
         TypeNotification.BOUTIQUE_COMMANDE_ANNULEE,
         titre=f"Commande {commande.numero_commande} annulée",
         message=f"Votre commande {commande.numero_commande} a été annulée.",
-        lien=f"/boutique?onglet=commandes&commande={commande.id}",  # voir notifier_commande_confirmee
+        # voir notifier_commande_confirmee
+        lien=f"/boutique?onglet=commandes&commande={commande.id}",
     )
 
 
@@ -99,7 +100,8 @@ def notifier_commande_expediee(commande: Commande) -> None:
         TypeNotification.BOUTIQUE_COMMANDE_EXPEDIEE,
         titre=f"Commande {commande.numero_commande} expédiée",
         message=f"Votre commande vient d'être expédiée.{suivi}",
-        lien=f"/boutique?onglet=commandes&commande={commande.id}",  # voir notifier_commande_confirmee
+        # voir notifier_commande_confirmee
+        lien=f"/boutique?onglet=commandes&commande={commande.id}",
     )
 
 

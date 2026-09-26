@@ -419,7 +419,9 @@ def test_list_comme_role_personnalise_eleve_retourne_toutes_les_fiches(api_clien
     assert str(ma_fiche.id) in ids
 
 
-def test_list_comme_membre_sans_role_eleve_ne_voit_toujours_que_sa_propre_fiche(api_client, membre_user):
+def test_list_comme_membre_sans_role_eleve_ne_voit_toujours_que_sa_propre_fiche(
+    api_client, membre_user
+):
     """Régression explicite après le câblage Phase B : un rôle "membre" pur, sans aucune
     UserRoleAssignment supplémentaire, continue de ne voir que sa propre fiche — le
     comportement historique (SCD §2.3 A01) n'a pas bougé."""

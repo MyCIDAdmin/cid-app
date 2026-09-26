@@ -54,7 +54,9 @@ TRADUCTIONS = {
         "assoc_tagline": "Club Africain de Tunis — Supporters en Allemagne",
         "preheader": "Votre bon d'achat CID est prêt à l'emploi.",
         "titre": "Votre bon d'achat est prêt !",
-        "intro": "Merci pour votre achat — voici votre code, prêt à être utilisé dans la boutique CID.",
+        "intro": (
+            "Merci pour votre achat — voici votre code, prêt à être utilisé dans la boutique CID."
+        ),
         "montant_label": "Montant",
         "code_label": "Votre code",
         "expiration_label": "Valable jusqu'au",

@@ -285,7 +285,8 @@ class CotisationViewSet(ModelViewSet):
 
         # Même page de gestion "Ausstehende Zahlungen" que marquer_payee ci-dessus (Phase D,
         # slug `page_cotisations_attente`, voir le docstring d'action : "Bei 'Ausstehende
-        # Zahlungen'...") — remplace (et non complète) l'ancien seuil fixe SAISIE_POUR_AUTRUI_MIN_LEVEL.
+        # Zahlungen'...") — remplace (et non complète) l'ancien seuil fixe
+        # SAISIE_POUR_AUTRUI_MIN_LEVEL.
         if not has_admin_page_access(
             request.user, "page_cotisations_attente", required=NiveauAcces.LECTURE_ECRITURE
         ):

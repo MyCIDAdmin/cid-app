@@ -239,9 +239,9 @@ class SouscriptionViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL or is_elevated_for_module(
-            user, "adhesions"
-        ):
+        if ROLE_LEVELS.get(
+            user.role, 0
+        ) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL or is_elevated_for_module(user, "adhesions"):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(membre=membre) if membre else queryset.none()

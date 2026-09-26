@@ -286,9 +286,7 @@ class HistoriqueStatutMembre(models.Model):
     seuls les changements réels, à partir de maintenant, en déclenchent."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    membre = models.ForeignKey(
-        Membre, on_delete=models.CASCADE, related_name="historique_statuts"
-    )
+    membre = models.ForeignKey(Membre, on_delete=models.CASCADE, related_name="historique_statuts")
     annee = models.PositiveSmallIntegerField()
     statut = models.CharField(max_length=20, choices=StatutMembre.choices)
     raison = models.CharField(max_length=20, choices=RaisonChangementStatut.choices)

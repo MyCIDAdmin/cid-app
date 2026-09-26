@@ -102,7 +102,7 @@ ALL_MODULE_LABELS = {**MODULE_LABELS, **PAGE_ADMIN_LABELS}
 
 
 def categorie_module(module: str) -> str:
-    """"page_admin" pour une des 13 pages de gestion, "donnees" pour un module métier — exposé
+    """ "page_admin" pour une des 13 pages de gestion, "donnees" pour un module métier — exposé
     à la matrice (`GET /rbac/matrix/`) pour que le frontend sache quelles colonnes verrouiller
     pour l'Administrateur App, sans avoir à recopier la liste PAGES_ADMIN côté TypeScript."""
     return "page_admin" if module in PAGES_ADMIN else "donnees"

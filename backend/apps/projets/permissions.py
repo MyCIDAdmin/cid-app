@@ -73,9 +73,7 @@ class ProjetPermission(BasePermission):
         action = getattr(view, "action", None)
         if action == "contributeurs":
             return True
-        return has_admin_page_access(
-            user, "page_projets", required=NiveauAcces.LECTURE_ECRITURE
-        )
+        return has_admin_page_access(user, "page_projets", required=NiveauAcces.LECTURE_ECRITURE)
 
 
 class GestionContenuProjetPermission(BasePermission):

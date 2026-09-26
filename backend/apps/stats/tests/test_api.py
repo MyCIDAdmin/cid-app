@@ -238,7 +238,7 @@ def test_export_pdf_retourne_un_pdf(api_client):
 
 
 def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
-    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+    from apps.rbac.models import RoleDefinition, RoleModulePermission
 
     role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
     RoleModulePermission.objects.update_or_create(

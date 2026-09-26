@@ -54,7 +54,6 @@ export default function VotePage() {
     // On ne réinitialise jamais sessionAffichee à undefined ici : une session qui vient d'être
     // clôturée (donc disparue du filtre statut=ouverte) doit rester affichée avec ses résultats
     // pour l'utilisateur en train de la consulter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeQuery.data]);
 
   const sessionQuery = useVoteSession(sessionAffichee);
@@ -87,7 +86,6 @@ export default function VotePage() {
   // pouvait sembler figé indéfiniment si la connexion tardait ou échouait).
   useEffect(() => {
     if (socket.voteEnregistre || socket.erreur) setEnvoiEnCours(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket.voteEnregistre, socket.erreur]);
 
   const resultats = socket.resultats;

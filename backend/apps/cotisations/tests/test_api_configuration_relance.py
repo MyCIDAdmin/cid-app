@@ -162,7 +162,7 @@ def test_directeur_financier_peut_supprimer_une_echeance(api_client):
 
 
 def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
-    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+    from apps.rbac.models import RoleDefinition, RoleModulePermission
 
     role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
     RoleModulePermission.objects.update_or_create(
@@ -183,12 +183,18 @@ def test_phase_d_directeur_financier_perd_lacces_aux_relances_si_matrice_le_dit(
 
 def test_phase_d_role_personnalise_peut_gerer_les_relances_via_la_matrice(api_client):
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     user, _membre = _user_avec_membre(Role.MEMBRE, "phased-relances-grant@example.de")
     role_perso = RoleDefinitionFactory(slug="relances-manager")
     RoleModulePermissionFactory(
-        role=role_perso, module="page_cotisations_relances", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+        role=role_perso,
+        module="page_cotisations_relances",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
     )
     UserRoleAssignmentFactory(user=user, role=role_perso)
     _auth(api_client, user)

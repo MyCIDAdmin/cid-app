@@ -31,7 +31,9 @@ class ModuleAccessPermission(BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        requis = NiveauAcces.LECTURE if request.method in SAFE_METHODS else NiveauAcces.LECTURE_ECRITURE
+        requis = (
+            NiveauAcces.LECTURE if request.method in SAFE_METHODS else NiveauAcces.LECTURE_ECRITURE
+        )
         return services.user_has_module_access(user, self.module, requis)
 
 

@@ -311,7 +311,7 @@ def test_rh_liste_tous_les_justificatifs(api_client):
 
 
 def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
-    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+    from apps.rbac.models import RoleDefinition, RoleModulePermission
 
     role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
     RoleModulePermission.objects.update_or_create(
@@ -337,7 +337,11 @@ def test_phase_d_role_personnalise_peut_voir_la_file_via_la_matrice(api_client):
     scope de cette phase (voir plan, section "bewusst NICHT angefasst"), donc ce test porte sur
     la propre justificatif du user plutôt que sur "voit tout"."""
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     JustificatifRabaisFactory.create_batch(2)  # bruit : appartiennent à d'autres membres
     user, membre = _user_avec_membre(Role.MEMBRE, "phased-justificatifs-grant@example.de")

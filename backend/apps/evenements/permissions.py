@@ -54,9 +54,7 @@ class EvenementPermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in EVENEMENT_WRITE_ACTIONS:
-            return has_admin_page_access(
-                user, "page_events", required=NiveauAcces.LECTURE_ECRITURE
-            )
+            return has_admin_page_access(user, "page_events", required=NiveauAcces.LECTURE_ECRITURE)
         return True
 
 

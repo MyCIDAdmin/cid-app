@@ -328,7 +328,7 @@ def test_membre_ne_peut_pas_modifier_une_ligne_type_fixe(api_client):
 
 
 def _set_matrice_cellule(role_slug, module_slug, niveau_acces):
-    from apps.rbac.models import NiveauAcces, RoleDefinition, RoleModulePermission
+    from apps.rbac.models import RoleDefinition, RoleModulePermission
 
     role = RoleDefinition.objects.get(slug=role_slug, is_system=True)
     RoleModulePermission.objects.update_or_create(
@@ -344,7 +344,10 @@ def test_phase_d_super_admin_garde_lacces_au_catalogue_meme_si_matrice_dit_aucun
 
     _set_matrice_cellule("super_admin", "page_articles_cotisation", NiveauAcces.AUCUN)
     admin = User.objects.create_user(
-        email="phased-articles-super@example.de", password="Password123!", role=Role.SUPER_ADMIN, is_active=True
+        email="phased-articles-super@example.de",
+        password="Password123!",
+        role=Role.SUPER_ADMIN,
+        is_active=True,
     )
     _auth(api_client, admin)
 
@@ -425,12 +428,18 @@ def test_phase_d_bureau_admin_perd_lacces_au_catalogue_par_defaut(api_client):
 
 def test_phase_d_role_personnalise_peut_gerer_le_catalogue_via_la_matrice(api_client):
     from apps.rbac.models import NiveauAcces
-    from apps.rbac.tests.factories import RoleDefinitionFactory, RoleModulePermissionFactory, UserRoleAssignmentFactory
+    from apps.rbac.tests.factories import (
+        RoleDefinitionFactory,
+        RoleModulePermissionFactory,
+        UserRoleAssignmentFactory,
+    )
 
     user, _membre = _user_avec_membre(Role.MEMBRE, "phased-articles-grant@example.de")
     role_perso = RoleDefinitionFactory(slug="articles-manager")
     RoleModulePermissionFactory(
-        role=role_perso, module="page_articles_cotisation", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+        role=role_perso,
+        module="page_articles_cotisation",
+        niveau_acces=NiveauAcces.LECTURE_ECRITURE,
     )
     UserRoleAssignmentFactory(user=user, role=role_perso)
     _auth(api_client, user)

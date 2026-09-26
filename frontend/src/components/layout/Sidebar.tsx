@@ -112,12 +112,17 @@ export interface NavItem {
 }
 
 // Ordre d'affichage des groupes + libellé i18n de leur en-tête (nav_groupe.* dans common.json).
+// Constantes volontairement co-localisées avec le composant Sidebar (consommées aussi par
+// MobileNavDrawer) plutôt que déplacées dans un fichier séparé — react-refresh/only-export-
+// components ne dégrade que le Fast Refresh en dev, pas le comportement runtime.
+// eslint-disable-next-line react-refresh/only-export-components
 export const GROUP_ORDER: SidebarGroupKey[] = [
   "general",
   "communaute",
   "contenu",
   "administration",
 ];
+// eslint-disable-next-line react-refresh/only-export-components
 export const GROUP_LABEL_KEYS: Record<SidebarGroupKey, string> = {
   general: "nav_groupe.general",
   communaute: "nav_groupe.communaute",
@@ -135,6 +140,7 @@ const GROUP_ICONS: Record<SidebarGroupKey, NavIcon> = {
   administration: IconSettings,
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- voir commentaire GROUP_ORDER
 export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: IconLayoutDashboard, group: "general" },
   // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
@@ -300,6 +306,7 @@ export interface SidebarNavGroup {
  * plutôt que de le dupliquer dans les deux composants (source d'incohérences garantie sinon,
  * ex. un item marqué actif sur desktop mais pas sur mobile).
  */
+// eslint-disable-next-line react-refresh/only-export-components -- voir commentaire GROUP_ORDER
 export function useSidebarNav() {
   const user = useAuthStore((s) => s.user);
   const location = useLocation();
