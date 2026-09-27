@@ -1562,3 +1562,67 @@ class ReponseQuiz(models.Model):
 
     def __str__(self):
         return f"{self.participation_id} — Q{self.question_id}"
+
+
+def video_hero_upload_path(instance, filename):
+    return f"configuration-site/hero/{filename}"
+
+
+class ConfigurationSitePublic(models.Model):
+    """Quasi-singleton (une seule ligne, toujours pk=1 — voir get_solo()), même convention que
+    apps.notifications.models.ParametresNotification/apps.cotisations.models.ConfigurationRelance.
+
+    Ajouté le 2026-09-27 (demande utilisateur, Phase 5 — "Startseite Hero-Video") : la nouvelle
+    page d'accueil publique façon mycid.org (AccueilTab.tsx, plan "Öffentliche mycid.org-
+    Startseite" section C) affiche un fond vidéo en autoplay muet/loop derrière le titre/CTA du
+    hero — cette vidéo est un réglage global du site, pas une donnée par module métier, d'où un
+    modèle dédié ici plutôt qu'un champ ajouté à un modèle existant.
+
+    Placé dans apps.communaute (plutôt qu'une nouvelle app dédiée) : ce module héberge déjà le
+    seul autre contenu PUBLIC (AllowAny) de l'application — ClassementLigueViewSet/
+    RencontreCalendrierViewSet (widget "Club Africain Live" de la même page d'accueil) — et
+    réutilise le même bucket MinIO public ("cid-media", PublicationsStorage) que les photos du
+    fil d'actualité/albums, déjà servies sans authentification côté lecture.
+
+    Gestion (upload) réservée au Bureau Admin+ via un seuil `ROLE_LEVELS` direct
+    (ConfigurationSitePublicPermission), PAS via la matrice apps.rbac (PAGES_ADMIN) : cette
+    matrice est une liste EXPLICITE des pages nommées par l'utilisateur (voir docstring
+    apps.rbac.registry.PAGES_ADMIN) et ce nouveau réglage n'en fait pas partie — même choix que
+    /admin/roles (RequireRole minRoleLevel, volontairement hors matrice), pour un réglage
+    ponctuel qui n'a pas besoin de la distinction lecture/lecture_ecriture par rôle personnalisé.
+    """
+
+    id = models.AutoField(primary_key=True)
+    video_hero = models.FileField(
+        upload_to=video_hero_upload_path,
+        storage=PublicationsStorage(),
+        null=True,
+        blank=True,
+        help_text=_("Vidéo de fond du hero de la page d'accueil publique (MP4, silencieuse)."),
+    )
+
+    modifie_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Bureau Admin+ ayant modifié ce paramétrage en dernier."),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_configuration_site_public"
+        verbose_name = _("Configuration du site public")
+        verbose_name_plural = _("Configuration du site public")
+
+    def __str__(self):
+        return "Configuration du site public (hero vidéo)"
+
+    @classmethod
+    def get_solo(cls) -> "ConfigurationSitePublic":
+        """Toujours pk=1 — crée la ligne (aucune vidéo par défaut) à la première lecture/
+        écriture, même principe que ParametresNotification.get_solo (pas de migration de
+        données nécessaire pour un environnement déjà en production)."""
+        obj, _created = cls.objects.get_or_create(pk=1)
+        return obj
