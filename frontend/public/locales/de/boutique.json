@@ -129,7 +129,8 @@
   "detail": {
     "retour_catalogue": "Zurück zum Shop",
     "quantite_label": "Menge",
-    "choisir_montant_catalogue": "Betrag im Katalog auswählen"
+    "choisir_montant_catalogue": "Betrag im Katalog auswählen",
+    "galerie_vignette": "Bild {{n}} anzeigen"
   },
   "boutique_page": {
     "onglet_catalogue": "Katalog",
@@ -276,7 +277,16 @@
     "regle_erreur": "Die Staffel konnte nicht erstellt werden.",
     "seuil_quantite_label": "Schwelle (Menge)",
     "type_reduction_label": "Typ",
-    "ajouter_regle": "Hinzufügen"
+    "ajouter_regle": "Hinzufügen",
+    "galerie_titre": "Fotogalerie",
+    "galerie_vide": "Noch keine zusätzlichen Fotos.",
+    "galerie_ajouter": "Foto hinzufügen",
+    "galerie_ajout_en_cours": "Wird hochgeladen…",
+    "galerie_erreur": "Das Foto konnte nicht hinzugefügt werden.",
+    "galerie_supprimer": "Dieses Foto löschen",
+    "gerer_galerie": "Galerie verwalten",
+    "masquer_galerie": "Galerie ausblenden",
+    "voir_galerie": "Galerie ansehen"
   },
   "mes_bons_achat": {
     "titre": "Meine Gutscheine",

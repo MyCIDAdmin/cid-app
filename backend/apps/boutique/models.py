@@ -291,6 +291,35 @@ class Produit(models.Model):
         return self.prix_final, False
 
 
+def produit_image_galerie_upload_path(instance, filename):
+    return f"galerie/{instance.produit_id}/{uuid.uuid4()}_{filename}"
+
+
+class ProduitImage(models.Model):
+    """Image supplémentaire de la galerie produit (demande utilisateur du 2026-09-27, point
+    13.1 "mehr als ein Bild pro Produkt hochladen") — même principe que
+    apps.projets.models.ProjetImage : `Produit.image` reste l'image principale/historique
+    (utilisée sur la Kachel du catalogue, inchangée), ces images-ci sont les photos
+    supplémentaires visibles par un membre dans la galerie de la fiche produit."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    produit = models.ForeignKey(Produit, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(
+        upload_to=produit_image_galerie_upload_path, storage=ProduitsStorage()
+    )
+    ordre = models.PositiveIntegerField(default=0)
+    uploaded_by = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "boutique_produits_images"
+        verbose_name = _("Image de produit")
+        verbose_name_plural = _("Images de produit")
+        ordering = ["ordre", "created_at"]
+
+
 class VarianteProduit(models.Model):
     """Déclinaison (taille/couleur) d'un produit, porteuse du stock — FDD §3.4."""
 

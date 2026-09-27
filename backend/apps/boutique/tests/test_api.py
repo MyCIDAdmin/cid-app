@@ -4,8 +4,10 @@ import io
 from decimal import Decimal
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
@@ -43,10 +45,25 @@ PRODUIT_LIST_URL = "boutique:produit-list"
 COMMANDE_LIST_URL = "boutique:commande-list"
 PASSER_URL = "boutique:commande-passer"
 VARIANTE_LIST_URL = "boutique:variante-list"
+IMAGE_LIST_URL = "boutique:produit-image-list"
 
 
 def _produit_detail_url(produit):
     return reverse("boutique:produit-detail", args=[produit.id])
+
+
+def _image_detail_url(image):
+    return reverse("boutique:produit-image-detail", args=[image.id])
+
+
+def _image_valide(nom="photo.jpg", format_pillow="JPEG", content_type="image/jpeg"):
+    # Même helper que apps.projets.tests.test_api._image_valide — un JPEG/PNG minimal
+    # réellement décodable par Pillow, requis par valider_et_reencoder_photo (voir
+    # apps.communaute.validators) qu'ProduitImageSerializer appelle aussi.
+    buffer = io.BytesIO()
+    Image.new("RGB", (60, 60), color=(255, 0, 0)).save(buffer, format=format_pillow)
+    buffer.seek(0)
+    return SimpleUploadedFile(nom, buffer.read(), content_type=content_type)
 
 
 def _commande_detail_url(commande):
@@ -244,6 +261,102 @@ def test_modifier_produit_ignore_stock_initial(api_client):
     assert resp.status_code == 200
     produit.refresh_from_db()
     assert produit.stock_total == 5  # inchangé, aucune variante fantôme créée
+
+
+# --- Galerie de photos supplémentaires (demande utilisateur du 2026-09-27, point 13.1) ---
+
+
+def test_liste_produits_expose_la_galerie_dimages(api_client):
+    produit = ProduitFactory(statut=StatutProduit.PUBLIE)
+    resp = api_client.get(_produit_detail_url(produit))
+    assert resp.status_code == 200
+    assert resp.data["images"] == []
+
+
+def test_membre_normal_ne_peut_pas_ajouter_une_image_de_galerie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "galerie1@example.de")
+    produit = ProduitFactory()
+    resp = _auth(api_client, user).post(
+        reverse(IMAGE_LIST_URL),
+        {"produit": str(produit.id), "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 403
+    assert produit.images.count() == 0
+
+
+def test_bureau_admin_peut_ajouter_une_image_de_galerie(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "galerie2@example.de")
+    produit = ProduitFactory()
+
+    resp = _auth(api_client, user).post(
+        reverse(IMAGE_LIST_URL),
+        {"produit": str(produit.id), "image": _image_valide()},
+        format="multipart",
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["uploaded_by"] == membre.id
+    assert produit.images.count() == 1
+
+
+def test_ajouter_une_image_non_valide_est_refuse(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "galerie3@example.de")
+    produit = ProduitFactory()
+    faux_fichier = SimpleUploadedFile(
+        "malware.jpg", b"pas une vraie image", content_type="image/jpeg"
+    )
+
+    resp = _auth(api_client, user).post(
+        reverse(IMAGE_LIST_URL),
+        {"produit": str(produit.id), "image": faux_fichier},
+        format="multipart",
+    )
+
+    assert resp.status_code == 400
+    assert "image" in resp.data["details"]
+
+
+def test_produit_publie_expose_ses_images_a_un_visiteur_anonyme(api_client):
+    """Cohérent avec CatalogueBoutiquePermission (lecture ouverte à tout le monde depuis le
+    2026-09-26) : la galerie suit la même règle que la fiche produit elle-même — un visiteur
+    peut la consulter dans le shop (demande utilisateur : "User können sie im Shop
+    anschauen")."""
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "galerie4@example.de")
+    produit = ProduitFactory(statut=StatutProduit.PUBLIE)
+    _auth(api_client, user).post(
+        reverse(IMAGE_LIST_URL),
+        {"produit": str(produit.id), "image": _image_valide()},
+        format="multipart",
+    )
+
+    resp = APIClient().get(reverse(IMAGE_LIST_URL), {"produit": str(produit.id)})
+
+    assert resp.status_code == 200
+    assert len(resp.data["results"]) == 1
+
+
+def test_reassignation_image_de_galerie_vers_un_autre_produit_est_ignoree(api_client):
+    """IDOR — `produit` est immuable après création (voir ProduitImageSerializer.update),
+    même principe que ProjetImageSerializer.update côté apps.projets."""
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "galerie5@example.de")
+    produit = ProduitFactory()
+    autre_produit = ProduitFactory()
+    creation = _auth(api_client, user).post(
+        reverse(IMAGE_LIST_URL),
+        {"produit": str(produit.id), "image": _image_valide()},
+        format="multipart",
+    )
+    image_id = creation.data["id"]
+
+    resp = api_client.patch(
+        reverse("boutique:produit-image-detail", args=[image_id]),
+        {"produit": str(autre_produit.id), "ordre": 5},
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["produit"] == produit.id
+    assert resp.data["ordre"] == 5
 
 
 def test_prix_final_expose_par_lapi_avec_reduction(api_client):

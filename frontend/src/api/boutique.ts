@@ -14,6 +14,8 @@ import type {
   PaiementEnLigneCommandeResponse,
   PasserCommandePayload,
   Produit,
+  ProduitImage,
+  ProduitImagePayload,
   ProduitPayload,
   RegleReduction,
   RegleReductionPayload,
@@ -86,6 +88,30 @@ export async function televerserImageProduit(id: string, fichier: File): Promise
   formData.append("image", fichier);
   const { data } = await apiClient.patch<Produit>(`/boutique/produits/${id}/`, formData);
   return data;
+}
+
+/**
+ * Galerie de photos supplémentaires (demande utilisateur du 2026-09-27, point 13.1 "mehr als
+ * ein Bild pro Produkt hochladen... die Bilder können User sich im Shop anschauen") — même
+ * principe que apps.projets/ajouterImageProjet : `multipart/form-data`, lecture ouverte à tout
+ * le monde (voir CatalogueBoutiquePermission côté backend), écriture réservée à la page
+ * "Shop-Verwaltung". Pas d'appel de listing dédié : `Produit.images` est déjà imbriqué dans la
+ * réponse de /boutique/produits/ (voir ProduitSerializer côté backend, même convention que
+ * Projet.images) — ces mutations invalident simplement la requête produit(s) parente.
+ */
+export async function ajouterImageProduit(payload: ProduitImagePayload): Promise<ProduitImage> {
+  const formData = new FormData();
+  formData.append("produit", payload.produit);
+  formData.append("image", payload.image);
+  if (payload.ordre !== undefined) {
+    formData.append("ordre", String(payload.ordre));
+  }
+  const { data } = await apiClient.post<ProduitImage>("/boutique/produit-images/", formData);
+  return data;
+}
+
+export async function supprimerImageProduit(id: string): Promise<void> {
+  await apiClient.delete(`/boutique/produit-images/${id}/`);
 }
 
 export async function listVariantes(produitId: string): Promise<CursorPage<VarianteProduit>> {

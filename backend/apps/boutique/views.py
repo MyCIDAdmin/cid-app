@@ -123,6 +123,7 @@ from .models import (
     LigneCommande,
     ModePaiementCommande,
     Produit,
+    ProduitImage,
     RegleReduction,
     Retour,
     StatutBonAchat,
@@ -158,6 +159,7 @@ from .serializers import (
     ExpedierCommandeSerializer,
     InitierPaiementEnLigneCommandeSerializer,
     PasserCommandeSerializer,
+    ProduitImageSerializer,
     ProduitSerializer,
     RegleReductionSerializer,
     RetourSerializer,
@@ -203,6 +205,29 @@ class ProduitViewSet(ModelViewSet):
         ):
             return queryset
         return queryset.filter(statut=StatutProduit.PUBLIE)
+
+
+class ProduitImageViewSet(ModelViewSet):
+    """Galerie de photos supplémentaires par produit (demande utilisateur du 2026-09-27, point
+    13.1 "mehr als ein Bild pro Produkt hochladen... User können sie im Shop anschauen") — même
+    règle d'accès que Produit (CatalogueBoutiquePermission : lecture ouverte à tout le monde, y
+    compris anonyme, écriture réservée à "Shop-Verwaltung" page_boutique lecture_ecriture).
+    Contrairement à apps.projets.views.ProjetImageViewSet, pas de vérification manuelle
+    supplémentaire dans perform_create : il n'existe pas ici de notion de "responsable d'un
+    produit précis" comme pour Projet.responsable — l'accès en écriture est uniquement porté
+    par le rôle/la page RBAC, déjà entièrement vérifié par has_permission."""
+
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    permission_classes = [CatalogueBoutiquePermission]
+    serializer_class = ProduitImageSerializer
+    pagination_class = BoutiqueCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["produit"]
+    queryset = ProduitImage.objects.select_related("produit", "uploaded_by")
+
+    def perform_create(self, serializer):
+        membre = getattr(self.request.user, "membre", None)
+        serializer.save(uploaded_by=membre)
 
 
 class RegleReductionViewSet(ModelViewSet):

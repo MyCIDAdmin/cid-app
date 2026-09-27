@@ -83,6 +83,26 @@ export interface VarianteProduit {
   stock: number;
 }
 
+/** Photo supplémentaire de la galerie produit (demande utilisateur du 2026-09-27, point 13.1
+ * "mehr als ein Bild pro Produkt hochladen") — distincte de Produit.image (image principale/
+ * kachel du catalogue, inchangée), voir apps.boutique.models.ProduitImage côté backend. */
+export interface ProduitImage {
+  id: string;
+  produit: string;
+  image: string;
+  ordre: number;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+/** Payload de POST /boutique/produit-images/ — même principe que ProjetImagePayload
+ * (apps.projets). */
+export interface ProduitImagePayload {
+  produit: string;
+  image: File;
+  ordre?: number;
+}
+
 export interface Produit {
   id: string;
   nom: string;
@@ -108,6 +128,9 @@ export interface Produit {
    * ProduitDetailPage). Toujours résolu côté serveur, jamais déduit du frontend. */
   est_prix_membre: boolean;
   image: string | null;
+  /** Galerie de photos supplémentaires (demande utilisateur du 2026-09-27, point 13.1) —
+   * toujours triée par `ordre` (voir ProduitImage.Meta.ordering côté backend). */
+  images: ProduitImage[];
   statut: StatutProduit;
   /** Voir TypeProduit — pilote l'affichage catalogue/panier (CataloguePage) : sélecteur de
    * montant libre au lieu du sélecteur taille/couleur pour "bon_achat". */

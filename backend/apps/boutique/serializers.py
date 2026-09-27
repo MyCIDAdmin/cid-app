@@ -10,6 +10,7 @@ views.py), sous verrou transactionnel pour un stock toujours cohérent.
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 
 from .models import (
@@ -19,6 +20,7 @@ from .models import (
     LigneCommande,
     ModePaiementCommande,
     Produit,
+    ProduitImage,
     RegleReduction,
     Retour,
     StatutCommande,
@@ -35,6 +37,28 @@ class VarianteProduitSerializer(serializers.ModelSerializer):
         model = VarianteProduit
         fields = ["id", "produit", "taille", "couleur", "stock"]
         read_only_fields = ["id"]
+
+
+class ProduitImageSerializer(serializers.ModelSerializer):
+    """Photo supplémentaire de la galerie produit (demande utilisateur du 2026-09-27, point
+    13.1) — même principe que apps.projets.serializers.ProjetImageSerializer : validation
+    MIME/ré-encodage systématiques (CLAUDE.md §8), `produit` immuable après création pour
+    éviter toute réassignation IDOR (voir update ci-dessous)."""
+
+    class Meta:
+        model = ProduitImage
+        fields = ["id", "produit", "image", "ordre", "uploaded_by", "created_at"]
+        read_only_fields = ["id", "uploaded_by", "created_at"]
+        extra_kwargs = {"produit": {"required": True}}
+
+    def validate_image(self, image):
+        return valider_et_reencoder_photo(image)
+
+    def update(self, instance, validated_data):
+        # Même verrou que ProjetImageSerializer.update (CID-SCD-001 §2.3 A01) : `produit` ne
+        # doit jamais être réassignable depuis une modification de l'image elle-même.
+        validated_data.pop("produit", None)
+        return super().update(instance, validated_data)
 
 
 class RegleReductionSerializer(serializers.ModelSerializer):
@@ -74,6 +98,10 @@ class RegleReductionSerializer(serializers.ModelSerializer):
 
 class ProduitSerializer(serializers.ModelSerializer):
     variantes = VarianteProduitSerializer(many=True, read_only=True)
+    # Galerie de photos supplémentaires (demande utilisateur du 2026-09-27, point 13.1) — même
+    # principe que ProjetSerializer.images : `image` reste l'image principale/kachel du
+    # catalogue, ces photos-ci sont les visuels additionnels visibles sur la fiche produit.
+    images = ProduitImageSerializer(many=True, read_only=True)
     stock_total = serializers.IntegerField(read_only=True)
     stock_faible = serializers.BooleanField(read_only=True)
     en_rupture = serializers.BooleanField(read_only=True)
@@ -115,6 +143,7 @@ class ProduitSerializer(serializers.ModelSerializer):
             "prix_affiche",
             "est_prix_membre",
             "image",
+            "images",
             "statut",
             "nouveaute",
             "seuil_alerte_stock",
