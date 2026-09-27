@@ -23,6 +23,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     prix_final: "45.00",
     prix_membre: null,
     image: null,
+    images: [],
     statut: "publie",
     type_produit: "physique",
     nouveaute: true,
@@ -146,5 +147,61 @@ describe("ProduitDetailPage", () => {
     renderPage();
 
     expect(screen.getByText("catalogue.erreur")).toBeInTheDocument();
+  });
+
+  // Galerie de photos supplémentaires (demande utilisateur du 2026-09-27, point 13.1).
+  describe("galerie de photos", () => {
+    it("n'affiche pas de vignettes quand le produit n'a qu'une seule photo (ou aucune)", () => {
+      vi.mocked(useBoutiqueHooks.useProduit).mockReturnValue({
+        data: produit({ image: "https://cdn.example.de/produits/p1.jpg", images: [] }),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useBoutiqueHooks.useProduit>);
+
+      renderPage();
+
+      expect(screen.queryByLabelText(/detail.galerie_vignette/)).not.toBeInTheDocument();
+    });
+
+    it("affiche une vignette par photo (principale + galerie) et bascule l'image affichée au clic", () => {
+      vi.mocked(useBoutiqueHooks.useProduit).mockReturnValue({
+        data: produit({
+          image: "https://cdn.example.de/produits/principale.jpg",
+          images: [
+            {
+              id: "img1",
+              produit: "p1",
+              image: "https://cdn.example.de/produits/galerie1.jpg",
+              ordre: 0,
+              uploaded_by: "m1",
+              created_at: "2026-01-01T00:00:00Z",
+            },
+            {
+              id: "img2",
+              produit: "p1",
+              image: "https://cdn.example.de/produits/galerie2.jpg",
+              ordre: 1,
+              uploaded_by: "m1",
+              created_at: "2026-01-01T00:00:00Z",
+            },
+          ],
+        }),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useBoutiqueHooks.useProduit>);
+
+      renderPage();
+
+      const vignettes = screen.getAllByLabelText(/detail.galerie_vignette/);
+      expect(vignettes).toHaveLength(3);
+
+      const heroAvant = screen.getByAltText("Maillot domicile CA 2026") as HTMLImageElement;
+      expect(heroAvant.src).toBe("https://cdn.example.de/produits/principale.jpg");
+
+      fireEvent.click(vignettes[2]);
+
+      const heroApres = screen.getByAltText("Maillot domicile CA 2026") as HTMLImageElement;
+      expect(heroApres.src).toBe("https://cdn.example.de/produits/galerie2.jpg");
+    });
   });
 });
