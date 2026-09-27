@@ -224,7 +224,9 @@ def test_televerser_image_kachel_evenement(api_client):
 def test_televerser_image_kachel_evenement_refuse_un_fichier_non_image(api_client):
     user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-image2@example.de")
     evenement = EvenementFactory()
-    faux_fichier = SimpleUploadedFile("malware.jpg", b"pas une vraie image", content_type="image/jpeg")
+    faux_fichier = SimpleUploadedFile(
+        "malware.jpg", b"pas une vraie image", content_type="image/jpeg"
+    )
 
     resp = _auth(api_client, user).patch(
         _evenement_detail_url(evenement),
