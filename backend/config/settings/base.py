@@ -274,6 +274,9 @@ MINIO_BUCKET_EXPORTS = os.environ.get("MINIO_BUCKET_EXPORTS", "exports")
 # Module Projets & Actions (voir apps.projets.storage.ProjetsStorage) — bucket isolé, même
 # principe que MINIO_BUCKET_PRODUITS.
 MINIO_BUCKET_PROJETS = os.environ.get("MINIO_BUCKET_PROJETS", "projets")
+# Module Événements (voir apps.evenements.storage.EvenementsStorage) — demande utilisateur du
+# 2026-09-27, point 11.1 : bucket isolé, même principe que MINIO_BUCKET_PROJETS.
+MINIO_BUCKET_EVENEMENTS = os.environ.get("MINIO_BUCKET_EVENEMENTS", "evenements")
 
 # Endpoint PUBLIC (navigateur) du bucket produits — distinct de MINIO_ENDPOINT ci-dessus,
 # qui reste l'endpoint INTERNE utilisé par le backend pour parler à MinIO (ex. déploiement

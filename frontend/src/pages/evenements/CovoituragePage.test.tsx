@@ -45,6 +45,7 @@ function trajet(overrides: Partial<Covoiturage> = {}): Covoiturage {
     date_trajet: "2099-05-31",
     heure_trajet: "06:00",
     lieu_rendez_vous: "",
+    lieu_rendez_vous_maps_url: "",
     places_disponibles: 3,
     prix_par_place: "25.00",
     vehicule: "VW Passat",
@@ -219,6 +220,63 @@ describe("CovoituragePage", () => {
     expect(creer.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ lieu_rendez_vous: "Parking Décathlon" }),
       expect.anything(),
+    );
+  });
+
+  // Lien Maps du point de rendez-vous (demande utilisateur du 2026-09-27, point 12.1).
+  it("propose un trajet avec un lien Google Maps pour le point de rendez-vous", () => {
+    const creer = mutationMock<ReturnType<typeof useEvenementsHooks.useCreerCovoiturage>>();
+    vi.mocked(useEvenementsHooks.useCreerCovoiturage).mockReturnValue(creer);
+    vi.mocked(useEvenementsHooks.useCovoiturages).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useCovoiturages>);
+
+    renderWithProviders(<CovoituragePage />);
+
+    fireEvent.click(screen.getByText("covoiturage.proposer_trajet"));
+    fireEvent.change(screen.getByPlaceholderText("covoiturage.depart_placeholder"), {
+      target: { value: "Hambourg" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("covoiturage.destination_placeholder"), {
+      target: { value: "Stuttgart" },
+    });
+    fireEvent.change(screen.getByLabelText("covoiturage.champ_date_label"), {
+      target: { value: "2099-06-14" },
+    });
+    fireEvent.change(screen.getByLabelText("covoiturage.champ_heure_label"), {
+      target: { value: "06:00" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("covoiturage.treffpunkt_maps_url_placeholder"), {
+      target: { value: "https://share.google/xyz789" },
+    });
+
+    fireEvent.click(screen.getByText("covoiturage.publier_trajet"));
+
+    expect(creer.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ lieu_rendez_vous_maps_url: "https://share.google/xyz789" }),
+      expect.anything(),
+    );
+  });
+
+  it("affiche l'aperçu Maps sur la tuile quand un lien est renseigné", () => {
+    vi.mocked(useEvenementsHooks.useCovoiturages).mockReturnValue({
+      data: page([
+        trajet({
+          lieu_rendez_vous: "Devant la gare, sortie Nord",
+          lieu_rendez_vous_maps_url: "https://share.google/xyz789",
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useCovoiturages>);
+
+    renderWithProviders(<CovoituragePage />);
+
+    expect(screen.getByText("maps.ouvrir").closest("a")).toHaveAttribute(
+      "href",
+      "https://share.google/xyz789",
     );
   });
 

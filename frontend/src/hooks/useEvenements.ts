@@ -52,6 +52,17 @@ export function useModifierEvenement() {
   });
 }
 
+/** Téléversement de l'image de kachel (demande utilisateur 2026-09-27, point 11.1) — même
+ * principe que useTeleverserImageProduit (hooks/useBoutique.ts). */
+export function useTeleverserImageEvenement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, fichier }: { id: string; fichier: File }) =>
+      evenementsApi.televerserImageEvenement(id, fichier),
+    onSuccess: () => invalidateEvenements(queryClient),
+  });
+}
+
 export function usePublierEvenement() {
   const queryClient = useQueryClient();
   return useMutation({

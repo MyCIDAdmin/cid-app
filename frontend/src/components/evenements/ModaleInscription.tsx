@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 
 import { useInscrire } from "../../hooks/useEvenements";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import MapsApercu from "../ui/MapsApercu";
 import type { Evenement, RegimeAlimentaire } from "../../types/evenements";
 
 // Fonctions utilitaires co-localisées avec le composant (réutilisées par EvenementsPage et
@@ -121,6 +122,14 @@ export default function ModaleInscription({
             <div className="text-[10px] text-text-tertiary">{t("modal_montant_estime")}</div>
           </div>
         </div>
+
+        {/* Aperçu Maps (demande utilisateur du 2026-09-27, point 11.2 "Maps-Link für den Ort +
+            Vorschau + Adresse anzeigen") — ne rend rien si `lieu` est vide, voir MapsApercu. */}
+        <MapsApercu
+          adresse={evenement.lieu}
+          mapsUrl={evenement.lieu_maps_url}
+          className="mb-3"
+        />
 
         <div className="mb-2 grid grid-cols-2 gap-2">
           <div>
