@@ -28,10 +28,13 @@ export default function HeroVideo({ videoUrl }: { videoUrl: string }) {
         aria-hidden="true"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      {/* Assombrit la vidéo pour garder le texte du hero lisible, même dégradé de marque que le
-          fond par défaut (voir AccueilTab.tsx) mais semi-transparent ici pour laisser voir la
-          vidéo derrière. */}
-      <div className="absolute inset-0 bg-gradient-to-br from-ca/80 to-cad/85" />
+      {/* Assombrit la vidéo côté texte (gauche) pour garder le hero lisible quel que soit le
+          contenu de la vidéo, sans couvrir la vidéo dans son ensemble : dégradé NOIR directionnel
+          (gauche opaque -> droite transparente), pas le dégradé de marque plein cadre d'origine
+          (from-ca/80 to-cad/85), qui couvrait quasi entièrement la vidéo d'un aplat rouge opaque
+          au lieu de la laisser transparaître (bug rapporté par l'utilisateur le 2026-09-27 :
+          "je ne vois qu'un rectangle rouge"). */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-transparent" />
     </>
   );
 }
