@@ -87,7 +87,7 @@ export default function CotisationRetourPage() {
     return (
       <div className="mx-auto max-w-md rounded-cid-lg bg-bg-primary p-8 text-center shadow-sm">
         <div className="mb-3 text-sm text-status-dangerText">{t("retour.introuvable")}</div>
-        <Link to="/cotisation" className="text-sm font-medium text-ca hover:underline">
+        <Link to="/mon-adhesion" className="text-sm font-medium text-ca hover:underline">
           {t("retour.retour_accueil")}
         </Link>
       </div>
@@ -106,7 +106,7 @@ export default function CotisationRetourPage() {
     return (
       <div className="mx-auto max-w-md rounded-cid-lg bg-bg-primary p-8 text-center shadow-sm">
         <div className="mb-3 text-sm text-status-dangerText">{t("retour.introuvable")}</div>
-        <Link to="/cotisation" className="text-sm font-medium text-ca hover:underline">
+        <Link to="/mon-adhesion" className="text-sm font-medium text-ca hover:underline">
           {t("retour.retour_accueil")}
         </Link>
       </div>
@@ -213,7 +213,7 @@ export default function CotisationRetourPage() {
           )}
         </div>
 
-        <Link to="/cotisation" className="text-sm font-medium text-ca hover:underline">
+        <Link to="/mon-adhesion" className="text-sm font-medium text-ca hover:underline">
           {t("retour.retour_accueil")}
         </Link>
       </div>

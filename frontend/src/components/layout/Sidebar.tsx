@@ -58,7 +58,6 @@ import {
   IconChevronRight,
   IconClipboardCheck,
   IconClockDollar,
-  IconCreditCard,
   IconFileCheck,
   IconFolderCog,
   IconGavel,
@@ -146,8 +145,13 @@ export const NAV_ITEMS: NavItem[] = [
   // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
   // voit que sa propre fiche), inutile de dupliquer cette règle ici.
   { to: "/membres", labelKey: "nav.membres", icon: IconUsers, group: "general" },
+  // Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
+  // utilisateur non negociable) : l'entree "Mitgliedsbeitrag" (/cotisation) a ete retiree — tout
+  // son contenu vit desormais sous /mon-adhesion (voir PaiementStepper.tsx, rendu par
+  // MonAdhesionPage.tsx). La route /cotisation reste techniquement presente (voir
+  // pages/cotisations/CotisationRedirect.tsx) pour les deep-links existants, mais n'a plus
+  // d'entree de navigation.
   { to: "/mon-adhesion", labelKey: "nav.mon_adhesion", icon: IconIdBadge, group: "general" },
-  { to: "/cotisation", labelKey: "nav.cotisation", icon: IconCreditCard, group: "general" },
   // Événements + Covoiturage (mockup #pg-evenements/#pg-covoiturage, FDD §3.4) — ouverts à tout
   // authentifié, même principe que /mon-adhesion : le backend scope déjà le queryset (événements
   // publiés uniquement en dessous de Bureau Admin, voir EvenementViewSet.get_queryset).

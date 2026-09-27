@@ -31,9 +31,9 @@ import MessageriePage from "./pages/communaute/MessageriePage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
+import CotisationRedirect from "./pages/cotisations/CotisationRedirect";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
-import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminEventsPage from "./pages/evenements/AdminEventsPage";
 import CovoituragePage from "./pages/evenements/CovoituragePage";
@@ -106,10 +106,14 @@ export default function App() {
             </RequireRole>
           }
         />
-        {/* Paiement libre-service (mockup #pg-cotisation, RICEFW F-004, AHM-16) —
-            ouvert à tout authentifié : le backend scope déjà le queryset et
-            résout le membre courant à la création (CotisationViewSet). */}
-        <Route path="/cotisation" element={<CotisationStepperPage />} />
+        {/* Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
+            utilisateur non négociable) : le stepper de paiement libre-service (mockup
+            #pg-cotisation, RICEFW F-004, AHM-16) vit désormais entièrement sous /mon-adhesion
+            (voir PaiementStepper.tsx, rendu par MonAdhesionPage.tsx). Cette route reste
+            techniquement présente — non retirée d'App.tsx — uniquement pour que les deep-links
+            existants (?paiement=...) depuis Événements/Projets continuent de fonctionner ; elle
+            ne rend plus qu'un redirect. */}
+        <Route path="/cotisation" element={<CotisationRedirect />} />
         {/* Retour depuis Stripe Checkout/PayPal Checkout (AHM-46, success_url/return_url et
             cancel_url — voir apps.cotisations.gateways) — ouvert à tout authentifié, même scope
             IDOR que le reste de CotisationViewSet (get_queryset). */}

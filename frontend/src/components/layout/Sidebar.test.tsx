@@ -387,10 +387,13 @@ describe("getGroupForPath", () => {
     expect(getGroupForPath("/forum/42")).toBe("communaute");
   });
 
-  it("ne confond pas un préfixe partiel non séparé par '/' (ex. /cotisation vs /cotisations)", () => {
-    // "/cotisations/en-attente" a son propre item dédié (groupe administration) — ne doit
-    // jamais matcher le préfixe de "/cotisation" (groupe general) malgré le préfixe textuel
-    // commun sans séparateur.
+  it("ne confond pas un préfixe partiel non séparé par '/' (régression : l'ancien item /cotisation, groupe general, retiré en Phase F, ne doit pas réapparaître dans la résolution de /cotisations/en-attente)", () => {
+    // Jusqu'au retrait de l'entrée Sidebar "/cotisation" (Phase F, fusion "Mitgliedsbeitrag" ->
+    // "Meine Mitgliedschaft", 2026-09-26), ce test vérifiait que "/cotisations/en-attente" (son
+    // propre item dédié, groupe administration) ne matchait jamais le préfixe textuel de
+    // "/cotisation" (groupe general) faute de séparateur "/". L'item "/cotisation" a disparu de
+    // NAV_ITEMS, mais le test reste utile en garde de non-régression : "/cotisations/en-attente"
+    // doit continuer à résoudre "administration" via son propre item exact.
     expect(getGroupForPath("/cotisations/en-attente")).toBe("administration");
   });
 

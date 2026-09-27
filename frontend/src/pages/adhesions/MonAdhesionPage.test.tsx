@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useAdhesionsHooks from "../../hooks/useAdhesions";
+import * as useCotisationsHooks from "../../hooks/useCotisations";
 import type { CampagneAdhesion, OffreAdhesion, Souscription } from "../../types/adhesion";
 import MonAdhesionPage from "./MonAdhesionPage";
 
@@ -16,6 +17,23 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useSouscrire: vi.fn(),
     useUploaderJustificatif: vi.fn(),
     useAnnulerSouscription: vi.fn(),
+  };
+});
+
+// Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft") : cette page rend
+// désormais aussi <PaiementStepper/> (voir components/adhesions/PaiementStepper.tsx), qui utilise
+// ces mêmes hooks que l'ancienne CotisationStepperPage.test.tsx — mockés ici avec des valeurs
+// neutres par défaut (aucune donnée) pour que les tests ci-dessus, qui ne portent que sur la
+// grille offre/historique existante, ne dépendent pas d'un vrai appel réseau non mocké.
+vi.mock("../../hooks/useCotisations", async () => {
+  const actual = await vi.importActual<typeof useCotisationsHooks>("../../hooks/useCotisations");
+  return {
+    ...actual,
+    useMesCotisations: vi.fn(),
+    useCreerCotisation: vi.fn(),
+    useInitierPaiementEnLigne: vi.fn(),
+    useArticlesCatalogue: vi.fn(),
+    useCotisation: vi.fn(),
   };
 });
 
@@ -101,6 +119,60 @@ describe("MonAdhesionPage", () => {
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useAdhesionsHooks.useAnnulerSouscription>);
+
+    // Valeurs neutres par défaut pour <PaiementStepper/> (voir commentaire du mock ci-dessus) —
+    // aucune de ces valeurs n'est exercée par les tests existants de cette page, qui ne portent
+    // que sur la grille offre/historique ; voir PaiementStepper.test.tsx pour la couverture du
+    // stepper lui-même.
+    vi.mocked(useCotisationsHooks.useMesCotisations).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useMesCotisations>);
+    vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+    vi.mocked(useCotisationsHooks.useInitierPaiementEnLigne).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
+    vi.mocked(useCotisationsHooks.useCotisation).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
+  });
+
+  it("intègre la section de paiement libre-service (Phase F, fusion Mitgliedsbeitrag -> Meine Mitgliedschaft)", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    // PaiementStepper (ex-CotisationStepperPage) est bien rendu comme section de cette page.
+    expect(screen.getByText("etape.choisir")).toBeInTheDocument();
+    expect(screen.getByText("continuer")).toBeInTheDocument();
   });
 
   it("affiche un message quand aucune campagne n'est publiée", () => {

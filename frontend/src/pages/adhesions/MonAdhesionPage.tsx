@@ -32,10 +32,30 @@
  * repli sur un style neutre plutôt que d'inventer une 4ᵉ couleur non validée. Les avantages
  * (offre.avantages) et la tranche d'âge éligible sont désormais affichés directement sur
  * chaque carte, plutôt qu'uniquement après souscription (snapshot_avantages du hero).
+ *
+ * Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
+ * utilisateur non negociable, voir plan section F) : cette page integre desormais aussi
+ * l'integralite de l'ancien module "Mitgliedsbeitrag" (PaiementStepper, ex-
+ * CotisationStepperPage.tsx) comme section supplementaire, juste apres la grille
+ * offre/historique ci-dessous - plus aucun contenu ne vit sous une page/route separee, et
+ * l'entree de sidebar "Mitgliedsbeitrag" a ete retiree (voir Sidebar.tsx).
+ *
+ * Historique - decision de conception : le plan evoquait "une historique commune
+ * (souscriptions d'adhesion et autres paiements dans un seul tableau)". En pratique les deux
+ * historiques portent sur des donnees de forme differente (une Souscription a une
+ * campagne/offre/prix/statut de souscription ; une Cotisation a un libelle/montant/statut de
+ * paiement/recu PDF telechargeable) et utilisent deux namespaces i18n distincts
+ * (adhesions/cotisations) avec des statuts non superposables (ex. rabais_refuse vs echouee).
+ * Les fusionner dans un unique tableau forcerait soit a perdre des colonnes significatives (le
+ * recu PDF, la campagne/offre) soit a afficher des cellules vides selon la ligne. Les deux
+ * tableaux restent donc distincts mais colocalises sur la meme page - ce qui satisfait
+ * l'exigence reelle de l'utilisateur ("tout ce qui apparaissait sous Mitgliedsbeitrag
+ * apparait desormais sous Meine Mitgliedschaft") sans degrader ni l'un ni l'autre historique.
  */
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import PaiementStepper from "../../components/adhesions/PaiementStepper";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
   useAnnulerSouscription,
@@ -484,6 +504,8 @@ export default function MonAdhesionPage() {
           )}
         </div>
       </div>
+
+      <PaiementStepper />
 
       <ConfirmDialog
         open={retraitOuvert}
