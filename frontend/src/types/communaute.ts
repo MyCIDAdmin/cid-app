@@ -669,3 +669,16 @@ export type LiveMatchSocketMessage =
   // Admin+) via LiveMatchConsumer.match_evenement, voir hooks/useLiveMatchSocket.ts.
   | ({ type: "match_evenement" } & MatchEvenement)
   | { type: "erreur"; message: string };
+
+/**
+ * Configuration du site public (singleton, demande utilisateur du 2026-09-27, Phase 5
+ * "Startseite Hero-Video") — voir apps.communaute.models.ConfigurationSitePublic côté backend.
+ * `video_hero` est l'URL publique (MinIO, bucket "cid-media") ou `null` si jamais configurée —
+ * jamais un objet File côté lecture (GET), seulement en écriture (voir ConfigurationSitePayload
+ * dans api/communaute.ts).
+ */
+export interface ConfigurationSitePublic {
+  video_hero: string | null;
+  modifie_par: string | null;
+  updated_at: string;
+}

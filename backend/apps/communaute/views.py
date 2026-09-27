@@ -48,8 +48,10 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
@@ -62,6 +64,7 @@ from .models import (
     ChoixQuestion,
     ClassementLigue,
     Commentaire,
+    ConfigurationSitePublic,
     Conversation,
     EquipeInfo,
     GroupeChat,
@@ -99,6 +102,7 @@ from .permissions import (
     MODERATION_MIN_LEVEL,
     SUPER_ADMIN_MIN_LEVEL,
     AlbumPermission,
+    ConfigurationSitePublicPermission,
     ContenuCommunautePermission,
     ConversationPermission,
     GestionQuizPermission,
@@ -121,6 +125,7 @@ from .serializers import (
     ChoixQuestionSerializer,
     ClassementLigueSerializer,
     CommentaireSerializer,
+    ConfigurationSitePublicSerializer,
     ConversationSerializer,
     EquipeInfoSerializer,
     GroupeChatSerializer,
@@ -917,6 +922,36 @@ class RencontreCalendrierViewSet(mixins.ListModelMixin, viewsets.GenericViewSet)
     permission_classes = [AllowAny]
     pagination_class = CalendrierCursorPagination
     queryset = RencontreCalendrier.objects.all()
+
+
+class ConfigurationSitePublicView(APIView):
+    """
+    GET/PATCH /communaute/configuration-site/ — vidéo de fond du hero de la page d'accueil
+    publique (voir models.ConfigurationSitePublic et permissions.
+    ConfigurationSitePublicPermission). Singleton (ConfigurationSitePublic.get_solo) : pas de
+    ModelViewSet, un simple GET/PATCH suffit, même principe que
+    apps.notifications.views.ParametresNotificationView.
+
+    GET ouvert à AllowAny (visiteur anonyme inclus, voir PublicHomePage) ; PATCH réservé au
+    Bureau Admin+ (voir ConfigurationSitePublicPermission pour le choix de rester hors matrice
+    apps.rbac).
+    """
+
+    permission_classes = [ConfigurationSitePublicPermission]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request):
+        configuration = ConfigurationSitePublic.get_solo()
+        return Response(ConfigurationSitePublicSerializer(configuration).data)
+
+    def patch(self, request):
+        configuration = ConfigurationSitePublic.get_solo()
+        serializer = ConfigurationSitePublicSerializer(
+            configuration, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(modifie_par=getattr(request.user, "membre", None))
+        return Response(serializer.data)
 
 
 class StatistiqueJoueurCursorPagination(CursorPagination):

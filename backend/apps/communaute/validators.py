@@ -140,3 +140,41 @@ def valider_document_pdf(fichier):
     # trompeuse), même principe que valider_et_reencoder_photo ci-dessus.
     fichier.name = f"{uuid.uuid4()}.{extension}"
     return fichier
+
+
+# Ajouté le 2026-09-27 (ConfigurationSitePublic.video_hero, demande utilisateur Phase 5 "Startseite
+# Hero-Video") — MP4 uniquement (seul format demandé), 20 Mo max (repère "poids raisonnable pour
+# un fond de hero en autoplay" donné par l'utilisateur, aucune valeur documentée par ailleurs pour
+# ce champ précis).
+MAX_VIDEO_SIZE_BYTES = 20 * 1024 * 1024
+
+ALLOWED_VIDEO_MIME_TYPES = {"video/mp4": "mp4"}
+
+
+def valider_video_hero(fichier):
+    """Valide une vidéo uploadée (taille, MIME réel) pour `ConfigurationSitePublic.video_hero` et
+    retourne le même fichier, nom reconstruit côté serveur — même principe que
+    `valider_document_pdf` ci-dessus (pas de ré-encodage : aucune bibliothèque de traitement
+    vidéo dans les dépendances du projet, contrairement à Pillow pour les photos). La garantie de
+    sécurité vient uniquement de la détection MIME réelle (magic bytes), jamais de l'extension/
+    Content-Type déclarés par le client.
+
+    Lève `serializers.ValidationError` (mêmes clés de message que les validateurs ci-dessus) si
+    le fichier est invalide.
+    """
+    if fichier.size > MAX_VIDEO_SIZE_BYTES:
+        raise serializers.ValidationError(
+            f"Fichier trop volumineux (max {MAX_VIDEO_SIZE_BYTES // (1024 * 1024)} Mo)."
+        )
+
+    contenu = fichier.read()
+    fichier.seek(0)
+    mime_reel = magic.from_buffer(contenu, mime=True)
+    extension = ALLOWED_VIDEO_MIME_TYPES.get(mime_reel)
+    if extension is None:
+        raise serializers.ValidationError(
+            f"Format non supporté (détecté : {mime_reel}). MP4 uniquement."
+        )
+
+    fichier.name = f"{uuid.uuid4()}.{extension}"
+    return fichier

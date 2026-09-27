@@ -417,3 +417,22 @@ class TippspielTipPermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         membre = _membre_de(request.user)
         return membre is not None and obj.teilnahme.membre_id == membre.id
+
+
+class ConfigurationSitePublicPermission(BasePermission):
+    """GET public (AllowAny) — la page d'accueil publique (visiteur anonyme inclus) doit
+    pouvoir récupérer l'URL de la vidéo de hero, même principe que ClassementLigueViewSet/
+    RencontreCalendrierViewSet (widget "Club Africain Live" de la même page). PATCH réservé
+    au Bureau Admin+ via un seuil `ROLE_LEVELS` direct — PAS via la matrice apps.rbac
+    (PAGES_ADMIN, liste explicite des pages nommées par l'utilisateur, voir docstring
+    apps.rbac.registry) : même choix que /admin/roles côté frontend (RequireRole
+    minRoleLevel), volontairement hors matrice pour ce réglage ponctuel."""
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        user = request.user
+        return (
+            bool(user and user.is_authenticated)
+            and ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
+        )

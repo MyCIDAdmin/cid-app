@@ -11,12 +11,16 @@ PublicationSerializer.validate_image/validate_document (retour utilisateur : ima
 s'affiche pas après publication) — jusque-là, AUCUN test ne créait de Publication avec un
 fichier joint (voir test_api.py avant cette date), ce qui laissait ce chemin totalement non
 couvert malgré le chemin Photo/Album équivalent déjà testé.
+
+ConfigurationSitePublic.video_hero ajouté le 2026-09-27 (même raisonnement, voir
+test_configuration_site.py) — sans ce patch, un test qui televerse réellement une vidéo tente
+une écriture MinIO réelle (EndpointConnectionError, aucun MinIO en environnement de test).
 """
 
 import pytest
 from django.core.files.storage import FileSystemStorage
 
-from apps.communaute.models import Photo, Publication
+from apps.communaute.models import ConfigurationSitePublic, Photo, Publication
 
 
 @pytest.fixture(autouse=True)
@@ -25,6 +29,7 @@ def _photos_storage_local(tmp_path):
         Photo._meta.get_field("image"),
         Publication._meta.get_field("image"),
         Publication._meta.get_field("document"),
+        ConfigurationSitePublic._meta.get_field("video_hero"),
     ]
     originaux = [champ.storage for champ in champs]
     for champ in champs:

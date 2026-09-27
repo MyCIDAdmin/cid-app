@@ -85,5 +85,15 @@
     "folgen_titre": "Folge uns",
     "facebook": "Facebook",
     "instagram": "Instagram"
+  },
+  "admin_hero_video": {
+    "titre": "Hero-Video der Startseite",
+    "description": "Hintergrundvideo im Hero-Bereich der öffentlichen Startseite (mycid.org-Stil) — läuft dort automatisch stumm in Schleife. Nur MP4, max. 20 MB.",
+    "chargement": "Lädt…",
+    "erreur_chargement": "Fehler beim Laden der Konfiguration.",
+    "aucune_video": "Noch kein Video hinterlegt — der Hero-Bereich zeigt den Standard-Hintergrund.",
+    "televerser": "Video hochladen",
+    "televersement_en_cours": "Wird hochgeladen…",
+    "erreur": "Fehler beim Hochladen des Videos."
   }
 }

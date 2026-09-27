@@ -62,6 +62,7 @@ const communauteKeys = {
     [...communauteKeys.all, "tippspiel-teilnahmen", filtres] as const,
   tippspielTipps: (filtres: communauteApi.TippspielTippsFiltres = {}) =>
     [...communauteKeys.all, "tippspiel-tipps", filtres] as const,
+  configurationSite: () => [...communauteKeys.all, "configuration-site"] as const,
 };
 
 function invalidatePublications(queryClient: ReturnType<typeof useQueryClient>) {
@@ -810,5 +811,25 @@ export function useModifierTippspielTip() {
       payload: Pick<TippspielTipPayload, "score_domicile" | "score_exterieur">;
     }) => communauteApi.modifierTippspielTip(id, payload),
     onSuccess: () => invalidateTippspielTipps(queryClient),
+  });
+}
+
+// --- Configuration du site public (vidéo de hero, demande utilisateur du 2026-09-27, Phase 5)
+// --- GET public (AllowAny côté backend, voir HeroVideo.tsx/AccueilTab.tsx), PATCH réservé au
+// Bureau Admin+ (voir AdminConfigurationSitePage.tsx).
+
+export function useConfigurationSitePublic() {
+  return useQuery({
+    queryKey: communauteKeys.configurationSite(),
+    queryFn: () => communauteApi.getConfigurationSitePublic(),
+  });
+}
+
+export function useModifierConfigurationSitePublic() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (videoHero: File) => communauteApi.modifierConfigurationSitePublic(videoHero),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: communauteKeys.configurationSite() }),
   });
 }

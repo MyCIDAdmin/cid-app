@@ -15,6 +15,7 @@ from .models import (
     ChoixQuestion,
     ClassementLigue,
     Commentaire,
+    ConfigurationSitePublic,
     Conversation,
     EquipeInfo,
     GroupeChat,
@@ -47,7 +48,7 @@ from .models import (
     TypeReactionMatch,
 )
 from .permissions import MODERATION_MIN_LEVEL
-from .validators import valider_document_pdf, valider_et_reencoder_photo
+from .validators import valider_document_pdf, valider_et_reencoder_photo, valider_video_hero
 
 
 class AuteurSerializer(serializers.ModelSerializer):
@@ -1164,3 +1165,17 @@ class TippspielTipSerializer(serializers.ModelSerializer):
                 "participation confirmé par le Directeur Financier."
             )
         return TippspielTip.objects.create(teilnahme=teilnahme, **validated_data)
+
+
+class ConfigurationSitePublicSerializer(serializers.ModelSerializer):
+    """Singleton (voir ConfigurationSitePublic.get_solo) — `modifie_par` est résolu par la vue
+    (l'utilisateur courant), jamais par le client, même principe que
+    ParametresNotificationSerializer/ConfigurationRelanceSerializer."""
+
+    class Meta:
+        model = ConfigurationSitePublic
+        fields = ["video_hero", "modifie_par", "updated_at"]
+        read_only_fields = ["modifie_par", "updated_at"]
+
+    def validate_video_hero(self, video):
+        return valider_video_hero(video)

@@ -79,6 +79,7 @@ import {
   IconUserCog,
   IconUsers,
   IconUsersGroup,
+  IconVideo,
 } from "@tabler/icons-react";
 import { type ComponentType, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -295,6 +296,18 @@ export const NAV_ITEMS: NavItem[] = [
     icon: IconPhotoEdit,
     group: "administration",
     pageSlug: "page_albums", // seuil de départ : Bureau Admin
+  },
+  // Vidéo de fond du hero de la page d'accueil publique (Phase 5, "Startseite Hero-Video",
+  // demande utilisateur du 2026-09-27) — `minRoleLevel` direct plutôt qu'un `pageSlug` de la
+  // matrice apps.rbac (PAGES_ADMIN est une liste EXPLICITE des pages nommées par l'utilisateur,
+  // voir docstring apps.rbac.registry côté backend) : même choix que /admin/roles ci-dessus pour
+  // ce réglage ponctuel, hors matrice.
+  {
+    to: "/admin/configuration-site",
+    labelKey: "nav.configuration_site",
+    icon: IconVideo,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
 ];
 

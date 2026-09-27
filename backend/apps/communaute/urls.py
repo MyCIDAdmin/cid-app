@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
@@ -5,6 +6,7 @@ from .views import (
     ChoixQuestionViewSet,
     ClassementLigueViewSet,
     CommentaireViewSet,
+    ConfigurationSitePublicView,
     ConversationViewSet,
     EquipeInfoViewSet,
     GroupeChatViewSet,
@@ -57,4 +59,12 @@ router.register("tippspiel", TippspielViewSet, basename="tippspiel")
 router.register("tippspiel-teilnahmen", TippspielTeilnahmeViewSet, basename="tippspiel-teilnahme")
 router.register("tippspiel-tipps", TippspielTipViewSet, basename="tippspiel-tip")
 
-urlpatterns = router.urls
+urlpatterns = [
+    # Singleton (voir ConfigurationSitePublic.get_solo) — pas un ViewSet routé, même
+    # convention que apps.notifications.urls (ParametresNotificationView).
+    path(
+        "configuration-site/",
+        ConfigurationSitePublicView.as_view(),
+        name="configuration-site-public",
+    ),
+] + router.urls

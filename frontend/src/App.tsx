@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
+import AdminConfigurationSitePage from "./pages/admin/AdminConfigurationSitePage";
 import ArticlesCatalogueCotisationPage from "./pages/admin/ArticlesCatalogueCotisationPage";
 import GestionRolesPage from "./pages/admin/GestionRolesPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
@@ -185,6 +186,18 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
               <GestionRolesPage />
+            </RequireRole>
+          }
+        />
+        {/* Vidéo de fond du hero de la page d'accueil publique (demande utilisateur du
+            2026-09-27, Phase 5 "Startseite Hero-Video") — `minRoleLevel` direct plutôt qu'un
+            pageSlug de la matrice apps.rbac (PAGES_ADMIN est une liste EXPLICITE des pages
+            nommées par l'utilisateur), même choix que /admin/roles ci-dessus. */}
+        <Route
+          path="/admin/configuration-site"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <AdminConfigurationSitePage />
             </RequireRole>
           }
         />
