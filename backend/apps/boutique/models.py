@@ -304,7 +304,9 @@ class ProduitImage(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     produit = models.ForeignKey(Produit, on_delete=models.CASCADE, related_name="images")
-    image = models.ImageField(upload_to=produit_image_galerie_upload_path, storage=ProduitsStorage())
+    image = models.ImageField(
+        upload_to=produit_image_galerie_upload_path, storage=ProduitsStorage()
+    )
     ordre = models.PositiveIntegerField(default=0)
     uploaded_by = models.ForeignKey(
         "membres.Membre", on_delete=models.SET_NULL, null=True, related_name="+"

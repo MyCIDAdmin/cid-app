@@ -303,7 +303,9 @@ def test_bureau_admin_peut_ajouter_une_image_de_galerie(api_client):
 def test_ajouter_une_image_non_valide_est_refuse(api_client):
     user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "galerie3@example.de")
     produit = ProduitFactory()
-    faux_fichier = SimpleUploadedFile("malware.jpg", b"pas une vraie image", content_type="image/jpeg")
+    faux_fichier = SimpleUploadedFile(
+        "malware.jpg", b"pas une vraie image", content_type="image/jpeg"
+    )
 
     resp = _auth(api_client, user).post(
         reverse(IMAGE_LIST_URL),
