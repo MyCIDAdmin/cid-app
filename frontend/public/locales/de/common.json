@@ -30,7 +30,8 @@
     "gestion_roles": "Rollenverwaltung",
     "articles_cotisation": "Beitragsartikel",
     "parametres_notification": "E-Mail-Benachrichtigungen",
-    "point_activite": "Neuigkeiten bei {{module}}"
+    "point_activite": "Neuigkeiten bei {{module}}",
+    "configuration_site": "Hero-Video"
   },
   "nav_groupe": {
     "general": "Allgemein",

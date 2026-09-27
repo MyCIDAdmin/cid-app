@@ -13,6 +13,7 @@ import type {
   ChoixQuestionPayload,
   ClassementLigue,
   Commentaire,
+  ConfigurationSitePublic,
   Conversation,
   EquipeInfo,
   GroupeChat,
@@ -674,4 +675,26 @@ export async function creerChoixQuestion(payload: ChoixQuestionPayload): Promise
 
 export async function supprimerChoixQuestion(id: string): Promise<void> {
   await apiClient.delete(`/communaute/quiz-choix/${id}/`);
+}
+
+/**
+ * Configuration du site public (singleton, demande utilisateur du 2026-09-27, Phase 5
+ * "Startseite Hero-Video") — GET ouvert à tout visiteur (voir HeroVideo.tsx, AccueilTab.tsx),
+ * PATCH réservé au Bureau Admin+ côté backend (voir AdminConfigurationSitePage.tsx).
+ */
+export async function getConfigurationSitePublic(): Promise<ConfigurationSitePublic> {
+  const { data } = await apiClient.get<ConfigurationSitePublic>("/communaute/configuration-site/");
+  return data;
+}
+
+export async function modifierConfigurationSitePublic(
+  videoHero: File,
+): Promise<ConfigurationSitePublic> {
+  const formData = new FormData();
+  formData.append("video_hero", videoHero);
+  const { data } = await apiClient.patch<ConfigurationSitePublic>(
+    "/communaute/configuration-site/",
+    formData,
+  );
+  return data;
 }

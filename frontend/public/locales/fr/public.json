@@ -85,5 +85,15 @@
     "folgen_titre": "Suivez-nous",
     "facebook": "Facebook",
     "instagram": "Instagram"
+  },
+  "admin_hero_video": {
+    "titre": "Vidéo du hero de la page d'accueil",
+    "description": "Vidéo de fond dans le hero de la page d'accueil publique (façon mycid.org) — jouée automatiquement, sans son, en boucle. MP4 uniquement, 20 Mo max.",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Erreur lors du chargement de la configuration.",
+    "aucune_video": "Aucune vidéo pour le moment — le hero affiche le fond par défaut.",
+    "televerser": "Téléverser une vidéo",
+    "televersement_en_cours": "Téléversement en cours…",
+    "erreur": "Erreur lors du téléversement de la vidéo."
   }
 }

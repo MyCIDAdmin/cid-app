@@ -30,7 +30,8 @@
     "gestion_roles": "Gestion des rôles",
     "articles_cotisation": "Articles de cotisation",
     "parametres_notification": "Notifications par email",
-    "point_activite": "Nouveautés dans {{module}}"
+    "point_activite": "Nouveautés dans {{module}}",
+    "configuration_site": "Vidéo du hero"
   },
   "nav_groupe": {
     "general": "Général",
