@@ -28,6 +28,32 @@ vi.mock("../../hooks/useRbac", async () => {
   return { ...actual, usePageAccess: vi.fn() };
 });
 
+// RichTextEditor (TipTap/ProseMirror, demande utilisateur du 2026-09-27, point 11.3) ne peut
+// pas être piloté par fireEvent dans jsdom (ProseMirror ignore les mutations DOM manuelles —
+// voir RichTextEditor.test.tsx, qui ne teste jamais la frappe réelle) : remplacé ici par un
+// <textarea> minimal exposant le même contrat value/onChange/placeholder/ariaLabel, pour que
+// les tests de soumission du formulaire ci-dessous restent inchangés.
+vi.mock("../../components/ui/RichTextEditor", () => ({
+  default: ({
+    value,
+    onChange,
+    placeholder,
+    ariaLabel,
+  }: {
+    value: string;
+    onChange: (html: string) => void;
+    placeholder?: string;
+    ariaLabel?: string;
+  }) => (
+    <textarea
+      aria-label={ariaLabel}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+
 const bureauAdmin = {
   id: "u1",
   email: "admin@example.com",

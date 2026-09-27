@@ -73,7 +73,13 @@ function EvenementKachel({
         <h3 className="relative z-10 pr-16 text-base font-bold text-white">{evenement.titre}</h3>
       </div>
       <div className="space-y-2 p-3">
-        <p className="line-clamp-2 text-xs text-text-tertiary">{evenement.description}</p>
+        {/* evenement.description contient désormais du HTML (éditeur riche AdminEventsPage,
+            demande utilisateur du 2026-09-27 point 11.3) — rendu tel quel, jamais retapé côté
+            client, même principe que ProjetCard.tsx pour description_html. */}
+        <div
+          className="line-clamp-2 text-xs text-text-tertiary"
+          dangerouslySetInnerHTML={{ __html: evenement.description }}
+        />
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-tertiary">
           {evenement.heure && <span>🕒 {evenement.heure.slice(0, 5)}</span>}
           <span>📍 {evenement.lieu}</span>
