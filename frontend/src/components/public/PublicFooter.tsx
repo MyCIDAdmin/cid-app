@@ -10,7 +10,15 @@
  * la spécification utilisateur) — à remplacer par des routes internes le jour où ces textes
  * existeront pour CID lui-même.
  */
+import { IconBrandFacebook, IconBrandInstagram, IconMail, IconMapPin } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
+
+import BrandLogo from "../ui/BrandLogo";
+
+// Lien "location" du footer (retour utilisateur du 2026-09-27) — pointe directement vers le lien
+// Google Maps fourni par l'utilisateur ; inutile de le résoudre côté serveur/scraping, un lien
+// externe n'a besoin que de sa cible, pas de son contenu.
+const LIEN_LOCALISATION = "https://share.google/2bOef3rWXOlAMprNM";
 
 const LIENS_LEGAUX = [
   { labelKey: "footer.impressum", href: "https://www.mycid.org/impressum" },
@@ -34,9 +42,12 @@ export default function PublicFooter() {
     <footer className="border-t border-text-tertiary/10 bg-bg-primary">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
         <div>
-          <p className="font-display text-sm font-semibold uppercase tracking-wide text-text-primary">
-            MyCID <span className="text-text-tertiary">{t("footer.depuis_2019")}</span>
-          </p>
+          <div className="flex items-center gap-2">
+            <BrandLogo className="h-8 w-8" />
+            <p className="font-display text-sm font-semibold uppercase tracking-wide text-text-primary">
+              MyCID <span className="text-text-tertiary">{t("footer.depuis_2019")}</span>
+            </p>
+          </div>
           <p className="mt-2 max-w-sm text-sm text-text-secondary">{t("footer.claim")}</p>
         </div>
 
@@ -68,12 +79,23 @@ export default function PublicFooter() {
             <li>
               <a
                 href="mailto:info@clubistesindeutschland.org"
-                className="hover:text-ca"
+                className="flex items-center gap-1.5 hover:text-ca"
               >
+                <IconMail size={16} className="shrink-0" />
                 info@clubistesindeutschland.org
               </a>
             </li>
-            <li>{t("footer.pays")}</li>
+            <li>
+              <a
+                href={LIEN_LOCALISATION}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 hover:text-ca"
+              >
+                <IconMapPin size={16} className="shrink-0" />
+                {t("footer.pays")}
+              </a>
+            </li>
           </ul>
 
           <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-text-tertiary">
@@ -86,8 +108,13 @@ export default function PublicFooter() {
                   href={lien.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-text-secondary hover:text-ca"
+                  className="flex items-center gap-1.5 text-text-secondary hover:text-ca"
                 >
+                  {lien.labelKey === "footer.facebook" ? (
+                    <IconBrandFacebook size={16} className="shrink-0" />
+                  ) : (
+                    <IconBrandInstagram size={16} className="shrink-0" />
+                  )}
                   {t(lien.labelKey)}
                 </a>
               </li>
