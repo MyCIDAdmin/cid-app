@@ -82,6 +82,24 @@ describe("PublicEvenementsTab", () => {
     expect(screen.getByText("Sortie supporters")).toBeInTheDocument();
   });
 
+  // evenement.description contient désormais du HTML (éditeur riche AdminEventsPage, demande
+  // utilisateur du 2026-09-27 point 11.3) — la kachel doit le RENDRE (comme ProjetCard pour
+  // description_html), pas l'afficher tel quel en tant que texte brut avec les balises visibles.
+  it("rend la description au format HTML sur la kachel, sans afficher les balises", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([
+        evenement({ description: "<p>Départ à <strong>8h</strong> précises.</p>" }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<PublicEvenementsTab />);
+
+    expect(screen.getByText("précises.", { exact: false })).toBeInTheDocument();
+    expect(screen.queryByText(/<p>|<strong>/)).not.toBeInTheDocument();
+  });
+
   it("renvoie un visiteur anonyme vers /login au clic sur \"S'inscrire\" au lieu d'ouvrir la modale", () => {
     renderWithProviders(<PublicEvenementsTab />);
     fireEvent.click(screen.getByText("sinscrire_gratuit"));

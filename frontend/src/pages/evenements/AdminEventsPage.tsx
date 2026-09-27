@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import RichTextEditor from "../../components/ui/RichTextEditor";
 import {
   useAnnulerEvenement,
   useCreerEvenement,
@@ -152,12 +153,17 @@ function FormulaireEvenement({
         <label className="mb-1 block text-xs font-medium text-text-secondary">
           {t("admin.champ_description")} <span className="text-status-dangerText">*</span>
         </label>
-        <textarea
+        {/* Éditeur riche type Word (demande utilisateur du 2026-09-27, point 11.3 :
+            "word-like text editor" pour la description des événements) — même composant
+            TipTap que Projets & Actions/Mitgliedschaftskampagnen (RichTextEditor.tsx), plus
+            de simple <textarea>. La description stocke donc désormais du HTML — voir
+            docstring de Evenement.description et apps.evenements.tasks (strip_tags avant tout
+            envoi d'email texte brut). */}
+        <RichTextEditor
           value={valeurs.description}
-          onChange={(e) => champ("description", e.target.value)}
-          placeholder={t("admin.champ_description_placeholder")}
-          rows={3}
-          className="w-full resize-none rounded-cid border border-text-tertiary/30 p-2 text-sm"
+          onChange={(html) => champ("description", html)}
+          placeholder={t("admin.champ_description_placeholder") ?? ""}
+          ariaLabel={t("admin.champ_description") ?? ""}
         />
       </div>
 

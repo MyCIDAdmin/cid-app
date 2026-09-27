@@ -62,6 +62,12 @@ class Evenement(models.Model):
 
     titre = models.CharField(max_length=200)
     type_evenement = models.CharField(max_length=20, choices=TypeEvenement.choices)
+    # Contient désormais du HTML, saisi via l'éditeur riche type Word côté AdminEventsPage
+    # (demande utilisateur du 2026-09-27, point 11.3) — même principe que
+    # apps.projets.Projet.description_html/apps.adhesions.CampagneAdhesion.description, sans
+    # sanitization HTML côté serveur (contenu réservé au Bureau Admin+, jamais à un membre
+    # normal — voir EvenementPermission). Les emails texte brut qui l'interpolent (voir tasks.py)
+    # suppriment les balises via strip_tags avant envoi.
     description = models.TextField()
 
     date_evenement = models.DateField()

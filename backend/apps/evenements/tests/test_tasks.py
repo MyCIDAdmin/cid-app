@@ -62,6 +62,27 @@ def test_invitation_evenement_introuvable_ne_leve_pas():
     assert envoyer_invitations_evenement("00000000-0000-0000-0000-000000000000") == 0
 
 
+def test_invitation_supprime_le_html_de_la_description(mailoutbox):
+    # Ajouté le 2026-09-27 (demande utilisateur, point 11.3 : "word-like text editor" pour la
+    # description des événements) — evenement.description contient désormais du HTML (éditeur
+    # TipTap côté AdminEventsPage), cet email reste du texte brut : les balises ne doivent jamais
+    # fuiter telles quelles dans la boîte de réception d'un membre.
+    _membre_actif_avec_compte("m1@example.de")
+    evenement = EvenementFactory(
+        titre="AG Berlin",
+        description="<p>Nouvelle <strong>édition</strong> annuelle.</p><p>Venez nombreux !</p>",
+    )
+
+    envoyer_invitations_evenement(str(evenement.id))
+
+    assert len(mailoutbox) == 1
+    corps = mailoutbox[0].body
+    assert "<p>" not in corps
+    assert "<strong>" not in corps
+    assert "Nouvelle édition annuelle." in corps
+    assert "Venez nombreux !" in corps
+
+
 # --- envoyer_rappels_evenements (W-005) ---
 
 
@@ -102,6 +123,26 @@ def test_rappel_ignore_les_evenements_hors_fenetre(mailoutbox):
 
     assert envoyes == 0
     assert len(mailoutbox) == 0
+
+
+def test_rappel_supprime_le_html_de_la_description(mailoutbox):
+    # Voir test_invitation_supprime_le_html_de_la_description ci-dessus — même garde côté
+    # rappels J-3/J-1.
+    membre = _membre_actif_avec_compte("inscrit2@example.de")
+    aujourdhui = datetime.date(2027, 3, 1)
+    evenement = EvenementFactory(
+        date_evenement=aujourdhui + datetime.timedelta(days=3),
+        description="<p>Nouvelle <strong>édition</strong> annuelle.</p>",
+    )
+    InscriptionFactory(evenement=evenement, membre=membre)
+
+    envoyer_rappels_evenements(today=aujourdhui)
+
+    assert len(mailoutbox) == 1
+    corps = mailoutbox[0].body
+    assert "<p>" not in corps
+    assert "<strong>" not in corps
+    assert "Nouvelle édition annuelle." in corps
 
 
 # --- envoyer_annulation_evenement (ajoutée le 2026-09-16) ---

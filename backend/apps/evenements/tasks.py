@@ -17,6 +17,14 @@ Comme apps.cotisations.tasks (voir son docstring), chaque envoi email individuel
 suivants — et la notification in-app est créée indépendamment de l'email, jamais conditionnée à
 son succès (contrairement à la relance cotisation, où seul un envoi réussi consomme le verrou
 d'idempotence : ici il n'y a pas de verrou équivalent à contourner).
+
+`evenement.description` contient désormais du HTML (éditeur "word-like" TipTap côté
+AdminEventsPage, demande utilisateur du 2026-09-27 point 11.3 — même principe que
+apps.adhesions.tasks.envoyer_annonce_campagne) — ces emails restent des `send_mail` texte brut
+(pas de version HTML), donc `strip_tags` avant interpolation, sinon les balises brutes
+apparaîtraient telles quelles dans la boîte de réception du membre. `strip_tags` sur une
+ancienne description en texte brut (sans balises, créées avant ce changement) est un no-op,
+donc rétro-compatible.
 """
 
 import logging
@@ -26,6 +34,7 @@ from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.utils.html import strip_tags
 
 from apps.membres.models import Membre, StatutMembre
 from apps.notifications.models import TypeNotification
@@ -41,7 +50,7 @@ def _details_evenement(evenement: Evenement) -> str:
     Mails mehr Details hinzu")."""
     cout = f"{evenement.cout} €" if evenement.cout else "Gratuit"
     return (
-        f"{evenement.description}\n\n"
+        f"{strip_tags(evenement.description).strip()}\n\n"
         f"Date : {evenement.date_evenement:%d/%m/%Y}\n"
         f"Lieu : {evenement.lieu}\n"
         f"Coût : {cout}"
@@ -187,7 +196,7 @@ def envoyer_rappels_evenements(today=None) -> int:
                                 f"Rappel : {evenement.titre} a lieu le "
                                 f"{evenement.date_evenement:%d/%m/%Y} à {evenement.lieu}. "
                                 f"Vous êtes inscrit(e) pour {inscription.places} place(s).\n\n"
-                                f"{evenement.description}"
+                                f"{strip_tags(evenement.description).strip()}"
                             ),
                             from_email=settings.DEFAULT_FROM_EMAIL,
                             recipient_list=[user.email],
