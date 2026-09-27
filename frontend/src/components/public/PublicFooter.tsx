@@ -9,6 +9,14 @@
  * pointent vers mycid.org : CID n'a pas encore ses propres pages légales (aucune demandée dans
  * la spécification utilisateur) — à remplacer par des routes internes le jour où ces textes
  * existeront pour CID lui-même.
+ *
+ * Variante `compact` (retour utilisateur du 2026-09-27 : "Der Footer in der App nach Anmeldung
+ * ist zu groß, nimmt einen großen Platz [...] Footer soll immer am Ende der Seite angebunden
+ * sein") : utilisée UNIQUEMENT par AppLayout.tsx (jamais par PublicHomePage.tsx, qui garde le
+ * footer pleine taille façon mycid.org). Une seule ligne dense (marque + liens légaux + contact +
+ * réseaux sociaux) plutôt que la grille 3 colonnes py-10 d'origine, pensée pour l'app connectée où
+ * l'espace vertical est disputé par la sidebar/le contenu métier — le contenu reste strictement le
+ * même (aucun lien retiré), seule la densité change.
  */
 import { IconBrandFacebook, IconBrandInstagram, IconMail, IconMapPin } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
@@ -35,8 +43,74 @@ const LIENS_SOCIAUX = [
   { labelKey: "footer.instagram", href: "https://www.instagram.com/clubistes_in_deutschland/" },
 ];
 
-export default function PublicFooter() {
+export default function PublicFooter({ compact = false }: { compact?: boolean }) {
   const { t } = useTranslation("public");
+
+  if (compact) {
+    return (
+      <footer className="shrink-0 border-t border-text-tertiary/10 bg-bg-primary">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 text-xs sm:px-6">
+          <div className="flex items-center gap-1.5">
+            <BrandLogo className="h-5 w-5" />
+            <span className="font-display font-semibold uppercase tracking-wide text-text-primary">
+              MyCID
+            </span>
+            <span className="text-text-tertiary">{t("footer.depuis_2019")}</span>
+          </div>
+
+          <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {LIENS_LEGAUX.map((lien) => (
+              <li key={lien.labelKey}>
+                <a
+                  href={lien.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-secondary hover:text-ca"
+                >
+                  {t(lien.labelKey)}
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <a
+              href="mailto:info@clubistesindeutschland.org"
+              className="flex items-center gap-1 text-text-secondary hover:text-ca"
+            >
+              <IconMail size={14} className="shrink-0" />
+              info@clubistesindeutschland.org
+            </a>
+            <a
+              href={LIEN_LOCALISATION}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-text-secondary hover:text-ca"
+            >
+              <IconMapPin size={14} className="shrink-0" />
+              {t("footer.pays")}
+            </a>
+            {LIENS_SOCIAUX.map((lien) => (
+              <a
+                key={lien.labelKey}
+                href={lien.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t(lien.labelKey)}
+                className="flex items-center text-text-secondary hover:text-ca"
+              >
+                {lien.labelKey === "footer.facebook" ? (
+                  <IconBrandFacebook size={16} className="shrink-0" />
+                ) : (
+                  <IconBrandInstagram size={16} className="shrink-0" />
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="border-t border-text-tertiary/10 bg-bg-primary">

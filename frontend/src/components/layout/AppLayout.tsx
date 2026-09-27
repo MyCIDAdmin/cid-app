@@ -76,7 +76,9 @@ export default function AppLayout() {
         <main className="flex-1 overflow-y-auto bg-bg-tertiary p-6">
           <Outlet />
         </main>
-        {afficherFooter && <PublicFooter />}
+        {/* Variante compact (retour utilisateur du 2026-09-27 : footer trop grand + scrollbar
+            ajoutée) : voir docstring PublicFooter.tsx. */}
+        {afficherFooter && <PublicFooter compact />}
       </div>
     </div>
   );

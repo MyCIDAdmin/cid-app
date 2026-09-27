@@ -31,11 +31,16 @@ export default function AccueilTab() {
         className={
           videoUrl
             ? "relative overflow-hidden rounded-cid-lg bg-gradient-to-br from-ca to-cad px-6 py-16 sm:px-10"
-            : undefined
+            : "py-10"
         }
       >
         {videoUrl && <HeroVideo videoUrl={videoUrl} />}
-        <div className="relative">
+        {/* Centré façon mycid.org (retour utilisateur du 2026-09-27 : "gleiche Seitenausrichtung:
+            Zentriert", "Button 'Mitglieder werden' Soll auch zentriert sein") — colonne flex
+            centrée plutôt que le bloc aligné à gauche d'origine ; `.stagger-children` (utilitaire
+            déjà existant, voir index.css, utilisé par CataloguePage/ProjetsPage) applique la même
+            apparition échelonnée (fade-up) au titre/sous-titre/CTA, façon mycid.org. */}
+        <div className="stagger-children relative mx-auto flex max-w-2xl flex-col items-center text-center">
           <h1
             className={`font-display text-3xl font-bold sm:text-4xl ${
               videoUrl ? "text-white" : "text-text-primary"
@@ -44,9 +49,7 @@ export default function AccueilTab() {
             {t("hero.titre")}
           </h1>
           <p
-            className={`mt-3 max-w-2xl text-base ${
-              videoUrl ? "text-white/85" : "text-text-secondary"
-            }`}
+            className={`mt-3 text-base ${videoUrl ? "text-white/85" : "text-text-secondary"}`}
           >
             {t("hero.sous_titre")}
           </p>

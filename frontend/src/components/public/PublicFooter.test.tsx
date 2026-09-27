@@ -52,4 +52,28 @@ describe("PublicFooter", () => {
       "https://share.google/2bOef3rWXOlAMprNM",
     );
   });
+
+  // Variante utilisée par AppLayout.tsx (retour utilisateur du 2026-09-27 : footer trop grand +
+  // scrollbar ajoutée dans l'app connectée) — même contenu, disposition dense en une seule ligne.
+  it("variante compact : garde tous les liens mais en une seule ligne dense", () => {
+    renderWithProviders(<PublicFooter compact />);
+    expect(screen.getByText("footer.impressum").closest("a")).toHaveAttribute(
+      "href",
+      "https://www.mycid.org/impressum",
+    );
+    expect(screen.getByText("info@clubistesindeutschland.org")).toHaveAttribute(
+      "href",
+      "mailto:info@clubistesindeutschland.org",
+    );
+    expect(screen.getByText("footer.pays").closest("a")).toHaveAttribute(
+      "href",
+      "https://share.google/2bOef3rWXOlAMprNM",
+    );
+    // Les réseaux sociaux perdent leur libellé texte en compact (icône + aria-label seulement).
+    expect(screen.queryByText("footer.facebook")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("footer.facebook")).toHaveAttribute(
+      "href",
+      expect.stringContaining("facebook.com"),
+    );
+  });
 });
