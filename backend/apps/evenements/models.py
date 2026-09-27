@@ -131,6 +131,20 @@ class Evenement(models.Model):
         max_length=20, choices=StatutEvenement.choices, default=StatutEvenement.BROUILLON
     )
 
+    # Startseite publique façon mycid.org/events (demande utilisateur du 2026-09-26) : un
+    # événement publié reste par défaut réservé aux membres connectés (comportement
+    # historique inchangé) — seul un événement explicitement coché ici par le Bureau Admin+
+    # apparaît aussi dans l'onglet "Veranstaltungen" public/anonyme. Ne change jamais
+    # `statut` : un événement en brouillon n'est jamais public même si ce champ est True
+    # (voir EvenementViewSet.get_queryset, qui filtre toujours d'abord sur statut=PUBLIE).
+    visible_public = models.BooleanField(
+        default=False,
+        help_text=_(
+            "Si activé, cet événement (une fois publié) est aussi visible sur la page "
+            "d'accueil publique, pour les visiteurs non connectés et les non-membres."
+        ),
+    )
+
     created_by = models.ForeignKey(
         "membres.Membre",
         on_delete=models.PROTECT,

@@ -276,6 +276,33 @@ def test_me_requires_authentication(api_client):
     assert resp.status_code == 401
 
 
+def test_me_renvoie_le_statut_membre_de_la_fiche_liee(api_client):
+    """statut_membre (2026-09-26, plan "Öffentliche mycid.org-Startseite" section A) — utilisé
+    par HomeRoute.tsx pour distinguer un membre actif (tableau de bord habituel) d'un membre
+    non-actif (traité comme un visiteur, voir docstring UserSerializer.get_statut_membre)."""
+    from apps.membres.models import StatutMembre
+    from apps.membres.tests.factories import MembreFactory
+
+    user = User.objects.create_user(
+        email="sami.bensalah@example.com", password="Password123!", is_active=True
+    )
+    MembreFactory(user=user, statut=StatutMembre.EN_ATTENTE)
+
+    api_client.force_authenticate(user=user)
+    resp = api_client.get(reverse("accounts:me"))
+    assert resp.status_code == 200
+    assert resp.data["statut_membre"] == StatutMembre.EN_ATTENTE
+
+
+def test_me_renvoie_statut_membre_null_sans_fiche_membre_liee(api_client, membre_actif):
+    """Un compte sans fiche Membre (superuser, RH créé hors auto-inscription) ne doit pas faire
+    planter la sérialisation — même principe que get_prenom/get_nom (AHM-52)."""
+    api_client.force_authenticate(user=membre_actif)
+    resp = api_client.get(reverse("accounts:me"))
+    assert resp.status_code == 200
+    assert resp.data["statut_membre"] is None
+
+
 def test_register_creates_inactive_member(api_client):
     from apps.membres.models import Membre, StatutMembre
 

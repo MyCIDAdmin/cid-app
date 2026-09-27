@@ -57,31 +57,36 @@ def est_gestionnaire_projet(user, projet) -> bool:
 
 
 class ProjetPermission(BasePermission):
-    """Projet — lecture tout authentifié, écriture = page de gestion "Projekt- &
-    Aktionsverwaltung" (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.PAGES_ADMIN slug
-    `page_projets`) — remplace (et non complète) l'ancien seuil fixe GESTION_PROJETS_MIN_LEVEL.
-    `contributeurs` ouverte à tout authentifié (voir docstring de module). NE remplace PAS
-    `est_gestionnaire_projet` ci-dessous (exception objet-spécifique "responsable de CE projet",
-    utilisée par GestionContenuProjetPermission), qui reste inchangée."""
+    """Projet — lecture ouverte à tout le monde, y compris un visiteur anonyme depuis le
+    2026-09-26 (page d'accueil publique façon mycid.org/projects, demande utilisateur) —
+    ProjetViewSet.get_queryset masque déjà "en_preparation" à qui n'est pas Bureau Admin+, ce
+    qui s'applique donc aussi à un anonyme sans changement supplémentaire. Écriture = page de
+    gestion "Projekt- & Aktionsverwaltung" (Phase D, ajoutée le 2026-09-23,
+    apps.rbac.registry.PAGES_ADMIN slug `page_projets`) — remplace (et non complète) l'ancien
+    seuil fixe GESTION_PROJETS_MIN_LEVEL. `contributeurs` ouverte à tout le monde (voir docstring
+    de module), déjà couverte par la branche SAFE_METHODS ci-dessous puisque c'est une action GET.
+    NE remplace PAS `est_gestionnaire_projet` ci-dessous (exception objet-spécifique "responsable
+    de CE projet", utilisée par GestionContenuProjetPermission), qui reste inchangée."""
 
     def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        if request.method in SAFE_METHODS:
-            return True
-        action = getattr(view, "action", None)
-        if action == "contributeurs":
-            return True
         return has_admin_page_access(user, "page_projets", required=NiveauAcces.LECTURE_ECRITURE)
 
 
 class GestionContenuProjetPermission(BasePermission):
-    """ProjetImage / ProjetMiseAJour / ProjetMiseAJourImage — lecture tout authentifié,
-    écriture Bureau Admin+ OU responsable du projet référencé (voir docstring de module
-    et est_gestionnaire_projet)."""
+    """ProjetImage / ProjetMiseAJour / ProjetMiseAJourImage — lecture ouverte à tout le monde
+    (y compris anonyme depuis le 2026-09-26, même raisonnement que ProjetPermission ci-dessus :
+    carrousel/rapport d'avancement visibles sur la page d'accueil publique), écriture Bureau
+    Admin+ OU responsable du projet référencé (voir docstring de module et
+    est_gestionnaire_projet)."""
 
     def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
         user = request.user
         return bool(user and user.is_authenticated)
 

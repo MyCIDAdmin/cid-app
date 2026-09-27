@@ -107,10 +107,21 @@ export function useInscrireEspeces() {
   });
 }
 
-export function useInscriptions(filtres: evenementsApi.InscriptionsFiltres = {}) {
+/**
+ * `options.enabled` (ajouté le 2026-09-26, Phase D page d'accueil publique) : PublicEvenementsTab
+ * l'appelle avec `enabled: isAuthenticated` pour éviter un appel réseau voué à un 401 (Inscription
+ * Permission exige un authentifié) tant que le visiteur du sous-onglet "Meine Anmeldungen" n'est
+ * pas connecté — même principe que useMesSouscriptions (voir useAdhesions.ts). EvenementsPage
+ * (réservée aux membres connectés) continue de l'appeler sans options, comportement inchangé.
+ */
+export function useInscriptions(
+  filtres: evenementsApi.InscriptionsFiltres = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: evenementsKeys.inscriptions(filtres),
     queryFn: () => evenementsApi.listInscriptions(filtres),
+    enabled: options.enabled ?? true,
   });
 }
 

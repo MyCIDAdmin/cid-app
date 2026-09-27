@@ -35,6 +35,7 @@ i18n
       "vote",
       "communaute",
       "projets",
+      "public",
     ],
     defaultNS: "common",
     backend: {

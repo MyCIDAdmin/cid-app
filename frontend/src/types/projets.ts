@@ -131,3 +131,14 @@ export interface Contributeur {
   montant_total: string;
   derniere_contribution: string;
 }
+
+/**
+ * Kennzahlen "Donators / Gesammelt / Projekte" de la page d'accueil publique (demande
+ * utilisateur du 2026-09-26, plan "Öffentliche mycid.org-Startseite" section C.3) — réponse de
+ * GET /projets/projets/kennzahlen/, voir docstring ProjetViewSet.kennzahlen côté backend.
+ */
+export interface ProjetsKennzahlen {
+  nb_projets: number;
+  montant_collecte: string;
+  nb_donateurs: number;
+}

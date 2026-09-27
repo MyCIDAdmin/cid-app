@@ -338,7 +338,7 @@ export default function DashboardPage() {
           )}
           <button
             type="button"
-            onClick={() => navigate("/cotisation")}
+            onClick={() => navigate("/mon-adhesion")}
             className="mt-3 w-full rounded-cid bg-ca px-3 py-1.5 text-xs font-semibold text-white hover:bg-cad"
           >
             {t("ma_situation.gerer_paiements")}

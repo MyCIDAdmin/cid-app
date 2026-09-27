@@ -3,9 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useBoutiqueHooks from "../../hooks/useBoutique";
+import { useAuthStore } from "../../store/authStore";
 import { usePanierStore } from "../../store/panierStore";
 import type { Produit } from "../../types/boutique";
 import CataloguePage from "./CataloguePage";
+
+const navigateMock = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+  return { ...actual, useNavigate: () => navigateMock };
+});
 
 vi.mock("../../hooks/useBoutique", async () => {
   const actual = await vi.importActual<typeof useBoutiqueHooks>("../../hooks/useBoutique");
@@ -49,6 +56,14 @@ describe("CataloguePage", () => {
   beforeEach(() => {
     sessionStorage.clear();
     usePanierStore.setState({ articles: [] });
+    // Cette page est aussi embarquée telle quelle dans l'onglet public "Shop" (Phase D, page
+    // d'accueil publique) : par défaut ici on simule l'usage MEMBRE habituel (authentifié), le
+    // comportement visiteur anonyme a son propre test dédié ci-dessous (voir docstring
+    // handleAjouter dans CataloguePage.tsx).
+    useAuthStore.setState({
+      isAuthenticated: true,
+      user: { id: "u1", email: "m@example.com", role: "membre", langue_preferee: "fr" },
+    });
     vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
       data: { next: null, previous: null, results: [produit()] },
       isLoading: false,
@@ -292,5 +307,30 @@ describe("CataloguePage", () => {
 
     renderWithProviders(<CataloguePage />);
     expect(screen.getByText("catalogue.aucun_produit")).toBeInTheDocument();
+  });
+
+  it("renvoie un visiteur anonyme vers /login au clic sur \"Ajouter\" au lieu de remplir le panier (onglet public \"Shop\", Phase D)", () => {
+    useAuthStore.setState({ isAuthenticated: false, user: null });
+
+    renderWithProviders(<CataloguePage />);
+    fireEvent.click(screen.getByText(/catalogue.ajouter/));
+
+    expect(navigateMock).toHaveBeenCalledWith("/login");
+    expect(usePanierStore.getState().articles).toHaveLength(0);
+  });
+
+  it("renvoie un visiteur anonyme vers /login au clic sur \"Ajouter\" d'un bon d'achat (onglet public \"Shop\", Phase D)", () => {
+    useAuthStore.setState({ isAuthenticated: false, user: null });
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: { next: null, previous: null, results: [produitBonAchat()] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+
+    renderWithProviders(<CataloguePage />);
+    fireEvent.click(screen.getByText(/catalogue.ajouter/));
+
+    expect(navigateMock).toHaveBeenCalledWith("/login");
+    expect(usePanierStore.getState().articles).toHaveLength(0);
   });
 });

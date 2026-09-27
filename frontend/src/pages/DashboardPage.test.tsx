@@ -89,6 +89,7 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     organisateur: null,
     organisateur_detail: null,
     statut: "publie",
+    visible_public: false,
     places_reservees: 38,
     places_restantes: 7,
     created_by: "m1",

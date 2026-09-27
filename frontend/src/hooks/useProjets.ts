@@ -21,12 +21,24 @@ const projetsKeys = {
   detail: (id: string) => [...projetsKeys.all, "detail", id] as const,
   contributeurs: (id: string) => [...projetsKeys.all, "contributeurs", id] as const,
   misesAJour: (projetId: string) => [...projetsKeys.all, "mises-a-jour", projetId] as const,
+  kennzahlen: () => [...projetsKeys.all, "kennzahlen"] as const,
 };
 
 export function useProjets(filtres: projetsApi.ProjetsFiltres = {}) {
   return useQuery({
     queryKey: projetsKeys.liste(filtres),
     queryFn: () => projetsApi.listProjets(filtres),
+  });
+}
+
+/**
+ * Kennzahlen "Donators / Gesammelt / Projekte" de la page d'accueil publique (demande
+ * utilisateur du 2026-09-26, plan section C.3) — lecture ouverte à tout le monde.
+ */
+export function useKennzahlenProjets() {
+  return useQuery({
+    queryKey: projetsKeys.kennzahlen(),
+    queryFn: () => projetsApi.getKennzahlenProjets(),
   });
 }
 

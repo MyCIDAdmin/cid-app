@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "aria_label": "Hauptnavigation",
+    "accueil": "Startseite",
+    "evenements": "Veranstaltungen",
+    "projets": "Projekte",
+    "shop": "Shop",
+    "galerie": "Galerie",
+    "apropos": "Über uns"
+  },
+  "action": {
+    "connexion": "Anmelden / Registrieren",
+    "mode_sombre": "Dunkler Modus",
+    "mode_clair": "Heller Modus"
+  },
+  "hero": {
+    "titre": "Ein Club. Ein Herz. Eine Familie.",
+    "sous_titre": "Der offizielle Fanverband für Club Africain Unterstützer in Deutschland. Werde Teil unserer Gemeinschaft und sei Teil von etwas Besonderem.",
+    "cta_mitglied_werden": "Mitglied werden"
+  },
+  "onglet_a_venir": {
+    "description": "Dieser Bereich wird in Kürze verfügbar sein."
+  },
+  "membership": {
+    "titre": "Mitgliedschaft {{annee}}",
+    "sous_titre": "Wähle das Paket, das am besten zu dir passt, und werde offizielles Mitglied von Clubistes in Deutschland.",
+    "badge_populaire": "Beliebt",
+    "choisir": "Mitglied werden",
+    "deja_membre_titre": "Deine Mitgliedschaft",
+    "deja_membre_expire_le": "Gültig bis {{date}}",
+    "gerer_lien": "Meine Mitgliedschaft verwalten"
+  },
+  "kennzahlen": {
+    "donateurs": "Spender",
+    "collecte": "Gesammelt",
+    "projets": "Projekte"
+  },
+  "fanclub": {
+    "titre": "Club Africain Live",
+    "onglet_classement": "Tabelle",
+    "onglet_calendrier": "Spielplan"
+  },
+  "evenements_public": {
+    "titre": "Veranstaltungen",
+    "sous_titre": "Entdecke unsere kommenden Treffen, Reisen und Feiern — und sieh, was du bereits gebucht hast.",
+    "connexion_requise_titre": "Melde dich an, um deine Anmeldungen zu sehen",
+    "connexion_requise_text": "Sobald du angemeldet bist, findest du hier alle Veranstaltungen, für die du dich angemeldet hast.",
+    "connexion_bouton": "Jetzt anmelden"
+  },
+  "apropos": {
+    "titre": "Über MyCID",
+    "intro": "Wer wir sind, woher wir kommen, und wofür wir stehen.",
+    "geschichte_titre": "Unsere Geschichte",
+    "geschichte_text": "Clubistes in Deutschland wurde 2019 von einer Handvoll Fans gegründet, die in Deutschland leben, aber ihrem Herzensverein treu geblieben sind. Aus ein paar Treffen in Wohnzimmern ist ein Verein geworden, der heute Mitglieder in ganz Deutschland zählt — mit eigenen Veranstaltungen, einer Boutique, gemeinsamen Reisen zu Auswärtsspielen und einem starken Zusammenhalt weit über den Fußball hinaus.",
+    "club_titre": "Club Africain de Tunis",
+    "club_text": "Der Club Africain de Tunis, gegründet 1920, ist einer der traditionsreichsten Fußballvereine Nordafrikas. Seine Erfolgsgeschichte ist die Grundlage, auf der unsere Gemeinschaft in Deutschland ihre Leidenschaft aufbaut.",
+    "kennzahl_meistertitel_valeur": "14",
+    "kennzahl_meistertitel_label": "Meistertitel",
+    "kennzahl_pokalsiege_valeur": "13",
+    "kennzahl_pokalsiege_label": "Pokalsiege",
+    "kennzahl_caf_valeur": "1",
+    "kennzahl_caf_label": "CAF Champions League",
+    "werte_titre": "Unsere Werte",
+    "wert_leidenschaft_titre": "Leidenschaft",
+    "wert_leidenschaft_text": "Der Club Africain ist mehr als ein Verein — er ist ein Teil unserer Identität, den wir mit Stolz weitertragen.",
+    "wert_gemeinschaft_titre": "Gemeinschaft",
+    "wert_gemeinschaft_text": "Wir bringen Clubistes aus ganz Deutschland zusammen, ob bei einer Feier, einer Reise oder einfach beim nächsten Spiel.",
+    "wert_kultur_titre": "Kultur",
+    "wert_kultur_text": "Wir pflegen unsere tunesische Kultur und geben sie an die nächste Generation von Clubistes in Deutschland weiter.",
+    "wert_exzellenz_titre": "Exzellenz",
+    "wert_exzellenz_text": "Wir organisieren unsere Veranstaltungen, unsere Boutique und unsere Projekte mit demselben Anspruch, den wir vom Verein selbst erwarten.",
+    "kontakt_titre": "Kontakt",
+    "kontakt_text": "Fragen zum Verein oder zur Mitgliedschaft? Schreib uns — die Kontaktdaten findest du im Footer jeder Seite."
+  },
+  "footer": {
+    "depuis_2019": "Since 2019",
+    "claim": "Der offizielle Fanverband für Club Africain Unterstützer in Deutschland. Werde Teil unserer Gemeinschaft und sei Teil von etwas Besonderem.",
+    "rechtliches_titre": "Rechtliches",
+    "impressum": "Impressum",
+    "datenschutz": "Datenschutz",
+    "agb": "Nutzungsbedingungen",
+    "erstattung": "Erstattungsrichtlinie",
+    "kontakt_titre": "Kontakt",
+    "pays": "Germany",
+    "folgen_titre": "Folge uns",
+    "facebook": "Facebook",
+    "instagram": "Instagram"
+  }
+}

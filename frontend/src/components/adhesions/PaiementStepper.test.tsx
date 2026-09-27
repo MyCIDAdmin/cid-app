@@ -5,7 +5,7 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import * as cotisationsApi from "../../api/cotisations";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
 import type { ArticleCatalogue, Cotisation } from "../../types/cotisation";
-import CotisationStepperPage from "./CotisationStepperPage";
+import PaiementStepper from "./PaiementStepper";
 
 vi.mock("../../hooks/useCotisations", async () => {
   const actual = await vi.importActual<typeof useCotisationsHooks>("../../hooks/useCotisations");
@@ -48,7 +48,7 @@ function cotisation(overrides: Partial<Cotisation> = {}): Cotisation {
   };
 }
 
-describe("CotisationStepperPage", () => {
+describe("PaiementStepper", () => {
   beforeEach(() => {
     vi.mocked(useCotisationsHooks.useMesCotisations).mockReturnValue({
       data: { next: null, previous: null, results: [cotisation()] },
@@ -106,7 +106,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     expect(screen.getByText("continuer")).toBeInTheDocument();
     // Récapitulatif + option catalogue + historique affichent tous 45,00 €.
@@ -123,7 +123,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     fireEvent.click(screen.getByText("article.don_titre"));
     const champMontant = screen.getByLabelText("article.don_montant_label") as HTMLInputElement;
@@ -136,7 +136,7 @@ describe("CotisationStepperPage", () => {
 
   it("enregistre le paiement d'une cotisation et affiche la confirmation en attente (AHM-53)", async () => {
     // AHM-53 : le serveur ne renvoie jamais statut=payee pour un paiement en libre-service, quel
-    // que soit le mode choisi — voir docstring de CotisationStepperPage et perform_create côté
+    // que soit le mode choisi — voir docstring de PaiementStepper et perform_create côté
     // backend. Le mock reflète donc la réalité de l'API : en_attente, pas de référence.
     const mutate = vi.fn(
       (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
@@ -151,7 +151,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     fireEvent.click(screen.getByText("continuer"));
     expect(screen.getByText("paiement.titre")).toBeInTheDocument();
@@ -205,7 +205,7 @@ describe("CotisationStepperPage", () => {
       isPending: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     fireEvent.click(screen.getByText("continuer"));
     // "carte" (Stripe) n'est plus proposé du tout — seuls virement SEPA et PayPal manuel le sont.
@@ -247,7 +247,7 @@ describe("CotisationStepperPage", () => {
       isPending: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     fireEvent.click(screen.getByText("continuer"));
     fireEvent.click(screen.getByText("paiement.paypal_titre"));
@@ -280,7 +280,7 @@ describe("CotisationStepperPage", () => {
       isPending: false,
     } as unknown as ReturnType<typeof useCotisationsHooks.useInitierPaiementEnLigne>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     fireEvent.click(screen.getByText("continuer"));
     fireEvent.click(screen.getByText("paiement.sepa_titre"));
@@ -302,7 +302,7 @@ describe("CotisationStepperPage", () => {
     const blob = new Blob(["%PDF-fake"], { type: "application/pdf" });
     vi.mocked(cotisationsApi.telechargerRecuCotisation).mockResolvedValue(blob);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     fireEvent.click(screen.getByText("recu.telecharger"));
 
@@ -326,7 +326,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     expect(screen.queryByText("recu.telecharger")).not.toBeInTheDocument();
   });
@@ -348,7 +348,7 @@ describe("CotisationStepperPage", () => {
     const blob = new Blob(["%PDF-fake"], { type: "application/pdf" });
     vi.mocked(cotisationsApi.telechargerRecuCotisation).mockResolvedValue(blob);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     fireEvent.click(screen.getByText("continuer"));
     fireEvent.click(screen.getByText(/paiement\.payer/));
@@ -396,7 +396,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     // L'article désactivé n'est jamais proposé.
     expect(screen.queryByText("Ancien article")).not.toBeInTheDocument();
@@ -450,7 +450,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     expect(screen.getAllByText("60,00 €").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("45,00 €")).not.toBeInTheDocument();
@@ -480,7 +480,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     expect(screen.queryByText("article.cotisation_description")).not.toBeInTheDocument();
     // La carte adhésion (non désactivée) reste proposée.
@@ -502,7 +502,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     expect(screen.getByText("article.cotisation_description")).toBeInTheDocument();
     expect(screen.getByText("article.adhesion_description")).toBeInTheDocument();
@@ -526,7 +526,7 @@ describe("CotisationStepperPage", () => {
       reset: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
 
-    renderWithProviders(<CotisationStepperPage />);
+    renderWithProviders(<PaiementStepper />);
 
     expect(screen.queryByText("article.cotisation_description")).not.toBeInTheDocument();
     expect(screen.queryByText("article.adhesion_description")).not.toBeInTheDocument();
@@ -569,7 +569,7 @@ describe("CotisationStepperPage", () => {
         isError: false,
       } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
 
-      renderWithProviders(<CotisationStepperPage />, { route: "/?paiement=cot-evt" });
+      renderWithProviders(<PaiementStepper />, { route: "/?paiement=cot-evt" });
 
       // Étape 1 (choix d'article) entièrement sautée.
       expect(screen.queryByText("article.cotisation_titre")).not.toBeInTheDocument();
@@ -601,7 +601,7 @@ describe("CotisationStepperPage", () => {
         isError: false,
       } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
 
-      renderWithProviders(<CotisationStepperPage />, { route: "/?paiement=cot-payee" });
+      renderWithProviders(<PaiementStepper />, { route: "/?paiement=cot-payee" });
 
       expect(screen.getByText("confirmation.titre")).toBeInTheDocument();
       expect(screen.getByText("Inscription — Tournoi")).toBeInTheDocument();
@@ -614,7 +614,7 @@ describe("CotisationStepperPage", () => {
         isError: false,
       } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
 
-      renderWithProviders(<CotisationStepperPage />, { route: "/?paiement=cot-loading" });
+      renderWithProviders(<PaiementStepper />, { route: "/?paiement=cot-loading" });
 
       expect(screen.getByText("paiement.chargement_lien")).toBeInTheDocument();
     });
@@ -626,7 +626,7 @@ describe("CotisationStepperPage", () => {
         isError: true,
       } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
 
-      renderWithProviders(<CotisationStepperPage />, { route: "/?paiement=cot-404" });
+      renderWithProviders(<PaiementStepper />, { route: "/?paiement=cot-404" });
 
       expect(screen.getByText("paiement.erreur_lien")).toBeInTheDocument();
     });

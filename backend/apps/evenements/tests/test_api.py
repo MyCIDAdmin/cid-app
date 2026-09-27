@@ -65,8 +65,32 @@ def _rejoindre_url(trajet):
 # --- Permissions catalogue événements ---
 
 
-def test_list_evenements_non_authentifie_refuse(api_client):
+def test_list_evenements_non_authentifie_ne_voit_que_les_evenements_publics(api_client):
+    """Depuis le 2026-09-26 (page d'accueil publique façon mycid.org/events, demande
+    utilisateur), un visiteur anonyme peut lister les événements — mais get_queryset ne lui
+    renvoie que ceux PUBLIE + visible_public=True (jamais un brouillon, jamais un événement
+    réservé aux membres). Remplace l'ancien test qui attendait un refus 401 pur."""
+    EvenementFactory(statut=StatutEvenement.BROUILLON, titre="Brouillon", visible_public=True)
+    EvenementFactory(statut=StatutEvenement.PUBLIE, titre="Publié réservé aux membres")
+    EvenementFactory(statut=StatutEvenement.PUBLIE, titre="Publié et public", visible_public=True)
     resp = api_client.get(reverse(EVENEMENT_LIST_URL))
+    assert resp.status_code == 200
+    titres = [e["titre"] for e in resp.data["results"]]
+    assert titres == ["Publié et public"]
+
+
+def test_list_evenements_non_authentifie_refuse_inscrire(api_client):
+    """`inscrire` reste réservé à un authentifié même si `list`/`retrieve` sont désormais
+    ouverts à tous — voir EvenementPermission."""
+    evenement = EvenementFactory(statut=StatutEvenement.PUBLIE, visible_public=True)
+    resp = api_client.post(
+        reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}, format="json"
+    )
+    assert resp.status_code == 401
+
+
+def test_list_evenements_non_authentifie_refuse_creation(api_client):
+    resp = api_client.post(reverse(EVENEMENT_LIST_URL), {"titre": "x"}, format="json")
     assert resp.status_code == 401
 
 

@@ -37,10 +37,18 @@ export function useCampagnes() {
   });
 }
 
-export function useMesSouscriptions() {
+/**
+ * `options.enabled` (ajouté le 2026-09-26, plan "Öffentliche mycid.org-Startseite" section C.2)
+ * — MembershipSection.tsx doit pouvoir désactiver cette requête pour un visiteur non connecté
+ * (l'endpoint reste authentifié, voir SouscriptionPermission côté backend, inchangé) sans
+ * dupliquer ce hook. Par défaut `true` : tous les appels existants (MonAdhesionPage) gardent
+ * leur comportement inchangé.
+ */
+export function useMesSouscriptions(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: adhesionsKeys.mesSouscriptions(),
     queryFn: () => adhesionsApi.listMesSouscriptions(),
+    enabled: options.enabled ?? true,
   });
 }
 

@@ -1,0 +1,100 @@
+/**
+ * Pied de page repris de https://www.mycid.org/ (demande utilisateur du 2026-09-26, point
+ * 2.1.7) — affiché en bas de la page d'accueil publique ET, décision utilisateur ("Auch in der
+ * eingeloggten App"), en bas de toute page appartenant aux groupes Sidebar "Allgemein",
+ * "Community" et "Inhalte" (jamais "Administration") — voir AppLayout.tsx et
+ * Sidebar.tsx::getGroupForPath.
+ *
+ * Les liens Rechtliches (Impressum/Datenschutz/Nutzungsbedingungen/Erstattungsrichtlinie)
+ * pointent vers mycid.org : CID n'a pas encore ses propres pages légales (aucune demandée dans
+ * la spécification utilisateur) — à remplacer par des routes internes le jour où ces textes
+ * existeront pour CID lui-même.
+ */
+import { useTranslation } from "react-i18next";
+
+const LIENS_LEGAUX = [
+  { labelKey: "footer.impressum", href: "https://www.mycid.org/impressum" },
+  { labelKey: "footer.datenschutz", href: "https://www.mycid.org/privacy" },
+  { labelKey: "footer.agb", href: "https://www.mycid.org/terms" },
+  { labelKey: "footer.erstattung", href: "https://www.mycid.org/refund-policy" },
+];
+
+const LIENS_SOCIAUX = [
+  {
+    labelKey: "footer.facebook",
+    href: "https://www.facebook.com/people/%D8%AE%D9%84%D9%8A%D8%A9-%D8%A3%D8%AD%D8%A8%D8%A7%D8%A1-%D8%A7%D9%84%D9%86%D8%A7%D8%AF%D9%8A-%D8%A7%D9%84%D8%A7%D9%81%D8%B1%D9%8A%D9%82%D9%8A-%D8%A8%D8%A3%D9%84%D9%85%D8%A7%D9%86%D9%8A%D8%A7/100052125737170/",
+  },
+  { labelKey: "footer.instagram", href: "https://www.instagram.com/clubistes_in_deutschland/" },
+];
+
+export default function PublicFooter() {
+  const { t } = useTranslation("public");
+
+  return (
+    <footer className="border-t border-text-tertiary/10 bg-bg-primary">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
+        <div>
+          <p className="font-display text-sm font-semibold uppercase tracking-wide text-text-primary">
+            MyCID <span className="text-text-tertiary">{t("footer.depuis_2019")}</span>
+          </p>
+          <p className="mt-2 max-w-sm text-sm text-text-secondary">{t("footer.claim")}</p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            {t("footer.rechtliches_titre")}
+          </p>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {LIENS_LEGAUX.map((lien) => (
+              <li key={lien.labelKey}>
+                <a
+                  href={lien.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-secondary hover:text-ca"
+                >
+                  {t(lien.labelKey)}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            {t("footer.kontakt_titre")}
+          </p>
+          <ul className="mt-2 space-y-1.5 text-sm text-text-secondary">
+            <li>
+              <a
+                href="mailto:info@clubistesindeutschland.org"
+                className="hover:text-ca"
+              >
+                info@clubistesindeutschland.org
+              </a>
+            </li>
+            <li>{t("footer.pays")}</li>
+          </ul>
+
+          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            {t("footer.folgen_titre")}
+          </p>
+          <ul className="mt-2 flex gap-3 text-sm">
+            {LIENS_SOCIAUX.map((lien) => (
+              <li key={lien.labelKey}>
+                <a
+                  href={lien.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-secondary hover:text-ca"
+                >
+                  {t(lien.labelKey)}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </footer>
+  );
+}

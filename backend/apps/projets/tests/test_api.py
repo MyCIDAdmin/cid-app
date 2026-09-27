@@ -75,8 +75,22 @@ def _image_valide(nom="photo.jpg", format_pillow="JPEG", content_type="image/jpe
 # --- Projet : lecture ---------------------------------------------------------------
 
 
-def test_list_non_authentifie_refuse(api_client):
+def test_list_non_authentifie_voit_les_projets_publies(api_client):
+    """Depuis le 2026-09-26 (page d'accueil publique façon mycid.org/projects, demande
+    utilisateur), un visiteur anonyme peut lister les projets — get_queryset masque
+    cependant "en_preparation" exactement comme pour un membre normal. Remplace l'ancien
+    test qui attendait un refus 401 pur."""
+    ProjetFactory(statut=StatutProjet.EN_PREPARATION, titre="Secret")
+    ProjetFactory(statut=StatutProjet.EN_COURS, titre="Visible")
     resp = api_client.get(reverse(PROJET_LIST_URL))
+    assert resp.status_code == 200
+    titres = [p["titre"] for p in resp.data["results"]]
+    assert "Visible" in titres
+    assert "Secret" not in titres
+
+
+def test_creer_projet_non_authentifie_refuse(api_client):
+    resp = api_client.post(reverse(PROJET_LIST_URL), {"titre": "x"}, format="json")
     assert resp.status_code == 401
 
 
@@ -254,10 +268,63 @@ def test_contributeurs_ouvert_a_tout_authentifie_et_agrege_par_membre(api_client
     assert resp.data[1]["montant_total"] == "15.00"
 
 
-def test_contributeurs_non_authentifie_refuse(api_client):
+def _kennzahlen_url():
+    return reverse("projets:projet-kennzahlen")
+
+
+def test_kennzahlen_agrege_montant_donateurs_distincts_et_nb_projets(api_client):
+    """Kennzahlen "Donators / Gesammelt / Projekte" de la page d'accueil publique (demande
+    utilisateur 2026-09-26) — ouvertes à tout le monde, y compris anonyme."""
+    ProjetFactory(statut=StatutProjet.EN_PREPARATION)  # masqué : ne compte pas dans nb_projets
+    projet = ProjetFactory(statut=StatutProjet.EN_COURS)
+    membre_a = MembreFactory()
+    membre_b = MembreFactory()
+    CotisationFactory(
+        type_article=TypeArticle.PROJET,
+        projet=projet,
+        membre=membre_a,
+        montant="10.00",
+        mode_paiement=ModePaiement.CARTE,
+        statut=StatutCotisation.PAYEE,
+    )
+    CotisationFactory(
+        type_article=TypeArticle.PROJET,
+        projet=projet,
+        membre=membre_a,
+        montant="5.00",
+        mode_paiement=ModePaiement.CARTE,
+        statut=StatutCotisation.PAYEE,
+    )
+    CotisationFactory(
+        type_article=TypeArticle.PROJET,
+        projet=projet,
+        membre=membre_b,
+        montant="50.00",
+        mode_paiement=ModePaiement.CARTE,
+        statut=StatutCotisation.PAYEE,
+    )
+    # Pas encore payée : ne doit pas compter.
+    CotisationFactory(
+        type_article=TypeArticle.PROJET,
+        projet=projet,
+        membre=MembreFactory(),
+        montant="999.00",
+        statut=StatutCotisation.EN_ATTENTE,
+    )
+    resp = api_client.get(_kennzahlen_url())
+    assert resp.status_code == 200
+    assert resp.data["nb_projets"] == 1
+    assert resp.data["montant_collecte"] == Decimal("65.00")
+    assert resp.data["nb_donateurs"] == 2
+
+
+def test_contributeurs_non_authentifie_autorise(api_client):
+    """`contributeurs` est une action GET, couverte par la même ouverture SAFE_METHODS que
+    `list`/`retrieve` depuis le 2026-09-26 — voir ProjetPermission. Remplace l'ancien test
+    qui attendait un refus 401 pur."""
     projet = ProjetFactory()
     resp = api_client.get(_contributeurs_url(projet))
-    assert resp.status_code == 401
+    assert resp.status_code == 200
 
 
 # --- Images de la kachel : Bureau Admin+ OU responsable DE CE projet -----------------

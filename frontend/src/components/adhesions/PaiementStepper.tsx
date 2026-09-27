@@ -1,14 +1,28 @@
 /**
- * Stepper de paiement (mockup #pg-cotisation, FDD §3.2, RICEFW F-004, AHM-16).
+ * Stepper de paiement libre-service (mockup #pg-cotisation, FDD §3.2, RICEFW F-004, AHM-16).
  *
- * Portée de ce ticket : 3 étapes (article → mode de paiement → confirmation)
- * en libre-service, au-dessus de l'API déjà construite par AHM-15
- * (POST /cotisations/ avec statut=payee, cf. apps.cotisations.views).
+ * Déplacé depuis pages/cotisations/CotisationStepperPage.tsx le 2026-09-26 (Phase F, demande
+ * utilisateur explicite : "Alle Elemente vom 'Mitgliedsbeitrag' nach 'Meine Mitgliedschaft'
+ * umziehen. [...] Eintrag 'Mitgliedsbeitrag' entfernen.") — ce composant est désormais rendu
+ * comme SECTION de MonAdhesionPage.tsx ("Meine Mitgliedschaft"), plutôt que comme page autonome
+ * sous sa propre route/entrée de sidebar. L'ancienne route `/cotisation` reste techniquement
+ * active (voir pages/cotisations/CotisationRedirect.tsx) — uniquement pour ne pas casser les
+ * liens profonds `?paiement=<id>` déjà utilisés depuis EvenementsPage/ProjetsPage/
+ * PublicEvenementsTab (inscription à un événement, contribution à un projet) — mais redirige
+ * désormais vers `/mon-adhesion?paiement=<id>` au lieu d'afficher sa propre page.
+ *
+ * Le contenu/comportement métier n'a PAS changé par rapport à l'ancienne page — seul
+ * l'emplacement (section plutôt que page) et la cible de `nouveauPaiement()` (voir plus bas)
+ * ont changé.
+ *
+ * Portée de ce module : 3 étapes (article → mode de paiement → confirmation) en libre-service,
+ * au-dessus de l'API déjà construite par AHM-15 (POST /cotisations/ avec statut=payee, cf.
+ * apps.cotisations.views).
  *
  * Choix de périmètre actés avec l'utilisateur :
- *  - Seuls les types d'article "cotisation", "adhesion" et "don" sont
- *    proposés — "evenement" est exclu tant que apps.evenements n'existe
- *    pas (aucun événement à sélectionner).
+ *  - Seuls les types d'article "cotisation", "adhesion" et "don" sont proposés en création
+ *    directe ici — un paiement lié à un événement/projet arrive toujours via le lien direct
+ *    `?paiement=<id>` (voir plus bas), jamais créé depuis cette section.
  *  - Ajouté le 2026-09-17 (retour utilisateur, voir apps.cotisations.models.ArticleCatalogue) :
  *    les articles actifs du catalogue géré par l'Administrateur App (/admin/articles-cotisation)
  *    sont proposés ici comme choix supplémentaires (type_article="autre"), à côté des 3 choix
@@ -31,11 +45,11 @@
  *    modèles). Avant ce changement, une ligne supprimée (au lieu de désactivée) faisait réapparaître
  *    la carte au tarif MONTANTS_CATALOGUE, ce qui ne correspondait jamais à l'intention de
  *    l'Administrateur App.
- *  - Aucune donnée bancaire (numéro de carte, IBAN/BIC) n'est saisie sur CETTE page, quel que soit
- *    le mode : pour carte/paypal, la saisie a lieu entièrement sur la page hébergée par le PSP
- *    (Stripe Checkout/PayPal Checkout, AHM-46 ci-dessous) — jamais dans ce formulaire, qui reste
- *    un simple choix de mode. Le virement SEPA n'a toujours pas d'équivalent en ligne (confirmation
- *    manuelle uniquement).
+ *  - Aucune donnée bancaire (numéro de carte, IBAN/BIC) n'est saisie sur CETTE section, quel que
+ *    soit le mode : pour carte/paypal, la saisie a lieu entièrement sur la page hébergée par le
+ *    PSP (Stripe Checkout/PayPal Checkout, AHM-46 ci-dessous) — jamais dans ce formulaire, qui
+ *    reste un simple choix de mode. Le virement SEPA n'a toujours pas d'équivalent en ligne
+ *    (confirmation manuelle uniquement).
  *
  * AHM-53 (retour utilisateur : recevoir une quittance immédiate pour un virement SEPA non
  * encore réglé est trompeur) : quel que soit le mode de paiement choisi à l'étape 2, le POST de
@@ -72,24 +86,25 @@
  *
  * Lien direct `?paiement=<cotisationId>` (ajouté le 2026-09-20, retour utilisateur : "Wenn ich
  * auf 'Confirmer et payer' clicke, ich soll direkt zur Zahlung springen") : ouvert depuis
- * EvenementsPage.tsx (modal d'inscription "Confirmer et payer", et le bouton "Payer maintenant"
- * de l'onglet "Mes inscriptions") vers une Cotisation DÉJÀ créée côté serveur — voir
- * apps.evenements.services.synchroniser_cotisation — jamais une nouvelle création. La Cotisation
- * est chargée par `useCotisation(paiementId)`, et l'étape 1 (choix d'article) est sautée pour
- * aller directement à l'étape 2 (choix du mode) : `payer()` n'appelle alors PAS
- * `creerMutation`/POST /cotisations/ (CotisationViewSet n'autorise d'ailleurs même pas PATCH,
- * voir `http_method_names` — un membre ne peut pas non plus corriger le mode a posteriori sur une
- * cotisation existante), il se contente d'afficher l'étape 3 avec cette même cotisation et le
- * mode choisi localement (uniquement pour l'affichage des instructions SEPA/PayPal — la
- * confirmation réelle du paiement reste manuelle, DF/Admin, comme pour tout le reste de ce
- * stepper, AHM-53). Si la cotisation est déjà `payee` (le membre revient sur ce lien après coup),
- * on saute directement à l'étape 3 telle quelle.
+ * EvenementsPage.tsx/PublicEvenementsTab.tsx (modal d'inscription "Confirmer et payer", et le
+ * bouton "Payer maintenant" de l'onglet "Mes inscriptions") et depuis ProjetsPage.tsx/
+ * ProjetDetailPage.tsx (ModaleContribution) vers une Cotisation DÉJÀ créée côté serveur — voir
+ * apps.evenements.services.synchroniser_cotisation / apps.cotisations.views (contribution projet)
+ * — jamais une nouvelle création. La Cotisation est chargée par `useCotisation(paiementId)`, et
+ * l'étape 1 (choix d'article) est sautée pour aller directement à l'étape 2 (choix du mode) :
+ * `payer()` n'appelle alors PAS `creerMutation`/POST /cotisations/ (CotisationViewSet n'autorise
+ * d'ailleurs même pas PATCH, voir `http_method_names` — un membre ne peut pas non plus corriger le
+ * mode a posteriori sur une cotisation existante), il se contente d'afficher l'étape 3 avec cette
+ * même cotisation et le mode choisi localement (uniquement pour l'affichage des instructions
+ * SEPA/PayPal — la confirmation réelle du paiement reste manuelle, DF/Admin, comme pour tout le
+ * reste de ce stepper, AHM-53). Si la cotisation est déjà `payee` (le membre revient sur ce lien
+ * après coup), on saute directement à l'étape 3 telle quelle.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import PaymentInstructions from "../../components/ui/PaymentInstructions";
+import PaymentInstructions from "../ui/PaymentInstructions";
 import { telechargerRecuCotisation } from "../../api/cotisations";
 import {
   useArticlesCatalogue,
@@ -159,7 +174,7 @@ function EtapeIndicateur({ numero, label, active, franchie }: EtapeIndicateurPro
   );
 }
 
-export default function CotisationStepperPage() {
+export default function PaiementStepper() {
   const { t } = useTranslation("cotisations");
   const navigate = useNavigate();
   const anneeCourante = new Date().getFullYear();
@@ -188,7 +203,7 @@ export default function CotisationStepperPage() {
   const articlesCatalogue = useArticlesCatalogue();
   // Le backend scope déjà aux articles actif=true pour un rôle < Administrateur App (voir
   // ArticleCatalogueViewSet.get_queryset), mais on refiltre ici par défense en profondeur — un
-  // Administrateur App consultant lui-même ce stepper ne doit pas se voir proposer un article
+  // Administrateur App consultant lui-même cette section ne doit pas se voir proposer un article
   // qu'il vient de désactiver. `type_fixe` exclu : ces 2 lignes techniques sont représentées par
   // les cartes cotisation/adhesion ci-dessous, jamais par une carte "autre" supplémentaire.
   const articlesCatalogueActifs = (articlesCatalogue.data?.results ?? []).filter(
@@ -403,15 +418,17 @@ export default function CotisationStepperPage() {
     creerMutation.reset();
     if (paiementId) {
       // Retire `?paiement=...` de l'URL, sinon l'effet ci-dessus resauterait immédiatement à
-      // l'étape 2 dès qu'elle repasse à 1.
-      navigate("/cotisation", { replace: true });
+      // l'étape 2 dès qu'elle repasse à 1. Cible "/mon-adhesion" (et non plus "/cotisation")
+      // depuis la Phase F (2026-09-26, fusion Mitgliedsbeitrag -> Meine Mitgliedschaft) : cette
+      // section vit désormais exclusivement sous MonAdhesionPage.
+      navigate("/mon-adhesion", { replace: true });
     }
     setEtape(1);
   }
 
   return (
-    <div>
-      <h1 className="mb-4 text-xl font-bold text-text-primary">{t("article.titre")}</h1>
+    <section className="mt-8">
+      <h2 className="mb-4 text-lg font-bold text-text-primary">{t("article.titre")}</h2>
 
       <div className="mb-5 flex items-center gap-3">
         <EtapeIndicateur numero={1} label={t("etape.choisir")} active={etape === 1} franchie={etape > 1} />
@@ -435,7 +452,7 @@ export default function CotisationStepperPage() {
       {!paiementId && etape === 1 && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-            <h2 className="mb-3 text-xs font-bold text-text-primary">{t("article.titre")}</h2>
+            <h3 className="mb-3 text-xs font-bold text-text-primary">{t("article.titre")}</h3>
             <div className="space-y-2">
               {ARTICLES_DISPONIBLES.map((a) => (
                 <button
@@ -515,7 +532,7 @@ export default function CotisationStepperPage() {
 
           <div>
             <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-              <h2 className="mb-3 text-xs font-bold text-text-primary">{t("recap.titre")}</h2>
+              <h3 className="mb-3 text-xs font-bold text-text-primary">{t("recap.titre")}</h3>
               <dl className="space-y-1.5 text-sm">
                 <div className="flex justify-between">
                   <dt className="text-text-secondary">{t("recap.article")}</dt>
@@ -536,7 +553,7 @@ export default function CotisationStepperPage() {
             </div>
 
             <div className="mt-4 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-              <h2 className="mb-3 text-xs font-bold text-text-primary">{t("historique.titre")}</h2>
+              <h3 className="mb-3 text-xs font-bold text-text-primary">{t("historique.titre")}</h3>
               {historique.isLoading && (
                 <p className="text-sm text-text-tertiary">{t("historique.chargement")}</p>
               )}
@@ -596,7 +613,7 @@ export default function CotisationStepperPage() {
       {etape === 2 && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-            <h2 className="mb-3 text-xs font-bold text-text-primary">{t("paiement.titre")}</h2>
+            <h3 className="mb-3 text-xs font-bold text-text-primary">{t("paiement.titre")}</h3>
             <div className="space-y-2">
               {(
                 [
@@ -634,7 +651,7 @@ export default function CotisationStepperPage() {
           </div>
 
           <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-            <h2 className="mb-3 text-xs font-bold text-text-primary">{t("recap.titre")}</h2>
+            <h3 className="mb-3 text-xs font-bold text-text-primary">{t("recap.titre")}</h3>
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between">
                 <dt className="text-text-secondary">{t("recap.article")}</dt>
@@ -785,6 +802,6 @@ export default function CotisationStepperPage() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

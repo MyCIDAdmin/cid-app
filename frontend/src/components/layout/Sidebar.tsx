@@ -58,7 +58,6 @@ import {
   IconChevronRight,
   IconClipboardCheck,
   IconClockDollar,
-  IconCreditCard,
   IconFileCheck,
   IconFolderCog,
   IconGavel,
@@ -146,8 +145,13 @@ export const NAV_ITEMS: NavItem[] = [
   // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
   // voit que sa propre fiche), inutile de dupliquer cette règle ici.
   { to: "/membres", labelKey: "nav.membres", icon: IconUsers, group: "general" },
+  // Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
+  // utilisateur non negociable) : l'entree "Mitgliedsbeitrag" (/cotisation) a ete retiree — tout
+  // son contenu vit desormais sous /mon-adhesion (voir PaiementStepper.tsx, rendu par
+  // MonAdhesionPage.tsx). La route /cotisation reste techniquement presente (voir
+  // pages/cotisations/CotisationRedirect.tsx) pour les deep-links existants, mais n'a plus
+  // d'entree de navigation.
   { to: "/mon-adhesion", labelKey: "nav.mon_adhesion", icon: IconIdBadge, group: "general" },
-  { to: "/cotisation", labelKey: "nav.cotisation", icon: IconCreditCard, group: "general" },
   // Événements + Covoiturage (mockup #pg-evenements/#pg-covoiturage, FDD §3.4) — ouverts à tout
   // authentifié, même principe que /mon-adhesion : le backend scope déjà le queryset (événements
   // publiés uniquement en dessous de Bureau Admin, voir EvenementViewSet.get_queryset).
@@ -298,6 +302,26 @@ export interface SidebarNavGroup {
   key: SidebarGroupKey;
   items: NavItem[];
   hasActiveItem: boolean;
+}
+
+/**
+ * Groupe (`SidebarGroupKey`) de la page correspondant à `pathname`, ou `null` si aucun item de
+ * NAV_ITEMS ne correspond (ex. `/login`, `/register`, la nouvelle page d'accueil publique elle-
+ * même) — ajouté le 2026-09-26 (plan "Öffentliche mycid.org-Startseite" section B) pour qu'
+ * AppLayout.tsx sache si le PublicFooter doit apparaître sous la page courante (uniquement pour
+ * les groupes "general"/"communaute"/"contenu", jamais "administration", décision utilisateur).
+ * Même comparaison de préfixe le-plus-long que `useSidebarNav.activeTo` ci-dessous, mais SANS
+ * filtrer par rôle/accès matrice : le footer est une question de mise en page, pas de permission
+ * (une page déjà rendue est par définition accessible à l'utilisateur courant).
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- voir commentaire GROUP_ORDER
+export function getGroupForPath(pathname: string): SidebarGroupKey | null {
+  const meilleur = NAV_ITEMS.reduce<NavItem | null>((best, item) => {
+    const correspond = pathname === item.to || pathname.startsWith(`${item.to}/`);
+    if (!correspond) return best;
+    return best === null || item.to.length > best.to.length ? item : best;
+  }, null);
+  return meilleur?.group ?? null;
 }
 
 /**

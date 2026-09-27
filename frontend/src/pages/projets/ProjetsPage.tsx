@@ -28,6 +28,7 @@ import ProjetCard from "../../components/projets/ProjetCard";
 import ProjetsFiltreTabs, { type FiltreProjet } from "../../components/projets/ProjetsFiltreTabs";
 import ProjetsKpiTiles from "../../components/projets/ProjetsKpiTiles";
 import { useProjets } from "../../hooks/useProjets";
+import { useAuthStore } from "../../store/authStore";
 import type { Projet } from "../../types/projets";
 
 /** Correspondance onglet de filtre -> StatutProjet backend (voir docstring ProjetsFiltreTabs pour
@@ -40,9 +41,23 @@ const STATUT_PAR_FILTRE: Record<Exclude<FiltreProjet, "tous">, Projet["statut"]>
 export default function ProjetsPage() {
   const { t } = useTranslation("projets");
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const projetsQuery = useProjets();
   const [projetContribution, setProjetContribution] = useState<Projet | null>(null);
   const [filtre, setFiltre] = useState<FiltreProjet>("tous");
+
+  // Cette page est désormais aussi embarquée dans l'onglet public "Projekte" (Phase D, page
+  // d'accueil publique, demande utilisateur : "Spenden-Button führt bei fehlendem Login auf
+  // /login") — useContribuerProjet exige un membre authentifié côté backend (voir
+  // apps.cotisations.views), donc un visiteur anonyme est renvoyé se connecter au lieu d'ouvrir
+  // une modale vouée à échouer avec un 401.
+  function ouvrirContribution(projet: Projet) {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    setProjetContribution(projet);
+  }
 
   // `data?.results` change de référence à chaque re-render tant que la query n'est pas résolue
   // (nouveau tableau vide `?? []`) — dépendance directe sur `projetsQuery.data` (stable tant que
@@ -93,7 +108,7 @@ export default function ProjetsPage() {
               <ProjetCard
                 key={projet.id}
                 projet={projet}
-                onContribuer={setProjetContribution}
+                onContribuer={ouvrirContribution}
                 onVoirRapport={(p) => navigate(`/projets/${p.id}`)}
               />
             ))}

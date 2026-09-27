@@ -2,9 +2,15 @@
 Permissions API — app adhesions (FDD §2.2 matrice des permissions / §6.1) :
 
   - Catalogue (CampagneAdhesion, OffreAdhesion, RabaisOffre) : lecture (list/retrieve/active)
-    ouverte à tout utilisateur authentifié — un membre doit pouvoir consulter les offres pour
-    souscrire. Écriture (create/update/partial_update/destroy/publier/cloturer) réservée au
-    Bureau Administratif et au-dessus (FDD §2.1 : gestion des campagnes = Bureau Admin).
+    ouverte à TOUT LE MONDE, y compris non authentifié (élargi le 2026-09-26, plan "Öffentliche
+    mycid.org-Startseite" section C.2 — l'onglet "Startseite" doit afficher la campagne/les
+    offres d'adhésion actives à un visiteur non connecté, même mécanisme d'ouverture que
+    apps.evenements/apps.projets/apps.boutique/apps.communaute, voir leurs permissions.py
+    respectifs). `CampagneAdhesionViewSet.get_queryset`/`OffreAdhesionViewSet.get_queryset`
+    restent seuls responsables de ne jamais exposer une campagne/offre non publiée à un rôle
+    < Bureau Admin (y compris désormais un anonyme). Écriture
+    (create/update/partial_update/destroy/publier/cloturer) réservée au Bureau Administratif et
+    au-dessus (FDD §2.1 : gestion des campagnes = Bureau Admin), toujours authentifiée.
   - Souscription : list/retrieve — RH et au-dessus voient toutes les souscriptions ; un rôle
     < RH ne voit que les siennes (celles de la fiche Membre liée à son compte), même défense en
     profondeur IDOR que CotisationPermission (SCD §2.3 A01). create (souscrire) — authentifié,
@@ -46,22 +52,23 @@ CATALOGUE_WRITE_ACTIONS = (
 
 
 class CataloguePermission(BasePermission):
-    """CampagneAdhesion / OffreAdhesion / RabaisOffre. Écriture = page de gestion
+    """CampagneAdhesion / OffreAdhesion / RabaisOffre. Lecture ouverte à tout le monde, y compris
+    non authentifié (voir docstring de module) — écriture = page de gestion
     "Mitgliedschaftskampagnen" (Phase D, ajoutée le 2026-09-23, apps.rbac.registry.PAGES_ADMIN
     slug `page_campagnes_adhesion`) — remplace (et non complète) l'ancien seuil fixe
     GESTION_CATALOGUE_MIN_LEVEL. Niveau `lecture_ecriture` requis depuis le 2026-09-24 (retour
     utilisateur — voir apps.communaute.permissions.QuizPermission pour le contexte complet)."""
 
     def has_permission(self, request, view):
+        action = getattr(view, "action", None)
+        if action not in CATALOGUE_WRITE_ACTIONS and request.method in SAFE_METHODS:
+            return True
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        action = getattr(view, "action", None)
-        if action in CATALOGUE_WRITE_ACTIONS or request.method not in SAFE_METHODS:
-            return has_admin_page_access(
-                user, "page_campagnes_adhesion", required=NiveauAcces.LECTURE_ECRITURE
-            )
-        return True
+        return has_admin_page_access(
+            user, "page_campagnes_adhesion", required=NiveauAcces.LECTURE_ECRITURE
+        )
 
 
 class SouscriptionPermission(BasePermission):

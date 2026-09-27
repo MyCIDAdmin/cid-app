@@ -62,6 +62,7 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     organisateur: "m1",
     organisateur_detail: { id: "m1", prenom: "Sami", nom: "Trabelsi" },
     statut: "brouillon",
+    visible_public: false,
     places_reservees: 0,
     places_restantes: 45,
     created_by: "m1",

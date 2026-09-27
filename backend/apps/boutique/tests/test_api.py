@@ -74,8 +74,22 @@ def _adresse_livraison():
 # --- Catalogue : visibilité et permissions d'écriture ---
 
 
-def test_list_produits_non_authentifie_refuse(api_client):
+def test_list_produits_non_authentifie_ne_voit_que_les_produits_publies(api_client):
+    """Depuis le 2026-09-26 (onglet Shop de la page d'accueil publique, demande utilisateur),
+    un visiteur anonyme peut lister le catalogue — get_queryset masque cependant les
+    brouillons exactement comme pour un membre normal. Remplace l'ancien test qui attendait
+    un refus 401 pur."""
+    ProduitFactory(statut=StatutProduit.BROUILLON, nom="Brouillon secret")
+    ProduitFactory(statut=StatutProduit.PUBLIE, nom="Publié visible")
     resp = api_client.get(reverse(PRODUIT_LIST_URL))
+    assert resp.status_code == 200
+    noms = [p["nom"] for p in resp.data["results"]]
+    assert "Publié visible" in noms
+    assert "Brouillon secret" not in noms
+
+
+def test_creer_produit_non_authentifie_refuse(api_client):
+    resp = api_client.post(reverse(PRODUIT_LIST_URL), {"nom": "x"}, format="json")
     assert resp.status_code == 401
 
 

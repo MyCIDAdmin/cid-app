@@ -31,7 +31,9 @@ type_article, aucune vue dédiée n'est nécessaire ici, y compris pour le paiem
 Stripe/PayPal ou la saisie pour autrui F-015).
 """
 
-from django.db.models import Max, Sum
+from decimal import Decimal
+
+from django.db.models import Count, Max, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -131,6 +133,29 @@ class ProjetViewSet(ModelViewSet):
             reverse=True,
         )
         return Response(ContributeurSerializer(lignes, many=True).data)
+
+    @action(detail=False, methods=["get"])
+    def kennzahlen(self, request):
+        """Kennzahlen "Donators / Gesammelt / Projekte" de la page d'accueil publique façon
+        mycid.org (demande utilisateur 2026-09-26, section C.3 du plan) — agrégées à la volée
+        sur le même registre Cotisation que `contributeurs`/`Projet.montant_collecte`, jamais
+        dénormalisées. `self.get_queryset()` applique déjà le bon périmètre selon qui demande
+        (masque "en_preparation" à un anonyme/membre normal, montre tout à un Bureau Admin+),
+        donc ces trois chiffres restent cohérents avec ce que l'appelant peut effectivement
+        voir dans la liste des projets. Lecture ouverte à tout le monde (voir ProjetPermission),
+        aucune action GET dédiée à protéger davantage — ce ne sont que des totaux, jamais le
+        détail nominatif d'un contributeur (contrairement à `contributeurs` ci-dessus)."""
+        projets = self.get_queryset()
+        totaux = Cotisation.objects.filter(
+            projet__in=projets, statut=StatutCotisation.PAYEE
+        ).aggregate(montant_collecte=Sum("montant"), nb_donateurs=Count("membre_id", distinct=True))
+        return Response(
+            {
+                "nb_projets": projets.count(),
+                "montant_collecte": totaux["montant_collecte"] or Decimal("0.00"),
+                "nb_donateurs": totaux["nb_donateurs"] or 0,
+            }
+        )
 
 
 class ProjetImageViewSet(ModelViewSet):

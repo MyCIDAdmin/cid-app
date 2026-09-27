@@ -46,6 +46,7 @@ const FORMULAIRE_VIDE: EvenementPayload = {
   prix_accompagnant_adulte: "0.00",
   prix_accompagnant_enfant: "0.00",
   age_limite_accompagnant_enfant: 12,
+  visible_public: false,
 };
 
 function FormulaireEvenement({
@@ -77,6 +78,7 @@ function FormulaireEvenement({
           prix_accompagnant_adulte: evenement.prix_accompagnant_adulte,
           prix_accompagnant_enfant: evenement.prix_accompagnant_enfant,
           age_limite_accompagnant_enfant: evenement.age_limite_accompagnant_enfant,
+          visible_public: evenement.visible_public,
         }
       : FORMULAIRE_VIDE,
   );
@@ -343,6 +345,24 @@ function FormulaireEvenement({
           {t("admin.aide_accompagnants")}
         </p>
       </div>
+
+      {/* Startseite publique façon mycid.org/events (demande utilisateur 2026-09-26) — ne
+          change jamais `statut` : un brouillon reste invisible même si cette case est cochée
+          (voir EvenementViewSet.get_queryset côté backend). */}
+      <label
+        htmlFor="admin-event-visible-public"
+        className="flex items-center gap-2 text-xs font-medium text-text-secondary"
+      >
+        <input
+          id="admin-event-visible-public"
+          type="checkbox"
+          checked={valeurs.visible_public ?? false}
+          onChange={(e) => champ("visible_public", e.target.checked)}
+          className="h-3.5 w-3.5 rounded border-text-tertiary/40"
+        />
+        {t("admin.champ_visible_public")}
+      </label>
+      <p className="-mt-2 text-[11px] text-text-tertiary">{t("admin.aide_visible_public")}</p>
 
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
 

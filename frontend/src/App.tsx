@@ -31,15 +31,16 @@ import MessageriePage from "./pages/communaute/MessageriePage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
+import CotisationRedirect from "./pages/cotisations/CotisationRedirect";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
-import CotisationStepperPage from "./pages/cotisations/CotisationStepperPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminEventsPage from "./pages/evenements/AdminEventsPage";
 import CovoituragePage from "./pages/evenements/CovoituragePage";
 import EvenementsPage from "./pages/evenements/EvenementsPage";
 import LoginPage from "./pages/LoginPage";
 import MembreDetailPage from "./pages/membres/MembreDetailPage";
+import HomeRoute from "./pages/public/HomeRoute";
 import MembreFormPage from "./pages/membres/MembreFormPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
@@ -105,10 +106,14 @@ export default function App() {
             </RequireRole>
           }
         />
-        {/* Paiement libre-service (mockup #pg-cotisation, RICEFW F-004, AHM-16) —
-            ouvert à tout authentifié : le backend scope déjà le queryset et
-            résout le membre courant à la création (CotisationViewSet). */}
-        <Route path="/cotisation" element={<CotisationStepperPage />} />
+        {/* Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
+            utilisateur non négociable) : le stepper de paiement libre-service (mockup
+            #pg-cotisation, RICEFW F-004, AHM-16) vit désormais entièrement sous /mon-adhesion
+            (voir PaiementStepper.tsx, rendu par MonAdhesionPage.tsx). Cette route reste
+            techniquement présente — non retirée d'App.tsx — uniquement pour que les deep-links
+            existants (?paiement=...) depuis Événements/Projets continuent de fonctionner ; elle
+            ne rend plus qu'un redirect. */}
+        <Route path="/cotisation" element={<CotisationRedirect />} />
         {/* Retour depuis Stripe Checkout/PayPal Checkout (AHM-46, success_url/return_url et
             cancel_url — voir apps.cotisations.gateways) — ouvert à tout authentifié, même scope
             IDOR que le reste de CotisationViewSet (get_queryset). */}
@@ -374,7 +379,11 @@ export default function App() {
           }
         />
       </Route>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      {/* Page d'accueil publique façon mycid.org (demande utilisateur du 2026-09-26, voir
+          HomeRoute.tsx/PublicHomePage.tsx) — remplace l'ancien "/" -> /dashboard systématique :
+          seul un membre actif connecté est encore redirigé vers /dashboard, tout le monde
+          d'autre (visiteur non connecté, membre non-actif) voit la nouvelle page d'accueil. */}
+      <Route path="/" element={<HomeRoute />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );

@@ -48,7 +48,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import ROLE_LEVELS
@@ -889,10 +889,14 @@ class ClassementLigueViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     pouvait être entièrement remplie par la saison la PLUS ANCIENNE une fois 2+ saisons en
     base, jamais la saison en cours. `?saison=<valeur>` cible une saison précise (ex. pour
     un historique) ; `?saison=toutes` lève le filtre. Même principe que
-    `StatistiqueJoueurViewSet` ci-dessous."""
+    `StatistiqueJoueurViewSet` ci-dessous.
+
+    `AllowAny` depuis le 2026-09-26 (widget "Club Africain Live" de la page d'accueil
+    publique, demande utilisateur) — pures données sportives tierces (synchronisées depuis
+    l'API GOAL, voir services.py), rien de sensible à protéger derrière une authentification."""
 
     serializer_class = ClassementLigueSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     pagination_class = ClassementCursorPagination
 
     def get_queryset(self):
@@ -904,10 +908,13 @@ class ClassementLigueViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
 
 class RencontreCalendrierViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py."""
+    """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py.
+
+    `AllowAny` depuis le 2026-09-26 — même raisonnement que ClassementLigueViewSet
+    ci-dessus (données sportives tierces, aucune information sensible)."""
 
     serializer_class = RencontreCalendrierSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     pagination_class = CalendrierCursorPagination
     queryset = RencontreCalendrier.objects.all()
 
@@ -1214,7 +1221,10 @@ class PhotoViewSet(viewsets.ModelViewSet):
             "likes", "commentaires__auteur"
         )
         user = self.request.user
-        if ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL:
+        # Anonyme depuis le 2026-09-26 (onglet Galerie de la page d'accueil publique) : même
+        # branche "non-modérateur" qu'un membre normal — `user.role` n'existe pas sur
+        # AnonymousUser, d'où le garde-fou `user.is_authenticated` explicite.
+        if user.is_authenticated and ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL:
             return qs
         return qs.filter(est_masquee=False)
 

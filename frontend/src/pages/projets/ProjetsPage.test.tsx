@@ -1,9 +1,10 @@
 import { fireEvent, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
 import * as useProjetsHooks from "../../hooks/useProjets";
+import { useAuthStore } from "../../store/authStore";
 import type { Projet } from "../../types/projets";
 import ProjetsPage from "./ProjetsPage";
 
@@ -65,6 +66,17 @@ function projet(overrides: Partial<Projet> = {}): Projet {
 }
 
 describe("ProjetsPage", () => {
+  // Cette page est aussi embarquée telle quelle dans l'onglet public "Projekte" (Phase D, page
+  // d'accueil publique) : par défaut ici on simule l'usage MEMBRE habituel (authentifié), le
+  // comportement visiteur anonyme a son propre test dédié ci-dessous (voir docstring
+  // ouvrirContribution dans ProjetsPage.tsx).
+  beforeEach(() => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      user: { id: "u1", email: "m@example.com", role: "membre", langue_preferee: "fr" },
+    });
+  });
+
   function mockHooksParDefaut() {
     vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
       data: undefined,
@@ -196,5 +208,22 @@ describe("ProjetsPage", () => {
     expect(screen.queryByText("Projet terminé")).not.toBeInTheDocument();
     // Les tuiles KPI restent sur la liste complète, non filtrée (voir docstring ProjetsKpiTiles).
     expect(screen.getByText("kpi.total")).toBeInTheDocument();
+  });
+
+  it("renvoie un visiteur anonyme vers /login au clic sur \"Contribuer\" au lieu d'ouvrir la modale (onglet public \"Projekte\", Phase D)", () => {
+    mockHooksParDefaut();
+    useAuthStore.setState({ isAuthenticated: false, user: null });
+    vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
+      data: page([projet()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
+
+    renderWithProviders(<ProjetsPage />);
+
+    fireEvent.click(screen.getByText("cagnote.contribuer"));
+
+    expect(navigateMock).toHaveBeenCalledWith("/login");
+    expect(screen.queryByText("modal_contribution.confirmer")).not.toBeInTheDocument();
   });
 });
