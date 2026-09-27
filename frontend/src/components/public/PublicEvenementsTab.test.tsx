@@ -37,6 +37,8 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     heure: "18:00:00",
     lieu: "Berlin",
     point_rdv: "",
+    lieu_maps_url: "",
+    image: null,
     places_max: 20,
     gratuit: true,
     cout: "0.00",
@@ -80,6 +82,28 @@ describe("PublicEvenementsTab", () => {
   it("affiche les événements à venir sous forme de kacheln", () => {
     renderWithProviders(<PublicEvenementsTab />);
     expect(screen.getByText("Sortie supporters")).toBeInTheDocument();
+  });
+
+  // Image de kachel (demande utilisateur du 2026-09-27, point 11.1).
+  it("affiche l'image de kachel en fond quand elle est renseignée", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement({ image: "https://cdn.example.de/evenements/kachel.jpg" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<PublicEvenementsTab />);
+
+    expect(screen.getByText("Sortie supporters").closest("div")).toHaveStyle(
+      "background-image: url(https://cdn.example.de/evenements/kachel.jpg)",
+    );
+  });
+
+  it("garde le dégradé de repli tant qu'aucune image n'est téléversée", () => {
+    renderWithProviders(<PublicEvenementsTab />);
+    const banniere = screen.getByText("Sortie supporters").closest("div");
+    expect(banniere).toHaveClass("bg-gradient-to-br");
+    expect(banniere).not.toHaveAttribute("style");
   });
 
   it("renvoie un visiteur anonyme vers /login au clic sur \"S'inscrire\" au lieu d'ouvrir la modale", () => {

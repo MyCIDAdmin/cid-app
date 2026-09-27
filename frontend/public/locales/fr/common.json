@@ -92,5 +92,8 @@
     "lien_url": "URL du lien (laisser vide pour retirer)",
     "annuler_saisie": "Annuler la saisie",
     "retablir_saisie": "Rétablir la saisie"
+  },
+  "maps": {
+    "ouvrir": "Ouvrir dans Google Maps"
   }
 }

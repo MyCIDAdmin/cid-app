@@ -1,9 +1,12 @@
 """Tests API — app evenements (FDD §2.2/§3.4, SCD §2.3 A01 : IDOR)."""
 
+import io
 from decimal import Decimal
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
@@ -56,6 +59,16 @@ def _annuler_evenement_url(evenement):
 
 def _inscription_annuler_url(inscription):
     return reverse("evenements:inscription-annuler", args=[inscription.id])
+
+
+def _image_valide(nom="kachel.jpg", format_pillow="JPEG", content_type="image/jpeg"):
+    # Même helper que apps.projets.tests.test_api._image_valide — un JPEG/PNG minimal
+    # réellement décodable par Pillow, requis par valider_et_reencoder_photo (voir
+    # apps.communaute.validators) qu'EvenementSerializer.validate_image appelle aussi.
+    buffer = io.BytesIO()
+    Image.new("RGB", (60, 60), color=(255, 0, 0)).save(buffer, format=format_pillow)
+    buffer.seek(0)
+    return SimpleUploadedFile(nom, buffer.read(), content_type=content_type)
 
 
 def _rejoindre_url(trajet):
@@ -148,6 +161,79 @@ def test_bureau_admin_peut_creer_et_publier_evenement(api_client):
     resp2 = _auth(api_client, user).post(_publier_url(_Obj(resp.data["id"])))
     assert resp2.status_code == 200
     assert resp2.data["statut"] == StatutEvenement.PUBLIE
+
+
+# --- Lien Maps + image de kachel (demande utilisateur du 2026-09-27, points 11.1 "Bild für
+# Veranstaltungs-Kachel hochladen" et 11.2 "Maps-Link für den Ort ... anzeigen") ---
+
+
+def test_creer_un_evenement_avec_un_lien_maps(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-maps@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(EVENEMENT_LIST_URL),
+        {
+            "titre": "Déplacement Munich",
+            "type_evenement": "deplacement",
+            "description": "desc",
+            "date_evenement": "2027-01-01",
+            "lieu": "Allianz Arena, Munich",
+            "lieu_maps_url": "https://share.google/abc123",
+            "places_max": 40,
+            "cout": "35.00",
+        },
+    )
+    assert resp.status_code == 201, resp.data
+    assert resp.data["lieu_maps_url"] == "https://share.google/abc123"
+
+
+def test_lieu_maps_url_refuse_si_pas_une_url_valide(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-maps2@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(EVENEMENT_LIST_URL),
+        {
+            "titre": "Déplacement Munich",
+            "type_evenement": "deplacement",
+            "description": "desc",
+            "date_evenement": "2027-01-01",
+            "lieu": "Munich",
+            "lieu_maps_url": "pas-une-url",
+            "places_max": 40,
+            "cout": "35.00",
+        },
+    )
+    assert resp.status_code == 400
+    assert "lieu_maps_url" in resp.data["details"]
+
+
+def test_televerser_image_kachel_evenement(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-image@example.de")
+    evenement = EvenementFactory()
+
+    resp = _auth(api_client, user).patch(
+        _evenement_detail_url(evenement),
+        {"image": _image_valide()},
+        format="multipart",
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["image"] is not None
+    evenement.refresh_from_db()
+    assert evenement.image.name
+
+
+def test_televerser_image_kachel_evenement_refuse_un_fichier_non_image(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-image2@example.de")
+    evenement = EvenementFactory()
+    faux_fichier = SimpleUploadedFile("malware.jpg", b"pas une vraie image", content_type="image/jpeg")
+
+    resp = _auth(api_client, user).patch(
+        _evenement_detail_url(evenement),
+        {"image": faux_fichier},
+        format="multipart",
+    )
+
+    assert resp.status_code == 400
+    assert "image" in resp.data["details"]
 
 
 def test_annuler_evenement_publie_declenche_la_notification(api_client, monkeypatch):
@@ -699,6 +785,30 @@ def test_creer_un_trajet_avec_une_remarque(api_client):
     assert (
         resp.data["remarques"] == "Arrêt possible à Leipzig, non-fumeur, 1 valise max par personne."
     )
+
+
+# --- Lien Maps du point de rendez-vous (demande utilisateur du 2026-09-27, point 12.1
+# "Maps-Link für Treffpunkt + Adresse anzeigen") ---
+
+
+def test_creer_un_trajet_avec_un_lien_maps_pour_le_point_de_rendez_vous(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "cond8@example.de")
+
+    resp = _auth(api_client, user).post(
+        reverse(COVOITURAGE_LIST_URL),
+        {
+            "depart": "Berlin Hbf",
+            "destination": "Stuttgart",
+            "date_trajet": "2099-05-31",
+            "heure_trajet": "06:00",
+            "places_disponibles": 3,
+            "lieu_rendez_vous": "Devant la gare, sortie Nord",
+            "lieu_rendez_vous_maps_url": "https://share.google/xyz789",
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert resp.data["lieu_rendez_vous_maps_url"] == "https://share.google/xyz789"
 
 
 def test_reservations_covoiturage_expose_le_nom_du_passager(api_client):

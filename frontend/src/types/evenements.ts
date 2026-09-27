@@ -28,6 +28,13 @@ export interface Evenement {
   heure: string | null;
   lieu: string;
   point_rdv: string;
+  /** Lien Google Maps saisi par l'admin (demande utilisateur 2026-09-27, point 11.2) — utilisé
+   * uniquement comme cible du lien cliquable, jamais pour générer la vignette d'aperçu (voir
+   * components/ui/MapsApercu.tsx). */
+  lieu_maps_url: string;
+  /** Image de la kachel (page d'accueil publique, demande utilisateur 2026-09-27, point 11.1) —
+   * null tant qu'aucune image n'a été téléversée. */
+  image: string | null;
   places_max: number | null;
   gratuit: boolean;
   cout: string;
@@ -64,6 +71,7 @@ export interface EvenementPayload {
   heure?: string | null;
   lieu: string;
   point_rdv?: string;
+  lieu_maps_url?: string;
   places_max?: number | null;
   gratuit?: boolean;
   cout?: string;
@@ -143,6 +151,9 @@ export interface Covoiturage {
   /** Point de rendez-vous fixé par le conducteur pour l'ensemble du trajet ("Treffpunkt") —
    * distinct de ReservationCovoiturage.point_prise_en_charge (propre à chaque passager). */
   lieu_rendez_vous: string;
+  /** Lien Google Maps saisi par le conducteur (demande utilisateur 2026-09-27, point 12.1) —
+   * même principe que Evenement.lieu_maps_url : cible du lien cliquable uniquement. */
+  lieu_rendez_vous_maps_url: string;
   places_disponibles: number;
   prix_par_place: string | null;
   vehicule: string;
@@ -163,6 +174,7 @@ export interface CovoituragePayload {
   date_trajet: string;
   heure_trajet: string;
   lieu_rendez_vous?: string;
+  lieu_rendez_vous_maps_url?: string;
   places_disponibles: number;
   prix_par_place?: string | null;
   vehicule?: string;

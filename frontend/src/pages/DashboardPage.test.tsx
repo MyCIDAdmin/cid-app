@@ -79,6 +79,8 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     heure: "06:00",
     lieu: "Stuttgart",
     point_rdv: "",
+    lieu_maps_url: "",
+    image: null,
     places_max: 45,
     gratuit: false,
     cout: "35.00",

@@ -17,6 +17,7 @@ vi.mock("../../hooks/useEvenements", async () => {
     useModifierEvenement: vi.fn(),
     usePublierEvenement: vi.fn(),
     useAnnulerEvenement: vi.fn(),
+    useTeleverserImageEvenement: vi.fn(),
   };
 });
 
@@ -52,6 +53,8 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     heure: "06:00",
     lieu: "Mercedes-Benz Arena, Stuttgart",
     point_rdv: "Berlin Hbf",
+    lieu_maps_url: "",
+    image: null,
     places_max: 45,
     gratuit: false,
     cout: "35.00",
@@ -91,6 +94,9 @@ describe("AdminEventsPage", () => {
     );
     vi.mocked(useEvenementsHooks.useAnnulerEvenement).mockReturnValue(
       mutationMock<ReturnType<typeof useEvenementsHooks.useAnnulerEvenement>>(),
+    );
+    vi.mocked(useEvenementsHooks.useTeleverserImageEvenement).mockReturnValue(
+      mutationMock<ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>>(),
     );
     vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
       accessible: true,
@@ -230,6 +236,66 @@ describe("AdminEventsPage", () => {
     expect(annuler.mutate).toHaveBeenCalledWith("e1", expect.anything());
   });
 
+  // Lien Maps (demande utilisateur du 2026-09-27, point 11.2) et image de kachel (point 11.1).
+  it("crée un événement avec un lien Google Maps", () => {
+    const creer = mutationMock<ReturnType<typeof useEvenementsHooks.useCreerEvenement>>();
+    vi.mocked(useEvenementsHooks.useCreerEvenement).mockReturnValue(creer);
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<AdminEventsPage />);
+
+    fireEvent.click(screen.getByText("admin.creer_evenement"));
+    fireEvent.change(screen.getByPlaceholderText("admin.champ_titre_placeholder"), {
+      target: { value: "Déplacement Munich" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("admin.champ_description_placeholder"), {
+      target: { value: "Match aller au Bayern." },
+    });
+    fireEvent.change(screen.getByLabelText("admin.champ_date", { exact: false }), {
+      target: { value: "2099-06-14" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("admin.champ_lieu_placeholder"), {
+      target: { value: "Munich" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("admin.champ_lieu_maps_url_placeholder"), {
+      target: { value: "https://share.google/abc123" },
+    });
+
+    fireEvent.click(screen.getByText("admin.creer_evenement"));
+
+    expect(creer.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ lieu_maps_url: "https://share.google/abc123" }),
+      expect.anything(),
+    );
+  });
+
+  it("téléverse l'image de kachel d'un événement existant", () => {
+    const televerser = mutationMock<
+      ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>
+    >();
+    vi.mocked(useEvenementsHooks.useTeleverserImageEvenement).mockReturnValue(televerser);
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<AdminEventsPage />);
+
+    const fichier = new File(["image"], "kachel.jpg", { type: "image/jpeg" });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [fichier] } });
+
+    expect(televerser.mutate).toHaveBeenCalledWith(
+      { id: "e1", fichier },
+      expect.anything(),
+    );
+  });
+
   describe("lecture seule (task #216 — page_events en 'lecture' uniquement)", () => {
     beforeEach(() => {
       vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
@@ -255,6 +321,7 @@ describe("AdminEventsPage", () => {
       expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
       expect(screen.getByText("admin.creer_evenement")).toBeDisabled();
       expect(screen.getByText("admin.modifier")).toBeDisabled();
+      expect(screen.getByText("admin.image_televerser")).toBeDisabled();
 
       fireEvent.click(screen.getByText("admin.publier"));
       expect(publier.mutate).not.toHaveBeenCalled();

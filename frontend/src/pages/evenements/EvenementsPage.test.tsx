@@ -52,6 +52,8 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     heure: "06:00",
     lieu: "Mercedes-Benz Arena, Stuttgart",
     point_rdv: "Berlin Hbf",
+    lieu_maps_url: "",
+    image: null,
     places_max: 45,
     gratuit: false,
     cout: "35.00",

@@ -7,7 +7,7 @@
  * "Annuler" est la seule façon réelle de retirer un événement, même principe que
  * l'annulation d'une session de vote plutôt qu'une suppression pure.
  */
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -16,6 +16,7 @@ import {
   useEvenements,
   useModifierEvenement,
   usePublierEvenement,
+  useTeleverserImageEvenement,
 } from "../../hooks/useEvenements";
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -39,6 +40,7 @@ const FORMULAIRE_VIDE: EvenementPayload = {
   heure: "",
   lieu: "",
   point_rdv: "",
+  lieu_maps_url: "",
   places_max: null,
   gratuit: false,
   cout: "0.00",
@@ -71,6 +73,7 @@ function FormulaireEvenement({
           heure: evenement.heure ?? "",
           lieu: evenement.lieu,
           point_rdv: evenement.point_rdv,
+          lieu_maps_url: evenement.lieu_maps_url,
           places_max: evenement.places_max,
           gratuit: evenement.gratuit,
           cout: evenement.cout,
@@ -268,6 +271,22 @@ function FormulaireEvenement({
         />
       </div>
 
+      {/* Lien Google Maps (demande utilisateur du 2026-09-27, point 11.2) — utilisé uniquement
+          comme cible du lien cliquable "Ouvrir dans Google Maps" côté membre, la vignette
+          d'aperçu étant générée depuis `lieu` ci-dessus (voir components/ui/MapsApercu.tsx). */}
+      <div>
+        <label className="mb-1 block text-xs font-medium text-text-secondary">
+          {t("admin.champ_lieu_maps_url")}
+        </label>
+        <input
+          type="url"
+          value={valeurs.lieu_maps_url ?? ""}
+          onChange={(e) => champ("lieu_maps_url", e.target.value)}
+          placeholder={t("admin.champ_lieu_maps_url_placeholder")}
+          className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+        />
+      </div>
+
       {/* Begleitpersonen (module "Veranstaltungsverwaltung", 2026-09-25) — indépendant de
           gratuit/cout ci-dessus : un événement gratuit pour le membre peut tout de même
           facturer ses accompagnants. */}
@@ -392,11 +411,39 @@ export default function AdminEventsPage() {
   const evenementsQuery = useEvenements();
   const publier = usePublierEvenement();
   const annuler = useAnnulerEvenement();
+  const televerserImageMutation = useTeleverserImageEvenement();
   const { accessible, modifiable } = usePageAccess("page_events");
 
   const [afficherFormulaire, setAfficherFormulaire] = useState(false);
   const [evenementEnEdition, setEvenementEnEdition] = useState<Evenement | null>(null);
   const [erreurAction, setErreurAction] = useState("");
+  // Téléversement de l'image de kachel (demande utilisateur 2026-09-27, point 11.1) — même
+  // principe que GestionCatalogueTab.tsx (boutique) : bouton par ligne, ref map par id.
+  const [evenementImageEnCours, setEvenementImageEnCours] = useState<string | null>(null);
+  const [evenementImageErreur, setEvenementImageErreur] = useState<{
+    evenementId: string;
+    message: string;
+  } | null>(null);
+  const inputsFichierImage = useRef<Record<string, HTMLInputElement | null>>({});
+
+  function handleImageChoisie(evenement: Evenement, e: ChangeEvent<HTMLInputElement>) {
+    const fichier = e.target.files?.[0];
+    e.target.value = "";
+    if (!fichier || !modifiable) return;
+    setEvenementImageEnCours(evenement.id);
+    setEvenementImageErreur(null);
+    televerserImageMutation.mutate(
+      { id: evenement.id, fichier },
+      {
+        onError: (err) =>
+          setEvenementImageErreur({
+            evenementId: evenement.id,
+            message: extractApiErrorMessage(err, t("admin.image_erreur")),
+          }),
+        onSettled: () => setEvenementImageEnCours(null),
+      },
+    );
+  }
 
   function ouvrirCreation() {
     setEvenementEnEdition(null);
@@ -496,6 +543,26 @@ export default function AdminEventsPage() {
                 </div>
               </div>
               <div className="flex shrink-0 gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={(el) => {
+                    inputsFichierImage.current[evenement.id] = el;
+                  }}
+                  onChange={(e) => handleImageChoisie(evenement, e)}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => inputsFichierImage.current[evenement.id]?.click()}
+                  disabled={evenementImageEnCours === evenement.id || !modifiable}
+                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  className="rounded-cid border border-text-tertiary/30 px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
+                >
+                  {evenementImageEnCours === evenement.id
+                    ? t("admin.image_en_cours")
+                    : t("admin.image_televerser")}
+                </button>
                 <button
                   type="button"
                   disabled={!modifiable}
@@ -529,6 +596,9 @@ export default function AdminEventsPage() {
                 )}
               </div>
             </div>
+            {evenementImageErreur?.evenementId === evenement.id && (
+              <p className="mt-2 text-xs text-status-dangerText">{evenementImageErreur.message}</p>
+            )}
           </div>
         ))}
       </div>

@@ -56,11 +56,21 @@ function EvenementKachel({
 
   return (
     <div className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-card">
-      <div className="relative flex h-28 flex-col justify-end bg-gradient-to-br from-ca to-cad p-3">
-        <span className="absolute right-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ca">
+      {/* Image de kachel (demande utilisateur du 2026-09-27, point 11.1 "Bild für
+          Veranstaltungs-Kachel hochladen") : dégradé conservé comme repli tant qu'aucune image
+          n'a été téléversée (voir AdminEventsPage.tsx) — un overlay dégradé reste posé par-dessus
+          l'image pour garder le titre/la pastille de date lisibles quelle que soit l'image. */}
+      <div
+        className="relative flex h-28 flex-col justify-end bg-gradient-to-br from-ca to-cad bg-cover bg-center p-3"
+        style={evenement.image ? { backgroundImage: `url(${evenement.image})` } : undefined}
+      >
+        {evenement.image && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        )}
+        <span className="absolute right-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ca">
           {formatDate(evenement.date_evenement)}
         </span>
-        <h3 className="pr-16 text-base font-bold text-white">{evenement.titre}</h3>
+        <h3 className="relative z-10 pr-16 text-base font-bold text-white">{evenement.titre}</h3>
       </div>
       <div className="space-y-2 p-3">
         <p className="line-clamp-2 text-xs text-text-tertiary">{evenement.description}</p>

@@ -15,6 +15,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import MapsApercu from "../../components/ui/MapsApercu";
 import ShareButton from "../../components/ui/ShareButton";
 import {
   useCovoiturages,
@@ -132,6 +133,14 @@ function ModaleRejoindre({ trajet, onClose }: { trajet: Covoiturage; onClose: ()
           )}
         </div>
 
+        {/* Aperçu Maps du point de rendez-vous (demande utilisateur du 2026-09-27, point 12.1) —
+            ne rend rien si lieu_rendez_vous est vide, voir MapsApercu. */}
+        <MapsApercu
+          adresse={trajet.lieu_rendez_vous}
+          mapsUrl={trajet.lieu_rendez_vous_maps_url}
+          className="mb-3"
+        />
+
         <div className="mb-2">
           <label className="mb-1 block text-xs font-medium text-text-secondary">
             {t("covoiturage.modal_places")}
@@ -206,6 +215,7 @@ export default function CovoituragePage() {
   const [prixParPlace, setPrixParPlace] = useState("");
   const [vehicule, setVehicule] = useState("");
   const [lieuRendezVous, setLieuRendezVous] = useState("");
+  const [lieuRendezVousMapsUrl, setLieuRendezVousMapsUrl] = useState("");
   const [remarques, setRemarques] = useState("");
   const [evenementLie, setEvenementLie] = useState("");
   const [erreurCreation, setErreurCreation] = useState("");
@@ -224,6 +234,7 @@ export default function CovoituragePage() {
         prix_par_place: prixParPlace || null,
         vehicule,
         lieu_rendez_vous: lieuRendezVous,
+        lieu_rendez_vous_maps_url: lieuRendezVousMapsUrl,
         remarques,
         evenement: evenementLie || null,
       },
@@ -237,6 +248,7 @@ export default function CovoituragePage() {
           setPrixParPlace("");
           setVehicule("");
           setLieuRendezVous("");
+          setLieuRendezVousMapsUrl("");
           setRemarques("");
           setEvenementLie("");
           setAfficherFormulaire(false);
@@ -328,6 +340,15 @@ export default function CovoituragePage() {
             value={lieuRendezVous}
             onChange={(e) => setLieuRendezVous(e.target.value)}
             placeholder={t("covoiturage.treffpunkt_placeholder")}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+          {/* Lien Google Maps du point de rendez-vous (demande utilisateur du 2026-09-27, point
+              12.1) — utilisé uniquement comme cible du lien cliquable, voir MapsApercu.tsx. */}
+          <input
+            type="url"
+            value={lieuRendezVousMapsUrl}
+            onChange={(e) => setLieuRendezVousMapsUrl(e.target.value)}
+            placeholder={t("covoiturage.treffpunkt_maps_url_placeholder")}
             className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
           />
           <textarea
@@ -431,6 +452,13 @@ export default function CovoituragePage() {
                   </span>{" "}
                   {trajet.lieu_rendez_vous}
                 </p>
+              )}
+              {trajet.lieu_rendez_vous_maps_url && (
+                <MapsApercu
+                  adresse={trajet.lieu_rendez_vous}
+                  mapsUrl={trajet.lieu_rendez_vous_maps_url}
+                  className="mt-1.5"
+                />
               )}
               {trajet.remarques && (
                 <p className="mt-1.5 text-[10px] text-text-tertiary">
