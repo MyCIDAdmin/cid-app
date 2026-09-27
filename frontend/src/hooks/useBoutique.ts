@@ -10,6 +10,7 @@ import type {
   ExpedierCommandePayload,
   InitierPaiementEnLigneCommandePayload,
   PasserCommandePayload,
+  ProduitImagePayload,
   ProduitPayload,
   RegleReductionPayload,
   RetourPayload,
@@ -138,6 +139,25 @@ export function useSupprimerProduit() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => boutiqueApi.supprimerProduit(id),
+    onSuccess: () => invalidateProduits(queryClient),
+  });
+}
+
+/** Galerie de photos supplémentaires (demande utilisateur du 2026-09-27, point 13.1) — même
+ * principe que useAjouterImageProjet/useSupprimerImageProjet (hooks/useProjets.ts) : invalide
+ * simplement la requête produit(s) parente, `Produit.images` étant imbriqué côté backend. */
+export function useAjouterImageProduit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ProduitImagePayload) => boutiqueApi.ajouterImageProduit(payload),
+    onSuccess: () => invalidateProduits(queryClient),
+  });
+}
+
+export function useSupprimerImageProduit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => boutiqueApi.supprimerImageProduit(id),
     onSuccess: () => invalidateProduits(queryClient),
   });
 }

@@ -28,10 +28,21 @@ export default function AppLayout() {
   const afficherFooter = groupe !== null && GROUPES_AVEC_FOOTER.has(groupe);
 
   return (
-    <div className="flex min-h-screen">
+    // h-screen (pas min-h-screen) + min-h-0 sur la colonne de droite (retour utilisateur du
+    // 2026-09-27 : "Side Bar nach dem Login ist abgeschnitten und geht nicht bis zum End der
+    // Seite") : la colonne de droite (header + <main> scrollable + PublicFooter éventuel) est un
+    // enfant flex sans hauteur explicite, dont la hauteur minimale par défaut est celle de son
+    // contenu ("min-height: auto") — dès que ce contenu dépasse un écran (notamment avec le
+    // PublicFooter ajouté sous <main>), la colonne grandissait au-delà de 100vh et entraînait tout
+    // le document avec elle, alors que <Sidebar> garde une hauteur fixe (`h-screen`, voir
+    // Sidebar.tsx) : elle ne suivait donc plus jusqu'en bas de la page ainsi allongée. `min-h-0`
+    // autorise la colonne à se contracter à la hauteur disponible, pour que ce soit bien <main>
+    // (overflow-y-auto) qui défile en interne, jamais le document — la sidebar reste alors
+    // toujours alignée sur exactement 100vh, quelle que soit la longueur de la page.
+    <div className="flex h-screen">
       <Sidebar />
       <MobileNavDrawer open={tiroirMobileOuvert} onClose={() => setTiroirMobileOuvert(false)} />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Topbar (mockup .topbar) — cloche de notifications (Phase 2B), sélecteur de langue et
             bascule de thème (demande utilisateur du 2026-09-16) ; les autres éléments du
             mockup (recherche, action rapide) restent hors périmètre tant qu'ils n'ont pas

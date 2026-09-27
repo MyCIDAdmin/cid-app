@@ -39,6 +39,7 @@ import type {
   TypeProduit,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import GalerieProduitManager from "./GalerieProduitManager";
 import RegleReductionManager from "./RegleReductionManager";
 import VariantesManager from "./VariantesManager";
 
@@ -85,6 +86,7 @@ export default function GestionCatalogueTab({
   const [form, setForm] = useState<ProduitPayload>(formulaireInitial);
   const [produitDeplie, setProduitDeplie] = useState<string | null>(null);
   const [produitReductionDeplie, setProduitReductionDeplie] = useState<string | null>(null);
+  const [produitGalerieDeplie, setProduitGalerieDeplie] = useState<string | null>(null);
   const [produitImageEnCours, setProduitImageEnCours] = useState<string | null>(null);
   const [produitImageErreur, setProduitImageErreur] = useState<{
     produitId: string;
@@ -531,6 +533,19 @@ export default function GestionCatalogueTab({
                       ? t("catalogue_admin.gerer_regles_reduction")
                       : t("catalogue_admin.voir_regles_reduction")}
                 </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setProduitGalerieDeplie((cur) => (cur === produit.id ? null : produit.id))
+                  }
+                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+                >
+                  {produitGalerieDeplie === produit.id
+                    ? t("catalogue_admin.masquer_galerie")
+                    : modifiable
+                      ? t("catalogue_admin.gerer_galerie")
+                      : t("catalogue_admin.voir_galerie")}
+                </button>
               </div>
               {produitImageErreur?.produitId === produit.id && (
                 <p className="mt-1 text-[11px] text-status-dangerText">
@@ -542,6 +557,9 @@ export default function GestionCatalogueTab({
               )}
               {produitReductionDeplie === produit.id && (
                 <RegleReductionManager produit={produit} modifiable={modifiable} />
+              )}
+              {produitGalerieDeplie === produit.id && (
+                <GalerieProduitManager produit={produit} modifiable={modifiable} />
               )}
             </div>
           ))}

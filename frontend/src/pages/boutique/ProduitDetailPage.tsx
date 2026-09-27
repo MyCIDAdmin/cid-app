@@ -19,7 +19,7 @@
  * catalogue (voir ProduitCarteBonAchat) — sa page de détail se limite à un lien de retour, cette
  * page ne duplique pas le sélecteur de montant.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
@@ -43,6 +43,25 @@ export default function ProduitDetailPage() {
   const variantesEnStock = produit?.variantes.filter((v) => v.stock > 0) ?? [];
   const [varianteId, setVarianteId] = useState<string>("");
   const [quantite, setQuantite] = useState(1);
+
+  // Galerie de photos supplémentaires (demande utilisateur du 2026-09-27, point 13.1 : "die
+  // Bilder können User sich im Shop anschauen") — `produit.image` (kachel/historique) reste la
+  // première vignette pour ne rien changer visuellement quand aucune photo supplémentaire
+  // n'a été ajoutée ; sélection par miniatures plutôt qu'un carrousel auto-rotatif (voir
+  // ImageCarousel côté projets) : sur une fiche produit consultée activement, l'utilisateur
+  // choisit lui-même la photo qu'il veut voir, contrairement à une kachel de catalogue survolée
+  // passivement.
+  const [indexGalerieActif, setIndexGalerieActif] = useState(0);
+  useEffect(() => {
+    setIndexGalerieActif(0);
+  }, [produit?.id]);
+  const imagesGalerie = produit
+    ? [
+        ...(produit.image ? [{ id: "principale", image: produit.image }] : []),
+        ...produit.images,
+      ]
+    : [];
+  const imageAffichee = imagesGalerie[indexGalerieActif]?.image ?? produit?.image ?? null;
 
   const varianteSelectionnee = produit?.variantes.find(
     (v) => v.id === (varianteId || variantesEnStock[0]?.id),
@@ -114,10 +133,29 @@ export default function ProduitDetailPage() {
             <div className="absolute bottom-3 right-3 rounded-full bg-bg-primary/80 backdrop-blur-sm">
               <ShareButton path={`/boutique/${produit.id}`} titre={produit.nom} />
             </div>
-            {produit.image ? (
-              <img src={produit.image} alt={produit.nom} className="h-full w-full object-cover" />
+            {imageAffichee ? (
+              <img src={imageAffichee} alt={produit.nom} className="h-full w-full object-cover" />
             ) : (
               <span className="text-6xl">{produit.type_produit === "bon_achat" ? "🎁" : "🛍️"}</span>
+            )}
+            {imagesGalerie.length > 1 && (
+              <div className="absolute inset-x-0 bottom-0 flex gap-1.5 overflow-x-auto bg-black/40 p-2">
+                {imagesGalerie.map((img, i) => (
+                  <button
+                    key={img.id}
+                    type="button"
+                    onClick={() => setIndexGalerieActif(i)}
+                    aria-label={t("detail.galerie_vignette", { n: i + 1 })}
+                    className={`h-10 w-10 shrink-0 overflow-hidden rounded border-2 ${
+                      i === indexGalerieActif
+                        ? "border-white"
+                        : "border-transparent opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <img src={img.image} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 

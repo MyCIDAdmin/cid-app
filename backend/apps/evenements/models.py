@@ -27,6 +27,8 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from .storage import EvenementsStorage
+
 
 class TypeEvenement(models.TextChoices):
     """Mockup #pg-admin-events — liste déroulante "Type"."""
@@ -55,6 +57,13 @@ class RegimeAlimentaire(models.TextChoices):
     VEGETARIEN = "vegetarien", _("Végétarien")
 
 
+def evenement_image_upload_path(instance, filename):
+    """Même principe que projets.models.projet_image_upload_path : le fichier passé ici est
+    déjà celui produit par valider_et_reencoder_photo (nom UUID, ré-encodé), ce préfixe
+    supplémentaire évite seulement toute collision entre événements dans le bucket."""
+    return f"kachel/{instance.id}/{uuid.uuid4()}_{filename}"
+
+
 class Evenement(models.Model):
     """Événement associatif (déplacement, fête, conférence...) — FDD §3.4, F-005."""
 
@@ -74,6 +83,24 @@ class Evenement(models.Model):
     heure = models.TimeField(null=True, blank=True)
     lieu = models.CharField(max_length=255, help_text=_("Stade/salle, ville, adresse complète."))
     point_rdv = models.CharField(max_length=255, blank=True)
+    # Demande utilisateur du 2026-09-27, point 11.2 "Maps-Link für den Ort + Vorschau + Adresse
+    # anzeigen" : lien Google Maps saisi par l'admin (souvent un lien "partager", parfois un
+    # lien court share.google/...), utilisé côté frontend uniquement comme cible du lien
+    # cliquable "Ouvrir dans Google Maps" — la vignette d'aperçu est générée depuis `lieu`
+    # (texte), jamais depuis ce lien (souvent bloqué en iframe par Google, voir
+    # frontend/src/components/ui/MapsApercu.tsx).
+    lieu_maps_url = models.URLField(max_length=500, blank=True)
+
+    # Demande utilisateur du 2026-09-27, point 11.1 "Bild für Veranstaltungs-Kachel hochladen" —
+    # même principe que Projet.image (bucket dédié EvenementsStorage, validation MIME/re-encodage
+    # via valider_et_reencoder_photo dans EvenementSerializer.validate_image, CLAUDE.md §8).
+    image = models.ImageField(
+        upload_to=evenement_image_upload_path,
+        storage=EvenementsStorage(),
+        null=True,
+        blank=True,
+        help_text=_("Image affichée sur la kachel de l'événement (page d'accueil publique)."),
+    )
 
     places_max = models.PositiveIntegerField(
         null=True, blank=True, help_text=_("Vide = pas de limite de capacité.")
@@ -319,6 +346,10 @@ class Covoiturage(models.Model):
             "ReservationCovoiturage.point_prise_en_charge)."
         ),
     )
+    # Demande utilisateur du 2026-09-27, point 12.1 "Maps-Link für Treffpunkt + Adresse
+    # anzeigen" — même principe que Evenement.lieu_maps_url : lien cliquable uniquement,
+    # jamais utilisé pour générer la vignette d'aperçu (générée depuis lieu_rendez_vous).
+    lieu_rendez_vous_maps_url = models.URLField(max_length=500, blank=True)
 
     places_disponibles = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     prix_par_place = models.DecimalField(

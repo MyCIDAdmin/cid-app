@@ -8,6 +8,7 @@ serveur dans les vues (voir views.py), à partir de evenement.cout / trajet.prix
 
 from rest_framework import serializers
 
+from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 
 from .models import Covoiturage, Evenement, Inscription, ReservationCovoiturage, StatutEvenement
@@ -50,6 +51,8 @@ class EvenementSerializer(serializers.ModelSerializer):
             "heure",
             "lieu",
             "point_rdv",
+            "lieu_maps_url",
+            "image",
             "places_max",
             "gratuit",
             "cout",
@@ -76,6 +79,11 @@ class EvenementSerializer(serializers.ModelSerializer):
                 {"places_max": "Le nombre de places doit être strictement positif."}
             )
         return attrs
+
+    def validate_image(self, image):
+        # CLAUDE.md §8 : MIME réel vérifié + ré-encodage Pillow (EXIF supprimé), jamais les
+        # octets bruts du client stockés tels quels — voir docstring de valider_et_reencoder_photo.
+        return valider_et_reencoder_photo(image)
 
 
 class InscriptionSerializer(serializers.ModelSerializer):
@@ -164,6 +172,7 @@ class CovoiturageSerializer(serializers.ModelSerializer):
             "date_trajet",
             "heure_trajet",
             "lieu_rendez_vous",
+            "lieu_rendez_vous_maps_url",
             "places_disponibles",
             "prix_par_place",
             "vehicule",

@@ -64,6 +64,18 @@ export async function annulerEvenement(id: string): Promise<Evenement> {
 }
 
 /**
+ * Téléverse l'image de la kachel d'un événement (demande utilisateur du 2026-09-27, point
+ * 11.1) — FormData + PATCH, même convention que televerserImageProduit (api/boutique.ts) :
+ * requête multipart distincte de l'appel JSON de création/modification.
+ */
+export async function televerserImageEvenement(id: string, fichier: File): Promise<Evenement> {
+  const formData = new FormData();
+  formData.append("image", fichier);
+  const { data } = await apiClient.patch<Evenement>(`/evenements/evenements/${id}/`, formData);
+  return data;
+}
+
+/**
  * S'inscrire à un événement — le montant/la capacité sont toujours recalculés côté serveur
  * (CLAUDE.md §8, verrouillage SELECT FOR UPDATE), voir InscrirePayload/EvenementViewSet.inscrire.
  * Ré-appeler avec le même événement met à jour l'inscription existante (une seule ligne par

@@ -40,4 +40,16 @@ describe("PublicFooter", () => {
       "https://www.instagram.com/clubistes_in_deutschland/",
     );
   });
+
+  // Retour utilisateur du 2026-09-27 ("die Logos für CID, Mail, location, instagram und facebook
+  // hinzufügen") : blason CID dans le bloc de marque, et "footer.pays" devient un lien externe
+  // vers l'emplacement Google Maps fourni par l'utilisateur (voir LIEN_LOCALISATION).
+  it("affiche le blason CID et un lien vers la localisation", () => {
+    renderWithProviders(<PublicFooter />);
+    expect(screen.getByAltText("Clubistes in Deutschland")).toBeInTheDocument();
+    expect(screen.getByText("footer.pays").closest("a")).toHaveAttribute(
+      "href",
+      "https://share.google/2bOef3rWXOlAMprNM",
+    );
+  });
 });

@@ -30,6 +30,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     prix_final: "45.00",
     prix_membre: null,
     image: null,
+    images: [],
     statut: "publie",
     type_produit: "physique",
     nouveaute: true,

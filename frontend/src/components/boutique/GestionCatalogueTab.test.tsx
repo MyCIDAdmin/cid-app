@@ -22,6 +22,8 @@ vi.mock("../../hooks/useBoutique", async () => {
     useCreerRegleReduction: vi.fn(),
     useModifierRegleReduction: vi.fn(),
     useSupprimerRegleReduction: vi.fn(),
+    useAjouterImageProduit: vi.fn(),
+    useSupprimerImageProduit: vi.fn(),
   };
 });
 
@@ -36,6 +38,7 @@ function produit(overrides: Partial<Produit> = {}): Produit {
     prix_final: "18.00",
     prix_membre: null,
     image: null,
+    images: [],
     statut: "publie",
     type_produit: "physique",
     nouveaute: false,
@@ -111,6 +114,14 @@ describe("GestionCatalogueTab", () => {
     vi.mocked(useBoutiqueHooks.useSupprimerRegleReduction).mockReturnValue({
       mutate: vi.fn(),
     } as unknown as ReturnType<typeof useBoutiqueHooks.useSupprimerRegleReduction>);
+    vi.mocked(useBoutiqueHooks.useAjouterImageProduit).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useAjouterImageProduit>);
+    vi.mocked(useBoutiqueHooks.useSupprimerImageProduit).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useSupprimerImageProduit>);
   });
 
   it("affiche les produits existants avec leur alerte de stock faible", () => {
@@ -254,6 +265,141 @@ describe("GestionCatalogueTab", () => {
       { produit: "p1", seuil_quantite: 5, type_reduction: "article_offert", pourcentage: null },
       expect.anything(),
     );
+  });
+
+  // --- GalerieProduitManager (demande utilisateur du 2026-09-27, point 13.1) ---
+
+  it("déplie le panneau de galerie photo et affiche les vignettes existantes", () => {
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          produit({
+            images: [
+              {
+                id: "img1",
+                produit: "p1",
+                image: "https://cdn.example.de/produits/galerie1.jpg",
+                ordre: 0,
+                uploaded_by: "m1",
+                created_at: "2026-01-01T00:00:00Z",
+              },
+            ],
+          }),
+        ],
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+
+    renderWithProviders(<GestionCatalogueTab />);
+    fireEvent.click(screen.getByText("catalogue_admin.gerer_galerie"));
+
+    expect(screen.getByText("catalogue_admin.galerie_titre")).toBeInTheDocument();
+    expect(screen.queryByText("catalogue_admin.galerie_vide")).not.toBeInTheDocument();
+  });
+
+  it("replie le panneau de galerie photo au second clic", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+    fireEvent.click(screen.getByText("catalogue_admin.gerer_galerie"));
+    fireEvent.click(screen.getByText("catalogue_admin.masquer_galerie"));
+    expect(screen.queryByText("catalogue_admin.galerie_titre")).not.toBeInTheDocument();
+  });
+
+  it("affiche un message quand la galerie ne contient encore aucune photo", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+    fireEvent.click(screen.getByText("catalogue_admin.gerer_galerie"));
+    expect(screen.getByText("catalogue_admin.galerie_vide")).toBeInTheDocument();
+  });
+
+  it("ajoute une photo de galerie via le bouton d'ajout", () => {
+    const ajouterMock = vi.fn();
+    vi.mocked(useBoutiqueHooks.useAjouterImageProduit).mockReturnValue({
+      mutate: ajouterMock,
+      isPending: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useAjouterImageProduit>);
+
+    renderWithProviders(<GestionCatalogueTab />);
+    fireEvent.click(screen.getByText("catalogue_admin.gerer_galerie"));
+
+    const fichier = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    // Le champ de fichier du panneau de galerie est un frère caché du bouton "Ajouter une
+    // photo" — voir GalerieProduitManager (même principe que inputsFichierImage côté image
+    // principale, mais un seul input ici puisque le panneau ne concerne qu'un seul produit).
+    const inputFichier = screen
+      .getByText("catalogue_admin.galerie_ajouter")
+      .parentElement!.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(inputFichier, { target: { files: [fichier] } });
+
+    expect(ajouterMock).toHaveBeenCalledWith(
+      { produit: "p1", image: fichier },
+      expect.anything(),
+    );
+  });
+
+  it("supprime une photo de galerie via le bouton ×", () => {
+    const supprimerMock = vi.fn();
+    vi.mocked(useBoutiqueHooks.useSupprimerImageProduit).mockReturnValue({
+      mutate: supprimerMock,
+      isPending: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useSupprimerImageProduit>);
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          produit({
+            images: [
+              {
+                id: "img1",
+                produit: "p1",
+                image: "https://cdn.example.de/produits/galerie1.jpg",
+                ordre: 0,
+                uploaded_by: "m1",
+                created_at: "2026-01-01T00:00:00Z",
+              },
+            ],
+          }),
+        ],
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+
+    renderWithProviders(<GestionCatalogueTab />);
+    fireEvent.click(screen.getByText("catalogue_admin.gerer_galerie"));
+    fireEvent.click(screen.getByLabelText("catalogue_admin.galerie_supprimer"));
+
+    expect(supprimerMock).toHaveBeenCalledWith("img1", expect.anything());
+  });
+
+  it("désactive l'ajout et la suppression de photos de galerie quand modifiable=false", () => {
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          produit({
+            images: [
+              {
+                id: "img1",
+                produit: "p1",
+                image: "https://cdn.example.de/produits/galerie1.jpg",
+                ordre: 0,
+                uploaded_by: "m1",
+                created_at: "2026-01-01T00:00:00Z",
+              },
+            ],
+          }),
+        ],
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+
+    renderWithProviders(<GestionCatalogueTab modifiable={false} />);
+    fireEvent.click(screen.getByText("catalogue_admin.voir_galerie"));
+
+    expect(screen.getByText("catalogue_admin.galerie_ajouter")).toBeDisabled();
+    expect(screen.getByLabelText("catalogue_admin.galerie_supprimer")).toBeDisabled();
   });
 
   // Bug remonté par l'utilisateur (2026-09-24, task #216) : le `disabled` sur les champs bloque

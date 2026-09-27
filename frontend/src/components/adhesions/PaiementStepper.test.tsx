@@ -115,6 +115,34 @@ describe("PaiementStepper", () => {
     expect(screen.getByText("Cotisation annuelle 2025")).toBeInTheDocument();
   });
 
+  it("limite l'historique affiché aux 5 paiements les plus récents (retour utilisateur du 2026-09-27)", () => {
+    vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      reset: vi.fn(),
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+    // Le backend trie déjà par -created_at (voir CotisationViewSet.ordering) : cet ordre de mock
+    // représente donc directement "du plus récent au plus ancien", 1 étant le plus récent.
+    const septPaiements = Array.from({ length: 7 }, (_, i) =>
+      cotisation({ id: `c${i + 1}`, libelle: `Paiement ${i + 1}` }),
+    );
+    vi.mocked(useCotisationsHooks.useMesCotisations).mockReturnValue({
+      data: { next: null, previous: null, results: septPaiements },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useMesCotisations>);
+
+    renderWithProviders(<PaiementStepper />);
+
+    for (let i = 1; i <= 5; i += 1) {
+      expect(screen.getByText(`Paiement ${i}`)).toBeInTheDocument();
+    }
+    expect(screen.queryByText("Paiement 6")).not.toBeInTheDocument();
+    expect(screen.queryByText("Paiement 7")).not.toBeInTheDocument();
+  });
+
   it("refuse de continuer pour un don sans montant valide", () => {
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
       mutate: vi.fn(),

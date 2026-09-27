@@ -129,7 +129,8 @@
   "detail": {
     "retour_catalogue": "Retour au catalogue",
     "quantite_label": "Quantité",
-    "choisir_montant_catalogue": "Choisir un montant depuis le catalogue"
+    "choisir_montant_catalogue": "Choisir un montant depuis le catalogue",
+    "galerie_vignette": "Afficher la photo {{n}}"
   },
   "boutique_page": {
     "onglet_catalogue": "Catalogue",
@@ -276,7 +277,16 @@
     "regle_erreur": "Le palier n'a pas pu être créé.",
     "seuil_quantite_label": "Seuil (quantité)",
     "type_reduction_label": "Type",
-    "ajouter_regle": "Ajouter"
+    "ajouter_regle": "Ajouter",
+    "galerie_titre": "Galerie photo",
+    "galerie_vide": "Aucune photo supplémentaire pour le moment.",
+    "galerie_ajouter": "Ajouter une photo",
+    "galerie_ajout_en_cours": "Téléversement…",
+    "galerie_erreur": "La photo n'a pas pu être ajoutée.",
+    "galerie_supprimer": "Supprimer cette photo",
+    "gerer_galerie": "Gérer la galerie",
+    "masquer_galerie": "Masquer la galerie",
+    "voir_galerie": "Voir la galerie"
   },
   "mes_bons_achat": {
     "titre": "Mes bons d'achat",

@@ -92,5 +92,8 @@
     "lien_url": "Link-URL (leer lassen, um zu entfernen)",
     "annuler_saisie": "Rückgängig",
     "retablir_saisie": "Wiederholen"
+  },
+  "maps": {
+    "ouvrir": "In Google Maps öffnen"
   }
 }

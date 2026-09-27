@@ -576,7 +576,11 @@ export default function PaiementStepper() {
                     </tr>
                   </thead>
                   <tbody>
-                    {historique.data.results.map((c) => (
+                    {/* Retour utilisateur du 2026-09-27 : la kachel ne doit pas étirer la page —
+                        seuls les 5 paiements les plus récents sont affichés (le tri "-created_at"
+                        du backend, voir CotisationViewSet.ordering, garantit qu'il s'agit bien
+                        des plus récents, jamais d'un sous-ensemble arbitraire). */}
+                    {historique.data.results.slice(0, 5).map((c) => (
                       <tr key={c.id} className="border-b border-text-tertiary/10 last:border-0">
                         <td className="py-1">{formatDate(c.date_paiement ?? c.created_at)}</td>
                         <td className="py-1">{c.libelle}</td>
