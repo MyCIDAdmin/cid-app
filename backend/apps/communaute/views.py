@@ -919,12 +919,28 @@ class RencontreCalendrierViewSet(mixins.ListModelMixin, viewsets.GenericViewSet)
     """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py.
 
     `AllowAny` depuis le 2026-09-26 — même raisonnement que ClassementLigueViewSet
-    ci-dessus (données sportives tierces, aucune information sensible)."""
+    ci-dessus (données sportives tierces, aucune information sensible).
+
+    Filtrée par défaut sur l'année en cours + l'année suivante (2026-09-28, retour
+    utilisateur "Spielplan-Filter (aktuelles+nächstes Jahr)") — GOAL API renvoie désormais
+    le calendrier COMPLET (198 rencontres testées, depuis 2021, voir docstring de tête
+    models.py), et sans filtre le Spielplan (onglet "Calendrier"/CalendrierTab.tsx, comme
+    TippspielTippAbgabe.tsx et StatistiquesTab.tsx qui réutilisent ce même endpoint)
+    ressortait noyé sous des années de résultats archivés — même famille de bug que
+    "Tabelle ist falsch und Listet Daten aus alten Säsons" déjà corrigée sur
+    ClassementLigueViewSet ci-dessus. `?periode=toutes` lève le filtre (ex. pour un futur
+    historique complet), même principe que `?saison=toutes`."""
 
     serializer_class = RencontreCalendrierSerializer
     permission_classes = [AllowAny]
     pagination_class = CalendrierCursorPagination
-    queryset = RencontreCalendrier.objects.all()
+
+    def get_queryset(self):
+        qs = RencontreCalendrier.objects.all()
+        if self.request.query_params.get("periode") == "toutes":
+            return qs
+        annee_actuelle = timezone.localdate().year
+        return qs.filter(date_heure__year__in=[annee_actuelle, annee_actuelle + 1])
 
 
 class ConfigurationSitePublicView(APIView):
