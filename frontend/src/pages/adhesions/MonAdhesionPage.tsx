@@ -33,6 +33,19 @@
  * (offre.avantages) et la tranche d'âge éligible sont désormais affichés directement sur
  * chaque carte, plutôt qu'uniquement après souscription (snapshot_avantages du hero).
  *
+ * Cartes façon mycid.org/membership (retour utilisateur du 2026-09-27, points 3-4 : "Wenn ich
+ * auf dem Button 'Mitglieder werden' klicke, erscheint eine Seite mit den Angeboten [...] Der
+ * Design der Seite mycid.org/membership soll übernommen werden" + "Button [...] auf 'Jetzt
+ * beitreten' umbenennen") — cette page (déjà la destination du CTA hero "Mitglied werden", voir
+ * AccueilTab.tsx) reprend désormais elle-même le langage visuel de cartes tarifaires utilisé par
+ * MembershipOffersPublic.tsx (bordure haute colorée, prix en grand, badge "Beliebt" sur l'offre
+ * du milieu à partir de 3 offres) au lieu de l'ancienne liste compacte — MembershipSection.tsx
+ * n'est elle-même plus montrée sur la Startseite (voir AccueilTab.tsx), donc ce style de carte ne
+ * vit désormais plus qu'ici, en un seul clic depuis le hero. Le bouton "Jetzt beitreten"
+ * (offres.rejoindre) déplie la carte (rabais + confirmation) exactement comme cliquer sur la
+ * ligne le faisait avant — seul l'habillage visuel change, pas le flux d'inscription en 2 temps
+ * (choix du rabais avant confirmation définitive, prix toujours recalculé côté serveur).
+ *
  * Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
  * utilisateur non negociable, voir plan section F) : cette page integre desormais aussi
  * l'integralite de l'ancien module "Mitgliedsbeitrag" (PaiementStepper, ex-
@@ -81,13 +94,18 @@ const STATUTS_RETIRABLES: StatutSouscription[] = [
 ];
 
 // Palette catégorielle fixe (jamais recyclée arbitrairement) — voir le docstring de tête pour
-// le choix des 3 slots. `puce` colore le repère "✓" devant chaque avantage listé.
+// le choix des 3 slots. `puce` colore le repère "✓" devant chaque avantage listé ; `liseret_haut`
+// est la même palette en bordure haute (façon mycid.org/membership, voir docstring de tête).
 const ACCENTS_OFFRE = [
-  { liseret: "border-l-cat-1", puce: "text-cat-1" },
-  { liseret: "border-l-cat-2", puce: "text-cat-2" },
-  { liseret: "border-l-cat-3", puce: "text-cat-3" },
+  { liseret: "border-l-cat-1", liseret_haut: "border-t-cat-1", puce: "text-cat-1" },
+  { liseret: "border-l-cat-2", liseret_haut: "border-t-cat-2", puce: "text-cat-2" },
+  { liseret: "border-l-cat-3", liseret_haut: "border-t-cat-3", puce: "text-cat-3" },
 ] as const;
-const ACCENT_NEUTRE = { liseret: "border-l-text-tertiary/30", puce: "text-ca" } as const;
+const ACCENT_NEUTRE = {
+  liseret: "border-l-text-tertiary/30",
+  liseret_haut: "border-t-text-tertiary/30",
+  puce: "text-ca",
+} as const;
 
 function accentOffre(index: number): (typeof ACCENTS_OFFRE)[number] | typeof ACCENT_NEUTRE {
   return ACCENTS_OFFRE[index] ?? ACCENT_NEUTRE;
@@ -316,193 +334,204 @@ export default function MonAdhesionPage() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-          <h2 className="mb-3 text-xs font-bold text-text-primary">
-            {campagne
-              ? t("offres.titre", { annee: campagne.annee })
-              : t("offres.titre_sans_campagne")}
-          </h2>
+      <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+        <h2 className="mb-1 text-xs font-bold text-text-primary">
+          {campagne
+            ? t("offres.titre", { annee: campagne.annee })
+            : t("offres.titre_sans_campagne")}
+        </h2>
 
-          {campagneActive.isLoading && (
-            <p className="text-sm text-text-tertiary">{t("offres.chargement")}</p>
-          )}
-          {campagneActive.isError && (
-            <p className="text-sm text-text-tertiary">{t("offres.aucune_campagne")}</p>
-          )}
-          {campagne && dejaPayee && (
-            <p className="text-sm text-text-tertiary">{t("offres.deja_payee")}</p>
-          )}
-          {campagne && !dejaPayee && offresVisibles.length === 0 && (
-            <p className="text-sm text-text-tertiary">{t("offres.aucune_campagne")}</p>
-          )}
+        {campagneActive.isLoading && (
+          <p className="text-sm text-text-tertiary">{t("offres.chargement")}</p>
+        )}
+        {campagneActive.isError && (
+          <p className="text-sm text-text-tertiary">{t("offres.aucune_campagne")}</p>
+        )}
+        {campagne && dejaPayee && (
+          <p className="text-sm text-text-tertiary">{t("offres.deja_payee")}</p>
+        )}
+        {campagne && !dejaPayee && offresVisibles.length === 0 && (
+          <p className="text-sm text-text-tertiary">{t("offres.aucune_campagne")}</p>
+        )}
 
-          {campagne && !dejaPayee && offresVisibles.length > 0 && (
-            <div className="space-y-2">
-              {offresVisibles.map((offre, index) => {
-                const accent = accentOffre(index);
-                const avantagesOffre = offre.avantages.slice().sort((a, b) => a.ordre - b.ordre);
-                const texteConditionAge =
-                  offre.condition_age_min != null && offre.condition_age_max != null
-                    ? t("offres.condition_age_min_max", {
-                        min: offre.condition_age_min,
-                        max: offre.condition_age_max,
-                      })
-                    : offre.condition_age_min != null
-                      ? t("offres.condition_age_min", { min: offre.condition_age_min })
-                      : offre.condition_age_max != null
-                        ? t("offres.condition_age_max", { max: offre.condition_age_max })
-                        : null;
+        {campagne && !dejaPayee && offresVisibles.length > 0 && (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {offresVisibles.map((offre, index) => {
+              const accent = accentOffre(index);
+              const avantagesOffre = offre.avantages.slice().sort((a, b) => a.ordre - b.ordre);
+              const texteConditionAge =
+                offre.condition_age_min != null && offre.condition_age_max != null
+                  ? t("offres.condition_age_min_max", {
+                      min: offre.condition_age_min,
+                      max: offre.condition_age_max,
+                    })
+                  : offre.condition_age_min != null
+                    ? t("offres.condition_age_min", { min: offre.condition_age_min })
+                    : offre.condition_age_max != null
+                      ? t("offres.condition_age_max", { max: offre.condition_age_max })
+                      : null;
+              const selectionnee = offreSelectionneeId === offre.id;
+              // Repère cosmétique "Beliebt" façon mycid.org/membership — l'offre du milieu à
+              // partir de 3 offres visibles, jamais un champ backend dédié (voir
+              // MembershipOffersPublic.tsx, même convention) : purement décoratif.
+              const populaire =
+                offresVisibles.length >= 3 && index === Math.floor(offresVisibles.length / 2);
 
-                return (
-                  <div
-                    key={offre.id}
-                    className={`rounded-cid border border-l-4 px-3 py-2 ${accent.liseret} ${
-                      offreSelectionneeId === offre.id
-                        ? "border-ca bg-cal/20"
-                        : "border-text-tertiary/20"
-                    }`}
-                  >
+              return (
+                <div
+                  key={offre.id}
+                  className={`relative flex flex-col rounded-cid-lg border-t-4 bg-bg-primary p-5 shadow-sm ${
+                    accent.liseret_haut
+                  } ${selectionnee ? "ring-2 ring-ca" : ""}`}
+                >
+                  {populaire && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-ca px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
+                      {t("offres.badge_populaire")}
+                    </span>
+                  )}
+
+                  <div className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+                    {offre.nom}
+                  </div>
+                  <div className="mt-2 font-display text-3xl font-bold text-text-primary">
+                    {formatMontant(offre.prix_plein)}
+                  </div>
+                  {offre.description && (
+                    <p className="mt-2 text-sm text-text-secondary">{offre.description}</p>
+                  )}
+                  {texteConditionAge && (
+                    <p className="mt-1 text-[11px] text-text-tertiary">{texteConditionAge}</p>
+                  )}
+
+                  {avantagesOffre.length > 0 && (
+                    <ul className="mt-4 flex-1 space-y-1.5">
+                      {avantagesOffre.map((av) => (
+                        <li
+                          key={av.ordre}
+                          className="flex items-start gap-1.5 text-sm text-text-secondary"
+                        >
+                          <span className={`shrink-0 font-bold ${accent.puce}`} aria-hidden="true">
+                            ✓
+                          </span>
+                          {av.texte_fr}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {!selectionnee && (
                     <button
                       type="button"
                       onClick={() => choisirOffre(offre.id)}
-                      className="flex w-full items-center justify-between gap-2 text-left"
+                      className="mt-5 rounded-cid bg-ca px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-cad"
                     >
-                      <div>
-                        <div className="text-sm font-semibold text-text-primary">{offre.nom}</div>
-                        <div className="text-xs text-text-tertiary">{offre.description}</div>
-                      </div>
-                      <div className="whitespace-nowrap text-sm font-bold text-ca">
-                        {t("offres.prix_plein")} : {formatMontant(offre.prix_plein)}
-                      </div>
+                      {t("offres.rejoindre")}
                     </button>
+                  )}
 
-                    {(avantagesOffre.length > 0 || texteConditionAge) && (
-                      <div className="mt-2 space-y-1 border-t border-text-tertiary/10 pt-2">
-                        {texteConditionAge && (
-                          <div className="text-[11px] text-text-tertiary">{texteConditionAge}</div>
-                        )}
-                        {avantagesOffre.length > 0 && (
-                          <div>
-                            <div className="mb-0.5 text-[11px] font-semibold uppercase text-text-tertiary">
-                              {t("offres.avantages_titre")}
-                            </div>
-                            <ul className="space-y-0.5">
-                              {avantagesOffre.map((av) => (
-                                <li
-                                  key={av.ordre}
-                                  className="flex items-start gap-1.5 text-xs text-text-secondary"
-                                >
-                                  <span
-                                    className={`shrink-0 font-bold ${accent.puce}`}
-                                    aria-hidden="true"
-                                  >
-                                    ✓
-                                  </span>
-                                  {av.texte_fr}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                  {selectionnee && (
+                    <div className="mt-5 border-t border-text-tertiary/10 pt-4">
+                      {offre.rabais.length > 0 && (
+                        <div className="mb-2">
+                          <label
+                            htmlFor={`rabais-${offre.id}`}
+                            className="mb-1 block text-xs font-medium text-text-secondary"
+                          >
+                            {t("offres.rabais_label")}
+                          </label>
+                          <select
+                            id={`rabais-${offre.id}`}
+                            value={rabaisSelectionneId ?? ""}
+                            onChange={(e) => setRabaisSelectionneId(e.target.value || null)}
+                            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                          >
+                            <option value="">{t("offres.rabais_aucun")}</option>
+                            {offre.rabais.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.label_fr}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
-                    {offreSelectionneeId === offre.id && (
-                      <div className="mt-2 border-t border-text-tertiary/10 pt-2">
-                        {offre.rabais.length > 0 && (
-                          <div className="mb-2">
-                            <label
-                              htmlFor={`rabais-${offre.id}`}
-                              className="mb-1 block text-xs font-medium text-text-secondary"
-                            >
-                              {t("offres.rabais_label")}
-                            </label>
-                            <select
-                              id={`rabais-${offre.id}`}
-                              value={rabaisSelectionneId ?? ""}
-                              onChange={(e) => setRabaisSelectionneId(e.target.value || null)}
-                              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                            >
-                              <option value="">{t("offres.rabais_aucun")}</option>
-                              {offre.rabais.map((r) => (
-                                <option key={r.id} value={r.id}>
-                                  {r.label_fr}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
+                      {souscrireMutation.isError && (
+                        <p className="mb-2 text-xs text-status-dangerText">
+                          {extractApiErrorMessage(souscrireMutation.error, t("offres.erreur"))}
+                        </p>
+                      )}
 
-                        {souscrireMutation.isError && (
-                          <p className="mb-2 text-xs text-status-dangerText">
-                            {extractApiErrorMessage(souscrireMutation.error, t("offres.erreur"))}
-                          </p>
-                        )}
-
+                      <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={handleSouscrire}
                           disabled={souscrireMutation.isPending}
-                          className="w-full rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+                          className="flex-1 rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
                         >
                           {souscriptionActuelle ? t("offres.changer") : t("offres.souscrire")}
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => choisirOffre(offre.id)}
+                          className="rounded-cid border border-text-tertiary/20 px-3 py-1.5 text-sm font-medium text-text-secondary hover:bg-bg-tertiary"
+                        >
+                          {t("offres.annuler_selection")}
+                        </button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-5 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+        <h2 className="mb-3 text-xs font-bold text-text-primary">{t("historique.titre")}</h2>
+        {mesSouscriptions.isLoading && (
+          <p className="text-sm text-text-tertiary">{t("historique.chargement")}</p>
+        )}
+        {mesSouscriptions.isError && (
+          <p className="text-sm text-status-dangerText">{t("historique.erreur")}</p>
+        )}
+        {mesSouscriptions.data && mesSouscriptions.data.results.length === 0 && (
+          <p className="text-sm text-text-tertiary">{t("historique.aucun")}</p>
+        )}
+        {mesSouscriptions.data && mesSouscriptions.data.results.length > 0 && (
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
+                <th className="py-1">{t("historique.col_campagne")}</th>
+                <th className="py-1">{t("historique.col_offre")}</th>
+                <th className="py-1">{t("historique.col_prix")}</th>
+                <th className="py-1">{t("historique.col_statut")}</th>
+                <th className="py-1">{t("historique.col_date")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mesSouscriptions.data.results.map((s) => {
+                const camp = campagnesById.get(s.campagne);
+                const offreNom = camp?.offres.find((o) => o.id === s.offre)?.nom;
+                return (
+                  <tr key={s.id} className="border-b border-text-tertiary/10 last:border-0">
+                    <td className="py-1">{camp?.nom ?? "—"}</td>
+                    <td className="py-1">{offreNom ?? "—"}</td>
+                    <td className="py-1">{formatMontant(s.prix_paye)}</td>
+                    <td className="py-1">
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[s.statut]}`}
+                      >
+                        {t(`statut.${s.statut}`)}
+                      </span>
+                    </td>
+                    <td className="py-1">{formatDate(s.date_souscription)}</td>
+                  </tr>
                 );
               })}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-          <h2 className="mb-3 text-xs font-bold text-text-primary">{t("historique.titre")}</h2>
-          {mesSouscriptions.isLoading && (
-            <p className="text-sm text-text-tertiary">{t("historique.chargement")}</p>
-          )}
-          {mesSouscriptions.isError && (
-            <p className="text-sm text-status-dangerText">{t("historique.erreur")}</p>
-          )}
-          {mesSouscriptions.data && mesSouscriptions.data.results.length === 0 && (
-            <p className="text-sm text-text-tertiary">{t("historique.aucun")}</p>
-          )}
-          {mesSouscriptions.data && mesSouscriptions.data.results.length > 0 && (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
-                  <th className="py-1">{t("historique.col_campagne")}</th>
-                  <th className="py-1">{t("historique.col_offre")}</th>
-                  <th className="py-1">{t("historique.col_prix")}</th>
-                  <th className="py-1">{t("historique.col_statut")}</th>
-                  <th className="py-1">{t("historique.col_date")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mesSouscriptions.data.results.map((s) => {
-                  const camp = campagnesById.get(s.campagne);
-                  const offreNom = camp?.offres.find((o) => o.id === s.offre)?.nom;
-                  return (
-                    <tr key={s.id} className="border-b border-text-tertiary/10 last:border-0">
-                      <td className="py-1">{camp?.nom ?? "—"}</td>
-                      <td className="py-1">{offreNom ?? "—"}</td>
-                      <td className="py-1">{formatMontant(s.prix_paye)}</td>
-                      <td className="py-1">
-                        <span
-                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[s.statut]}`}
-                        >
-                          {t(`statut.${s.statut}`)}
-                        </span>
-                      </td>
-                      <td className="py-1">{formatDate(s.date_souscription)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+            </tbody>
+          </table>
+        )}
       </div>
 
       <PaiementStepper />

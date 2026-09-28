@@ -72,4 +72,28 @@ describe("LoginPage", () => {
 
     await waitFor(() => expect(authApi.login).toHaveBeenCalledWith("membre@example.com", "Password123!"));
   });
+
+  // Retour utilisateur du 2026-09-27 ("wenn ich auf Mitglieder werden springe [...] dann direkt
+  // auf Übersicht") : arrivé ici via RequireAuth (state.from = la page initialement visée), la
+  // connexion doit y retourner au lieu du /dashboard fixe — voir docstring LoginPage.tsx.
+  it("retourne vers la page initialement visée (state.from) après connexion, pas /dashboard", async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      access: "access-token",
+      refresh: "refresh-token",
+      user: {
+        id: "u1",
+        email: "membre@example.com",
+        role: "membre",
+        langue_preferee: "fr",
+      },
+    });
+
+    renderWithProviders(<LoginPage />, {
+      route: { pathname: "/login", state: { from: { pathname: "/mon-adhesion" } } },
+      path: "/login",
+    });
+    soumettre("membre@example.com", "Password123!");
+
+    expect(await screen.findByTestId("route-fallback")).toBeInTheDocument();
+  });
 });

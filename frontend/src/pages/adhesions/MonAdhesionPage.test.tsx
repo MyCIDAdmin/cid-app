@@ -246,7 +246,10 @@ describe("MonAdhesionPage", () => {
 
     renderWithProviders(<MonAdhesionPage />);
 
-    fireEvent.click(screen.getByText("Basic"));
+    // Carte façon mycid.org/membership (retour utilisateur du 2026-09-27) : le bouton
+    // "offres.rejoindre" ("Jetzt beitreten") déplie la carte, comme cliquer sur la ligne le
+    // faisait avant — voir docstring MonAdhesionPage.tsx.
+    fireEvent.click(screen.getByText("offres.rejoindre"));
     fireEvent.change(screen.getByLabelText("offres.rabais_label"), { target: { value: "r1" } });
     fireEvent.click(screen.getByText("offres.souscrire"));
 
@@ -408,11 +411,13 @@ describe("MonAdhesionPage", () => {
     expect(screen.getByText("offres.condition_age_min_max")).toBeInTheDocument();
 
     // Chaque offre porte un liseré de couleur distinct et fixe (palette catégorielle, pas de
-    // recyclage arbitraire) — repéré ici via la carte englobant son nom.
-    const carteBasic = screen.getByText("Basic").closest("div.rounded-cid");
-    const carteFamille = screen.getByText("Famille").closest("div.rounded-cid");
-    expect(carteBasic).toHaveClass("border-l-cat-1");
-    expect(carteFamille).toHaveClass("border-l-cat-2");
+    // recyclage arbitraire) — repéré ici via la carte englobant son nom. Bordure HAUTE depuis le
+    // passage au style carte façon mycid.org/membership (retour utilisateur du 2026-09-27, voir
+    // docstring MonAdhesionPage.tsx), auparavant une bordure gauche.
+    const carteBasic = screen.getByText("Basic").closest("div.rounded-cid-lg");
+    const carteFamille = screen.getByText("Famille").closest("div.rounded-cid-lg");
+    expect(carteBasic).toHaveClass("border-t-cat-1");
+    expect(carteFamille).toHaveClass("border-t-cat-2");
   });
 
   it("ne propose pas de retirer une adhésion déjà payée", () => {
