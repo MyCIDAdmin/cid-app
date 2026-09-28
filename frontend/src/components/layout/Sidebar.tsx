@@ -65,7 +65,6 @@ import {
   IconIdBadge,
   IconIdBadge2,
   IconLayoutDashboard,
-  IconLogout,
   IconMail,
   IconMailCog,
   IconMessageCircle2,
@@ -85,10 +84,10 @@ import {
 import { type ComponentType, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { useMarquerLuesPrefixe, useNotificationsNonLues } from "../../hooks/useNotifications";
-import { useMesAcces } from "../../hooks/useRbac";
+import { useMesAcces, useVisibiliteEffective } from "../../hooks/useRbac";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { type SidebarGroupKey, useUiStore } from "../../store/uiStore";
 import { pageEstAccessible } from "../../types/rbac";
@@ -110,6 +109,13 @@ export interface NavItem {
    * `minRoleLevel` statique — l'item disparaît/apparaît selon ce qu'un Administrateur App a
    * configuré pour le rôle courant, y compris pour un rôle système (real enforcement). */
   pageSlug?: string;
+  /** Bug corrigé le 2026-09-28 (retour utilisateur : masquer un module dans l'admin Django
+   * "ModuleVisibiliteMembre" restait sans effet sur la Sidebar) — slug d'un des 10 modules de
+   * `apps.rbac.registry.MODULES`, voir hooks/useRbac.ts::useVisibiliteEffective. Mécanisme
+   * DISTINCT de `pageSlug` ci-dessus (mutuellement applicable, un item peut n'avoir ni l'un ni
+   * l'autre) : `ModuleVisibiliteMembre` ne concerne QUE le rôle système "Membre Normal" (voir sa
+   * docstring backend) — un rôle supérieur voit toujours l'item, quel que soit ce réglage. */
+  module?: string;
 }
 
 // Ordre d'affichage des groupes + libellé i18n de leur en-tête (nav_groupe.* dans common.json).
@@ -146,48 +152,119 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", labelKey: "nav.dashboard", icon: IconLayoutDashboard, group: "general" },
   // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
   // voit que sa propre fiche), inutile de dupliquer cette règle ici.
-  { to: "/membres", labelKey: "nav.membres", icon: IconUsers, group: "general" },
+  { to: "/membres", labelKey: "nav.membres", icon: IconUsers, group: "general", module: "membres" },
   // Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
   // utilisateur non negociable) : l'entree "Mitgliedsbeitrag" (/cotisation) a ete retiree — tout
   // son contenu vit desormais sous /mon-adhesion (voir PaiementStepper.tsx, rendu par
   // MonAdhesionPage.tsx). La route /cotisation reste techniquement presente (voir
   // pages/cotisations/CotisationRedirect.tsx) pour les deep-links existants, mais n'a plus
-  // d'entree de navigation.
-  { to: "/mon-adhesion", labelKey: "nav.mon_adhesion", icon: IconIdBadge, group: "general" },
+  // d'entree de navigation. `module: "adhesions"` (pas "cotisations", fusionné dedans) : c'est le
+  // module de registry.MODULES le plus proche de ce que cette page représente désormais.
+  {
+    to: "/mon-adhesion",
+    labelKey: "nav.mon_adhesion",
+    icon: IconIdBadge,
+    group: "general",
+    module: "adhesions",
+  },
   // Événements + Covoiturage (mockup #pg-evenements/#pg-covoiturage, FDD §3.4) — ouverts à tout
   // authentifié, même principe que /mon-adhesion : le backend scope déjà le queryset (événements
-  // publiés uniquement en dessous de Bureau Admin, voir EvenementViewSet.get_queryset).
-  { to: "/evenements", labelKey: "nav.evenements", icon: IconCalendarEvent, group: "general" },
-  { to: "/covoiturage", labelKey: "nav.covoiturage", icon: IconCar, group: "general" },
+  // publiés uniquement en dessous de Bureau Admin, voir EvenementViewSet.get_queryset). Même
+  // module "evenements" pour les deux entrées (le covoiturage vit dans apps.evenements, voir
+  // CLAUDE.md §3) — masquer le module masque logiquement les deux à la fois.
+  {
+    to: "/evenements",
+    labelKey: "nav.evenements",
+    icon: IconCalendarEvent,
+    group: "general",
+    module: "evenements",
+  },
+  {
+    to: "/covoiturage",
+    labelKey: "nav.covoiturage",
+    icon: IconCar,
+    group: "general",
+    module: "evenements",
+  },
   // Projets & Actions (module ajouté le 2026-09-22 sur demande utilisateur) — ouvert à tout
   // authentifié, même principe que /evenements : le backend ne renvoie de toute façon pas les
   // projets "en_preparation" à un rôle < Bureau Admin (voir ProjetViewSet.get_queryset).
-  { to: "/projets", labelKey: "nav.projets", icon: IconTargetArrow, group: "general" },
+  {
+    to: "/projets",
+    labelKey: "nav.projets",
+    icon: IconTargetArrow,
+    group: "general",
+    module: "projets",
+  },
   // Catalogue boutique (mockup #pg-boutique) — ouvert à tout authentifié, même principe que
   // /mon-adhesion : le backend scope déjà le queryset (produits publiés uniquement en dessous
   // de Bureau Admin, voir ProduitViewSet.get_queryset).
   // "Mes commandes" et "Mes bons d'achat" n'ont plus leur propre entrée depuis le 2026-09-23
   // (voir docstring de module) — accessibles comme onglets de cette même page.
-  { to: "/boutique", labelKey: "nav.boutique", icon: IconShoppingBag, group: "general" },
+  {
+    to: "/boutique",
+    labelKey: "nav.boutique",
+    icon: IconShoppingBag,
+    group: "general",
+    module: "boutique",
+  },
   // Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) — ouverts à
   // tout authentifié, même principe que /mon-adhesion : le backend scope déjà la visibilité (voir
-  // PublicationViewSet/SujetViewSet.get_queryset).
-  { to: "/fil", labelKey: "nav.fil", icon: IconNews, group: "communaute" },
-  { to: "/forum", labelKey: "nav.forum", icon: IconMessageCircle2, group: "communaute" },
+  // PublicationViewSet/SujetViewSet.get_queryset). `module: "communaute"` sur toutes les entrées
+  // de ce groupe (fil/forum/messagerie/groupes/live/albums/quiz vivent toutes dans apps.communaute,
+  // voir CLAUDE.md §3 — un seul module de registry.MODULES pour l'ensemble de ce périmètre).
+  { to: "/fil", labelKey: "nav.fil", icon: IconNews, group: "communaute", module: "communaute" },
+  {
+    to: "/forum",
+    labelKey: "nav.forum",
+    icon: IconMessageCircle2,
+    group: "communaute",
+    module: "communaute",
+  },
   // Messagerie privée + Groupes de chat (mockup #pg-messagerie/#pg-groupes, Release Plan
   // §3.2, Phase 4A/4B) — ouverts à tout authentifié, même principe que /fil et /forum.
-  { to: "/messagerie", labelKey: "nav.messagerie", icon: IconMail, group: "communaute" },
-  { to: "/groupes", labelKey: "nav.groupes", icon: IconUsersGroup, group: "communaute" },
+  {
+    to: "/messagerie",
+    labelKey: "nav.messagerie",
+    icon: IconMail,
+    group: "communaute",
+    module: "communaute",
+  },
+  {
+    to: "/groupes",
+    labelKey: "nav.groupes",
+    icon: IconUsersGroup,
+    group: "communaute",
+    module: "communaute",
+  },
   // Live Match (mockup #pg-live, Release Plan §3.2, troisième lot Phase 4B) — ouvert à tout
   // authentifié, même principe que /fil et /groupes.
-  { to: "/live", labelKey: "nav.live", icon: IconBroadcast, group: "communaute" },
+  {
+    to: "/live",
+    labelKey: "nav.live",
+    icon: IconBroadcast,
+    group: "communaute",
+    module: "communaute",
+  },
   // Albums photos, Quiz (mockup #pg-albums/#pg-quiz) + Votes & Élections (mockup #pg-vote, FDD
   // §3.5/F-008) — ouverts à tout authentifié : le backend scope déjà la visibilité (résultats de
   // vote masqués tant que non clôturé, voir VoteSessionViewSet.resultats ; la création/clôture de
   // session reste gérée par la page elle-même pour l'exception Dir. Financier, voir VotePage).
-  { to: "/albums", labelKey: "nav.albums", icon: IconPhoto, group: "contenu" },
-  { to: "/quiz", labelKey: "nav.quiz", icon: IconHelpCircle, group: "contenu" },
-  { to: "/votes", labelKey: "nav.votes", icon: IconGavel, group: "contenu" },
+  {
+    to: "/albums",
+    labelKey: "nav.albums",
+    icon: IconPhoto,
+    group: "contenu",
+    module: "communaute",
+  },
+  {
+    to: "/quiz",
+    labelKey: "nav.quiz",
+    icon: IconHelpCircle,
+    group: "contenu",
+    module: "communaute",
+  },
+  { to: "/votes", labelKey: "nav.votes", icon: IconGavel, group: "contenu", module: "vote" },
   // Gestion des quiz (mockup #pg-quiz) — Bureau Admin+ seulement, même niveau que
   // GestionQuizPermission côté API.
   // Phase D (ajoutée le 2026-09-23) : ces 13 items sont désormais pilotés par la matrice
@@ -386,8 +463,24 @@ export function useSidebarNav() {
     return pageEstAccessible(mesAcces?.[item.pageSlug]);
   }
 
+  // Bug corrigé le 2026-09-28 (retour utilisateur : masquer un module dans l'admin Django
+  // "ModuleVisibiliteMembre" restait sans effet) — voir docstring NavItem.module et le modèle
+  // backend ModuleVisibiliteMembre : ce réglage ne s'applique QU'AU rôle système "Membre Normal"
+  // (`user.role === "membre"`), jamais à un rôle supérieur, qui garde toujours accès à ses
+  // modules quel que soit ce toggle. Défaut visible (`?? true`) tant que la requête charge ou
+  // qu'aucune ligne n'existe pour ce module — même défaut que le backend (`existantes.get(m,
+  // True)`), donc pas de "flash puis masquage" à l'affichage initial.
+  const { data: visibiliteEffective } = useVisibiliteEffective();
+
+  function moduleEstVisible(item: NavItem): boolean {
+    if (!item.module) return true;
+    if (user?.role !== "membre") return true;
+    return visibiliteEffective?.[item.module] ?? true;
+  }
+
   const visibleItems = NAV_ITEMS.filter(
-    (item) => hasRoleAtLeast(user, item.minRoleLevel ?? 1) && aAccesPage(item),
+    (item) =>
+      hasRoleAtLeast(user, item.minRoleLevel ?? 1) && aAccesPage(item) && moduleEstVisible(item),
   );
 
   // Le seul item réellement actif pour le pathname courant — voir docstring de module (bug
@@ -652,23 +745,9 @@ function RailGroupButton({
 
 export default function Sidebar() {
   const { t } = useTranslation("common");
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
-  const navigate = useNavigate();
   const { groups, isItemActive, itemALeSignal, handleClicItem } = useSidebarNav();
-
-  function handleLogout() {
-    // logout() vide aussi le cache React Query (cf queryClient.ts) — sans
-    // quoi les données du compte qui se déconnecte resteraient visibles au
-    // prochain compte connecté dans le même onglet.
-    logout();
-    // Retour utilisateur du 2026-09-28 : après "Abmelden", atterrir sur la Startseite publique
-    // (HomeRoute -> PublicHomePage) plutôt que directement sur /login — même geste que
-    // MobileNavDrawer.handleLogout (mobile).
-    navigate("/", { replace: true });
-  }
 
   return (
     // hidden lg:flex (ajouté le 2026-09-22) : sous 1024px, la navigation passe par
@@ -734,23 +813,6 @@ export default function Sidebar() {
               />
             )}
       </nav>
-      {user && (
-        <div className={`border-t border-white/10 py-3 ${collapsed ? "px-2" : "px-4"}`}>
-          {!collapsed && <div className="mb-2 truncate text-xs text-white/60">{user.email}</div>}
-          <button
-            type="button"
-            onClick={handleLogout}
-            aria-label={t("action.deconnexion")}
-            title={collapsed ? t("action.deconnexion") : undefined}
-            className={`flex w-full items-center gap-2 rounded-cid px-2 py-1.5 text-xs text-white/70 transition hover:bg-white/5 ${
-              collapsed ? "justify-center" : "text-left"
-            }`}
-          >
-            <IconLogout size={16} className="shrink-0" />
-            {!collapsed && <span>{t("action.deconnexion")}</span>}
-          </button>
-        </div>
-      )}
     </aside>
   );
 }

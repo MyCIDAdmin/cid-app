@@ -4,8 +4,12 @@ CI/CD : cas de test DRF vérifiant qu'un membre A ne peut pas lire les
 données de membre B").
 """
 
+import io
+
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
@@ -58,6 +62,16 @@ def _payload(**overrides):
     }
     data.update(overrides)
     return data
+
+
+def _image_valide(nom="profil.jpg", format_pillow="JPEG", content_type="image/jpeg"):
+    # Même helper que apps.evenements.tests.test_api._image_valide — un JPEG/PNG minimal
+    # réellement décodable par Pillow, requis par valider_et_reencoder_photo (voir
+    # apps.communaute.validators) qu'MembreSerializer.validate_photo appelle aussi.
+    buffer = io.BytesIO()
+    Image.new("RGB", (60, 60), color=(0, 0, 255)).save(buffer, format=format_pillow)
+    buffer.seek(0)
+    return SimpleUploadedFile(nom, buffer.read(), content_type=content_type)
 
 
 # --- Authentification ---
@@ -303,6 +317,95 @@ def test_changer_statut_reste_le_seul_moyen_meme_pour_sa_propre_fiche(api_client
         format="json",
     )
     assert resp.status_code == 403
+
+
+# --- Action "moi" (bouton "Mein Profil" du menu utilisateur, ajouté le 2026-09-28) ---
+
+
+def test_moi_comme_membre_retourne_sa_propre_fiche(api_client, membre_user):
+    ma_fiche = MembreFactory(user=membre_user, ville_de="Cologne")
+    _auth(api_client, membre_user)
+    resp = api_client.get(reverse("membres:membre-moi"))
+    assert resp.status_code == 200
+    assert resp.data["id"] == str(ma_fiche.id)
+    assert resp.data["ville_de"] == "Cologne"
+
+
+def test_moi_sans_fiche_liee_404(api_client, rh_user):
+    # Un compte RH créé hors auto-inscription peut n'avoir aucune fiche Membre liée.
+    _auth(api_client, rh_user)
+    resp = api_client.get(reverse("membres:membre-moi"))
+    assert resp.status_code == 404
+    assert resp.data["code"] == "aucune_fiche_membre"
+
+
+def test_moi_patch_met_a_jour_sa_propre_fiche(api_client, membre_user):
+    MembreFactory(user=membre_user, telephone="+49 30 0000000")
+    _auth(api_client, membre_user)
+    resp = api_client.patch(
+        reverse("membres:membre-moi"),
+        {"telephone": "+49 30 2222222", "ville_de": "Dresde"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["telephone"] == "+49 30 2222222"
+    assert resp.data["ville_de"] == "Dresde"
+
+
+def test_moi_patch_ignore_les_champs_administratifs(api_client, membre_user, rh_user):
+    ma_fiche = MembreFactory(user=membre_user, statut=StatutMembre.EN_ATTENTE)
+    ancien_statut = ma_fiche.statut
+    ancienne_date_adhesion = ma_fiche.date_adhesion
+    _auth(api_client, membre_user)
+    resp = api_client.patch(
+        reverse("membres:membre-moi"),
+        {
+            "statut": StatutMembre.ACTIF,
+            "date_adhesion": "2020-01-01",
+            "user": str(rh_user.id),
+            "telephone": "+49 89 1231231",
+        },
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["telephone"] == "+49 89 1231231"
+    ma_fiche.refresh_from_db()
+    assert ma_fiche.statut == ancien_statut
+    assert ma_fiche.date_adhesion == ancienne_date_adhesion
+    assert ma_fiche.user_id == membre_user.id
+
+
+def test_moi_non_authentifie_refuse(api_client):
+    resp = api_client.get(reverse("membres:membre-moi"))
+    assert resp.status_code == 401
+
+
+# --- Upload de photo de profil (retour utilisateur du 2026-09-28) ---
+
+
+def test_upload_photo_valide_est_reencodee(api_client, membre_user):
+    MembreFactory(user=membre_user)
+    _auth(api_client, membre_user)
+    resp = api_client.patch(
+        reverse("membres:membre-moi"),
+        {"photo": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 200, resp.data
+    assert resp.data["photo"] is not None
+
+
+def test_upload_photo_invalide_rejette_fichier_non_image(api_client, membre_user):
+    MembreFactory(user=membre_user)
+    _auth(api_client, membre_user)
+    faux_fichier = SimpleUploadedFile("malware.jpg", b"pas une vraie image", content_type="image/jpeg")
+    resp = api_client.patch(
+        reverse("membres:membre-moi"),
+        {"photo": faux_fichier},
+        format="multipart",
+    )
+    assert resp.status_code == 400
+    assert "photo" in resp.data["details"]
 
 
 # --- Suppression (Bureau Admin+) ---

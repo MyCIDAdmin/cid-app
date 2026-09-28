@@ -14,7 +14,29 @@ vi.mock("../../hooks/useMembres", async () => {
     useMembre: vi.fn(),
     useCreateMembre: vi.fn(),
     useUpdateMembre: vi.fn(),
+    useMembreMoi: vi.fn(),
+    useUpdateMembreMoi: vi.fn(),
+    useTeleverserPhotoMembreMoi: vi.fn(),
   };
+});
+
+// useMembre/useMembreMoi (et leurs mutations respectives) sont désormais TOUJOURS tous les deux
+// appelés par MembreFormPage (règles des Hooks React — voir sa docstring de tête), seule
+// l'ACTIVATION varie selon le mode. Défaut neutre ici pour ne pas devoir le répéter dans chaque
+// describe qui ne teste pas le mode profil ; le describe "profil personnel" ci-dessous écrase ce
+// défaut avec les données pertinentes.
+beforeEach(() => {
+  vi.mocked(useMembresHooks.useMembreMoi).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof useMembresHooks.useMembreMoi>);
+  vi.mocked(useMembresHooks.useUpdateMembreMoi).mockReturnValue({
+    mutateAsync: vi.fn(),
+  } as unknown as ReturnType<typeof useMembresHooks.useUpdateMembreMoi>);
+  vi.mocked(useMembresHooks.useTeleverserPhotoMembreMoi).mockReturnValue({
+    mutate: vi.fn(),
+  } as unknown as ReturnType<typeof useMembresHooks.useTeleverserPhotoMembreMoi>);
 });
 
 const membreCree: Membre = {
@@ -330,5 +352,145 @@ describe("MembreFormPage (édition, AHM-51 — un Membre modifie sa propre fiche
     });
 
     expect(screen.getByText("fiche.erreur_chargement")).toBeInTheDocument();
+  });
+});
+
+// Mode profil ajouté le 2026-09-28 (retour utilisateur : bouton "Mein Profil" du menu
+// utilisateur — voir UserMenu.tsx et la docstring de tête de MembreFormPage.tsx). Route
+// /mon-profil (sans :id) : useMembreMoi/useUpdateMembreMoi remplacent useMembre/useUpdateMembre.
+describe("MembreFormPage (profil personnel, /mon-profil)", () => {
+  const maFiche: Membre = { ...membreCree, id: "m1", user: "u2" };
+
+  beforeEach(() => {
+    vi.mocked(useMembresHooks.useCreateMembre).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
+    // Non pertinent sur cette route (pas de :id) mais toujours appelé sans condition (règles des
+    // Hooks React) — voir docstring de tête de MembreFormPage.tsx.
+    vi.mocked(useMembresHooks.useMembre).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembre>);
+    vi.mocked(useMembresHooks.useUpdateMembre).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof useMembresHooks.useUpdateMembre>);
+  });
+
+  it("masque la section administrative même pour un compte RH+", () => {
+    useAuthStore.setState({
+      user: { id: "rh1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembreMoi).mockReturnValue({
+      data: maFiche,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembreMoi>);
+
+    renderWithProviders(<MembreFormPage />, { route: "/mon-profil", path: "/mon-profil" });
+
+    expect(screen.getByText("profil.titre")).toBeInTheDocument();
+    expect(screen.queryByLabelText("champ.statut", { exact: false })).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("champ.date_adhesion", { exact: false }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("affiche un message dédié si aucune fiche Membre n'est liée au compte (404)", () => {
+    useAuthStore.setState({
+      user: { id: "u9", email: "sans-fiche@example.com", role: "membre", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembreMoi).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembreMoi>);
+
+    renderWithProviders(<MembreFormPage />, { route: "/mon-profil", path: "/mon-profil" });
+
+    expect(screen.getByText("profil.aucune_fiche")).toBeInTheDocument();
+  });
+
+  it("modifie ses champs personnels et navigue vers le tableau de bord", async () => {
+    useAuthStore.setState({
+      user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembreMoi).mockReturnValue({
+      data: maFiche,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembreMoi>);
+    const mutateAsync = vi.fn().mockResolvedValue({ ...maFiche, telephone: "+49 30 9999999" });
+    vi.mocked(useMembresHooks.useUpdateMembreMoi).mockReturnValue({
+      mutateAsync,
+    } as unknown as ReturnType<typeof useMembresHooks.useUpdateMembreMoi>);
+
+    renderWithProviders(<MembreFormPage />, { route: "/mon-profil", path: "/mon-profil" });
+
+    fireEvent.change(screen.getByLabelText("champ.telephone", { exact: false }), {
+      target: { value: "+49 30 9999999" },
+    });
+    fireEvent.click(screen.getByText("formulaire.enregistrer"));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({ telephone: "+49 30 9999999" });
+    await waitFor(() => expect(screen.getByTestId("route-fallback")).toBeInTheDocument());
+  });
+
+  // Téléversement de photo (retour utilisateur : "zu dem Profile darf der User sein Bild
+  // hochladen") — même principe "aperçu + confirmation/annulation" que
+  // AdminEventsPage.test.tsx (imageEnAttente).
+  describe("téléversement de la photo de profil", () => {
+    beforeEach(() => {
+      useAuthStore.setState({
+        user: { id: "u2", email: "membre@example.com", role: "membre", langue_preferee: "fr" },
+      });
+      vi.mocked(useMembresHooks.useMembreMoi).mockReturnValue({
+        data: maFiche,
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useMembresHooks.useMembreMoi>);
+      // jsdom n'implémente pas createObjectURL/revokeObjectURL nativement — même mock que
+      // AdminEventsPage.test.tsx.
+      window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+      window.URL.revokeObjectURL = vi.fn();
+    });
+
+    it("n'envoie la photo qu'après confirmation de l'aperçu", () => {
+      const televerser = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false };
+      vi.mocked(useMembresHooks.useTeleverserPhotoMembreMoi).mockReturnValue(
+        televerser as unknown as ReturnType<typeof useMembresHooks.useTeleverserPhotoMembreMoi>,
+      );
+
+      renderWithProviders(<MembreFormPage />, { route: "/mon-profil", path: "/mon-profil" });
+
+      const fichier = new File(["photo"], "profil.jpg", { type: "image/jpeg" });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(input, { target: { files: [fichier] } });
+
+      expect(televerser.mutate).not.toHaveBeenCalled();
+      expect(screen.getByText("profil.jpg")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("profil.photo_confirmer"));
+
+      expect(televerser.mutate).toHaveBeenCalledWith(fichier, expect.anything());
+    });
+
+    it("n'envoie rien si l'aperçu de la photo est annulé", () => {
+      const televerser = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false };
+      vi.mocked(useMembresHooks.useTeleverserPhotoMembreMoi).mockReturnValue(
+        televerser as unknown as ReturnType<typeof useMembresHooks.useTeleverserPhotoMembreMoi>,
+      );
+
+      renderWithProviders(<MembreFormPage />, { route: "/mon-profil", path: "/mon-profil" });
+
+      const fichier = new File(["photo"], "profil.jpg", { type: "image/jpeg" });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      fireEvent.change(input, { target: { files: [fichier] } });
+      fireEvent.click(screen.getByText("profil.photo_annuler"));
+
+      expect(televerser.mutate).not.toHaveBeenCalled();
+      expect(screen.queryByText("profil.jpg")).not.toBeInTheDocument();
+    });
   });
 });

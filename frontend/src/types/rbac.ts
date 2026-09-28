@@ -110,3 +110,13 @@ export interface UtilisateurRolesReponse {
   role_ids: string[];
   role_primaire: string;
 }
+
+/**
+ * GET /rbac/visibilite-membre/effective/ — un booléen par slug de `registry.MODULES` (10 modules
+ * métier, PAS les 13 `PAGES_ADMIN` de `MesAccesReponse` ci-dessus : deux mécanismes distincts,
+ * voir docstring backend `ModuleVisibiliteMembre`). Un slug absent équivaut à visible (même
+ * défaut que le backend, `existantes.get(m, True)`) — voir Sidebar.tsx::useSidebarNav pour la
+ * consommation (uniquement appliqué au rôle système "Membre Normal", jamais aux rôles supérieurs,
+ * voir docstring du modèle backend).
+ */
+export type VisibiliteEffectiveReponse = Record<string, boolean>;

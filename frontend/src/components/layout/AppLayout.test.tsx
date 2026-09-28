@@ -19,6 +19,7 @@ vi.mock("./MobileNavDrawer", () => ({ default: () => <div data-testid="mobile-dr
 vi.mock("./NotificationBell", () => ({ default: () => <div data-testid="bell-stub" /> }));
 vi.mock("./LanguageSwitcher", () => ({ default: () => <div data-testid="lang-stub" /> }));
 vi.mock("./ThemeToggle", () => ({ default: () => <div data-testid="theme-stub" /> }));
+vi.mock("./UserMenu", () => ({ default: () => <div data-testid="user-menu-stub" /> }));
 vi.mock("../public/PublicFooter", () => ({
   default: () => <div data-testid="public-footer-stub" />,
 }));

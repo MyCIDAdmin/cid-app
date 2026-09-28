@@ -13,12 +13,10 @@
  * persisté dans uiStore : contrairement au repli de la sidebar desktop (une vraie préférence),
  * un tiroir mobile doit toujours redémarrer fermé au chargement d'une page.
  */
-import { IconLogout, IconX } from "@tabler/icons-react";
+import { IconX } from "@tabler/icons-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
-import { useAuthStore } from "../../store/authStore";
 import BrandLogo from "../ui/BrandLogo";
 import { NavAccordionList, useSidebarNav } from "./Sidebar";
 
@@ -29,20 +27,7 @@ interface MobileNavDrawerProps {
 
 export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps) {
   const { t } = useTranslation("common");
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const navigate = useNavigate();
   const { groups, isItemActive, itemALeSignal, handleClicItem } = useSidebarNav();
-
-  function handleLogout() {
-    // Même geste que Sidebar.handleLogout (desktop) : vide aussi le cache React Query (voir
-    // authStore.logout) pour ne rien laisser fuiter au prochain compte connecté dans le même
-    // navigateur. Retour utilisateur du 2026-09-28 : atterrir sur la Startseite publique plutôt
-    // que directement sur /login.
-    logout();
-    onClose();
-    navigate("/", { replace: true });
-  }
 
   // Ferme sur Échap — même geste que le flyout desktop (RailGroupButton), pour une navigation
   // clavier cohérente entre les deux formats.
@@ -98,19 +83,6 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
             onNavigate={naviguer}
           />
         </nav>
-        {user && (
-          <div className="border-t border-white/10 px-4 py-3">
-            <div className="mb-2 truncate text-xs text-white/60">{user.email}</div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex w-full items-center gap-2 rounded-cid px-2 py-1.5 text-left text-xs text-white/70 transition hover:bg-white/5"
-            >
-              <IconLogout size={16} className="shrink-0" />
-              <span>{t("action.deconnexion")}</span>
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

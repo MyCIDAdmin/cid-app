@@ -1,9 +1,10 @@
 /**
  * Tests du tiroir de navigation mobile (voir docstring de MobileNavDrawer.tsx — refonte du
  * 2026-09-22, "Die App werden wir auch für Mobile kompatibel machen"). Se limite au
- * comportement propre à la coquille du tiroir (ouverture/fermeture, backdrop, Échap,
- * déconnexion) : le calcul de navigation lui-même (item actif, points d'activité, groupement
- * par rôle) est déjà couvert par Sidebar.test.tsx via le hook partagé `useSidebarNav`.
+ * comportement propre à la coquille du tiroir (ouverture/fermeture, backdrop, Échap) : le calcul
+ * de navigation lui-même (item actif, points d'activité, groupement par rôle) est déjà couvert
+ * par Sidebar.test.tsx via le hook partagé `useSidebarNav`. La déconnexion a déménagé vers
+ * UserMenu.tsx le 2026-09-28 (retour utilisateur, point 2.3) — voir UserMenu.test.tsx.
  */
 import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -98,15 +99,5 @@ describe("MobileNavDrawer", () => {
     fireEvent.click(screen.getByText("nav.dashboard"));
 
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it("ferme le tiroir et déconnecte au clic sur le bouton de déconnexion", () => {
-    const onClose = vi.fn();
-    renderWithProviders(<MobileNavDrawer open onClose={onClose} />);
-
-    fireEvent.click(screen.getByText("action.deconnexion"));
-
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
 });

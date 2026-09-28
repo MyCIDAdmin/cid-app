@@ -141,6 +141,19 @@
     "col_ligne": "Zeile",
     "col_message": "Meldung"
   },
+  "profil": {
+    "titre": "Mein Profil",
+    "retour": "Zurück zum Dashboard",
+    "aucune_fiche": "Ihrem Konto ist keine Mitgliederkarte zugeordnet.",
+    "section_photo": "Profilbild",
+    "photo_televerser": "Foto hochladen",
+    "photo_changer": "Foto ändern",
+    "photo_apercu_alt": "Vorschau",
+    "photo_annuler": "Abbrechen",
+    "photo_confirmer": "Bestätigen",
+    "photo_en_cours": "Wird hochgeladen…",
+    "photo_erreur": "Beim Hochladen des Fotos ist ein Fehler aufgetreten."
+  },
   "import_historique": {
     "titre": "Statushistorie importieren",
     "description": "Importieren Sie den Vereinsstatus (aktiv/inaktiv) bereits bestehender Mitglieder für vergangene Jahre — eine Spalte pro Jahr. Mitglieder werden anhand von E-Mail + Personalausweisnr. (CIN) identifiziert.",

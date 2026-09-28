@@ -12,7 +12,9 @@
  * — la première version de ce composant (2026-09-26) ne reprenait que les sections texte,
  * sans jamais avoir été câblée aux fichiers logo malgré leur envoi par l'utilisateur ce jour-là.
  * Fichiers recadrés/redimensionnés depuis les originaux transmis dans le chat (voir
- * public/brand/logo-cid-about.png et logo-club-africain.png).
+ * public/brand/logo-cid-about.png et logo-club-africain.png). Le caractère "×" initialement
+ * placé entre les deux logos a été retiré le même jour (retour utilisateur suivant) — les deux
+ * images gardent leur espacement (`gap-6 sm:gap-10` sur le conteneur) sans séparateur visuel.
  */
 import { useTranslation } from "react-i18next";
 
@@ -31,9 +33,6 @@ export default function UeberUnsTab() {
             alt="Clubistes in Deutschland"
             className="h-24 w-auto sm:h-32"
           />
-          <span className="text-2xl text-text-tertiary" aria-hidden="true">
-            ×
-          </span>
           <img
             src="/brand/logo-club-africain.png"
             alt="Club Africain"

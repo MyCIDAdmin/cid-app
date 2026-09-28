@@ -97,5 +97,10 @@
   },
   "maps": {
     "ouvrir": "In Google Maps öffnen"
+  },
+  "menu_utilisateur": {
+    "aria_label": "Benutzermenü",
+    "mon_profil": "Mein Profil",
+    "preferences_titre": "Einstellungen"
   }
 }

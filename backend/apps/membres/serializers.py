@@ -12,6 +12,7 @@ MembreAdmin.cin_masque).
 from rest_framework import serializers
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.communaute.validators import valider_et_reencoder_photo
 
 from .models import Membre, Pays
 
@@ -142,6 +143,16 @@ class MembreSerializer(serializers.ModelSerializer):
         if erreurs:
             raise serializers.ValidationError(erreurs)
         return attrs
+
+    def validate_photo(self, value):
+        """Photo de profil (ajoutée le 2026-09-28, retour utilisateur : "zu dem Profile darf der
+        User sein Bild hochladen") — même validateur que les autres uploads d'image du projet
+        (albums, événements : CLAUDE.md §8 "Uploads : validation MIME (python-magic) + whitelist
+        d'extensions") plutôt qu'un `ImageField` nu qui ne vérifierait que l'extension déclarée :
+        magic bytes réels, ré-encodage Pillow (supprime l'EXIF), garde-fou bombe de
+        décompression. `value` est déjà un fichier (pas encore enregistré) à ce stade du cycle
+        DRF — voir valider_et_reencoder_photo pour le détail."""
+        return valider_et_reencoder_photo(value)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

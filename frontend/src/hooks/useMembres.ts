@@ -14,6 +14,7 @@ const membresKeys = {
   list: (filters: MembresListFilters, pageUrl: string | null) =>
     [...membresKeys.all, "list", filters, pageUrl] as const,
   detail: (id: string) => [...membresKeys.all, "detail", id] as const,
+  moi: () => [...membresKeys.all, "moi"] as const,
 };
 
 export function useMembresList(
@@ -34,6 +35,37 @@ export function useMembre(id: string | undefined) {
     queryKey: membresKeys.detail(id ?? ""),
     queryFn: () => membresApi.getMembre(id as string),
     enabled: Boolean(id),
+  });
+}
+
+/** Fiche du compte connecté (bouton "Mein Profil" du menu utilisateur, ajouté le 2026-09-28) —
+ * `retry: false` même raisonnement que useCampagneActive (hooks/useAdhesions.ts) : un 404 ici est
+ * un état attendu (aucune fiche Membre liée à ce compte), pas une erreur transitoire à retenter.
+ * `enabled` (défaut true) permet à MembreFormPage de n'appeler cette requête qu'en mode profil
+ * (voir MembreFormPage.tsx, qui appelle aussi useMembre — les deux hooks doivent toujours être
+ * appelés sans condition, seule leur activation varie, cf règles des Hooks React). */
+export function useMembreMoi(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: membresKeys.moi(),
+    queryFn: membresApi.getMembreMoi,
+    retry: false,
+    enabled: options.enabled ?? true,
+  });
+}
+
+export function useUpdateMembreMoi() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: Partial<MembreFormValues>) => membresApi.updateMembreMoi(values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
+  });
+}
+
+export function useTeleverserPhotoMembreMoi() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (fichier: File) => membresApi.televerserPhotoMembreMoi(fichier),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
   });
 }
 

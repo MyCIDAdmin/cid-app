@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useNotificationsHooks from "../../hooks/useNotifications";
 import * as useRbacHooks from "../../hooks/useRbac";
-import { queryClient } from "../../queryClient";
 import { useAuthStore } from "../../store/authStore";
 import { DEFAULT_COLLAPSED_GROUPS, useUiStore } from "../../store/uiStore";
 import type { Notification } from "../../types/notification";
@@ -23,10 +22,12 @@ vi.mock("../../hooks/useNotifications", async () => {
 
 // Phase D (ajoutée le 2026-09-23) : useMesAcces mocké partout (par défaut "aucune page de
 // gestion accessible, chargement terminé") pour ne jamais dépendre d'un vrai appel réseau dans
-// ces tests — describe dédié plus bas pour la logique de visibilité elle-même.
+// ces tests — describe dédié plus bas pour la logique de visibilité elle-même. useVisibiliteEffective
+// (ajouté le 2026-09-28, bug "ModuleVisibiliteMembre" sans effet) mocké de la même façon, par
+// défaut "aucun module masqué" — describe dédié plus bas pour ce mécanisme.
 vi.mock("../../hooks/useRbac", async () => {
   const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
-  return { ...actual, useMesAcces: vi.fn() };
+  return { ...actual, useMesAcces: vi.fn(), useVisibiliteEffective: vi.fn() };
 });
 
 function mockMesAcces(overrides: Partial<ReturnType<typeof useRbacHooks.useMesAcces>> = {}) {
@@ -35,6 +36,16 @@ function mockMesAcces(overrides: Partial<ReturnType<typeof useRbacHooks.useMesAc
     isLoading: false,
     ...overrides,
   } as unknown as ReturnType<typeof useRbacHooks.useMesAcces>);
+}
+
+function mockVisibiliteEffective(
+  overrides: Partial<ReturnType<typeof useRbacHooks.useVisibiliteEffective>> = {},
+) {
+  vi.mocked(useRbacHooks.useVisibiliteEffective).mockReturnValue({
+    data: {},
+    isLoading: false,
+    ...overrides,
+  } as unknown as ReturnType<typeof useRbacHooks.useVisibiliteEffective>);
 }
 
 function notification(overrides: Partial<Notification> = {}): Notification {
@@ -66,7 +77,10 @@ const administrateur = {
   role: "super_admin" as const,
 };
 
-describe("Sidebar — déconnexion (AHM-51)", () => {
+// Déconnexion déplacée vers UserMenu.tsx le 2026-09-28 (retour utilisateur, point 2.3 : "Der
+// Button für die Abmeldung soll auch unter dem User Profil umgezogen werden") — voir
+// UserMenu.test.tsx pour sa couverture désormais.
+describe("Sidebar — repli/dépli, groupes et navigation", () => {
   beforeEach(() => {
     useAuthStore.setState({
       accessToken: "access",
@@ -82,25 +96,7 @@ describe("Sidebar — déconnexion (AHM-51)", () => {
       mutate: vi.fn(),
     } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
     mockMesAcces();
-  });
-
-  it("affiche un bouton de déconnexion pour un utilisateur connecté", () => {
-    renderWithProviders(<Sidebar />);
-    expect(screen.getByText("action.deconnexion")).toBeInTheDocument();
-  });
-
-  it("vide l'état d'authentification et le cache React Query au clic", () => {
-    // Simule des données d'un compte précédent encore en cache (cf bug
-    // corrigé : ces données ne doivent pas fuiter vers le prochain compte
-    // connecté dans le même onglet).
-    queryClient.setQueryData(["membres", "list"], { results: [{ id: "m1" }] });
-
-    renderWithProviders(<Sidebar />, { route: "/dashboard", path: "/dashboard" });
-    fireEvent.click(screen.getByText("action.deconnexion"));
-
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
-    expect(useAuthStore.getState().user).toBeNull();
-    expect(queryClient.getQueryData(["membres", "list"])).toBeUndefined();
+    mockVisibiliteEffective();
   });
 
   it("se replie et se déplie au clic sur le bouton dédié (persisté via uiStore)", () => {
@@ -237,6 +233,7 @@ describe("Sidebar — point d'activité par module (demande utilisateur du 2026-
       mutate: marquerLuesPrefixeMock,
     } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
     mockMesAcces();
+    mockVisibiliteEffective();
   });
 
   it("affiche un point sur le module concerné par une notification non lue", () => {
@@ -322,6 +319,7 @@ describe("Sidebar — visibilité pilotée par la matrice (Phase D, ajoutée le 
     vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
       mutate: vi.fn(),
     } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
+    mockVisibiliteEffective();
   });
 
   it("affiche un item pageSlug quand la matrice l'autorise pour ce rôle, masque les autres", () => {
@@ -367,6 +365,80 @@ describe("Sidebar — visibilité pilotée par la matrice (Phase D, ajoutée le 
     renderWithProviders(<Sidebar />);
 
     expect(screen.getByText("nav.admin_quiz")).toBeInTheDocument();
+  });
+});
+
+// Bug corrigé le 2026-09-28 (retour utilisateur : "Ich [...] das Module 'membres' auf nicht
+// sichtbar gesetzt [...] Bein testen ist das Modul immer für ein normaler member angezeigt. Für
+// alle Module nachprüfen") — GET /rbac/visibilite-membre/effective/ existait déjà côté backend
+// mais n'était appelé par aucun hook frontend, donc masquer un module dans l'admin Django
+// ("ModuleVisibiliteMembre") n'avait jamais d'effet sur la Sidebar. Couvre plusieurs modules
+// distincts (pas seulement "membres") pour la demande explicite "für alle Module".
+describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug corrigé le 2026-09-28)", () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      accessToken: "access",
+      refreshToken: "refresh",
+      user: utilisateur,
+      isAuthenticated: true,
+    });
+    useUiStore.setState({ sidebarCollapsed: false, collapsedGroups: DEFAULT_COLLAPSED_GROUPS });
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+    vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
+    mockMesAcces();
+  });
+
+  it("masque '/membres' pour un Membre Normal quand le module 'membres' est masqué", () => {
+    mockVisibiliteEffective({ data: { membres: false } });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.queryByText("nav.membres")).not.toBeInTheDocument();
+    // Le reste du menu (module non concerné) reste inchangé.
+    expect(screen.getByText("nav.evenements")).toBeInTheDocument();
+  });
+
+  it("masque aussi les autres modules quand ils sont désactivés un par un (pas seulement 'membres')", () => {
+    mockVisibiliteEffective({
+      data: { evenements: false, boutique: false, communaute: false, vote: false, projets: false },
+    });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.queryByText("nav.evenements")).not.toBeInTheDocument();
+    expect(screen.queryByText("nav.covoiturage")).not.toBeInTheDocument();
+    expect(screen.queryByText("nav.boutique")).not.toBeInTheDocument();
+    expect(screen.queryByText("nav.fil")).not.toBeInTheDocument();
+    expect(screen.queryByText("nav.albums")).not.toBeInTheDocument();
+    expect(screen.queryByText("nav.votes")).not.toBeInTheDocument();
+    expect(screen.queryByText("nav.projets")).not.toBeInTheDocument();
+    // "membres" et "adhesions" ne sont pas dans la liste ci-dessus : toujours visibles.
+    expect(screen.getByText("nav.membres")).toBeInTheDocument();
+    expect(screen.getByText("nav.mon_adhesion")).toBeInTheDocument();
+  });
+
+  it("module absent de la réponse (aucune ligne en base) reste visible, même défaut que le backend", () => {
+    mockVisibiliteEffective({ data: {} });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByText("nav.membres")).toBeInTheDocument();
+  });
+
+  it("n'affiche pas puis ne masque pas l'item pendant le chargement (reste visible, défaut sûr)", () => {
+    mockVisibiliteEffective({ data: undefined, isLoading: true });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByText("nav.membres")).toBeInTheDocument();
+  });
+
+  it("un rôle supérieur au Membre Normal garde toujours l'accès, quel que soit ce réglage (spécifique au rôle 'membre', voir docstring backend)", () => {
+    useAuthStore.setState({ user: { ...utilisateur, id: "u4", role: "bureau_admin" as const } });
+    mockVisibiliteEffective({ data: { membres: false } });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.getByText("nav.membres")).toBeInTheDocument();
   });
 });
 

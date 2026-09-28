@@ -1,7 +1,8 @@
 /**
  * Formulaire créer/modifier un membre (mockup #pg-admin-nouveau-membre),
- * partagé entre /membres/nouveau et /membres/:id/modifier — le mode est
- * déduit de la présence d'un :id dans l'URL.
+ * partagé entre /membres/nouveau, /membres/:id/modifier et /mon-profil —
+ * le mode est déduit de la présence d'un :id dans l'URL, ou du chemin
+ * /mon-profil (voir modeProfil ci-dessous).
  *
  * /membres/nouveau reste gated RH+ par RequireRole (App.tsx). En édition,
  * un Membre peut désormais accéder à ce formulaire pour sa propre fiche
@@ -10,19 +11,38 @@
  * (MembreSerializer._CHAMPS_ADMINISTRATIFS), mais les cacher évite de
  * laisser croire qu'ils sont modifiables. La validation finale reste dans
  * tous les cas côté serveur.
+ *
+ * /mon-profil (ajouté le 2026-09-28, bouton "Mein Profil" du menu utilisateur — voir
+ * UserMenu.tsx) réutilise ce même formulaire pour l'auto-service, via useMembreMoi/
+ * useUpdateMembreMoi plutôt que useMembre/useUpdateMembre (qui ont besoin d'un :id absent de
+ * cette route) : la section administrative reste masquée MÊME pour un compte RH+ (on édite ici
+ * "son" profil, jamais une fiche de gestion), et ce mode ajoute le téléversement de photo de
+ * profil (retour utilisateur : "zu dem Profile darf der User sein Bild hochladen").
  */
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 
-import { useCreateMembre, useMembre, useUpdateMembre } from "../../hooks/useMembres";
+import {
+  useCreateMembre,
+  useMembre,
+  useMembreMoi,
+  useTeleverserPhotoMembreMoi,
+  useUpdateMembre,
+  useUpdateMembreMoi,
+} from "../../hooks/useMembres";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { BUNDESLANDER, PAYS_ALLEMAGNE, PAYS_MEMBRE, STATUTS_MEMBRE } from "../../types/membre";
 import type { Pays } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
+
+function initialesProfil(prenom: string, nom: string): string {
+  return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
+}
 
 const PAYS_VALEURS = PAYS_MEMBRE.map((p) => p.value) as [Pays, ...Pays[]];
 
@@ -123,18 +143,75 @@ const champClasses =
 export default function MembreFormPage() {
   const { t } = useTranslation("membres");
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
-  const modeEdition = Boolean(id);
+  // /mon-profil (sans :id) réutilise ce formulaire en mode auto-service — voir docstring de
+  // tête. Les deux routes ne rendent jamais le même montage de ce composant (chemins distincts
+  // dans App.tsx), donc modeProfil ne change jamais au cours de la vie d'une instance : les deux
+  // paires de hooks ci-dessous (useMembre/useMembreMoi, useUpdateMembre/useUpdateMembreMoi)
+  // restent malgré tout toutes les deux appelées sans condition (règles des Hooks React), seule
+  // leur activation/utilisation varie selon modeProfil.
+  const modeProfil = location.pathname === "/mon-profil";
+  const modeEdition = Boolean(id) || modeProfil;
   const utilisateur = useAuthStore((s) => s.user);
-  const gestionComplete = hasRoleAtLeast(utilisateur, ROLE_LEVELS.rh);
+  // En mode profil, la section administrative reste masquée même pour un compte RH+ : on édite
+  // ici "son" profil personnel, jamais une fiche de gestion (voir docstring de tête).
+  const gestionComplete = !modeProfil && hasRoleAtLeast(utilisateur, ROLE_LEVELS.rh);
 
+  const requeteMembreId = useMembre(modeProfil ? undefined : id);
+  const requeteMembreMoi = useMembreMoi({ enabled: modeProfil });
   const {
     data: membre,
     isLoading: chargementMembre,
     isError: erreurChargementMembre,
-  } = useMembre(id);
+  } = modeProfil ? requeteMembreMoi : requeteMembreId;
   const createMutation = useCreateMembre();
-  const updateMutation = useUpdateMembre(id ?? "");
+  const updateIdMutation = useUpdateMembre(id ?? "");
+  const updateMoiMutation = useUpdateMembreMoi();
+  const televerserPhotoMutation = useTeleverserPhotoMembreMoi();
+
+  // Téléversement de la photo de profil (mode profil uniquement) — même principe
+  // "aperçu + confirmation/annulation" que AdminEventsPage.tsx (imageEnAttente), en plus simple
+  // ici (une seule fiche éditée à la fois, pas de map par id nécessaire).
+  const [photoEnAttente, setPhotoEnAttente] = useState<{ fichier: File; previewUrl: string } | null>(
+    null,
+  );
+  const [photoEnCours, setPhotoEnCours] = useState(false);
+  const [photoErreur, setPhotoErreur] = useState("");
+  const inputFichierPhoto = useRef<HTMLInputElement>(null);
+
+  function handlePhotoChoisie(e: ChangeEvent<HTMLInputElement>) {
+    const fichier = e.target.files?.[0];
+    e.target.value = "";
+    if (!fichier) return;
+    setPhotoErreur("");
+    setPhotoEnAttente((precedent) => {
+      if (precedent) URL.revokeObjectURL(precedent.previewUrl);
+      return { fichier, previewUrl: URL.createObjectURL(fichier) };
+    });
+  }
+
+  function annulerPhotoEnAttente() {
+    setPhotoEnAttente((precedent) => {
+      if (precedent) URL.revokeObjectURL(precedent.previewUrl);
+      return null;
+    });
+  }
+
+  function confirmerPhotoEnAttente() {
+    if (!photoEnAttente) return;
+    const { fichier, previewUrl } = photoEnAttente;
+    setPhotoEnCours(true);
+    setPhotoErreur("");
+    televerserPhotoMutation.mutate(fichier, {
+      onError: (err) => setPhotoErreur(extractApiErrorMessage(err, t("profil.photo_erreur"))),
+      onSettled: () => {
+        setPhotoEnCours(false);
+        URL.revokeObjectURL(previewUrl);
+        setPhotoEnAttente(null);
+      },
+    });
+  }
 
   const {
     register,
@@ -177,8 +254,11 @@ export default function MembreFormPage() {
 
   async function onSubmit(values: FormValues) {
     try {
-      if (modeEdition && id) {
-        const misAJour = await updateMutation.mutateAsync(values);
+      if (modeProfil) {
+        await updateMoiMutation.mutateAsync(values);
+        navigate("/dashboard");
+      } else if (modeEdition && id) {
+        const misAJour = await updateIdMutation.mutateAsync(values);
         navigate(`/membres/${misAJour.id}`);
       } else {
         const cree = await createMutation.mutateAsync(values);
@@ -193,26 +273,102 @@ export default function MembreFormPage() {
     return <p className="text-text-tertiary">{t("liste.chargement")}</p>;
   }
 
-  // Fiche introuvable ou inaccessible (ex. un Membre qui tente de modifier
-  // la fiche d'un autre — le backend renvoie 404, cf MembreViewSet).
+  // Fiche introuvable ou inaccessible (ex. un Membre qui tente de modifier la fiche d'un autre —
+  // le backend renvoie 404, cf MembreViewSet) ; en mode profil, un 404 signifie plutôt qu'aucune
+  // fiche Membre n'est liée à ce compte (voir MembreViewSet.moi côté backend).
   if (modeEdition && (erreurChargementMembre || !membre)) {
-    return <p className="text-status-dangerText">{t("fiche.erreur_chargement")}</p>;
+    return (
+      <p className="text-status-dangerText">
+        {modeProfil ? t("profil.aucune_fiche") : t("fiche.erreur_chargement")}
+      </p>
+    );
   }
 
   return (
     <div>
       <Link
-        to={modeEdition && id ? `/membres/${id}` : "/membres"}
+        to={modeProfil ? "/dashboard" : modeEdition && id ? `/membres/${id}` : "/membres"}
         className="mb-4 inline-block text-sm text-text-secondary hover:underline"
       >
-        ← {t("fiche.retour")}
+        ← {modeProfil ? t("profil.retour") : t("fiche.retour")}
       </Link>
 
       <h1 className="mb-4 text-xl font-bold text-text-primary">
-        {modeEdition ? t("formulaire.titre_modifier") : t("formulaire.titre_creer")}
+        {modeProfil
+          ? t("profil.titre")
+          : modeEdition
+            ? t("formulaire.titre_modifier")
+            : t("formulaire.titre_creer")}
       </h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {modeProfil && membre && (
+          <section className="rounded-cid-lg bg-bg-primary p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-text-primary">
+              {t("profil.section_photo")}
+            </h2>
+            <div className="flex items-center gap-4">
+              {membre.photo ? (
+                <img
+                  src={membre.photo}
+                  alt=""
+                  className="h-16 w-16 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-cal text-lg font-semibold text-ca">
+                  {initialesProfil(membre.prenom, membre.nom)}
+                </div>
+              )}
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={inputFichierPhoto}
+                  onChange={handlePhotoChoisie}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => inputFichierPhoto.current?.click()}
+                  disabled={photoEnCours}
+                  className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
+                >
+                  {membre.photo ? t("profil.photo_changer") : t("profil.photo_televerser")}
+                </button>
+              </div>
+            </div>
+            {photoEnAttente && (
+              <div className="mt-3 flex items-center gap-3 rounded-cid border border-text-tertiary/20 bg-bg-secondary p-2">
+                <img
+                  src={photoEnAttente.previewUrl}
+                  alt={t("profil.photo_apercu_alt") ?? ""}
+                  className="h-12 w-12 shrink-0 rounded-full object-cover"
+                />
+                <p className="flex-1 truncate text-xs text-text-secondary">
+                  {photoEnAttente.fichier.name}
+                </p>
+                <button
+                  type="button"
+                  onClick={annulerPhotoEnAttente}
+                  disabled={photoEnCours}
+                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
+                >
+                  {t("profil.photo_annuler")}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmerPhotoEnAttente}
+                  disabled={photoEnCours}
+                  className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
+                >
+                  {photoEnCours ? t("profil.photo_en_cours") : t("profil.photo_confirmer")}
+                </button>
+              </div>
+            )}
+            {photoErreur && <p className="mt-2 text-xs text-status-dangerText">{photoErreur}</p>}
+          </section>
+        )}
+
         <section className="rounded-cid-lg bg-bg-primary p-5 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-text-primary">
             {t("fiche.section_personnelles")}
@@ -394,7 +550,7 @@ export default function MembreFormPage() {
 
         <div className="flex justify-end gap-2">
           <Link
-            to={modeEdition && id ? `/membres/${id}` : "/membres"}
+            to={modeProfil ? "/dashboard" : modeEdition && id ? `/membres/${id}` : "/membres"}
             className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
           >
             {t("formulaire.annuler")}
