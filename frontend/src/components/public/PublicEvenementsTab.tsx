@@ -26,6 +26,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import AnimatedProgress from "../ui/AnimatedProgress";
+import MapsApercu from "../ui/MapsApercu";
 import ModaleInscription, { formatDate, formatMontant } from "../evenements/ModaleInscription";
 import { useAnnulerInscription, useEvenements, useInscriptions } from "../../hooks/useEvenements";
 import { useAuthStore } from "../../store/authStore";
@@ -48,6 +49,9 @@ function EvenementKachel({
   onInscrire: (evenement: Evenement) => void;
 }) {
   const { t } = useTranslation("evenements");
+  // Vorschau + Adresse (retour utilisateur du 2026-09-27, point 11.2.2) — voir docstring
+  // EvenementCarte (EvenementsPage.tsx), même raisonnement pour la Startseite.
+  const [carteOuverte, setCarteOuverte] = useState(false);
   const remplissage =
     evenement.places_max !== null
       ? Math.min(100, Math.round((evenement.places_reservees / evenement.places_max) * 100))
@@ -92,6 +96,19 @@ function EvenementKachel({
               : t("places_illimitees")}
           </span>
         </div>
+
+        {evenement.lieu.trim() && (
+          <button
+            type="button"
+            onClick={() => setCarteOuverte((v) => !v)}
+            className="text-xs font-medium text-ca hover:underline"
+          >
+            {carteOuverte ? t("carte_masquer") : t("carte_afficher")}
+          </button>
+        )}
+        {carteOuverte && (
+          <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />
+        )}
 
         {!passe && remplissage !== null && <AnimatedProgress value={remplissage} />}
 
