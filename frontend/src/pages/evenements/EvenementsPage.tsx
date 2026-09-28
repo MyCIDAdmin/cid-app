@@ -30,6 +30,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import AnimatedProgress from "../../components/ui/AnimatedProgress";
+import MapsApercu from "../../components/ui/MapsApercu";
 import ShareButton from "../../components/ui/ShareButton";
 import ModaleInscription, {
   formatDate,
@@ -58,6 +59,14 @@ function EvenementCarte({
   cardRef?: (el: HTMLElement | null) => void;
 }) {
   const { t } = useTranslation("evenements");
+  // Vorschau + Adresse (retour utilisateur du 2026-09-27, point 11.2.2) — jusqu'ici seule
+  // ModaleInscription (ouverte uniquement en cliquant "S'inscrire") affichait MapsApercu ;
+  // l'adresse en texte était bien sur la carte, mais jamais la vignette de carte elle-même ni le
+  // lien "Ouvrir dans Google Maps", d'où le "Weitere Details immer noch nicht im Modul
+  // Veranstaltungen" du retour utilisateur. Repliée par défaut (plutôt qu'un iframe Google Maps
+  // par carte chargé d'office, potentiellement plusieurs dizaines sur cette page) — un simple
+  // bouton la déplie à la demande, MapsApercu ne rendant de toute façon rien si `lieu` est vide.
+  const [carteOuverte, setCarteOuverte] = useState(false);
   const remplissage =
     evenement.places_max !== null
       ? Math.min(100, Math.round((evenement.places_reservees / evenement.places_max) * 100))
@@ -95,6 +104,19 @@ function EvenementCarte({
               : t("cout_par_personne", { cout: formatMontant(evenement.cout) })}
           </span>
         </div>
+
+        {evenement.lieu.trim() && (
+          <button
+            type="button"
+            onClick={() => setCarteOuverte((v) => !v)}
+            className="text-xs font-medium text-ca hover:underline"
+          >
+            {carteOuverte ? t("carte_masquer") : t("carte_afficher")}
+          </button>
+        )}
+        {carteOuverte && (
+          <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />
+        )}
 
         {!passe && remplissage !== null && (
           <div>

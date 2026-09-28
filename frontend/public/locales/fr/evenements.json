@@ -17,6 +17,8 @@
   "places_illimitees": "Places illimitées",
   "places_count": "{{count}} place(s)",
   "cout_par_personne": "{{cout}} / pers.",
+  "carte_afficher": "Afficher la carte",
+  "carte_masquer": "Masquer la carte",
   "remplissage": "Remplissage {{pct}} %",
   "sinscrire_gratuit": "S'inscrire (gratuit)",
   "sinscrire_payer": "S'inscrire & payer",

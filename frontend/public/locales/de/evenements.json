@@ -17,6 +17,8 @@
   "places_illimitees": "Unbegrenzte Plätze",
   "places_count": "{{count}} Platz/Plätze",
   "cout_par_personne": "{{cout}} / Pers.",
+  "carte_afficher": "Karte anzeigen",
+  "carte_masquer": "Karte ausblenden",
   "remplissage": "Auslastung {{pct}} %",
   "sinscrire_gratuit": "Anmelden (kostenlos)",
   "sinscrire_payer": "Anmelden & bezahlen",
