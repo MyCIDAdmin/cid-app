@@ -16,6 +16,15 @@ intercepte l'erreur (MinIO répond en `application/xml`, pas `image/*`, sur un G
 refusé) — rien à voir avec des credentials/signatures manquants côté frontend : le fichier
 existe bien, seule la politique du bucket bloque la lecture anonyme.
 
+Même classe de bug pour "evenements" (retour utilisateur du 2026-09-27, point 11.2.1 :
+"Bild konnte nicht hochgeladen werden. Hier wahrscheinlich Bucket Problem") — le bucket dédié
+introduit par apps.evenements.storage.EvenementsStorage (2026-09-27, point 11.1) n'avait
+jamais été ajouté à BUCKETS_PUBLICS ci-dessous. Contrairement au cas cid-media/projets
+ci-dessus, MinIO ne crée jamais un bucket implicitement à l'écriture : le bucket "evenements"
+n'existait donc pas du tout côté MinIO, et le PUT effectué par django-storages lors de
+l'upload échouait directement avec `NoSuchBucket` (pas seulement l'affichage ensuite) — d'où
+l'échec observé dès le téléversement, avant même la question d'une politique de lecture.
+
 Chaque bucket "public" reçoit la même politique que `mc anonymous set download <alias>/<bucket>`
 (lecture anonyme de tous les objets ; l'écriture reste réservée aux clés d'accès
 MINIO_ACCESS_KEY/MINIO_SECRET_KEY, jamais exposée par cette politique). Chaque bucket "privé"
@@ -38,14 +47,17 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-# (nom du bucket, lecture publique ?) — cid-media/produits/projets sont montrés dans l'app à
-# tout membre authentifié, jamais de données sensibles (voir docstrings des Storage
-# correspondants) ; justificatifs/exports restent privés (accès via URL pré-signée à durée
-# limitée, voir apps.adhesions.storage.JustificatifsStorage / apps.stats).
+# (nom du bucket, lecture publique ?) — cid-media/produits/projets/evenements sont montrés
+# dans l'app à tout membre authentifié (evenements : même à un visiteur anonyme si
+# Evenement.visible_public, voir apps.evenements.storage.EvenementsStorage), jamais de données
+# sensibles (voir docstrings des Storage correspondants) ; justificatifs/exports restent privés
+# (accès via URL pré-signée à durée limitée, voir apps.adhesions.storage.JustificatifsStorage /
+# apps.stats).
 BUCKETS_PUBLICS = [
     settings.AWS_STORAGE_BUCKET_NAME,  # cid-media — fil d'actualité + albums photos
     settings.MINIO_BUCKET_PRODUITS,
     settings.MINIO_BUCKET_PROJETS,
+    settings.MINIO_BUCKET_EVENEMENTS,
 ]
 BUCKETS_PRIVES = [
     settings.MINIO_BUCKET_JUSTIFICATIFS,
