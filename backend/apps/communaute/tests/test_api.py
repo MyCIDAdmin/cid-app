@@ -1223,6 +1223,49 @@ def test_calendrier_lecture_ouverte_a_tout_authentifie(api_client):
     assert resp.data["results"][0]["equipe_exterieur"] == "EST"
 
 
+def test_calendrier_masque_les_anciennes_annees_par_defaut(api_client):
+    # Correctif bug utilisateur "Spielplan-Filter (aktuelles+nächstes Jahr)" (2026-09-28) :
+    # même famille de correctif que test_classement_masque_les_anciennes_saisons_par_defaut
+    # ci-dessus — get_queryset() filtre désormais sur l'année en cours + l'année suivante.
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc3c@example.de")
+    annee_actuelle = timezone.localdate().year
+    RencontreCalendrierFactory(
+        equipe_exterieur="Ancienne Rencontre",
+        date_heure=timezone.datetime(annee_actuelle - 3, 6, 1, tzinfo=timezone.utc),
+    )
+    RencontreCalendrierFactory(
+        equipe_exterieur="Rencontre Actuelle",
+        date_heure=timezone.datetime(annee_actuelle, 6, 1, tzinfo=timezone.utc),
+    )
+    RencontreCalendrierFactory(
+        equipe_exterieur="Rencontre Annee Prochaine",
+        date_heure=timezone.datetime(annee_actuelle + 1, 6, 1, tzinfo=timezone.utc),
+    )
+
+    resp = _auth(api_client, user).get(reverse(CALENDRIER_LIST_URL))
+    assert resp.status_code == 200
+    equipes = {ligne["equipe_exterieur"] for ligne in resp.data["results"]}
+    assert equipes == {"Rencontre Actuelle", "Rencontre Annee Prochaine"}
+
+
+def test_calendrier_parametre_periode_toutes(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fc3d@example.de")
+    annee_actuelle = timezone.localdate().year
+    RencontreCalendrierFactory(
+        equipe_exterieur="Ancienne Rencontre",
+        date_heure=timezone.datetime(annee_actuelle - 3, 6, 1, tzinfo=timezone.utc),
+    )
+    RencontreCalendrierFactory(
+        equipe_exterieur="Rencontre Actuelle",
+        date_heure=timezone.datetime(annee_actuelle, 6, 1, tzinfo=timezone.utc),
+    )
+
+    resp = _auth(api_client, user).get(reverse(CALENDRIER_LIST_URL), {"periode": "toutes"})
+    assert resp.status_code == 200
+    equipes = {ligne["equipe_exterieur"] for ligne in resp.data["results"]}
+    assert equipes == {"Ancienne Rencontre", "Rencontre Actuelle"}
+
+
 def test_statistiques_joueurs_lecture_ouverte_a_tout_authentifie(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "fc3b@example.de")
     # Même remarque que test_classement_lecture_ouverte_a_tout_authentifie ci-dessus.
