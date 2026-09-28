@@ -1,10 +1,17 @@
 /**
  * Page de connexion — étape 1 (email/mdp) + étape 2 conditionnelle (2FA),
  * cf mockup #sc-login et FDD §3.1 / §5.1. Design : dégradé sb -> ca.
+ *
+ * Redirection post-connexion (retour utilisateur du 2026-09-27, voir docstring RequireAuth.tsx) :
+ * si l'utilisateur a été renvoyé ici depuis une page protégée (typiquement /mon-adhesion via le
+ * CTA "Mitglied werden" du hero), `location.state.from` porte cette page — on y retourne après
+ * connexion plutôt que vers /dashboard en dur. Le lien "Créer un compte" relaie ce même state
+ * vers /register, pour que le même retour fonctionne après une inscription (voir RegisterPage.tsx).
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import type { Location } from "react-router-dom";
 
 import { login, verify2FA, sendOtp } from "../api/auth";
 import BrandLogo from "../components/ui/BrandLogo";
@@ -13,10 +20,16 @@ import { extractApiErrorMessage } from "../utils/apiError";
 
 type Step = "credentials" | "twofa";
 
+interface LocationState {
+  from?: Location;
+}
+
 export default function LoginPage() {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
+  const location = useLocation();
   const loginSuccess = useAuthStore((s) => s.loginSuccess);
+  const destination = (location.state as LocationState | null)?.from?.pathname || "/dashboard";
 
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
@@ -48,7 +61,7 @@ export default function LoginPage() {
         setStep("twofa");
       } else if (res.access && res.refresh && res.user) {
         loginSuccess(res.access, res.refresh, res.user);
-        navigate("/dashboard");
+        navigate(destination, { replace: true });
       }
     } catch (err) {
       // Le backend distingue "identifiants invalides" (401) de "compte pas
@@ -71,7 +84,7 @@ export default function LoginPage() {
       const res = await verify2FA(loginTicket, method, code);
       if (res.access && res.refresh && res.user) {
         loginSuccess(res.access, res.refresh, res.user);
-        navigate("/dashboard");
+        navigate(destination, { replace: true });
       }
     } catch {
       setError(t("twofa.error_invalid"));
@@ -140,7 +153,11 @@ export default function LoginPage() {
             </button>
             <p className="text-center text-xs text-text-tertiary">
               {t("register.pas_de_compte")}{" "}
-              <Link to="/register" className="font-medium text-ca hover:underline">
+              <Link
+                to="/register"
+                state={location.state}
+                className="font-medium text-ca hover:underline"
+              >
                 {t("register.creer_compte")}
               </Link>
             </p>

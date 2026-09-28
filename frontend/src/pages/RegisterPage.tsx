@@ -13,7 +13,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { z } from "zod";
 
 import {
@@ -89,6 +89,10 @@ type Step = "form" | "confirm" | "success";
 
 export default function RegisterPage() {
   const { t } = useTranslation("auth");
+  // Relaie `location.state.from` vers /login (voir docstring LoginPage.tsx / RequireAuth.tsx) —
+  // un visiteur arrivé ici depuis /login (lui-même renvoyé depuis une page protégée) doit
+  // retrouver cette même destination une fois son compte validé et connecté, pas /dashboard.
+  const location = useLocation();
 
   const [step, setStep] = useState<Step>("form");
   const [emailInscrit, setEmailInscrit] = useState("");
@@ -212,6 +216,7 @@ export default function RegisterPage() {
             <p className="mb-5 text-sm text-text-secondary">{t("register.succes_message")}</p>
             <Link
               to="/login"
+              state={location.state}
               className="inline-block rounded-cid bg-ca px-4 py-2 text-sm font-semibold text-white hover:bg-cad"
             >
               {t("register.succes_retour_connexion")}
@@ -473,7 +478,7 @@ export default function RegisterPage() {
 
             <p className="text-center text-xs text-text-tertiary">
               {t("register.deja_membre")}{" "}
-              <Link to="/login" className="font-medium text-ca hover:underline">
+              <Link to="/login" state={location.state} className="font-medium text-ca hover:underline">
                 {t("register.se_connecter")}
               </Link>
             </p>

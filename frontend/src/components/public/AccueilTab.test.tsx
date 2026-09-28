@@ -5,13 +5,11 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
 import AccueilTab from "./AccueilTab";
 
-// Chaque section a ses propres tests dédiés (MembershipSection/KennzahlenBar/FanClubPreview) —
-// ici on vérifie uniquement qu'AccueilTab les assemble toutes, dans l'ordre demandé par
-// l'utilisateur (hero -> adhésion -> kennzahlen -> Fan-Club), sans "Aktives Projekt" (exclu,
-// voir docstring du composant).
-vi.mock("./MembershipSection", () => ({
-  default: () => <div data-testid="membership-stub" />,
-}));
+// Chaque section a ses propres tests dédiés (KennzahlenBar/FanClubPreview) — ici on vérifie
+// uniquement qu'AccueilTab les assemble toutes, dans l'ordre demandé par l'utilisateur (hero ->
+// kennzahlen -> Fan-Club), sans "Aktives Projekt" (exclu, voir docstring du composant) et sans
+// section adhésion (retour utilisateur du 2026-09-27 : "Mitgliedschaft Kampagne soll ausgeblendet
+// sein" — voir docstring d'AccueilTab.tsx, l'offre ne vit plus que sur /mon-adhesion).
 vi.mock("./KennzahlenBar", () => ({ default: () => <div data-testid="kennzahlen-stub" /> }));
 vi.mock("./FanClubPreview", () => ({ default: () => <div data-testid="fanclub-stub" /> }));
 
@@ -46,7 +44,13 @@ describe("AccueilTab", () => {
     const ids = Array.from(document.querySelectorAll("[data-testid]")).map((el) =>
       el.getAttribute("data-testid"),
     );
-    expect(ids).toEqual(["membership-stub", "kennzahlen-stub", "fanclub-stub"]);
+    expect(ids).toEqual(["kennzahlen-stub", "fanclub-stub"]);
+  });
+
+  it("ne montre pas la section adhésion sur la Startseite (retour utilisateur du 2026-09-27)", () => {
+    mockConfiguration(null);
+    renderWithProviders(<AccueilTab />);
+    expect(screen.queryByTestId("membership-stub")).not.toBeInTheDocument();
   });
 
   it("ne reprend pas la section \"Aktives Projekt\" (exclue par décision utilisateur)", () => {

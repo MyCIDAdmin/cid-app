@@ -4,12 +4,20 @@
  *   1. Hero (bannière + CTA "Mitglied werden" → /mon-adhesion ; PAS de boutons "Projekte"/
  *      "Veranstaltungen", déjà des onglets de la nav, voir docstring PublicTopNav.tsx) — fond
  *      vidéo optionnel depuis le 2026-09-27 (Phase 5 "Startseite Hero-Video", voir HeroVideo.tsx)
- *   2. Adhésion (MembershipSection — offres façon mycid.org/membership OU récapitulatif "déjà
- *      membre" selon la souscription en cours)
- *   3. Kennzahlen (Donateurs/Collecté/Projets)
- *   4. Fan-Club (classement + calendrier, réutilisation pure du module existant)
+ *   2. Kennzahlen (Donateurs/Collecté/Projets)
+ *   3. Fan-Club (classement + calendrier, réutilisation pure du module existant)
  * Le point "Aktives Projekt" du mockup mycid.org n'est PAS repris ici (décision utilisateur
  * explicite, point 2.1.6) — le footer applicatif est déjà posé par PublicHomePage.tsx.
+ *
+ * Pas de section "Adhésion" ici (retour utilisateur du 2026-09-27 : "Mitgliedschaft Kampagne
+ * soll ausgeblendet sein" — la carte d'offres façon mycid.org/membership, encore présente sur la
+ * page tant que le rapport de bug n'était pas confirmé, restait visible directement sur la
+ * Startseite, ce qui n'était pas le comportement demandé). Le CTA "Mitglied werden" du hero
+ * ci-dessous reste le seul point d'entrée vers l'adhésion : il mène à /mon-adhesion, qui affiche
+ * désormais elle-même les offres dans ce même style de cartes (voir MonAdhesionPage.tsx) — donc
+ * aucune perte de fonctionnalité, seulement un clic de plus avant de voir les offres, comme
+ * demandé. MembershipSection/MembershipOffersPublic restent dans le code (testées, inchangées)
+ * au cas où une future demande voudrait les remontrer ailleurs.
  */
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -17,7 +25,6 @@ import { Link } from "react-router-dom";
 import FanClubPreview from "./FanClubPreview";
 import HeroVideo from "./HeroVideo";
 import KennzahlenBar from "./KennzahlenBar";
-import MembershipSection from "./MembershipSection";
 import { useConfigurationSitePublic } from "../../hooks/useCommunaute";
 
 export default function AccueilTab() {
@@ -66,7 +73,6 @@ export default function AccueilTab() {
         </div>
       </div>
 
-      <MembershipSection />
       <KennzahlenBar />
       <FanClubPreview />
     </div>
