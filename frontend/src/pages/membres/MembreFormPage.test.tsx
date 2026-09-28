@@ -74,6 +74,65 @@ describe("MembreFormPage (création)", () => {
     });
   });
 
+  // Ajouté le 2026-09-28 (retour utilisateur, point 5) — même règle "CIN ou passeport" qu'à
+  // l'inscription libre-service (voir RegisterPage.test.tsx), appliquée ici aussi puisque cette
+  // fiche partage le même modèle Membre.
+  it("affiche une erreur dédiée si ni CIN ni passeport ne sont renseignés", async () => {
+    vi.mocked(useMembresHooks.useCreateMembre).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
+
+    renderWithProviders(<MembreFormPage />, { route: "/membres/nouveau", path: "/membres/nouveau" });
+
+    fireEvent.click(screen.getByText("formulaire.enregistrer"));
+
+    await waitFor(() => {
+      expect(screen.getByText("formulaire.erreur_cin_ou_passeport")).toBeInTheDocument();
+    });
+  });
+
+  it("accepte le formulaire avec uniquement le passeport rempli (sans CIN)", async () => {
+    const mutateAsync = vi.fn().mockResolvedValue(membreCree);
+    vi.mocked(useMembresHooks.useCreateMembre).mockReturnValue({
+      mutateAsync,
+    } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
+
+    renderWithProviders(<MembreFormPage />, { route: "/membres/nouveau", path: "/membres/nouveau" });
+
+    fireEvent.change(screen.getByLabelText("champ.prenom", { exact: false }), {
+      target: { value: "Ines" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.nom", { exact: false }), {
+      target: { value: "Trabelsi" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.date_naissance", { exact: false }), {
+      target: { value: "1995-03-02" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.email", { exact: false }), {
+      target: { value: "ines@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.telephone", { exact: false }), {
+      target: { value: "+49 176 1111111" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.passeport", { exact: false }), {
+      target: { value: "P1234567" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.adresse_de", { exact: false }), {
+      target: { value: "Beispielweg 2" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.ville_de", { exact: false }), {
+      target: { value: "Hambourg" },
+    });
+    fireEvent.change(screen.getByLabelText("champ.date_adhesion", { exact: false }), {
+      target: { value: "2024-02-01" },
+    });
+
+    fireEvent.click(screen.getByText("formulaire.enregistrer"));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({ passeport: "P1234567" });
+  });
+
   it("soumet le formulaire rempli et navigue vers la fiche créée", async () => {
     const mutateAsync = vi.fn().mockResolvedValue(membreCree);
     vi.mocked(useMembresHooks.useCreateMembre).mockReturnValue({

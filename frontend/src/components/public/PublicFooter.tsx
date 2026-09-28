@@ -6,20 +6,23 @@
  * Sidebar.tsx::getGroupForPath.
  *
  * Les liens Rechtliches (Impressum/Datenschutz/Nutzungsbedingungen/Erstattungsrichtlinie)
- * pointent vers mycid.org : CID n'a pas encore ses propres pages légales (aucune demandée dans
- * la spécification utilisateur) — à remplacer par des routes internes le jour où ces textes
- * existeront pour CID lui-même.
+ * pointent depuis le 2026-09-28 (retour utilisateur, points 3.1-3.4) vers des routes internes
+ * (/impressum, /datenschutz, /nutzungsbedingungen, /erstattungsrichtlinie — voir
+ * pages/public/legal/) qui reconstruisent le contenu des pages mycid.org/{impressum,privacy,
+ * terms,refund-policy} correspondantes, au lieu de liens externes vers mycid.org.
  *
  * Variante `compact` (retour utilisateur du 2026-09-27 : "Der Footer in der App nach Anmeldung
  * ist zu groß, nimmt einen großen Platz [...] Footer soll immer am Ende der Seite angebunden
- * sein") : utilisée UNIQUEMENT par AppLayout.tsx (jamais par PublicHomePage.tsx, qui garde le
- * footer pleine taille façon mycid.org). Une seule ligne dense (marque + liens légaux + contact +
- * réseaux sociaux) plutôt que la grille 3 colonnes py-10 d'origine, pensée pour l'app connectée où
- * l'espace vertical est disputé par la sidebar/le contenu métier — le contenu reste strictement le
- * même (aucun lien retiré), seule la densité change.
+ * sein") : à l'origine réservée à AppLayout.tsx, également utilisée par PublicHomePage.tsx depuis
+ * le 2026-09-28 (retour utilisateur : "Den dünnen Footer aus den Seiten der Modulen in die
+ * Startseite übernehmen") — la grille 3 colonnes py-10 d'origine (ci-dessous, `compact=false`)
+ * n'est plus utilisée qu'en repli si un futur écran en a besoin. Une seule ligne dense (marque +
+ * liens légaux + contact + réseaux sociaux) plutôt que la grille 3 colonnes — le contenu reste
+ * strictement le même (aucun lien retiré), seule la densité change.
  */
 import { IconBrandFacebook, IconBrandInstagram, IconMail, IconMapPin } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import BrandLogo from "../ui/BrandLogo";
 
@@ -28,11 +31,13 @@ import BrandLogo from "../ui/BrandLogo";
 // externe n'a besoin que de sa cible, pas de son contenu.
 const LIEN_LOCALISATION = "https://share.google/2bOef3rWXOlAMprNM";
 
+// Routes internes (voir pages/public/legal/) depuis le 2026-09-28 — remplacent les anciens liens
+// externes vers mycid.org (voir docstring de tête).
 const LIENS_LEGAUX = [
-  { labelKey: "footer.impressum", href: "https://www.mycid.org/impressum" },
-  { labelKey: "footer.datenschutz", href: "https://www.mycid.org/privacy" },
-  { labelKey: "footer.agb", href: "https://www.mycid.org/terms" },
-  { labelKey: "footer.erstattung", href: "https://www.mycid.org/refund-policy" },
+  { labelKey: "footer.impressum", href: "/impressum" },
+  { labelKey: "footer.datenschutz", href: "/datenschutz" },
+  { labelKey: "footer.agb", href: "/nutzungsbedingungen" },
+  { labelKey: "footer.erstattung", href: "/erstattungsrichtlinie" },
 ];
 
 const LIENS_SOCIAUX = [
@@ -61,14 +66,9 @@ export default function PublicFooter({ compact = false }: { compact?: boolean })
           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {LIENS_LEGAUX.map((lien) => (
               <li key={lien.labelKey}>
-                <a
-                  href={lien.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-text-secondary hover:text-ca"
-                >
+                <Link to={lien.href} className="text-text-secondary hover:text-ca">
                   {t(lien.labelKey)}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -132,14 +132,9 @@ export default function PublicFooter({ compact = false }: { compact?: boolean })
           <ul className="mt-2 space-y-1.5 text-sm">
             {LIENS_LEGAUX.map((lien) => (
               <li key={lien.labelKey}>
-                <a
-                  href={lien.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-text-secondary hover:text-ca"
-                >
+                <Link to={lien.href} className="text-text-secondary hover:text-ca">
                   {t(lien.labelKey)}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

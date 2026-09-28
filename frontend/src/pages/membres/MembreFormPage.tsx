@@ -34,7 +34,7 @@ const membreSchema = z
     sexe: z.enum(["homme", "femme", "non_renseigne"]),
     email: z.string().min(1).email(),
     telephone: z.string().min(1),
-    cin: z.string().min(1),
+    cin: z.string().optional(),
     passeport: z.string().optional(),
     pays: z.enum(PAYS_VALEURS),
     adresse_de: z.string().optional(),
@@ -49,12 +49,24 @@ const membreSchema = z
   // adresse_de/ville_de ne sont requis que pour un membre résidant en Allemagne
   // (voir MembreSerializer.validate côté backend, qui applique la même règle).
   .superRefine((values, ctx) => {
-    if (values.pays !== PAYS_ALLEMAGNE) return;
-    if (!values.adresse_de?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adresse_de"], message: "requis" });
+    if (values.pays === PAYS_ALLEMAGNE) {
+      if (!values.adresse_de?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adresse_de"], message: "requis" });
+      }
+      if (!values.ville_de?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ville_de"], message: "requis" });
+      }
     }
-    if (!values.ville_de?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ville_de"], message: "requis" });
+    // Même règle "CIN ou passeport" que RegisterPage.tsx (retour utilisateur du 2026-09-28,
+    // point 5) — cette fiche partage le même modèle Membre, la même contrainte s'applique donc
+    // ici aussi pour la cohérence (et est de toute façon vérifiée côté serveur, voir
+    // MembreSerializer.validate).
+    if (!values.cin?.trim() && !values.passeport?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cin"],
+        message: "cin_ou_passeport_requis",
+      });
     }
   });
 
@@ -148,7 +160,7 @@ export default function MembreFormPage() {
         sexe: membre.sexe,
         email: membre.email,
         telephone: membre.telephone,
-        cin: membre.cin,
+        cin: membre.cin ?? "",
         passeport: membre.passeport ?? "",
         pays: membre.pays,
         adresse_de: membre.adresse_de,
@@ -261,8 +273,12 @@ export default function MembreFormPage() {
             <Champ
               label={t("champ.cin")}
               htmlFor="cin"
-              requis
-              erreur={errors.cin && t("formulaire.champ_requis")}
+              erreur={
+                errors.cin &&
+                (errors.cin.message === "cin_ou_passeport_requis"
+                  ? t("formulaire.erreur_cin_ou_passeport")
+                  : t("formulaire.champ_requis"))
+              }
             >
               <input id="cin" {...register("cin")} className={champClasses} />
             </Champ>

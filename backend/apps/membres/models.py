@@ -136,7 +136,12 @@ class Membre(models.Model):
     telephone = models.CharField(max_length=30, help_text=_("Format allemand attendu (+49…)."))
 
     # --- Pièces d'identité — chiffrées AES-256-GCM au repos (SCD §5.1, TDD §3.1) ---
-    cin = EncryptedCharField(max_length=50)
+    # cin est devenu blank=True/null=True le 2026-09-28 (retour utilisateur, point 5) : à
+    # l'inscription, ni CIN ni passeport n'est individuellement obligatoire — la règle "au moins
+    # l'un des deux" est appliquée en amont par RegisterSerializer.validate (accounts/
+    # serializers.py), jamais au niveau du modèle lui-même (une fiche importée, par ex., peut
+    # légitimement n'avoir que l'un des deux, ou aucun temporairement).
+    cin = EncryptedCharField(max_length=50, blank=True, null=True)
     passeport = EncryptedCharField(max_length=50, blank=True, null=True)
 
     # --- Pays de résidence + adresse ---

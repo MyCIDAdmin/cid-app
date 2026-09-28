@@ -124,6 +124,11 @@ describe("AdminEventsPage", () => {
     vi.mocked(useEvenementsHooks.useTeleverserImageEvenement).mockReturnValue(
       mutationMock<ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>>(),
     );
+    // Aperçu avant confirmation de l'image (2026-09-28) — même mock que
+    // PaiementStepper.test.tsx/GestionCommandesTab.test.tsx : jsdom n'implémente pas
+    // createObjectURL/revokeObjectURL nativement.
+    window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    window.URL.revokeObjectURL = vi.fn();
     vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
       accessible: true,
       modifiable: true,
@@ -299,7 +304,11 @@ describe("AdminEventsPage", () => {
     );
   });
 
-  it("téléverse l'image de kachel d'un événement existant", () => {
+  // Étape d'aperçu + confirmation ajoutée le 2026-09-28 (retour utilisateur : "Kein Button zur
+  // Bestätigung des Hochladen des Bildes") — voir docstring handleImageChoisie/imageEnAttente
+  // dans AdminEventsPage.tsx : le fichier choisi n'est plus envoyé automatiquement, un aperçu
+  // avec "Bestätigen"/"Abbrechen" apparaît d'abord.
+  it("n'envoie l'image de kachel qu'après confirmation de l'aperçu", () => {
     const televerser = mutationMock<
       ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>
     >();
@@ -316,10 +325,35 @@ describe("AdminEventsPage", () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [fichier] } });
 
-    expect(televerser.mutate).toHaveBeenCalledWith(
-      { id: "e1", fichier },
-      expect.anything(),
-    );
+    // Choisir un fichier n'envoie encore rien : l'aperçu apparaît avec son nom, en attente.
+    expect(televerser.mutate).not.toHaveBeenCalled();
+    expect(screen.getByText("kachel.jpg")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("admin.image_confirmer"));
+
+    expect(televerser.mutate).toHaveBeenCalledWith({ id: "e1", fichier }, expect.anything());
+  });
+
+  it("n'envoie rien si l'aperçu de l'image est annulé", () => {
+    const televerser = mutationMock<
+      ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>
+    >();
+    vi.mocked(useEvenementsHooks.useTeleverserImageEvenement).mockReturnValue(televerser);
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<AdminEventsPage />);
+
+    const fichier = new File(["image"], "kachel.jpg", { type: "image/jpeg" });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [fichier] } });
+    fireEvent.click(screen.getByText("admin.image_annuler"));
+
+    expect(televerser.mutate).not.toHaveBeenCalled();
+    expect(screen.queryByText("kachel.jpg")).not.toBeInTheDocument();
   });
 
   describe("lecture seule (task #216 — page_events en 'lecture' uniquement)", () => {

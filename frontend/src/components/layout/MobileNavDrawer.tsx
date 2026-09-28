@@ -37,10 +37,11 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
   function handleLogout() {
     // Même geste que Sidebar.handleLogout (desktop) : vide aussi le cache React Query (voir
     // authStore.logout) pour ne rien laisser fuiter au prochain compte connecté dans le même
-    // navigateur.
+    // navigateur. Retour utilisateur du 2026-09-28 : atterrir sur la Startseite publique plutôt
+    // que directement sur /login.
     logout();
     onClose();
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   }
 
   // Ferme sur Échap — même geste que le flyout desktop (RailGroupButton), pour une navigation

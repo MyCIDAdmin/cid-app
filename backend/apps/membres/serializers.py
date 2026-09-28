@@ -124,16 +124,23 @@ class MembreSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         pays = attrs.get("pays", getattr(self.instance, "pays", Pays.ALLEMAGNE))
+        erreurs = {}
         if pays == Pays.ALLEMAGNE:
             adresse_de = attrs.get("adresse_de", getattr(self.instance, "adresse_de", ""))
             ville_de = attrs.get("ville_de", getattr(self.instance, "ville_de", ""))
-            erreurs = {}
             if not (adresse_de or "").strip():
                 erreurs["adresse_de"] = "Ce champ est requis pour un membre résidant en Allemagne."
             if not (ville_de or "").strip():
                 erreurs["ville_de"] = "Ce champ est requis pour un membre résidant en Allemagne."
-            if erreurs:
-                raise serializers.ValidationError(erreurs)
+        # CIN ni passeport ne sont requis isolément (retour utilisateur du 2026-09-28, point 5 —
+        # même règle qu'à l'inscription libre-service, voir RegisterSerializer.validate), mais au
+        # moins l'un des deux doit être renseigné.
+        cin = attrs.get("cin", getattr(self.instance, "cin", ""))
+        passeport = attrs.get("passeport", getattr(self.instance, "passeport", ""))
+        if not (cin or "").strip() and not (passeport or "").strip():
+            erreurs["cin"] = "Ausweisnummer (CIN) oder Passnummer ist erforderlich."
+        if erreurs:
+            raise serializers.ValidationError(erreurs)
         return attrs
 
     def to_representation(self, instance):

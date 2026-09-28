@@ -31,7 +31,14 @@ async function refreshAccessToken(): Promise<string> {
     const { data } = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
       refresh: refreshToken,
     });
-    setTokens(data.access, refreshToken);
+    // Bug corrigé le 2026-09-28 (retour utilisateur : "warum ich [...] manchmal rausgekickt
+    // [werde]") : SIMPLE_JWT tourne avec ROTATE_REFRESH_TOKENS + BLACKLIST_AFTER_ROTATION
+    // (voir config.settings.base) — chaque refresh invalide l'ANCIEN refresh token et en
+    // renvoie un NOUVEAU dans `data.refresh`. Réutiliser l'ancien `refreshToken` ici (comme
+    // avant ce correctif) fonctionnait une seule fois : au refresh suivant (~15 min plus
+    // tard, ACCESS_TOKEN_LIFETIME), le token déjà blacklisté était rejeté -> logout() —
+    // exactement le symptôme "angemeldet bleiben coché, mais manchmal ausgeloggt".
+    setTokens(data.access, data.refresh);
     return data.access as string;
   } catch (err) {
     logout();

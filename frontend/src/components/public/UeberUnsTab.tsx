@@ -6,6 +6,13 @@
  * chiffrées : 14 titres de champion, 13 coupes, 1 Ligue des Champions CAF), quatre cartes de
  * valeurs (Leidenschaft/Gemeinschaft/Kultur/Exzellenz) et une section contact — texte rédigé en
  * formulation propre à CID, jamais copié mot pour mot de mycid.org (voir plan §D).
+ *
+ * Hero avec les deux logos (CID + Club Africain) ajouté le 2026-09-28 (retour utilisateur :
+ * "die von mir hochgeladene Logos von Club Africain und CID sind in der Seite nicht sichtbar")
+ * — la première version de ce composant (2026-09-26) ne reprenait que les sections texte,
+ * sans jamais avoir été câblée aux fichiers logo malgré leur envoi par l'utilisateur ce jour-là.
+ * Fichiers recadrés/redimensionnés depuis les originaux transmis dans le chat (voir
+ * public/brand/logo-cid-about.png et logo-club-africain.png).
  */
 import { useTranslation } from "react-i18next";
 
@@ -18,6 +25,21 @@ export default function UeberUnsTab() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <div className="mb-10 text-center">
+        <div className="mb-6 flex items-center justify-center gap-6 sm:gap-10">
+          <img
+            src="/brand/logo-cid-about.png"
+            alt="Clubistes in Deutschland"
+            className="h-24 w-auto sm:h-32"
+          />
+          <span className="text-2xl text-text-tertiary" aria-hidden="true">
+            ×
+          </span>
+          <img
+            src="/brand/logo-club-africain.png"
+            alt="Club Africain"
+            className="h-24 w-auto sm:h-32"
+          />
+        </div>
         <h1 className="text-2xl font-bold text-text-primary">{t("apropos.titre")}</h1>
         <p className="mt-2 text-sm text-text-secondary">{t("apropos.intro")}</p>
       </div>

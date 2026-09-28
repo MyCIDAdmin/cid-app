@@ -58,7 +58,10 @@ export interface RegisterPayload {
   nom: string;
   date_naissance: string;
   sexe?: "homme" | "femme" | "non_renseigne";
-  cin: string;
+  // CIN redevenu optionnel côté frontend le 2026-09-28 (retour utilisateur, point 5) : ni CIN ni
+  // passeport n'est requis isolément, mais le backend (RegisterSerializer.validate) exige qu'au
+  // moins l'un des deux soit renseigné — voir le .refine() correspondant dans RegisterPage.tsx.
+  cin?: string;
   passeport?: string;
   telephone: string;
   adresse_de: string;

@@ -61,10 +61,14 @@ describe("PublicHomePage", () => {
     );
   });
 
+  // "footer.impressum" (au lieu de l'ancien "footer.rechtliches_titre", absent en variante
+  // compact) depuis le 2026-09-28 (retour utilisateur, point 3.5 : "Den dünnen Footer aus den
+  // Seiten der Modulen in die Startseite übernehmen") — PublicHomePage utilise désormais
+  // <PublicFooter compact />, voir docstring PublicHomePage.tsx.
   it("affiche toujours la nav et le footer, quel que soit l'onglet", () => {
     renderWithProviders(<PublicHomePage />);
     expect(screen.getByText("action.connexion")).toBeInTheDocument();
-    expect(screen.getByText("footer.rechtliches_titre")).toBeInTheDocument();
+    expect(screen.getByText("footer.impressum")).toBeInTheDocument();
   });
 
   it("bascule vers un autre onglet sans faire disparaître nav/footer", () => {
@@ -74,7 +78,7 @@ describe("PublicHomePage", () => {
     expect(screen.getByTestId("evenements-stub")).toBeInTheDocument();
     expect(screen.queryByText("hero.titre")).not.toBeInTheDocument();
     expect(screen.getByText("action.connexion")).toBeInTheDocument();
-    expect(screen.getByText("footer.rechtliches_titre")).toBeInTheDocument();
+    expect(screen.getByText("footer.impressum")).toBeInTheDocument();
   });
 
   it("revient à l'accueil au clic sur le logo", () => {

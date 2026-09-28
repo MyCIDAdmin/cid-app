@@ -78,6 +78,9 @@
     "kontakt_titre": "Contact",
     "kontakt_text": "Des questions sur l'association ou l'adhésion ? Écrivez-nous — les coordonnées se trouvent dans le pied de page de chaque page."
   },
+  "legal": {
+    "retour": "Retour à l'accueil"
+  },
   "footer": {
     "depuis_2019": "Depuis 2019",
     "claim": "L'association officielle des supporters du Club Africain en Allemagne. Rejoignez notre communauté et faites partie de quelque chose de spécial.",

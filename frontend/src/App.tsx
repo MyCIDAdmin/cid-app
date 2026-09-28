@@ -43,6 +43,10 @@ import EvenementsPage from "./pages/evenements/EvenementsPage";
 import LoginPage from "./pages/LoginPage";
 import MembreDetailPage from "./pages/membres/MembreDetailPage";
 import HomeRoute from "./pages/public/HomeRoute";
+import DatenschutzPage from "./pages/public/legal/DatenschutzPage";
+import ErstattungsrichtliniePage from "./pages/public/legal/ErstattungsrichtliniePage";
+import ImpressumPage from "./pages/public/legal/ImpressumPage";
+import NutzungsbedingungenPage from "./pages/public/legal/NutzungsbedingungenPage";
 import MembreFormPage from "./pages/membres/MembreFormPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
@@ -69,6 +73,14 @@ export default function App() {
           demande d'email puis confirmation via le lien reçu (?token=). */}
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      {/* Pages légales (retour utilisateur du 2026-09-28, points 3.1-3.4 : nachbau des pages
+          mycid.org/{impressum,privacy,terms,refund-policy}, voir pages/public/legal/) —
+          toujours publiques (jamais derrière RequireAuth), reliées depuis PublicFooter.tsx qui
+          s'affiche aussi bien sur la Startseite publique que dans l'app connectée. */}
+      <Route path="/impressum" element={<ImpressumPage />} />
+      <Route path="/datenschutz" element={<DatenschutzPage />} />
+      <Route path="/nutzungsbedingungen" element={<NutzungsbedingungenPage />} />
+      <Route path="/erstattungsrichtlinie" element={<ErstattungsrichtliniePage />} />
       <Route
         element={
           <RequireAuth>

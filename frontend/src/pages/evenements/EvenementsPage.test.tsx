@@ -137,6 +137,22 @@ describe("EvenementsPage", () => {
     expect(screen.getByText("Déplacement Stuttgart")).toBeInTheDocument();
   });
 
+  // Régression du 2026-09-28 (retour utilisateur, points 2.1/2.2 : la description et l'image
+  // n'apparaissaient pas du tout sur la Kachel — voir docstring EvenementCarte).
+  it("affiche la description et la bannière (image ou dégradé de repli) de la Kachel", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement({ image: "https://cdn.example.com/e1.jpg" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    expect(screen.getByText("Bus au départ de Berlin.")).toBeInTheDocument();
+    const banniere = screen.getByText("Déplacement Stuttgart").closest("div");
+    expect(banniere).toHaveStyle({ backgroundImage: "url(https://cdn.example.com/e1.jpg)" });
+  });
+
   it("affiche un message si aucun événement à venir", () => {
     vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
       data: page([]),
