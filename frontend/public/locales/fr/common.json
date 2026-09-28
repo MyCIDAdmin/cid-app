@@ -31,7 +31,8 @@
     "articles_cotisation": "Articles de cotisation",
     "parametres_notification": "Notifications par email",
     "point_activite": "Nouveautés dans {{module}}",
-    "configuration_site": "Vidéo du hero"
+    "configuration_site": "Vidéo du hero",
+    "fan_club_logos": "Logos des clubs"
   },
   "nav_groupe": {
     "general": "Général",

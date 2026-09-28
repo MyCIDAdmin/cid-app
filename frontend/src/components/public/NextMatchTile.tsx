@@ -17,6 +17,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useCalendrierRencontres } from "../../hooks/useCommunaute";
+import EquipeLogoImage from "../communaute/EquipeLogoImage";
 
 function formatDate(iso: string, locale: string): string {
   return new Date(iso).toLocaleString(locale, {
@@ -76,8 +77,18 @@ export default function NextMatchTile() {
         <div className="text-[11px] font-semibold uppercase tracking-wide text-white/75">
           {t("nextMatch.titre")}
         </div>
-        <div className="mt-1 font-display text-lg font-bold sm:text-xl">
-          {prochaineRencontre.equipe_domicile} — {prochaineRencontre.equipe_exterieur}
+        <div className="mt-1 flex items-center gap-1.5 font-display text-lg font-bold sm:text-xl">
+          <EquipeLogoImage
+            equipe={prochaineRencontre.equipe_domicile}
+            className="h-6 w-6 shrink-0 rounded-full bg-white/90 object-contain p-0.5"
+          />
+          <span>
+            {prochaineRencontre.equipe_domicile} — {prochaineRencontre.equipe_exterieur}
+          </span>
+          <EquipeLogoImage
+            equipe={prochaineRencontre.equipe_exterieur}
+            className="h-6 w-6 shrink-0 rounded-full bg-white/90 object-contain p-0.5"
+          />
         </div>
         <div className="mt-1 text-sm text-white/85">
           {[prochaineRencontre.competition, formatDate(prochaineRencontre.date_heure, i18n.language)]

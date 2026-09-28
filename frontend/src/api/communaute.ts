@@ -16,6 +16,7 @@ import type {
   ConfigurationSitePublic,
   Conversation,
   EquipeInfo,
+  EquipeLogo,
   GroupeChat,
   GroupeChatPayload,
   Match,
@@ -697,4 +698,29 @@ export async function modifierConfigurationSitePublic(
     formData,
   );
   return data;
+}
+
+/**
+ * Logos d'équipes du Fan-Club (retour utilisateur du 2026-09-28 : "Fan-Club: Vereins-Logos
+ * anzeigen + Upload-Möglichkeit") — voir apps.communaute.views.EquipeLogoViewSet. Liste
+ * ouverte à tout visiteur, sans pagination (voir docstring backend) ; upload/suppression
+ * réservés au Bureau Admin+ côté backend (voir AdminFanClubLogosPage.tsx).
+ */
+export async function listEquipesLogos(): Promise<EquipeLogo[]> {
+  const { data } = await apiClient.get<EquipeLogo[]>("/communaute/equipe-logos/");
+  return data;
+}
+
+// Upsert par nom d'équipe (voir docstring EquipeLogoViewSet.create côté backend) : uploader
+// un logo pour un nom déjà présent remplace le logo existant plutôt que d'échouer.
+export async function enregistrerEquipeLogo(equipe: string, logo: File): Promise<EquipeLogo> {
+  const formData = new FormData();
+  formData.append("equipe", equipe);
+  formData.append("logo", logo);
+  const { data } = await apiClient.post<EquipeLogo>("/communaute/equipe-logos/", formData);
+  return data;
+}
+
+export async function supprimerEquipeLogo(id: number): Promise<void> {
+  await apiClient.delete(`/communaute/equipe-logos/${id}/`);
 }

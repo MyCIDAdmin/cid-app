@@ -436,3 +436,22 @@ class ConfigurationSitePublicPermission(BasePermission):
             bool(user and user.is_authenticated)
             and ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
         )
+
+
+class EquipeLogoPermission(BasePermission):
+    """Même principe que ConfigurationSitePublicPermission ci-dessus (2026-09-28, retour
+    utilisateur "Fan-Club: Vereins-Logos anzeigen + Upload-Möglichkeit") : lecture (liste des
+    logos) ouverte à AllowAny — les logos apparaissent sur la Startseite publique (widget
+    "Club Africain Live"), même raisonnement que ClassementLigueViewSet/
+    RencontreCalendrierViewSet — écriture (upload/suppression) réservée au Bureau Admin+ via
+    un seuil `ROLE_LEVELS` direct, volontairement hors matrice apps.rbac (même choix que
+    /admin/configuration-site)."""
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        user = request.user
+        return (
+            bool(user and user.is_authenticated)
+            and ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
+        )

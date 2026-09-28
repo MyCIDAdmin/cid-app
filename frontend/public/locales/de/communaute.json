@@ -294,6 +294,21 @@
     "confirmer_suppression": "Dieses Album und alle seine Fotos löschen?",
     "erreur_enregistrement": "Das Album konnte nicht gespeichert werden."
   },
+  "admin_fan_club_logos": {
+    "titre": "Vereinslogos",
+    "description": "Lade ein Logo für einen Verein hoch, damit es in der Tabelle, im Spielplan und auf der Kachel „Nächstes Spiel“ neben seinem Namen erscheint. Der Vereinsname muss genau mit der Schreibweise übereinstimmen, die in der Tabelle/im Spielplan angezeigt wird.",
+    "champ_equipe": "Vereinsname",
+    "champ_equipe_placeholder": "Genau wie in der Tabelle/im Spielplan geschrieben",
+    "champ_logo": "Logo-Datei",
+    "televerser": "Hochladen",
+    "televersement_en_cours": "Wird hochgeladen…",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Logos konnten nicht geladen werden.",
+    "aucun_logo": "Noch kein Logo hochgeladen.",
+    "supprimer": "Entfernen",
+    "erreur_enregistrement": "Das Logo konnte nicht gespeichert werden.",
+    "erreur_suppression": "Das Logo konnte nicht entfernt werden."
+  },
   "tippspiel": {
     "titre": "Tippspiel",
     "chargement": "Wird geladen…",

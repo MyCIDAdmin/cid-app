@@ -15,12 +15,15 @@ couvert malgré le chemin Photo/Album équivalent déjà testé.
 ConfigurationSitePublic.video_hero ajouté le 2026-09-27 (même raisonnement, voir
 test_configuration_site.py) — sans ce patch, un test qui televerse réellement une vidéo tente
 une écriture MinIO réelle (EndpointConnectionError, aucun MinIO en environnement de test).
+
+EquipeLogo.logo ajouté le 2026-09-28 (même raisonnement — Fan-Club, upload de logos
+d'équipes, voir test_api.py::test_equipe_logos_*).
 """
 
 import pytest
 from django.core.files.storage import FileSystemStorage
 
-from apps.communaute.models import ConfigurationSitePublic, Photo, Publication
+from apps.communaute.models import ConfigurationSitePublic, EquipeLogo, Photo, Publication
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +33,7 @@ def _photos_storage_local(tmp_path):
         Publication._meta.get_field("image"),
         Publication._meta.get_field("document"),
         ConfigurationSitePublic._meta.get_field("video_hero"),
+        EquipeLogo._meta.get_field("logo"),
     ]
     originaux = [champ.storage for champ in champs]
     for champ in champs:

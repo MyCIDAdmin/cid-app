@@ -31,7 +31,8 @@
     "articles_cotisation": "Beitragsartikel",
     "parametres_notification": "E-Mail-Benachrichtigungen",
     "point_activite": "Neuigkeiten bei {{module}}",
-    "configuration_site": "Hero-Video"
+    "configuration_site": "Hero-Video",
+    "fan_club_logos": "Vereinslogos"
   },
   "nav_groupe": {
     "general": "Allgemein",

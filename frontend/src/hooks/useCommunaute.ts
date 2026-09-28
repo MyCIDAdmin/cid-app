@@ -45,6 +45,7 @@ const communauteKeys = {
   calendrier: () => [...communauteKeys.all, "calendrier"] as const,
   statistiquesJoueurs: () => [...communauteKeys.all, "statistiques-joueurs"] as const,
   equipeInfo: () => [...communauteKeys.all, "equipe-info"] as const,
+  equipeLogos: () => [...communauteKeys.all, "equipe-logos"] as const,
   matchEvenements: (matchId: string) =>
     [...communauteKeys.all, "match-evenements", matchId] as const,
   albums: (filtres: communauteApi.AlbumsFiltres = {}) =>
@@ -831,5 +832,34 @@ export function useModifierConfigurationSitePublic() {
     mutationFn: (videoHero: File) => communauteApi.modifierConfigurationSitePublic(videoHero),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: communauteKeys.configurationSite() }),
+  });
+}
+
+// --- Logos d'équipes du Fan-Club (retour utilisateur du 2026-09-28 : "Fan-Club: Vereins-Logos
+// anzeigen + Upload-Möglichkeit") --- Liste ouverte à tout visiteur (voir ClassementTab.tsx/
+// CalendrierTab.tsx/NextMatchTile.tsx), upload/suppression réservés au Bureau Admin+ (voir
+// AdminFanClubLogosPage.tsx).
+
+export function useEquipesLogos() {
+  return useQuery({
+    queryKey: communauteKeys.equipeLogos(),
+    queryFn: () => communauteApi.listEquipesLogos(),
+  });
+}
+
+export function useEnregistrerEquipeLogo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ equipe, logo }: { equipe: string; logo: File }) =>
+      communauteApi.enregistrerEquipeLogo(equipe, logo),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: communauteKeys.equipeLogos() }),
+  });
+}
+
+export function useSupprimerEquipeLogo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => communauteApi.supprimerEquipeLogo(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: communauteKeys.equipeLogos() }),
   });
 }

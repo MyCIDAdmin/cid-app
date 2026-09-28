@@ -13,6 +13,7 @@ from apps.communaute.models import (
     Commentaire,
     Conversation,
     EquipeEvenement,
+    EquipeLogo,
     GroupeChat,
     Match,
     MatchCommentaire,
@@ -301,6 +302,14 @@ class ClassementLigueFactory(DjangoModelFactory):
     difference = 7
     points = 18
     forme_recente = "VVNDV"
+
+
+class EquipeLogoFactory(DjangoModelFactory):
+    class Meta:
+        model = EquipeLogo
+
+    equipe = factory.Sequence(lambda n: f"Équipe {n}")
+    logo = factory.django.ImageField(color="red", format="PNG")
 
 
 class RencontreCalendrierFactory(DjangoModelFactory):

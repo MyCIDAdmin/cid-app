@@ -294,6 +294,21 @@
     "confirmer_suppression": "Supprimer cet album et toutes ses photos ?",
     "erreur_enregistrement": "Impossible d'enregistrer l'album."
   },
+  "admin_fan_club_logos": {
+    "titre": "Logos des clubs",
+    "description": "Téléversez un logo pour un club afin qu'il apparaisse à côté de son nom dans le classement, le calendrier et la kachel « Prochain match ». Le nom du club doit correspondre EXACTEMENT à l'orthographe affichée dans le classement/calendrier.",
+    "champ_equipe": "Nom du club",
+    "champ_equipe_placeholder": "Exactement comme dans le classement/calendrier",
+    "champ_logo": "Fichier du logo",
+    "televerser": "Téléverser",
+    "televersement_en_cours": "Téléversement…",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les logos.",
+    "aucun_logo": "Aucun logo téléversé pour le moment.",
+    "supprimer": "Retirer",
+    "erreur_enregistrement": "Impossible d'enregistrer le logo.",
+    "erreur_suppression": "Impossible de retirer le logo."
+  },
   "tippspiel": {
     "titre": "Pronostics",
     "chargement": "Chargement…",

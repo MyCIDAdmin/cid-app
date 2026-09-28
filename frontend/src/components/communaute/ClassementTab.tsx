@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 
 import { useClassementLigue } from "../../hooks/useCommunaute";
 import type { ClassementLigue } from "../../types/communaute";
+import EquipeLogoImage from "./EquipeLogoImage";
 
 type Vue = "ensemble" | "domicile" | "exterieur";
 
@@ -126,12 +127,15 @@ export default function ClassementTab() {
               >
                 <td className="px-3 py-2">{ligne.rang}</td>
                 <td className="px-3 py-2">
-                  {ligne.equipe}
-                  {ligne.zone_texte && (
-                    <span className="ml-1.5 text-[10px] font-normal text-text-tertiary">
-                      {ligne.zone_texte}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1.5">
+                    <EquipeLogoImage equipe={ligne.equipe} />
+                    {ligne.equipe}
+                    {ligne.zone_texte && (
+                      <span className="text-[10px] font-normal text-text-tertiary">
+                        {ligne.zone_texte}
+                      </span>
+                    )}
+                  </span>
                 </td>
                 <td className="px-2 py-2 text-center tabular-nums">{stats.joues}</td>
                 <td className="px-2 py-2 text-center tabular-nums">{stats.victoires}</td>

@@ -18,6 +18,7 @@ from .models import (
     ConfigurationSitePublic,
     Conversation,
     EquipeInfo,
+    EquipeLogo,
     GroupeChat,
     Match,
     MatchCommentaire,
@@ -1179,3 +1180,22 @@ class ConfigurationSitePublicSerializer(serializers.ModelSerializer):
 
     def validate_video_hero(self, video):
         return valider_video_hero(video)
+
+
+class EquipeLogoSerializer(serializers.ModelSerializer):
+    """`equipe` est le seul champ modifiable par le client en plus du fichier — `modifie_par`
+    est résolu par la vue (utilisateur courant), jamais par le client, même principe que
+    ConfigurationSitePublicSerializer ci-dessus. Voir EquipeLogoViewSet.create pour l'upsert
+    par nom d'équipe (un upload pour un nom déjà présent remplace le logo existant) : le
+    validateur d'unicité automatique de DRF sur `equipe` (dérivé de `unique=True` côté
+    modèle) est désactivé ci-dessous (`extra_kwargs`), sans quoi un second upload pour un
+    nom déjà présent échouerait en 400 AVANT d'atteindre la logique d'upsert de la vue."""
+
+    class Meta:
+        model = EquipeLogo
+        fields = ["id", "equipe", "logo", "modifie_par", "updated_at"]
+        read_only_fields = ["id", "modifie_par", "updated_at"]
+        extra_kwargs = {"equipe": {"validators": []}}
+
+    def validate_logo(self, image):
+        return valider_et_reencoder_photo(image)
