@@ -18,6 +18,7 @@ from apps.communaute.models import (
     Commentaire,
     Conversation,
     EquipeInfo,
+    EquipeLogo,
     MembreGroupe,
     MessageGroupe,
     MessageGroupeLike,
@@ -30,6 +31,7 @@ from apps.communaute.tests.factories import (
     ClassementLigueFactory,
     CommentaireFactory,
     ConversationFactory,
+    EquipeLogoFactory,
     GroupeChatFactory,
     MatchCommentaireFactory,
     MatchEvenementFactory,
@@ -1123,6 +1125,7 @@ CLASSEMENT_LIST_URL = "communaute:classement-list"
 CALENDRIER_LIST_URL = "communaute:calendrier-list"
 STATISTIQUE_JOUEUR_LIST_URL = "communaute:statistique-joueur-list"
 EQUIPE_INFO_LIST_URL = "communaute:equipe-info-list"
+EQUIPE_LOGO_LIST_URL = "communaute:equipe-logo-list"
 MATCH_EVENEMENT_LIST_URL = "communaute:match-evenement-list"
 
 
@@ -1149,6 +1152,98 @@ def test_rencontre_calendrier_non_authentifie_autorise(api_client):
     """Même changement que ClassementLigueViewSet ci-dessus (AllowAny, 2026-09-26)."""
     resp = api_client.get(reverse(CALENDRIER_LIST_URL))
     assert resp.status_code == 200
+
+
+# --- Logos d'équipes du Fan-Club (retour utilisateur du 2026-09-28 : "Fan-Club:
+# Vereins-Logos anzeigen + Upload-Möglichkeit") -----------------------------------------
+
+
+def test_equipe_logos_liste_non_authentifie_autorise(api_client):
+    """Même raisonnement que ClassementLigueViewSet/RencontreCalendrierViewSet ci-dessus —
+    les logos apparaissent sur la Startseite publique (widget "Club Africain Live")."""
+    EquipeLogoFactory(equipe="Espérance de Tunis")
+    resp = api_client.get(reverse(EQUIPE_LOGO_LIST_URL))
+    assert resp.status_code == 200
+    assert resp.data[0]["equipe"] == "Espérance de Tunis"
+
+
+def test_equipe_logos_upload_refuse_si_non_authentifie(api_client):
+    resp = api_client.post(
+        reverse(EQUIPE_LOGO_LIST_URL),
+        {"equipe": "Espérance de Tunis", "logo": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 401
+
+
+def test_equipe_logos_upload_refuse_a_un_simple_membre(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "fclogo1@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(EQUIPE_LOGO_LIST_URL),
+        {"equipe": "Espérance de Tunis", "logo": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 403
+
+
+def test_equipe_logos_upload_par_bureau_admin(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fclogo2@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(EQUIPE_LOGO_LIST_URL),
+        {"equipe": "Espérance de Tunis", "logo": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 201
+    assert resp.data["equipe"] == "Espérance de Tunis"
+    assert EquipeLogo.objects.filter(equipe="Espérance de Tunis").exists()
+
+
+def test_equipe_logos_upload_remplace_le_logo_existant_du_meme_nom(api_client):
+    # Upsert par nom d'équipe (voir docstring EquipeLogoViewSet.create) : un second upload
+    # pour le même nom remplace le premier plutôt que de créer un doublon.
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fclogo3@example.de")
+    EquipeLogoFactory(equipe="Espérance de Tunis")
+    assert EquipeLogo.objects.filter(equipe="Espérance de Tunis").count() == 1
+
+    resp = _auth(api_client, user).post(
+        reverse(EQUIPE_LOGO_LIST_URL),
+        {"equipe": "Espérance de Tunis", "logo": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 201
+    assert EquipeLogo.objects.filter(equipe="Espérance de Tunis").count() == 1
+
+
+def test_equipe_logos_upload_rejette_fichier_non_image(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fclogo4@example.de")
+    faux_fichier = SimpleUploadedFile("logo.jpg", b"ceci n'est pas une image", "image/jpeg")
+    resp = _auth(api_client, user).post(
+        reverse(EQUIPE_LOGO_LIST_URL),
+        {"equipe": "Espérance de Tunis", "logo": faux_fichier},
+        format="multipart",
+    )
+    assert resp.status_code == 400
+    assert "logo" in resp.data["details"]
+
+
+def test_equipe_logos_suppression_reservee_au_bureau_admin(api_client):
+    membre_user, _ = _user_avec_membre(Role.MEMBRE, "fclogo5@example.de")
+    logo = EquipeLogoFactory(equipe="Espérance de Tunis")
+    resp = _auth(api_client, membre_user).delete(
+        reverse("communaute:equipe-logo-detail", args=[logo.id])
+    )
+    assert resp.status_code == 403
+    assert EquipeLogo.objects.filter(id=logo.id).exists()
+
+
+def test_equipe_logos_suppression_par_bureau_admin(api_client):
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fclogo6@example.de")
+    logo = EquipeLogoFactory(equipe="Espérance de Tunis")
+    resp = _auth(api_client, admin_user).delete(
+        reverse("communaute:equipe-logo-detail", args=[logo.id])
+    )
+    assert resp.status_code == 204
+    assert not EquipeLogo.objects.filter(id=logo.id).exists()
 
 
 def test_liste_albums_non_authentifie_autorise(api_client):

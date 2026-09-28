@@ -4,6 +4,7 @@ import AppLayout from "./components/layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
 import AdminConfigurationSitePage from "./pages/admin/AdminConfigurationSitePage";
+import AdminFanClubLogosPage from "./pages/admin/AdminFanClubLogosPage";
 import ArticlesCatalogueCotisationPage from "./pages/admin/ArticlesCatalogueCotisationPage";
 import GestionRolesPage from "./pages/admin/GestionRolesPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
@@ -198,6 +199,17 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
               <AdminConfigurationSitePage />
+            </RequireRole>
+          }
+        />
+        {/* Logos d'équipes du Fan-Club (retour utilisateur du 2026-09-28 : "Fan-Club:
+            Vereins-Logos anzeigen + Upload-Möglichkeit") — même raisonnement que
+            /admin/configuration-site ci-dessus (minRoleLevel direct, hors matrice apps.rbac). */}
+        <Route
+          path="/admin/fan-club-logos"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <AdminFanClubLogosPage />
             </RequireRole>
           }
         />

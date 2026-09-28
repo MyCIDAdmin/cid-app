@@ -8,8 +8,18 @@ import ClassementTab from "./ClassementTab";
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
-  return { ...actual, useClassementLigue: vi.fn() };
+  return { ...actual, useClassementLigue: vi.fn(), useEquipesLogos: vi.fn() };
 });
+
+// EquipeLogoImage (voir docstring de tête ClassementTab.tsx, retour utilisateur du
+// 2026-09-28 "Fan-Club: Vereins-Logos anzeigen + Upload-Möglichkeit") appelle
+// useEquipesLogos() en interne — mocké ici en liste vide pour ne dépendre d'aucun réseau ;
+// son propre affichage (logo présent/absent) est couvert par EquipeLogoImage.test.tsx.
+vi.mocked(useCommunauteHooks.useEquipesLogos).mockReturnValue({
+  data: [],
+  isLoading: false,
+  isError: false,
+} as unknown as ReturnType<typeof useCommunauteHooks.useEquipesLogos>);
 
 function page<T>(results: T[]) {
   return { count: results.length, next: null, previous: null, results };

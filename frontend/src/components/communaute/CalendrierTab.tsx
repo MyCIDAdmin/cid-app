@@ -30,6 +30,7 @@ import { useTranslation } from "react-i18next";
 
 import { useCalendrierRencontres } from "../../hooks/useCommunaute";
 import type { RencontreCalendrier } from "../../types/communaute";
+import EquipeLogoImage from "./EquipeLogoImage";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
@@ -81,8 +82,12 @@ function RencontreLigne({ rencontre }: { rencontre: RencontreCalendrier }) {
   return (
     <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-bold text-text-primary">
-          {rencontre.equipe_domicile} — {rencontre.equipe_exterieur}
+        <span className="flex min-w-0 items-center gap-1.5 text-sm font-bold text-text-primary">
+          <EquipeLogoImage equipe={rencontre.equipe_domicile} />
+          <span className="truncate">
+            {rencontre.equipe_domicile} — {rencontre.equipe_exterieur}
+          </span>
+          <EquipeLogoImage equipe={rencontre.equipe_exterieur} />
         </span>
         <div className="flex shrink-0 items-center gap-2">
           {labelStatut && (

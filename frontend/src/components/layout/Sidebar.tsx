@@ -73,6 +73,7 @@ import {
   IconPhoto,
   IconPhotoEdit,
   IconSettings,
+  IconShirtSport,
   IconShoppingBag,
   IconTag,
   IconTargetArrow,
@@ -306,6 +307,17 @@ export const NAV_ITEMS: NavItem[] = [
     to: "/admin/configuration-site",
     labelKey: "nav.configuration_site",
     icon: IconVideo,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.bureau_admin,
+  },
+  // Logos d'équipes du Fan-Club (retour utilisateur du 2026-09-28 : "Fan-Club: Vereins-Logos
+  // anzeigen + Upload-Möglichkeit") — même raisonnement que /admin/configuration-site
+  // ci-dessus (minRoleLevel direct, hors matrice apps.rbac : réglage ponctuel, pas une page
+  // nommée dans PAGES_ADMIN).
+  {
+    to: "/admin/fan-club-logos",
+    labelKey: "nav.fan_club_logos",
+    icon: IconShirtSport,
     group: "administration",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },

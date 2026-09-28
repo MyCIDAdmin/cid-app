@@ -8,8 +8,17 @@ import NextMatchTile from "./NextMatchTile";
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
-  return { ...actual, useCalendrierRencontres: vi.fn() };
+  return { ...actual, useCalendrierRencontres: vi.fn(), useEquipesLogos: vi.fn() };
 });
+
+// EquipeLogoImage (retour utilisateur du 2026-09-28 "Fan-Club: Vereins-Logos anzeigen +
+// Upload-Möglichkeit") appelle useEquipesLogos() en interne — mocké ici en liste vide pour
+// ne dépendre d'aucun réseau ; son propre affichage est couvert par EquipeLogoImage.test.tsx.
+vi.mocked(useCommunauteHooks.useEquipesLogos).mockReturnValue({
+  data: [],
+  isLoading: false,
+  isError: false,
+} as unknown as ReturnType<typeof useCommunauteHooks.useEquipesLogos>);
 
 function rencontre(overrides: Partial<RencontreCalendrier>): RencontreCalendrier {
   return {

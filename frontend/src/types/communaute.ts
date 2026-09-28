@@ -357,6 +357,21 @@ export interface EquipeInfo {
   maj_le: string;
 }
 
+/** Logo d'un club affiché à côté de son nom dans le Tableau/Spielplan/kachel "Nächstes
+ * Spiel" du module Fan-Club (retour utilisateur du 2026-09-28 : "Fan-Club: Vereins-Logos
+ * anzeigen + Upload-Möglichkeit") — voir apps.communaute.models.EquipeLogo. `equipe` est le
+ * nom EXACT tel que synchronisé par GOAL API (ClassementLigue.equipe/
+ * RencontreCalendrier.equipe_domicile/equipe_exterieur), utilisé comme clé de
+ * correspondance côté frontend (voir useEquipesLogos()). Pas de pagination (liste brute,
+ * voir EquipeLogoViewSet.pagination_class = None côté backend). */
+export interface EquipeLogo {
+  id: number;
+  equipe: string;
+  logo: string;
+  modifie_par: string | null;
+  updated_at: string;
+}
+
 export type TypeEvenementMatch =
   | "coup_envoi"
   | "but"

@@ -67,6 +67,7 @@ from .models import (
     ConfigurationSitePublic,
     Conversation,
     EquipeInfo,
+    EquipeLogo,
     GroupeChat,
     Match,
     MatchCommentaire,
@@ -105,6 +106,7 @@ from .permissions import (
     ConfigurationSitePublicPermission,
     ContenuCommunautePermission,
     ConversationPermission,
+    EquipeLogoPermission,
     GestionQuizPermission,
     GroupeChatPermission,
     MatchCommentairePermission,
@@ -128,6 +130,7 @@ from .serializers import (
     ConfigurationSitePublicSerializer,
     ConversationSerializer,
     EquipeInfoSerializer,
+    EquipeLogoSerializer,
     GroupeChatSerializer,
     MatchCommentaireSerializer,
     MatchEvenementSerializer,
@@ -1005,6 +1008,46 @@ class EquipeInfoViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def list(self, request, *args, **kwargs):
         info, _cree = EquipeInfo.objects.get_or_create(pk=EquipeInfo.PK_UNIQUE)
         return Response(self.get_serializer(info).data)
+
+
+class EquipeLogoViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Logos d'équipes du Fan-Club — voir docstring de tête models.EquipeLogo (retour
+    utilisateur du 2026-09-28 : "Fan-Club: Vereins-Logos anzeigen + Upload-Möglichkeit").
+
+    GET (list) ouvert à AllowAny — même widget "Club Africain Live" que ClassementLigueViewSet/
+    RencontreCalendrierViewSet ci-dessus. Pas de pagination (une poignée de clubs tout au plus,
+    jamais 20+) : `list()` renvoie un tableau brut plutôt qu'une page curseur, plus simple à
+    consommer côté frontend (un lookup `equipe -> logo`, voir useEquipesLogos.ts).
+
+    POST (create) réservé au Bureau Admin+ (EquipeLogoPermission) et fait un UPSERT par nom
+    d'équipe plutôt qu'un create strict : un upload pour un nom déjà présent remplace le logo
+    existant (`update_or_create`), pour que l'admin n'ait jamais besoin de connaître/retrouver
+    l'ID d'un logo existant pour le remplacer — juste retaper le même nom d'équipe.
+
+    DELETE (destroy) réservé au Bureau Admin+, pour retirer un logo obsolète/erroné."""
+
+    serializer_class = EquipeLogoSerializer
+    permission_classes = [EquipeLogoPermission]
+    queryset = EquipeLogo.objects.all()
+    pagination_class = None
+    parser_classes = [MultiPartParser, FormParser]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance, _cree = EquipeLogo.objects.update_or_create(
+            equipe=serializer.validated_data["equipe"],
+            defaults={
+                "logo": serializer.validated_data["logo"],
+                "modifie_par": getattr(request.user, "membre", None),
+            },
+        )
+        return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED)
 
 
 class MatchEvenementViewSet(

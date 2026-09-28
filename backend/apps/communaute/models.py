@@ -1626,3 +1626,56 @@ class ConfigurationSitePublic(models.Model):
         données nécessaire pour un environnement déjà en production)."""
         obj, _created = cls.objects.get_or_create(pk=1)
         return obj
+
+
+def equipe_logo_upload_path(instance, filename):
+    return f"fan-club/logos/{filename}"
+
+
+class EquipeLogo(models.Model):
+    """Logo d'un club affiché à côté de son nom dans le module Fan-Club — Tabelle
+    (ClassementTab.tsx), Spielplan (CalendrierTab.tsx) et la kachel "Nächstes Spiel"
+    (NextMatchTile.tsx) — voir retour utilisateur du 2026-09-28 : "Fan-Club: Vereins-Logos
+    anzeigen + Upload-Möglichkeit".
+
+    GOAL API ne fournit un logo que pour Club Africain lui-même (`EquipeInfo.logo_url`,
+    synchronisé automatiquement, voir services.py) — jamais pour les adversaires, dont les
+    noms proviennent en texte libre de `ClassementLigue.equipe`/
+    `RencontreCalendrier.equipe_domicile`/`equipe_exterieur` (aucune clé étrangère vers un
+    modèle "club" côté GOAL API, voir docstrings de tête de ces deux modèles). Ce modèle
+    comble ce manque : un logo est associé à un nom d'équipe EXACT (même chaîne que celle
+    synchronisée par GOAL API), uploadé manuellement par un Bureau Admin+ (voir
+    EquipeLogoPermission) — aucune synchronisation automatique, aucun lien de clé
+    étrangère vers ClassementLigue/RencontreCalendrier (le nom seul suffit à faire la
+    correspondance côté frontend, voir hooks/useEquipesLogos.ts).
+
+    `equipe` est unique : `EquipeLogoViewSet.create` fait un upsert (upload d'un logo pour
+    un nom déjà présent = remplacement), jamais de doublon.
+
+    Même bucket MinIO public ("cid-media", PublicationsStorage) et même validation upload
+    (`valider_et_reencoder_photo`) que Photo/ConfigurationSitePublic ci-dessus — logos
+    publics par nature (déjà visibles sur la Startseite publique, widget "Club Africain
+    Live")."""
+
+    id = models.AutoField(primary_key=True)
+    equipe = models.CharField(max_length=200, unique=True)
+    logo = models.ImageField(upload_to=equipe_logo_upload_path, storage=PublicationsStorage())
+
+    modifie_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Bureau Admin+ ayant téléversé/remplacé ce logo en dernier."),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_equipe_logo"
+        verbose_name = _("Logo d'équipe (Fan-Club)")
+        verbose_name_plural = _("Logos d'équipes (Fan-Club)")
+        ordering = ["equipe"]
+
+    def __str__(self):
+        return self.equipe
