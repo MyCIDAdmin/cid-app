@@ -4,6 +4,9 @@
  *   1. Hero (bannière + CTA "Mitglied werden" → /mon-adhesion ; PAS de boutons "Projekte"/
  *      "Veranstaltungen", déjà des onglets de la nav, voir docstring PublicTopNav.tsx) — fond
  *      vidéo optionnel depuis le 2026-09-27 (Phase 5 "Startseite Hero-Video", voir HeroVideo.tsx)
+ *   1bis. Kachel "Nächstes Spiel" (retour utilisateur du 2026-09-28 :
+ *      "Nächstes-Spiel-Highlight-Kachel auf der Startseite") — voir NextMatchTile.tsx,
+ *      n'affiche rien tant qu'aucune rencontre à venir n'est connue.
  *   2. Kennzahlen (Donateurs/Collecté/Projets)
  *   3. Fan-Club (classement + calendrier, réutilisation pure du module existant)
  * Le point "Aktives Projekt" du mockup mycid.org n'est PAS repris ici (décision utilisateur
@@ -25,6 +28,7 @@ import { Link } from "react-router-dom";
 import FanClubPreview from "./FanClubPreview";
 import HeroVideo from "./HeroVideo";
 import KennzahlenBar from "./KennzahlenBar";
+import NextMatchTile from "./NextMatchTile";
 import { useConfigurationSitePublic } from "../../hooks/useCommunaute";
 
 export default function AccueilTab() {
@@ -73,6 +77,7 @@ export default function AccueilTab() {
         </div>
       </div>
 
+      <NextMatchTile />
       <KennzahlenBar />
       <FanClubPreview />
     </div>
