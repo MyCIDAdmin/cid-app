@@ -40,6 +40,12 @@
     "onglet_classement": "Classement",
     "onglet_calendrier": "Calendrier"
   },
+  "nextMatch": {
+    "titre": "Prochain match",
+    "aujourdhui": "Aujourd'hui",
+    "demain": "Demain",
+    "dans_x_jours": "Dans {{count}} jour(s)"
+  },
   "evenements_public": {
     "titre": "Événements",
     "sous_titre": "Découvrez nos prochaines rencontres, voyages et fêtes — et retrouvez ce que vous avez déjà réservé.",

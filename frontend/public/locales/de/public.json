@@ -40,6 +40,12 @@
     "onglet_classement": "Tabelle",
     "onglet_calendrier": "Spielplan"
   },
+  "nextMatch": {
+    "titre": "Nächstes Spiel",
+    "aujourdhui": "Heute",
+    "demain": "Morgen",
+    "dans_x_jours": "In {{count}} Tag(en)"
+  },
   "evenements_public": {
     "titre": "Veranstaltungen",
     "sous_titre": "Entdecke unsere kommenden Treffen, Reisen und Feiern — und sieh, was du bereits gebucht hast.",
