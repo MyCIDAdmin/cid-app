@@ -1,3 +1,5 @@
+import typography from "@tailwindcss/typography";
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
@@ -94,7 +96,43 @@ export default {
         "scale-in": "scale-in 0.35s ease-out both",
         "badge-pulse": "badge-pulse 2s ease-in-out infinite",
       },
+      // Ajouté avec @tailwindcss/typography ci-dessous (2026-09-28) — sans ce surcharge, `prose`
+      // impose sa propre échelle de gris (--tw-prose-body etc.) qui aurait ignoré les couleurs de
+      // thème CID (text-text-primary/secondary, variables CSS définies dans index.css) et cassé
+      // le mode sombre pour tout contenu HTML riche (éditeur + rendu en lecture seule). `inherit`
+      // partout : le texte suit la couleur déjà posée par le composant appelant (voir
+      // RichTextEditor.tsx `class="... text-text-primary ..."`), seules les puces/numéros/
+      // espacements/typo viennent désormais du plugin.
+      typography: {
+        DEFAULT: {
+          css: {
+            "--tw-prose-body": "inherit",
+            "--tw-prose-headings": "inherit",
+            "--tw-prose-lead": "inherit",
+            "--tw-prose-links": "inherit",
+            "--tw-prose-bold": "inherit",
+            "--tw-prose-counters": "inherit",
+            "--tw-prose-bullets": "currentColor",
+            "--tw-prose-hr": "currentColor",
+            "--tw-prose-quotes": "inherit",
+            "--tw-prose-quote-borders": "currentColor",
+            "--tw-prose-captions": "inherit",
+            "--tw-prose-code": "inherit",
+            color: "inherit",
+            maxWidth: "none",
+          },
+        },
+      },
     },
   },
-  plugins: [],
+  // @tailwindcss/typography ajouté le 2026-09-28 (retour utilisateur : "Numerierung und Bullet
+  // points im Word like editor funktionieren nicht") — les classes `prose`/`prose-sm` utilisées
+  // par RichTextEditor.tsx (et le rendu HTML riche partout ailleurs : ProjetDetailPage,
+  // RapportListe, kacheln Événements/Projets) supposaient déjà ce plugin sans qu'il soit installé
+  // : Tailwind preflight retire `list-style`/marge/padding par défaut sur ul/ol/li, donc sans les
+  // règles `.prose ul`/`.prose ol` du plugin, les listes à puces/numérotées de l'éditeur (et de
+  // tout contenu HTML riche affiché en lecture seule) n'affichaient tout simplement plus aucune
+  // puce/numéro — le bouton de la barre d'outils fonctionnait bien (voir toggleBulletList/
+  // toggleOrderedList dans RichTextEditor.tsx), seul le rendu visuel manquait.
+  plugins: [typography],
 };

@@ -5,23 +5,26 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import PublicFooter from "./PublicFooter";
 
 describe("PublicFooter", () => {
-  it("affiche les liens légaux vers mycid.org", () => {
+  // Devenus des routes internes le 2026-09-28 (retour utilisateur, points 3.1-3.4 : nachbau des
+  // pages mycid.org/{impressum,privacy,terms,refund-policy} dans l'app elle-même, voir
+  // pages/public/legal/) — plus de liens externes vers mycid.org.
+  it("affiche les liens légaux vers les pages internes", () => {
     renderWithProviders(<PublicFooter />);
     expect(screen.getByText("footer.impressum").closest("a")).toHaveAttribute(
       "href",
-      "https://www.mycid.org/impressum",
+      "/impressum",
     );
     expect(screen.getByText("footer.datenschutz").closest("a")).toHaveAttribute(
       "href",
-      "https://www.mycid.org/privacy",
+      "/datenschutz",
     );
     expect(screen.getByText("footer.agb").closest("a")).toHaveAttribute(
       "href",
-      "https://www.mycid.org/terms",
+      "/nutzungsbedingungen",
     );
     expect(screen.getByText("footer.erstattung").closest("a")).toHaveAttribute(
       "href",
-      "https://www.mycid.org/refund-policy",
+      "/erstattungsrichtlinie",
     );
   });
 
@@ -57,10 +60,7 @@ describe("PublicFooter", () => {
   // scrollbar ajoutée dans l'app connectée) — même contenu, disposition dense en une seule ligne.
   it("variante compact : garde tous les liens mais en une seule ligne dense", () => {
     renderWithProviders(<PublicFooter compact />);
-    expect(screen.getByText("footer.impressum").closest("a")).toHaveAttribute(
-      "href",
-      "https://www.mycid.org/impressum",
-    );
+    expect(screen.getByText("footer.impressum").closest("a")).toHaveAttribute("href", "/impressum");
     expect(screen.getByText("info@clubistesindeutschland.org")).toHaveAttribute(
       "href",
       "mailto:info@clubistesindeutschland.org",

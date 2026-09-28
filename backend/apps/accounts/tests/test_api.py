@@ -337,6 +337,34 @@ def test_register_attribue_automatiquement_le_role_rbac_membre(api_client):
     assert UserRoleAssignment.objects.filter(user=user, role=role_membre).exists()
 
 
+def test_register_sans_cin_ni_passeport_echoue(api_client):
+    """Retour utilisateur du 2026-09-28 (point 5) : "Ausweisnummer (CIN) kein Pflichtfeld [...]
+    aber entweder CIN oder Passnummer erforderlich" — voir RegisterSerializer.validate."""
+    url = reverse("accounts:register")
+    payload = payload_inscription()
+    del payload["cin"]
+    resp = api_client.post(url, payload, format="json")
+    assert resp.status_code == 400
+    assert "cin" in resp.data["details"]
+
+
+def test_register_avec_uniquement_passeport_reussit(api_client):
+    """Symétrique du test précédent : le CIN seul n'est plus requis dès lors que le passeport est
+    fourni — voir docstring RegisterSerializer.cin."""
+    from apps.membres.models import Membre
+
+    url = reverse("accounts:register")
+    payload = payload_inscription()
+    del payload["cin"]
+    payload["passeport"] = "P1234567"
+    resp = api_client.post(url, payload, format="json")
+    assert resp.status_code == 201
+
+    membre = Membre.objects.get(user__email="nouveau@example.com")
+    assert not membre.cin
+    assert membre.passeport == "P1234567"
+
+
 def test_register_without_rgpd_consent_fails(api_client):
     url = reverse("accounts:register")
     resp = api_client.post(

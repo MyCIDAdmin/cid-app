@@ -33,7 +33,7 @@ export interface Membre {
   sexe: Sexe;
   email: string;
   telephone: string;
-  cin: string;
+  cin: string | null;
   passeport: string | null;
   pays: Pays;
   adresse_de: string;
@@ -57,7 +57,7 @@ export interface MembreFormValues {
   sexe: Sexe;
   email: string;
   telephone: string;
-  cin: string;
+  cin?: string;
   passeport?: string;
   pays: Pays;
   adresse_de?: string;

@@ -114,6 +114,7 @@
     "titre_creer": "Mitglied hinzufügen",
     "titre_modifier": "Mitglied bearbeiten",
     "champ_requis": "Dieses Feld ist erforderlich.",
+    "erreur_cin_ou_passeport": "Ausweisnummer (CIN) oder Passnummer ist erforderlich.",
     "erreur_email": "Ungültige E-Mail-Adresse.",
     "erreur_soumission": "Beim Speichern ist ein Fehler aufgetreten.",
     "annuler": "Abbrechen",

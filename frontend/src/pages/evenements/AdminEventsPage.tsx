@@ -425,10 +425,23 @@ export default function AdminEventsPage() {
   const [erreurAction, setErreurAction] = useState("");
   // Téléversement de l'image de kachel (demande utilisateur 2026-09-27, point 11.1) — même
   // principe que GestionCatalogueTab.tsx (boutique) : bouton par ligne, ref map par id.
+  //
+  // Étape d'aperçu + confirmation ajoutée le 2026-09-28 (retour utilisateur : "Kein Button zur
+  // Bestätigung des Hochladen des Bildes") — jusqu'ici le fichier choisi dans le sélecteur natif
+  // partait immédiatement en upload sur `onChange`, sans aperçu ni bouton dédié : le clic "OK" de
+  // la boîte de dialogue du système servait de seule confirmation, invisible pour l'utilisateur
+  // une fois revenu sur la page. `imageEnAttente` retient maintenant le fichier choisi (+ une URL
+  // d'aperçu via URL.createObjectURL) sans rien envoyer au serveur tant que l'utilisateur n'a pas
+  // cliqué "Bestätigen" ci-dessous (confirmerImage) — "Abbrechen" annule sans upload.
   const [evenementImageEnCours, setEvenementImageEnCours] = useState<string | null>(null);
   const [evenementImageErreur, setEvenementImageErreur] = useState<{
     evenementId: string;
     message: string;
+  } | null>(null);
+  const [imageEnAttente, setImageEnAttente] = useState<{
+    evenementId: string;
+    fichier: File;
+    previewUrl: string;
   } | null>(null);
   const inputsFichierImage = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -436,17 +449,38 @@ export default function AdminEventsPage() {
     const fichier = e.target.files?.[0];
     e.target.value = "";
     if (!fichier || !modifiable) return;
-    setEvenementImageEnCours(evenement.id);
+    setEvenementImageErreur(null);
+    setImageEnAttente((precedent) => {
+      if (precedent) URL.revokeObjectURL(precedent.previewUrl);
+      return { evenementId: evenement.id, fichier, previewUrl: URL.createObjectURL(fichier) };
+    });
+  }
+
+  function annulerImageEnAttente() {
+    setImageEnAttente((precedent) => {
+      if (precedent) URL.revokeObjectURL(precedent.previewUrl);
+      return null;
+    });
+  }
+
+  function confirmerImageEnAttente() {
+    if (!imageEnAttente) return;
+    const { evenementId, fichier, previewUrl } = imageEnAttente;
+    setEvenementImageEnCours(evenementId);
     setEvenementImageErreur(null);
     televerserImageMutation.mutate(
-      { id: evenement.id, fichier },
+      { id: evenementId, fichier },
       {
         onError: (err) =>
           setEvenementImageErreur({
-            evenementId: evenement.id,
+            evenementId,
             message: extractApiErrorMessage(err, t("admin.image_erreur")),
           }),
-        onSettled: () => setEvenementImageEnCours(null),
+        onSettled: () => {
+          setEvenementImageEnCours(null);
+          URL.revokeObjectURL(previewUrl);
+          setImageEnAttente(null);
+        },
       },
     );
   }
@@ -525,7 +559,18 @@ export default function AdminEventsPage() {
         {evenementsQuery.data?.results.map((evenement) => (
           <div key={evenement.id} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex items-center gap-3">
+                {/* Miniature de l'image actuelle (retour utilisateur du 2026-09-28) — permet de
+                    vérifier qu'un envoi précédent a bien été pris en compte, sans devoir rouvrir
+                    la Startseite publique pour le savoir. */}
+                {evenement.image && (
+                  <img
+                    src={evenement.image}
+                    alt=""
+                    className="h-10 w-14 shrink-0 rounded-cid object-cover"
+                  />
+                )}
+                <div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-text-primary">{evenement.titre}</span>
                   <span
@@ -546,6 +591,7 @@ export default function AdminEventsPage() {
                     reservees: evenement.places_reservees,
                     max: evenement.places_max ?? "∞",
                   })}
+                </div>
                 </div>
               </div>
               <div className="flex shrink-0 gap-2">
@@ -602,6 +648,36 @@ export default function AdminEventsPage() {
                 )}
               </div>
             </div>
+            {imageEnAttente?.evenementId === evenement.id && (
+              <div className="mt-2 flex items-center gap-3 rounded-cid border border-text-tertiary/20 bg-bg-secondary p-2">
+                <img
+                  src={imageEnAttente.previewUrl}
+                  alt={t("admin.image_apercu_alt") ?? ""}
+                  className="h-12 w-16 shrink-0 rounded-cid object-cover"
+                />
+                <p className="flex-1 truncate text-xs text-text-secondary">
+                  {imageEnAttente.fichier.name}
+                </p>
+                <button
+                  type="button"
+                  onClick={annulerImageEnAttente}
+                  disabled={evenementImageEnCours === evenement.id}
+                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
+                >
+                  {t("admin.image_annuler")}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmerImageEnAttente}
+                  disabled={evenementImageEnCours === evenement.id}
+                  className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
+                >
+                  {evenementImageEnCours === evenement.id
+                    ? t("admin.image_en_cours")
+                    : t("admin.image_confirmer")}
+                </button>
+              </div>
+            )}
             {evenementImageErreur?.evenementId === evenement.id && (
               <p className="mt-2 text-xs text-status-dangerText">{evenementImageErreur.message}</p>
             )}

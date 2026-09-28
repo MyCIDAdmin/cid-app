@@ -32,7 +32,7 @@ const registerSchema = z
     nom: z.string().min(1),
     date_naissance: z.string().min(1),
     sexe: z.enum(["homme", "femme", "non_renseigne"]),
-    cin: z.string().min(1),
+    cin: z.string().optional(),
     passeport: z.string().optional(),
     email: z.string().min(1).email(),
     telephone: z.string().min(1),
@@ -50,6 +50,15 @@ const registerSchema = z
   .refine((values) => values.password === values.confirmPassword, {
     path: ["confirmPassword"],
     message: "mismatch",
+  })
+  // Retour utilisateur du 2026-09-28 (point 5) : "Ausweisnummer (CIN) kein Pflichtfeld [...]
+  // aber entweder CIN oder Passnummer erforderlich" — ni l'un ni l'autre n'est requis isolément,
+  // mais au moins un des deux doit être rempli. Même règle imposée côté backend
+  // (RegisterSerializer.validate, voir accounts/serializers.py) : le frontend ne fait
+  // qu'anticiper l'erreur serveur pour un retour immédiat.
+  .refine((values) => Boolean(values.cin?.trim()) || Boolean(values.passeport?.trim()), {
+    path: ["cin"],
+    message: "cin_ou_passeport_requis",
   });
 
 type FormValues = z.infer<typeof registerSchema>;
@@ -154,7 +163,7 @@ export default function RegisterPage() {
         nom: values.nom,
         date_naissance: values.date_naissance,
         sexe: values.sexe,
-        cin: values.cin,
+        cin: values.cin || undefined,
         passeport: values.passeport || undefined,
         telephone: values.telephone,
         adresse_de: values.adresse_de,
@@ -307,8 +316,12 @@ export default function RegisterPage() {
                 <Champ
                   label={t("register.cin")}
                   htmlFor="cin"
-                  requis
-                  erreur={errors.cin && t("register.error_champ_requis")}
+                  erreur={
+                    errors.cin &&
+                    (errors.cin.message === "cin_ou_passeport_requis"
+                      ? t("register.error_cin_ou_passeport_requis")
+                      : t("register.error_champ_requis"))
+                  }
                 >
                   <input id="cin" {...register("cin")} className={champClasses} />
                 </Champ>
@@ -316,6 +329,9 @@ export default function RegisterPage() {
                   <input id="passeport" {...register("passeport")} className={champClasses} />
                 </Champ>
               </div>
+              <p className="mt-1 text-xs text-text-tertiary">
+                {t("register.aide_cin_ou_passeport")}
+              </p>
             </section>
 
             <section>

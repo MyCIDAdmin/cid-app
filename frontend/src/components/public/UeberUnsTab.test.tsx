@@ -25,4 +25,19 @@ describe("UeberUnsTab", () => {
 
     expect(screen.getByText("apropos.kontakt_titre")).toBeInTheDocument();
   });
+
+  // Régression du 2026-09-28 : les logos étaient absents du rendu malgré leur envoi par
+  // l'utilisateur — voir docstring de tête UeberUnsTab.tsx.
+  it("affiche les logos CID et Club Africain", () => {
+    renderWithProviders(<UeberUnsTab />);
+
+    expect(screen.getByAltText("Clubistes in Deutschland")).toHaveAttribute(
+      "src",
+      "/brand/logo-cid-about.png",
+    );
+    expect(screen.getByAltText("Club Africain")).toHaveAttribute(
+      "src",
+      "/brand/logo-club-africain.png",
+    );
+  });
 });

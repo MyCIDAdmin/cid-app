@@ -73,6 +73,44 @@ describe("RegisterPage", () => {
     expect(authApi.register).not.toHaveBeenCalled();
   });
 
+  // Ajouté le 2026-09-28 (retour utilisateur, point 5 : "Ausweisnummer (CIN) kein Pflichtfeld
+  // [...] aber entweder CIN oder Passnummer erforderlich") — ni CIN ni passeport n'est requis
+  // isolément, mais au moins l'un des deux doit être rempli.
+  it("affiche une erreur si ni CIN ni passeport ne sont renseignés", async () => {
+    renderWithProviders(<RegisterPage />);
+    remplirFormulaireValide();
+    // remplirChampsTexte() a déjà rempli "register.cin" — on le vide à nouveau pour ce cas.
+    fireEvent.input(screen.getByLabelText("register.cin", { exact: false }), {
+      target: { value: "" },
+    });
+
+    fireEvent.click(screen.getByText("register.submit"));
+
+    expect(await screen.findByText("register.error_cin_ou_passeport_requis")).toBeInTheDocument();
+    expect(authApi.register).not.toHaveBeenCalled();
+  });
+
+  it("accepte le formulaire avec uniquement le passeport rempli (sans CIN)", async () => {
+    vi.mocked(authApi.register).mockResolvedValue(undefined);
+
+    renderWithProviders(<RegisterPage />);
+    remplirFormulaireValide();
+    fireEvent.input(screen.getByLabelText("register.cin", { exact: false }), {
+      target: { value: "" },
+    });
+    fireEvent.input(screen.getByLabelText("register.passeport", { exact: false }), {
+      target: { value: "P1234567" },
+    });
+
+    fireEvent.click(screen.getByText("register.submit"));
+
+    await waitFor(() =>
+      expect(authApi.register).toHaveBeenCalledWith(
+        expect.objectContaining({ cin: undefined, passeport: "P1234567" }),
+      ),
+    );
+  });
+
   it("affiche une erreur si les mots de passe ne correspondent pas", async () => {
     renderWithProviders(<RegisterPage />);
     remplirFormulaireValide();

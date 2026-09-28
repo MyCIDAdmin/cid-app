@@ -664,7 +664,10 @@ export default function Sidebar() {
     // quoi les données du compte qui se déconnecte resteraient visibles au
     // prochain compte connecté dans le même onglet.
     logout();
-    navigate("/login", { replace: true });
+    // Retour utilisateur du 2026-09-28 : après "Abmelden", atterrir sur la Startseite publique
+    // (HomeRoute -> PublicHomePage) plutôt que directement sur /login — même geste que
+    // MobileNavDrawer.handleLogout (mobile).
+    navigate("/", { replace: true });
   }
 
   return (

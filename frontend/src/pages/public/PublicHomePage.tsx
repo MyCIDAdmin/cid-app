@@ -85,7 +85,11 @@ export default function PublicHomePage() {
         {onglet === "apropos" && <UeberUnsTab />}
       </main>
 
-      <PublicFooter />
+      {/* Footer compact (retour utilisateur du 2026-09-28 : "Den dünnen Footer aus den Seiten der
+          Modulen in die Startseite übernehmen") — la Startseite publique utilise désormais la
+          même variante dense qu'AppLayout.tsx plutôt que la grille 3 colonnes pleine taille
+          d'origine ; contenu strictement identique, voir docstring PublicFooter.tsx. */}
+      <PublicFooter compact />
     </div>
   );
 }

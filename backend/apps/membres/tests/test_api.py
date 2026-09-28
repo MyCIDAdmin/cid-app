@@ -196,6 +196,27 @@ def test_create_membre_residant_a_letranger_sans_adresse_allemande_ok(api_client
     assert resp.data["ville_de"] == ""
 
 
+# Retour utilisateur du 2026-09-28 (point 5, même règle qu'à l'inscription libre-service — voir
+# apps.accounts.tests.test_api.test_register_sans_cin_ni_passeport_echoue) : cette fiche partage
+# le même modèle Membre, la contrainte "au moins CIN ou passeport" s'applique donc ici aussi.
+def test_create_sans_cin_ni_passeport_refuse(api_client, rh_user):
+    _auth(api_client, rh_user)
+    payload = _payload()
+    del payload["cin"]
+    resp = api_client.post(reverse("membres:membre-list"), payload, format="json")
+    assert resp.status_code == 400
+    assert "cin" in resp.data["details"]
+
+
+def test_create_avec_uniquement_passeport_ok(api_client, rh_user):
+    _auth(api_client, rh_user)
+    payload = _payload()
+    del payload["cin"]
+    payload["passeport"] = "P1234567"
+    resp = api_client.post(reverse("membres:membre-list"), payload, format="json")
+    assert resp.status_code == 201, resp.data
+
+
 def test_update_comme_rh_ok(api_client, rh_user):
     membre = MembreFactory(ville_de="Hambourg")
     _auth(api_client, rh_user)

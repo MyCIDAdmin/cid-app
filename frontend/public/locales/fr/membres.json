@@ -114,6 +114,7 @@
     "titre_creer": "Ajouter un membre",
     "titre_modifier": "Modifier le membre",
     "champ_requis": "Ce champ est requis.",
+    "erreur_cin_ou_passeport": "Le n° CIN ou le n° de passeport est requis.",
     "erreur_email": "Adresse email invalide.",
     "erreur_soumission": "Une erreur est survenue lors de l'enregistrement.",
     "annuler": "Annuler",

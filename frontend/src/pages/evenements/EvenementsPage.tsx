@@ -75,10 +75,25 @@ function EvenementCarte({
 
   return (
     <div ref={cardRef} className="overflow-hidden rounded-cid-lg bg-card-gradient shadow-card">
-      <div className="flex items-center justify-between bg-ca px-3 py-2 text-white">
-        <span className="text-sm font-bold">{evenement.titre}</span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium">{formatDate(evenement.date_evenement)}</span>
+      {/* Bannière + description en aperçu (retour utilisateur du 2026-09-28, points 2.1/2.2 :
+          "Beschreibung und Details ... soll Attraktiv ... dargestellt werden" / "Das
+          Hochgeladene Bild soll als Banner ... angezeigt werden. Genau wie bei den
+          Veranstalltungen in der Startseite.") — même Kachel-Stil que EvenementKachel
+          (PublicEvenementsTab.tsx, page d'accueil publique) : image de fond en bannière (repli
+          dégradé bg-ca→bg-cad tant qu'aucune image n'a été téléversée), overlay dégradé pour
+          garder titre/pastille de date lisibles, et description (HTML de l'éditeur riche,
+          jamais retapée côté client) tronquée à 2 lignes juste en dessous. */}
+      <div
+        className="relative flex h-28 flex-col justify-end bg-gradient-to-br from-ca to-cad bg-cover bg-center p-3"
+        style={evenement.image ? { backgroundImage: `url(${evenement.image})` } : undefined}
+      >
+        {evenement.image && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        )}
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
+          <span className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ca">
+            {formatDate(evenement.date_evenement)}
+          </span>
           <ShareButton
             path={`/evenements?evenement=${evenement.id}`}
             titre={evenement.titre}
@@ -86,8 +101,15 @@ function EvenementCarte({
             variant="inverse"
           />
         </div>
+        <h3 className="relative z-10 pr-16 text-base font-bold text-white">{evenement.titre}</h3>
       </div>
       <div className="space-y-2 p-3">
+        {evenement.description && (
+          <div
+            className="line-clamp-2 text-xs text-text-tertiary"
+            dangerouslySetInnerHTML={{ __html: evenement.description }}
+          />
+        )}
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-tertiary">
           <span>{evenement.lieu}</span>
           <span>

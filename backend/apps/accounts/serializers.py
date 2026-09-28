@@ -94,7 +94,11 @@ class RegisterSerializer(serializers.Serializer):
     sexe = serializers.ChoiceField(choices=Sexe.choices, default=Sexe.NON_RENSEIGNE, required=False)
 
     # --- Pièces d'identité (chiffrées au repos par Membre.cin/passeport) ---
-    cin = serializers.CharField(max_length=50)
+    # Ni l'un ni l'autre n'est requis isolément depuis le 2026-09-28 (retour utilisateur : "Im
+    # Registrierungsformular ist 'Ausweisnummer (CIN)' kein Pflichtfeld. Um mitglieder zu werden
+    # ist aber entweder 'Ausweisnummer (CIN)' oder 'Passnummer' erforderlich") — la règle "au
+    # moins l'un des deux" est appliquée dans validate() ci-dessous.
+    cin = serializers.CharField(max_length=50, required=False, allow_blank=True)
     passeport = serializers.CharField(max_length=50, required=False, allow_blank=True)
 
     # --- Contact ---
@@ -138,6 +142,15 @@ class RegisterSerializer(serializers.Serializer):
                 "Le consentement RGPD est requis pour créer un compte."
             )
         return value
+
+    def validate(self, attrs):
+        # Au moins CIN ou passeport (voir docstring des champs ci-dessus) — vérifié au niveau
+        # objet plutôt que sur un seul champ, puisque la règle porte sur les deux ensemble.
+        if not (attrs.get("cin") or "").strip() and not (attrs.get("passeport") or "").strip():
+            raise serializers.ValidationError(
+                {"cin": "Ausweisnummer (CIN) oder Passnummer ist erforderlich."}
+            )
+        return attrs
 
     def create(self, validated_data):
         validated_data.pop("consentement_rgpd")
