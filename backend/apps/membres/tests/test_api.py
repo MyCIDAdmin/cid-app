@@ -398,7 +398,9 @@ def test_upload_photo_valide_est_reencodee(api_client, membre_user):
 def test_upload_photo_invalide_rejette_fichier_non_image(api_client, membre_user):
     MembreFactory(user=membre_user)
     _auth(api_client, membre_user)
-    faux_fichier = SimpleUploadedFile("malware.jpg", b"pas une vraie image", content_type="image/jpeg")
+    faux_fichier = SimpleUploadedFile(
+        "malware.jpg", b"pas une vraie image", content_type="image/jpeg"
+    )
     resp = api_client.patch(
         reverse("membres:membre-moi"),
         {"photo": faux_fichier},
