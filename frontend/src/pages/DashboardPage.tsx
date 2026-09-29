@@ -51,6 +51,7 @@ import { useSessionVoteActive } from "../hooks/useVote";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../store/authStore";
 import type { Cotisation, StatutCotisation, TypeArticle } from "../types/cotisation";
 import type { Evenement } from "../types/evenements";
+import { apercuTexteDepuisHtml } from "../utils/html";
 
 function aujourdhuiISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -372,7 +373,12 @@ export default function DashboardPage() {
                   <span className="font-medium text-text-primary">
                     {publication.auteur.prenom} {publication.auteur.nom}
                   </span>{" "}
-                  <span className="text-text-secondary">{publication.contenu}</span>
+                  {/* contenu est du HTML depuis le 2026-09-29 (retour utilisateur, éditeur type
+                      Word du module "Neuigkeiten") — aperçu compact en ligne, donc texte brut
+                      tronqué plutôt que le rendu HTML complet (voir utils/html.ts). */}
+                  <span className="text-text-secondary">
+                    {apercuTexteDepuisHtml(publication.contenu, 80)}
+                  </span>
                 </div>
               </li>
             ))}

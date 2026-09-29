@@ -318,4 +318,18 @@ describe("DashboardPage", () => {
     expect(screen.getByText(/Sana Werfelli/)).toBeInTheDocument();
     expect(screen.getByText(/Ambiance de folie hier soir/)).toBeInTheDocument();
   });
+
+  it("affiche l'aperçu d'une publication HTML (éditeur Word) en texte brut, sans balises", () => {
+    // Depuis le 2026-09-29 (retour utilisateur, module "Neuigkeiten"), Publication.contenu est
+    // du HTML — l'aperçu compact du dashboard doit rester lisible (voir apercuTexteDepuisHtml).
+    stubHooks({
+      publications: [
+        publication({ contenu: "<p><strong>Belle victoire</strong> hier soir !</p>" }),
+      ],
+    });
+    renderWithProviders(<DashboardPage />);
+
+    expect(screen.getByText("Belle victoire hier soir !")).toBeInTheDocument();
+    expect(screen.queryByText(/<p>|<strong>/)).not.toBeInTheDocument();
+  });
 });

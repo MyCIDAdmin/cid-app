@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import RichTextEditor from "../../components/ui/RichTextEditor";
 import ShareButton from "../../components/ui/ShareButton";
 import {
   useCommenterPublication,
@@ -24,6 +25,7 @@ import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Commentaire, Publication } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { apercuTexteDepuisHtml, texteBrutDepuisHtml } from "../../utils/html";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
@@ -172,12 +174,20 @@ function PublicationCarte({
           <ShareButton
             path={`/fil?publication=${publication.id}`}
             titre={`${publication.auteur.prenom} ${publication.auteur.nom}`}
-            texte={publication.contenu}
+            texte={apercuTexteDepuisHtml(publication.contenu)}
           />
         </div>
       </div>
 
-      <p className="my-2 whitespace-pre-wrap text-sm text-text-secondary">{publication.contenu}</p>
+      {/* contenu est du HTML depuis le 2026-09-29 (retour utilisateur, point 3.2 : éditeur
+          type Word) — rendu tel quel, jamais retapé côté client, même principe que
+          ProjetCard.tsx/EvenementCarte.tsx pour leurs champs HTML respectifs. ShareButton
+          ci-dessus utilise apercuTexteDepuisHtml (texte brut tronqué) plutôt que `contenu` :
+          des balises HTML brutes dans un partage navigator.share/email seraient illisibles. */}
+      <div
+        className="prose prose-sm my-2 max-w-none text-text-secondary"
+        dangerouslySetInnerHTML={{ __html: publication.contenu }}
+      />
 
       {publication.image && (
         <img
@@ -302,6 +312,13 @@ function PublicationCarte({
 
 export default function FilPage() {
   const { t } = useTranslation("communaute");
+  // Rôle requis pour PUBLIER une Neuigkeit (retour utilisateur du 2026-09-29, point 3.1 :
+  // "Normal User sollen den Editor nicht sehen [Nur Lese Zugriff und Reaktionen ...]") — même
+  // seuil que la modération de ce module (MODERATION_MIN_LEVEL côté backend,
+  // apps.communaute.permissions.PublicationPermission) : ce sont déjà les rôles qui gèrent ce
+  // contenu. Lecture, réactions (liker/partager) et commentaires restent inchangés pour tous.
+  const user = useAuthStore((s) => s.user);
+  const peutPublier = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
   const [texte, setTexte] = useState("");
   // Un seul sélecteur de fichier (voir input plus bas, accept="image/*,application/pdf")
   // pour rester au plus près de l'UI existante — le fichier choisi est routé vers le champ
@@ -317,7 +334,7 @@ export default function FilPage() {
 
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
-    if (!texte.trim()) return;
+    if (!texteBrutDepuisHtml(texte)) return;
     const estPdf = fichier?.type === "application/pdf";
     creer.mutate(
       {
@@ -339,61 +356,58 @@ export default function FilPage() {
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("fil.titre")}</h1>
 
-      <form
-        onSubmit={soumettre}
-        className="mb-4 rounded-cid-lg bg-bg-primary p-3 shadow-sm"
-        id="new-post-form"
-      >
-        <textarea
-          id="new-post-txt"
-          value={texte}
-          onChange={(e) => setTexte(e.target.value)}
-          placeholder={t("fil.placeholder_publication")}
-          rows={3}
-          className="w-full resize-none rounded-cid border border-text-tertiary/30 p-2 text-sm"
-        />
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            {/* Le <input type="file"> natif affiche le libellé de son bouton dans la langue du
-                NAVIGATEUR (ex. "Datei auswählen" avec un navigateur en allemand), indépendamment
-                de la langue choisie dans l'app — ce n'est pas une chaîne i18n qu'on peut traduire
-                côté React (voir rapport de comparaison MyCID, 2026-09-25, section "Nebenbei
-                bemerkt"). On masque donc l'input natif (sr-only, toujours focusable/actionnable
-                au clavier) et on déclenche l'ouverture du sélecteur via un <label> stylé qui, lui,
-                porte notre propre texte traduit. */}
-            <label
-              htmlFor="fil-fichier-input"
-              className="flex-none cursor-pointer whitespace-nowrap rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
-            >
-              {t("fil.joindre_fichier")}
-            </label>
-            <input
-              id="fil-fichier-input"
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={(e) => setFichier(e.target.files?.[0])}
-              className="sr-only"
-            />
-            {fichier && (
-              <span
-                className="min-w-0 truncate text-xs text-text-tertiary"
-                title={fichier.name}
+      {peutPublier && (
+        <form
+          onSubmit={soumettre}
+          className="mb-4 rounded-cid-lg bg-bg-primary p-3 shadow-sm"
+          id="new-post-form"
+        >
+          <RichTextEditor
+            value={texte}
+            onChange={setTexte}
+            placeholder={t("fil.placeholder_publication")}
+            ariaLabel={t("fil.placeholder_publication")}
+          />
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              {/* Le <input type="file"> natif affiche le libellé de son bouton dans la langue du
+                  NAVIGATEUR (ex. "Datei auswählen" avec un navigateur en allemand), indépendamment
+                  de la langue choisie dans l'app — ce n'est pas une chaîne i18n qu'on peut traduire
+                  côté React (voir rapport de comparaison MyCID, 2026-09-25, section "Nebenbei
+                  bemerkt"). On masque donc l'input natif (sr-only, toujours focusable/actionnable
+                  au clavier) et on déclenche l'ouverture du sélecteur via un <label> stylé qui, lui,
+                  porte notre propre texte traduit. */}
+              <label
+                htmlFor="fil-fichier-input"
+                className="flex-none cursor-pointer whitespace-nowrap rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
               >
-                {fichier.name}
-              </span>
-            )}
+                {t("fil.joindre_fichier")}
+              </label>
+              <input
+                id="fil-fichier-input"
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={(e) => setFichier(e.target.files?.[0])}
+                className="sr-only"
+              />
+              {fichier && (
+                <span className="min-w-0 truncate text-xs text-text-tertiary" title={fichier.name}>
+                  {fichier.name}
+                </span>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={creer.isPending}
+              className="flex-none rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
+            >
+              {t("fil.publier")}
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={creer.isPending}
-            className="flex-none rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
-          >
-            {t("fil.publier")}
-          </button>
-        </div>
-        <p className="mt-1 text-[10px] text-text-tertiary">{t("fil.types_autorises")}</p>
-        {erreur && <p className="mt-1 text-xs text-status-dangerText">{erreur}</p>}
-      </form>
+          <p className="mt-1 text-[10px] text-text-tertiary">{t("fil.types_autorises")}</p>
+          {erreur && <p className="mt-1 text-xs text-status-dangerText">{erreur}</p>}
+        </form>
+      )}
 
       {publicationsQuery.isLoading && (
         <p className="text-sm text-text-tertiary">{t("fil.chargement")}</p>
