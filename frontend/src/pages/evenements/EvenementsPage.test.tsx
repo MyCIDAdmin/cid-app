@@ -153,6 +153,22 @@ describe("EvenementsPage", () => {
     expect(banniere).toHaveStyle({ backgroundImage: "url(https://cdn.example.com/e1.jpg)" });
   });
 
+  // Régression du 2026-09-29 (retour utilisateur, point 2 : "Icons für Zeit und Ort wie im
+  // Tab der Startseite übernehmen") — la Kachel n'affichait ni icône ni heure jusqu'ici (voir
+  // EvenementKachel, PublicEvenementsTab.tsx, pour le même rendu sur la Startseite).
+  it("affiche l'heure et le lieu avec les mêmes icônes que l'onglet Veranstaltungen de la Startseite", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    expect(screen.getByText("🕒 06:00")).toBeInTheDocument();
+    expect(screen.getByText("📍 Mercedes-Benz Arena, Stuttgart")).toBeInTheDocument();
+  });
+
   it("affiche un message si aucun événement à venir", () => {
     vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
       data: page([]),

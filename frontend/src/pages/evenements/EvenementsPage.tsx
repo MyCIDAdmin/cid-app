@@ -111,7 +111,12 @@ function EvenementCarte({
           />
         )}
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-tertiary">
-          <span>{evenement.lieu}</span>
+          {/* Icônes Zeit/Ort reprises telles quelles de PublicEvenementsTab.tsx (retour
+              utilisateur du 2026-09-29, point 2 : "Icons für Zeit und Ort wie im Tab der
+              Startseite übernehmen") — evenement.heure n'était jusqu'ici affichée nulle part
+              sur cette carte, contrairement à la Startseite. */}
+          {evenement.heure && <span>🕒 {evenement.heure.slice(0, 5)}</span>}
+          <span>📍 {evenement.lieu}</span>
           <span>
             {evenement.places_max !== null
               ? t("places_sur_max", {

@@ -76,12 +76,12 @@ export default function ParametresNotificationPage() {
                   disabled={modifierMutation.isPending || !modifiable}
                   title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
                   onClick={() => toggleModule(module, actif)}
-                  className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors disabled:opacity-40 ${
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:opacity-40 ${
                     actif ? "border-ca bg-ca" : "border-text-tertiary bg-bg-tertiary"
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                    className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
                       actif ? "translate-x-5" : "translate-x-0.5"
                     }`}
                   />
