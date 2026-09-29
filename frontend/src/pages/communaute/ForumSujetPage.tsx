@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import ShareButton from "../../components/ui/ShareButton";
 import {
   useEpinglerSujet,
   useMasquerReponseForum,
@@ -82,12 +83,18 @@ export default function ForumSujetPage() {
       </Link>
 
       <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-        <div className="flex items-center gap-2">
-          {sujet.est_epingle && <span title={t("forum.epingle")}>📌</span>}
-          {sujet.est_verrouille && <span title={t("forum.verrouille")}>🔒</span>}
-          <span className="rounded bg-cal px-1.5 py-0.5 text-[10px] font-medium text-cad">
-            {t(`categorie.${sujet.categorie}`)}
-          </span>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {sujet.est_epingle && <span title={t("forum.epingle")}>📌</span>}
+            {sujet.est_verrouille && <span title={t("forum.verrouille")}>🔒</span>}
+            <span className="rounded bg-cal px-1.5 py-0.5 text-[10px] font-medium text-cad">
+              {t(`categorie.${sujet.categorie}`)}
+            </span>
+          </div>
+          {/* Partage externe (demande utilisateur du 2026-09-29, module "Forum" : "Es soll
+              möglich sein Elemente in Social Media zu teilen") — même composant que
+              Fil/Projets/Boutique/Events, voir docstring ShareButton. */}
+          <ShareButton path={`/forum/${sujet.id}`} titre={sujet.titre} className="shrink-0" />
         </div>
         <h1 className="mt-1 text-lg font-bold text-text-primary">{sujet.titre}</h1>
         <div className="mt-0.5 text-xs text-text-tertiary">

@@ -1,5 +1,5 @@
 import { fireEvent, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
@@ -56,6 +56,8 @@ function mutationMock() {
 }
 
 describe("ForumPage", () => {
+  const originalShare = navigator.share;
+
   beforeEach(() => {
     useAuthStore.setState({
       accessToken: "t",
@@ -64,6 +66,10 @@ describe("ForumPage", () => {
       isAuthenticated: true,
     });
     vi.mocked(useCommunauteHooks.useCreerSujet).mockReturnValue(mutationMock());
+  });
+
+  afterEach(() => {
+    Object.defineProperty(navigator, "share", { value: originalShare, configurable: true });
   });
 
   it("affiche la liste des sujets avec les sujets épinglés signalés", () => {
@@ -118,6 +124,33 @@ describe("ForumPage", () => {
       { categorie: "general", titre: "Un nouveau sujet", contenu: "Le contenu du sujet." },
       expect.anything(),
     );
+  });
+
+  it("affiche un bouton de partage externe sur chaque sujet, cliquable indépendamment de la carte", () => {
+    // Retour utilisateur du 2026-09-29, module "Forum" : "Es soll möglich sein Elemente in
+    // Social Media zu teilen" — la carte entière est un lien vers le sujet (voir
+    // ForumPage.tsx : Link en superposition + contenu pointer-events-none), le bouton de
+    // partage doit rester cliquable malgré ça (zone pointer-events-auto dédiée).
+    Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+    vi.mocked(useCommunauteHooks.useSujets).mockReturnValue({
+      data: page([
+        sujet({ titre: "Sujet normal" }),
+        sujet({ id: "s2", titre: "Sujet épinglé", est_epingle: true }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSujets>);
+
+    renderWithProviders(<ForumPage />, { route: "/forum", path: "/forum" });
+
+    const boutonsPartage = screen.getAllByLabelText("partage.bouton_aria");
+    expect(boutonsPartage).toHaveLength(2);
+
+    fireEvent.click(boutonsPartage[0]);
+    expect(screen.getByText("partage.whatsapp")).toBeInTheDocument();
+    // La liste des sujets reste affichée — pas de navigation déclenchée par la carte.
+    expect(screen.getByText("Sujet normal")).toBeInTheDocument();
+    expect(screen.getByText("Sujet épinglé")).toBeInTheDocument();
   });
 
   it("filtre par catégorie", () => {

@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import ShareButton from "../../components/ui/ShareButton";
 import { useCreerSujet, useSujets } from "../../hooks/useCommunaute";
 import type { CategorieForum } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -143,29 +144,46 @@ export default function ForumPage() {
 
       <div className="space-y-2">
         {sujetsQuery.data?.results.map((sujet) => (
-          <Link
+          // La carte entière reste cliquable (Link en superposition, voir plus bas) — le bouton
+          // de partage (demande utilisateur du 2026-09-29, module "Forum" : "Es soll möglich
+          // sein Elemente in Social Media zu teilen") a besoin de sa propre zone cliquable, ce
+          // qu'un <button> imbriqué dans un <a> ne permet pas proprement. Plutôt que de copier le
+          // montage `<Link className="absolute inset-0">` + bouton positionné séparément déjà
+          // utilisé ailleurs (CataloguePage.tsx) — dont l'ordre DOM ne garantit pas quel élément
+          // capte le clic en cas de chevauchement — le contenu de la carte passe en
+          // `pointer-events-none` et seule la zone du bouton de partage réactive
+          // `pointer-events-auto` (avec un z-index explicite) : le Link capte tout le reste de la
+          // carte sans ambiguïté, le bouton de partage capte uniquement sa propre zone.
+          <div
             key={sujet.id}
-            to={`/forum/${sujet.id}`}
-            className="block rounded-cid-lg bg-bg-primary p-3 shadow-sm hover:bg-bg-secondary"
+            className="relative rounded-cid-lg bg-bg-primary p-3 shadow-sm hover:bg-bg-secondary"
           >
-            <div className="flex items-center gap-2">
-              {sujet.est_epingle && <span title={t("forum.epingle")}>📌</span>}
-              {sujet.est_verrouille && <span title={t("forum.verrouille")}>🔒</span>}
-              {sujet.est_masque && (
-                <span className="rounded bg-status-dangerBg px-1.5 py-0.5 text-[9px] font-bold text-status-dangerText">
-                  {t("forum.masque_badge")}
-                </span>
-              )}
-              <span className="text-sm font-bold text-text-primary">{sujet.titre}</span>
+            <Link to={`/forum/${sujet.id}`} className="absolute inset-0" aria-label={sujet.titre} />
+            <div className="pointer-events-none flex items-start justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  {sujet.est_epingle && <span title={t("forum.epingle")}>📌</span>}
+                  {sujet.est_verrouille && <span title={t("forum.verrouille")}>🔒</span>}
+                  {sujet.est_masque && (
+                    <span className="rounded bg-status-dangerBg px-1.5 py-0.5 text-[9px] font-bold text-status-dangerText">
+                      {t("forum.masque_badge")}
+                    </span>
+                  )}
+                  <span className="text-sm font-bold text-text-primary">{sujet.titre}</span>
+                </div>
+                <div className="mt-0.5 text-xs text-text-tertiary">
+                  {t(`categorie.${sujet.categorie}`)} · {sujet.auteur.prenom} {sujet.auteur.nom} ·{" "}
+                  {formatDate(sujet.created_at)}
+                </div>
+                <div className="mt-1 text-xs text-text-tertiary">
+                  {t("forum.nombre_reponses", { count: sujet.nombre_reponses })}
+                </div>
+              </div>
+              <div className="relative z-10 shrink-0 pointer-events-auto">
+                <ShareButton path={`/forum/${sujet.id}`} titre={sujet.titre} />
+              </div>
             </div>
-            <div className="mt-0.5 text-xs text-text-tertiary">
-              {t(`categorie.${sujet.categorie}`)} · {sujet.auteur.prenom} {sujet.auteur.nom} ·{" "}
-              {formatDate(sujet.created_at)}
-            </div>
-            <div className="mt-1 text-xs text-text-tertiary">
-              {t("forum.nombre_reponses", { count: sujet.nombre_reponses })}
-            </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>
