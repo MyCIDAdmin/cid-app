@@ -9,11 +9,11 @@ import datetime
 from decimal import Decimal
 
 import pytest
-
 from apps.cotisations.models import ModePaiement, StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.membres.tests.factories import MembreFactory
 from apps.projets.tests.factories import ProjetFactory
+from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
 
@@ -75,12 +75,12 @@ def test_echeance_depassee_sans_date_limite_est_fausse():
 
 
 def test_echeance_depassee_date_passee():
-    hier = datetime.date.today() - datetime.timedelta(days=1)
+    hier = timezone.localdate() - datetime.timedelta(days=1)
     projet = ProjetFactory(date_limite=hier)
     assert projet.echeance_depassee is True
 
 
 def test_echeance_depassee_date_future():
-    demain = datetime.date.today() + datetime.timedelta(days=1)
+    demain = timezone.localdate() + datetime.timedelta(days=1)
     projet = ProjetFactory(date_limite=demain)
     assert projet.echeance_depassee is False
