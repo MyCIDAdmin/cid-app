@@ -15,6 +15,7 @@ const membresKeys = {
     [...membresKeys.all, "list", filters, pageUrl] as const,
   detail: (id: string) => [...membresKeys.all, "detail", id] as const,
   moi: () => [...membresKeys.all, "moi"] as const,
+  monHistorique: () => [...membresKeys.all, "mon-historique"] as const,
 };
 
 export function useMembresList(
@@ -50,6 +51,15 @@ export function useMembreMoi(options: { enabled?: boolean } = {}) {
     queryFn: membresApi.getMembreMoi,
     retry: false,
     enabled: options.enabled ?? true,
+  });
+}
+
+/** Historique de statut par année du compte connecté (widget "Mitgliedschaftsverlauf",
+ * MonAdhesionPage.tsx) — voir membresApi.getMonHistoriqueStatut. */
+export function useMonHistoriqueStatut() {
+  return useQuery({
+    queryKey: membresKeys.monHistorique(),
+    queryFn: membresApi.getMonHistoriqueStatut,
   });
 }
 
