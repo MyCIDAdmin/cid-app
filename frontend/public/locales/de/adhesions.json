@@ -59,6 +59,20 @@
     "col_statut": "Status",
     "col_date": "Datum"
   },
+  "historique_statut": {
+    "titre": "Jährlicher Mitgliedschaftsstatus",
+    "chargement": "Wird geladen…",
+    "erreur": "Verlauf konnte nicht geladen werden.",
+    "aucun": "Für Sie liegt noch keine Jahres-Statushistorie vor.",
+    "col_annee": "Jahr",
+    "col_statut": "Status",
+    "col_date": "Datum",
+    "statut": {
+      "actif": "Aktiv",
+      "en_attente": "Ausstehend",
+      "inactif": "Inaktiv"
+    }
+  },
   "justificatif": {
     "titre": "Nachweis für Ihren Rabatt erforderlich",
     "fichier_label": "Nachweisdatei",
@@ -130,7 +144,6 @@
     "visible_label": "Sichtbar",
     "gerer_rabais": "Rabatte verwalten",
     "voir_rabais": "Rabatte ansehen",
-    "masquer_rabais": "Rabatte ausblenden",
     "supprimer": "Angebot löschen",
     "aucune": "Noch kein Angebot für diese Kampagne.",
     "nom_label": "Name des Angebots",
