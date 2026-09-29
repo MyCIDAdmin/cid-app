@@ -103,6 +103,7 @@
       "especes": "Bar"
     },
     "confirmer": "Als bezahlt markieren",
+    "date_paiement_label": "Transaktionsdatum (optional, Standard: heute)",
     "en_cours": "Wird bestätigt…",
     "erreur_action": "Die Zahlung konnte nicht bestätigt werden.",
     "filtre_statut": "Status",

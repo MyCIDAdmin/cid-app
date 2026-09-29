@@ -104,5 +104,28 @@
     "televerser": "Téléverser une vidéo",
     "televersement_en_cours": "Téléversement en cours…",
     "erreur": "Erreur lors du téléversement de la vidéo."
+  },
+  "admin_arriere_plans_modules": {
+    "titre": "Images de fond par module",
+    "description": "Une image de fond, mise à l'échelle, pour les pages d'un module (hors Administration). Fichiers image uniquement.",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Erreur lors du chargement des images de fond.",
+    "aucune_image": "Aucune image pour le moment — la page affiche le fond par défaut.",
+    "televerser": "Téléverser une image",
+    "remplacer": "Remplacer l'image",
+    "televersement_en_cours": "Téléversement en cours…",
+    "supprimer": "Retirer",
+    "suppression_en_cours": "Suppression en cours…",
+    "erreur": "Erreur lors du téléversement de l'image.",
+    "erreur_suppression": "Erreur lors de la suppression de l'image.",
+    "modules": {
+      "membres": "Membres",
+      "adhesions": "Mon Adhésion",
+      "evenements": "Évènements",
+      "projets": "Projets & Actions",
+      "boutique": "Boutique",
+      "communaute": "Communauté",
+      "vote": "Votes & Élections"
+    }
   }
 }

@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     AlbumViewSet,
+    ArrierePlanModuleViewSet,
     ChoixQuestionViewSet,
     ClassementLigueViewSet,
     CommentaireViewSet,
@@ -56,6 +57,7 @@ router.register("calendrier", RencontreCalendrierViewSet, basename="calendrier")
 router.register("statistiques-joueurs", StatistiqueJoueurViewSet, basename="statistique-joueur")
 router.register("equipe-info", EquipeInfoViewSet, basename="equipe-info")
 router.register("equipe-logos", EquipeLogoViewSet, basename="equipe-logo")
+router.register("arriere-plans-modules", ArrierePlanModuleViewSet, basename="arriere-plan-module")
 router.register("match-evenements", MatchEvenementViewSet, basename="match-evenement")
 router.register("tippspiel", TippspielViewSet, basename="tippspiel")
 router.register("tippspiel-teilnahmen", TippspielTeilnahmeViewSet, basename="tippspiel-teilnahme")

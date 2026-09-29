@@ -14,6 +14,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import Role, User
 from apps.communaute import services
 from apps.communaute.models import (
+    ArrierePlanModule,
     CategorieForum,
     Commentaire,
     Conversation,
@@ -27,6 +28,7 @@ from apps.communaute.models import (
 )
 from apps.communaute.tests.factories import (
     AlbumFactory,
+    ArrierePlanModuleFactory,
     ChoixQuestionFactory,
     ClassementLigueFactory,
     CommentaireFactory,
@@ -1406,6 +1408,113 @@ def test_equipe_logos_suppression_par_bureau_admin(api_client):
     )
     assert resp.status_code == 204
     assert not EquipeLogo.objects.filter(id=logo.id).exists()
+
+
+# --- Images de fond par module (demande utilisateur du 2026-09-29 : "Im Modul 'Hero
+# Video' es soll möglich sein Hintergrund Bilder pro Modul (außer in der Kategorie
+# Verwaltung) hochzuladen") --------------------------------------------------------------
+
+ARRIERE_PLAN_MODULE_LIST_URL = "communaute:arriere-plan-module-list"
+
+
+def test_arriere_plans_modules_liste_refuse_si_non_authentifie(api_client):
+    """Contrairement à EquipeLogoViewSet (AllowAny, alimente la Startseite publique), la
+    lecture ici est réservée aux utilisateurs authentifiés — voir docstring
+    ArrierePlanModulePermission."""
+    ArrierePlanModuleFactory(module="membres")
+    resp = api_client.get(reverse(ARRIERE_PLAN_MODULE_LIST_URL))
+    assert resp.status_code == 401
+
+
+def test_arriere_plans_modules_liste_autorisee_a_tout_authentifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "apm1@example.de")
+    ArrierePlanModuleFactory(module="membres")
+    resp = _auth(api_client, user).get(reverse(ARRIERE_PLAN_MODULE_LIST_URL))
+    assert resp.status_code == 200
+    assert resp.data[0]["module"] == "membres"
+
+
+def test_arriere_plans_modules_upload_refuse_a_un_simple_membre(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "apm2@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(ARRIERE_PLAN_MODULE_LIST_URL),
+        {"module": "membres", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 403
+
+
+def test_arriere_plans_modules_upload_par_bureau_admin(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "apm3@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(ARRIERE_PLAN_MODULE_LIST_URL),
+        {"module": "membres", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 201
+    assert resp.data["module"] == "membres"
+    assert ArrierePlanModule.objects.filter(module="membres").exists()
+
+
+def test_arriere_plans_modules_upload_remplace_image_existante_du_meme_module(api_client):
+    # Upsert par slug de module (voir docstring ArrierePlanModuleViewSet.create) : un
+    # second upload pour le même module remplace le premier plutôt que de créer un doublon.
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "apm4@example.de")
+    ArrierePlanModuleFactory(module="membres")
+    assert ArrierePlanModule.objects.filter(module="membres").count() == 1
+
+    resp = _auth(api_client, user).post(
+        reverse(ARRIERE_PLAN_MODULE_LIST_URL),
+        {"module": "membres", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 201
+    assert ArrierePlanModule.objects.filter(module="membres").count() == 1
+
+
+def test_arriere_plans_modules_upload_rejette_module_hors_liste(api_client):
+    """`stats`/`notifications`/`cotisations` (entre autres) n'ont aucune page hors
+    Administration — voir MODULES_AVEC_ARRIERE_PLAN dans models.py."""
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "apm5@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(ARRIERE_PLAN_MODULE_LIST_URL),
+        {"module": "stats", "image": _image_valide()},
+        format="multipart",
+    )
+    assert resp.status_code == 400
+    assert "module" in resp.data["details"]
+
+
+def test_arriere_plans_modules_upload_rejette_fichier_non_image(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "apm6@example.de")
+    faux_fichier = SimpleUploadedFile("bg.jpg", b"ceci n'est pas une image", "image/jpeg")
+    resp = _auth(api_client, user).post(
+        reverse(ARRIERE_PLAN_MODULE_LIST_URL),
+        {"module": "membres", "image": faux_fichier},
+        format="multipart",
+    )
+    assert resp.status_code == 400
+    assert "image" in resp.data["details"]
+
+
+def test_arriere_plans_modules_suppression_reservee_au_bureau_admin(api_client):
+    membre_user, _ = _user_avec_membre(Role.MEMBRE, "apm7@example.de")
+    arriere_plan = ArrierePlanModuleFactory(module="membres")
+    resp = _auth(api_client, membre_user).delete(
+        reverse("communaute:arriere-plan-module-detail", args=[arriere_plan.id])
+    )
+    assert resp.status_code == 403
+    assert ArrierePlanModule.objects.filter(id=arriere_plan.id).exists()
+
+
+def test_arriere_plans_modules_suppression_par_bureau_admin(api_client):
+    admin_user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "apm8@example.de")
+    arriere_plan = ArrierePlanModuleFactory(module="membres")
+    resp = _auth(api_client, admin_user).delete(
+        reverse("communaute:arriere-plan-module-detail", args=[arriere_plan.id])
+    )
+    assert resp.status_code == 204
+    assert not ArrierePlanModule.objects.filter(id=arriere_plan.id).exists()
 
 
 def test_liste_albums_non_authentifie_autorise(api_client):

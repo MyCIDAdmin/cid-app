@@ -468,6 +468,26 @@ class ConfigurationSitePublicPermission(BasePermission):
         )
 
 
+class ArrierePlanModulePermission(BasePermission):
+    """Ajouté le 2026-09-29 (demande utilisateur : "Hintergrund Bilder pro Modul [...]
+    hochzuladen") — contrairement à ConfigurationSitePublicPermission/EquipeLogoPermission
+    ci-dessus (GET AllowAny, car ces 2 réglages alimentent la Startseite publique), la
+    lecture ici est réservée à `IsAuthenticated` (PAS AllowAny) : les images de fond par
+    module ne concernent QUE les pages internes de l'app (Mitglieder/Events/Shop/etc.),
+    jamais la page d'accueil publique — un visiteur anonyme n'a aucune raison d'y accéder.
+    Écriture (upload/suppression) réservée au Bureau Admin+ via un seuil `ROLE_LEVELS`
+    direct, même principe que les 2 permissions ci-dessus (volontairement hors matrice
+    apps.rbac — réglage ponctuel, pas une page nommée)."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not bool(user and user.is_authenticated):
+            return False
+        if request.method in SAFE_METHODS:
+            return True
+        return ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
+
+
 class EquipeLogoPermission(BasePermission):
     """Même principe que ConfigurationSitePublicPermission ci-dessus (2026-09-28, retour
     utilisateur "Fan-Club: Vereins-Logos anzeigen + Upload-Möglichkeit") : lecture (liste des

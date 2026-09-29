@@ -19,6 +19,7 @@ from .models import (
     Commande,
     LigneCommande,
     ModePaiementCommande,
+    MotifRetour,
     Produit,
     ProduitImage,
     RegleReduction,
@@ -275,6 +276,71 @@ class RetourSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class LigneRetourLotSerializer(serializers.Serializer):
+    """Une ligne du lot — voir `RetourLotSerializer` ci-dessous."""
+
+    ligne_commande = serializers.PrimaryKeyRelatedField(queryset=LigneCommande.objects.all())
+    quantite = serializers.IntegerField(min_value=1)
+
+
+class RetourLotSerializer(serializers.Serializer):
+    """Payload de `RetourViewSet.lot` (ajouté le 2026-09-29, demande utilisateur : "für Retoure
+    soll es möglich sein, Mengen pro Varianten einzugeben") — jamais persisté directement : la
+    vue s'en sert pour valider l'entrée puis crée un `Retour` par ligne (même `motif`/
+    `commentaire` pour tout le lot, voir views.RetourViewSet.lot), sous le même principe de
+    verrouillage transactionnel que `RetourViewSet.perform_create`/`CommandeViewSet.passer`
+    (CLAUDE.md §8). Remplace un enregistrement ligne par ligne (un appel à `RetourViewSet.create`
+    par variante) par un seul appel couvrant plusieurs variantes de la même commande à la fois —
+    `RetourViewSet.create` (un seul `Retour`) reste disponible et inchangé pour l'usage simple."""
+
+    commande = serializers.PrimaryKeyRelatedField(queryset=Commande.objects.all())
+    motif = serializers.ChoiceField(choices=MotifRetour.choices)
+    commentaire = serializers.CharField(required=False, allow_blank=True, default="")
+    lignes = LigneRetourLotSerializer(many=True)
+
+    def validate_lignes(self, value):
+        if not value:
+            raise serializers.ValidationError("Au moins une ligne doit avoir une quantité.")
+        ids = [ligne["ligne_commande"].id for ligne in value]
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError(
+                "Une même ligne de commande ne peut apparaître qu'une fois dans le lot."
+            )
+        return value
+
+    def validate(self, attrs):
+        commande = attrs["commande"]
+        if commande.statut not in STATUTS_RETOURNABLES:
+            raise serializers.ValidationError(
+                {
+                    "commande": (
+                        "Une commande annulée ou remboursée a déjà eu son stock intégralement "
+                        "restitué — enregistrer un retour créerait un double comptage "
+                        f"(statut actuel : {commande.get_statut_display()})."
+                    )
+                }
+            )
+        for ligne in attrs["lignes"]:
+            ligne_commande = ligne["ligne_commande"]
+            if ligne_commande.commande_id != commande.id:
+                raise serializers.ValidationError(
+                    {"lignes": "Une ligne n'appartient pas à la commande indiquée."}
+                )
+            # Re-vérifié dans la vue sous verrou (SELECT FOR UPDATE) — même principe que
+            # RetourSerializer.validate ci-dessus, ce contrôle évite un aller-retour serveur
+            # inutile pour le cas non concurrent.
+            if ligne["quantite"] > ligne_commande.quantite_retournable:
+                raise serializers.ValidationError(
+                    {
+                        "lignes": (
+                            f"Quantité supérieure à ce qui reste retournable pour « "
+                            f"{ligne_commande.variante} » ({ligne_commande.quantite_retournable})."
+                        )
+                    }
+                )
+        return attrs
+
+
 class CommandeSerializer(serializers.ModelSerializer):
     lignes = LigneCommandeSerializer(many=True, read_only=True)
     retours = RetourSerializer(many=True, read_only=True)
@@ -314,9 +380,22 @@ class CommandeSerializer(serializers.ModelSerializer):
 
 class ConfirmerPaiementCommandeSerializer(serializers.Serializer):
     """Entrée de POST /boutique/commandes/{id}/confirmer-paiement/ — Directeur Financier+,
-    même principe que Cotisation.marquer_payee/AHM-53 (voir permissions.py)."""
+    même principe que Cotisation.marquer_payee/AHM-53 (voir permissions.py).
+
+    `date_paiement` (ajouté le 2026-09-29, demande utilisateur : "Bei Zahlungsbestätigung Im
+    Modul [...] 'Shop Verwaltung' das Transaktionsdatum bei der Bestägigung hinzufügen")
+    optionnel — même principe que apps.cotisations.serializers.MarquerPayeeSerializer : absent,
+    `Commande.date_paiement_confirme` reste daté à `timezone.now()` (voir views.py)."""
 
     mode_paiement = serializers.ChoiceField(choices=ModePaiementCommande.choices)
+    date_paiement = serializers.DateField(required=False, allow_null=True, default=None)
+
+    def validate_date_paiement(self, value):
+        if value and value > timezone.localdate():
+            raise serializers.ValidationError(
+                "La date de transaction ne peut pas être dans le futur."
+            )
+        return value
 
 
 class InitierPaiementEnLigneCommandeSerializer(serializers.Serializer):

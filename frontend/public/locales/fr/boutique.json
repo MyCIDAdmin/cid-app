@@ -195,6 +195,7 @@
       "virement": "Virement SEPA",
       "especes": "Espèces"
     },
+    "date_paiement_label": "Date de la transaction (optionnel, par défaut : maintenant)",
     "confirmer": "Confirmer le paiement",
     "erreur": "La confirmation du paiement a échoué."
   },
@@ -217,6 +218,7 @@
     "bouton": "Enregistrer un retour",
     "titre": "Enregistrer un retour",
     "ligne_label": "Article",
+    "lignes_titre": "Articles et quantités (par variante)",
     "ligne_option": "{{quantite}} × {{prix}} € — {{retournable}} retournable(s)",
     "quantite_label": "Quantité retournée",
     "motif_label": "Motif",

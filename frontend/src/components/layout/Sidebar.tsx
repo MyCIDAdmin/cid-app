@@ -427,6 +427,27 @@ export function getGroupForPath(pathname: string): SidebarGroupKey | null {
 }
 
 /**
+ * Slug de module (`NavItem.module`) de la page correspondant à `pathname`, ou `null` si aucun
+ * item de NAV_ITEMS ne correspond OU si l'item correspondant n'a pas de `module` — ajouté le
+ * 2026-09-29 (demande utilisateur : "Im Modul 'Hero Video' es soll möglich sein Hintergrund
+ * Bilder pro Modul (außer in der Kategorie Verwaltung) hochzuladen") pour qu'AppLayout.tsx
+ * sache quelle image de fond (ArrierePlanModule) afficher pour la page courante. AUCUN item du
+ * groupe "administration" ne renseigne `module` (vérifié sur l'ensemble de NAV_ITEMS) : ce
+ * filtre exclut donc automatiquement toute la catégorie Verwaltung, exactement comme demandé,
+ * sans avoir besoin d'un test de groupe séparé. Même logique de correspondance par préfixe-le-
+ * plus-long que `getGroupForPath` ci-dessus.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- voir commentaire GROUP_ORDER
+export function getModuleForPath(pathname: string): string | null {
+  const meilleur = NAV_ITEMS.reduce<NavItem | null>((best, item) => {
+    const correspond = pathname === item.to || pathname.startsWith(`${item.to}/`);
+    if (!correspond) return best;
+    return best === null || item.to.length > best.to.length ? item : best;
+  }, null);
+  return meilleur?.module ?? null;
+}
+
+/**
  * Logique de navigation partagée entre `Sidebar` (desktop) et `MobileNavDrawer` (mobile) — un
  * seul et même calcul d'item actif / de notifications par module / de groupement par rôle,
  * plutôt que de le dupliquer dans les deux composants (source d'incohérences garantie sinon,
@@ -490,8 +511,7 @@ export function useSidebarNav() {
   // "/boutique" reste actif sur une sous-page sans item dédié (ex. "/boutique/panier"), puisqu'il
   // est alors seul candidat.
   const activeTo = visibleItems.reduce<string | null>((best, item) => {
-    const correspond =
-      location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+    const correspond = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
     if (!correspond) return best;
     return best === null || item.to.length > best.length ? item.to : best;
   }, null);
@@ -501,9 +521,7 @@ export function useSidebarNav() {
   }
 
   function itemALeSignal(item: NavItem): boolean {
-    return notificationsNonLues.some(
-      (n) => n.lien === item.to || n.lien.startsWith(`${item.to}/`),
-    );
+    return notificationsNonLues.some((n) => n.lien === item.to || n.lien.startsWith(`${item.to}/`));
   }
 
   function handleClicItem(item: NavItem) {
@@ -794,24 +812,24 @@ export default function Sidebar() {
               "thin-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto px-2"
         }
       >
-        {collapsed
-          ? groups.map((group) => (
-              <RailGroupButton
-                key={group.key}
-                group={group}
-                isItemActive={isItemActive}
-                itemALeSignal={itemALeSignal}
-                onNavigate={handleClicItem}
-              />
-            ))
-          : (
-              <NavAccordionList
-                groups={groups}
-                isItemActive={isItemActive}
-                itemALeSignal={itemALeSignal}
-                onNavigate={handleClicItem}
-              />
-            )}
+        {collapsed ? (
+          groups.map((group) => (
+            <RailGroupButton
+              key={group.key}
+              group={group}
+              isItemActive={isItemActive}
+              itemALeSignal={itemALeSignal}
+              onNavigate={handleClicItem}
+            />
+          ))
+        ) : (
+          <NavAccordionList
+            groups={groups}
+            isItemActive={isItemActive}
+            itemALeSignal={itemALeSignal}
+            onNavigate={handleClicItem}
+          />
+        )}
       </nav>
     </aside>
   );

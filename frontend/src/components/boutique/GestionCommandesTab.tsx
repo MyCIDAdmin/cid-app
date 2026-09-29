@@ -36,7 +36,7 @@ import {
   useChangerStatutCommande,
   useCommandes,
   useConfirmerPaiementCommande,
-  useCreerRetour,
+  useCreerRetourLot,
   useExpedierCommande,
 } from "../../hooks/useBoutique";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
@@ -126,6 +126,13 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
   const [modePaiementParCommande, setModePaiementParCommande] = useState<
     Record<string, ModePaiementCommande>
   >({});
+  // Date de transaction backdatée par commande (demande utilisateur du 2026-09-29 : "Bei
+  // Zahlungsbestätigung Im Modul [...] 'Shop Verwaltung' das Transaktionsdatum bei der
+  // Bestätigung hinzufügen") — vide par défaut (comportement inchangé : date/heure actuelles
+  // côté backend, voir ConfirmerPaiementCommandePayload).
+  const [datePaiementParCommande, setDatePaiementParCommande] = useState<Record<string, string>>(
+    {},
+  );
 
   // Téléchargement des documents PDF (confirmation/facture, demande utilisateur du 2026-09-25) —
   // `documentEnCours` retient "<commandeId>-<type>" pour ne désactiver que le bouton concerné.
@@ -141,9 +148,13 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
   const [modePaiementNacherfassung, setModePaiementNacherfassung] =
     useState<ModePaiementCommande>("especes");
 
+  // Retour multi-variantes (demande utilisateur du 2026-09-29 : "Bei Shop Verwaltung für
+  // Retoure soll es möglich sein, Mengen pro Varianten einzugeben") — `quantitesRetour` associe
+  // chaque ligne retournable de la commande à la quantité saisie pour CE retour (0 = ligne non
+  // incluse dans le lot), plutôt qu'une seule ligne sélectionnée via <select> comme avant. Motif/
+  // commentaire restent partagés pour tout le lot (voir RetourLotPayload/RetourViewSet.lot).
   const [retourModal, setRetourModal] = useState<Commande | null>(null);
-  const [ligneRetourId, setLigneRetourId] = useState("");
-  const [quantiteRetour, setQuantiteRetour] = useState(1);
+  const [quantitesRetour, setQuantitesRetour] = useState<Record<string, number>>({});
   const [motifRetour, setMotifRetour] = useState<MotifRetour>("autre");
   const [commentaireRetour, setCommentaireRetour] = useState("");
 
@@ -157,7 +168,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
   const annulerMutation = useAnnulerCommande();
   const confirmerPaiementMutation = useConfirmerPaiementCommande();
   const expedierMutation = useExpedierCommande();
-  const creerRetourMutation = useCreerRetour();
+  const creerRetourMutation = useCreerRetourLot();
 
   async function telechargerConfirmation(commande: Commande) {
     setErreurDocument(null);
@@ -211,7 +222,10 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
   function confirmerPaiement(commande: Commande) {
     confirmerPaiementMutation.mutate({
       id: commande.id,
-      payload: { mode_paiement: modePaiementParCommande[commande.id] ?? "virement" },
+      payload: {
+        mode_paiement: modePaiementParCommande[commande.id] ?? "virement",
+        date_paiement: datePaiementParCommande[commande.id] || undefined,
+      },
     });
   }
 
@@ -246,28 +260,33 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
 
   function ouvrirRetour(commande: Commande) {
     setRetourModal(commande);
-    const premiereLigne = commande.lignes.find((l) => l.quantite_retournable > 0);
-    setLigneRetourId(premiereLigne?.id ?? "");
-    setQuantiteRetour(1);
+    setQuantitesRetour({});
     setMotifRetour("autre");
     setCommentaireRetour("");
   }
 
+  // Lignes retournables de la commande ouverte, dans l'ordre — calculé une fois ici plutôt
+  // qu'inline dans le JSX (utilisé à la fois pour le rendu des champs et pour la validation).
+  const lignesRetournables = retourModal?.lignes.filter((l) => l.quantite_retournable > 0) ?? [];
+
+  // Lot effectivement soumis : uniquement les lignes où l'admin a saisi une quantité > 0 (voir
+  // RetourLotSerializer.validate_lignes côté backend, qui refuse un lot vide).
+  const lignesDuLot = lignesRetournables
+    .map((l) => ({ ligne_commande: l.id, quantite: quantitesRetour[l.id] ?? 0 }))
+    .filter((l) => l.quantite > 0);
+
   function soumettreRetour() {
-    if (!retourModal || !ligneRetourId) return;
+    if (!retourModal || lignesDuLot.length === 0) return;
     creerRetourMutation.mutate(
       {
         commande: retourModal.id,
-        ligne_commande: ligneRetourId,
-        quantite: quantiteRetour,
         motif: motifRetour,
         commentaire: commentaireRetour || undefined,
+        lignes: lignesDuLot,
       },
       { onSuccess: () => setRetourModal(null) },
     );
   }
-
-  const ligneRetourSelectionnee = retourModal?.lignes.find((l) => l.id === ligneRetourId);
 
   return (
     <div>
@@ -475,6 +494,19 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
                                 </option>
                               ))}
                             </select>
+                            <input
+                              type="date"
+                              aria-label={t("paiement.date_paiement_label")}
+                              value={datePaiementParCommande[commande.id] ?? ""}
+                              onChange={(e) =>
+                                setDatePaiementParCommande((prev) => ({
+                                  ...prev,
+                                  [commande.id]: e.target.value,
+                                }))
+                              }
+                              max={new Date().toISOString().slice(0, 10)}
+                              className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-[11px]"
+                            />
                             <button
                               type="button"
                               onClick={() => confirmerPaiement(commande)}
@@ -666,40 +698,38 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
             <p className="mt-1 text-xs text-text-tertiary">{retourModal.numero_commande}</p>
 
             <div className="mt-3 flex flex-col gap-2">
-              <label className="text-xs font-medium text-text-secondary">
-                {t("retour.ligne_label")}
-                <select
-                  value={ligneRetourId}
-                  onChange={(e) => {
-                    setLigneRetourId(e.target.value);
-                    setQuantiteRetour(1);
-                  }}
-                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                >
-                  {retourModal.lignes
-                    .filter((l) => l.quantite_retournable > 0)
-                    .map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {t("retour.ligne_option", {
-                          quantite: l.quantite,
-                          prix: l.prix_unitaire,
-                          retournable: l.quantite_retournable,
-                        })}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label className="text-xs font-medium text-text-secondary">
-                {t("retour.quantite_label")}
-                <input
-                  type="number"
-                  min={1}
-                  max={ligneRetourSelectionnee?.quantite_retournable ?? 1}
-                  value={quantiteRetour}
-                  onChange={(e) => setQuantiteRetour(Number(e.target.value))}
-                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                />
-              </label>
+              <p className="text-xs font-medium text-text-secondary">{t("retour.lignes_titre")}</p>
+              {/* Une ligne par variante retournable (demande utilisateur du 2026-09-29 : "Mengen
+                  pro Varianten einzugeben") — un input à 0 signifie "pas incluse dans ce retour",
+                  voir lignesDuLot ci-dessus. */}
+              <div className="flex flex-col gap-2 rounded-cid border border-text-tertiary/20 p-2">
+                {lignesRetournables.map((l) => (
+                  <div key={l.id} className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-text-secondary">
+                      {t("retour.ligne_option", {
+                        quantite: l.quantite,
+                        prix: l.prix_unitaire,
+                        retournable: l.quantite_retournable,
+                      })}
+                    </span>
+                    <input
+                      type="number"
+                      aria-label={t("retour.quantite_label")}
+                      min={0}
+                      max={l.quantite_retournable}
+                      value={quantitesRetour[l.id] ?? 0}
+                      onChange={(e) => {
+                        const valeur = Math.max(
+                          0,
+                          Math.min(Number(e.target.value), l.quantite_retournable),
+                        );
+                        setQuantitesRetour((prev) => ({ ...prev, [l.id]: valeur }));
+                      }}
+                      className="w-20 rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
               <label className="text-xs font-medium text-text-secondary">
                 {t("retour.motif_label")}
                 <select
@@ -742,13 +772,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
               <button
                 type="button"
                 onClick={soumettreRetour}
-                disabled={
-                  !ligneRetourId ||
-                  quantiteRetour < 1 ||
-                  quantiteRetour > (ligneRetourSelectionnee?.quantite_retournable ?? 0) ||
-                  creerRetourMutation.isPending ||
-                  !modifiable
-                }
+                disabled={lignesDuLot.length === 0 || creerRetourMutation.isPending || !modifiable}
                 title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-50"
               >

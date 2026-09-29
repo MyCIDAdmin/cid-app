@@ -225,6 +225,18 @@ export interface RetourPayload {
   commentaire?: string;
 }
 
+/** Entrée de POST /boutique/retours/lot/ (Bureau Admin+) — demande utilisateur du 2026-09-29 :
+ * "Bei Shop Verwaltung für Retoure soll es möglich sein, Mengen pro Varianten einzugeben".
+ * Retour de PLUSIEURS lignes/variantes d'une même commande en un seul appel, un motif/
+ * commentaire partagé pour tout le lot (voir RetourLotSerializer côté backend) — contrairement
+ * à RetourPayload ci-dessus qui reste utilisé pour un retour à une seule ligne. */
+export interface RetourLotPayload {
+  commande: string;
+  motif: MotifRetour;
+  commentaire?: string;
+  lignes: Array<{ ligne_commande: string; quantite: number }>;
+}
+
 export interface Commande {
   id: string;
   numero_commande: string;
@@ -319,6 +331,12 @@ export interface ChangerStatutCommandePayload {
  * demande utilisateur du 2026-09-15). */
 export interface ConfirmerPaiementCommandePayload {
   mode_paiement: ModePaiementCommande;
+  /** Date de transaction backdatée (demande utilisateur du 2026-09-29 : "Bei
+   * Zahlungsbestätigung Im Modul [...] 'Shop Verwaltung' das Transaktionsdatum bei der
+   * Bestätigung hinzufügen") — format "YYYY-MM-DD" (`<input type="date">`), jamais dans le
+   * futur (voir _valider_date_paiement_non_future côté backend). Absente ou vide ->
+   * comportement inchangé (date/heure actuelles, voir CommandeViewSet.confirmer_paiement). */
+  date_paiement?: string;
 }
 
 /** Entrée de POST /boutique/commandes/{id}/initier-paiement-en-ligne/ (ajouté le 2026-09-17,

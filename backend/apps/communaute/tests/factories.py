@@ -7,6 +7,7 @@ from factory.django import DjangoModelFactory
 from apps.accounts.models import Role, User
 from apps.communaute.models import (
     Album,
+    ArrierePlanModule,
     CategorieForum,
     ChoixQuestion,
     ClassementLigue,
@@ -310,6 +311,14 @@ class EquipeLogoFactory(DjangoModelFactory):
 
     equipe = factory.Sequence(lambda n: f"Équipe {n}")
     logo = factory.django.ImageField(color="red", format="PNG")
+
+
+class ArrierePlanModuleFactory(DjangoModelFactory):
+    class Meta:
+        model = ArrierePlanModule
+
+    module = "membres"
+    image = factory.django.ImageField(color="blue", format="PNG")
 
 
 class RencontreCalendrierFactory(DjangoModelFactory):

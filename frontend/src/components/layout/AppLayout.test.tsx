@@ -16,6 +16,12 @@ vi.mock("./Sidebar", async () => {
   return { ...actual, default: () => <div data-testid="sidebar-stub" /> };
 });
 vi.mock("./MobileNavDrawer", () => ({ default: () => <div data-testid="mobile-drawer-stub" /> }));
+// Stubbé (demande utilisateur du 2026-09-29, image de fond par module) : ce composant
+// appelle useArrierePlansModules() (React Query), hors périmètre de ce test qui ne couvre
+// que le footer/le logo — voir ModuleBackground.test.tsx pour son propre test dédié.
+vi.mock("./ModuleBackground", () => ({
+  default: () => <div data-testid="module-background-stub" />,
+}));
 vi.mock("./NotificationBell", () => ({ default: () => <div data-testid="bell-stub" /> }));
 vi.mock("./LanguageSwitcher", () => ({ default: () => <div data-testid="lang-stub" /> }));
 vi.mock("./ThemeToggle", () => ({ default: () => <div data-testid="theme-stub" /> }));

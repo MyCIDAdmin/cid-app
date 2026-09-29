@@ -17,7 +17,7 @@ vi.mock("../../hooks/useBoutique", async () => {
     useAnnulerCommande: vi.fn(),
     useConfirmerPaiementCommande: vi.fn(),
     useExpedierCommande: vi.fn(),
-    useCreerRetour: vi.fn(),
+    useCreerRetourLot: vi.fn(),
   };
 });
 
@@ -122,11 +122,11 @@ describe("GestionCommandesTab", () => {
       isError: false,
       isPending: false,
     } as unknown as ReturnType<typeof useBoutiqueHooks.useExpedierCommande>);
-    vi.mocked(useBoutiqueHooks.useCreerRetour).mockReturnValue({
+    vi.mocked(useBoutiqueHooks.useCreerRetourLot).mockReturnValue({
       mutate: creerRetourMock,
       isError: false,
       isPending: false,
-    } as unknown as ReturnType<typeof useBoutiqueHooks.useCreerRetour>);
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCreerRetourLot>);
 
     window.URL.createObjectURL = vi.fn(() => "blob:mock-url");
     window.URL.revokeObjectURL = vi.fn();
@@ -185,6 +185,21 @@ describe("GestionCommandesTab", () => {
     expect(confirmerPaiementMock).toHaveBeenCalledWith({
       id: "c1",
       payload: { mode_paiement: "especes" },
+    });
+  });
+
+  it("confirme le paiement avec une date de transaction backdatée (demande utilisateur du 2026-09-29)", () => {
+    renderWithProviders(<GestionCommandesTab />);
+    fireEvent.change(screen.getByLabelText("paiement.mode_label"), {
+      target: { value: "especes" },
+    });
+    fireEvent.change(screen.getByLabelText("paiement.date_paiement_label"), {
+      target: { value: "2026-06-10" },
+    });
+    fireEvent.click(screen.getByText("paiement.confirmer"));
+    expect(confirmerPaiementMock).toHaveBeenCalledWith({
+      id: "c1",
+      payload: { mode_paiement: "especes", date_paiement: "2026-06-10" },
     });
   });
 
@@ -286,7 +301,7 @@ describe("GestionCommandesTab", () => {
     fireEvent.click(screen.getByText("retour.bouton"));
     expect(screen.getByText("retour.titre")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("retour.quantite_label"), {
+    fireEvent.change(screen.getAllByLabelText("retour.quantite_label")[0], {
       target: { value: "2" },
     });
     fireEvent.change(screen.getByLabelText("retour.motif_label"), {
@@ -297,10 +312,77 @@ describe("GestionCommandesTab", () => {
     expect(creerRetourMock).toHaveBeenCalledWith(
       {
         commande: "c1",
-        ligne_commande: "l1",
-        quantite: 2,
         motif: "defectueux",
         commentaire: undefined,
+        lignes: [{ ligne_commande: "l1", quantite: 2 }],
+      },
+      expect.anything(),
+    );
+  });
+
+  it("propose un retour sur plusieurs variantes en un seul lot", () => {
+    // Demande utilisateur du 2026-09-29 : "Bei Shop Verwaltung für Retoure soll es möglich
+    // sein, Mengen pro Varianten einzugeben" — deux lignes retournables de la même commande,
+    // chacune avec sa propre quantité saisie, soumises en un seul appel à /retours/lot/.
+    useAuthStore.setState({ user: bureauAdmin });
+    vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          commande({
+            statut: "expediee",
+            lignes: [
+              {
+                id: "l1",
+                variante: "v1",
+                quantite: 3,
+                prix_unitaire: "20.00",
+                sous_total: "60.00",
+                quantite_offerte: 0,
+                pourcentage_reduction_quantite: null,
+                reduction_quantite: "0.00",
+                sous_total_net: "60.00",
+                quantite_retournee: 0,
+                quantite_retournable: 3,
+              },
+              {
+                id: "l2",
+                variante: "v2",
+                quantite: 2,
+                prix_unitaire: "15.00",
+                sous_total: "30.00",
+                quantite_offerte: 0,
+                pourcentage_reduction_quantite: null,
+                reduction_quantite: "0.00",
+                sous_total_net: "30.00",
+                quantite_retournee: 0,
+                quantite_retournable: 2,
+              },
+            ],
+          }),
+        ],
+      },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+
+    renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByText("retour.bouton"));
+
+    const inputs = screen.getAllByLabelText("retour.quantite_label");
+    expect(inputs).toHaveLength(2);
+    fireEvent.change(inputs[0], { target: { value: "2" } });
+    fireEvent.change(inputs[1], { target: { value: "1" } });
+    fireEvent.click(screen.getByText("retour.confirmer"));
+
+    expect(creerRetourMock).toHaveBeenCalledWith(
+      {
+        commande: "c1",
+        motif: "autre",
+        commentaire: undefined,
+        lignes: [
+          { ligne_commande: "l1", quantite: 2 },
+          { ligne_commande: "l2", quantite: 1 },
+        ],
       },
       expect.anything(),
     );
@@ -373,7 +455,7 @@ describe("GestionCommandesTab", () => {
     renderWithProviders(<GestionCommandesTab />);
     fireEvent.click(screen.getByText("retour.bouton"));
 
-    fireEvent.change(screen.getByLabelText("retour.quantite_label"), {
+    fireEvent.change(screen.getAllByLabelText("retour.quantite_label")[0], {
       target: { value: "5" },
     });
     fireEvent.click(screen.getByText("retour.confirmer"));
@@ -381,10 +463,9 @@ describe("GestionCommandesTab", () => {
     expect(creerRetourMock).toHaveBeenCalledWith(
       {
         commande: "c1",
-        ligne_commande: "l1",
-        quantite: 5,
         motif: "autre",
         commentaire: undefined,
+        lignes: [{ ligne_commande: "l1", quantite: 5 }],
       },
       expect.anything(),
     );

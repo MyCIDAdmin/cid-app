@@ -180,6 +180,13 @@ export interface HistoriqueStatutCotisation {
 export interface ChangerStatutCotisationPayload {
   statut: StatutCotisation;
   motif?: string;
+  /** Date de transaction backdatée (demande utilisateur du 2026-09-29 : "Bei
+   * Zahlungsbestätigung Im Modul 'Zahlungen' [...] das Transaktionsdatum bei der Bestätigung
+   * hinzufügen") — pertinente uniquement pour une transition vers `payee` (ignorée sinon côté
+   * backend, voir CotisationViewSet.changer_statut) ; format "YYYY-MM-DD" (`<input
+   * type="date">`), jamais dans le futur (voir _valider_date_paiement_non_future). Absente ou
+   * vide -> comportement inchangé (date du jour, voir Cotisation.save()). */
+  date_paiement?: string;
 }
 
 /**

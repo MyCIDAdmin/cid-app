@@ -20,6 +20,7 @@ import type {
   RegleReduction,
   RegleReductionPayload,
   Retour,
+  RetourLotPayload,
   RetourPayload,
   StatutBonAchat,
   StatutCommande,
@@ -380,6 +381,13 @@ export async function listRetours(filtres: RetoursFiltres = {}): Promise<CursorP
 
 export async function creerRetour(payload: RetourPayload): Promise<Retour> {
   const { data } = await apiClient.post<Retour>("/boutique/retours/", payload);
+  return data;
+}
+
+// Retour de plusieurs lignes/variantes en un seul appel (demande utilisateur du 2026-09-29,
+// voir docstring RetourLotPayload) — voir RetourViewSet.lot côté backend.
+export async function creerRetourLot(payload: RetourLotPayload): Promise<Retour[]> {
+  const { data } = await apiClient.post<Retour[]>("/boutique/retours/lot/", payload);
   return data;
 }
 

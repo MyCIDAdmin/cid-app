@@ -18,12 +18,21 @@ une écriture MinIO réelle (EndpointConnectionError, aucun MinIO en environneme
 
 EquipeLogo.logo ajouté le 2026-09-28 (même raisonnement — Fan-Club, upload de logos
 d'équipes, voir test_api.py::test_equipe_logos_*).
+
+ArrierePlanModule.image ajouté le 2026-09-29 (même raisonnement — images de fond par
+module, voir test_api.py::test_arriere_plans_modules_*).
 """
 
 import pytest
 from django.core.files.storage import FileSystemStorage
 
-from apps.communaute.models import ConfigurationSitePublic, EquipeLogo, Photo, Publication
+from apps.communaute.models import (
+    ArrierePlanModule,
+    ConfigurationSitePublic,
+    EquipeLogo,
+    Photo,
+    Publication,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -34,6 +43,7 @@ def _photos_storage_local(tmp_path):
         Publication._meta.get_field("document"),
         ConfigurationSitePublic._meta.get_field("video_hero"),
         EquipeLogo._meta.get_field("logo"),
+        ArrierePlanModule._meta.get_field("image"),
     ]
     originaux = [champ.storage for champ in champs]
     for champ in champs:

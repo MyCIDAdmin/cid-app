@@ -195,6 +195,7 @@
       "virement": "SEPA-Überweisung",
       "especes": "Bar"
     },
+    "date_paiement_label": "Transaktionsdatum (optional, Standard: jetzt)",
     "confirmer": "Zahlung bestätigen",
     "erreur": "Die Zahlungsbestätigung ist fehlgeschlagen."
   },
@@ -217,6 +218,7 @@
     "bouton": "Retoure erfassen",
     "titre": "Retoure erfassen",
     "ligne_label": "Artikel",
+    "lignes_titre": "Artikel & Mengen (pro Variante)",
     "ligne_option": "{{quantite}} × {{prix}} € — {{retournable}} retournierbar",
     "quantite_label": "Retournierte Menge",
     "motif_label": "Grund",

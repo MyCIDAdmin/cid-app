@@ -263,6 +263,33 @@ describe("CotisationsEnAttentePage", () => {
     });
   });
 
+  it("confirme le paiement avec une date de transaction backdatée (demande utilisateur du 2026-09-29)", () => {
+    const mutate = vi.fn();
+    vi.mocked(useCotisationsHooks.useMarquerCotisationPayee).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useMarquerCotisationPayee>);
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: { next: null, previous: null, results: [cotisationEnAttente()] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.date_paiement_label"), {
+      target: { value: "2026-08-15" },
+    });
+    fireEvent.click(screen.getByText("en_attente_paiement.confirmer"));
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate.mock.calls[0][0]).toEqual({
+      id: "c1",
+      payload: { mode_paiement: "virement_sepa", date_paiement: "2026-08-15" },
+    });
+  });
+
   it("préremplit le mode de paiement déjà connu", () => {
     vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
       data: {
@@ -318,6 +345,41 @@ describe("CotisationsEnAttentePage", () => {
 
     expect(mutate).toHaveBeenCalledWith(
       { id: "c1", payload: { statut: "annulee", motif: "Erreur de saisie" } },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  it("propose une date de transaction uniquement pour une transition vers payee, et la transmet", () => {
+    // Demande utilisateur du 2026-09-29 : le champ n'a de sens QUE pour statut=payee (voir
+    // docstring ChangerStatutCotisationPayload) — masqué pour toute autre transition.
+    const mutate = vi.fn();
+    vi.mocked(useCotisationsHooks.useChangerStatutCotisation).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useChangerStatutCotisation>);
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: { next: null, previous: null, results: [cotisationEnAttente({ statut: "annulee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    expect(
+      screen.queryByLabelText("en_attente_paiement.date_paiement_label"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.changer_statut_label"), {
+      target: { value: "payee" },
+    });
+    fireEvent.change(screen.getByLabelText("en_attente_paiement.date_paiement_label"), {
+      target: { value: "2026-07-01" },
+    });
+    fireEvent.click(screen.getByText("en_attente_paiement.changer_statut"));
+
+    expect(mutate).toHaveBeenCalledWith(
+      { id: "c1", payload: { statut: "payee", motif: "", date_paiement: "2026-07-01" } },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
   });

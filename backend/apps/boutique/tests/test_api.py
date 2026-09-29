@@ -963,6 +963,56 @@ def test_confirmer_paiement_sans_mode_paiement_refuse(api_client):
     assert resp.status_code == 400
 
 
+# date_paiement (transaction backdatée, demande utilisateur du 2026-09-29 : "Bei
+# Zahlungsbestätigung Im Modul [...] 'Shop Verwaltung' das Transaktionsdatum bei der
+# Bestätigung hinzufügen")
+
+
+def test_confirmer_paiement_avec_date_paiement_backdate_la_transaction(api_client):
+    from datetime import date
+
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df-date1@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-date1@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, df).post(
+        _confirmer_paiement_url(commande),
+        {"mode_paiement": "virement", "date_paiement": "2026-06-10"},
+    )
+    assert resp.status_code == 200, resp.data
+    commande.refresh_from_db()
+    # localtime() : date_paiement_confirme est stocké en UTC (USE_TZ=True) — _debut_jour_aware
+    # construit minuit dans le fuseau LOCAL, donc un .date() direct sur la valeur UTC peut
+    # retomber sur la veille selon le fuseau (voir même correctif dans test_api.py cotisations).
+    assert timezone.localtime(commande.date_paiement_confirme).date() == date(2026, 6, 10)
+
+
+def test_confirmer_paiement_sans_date_paiement_utilise_maintenant(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df-date2@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-date2@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, df).post(
+        _confirmer_paiement_url(commande), {"mode_paiement": "virement"}
+    )
+    assert resp.status_code == 200, resp.data
+    commande.refresh_from_db()
+    assert timezone.localtime(commande.date_paiement_confirme).date() == timezone.localdate()
+
+
+def test_confirmer_paiement_refuse_date_paiement_future(api_client):
+    df, _ = _user_avec_membre(Role.DIR_FINANCIER, "df-date3@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-date3@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EN_ATTENTE)
+
+    resp = _auth(api_client, df).post(
+        _confirmer_paiement_url(commande),
+        {"mode_paiement": "virement", "date_paiement": "2099-01-01"},
+    )
+    assert resp.status_code == 400
+    assert "date_paiement" in resp.data["details"]
+
+
 # expedier — flux normal
 
 
@@ -1362,6 +1412,183 @@ def test_list_retours_filtre_par_commande(api_client):
     assert resp.status_code == 200
     assert len(resp.data["results"]) == 1
     assert resp.data["results"][0]["commande"] == commande1.id
+
+
+# --- retours/lot — retour en une fois de plusieurs variantes (demande utilisateur du
+# 2026-09-29 : "Bei Shop Verwaltung für Retoure soll es möglich sein, Mengen pro Varianten
+# einzugeben") -----------------------------------------------------------------------------
+
+
+def _retour_lot_url():
+    return reverse("boutique:retour-lot")
+
+
+def test_retour_lot_bureau_admin_cree_un_retour_par_variante(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-lot1@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-lot1@example.de")
+    variante1 = VarianteProduitFactory(stock=0)
+    variante2 = VarianteProduitFactory(stock=1)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne1 = LigneCommandeFactory(commande=commande, variante=variante1, quantite=3)
+    ligne2 = LigneCommandeFactory(commande=commande, variante=variante2, quantite=2)
+
+    resp = _auth(api_client, bureau).post(
+        _retour_lot_url(),
+        {
+            "commande": str(commande.id),
+            "motif": "mauvaise_taille",
+            "commentaire": "Deux tailles ne convenaient pas",
+            "lignes": [
+                {"ligne_commande": str(ligne1.id), "quantite": 2},
+                {"ligne_commande": str(ligne2.id), "quantite": 1},
+            ],
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert len(resp.data) == 2
+
+    variante1.refresh_from_db()
+    variante2.refresh_from_db()
+    assert variante1.stock == 2  # 0 + 2
+    assert variante2.stock == 2  # 1 + 1
+
+    ligne1.refresh_from_db()
+    ligne2.refresh_from_db()
+    assert ligne1.quantite_retournee == 2
+    assert ligne2.quantite_retournee == 1
+
+
+def test_retour_lot_membre_refuse(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "m-lot2@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
+
+    resp = _auth(api_client, user).post(
+        _retour_lot_url(),
+        {
+            "commande": str(commande.id),
+            "motif": "autre",
+            "lignes": [{"ligne_commande": str(ligne.id), "quantite": 1}],
+        },
+        format="json",
+    )
+    assert resp.status_code == 403
+
+
+def test_retour_lot_refuse_si_une_quantite_depasse_le_retournable(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-lot3@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-lot3@example.de")
+    variante1 = VarianteProduitFactory(stock=0)
+    variante2 = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne1 = LigneCommandeFactory(commande=commande, variante=variante1, quantite=1)
+    ligne2 = LigneCommandeFactory(commande=commande, variante=variante2, quantite=2)
+
+    resp = _auth(api_client, bureau).post(
+        _retour_lot_url(),
+        {
+            "commande": str(commande.id),
+            "motif": "autre",
+            "lignes": [
+                {"ligne_commande": str(ligne1.id), "quantite": 1},
+                # dépasse la quantité commandée pour cette ligne (2)
+                {"ligne_commande": str(ligne2.id), "quantite": 5},
+            ],
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    # Aucun retour ni réintégration de stock ne doit avoir eu lieu (transaction atomique) —
+    # même principe que RetourLotSerializer.validate + CommandeViewSet.passer (verrouillage
+    # trié, voir views.py).
+    variante1.refresh_from_db()
+    variante2.refresh_from_db()
+    assert variante1.stock == 0
+    assert variante2.stock == 0
+    ligne1.refresh_from_db()
+    assert ligne1.quantite_retournee == 0
+
+
+def test_retour_lot_refuse_ligne_dune_autre_commande(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-lot4@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-lot4@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    autre_commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne_autre_commande = LigneCommandeFactory(
+        commande=autre_commande, variante=variante, quantite=2
+    )
+
+    resp = _auth(api_client, bureau).post(
+        _retour_lot_url(),
+        {
+            "commande": str(commande.id),
+            "motif": "autre",
+            "lignes": [{"ligne_commande": str(ligne_autre_commande.id), "quantite": 1}],
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "lignes" in resp.data["details"]
+
+
+def test_retour_lot_refuse_lignes_dupliquees(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-lot5@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-lot5@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=5)
+
+    resp = _auth(api_client, bureau).post(
+        _retour_lot_url(),
+        {
+            "commande": str(commande.id),
+            "motif": "autre",
+            "lignes": [
+                {"ligne_commande": str(ligne.id), "quantite": 1},
+                {"ligne_commande": str(ligne.id), "quantite": 2},
+            ],
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "lignes" in resp.data["details"]
+
+
+def test_retour_lot_refuse_sans_lignes(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-lot6@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-lot6@example.de")
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.EXPEDIEE)
+
+    resp = _auth(api_client, bureau).post(
+        _retour_lot_url(),
+        {"commande": str(commande.id), "motif": "autre", "lignes": []},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "lignes" in resp.data["details"]
+
+
+def test_retour_lot_commande_annulee_refuse(api_client):
+    bureau, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-lot7@example.de")
+    _, membre = _user_avec_membre(Role.MEMBRE, "m-lot7@example.de")
+    variante = VarianteProduitFactory(stock=0)
+    commande = CommandeFactory(membre=membre, statut=StatutCommande.ANNULEE)
+    ligne = LigneCommandeFactory(commande=commande, variante=variante, quantite=2)
+
+    resp = _auth(api_client, bureau).post(
+        _retour_lot_url(),
+        {
+            "commande": str(commande.id),
+            "motif": "autre",
+            "lignes": [{"ligne_commande": str(ligne.id), "quantite": 1}],
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "commande" in resp.data["details"]
 
 
 # --- Vente au comptoir/vereinfachter Kassenverkauf par le Directeur Financier/Admin (ajoutée le

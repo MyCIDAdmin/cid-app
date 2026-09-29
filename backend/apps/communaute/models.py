@@ -1703,3 +1703,78 @@ class EquipeLogo(models.Model):
 
     def __str__(self):
         return self.equipe
+
+
+# Modules éligibles à une image de fond de page (ajouté le 2026-09-29, demande utilisateur :
+# "Im Modul 'Hero Video' es soll möglich sein Hintergrund Bilder pro Modul (außer in der
+# Kategorie Verwaltung) hochzuladen"). Sous-ensemble d'apps.rbac.registry.MODULES : seuls les
+# modules qui ont une page réellement visitée par un membre EN DEHORS du groupe "administration"
+# de la Sidebar (voir frontend/src/components/layout/Sidebar.tsx NAV_ITEMS) — "cotisations" a
+# fusionné dans "adhesions" (module /mon-adhesion, voir Phase F), "stats" (/stats) et
+# "notifications" (/admin/notifications) n'ont QUE des pages du groupe "administration", donc
+# volontairement absents ici (jamais de fond de page à leur associer). Constante volontairement
+# indépendante de apps.rbac.registry.MODULES (mêmes raisons que MODULES lui-même vis-à-vis d'une
+# table dédiée, voir sa docstring) : CharField sans choices figées côté modèle, validée ici.
+MODULES_AVEC_ARRIERE_PLAN = [
+    "membres",
+    "adhesions",
+    "evenements",
+    "projets",
+    "boutique",
+    "communaute",
+    "vote",
+]
+
+
+def arriere_plan_module_upload_path(instance, filename):
+    return f"configuration-site/arriere-plan/{instance.module}/{filename}"
+
+
+class ArrierePlanModule(models.Model):
+    """Image de fond appliquée derrière le contenu de page d'un module de l'app connectée
+    (ajouté le 2026-09-29, demande utilisateur : "Im Modul 'Hero Video' es soll möglich sein
+    Hintergrund Bilder pro Modul (außer in der Kategorie Verwaltung) hochzuladen [...] skaliert
+    als Hintergrund für die Seite des Moduls dargestellt werden") — voir AppLayout.tsx côté
+    frontend pour le rendu (image + calque de superposition pour garder le contenu lisible,
+    même principe que HeroVideo.tsx) et Sidebar.tsx::getModuleForPath pour la résolution
+    route -> module courant.
+
+    Une ligne par module de `MODULES_AVEC_ARRIERE_PLAN` ci-dessus — absence de ligne = aucun
+    fond (comportement par défaut), même convention que apps.rbac.models.ModuleVisibiliteMembre
+    (`module` CharField unique plutôt qu'une FK figée, pour rester extensible sans migration si
+    la liste de modules éligibles change). `ArrierePlanModuleViewSet.create` fait un UPSERT par
+    module (même principe que EquipeLogoViewSet.create ci-dessus) : un upload pour un module déjà
+    configuré remplace l'image existante.
+
+    Lecture réservée à tout authentifié (PAS AllowAny, contrairement à ConfigurationSitePublic/
+    EquipeLogo ci-dessus : ces images ne concernent QUE les pages de l'app connectée, jamais la
+    Startseite publique) — écriture réservée au Bureau Admin+ via un seuil `ROLE_LEVELS` direct,
+    même choix hors matrice apps.rbac que ConfigurationSitePublicPermission/EquipeLogoPermission
+    (réglage ponctuel, page /admin/configuration-site commune aux trois réglages). Même bucket
+    MinIO ("cid-media", PublicationsStorage) et même validation upload
+    (`valider_et_reencoder_photo`) que Photo/ConfigurationSitePublic/EquipeLogo."""
+
+    id = models.AutoField(primary_key=True)
+    module = models.CharField(max_length=50, unique=True)
+    image = models.ImageField(
+        upload_to=arriere_plan_module_upload_path, storage=PublicationsStorage()
+    )
+
+    modifie_par = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("Bureau Admin+ ayant téléversé/remplacé cette image en dernier."),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_arriere_plan_module"
+        verbose_name = _("Image de fond par module")
+        verbose_name_plural = _("Images de fond par module")
+        ordering = ["module"]
+
+    def __str__(self):
+        return self.module
