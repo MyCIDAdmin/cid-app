@@ -97,7 +97,11 @@ from .models import (
     TippspielTeilnahme,
     TippspielTip,
 )
-from .notifications import notifier_nouveau_commentaire_fil, notifier_nouvelle_reponse_forum
+from .notifications import (
+    notifier_mentions,
+    notifier_nouveau_commentaire_fil,
+    notifier_nouvelle_reponse_forum,
+)
 from .permissions import (
     DIR_FINANCIER_MIN_LEVEL,
     MODERATION_MIN_LEVEL,
@@ -267,6 +271,12 @@ class CommentaireViewSet(
         # Notification (ajoutée le 2026-09-16) — auteur de la publication + auteur du
         # commentaire parent si réponse, voir notifications.notifier_nouveau_commentaire_fil.
         notifier_nouveau_commentaire_fil(serializer.instance)
+        # Mentions "@" (ajoutées le 2026-09-29) — voir CommentaireSerializer.mentions ;
+        # self.validated_data reste lisible ici même si create() a retiré "mentions" de sa
+        # copie locale avant l'appel à Model.objects.create().
+        membres_mentionnes = serializer.validated_data.get("mentions") or []
+        if membres_mentionnes:
+            notifier_mentions(serializer.instance, membres_mentionnes)
 
     @action(detail=True, methods=["post"])
     def masquer(self, request, pk=None):
@@ -301,6 +311,16 @@ class SujetViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context["vue"] = "detail" if self.action == "retrieve" else "liste"
         return context
+
+    def perform_create(self, serializer):
+        serializer.save()
+        # Mentions "@" (ajoutées le 2026-09-29) — voir CommentaireViewSet.perform_create pour
+        # l'explication du self.validated_data.get("mentions"). Pas de notification "nouveau
+        # sujet" par ailleurs (aucun destinataire naturel — contrairement à une réponse, un
+        # sujet n'a pas d'"auteur précédent" à prévenir), donc rien d'autre à faire ici.
+        membres_mentionnes = serializer.validated_data.get("mentions") or []
+        if membres_mentionnes:
+            notifier_mentions(serializer.instance, membres_mentionnes)
 
     @action(detail=True, methods=["post"])
     def epingler(self, request, pk=None):
@@ -375,6 +395,11 @@ class ReponseForumViewSet(
         # Notification (ajoutée le 2026-09-16) — auteur du sujet + précédents répondants
         # uniquement, voir notifications.notifier_nouvelle_reponse_forum.
         notifier_nouvelle_reponse_forum(serializer.instance)
+        # Mentions "@" (ajoutées le 2026-09-29) — voir CommentaireViewSet.perform_create
+        # ci-dessus pour l'explication du self.validated_data.get("mentions").
+        membres_mentionnes = serializer.validated_data.get("mentions") or []
+        if membres_mentionnes:
+            notifier_mentions(serializer.instance, membres_mentionnes)
 
     @action(detail=True, methods=["post"])
     def masquer(self, request, pk=None):

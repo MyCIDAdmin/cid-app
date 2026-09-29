@@ -37,4 +37,31 @@ describe("RichTextEditor", () => {
     // annuler, rétablir = 13 contrôles.
     expect(boutons).toHaveLength(13);
   });
+
+  // Mentions "@" (ajoutées le 2026-09-29) — voir mentionSuggestion.ts/
+  // MentionSuggestionListe.tsx pour la logique du popup de suggestion (testée séparément, la
+  // popup dépend du positionnement DOM réel que jsdom ne calcule pas) ; ici on vérifie
+  // seulement que l'extension @tiptap/extension-mention est bien active (le HTML d'un nœud
+  // mention existant se recharge et s'affiche) quand `rechercherMentions` est fourni.
+  it("recharge et affiche un nœud mention existant quand rechercherMentions est fourni", async () => {
+    const contenu =
+      '<p>Bravo <span data-type="mention" data-id="m1" data-label="Sana">@Sana</span> !</p>';
+    render(<RichTextEditor value={contenu} onChange={vi.fn()} rechercherMentions={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("@Sana")).toBeInTheDocument();
+    });
+  });
+
+  it("sans rechercherMentions (ex. apps.projets), un nœud mention existant reste inerte (pas de crash, texte affiché tel quel)", async () => {
+    const contenu =
+      '<p>Bravo <span data-type="mention" data-id="m1" data-label="Sana">@Sana</span> !</p>';
+    render(<RichTextEditor value={contenu} onChange={vi.fn()} />);
+
+    // Sans l'extension Mention, TipTap ne reconnaît pas le nœud mention — le HTML est ignoré/
+    // aplati plutôt que de faire planter l'éditeur ; seul le texte environnant reste garanti.
+    await waitFor(() => {
+      expect(screen.getByText(/Bravo/)).toBeInTheDocument();
+    });
+  });
 });

@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 
 import ShareButton from "../../components/ui/ShareButton";
 import { useCreerSujet, useSujets } from "../../hooks/useCommunaute";
+import { useMentionAutocomplete } from "../../hooks/useMentionAutocomplete";
 import type { CategorieForum } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -31,6 +32,8 @@ export default function ForumPage() {
 
   const sujetsQuery = useSujets({ categorie: categorie || undefined });
   const creer = useCreerSujet();
+  // Mentions "@" (ajoutées le 2026-09-29) — voir hooks/useMentionAutocomplete.ts.
+  const mention = useMentionAutocomplete(contenu, setContenu);
 
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
@@ -39,13 +42,14 @@ export default function ForumPage() {
       return;
     }
     creer.mutate(
-      { categorie: categorieForm, titre, contenu },
+      { categorie: categorieForm, titre, contenu, mentions: mention.mentionsPourEnvoi(contenu) },
       {
         onSuccess: () => {
           setTitre("");
           setContenu("");
           setAfficherForm(false);
           setErreur("");
+          mention.reinitialiser();
         },
         onError: (err) => setErreur(extractApiErrorMessage(err, t("forum.erreur_creation"))),
       },
@@ -90,13 +94,29 @@ export default function ForumPage() {
             placeholder={t("forum.titre_placeholder")}
             className="mb-2 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
           />
-          <textarea
-            value={contenu}
-            onChange={(e) => setContenu(e.target.value)}
-            placeholder={t("forum.contenu_placeholder")}
-            rows={3}
-            className="mb-2 w-full resize-none rounded-cid border border-text-tertiary/30 p-2 text-sm"
-          />
+          <div className="relative mb-2">
+            <textarea
+              value={contenu}
+              onChange={(e) => setContenu(e.target.value)}
+              placeholder={t("forum.contenu_placeholder")}
+              rows={3}
+              className="w-full resize-none rounded-cid border border-text-tertiary/30 p-2 text-sm"
+            />
+            {mention.suggestions.length > 0 && (
+              <div className="absolute bottom-full left-0 z-10 mb-1 w-48 rounded-cid-lg bg-bg-primary py-1 shadow-xl">
+                {mention.suggestions.map((auteur) => (
+                  <button
+                    key={auteur.id}
+                    type="button"
+                    onClick={() => mention.choisirMention(auteur)}
+                    className="block w-full px-3 py-1 text-left text-xs hover:bg-bg-tertiary"
+                  >
+                    {auteur.prenom} {auteur.nom}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {erreur && <p className="mb-2 text-xs text-status-dangerText">{erreur}</p>}
           <button
             type="submit"

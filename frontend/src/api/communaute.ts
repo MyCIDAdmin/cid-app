@@ -109,11 +109,15 @@ export async function commenterPublication(
   publicationId: string,
   contenu: string,
   parent?: string,
+  // IDs de membres mentionnés via "@" (ajouté le 2026-09-29) — voir
+  // hooks/useMentionAutocomplete.ts et CommentaireSerializer.mentions côté backend.
+  mentions?: string[],
 ): Promise<Commentaire> {
   const { data } = await apiClient.post<Commentaire>("/communaute/commentaires/", {
     publication: publicationId,
     contenu,
     parent,
+    mentions,
   });
   return data;
 }
@@ -171,10 +175,16 @@ export async function masquerSujet(id: string, motif?: string): Promise<Sujet> {
   return data;
 }
 
-export async function repondreAuSujet(sujetId: string, contenu: string): Promise<ReponseForum> {
+export async function repondreAuSujet(
+  sujetId: string,
+  contenu: string,
+  // Voir commenterPublication ci-dessus — même mécanisme.
+  mentions?: string[],
+): Promise<ReponseForum> {
   const { data } = await apiClient.post<ReponseForum>("/communaute/reponses-forum/", {
     sujet: sujetId,
     contenu,
+    mentions,
   });
   return data;
 }

@@ -19,6 +19,7 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useRepondreAuSujet: vi.fn(),
     useSupprimerReponseForum: vi.fn(),
     useMasquerReponseForum: vi.fn(),
+    useRechercherMembres: vi.fn(),
   };
 });
 
@@ -90,6 +91,11 @@ describe("ForumSujetPage", () => {
     vi.mocked(useCommunauteHooks.useMasquerReponseForum).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useMasquerReponseForum>>(),
     );
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
   });
 
   it("affiche le sujet et ses réponses", () => {
@@ -195,7 +201,36 @@ describe("ForumSujetPage", () => {
     fireEvent.click(screen.getByText("forum.repondre"));
 
     expect(repondre.mutate).toHaveBeenCalledWith(
-      { sujetId: "s1", contenu: "Ma réponse" },
+      { sujetId: "s1", contenu: "Ma réponse", mentions: [] },
+      expect.anything(),
+    );
+  });
+
+  it("propose une mention '@' dans le champ de réponse et l'inclut dans mentions à l'envoi", () => {
+    // Ajouté le 2026-09-29 — voir hooks/useMentionAutocomplete.ts.
+    const repondre = mutationMock<ReturnType<typeof useCommunauteHooks.useRepondreAuSujet>>();
+    vi.mocked(useCommunauteHooks.useRepondreAuSujet).mockReturnValue(repondre);
+    vi.mocked(useCommunauteHooks.useSujet).mockReturnValue({
+      data: sujet(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSujet>);
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [{ id: "m9", prenom: "Cible", nom: "Test", photo: null }],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
+
+    renderSujet();
+
+    fireEvent.change(screen.getByPlaceholderText("forum.placeholder_reponse"), {
+      target: { value: "Salut @Ci" },
+    });
+    fireEvent.click(screen.getByText("Cible Test"));
+    fireEvent.click(screen.getByText("forum.repondre"));
+
+    expect(repondre.mutate).toHaveBeenCalledWith(
+      { sujetId: "s1", contenu: "Salut @Cible ", mentions: ["m9"] },
       expect.anything(),
     );
   });

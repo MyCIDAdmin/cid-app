@@ -20,6 +20,7 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useCommenterPublication: vi.fn(),
     useSupprimerCommentaire: vi.fn(),
     useMasquerCommentaire: vi.fn(),
+    useRechercherMembres: vi.fn(),
   };
 });
 
@@ -122,6 +123,11 @@ describe("FilPage", () => {
     vi.mocked(useCommunauteHooks.useMasquerCommentaire).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useMasquerCommentaire>>(),
     );
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
   });
 
   it("affiche les publications du fil", () => {
@@ -162,6 +168,52 @@ describe("FilPage", () => {
     expect(screen.getByText("#berlin")).toBeInTheDocument();
   });
 
+  // Retour utilisateur du 2026-09-29 : "cliquer un hashtag filtre le fil" — le filtre backend/
+  // hook existait déjà (usePublications({hashtag})), seul le câblage UI manquait.
+  it("cliquer un hashtag appelle usePublications avec ce filtre et affiche le bandeau actif", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication({ hashtags: ["ca1920"] })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    fireEvent.click(screen.getByText("#ca1920"));
+
+    expect(useCommunauteHooks.usePublications).toHaveBeenLastCalledWith({ hashtag: "ca1920" });
+    expect(screen.getByText("fil.filtre_hashtag")).toBeInTheDocument();
+  });
+
+  it("retire le filtre hashtag actif au clic sur 'Filter entfernen'", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication({ hashtags: ["ca1920"] })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />, { route: "/?hashtag=ca1920" });
+
+    expect(screen.getByText("fil.filtre_hashtag")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("fil.retirer_filtre"));
+
+    expect(useCommunauteHooks.usePublications).toHaveBeenLastCalledWith({ hashtag: undefined });
+    expect(screen.queryByText("fil.filtre_hashtag")).not.toBeInTheDocument();
+  });
+
+  it("affiche un message dédié quand aucune publication ne correspond au hashtag filtré", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />, { route: "/?hashtag=inconnu" });
+
+    expect(screen.getByText("fil.aucune_publication_hashtag")).toBeInTheDocument();
+    expect(screen.queryByText("fil.aucune_publication")).not.toBeInTheDocument();
+  });
+
   it("appelle liker au clic sur le bouton like", () => {
     const liker = mutationMock<ReturnType<typeof useCommunauteHooks.useLikerPublication>>();
     vi.mocked(useCommunauteHooks.useLikerPublication).mockReturnValue(liker);
@@ -175,6 +227,59 @@ describe("FilPage", () => {
 
     fireEvent.click(screen.getByText("♥ 0"));
     expect(liker.mutate).toHaveBeenCalledWith("p1");
+  });
+
+  it("commente une publication sans mention", () => {
+    const commenter = mutationMock<ReturnType<typeof useCommunauteHooks.useCommenterPublication>>();
+    vi.mocked(useCommunauteHooks.useCommenterPublication).mockReturnValue(commenter);
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    fireEvent.click(screen.getByText("💬 0"));
+    fireEvent.change(screen.getByPlaceholderText("fil.placeholder_commentaire"), {
+      target: { value: "Bravo !" },
+    });
+    fireEvent.click(screen.getByText("fil.envoyer"));
+
+    expect(commenter.mutate).toHaveBeenCalledWith(
+      { publicationId: "p1", contenu: "Bravo !", parent: undefined, mentions: [] },
+      expect.anything(),
+    );
+  });
+
+  it("propose une mention '@' dans le champ de commentaire et l'inclut dans mentions à l'envoi", () => {
+    // Ajouté le 2026-09-29 — voir hooks/useMentionAutocomplete.ts.
+    const commenter = mutationMock<ReturnType<typeof useCommunauteHooks.useCommenterPublication>>();
+    vi.mocked(useCommunauteHooks.useCommenterPublication).mockReturnValue(commenter);
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [{ id: "m9", prenom: "Cible", nom: "Test", photo: null }],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
+
+    renderWithProviders(<FilPage />);
+
+    fireEvent.click(screen.getByText("💬 0"));
+    fireEvent.change(screen.getByPlaceholderText("fil.placeholder_commentaire"), {
+      target: { value: "Salut @Ci" },
+    });
+    fireEvent.click(screen.getByText("Cible Test"));
+    fireEvent.click(screen.getByText("fil.envoyer"));
+
+    expect(commenter.mutate).toHaveBeenCalledWith(
+      { publicationId: "p1", contenu: "Salut @Cible ", parent: undefined, mentions: ["m9"] },
+      expect.anything(),
+    );
   });
 
   it("un membre normal ne voit pas le bouton masquer sur le contenu d'autrui", () => {
