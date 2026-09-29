@@ -64,6 +64,13 @@
  * tableaux restent donc distincts mais colocalises sur la meme page - ce qui satisfait
  * l'exigence reelle de l'utilisateur ("tout ce qui apparaissait sous Mitgliedsbeitrag
  * apparait desormais sous Meine Mitgliedschaft") sans degrader ni l'un ni l'autre historique.
+ *
+ * Historique de statut annuel (ajouté le 2026-09-29, diagnostic import Historique Excel) : un
+ * troisième tableau distinct, alimenté par GET /membres/mon-historique/ (voir
+ * hooks/useMembres.useMonHistoriqueStatut et history_views.py côté backend). Même raisonnement
+ * que ci-dessus contre la fusion : ces lignes (une par année, statut actif/inactif) n'ont ni
+ * campagne/offre ni prix/reçu, donc un tableau à part plutôt que des colonnes vides dans l'un
+ * des deux tableaux existants.
  */
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -78,6 +85,7 @@ import {
   useSouscrire,
   useUploaderJustificatif,
 } from "../../hooks/useAdhesions";
+import { useMonHistoriqueStatut } from "../../hooks/useMembres";
 import type {
   CampagneAdhesion,
   OffreAdhesion,
@@ -156,6 +164,7 @@ export default function MonAdhesionPage() {
   const souscrireMutation = useSouscrire();
   const uploaderJustificatifMutation = useUploaderJustificatif();
   const annulerMutation = useAnnulerSouscription();
+  const monHistoriqueStatut = useMonHistoriqueStatut();
 
   const [offreSelectionneeId, setOffreSelectionneeId] = useState<string | null>(null);
   const [rabaisSelectionneId, setRabaisSelectionneId] = useState<string | null>(null);
@@ -558,6 +567,49 @@ export default function MonAdhesionPage() {
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="mt-5 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+        <h2 className="mb-3 text-xs font-bold text-text-primary">{t("historique_statut.titre")}</h2>
+        {monHistoriqueStatut.isLoading && (
+          <p className="text-sm text-text-tertiary">{t("historique_statut.chargement")}</p>
+        )}
+        {monHistoriqueStatut.isError && (
+          <p className="text-sm text-status-dangerText">{t("historique_statut.erreur")}</p>
+        )}
+        {monHistoriqueStatut.data && monHistoriqueStatut.data.length === 0 && (
+          <p className="text-sm text-text-tertiary">{t("historique_statut.aucun")}</p>
+        )}
+        {monHistoriqueStatut.data && monHistoriqueStatut.data.length > 0 && (
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
+                <th className="py-1">{t("historique_statut.col_annee")}</th>
+                <th className="py-1">{t("historique_statut.col_statut")}</th>
+                <th className="py-1">{t("historique_statut.col_date")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {monHistoriqueStatut.data.map((entree) => (
+                <tr key={entree.annee} className="border-b border-text-tertiary/10 last:border-0">
+                  <td className="py-1">{entree.annee}</td>
+                  <td className="py-1">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        entree.statut === "actif"
+                          ? "bg-status-successBg text-status-successText"
+                          : "bg-bg-tertiary text-text-secondary"
+                      }`}
+                    >
+                      {t(`historique_statut.statut.${entree.statut}`)}
+                    </span>
+                  </td>
+                  <td className="py-1">{formatDate(entree.date_effet)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
