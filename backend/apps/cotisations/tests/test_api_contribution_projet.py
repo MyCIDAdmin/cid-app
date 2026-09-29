@@ -15,6 +15,7 @@ from decimal import Decimal
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
@@ -33,7 +34,9 @@ def api_client():
 
 
 def _user_avec_membre(role, email):
-    user = User.objects.create_user(email=email, password="Password123!", role=role, is_active=True)
+    user = User.objects.create_user(
+        email=email, password="Password123!", role=role, is_active=True
+    )
     membre = MembreFactory(user=user)
     return user, membre
 
@@ -88,7 +91,11 @@ def test_contribution_sans_projet_refusee(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "cp3@example.de")
     resp = _auth(api_client, user).post(
         reverse(LIST_URL),
-        {"type_article": TypeArticle.PROJET, "montant": "10.00", "mode_paiement": "carte"},
+        {
+            "type_article": TypeArticle.PROJET,
+            "montant": "10.00",
+            "mode_paiement": "carte",
+        },
     )
     assert resp.status_code == 400
     assert "projet" in resp.data["details"]
@@ -99,7 +106,11 @@ def test_contribution_sans_montant_refusee(api_client):
     projet = ProjetFactory(cagnote_active=True)
     resp = _auth(api_client, user).post(
         reverse(LIST_URL),
-        {"type_article": TypeArticle.PROJET, "projet": str(projet.id), "mode_paiement": "carte"},
+        {
+            "type_article": TypeArticle.PROJET,
+            "projet": str(projet.id),
+            "mode_paiement": "carte",
+        },
     )
     assert resp.status_code == 400
     assert "montant" in resp.data["details"]
@@ -127,7 +138,7 @@ def test_contribution_echeance_depassee_refusee(api_client):
     """Demande utilisateur point 4 : la date limite bloque une nouvelle contribution —
     voir Projet.echeance_depassee."""
     user, _ = _user_avec_membre(Role.MEMBRE, "cp6@example.de")
-    hier = datetime.date.today() - datetime.timedelta(days=1)
+    hier = timezone.localdate() - datetime.timedelta(days=1)
     projet = ProjetFactory(cagnote_active=True, date_limite=hier)
     resp = _auth(api_client, user).post(
         reverse(LIST_URL),
@@ -144,7 +155,7 @@ def test_contribution_echeance_depassee_refusee(api_client):
 
 def test_contribution_avant_echeance_acceptee(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "cp7@example.de")
-    demain = datetime.date.today() + datetime.timedelta(days=1)
+    demain = timezone.localdate() + datetime.timedelta(days=1)
     projet = ProjetFactory(cagnote_active=True, date_limite=demain)
     resp = _auth(api_client, user).post(
         reverse(LIST_URL),
