@@ -21,6 +21,8 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedCharField
 
+from apps.membres.storage import MembrePhotoStorage
+
 
 class StatutMembre(models.TextChoices):
     """Statut associatif — formulaire fiche membre (mockup pg-admin-nouveau-membre)."""
@@ -176,7 +178,12 @@ class Membre(models.Model):
     )
     date_adhesion = models.DateField(default=_aujourd_hui)
 
-    photo = models.ImageField(upload_to=membre_photo_upload_path, null=True, blank=True)
+    photo = models.ImageField(
+        upload_to=membre_photo_upload_path,
+        storage=MembrePhotoStorage(),
+        null=True,
+        blank=True,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
