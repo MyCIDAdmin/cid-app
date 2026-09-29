@@ -34,9 +34,7 @@ def api_client():
 
 
 def _user_avec_membre(role, email):
-    user = User.objects.create_user(
-        email=email, password="Password123!", role=role, is_active=True
-    )
+    user = User.objects.create_user(email=email, password="Password123!", role=role, is_active=True)
     membre = MembreFactory(user=user)
     return user, membre
 
