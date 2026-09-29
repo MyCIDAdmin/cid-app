@@ -9,11 +9,12 @@ import datetime
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
+
 from apps.cotisations.models import ModePaiement, StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.membres.tests.factories import MembreFactory
 from apps.projets.tests.factories import ProjetFactory
-from django.utils import timezone
 
 pytestmark = pytest.mark.django_db
 
