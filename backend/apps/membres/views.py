@@ -11,6 +11,8 @@ Vues API — app membres (TDD §2.4, complété AHM-51) :
                                                     MembreSerializer)
   DELETE         /membres/{id}/                 — supprimer (Bureau Admin+)
   POST           /membres/{id}/changer_statut/  — changer le statut (RH+)
+  GET/PATCH      /membres/moi/                  — fiche du compte connecté (bouton "Mon profil",
+                                                    ajouté le 2026-09-28), sans connaître son id
 """
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -71,6 +73,41 @@ class MembreViewSet(ModelViewSet):
         if self.action == "list":
             return MembreListSerializer
         return MembreSerializer
+
+    @action(detail=False, methods=["get", "patch"], url_path="moi")
+    def moi(self, request):
+        """Fiche Membre du compte connecté (bouton "Mein Profil" du menu utilisateur, ajouté le
+        2026-09-28) — évite au frontend de devoir d'abord connaître l'id de sa propre fiche pour
+        y accéder. `detail=False` place cette action AVANT la route générique `{pk}/` dans
+        l'ordre d'inclusion du DefaultRouter (SimpleRouter.routes : list, extra list actions,
+        PUIS detail), donc pas de collision malgré le regex de pk non restreint à un UUID (voir
+        urls.py). Réutilise `MembreSerializer` tel quel : le verrouillage des champs
+        administratifs (__init__) et le masquage CIN/passeport (to_representation) s'appliquent
+        déjà automatiquement via `self.get_serializer_context()` (contient `request`) — mais ici
+        `membre.user_id == user.id` est toujours vrai par construction, donc le CIN/passeport
+        démasqué et les seules restrictions liées au rôle du compte s'appliquent normalement.
+        404 (pas 403/{}) si aucune fiche Membre n'est liée à ce compte (superuser, RH créé hors
+        auto-inscription — voir authStore.CidUser.statut_membre côté frontend) : signale
+        clairement au frontend qu'il n'y a rien à éditer ici plutôt qu'une erreur ambiguë."""
+        membre = Membre.objects.select_related("user").filter(user=request.user).first()
+        if membre is None:
+            return Response(
+                {
+                    "code": "aucune_fiche_membre",
+                    "message": "Aucune fiche membre n'est liée à ce compte.",
+                    "details": {},
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if request.method == "GET":
+            serializer = MembreSerializer(membre, context=self.get_serializer_context())
+            return Response(serializer.data)
+        serializer = MembreSerializer(
+            membre, data=request.data, partial=True, context=self.get_serializer_context()
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="changer_statut")
     def changer_statut(self, request, pk=None):

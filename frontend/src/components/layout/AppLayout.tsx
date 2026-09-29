@@ -10,6 +10,7 @@ import MobileNavDrawer from "./MobileNavDrawer";
 import NotificationBell from "./NotificationBell";
 import Sidebar, { getGroupForPath } from "./Sidebar";
 import ThemeToggle from "./ThemeToggle";
+import UserMenu from "./UserMenu";
 
 // Groupes Sidebar sous lesquels le PublicFooter apparaît aussi dans l'app connectée (décision
 // utilisateur du 2026-09-26, "Auch in der eingeloggten App") — jamais "administration", ni les
@@ -71,6 +72,7 @@ export default function AppLayout() {
             <LanguageSwitcher />
             <ThemeToggle />
             <NotificationBell />
+            <UserMenu />
           </div>
         </header>
         <main className="flex-1 overflow-y-auto bg-bg-tertiary p-6">

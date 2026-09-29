@@ -40,4 +40,12 @@ describe("UeberUnsTab", () => {
       "/brand/logo-club-africain.png",
     );
   });
+
+  // Régression du 2026-09-28 (retour utilisateur suivant l'ajout des logos ci-dessus) : le "×"
+  // placé entre les deux logos a été retiré — ils gardent leur espacement (gap) sans séparateur.
+  it("n'affiche plus le séparateur '×' entre les deux logos", () => {
+    renderWithProviders(<UeberUnsTab />);
+
+    expect(screen.queryByText("×")).not.toBeInTheDocument();
+  });
 });

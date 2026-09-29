@@ -141,6 +141,19 @@
     "col_ligne": "Ligne",
     "col_message": "Message"
   },
+  "profil": {
+    "titre": "Mon profil",
+    "retour": "Retour au tableau de bord",
+    "aucune_fiche": "Aucune fiche membre n'est associée à votre compte.",
+    "section_photo": "Photo de profil",
+    "photo_televerser": "Télécharger une photo",
+    "photo_changer": "Changer la photo",
+    "photo_apercu_alt": "Aperçu",
+    "photo_annuler": "Annuler",
+    "photo_confirmer": "Confirmer",
+    "photo_en_cours": "Téléchargement en cours…",
+    "photo_erreur": "Une erreur est survenue lors du téléchargement de la photo."
+  },
   "import_historique": {
     "titre": "Importer un historique de statut",
     "description": "Importez le statut associatif (actif/inactif) de membres déjà existants pour les années passées — une colonne par année. Les membres sont identifiés par email + CIN.",

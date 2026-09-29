@@ -13,6 +13,7 @@ import type {
   RoleDefinition,
   SetMatriceCellulePayload,
   UtilisateurRolesReponse,
+  VisibiliteEffectiveReponse,
 } from "../types/rbac";
 
 export async function creerRole(payload: CreerRolePayload): Promise<RoleDefinition> {
@@ -65,5 +66,16 @@ export async function assignerRolesUtilisateur(
 /** GET /rbac/mes-acces/ — Phase D, voir types/rbac.ts::MesAccesReponse. */
 export async function getMesAcces(): Promise<MesAccesReponse> {
   const { data } = await apiClient.get<MesAccesReponse>("/rbac/mes-acces/");
+  return data;
+}
+
+/** GET /rbac/visibilite-membre/effective/ — voir types/rbac.ts::VisibiliteEffectiveReponse. Bug
+ * corrigé le 2026-09-28 (retour utilisateur : un module masqué dans "ModuleVisibiliteMembre"
+ * restait toujours affiché à un membre normal) — cet endpoint existait déjà côté backend mais
+ * n'était appelé par aucun client frontend, voir hooks/useRbac.ts::useVisibiliteEffective. */
+export async function getVisibiliteEffective(): Promise<VisibiliteEffectiveReponse> {
+  const { data } = await apiClient.get<VisibiliteEffectiveReponse>(
+    "/rbac/visibilite-membre/effective/",
+  );
   return data;
 }

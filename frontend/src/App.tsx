@@ -110,6 +110,12 @@ export default function App() {
             masqués, erreur si la fiche n'est pas la sienne) et le backend
             reste de toute façon la source de vérité (MembrePermission). */}
         <Route path="/membres/:id/modifier" element={<MembreFormPage />} />
+        {/* Profil personnel (bouton "Mein Profil" du menu utilisateur, ajouté le 2026-09-28) —
+            ouvert à tout authentifié, sans RequireRole : MembreFormPage bascule en mode profil
+            (via useMembreMoi/useUpdateMembreMoi) sur ce chemin exact, voir sa docstring de tête.
+            Un compte sans fiche Membre liée (superuser, RH créé hors auto-inscription) voit un
+            message explicite plutôt qu'un formulaire cassé (404 de /membres/moi/). */}
+        <Route path="/mon-profil" element={<MembreFormPage />} />
         {/* Import Excel (RICEFW W-008/F-019) — même gate RH+ que
             MembreImportView côté API. */}
         <Route

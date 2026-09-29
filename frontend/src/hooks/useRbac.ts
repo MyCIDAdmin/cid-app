@@ -20,6 +20,7 @@ const rbacKeys = {
   matrice: () => [...rbacKeys.all, "matrice"] as const,
   rolesUtilisateur: (userId: string) => [...rbacKeys.all, "utilisateur", userId] as const,
   mesAcces: () => [...rbacKeys.all, "mes-acces"] as const,
+  visibiliteEffective: () => [...rbacKeys.all, "visibilite-effective"] as const,
 };
 
 export function useRbacMatrice() {
@@ -95,6 +96,26 @@ export function useMesAcces() {
   return useQuery({
     queryKey: rbacKeys.mesAcces(),
     queryFn: rbacApi.getMesAcces,
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * GET /rbac/visibilite-membre/effective/ (Sidebar.tsx::useSidebarNav) — bug corrigé le
+ * 2026-09-28 (retour utilisateur : masquer un module dans "ModuleVisibiliteMembre" via l'admin
+ * Django n'avait aucun effet, le module restait toujours affiché à un membre normal) : cet
+ * endpoint backend existait déjà (IsAuthenticated seul, voir apps.rbac.views), mais aucun hook
+ * frontend ne l'appelait — la Sidebar n'avait donc aucun moyen de savoir qu'un module avait été
+ * masqué. Même `enabled`/`staleTime` que useMesAcces (ci-dessus), même raison : jamais interrogé
+ * avant la fin du login, rafraîchi au plus une fois par minute (pas une donnée qui change souvent
+ * en pratique — un Admin App la modifie ponctuellement, pas en continu).
+ */
+export function useVisibiliteEffective() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return useQuery({
+    queryKey: rbacKeys.visibiliteEffective(),
+    queryFn: rbacApi.getVisibiliteEffective,
     enabled: isAuthenticated,
     staleTime: 60_000,
   });

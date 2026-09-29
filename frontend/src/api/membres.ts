@@ -55,6 +55,31 @@ export async function getMembre(id: string): Promise<Membre> {
   return data;
 }
 
+/** GET /membres/moi/ — fiche du compte connecté (bouton "Mein Profil" du menu utilisateur,
+ * ajouté le 2026-09-28) : évite de devoir d'abord connaître son propre id. 404 si aucune fiche
+ * Membre n'est liée à ce compte (superuser, RH créé hors auto-inscription) — voir
+ * MembreViewSet.moi côté backend. */
+export async function getMembreMoi(): Promise<Membre> {
+  const { data } = await apiClient.get<Membre>("/membres/moi/");
+  return data;
+}
+
+/** PATCH /membres/moi/ — modifie sa propre fiche sans connaître son id (voir getMembreMoi). */
+export async function updateMembreMoi(values: Partial<MembreFormValues>): Promise<Membre> {
+  const { data } = await apiClient.patch<Membre>("/membres/moi/", values);
+  return data;
+}
+
+/** Téléverse la photo de profil du compte connecté (retour utilisateur du 2026-09-28, "zu dem
+ * Profile darf der User sein Bild hochladen") — même convention que televerserImageEvenement
+ * (FormData + PATCH, requête multipart distincte de l'appel JSON ci-dessus). */
+export async function televerserPhotoMembreMoi(fichier: File): Promise<Membre> {
+  const formData = new FormData();
+  formData.append("photo", fichier);
+  const { data } = await apiClient.patch<Membre>("/membres/moi/", formData);
+  return data;
+}
+
 export async function createMembre(values: MembreFormValues): Promise<Membre> {
   const { data } = await apiClient.post<Membre>("/membres/", values);
   return data;
