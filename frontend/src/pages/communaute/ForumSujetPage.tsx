@@ -21,6 +21,7 @@ import {
   useSupprimerSujet,
   useVerrouillerSujet,
 } from "../../hooks/useCommunaute";
+import { useMentionAutocomplete } from "../../hooks/useMentionAutocomplete";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -46,6 +47,9 @@ export default function ForumSujetPage() {
 
   const [contenu, setContenu] = useState("");
   const [erreur, setErreur] = useState("");
+  // Mentions "@" (ajoutées le 2026-09-29) — voir hooks/useMentionAutocomplete.ts. Déclaré
+  // avant les retours anticipés ci-dessous (Rules of Hooks — jamais de hook conditionnel).
+  const mention = useMentionAutocomplete(contenu, setContenu);
 
   if (sujetQuery.isLoading) {
     return <p className="text-sm text-text-tertiary">{t("forum.chargement")}</p>;
@@ -60,11 +64,12 @@ export default function ForumSujetPage() {
     e.preventDefault();
     if (!contenu.trim() || !id) return;
     repondre.mutate(
-      { sujetId: id, contenu },
+      { sujetId: id, contenu, mentions: mention.mentionsPourEnvoi(contenu) },
       {
         onSuccess: () => {
           setContenu("");
           setErreur("");
+          mention.reinitialiser();
         },
         onError: (err) => setErreur(extractApiErrorMessage(err, t("forum.erreur_reponse"))),
       },
@@ -175,7 +180,21 @@ export default function ForumSujetPage() {
       {sujet.est_verrouille ? (
         <p className="mt-3 text-xs text-text-tertiary">{t("forum.sujet_verrouille_message")}</p>
       ) : (
-        <form onSubmit={soumettreReponse} className="mt-3 flex gap-2">
+        <form onSubmit={soumettreReponse} className="relative mt-3 flex gap-2">
+          {mention.suggestions.length > 0 && (
+            <div className="absolute bottom-full left-0 z-10 mb-1 w-48 rounded-cid-lg bg-bg-primary py-1 shadow-xl">
+              {mention.suggestions.map((auteur) => (
+                <button
+                  key={auteur.id}
+                  type="button"
+                  onClick={() => mention.choisirMention(auteur)}
+                  className="block w-full px-3 py-1 text-left text-xs hover:bg-bg-tertiary"
+                >
+                  {auteur.prenom} {auteur.nom}
+                </button>
+              ))}
+            </div>
+          )}
           <input
             type="text"
             value={contenu}

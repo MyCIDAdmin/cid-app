@@ -1,13 +1,22 @@
 /**
  * Page "Fil d'actualité" (mockup #pg-fil, Release Plan §3.2 — Phase 4A).
  *
- * Publications texte/photo, hashtags (affichage seul — cliquer un hashtag filtre le fil),
- * likes/commentaires/partage (bascule), modération (masquer, Bureau Admin+). Un commentaire
- * peut recevoir une réponse (un seul niveau, voir CommentaireSerializer côté backend).
+ * Publications texte/photo, hashtags (cliquer un hashtag filtre le fil — voir `?hashtag=`
+ * ci-dessous, câblé le 2026-09-29 : le filtre backend/hook existait déjà depuis AHM/R2 mais
+ * n'était pas encore relié à l'UI), likes/commentaires/partage (bascule), modération (masquer,
+ * Bureau Admin+). Un commentaire peut recevoir une réponse (un seul niveau, voir
+ * CommentaireSerializer côté backend).
+ *
+ * Filtre par hashtag : `?hashtag=xxx` dans l'URL (même principe de state-dans-l'URL que
+ * `?onglet=` sur BoutiquePage.tsx — bookmarkable/partageable), lu/écrit via useSearchParams.
+ * `usePublications({hashtag})`/`listPublications` acceptaient déjà ce filtre (côté hook et API),
+ * seul le câblage UI manquait : span statique -> bouton cliquable + bandeau de filtre actif.
  */
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
+import * as communauteApi from "../../api/communaute";
 import RichTextEditor from "../../components/ui/RichTextEditor";
 import ShareButton from "../../components/ui/ShareButton";
 import {
@@ -22,6 +31,7 @@ import {
   useSupprimerPublication,
 } from "../../hooks/useCommunaute";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
+import { useMentionAutocomplete } from "../../hooks/useMentionAutocomplete";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Commentaire, Publication } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -112,9 +122,11 @@ function CommentaireLigne({
 function PublicationCarte({
   publication,
   cardRef,
+  onHashtagClick,
 }: {
   publication: Publication;
   cardRef?: (el: HTMLElement | null) => void;
+  onHashtagClick: (hashtag: string) => void;
 }) {
   const { t } = useTranslation("communaute");
   const user = useAuthStore((s) => s.user);
@@ -130,16 +142,24 @@ function PublicationCarte({
   const [texteCommentaire, setTexteCommentaire] = useState("");
   const [repondreA, setRepondreA] = useState<string | undefined>(undefined);
   const [erreur, setErreur] = useState("");
+  // Mentions "@" (ajoutées le 2026-09-29) — voir hooks/useMentionAutocomplete.ts.
+  const mention = useMentionAutocomplete(texteCommentaire, setTexteCommentaire);
 
   function soumettreCommentaire(e: React.FormEvent) {
     e.preventDefault();
     if (!texteCommentaire.trim()) return;
     commenter.mutate(
-      { publicationId: publication.id, contenu: texteCommentaire, parent: repondreA },
+      {
+        publicationId: publication.id,
+        contenu: texteCommentaire,
+        parent: repondreA,
+        mentions: mention.mentionsPourEnvoi(texteCommentaire),
+      },
       {
         onSuccess: () => {
           setTexteCommentaire("");
           setRepondreA(undefined);
+          mention.reinitialiser();
         },
         onError: (err) => setErreur(extractApiErrorMessage(err, t("fil.erreur_commentaire"))),
       },
@@ -185,7 +205,7 @@ function PublicationCarte({
           ci-dessus utilise apercuTexteDepuisHtml (texte brut tronqué) plutôt que `contenu` :
           des balises HTML brutes dans un partage navigator.share/email seraient illisibles. */}
       <div
-        className="prose prose-sm my-2 max-w-none text-text-secondary"
+        className="prose prose-sm my-2 max-w-none text-text-secondary [&_span[data-type='mention']]:font-semibold [&_span[data-type='mention']]:text-ca"
         dangerouslySetInnerHTML={{ __html: publication.contenu }}
       />
 
@@ -211,9 +231,14 @@ function PublicationCarte({
       {publication.hashtags.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1">
           {publication.hashtags.map((hashtag) => (
-            <span key={hashtag} className="text-xs font-medium text-ca">
+            <button
+              key={hashtag}
+              type="button"
+              onClick={() => onHashtagClick(hashtag)}
+              className="text-xs font-medium text-ca hover:underline"
+            >
               #{hashtag}
-            </span>
+            </button>
           ))}
         </div>
       )}
@@ -286,7 +311,21 @@ function PublicationCarte({
             />
           ))}
 
-          <form onSubmit={soumettreCommentaire} className="flex gap-2">
+          <form onSubmit={soumettreCommentaire} className="relative flex gap-2">
+            {mention.suggestions.length > 0 && (
+              <div className="absolute bottom-full left-0 z-10 mb-1 w-48 rounded-cid-lg bg-bg-primary py-1 shadow-xl">
+                {mention.suggestions.map((auteur) => (
+                  <button
+                    key={auteur.id}
+                    type="button"
+                    onClick={() => mention.choisirMention(auteur)}
+                    className="block w-full px-3 py-1 text-left text-xs hover:bg-bg-tertiary"
+                  >
+                    {auteur.prenom} {auteur.nom}
+                  </button>
+                ))}
+              </div>
+            )}
             <input
               type="text"
               value={texteCommentaire}
@@ -327,8 +366,36 @@ export default function FilPage() {
   // pdf Dokumenten" + "Hinweis welche Dateientypen sind erlaubt".
   const [fichier, setFichier] = useState<File | undefined>(undefined);
   const [erreur, setErreur] = useState("");
+  // Mentions "@" dans l'éditeur TipTap (ajoutées le 2026-09-29) — voir
+  // components/ui/mentionSuggestion.ts. Le mapping id/prénom+nom -> {id, label} générique
+  // reste ici plutôt que dans RichTextEditor.tsx, qui ne connaît pas apps.communaute.
+  const rechercherMentions = useCallback(
+    (query: string) =>
+      communauteApi
+        .rechercherMembres(query)
+        .then((membres) => membres.map((m) => ({ id: m.id, label: `${m.prenom} ${m.nom}` }))),
+    [],
+  );
 
-  const publicationsQuery = usePublications();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hashtagFiltre = searchParams.get("hashtag");
+
+  function filtrerParHashtag(hashtag: string) {
+    const next = new URLSearchParams(searchParams);
+    next.set("hashtag", hashtag);
+    // Un changement de filtre n'est plus le suivi d'une notification — on nettoie la cible de
+    // deep-link, même principe que BoutiquePage.tsx en changeant d'onglet (voir docstring).
+    next.delete("publication");
+    setSearchParams(next);
+  }
+
+  function retirerFiltreHashtag() {
+    const next = new URLSearchParams(searchParams);
+    next.delete("hashtag");
+    setSearchParams(next);
+  }
+
+  const publicationsQuery = usePublications({ hashtag: hashtagFiltre ?? undefined });
   const creer = useCreerPublication();
   const { refCible } = useDeepLinkCible("publication");
 
@@ -367,6 +434,7 @@ export default function FilPage() {
             onChange={setTexte}
             placeholder={t("fil.placeholder_publication")}
             ariaLabel={t("fil.placeholder_publication")}
+            rechercherMentions={rechercherMentions}
           />
           <div className="mt-2 flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
@@ -409,6 +477,19 @@ export default function FilPage() {
         </form>
       )}
 
+      {hashtagFiltre && (
+        <div className="mb-3 flex items-center gap-2 rounded-cid bg-bg-secondary px-3 py-2 text-xs text-text-secondary">
+          <span>{t("fil.filtre_hashtag", { hashtag: hashtagFiltre })}</span>
+          <button
+            type="button"
+            onClick={retirerFiltreHashtag}
+            className="font-medium text-ca hover:underline"
+          >
+            {t("fil.retirer_filtre")}
+          </button>
+        </div>
+      )}
+
       {publicationsQuery.isLoading && (
         <p className="text-sm text-text-tertiary">{t("fil.chargement")}</p>
       )}
@@ -416,7 +497,9 @@ export default function FilPage() {
         <p className="text-sm text-status-dangerText">{t("fil.erreur_chargement")}</p>
       )}
       {publicationsQuery.data?.results.length === 0 && (
-        <p className="text-sm text-text-tertiary">{t("fil.aucune_publication")}</p>
+        <p className="text-sm text-text-tertiary">
+          {hashtagFiltre ? t("fil.aucune_publication_hashtag") : t("fil.aucune_publication")}
+        </p>
       )}
 
       <div className="space-y-3">
@@ -425,6 +508,7 @@ export default function FilPage() {
             key={publication.id}
             publication={publication}
             cardRef={refCible(publication.id)}
+            onHashtagClick={filtrerParHashtag}
           />
         ))}
       </div>

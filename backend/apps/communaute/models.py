@@ -143,6 +143,30 @@ def extraire_hashtags(contenu: str) -> list[str]:
     return list(vus.keys())
 
 
+# Nœud "mention" tel qu'émis par défaut par @tiptap/extension-mention dans le HTML de
+# Publication.contenu : <span data-type="mention" data-id="<uuid Membre>"
+# data-label="...">@...</span> — ajouté le 2026-09-29 (demande utilisateur : "'@'-Erwähnungen
+# auf weitere Module wie Forum/Neuigkeiten ausweiten und mit echten Benachrichtigungen
+# versehen"). Contrairement au Forum/Commentaire (champ texte libre, voir
+# serializers.CommentaireSerializer.mentions), le composeur de Publication est du TipTap : le
+# membre mentionné est donc extrait du HTML final plutôt que transmis séparément par le
+# frontend. Lookaheads plutôt qu'un match linéaire "data-type puis data-id" : TipTap ne
+# garantit pas l'ordre de rendu des attributs.
+MENTION_RE = re.compile(r'<span\b(?=[^>]*\bdata-type="mention")(?=[^>]*\bdata-id="([^"]+)")[^>]*>')
+
+
+def extraire_mentions(contenu: str) -> list[str]:
+    """Renvoie les data-id (UUID de Membre, non résolus/validés ici) des nœuds mention trouvés
+    dans le HTML, dédoublonnés en conservant l'ordre d'apparition — la résolution en instances
+    `Membre` réellement actives se fait côté appelant (voir
+    PublicationSerializer.create()/.update(), même découpage que synchroniser_hashtags() vs.
+    extraire_hashtags() ci-dessus)."""
+    vus: dict[str, None] = {}
+    for match in MENTION_RE.finditer(contenu or ""):
+        vus.setdefault(match.group(1), None)
+    return list(vus.keys())
+
+
 class Hashtag(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     label = models.CharField(max_length=100, unique=True)

@@ -131,11 +131,13 @@ export function useCommenterPublication() {
       publicationId,
       contenu,
       parent,
+      mentions,
     }: {
       publicationId: string;
       contenu: string;
       parent?: string;
-    }) => communauteApi.commenterPublication(publicationId, contenu, parent),
+      mentions?: string[];
+    }) => communauteApi.commenterPublication(publicationId, contenu, parent, mentions),
     onSuccess: () => invalidatePublications(queryClient),
   });
 }
@@ -222,8 +224,15 @@ export function useMasquerSujet() {
 export function useRepondreAuSujet() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ sujetId, contenu }: { sujetId: string; contenu: string }) =>
-      communauteApi.repondreAuSujet(sujetId, contenu),
+    mutationFn: ({
+      sujetId,
+      contenu,
+      mentions,
+    }: {
+      sujetId: string;
+      contenu: string;
+      mentions?: string[];
+    }) => communauteApi.repondreAuSujet(sujetId, contenu, mentions),
     onSuccess: (_data, variables) => invalidateSujet(queryClient, variables.sujetId),
   });
 }

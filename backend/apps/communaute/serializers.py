@@ -8,7 +8,7 @@ from django.utils import timezone as django_timezone
 from rest_framework import serializers
 
 from apps.accounts.models import ROLE_LEVELS
-from apps.membres.models import Membre
+from apps.membres.models import Membre, StatutMembre
 
 from .models import (
     Album,
@@ -47,7 +47,9 @@ from .models import (
     TippspielTip,
     TypePrixTippspiel,
     TypeReactionMatch,
+    extraire_mentions,
 )
+from .notifications import notifier_mentions
 from .permissions import MODERATION_MIN_LEVEL
 from .validators import valider_document_pdf, valider_et_reencoder_photo, valider_video_hero
 
@@ -66,6 +68,20 @@ class CommentaireSerializer(serializers.ModelSerializer):
     auteur = AuteurSerializer(read_only=True)
     reponses = serializers.SerializerMethodField()
     est_auteur = serializers.SerializerMethodField()
+    # Ajouté le 2026-09-29 (demande utilisateur : "'@'-Erwähnungen auf weitere Module wie
+    # Forum/Neuigkeiten ausweiten und mit echten Benachrichtigungen versehen") — le champ de
+    # commentaire est un simple <input type="text"> (pas de TipTap), donc le frontend transmet
+    # explicitement les membres choisis dans le picker "@" plutôt que de parser le texte
+    # (aucune ambiguïté nom→membre). `queryset` restreint aux membres actifs = même validation
+    # que MembreRechercheViewSet, un ID inconnu/inactif est rejeté avec une 400 par DRF.
+    # write_only et absent du modèle : extrait dans create() ci-dessous, jamais persisté tel
+    # quel — voir CommentaireViewSet.perform_create pour l'envoi de la notification.
+    mentions = serializers.PrimaryKeyRelatedField(
+        many=True,
+        write_only=True,
+        required=False,
+        queryset=Membre.objects.filter(statut=StatutMembre.ACTIF),
+    )
 
     class Meta:
         model = Commentaire
@@ -79,6 +95,7 @@ class CommentaireSerializer(serializers.ModelSerializer):
             "created_at",
             "reponses",
             "est_auteur",
+            "mentions",
         ]
         read_only_fields = ["id", "est_masque", "created_at"]
 
@@ -103,6 +120,10 @@ class CommentaireSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         membre = self.context["request"].user.membre
         validated_data["auteur"] = membre
+        # "mentions" n'est pas un champ du modèle Commentaire — retiré de la copie locale
+        # avant Model.objects.create(**validated_data) ; self.validated_data (l'attribut,
+        # jamais modifié par ce pop) reste lisible depuis la vue après serializer.save().
+        validated_data.pop("mentions", None)
         return super().create(validated_data)
 
 
@@ -190,13 +211,28 @@ class PublicationSerializer(serializers.ModelSerializer):
         validated_data["auteur"] = membre
         publication = super().create(validated_data)
         publication.synchroniser_hashtags()
+        self._notifier_mentions(publication)
         return publication
 
     def update(self, instance, validated_data):
         publication = super().update(instance, validated_data)
         if "contenu" in validated_data:
             publication.synchroniser_hashtags()
+            self._notifier_mentions(publication)
         return publication
+
+    def _notifier_mentions(self, publication) -> None:
+        # Mentions "@" (ajoutées le 2026-09-29) — voir extraire_mentions dans models.py pour
+        # le format du nœud TipTap. Résolution en Membres réellement actifs ici (jamais fait
+        # confiance aux data-id bruts du HTML — un membre a pu être désactivé depuis la
+        # rédaction, ou l'attribut peut être falsifié côté client), même garde-fou que le
+        # queryset de CommentaireSerializer.mentions ci-dessus.
+        ids = extraire_mentions(publication.contenu)
+        if not ids:
+            return
+        membres = Membre.objects.filter(id__in=ids, statut=StatutMembre.ACTIF)
+        if membres:
+            notifier_mentions(publication, membres)
 
 
 class PublicationLikeSerializer(serializers.ModelSerializer):
@@ -216,10 +252,27 @@ class PublicationPartageSerializer(serializers.ModelSerializer):
 class ReponseForumSerializer(serializers.ModelSerializer):
     auteur = AuteurSerializer(read_only=True)
     est_auteur = serializers.SerializerMethodField()
+    # Voir CommentaireSerializer.mentions ci-dessus — même mécanisme (champ texte libre, pas
+    # de TipTap).
+    mentions = serializers.PrimaryKeyRelatedField(
+        many=True,
+        write_only=True,
+        required=False,
+        queryset=Membre.objects.filter(statut=StatutMembre.ACTIF),
+    )
 
     class Meta:
         model = ReponseForum
-        fields = ["id", "sujet", "auteur", "contenu", "est_masquee", "created_at", "est_auteur"]
+        fields = [
+            "id",
+            "sujet",
+            "auteur",
+            "contenu",
+            "est_masquee",
+            "created_at",
+            "est_auteur",
+            "mentions",
+        ]
         read_only_fields = ["id", "est_masquee", "created_at"]
 
     def get_est_auteur(self, obj) -> bool:
@@ -232,6 +285,7 @@ class ReponseForumSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         membre = self.context["request"].user.membre
         validated_data["auteur"] = membre
+        validated_data.pop("mentions", None)  # voir CommentaireSerializer.create
         return super().create(validated_data)
 
 
@@ -474,6 +528,14 @@ class SujetSerializer(serializers.ModelSerializer):
     nombre_reponses = serializers.IntegerField(read_only=True)
     reponses = serializers.SerializerMethodField()
     est_auteur = serializers.SerializerMethodField()
+    # Voir CommentaireSerializer.mentions ci-dessus — même mécanisme (champ texte libre, pas
+    # de TipTap).
+    mentions = serializers.PrimaryKeyRelatedField(
+        many=True,
+        write_only=True,
+        required=False,
+        queryset=Membre.objects.filter(statut=StatutMembre.ACTIF),
+    )
 
     class Meta:
         model = Sujet
@@ -492,6 +554,7 @@ class SujetSerializer(serializers.ModelSerializer):
             "nombre_reponses",
             "reponses",
             "est_auteur",
+            "mentions",
         ]
         read_only_fields = [
             "id",
@@ -521,6 +584,7 @@ class SujetSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         membre = self.context["request"].user.membre
         validated_data["auteur"] = membre
+        validated_data.pop("mentions", None)  # voir CommentaireSerializer.create
         return super().create(validated_data)
 
 

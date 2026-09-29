@@ -9,13 +9,24 @@ apps.adhesions.tasks.envoyer_annonce_campagne) : une réponse de forum est un é
 fréquent sur un forum actif, et informer tout le monde à chaque réponse noierait le fil de
 notifications et multiplierait les écritures en base pour peu de valeur. Seuls l'auteur du sujet
 et les membres ayant déjà répondu au même sujet sont notifiés — jamais l'auteur de la nouvelle
-réponse lui-même."""
+réponse lui-même.
+
+`notifier_mentions` (ajoutée le 2026-09-29, demande utilisateur : "'@'-Erwähnungen auf weitere
+Module wie Forum/Neuigkeiten ausweiten und mit echten Benachrichtigungen versehen") couvre les
+mentions "@membre" réelles (avec notification, contrairement aux mentions déjà existantes dans le
+groupe de chat qui restent purement cosmétiques côté frontend, voir GroupeChatPage.tsx) sur
+Publication/Commentaire (fil d'actualité) et Sujet/ReponseForum (forum). Les membres mentionnés
+sont résolus en amont par l'appelant — voir serializers.py (`mentions` pour les champs texte
+libre Sujet/ReponseForum/Commentaire, `MENTION_RE` sur le HTML TipTap pour Publication) — cette
+fonction ne fait que dispatcher la notification, jamais l'extraction."""
 
 from django.conf import settings
 from django.core.mail import send_mail
 
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import email_module_actif, notifier
+
+from .models import Commentaire, Publication, ReponseForum, Sujet
 
 
 def notifier_nouvelle_reponse_forum(reponse) -> None:
@@ -93,5 +104,43 @@ def notifier_nouveau_commentaire_fil(commentaire) -> None:
             TypeNotification.COMMUNAUTE_COMMENTAIRE_FIL,
             titre=titre,
             message=f"{commentaire.auteur} a commenté « {apercu} ».",
+            lien=lien,
+        )
+
+
+def notifier_mentions(objet, membres_mentionnes) -> None:
+    """Notifie chaque membre mentionné via "@" — voir docstring de tête de module. `objet` est
+    l'instance qui porte la mention (`Publication`, `Commentaire`, `Sujet` ou `ReponseForum`) et
+    `membres_mentionnes` un itérable de `Membre` déjà résolus par l'appelant (aucune validation
+    d'existence ici — voir serializers.py). Jamais l'auteur de `objet` lui-même, même s'il se
+    mentionne (`@moi`), pour ne pas se notifier soi-même."""
+    apercu = (objet.contenu or "")[:80]
+
+    if isinstance(objet, Sujet):
+        lien = f"/forum/{objet.id}"
+        contexte = f"le sujet « {objet.titre} »"
+    elif isinstance(objet, ReponseForum):
+        lien = f"/forum/{objet.sujet_id}"
+        contexte = f"le sujet « {objet.sujet.titre} »"
+    elif isinstance(objet, Commentaire):
+        lien = f"/fil?publication={objet.publication_id}"
+        contexte = "un commentaire du fil d'actualité"
+    else:
+        assert isinstance(objet, Publication)
+        lien = f"/fil?publication={objet.id}"
+        contexte = "une publication du fil d'actualité"
+
+    titre = "Vous avez été mentionné·e"
+    for membre in membres_mentionnes:
+        if membre.id == objet.auteur_id:
+            continue
+        user = getattr(membre, "user", None)
+        if not user:
+            continue
+        notifier(
+            user,
+            TypeNotification.COMMUNAUTE_MENTION,
+            titre=titre,
+            message=f"{objet.auteur} vous a mentionné·e dans {contexte} : « {apercu} »",
             lien=lien,
         )

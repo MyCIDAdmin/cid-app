@@ -544,6 +544,156 @@ def test_repondre_a_son_propre_sujet_sans_autre_repondant_ne_notifie_personne(ap
     assert Notification.objects.count() == 0
 
 
+# --- Mentions "@" (ajoutées le 2026-09-29, demande utilisateur : "'@'-Erwähnungen auf weitere
+# Module wie Forum/Neuigkeiten ausweiten und mit echten Benachrichtigungen versehen") —
+# Commentaire/Sujet/ReponseForum sont des champs texte libre : le frontend transmet les membres
+# choisis via le champ "mentions" (voir CommentaireSerializer.mentions). Publication est du
+# TipTap : la mention est extraite du HTML final (voir apps.communaute.models.extraire_mentions).
+
+
+def test_mentionner_un_membre_dans_un_commentaire_le_notifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "mention-auteur@example.de")
+    mentionne_user, mentionne_membre = _user_avec_membre(Role.MEMBRE, "mention-cible@example.de")
+    publication = PublicationFactory()
+
+    resp = _auth(api_client, user).post(
+        reverse("communaute:commentaire-list"),
+        {
+            "publication": str(publication.id),
+            "contenu": "Regarde ça @Cible !",
+            "mentions": [str(mentionne_membre.id)],
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    notification = Notification.objects.get(
+        destinataire=mentionne_user, type_notification=TypeNotification.COMMUNAUTE_MENTION
+    )
+    assert notification.lien == f"/fil?publication={publication.id}"
+
+
+def test_se_mentionner_soi_meme_dans_un_commentaire_ne_se_notifie_pas(api_client):
+    user, membre = _user_avec_membre(Role.MEMBRE, "mention-solo@example.de")
+    publication = PublicationFactory()
+
+    resp = _auth(api_client, user).post(
+        reverse("communaute:commentaire-list"),
+        {
+            "publication": str(publication.id),
+            "contenu": "@moi je note pour plus tard",
+            "mentions": [str(membre.id)],
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert not Notification.objects.filter(
+        type_notification=TypeNotification.COMMUNAUTE_MENTION
+    ).exists()
+
+
+def test_mentionner_un_membre_inactif_dans_un_commentaire_est_refuse(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "mention-invalide@example.de")
+    inactif = MembreFactory(statut=StatutMembre.INACTIF)
+    publication = PublicationFactory()
+
+    resp = _auth(api_client, user).post(
+        reverse("communaute:commentaire-list"),
+        {
+            "publication": str(publication.id),
+            "contenu": "@inactif",
+            "mentions": [str(inactif.id)],
+        },
+    )
+
+    assert resp.status_code == 400
+
+
+def test_mentionner_un_membre_dans_une_reponse_de_sujet_le_notifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "mention-forum@example.de")
+    mentionne_user, mentionne_membre = _user_avec_membre(
+        Role.MEMBRE, "mention-forum-cible@example.de"
+    )
+    sujet = SujetFactory()
+
+    resp = _auth(api_client, user).post(
+        reverse("communaute:reponse-forum-list"),
+        {
+            "sujet": str(sujet.id),
+            "contenu": "@Cible qu'en penses-tu ?",
+            "mentions": [str(mentionne_membre.id)],
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    notification = Notification.objects.get(
+        destinataire=mentionne_user, type_notification=TypeNotification.COMMUNAUTE_MENTION
+    )
+    assert notification.lien == f"/forum/{sujet.id}"
+
+
+def test_mentionner_un_membre_dans_un_nouveau_sujet_le_notifie(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "mention-sujet@example.de")
+    mentionne_user, mentionne_membre = _user_avec_membre(
+        Role.MEMBRE, "mention-sujet-cible@example.de"
+    )
+
+    resp = _auth(api_client, user).post(
+        reverse(SUJET_LIST_URL),
+        {
+            "categorie": CategorieForum.GENERAL,
+            "titre": "Question",
+            "contenu": "@Cible dispo ce soir ?",
+            "mentions": [str(mentionne_membre.id)],
+        },
+    )
+
+    assert resp.status_code == 201, resp.data
+    assert Notification.objects.filter(
+        destinataire=mentionne_user, type_notification=TypeNotification.COMMUNAUTE_MENTION
+    ).exists()
+
+
+def test_mentionner_un_membre_dans_une_publication_tiptap_le_notifie(api_client):
+    """Le composeur de Publication est du TipTap, contrairement à Commentaire/Sujet/
+    ReponseForum — la mention est donc extraite du HTML final (voir
+    apps.communaute.models.extraire_mentions/MENTION_RE), jamais transmise via un champ
+    "mentions" séparé comme pour les champs texte libre ci-dessus."""
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "mention-pub@example.de")
+    mentionne_user, mentionne_membre = _user_avec_membre(
+        Role.MEMBRE, "mention-pub-cible@example.de"
+    )
+
+    contenu = (
+        f'Bravo <span data-type="mention" data-id="{mentionne_membre.id}" '
+        f'data-label="Cible">@Cible</span> !'
+    )
+    resp = _auth(api_client, user).post(reverse(PUBLICATION_LIST_URL), {"contenu": contenu})
+
+    assert resp.status_code == 201, resp.data
+    notification = Notification.objects.get(
+        destinataire=mentionne_user, type_notification=TypeNotification.COMMUNAUTE_MENTION
+    )
+    assert notification.lien == f"/fil?publication={resp.data['id']}"
+
+
+def test_mention_dun_membre_inexistant_dans_une_publication_est_ignoree_silencieusement(
+    api_client,
+):
+    """Contrairement à Commentaire/Sujet/ReponseForum (mentions transmises via un champ dédié,
+    validées par DRF avant la création), un data-id de Publication vient du HTML brut — un ID
+    falsifié ou périmé ne doit jamais faire échouer la création de la publication, seulement
+    n'être notifié à personne (voir PublicationSerializer._notifier_mentions)."""
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "mention-pub-invalide@example.de")
+    contenu = '<span data-type="mention" data-id="00000000-0000-0000-0000-000000000000">@x</span>'
+
+    resp = _auth(api_client, user).post(reverse(PUBLICATION_LIST_URL), {"contenu": contenu})
+
+    assert resp.status_code == 201, resp.data
+    assert not Notification.objects.filter(
+        type_notification=TypeNotification.COMMUNAUTE_MENTION
+    ).exists()
+
+
 def test_detail_dun_sujet_inclut_ses_reponses_mais_pas_la_liste(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "m18@example.de")
     sujet = SujetFactory()

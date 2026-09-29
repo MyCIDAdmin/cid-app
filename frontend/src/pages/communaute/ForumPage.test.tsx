@@ -13,6 +13,7 @@ vi.mock("../../hooks/useCommunaute", async () => {
     ...actual,
     useSujets: vi.fn(),
     useCreerSujet: vi.fn(),
+    useRechercherMembres: vi.fn(),
   };
 });
 
@@ -66,6 +67,11 @@ describe("ForumPage", () => {
       isAuthenticated: true,
     });
     vi.mocked(useCommunauteHooks.useCreerSujet).mockReturnValue(mutationMock());
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
   });
 
   afterEach(() => {
@@ -121,7 +127,50 @@ describe("ForumPage", () => {
     fireEvent.click(screen.getByText("forum.publier_sujet"));
 
     expect(creer.mutate).toHaveBeenCalledWith(
-      { categorie: "general", titre: "Un nouveau sujet", contenu: "Le contenu du sujet." },
+      {
+        categorie: "general",
+        titre: "Un nouveau sujet",
+        contenu: "Le contenu du sujet.",
+        mentions: [],
+      },
+      expect.anything(),
+    );
+  });
+
+  it("propose une mention '@' dans le nouveau sujet et l'inclut dans mentions à l'envoi", () => {
+    // Ajouté le 2026-09-29 — voir hooks/useMentionAutocomplete.ts.
+    const creer = mutationMock();
+    vi.mocked(useCommunauteHooks.useCreerSujet).mockReturnValue(creer);
+    vi.mocked(useCommunauteHooks.useSujets).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSujets>);
+    vi.mocked(useCommunauteHooks.useRechercherMembres).mockReturnValue({
+      data: [{ id: "m9", prenom: "Cible", nom: "Test", photo: null }],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useRechercherMembres>);
+
+    renderWithProviders(<ForumPage />);
+
+    fireEvent.click(screen.getByText("forum.nouveau_sujet"));
+    fireEvent.change(screen.getByPlaceholderText("forum.titre_placeholder"), {
+      target: { value: "Un nouveau sujet" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("forum.contenu_placeholder"), {
+      target: { value: "Salut @Ci" },
+    });
+    fireEvent.click(screen.getByText("Cible Test"));
+    fireEvent.click(screen.getByText("forum.publier_sujet"));
+
+    expect(creer.mutate).toHaveBeenCalledWith(
+      {
+        categorie: "general",
+        titre: "Un nouveau sujet",
+        contenu: "Salut @Cible ",
+        mentions: ["m9"],
+      },
       expect.anything(),
     );
   });

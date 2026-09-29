@@ -84,6 +84,9 @@ export interface SujetPayload {
   categorie: CategorieForum;
   titre: string;
   contenu: string;
+  // IDs de membres mentionnés via "@" (ajouté le 2026-09-29) — voir
+  // hooks/useMentionAutocomplete.ts et CommentaireSerializer.mentions côté backend.
+  mentions?: string[];
 }
 
 // --- Messagerie privée + Groupes de chat ---

@@ -31,7 +31,15 @@ export type TypeNotification =
   | "cotisation_paiement_attente"
   | "boutique_nouvelle_commande"
   | "communaute_message_groupe"
-  | "communaute_commentaire_fil";
+  | "communaute_commentaire_fil"
+  // Ajouté le 2026-09-29 (demande utilisateur : "'@'-Erwähnungen auf weitere Module wie
+  // Forum/Neuigkeiten ausweiten und mit echten Benachrichtigungen versehen") — voir
+  // backend/apps/notifications/models.py TypeNotification.COMMUNAUTE_MENTION. Comme les
+  // autres types ci-dessus, `titre`/`message` sont déjà des chaînes complètes fournies par le
+  // backend (voir apps.communaute.notifications.notifier_mentions) : NotificationBell.tsx les
+  // affiche telles quelles, sans mapping icône/libellé par type côté frontend (aucun des
+  // types existants n'en a un).
+  | "communaute_mention";
 
 export interface Notification {
   id: string;

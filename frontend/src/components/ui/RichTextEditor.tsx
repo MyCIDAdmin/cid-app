@@ -5,7 +5,11 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Link from "@tiptap/extension-link";
+import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
+
+import { creerSuggestionMention } from "./mentionSuggestion";
+import type { MentionSuggestionItem } from "./MentionSuggestionListe";
 
 interface RichTextEditorProps {
   /** HTML contrôlé depuis l'extérieur (ex. Projet.description_html) — voir useEffect
@@ -18,6 +22,11 @@ interface RichTextEditorProps {
    * rend `description_html` directement, sans repasser par TipTap, voir ProjetPage). */
   readOnly?: boolean;
   ariaLabel?: string;
+  /** Active les mentions "@" (ajouté le 2026-09-29) — omis par défaut, donc sans effet sur
+   * apps.projets (seul autre consommateur de ce composant). Quand fourni, tape "@" ouvre un
+   * popup de suggestions (voir mentionSuggestion.ts) et insère un nœud dont le HTML final
+   * porte `data-id` — extrait côté backend par apps.communaute.models.extraire_mentions. */
+  rechercherMentions?: (query: string) => Promise<MentionSuggestionItem[]>;
 }
 
 /**
@@ -36,6 +45,7 @@ export default function RichTextEditor({
   placeholder,
   readOnly = false,
   ariaLabel,
+  rechercherMentions,
 }: RichTextEditorProps) {
   const { t } = useTranslation("common");
 
@@ -48,6 +58,9 @@ export default function RichTextEditor({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Link.configure({ openOnClick: false, autolink: true }),
       Placeholder.configure({ placeholder: placeholder ?? "" }),
+      ...(rechercherMentions
+        ? [Mention.configure({ suggestion: creerSuggestionMention(rechercherMentions) })]
+        : []),
     ],
     content: value,
     editable: !readOnly,
@@ -62,6 +75,7 @@ export default function RichTextEditor({
         class:
           "prose prose-sm max-w-none min-h-[10rem] px-3 py-2 text-text-primary focus:outline-none " +
           "[&_a]:text-ca [&_a]:underline " +
+          "[&_span[data-type='mention']]:font-semibold [&_span[data-type='mention']]:text-ca " +
           "[&_p.is-editor-empty:first-child::before]:text-text-tertiary " +
           "[&_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] " +
           "[&_p.is-editor-empty:first-child::before]:float-left " +

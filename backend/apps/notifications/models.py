@@ -38,6 +38,13 @@ apps.communaute.{tasks,consumers} (nouveau message dans un groupe de chat — di
 membres du groupe sauf l'auteur, sans vérification de présence : contrairement à la messagerie
 privée 1:1, GroupeChatConsumer ne suit aucune présence, voir docstring de tête consumers.py).
 
+1 type supplémentaire ajouté le 2026-09-29 (demande utilisateur : "'@'-Erwähnungen auf weitere
+Module wie Forum/Neuigkeiten ausweiten und mit echten Benachrichtigungen versehen") : les
+mentions "@membre" existaient déjà dans le groupe de chat mais étaient purement cosmétiques (pas
+de notification) — ce type couvre désormais toute mention réelle d'un membre, quel que soit le
+module (fil d'actualité — Publication et Commentaire —, forum — Sujet et ReponseForum), voir
+apps.communaute.notifications.notifier_mentions.
+
 Destinataire porté par `User` (jamais `Membre`) : l'API "mes notifications" liste toujours
 `request.user`, et un compte RH/Bureau Admin/DG sans fiche Membre à jour doit pouvoir recevoir des
 notifications de gestion (ex. relance justificatif) au même titre qu'un membre normal.
@@ -57,9 +64,10 @@ class TypeNotification(models.TextChoices):
     (ADHESION_* à COMMUNAUTE_REPONSE_FORUM) puis les 6 suivants (ADHESION_JUSTIFICATIF_SOUMIS à
     COMMUNAUTE_COMMENTAIRE_FIL) ont été ajoutés le 2026-09-16, voir docstring de module. Les 2
     suivants (MEMBRE_STATUT_*) ont été ajoutés le 2026-09-19 — voir
-    apps.membres.services.enregistrer_statut_annuel. Le dernier (BOUTIQUE_BON_ACHAT_ACTIF) a été
+    apps.membres.services.enregistrer_statut_annuel. Le suivant (BOUTIQUE_BON_ACHAT_ACTIF) a été
     ajouté le 2026-09-23 (demande utilisateur : "Es soll möglich sein Gutscheine zu Kaufen... der
-    Code soll in einer schönen Email... geschickt werden") — voir apps.boutique.notifications."""
+    Code soll in einer schönen Email... geschickt werden") — voir apps.boutique.notifications. Le
+    dernier (COMMUNAUTE_MENTION) a été ajouté le 2026-09-29 — voir docstring de module."""
 
     BIENVENUE = "bienvenue", _("Bienvenue")
     PAIEMENT_CONFIRME = "paiement_confirme", _("Paiement confirmé")
@@ -87,6 +95,7 @@ class TypeNotification(models.TextChoices):
     MEMBRE_STATUT_ACTIF = "membre_statut_actif", _("Statut de membre réactivé")
     MEMBRE_STATUT_INACTIF = "membre_statut_inactif", _("Statut de membre désactivé")
     BOUTIQUE_BON_ACHAT_ACTIF = "boutique_bon_achat_actif", _("Bon d'achat prêt à l'emploi")
+    COMMUNAUTE_MENTION = "communaute_mention", _("Vous avez été mentionné·e")
 
 
 class Notification(models.Model):
