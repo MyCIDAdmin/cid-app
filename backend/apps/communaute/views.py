@@ -61,6 +61,7 @@ from . import services
 from .filters import PublicationFilter, SujetFilter
 from .models import (
     Album,
+    ArrierePlanModule,
     ChoixQuestion,
     ClassementLigue,
     Commentaire,
@@ -107,6 +108,7 @@ from .permissions import (
     MODERATION_MIN_LEVEL,
     SUPER_ADMIN_MIN_LEVEL,
     AlbumPermission,
+    ArrierePlanModulePermission,
     ConfigurationSitePublicPermission,
     ContenuCommunautePermission,
     ConversationPermission,
@@ -128,6 +130,7 @@ from .permissions import (
 )
 from .serializers import (
     AlbumSerializer,
+    ArrierePlanModuleSerializer,
     AuteurSerializer,
     ChoixQuestionSerializer,
     ClassementLigueSerializer,
@@ -1086,6 +1089,48 @@ class EquipeLogoViewSet(
             equipe=serializer.validated_data["equipe"],
             defaults={
                 "logo": serializer.validated_data["logo"],
+                "modifie_par": getattr(request.user, "membre", None),
+            },
+        )
+        return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED)
+
+
+class ArrierePlanModuleViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Images de fond par module — voir docstring de tête models.ArrierePlanModule (demande
+    utilisateur du 2026-09-29 : "Im Modul 'Hero Video' es soll möglich sein Hintergrund
+    Bilder pro Modul (außer in der Kategorie Verwaltung) hochzuladen. Die Hochladene Bilder
+    sollen skaliert als Hintergrund für die Seite des Moduls dargestellt werden").
+
+    GET (list) réservé à IsAuthenticated (PAS AllowAny, voir ArrierePlanModulePermission) —
+    contrairement à EquipeLogoViewSet ci-dessus, ces images ne concernent que l'app interne.
+    Pas de pagination (au plus 7 modules, voir MODULES_AVEC_ARRIERE_PLAN) : `list()` renvoie
+    un tableau brut, même principe qu'EquipeLogoViewSet.
+
+    POST (create) réservé au Bureau Admin+ (ArrierePlanModulePermission) et fait un UPSERT
+    par slug de module plutôt qu'un create strict — même principe qu'EquipeLogoViewSet.create
+    (un upload pour un module déjà présent remplace l'image existante).
+
+    DELETE (destroy) réservé au Bureau Admin+, pour retirer une image de fond (retour à
+    l'arrière-plan par défaut du module)."""
+
+    serializer_class = ArrierePlanModuleSerializer
+    permission_classes = [ArrierePlanModulePermission]
+    queryset = ArrierePlanModule.objects.all()
+    pagination_class = None
+    parser_classes = [MultiPartParser, FormParser]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance, _cree = ArrierePlanModule.objects.update_or_create(
+            module=serializer.validated_data["module"],
+            defaults={
+                "image": serializer.validated_data["image"],
                 "modifie_par": getattr(request.user, "membre", None),
             },
         )

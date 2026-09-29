@@ -64,6 +64,7 @@ const communauteKeys = {
   tippspielTipps: (filtres: communauteApi.TippspielTippsFiltres = {}) =>
     [...communauteKeys.all, "tippspiel-tipps", filtres] as const,
   configurationSite: () => [...communauteKeys.all, "configuration-site"] as const,
+  arrierePlansModules: () => [...communauteKeys.all, "arriere-plans-modules"] as const,
 };
 
 function invalidatePublications(queryClient: ReturnType<typeof useQueryClient>) {
@@ -870,5 +871,37 @@ export function useSupprimerEquipeLogo() {
   return useMutation({
     mutationFn: (id: number) => communauteApi.supprimerEquipeLogo(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: communauteKeys.equipeLogos() }),
+  });
+}
+
+// --- Images de fond par module (demande utilisateur du 2026-09-29 : "Im Modul 'Hero Video'
+// es soll möglich sein Hintergrund Bilder pro Modul (außer in der Kategorie Verwaltung)
+// hochzuladen") --- Liste réservée aux utilisateurs authentifiés côté backend (voir
+// ArrierePlanModulePermission), upload/suppression réservés au Bureau Admin+ (voir
+// AdminConfigurationSitePage.tsx).
+
+export function useArrierePlansModules() {
+  return useQuery({
+    queryKey: communauteKeys.arrierePlansModules(),
+    queryFn: () => communauteApi.listArrierePlansModules(),
+  });
+}
+
+export function useEnregistrerArrierePlanModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ module, image }: { module: string; image: File }) =>
+      communauteApi.enregistrerArrierePlanModule(module, image),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: communauteKeys.arrierePlansModules() }),
+  });
+}
+
+export function useSupprimerArrierePlanModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => communauteApi.supprimerArrierePlanModule(id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: communauteKeys.arrierePlansModules() }),
   });
 }

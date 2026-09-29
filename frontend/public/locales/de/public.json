@@ -104,5 +104,28 @@
     "televerser": "Video hochladen",
     "televersement_en_cours": "Wird hochgeladen…",
     "erreur": "Fehler beim Hochladen des Videos."
+  },
+  "admin_arriere_plans_modules": {
+    "titre": "Hintergrundbilder pro Modul",
+    "description": "Ein skaliertes Hintergrundbild für die Seiten eines Moduls (außer Verwaltung). Nur Bilddateien.",
+    "chargement": "Lädt…",
+    "erreur_chargement": "Fehler beim Laden der Hintergrundbilder.",
+    "aucune_image": "Kein Hintergrundbild hinterlegt — die Seite zeigt den Standard-Hintergrund.",
+    "televerser": "Bild hochladen",
+    "remplacer": "Bild ersetzen",
+    "televersement_en_cours": "Wird hochgeladen…",
+    "supprimer": "Entfernen",
+    "suppression_en_cours": "Wird entfernt…",
+    "erreur": "Fehler beim Hochladen des Bildes.",
+    "erreur_suppression": "Fehler beim Entfernen des Bildes.",
+    "modules": {
+      "membres": "Mitglieder",
+      "adhesions": "Meine Mitgliedschaft",
+      "evenements": "Veranstaltungen",
+      "projets": "Projekte & Aktionen",
+      "boutique": "Shop",
+      "communaute": "Community",
+      "vote": "Abstimmungen & Wahlen"
+    }
   }
 }

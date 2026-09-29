@@ -50,6 +50,8 @@ ici ni par le client : c'est le webhook (apps.cotisations.webhooks), signé par 
 CLAUDE.md §8).
 """
 
+from datetime import datetime, time
+
 from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
@@ -95,6 +97,7 @@ from .serializers import (
     ConfigurationRelanceSerializer,
     CotisationSerializer,
     HistoriqueStatutCotisationSerializer,
+    MarquerPayeeSerializer,
 )
 
 # Modes de paiement pris en charge par initier_paiement_en_ligne (AHM-46) — le virement SEPA n'a
@@ -104,6 +107,14 @@ MODES_PAIEMENT_EN_LIGNE = {ModePaiement.CARTE, ModePaiement.PAYPAL}
 # Statuts depuis lesquels une confirmation manuelle de paiement (marquer_payee) est autorisée.
 # "payee" (déjà fait), "remboursee" et "annulee" sont des statuts terminaux qu'on ne réécrit pas.
 STATUTS_CONFIRMABLES_EN_PAYEE = {StatutCotisation.EN_ATTENTE, StatutCotisation.ECHOUEE}
+
+
+def _debut_jour_aware(date_value):
+    """Convertit une date de transaction saisie par le Directeur Financier (sans heure, voir
+    MarquerPayeeSerializer/ChangerStatutCotisationSerializer.date_paiement, ajouté le
+    2026-09-29) en datetime aware à minuit heure locale — `Cotisation.date_paiement` reste un
+    DateTimeField (voir models.py), seule la date importe pour ce réglage rétroactif."""
+    return timezone.make_aware(datetime.combine(date_value, time.min))
 
 
 class CotisationCursorPagination(CursorPagination):
@@ -207,6 +218,12 @@ class CotisationViewSet(ModelViewSet):
         2026-09-23, apps.rbac.registry.PAGES_ADMIN slug `page_cotisations_attente`) — remplace
         (et non complète) l'ancien seuil fixe SAISIE_POUR_AUTRUI_MIN_LEVEL : le RH garde un accès
         en lecture seule sur ce module.
+
+        `date_paiement` (ajouté le 2026-09-29, demande utilisateur : "Bei Zahlungsbestätigung
+        [...] das Transaktionsdatum bei der Bestätigung hinzufügen") : date optionnelle de la
+        transaction réelle (ex. date du virement reçu, potentiellement antérieure au jour où le
+        DF la confirme dans le système) — absente, le comportement reste inchangé (`save()`
+        date automatiquement à `timezone.now()`, voir models.py).
         """
         cotisation = self.get_object()
 
@@ -224,10 +241,12 @@ class CotisationViewSet(ModelViewSet):
                 f"(statut actuel : {cotisation.get_statut_display()})."
             )
 
-        mode_paiement = request.data.get("mode_paiement", "")
+        serializer = MarquerPayeeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        mode_paiement = serializer.validated_data["mode_paiement"]
+        date_paiement = serializer.validated_data["date_paiement"]
+
         if mode_paiement:
-            if mode_paiement not in ModePaiement.values:
-                raise ValidationError({"mode_paiement": "Mode de paiement invalide."})
             cotisation.mode_paiement = mode_paiement
         elif not cotisation.mode_paiement:
             raise ValidationError(
@@ -237,11 +256,14 @@ class CotisationViewSet(ModelViewSet):
                     )
                 }
             )
+        if date_paiement:
+            cotisation.date_paiement = _debut_jour_aware(date_paiement)
 
         ancien_statut = cotisation.statut
         cotisation.statut = StatutCotisation.PAYEE
-        # save() (voir models.py) génère la référence de transaction et la date de paiement
-        # puisque le statut passe à "payee" sans référence existante.
+        # save() (voir models.py) génère la référence de transaction, et ne date le paiement à
+        # `timezone.now()` que si `date_paiement` n'est pas déjà renseigné (donc jamais si le DF
+        # vient de le préciser explicitement ci-dessus).
         cotisation.save()
         # Journalisation (ajoutée le 2026-09-19, voir HistoriqueStatutCotisation) — même point
         # d'écriture que changer_statut ci-dessous, sans motif (transition standard du flux
@@ -299,10 +321,18 @@ class CotisationViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         nouveau_statut = serializer.validated_data["statut"]
         motif = serializer.validated_data["motif"]
+        date_paiement = serializer.validated_data["date_paiement"]
 
         ancien_statut = cotisation.statut
         if nouveau_statut == ancien_statut:
             raise ValidationError({"statut": "La cotisation a déjà ce statut."})
+
+        # `date_paiement` (ajouté le 2026-09-29, même raisonnement que marquer_payee ci-dessus)
+        # n'a de sens que pour une transition vers "payee" — silencieusement ignoré sinon plutôt
+        # que de renvoyer une erreur (le champ n'a pas besoin d'être vidé par l'appelant selon le
+        # statut visé).
+        if nouveau_statut == StatutCotisation.PAYEE and date_paiement:
+            cotisation.date_paiement = _debut_jour_aware(date_paiement)
 
         cotisation.statut = nouveau_statut
         cotisation.save()

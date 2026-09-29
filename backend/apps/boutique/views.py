@@ -90,6 +90,7 @@ tête de models.py) :
     BonAchat correspondant(s), déjà ACTIF, et envoie l'email/notification existants.
 """
 
+from datetime import datetime, time
 from decimal import Decimal
 
 from django.conf import settings
@@ -97,6 +98,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
@@ -162,11 +164,20 @@ from .serializers import (
     ProduitImageSerializer,
     ProduitSerializer,
     RegleReductionSerializer,
+    RetourLotSerializer,
     RetourSerializer,
     VarianteProduitSerializer,
     VendreEspecesCommandeSerializer,
     VerifierBonAchatSerializer,
 )
+
+
+def _debut_jour_aware(date_value):
+    """Convertit une date de transaction saisie par le Directeur Financier (sans heure, voir
+    ConfirmerPaiementCommandeSerializer.date_paiement, ajouté le 2026-09-29) en datetime aware à
+    minuit heure locale — même helper que apps.cotisations.views._debut_jour_aware,
+    `Commande.date_paiement_confirme` restant un DateTimeField (voir models.py)."""
+    return timezone.make_aware(datetime.combine(date_value, time.min))
 
 
 class BoutiqueCursorPagination(CursorPagination):
@@ -782,7 +793,11 @@ class CommandeViewSet(ModelViewSet):
         (en_attente -> confirmee) — Directeur Financier+, voir permissions.py. Ne déclenche
         volontairement aucune notification de commande (voir docstring module) — mais génère et
         notifie les éventuels bons d'achat de la commande (voir _generer_bons_achat, demande
-        utilisateur du 2026-09-23)."""
+        utilisateur du 2026-09-23).
+
+        `date_paiement` (ajouté le 2026-09-29, demande utilisateur : "Bei Zahlungsbestätigung
+        [...] 'Shop Verwaltung' das Transaktionsdatum bei der Bestägigung hinzufügen") optionnel
+        — absent, `date_paiement_confirme` reste daté à `timezone.now()` comme avant."""
         commande = self.get_object()
         if commande.statut not in STATUTS_CONFIRMABLES_PAIEMENT:
             raise ValidationError(
@@ -796,10 +811,13 @@ class CommandeViewSet(ModelViewSet):
 
         serializer = ConfirmerPaiementCommandeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        date_paiement = serializer.validated_data["date_paiement"]
 
         membre = getattr(request.user, "membre", None)
         commande.mode_paiement = serializer.validated_data["mode_paiement"]
-        commande.date_paiement_confirme = timezone.now()
+        commande.date_paiement_confirme = (
+            _debut_jour_aware(date_paiement) if date_paiement else timezone.now()
+        )
         commande.paiement_confirme_par = membre
         commande.statut = StatutCommande.CONFIRMEE
         commande.save(
@@ -968,6 +986,72 @@ class RetourViewSet(ModelViewSet):
             variante.stock += quantite
             variante.save(update_fields=["stock"])
             serializer.save(enregistre_par=getattr(self.request.user, "membre", None))
+
+    @action(detail=False, methods=["post"])
+    def lot(self, request):
+        """POST /boutique/retours/lot/ (ajouté le 2026-09-29, demande utilisateur : "für Retoure
+        soll es möglich sein, Mengen pro Varianten einzugeben") — enregistre en un seul appel un
+        retour pour PLUSIEURS variantes/lignes de la même commande (même `motif`/`commentaire`
+        pour tout le lot), au lieu d'un aller-retour par variante via `create` ci-dessus (toujours
+        disponible, inchangé, pour un retour ne portant que sur une seule ligne).
+
+        Même principe de verrouillage transactionnel que `perform_create` ci-dessus, mais les
+        variantes de TOUTES les lignes du lot sont verrouillées ensemble, dans un ordre stable
+        (tri par id de variante, même convention que `CommandeViewSet.passer`) pour éviter tout
+        interblocage avec un retour/une commande concurrente touchant les mêmes variantes."""
+        serializer = RetourLotSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        commande = data["commande"]
+        motif = data["motif"]
+        commentaire = data["commentaire"]
+        lignes_demandees = data["lignes"]
+        membre = getattr(request.user, "membre", None)
+
+        retours_crees = []
+        with transaction.atomic():
+            ligne_ids = sorted({ligne["ligne_commande"].id for ligne in lignes_demandees})
+            lignes = {
+                ligne.id: ligne
+                for ligne in LigneCommande.objects.select_for_update()
+                .select_related("variante")
+                .filter(id__in=ligne_ids)
+            }
+            variante_ids = sorted({ligne.variante_id for ligne in lignes.values()})
+            variantes = {
+                v.id: v
+                for v in VarianteProduit.objects.select_for_update().filter(id__in=variante_ids)
+            }
+
+            for ligne_demandee in lignes_demandees:
+                ligne = lignes[ligne_demandee["ligne_commande"].id]
+                quantite = ligne_demandee["quantite"]
+                if quantite > ligne.quantite_retournable:
+                    raise ValidationError(
+                        {
+                            "lignes": (
+                                f"Quantité supérieure à ce qui reste retournable pour « "
+                                f"{ligne.variante} » ({ligne.quantite_retournable})."
+                            )
+                        }
+                    )
+                variante = variantes[ligne.variante_id]
+                variante.stock += quantite
+                variante.save(update_fields=["stock"])
+                retours_crees.append(
+                    Retour.objects.create(
+                        commande=commande,
+                        ligne_commande=ligne,
+                        quantite=quantite,
+                        motif=motif,
+                        commentaire=commentaire,
+                        enregistre_par=membre,
+                    )
+                )
+
+        return Response(
+            RetourSerializer(retours_crees, many=True).data, status=status.HTTP_201_CREATED
+        )
 
 
 class BonAchatViewSet(ModelViewSet):

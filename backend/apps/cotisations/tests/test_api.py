@@ -1049,6 +1049,63 @@ def test_marquer_payee_journalise_lhistorique(api_client):
     assert entree.motif == ""
 
 
+# --- date_paiement (transaction backdatée, demande utilisateur du 2026-09-29 : "Bei
+# Zahlungsbestätigung Im Modul 'Zahlungen' [...] das Transaktionsdatum bei der Bestätigung
+# hinzufügen") --------------------------------------------------------------------------
+
+
+def test_marquer_payee_avec_date_paiement_backdate_la_transaction(api_client):
+    from datetime import date
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg-date1@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(
+        _marquer_payee_url(cotisation),
+        {"mode_paiement": "virement_sepa", "date_paiement": "2026-08-15"},
+    )
+
+    assert resp.status_code == 200, resp.data
+    cotisation.refresh_from_db()
+    # localtime() : date_paiement est stocké en UTC (USE_TZ=True) — _debut_jour_aware
+    # construit minuit dans le fuseau LOCAL (Europe/Berlin), donc un .date() direct sur la
+    # valeur UTC peut retomber sur la veille selon le fuseau.
+    from django.utils import timezone
+
+    assert timezone.localtime(cotisation.date_paiement).date() == date(2026, 8, 15)
+
+
+def test_marquer_payee_sans_date_paiement_utilise_aujourdhui(api_client):
+    """Comportement inchangé quand `date_paiement` est absent — même résultat qu'avant
+    l'ajout de ce champ (voir Cotisation.save())."""
+    from django.utils import timezone
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg-date2@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(_marquer_payee_url(cotisation), {"mode_paiement": "virement_sepa"})
+
+    assert resp.status_code == 200, resp.data
+    cotisation.refresh_from_db()
+    assert timezone.localtime(cotisation.date_paiement).date() == timezone.localdate()
+
+
+def test_marquer_payee_refuse_date_paiement_future(api_client):
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg-date3@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(
+        _marquer_payee_url(cotisation),
+        {"mode_paiement": "virement_sepa", "date_paiement": "2099-01-01"},
+    )
+
+    assert resp.status_code == 400
+    assert "date_paiement" in resp.data["details"]
+
+
 # --- changer-statut (ajouté le 2026-09-19, correction rétroactive + historique complet) ---
 
 
@@ -1169,6 +1226,50 @@ def test_changer_statut_journalise_le_motif_et_lauteur(api_client):
     assert entree.nouveau_statut == StatutCotisation.ANNULEE
     assert entree.motif == "Erreur de saisie"
     assert entree.modifie_par_id == membre_admin.id
+
+
+def test_changer_statut_vers_payee_avec_date_paiement_backdate_la_transaction(api_client):
+    from datetime import date
+
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin-cs-date1@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(
+        _changer_statut_url(cotisation), {"statut": "payee", "date_paiement": "2026-07-01"}
+    )
+    assert resp.status_code == 200, resp.data
+
+    from django.utils import timezone
+
+    cotisation.refresh_from_db()
+    assert timezone.localtime(cotisation.date_paiement).date() == date(2026, 7, 1)
+
+
+def test_changer_statut_ignore_date_paiement_hors_transition_payee(api_client):
+    """`date_paiement` n'a de sens que pour statut=payee (voir docstring views.py) —
+    silencieusement ignoré pour toute autre transition, aucune erreur levée."""
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin-cs-date2@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.PAYEE)
+
+    _auth(api_client, user)
+    resp = api_client.post(
+        _changer_statut_url(cotisation),
+        {"statut": "annulee", "date_paiement": "2026-07-01"},
+    )
+    assert resp.status_code == 200, resp.data
+
+
+def test_changer_statut_refuse_date_paiement_future(api_client):
+    user, _membre = _user_avec_membre(Role.SUPER_ADMIN, "admin-cs-date3@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(
+        _changer_statut_url(cotisation), {"statut": "payee", "date_paiement": "2099-01-01"}
+    )
+    assert resp.status_code == 400
+    assert "date_paiement" in resp.data["details"]
 
 
 def test_historique_statuts_visible_par_le_proprietaire(api_client):

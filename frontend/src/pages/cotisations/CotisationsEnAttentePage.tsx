@@ -173,20 +173,37 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
   const [modePaiement, setModePaiement] = useState<ModePaiement>(
     (cotisation.mode_paiement as ModePaiement) || "virement_sepa",
   );
+  // Date de transaction backdatée (demande utilisateur du 2026-09-29 : "Bei
+  // Zahlungsbestätigung Im Modul 'Zahlungen' [...] das Transaktionsdatum bei der Bestätigung
+  // hinzufügen") — vide par défaut (comportement inchangé : date du jour côté backend, voir
+  // ChangerStatutCotisationPayload). "YYYY-MM-DD", format natif de `<input type="date">`.
+  const [datePaiement, setDatePaiement] = useState("");
   const [historiqueOuvert, setHistoriqueOuvert] = useState(false);
   const [nouveauStatut, setNouveauStatut] = useState<StatutCotisation>(cotisation.statut);
   const [motif, setMotif] = useState("");
+  const [dateChangementStatut, setDateChangementStatut] = useState("");
 
   const historique = useHistoriqueStatutsCotisation(cotisation.id, historiqueOuvert);
 
   function confirmerPaiement() {
-    marquerPayeeMutation.mutate({ id: cotisation.id, payload: { mode_paiement: modePaiement } });
+    marquerPayeeMutation.mutate({
+      id: cotisation.id,
+      payload: { mode_paiement: modePaiement, date_paiement: datePaiement || undefined },
+    });
   }
 
   function appliquerChangementStatut() {
     changerStatutMutation.mutate(
-      { id: cotisation.id, payload: { statut: nouveauStatut, motif } },
-      { onSuccess: () => setMotif("") },
+      {
+        id: cotisation.id,
+        payload: { statut: nouveauStatut, motif, date_paiement: dateChangementStatut || undefined },
+      },
+      {
+        onSuccess: () => {
+          setMotif("");
+          setDateChangementStatut("");
+        },
+      },
     );
   }
 
@@ -220,6 +237,16 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
                   </option>
                 ))}
               </select>
+              <input
+                type="date"
+                aria-label={t("en_attente_paiement.date_paiement_label")}
+                value={datePaiement}
+                onChange={(e) => setDatePaiement(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                disabled={!modifiable}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
+              />
               <button
                 type="button"
                 onClick={confirmerPaiement}
@@ -265,6 +292,22 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
               title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="min-w-[8rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
             />
+            {/* Uniquement pertinent pour une transition vers "payee" (voir docstring
+                ChangerStatutCotisationPayload/CotisationViewSet.changer_statut, qui ignore ce
+                champ pour toute autre transition) — masqué sinon pour ne pas suggérer un effet
+                qui n'existe pas. */}
+            {nouveauStatut === "payee" && (
+              <input
+                type="date"
+                aria-label={t("en_attente_paiement.date_paiement_label")}
+                value={dateChangementStatut}
+                onChange={(e) => setDateChangementStatut(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                disabled={!modifiable}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
+              />
+            )}
             <button
               type="button"
               onClick={appliquerChangementStatut}

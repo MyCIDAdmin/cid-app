@@ -15,11 +15,22 @@ from .models import (
     ConfigurationRelance,
     Cotisation,
     HistoriqueStatutCotisation,
+    ModePaiement,
     StatutCotisation,
     TypeArticle,
     article_catalogue_fixe_actif,
     montant_catalogue,
 )
+
+
+def _valider_date_paiement_non_future(value):
+    """Partagé par `MarquerPayeeSerializer`/`ChangerStatutCotisationSerializer` ci-dessous —
+    ajouté le 2026-09-29 (demande utilisateur : "Bei Zahlungsbestätigung [...] das
+    Transaktionsdatum bei der Bestätigung hinzufügen") : une date de transaction future n'a pas
+    de sens (le paiement ne peut pas avoir eu lieu avant d'être confirmé)."""
+    if value and value > timezone.localdate():
+        raise serializers.ValidationError("La date de transaction ne peut pas être dans le futur.")
+    return value
 
 
 class ArticleCatalogueSerializer(serializers.ModelSerializer):
@@ -192,3 +203,28 @@ class ChangerStatutCotisationSerializer(serializers.Serializer):
 
     statut = serializers.ChoiceField(choices=StatutCotisation.choices)
     motif = serializers.CharField(required=False, allow_blank=True, default="")
+    # Ajouté le 2026-09-29 (demande utilisateur : "Transaktionsdatum bei der Bestätigung
+    # hinzufügen") — pertinent uniquement quand statut=payee (voir views.changer_statut) ;
+    # silencieusement ignoré pour toute autre transition.
+    date_paiement = serializers.DateField(required=False, allow_null=True, default=None)
+
+    def validate_date_paiement(self, value):
+        return _valider_date_paiement_non_future(value)
+
+
+class MarquerPayeeSerializer(serializers.Serializer):
+    """Payload de `CotisationViewSet.marquer_payee` — jamais persisté directement (voir
+    views.py). Ajouté le 2026-09-29 (demande utilisateur : "Bei Zahlungsbestätigung Im Modul
+    'Zahlungen' [...] das Transaktionsdatum bei der Bestätigung hinzufügen") : `date_paiement`
+    optionnel — quand absent, comportement inchangé (`Cotisation.save()` date automatiquement à
+    `timezone.now()`, voir models.py). `mode_paiement` reste optionnel ici (la vue exige
+    qu'il soit déjà renseigné OU fourni ici, voir views.py — cette exigence conditionnelle ne se
+    prête pas à `required=True`)."""
+
+    mode_paiement = serializers.ChoiceField(
+        choices=ModePaiement.choices, required=False, allow_blank=True, default=""
+    )
+    date_paiement = serializers.DateField(required=False, allow_null=True, default=None)
+
+    def validate_date_paiement(self, value):
+        return _valider_date_paiement_non_future(value)

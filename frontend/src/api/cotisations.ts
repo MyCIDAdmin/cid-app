@@ -206,7 +206,10 @@ export async function getHistoriqueStatutsCotisation(
  */
 export async function marquerCotisationPayee(
   cotisationId: string,
-  payload: { mode_paiement?: ModePaiement },
+  // `date_paiement` (demande utilisateur du 2026-09-29, voir docstring
+  // ChangerStatutCotisationPayload dans types/cotisation.ts pour le détail) : même champ que
+  // changerStatutCotisation ci-dessus, absente/vide -> comportement inchangé.
+  payload: { mode_paiement?: ModePaiement; date_paiement?: string },
 ): Promise<Cotisation> {
   const { data } = await apiClient.post<Cotisation>(
     `/cotisations/${cotisationId}/marquer-payee/`,

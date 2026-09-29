@@ -7,6 +7,7 @@ import type { CursorPage } from "../types/membre";
 import type {
   Album,
   AlbumPayload,
+  ArrierePlanModule,
   Auteur,
   CategorieForum,
   ChoixQuestion,
@@ -733,4 +734,36 @@ export async function enregistrerEquipeLogo(equipe: string, logo: File): Promise
 
 export async function supprimerEquipeLogo(id: number): Promise<void> {
   await apiClient.delete(`/communaute/equipe-logos/${id}/`);
+}
+
+/**
+ * Images de fond par module (demande utilisateur du 2026-09-29 : "Im Modul 'Hero Video' es
+ * soll möglich sein Hintergrund Bilder pro Modul (außer in der Kategorie Verwaltung)
+ * hochzuladen") — voir apps.communaute.views.ArrierePlanModuleViewSet. Contrairement à
+ * listEquipesLogos ci-dessus, la liste requiert d'être authentifié côté backend (voir
+ * ArrierePlanModulePermission) ; upload/suppression réservés au Bureau Admin+.
+ */
+export async function listArrierePlansModules(): Promise<ArrierePlanModule[]> {
+  const { data } = await apiClient.get<ArrierePlanModule[]>("/communaute/arriere-plans-modules/");
+  return data;
+}
+
+// Upsert par slug de module (voir docstring ArrierePlanModuleViewSet.create côté backend) :
+// uploader une image pour un module déjà présent remplace l'image existante.
+export async function enregistrerArrierePlanModule(
+  module: string,
+  image: File,
+): Promise<ArrierePlanModule> {
+  const formData = new FormData();
+  formData.append("module", module);
+  formData.append("image", image);
+  const { data } = await apiClient.post<ArrierePlanModule>(
+    "/communaute/arriere-plans-modules/",
+    formData,
+  );
+  return data;
+}
+
+export async function supprimerArrierePlanModule(id: number): Promise<void> {
+  await apiClient.delete(`/communaute/arriere-plans-modules/${id}/`);
 }

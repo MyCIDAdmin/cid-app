@@ -13,6 +13,7 @@ import type {
   ProduitImagePayload,
   ProduitPayload,
   RegleReductionPayload,
+  RetourLotPayload,
   RetourPayload,
   VariantePayload,
   VendreEspecesCommandePayload,
@@ -327,13 +328,8 @@ export function useConfirmerPaiementCommande() {
 export function useInitierPaiementEnLigneCommande() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: InitierPaiementEnLigneCommandePayload;
-    }) => boutiqueApi.initierPaiementEnLigneCommande(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: InitierPaiementEnLigneCommandePayload }) =>
+      boutiqueApi.initierPaiementEnLigneCommande(id, payload),
     onSuccess: (_data, variables) =>
       queryClient.invalidateQueries({ queryKey: boutiqueKeys.commande(variables.id) }),
   });
@@ -367,6 +363,24 @@ export function useCreerRetour() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: RetourPayload) => boutiqueApi.creerRetour(payload),
+    onSuccess: () => {
+      invalidateCommandes(queryClient);
+      queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "retours"] });
+      queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "variantes"] });
+    },
+  });
+}
+
+/**
+ * Enregistre un retour sur PLUSIEURS lignes/variantes d'une même commande en un seul appel
+ * (demande utilisateur du 2026-09-29 : "Bei Shop Verwaltung für Retoure soll es möglich sein,
+ * Mengen pro Varianten einzugeben") — mêmes invalidations que useCreerRetour ci-dessus (voir
+ * RetourViewSet.lot côté backend).
+ */
+export function useCreerRetourLot() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: RetourLotPayload) => boutiqueApi.creerRetourLot(payload),
     onSuccess: () => {
       invalidateCommandes(queryClient);
       queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "retours"] });

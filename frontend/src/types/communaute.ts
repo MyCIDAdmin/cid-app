@@ -700,3 +700,32 @@ export interface ConfigurationSitePublic {
   modifie_par: string | null;
   updated_at: string;
 }
+
+/**
+ * Image de fond par module (demande utilisateur du 2026-09-29 : "Im Modul 'Hero Video' es
+ * soll möglich sein Hintergrund Bilder pro Modul (außer in der Kategorie Verwaltung)
+ * hochzuladen") — voir apps.communaute.models.ArrierePlanModule côté backend. `module` est
+ * l'un des slugs de MODULES_AVEC_ARRIERE_PLAN ci-dessous (même liste que le backend,
+ * dérivée des `module` présents sur les entrées NAV_ITEMS hors groupe "administration" —
+ * voir Sidebar.tsx::getModuleForPath).
+ */
+export interface ArrierePlanModule {
+  id: number;
+  module: string;
+  image: string;
+  modifie_par: string | null;
+  updated_at: string;
+}
+
+/** Même liste que MODULES_AVEC_ARRIERE_PLAN côté backend (apps.communaute.models) — dupliquée
+ * ici plutôt que dérivée dynamiquement de Sidebar.NAV_ITEMS pour rester triviale à auditer
+ * (courte liste figée, 7 entrées). */
+export const MODULES_AVEC_ARRIERE_PLAN = [
+  "membres",
+  "adhesions",
+  "evenements",
+  "projets",
+  "boutique",
+  "communaute",
+  "vote",
+] as const;

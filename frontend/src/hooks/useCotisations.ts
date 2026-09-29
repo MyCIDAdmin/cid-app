@@ -97,8 +97,13 @@ export function useCotisationsEnAttenteDePaiement() {
 export function useMarquerCotisationPayee() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { mode_paiement?: ModePaiement } }) =>
-      cotisationsApi.marquerCotisationPayee(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: { mode_paiement?: ModePaiement; date_paiement?: string };
+    }) => cotisationsApi.marquerCotisationPayee(id, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
   });
 }
@@ -207,8 +212,7 @@ export function useArticlesCatalogue() {
 export function useCreerArticleCatalogue() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: ArticleCataloguePayload) =>
-      cotisationsApi.creerArticleCatalogue(payload),
+    mutationFn: (payload: ArticleCataloguePayload) => cotisationsApi.creerArticleCatalogue(payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: cotisationsKeys.articlesCatalogue() }),
   });

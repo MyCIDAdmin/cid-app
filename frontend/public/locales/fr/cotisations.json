@@ -103,6 +103,7 @@
       "especes": "Espèces"
     },
     "confirmer": "Marquer comme payée",
+    "date_paiement_label": "Date de la transaction (optionnel, par défaut : aujourd'hui)",
     "en_cours": "Confirmation…",
     "erreur_action": "Le paiement n'a pas pu être confirmé.",
     "filtre_statut": "Statut",

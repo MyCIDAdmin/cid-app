@@ -7,6 +7,7 @@ import PublicFooter from "../public/PublicFooter";
 import BrandLogo from "../ui/BrandLogo";
 import LanguageSwitcher from "./LanguageSwitcher";
 import MobileNavDrawer from "./MobileNavDrawer";
+import ModuleBackground from "./ModuleBackground";
 import NotificationBell from "./NotificationBell";
 import Sidebar, { getGroupForPath } from "./Sidebar";
 import ThemeToggle from "./ThemeToggle";
@@ -43,7 +44,11 @@ export default function AppLayout() {
     <div className="flex h-screen">
       <Sidebar />
       <MobileNavDrawer open={tiroirMobileOuvert} onClose={() => setTiroirMobileOuvert(false)} />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Image de fond par module (demande utilisateur du 2026-09-29, voir docstring
+            ModuleBackground.tsx) — remplace l'ancien fond fixe `bg-bg-tertiary` de <main>
+            ci-dessous, désormais toujours transparent (le token de couleur vit ici). */}
+        <ModuleBackground />
         {/* Topbar (mockup .topbar) — cloche de notifications (Phase 2B), sélecteur de langue et
             bascule de thème (demande utilisateur du 2026-09-16) ; les autres éléments du
             mockup (recherche, action rapide) restent hors périmètre tant qu'ils n'ont pas
@@ -75,7 +80,7 @@ export default function AppLayout() {
             <UserMenu />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto bg-bg-tertiary p-6">
+        <main className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
         {/* Variante compact (retour utilisateur du 2026-09-27 : footer trop grand + scrollbar

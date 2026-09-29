@@ -11,7 +11,9 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.membres.models import Membre, StatutMembre
 
 from .models import (
+    MODULES_AVEC_ARRIERE_PLAN,
     Album,
+    ArrierePlanModule,
     ChoixQuestion,
     ClassementLigue,
     Commentaire,
@@ -1262,4 +1264,30 @@ class EquipeLogoSerializer(serializers.ModelSerializer):
         extra_kwargs = {"equipe": {"validators": []}}
 
     def validate_logo(self, image):
+        return valider_et_reencoder_photo(image)
+
+
+class ArrierePlanModuleSerializer(serializers.ModelSerializer):
+    """`module` est le seul champ modifiable par le client en plus du fichier — `modifie_par`
+    est résolu par la vue (utilisateur courant), même principe qu'EquipeLogoSerializer
+    ci-dessus. Voir ArrierePlanModuleViewSet.create pour l'upsert par slug de module (un
+    upload pour un module déjà présent remplace l'image existante) : le validateur
+    d'unicité automatique de DRF sur `module` (dérivé de `unique=True` côté modèle) est
+    désactivé ci-dessous (`extra_kwargs`), même raison qu'EquipeLogoSerializer.
+
+    Ajouté le 2026-09-29 (demande utilisateur : "Im Modul 'Hero Video' es soll möglich sein
+    Hintergrund Bilder pro Modul (außer in der Kategorie Verwaltung) hochzuladen")."""
+
+    class Meta:
+        model = ArrierePlanModule
+        fields = ["id", "module", "image", "modifie_par", "updated_at"]
+        read_only_fields = ["id", "modifie_par", "updated_at"]
+        extra_kwargs = {"module": {"validators": []}}
+
+    def validate_module(self, value):
+        if value not in MODULES_AVEC_ARRIERE_PLAN:
+            raise serializers.ValidationError("Ce module n'accepte pas d'image de fond.")
+        return value
+
+    def validate_image(self, image):
         return valider_et_reencoder_photo(image)
