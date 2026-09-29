@@ -13,6 +13,7 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useCreerOffre: vi.fn(),
     useModifierOffre: vi.fn(),
     useSupprimerOffre: vi.fn(),
+    useTeleverserIconeOffre: vi.fn(),
     useCreerRabais: vi.fn(),
     useModifierRabais: vi.fn(),
     useSupprimerRabais: vi.fn(),
@@ -31,6 +32,9 @@ function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
     condition_age_max: null,
     visible: true,
     ordre: 1,
+    icone: null,
+    couleur: "",
+    populaire: false,
     rabais: [],
     ...overrides,
   };
@@ -66,6 +70,9 @@ describe("OffresManager", () => {
     );
     vi.mocked(useAdhesionsHooks.useSupprimerOffre).mockReturnValue(
       mutationMock<ReturnType<typeof useAdhesionsHooks.useSupprimerOffre>>(),
+    );
+    vi.mocked(useAdhesionsHooks.useTeleverserIconeOffre).mockReturnValue(
+      mutationMock<ReturnType<typeof useAdhesionsHooks.useTeleverserIconeOffre>>(),
     );
     vi.mocked(useAdhesionsHooks.useCreerRabais).mockReturnValue(
       mutationMock<ReturnType<typeof useAdhesionsHooks.useCreerRabais>>(),
@@ -129,6 +136,70 @@ describe("OffresManager", () => {
     expect(supprimerMutate).toHaveBeenCalledWith("o1");
   });
 
+  // Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" : "1. Icons für
+  // jede Angebotskachel hochladen 2. Färblich highlighten 3. Tags hinzufügen... 'Popular'").
+  it("televerse l'icône choisie pour une offre", () => {
+    const iconeMutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useTeleverserIconeOffre).mockReturnValue({
+      mutate: iconeMutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useTeleverserIconeOffre>);
+
+    renderWithProviders(<OffresManager campagne={campagne()} />);
+
+    const fichier = new File(["contenu"], "icone.png", { type: "image/png" });
+    const input = screen.getByLabelText("admin_offres.icone_ajouter — Basic");
+    fireEvent.change(input, { target: { files: [fichier] } });
+
+    expect(iconeMutate).toHaveBeenCalledWith({ id: "o1", fichier });
+  });
+
+  it("modifie la couleur d'une offre", () => {
+    const modifierMutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useModifierOffre).mockReturnValue({
+      mutate: modifierMutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useModifierOffre>);
+
+    renderWithProviders(<OffresManager campagne={campagne()} />);
+
+    fireEvent.change(screen.getByLabelText("admin_offres.couleur_label — Basic"), {
+      target: { value: "cat_2" },
+    });
+
+    expect(modifierMutate).toHaveBeenCalledWith({ id: "o1", payload: { couleur: "cat_2" } });
+  });
+
+  it("bascule le tag 'Populaire' d'une offre", () => {
+    const modifierMutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useModifierOffre).mockReturnValue({
+      mutate: modifierMutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useModifierOffre>);
+
+    renderWithProviders(<OffresManager campagne={campagne()} />);
+
+    fireEvent.click(screen.getByLabelText("admin_offres.populaire_label"));
+
+    expect(modifierMutate).toHaveBeenCalledWith({ id: "o1", payload: { populaire: true } });
+  });
+
+  it("affiche l'icône existante d'une offre", () => {
+    renderWithProviders(
+      <OffresManager
+        campagne={campagne({ offres: [offre({ icone: "https://cdn.example/icone.png" })] })}
+      />,
+    );
+
+    expect(screen.getByAltText("admin_offres.icone_alt")).toHaveAttribute(
+      "src",
+      "https://cdn.example/icone.png",
+    );
+  });
+
   it("déplie la gestion des rabais d'une offre", () => {
     renderWithProviders(<OffresManager campagne={campagne()} />);
 
@@ -146,11 +217,17 @@ describe("OffresManager", () => {
     it("désactive le prix, la visibilité et la suppression d'une offre existante", () => {
       renderWithProviders(<OffresManager campagne={campagne()} modifiable={false} />);
 
-      expect(
-        screen.getByLabelText("admin_offres.prix_label — Basic"),
-      ).toBeDisabled();
+      expect(screen.getByLabelText("admin_offres.prix_label — Basic")).toBeDisabled();
       expect(screen.getByLabelText("admin_offres.visible_label")).toBeDisabled();
       expect(screen.getByLabelText("admin_offres.supprimer — Basic")).toBeDisabled();
+    });
+
+    it("désactive l'upload d'icône, la couleur et le tag 'Populaire' d'une offre existante", () => {
+      renderWithProviders(<OffresManager campagne={campagne()} modifiable={false} />);
+
+      expect(screen.getByLabelText("admin_offres.icone_ajouter — Basic")).toBeDisabled();
+      expect(screen.getByLabelText("admin_offres.couleur_label — Basic")).toBeDisabled();
+      expect(screen.getByLabelText("admin_offres.populaire_label")).toBeDisabled();
     });
 
     it("n'appelle jamais modifierMutation même si on force un changement sur le prix désactivé", () => {

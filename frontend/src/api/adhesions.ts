@@ -72,6 +72,18 @@ export async function supprimerOffre(id: string): Promise<void> {
   await apiClient.delete(`/adhesions/offres/${id}/`);
 }
 
+/**
+ * Upload/remplacement de l'icône d'une offre (retour utilisateur du 2026-09-29, "Icons für
+ * jede Angebotskachel hochladen") — même principe que televerserImageProduit (boutique.ts) :
+ * PATCH multipart sur la ressource existante, seul le champ fichier est envoyé.
+ */
+export async function televerserIconeOffre(id: string, fichier: File): Promise<OffreAdhesion> {
+  const formData = new FormData();
+  formData.append("icone", fichier);
+  const { data } = await apiClient.patch<OffreAdhesion>(`/adhesions/offres/${id}/`, formData);
+  return data;
+}
+
 export async function creerRabais(payload: RabaisCreatePayload): Promise<RabaisOffre> {
   const { data } = await apiClient.post<RabaisOffre>("/adhesions/rabais/", payload);
   return data;

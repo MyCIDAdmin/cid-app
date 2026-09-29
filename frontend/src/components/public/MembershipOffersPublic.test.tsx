@@ -17,6 +17,9 @@ function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
     condition_age_max: null,
     visible: true,
     ordre: 0,
+    icone: null,
+    couleur: "",
+    populaire: false,
     rabais: [],
     ...overrides,
   };

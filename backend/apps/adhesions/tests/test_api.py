@@ -3,10 +3,13 @@ Tests API — app adhesions (FDD §6.1, SCD §2.3 A01 : IDOR sur les endpoints d
 """
 
 import datetime
+import io
 from decimal import Decimal
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
@@ -777,6 +780,71 @@ def test_bureau_admin_modifie_une_offre(api_client):
     offre.refresh_from_db()
     assert str(offre.prix_plein) == "60.00"
     assert offre.visible is False
+
+
+def _image_valide(nom="icone.png", format_pillow="PNG", content_type="image/png"):
+    buffer = io.BytesIO()
+    Image.new("RGB", (40, 40), color=(200, 20, 20)).save(buffer, format=format_pillow)
+    buffer.seek(0)
+    return SimpleUploadedFile(nom, buffer.read(), content_type=content_type)
+
+
+def test_bureau_admin_definit_couleur_et_populaire_sur_une_offre(api_client):
+    # Retour utilisateur du 2026-09-29, module "Verwaltung der Mitgliedschaftskampagnen" —
+    # "Färblich highlighten" (couleur) et le tag "Popular" (populaire), voir CouleurOffre et
+    # OffreAdhesion.populaire (models.py) pour le détail de ces deux champs.
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin-couleur@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.patch(_offre_detail_url(offre), {"couleur": "cat_2", "populaire": True})
+
+    assert resp.status_code == 200, resp.data
+    offre.refresh_from_db()
+    assert offre.couleur == "cat_2"
+    assert offre.populaire is True
+
+
+def test_bureau_admin_uploade_une_icone_valide_pour_une_offre(api_client):
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin-icone@example.de")
+
+    resp = _auth(api_client, user).patch(
+        _offre_detail_url(offre), {"icone": _image_valide()}, format="multipart"
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert resp.data["icone"]
+    # Nom de fichier reconstruit côté serveur (jamais "icone.png" du client) — voir
+    # valider_et_reencoder_photo, même principe que les autres uploads d'image du projet.
+    assert "icone.png" not in resp.data["icone"]
+
+
+def test_bureau_admin_uploade_une_icone_invalide_rejette(api_client):
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin-icone2@example.de")
+    faux_fichier = SimpleUploadedFile("icone.png", b"ceci n'est pas une image", "image/png")
+
+    resp = _auth(api_client, user).patch(
+        _offre_detail_url(offre), {"icone": faux_fichier}, format="multipart"
+    )
+
+    assert resp.status_code == 400
+    assert "icone" in resp.data["details"]
+
+
+def test_membre_ne_peut_pas_definir_couleur_populaire_ou_icone(api_client):
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.MEMBRE, "membre-icone@example.de")
+
+    resp = _auth(api_client, user).patch(
+        _offre_detail_url(offre), {"couleur": "cat_1", "populaire": True}
+    )
+
+    assert resp.status_code == 403
+    offre.refresh_from_db()
+    assert offre.couleur == ""
+    assert offre.populaire is False
 
 
 def test_bureau_admin_supprime_une_offre(api_client):

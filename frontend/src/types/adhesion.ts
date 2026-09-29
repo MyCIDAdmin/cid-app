@@ -39,6 +39,15 @@ export interface RabaisOffre {
   instructions_ar: string;
 }
 
+/**
+ * Slots de couleur de surlignage d'une offre — miroir de apps.adhesions.models.CouleurOffre
+ * (retour utilisateur du 2026-09-29, "Färblich highlighten") : réutilise volontairement les 3
+ * mêmes emplacements catégoriels que ACCENTS_OFFRE (MonAdhesionPage.tsx), jamais une couleur
+ * libre — voir le docstring backend de CouleurOffre pour la justification. Chaîne vide = pas de
+ * choix explicite (attribution automatique par index, comportement historique).
+ */
+export type CouleurOffre = "" | "cat_1" | "cat_2" | "cat_3";
+
 export interface OffreAdhesion {
   id: string;
   campagne: string;
@@ -50,6 +59,13 @@ export interface OffreAdhesion {
   condition_age_max: number | null;
   visible: boolean;
   ordre: number;
+  // Trois champs ajoutés le 2026-09-29 (retour utilisateur, "Verwaltung der
+  // Mitgliedschaftskampagnen" : "1. Icons für jede Angebotskachel hochladen 2. Färblich
+  // highlighten 3. Tags hinzufügen wie... der Tag 'Popular'") — voir
+  // apps.adhesions.models.OffreAdhesion côté backend.
+  icone: string | null;
+  couleur: CouleurOffre;
+  populaire: boolean;
   rabais: RabaisOffre[];
 }
 
@@ -95,6 +111,10 @@ export interface OffreCreatePayload {
   condition_age_max?: number | null;
   visible?: boolean;
   ordre?: number;
+  // `icone` n'apparaît volontairement pas ici : comme Produit.image (boutique), elle ne se
+  // televerse qu'en multipart/form-data via un endpoint dédié — voir televerserIconeOffre.
+  couleur?: CouleurOffre;
+  populaire?: boolean;
 }
 
 /** Payload de POST/PATCH /adhesions/rabais/ (RabaisOffreSerializer). */

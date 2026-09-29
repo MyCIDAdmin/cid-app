@@ -47,6 +47,9 @@ function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
         condition_age_max: null,
         visible: true,
         ordre: 0,
+        icone: null,
+        couleur: "",
+        populaire: false,
         rabais: [],
       },
     ],
@@ -112,7 +115,7 @@ describe("MembershipSection", () => {
     expect(screen.getByText("membership.choisir")).toBeInTheDocument();
   });
 
-  it("affiche le récapitulatif \"déjà membre\" quand la souscription de la campagne active est payée", () => {
+  it('affiche le récapitulatif "déjà membre" quand la souscription de la campagne active est payée', () => {
     vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue(campagneQuery(campagne()));
     vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue(
       souscriptionsQuery([souscription()]),

@@ -28,6 +28,9 @@ function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
     condition_age_max: null,
     visible: true,
     ordre: 1,
+    icone: null,
+    couleur: "",
+    populaire: false,
     rabais: [
       {
         id: "r1",
@@ -154,7 +157,10 @@ describe("RabaisManager", () => {
     const checkboxes = screen.getAllByLabelText("admin_rabais.justificatif_requis_label");
     fireEvent.click(checkboxes[0]);
 
-    expect(modifierMutate).toHaveBeenCalledWith({ id: "r1", payload: { justificatif_requis: false } });
+    expect(modifierMutate).toHaveBeenCalledWith({
+      id: "r1",
+      payload: { justificatif_requis: false },
+    });
   });
 
   // Même bug de classe que OffresManager (2026-09-24) : désactiver la case à cocher bloque déjà

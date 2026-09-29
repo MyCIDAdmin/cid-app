@@ -11,6 +11,7 @@ import uuid
 import magic
 from rest_framework import serializers
 
+from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 
 from .models import (
@@ -82,9 +83,18 @@ class OffreAdhesionSerializer(serializers.ModelSerializer):
             "condition_age_max",
             "visible",
             "ordre",
+            "icone",
+            "couleur",
+            "populaire",
             "rabais",
         ]
         read_only_fields = ["id"]
+
+    def validate_icone(self, image):
+        # Retour utilisateur du 2026-09-29 : "Icons für jede Angebotskachel hochladen" — même
+        # validation (MIME réel, redimensionnement, ré-encodage) que toute image uploadée par
+        # un membre, voir le docstring de valider_et_reencoder_photo.
+        return valider_et_reencoder_photo(image)
 
 
 class CampagneAdhesionSerializer(serializers.ModelSerializer):
