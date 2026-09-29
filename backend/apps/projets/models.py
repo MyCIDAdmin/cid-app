@@ -170,7 +170,7 @@ class Projet(models.Model):
         """Seule règle serveur dépendant de `date_limite` (demande utilisateur point 4) —
         bloque une nouvelle contribution, voir apps.cotisations.serializers.
         CotisationSerializer.validate (TypeArticle.PROJET)."""
-        return bool(self.date_limite and self.date_limite < timezone.now().date())
+        return bool(self.date_limite and self.date_limite < timezone.localdate())
 
 
 class ProjetImage(models.Model):
