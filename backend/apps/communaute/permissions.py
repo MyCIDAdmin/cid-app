@@ -56,6 +56,36 @@ class ContenuCommunautePermission(BasePermission):
         return True
 
 
+# Seuil de rôle requis pour PUBLIER une Neuigkeit (voir PublicationPermission ci-dessous) — même
+# valeur que MODERATION_MIN_LEVEL, nommé séparément pour que le sens de chaque usage reste clair
+# à la lecture (modération vs droit d'écrire une actualité), même si la valeur coïncide
+# aujourd'hui.
+PUBLICATION_CREATION_MIN_LEVEL = MODERATION_MIN_LEVEL
+
+
+class PublicationPermission(ContenuCommunautePermission):
+    """Fil d'actualité ("Neuigkeiten") — retour utilisateur du 2026-09-29, point 3.1 :
+    "Modul zur Rollenverwaltung hinzufügen. Normal User sollen den Editor nicht sehen (Nur Lese
+    Zugriff und Reaktionen auf freigegeben Neuigkeiten)". Seule la CRÉATION diffère de
+    ContenuCommunautePermission (voir sa docstring, toujours valable pour Commentaire/Sujet/
+    ReponseForum, inchangés) : lecture, réactions (liker/partager, actions du ViewSet) et
+    commentaires restent ouverts à tout authentifié, mais écrire une nouvelle publication passe
+    désormais à PUBLICATION_CREATION_MIN_LEVEL (Bureau Admin+) — ce sont déjà les rôles qui
+    modèrent ce contenu, et c'est cette restriction qui rend acceptable de stocker le HTML de
+    l'éditeur riche (RichTextEditor, remplace le <textarea> brut, voir FilPage.tsx) sans
+    sanitization serveur, même raisonnement que RichTextEditor/apps.projets pour
+    Projet.description_html (voir sa docstring) : un champ HTML non filtré ne peut être rempli
+    QUE par des rôles habilités.
+    """
+
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        if getattr(view, "action", None) == "create":
+            return ROLE_LEVELS.get(request.user.role, 0) >= PUBLICATION_CREATION_MIN_LEVEL
+        return True
+
+
 # ---------------------------------------------------------------------------
 # Messagerie privée + Groupes de chat (deuxième lot — CID-SCD-001 §résumé
 # "Messagerie privée — chiffrée, accès strictement limité aux 2 participants")

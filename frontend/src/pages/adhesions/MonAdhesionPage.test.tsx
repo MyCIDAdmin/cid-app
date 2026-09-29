@@ -49,6 +49,9 @@ function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
     condition_age_max: null,
     visible: true,
     ordre: 1,
+    icone: null,
+    couleur: "",
+    populaire: false,
     rabais: [
       {
         id: "r1",
@@ -350,7 +353,11 @@ describe("MonAdhesionPage", () => {
       isError: false,
     } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
     vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
-      data: { next: null, previous: null, results: [souscription({ statut: "en_attente_paiement" })] },
+      data: {
+        next: null,
+        previous: null,
+        results: [souscription({ statut: "en_attente_paiement" })],
+      },
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
@@ -418,6 +425,99 @@ describe("MonAdhesionPage", () => {
     const carteFamille = screen.getByText("Famille").closest("div.rounded-cid-lg");
     expect(carteBasic).toHaveClass("border-t-cat-1");
     expect(carteFamille).toHaveClass("border-t-cat-2");
+  });
+
+  // Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" : "2. Färblich
+  // highlighten") — une couleur choisie côté admin (offre.couleur) l'emporte sur l'attribution
+  // automatique par index vérifiée par le test ci-dessus.
+  it("une couleur explicite (offre.couleur) l'emporte sur l'attribution automatique par index", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne({
+        offres: [
+          offre({ id: "o1", nom: "Basic", couleur: "cat_3" }),
+          offre({ id: "o2", nom: "Famille", prix_plein: "200.00" }),
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    const carteBasic = screen.getByText("Basic").closest("div.rounded-cid-lg");
+    const carteFamille = screen.getByText("Famille").closest("div.rounded-cid-lg");
+    // "Basic" force cat_3 malgré son index 0 (qui donnerait cat_1 par défaut) ; "Famille" n'a
+    // pas de couleur explicite et retombe donc sur l'attribution automatique par index (1).
+    expect(carteBasic).toHaveClass("border-t-cat-3");
+    expect(carteFamille).toHaveClass("border-t-cat-2");
+  });
+
+  // Retour utilisateur du 2026-09-29 ("3. Tags hinzufügen wie... der Tag 'Popular'") — un tag
+  // "Populaire" explicite remplace entièrement l'ancien repère par position (offre du milieu).
+  it("le tag 'Populaire' explicite remplace le repère par position, une seule offre porte le badge", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne({
+        offres: [
+          offre({ id: "o1", nom: "Basic", populaire: false }),
+          offre({ id: "o2", nom: "Famille", prix_plein: "200.00", populaire: true }),
+          offre({ id: "o3", nom: "Gold", prix_plein: "300.00", populaire: false }),
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    // Sans tag explicite, l'offre du milieu (index 1, "Famille") aurait de toute façon porté le
+    // badge par le repli historique — le vrai test est qu'un SEUL badge s'affiche.
+    expect(screen.getAllByText("offres.badge_populaire")).toHaveLength(1);
+  });
+
+  it("affiche l'icône d'une offre quand elle est définie", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne({
+        offres: [offre({ id: "o1", nom: "Basic", icone: "https://cdn.example/icone.png" })],
+      }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    const carteBasic = screen.getByText("Basic").closest("div.rounded-cid-lg");
+    const icone = carteBasic?.querySelector("img");
+    expect(icone).toHaveAttribute("src", "https://cdn.example/icone.png");
   });
 
   it("ne propose pas de retirer une adhésion déjà payée", () => {

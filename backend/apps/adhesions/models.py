@@ -29,7 +29,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from .storage import JustificatifsStorage
+from .storage import JustificatifsStorage, OffreIconeStorage
 
 
 class StatutCampagne(models.TextChoices):
@@ -82,6 +82,25 @@ class CampagneAdhesion(models.Model):
         return f"{self.nom} ({self.annee}) — {self.get_statut_display()}"
 
 
+def offre_icone_upload_path(instance, filename):
+    return f"adhesions/offres/{instance.id}/icone_{filename}"
+
+
+class CouleurOffre(models.TextChoices):
+    """Palette catégorielle fixe (retour utilisateur du 2026-09-29, "Färblich highlighten") —
+    volontairement les 3 MÊMES 3 slots validés déjà utilisés côté frontend (ACCENTS_OFFRE,
+    tokens Tailwind cat-1/cat-2/cat-3, voir MonAdhesionPage.tsx et index.css) plutôt qu'un
+    sélecteur de couleur libre : évite une combinaison non testée en accessibilité (contraste/
+    daltonisme, voir le skill dataviz — "assigner les teintes catégorielles dans un ordre fixe,
+    jamais généré"). Vide (choix par défaut) = pas de préférence explicite, le frontend retombe
+    alors sur l'attribution automatique par position (comportement inchangé pour les offres
+    existantes, voir accentOffre() côté frontend)."""
+
+    CAT_1 = "cat_1", _("Couleur 1")
+    CAT_2 = "cat_2", _("Couleur 2")
+    CAT_3 = "cat_3", _("Couleur 3")
+
+
 class OffreAdhesion(models.Model):
     """Offre d'adhésion (ex. Basic/Plus/Junior) rattachée à une campagne — FDD §6.1."""
 
@@ -110,6 +129,30 @@ class OffreAdhesion(models.Model):
         default=True, help_text=_("Décoché : offre gardée au catalogue mais masquée côté membre.")
     )
     ordre = models.PositiveSmallIntegerField(default=0)
+
+    # Retour utilisateur du 2026-09-29, module "Verwaltung der Mitgliedschaftskampagnen" (voir
+    # docstring de tête et CouleurOffre ci-dessus pour le détail de chaque champ) :
+    icone = models.ImageField(
+        upload_to=offre_icone_upload_path,
+        storage=OffreIconeStorage(),
+        null=True,
+        blank=True,
+        help_text=_("Icône affichée sur la kachel de cette offre (mycid.org/membership)."),
+    )
+    couleur = models.CharField(
+        max_length=10,
+        choices=CouleurOffre.choices,
+        blank=True,
+        help_text=_("Surlignage de couleur de la kachel. Vide = attribution automatique."),
+    )
+    populaire = models.BooleanField(
+        default=False,
+        help_text=_(
+            'Affiche le badge "Beliebt" (Populaire) sur cette offre. Si aucune offre d\'une '
+            "campagne n'est marquée, le badge reste placé automatiquement sur l'offre du "
+            "milieu (comportement historique, voir accentOffre()/populaire côté frontend)."
+        ),
+    )
 
     class Meta:
         db_table = "adhesions_offres"

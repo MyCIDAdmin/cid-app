@@ -67,6 +67,9 @@ function campagne(): CampagneAdhesion {
         condition_age_max: null,
         visible: true,
         ordre: 1,
+        icone: null,
+        couleur: "",
+        populaire: false,
         rabais: [
           {
             id: "r1",

@@ -23,6 +23,31 @@ vi.mock("../../hooks/useCommunaute", async () => {
   };
 });
 
+// RichTextEditor (TipTap/ProseMirror, retour utilisateur du 2026-09-29, point 3.2 — remplace le
+// <textarea> brut) ne peut pas être piloté par fireEvent dans jsdom (voir même mock dans
+// AdminEventsPage.test.tsx) : remplacé ici par un <textarea> minimal exposant le même contrat
+// value/onChange/placeholder/ariaLabel.
+vi.mock("../../components/ui/RichTextEditor", () => ({
+  default: ({
+    value,
+    onChange,
+    placeholder,
+    ariaLabel,
+  }: {
+    value: string;
+    onChange: (html: string) => void;
+    placeholder?: string;
+    ariaLabel?: string;
+  }) => (
+    <textarea
+      aria-label={ariaLabel}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+
 const membre = {
   id: "u1",
   email: "membre@example.com",
@@ -238,6 +263,14 @@ describe("FilPage", () => {
   });
 
   it("soumet une nouvelle publication", () => {
+    // Retour utilisateur du 2026-09-29, point 3.1 : seuls Bureau Admin+ voient l'éditeur
+    // (voir PublicationPermission côté backend et les deux tests ci-dessous).
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: bureauAdmin,
+      isAuthenticated: true,
+    });
     const creer = mutationMock<ReturnType<typeof useCommunauteHooks.useCreerPublication>>();
     vi.mocked(useCommunauteHooks.useCreerPublication).mockReturnValue(creer);
     vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
@@ -257,6 +290,42 @@ describe("FilPage", () => {
       { contenu: "Nouvelle actu", image: undefined, document: undefined },
       expect.anything(),
     );
+  });
+
+  it("un membre normal ne voit pas l'éditeur de publication (lecture seule)", () => {
+    // Retour utilisateur du 2026-09-29, point 3.1 : "Normal User sollen den Editor nicht
+    // sehen (Nur Lese Zugriff und Reaktionen auf freigegeben Neuigkeiten)".
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication({ contenu: "Actu déjà publiée" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    expect(screen.queryByPlaceholderText("fil.placeholder_publication")).not.toBeInTheDocument();
+    expect(screen.queryByText("fil.publier")).not.toBeInTheDocument();
+    // Lecture et réactions restent disponibles.
+    expect(screen.getByText("Actu déjà publiée")).toBeInTheDocument();
+  });
+
+  it("un bureau admin voit l'éditeur de publication", () => {
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: bureauAdmin,
+      isAuthenticated: true,
+    });
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    expect(screen.getByPlaceholderText("fil.placeholder_publication")).toBeInTheDocument();
+    expect(screen.getByText("fil.publier")).toBeInTheDocument();
   });
 
   it("affiche un lien vers le document joint à une publication", () => {

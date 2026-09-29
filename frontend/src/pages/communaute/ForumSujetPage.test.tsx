@@ -117,6 +117,20 @@ describe("ForumSujetPage", () => {
     expect(screen.getByText("Une réponse")).toBeInTheDocument();
   });
 
+  it("affiche le bouton de partage externe du sujet", () => {
+    // Retour utilisateur du 2026-09-29, module "Forum" : "Es soll möglich sein Elemente in
+    // Social Media zu teilen" — voir ShareButton.tsx et son docstring.
+    vi.mocked(useCommunauteHooks.useSujet).mockReturnValue({
+      data: sujet(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSujet>);
+
+    renderSujet();
+
+    expect(screen.getByLabelText("partage.bouton_aria")).toBeInTheDocument();
+  });
+
   it("un membre normal ne voit pas les actions de modération", () => {
     vi.mocked(useCommunauteHooks.useSujet).mockReturnValue({
       data: sujet(),

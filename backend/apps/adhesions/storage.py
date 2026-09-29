@@ -47,6 +47,29 @@ from storages.backends.s3boto3 import S3Boto3Storage
 from storages.utils import clean_name
 
 
+class OffreIconeStorage(S3Boto3Storage):
+    """Storage MinIO pour l'icône d'une offre d'adhésion (retour utilisateur du 2026-09-29,
+    module "Verwaltung der Mitgliedschaftskampagnen" : "Icons für jede Angebotskachel
+    hochladen") — bucket "défaut" (cid-media) et principe identiques à
+    apps.membres.storage.MembrePhotoStorage/apps.communaute.storage.PublicationsStorage :
+    icône montrée publiquement sur la carte de l'offre (mêmes lecteurs que le reste du
+    catalogue de campagnes, CataloguePermission — lecture ouverte à tout le monde, y compris
+    non authentifié), donc `custom_domain` + `querystring_auth = False` pour une URL publique
+    stable, JAMAIS l'endpoint interne `minio.railway.internal` (voir le docstring de
+    MembrePhotoStorage pour le détail du bug que ce motif évite)."""
+
+    bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+    querystring_auth = False
+    default_acl = None
+    file_overwrite = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if settings.MINIO_PUBLIC_ENDPOINT:
+            self.custom_domain = f"{settings.MINIO_PUBLIC_ENDPOINT}/{self.bucket_name}"
+            self.url_protocol = "https:" if settings.MINIO_PUBLIC_USE_SSL else "http:"
+
+
 class JustificatifsStorage(S3Boto3Storage):
     bucket_name = settings.MINIO_BUCKET_JUSTIFICATIFS
     querystring_expire = 900  # 15 minutes — FDD §9 "URL MinIO signée (TTL 15 min)"

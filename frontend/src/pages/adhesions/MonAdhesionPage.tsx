@@ -107,7 +107,19 @@ const ACCENT_NEUTRE = {
   puce: "text-ca",
 } as const;
 
-function accentOffre(index: number): (typeof ACCENTS_OFFRE)[number] | typeof ACCENT_NEUTRE {
+// Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" : "2. Färblich
+// highlighten") — reprend les mêmes 3 emplacements que ACCENTS_OFFRE (voir CouleurOffre côté
+// backend/types/adhesion.ts) : un choix explicite de l'admin (offre.couleur) l'emporte sur
+// l'attribution automatique par index, qui reste le repli historique quand `couleur` est vide.
+const COULEUR_OFFRE_INDEX: Record<string, number> = { cat_1: 0, cat_2: 1, cat_3: 2 };
+
+function accentOffre(
+  offre: Pick<OffreAdhesion, "couleur">,
+  index: number,
+): (typeof ACCENTS_OFFRE)[number] | typeof ACCENT_NEUTRE {
+  if (offre.couleur && offre.couleur in COULEUR_OFFRE_INDEX) {
+    return ACCENTS_OFFRE[COULEUR_OFFRE_INDEX[offre.couleur]];
+  }
   return ACCENTS_OFFRE[index] ?? ACCENT_NEUTRE;
 }
 
@@ -166,6 +178,12 @@ export default function MonAdhesionPage() {
   const dejaPayee = souscriptionActuelle?.statut === "payee";
 
   const offresVisibles: OffreAdhesion[] = (campagne?.offres ?? []).filter((o) => o.visible);
+  // Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" : "3. Tags
+  // hinzufügen wie... der Tag 'Popular'") — dès qu'une offre visible porte le tag "Populaire"
+  // explicite (OffreAdhesion.populaire, défini côté admin), il remplace entièrement le repère
+  // par position ci-dessous (voir le calcul de `populaire` dans le rendu des cartes) : jamais
+  // les deux mélangés, pour éviter deux badges "Beliebt" sur la même grille.
+  const uneOffrePopulaireExplicite = offresVisibles.some((o) => o.populaire);
   const offreSelectionnee = offresVisibles.find((o) => o.id === offreSelectionneeId) ?? null;
   const rabaisOptions = offreSelectionnee?.rabais ?? [];
   const rabaisSelectionne = rabaisOptions.find((r) => r.id === rabaisSelectionneId) ?? null;
@@ -357,7 +375,7 @@ export default function MonAdhesionPage() {
         {campagne && !dejaPayee && offresVisibles.length > 0 && (
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {offresVisibles.map((offre, index) => {
-              const accent = accentOffre(index);
+              const accent = accentOffre(offre, index);
               const avantagesOffre = offre.avantages.slice().sort((a, b) => a.ordre - b.ordre);
               const texteConditionAge =
                 offre.condition_age_min != null && offre.condition_age_max != null
@@ -371,11 +389,14 @@ export default function MonAdhesionPage() {
                       ? t("offres.condition_age_max", { max: offre.condition_age_max })
                       : null;
               const selectionnee = offreSelectionneeId === offre.id;
-              // Repère cosmétique "Beliebt" façon mycid.org/membership — l'offre du milieu à
-              // partir de 3 offres visibles, jamais un champ backend dédié (voir
-              // MembershipOffersPublic.tsx, même convention) : purement décoratif.
-              const populaire =
-                offresVisibles.length >= 3 && index === Math.floor(offresVisibles.length / 2);
+              // Repère "Beliebt" façon mycid.org/membership — depuis le 2026-09-29, un tag
+              // explicite côté admin (offre.populaire) l'emporte dès qu'au moins une offre de la
+              // campagne le porte ; sinon repli sur l'ancien heuristique purement décoratif
+              // (offre du milieu à partir de 3 offres visibles, voir MembershipOffersPublic.tsx
+              // pour la même convention côté page publique).
+              const populaire = uneOffrePopulaireExplicite
+                ? offre.populaire
+                : offresVisibles.length >= 3 && index === Math.floor(offresVisibles.length / 2);
 
               return (
                 <div
@@ -390,6 +411,14 @@ export default function MonAdhesionPage() {
                     </span>
                   )}
 
+                  {offre.icone && (
+                    <img
+                      src={offre.icone}
+                      alt=""
+                      aria-hidden="true"
+                      className="mb-2 h-10 w-10 rounded-cid object-cover"
+                    />
+                  )}
                   <div className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">
                     {offre.nom}
                   </div>

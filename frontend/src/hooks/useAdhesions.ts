@@ -86,8 +86,7 @@ export function useSouscrire() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: SouscrirePayload) => adhesionsApi.souscrire(payload),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: adhesionsKeys.mesSouscriptions() }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.mesSouscriptions() }),
   });
 }
 
@@ -167,6 +166,16 @@ export function useSupprimerOffre() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => adhesionsApi.supprimerOffre(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.campagnes() }),
+  });
+}
+
+/** Upload/remplacement de l'icône d'une offre — voir adhesionsApi.televerserIconeOffre. */
+export function useTeleverserIconeOffre() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, fichier }: { id: string; fichier: File }) =>
+      adhesionsApi.televerserIconeOffre(id, fichier),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.campagnes() }),
   });
 }

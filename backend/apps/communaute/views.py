@@ -116,6 +116,7 @@ from .permissions import (
     MessagePrivePermission,
     PhotoCommentairePermission,
     PhotoPermission,
+    PublicationPermission,
     QuizPermission,
     TippspielPermission,
     TippspielTeilnahmePermission,
@@ -191,7 +192,7 @@ class MessageGroupeCursorPagination(CursorPagination):
 
 class PublicationViewSet(viewsets.ModelViewSet):
     serializer_class = PublicationSerializer
-    permission_classes = [ContenuCommunautePermission]
+    permission_classes = [PublicationPermission]
     filterset_class = PublicationFilter
     filter_backends = [DjangoFilterBackend]
     pagination_class = PublicationCursorPagination

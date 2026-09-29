@@ -137,8 +137,20 @@ def test_bureau_admin_voit_les_publications_masquees(api_client):
     assert "Publication masquée" in contenus
 
 
-def test_membre_peut_creer_une_publication_avec_hashtags(api_client):
-    user, membre = _user_avec_membre(Role.MEMBRE, "m2@example.de")
+def test_membre_normal_ne_peut_pas_creer_de_publication(api_client):
+    # Retour utilisateur du 2026-09-29, point 3.1 : "Normal User sollen den Editor nicht sehen
+    # [Nur Lese Zugriff und Reaktionen auf freigegeben Neuigkeiten]" — voir
+    # PublicationPermission (permissions.py). Lecture/réactions/commentaires restent
+    # inchangés pour ce rôle (voir test_liker_bascule_le_like, test_commenter_une_publication).
+    user, _ = _user_avec_membre(Role.MEMBRE, "m2@example.de")
+    resp = _auth(api_client, user).post(
+        reverse(PUBLICATION_LIST_URL), {"contenu": "Allez le #CA1920 !"}
+    )
+    assert resp.status_code == 403
+
+
+def test_bureau_admin_peut_creer_une_publication_avec_hashtags(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "m2b@example.de")
     resp = _auth(api_client, user).post(
         reverse(PUBLICATION_LIST_URL), {"contenu": "Allez le #CA1920 !"}
     )
@@ -163,7 +175,7 @@ def _pdf_valide(nom="document.pdf"):
 
 
 def test_creer_publication_avec_image_valide_est_reencodee_et_saffiche(api_client):
-    user, _ = _user_avec_membre(Role.MEMBRE, "img1@example.de")
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "img1@example.de")
     resp = _auth(api_client, user).post(
         reverse(PUBLICATION_LIST_URL),
         {"contenu": "Belle photo du match", "image": _image_valide()},
@@ -177,7 +189,7 @@ def test_creer_publication_avec_image_valide_est_reencodee_et_saffiche(api_clien
 
 
 def test_creer_publication_avec_image_invalide_rejette(api_client):
-    user, _ = _user_avec_membre(Role.MEMBRE, "img2@example.de")
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "img2@example.de")
     faux_fichier = SimpleUploadedFile("photo.jpg", b"ceci n'est pas une image", "image/jpeg")
     resp = _auth(api_client, user).post(
         reverse(PUBLICATION_LIST_URL),
@@ -189,7 +201,7 @@ def test_creer_publication_avec_image_invalide_rejette(api_client):
 
 
 def test_creer_publication_avec_document_pdf_valide(api_client):
-    user, _ = _user_avec_membre(Role.MEMBRE, "doc1@example.de")
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "doc1@example.de")
     resp = _auth(api_client, user).post(
         reverse(PUBLICATION_LIST_URL),
         {"contenu": "Le compte-rendu de l'AG", "document": _pdf_valide()},
@@ -201,7 +213,7 @@ def test_creer_publication_avec_document_pdf_valide(api_client):
 
 
 def test_creer_publication_avec_document_non_pdf_rejette(api_client):
-    user, _ = _user_avec_membre(Role.MEMBRE, "doc2@example.de")
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "doc2@example.de")
     faux_fichier = SimpleUploadedFile(
         "document.pdf", b"ceci n'est pas un pdf", content_type="application/pdf"
     )

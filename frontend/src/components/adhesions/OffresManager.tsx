@@ -13,17 +13,23 @@
  * AdminCampagnesPage) désactive l'ajout/modification/suppression d'offres et se propage à
  * RabaisManager.
  */
-import { useState, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
   useCreerOffre,
   useModifierOffre,
   useSupprimerOffre,
+  useTeleverserIconeOffre,
 } from "../../hooks/useAdhesions";
-import type { CampagneAdhesion, OffreCreatePayload } from "../../types/adhesion";
+import type { CampagneAdhesion, CouleurOffre, OffreCreatePayload } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import RabaisManager from "./RabaisManager";
+
+// Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" : "2. Färblich
+// highlighten") — reprend les 3 mêmes emplacements que ACCENTS_OFFRE côté MonAdhesionPage.tsx,
+// jamais un sélecteur de couleur libre (voir le docstring backend de CouleurOffre).
+const OPTIONS_COULEUR: CouleurOffre[] = ["", "cat_1", "cat_2", "cat_3"];
 
 function formulaireInitial(campagneId: string): OffreCreatePayload & { avantages_texte: string } {
   return {
@@ -58,6 +64,7 @@ export default function OffresManager({
   const creerMutation = useCreerOffre();
   const modifierMutation = useModifierOffre();
   const supprimerMutation = useSupprimerOffre();
+  const iconeMutation = useTeleverserIconeOffre();
 
   const [form, setForm] = useState(() => formulaireInitial(campagne.id));
   const [offreDepliee, setOffreDepliee] = useState<string | null>(null);
@@ -87,13 +94,34 @@ export default function OffresManager({
     modifierMutation.mutate({ id: offreId, payload: { prix_plein: valeur } });
   }
 
+  function modifierCouleur(offreId: string, couleur: CouleurOffre) {
+    if (!modifiable) return;
+    modifierMutation.mutate({ id: offreId, payload: { couleur } });
+  }
+
+  function togglePopulaire(offreId: string, populaire: boolean) {
+    if (!modifiable) return;
+    modifierMutation.mutate({ id: offreId, payload: { populaire } });
+  }
+
+  function handleIconeChange(offreId: string, e: ChangeEvent<HTMLInputElement>) {
+    if (!modifiable) return;
+    const fichier = e.target.files?.[0];
+    if (!fichier) return;
+    iconeMutation.mutate({ id: offreId, fichier });
+    e.target.value = "";
+  }
+
   return (
     <div className="mt-2 rounded-cid border border-text-tertiary/20 bg-bg-tertiary/30 p-3">
       <h3 className="mb-2 text-xs font-bold text-text-primary">{t("admin_offres.titre")}</h3>
 
       <div className="space-y-2">
         {campagne.offres.map((offre) => (
-          <div key={offre.id} className="rounded-cid border border-text-tertiary/20 bg-bg-primary p-2">
+          <div
+            key={offre.id}
+            className="rounded-cid border border-text-tertiary/20 bg-bg-primary p-2"
+          >
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="flex-1 font-semibold text-text-primary">{offre.nom}</span>
               <label className="flex items-center gap-1 text-[10px] text-text-secondary">
@@ -106,7 +134,7 @@ export default function OffresManager({
                   defaultValue={offre.prix_plein}
                   onBlur={(e) => modifierPrix(offre.id, e.target.value)}
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   className="w-16 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
                 />
               </label>
@@ -116,7 +144,7 @@ export default function OffresManager({
                   checked={offre.visible}
                   onChange={(e) => toggleVisible(offre.id, e.target.checked)}
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 />
                 {t("admin_offres.visible_label")}
               </label>
@@ -139,16 +167,74 @@ export default function OffresManager({
                 type="button"
                 onClick={() => supprimerMutation.mutate(offre.id)}
                 disabled={!modifiable}
-                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 className="text-text-tertiary hover:text-status-dangerText disabled:opacity-40"
                 aria-label={`${t("admin_offres.supprimer")} — ${offre.nom}`}
               >
                 ✕
               </button>
             </div>
-            {offreDepliee === offre.id && (
-              <RabaisManager offre={offre} modifiable={modifiable} />
-            )}
+            {/* Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" :
+                "1. Icons für jede Angebotskachel hochladen 2. Färblich highlighten 3. Tags
+                hinzufügen wie... der Tag 'Popular'") — appliqué en PATCH immédiat, même
+                principe que toggleVisible/modifierPrix ci-dessus. */}
+            <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-text-tertiary/10 pt-2 text-xs">
+              {offre.icone ? (
+                <img
+                  src={offre.icone}
+                  alt={t("admin_offres.icone_alt", { nom: offre.nom })}
+                  className="h-8 w-8 rounded-cid object-cover"
+                />
+              ) : (
+                <span className="flex h-8 w-8 items-center justify-center rounded-cid border border-dashed border-text-tertiary/30 text-[10px] text-text-tertiary">
+                  {t("admin_offres.icone_label")}
+                </span>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                aria-label={`${offre.icone ? t("admin_offres.icone_changer") : t("admin_offres.icone_ajouter")} — ${offre.nom}`}
+                onChange={(e) => handleIconeChange(offre.id, e)}
+                disabled={!modifiable}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                className="w-32 text-[10px] text-text-secondary disabled:opacity-40"
+              />
+              <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                {t("admin_offres.couleur_label")}
+                <select
+                  aria-label={`${t("admin_offres.couleur_label")} — ${offre.nom}`}
+                  value={offre.couleur}
+                  onChange={(e) => modifierCouleur(offre.id, e.target.value as CouleurOffre)}
+                  disabled={!modifiable}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                  className="rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
+                >
+                  {OPTIONS_COULEUR.map((valeur) => (
+                    <option key={valeur || "auto"} value={valeur}>
+                      {valeur === ""
+                        ? t("admin_offres.couleur_auto")
+                        : t(`admin_offres.couleur_${valeur}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={offre.populaire}
+                  onChange={(e) => togglePopulaire(offre.id, e.target.checked)}
+                  disabled={!modifiable}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                />
+                {t("admin_offres.populaire_label")}
+              </label>
+              {iconeMutation.isError && (
+                <p className="w-full text-[10px] text-status-dangerText">
+                  {extractApiErrorMessage(iconeMutation.error, t("admin_offres.erreur_icone"))}
+                </p>
+              )}
+            </div>
+            {offreDepliee === offre.id && <RabaisManager offre={offre} modifiable={modifiable} />}
           </div>
         ))}
         {campagne.offres.length === 0 && (
@@ -156,7 +242,10 @@ export default function OffresManager({
         )}
       </div>
 
-      <form onSubmit={handleAjouter} className="mt-3 grid gap-2 border-t border-text-tertiary/10 pt-3 md:grid-cols-2">
+      <form
+        onSubmit={handleAjouter}
+        className="mt-3 grid gap-2 border-t border-text-tertiary/10 pt-3 md:grid-cols-2"
+      >
         <div>
           <label
             htmlFor={`offre-nom-${campagne.id}`}
@@ -273,7 +362,7 @@ export default function OffresManager({
           <button
             type="submit"
             disabled={creerMutation.isPending || !modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
           >
             {t("admin_offres.ajouter")}
