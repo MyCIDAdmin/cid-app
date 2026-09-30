@@ -436,7 +436,7 @@ def test_destroy_membre_avec_souscription_409(api_client, bureau_admin_user):
     assert resp.status_code == 409
     assert Membre.objects.filter(id=membre.id).exists()
 
- 
+
 # --- Action changer_statut (RH+) ---
 
 
