@@ -48,6 +48,7 @@ export default function MembreDetailPage() {
   const [nouveauStatut, setNouveauStatut] = useState<StatutMembre | "">("");
   const [confirmerSuppression, setConfirmerSuppression] = useState(false);
   const [erreurStatut, setErreurStatut] = useState<string | null>(null);
+  const [erreurSuppression, setErreurSuppression] = useState<string | null>(null);
 
   function appliquerChangementStatut() {
     if (!nouveauStatut) return;
@@ -61,9 +62,16 @@ export default function MembreDetailPage() {
 
   function supprimer() {
     if (!id) return;
-    deleteMutation.mutate(id, { onSuccess: () => navigate("/membres", { replace: true }) });
+    setErreurSuppression(null);
+    deleteMutation.mutate(id, {
+      onSuccess: () => navigate("/membres", { replace: true }),
+      onError: (error) => {
+        setConfirmerSuppression(false);
+        setErreurSuppression(extractApiErrorMessage(error, t("fiche.erreur_suppression")));
+      },
+    });
   }
-
+  
   if (isLoading) {
     return <p className="text-text-tertiary">{t("liste.chargement")}</p>;
   }
@@ -113,7 +121,10 @@ export default function MembreDetailPage() {
           )}
         </div>
       </div>
-
+      {erreurSuppression && (
+        <p className="mb-4 text-sm text-status-dangerText">{erreurSuppression}</p>
+      )}
+      
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-cid-lg bg-bg-primary p-5 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-text-primary">
