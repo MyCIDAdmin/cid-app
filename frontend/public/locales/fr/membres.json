@@ -108,7 +108,8 @@
     "confirmer_suppression_titre": "Supprimer ce membre ?",
     "confirmer_suppression_message": "Cette action est irréversible. Confirmez-vous la suppression de {{nom}} ?",
     "erreur_statut": "Impossible de changer le statut.",
-    "erreur_chargement": "Impossible de charger cette fiche membre."
+    "erreur_chargement": "Impossible de charger cette fiche membre.",
+    "erreur_suppression": "Impossible de supprimer ce membre."
   },
   "formulaire": {
     "titre_creer": "Ajouter un membre",
