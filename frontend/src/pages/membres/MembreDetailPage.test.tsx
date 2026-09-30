@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -126,5 +126,33 @@ describe("MembreDetailPage", () => {
 
     renderWithProviders(<MembreDetailPage />, { route: "/membres/m1", path: "/membres/:id" });
     expect(screen.getByText("fiche.erreur_chargement")).toBeInTheDocument();
+  });
+  
+  it("affiche l'erreur du backend et ferme le dialogue si la suppression échoue (409)", () => {
+    useAuthStore.setState({
+      user: { id: "u1", email: "admin@example.com", role: "bureau_admin", langue_preferee: "fr" },
+    });
+    vi.mocked(useMembresHooks.useMembre).mockReturnValue({
+      data: membre,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembre>);
+    vi.mocked(useMembresHooks.useDeleteMembre).mockReturnValue({
+      mutate: vi.fn((_id, opts) => {
+        opts.onError({
+          isAxiosError: true,
+          response: { data: { message: "Ce membre a encore des données liées." } },
+        });
+      }),
+      isPending: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useDeleteMembre>);
+
+    renderWithProviders(<MembreDetailPage />, { route: "/membres/m1", path: "/membres/:id" });
+
+    fireEvent.click(screen.getByText("fiche.supprimer"));
+    fireEvent.click(screen.getByText("action.confirmer"));
+
+    expect(screen.getByText("Ce membre a encore des données liées.")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
