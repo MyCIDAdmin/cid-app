@@ -53,7 +53,7 @@ export default function PublicFooter({ compact = false }: { compact?: boolean })
 
   if (compact) {
     return (
-      <footer className="shrink-0 border-t border-text-tertiary/10 bg-bg-primary">
+      <footer className="glass-bar shrink-0 border-t border-text-tertiary/10 bg-bg-primary">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 text-xs sm:px-6">
           <div className="flex items-center gap-1.5">
             <BrandLogo className="h-5 w-5" />
@@ -113,7 +113,7 @@ export default function PublicFooter({ compact = false }: { compact?: boolean })
   }
 
   return (
-    <footer className="border-t border-text-tertiary/10 bg-bg-primary">
+    <footer className="glass-bar border-t border-text-tertiary/10 bg-bg-primary">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
         <div>
           <div className="flex items-center gap-2">

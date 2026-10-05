@@ -33,8 +33,8 @@
   --color-sb: #1a0000;
 
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #fafafa;
-  --color-bg-tertiary: #f0f0f0;
+  --color-bg-secondary: #fbf8f8;
+  --color-bg-tertiary: #f5f0f0;
 
   --color-status-infoBg: #fff0f0;
   --color-status-infoText: #cc0000;
@@ -71,6 +71,20 @@
   --gradient-primary: linear-gradient(135deg, var(--color-ca) 0%, var(--color-cad) 100%);
   --shadow-card: 0 4px 20px color-mix(in srgb, var(--color-sb) 12%, transparent);
   --shadow-glow: 0 0 48px color-mix(in srgb, var(--color-ca) 20%, transparent);
+
+  /* Glas-Schicht (2026-10-06, Vorschau "Glasdesign in Rot und Weiß") — Jetons pour les surfaces
+     translucides (barres, sidebar, cartes). Voir la section "Glas-Schicht" en fin de fichier. */
+  --glass-bg: rgba(255, 255, 255, 0.56);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+  --glass-nav-bg: rgba(255, 255, 255, 0.58);
+  --glass-sidebar-bg: rgba(48, 0, 0, 0.6);
+  --glass-shadow: 0 12px 36px color-mix(in srgb, var(--color-cad) 13%, transparent);
+  --glass-sheen: color-mix(in srgb, var(--color-ca) 11%, transparent);
+  --glass-row-hover: color-mix(in srgb, var(--color-ca) 7%, transparent);
+  --ambient-1: rgba(204, 0, 0, 0.3);
+  --ambient-2: rgba(255, 110, 110, 0.26);
+  --ambient-3: rgba(204, 0, 0, 0.18);
 }
 
 .dark {
@@ -105,6 +119,19 @@
   --color-cat-1: #3987e5;
   --color-cat-2: #d95926;
   --color-cat-3: #199e70;
+
+  /* Glas-Schicht, variante sombre — verre fumé blanc à 7 %, bord clair à 15 %. */
+  --glass-bg: rgba(255, 255, 255, 0.07);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-highlight: rgba(255, 255, 255, 0.22);
+  --glass-nav-bg: rgba(34, 12, 14, 0.55);
+  --glass-sidebar-bg: rgba(18, 0, 0, 0.55);
+  --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  --glass-sheen: rgba(255, 255, 255, 0.08);
+  --glass-row-hover: rgba(255, 255, 255, 0.05);
+  --ambient-1: rgba(229, 69, 61, 0.4);
+  --ambient-2: rgba(255, 100, 100, 0.18);
+  --ambient-3: rgba(229, 69, 61, 0.22);
 
   /* --gradient-… et --shadow-… ne sont PAS redéfinis ici : ils référencent --color-ca/
      --color-sb/--color-bg-* via var(), donc déjà recalculés automatiquement avec les valeurs
@@ -272,5 +299,214 @@ input:-webkit-autofill:focus {
   .stagger-children > * {
     opacity: 1;
     animation: none;
+  }
+}
+
+/* ===== Glas-Schicht (2026-10-06) =====
+ * Demande utilisateur : "Glaseffekt in den Seiten", couleurs du Club Africain (rouge et blanc)
+ * conservées, structure inchangée. Approche CSS-first : aucun composant n'est réécrit, la couche
+ * cible (1) quelques classes-crochets ajoutées sur les racines (.glass-bar, .glass-sidebar,
+ * .ambient-bg, .glass-panel, .glass-match, .card-lift) et (2) le motif de carte déjà utilisé
+ * partout dans l'app ("rounded-cid-lg bg-bg-primary shadow-sm") — sans toucher aux modales et
+ * menus déroulants (shadow-lg/xl/2xl), qui restent opaques pour la lisibilité.
+ * Un verre n'est visible que s'il y a quelque chose de coloré derrière lui : .ambient-bg pose
+ * donc des halos rouges très doux sur le fond de page (voir ModuleBackground/PublicHomePage).
+ */
+.ambient-bg {
+  background-image:
+    radial-gradient(520px 360px at 10% 6%, var(--ambient-1), transparent 70%),
+    radial-gradient(480px 380px at 92% 26%, var(--ambient-2), transparent 70%),
+    radial-gradient(560px 420px at 4% 72%, var(--ambient-3), transparent 70%),
+    radial-gradient(620px 420px at 70% 98%, var(--ambient-3), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Cartes — translucides ; le flou n'est appliqué que si la carte ne contient pas d'élément
+   `fixed` (une modale rendue dans une carte serait sinon positionnée par rapport à la carte,
+   car backdrop-filter crée un bloc conteneur pour ses descendants fixed). */
+.rounded-cid-lg.bg-bg-primary.shadow-sm {
+  background-color: var(--glass-bg);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 0 0 1px var(--glass-border),
+    inset 0 1px 0 var(--glass-highlight);
+}
+
+.rounded-cid-lg.bg-bg-primary.shadow-sm:not(:has(.fixed)) {
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+}
+
+/* Barres (topbar de l'app, navigation publique, pied de page) */
+.glass-bar {
+  background-color: var(--glass-nav-bg);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(16px) saturate(165%);
+  backdrop-filter: blur(16px) saturate(165%);
+  box-shadow:
+    0 8px 26px color-mix(in srgb, var(--color-cad) 10%, transparent),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
+
+footer.glass-bar {
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+}
+
+/* Sidebar — verre fumé rouge foncé ; l'élément actif devient un verre rouge à bord clair. */
+aside.glass-sidebar {
+  background-color: var(--glass-sidebar-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+html[dir="rtl"] aside.glass-sidebar {
+  border-right: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+aside.glass-sidebar a[aria-current="page"] {
+  background-color: transparent;
+  background-image: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--color-ca) 92%, transparent),
+    color-mix(in srgb, var(--color-cad) 80%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 16px color-mix(in srgb, var(--color-ca) 35%, transparent);
+}
+
+/* Hero : panneau de verre dépoli posé sur la vidéo */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 14px 34px rgba(0, 0, 0, 0.4);
+}
+
+/* Prochain match : verre rouge */
+.glass-match {
+  background-image: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--color-ca) 92%, transparent),
+    color-mix(in srgb, var(--color-cad) 82%, transparent)
+  );
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+  box-shadow:
+    0 14px 34px color-mix(in srgb, var(--color-cad) 35%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Reflet lumineux qui suit la souris (--mx/--my posés par utils/glassPointer.ts) */
+.rounded-cid-lg.bg-bg-primary.shadow-sm:hover,
+.card-lift:hover {
+  background-image: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), var(--glass-sheen), transparent 62%);
+}
+
+/* Lignes de tableau */
+table tbody tr:hover > td {
+  background-color: var(--glass-row-hover);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Cartes cliquables et tuiles marquées .card-lift : légère élévation au survol */
+  a.rounded-cid-lg.bg-bg-primary.shadow-sm,
+  button.rounded-cid-lg.bg-bg-primary.shadow-sm,
+  .card-lift,
+  .glass-match {
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease,
+      background-color 0.3s ease;
+  }
+
+  a.rounded-cid-lg.bg-bg-primary.shadow-sm:hover,
+  button.rounded-cid-lg.bg-bg-primary.shadow-sm:hover,
+  .card-lift:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 18px 44px color-mix(in srgb, var(--color-cad) 20%, transparent),
+      inset 0 0 0 1px var(--glass-border),
+      inset 0 1px 0 var(--glass-highlight);
+  }
+
+  .glass-match:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 20px 48px color-mix(in srgb, var(--color-cad) 45%, transparent),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  /* Boutons rouges : retour au clic et au survol */
+  a.bg-ca,
+  button.bg-ca {
+    transition:
+      background-color 0.15s ease,
+      transform 0.15s ease,
+      box-shadow 0.2s ease,
+      color 0.15s ease,
+      opacity 0.15s ease;
+  }
+
+  a.bg-ca:hover,
+  button.bg-ca:hover {
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--color-ca) 35%, transparent);
+  }
+
+  a.bg-ca:active,
+  button.bg-ca:active {
+    transform: scale(0.97);
+  }
+
+  /* Éléments de menu : léger décalage au survol (sens inversé en RTL) */
+  aside.glass-sidebar nav a:not([aria-current="page"]):hover {
+    transform: translateX(3px);
+  }
+
+  html[dir="rtl"] aside.glass-sidebar nav a:not([aria-current="page"]):hover {
+    transform: translateX(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rounded-cid-lg.bg-bg-primary.shadow-sm:hover,
+  .card-lift:hover {
+    background-image: none;
+  }
+}
+
+/* Navigateurs sans backdrop-filter, ou préférence système "réduire la transparence" : surfaces opaques */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .rounded-cid-lg.bg-bg-primary.shadow-sm,
+  .glass-bar {
+    background-color: var(--color-bg-primary);
+  }
+
+  aside.glass-sidebar {
+    background-color: var(--color-sb);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .rounded-cid-lg.bg-bg-primary.shadow-sm,
+  .glass-bar {
+    background-color: var(--color-bg-primary);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  aside.glass-sidebar {
+    background-color: var(--color-sb);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

@@ -61,7 +61,7 @@ export default function PublicHomePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-tertiary">
+    <div className="ambient-bg flex min-h-screen flex-col bg-bg-tertiary">
       <PublicTopNav onglet={onglet} onChangeOnglet={changerOnglet} />
 
       <main className="flex-1">

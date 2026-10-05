@@ -7,6 +7,7 @@ import App from "./App";
 import "./i18n";
 import "./index.css";
 import { queryClient } from "./queryClient";
+import { initGlassPointer } from "./utils/glassPointer";
 
 // Applique la classe `dark` sur <html> avant le premier rendu React (évite un flash en thème
 // clair au chargement pour un utilisateur ayant choisi le sombre — voir uiStore.ts). Lecture
@@ -19,6 +20,9 @@ try {
 } catch {
   // localStorage indisponible (navigation privée stricte, etc.) — thème clair par défaut.
 }
+
+// Reflet lumineux des cartes en verre (Glas-Design, voir utils/glassPointer.ts et index.css).
+initGlassPointer();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

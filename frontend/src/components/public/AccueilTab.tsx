@@ -50,7 +50,7 @@ export default function AccueilTab() {
       <div
         className={
           videoUrl
-            ? "relative overflow-hidden rounded-cid-lg bg-gradient-to-br from-ca to-cad px-6 py-16 sm:px-10"
+            ? "relative overflow-hidden rounded-cid-lg bg-gradient-to-br from-ca to-cad px-6 py-12 sm:px-10"
             : "py-10"
         }
       >
@@ -60,7 +60,11 @@ export default function AccueilTab() {
             centrée plutôt que le bloc aligné à gauche d'origine ; `.stagger-children` (utilitaire
             déjà existant, voir index.css, utilisé par CataloguePage/ProjetsPage) applique la même
             apparition échelonnée (fade-up) au titre/sous-titre/CTA, façon mycid.org. */}
-        <div className="stagger-children relative mx-auto flex max-w-2xl flex-col items-center text-center">
+        <div
+          className={`stagger-children relative mx-auto flex max-w-2xl flex-col items-center text-center ${
+            videoUrl ? "glass-panel rounded-cid-lg p-6" : ""
+          }`}
+        >
           <h1
             className={`font-display text-3xl font-bold sm:text-4xl ${
               videoUrl ? "text-white" : "text-text-primary"

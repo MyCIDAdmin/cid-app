@@ -72,7 +72,7 @@ export default function NextMatchTile() {
         : t("nextMatch.dans_x_jours", { count: jours });
 
   return (
-    <div className="flex flex-col gap-3 rounded-cid-lg bg-gradient-to-r from-ca to-cad p-5 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div className="glass-match flex flex-col gap-3 rounded-cid-lg bg-gradient-to-r from-ca to-cad p-5 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div>
         <div className="text-[11px] font-semibold uppercase tracking-wide text-white/75">
           {t("nextMatch.titre")}

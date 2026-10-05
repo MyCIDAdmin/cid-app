@@ -40,7 +40,7 @@ export default function AppLayout() {
     // autorise la colonne à se contracter à la hauteur disponible, pour que ce soit bien <main>
     // (overflow-y-auto) qui défile en interne, jamais le document — la sidebar reste alors
     // toujours alignée sur exactement 100vh, quelle que soit la longueur de la page.
-    <div className="flex h-screen">
+    <div className="ambient-bg flex h-screen">
       <Sidebar />
       <MobileNavDrawer open={tiroirMobileOuvert} onClose={() => setTiroirMobileOuvert(false)} />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -58,7 +58,7 @@ export default function AppLayout() {
             2026-09-26, plan "Öffentliche mycid.org-Startseite" section A) : "/" redirige déjà
             vers /dashboard pour un membre actif (voir HomeRoute.tsx), donc un simple lien
             suffit — pas de cas particulier à gérer ici. */}
-        <header className="flex items-center justify-between gap-2 border-b border-text-tertiary/10 bg-bg-primary px-4 py-2 sm:px-6">
+        <header className="glass-bar flex items-center justify-between gap-2 border-b border-text-tertiary/10 bg-bg-primary px-4 py-2 sm:px-6">
           <div className="flex items-center gap-2">
             <button
               type="button"

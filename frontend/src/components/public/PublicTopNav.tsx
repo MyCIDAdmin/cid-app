@@ -49,7 +49,7 @@ export default function PublicTopNav({ onglet, onChangeOnglet }: PublicTopNavPro
   const [menuMobileOuvert, setMenuMobileOuvert] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-text-tertiary/10 bg-bg-primary">
+    <header className="glass-bar sticky top-0 z-20 border-b border-text-tertiary/10 bg-bg-primary">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
         <button
           type="button"

@@ -40,7 +40,7 @@ export default function ModuleBackground() {
   const arrierePlan = module ? arrierePlans?.find((item) => item.module === module) : undefined;
 
   return (
-    <div className="absolute inset-0 -z-10 overflow-hidden bg-bg-tertiary" aria-hidden="true">
+    <div className="ambient-bg absolute inset-0 -z-10 overflow-hidden bg-bg-tertiary" aria-hidden="true">
       {arrierePlan && (
         <>
           <img
