@@ -26,18 +26,26 @@
  * exactement comme en clair.
  */
 :root {
-  --color-ca: #cc0000;
-  --color-cad: #8b0000;
-  --color-cal: #fff0f0;
-  --color-caxx: #fff8f8;
-  --color-sb: #1a0000;
+  /* Palette "B — Rotes Seitenband" (2026-10-06, retour : fonds roses/bordeaux non souhaités) :
+     rouge du logo (Club Africain #FE171D, CID #E10B0D, ici légèrement approfondi pour garder
+     4,5:1 en texte), neutres froids blanc/graphite, sidebar rouge. --color-sb sert de graphite
+     neutre (ombres, pastilles) ; la couleur de la sidebar est --sidebar-solid / --glass-sidebar-bg.
+     --color-ca-text : rouge utilisé comme TEXTE (identique à --color-ca en clair ; en sombre
+     plus clair, car un rouge assez foncé pour porter du texte blanc est trop sombre sur fond
+     sombre — voir la règle ".dark .text-ca" en fin de fichier). */
+  --color-ca: #d00a0f;
+  --color-ca-text: var(--color-ca);
+  --color-cad: #9c0a0f;
+  --color-cal: #fde8e8;
+  --color-caxx: #fff5f5;
+  --color-sb: #14161b;
 
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #fbf8f8;
-  --color-bg-tertiary: #f5f0f0;
+  --color-bg-secondary: #f7f7f8;
+  --color-bg-tertiary: #f3f4f6;
 
   --color-status-infoBg: #fff0f0;
-  --color-status-infoText: #cc0000;
+  --color-status-infoText: #d00a0f;
   --color-status-successBg: #e8f5e0;
   --color-status-successText: #1a5c0a;
   --color-status-warningBg: #fef3e2;
@@ -45,9 +53,9 @@
   --color-status-dangerBg: #fdeaea;
   --color-status-dangerText: #8b1a1a;
 
-  --color-text-primary: #1a1a1a;
-  --color-text-secondary: #555555;
-  --color-text-tertiary: #999999;
+  --color-text-primary: #17181c;
+  --color-text-secondary: #555c69;
+  --color-text-tertiary: #6b7280;
 
   /* Palette catégorielle (dataviz skill, palette de référence validée) — sert à différencier
      visuellement des éléments de même nature sans hiérarchie entre eux (demande utilisateur
@@ -74,32 +82,38 @@
 
   /* Glas-Schicht (2026-10-06, Vorschau "Glasdesign in Rot und Weiß") — Jetons pour les surfaces
      translucides (barres, sidebar, cartes). Voir la section "Glas-Schicht" en fin de fichier. */
-  --glass-bg: rgba(255, 255, 255, 0.56);
-  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-bg: rgba(255, 255, 255, 0.74);
+  --glass-border: rgba(255, 255, 255, 0.9);
   --glass-highlight: rgba(255, 255, 255, 0.95);
-  --glass-nav-bg: rgba(255, 255, 255, 0.58);
-  --glass-sidebar-bg: rgba(48, 0, 0, 0.6);
-  --glass-shadow: 0 12px 36px color-mix(in srgb, var(--color-cad) 13%, transparent);
-  --glass-sheen: color-mix(in srgb, var(--color-ca) 11%, transparent);
-  --glass-row-hover: color-mix(in srgb, var(--color-ca) 7%, transparent);
-  --ambient-1: rgba(204, 0, 0, 0.3);
-  --ambient-2: rgba(255, 110, 110, 0.26);
-  --ambient-3: rgba(204, 0, 0, 0.18);
+  --glass-nav-bg: rgba(255, 255, 255, 0.78);
+  --sidebar-solid: #b80d12;
+  --glass-sidebar-bg: linear-gradient(180deg, #dc1218, #9c0a0f);
+  --sidebar-active-fg: #9c0a0f;
+  --sidebar-active-shadow: rgba(0, 0, 0, 0.22);
+  --glass-shadow: 0 12px 36px rgba(20, 22, 27, 0.09);
+  --glass-shadow-hover: rgba(20, 22, 27, 0.16);
+  --glass-bar-shadow: rgba(20, 22, 27, 0.08);
+  --glass-sheen: color-mix(in srgb, var(--color-ca) 8%, transparent);
+  --glass-row-hover: color-mix(in srgb, var(--color-ca) 5%, transparent);
+  --ambient-1: rgba(225, 11, 13, 0.08);
+  --ambient-2: rgba(225, 11, 13, 0.05);
+  --ambient-3: rgba(60, 70, 95, 0.06);
 }
 
 .dark {
   /* Rouge principal légèrement éclairci pour rester lisible sur les fonds sombres ci-dessous
      (le rouge de marque d'origine, #CC0000, perd du contraste avec le texte blanc des boutons
      une fois le reste de l'UI assombri). */
-  --color-ca: #e5453d;
-  --color-cad: #b7362f;
-  --color-cal: #3a1616;
-  --color-caxx: #2a1010;
-  --color-sb: #120000;
+  --color-ca: #e5141a;
+  --color-ca-text: #ff5559;
+  --color-cad: #b30e13;
+  --color-cal: #3a1416;
+  --color-caxx: #2a0e10;
+  --color-sb: #0b0b0e;
 
-  --color-bg-primary: #242424;
-  --color-bg-secondary: #1c1c1c;
-  --color-bg-tertiary: #141414;
+  --color-bg-primary: #1b1c21;
+  --color-bg-secondary: #131418;
+  --color-bg-tertiary: #0c0c0f;
 
   --color-status-infoBg: #3a1616;
   --color-status-infoText: #ff8a80;
@@ -110,9 +124,9 @@
   --color-status-dangerBg: #3a1616;
   --color-status-dangerText: #ff8a80;
 
-  --color-text-primary: #f0f0f0;
-  --color-text-secondary: #b8b8b8;
-  --color-text-tertiary: #8a8a8a;
+  --color-text-primary: #f4f4f6;
+  --color-text-secondary: #abafba;
+  --color-text-tertiary: #8d929e;
 
   /* Mêmes hue que le clair, marches assombries pour la surface sombre (palette de référence
      dataviz — voir le commentaire de :root ci-dessus). */
@@ -121,17 +135,22 @@
   --color-cat-3: #199e70;
 
   /* Glas-Schicht, variante sombre — verre fumé blanc à 7 %, bord clair à 15 %. */
-  --glass-bg: rgba(255, 255, 255, 0.07);
-  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.14);
   --glass-highlight: rgba(255, 255, 255, 0.22);
-  --glass-nav-bg: rgba(34, 12, 14, 0.55);
-  --glass-sidebar-bg: rgba(18, 0, 0, 0.55);
-  --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  --glass-nav-bg: rgba(22, 22, 27, 0.72);
+  --sidebar-solid: #8c0a0e;
+  --glass-sidebar-bg: linear-gradient(180deg, #b80d12, #5e0609);
+  --sidebar-active-fg: #8e090d;
+  --sidebar-active-shadow: rgba(0, 0, 0, 0.35);
+  --glass-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  --glass-shadow-hover: rgba(0, 0, 0, 0.6);
+  --glass-bar-shadow: rgba(0, 0, 0, 0.45);
   --glass-sheen: rgba(255, 255, 255, 0.08);
   --glass-row-hover: rgba(255, 255, 255, 0.05);
-  --ambient-1: rgba(229, 69, 61, 0.4);
-  --ambient-2: rgba(255, 100, 100, 0.18);
-  --ambient-3: rgba(229, 69, 61, 0.22);
+  --ambient-1: rgba(225, 11, 13, 0.18);
+  --ambient-2: rgba(225, 11, 13, 0.07);
+  --ambient-3: rgba(90, 105, 140, 0.1);
 
   /* --gradient-… et --shadow-… ne sont PAS redéfinis ici : ils référencent --color-ca/
      --color-sb/--color-bg-* via var(), donc déjà recalculés automatiquement avec les valeurs
@@ -344,7 +363,7 @@ input:-webkit-autofill:focus {
   -webkit-backdrop-filter: blur(16px) saturate(165%);
   backdrop-filter: blur(16px) saturate(165%);
   box-shadow:
-    0 8px 26px color-mix(in srgb, var(--color-cad) 10%, transparent),
+    0 8px 26px var(--glass-bar-shadow),
     inset 0 -1px 0 rgba(255, 255, 255, 0.35);
 }
 
@@ -352,9 +371,11 @@ footer.glass-bar {
   box-shadow: inset 0 1px 0 var(--glass-highlight);
 }
 
-/* Sidebar — verre fumé rouge foncé ; l'élément actif devient un verre rouge à bord clair. */
+/* Sidebar — bande rouge (dégradé du rouge du logo) ; l'élément actif devient une pastille
+   blanche à texte rouge, les textes blancs sont renforcés pour rester lisibles (≥ 4,5:1). */
 aside.glass-sidebar {
-  background-color: var(--glass-sidebar-bg);
+  background-color: var(--sidebar-solid);
+  background-image: var(--glass-sidebar-bg);
   border-right: 1px solid rgba(255, 255, 255, 0.14);
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   backdrop-filter: blur(20px) saturate(150%);
@@ -367,16 +388,37 @@ html[dir="rtl"] aside.glass-sidebar {
 }
 
 aside.glass-sidebar a[aria-current="page"] {
-  background-color: transparent;
-  background-image: linear-gradient(
-    120deg,
-    color-mix(in srgb, var(--color-ca) 92%, transparent),
-    color-mix(in srgb, var(--color-cad) 80%, transparent)
-  );
+  background-color: #ffffff;
+  background-image: none;
+  color: var(--sidebar-active-fg);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 6px 16px color-mix(in srgb, var(--color-ca) 35%, transparent);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 6px 16px var(--sidebar-active-shadow);
+}
+
+aside.glass-sidebar .text-white\/90,
+aside.glass-sidebar .text-white\/70 {
+  color: rgb(255 255 255 / 0.97);
+}
+
+aside.glass-sidebar .text-white\/60 {
+  color: rgb(255 255 255 / 0.92);
+}
+
+aside.glass-sidebar .text-white\/40 {
+  color: rgb(255 255 255 / 0.84);
+}
+
+/* Sidebar réduite : le bouton du groupe actif devient aussi une pastille blanche */
+aside.glass-sidebar button[aria-haspopup="menu"].bg-white\/10 {
+  background-color: #ffffff;
+  color: var(--sidebar-active-fg);
+  box-shadow: 0 6px 16px var(--sidebar-active-shadow);
+}
+
+/* Pastille de notification : l'anneau reprend la couleur de la sidebar */
+aside.glass-sidebar .ring-sb {
+  --tw-ring-color: var(--sidebar-solid);
 }
 
 /* Héros de l'accueil (retour 2026-10-06) : plus de boîte derrière le texte, il repose directement
@@ -506,7 +548,7 @@ table tbody tr:hover > td {
   .card-lift:hover {
     transform: translateY(-3px);
     box-shadow:
-      0 18px 44px color-mix(in srgb, var(--color-cad) 20%, transparent),
+      0 18px 44px var(--glass-shadow-hover),
       inset 0 0 0 1px var(--glass-border),
       inset 0 1px 0 var(--glass-highlight);
   }
@@ -565,7 +607,8 @@ table tbody tr:hover > td {
   }
 
   aside.glass-sidebar {
-    background-color: var(--color-sb);
+    background-color: var(--sidebar-solid);
+    background-image: none;
   }
 }
 
@@ -578,8 +621,19 @@ table tbody tr:hover > td {
   }
 
   aside.glass-sidebar {
-    background-color: var(--color-sb);
+    background-color: var(--sidebar-solid);
+    background-image: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+/* Rouge lisible comme TEXTE en thème sombre (retour 2026-10-06) : le rouge de fond --color-ca
+ * est assez sombre pour porter du texte blanc (4,7:1) mais trop sombre pour du texte sur fond
+ * sombre ; on utilise donc --color-ca-text (≥ 5:1). Exclu : les pastilles à fond blanc
+ * (ex. CTA du héros), où le rouge foncé reste le bon choix. */
+.dark .text-ca:not([class*="bg-white"]),
+.dark .hover\:text-ca:hover:not([class*="bg-white"]),
+.dark .text-cad:not([class*="bg-white"]) {
+  color: var(--color-ca-text);
 }
