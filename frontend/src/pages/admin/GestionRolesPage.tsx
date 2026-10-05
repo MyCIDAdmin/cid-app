@@ -14,8 +14,9 @@ import { useTranslation } from "react-i18next";
 
 import AttributionRolesTab from "../../components/rbac/AttributionRolesTab";
 import MatriceAccesTab from "../../components/rbac/MatriceAccesTab";
+import VisibiliteModulesTab from "../../components/rbac/VisibiliteModulesTab";
 
-type Onglet = "attribution" | "acces";
+type Onglet = "attribution" | "acces" | "visibilite";
 
 export default function GestionRolesPage() {
   const { t } = useTranslation("rbac");
@@ -46,10 +47,22 @@ export default function GestionRolesPage() {
         >
           {t("onglets.acces")}
         </button>
+        <button
+          type="button"
+          onClick={() => setOnglet("visibilite")}
+          className={`px-3 py-2 text-sm font-medium ${
+            onglet === "visibilite"
+              ? "border-b-2 border-ca text-ca"
+              : "text-text-tertiary hover:text-text-secondary"
+          }`}
+        >
+          {t("onglets.visibilite")}
+        </button>
       </div>
 
       {onglet === "attribution" && <AttributionRolesTab />}
       {onglet === "acces" && <MatriceAccesTab />}
+      {onglet === "visibilite" && <VisibiliteModulesTab />}
     </div>
   );
 }

@@ -32,6 +32,8 @@ qu'apps.adhesions ci-dessus (apps.evenements ne dépend d'aucun module de apps.c
 plus), même cascade avant seulement.
 """
 
+from django.utils import timezone
+
 from apps.accounts.models import ROLE_LEVELS, Role
 from apps.accounts.services import users_role_at_least
 from apps.adhesions.models import StatutSouscription
@@ -97,6 +99,16 @@ def notifier_paiement_confirme(cotisation: Cotisation) -> None:
         ):
             souscription.statut = StatutSouscription.PAYEE
             souscription.save(update_fields=["statut", "updated_at"])
+        # Demande utilisateur du 2026-10-05 (point 4) : adhésion approuvée ET payée -> le compte
+        # devient immédiatement membre actif (plus de validation manuelle séparée).
+        date_effet = cotisation.date_paiement or timezone.now()
+        enregistrer_statut_annuel(
+            cotisation.membre,
+            cotisation.annee or date_effet.year,
+            StatutMembre.ACTIF,
+            RaisonChangementStatut.PAIEMENT_CONFIRME,
+            date_effet=date_effet,
+        )
     elif cotisation.type_article == TypeArticle.EVENEMENT:
         # related_name="inscription_evenement" (ForeignKey, pas OneToOne — voir
         # apps.evenements.models.Inscription.cotisation), même raison que ci-dessus.

@@ -1,7 +1,8 @@
 {
   "onglets": {
     "attribution": "Zuweisung",
-    "acces": "Zugriff"
+    "acces": "Zugriff",
+    "visibilite": "Sichtbarkeit"
   },
   "modules": {
     "membres": "Mitglieder",
@@ -26,7 +27,8 @@
     "page_articles_cotisation": "Beitragsartikel",
     "page_notifications_params": "E-Mail-Benachrichtigungen",
     "page_projets": "Projekt- & Aktionsverwaltung",
-    "page_albums": "Fotoalben-Verwaltung"
+    "page_albums": "Fotoalben-Verwaltung",
+    "albums": "Fotoalben"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",
@@ -75,5 +77,13 @@
       "succes": "Die Rolle wurde gelöscht.",
       "erreur": "Die Rolle konnte nicht gelöscht werden."
     }
+  },
+  "visibilite": {
+    "chargement": "Wird geladen…",
+    "erreur": "Sichtbarkeit konnte nicht gespeichert/geladen werden.",
+    "aide": "Welche Module im Menü des Rollen „Mitglied“ angezeigt werden – getrennt für aktive Mitglieder und angemeldete Nicht-Mitglieder. Höhere Rollen sehen immer alles.",
+    "module": "Modul",
+    "membre": "Mitglied",
+    "non_membre": "Nicht-Mitglied"
   }
 }

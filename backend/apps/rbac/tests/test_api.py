@@ -6,6 +6,8 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.accounts.models import AuditLogEntry, Role
+from apps.membres.models import StatutMembre
+from apps.membres.tests.factories import MembreFactory
 from apps.rbac.models import (
     ModuleVisibiliteMembre,
     NiveauAcces,
@@ -13,7 +15,13 @@ from apps.rbac.models import (
     RoleModulePermission,
     UserRoleAssignment,
 )
-from apps.rbac.registry import ALL_MODULES, MODULES, PAGES_ADMIN
+from apps.rbac.registry import (
+    ALL_MODULES,
+    MODULES,
+    PAGES_ADMIN,
+    VISIBILITE_KEYS,
+    VISIBILITE_NON_MEMBRE_DEFAUT,
+)
 from apps.rbac.tests.factories import (
     RoleDefinitionFactory,
     RoleModulePermissionFactory,
@@ -75,7 +83,7 @@ def test_visibilite_effective_accessible_a_tout_utilisateur_connecte(api_client)
     membre = UserFactory(role=Role.MEMBRE)
     resp = _auth(api_client, membre).get(reverse(VISIBILITE_EFFECTIVE_URL))
     assert resp.status_code == 200
-    assert set(resp.data.keys()) == set(MODULES)
+    assert set(resp.data.keys()) == set(VISIBILITE_KEYS)
 
 
 # --- CRUD rôles --------------------------------------------------------------------------------
@@ -260,7 +268,11 @@ def test_visibilite_membre_get_defaut_tout_visible(api_client):
     resp = _auth(api_client, admin).get(reverse(VISIBILITE_URL))
     assert resp.status_code == 200
     assert all(ligne["visible"] is True for ligne in resp.data)
-    assert {ligne["module"] for ligne in resp.data} == set(MODULES)
+    assert {ligne["module"] for ligne in resp.data} == set(VISIBILITE_KEYS)
+    # Point 9 (2026-10-05) : colonne non-membre initialisée aux 5 modules par défaut.
+    assert {ligne["module"] for ligne in resp.data if ligne["visible_non_membre"]} == (
+        VISIBILITE_NON_MEMBRE_DEFAUT
+    )
 
 
 def test_visibilite_membre_set_masque_un_module(api_client):
@@ -279,11 +291,34 @@ def test_visibilite_membre_effective_reflete_le_masquage(api_client):
     # `visible` sur une ligne déjà existante).
     ModuleVisibiliteMembre.objects.update_or_create(module="vote", defaults={"visible": False})
     membre = UserFactory(role=Role.MEMBRE)
+    MembreFactory(user=membre, statut=StatutMembre.ACTIF)
 
     resp = _auth(api_client, membre).get(reverse(VISIBILITE_EFFECTIVE_URL))
     assert resp.status_code == 200
     assert resp.data["vote"] is False
     assert resp.data["membres"] is True
+
+
+def test_visibilite_effective_non_membre_utilise_la_colonne_non_membre(api_client):
+    """Point 3/9 (2026-10-05) : compte connecté sans adhésion active -> 5 modules par défaut."""
+    user = UserFactory(role=Role.MEMBRE)
+    MembreFactory(user=user, statut=StatutMembre.EN_ATTENTE)
+    resp = _auth(api_client, user).get(reverse(VISIBILITE_EFFECTIVE_URL))
+    assert {cle for cle, visible in resp.data.items() if visible} == VISIBILITE_NON_MEMBRE_DEFAUT
+
+
+def test_visibilite_set_colonne_non_membre(api_client):
+    admin = _super_admin()
+    resp = _auth(api_client, admin).post(
+        reverse(VISIBILITE_SET_URL),
+        {"module": "vote", "visible": True, "groupe": "non_membre"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["visible_non_membre"] is True
+    user = UserFactory(role=Role.MEMBRE)
+    resp = _auth(APIClient(), user).get(reverse(VISIBILITE_EFFECTIVE_URL))
+    assert resp.data["vote"] is True
 
 
 # --- attribution de rôles (mehrfachrollen) ---------------------------------------------------

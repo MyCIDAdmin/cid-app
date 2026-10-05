@@ -10,6 +10,7 @@ from rest_framework import serializers
 
 from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
+from apps.rbac.services import est_membre_actif
 
 from .models import Covoiturage, Evenement, Inscription, ReservationCovoiturage, StatutEvenement
 
@@ -39,6 +40,9 @@ class EvenementSerializer(serializers.ModelSerializer):
     places_reservees = serializers.IntegerField(read_only=True)
     places_restantes = serializers.IntegerField(read_only=True, allow_null=True)
     organisateur_detail = MembreResumeSerializer(source="organisateur", read_only=True)
+    # Point 1.1/3 (2026-10-05) : affichage seul pour les non-membres/anonymes.
+    reserve_membres = serializers.SerializerMethodField()
+    cout_applicable = serializers.SerializerMethodField()
 
     class Meta:
         model = Evenement
@@ -56,6 +60,9 @@ class EvenementSerializer(serializers.ModelSerializer):
             "places_max",
             "gratuit",
             "cout",
+            "cout_non_membre",
+            "cout_applicable",
+            "reserve_membres",
             "accompagnants_payants",
             "prix_accompagnant_adulte",
             "prix_accompagnant_enfant",
@@ -71,6 +78,16 @@ class EvenementSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "statut", "created_by", "created_at", "updated_at"]
+
+    def _est_membre(self) -> bool:
+        request = self.context.get("request")
+        return est_membre_actif(getattr(request, "user", None))
+
+    def get_reserve_membres(self, obj) -> bool:
+        return not obj.visible_public
+
+    def get_cout_applicable(self, obj) -> str:
+        return str(obj.cout_pour(self._est_membre()))
 
     def validate(self, attrs):
         places_max = attrs.get("places_max", getattr(self.instance, "places_max", None))

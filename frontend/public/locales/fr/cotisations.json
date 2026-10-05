@@ -223,5 +223,20 @@
     "reessai_en_cours": "Redirection…",
     "erreur_reessai": "Le nouveau paiement n'a pas pu être initié.",
     "retour_accueil": "Retour aux paiements"
+  },
+  "shop_zahlungen": {
+    "titre": "Paiements de la boutique",
+    "sous_titre": "Commandes de la boutique avec leur statut de paiement.",
+    "chargement": "Chargement…",
+    "erreur": "Impossible de charger les paiements de la boutique.",
+    "vide": "Aucune commande boutique.",
+    "commande": "Commande",
+    "client": "Destinataire",
+    "montant": "Montant",
+    "statut": "Statut",
+    "paiement": "Paiement",
+    "non_paye": "En attente",
+    "mode": "Mode de paiement",
+    "confirmer": "Confirmer"
   }
 }

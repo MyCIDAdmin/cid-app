@@ -32,7 +32,8 @@
     "parametres_notification": "E-Mail-Benachrichtigungen",
     "point_activite": "Neuigkeiten bei {{module}}",
     "configuration_site": "Hero-Video",
-    "fan_club_logos": "Vereinslogos"
+    "fan_club_logos": "Vereinslogos",
+    "startseite": "Startseite"
   },
   "nav_groupe": {
     "general": "Allgemein",

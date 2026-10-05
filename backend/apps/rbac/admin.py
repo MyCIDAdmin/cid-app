@@ -1,6 +1,8 @@
+from django import forms
 from django.contrib import admin
 
 from .models import ModuleVisibiliteMembre, RoleDefinition, RoleModulePermission, UserRoleAssignment
+from .registry import VISIBILITE_KEYS, VISIBILITE_LABELS
 
 
 @admin.register(RoleDefinition)
@@ -22,6 +24,16 @@ class RoleModulePermissionAdmin(admin.ModelAdmin):
     list_filter = ("module", "niveau_acces")
 
 
+class ModuleVisibiliteMembreForm(forms.ModelForm):
+    module = forms.ChoiceField(choices=[(k, VISIBILITE_LABELS.get(k, k)) for k in VISIBILITE_KEYS])
+
+    class Meta:
+        model = ModuleVisibiliteMembre
+        fields = ["module", "visible", "visible_non_membre"]
+
+
 @admin.register(ModuleVisibiliteMembre)
 class ModuleVisibiliteMembreAdmin(admin.ModelAdmin):
-    list_display = ("module", "visible", "updated_at")
+    form = ModuleVisibiliteMembreForm
+    list_display = ("module", "visible", "visible_non_membre", "updated_at")
+    list_editable = ("visible", "visible_non_membre")

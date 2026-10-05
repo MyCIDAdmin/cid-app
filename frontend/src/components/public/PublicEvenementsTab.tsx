@@ -29,7 +29,7 @@ import AnimatedProgress from "../ui/AnimatedProgress";
 import MapsApercu from "../ui/MapsApercu";
 import ModaleInscription, { formatDate, formatMontant } from "../evenements/ModaleInscription";
 import { useAnnulerInscription, useEvenements, useInscriptions } from "../../hooks/useEvenements";
-import { useAuthStore } from "../../store/authStore";
+import { estMembreActif, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Evenement } from "../../types/evenements";
 
@@ -57,6 +57,10 @@ function EvenementKachel({
       ? Math.min(100, Math.round((evenement.places_reservees / evenement.places_max) * 100))
       : null;
   const complet = evenement.places_restantes !== null && evenement.places_restantes <= 0;
+  // Point 1.1/3 (2026-10-05) : visiteur anonyme ou non-membre -> affichage seul pour un
+  // événement réservé aux membres (le backend refuse de toute façon l'inscription).
+  const user = useAuthStore((s) => s.user);
+  const bloqueNonMembre = evenement.reserve_membres && !estMembreActif(user);
 
   return (
     <div className="overflow-hidden rounded-cid-lg bg-bg-primary shadow-card">
@@ -74,6 +78,11 @@ function EvenementKachel({
         <span className="absolute right-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ca">
           {formatDate(evenement.date_evenement)}
         </span>
+        {evenement.reserve_membres && (
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-sb/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+            {t("nur_fuer_mitglieder")}
+          </span>
+        )}
         <h3 className="relative z-10 pr-16 text-base font-bold text-white">{evenement.titre}</h3>
       </div>
       <div className="space-y-2 p-3">
@@ -106,9 +115,7 @@ function EvenementKachel({
             {carteOuverte ? t("carte_masquer") : t("carte_afficher")}
           </button>
         )}
-        {carteOuverte && (
-          <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />
-        )}
+        {carteOuverte && <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />}
 
         {!passe && remplissage !== null && <AnimatedProgress value={remplissage} />}
 
@@ -116,14 +123,17 @@ function EvenementKachel({
           <button
             type="button"
             onClick={() => onInscrire(evenement)}
-            disabled={complet}
+            disabled={complet || bloqueNonMembre}
+            title={bloqueNonMembre ? t("reserve_membres_info") : undefined}
             className="w-full rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
           >
             {complet
               ? t("complet")
-              : evenement.gratuit
-                ? t("sinscrire_gratuit")
-                : t("sinscrire_payer")}
+              : bloqueNonMembre
+                ? t("nur_fuer_mitglieder")
+                : evenement.gratuit
+                  ? t("sinscrire_gratuit")
+                  : t("sinscrire_payer")}
           </button>
         )}
         {passe && (

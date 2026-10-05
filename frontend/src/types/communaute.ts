@@ -33,6 +33,7 @@ export interface Publication {
   image: string | null;
   document: string | null;
   hashtags: string[];
+  important: boolean;
   est_masquee: boolean;
   motif_masquage: string;
   created_at: string;
@@ -48,6 +49,8 @@ export interface Publication {
 
 export interface PublicationPayload {
   contenu: string;
+  /** Point 8 (2026-10-05) : badge "Wichtig" + notification de tous les membres actifs. */
+  important?: boolean;
   image?: File;
   document?: File;
 }

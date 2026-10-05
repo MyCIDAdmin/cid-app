@@ -58,7 +58,7 @@ export default function ModaleInscription({
   // Estimation affichée à titre purement indicatif — le montant réel est toujours recalculé et
   // vérifié côté serveur, jamais fait confiance au frontend (CLAUDE.md §8).
   const montantEstime =
-    Number(evenement.gratuit ? 0 : evenement.cout) * places +
+    Number(evenement.gratuit ? 0 : evenement.cout_applicable) * places +
     (evenement.accompagnants_payants
       ? Number(evenement.prix_accompagnant_adulte) * accompagnantsAdultes +
         Number(evenement.prix_accompagnant_enfant) * accompagnantsEnfants
@@ -125,11 +125,7 @@ export default function ModaleInscription({
 
         {/* Aperçu Maps (demande utilisateur du 2026-09-27, point 11.2 "Maps-Link für den Ort +
             Vorschau + Adresse anzeigen") — ne rend rien si `lieu` est vide, voir MapsApercu. */}
-        <MapsApercu
-          adresse={evenement.lieu}
-          mapsUrl={evenement.lieu_maps_url}
-          className="mb-3"
-        />
+        <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} className="mb-3" />
 
         <div className="mb-2 grid grid-cols-2 gap-2">
           <div>

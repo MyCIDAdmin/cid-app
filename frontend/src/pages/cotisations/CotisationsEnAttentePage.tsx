@@ -75,6 +75,7 @@ import type {
 import type { MembreListItem } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
+import ShopZahlungenPanel from "../../components/cotisations/ShopZahlungenPanel";
 import TippspielZahlungenPanel from "../../components/cotisations/TippspielZahlungenPanel";
 
 /**
@@ -1046,6 +1047,7 @@ export default function CotisationsEnAttentePage() {
       {erreurExport && <p className="mb-4 text-xs text-status-dangerText">{erreurExport}</p>}
 
       <TippspielZahlungenPanel />
+      <ShopZahlungenPanel />
 
       {especesOuvert && <PaiementEspecesForm onClose={() => setEspecesOuvert(false)} />}
 

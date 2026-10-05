@@ -84,6 +84,9 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     places_max: 45,
     gratuit: false,
     cout: "35.00",
+    cout_non_membre: null,
+    cout_applicable: "35.00",
+    reserve_membres: false,
     accompagnants_payants: false,
     prix_accompagnant_adulte: "0.00",
     prix_accompagnant_enfant: "0.00",
@@ -309,9 +312,8 @@ describe("AdminEventsPage", () => {
   // dans AdminEventsPage.tsx : le fichier choisi n'est plus envoyé automatiquement, un aperçu
   // avec "Bestätigen"/"Abbrechen" apparaît d'abord.
   it("n'envoie l'image de kachel qu'après confirmation de l'aperçu", () => {
-    const televerser = mutationMock<
-      ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>
-    >();
+    const televerser =
+      mutationMock<ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>>();
     vi.mocked(useEvenementsHooks.useTeleverserImageEvenement).mockReturnValue(televerser);
     vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
       data: page([evenement()]),
@@ -335,9 +337,8 @@ describe("AdminEventsPage", () => {
   });
 
   it("n'envoie rien si l'aperçu de l'image est annulé", () => {
-    const televerser = mutationMock<
-      ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>
-    >();
+    const televerser =
+      mutationMock<ReturnType<typeof useEvenementsHooks.useTeleverserImageEvenement>>();
     vi.mocked(useEvenementsHooks.useTeleverserImageEvenement).mockReturnValue(televerser);
     vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
       data: page([evenement()]),

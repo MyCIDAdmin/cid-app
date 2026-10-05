@@ -22,6 +22,7 @@ import logging
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
+from django.utils.html import strip_tags
 
 from apps.membres.models import Membre
 from apps.notifications.models import TypeNotification
@@ -147,3 +148,54 @@ def synchroniser_donnees_football():
         resultat["tippspiel_points_maj"],
     )
     return resultat
+
+
+@shared_task
+def notifier_publication_importante(publication_id) -> int:
+    """Point 8 (2026-10-05) : Neuigkeit marquée "Wichtig" -> notification in-app + email à tous
+    les membres actifs (sauf l'auteur). Retourne le nombre d'emails envoyés."""
+    from apps.membres.models import StatutMembre
+
+    from .models import Publication
+
+    publication = Publication.objects.select_related("auteur").filter(id=publication_id).first()
+    if publication is None or not publication.important or publication.est_masquee:
+        return 0
+
+    extrait = " ".join(strip_tags(publication.contenu).split())[:200]
+    lien = f"/fil?publication={publication.id}"
+    email_actif = email_module_actif("communaute")
+    envoyes = 0
+    membres = (
+        Membre.objects.filter(statut=StatutMembre.ACTIF)
+        .exclude(id=publication.auteur_id)
+        .select_related("user")
+    )
+    for membre in membres:
+        user = membre.user
+        if user is None:
+            continue
+        notifier(
+            user,
+            TypeNotification.COMMUNAUTE_PUBLICATION_IMPORTANTE,
+            titre="Wichtige Neuigkeit",
+            message=extrait,
+            lien=lien,
+        )
+        if email_actif and user.email:
+            try:
+                send_mail(
+                    subject="CID — Wichtige Neuigkeit",
+                    message=f"{extrait}\n\nLesen Sie die ganze Neuigkeit in der App.",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+                envoyes += 1
+            except Exception:  # noqa: BLE001 — un échec isolé ne bloque jamais la boucle
+                logger.warning(
+                    "notifier_publication_importante: échec d'envoi user=%s publication=%s",
+                    user.id,
+                    publication_id,
+                )
+    return envoyes

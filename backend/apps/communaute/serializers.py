@@ -149,6 +149,7 @@ class PublicationSerializer(serializers.ModelSerializer):
             "image",
             "document",
             "hashtags",
+            "important",
             "est_masquee",
             "motif_masquage",
             "created_at",

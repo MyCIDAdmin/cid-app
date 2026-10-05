@@ -147,6 +147,15 @@ class ModuleVisibiliteMembre(models.Model):
     id = models.AutoField(primary_key=True)
     module = models.CharField(max_length=50, unique=True)
     visible = models.BooleanField(default=True)
+    # Point 9 (2026-10-05) : 2e colonne pour un utilisateur connecté mais pas (encore) membre
+    # actif. NULL = défaut de registry.VISIBILITE_NON_MEMBRE_DEFAUT (pas de migration de données
+    # nécessaire, comportement voulu dès le déploiement).
+    visible_non_membre = models.BooleanField(
+        null=True,
+        blank=True,
+        verbose_name=_("Visible pour non-membre"),
+        help_text=_("Vide = valeur par défaut (visible pour 5 modules, voir registry)."),
+    )
     updated_at = models.DateTimeField(auto_now=True)
     modifie_par = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"

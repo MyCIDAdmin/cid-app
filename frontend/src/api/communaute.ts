@@ -76,11 +76,13 @@ export async function creerPublication(payload: PublicationPayload): Promise<Pub
     formData.append("contenu", payload.contenu);
     if (payload.image) formData.append("image", payload.image);
     if (payload.document) formData.append("document", payload.document);
+    if (payload.important) formData.append("important", "true");
     const { data } = await apiClient.post<Publication>("/communaute/publications/", formData);
     return data;
   }
   const { data } = await apiClient.post<Publication>("/communaute/publications/", {
     contenu: payload.contenu,
+    important: payload.important ?? false,
   });
   return data;
 }

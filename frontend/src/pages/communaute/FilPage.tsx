@@ -183,6 +183,11 @@ function PublicationCarte({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {publication.important && (
+            <span className="rounded bg-ca px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
+              {t("fil.important_badge")}
+            </span>
+          )}
           {publication.est_masquee && (
             <span className="rounded bg-status-dangerBg px-1.5 py-0.5 text-[9px] font-bold text-status-dangerText">
               {t("fil.masquee_badge")}
@@ -365,6 +370,7 @@ export default function FilPage() {
   // (voir soumettre() ci-dessous). Ajouté le 2026-09-20, retour utilisateur : "Hochladen von
   // pdf Dokumenten" + "Hinweis welche Dateientypen sind erlaubt".
   const [fichier, setFichier] = useState<File | undefined>(undefined);
+  const [important, setImportant] = useState(false);
   const [erreur, setErreur] = useState("");
   // Mentions "@" dans l'éditeur TipTap (ajoutées le 2026-09-29) — voir
   // components/ui/mentionSuggestion.ts. Le mapping id/prénom+nom -> {id, label} générique
@@ -408,11 +414,13 @@ export default function FilPage() {
         contenu: texte,
         image: fichier && !estPdf ? fichier : undefined,
         document: estPdf ? fichier : undefined,
+        important,
       },
       {
         onSuccess: () => {
           setTexte("");
           setFichier(undefined);
+          setImportant(false);
         },
         onError: (err) => setErreur(extractApiErrorMessage(err, t("fil.erreur_publication"))),
       },
@@ -464,6 +472,14 @@ export default function FilPage() {
                 </span>
               )}
             </div>
+            <label className="flex flex-none items-center gap-1 text-xs text-text-secondary">
+              <input
+                type="checkbox"
+                checked={important}
+                onChange={(e) => setImportant(e.target.checked)}
+              />
+              {t("fil.marquer_important")}
+            </label>
             <button
               type="submit"
               disabled={creer.isPending}

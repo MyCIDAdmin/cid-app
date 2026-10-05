@@ -78,6 +78,7 @@ function FormulaireEvenement({
           places_max: evenement.places_max,
           gratuit: evenement.gratuit,
           cout: evenement.cout,
+          cout_non_membre: evenement.cout_non_membre,
           accompagnants_payants: evenement.accompagnants_payants,
           prix_accompagnant_adulte: evenement.prix_accompagnant_adulte,
           prix_accompagnant_enfant: evenement.prix_accompagnant_enfant,
@@ -247,6 +248,25 @@ function FormulaireEvenement({
         </div>
         <div>
           <label
+            htmlFor="admin-event-cout-non-membre"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin.champ_cout_non_membre")}
+          </label>
+          <input
+            id="admin-event-cout-non-membre"
+            type="number"
+            min={0}
+            step="0.01"
+            disabled={valeurs.gratuit}
+            value={valeurs.cout_non_membre ?? ""}
+            onChange={(e) => champ("cout_non_membre", e.target.value || null)}
+            placeholder={t("admin.champ_cout_non_membre_placeholder")}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-50"
+          />
+        </div>
+        <div>
+          <label
             htmlFor="admin-event-gratuit"
             className="mb-1 block text-xs font-medium text-text-secondary"
           >
@@ -359,16 +379,12 @@ function FormulaireEvenement({
               type="number"
               min={1}
               value={valeurs.age_limite_accompagnant_enfant ?? 12}
-              onChange={(e) =>
-                champ("age_limite_accompagnant_enfant", Number(e.target.value) || 1)
-              }
+              onChange={(e) => champ("age_limite_accompagnant_enfant", Number(e.target.value) || 1)}
               className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             />
           </div>
         </div>
-        <p className="mt-1 text-[11px] text-text-tertiary">
-          {t("admin.aide_accompagnants")}
-        </p>
+        <p className="mt-1 text-[11px] text-text-tertiary">{t("admin.aide_accompagnants")}</p>
       </div>
 
       {/* Startseite publique façon mycid.org/events (demande utilisateur 2026-09-26) — ne
@@ -402,7 +418,7 @@ function FormulaireEvenement({
         <button
           type="submit"
           disabled={enCours || !modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
         >
           {evenement ? t("admin.enregistrer") : t("admin.creer_evenement")}
@@ -520,7 +536,7 @@ export default function AdminEventsPage() {
           <button
             type="button"
             disabled={!modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             onClick={ouvrirCreation}
             className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
           >
@@ -571,27 +587,27 @@ export default function AdminEventsPage() {
                   />
                 )}
                 <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-text-primary">{evenement.titre}</span>
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                      evenement.statut === "publie"
-                        ? "bg-status-successBg text-status-successText"
-                        : evenement.statut === "annule"
-                          ? "bg-status-dangerBg text-status-dangerText"
-                          : "bg-status-warningBg text-status-warningText"
-                    }`}
-                  >
-                    {t(`statut.${evenement.statut}`)}
-                  </span>
-                </div>
-                <div className="text-xs text-text-tertiary">
-                  {formatDate(evenement.date_evenement)} · {evenement.lieu} ·{" "}
-                  {t("places_sur_max", {
-                    reservees: evenement.places_reservees,
-                    max: evenement.places_max ?? "∞",
-                  })}
-                </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-text-primary">{evenement.titre}</span>
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                        evenement.statut === "publie"
+                          ? "bg-status-successBg text-status-successText"
+                          : evenement.statut === "annule"
+                            ? "bg-status-dangerBg text-status-dangerText"
+                            : "bg-status-warningBg text-status-warningText"
+                      }`}
+                    >
+                      {t(`statut.${evenement.statut}`)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-text-tertiary">
+                    {formatDate(evenement.date_evenement)} · {evenement.lieu} ·{" "}
+                    {t("places_sur_max", {
+                      reservees: evenement.places_reservees,
+                      max: evenement.places_max ?? "∞",
+                    })}
+                  </div>
                 </div>
               </div>
               <div className="flex shrink-0 gap-2">
@@ -608,7 +624,7 @@ export default function AdminEventsPage() {
                   type="button"
                   onClick={() => inputsFichierImage.current[evenement.id]?.click()}
                   disabled={evenementImageEnCours === evenement.id || !modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   className="rounded-cid border border-text-tertiary/30 px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
                 >
                   {evenementImageEnCours === evenement.id
@@ -618,7 +634,7 @@ export default function AdminEventsPage() {
                 <button
                   type="button"
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   onClick={() => ouvrirEdition(evenement)}
                   className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
                 >
@@ -628,7 +644,7 @@ export default function AdminEventsPage() {
                   <button
                     type="button"
                     disabled={!modifiable}
-                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                    title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                     onClick={() => surPublier(evenement.id)}
                     className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
                   >
@@ -639,7 +655,7 @@ export default function AdminEventsPage() {
                   <button
                     type="button"
                     disabled={!modifiable}
-                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                    title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                     onClick={() => surAnnuler(evenement.id)}
                     className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                   >

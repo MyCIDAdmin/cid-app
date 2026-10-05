@@ -13,6 +13,7 @@ import {
   type CreerRolePayload,
   type ModifierRolePayload,
   type SetMatriceCellulePayload,
+  type SetVisibilitePayload,
 } from "../types/rbac";
 
 const rbacKeys = {
@@ -21,6 +22,7 @@ const rbacKeys = {
   rolesUtilisateur: (userId: string) => [...rbacKeys.all, "utilisateur", userId] as const,
   mesAcces: () => [...rbacKeys.all, "mes-acces"] as const,
   visibiliteEffective: () => [...rbacKeys.all, "visibilite-effective"] as const,
+  visibiliteModules: () => [...rbacKeys.all, "visibilite-modules"] as const,
 };
 
 export function useRbacMatrice() {
@@ -143,4 +145,23 @@ export function usePageAccess(pageSlug: string) {
     modifiable: pageEstModifiable(niveau),
     isLoading,
   };
+}
+
+/** Point 9 (2026-10-05) : édition des 2 colonnes de visibilité depuis la Rollenverwaltung. */
+export function useVisibiliteModules() {
+  return useQuery({
+    queryKey: rbacKeys.visibiliteModules(),
+    queryFn: rbacApi.getVisibiliteModules,
+  });
+}
+
+export function useSetVisibiliteModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SetVisibilitePayload) => rbacApi.setVisibiliteModule(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacKeys.visibiliteModules() });
+      queryClient.invalidateQueries({ queryKey: rbacKeys.visibiliteEffective() });
+    },
+  });
 }

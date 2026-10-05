@@ -78,18 +78,16 @@ def _rejoindre_url(trajet):
 # --- Permissions catalogue événements ---
 
 
-def test_list_evenements_non_authentifie_ne_voit_que_les_evenements_publics(api_client):
-    """Depuis le 2026-09-26 (page d'accueil publique façon mycid.org/events, demande
-    utilisateur), un visiteur anonyme peut lister les événements — mais get_queryset ne lui
-    renvoie que ceux PUBLIE + visible_public=True (jamais un brouillon, jamais un événement
-    réservé aux membres). Remplace l'ancien test qui attendait un refus 401 pur."""
+def test_list_evenements_non_authentifie_voit_les_publies_avec_badge_membres(api_client):
+    """Depuis le 2026-10-05 (point 1.1) : un anonyme voit tous les événements PUBLIE (jamais un
+    brouillon) ; ceux réservés aux membres portent `reserve_membres=True` (affichage seul)."""
     EvenementFactory(statut=StatutEvenement.BROUILLON, titre="Brouillon", visible_public=True)
     EvenementFactory(statut=StatutEvenement.PUBLIE, titre="Publié réservé aux membres")
     EvenementFactory(statut=StatutEvenement.PUBLIE, titre="Publié et public", visible_public=True)
     resp = api_client.get(reverse(EVENEMENT_LIST_URL))
     assert resp.status_code == 200
-    titres = [e["titre"] for e in resp.data["results"]]
-    assert titres == ["Publié et public"]
+    reserve = {e["titre"]: e["reserve_membres"] for e in resp.data["results"]}
+    assert reserve == {"Publié réservé aux membres": True, "Publié et public": False}
 
 
 def test_list_evenements_non_authentifie_refuse_inscrire(api_client):
@@ -972,3 +970,46 @@ def test_phase_d_lecture_ecriture_page_events_permet_de_creer_un_evenement(api_c
     resp = _auth(api_client, user).post(reverse(EVENEMENT_LIST_URL), _EVENEMENT_PAYLOAD)
     assert resp.status_code == 201
     assert resp.data["titre"] == _EVENEMENT_PAYLOAD["titre"]
+
+
+# --- Non-membres (demande utilisateur du 2026-10-05, point 3) ---------------------------------
+
+
+def _non_membre_connecte(api_client):
+    from apps.membres.models import StatutMembre
+    from apps.membres.tests.factories import MembreFactory
+    from apps.rbac.tests.factories import UserFactory
+
+    user = UserFactory(role="membre")
+    membre = MembreFactory(user=user, statut=StatutMembre.EN_ATTENTE)
+    api_client.force_authenticate(user)
+    return membre
+
+
+def test_non_membre_ne_peut_pas_sinscrire_a_un_evenement_reserve(api_client):
+    _non_membre_connecte(api_client)
+    evenement = EvenementFactory(statut=StatutEvenement.PUBLIE, visible_public=False)
+    resp = api_client.post(
+        reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}, format="json"
+    )
+    assert resp.status_code == 400
+
+
+def test_non_membre_paie_le_tarif_non_membre(api_client):
+    from decimal import Decimal
+
+    _non_membre_connecte(api_client)
+    evenement = EvenementFactory(
+        statut=StatutEvenement.PUBLIE,
+        visible_public=True,
+        gratuit=False,
+        cout=Decimal("10.00"),
+        cout_non_membre=Decimal("25.00"),
+    )
+    detail = api_client.get(reverse("evenements:evenement-detail", args=[evenement.id]))
+    assert detail.data["cout_applicable"] == "25.00"
+    resp = api_client.post(
+        reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 2}, format="json"
+    )
+    assert resp.status_code == 200, resp.data
+    assert Decimal(resp.data["montant_paye"]) == Decimal("50.00")

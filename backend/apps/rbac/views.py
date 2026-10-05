@@ -216,8 +216,7 @@ class ModuleVisibiliteView(APIView):
     permission_classes = [IsSuperAdmin]
 
     def get(self, request):
-        existantes = {v.module: v.visible for v in ModuleVisibiliteMembre.objects.all()}
-        return Response([{"module": m, "visible": existantes.get(m, True)} for m in MODULES])
+        return Response(rbac_services.visibilite_lignes())
 
 
 class ModuleVisibiliteSetView(APIView):
@@ -227,18 +226,21 @@ class ModuleVisibiliteSetView(APIView):
         serializer = ModuleVisibiliteSetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        champ = "visible" if data["groupe"] == "membre" else "visible_non_membre"
         ligne, _created = ModuleVisibiliteMembre.objects.update_or_create(
             module=data["module"],
-            defaults={"visible": data["visible"], "modifie_par": request.user},
+            defaults={champ: data["visible"], "modifie_par": request.user},
         )
         accounts_services.log_audit_event(
             "rbac_module_visibilite_set",
             user=request.user,
             ip_address=_client_ip(request),
             module=ligne.module,
-            visible=ligne.visible,
+            groupe=data["groupe"],
+            visible=data["visible"],
         )
-        return Response({"module": ligne.module, "visible": ligne.visible})
+        cellule = next(c for c in rbac_services.visibilite_lignes() if c["module"] == ligne.module)
+        return Response(cellule)
 
 
 class ModuleVisibiliteEffectiveView(APIView):
@@ -248,8 +250,7 @@ class ModuleVisibiliteEffectiveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        existantes = {v.module: v.visible for v in ModuleVisibiliteMembre.objects.all()}
-        return Response({m: existantes.get(m, True) for m in MODULES})
+        return Response(rbac_services.visibilite_effective(request.user))
 
 
 class UserRolesView(APIView):

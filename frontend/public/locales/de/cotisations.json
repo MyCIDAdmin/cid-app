@@ -223,5 +223,20 @@
     "reessai_en_cours": "Weiterleitung…",
     "erreur_reessai": "Die neue Zahlung konnte nicht gestartet werden.",
     "retour_accueil": "Zurück zu den Zahlungen"
+  },
+  "shop_zahlungen": {
+    "titre": "Zahlungen aus dem Shop",
+    "sous_titre": "Bestellungen aus dem Shop mit ihrem Zahlungsstatus.",
+    "chargement": "Wird geladen…",
+    "erreur": "Shop-Zahlungen konnten nicht geladen werden.",
+    "vide": "Keine Shop-Bestellungen.",
+    "commande": "Bestellung",
+    "client": "Empfänger",
+    "montant": "Betrag",
+    "statut": "Status",
+    "paiement": "Zahlung",
+    "non_paye": "Offen",
+    "mode": "Zahlungsart",
+    "confirmer": "Bestätigen"
   }
 }

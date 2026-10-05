@@ -3,7 +3,7 @@
 from rest_framework import serializers
 
 from .models import NiveauAcces, RoleDefinition
-from .registry import ALL_MODULES, MODULES
+from .registry import ALL_MODULES, MODULES, VISIBILITE_KEYS
 
 
 def _valider_module_donnees(value: str) -> str:
@@ -82,13 +82,22 @@ class ModuleVisibiliteCellSerializer(serializers.Serializer):
 
     module = serializers.CharField()
     visible = serializers.BooleanField()
+    visible_non_membre = serializers.BooleanField()
+
+
+def _valider_cle_visibilite(value: str) -> str:
+    if value not in VISIBILITE_KEYS:
+        raise serializers.ValidationError(f"Module inconnu : {value}")
+    return value
 
 
 class ModuleVisibiliteSetSerializer(serializers.Serializer):
-    """Écriture d'une ligne de visibilité (`POST /rbac/visibilite-membre/set/`)."""
+    """Écriture d'une cellule de visibilité (`POST /rbac/visibilite-membre/set/`) — `groupe`
+    choisit la colonne (point 9, 2026-10-05), "membre" par défaut (compatibilité)."""
 
-    module = serializers.CharField(validators=[_valider_module_donnees])
+    module = serializers.CharField(validators=[_valider_cle_visibilite])
     visible = serializers.BooleanField()
+    groupe = serializers.ChoiceField(choices=["membre", "non_membre"], default="membre")
 
 
 class UserRolesAssignSerializer(serializers.Serializer):

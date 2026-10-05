@@ -138,6 +138,15 @@ export const ROLE_LEVELS: Record<CidUser["role"], number> = {
   super_admin: 5,
 };
 
+/** Point 3 (2026-10-05) : un compte "membre" n'est Mitglied que si sa fiche Membre est ACTIVE ;
+ * un rôle supérieur est toujours traité comme membre (même règle que
+ * apps.rbac.services.est_membre_actif côté backend). */
+export function estMembreActif(user: CidUser | null): boolean {
+  if (!user) return false;
+  if (user.role !== "membre") return true;
+  return user.statut_membre === "actif";
+}
+
 export function hasRoleAtLeast(user: CidUser | null, minLevel: number): boolean {
   if (!user) return false;
   return ROLE_LEVELS[user.role] >= minLevel;

@@ -46,6 +46,20 @@ MODULE_LABELS = {
 }
 
 # ---------------------------------------------------------------------------
+# Clés de VISIBILITÉ DE MENU (demande utilisateur du 2026-10-05, point 9) — les 10 modules
+# ci-dessus + "albums" : les Fotoalben vivent dans apps.communaute mais doivent pouvoir être
+# montrés à un non-membre sans ouvrir le reste de la communauté (fil, forum, messagerie...).
+# Utilisé UNIQUEMENT par ModuleVisibiliteMembre (jamais par la matrice d'accès).
+VISIBILITE_KEYS = MODULES + ["albums"]
+VISIBILITE_LABELS = {**MODULE_LABELS, "albums": "Albums photos"}
+
+# Défaut "non-membre" (compte connecté sans fiche Membre ACTIVE, demande utilisateur du
+# 2026-10-05, point 3) quand aucune ligne ModuleVisibiliteMembre n'existe, ou que sa colonne
+# `visible_non_membre` est vide : Meine Mitgliedschaft (adhesions), Veranstaltungen,
+# Aktionen & Projekte, Shop, Fotoalben. Tout le reste est masqué par défaut.
+VISIBILITE_NON_MEMBRE_DEFAUT = {"adhesions", "evenements", "projets", "boutique", "albums"}
+
+# ---------------------------------------------------------------------------
 # Pages de gestion (Phase D, ajoutée le 2026-09-23, demande utilisateur : "Ich möchte dass du
 # alle Verwaltungsmodule zur Matrix hinzufügst [...] Es soll möglich sein Zugriff bei den
 # Systemrollen auch umzustellen (Außer App Admin)") — liste EXPLICITE des 13 Admin-Unterseiten

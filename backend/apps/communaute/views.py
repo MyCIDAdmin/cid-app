@@ -161,6 +161,7 @@ from .serializers import (
     TippspielTipSerializer,
     nom_affiche_utilisateur,
 )
+from .tasks import notifier_publication_importante
 
 
 def _client_ip(request) -> str:
@@ -204,6 +205,18 @@ class PublicationViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     pagination_class = PublicationCursorPagination
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def perform_create(self, serializer):
+        publication = serializer.save()
+        if publication.important:
+            notifier_publication_importante.delay(str(publication.id))
+
+    def perform_update(self, serializer):
+        etait_important = serializer.instance.important
+        publication = serializer.save()
+        # Notification uniquement au passage "normal -> Wichtig", jamais à chaque édition.
+        if publication.important and not etait_important:
+            notifier_publication_importante.delay(str(publication.id))
 
     def get_queryset(self):
         qs = Publication.objects.select_related("auteur").prefetch_related(

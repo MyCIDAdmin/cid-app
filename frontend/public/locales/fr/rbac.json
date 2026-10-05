@@ -1,7 +1,8 @@
 {
   "onglets": {
     "attribution": "Attribution",
-    "acces": "Accès"
+    "acces": "Accès",
+    "visibilite": "Visibilité"
   },
   "modules": {
     "membres": "Membres",
@@ -26,7 +27,8 @@
     "page_articles_cotisation": "Articles de cotisation",
     "page_notifications_params": "Paramètres de notification",
     "page_projets": "Gestion des projets & actions",
-    "page_albums": "Gestion des albums photo"
+    "page_albums": "Gestion des albums photo",
+    "albums": "Albums photos"
   },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",
@@ -75,5 +77,13 @@
       "succes": "Le rôle a été supprimé.",
       "erreur": "Le rôle n'a pas pu être supprimé."
     }
+  },
+  "visibilite": {
+    "chargement": "Chargement…",
+    "erreur": "Impossible de charger/enregistrer la visibilité.",
+    "aide": "Modules affichés dans le menu du rôle « Membre » – séparément pour les membres actifs et les comptes connectés non-membres. Les rôles supérieurs voient toujours tout.",
+    "module": "Module",
+    "membre": "Membre",
+    "non_membre": "Non-membre"
   }
 }

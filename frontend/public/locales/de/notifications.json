@@ -7,7 +7,8 @@
     "aucune": "Keine Benachrichtigung.",
     "a_instant": "gerade eben",
     "il_y_a_minutes": "vor {{count}} Min.",
-    "il_y_a_heures": "vor {{count}} Std."
+    "il_y_a_heures": "vor {{count}} Std.",
+    "non_lue": "Ungelesen"
   },
   "parametres": {
     "titre": "E-Mail-Benachrichtigungen",
