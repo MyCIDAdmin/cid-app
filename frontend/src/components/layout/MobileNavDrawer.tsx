@@ -17,6 +17,8 @@ import { IconX } from "@tabler/icons-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Link } from "react-router-dom";
+
 import BrandLogo from "../ui/BrandLogo";
 import { NavAccordionList, useSidebarNav } from "./Sidebar";
 
@@ -52,11 +54,7 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
       {/* Arrière-plan — clic pour fermer, même geste que les autres modales de l'app
           (ex. RapportModal) : clic uniquement sur la zone assombrie elle-même, jamais un clic
           qui a "traversé" depuis le panneau du tiroir. */}
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
       <div
         role="dialog"
         aria-modal="true"
@@ -64,8 +62,15 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
         className="relative flex h-full w-72 max-w-[80vw] flex-col overflow-hidden bg-sb text-white/90 shadow-xl"
       >
         <div className="flex items-center gap-2 px-4 py-5">
-          <BrandLogo className="h-9 w-9" />
-          <span className="flex-1 truncate text-sm font-semibold">Clubistes in DE</span>
+          <Link
+            to="/"
+            onClick={onClose}
+            aria-label={t("action.accueil")}
+            className="flex min-w-0 flex-1 items-center gap-2"
+          >
+            <BrandLogo className="h-9 w-9" />
+            <span className="flex-1 truncate text-sm font-semibold">Clubistes in DE</span>
+          </Link>
           <button
             type="button"
             onClick={onClose}

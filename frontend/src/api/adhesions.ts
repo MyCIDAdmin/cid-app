@@ -196,3 +196,23 @@ export async function validerJustificatif(
   );
   return data;
 }
+
+/** Historique du module "Nachweise" (point 6, 2026-10-06) : toutes les souscriptions avec un
+ * justificatif déposé, quel que soit son statut. */
+export async function listSouscriptionsAvecJustificatif(): Promise<CursorPage<Souscription>> {
+  const { data } = await apiClient.get<CursorPage<Souscription>>("/adhesions/souscriptions/", {
+    params: { avec_justificatif: true },
+  });
+  return data;
+}
+
+/** PATCH /adhesions/campagnes/{id}/ — Frist für Bestandsmitglieder (point 3, 2026-10-06). */
+export async function modifierFristCampagne(
+  id: string,
+  date_limite_renouvellement: string | null,
+): Promise<CampagneAdhesion> {
+  const { data } = await apiClient.patch<CampagneAdhesion>(`/adhesions/campagnes/${id}/`, {
+    date_limite_renouvellement,
+  });
+  return data;
+}

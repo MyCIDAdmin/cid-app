@@ -320,9 +320,7 @@ export default function MembresListPage() {
         )}
       </form>
 
-      {erreurExport && (
-        <p className="mb-4 -mt-2 text-sm text-status-dangerText">{erreurExport}</p>
-      )}
+      {erreurExport && <p className="mb-4 -mt-2 text-sm text-status-dangerText">{erreurExport}</p>}
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
@@ -333,27 +331,28 @@ export default function MembresListPage() {
               <th className="px-4 py-2">{t("liste.col_cin")}</th>
               <th className="px-4 py-2">{t("liste.col_email")}</th>
               <th className="px-4 py-2">{t("liste.col_statut")}</th>
+              <th className="px-4 py-2">{t("liste.col_offre")}</th>
               <th className="px-4 py-2">{t("liste.col_actions")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
+                <td colSpan={7} className="px-4 py-6 text-center text-text-tertiary">
                   {t("liste.chargement")}
                 </td>
               </tr>
             )}
             {isError && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-status-dangerText">
+                <td colSpan={7} className="px-4 py-6 text-center text-status-dangerText">
                   {t("liste.erreur")}
                 </td>
               </tr>
             )}
             {!isLoading && !isError && data?.results.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
+                <td colSpan={7} className="px-4 py-6 text-center text-text-tertiary">
                   {t("liste.aucun_resultat")}
                 </td>
               </tr>
@@ -380,6 +379,11 @@ export default function MembresListPage() {
                 <td className="px-4 py-2">{membre.email}</td>
                 <td className="px-4 py-2">
                   <StatutBadge statut={membre.statut} />
+                </td>
+                <td className="px-4 py-2 text-text-secondary">
+                  {membre.offre_actuelle
+                    ? `${membre.offre_actuelle.nom} (${membre.offre_actuelle.annee})`
+                    : "—"}
                 </td>
                 <td className="px-4 py-2">
                   <div className="flex gap-1">

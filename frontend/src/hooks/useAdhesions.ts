@@ -60,6 +60,15 @@ export function useCreerCampagne() {
   });
 }
 
+export function useModifierFristCampagne() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, date }: { id: string; date: string | null }) =>
+      adhesionsApi.modifierFristCampagne(id, date),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
 export function usePublierCampagne() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -124,6 +133,13 @@ export function useJustificatifsEnAttente() {
   return useQuery({
     queryKey: adhesionsKeys.justificatifsEnAttente(),
     queryFn: () => adhesionsApi.listSouscriptionsEnAttenteJustificatif(),
+  });
+}
+
+export function useHistoriqueJustificatifs() {
+  return useQuery({
+    queryKey: [...adhesionsKeys.justificatifsEnAttente(), "historique"],
+    queryFn: () => adhesionsApi.listSouscriptionsAvecJustificatif(),
   });
 }
 

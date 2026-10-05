@@ -94,7 +94,16 @@
     "annuler_souscription": "Diesen Antrag stornieren",
     "confirmer_annuler_titre": "Diesen Antrag stornieren?",
     "confirmer_annuler_message": "Der Mitgliedschaftsantrag dieses Mitglieds wird storniert — diese Aktion kann nicht rückgängig gemacht werden.",
-    "erreur_annulation": "Der Antrag konnte nicht storniert werden."
+    "erreur_annulation": "Der Antrag konnte nicht storniert werden.",
+    "historique_titre": "Historie der Nachweise",
+    "historique_vide": "Noch keine Nachweise eingereicht.",
+    "col_depose_le": "Eingereicht am",
+    "col_decide_le": "Entschieden am",
+    "col_statut": "Status",
+    "col_motif": "Begründung",
+    "statut_en_attente": "Ausstehend",
+    "statut_approuve": "Genehmigt",
+    "statut_rejete": "Abgelehnt"
   },
   "admin": {
     "titre": "Verwaltung der Mitgliedschaftskampagnen",
@@ -122,7 +131,11 @@
     "erreur_chargement": "Kampagnen konnten nicht geladen werden.",
     "gerer_offres": "Angebote verwalten",
     "voir_offres": "Angebote ansehen",
-    "masquer_offres": "Angebote ausblenden"
+    "masquer_offres": "Angebote ausblenden",
+    "frist_label": "Frist für Bestandsmitglieder",
+    "frist_aide": "Danach werden Mitglieder der Vorjahreskampagne ohne neue Mitgliedschaft automatisch zu Nicht-Mitgliedern (Historie bleibt erhalten).",
+    "frist_court": "Frist:",
+    "frist_traitee": "Umgeschaltet am {{date}}"
   },
   "admin_offres": {
     "titre": "Angebote dieser Kampagne",
@@ -173,5 +186,14 @@
     "famille": "Familie",
     "senior": "Senior",
     "autre": "Sonstiges"
+  },
+  "profil_incomplet": {
+    "titre": "Profil ergänzen",
+    "texte": "Für die Mitgliedschaft benötigen wir Ihre Ausweisnummer (CIN) oder Passnummer.",
+    "cin": "Ausweisnummer (CIN)",
+    "passeport": "Passnummer",
+    "enregistrer": "Speichern und Mitglied werden",
+    "requis": "Bitte CIN oder Passnummer angeben.",
+    "erreur": "Profil konnte nicht gespeichert werden."
   }
 }

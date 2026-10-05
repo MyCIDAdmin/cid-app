@@ -110,11 +110,13 @@ class CampagneAdhesionSerializer(serializers.ModelSerializer):
             "date_fin",
             "description",
             "statut",
+            "date_limite_renouvellement",
+            "bascule_non_renouveles_le",
             "created_by",
             "created_at",
             "offres",
         ]
-        read_only_fields = ["id", "statut", "created_by", "created_at"]
+        read_only_fields = ["id", "statut", "bascule_non_renouveles_le", "created_by", "created_at"]
 
     def validate(self, attrs):
         date_debut = attrs.get("date_debut", getattr(self.instance, "date_debut", None))

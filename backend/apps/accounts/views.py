@@ -27,6 +27,8 @@ from django.core import signing
 from django.core.signing import BadSignature, SignatureExpired
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import generics, status
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
@@ -307,7 +309,15 @@ class RegisterConfirmView(APIView):
         if user.registration_decision == RegistrationDecision.EN_ATTENTE:
             user.is_active = True
             user.registration_decision = RegistrationDecision.APPROUVE
-        user.save(update_fields=["email_verifie", "is_active", "registration_decision"])
+            user.registration_decided_at = timezone.now()
+        user.save(
+            update_fields=[
+                "email_verifie",
+                "is_active",
+                "registration_decision",
+                "registration_decided_at",
+            ]
+        )
         send_welcome_email.delay(str(user.id))
         # Notification staff conservée (information, plus aucune action requise).
         notifier_nouvelle_inscription_rh.delay(str(user.id))
@@ -467,6 +477,23 @@ class PendingRegistrationsCursorPagination(CursorPagination):
     ordering = ("created_at", "id")
 
 
+class RegistrationsCursorPagination(PendingRegistrationsCursorPagination):
+    """Tri choisi par ?tri= parmi une liste blanche (point 5, 2026-10-06) — l'id sert de
+    départage pour garder une pagination par curseur stable."""
+
+    TRIS = {
+        "date": ("created_at", "id"),
+        "-date": ("-created_at", "-id"),
+        "decision_date": ("registration_decided_at", "id"),
+        "-decision_date": ("-registration_decided_at", "-id"),
+        "email": ("email", "id"),
+        "-email": ("-email", "-id"),
+    }
+
+    def get_ordering(self, request, queryset, view):
+        return self.TRIS.get(request.query_params.get("tri", ""), ("-created_at", "-id"))
+
+
 class PendingRegistrationsView(generics.ListAPIView):
     """
     Liste des inscriptions libre-service en attente de décision (AHM-48).
@@ -480,20 +507,31 @@ class PendingRegistrationsView(generics.ListAPIView):
     # HasInscriptionsAdminAccess) ; IsRHOrAbove reste inchangé pour membres import/export.
     permission_classes = [HasInscriptionsAdminAccess]
     serializer_class = PendingRegistrationSerializer
-    pagination_class = PendingRegistrationsCursorPagination
+    pagination_class = RegistrationsCursorPagination
 
     def get_queryset(self):
-        # email_verifie=True (AHM-50) : une inscription dont l'email n'est
-        # pas encore confirmé n'est pas une vraie demande à traiter par RH.
-        return (
-            User.objects.filter(
-                is_active=False,
-                registration_decision=RegistrationDecision.EN_ATTENTE,
-                email_verifie=True,
+        """Point 5 (2026-10-06) : historique complet des inscriptions (email confirmé, AHM-50),
+        plus seulement celles en attente. Filtres : ?decision=en_attente|approuve|refuse,
+        ?q= (email/prénom/nom), ?date_apres=/?date_avant= (date d'inscription, AAAA-MM-JJ).
+        Tri : ?tri= (voir RegistrationsCursorPagination.TRIS)."""
+        qs = User.objects.filter(email_verifie=True).select_related("membre")
+        params = self.request.query_params
+        decision = params.get("decision", "").strip()
+        if decision in RegistrationDecision.values:
+            qs = qs.filter(registration_decision=decision)
+        q = params.get("q", "").strip()
+        if q:
+            qs = qs.filter(
+                Q(email__icontains=q) | Q(membre__prenom__icontains=q) | Q(membre__nom__icontains=q)
             )
-            .select_related("membre")
-            .order_by("created_at", "id")
-        )
+        for param, lookup in (
+            ("date_apres", "created_at__date__gte"),
+            ("date_avant", "created_at__date__lte"),
+        ):
+            valeur = parse_date(params.get(param, "") or "")
+            if valeur:
+                qs = qs.filter(**{lookup: valeur})
+        return qs
 
 
 class UsersCursorPagination(CursorPagination):
@@ -593,7 +631,8 @@ class ApproveRegistrationView(APIView):
 
         target.is_active = True
         target.registration_decision = RegistrationDecision.APPROUVE
-        target.save(update_fields=["is_active", "registration_decision"])
+        target.registration_decided_at = timezone.now()
+        target.save(update_fields=["is_active", "registration_decision", "registration_decided_at"])
 
         membre = getattr(target, "membre", None)
         if membre is not None:
@@ -637,7 +676,8 @@ class RefuseRegistrationView(APIView):
             raise ValidationError("Inscription introuvable ou déjà traitée.")
 
         target.registration_decision = RegistrationDecision.REFUSE
-        target.save(update_fields=["registration_decision"])
+        target.registration_decided_at = timezone.now()
+        target.save(update_fields=["registration_decision", "registration_decided_at"])
 
         membre = getattr(target, "membre", None)
         if membre is not None:

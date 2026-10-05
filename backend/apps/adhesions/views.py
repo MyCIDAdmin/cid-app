@@ -237,6 +237,20 @@ STATUTS_SOUSCRIPTION_ANNULABLES = {
 }
 
 
+def _exiger_piece_identite(membre) -> None:
+    """Point 1.2 (2026-10-06) : CIN ou passeport obligatoire pour devenir membre — sinon le
+    profil doit être complété avant l'adhésion (clé `profil_incomplet`, lue par le frontend)."""
+    if not (membre.cin or "").strip() and not (membre.passeport or "").strip():
+        raise ValidationError(
+            {
+                "profil_incomplet": (
+                    "Bitte ergänzen Sie Ihr Profil mit Ausweisnummer (CIN) oder Passnummer, "
+                    "bevor Sie Mitglied werden."
+                )
+            }
+        )
+
+
 class SouscriptionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
     # apps.rbac Phase B (ajouté le 2026-09-23) : module_access_permission("adhesions") est une
@@ -270,6 +284,7 @@ class SouscriptionViewSet(ModelViewSet):
                 {"membre": "Aucune fiche membre associée à ce compte utilisateur."}
             )
 
+        _exiger_piece_identite(membre)
         serializer = SouscrireSerializer(data=request.data, context={"membre": membre})
         serializer.is_valid(raise_exception=True)
         offre = serializer.validated_data["offre"]
@@ -342,6 +357,7 @@ class SouscriptionViewSet(ModelViewSet):
         serializer = SouscrireEspecesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         membre_cible = serializer.validated_data["membre"]
+        _exiger_piece_identite(membre_cible)
         offre = serializer.validated_data["offre"]
         campagne = offre.campagne
 

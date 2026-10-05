@@ -87,3 +87,54 @@ def envoyer_annonce_campagne(campagne_id) -> int:
         )
 
     return envoyes
+
+
+@shared_task
+def basculer_membres_non_renouveles() -> int:
+    """Point 3 (2026-10-06) — quotidien. Pour chaque campagne dont la date limite de
+    renouvellement est passée (et pas encore traitée) : tout membre ACTIF ayant une adhésion
+    payée dans la campagne précédente mais pas dans celle-ci devient non-membre (INACTIF).
+    Passe par enregistrer_statut_annuel -> historique annuel conservé + notification.
+    Idempotent : une campagne n'est traitée qu'une fois (bascule_non_renouveles_le)."""
+    from django.utils import timezone
+
+    from apps.membres.models import RaisonChangementStatut
+    from apps.membres.services import enregistrer_statut_annuel
+
+    from .models import StatutSouscription
+
+    bascules = 0
+    a_traiter = CampagneAdhesion.objects.filter(
+        date_limite_renouvellement__lte=timezone.localdate(),
+        bascule_non_renouveles_le__isnull=True,
+    ).order_by("annee")
+    for campagne in a_traiter:
+        precedente = (
+            CampagneAdhesion.objects.filter(annee__lt=campagne.annee)
+            .order_by("-annee", "-date_debut")
+            .first()
+        )
+        if precedente is not None:
+            renouveles = campagne.souscriptions.filter(statut=StatutSouscription.PAYEE).values_list(
+                "membre_id", flat=True
+            )
+            membres = (
+                Membre.objects.filter(
+                    statut=StatutMembre.ACTIF,
+                    souscriptions__campagne=precedente,
+                    souscriptions__statut=StatutSouscription.PAYEE,
+                )
+                .exclude(id__in=renouveles)
+                .distinct()
+            )
+            for membre in membres:
+                enregistrer_statut_annuel(
+                    membre,
+                    campagne.annee,
+                    StatutMembre.INACTIF,
+                    RaisonChangementStatut.NON_RENOUVELE,
+                )
+                bascules += 1
+        campagne.bascule_non_renouveles_le = timezone.now()
+        campagne.save(update_fields=["bascule_non_renouveles_le"])
+    return bascules

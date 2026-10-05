@@ -127,5 +127,28 @@
       "communaute": "Communauté",
       "vote": "Votes & Élections"
     }
+  },
+  "vorschau": {
+    "titre": "Campagne d'adhésion en cours",
+    "chargement": "Chargement…",
+    "aucune_campagne": "Aucune campagne d'adhésion active pour le moment.",
+    "fermer": "Fermer",
+    "continuer": "Continuer vers la connexion"
+  },
+  "admin_kacheln": {
+    "titre": "Tuiles sous la vidéo hero",
+    "description": "Deux tuiles pour animations (GIF) ou images sur la page d'accueil. Seules les tuiles actives avec image sont affichées.",
+    "kachel": "Tuile {{index}}",
+    "active": "Active",
+    "media": "GIF ou image (max. 10 Mo)",
+    "titre_champ": "Titre",
+    "texte": "Texte",
+    "lien": "Lien (ex. /boutique ou https://…)",
+    "largeur": "Largeur",
+    "largeur_demi": "Demi-largeur",
+    "largeur_pleine": "Pleine largeur",
+    "erreur": "Impossible d'enregistrer la tuile.",
+    "enregistre": "Enregistré.",
+    "enregistrer": "Enregistrer"
   }
 }

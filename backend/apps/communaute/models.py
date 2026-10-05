@@ -1595,6 +1595,15 @@ def video_hero_upload_path(instance, filename):
     return f"configuration-site/hero/{filename}"
 
 
+def kachel_upload_path(instance, filename):
+    return f"configuration-site/kacheln/{filename}"
+
+
+class LargeurKachel(models.TextChoices):
+    PLEINE = "pleine", _("Pleine largeur")
+    DEMI = "demi", _("Demi-largeur")
+
+
 class ConfigurationSitePublic(models.Model):
     """Quasi-singleton (une seule ligne, toujours pk=1 — voir get_solo()), même convention que
     apps.notifications.models.ParametresNotification/apps.cotisations.models.ConfigurationRelance.
@@ -1626,6 +1635,29 @@ class ConfigurationSitePublic(models.Model):
         null=True,
         blank=True,
         help_text=_("Vidéo de fond du hero de la page d'accueil publique (MP4, silencieuse)."),
+    )
+    # 2 Kacheln sous le hero (demande utilisateur du 2026-10-06, point 11) — GIF/image, titre,
+    # texte, lien, largeur (pleine page / moitié), activable individuellement. Gérées dans le
+    # module "Hero-Video" (AdminConfigurationSitePage).
+    kachel1_active = models.BooleanField(default=False)
+    kachel1_media = models.FileField(
+        upload_to=kachel_upload_path, storage=PublicationsStorage(), null=True, blank=True
+    )
+    kachel1_titre = models.CharField(max_length=120, blank=True)
+    kachel1_texte = models.CharField(max_length=300, blank=True)
+    kachel1_lien = models.CharField(max_length=500, blank=True)
+    kachel1_largeur = models.CharField(
+        max_length=10, choices=LargeurKachel.choices, default=LargeurKachel.DEMI
+    )
+    kachel2_active = models.BooleanField(default=False)
+    kachel2_media = models.FileField(
+        upload_to=kachel_upload_path, storage=PublicationsStorage(), null=True, blank=True
+    )
+    kachel2_titre = models.CharField(max_length=120, blank=True)
+    kachel2_texte = models.CharField(max_length=300, blank=True)
+    kachel2_lien = models.CharField(max_length=500, blank=True)
+    kachel2_largeur = models.CharField(
+        max_length=10, choices=LargeurKachel.choices, default=LargeurKachel.DEMI
     )
 
     modifie_par = models.ForeignKey(

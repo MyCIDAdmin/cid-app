@@ -117,6 +117,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         ),
     )
 
+    # Date de la décision (point 5/6, 2026-10-06 : "Datumsfeld zum Protokollieren") —
+    # renseignée à l'approbation (automatique à la confirmation de l'email depuis le
+    # 2026-10-05, ou manuelle) ou au refus. Historique consultable dans "Registrierungen".
+    registration_decided_at = models.DateTimeField(null=True, blank=True)
+
     # --- Vérification de l'email à l'inscription (AHM-50) — distinct de la
     # décision RH : un email non confirmé n'est même pas montré à RH. ---
     email_verifie = models.BooleanField(

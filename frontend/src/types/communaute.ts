@@ -698,8 +698,23 @@ export type LiveMatchSocketMessage =
  * jamais un objet File côté lecture (GET), seulement en écriture (voir ConfigurationSitePayload
  * dans api/communaute.ts).
  */
+/** Kacheln sous le hero (point 11, 2026-10-06). */
+export type LargeurKachel = "pleine" | "demi";
+
 export interface ConfigurationSitePublic {
   video_hero: string | null;
+  kachel1_active: boolean;
+  kachel1_media: string | null;
+  kachel1_titre: string;
+  kachel1_texte: string;
+  kachel1_lien: string;
+  kachel1_largeur: LargeurKachel;
+  kachel2_active: boolean;
+  kachel2_media: string | null;
+  kachel2_titre: string;
+  kachel2_texte: string;
+  kachel2_lien: string;
+  kachel2_largeur: LargeurKachel;
   modifie_par: string | null;
   updated_at: string;
 }

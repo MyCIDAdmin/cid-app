@@ -33,6 +33,7 @@ import {
   useCampagnes,
   useCloturerCampagne,
   useCreerCampagne,
+  useModifierFristCampagne,
   usePublierCampagne,
 } from "../../hooks/useAdhesions";
 import { usePageAccess } from "../../hooks/useRbac";
@@ -51,6 +52,7 @@ function formulaireInitial(): CampagneCreatePayload {
     annee: new Date().getFullYear(),
     date_debut: "",
     date_fin: "",
+    date_limite_renouvellement: null,
     description: "",
   };
 }
@@ -73,6 +75,7 @@ export default function AdminCampagnesPage() {
   const campagnes = useCampagnes();
   const creerMutation = useCreerCampagne();
   const publierMutation = usePublierCampagne();
+  const fristMutation = useModifierFristCampagne();
   const cloturerMutation = useCloturerCampagne();
 
   function handleCreer(e: FormEvent<HTMLFormElement>) {
@@ -101,7 +104,10 @@ export default function AdminCampagnesPage() {
         <h2 className="mb-3 text-xs font-bold text-text-primary">{t("admin.nouvelle_campagne")}</h2>
         <form onSubmit={handleCreer} className="grid gap-3 md:grid-cols-2">
           <div>
-            <label htmlFor="camp-nom" className="mb-1 block text-xs font-medium text-text-secondary">
+            <label
+              htmlFor="camp-nom"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
               {t("admin.nom_label")}
             </label>
             <input
@@ -114,7 +120,10 @@ export default function AdminCampagnesPage() {
             />
           </div>
           <div>
-            <label htmlFor="camp-annee" className="mb-1 block text-xs font-medium text-text-secondary">
+            <label
+              htmlFor="camp-annee"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
               {t("admin.annee_label")}
             </label>
             <input
@@ -127,7 +136,10 @@ export default function AdminCampagnesPage() {
             />
           </div>
           <div>
-            <label htmlFor="camp-debut" className="mb-1 block text-xs font-medium text-text-secondary">
+            <label
+              htmlFor="camp-debut"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
               {t("admin.date_debut_label")}
             </label>
             <input
@@ -140,7 +152,10 @@ export default function AdminCampagnesPage() {
             />
           </div>
           <div>
-            <label htmlFor="camp-fin" className="mb-1 block text-xs font-medium text-text-secondary">
+            <label
+              htmlFor="camp-fin"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
               {t("admin.date_fin_label")}
             </label>
             <input
@@ -151,6 +166,24 @@ export default function AdminCampagnesPage() {
               onChange={(e) => setForm({ ...form, date_fin: e.target.value })}
               className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             />
+          </div>
+          <div>
+            <label
+              htmlFor="camp-frist"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("admin.frist_label")}
+            </label>
+            <input
+              id="camp-frist"
+              type="date"
+              value={form.date_limite_renouvellement ?? ""}
+              onChange={(e) =>
+                setForm({ ...form, date_limite_renouvellement: e.target.value || null })
+              }
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            />
+            <p className="mt-1 text-[11px] text-text-tertiary">{t("admin.frist_aide")}</p>
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium text-text-secondary">
@@ -173,7 +206,7 @@ export default function AdminCampagnesPage() {
             <button
               type="submit"
               disabled={creerMutation.isPending || !modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
             >
               {t("admin.creer")}
@@ -230,6 +263,29 @@ export default function AdminCampagnesPage() {
                   </td>
                   <td className="px-4 py-2 text-text-secondary">
                     {formatDate(c.date_debut)} – {formatDate(c.date_fin)}
+                    <label className="mt-1 flex items-center gap-1 text-[11px]">
+                      {t("admin.frist_court")}
+                      <input
+                        type="date"
+                        aria-label={t("admin.frist_label")}
+                        defaultValue={c.date_limite_renouvellement ?? ""}
+                        disabled={!modifiable || Boolean(c.bascule_non_renouveles_le)}
+                        onBlur={(e) => {
+                          const valeur = e.target.value || null;
+                          if (valeur !== c.date_limite_renouvellement) {
+                            fristMutation.mutate({ id: c.id, date: valeur });
+                          }
+                        }}
+                        className="rounded-cid border border-text-tertiary/30 px-1 py-0.5"
+                      />
+                    </label>
+                    {c.bascule_non_renouveles_le && (
+                      <span className="text-[11px] text-text-tertiary">
+                        {t("admin.frist_traitee", {
+                          date: formatDate(c.bascule_non_renouveles_le),
+                        })}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex flex-wrap gap-1">
@@ -238,7 +294,7 @@ export default function AdminCampagnesPage() {
                           type="button"
                           onClick={() => publierMutation.mutate(c.id)}
                           disabled={publierMutation.isPending || !modifiable}
-                          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                           className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
                         >
                           {t("admin.publier")}
@@ -249,7 +305,7 @@ export default function AdminCampagnesPage() {
                           type="button"
                           onClick={() => setCampagneACloturer(c)}
                           disabled={!modifiable}
-                          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                           className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                         >
                           {t("admin.cloturer")}
@@ -262,9 +318,7 @@ export default function AdminCampagnesPage() {
                           lecture seule, ce qui laissait croire à tort à une capacité d'édition. */}
                       <button
                         type="button"
-                        onClick={() =>
-                          setCampagneDepliee((cur) => (cur === c.id ? null : c.id))
-                        }
+                        onClick={() => setCampagneDepliee((cur) => (cur === c.id ? null : c.id))}
                         className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
                       >
                         {campagneDepliee === c.id

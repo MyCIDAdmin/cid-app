@@ -836,6 +836,21 @@ export function useConfigurationSitePublic() {
   });
 }
 
+export function useModifierKachelHero() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      index,
+      valeurs,
+    }: {
+      index: 1 | 2;
+      valeurs: Parameters<typeof communauteApi.modifierKachelHero>[1];
+    }) => communauteApi.modifierKachelHero(index, valeurs),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: communauteKeys.configurationSite() }),
+  });
+}
+
 export function useModifierConfigurationSitePublic() {
   const queryClient = useQueryClient();
   return useMutation({

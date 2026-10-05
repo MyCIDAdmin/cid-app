@@ -1,7 +1,7 @@
 {
   "liste": {
-    "titre": "Inscriptions en attente",
-    "description": "Validez ou refusez les demandes d'inscription reçues via la page d'inscription libre-service.",
+    "titre": "Inscriptions",
+    "description": "Toutes les inscriptions avec statut et date. Les comptes sont actifs dès la confirmation de l'e-mail.",
     "col_nom": "Nom",
     "col_email": "Email",
     "col_ville": "Ville",
@@ -20,6 +20,23 @@
     "confirmer_refuser_titre": "Refuser cette inscription ?",
     "confirmer_refuser_message": "Le compte {{email}} restera désactivé, sa fiche Membre passera au statut Inactif.",
     "accepte_message": "Le compte {{email}} a été activé et apparaît maintenant dans la liste des Membres.",
-    "erreur_action": "Une erreur est survenue, veuillez réessayer."
+    "erreur_action": "Une erreur est survenue, veuillez réessayer.",
+    "filtre_recherche": "Rechercher nom ou e-mail",
+    "filtre_statut": "Statut",
+    "statut_tous": "Tous les statuts",
+    "statut_en_attente": "En attente",
+    "statut_approuve": "Acceptée",
+    "statut_refuse": "Refusée",
+    "filtre_du": "Du",
+    "filtre_au": "Au",
+    "tri": "Tri",
+    "tri_desc_date": "Plus récentes",
+    "tri_date": "Plus anciennes",
+    "tri_desc_decision_date": "Décision (récente)",
+    "tri_decision_date": "Décision (ancienne)",
+    "tri_email": "E-mail A–Z",
+    "tri_desc_email": "E-mail Z–A",
+    "col_statut": "Statut",
+    "col_date_decision": "Décidée le"
   }
 }

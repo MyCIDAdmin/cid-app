@@ -8,8 +8,7 @@ import type { PendingRegistrationsPage } from "../../types/inscription";
 import InscriptionsEnAttentePage from "./InscriptionsEnAttentePage";
 
 vi.mock("../../hooks/useInscriptions", async () => {
-  const actual =
-    await vi.importActual<typeof useInscriptionsHooks>("../../hooks/useInscriptions");
+  const actual = await vi.importActual<typeof useInscriptionsHooks>("../../hooks/useInscriptions");
   return {
     ...actual,
     usePendingRegistrations: vi.fn(),
@@ -30,6 +29,8 @@ const inscription = {
   email: "candidat@example.com",
   langue_preferee: "fr" as const,
   created_at: "2026-01-15T10:00:00Z",
+  registration_decision: "en_attente" as const,
+  registration_decided_at: null,
   prenom: "Amine",
   nom: "Trabelsi",
   ville: "Hamburg",
@@ -37,7 +38,9 @@ const inscription = {
 
 const page: PendingRegistrationsPage = { next: null, previous: null, results: [inscription] };
 
-function mockList(overrides: Partial<ReturnType<typeof useInscriptionsHooks.usePendingRegistrations>> = {}) {
+function mockList(
+  overrides: Partial<ReturnType<typeof useInscriptionsHooks.usePendingRegistrations>> = {},
+) {
   vi.mocked(useInscriptionsHooks.usePendingRegistrations).mockReturnValue({
     data: page,
     isLoading: false,
@@ -103,9 +106,7 @@ describe("InscriptionsEnAttentePage", () => {
 
   it("refuse une inscription après confirmation", () => {
     mockList();
-    refuseMutate.mockImplementation((_id, { onSuccess }: { onSuccess: () => void }) =>
-      onSuccess(),
-    );
+    refuseMutate.mockImplementation((_id, { onSuccess }: { onSuccess: () => void }) => onSuccess());
 
     renderWithProviders(<InscriptionsEnAttentePage />);
 

@@ -143,14 +143,9 @@ class RegisterSerializer(serializers.Serializer):
             )
         return value
 
-    def validate(self, attrs):
-        # Au moins CIN ou passeport (voir docstring des champs ci-dessus) — vérifié au niveau
-        # objet plutôt que sur un seul champ, puisque la règle porte sur les deux ensemble.
-        if not (attrs.get("cin") or "").strip() and not (attrs.get("passeport") or "").strip():
-            raise serializers.ValidationError(
-                {"cin": "Ausweisnummer (CIN) oder Passnummer ist erforderlich."}
-            )
-        return attrs
+    # Demande utilisateur du 2026-10-06 (point 1.1) : CIN/passeport facultatifs à
+    # l'inscription — exigés uniquement au moment de l'adhésion (voir
+    # apps.adhesions.views._exiger_piece_identite).
 
     def create(self, validated_data):
         validated_data.pop("consentement_rgpd")
@@ -271,7 +266,17 @@ class PendingRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "langue_preferee", "created_at", "prenom", "nom", "ville"]
+        fields = [
+            "id",
+            "email",
+            "langue_preferee",
+            "created_at",
+            "registration_decision",
+            "registration_decided_at",
+            "prenom",
+            "nom",
+            "ville",
+        ]
         read_only_fields = fields
 
     def get_prenom(self, obj):

@@ -35,10 +35,15 @@ class SouscriptionFilter(django_filters.FilterSet):
     statut = django_filters.ChoiceFilter(choices=StatutSouscription.choices)
     campagne = django_filters.UUIDFilter(field_name="campagne_id")
     membre = django_filters.UUIDFilter(field_name="membre_id")
+    # Historique du module "Nachweise" (point 6, 2026-10-06) : toutes les souscriptions ayant
+    # un justificatif déposé, quel que soit son statut (validé/rejeté/en attente).
+    avec_justificatif = django_filters.BooleanFilter(
+        field_name="justificatif", lookup_expr="isnull", exclude=True
+    )
 
     class Meta:
         model = Souscription
-        fields = ["statut", "campagne", "membre"]
+        fields = ["statut", "campagne", "membre", "avec_justificatif"]
 
 
 class JustificatifRabaisFilter(django_filters.FilterSet):

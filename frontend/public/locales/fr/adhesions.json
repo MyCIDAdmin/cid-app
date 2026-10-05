@@ -94,7 +94,16 @@
     "annuler_souscription": "Annuler cette souscription",
     "confirmer_annuler_titre": "Annuler cette souscription ?",
     "confirmer_annuler_message": "La demande d'adhésion de ce membre sera annulée — cette action est irréversible.",
-    "erreur_annulation": "La souscription n'a pas pu être annulée."
+    "erreur_annulation": "La souscription n'a pas pu être annulée.",
+    "historique_titre": "Historique des justificatifs",
+    "historique_vide": "Aucun justificatif déposé.",
+    "col_depose_le": "Déposé le",
+    "col_decide_le": "Décidé le",
+    "col_statut": "Statut",
+    "col_motif": "Motif",
+    "statut_en_attente": "En attente",
+    "statut_approuve": "Approuvé",
+    "statut_rejete": "Rejeté"
   },
   "admin": {
     "titre": "Gestion des campagnes d'adhésion",
@@ -122,7 +131,11 @@
     "erreur_chargement": "Impossible de charger les campagnes.",
     "gerer_offres": "Gérer les offres",
     "voir_offres": "Voir les offres",
-    "masquer_offres": "Masquer les offres"
+    "masquer_offres": "Masquer les offres",
+    "frist_label": "Délai pour les membres existants",
+    "frist_aide": "Passé ce délai, les membres de la campagne précédente non réinscrits deviennent automatiquement non-membres (historique conservé).",
+    "frist_court": "Délai :",
+    "frist_traitee": "Bascule effectuée le {{date}}"
   },
   "admin_offres": {
     "titre": "Offres de cette campagne",
@@ -173,5 +186,14 @@
     "famille": "Famille",
     "senior": "Senior",
     "autre": "Autre"
+  },
+  "profil_incomplet": {
+    "titre": "Compléter votre profil",
+    "texte": "Pour l'adhésion, nous avons besoin de votre CIN ou de votre numéro de passeport.",
+    "cin": "CIN",
+    "passeport": "Numéro de passeport",
+    "enregistrer": "Enregistrer et adhérer",
+    "requis": "Veuillez indiquer la CIN ou le passeport.",
+    "erreur": "Impossible d'enregistrer le profil."
   }
 }

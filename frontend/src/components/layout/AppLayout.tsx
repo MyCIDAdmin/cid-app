@@ -1,10 +1,9 @@
 import { IconMenu2 } from "@tabler/icons-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 
 import PublicFooter from "../public/PublicFooter";
-import BrandLogo from "../ui/BrandLogo";
 import LanguageSwitcher from "./LanguageSwitcher";
 import MobileNavDrawer from "./MobileNavDrawer";
 import ModuleBackground from "./ModuleBackground";
@@ -69,9 +68,8 @@ export default function AppLayout() {
             >
               <IconMenu2 size={20} />
             </button>
-            <Link to="/" className="hidden lg:block" aria-label={t("action.accueil")}>
-              <BrandLogo className="h-8 w-8" />
-            </Link>
+            {/* Logo d'en-tête retiré (demande utilisateur du 2026-10-06, point 8) : seul le logo
+                de la Sidebar reste, et ramène à la Startseite (point 9). */}
           </div>
           <div className="flex flex-1 items-center justify-end gap-2">
             <LanguageSwitcher />

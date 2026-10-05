@@ -81,6 +81,10 @@ function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
     date_fin: "2026-12-31",
     description: "",
     statut: "publiee",
+
+    date_limite_renouvellement: null,
+
+    bascule_non_renouveles_le: null,
     created_by: "m-admin",
     created_at: "2026-01-01T00:00:00Z",
     offres: [offre()],

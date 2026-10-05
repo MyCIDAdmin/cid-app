@@ -19,10 +19,19 @@ import {
   usePendingRegistrations,
   useRefuseRegistration,
 } from "../../hooks/useInscriptions";
+import type { RegistrationsFiltres } from "../../types/inscription";
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 type Decision = { id: string; email: string; type: "approuver" | "refuser" };
+
+const DECISIONS = ["en_attente", "approuve", "refuse"] as const;
+const TRIS = ["-date", "date", "-decision_date", "decision_date", "email", "-email"] as const;
+const STATUT_CLASSES: Record<(typeof DECISIONS)[number], string> = {
+  en_attente: "bg-status-warningBg text-status-warningText",
+  approuve: "bg-status-successBg text-status-successText",
+  refuse: "bg-status-dangerBg text-status-dangerText",
+};
 
 export default function InscriptionsEnAttentePage() {
   const { t } = useTranslation(["inscriptions", "common"]);
@@ -33,7 +42,14 @@ export default function InscriptionsEnAttentePage() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [messageAccepte, setMessageAccepte] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = usePendingRegistrations(pageUrl);
+  // Historique + filtres/tri (point 5, 2026-10-06) — un changement de filtre repart de la 1re
+  // page (pageUrl remis à null).
+  const [filtres, setFiltres] = useState<RegistrationsFiltres>({ decision: "", tri: "-date" });
+  function changerFiltre(patch: Partial<RegistrationsFiltres>) {
+    setFiltres((f) => ({ ...f, ...patch }));
+    setPageUrl(null);
+  }
+  const { data, isLoading, isError } = usePendingRegistrations(pageUrl, filtres);
   const approveMutation = useApproveRegistration();
   const refuseMutation = useRefuseRegistration();
 
@@ -77,6 +93,62 @@ export default function InscriptionsEnAttentePage() {
         </p>
       )}
 
+      <div className="mb-3 flex flex-wrap items-end gap-2 text-xs">
+        <input
+          type="search"
+          value={filtres.q ?? ""}
+          onChange={(e) => changerFiltre({ q: e.target.value })}
+          placeholder={t("liste.filtre_recherche")}
+          aria-label={t("liste.filtre_recherche")}
+          className="rounded-cid border border-text-tertiary/30 px-2 py-1.5"
+        />
+        <select
+          value={filtres.decision ?? ""}
+          onChange={(e) =>
+            changerFiltre({ decision: e.target.value as RegistrationsFiltres["decision"] })
+          }
+          aria-label={t("liste.filtre_statut")}
+          className="rounded-cid border border-text-tertiary/30 px-2 py-1.5"
+        >
+          <option value="">{t("liste.statut_tous")}</option>
+          {DECISIONS.map((d) => (
+            <option key={d} value={d}>
+              {t(`liste.statut_${d}`)}
+            </option>
+          ))}
+        </select>
+        <label className="flex items-center gap-1 text-text-secondary">
+          {t("liste.filtre_du")}
+          <input
+            type="date"
+            value={filtres.date_apres ?? ""}
+            onChange={(e) => changerFiltre({ date_apres: e.target.value })}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1"
+          />
+        </label>
+        <label className="flex items-center gap-1 text-text-secondary">
+          {t("liste.filtre_au")}
+          <input
+            type="date"
+            value={filtres.date_avant ?? ""}
+            onChange={(e) => changerFiltre({ date_avant: e.target.value })}
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1"
+          />
+        </label>
+        <select
+          value={filtres.tri ?? "-date"}
+          onChange={(e) => changerFiltre({ tri: e.target.value as RegistrationsFiltres["tri"] })}
+          aria-label={t("liste.tri")}
+          className="rounded-cid border border-text-tertiary/30 px-2 py-1.5"
+        >
+          {TRIS.map((tri) => (
+            <option key={tri} value={tri}>
+              {t(`liste.tri_${tri.replace("-", "desc_")}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
           <thead>
@@ -86,27 +158,29 @@ export default function InscriptionsEnAttentePage() {
               <th className="px-4 py-2">{t("liste.col_ville")}</th>
               <th className="px-4 py-2">{t("liste.col_langue")}</th>
               <th className="px-4 py-2">{t("liste.col_date")}</th>
+              <th className="px-4 py-2">{t("liste.col_statut")}</th>
+              <th className="px-4 py-2">{t("liste.col_date_decision")}</th>
               <th className="px-4 py-2">{t("liste.col_actions")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
+                <td colSpan={8} className="px-4 py-6 text-center text-text-tertiary">
                   {t("liste.chargement")}
                 </td>
               </tr>
             )}
             {isError && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-status-dangerText">
+                <td colSpan={8} className="px-4 py-6 text-center text-status-dangerText">
                   {t("liste.erreur_chargement")}
                 </td>
               </tr>
             )}
             {!isLoading && !isError && data?.results.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
+                <td colSpan={8} className="px-4 py-6 text-center text-text-tertiary">
                   {t("liste.aucune_inscription")}
                 </td>
               </tr>
@@ -125,30 +199,52 @@ export default function InscriptionsEnAttentePage() {
                   {new Date(inscription.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-2">
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEnCours({ id: inscription.id, email: inscription.email, type: "approuver" })
-                      }
-                      disabled={!modifiable}
-                      title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
-                      className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
-                    >
-                      {t("liste.accepter")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEnCours({ id: inscription.id, email: inscription.email, type: "refuser" })
-                      }
-                      disabled={!modifiable}
-                      title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
-                      className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
-                    >
-                      {t("liste.refuser")}
-                    </button>
-                  </div>
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUT_CLASSES[inscription.registration_decision]}`}
+                  >
+                    {t(`liste.statut_${inscription.registration_decision}`)}
+                  </span>
+                </td>
+                <td className="px-4 py-2 text-text-secondary">
+                  {inscription.registration_decided_at
+                    ? new Date(inscription.registration_decided_at).toLocaleString()
+                    : "—"}
+                </td>
+                <td className="px-4 py-2">
+                  {inscription.registration_decision === "en_attente" && (
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEnCours({
+                            id: inscription.id,
+                            email: inscription.email,
+                            type: "approuver",
+                          })
+                        }
+                        disabled={!modifiable}
+                        title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                        className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
+                      >
+                        {t("liste.accepter")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEnCours({
+                            id: inscription.id,
+                            email: inscription.email,
+                            type: "refuser",
+                          })
+                        }
+                        disabled={!modifiable}
+                        title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                        className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
+                      >
+                        {t("liste.refuser")}
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -178,10 +274,14 @@ export default function InscriptionsEnAttentePage() {
       <ConfirmDialog
         open={enCours !== null}
         title={
-          enCours?.type === "approuver" ? t("liste.confirmer_accepter_titre") : t("liste.confirmer_refuser_titre")
+          enCours?.type === "approuver"
+            ? t("liste.confirmer_accepter_titre")
+            : t("liste.confirmer_refuser_titre")
         }
         message={t(
-          enCours?.type === "approuver" ? "liste.confirmer_accepter_message" : "liste.confirmer_refuser_message",
+          enCours?.type === "approuver"
+            ? "liste.confirmer_accepter_message"
+            : "liste.confirmer_refuser_message",
           { email: enCours?.email },
         )}
         danger={enCours?.type === "refuser"}

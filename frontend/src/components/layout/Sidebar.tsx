@@ -786,8 +786,15 @@ export default function Sidebar() {
       <div className="flex items-center gap-2 px-4 py-5">
         {!collapsed && (
           <>
-            <BrandLogo className="h-9 w-9" />
-            <span className="flex-1 truncate text-sm font-semibold">Clubistes in DE</span>
+            {/* Point 9 (2026-10-06) : clic sur le logo -> Startseite "/", session conservée. */}
+            <Link
+              to="/"
+              aria-label={t("action.accueil")}
+              className="flex min-w-0 flex-1 items-center gap-2"
+            >
+              <BrandLogo className="h-9 w-9" />
+              <span className="flex-1 truncate text-sm font-semibold">Clubistes in DE</span>
+            </Link>
           </>
         )}
         <button

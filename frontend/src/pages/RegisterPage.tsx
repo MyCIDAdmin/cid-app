@@ -50,16 +50,9 @@ const registerSchema = z
   .refine((values) => values.password === values.confirmPassword, {
     path: ["confirmPassword"],
     message: "mismatch",
-  })
-  // Retour utilisateur du 2026-09-28 (point 5) : "Ausweisnummer (CIN) kein Pflichtfeld [...]
-  // aber entweder CIN oder Passnummer erforderlich" — ni l'un ni l'autre n'est requis isolément,
-  // mais au moins un des deux doit être rempli. Même règle imposée côté backend
-  // (RegisterSerializer.validate, voir accounts/serializers.py) : le frontend ne fait
-  // qu'anticiper l'erreur serveur pour un retour immédiat.
-  .refine((values) => Boolean(values.cin?.trim()) || Boolean(values.passeport?.trim()), {
-    path: ["cin"],
-    message: "cin_ou_passeport_requis",
   });
+// CIN/passeport facultatifs à l'inscription depuis le 2026-10-06 (point 1.1) — exigés seulement
+// au moment de devenir membre (voir MonAdhesionPage, erreur `profil_incomplet`).
 
 type FormValues = z.infer<typeof registerSchema>;
 
@@ -494,16 +487,18 @@ export default function RegisterPage() {
 
             <p className="text-center text-xs text-text-tertiary">
               {t("register.deja_membre")}{" "}
-              <Link to="/login" state={location.state} className="font-medium text-ca hover:underline">
+              <Link
+                to="/login"
+                state={location.state}
+                className="font-medium text-ca hover:underline"
+              >
                 {t("register.se_connecter")}
               </Link>
             </p>
           </form>
         )}
       </div>
-      {datenschutzOuvert && (
-        <DatenschutzhinweisModal onClose={() => setDatenschutzOuvert(false)} />
-      )}
+      {datenschutzOuvert && <DatenschutzhinweisModal onClose={() => setDatenschutzOuvert(false)} />}
     </div>
   );
 }

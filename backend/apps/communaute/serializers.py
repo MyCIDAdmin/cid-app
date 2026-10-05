@@ -53,7 +53,12 @@ from .models import (
 )
 from .notifications import notifier_mentions
 from .permissions import MODERATION_MIN_LEVEL
-from .validators import valider_document_pdf, valider_et_reencoder_photo, valider_video_hero
+from .validators import (
+    valider_document_pdf,
+    valider_et_reencoder_photo,
+    valider_media_kachel,
+    valider_video_hero,
+)
 
 
 class AuteurSerializer(serializers.ModelSerializer):
@@ -1242,11 +1247,46 @@ class ConfigurationSitePublicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ConfigurationSitePublic
-        fields = ["video_hero", "modifie_par", "updated_at"]
+        fields = [
+            "video_hero",
+            "kachel1_active",
+            "kachel1_media",
+            "kachel1_titre",
+            "kachel1_texte",
+            "kachel1_lien",
+            "kachel1_largeur",
+            "kachel2_active",
+            "kachel2_media",
+            "kachel2_titre",
+            "kachel2_texte",
+            "kachel2_lien",
+            "kachel2_largeur",
+            "modifie_par",
+            "updated_at",
+        ]
         read_only_fields = ["modifie_par", "updated_at"]
 
     def validate_video_hero(self, video):
         return valider_video_hero(video)
+
+    def validate_kachel1_media(self, media):
+        return valider_media_kachel(media)
+
+    def validate_kachel2_media(self, media):
+        return valider_media_kachel(media)
+
+    def _valider_lien(self, lien: str) -> str:
+        # Lien interne ("/boutique") ou https:// uniquement — jamais javascript:/data: (XSS).
+        lien = (lien or "").strip()
+        if lien and not (lien.startswith("/") or lien.startswith("https://")):
+            raise serializers.ValidationError("Lien interne (/...) ou https:// uniquement.")
+        return lien
+
+    def validate_kachel1_lien(self, lien):
+        return self._valider_lien(lien)
+
+    def validate_kachel2_lien(self, lien):
+        return self._valider_lien(lien)
 
 
 class EquipeLogoSerializer(serializers.ModelSerializer):

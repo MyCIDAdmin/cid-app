@@ -337,15 +337,45 @@ def test_register_attribue_automatiquement_le_role_rbac_membre(api_client):
     assert UserRoleAssignment.objects.filter(user=user, role=role_membre).exists()
 
 
-def test_register_sans_cin_ni_passeport_echoue(api_client):
-    """Retour utilisateur du 2026-09-28 (point 5) : "Ausweisnummer (CIN) kein Pflichtfeld [...]
-    aber entweder CIN oder Passnummer erforderlich" — voir RegisterSerializer.validate."""
+def test_register_sans_cin_ni_passeport_reussit(api_client):
+    """Depuis le 2026-10-06 (point 1.1) : CIN/passeport facultatifs à l'inscription, exigés
+    seulement à l'adhésion (voir apps.adhesions.views._exiger_piece_identite)."""
     url = reverse("accounts:register")
     payload = payload_inscription()
     del payload["cin"]
     resp = api_client.post(url, payload, format="json")
-    assert resp.status_code == 400
-    assert "cin" in resp.data["details"]
+    assert resp.status_code == 201, resp.data
+
+
+def test_registrations_historique_filtre_et_date_de_decision(api_client, rh_user):
+    """Point 5 (2026-10-06) : la liste couvre tout l'historique, filtrable par décision."""
+    from django.utils import timezone
+
+    from apps.accounts.models import RegistrationDecision
+
+    User.objects.create_user(
+        email="ok@example.de",
+        password="Password123!",
+        is_active=True,
+        email_verifie=True,
+        registration_decision=RegistrationDecision.APPROUVE,
+        registration_decided_at=timezone.now(),
+    )
+    User.objects.create_user(
+        email="refus@example.de",
+        password="Password123!",
+        email_verifie=True,
+        registration_decision=RegistrationDecision.REFUSE,
+    )
+    api_client.force_authenticate(rh_user)
+    url = reverse("accounts:pending-registrations")
+    emails = {u["email"] for u in api_client.get(url).data["results"]}
+    assert {"ok@example.de", "refus@example.de"} <= emails
+    resp = api_client.get(url, {"decision": "approuve", "tri": "-date"})
+    assert [u["email"] for u in resp.data["results"] if u["email"].endswith("example.de")] == [
+        "ok@example.de"
+    ]
+    assert resp.data["results"][0]["registration_decided_at"] is not None
 
 
 def test_register_avec_uniquement_passeport_reussit(api_client):

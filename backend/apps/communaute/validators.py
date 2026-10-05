@@ -178,3 +178,32 @@ def valider_video_hero(fichier):
 
     fichier.name = f"{uuid.uuid4()}.{extension}"
     return fichier
+
+
+# Kacheln sous le hero (demande utilisateur du 2026-10-06, point 11) : animations GIF ou images
+# fixes. PAS de ré-encodage Pillow (il casserait l'animation GIF) — sécurité par MIME réel
+# (magic bytes) + whitelist, même principe que valider_video_hero ci-dessus.
+ALLOWED_KACHEL_MIME_TYPES = {
+    "image/gif": "gif",
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/webp": "webp",
+}
+MAX_KACHEL_SIZE_BYTES = 10 * 1024 * 1024
+
+
+def valider_media_kachel(fichier):
+    if fichier.size > MAX_KACHEL_SIZE_BYTES:
+        raise serializers.ValidationError(
+            f"Fichier trop volumineux (max {MAX_KACHEL_SIZE_BYTES // (1024 * 1024)} Mo)."
+        )
+    contenu = fichier.read()
+    fichier.seek(0)
+    mime_reel = magic.from_buffer(contenu, mime=True)
+    extension = ALLOWED_KACHEL_MIME_TYPES.get(mime_reel)
+    if extension is None:
+        raise serializers.ValidationError(
+            f"Format non supporté (détecté : {mime_reel}). GIF, PNG, JPEG ou WebP uniquement."
+        )
+    fichier.name = f"{uuid.uuid4()}.{extension}"
+    return fichier

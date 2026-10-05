@@ -158,3 +158,44 @@ def test_patch_refuse_un_fichier_trop_volumineux(api_client, settings):
         assert resp.status_code == 400
     finally:
         communaute_validators.MAX_VIDEO_SIZE_BYTES = original_max
+
+
+# --- Kacheln sous le hero (demande utilisateur du 2026-10-06, point 11) -----------------------
+
+
+def _gif_upload(name="kachel.gif"):
+    import io
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (4, 4), "red").save(buffer, format="GIF")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/gif")
+
+
+def test_patch_bureau_admin_configure_une_kachel(api_client):
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-kachel@example.de")
+    resp = _auth(api_client, user).patch(
+        reverse(CONFIGURATION_SITE_URL),
+        {
+            "kachel1_active": "true",
+            "kachel1_media": _gif_upload(),
+            "kachel1_titre": "Saisonstart",
+            "kachel1_lien": "/boutique",
+            "kachel1_largeur": "pleine",
+        },
+        format="multipart",
+    )
+    assert resp.status_code == 200, resp.data
+    assert resp.data["kachel1_active"] is True
+    assert resp.data["kachel1_media"].endswith(".gif")
+    assert resp.data["kachel1_largeur"] == "pleine"
+
+
+def test_patch_kachel_refuse_un_lien_javascript(api_client):
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-kachel2@example.de")
+    resp = _auth(api_client, user).patch(
+        reverse(CONFIGURATION_SITE_URL), {"kachel2_lien": "javascript:alert(1)"}, format="multipart"
+    )
+    assert resp.status_code == 400
