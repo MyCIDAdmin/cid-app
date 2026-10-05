@@ -4,19 +4,23 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as inscriptionsApi from "../api/inscriptions";
+import type { RegistrationsFiltres } from "../types/inscription";
 
 const inscriptionsKeys = {
   all: ["inscriptions-en-attente"] as const,
   list: (pageUrl: string | null) => [...inscriptionsKeys.all, "list", pageUrl] as const,
 };
 
-export function usePendingRegistrations(pageUrl: string | null) {
+export function usePendingRegistrations(
+  pageUrl: string | null,
+  filtres: RegistrationsFiltres = {},
+) {
   return useQuery({
-    queryKey: inscriptionsKeys.list(pageUrl),
+    queryKey: [...inscriptionsKeys.list(pageUrl), filtres],
     queryFn: () =>
       pageUrl
         ? inscriptionsApi.getPendingRegistrationsPage(pageUrl)
-        : inscriptionsApi.listPendingRegistrations(),
+        : inscriptionsApi.listPendingRegistrations(filtres),
     placeholderData: keepPreviousData,
   });
 }

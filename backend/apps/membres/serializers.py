@@ -36,6 +36,9 @@ class MembreListSerializer(serializers.ModelSerializer):
     (jamais nécessaire pour un simple listing, réduit la surface d'exposition)."""
 
     cin_masque = serializers.SerializerMethodField()
+    # Point 7.2 (2026-10-06) : offre de la souscription la plus récente (payée en priorité),
+    # lue depuis le prefetch `souscriptions_recentes` de MembreViewSet.get_queryset.
+    offre_actuelle = serializers.SerializerMethodField()
 
     class Meta:
         model = Membre
@@ -51,10 +54,21 @@ class MembreListSerializer(serializers.ModelSerializer):
             "statut",
             "date_adhesion",
             "cin_masque",
+            "offre_actuelle",
         ]
 
     def get_cin_masque(self, obj):
         return _mask(obj.cin)
+
+    def get_offre_actuelle(self, obj):
+        souscriptions = getattr(obj, "souscriptions_recentes", None)
+        if souscriptions is None:
+            return None
+        payees = [s for s in souscriptions if s.statut == "payee"]
+        choisie = (payees or souscriptions or [None])[0]
+        if choisie is None:
+            return None
+        return {"nom": choisie.offre.nom, "annee": choisie.campagne.annee, "statut": choisie.statut}
 
 
 class MembreSerializer(serializers.ModelSerializer):

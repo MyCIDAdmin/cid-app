@@ -17,9 +17,14 @@ import {
   useConfigurationSitePublic,
   useEnregistrerArrierePlanModule,
   useModifierConfigurationSitePublic,
+  useModifierKachelHero,
   useSupprimerArrierePlanModule,
 } from "../../hooks/useCommunaute";
-import { MODULES_AVEC_ARRIERE_PLAN } from "../../types/communaute";
+import {
+  MODULES_AVEC_ARRIERE_PLAN,
+  type ConfigurationSitePublic,
+  type LargeurKachel,
+} from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 export default function AdminConfigurationSitePage() {
@@ -86,6 +91,7 @@ export default function AdminConfigurationSitePage() {
         </div>
       )}
 
+      {data && <KachelnHeroSection config={data} />}
       <ArrierePlansModulesSection />
     </div>
   );
@@ -231,5 +237,114 @@ function ArrierePlanModuleCard({
         )}
       </div>
     </div>
+  );
+}
+
+/** Gestion des 2 Kacheln sous le hero (demande utilisateur du 2026-10-06, point 11). */
+function KachelnHeroSection({ config }: { config: ConfigurationSitePublic }) {
+  const { t } = useTranslation("public");
+  return (
+    <section className="mt-6">
+      <h2 className="mb-1 text-base font-bold text-text-primary">{t("admin_kacheln.titre")}</h2>
+      <p className="mb-3 text-sm text-text-secondary">{t("admin_kacheln.description")}</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <KachelHeroCard index={1} config={config} />
+        <KachelHeroCard index={2} config={config} />
+      </div>
+    </section>
+  );
+}
+
+function KachelHeroCard({ index, config }: { index: 1 | 2; config: ConfigurationSitePublic }) {
+  const { t } = useTranslation("public");
+  const modifier = useModifierKachelHero();
+  const [titre, setTitre] = useState(config[`kachel${index}_titre`]);
+  const [texte, setTexte] = useState(config[`kachel${index}_texte`]);
+  const [lien, setLien] = useState(config[`kachel${index}_lien`]);
+  const [largeur, setLargeur] = useState(config[`kachel${index}_largeur`]);
+  const [active, setActive] = useState(config[`kachel${index}_active`]);
+  const [media, setMedia] = useState<File | undefined>(undefined);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+  const mediaActuel = config[`kachel${index}_media`];
+
+  function enregistrer(e: React.FormEvent) {
+    e.preventDefault();
+    setErreur(null);
+    setOk(false);
+    modifier.mutate(
+      { index, valeurs: { active, titre, texte, lien, largeur, media } },
+      {
+        onSuccess: () => {
+          setMedia(undefined);
+          setOk(true);
+        },
+        onError: (err) => setErreur(extractApiErrorMessage(err, t("admin_kacheln.erreur"))),
+      },
+    );
+  }
+
+  const champ = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm";
+  return (
+    <form onSubmit={enregistrer} className="space-y-2 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-text-primary">
+          {t("admin_kacheln.kachel", { index })}
+        </h3>
+        <label className="flex items-center gap-1 text-xs text-text-secondary">
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+          {t("admin_kacheln.active")}
+        </label>
+      </div>
+      {mediaActuel && (
+        <img src={mediaActuel} alt="" className="max-h-32 w-full rounded-cid object-contain" />
+      )}
+      <label className="block text-xs text-text-secondary">
+        {t("admin_kacheln.media")}
+        <input
+          type="file"
+          accept="image/gif,image/png,image/jpeg,image/webp"
+          onChange={(e) => setMedia(e.target.files?.[0])}
+          className="mt-1 block w-full text-xs"
+        />
+      </label>
+      <label className="block text-xs text-text-secondary">
+        {t("admin_kacheln.titre_champ")}
+        <input value={titre} onChange={(e) => setTitre(e.target.value)} className={champ} />
+      </label>
+      <label className="block text-xs text-text-secondary">
+        {t("admin_kacheln.texte")}
+        <input value={texte} onChange={(e) => setTexte(e.target.value)} className={champ} />
+      </label>
+      <label className="block text-xs text-text-secondary">
+        {t("admin_kacheln.lien")}
+        <input
+          value={lien}
+          onChange={(e) => setLien(e.target.value)}
+          placeholder="/boutique"
+          className={champ}
+        />
+      </label>
+      <label className="block text-xs text-text-secondary">
+        {t("admin_kacheln.largeur")}
+        <select
+          value={largeur}
+          onChange={(e) => setLargeur(e.target.value as LargeurKachel)}
+          className={champ}
+        >
+          <option value="demi">{t("admin_kacheln.largeur_demi")}</option>
+          <option value="pleine">{t("admin_kacheln.largeur_pleine")}</option>
+        </select>
+      </label>
+      {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
+      {ok && <p className="text-xs text-status-successText">{t("admin_kacheln.enregistre")}</p>}
+      <button
+        type="submit"
+        disabled={modifier.isPending}
+        className="rounded-cid bg-ca px-3 py-1.5 text-xs font-semibold text-white hover:bg-cad disabled:opacity-50"
+      >
+        {t("admin_kacheln.enregistrer")}
+      </button>
+    </form>
   );
 }

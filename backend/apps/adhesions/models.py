@@ -60,6 +60,15 @@ class CampagneAdhesion(models.Model):
         related_name="campagnes_creees",
         help_text=_("Membre du Bureau ayant créé la campagne (traçabilité — SCD §7)."),
     )
+    # Demande utilisateur du 2026-10-06 (point 3) : passé cette date, un membre actif de la
+    # campagne PRÉCÉDENTE sans adhésion payée dans celle-ci repasse automatiquement non-membre
+    # (tasks.basculer_membres_non_renouveles, historique conservé via HistoriqueStatutMembre).
+    date_limite_renouvellement = models.DateField(
+        null=True,
+        blank=True,
+        help_text=_("Frist für Bestandsmitglieder. Vide = aucune bascule automatique."),
+    )
+    bascule_non_renouveles_le = models.DateTimeField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

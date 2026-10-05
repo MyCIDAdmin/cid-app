@@ -268,6 +268,7 @@ class RaisonChangementStatut(models.TextChoices):
     PAIEMENT_CONFIRME = "paiement_confirme", _("Paiement confirmé")
     ECHEANCE_DEPASSEE = "echeance_depassee", _("Échéance dépassée")
     MANUEL = "manuel", _("Modification manuelle")
+    NON_RENOUVELE = "non_renouvele", _("Adhésion non renouvelée")
 
 
 class HistoriqueStatutMembre(models.Model):

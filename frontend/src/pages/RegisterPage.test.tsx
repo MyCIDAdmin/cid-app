@@ -76,7 +76,8 @@ describe("RegisterPage", () => {
   // Ajouté le 2026-09-28 (retour utilisateur, point 5 : "Ausweisnummer (CIN) kein Pflichtfeld
   // [...] aber entweder CIN oder Passnummer erforderlich") — ni CIN ni passeport n'est requis
   // isolément, mais au moins l'un des deux doit être rempli.
-  it("affiche une erreur si ni CIN ni passeport ne sont renseignés", async () => {
+  it("accepte l'inscription sans CIN ni passeport (facultatifs depuis le 2026-10-06)", async () => {
+    vi.mocked(authApi.register).mockResolvedValue(undefined);
     renderWithProviders(<RegisterPage />);
     remplirFormulaireValide();
     // remplirChampsTexte() a déjà rempli "register.cin" — on le vide à nouveau pour ce cas.
@@ -86,8 +87,7 @@ describe("RegisterPage", () => {
 
     fireEvent.click(screen.getByText("register.submit"));
 
-    expect(await screen.findByText("register.error_cin_ou_passeport_requis")).toBeInTheDocument();
-    expect(authApi.register).not.toHaveBeenCalled();
+    await waitFor(() => expect(authApi.register).toHaveBeenCalled());
   });
 
   it("accepte le formulaire avec uniquement le passeport rempli (sans CIN)", async () => {
@@ -229,7 +229,9 @@ describe("RegisterPage", () => {
 
   it("permet de renvoyer le code de confirmation", async () => {
     vi.mocked(authApi.register).mockResolvedValue(undefined);
-    vi.mocked(authApi.resendRegistrationCode).mockResolvedValue({ message: "Nouveau code envoyé." });
+    vi.mocked(authApi.resendRegistrationCode).mockResolvedValue({
+      message: "Nouveau code envoyé.",
+    });
 
     renderWithProviders(<RegisterPage />);
     remplirFormulaireValide();
@@ -238,7 +240,9 @@ describe("RegisterPage", () => {
     await screen.findByText(/confirm_message/);
     fireEvent.click(screen.getByText("register.confirm_renvoyer"));
 
-    await waitFor(() => expect(authApi.resendRegistrationCode).toHaveBeenCalledWith("nouveau@example.com"));
+    await waitFor(() =>
+      expect(authApi.resendRegistrationCode).toHaveBeenCalledWith("nouveau@example.com"),
+    );
     expect(await screen.findByText("Nouveau code envoyé.")).toBeInTheDocument();
   });
 });

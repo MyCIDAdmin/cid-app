@@ -69,9 +69,9 @@ describe("AppLayout — footer applicatif", () => {
     expect(screen.queryByTestId("public-footer-stub")).not.toBeInTheDocument();
   });
 
-  it("affiche un lien vers l'accueil portant le logo CID", () => {
+  it("n'affiche plus de logo dans l'en-tête des modules (point 8, 2026-10-06)", () => {
     renderAvecRoute("/dashboard");
-    const lien = screen.getByLabelText("action.accueil");
-    expect(lien).toHaveAttribute("href", "/");
+    // Sidebar mockée ici : le seul logo restant (Sidebar) est testé dans Sidebar.test.tsx.
+    expect(screen.queryByLabelText("action.accueil")).not.toBeInTheDocument();
   });
 });

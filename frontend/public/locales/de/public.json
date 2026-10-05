@@ -127,5 +127,28 @@
       "communaute": "Community",
       "vote": "Abstimmungen & Wahlen"
     }
+  },
+  "vorschau": {
+    "titre": "Aktuelle Mitgliedschaftskampagne",
+    "chargement": "Wird geladen…",
+    "aucune_campagne": "Derzeit ist keine Mitgliedschaftskampagne aktiv.",
+    "fermer": "Schließen",
+    "continuer": "Weiter zur Anmeldung"
+  },
+  "admin_kacheln": {
+    "titre": "Kacheln unter dem Hero-Video",
+    "description": "Zwei Kacheln für Animationen (GIF) oder Bilder auf der Startseite. Nur aktive Kacheln mit Bild werden angezeigt.",
+    "kachel": "Kachel {{index}}",
+    "active": "Aktiv",
+    "media": "GIF oder Bild (max. 10 MB)",
+    "titre_champ": "Titel",
+    "texte": "Text",
+    "lien": "Link (z.B. /boutique oder https://…)",
+    "largeur": "Breite",
+    "largeur_demi": "Halbe Seitenbreite",
+    "largeur_pleine": "Ganze Seitenbreite",
+    "erreur": "Kachel konnte nicht gespeichert werden.",
+    "enregistre": "Gespeichert.",
+    "enregistrer": "Speichern"
   }
 }

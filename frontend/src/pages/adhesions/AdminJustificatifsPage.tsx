@@ -38,6 +38,7 @@ import { useMembre } from "../../hooks/useMembres";
 import {
   useAnnulerSouscription,
   useCampagnes,
+  useHistoriqueJustificatifs,
   useJustificatifsEnAttente,
   useUploaderJustificatif,
   useValiderJustificatif,
@@ -57,7 +58,11 @@ interface JustificatifQueueRowProps {
   modifiable: boolean;
 }
 
-function JustificatifQueueRow({ souscription, campagnesById, modifiable }: JustificatifQueueRowProps) {
+function JustificatifQueueRow({
+  souscription,
+  campagnesById,
+  modifiable,
+}: JustificatifQueueRowProps) {
   const { t } = useTranslation(["adhesions", "common"]);
   const membre = useMembre(souscription.membre);
   const validerMutation = useValiderJustificatif();
@@ -114,7 +119,9 @@ function JustificatifQueueRow({ souscription, campagnesById, modifiable }: Justi
 
   return (
     <tr className="border-b border-text-tertiary/10 last:border-0 align-top">
-      <td className="px-4 py-2">{formatDate(justificatif?.created_at ?? souscription.date_souscription)}</td>
+      <td className="px-4 py-2">
+        {formatDate(justificatif?.created_at ?? souscription.date_souscription)}
+      </td>
       <td className="px-4 py-2">
         {membre.isLoading
           ? t("admin_justificatifs.chargement")
@@ -149,7 +156,10 @@ function JustificatifQueueRow({ souscription, campagnesById, modifiable }: Justi
             />
             {uploaderMutation.isError && (
               <p className="text-xs text-status-dangerText">
-                {extractApiErrorMessage(uploaderMutation.error, t("admin_justificatifs.erreur_upload"))}
+                {extractApiErrorMessage(
+                  uploaderMutation.error,
+                  t("admin_justificatifs.erreur_upload"),
+                )}
               </p>
             )}
           </div>
@@ -167,7 +177,7 @@ function JustificatifQueueRow({ souscription, campagnesById, modifiable }: Justi
                   type="button"
                   onClick={approuver}
                   disabled={validerMutation.isPending || !modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   className="rounded-cid bg-status-successText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
                 >
                   {t("admin_justificatifs.approuver")}
@@ -176,7 +186,7 @@ function JustificatifQueueRow({ souscription, campagnesById, modifiable }: Justi
                   type="button"
                   onClick={() => setRejetOuvert((cur) => !cur)}
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   className="rounded-cid px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                 >
                   {t("admin_justificatifs.rejeter")}
@@ -195,7 +205,7 @@ function JustificatifQueueRow({ souscription, campagnesById, modifiable }: Justi
                     type="button"
                     onClick={confirmerRejet}
                     disabled={!motifRejet.trim() || validerMutation.isPending || !modifiable}
-                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                    title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                     className="mt-1 rounded-cid bg-status-dangerText px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
                   >
                     {t("admin_justificatifs.confirmer_rejet")}
@@ -204,7 +214,10 @@ function JustificatifQueueRow({ souscription, campagnesById, modifiable }: Justi
               )}
               {validerMutation.isError && (
                 <p className="text-xs text-status-dangerText">
-                  {extractApiErrorMessage(validerMutation.error, t("admin_justificatifs.erreur_action"))}
+                  {extractApiErrorMessage(
+                    validerMutation.error,
+                    t("admin_justificatifs.erreur_action"),
+                  )}
                 </p>
               )}
             </>
@@ -218,7 +231,10 @@ function JustificatifQueueRow({ souscription, campagnesById, modifiable }: Justi
           </button>
           {annulerMutation.isError && (
             <p className="text-xs text-status-dangerText">
-              {extractApiErrorMessage(annulerMutation.error, t("admin_justificatifs.erreur_annulation"))}
+              {extractApiErrorMessage(
+                annulerMutation.error,
+                t("admin_justificatifs.erreur_annulation"),
+              )}
             </p>
           )}
         </div>
@@ -232,6 +248,84 @@ function JustificatifQueueRow({ souscription, campagnesById, modifiable }: Justi
         />
       </td>
     </tr>
+  );
+}
+
+/** Ligne d'historique (point 6, 2026-10-06) : dates de dépôt et de décision protocolées. */
+function JustificatifHistoriqueRow({
+  souscription,
+  campagnesById,
+}: {
+  souscription: Souscription;
+  campagnesById: Map<string, CampagneAdhesion>;
+}) {
+  const { t } = useTranslation("adhesions");
+  const membre = useMembre(souscription.membre);
+  const offre = campagnesById
+    .get(souscription.campagne)
+    ?.offres.find((o) => o.id === souscription.offre);
+  const justificatif = souscription.justificatif;
+  if (!justificatif) return null;
+  return (
+    <tr className="border-b border-text-tertiary/10 last:border-0">
+      <td className="px-4 py-2">{new Date(justificatif.created_at).toLocaleString()}</td>
+      <td className="px-4 py-2">
+        {justificatif.date_decision ? new Date(justificatif.date_decision).toLocaleString() : "—"}
+      </td>
+      <td className="px-4 py-2">
+        {membre.data ? `${membre.data.prenom} ${membre.data.nom}` : "—"}
+      </td>
+      <td className="px-4 py-2">{offre?.nom ?? "—"}</td>
+      <td className="px-4 py-2">{t(`admin_justificatifs.statut_${justificatif.statut}`)}</td>
+      <td className="px-4 py-2 text-xs text-text-tertiary">{justificatif.motif_rejet || "—"}</td>
+    </tr>
+  );
+}
+
+function HistoriqueJustificatifs({
+  campagnesById,
+}: {
+  campagnesById: Map<string, CampagneAdhesion>;
+}) {
+  const { t } = useTranslation("adhesions");
+  const historique = useHistoriqueJustificatifs();
+  const lignes = historique.data?.results ?? [];
+  return (
+    <section className="mt-6">
+      <h2 className="mb-2 text-sm font-bold text-text-primary">
+        {t("admin_justificatifs.historique_titre")}
+      </h2>
+      <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
+              <th className="px-4 py-2">{t("admin_justificatifs.col_depose_le")}</th>
+              <th className="px-4 py-2">{t("admin_justificatifs.col_decide_le")}</th>
+              <th className="px-4 py-2">{t("admin_justificatifs.col_membre")}</th>
+              <th className="px-4 py-2">{t("admin_justificatifs.col_offre")}</th>
+              <th className="px-4 py-2">{t("admin_justificatifs.col_statut")}</th>
+              <th className="px-4 py-2">{t("admin_justificatifs.col_motif")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {historique.data && lignes.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
+                  {t("admin_justificatifs.historique_vide")}
+                </td>
+              </tr>
+            )}
+            {lignes.map((s) => (
+              <JustificatifHistoriqueRow
+                key={s.id}
+                souscription={s}
+                campagnesById={campagnesById}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -308,6 +402,8 @@ export default function AdminJustificatifsPage() {
           </tbody>
         </table>
       </div>
+
+      <HistoriqueJustificatifs campagnesById={campagnesById} />
     </div>
   );
 }

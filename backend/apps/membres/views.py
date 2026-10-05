@@ -15,6 +15,7 @@ Vues API — app membres (TDD §2.4, complété AHM-51) :
                                                     ajouté le 2026-09-28), sans connaître son id
 """
 
+from django.db.models import Prefetch
 from django.db.models.deletion import ProtectedError
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as drf_filters
@@ -56,7 +57,17 @@ class MembreViewSet(ModelViewSet):
     search_fields = ["nom", "prenom", "numero_membre", "email"]
 
     def get_queryset(self):
-        queryset = Membre.objects.select_related("user").all()
+        from apps.adhesions.models import Souscription
+
+        queryset = Membre.objects.select_related("user").prefetch_related(
+            Prefetch(
+                "souscriptions",
+                queryset=Souscription.objects.select_related("offre", "campagne").order_by(
+                    "-campagne__annee", "-campagne__date_debut"
+                ),
+                to_attr="souscriptions_recentes",
+            )
+        )
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()

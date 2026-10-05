@@ -21,6 +21,8 @@ export interface MembreListItem {
   statut: StatutMembre;
   date_adhesion: string;
   cin_masque: string | null;
+  /** Point 7.2 (2026-10-06) : offre de la souscription la plus récente (payée en priorité). */
+  offre_actuelle?: { nom: string; annee: number; statut: string } | null;
 }
 
 export interface Membre {

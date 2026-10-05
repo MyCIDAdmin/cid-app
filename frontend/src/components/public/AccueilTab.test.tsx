@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -14,6 +14,9 @@ import AccueilTab from "./AccueilTab";
 vi.mock("./NextMatchTile", () => ({ default: () => <div data-testid="next-match-stub" /> }));
 vi.mock("./KennzahlenBar", () => ({ default: () => <div data-testid="kennzahlen-stub" /> }));
 vi.mock("./FanClubPreview", () => ({ default: () => <div data-testid="fanclub-stub" /> }));
+vi.mock("./MitgliedWerdenVorschau", () => ({
+  default: () => <div data-testid="vorschau-stub" />,
+}));
 
 // useConfigurationSitePublic (Phase 5, "Startseite Hero-Video", ajouté le 2026-09-27) — mocké au
 // niveau du hook plutôt qu'en stubant HeroVideo.tsx (celui-ci est purement présentationnel, voir
@@ -38,10 +41,9 @@ describe("AccueilTab", () => {
     renderWithProviders(<AccueilTab />);
 
     expect(screen.getByText("hero.titre")).toBeInTheDocument();
-    expect(screen.getByText("hero.cta_mitglied_werden").closest("a")).toHaveAttribute(
-      "href",
-      "/mon-adhesion",
-    );
+    // Point 10 (2026-10-06) : un visiteur ouvre d'abord l'aperçu de la campagne (bouton),
+    // plus un lien direct vers /mon-adhesion.
+    expect(screen.getByRole("button", { name: "hero.cta_mitglied_werden" })).toBeInTheDocument();
 
     const ids = Array.from(document.querySelectorAll("[data-testid]")).map((el) =>
       el.getAttribute("data-testid"),
@@ -55,7 +57,7 @@ describe("AccueilTab", () => {
     expect(screen.queryByTestId("membership-stub")).not.toBeInTheDocument();
   });
 
-  it("ne reprend pas la section \"Aktives Projekt\" (exclue par décision utilisateur)", () => {
+  it('ne reprend pas la section "Aktives Projekt" (exclue par décision utilisateur)', () => {
     mockConfiguration(null);
     renderWithProviders(<AccueilTab />);
     expect(screen.queryByText(/aktives projekt/i)).not.toBeInTheDocument();
@@ -78,5 +80,13 @@ describe("AccueilTab", () => {
     );
     expect(video).toHaveAttribute("loop");
     expect((video as HTMLVideoElement).muted).toBe(true);
+  });
+
+  it("ouvre l'aperçu de la campagne au clic sur 'Mitglied werden' (visiteur, point 10)", () => {
+    mockConfiguration(null);
+    renderWithProviders(<AccueilTab />);
+    expect(screen.queryByTestId("vorschau-stub")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "hero.cta_mitglied_werden" }));
+    expect(screen.getByTestId("vorschau-stub")).toBeInTheDocument();
   });
 });

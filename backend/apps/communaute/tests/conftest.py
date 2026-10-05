@@ -42,6 +42,8 @@ def _photos_storage_local(tmp_path):
         Publication._meta.get_field("image"),
         Publication._meta.get_field("document"),
         ConfigurationSitePublic._meta.get_field("video_hero"),
+        ConfigurationSitePublic._meta.get_field("kachel1_media"),
+        ConfigurationSitePublic._meta.get_field("kachel2_media"),
         EquipeLogo._meta.get_field("logo"),
         ArrierePlanModule._meta.get_field("image"),
     ]

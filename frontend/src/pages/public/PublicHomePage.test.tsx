@@ -51,14 +51,12 @@ describe("PublicHomePage", () => {
     vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue(videQuery());
   });
 
-
   it("affiche l'onglet 'accueil' par défaut avec le CTA d'adhésion", () => {
     renderWithProviders(<PublicHomePage />);
     expect(screen.getByText("hero.titre")).toBeInTheDocument();
-    expect(screen.getByText("hero.cta_mitglied_werden").closest("a")).toHaveAttribute(
-      "href",
-      "/mon-adhesion",
-    );
+    // Point 10 (2026-10-06) : un visiteur ouvre d'abord l'aperçu de la campagne (bouton),
+    // plus un lien direct vers /mon-adhesion.
+    expect(screen.getByRole("button", { name: "hero.cta_mitglied_werden" })).toBeInTheDocument();
   });
 
   // "footer.impressum" (au lieu de l'ancien "footer.rechtliches_titre", absent en variante

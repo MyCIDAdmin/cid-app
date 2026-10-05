@@ -22,19 +22,28 @@
  * demandé. MembershipSection/MembershipOffersPublic restent dans le code (testées, inchangées)
  * au cas où une future demande voudrait les remontrer ailleurs.
  */
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import FanClubPreview from "./FanClubPreview";
+import HeroKacheln from "./HeroKacheln";
 import HeroVideo from "./HeroVideo";
 import KennzahlenBar from "./KennzahlenBar";
+import MitgliedWerdenVorschau from "./MitgliedWerdenVorschau";
 import NextMatchTile from "./NextMatchTile";
 import { useConfigurationSitePublic } from "../../hooks/useCommunaute";
+import { useAuthStore } from "../../store/authStore";
 
 export default function AccueilTab() {
   const { t } = useTranslation("public");
   const { data: configuration } = useConfigurationSitePublic();
   const videoUrl = configuration?.video_hero ?? null;
+  const isAuthenticated = useAuthStore((st) => st.isAuthenticated);
+  const [vorschauOuverte, setVorschauOuverte] = useState(false);
+  const classeCta = videoUrl
+    ? "mt-6 inline-block rounded-cid bg-white px-5 py-2.5 text-sm font-semibold text-ca transition hover:bg-white/90"
+    : "mt-6 inline-block rounded-cid bg-ca px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cad";
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-16 sm:px-6">
@@ -59,24 +68,25 @@ export default function AccueilTab() {
           >
             {t("hero.titre")}
           </h1>
-          <p
-            className={`mt-3 text-base ${videoUrl ? "text-white/85" : "text-text-secondary"}`}
-          >
+          <p className={`mt-3 text-base ${videoUrl ? "text-white/85" : "text-text-secondary"}`}>
             {t("hero.sous_titre")}
           </p>
-          <Link
-            to="/mon-adhesion"
-            className={
-              videoUrl
-                ? "mt-6 inline-block rounded-cid bg-white px-5 py-2.5 text-sm font-semibold text-ca transition hover:bg-white/90"
-                : "mt-6 inline-block rounded-cid bg-ca px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cad"
-            }
-          >
-            {t("hero.cta_mitglied_werden")}
-          </Link>
+          {/* Point 10 (2026-10-06) : un visiteur voit d'abord l'aperçu de la campagne en cours,
+              puis seulement la page de connexion ; un connecté va directement à son adhésion. */}
+          {isAuthenticated ? (
+            <Link to="/mon-adhesion" className={classeCta}>
+              {t("hero.cta_mitglied_werden")}
+            </Link>
+          ) : (
+            <button type="button" onClick={() => setVorschauOuverte(true)} className={classeCta}>
+              {t("hero.cta_mitglied_werden")}
+            </button>
+          )}
         </div>
       </div>
 
+      <HeroKacheln config={configuration} />
+      {vorschauOuverte && <MitgliedWerdenVorschau onClose={() => setVorschauOuverte(false)} />}
       <NextMatchTile />
       <KennzahlenBar />
       <FanClubPreview />

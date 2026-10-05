@@ -34,6 +34,10 @@ function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
     date_fin: "2026-12-31",
     description: "",
     statut: "brouillon",
+
+    date_limite_renouvellement: null,
+
+    bascule_non_renouveles_le: null,
     created_by: "m-admin",
     created_at: "2026-01-01T00:00:00Z",
     offres: [],
@@ -41,7 +45,11 @@ function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
   };
 }
 
-function setupMutationMocks(publierMutate = vi.fn(), cloturerMutate = vi.fn(), creerMutate = vi.fn()) {
+function setupMutationMocks(
+  publierMutate = vi.fn(),
+  cloturerMutate = vi.fn(),
+  creerMutate = vi.fn(),
+) {
   vi.mocked(useAdhesionsHooks.useCreerCampagne).mockReturnValue({
     mutate: creerMutate,
     isPending: false,
@@ -128,9 +136,15 @@ describe("AdminCampagnesPage", () => {
 
     renderWithProviders(<AdminCampagnesPage />);
 
-    fireEvent.change(screen.getByLabelText("admin.nom_label"), { target: { value: "Campagne 2027" } });
-    fireEvent.change(screen.getByLabelText("admin.date_debut_label"), { target: { value: "2027-01-01" } });
-    fireEvent.change(screen.getByLabelText("admin.date_fin_label"), { target: { value: "2027-12-31" } });
+    fireEvent.change(screen.getByLabelText("admin.nom_label"), {
+      target: { value: "Campagne 2027" },
+    });
+    fireEvent.change(screen.getByLabelText("admin.date_debut_label"), {
+      target: { value: "2027-01-01" },
+    });
+    fireEvent.change(screen.getByLabelText("admin.date_fin_label"), {
+      target: { value: "2027-12-31" },
+    });
     fireEvent.click(screen.getByText("admin.creer"));
 
     expect(creerMutate).toHaveBeenCalledTimes(1);

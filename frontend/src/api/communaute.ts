@@ -769,3 +769,27 @@ export async function enregistrerArrierePlanModule(
 export async function supprimerArrierePlanModule(id: number): Promise<void> {
   await apiClient.delete(`/communaute/arriere-plans-modules/${id}/`);
 }
+
+/** Kacheln sous le hero (point 11, 2026-10-06) — PATCH partiel multipart d'une Kachel. */
+export async function modifierKachelHero(
+  index: 1 | 2,
+  valeurs: {
+    active?: boolean;
+    media?: File;
+    titre?: string;
+    texte?: string;
+    lien?: string;
+    largeur?: "pleine" | "demi";
+  },
+): Promise<ConfigurationSitePublic> {
+  const formData = new FormData();
+  Object.entries(valeurs).forEach(([cle, valeur]) => {
+    if (valeur === undefined) return;
+    formData.append(`kachel${index}_${cle}`, valeur instanceof File ? valeur : String(valeur));
+  });
+  const { data } = await apiClient.patch<ConfigurationSitePublic>(
+    "/communaute/configuration-site/",
+    formData,
+  );
+  return data;
+}

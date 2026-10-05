@@ -568,3 +568,26 @@ def test_list_comme_membre_sans_role_eleve_ne_voit_toujours_que_sa_propre_fiche(
     assert resp.status_code == 200
     assert len(resp.data["results"]) == 1
     assert resp.data["results"][0]["id"] == str(ma_fiche.id)
+
+
+def test_liste_membres_expose_l_offre_actuelle(api_client, rh_user):
+    """Point 7.2 (2026-10-06) : colonne "Angebot" de la liste des membres."""
+    from apps.adhesions.models import StatutSouscription
+    from apps.adhesions.tests.factories import (
+        CampagneAdhesionFactory,
+        OffreAdhesionFactory,
+        SouscriptionFactory,
+    )
+
+    membre = MembreFactory()
+    campagne = CampagneAdhesionFactory(annee=2040)
+    SouscriptionFactory(
+        membre=membre,
+        campagne=campagne,
+        offre=OffreAdhesionFactory(campagne=campagne, nom="Familie"),
+        statut=StatutSouscription.PAYEE,
+    )
+    api_client.force_authenticate(rh_user)
+    resp = api_client.get(reverse("membres:membre-list"))
+    ligne = next(m for m in resp.data["results"] if m["id"] == str(membre.id))
+    assert ligne["offre_actuelle"] == {"nom": "Familie", "annee": 2040, "statut": "payee"}

@@ -92,6 +92,9 @@ import type {
   Souscription,
   StatutSouscription,
 } from "../../types/adhesion";
+import CompleterProfilIdentite, {
+  estErreurProfilIncomplet,
+} from "../../components/adhesions/CompleterProfilIdentite";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
 const STATUTS_RETIRABLES: StatutSouscription[] = [
@@ -497,11 +500,14 @@ export default function MonAdhesionPage() {
                         </div>
                       )}
 
-                      {souscrireMutation.isError && (
-                        <p className="mb-2 text-xs text-status-dangerText">
-                          {extractApiErrorMessage(souscrireMutation.error, t("offres.erreur"))}
-                        </p>
-                      )}
+                      {souscrireMutation.isError &&
+                        (estErreurProfilIncomplet(souscrireMutation.error) ? (
+                          <CompleterProfilIdentite onComplete={handleSouscrire} />
+                        ) : (
+                          <p className="mb-2 text-xs text-status-dangerText">
+                            {extractApiErrorMessage(souscrireMutation.error, t("offres.erreur"))}
+                          </p>
+                        ))}
 
                       <div className="flex gap-2">
                         <button

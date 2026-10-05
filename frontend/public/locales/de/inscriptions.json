@@ -1,7 +1,7 @@
 {
   "liste": {
-    "titre": "Ausstehende Registrierungen",
-    "description": "Bestätigen oder lehnen Sie Registrierungsanfragen ab, die über die Selbstregistrierungsseite eingegangen sind.",
+    "titre": "Registrierungen",
+    "description": "Alle Registrierungen mit Status und Datum. Konten sind nach der E-Mail-Bestätigung automatisch aktiv.",
     "col_nom": "Name",
     "col_email": "E-Mail",
     "col_ville": "Stadt",
@@ -20,6 +20,23 @@
     "confirmer_refuser_titre": "Diese Registrierung ablehnen?",
     "confirmer_refuser_message": "Das Konto {{email}} bleibt deaktiviert, die Mitgliederkarte wird auf Inaktiv gesetzt.",
     "accepte_message": "Das Konto {{email}} wurde aktiviert und erscheint jetzt in der Mitgliederliste.",
-    "erreur_action": "Ein Fehler ist aufgetreten, bitte versuchen Sie es erneut."
+    "erreur_action": "Ein Fehler ist aufgetreten, bitte versuchen Sie es erneut.",
+    "filtre_recherche": "Name oder E-Mail suchen",
+    "filtre_statut": "Status",
+    "statut_tous": "Alle Status",
+    "statut_en_attente": "Ausstehend",
+    "statut_approuve": "Angenommen",
+    "statut_refuse": "Abgelehnt",
+    "filtre_du": "Von",
+    "filtre_au": "Bis",
+    "tri": "Sortierung",
+    "tri_desc_date": "Neueste zuerst",
+    "tri_date": "Älteste zuerst",
+    "tri_desc_decision_date": "Entscheidung (neueste)",
+    "tri_decision_date": "Entscheidung (älteste)",
+    "tri_email": "E-Mail A–Z",
+    "tri_desc_email": "E-Mail Z–A",
+    "col_statut": "Status",
+    "col_date_decision": "Entschieden am"
   }
 }

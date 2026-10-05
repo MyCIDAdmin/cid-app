@@ -1,8 +1,8 @@
 {
   "statut": {
-    "actif": "Aktiv",
-    "en_attente": "Ausstehend",
-    "inactif": "Inaktiv"
+    "actif": "Mitglied (aktiv)",
+    "en_attente": "Nicht-Mitglied (neu)",
+    "inactif": "Nicht-Mitglied (ehemalig)"
   },
   "sexe": {
     "homme": "Männlich",
@@ -93,7 +93,8 @@
     "precedent": "Zurück",
     "suivant": "Weiter",
     "confirmer_suppression_titre": "Mitglied löschen?",
-    "confirmer_suppression_message": "Diese Aktion ist unwiderruflich. Möchten Sie {{nom}} wirklich löschen?"
+    "confirmer_suppression_message": "Diese Aktion ist unwiderruflich. Möchten Sie {{nom}} wirklich löschen?",
+    "col_offre": "Angebot"
   },
   "fiche": {
     "retour": "Zurück zur Liste",

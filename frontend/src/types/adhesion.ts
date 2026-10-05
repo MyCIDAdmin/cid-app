@@ -77,6 +77,9 @@ export interface CampagneAdhesion {
   date_fin: string;
   description: string;
   statut: StatutCampagne;
+  /** Frist für Bestandsmitglieder (point 3, 2026-10-06) — null = pas de bascule automatique. */
+  date_limite_renouvellement: string | null;
+  bascule_non_renouveles_le: string | null;
   created_by: string;
   created_at: string;
   offres: OffreAdhesion[];
@@ -94,6 +97,7 @@ export interface CampagneCreatePayload {
   date_debut: string;
   date_fin: string;
   description?: string;
+  date_limite_renouvellement?: string | null;
 }
 
 /**

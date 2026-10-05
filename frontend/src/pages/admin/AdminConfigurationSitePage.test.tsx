@@ -17,11 +17,21 @@ vi.mock("../../hooks/useCommunaute", async () => {
   };
 });
 
-function configuration(
-  overrides: Partial<ConfigurationSitePublic> = {},
-): ConfigurationSitePublic {
+function configuration(overrides: Partial<ConfigurationSitePublic> = {}): ConfigurationSitePublic {
   return {
     video_hero: null,
+    kachel1_active: false,
+    kachel1_media: null,
+    kachel1_titre: "",
+    kachel1_texte: "",
+    kachel1_lien: "",
+    kachel1_largeur: "demi",
+    kachel2_active: false,
+    kachel2_media: null,
+    kachel2_titre: "",
+    kachel2_texte: "",
+    kachel2_lien: "",
+    kachel2_largeur: "demi",
     modifie_par: null,
     updated_at: "2026-09-27T10:00:00Z",
     ...overrides,
@@ -61,7 +71,7 @@ describe("AdminConfigurationSitePage", () => {
     expect(screen.getByText("admin_hero_video.erreur_chargement")).toBeInTheDocument();
   });
 
-  it("affiche \"aucune vidéo\" quand la configuration n'a pas encore de vidéo", () => {
+  it('affiche "aucune vidéo" quand la configuration n\'a pas encore de vidéo', () => {
     vi.mocked(useCommunauteHooks.useConfigurationSitePublic).mockReturnValue({
       data: configuration(),
       isLoading: false,
@@ -113,10 +123,13 @@ describe("AdminConfigurationSitePage", () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [fichier] } });
 
-    expect(mutate).toHaveBeenCalledWith(fichier, expect.objectContaining({ onError: expect.any(Function) }));
+    expect(mutate).toHaveBeenCalledWith(
+      fichier,
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 
-  it("affiche \"en cours\" et désactive le bouton pendant l'envoi", () => {
+  it('affiche "en cours" et désactive le bouton pendant l\'envoi', () => {
     vi.mocked(useCommunauteHooks.useConfigurationSitePublic).mockReturnValue({
       data: configuration(),
       isLoading: false,
@@ -130,7 +143,9 @@ describe("AdminConfigurationSitePage", () => {
     renderWithProviders(<AdminConfigurationSitePage />);
 
     expect(screen.getByText("admin_hero_video.televersement_en_cours")).toBeInTheDocument();
-    expect(screen.getByRole("button")).toBeDisabled();
+    expect(
+      screen.getByText("admin_hero_video.televersement_en_cours").closest("button"),
+    ).toBeDisabled();
   });
 
   it("affiche le message d'erreur renvoyé par la mutation en cas d'échec", async () => {

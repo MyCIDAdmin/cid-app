@@ -3,10 +3,15 @@
  * backend/apps/accounts/views.py::PendingRegistrationsView & co).
  */
 import { apiClient } from "./client";
-import type { PendingRegistrationsPage } from "../types/inscription";
+import type { PendingRegistrationsPage, RegistrationsFiltres } from "../types/inscription";
 
-export async function listPendingRegistrations(): Promise<PendingRegistrationsPage> {
-  const { data } = await apiClient.get<PendingRegistrationsPage>("/auth/pending-registrations/");
+export async function listPendingRegistrations(
+  filtres: RegistrationsFiltres = {},
+): Promise<PendingRegistrationsPage> {
+  const params = Object.fromEntries(Object.entries(filtres).filter(([, v]) => Boolean(v)));
+  const { data } = await apiClient.get<PendingRegistrationsPage>("/auth/pending-registrations/", {
+    params,
+  });
   return data;
 }
 

@@ -1181,3 +1181,53 @@ def test_admin_peut_souscrire_especes(api_client):
 
     assert resp.status_code == 200, resp.data
     assert resp.data["statut"] == StatutSouscription.PAYEE
+
+
+# --- Demande utilisateur du 2026-10-06 ---------------------------------------------------------
+
+
+def test_souscrire_sans_piece_identite_demande_de_completer_le_profil(api_client):
+    """Point 1.2 : CIN ou passeport requis pour devenir membre."""
+    offre = OffreAdhesionFactory(visible=True)
+    user, _membre = _user_avec_membre(Role.MEMBRE, "sans-cin@example.de", cin="", passeport=None)
+    _auth(api_client, user)
+    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    assert resp.status_code == 400
+    assert "profil_incomplet" in str(resp.data)
+
+
+def test_bascule_non_renouveles_apres_la_frist(api_client):
+    """Point 3 : membre de la campagne précédente non réinscrit -> non-membre, historique
+    conservé ; un membre réinscrit reste actif ; idempotent."""
+    from apps.adhesions.tasks import basculer_membres_non_renouveles
+    from apps.membres.models import HistoriqueStatutMembre, StatutMembre
+
+    ancienne = CampagneAdhesionFactory(annee=2030)
+    nouvelle = CampagneAdhesionFactory(
+        annee=2031, date_limite_renouvellement=datetime.date.today() - datetime.timedelta(days=1)
+    )
+    _u1, parti = _user_avec_membre(Role.MEMBRE, "parti@example.de", statut=StatutMembre.ACTIF)
+    _u2, reste = _user_avec_membre(Role.MEMBRE, "reste@example.de", statut=StatutMembre.ACTIF)
+    for membre in (parti, reste):
+        SouscriptionFactory(
+            membre=membre,
+            campagne=ancienne,
+            offre=OffreAdhesionFactory(campagne=ancienne),
+            statut=StatutSouscription.PAYEE,
+        )
+    SouscriptionFactory(
+        membre=reste,
+        campagne=nouvelle,
+        offre=OffreAdhesionFactory(campagne=nouvelle),
+        statut=StatutSouscription.PAYEE,
+    )
+
+    assert basculer_membres_non_renouveles() == 1
+    parti.refresh_from_db()
+    reste.refresh_from_db()
+    assert parti.statut == StatutMembre.INACTIF
+    assert reste.statut == StatutMembre.ACTIF
+    assert HistoriqueStatutMembre.objects.filter(
+        membre=parti, annee=2031, statut=StatutMembre.INACTIF, raison="non_renouvele"
+    ).exists()
+    assert basculer_membres_non_renouveles() == 0  # déjà traitée

@@ -126,6 +126,12 @@ describe("Sidebar — repli/dépli, groupes et navigation", () => {
     expect(screen.getByText("nav.dashboard")).toBeInTheDocument();
   });
 
+  it("le logo de la Sidebar ramène à la Startseite (point 9, 2026-10-06)", () => {
+    useUiStore.setState({ sidebarCollapsed: false });
+    renderWithProviders(<Sidebar />);
+    expect(screen.getByLabelText("action.accueil")).toHaveAttribute("href", "/");
+  });
+
   it("ouvre le flyout d'un groupe au clic, le referme au clic extérieur puis sur Échap", () => {
     useUiStore.setState({ sidebarCollapsed: true });
     renderWithProviders(<Sidebar />);
