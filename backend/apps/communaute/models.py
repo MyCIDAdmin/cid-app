@@ -232,6 +232,9 @@ class Publication(models.Model):
     )
     motif_masquage = models.CharField(max_length=255, blank=True)
 
+    # Demande utilisateur du 2026-10-05 (point 8) : badge "Wichtig" + notification (in-app et
+    # email) de tous les membres actifs, voir tasks.notifier_publication_importante.
+    important = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -7,7 +7,8 @@
     "aucune": "Aucune notification.",
     "a_instant": "à l'instant",
     "il_y_a_minutes": "il y a {{count}} min",
-    "il_y_a_heures": "il y a {{count}} h"
+    "il_y_a_heures": "il y a {{count}} h",
+    "non_lue": "Non lue"
   },
   "parametres": {
     "titre": "Notifications par email",

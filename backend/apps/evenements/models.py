@@ -114,6 +114,16 @@ class Evenement(models.Model):
         help_text=_("Ignoré (toujours 0) si gratuit=True — voir Evenement.save()."),
     )
 
+    # Demande utilisateur du 2026-10-05 (point 3) : un non-membre connecté peut participer aux
+    # événements visible_public et paie ce tarif. Vide = même tarif que `cout`.
+    cout_non_membre = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_("Tarif non-membre. Vide = identique au tarif membre (cout)."),
+    )
     # --- Begleitpersonen / accompagnants (demande utilisateur du 2026-09-25, module
     # "Veranstaltungsverwaltung" : "Begleitpersonen definieren (Anzahl, ob sie zahlen, Preis —
     # Erwachsene/Kinder mit Altersgrenze)"). Réponse à la question de clarification posée avant
@@ -199,6 +209,14 @@ class Evenement(models.Model):
 
     def __str__(self):
         return f"{self.titre} ({self.date_evenement})"
+
+    def cout_pour(self, est_membre: bool) -> Decimal:
+        """Tarif par place selon le statut (point 3, 2026-10-05) — recalculé côté serveur."""
+        if self.gratuit:
+            return Decimal("0.00")
+        if est_membre or self.cout_non_membre is None:
+            return self.cout
+        return self.cout_non_membre
 
     def save(self, *args, **kwargs):
         if self.gratuit:

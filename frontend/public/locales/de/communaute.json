@@ -27,7 +27,9 @@
     "placeholder_commentaire": "Kommentar hinzufügen…",
     "placeholder_reponse": "Antworten…",
     "envoyer": "Senden",
-    "erreur_commentaire": "Der Kommentar konnte nicht gesendet werden."
+    "erreur_commentaire": "Der Kommentar konnte nicht gesendet werden.",
+    "important_badge": "Wichtig",
+    "marquer_important": "Als wichtig markieren (Mitglieder benachrichtigen)"
   },
   "forum": {
     "titre": "Forum",

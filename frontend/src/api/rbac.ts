@@ -13,7 +13,9 @@ import type {
   RoleDefinition,
   SetMatriceCellulePayload,
   UtilisateurRolesReponse,
+  SetVisibilitePayload,
   VisibiliteEffectiveReponse,
+  VisibiliteModuleLigne,
 } from "../types/rbac";
 
 export async function creerRole(payload: CreerRolePayload): Promise<RoleDefinition> {
@@ -76,6 +78,23 @@ export async function getMesAcces(): Promise<MesAccesReponse> {
 export async function getVisibiliteEffective(): Promise<VisibiliteEffectiveReponse> {
   const { data } = await apiClient.get<VisibiliteEffectiveReponse>(
     "/rbac/visibilite-membre/effective/",
+  );
+  return data;
+}
+
+/** GET /rbac/visibilite-membre/ — Admin App uniquement (point 9, 2026-10-05). */
+export async function getVisibiliteModules(): Promise<VisibiliteModuleLigne[]> {
+  const { data } = await apiClient.get<VisibiliteModuleLigne[]>("/rbac/visibilite-membre/");
+  return data;
+}
+
+/** POST /rbac/visibilite-membre/set/ — une cellule (module × groupe). */
+export async function setVisibiliteModule(
+  payload: SetVisibilitePayload,
+): Promise<VisibiliteModuleLigne> {
+  const { data } = await apiClient.post<VisibiliteModuleLigne>(
+    "/rbac/visibilite-membre/set/",
+    payload,
   );
   return data;
 }

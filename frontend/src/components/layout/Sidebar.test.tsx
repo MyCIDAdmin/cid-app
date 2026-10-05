@@ -403,7 +403,14 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
 
   it("masque aussi les autres modules quand ils sont désactivés un par un (pas seulement 'membres')", () => {
     mockVisibiliteEffective({
-      data: { evenements: false, boutique: false, communaute: false, vote: false, projets: false },
+      data: {
+        evenements: false,
+        boutique: false,
+        communaute: false,
+        albums: false,
+        vote: false,
+        projets: false,
+      },
     });
     renderWithProviders(<Sidebar />);
 

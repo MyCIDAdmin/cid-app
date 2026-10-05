@@ -27,7 +27,9 @@
     "placeholder_commentaire": "Ajouter un commentaire…",
     "placeholder_reponse": "Répondre…",
     "envoyer": "Envoyer",
-    "erreur_commentaire": "L'envoi du commentaire a échoué."
+    "erreur_commentaire": "L'envoi du commentaire a échoué.",
+    "important_badge": "Important",
+    "marquer_important": "Marquer comme important (notifier les membres)"
   },
   "forum": {
     "titre": "Forum",

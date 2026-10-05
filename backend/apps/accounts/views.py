@@ -299,24 +299,20 @@ class RegisterConfirmView(APIView):
         ):
             raise ValidationError("Code invalide ou expiré.")
 
+        # Demande utilisateur du 2026-10-05 (point 2) : plus de validation RH/Admin de
+        # l'inscription — l'email confirmé suffit pour se connecter. Le compte reste un
+        # "non-membre" (fiche Membre EN_ATTENTE) tant que son adhésion n'est pas approuvée ET
+        # payée (voir apps.cotisations.notifications.notifier_paiement_confirme).
         user.email_verifie = True
-        user.save(update_fields=["email_verifie"])
-        # Ancien message "bienvenue" (send_welcome_email) : désormais exact
-        # uniquement après confirmation de l'email — c'est ici, pas à
-        # l'inscription, que la demande devient visible par RH (AHM-48).
+        if user.registration_decision == RegistrationDecision.EN_ATTENTE:
+            user.is_active = True
+            user.registration_decision = RegistrationDecision.APPROUVE
+        user.save(update_fields=["email_verifie", "is_active", "registration_decision"])
         send_welcome_email.delay(str(user.id))
-        # Notification staff (ajoutée le 2026-09-16) — même instant précis que ci-dessus :
-        # c'est bien maintenant que la demande devient visible par RH sur /inscriptions.
+        # Notification staff conservée (information, plus aucune action requise).
         notifier_nouvelle_inscription_rh.delay(str(user.id))
         services.log_audit_event("email_verified", user=user, ip_address=_client_ip(request))
-        return Response(
-            {
-                "message": (
-                    "Email confirmé. Votre inscription doit maintenant être validée par un "
-                    "administrateur."
-                )
-            }
-        )
+        return Response({"message": "Email confirmé. Vous pouvez maintenant vous connecter."})
 
 
 class RegisterResendCodeView(APIView):

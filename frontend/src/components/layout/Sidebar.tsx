@@ -64,6 +64,7 @@ import {
   IconHelpCircle,
   IconIdBadge,
   IconIdBadge2,
+  IconHome,
   IconLayoutDashboard,
   IconMail,
   IconMailCog,
@@ -149,6 +150,9 @@ const GROUP_ICONS: Record<SidebarGroupKey, NavIcon> = {
 
 // eslint-disable-next-line react-refresh/only-export-components -- voir commentaire GROUP_ORDER
 export const NAV_ITEMS: NavItem[] = [
+  // Startseite (point 1.2, 2026-10-05) : un utilisateur connecté reste sur "/" (AccueilTab dans
+  // l'AppLayout, voir HomeRoute.tsx) — entrée de menu pour y revenir.
+  { to: "/", labelKey: "nav.startseite", icon: IconHome, group: "general" },
   { to: "/dashboard", labelKey: "nav.dashboard", icon: IconLayoutDashboard, group: "general" },
   // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
   // voit que sa propre fiche), inutile de dupliquer cette règle ici.
@@ -255,7 +259,10 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.albums",
     icon: IconPhoto,
     group: "contenu",
-    module: "communaute",
+    // Clé de visibilité propre (point 9, 2026-10-05) : les Fotoalben doivent pouvoir être
+    // montrés à un non-membre sans ouvrir le reste de la communauté — voir
+    // apps.rbac.registry.VISIBILITE_KEYS.
+    module: "albums",
   },
   {
     to: "/quiz",

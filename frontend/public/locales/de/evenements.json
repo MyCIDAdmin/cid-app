@@ -132,6 +132,10 @@
     "erreur_annulation": "Veranstaltung konnte nicht abgesagt werden.",
     "modifier": "Bearbeiten",
     "publier": "Veröffentlichen",
-    "annuler_evenement": "Veranstaltung absagen"
-  }
+    "annuler_evenement": "Veranstaltung absagen",
+    "champ_cout_non_membre": "Preis Nicht-Mitglieder (€)",
+    "champ_cout_non_membre_placeholder": "Leer = gleicher Preis"
+  },
+  "nur_fuer_mitglieder": "Nur für Mitglieder",
+  "reserve_membres_info": "Diese Veranstaltung ist nur für aktive Mitglieder."
 }

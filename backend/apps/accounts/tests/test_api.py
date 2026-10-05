@@ -399,6 +399,11 @@ def test_register_confirm_avec_code_valide_active_email_verifie(api_client):
     assert resp.status_code == 200
     user.refresh_from_db()
     assert user.email_verifie is True
+    # Point 2 (2026-10-05) : plus de validation RH — connexion possible immédiatement, mais
+    # la fiche Membre reste EN_ATTENTE (non-membre) jusqu'à l'adhésion payée.
+    assert user.is_active is True
+    assert user.registration_decision == "approuve"
+    assert user.membre.statut == "en_attente"
 
 
 def test_register_confirm_avec_code_invalide_echoue(api_client):

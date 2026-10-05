@@ -830,9 +830,9 @@ def test_marquer_payee_dune_cotisation_annuelle_reactive_le_membre(api_client):
     assert historique.raison == RaisonChangementStatut.PAIEMENT_CONFIRME
 
 
-def test_marquer_payee_dune_adhesion_ne_touche_pas_le_statut_du_membre(api_client):
-    # Frais d'adhésion ponctuel (type_article=adhesion) — jamais concerné par la réactivation
-    # automatique, réservée à la cotisation annuelle (Mitgliederbeitrag).
+def test_marquer_payee_dune_adhesion_active_le_membre(api_client):
+    # Demande utilisateur du 2026-10-05 (point 4) : adhésion approuvée et payée -> le compte
+    # devient immédiatement membre actif (remplace l'ancien comportement "statut inchangé").
     from apps.membres.models import HistoriqueStatutMembre, StatutMembre
 
     user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg4@example.de")
@@ -854,8 +854,10 @@ def test_marquer_payee_dune_adhesion_ne_touche_pas_le_statut_du_membre(api_clien
     assert resp.status_code == 200, resp.data
 
     membre_paye.refresh_from_db()
-    assert membre_paye.statut == StatutMembre.INACTIF
-    assert not HistoriqueStatutMembre.objects.filter(membre=membre_paye, annee=2027).exists()
+    assert membre_paye.statut == StatutMembre.ACTIF
+    assert HistoriqueStatutMembre.objects.filter(
+        membre=membre_paye, statut=StatutMembre.ACTIF
+    ).exists()
 
 
 def test_marquer_payee_dune_souscription_dadhesion_marque_la_souscription_payee(api_client):

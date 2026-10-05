@@ -416,20 +416,24 @@ export default function MonAdhesionPage() {
                       src={offre.icone}
                       alt=""
                       aria-hidden="true"
-                      className="mb-2 h-10 w-10 rounded-cid object-cover"
+                      className="mx-auto mb-2 h-10 w-10 rounded-cid object-cover"
                     />
                   )}
-                  <div className="text-sm font-semibold uppercase tracking-wide text-text-tertiary">
+                  <div className="text-center text-sm font-semibold uppercase tracking-wide text-text-tertiary">
                     {offre.nom}
                   </div>
-                  <div className="mt-2 font-display text-3xl font-bold text-text-primary">
+                  <div className="mt-2 text-center font-display text-3xl font-bold text-text-primary">
                     {formatMontant(offre.prix_plein)}
                   </div>
                   {offre.description && (
-                    <p className="mt-2 text-sm text-text-secondary">{offre.description}</p>
+                    <p className="mt-2 text-center text-sm text-text-secondary">
+                      {offre.description}
+                    </p>
                   )}
                   {texteConditionAge && (
-                    <p className="mt-1 text-[11px] text-text-tertiary">{texteConditionAge}</p>
+                    <p className="mt-1 text-center text-[11px] text-text-tertiary">
+                      {texteConditionAge}
+                    </p>
                   )}
 
                   {avantagesOffre.length > 0 && (

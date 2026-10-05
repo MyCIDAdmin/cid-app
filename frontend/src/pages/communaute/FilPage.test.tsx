@@ -72,6 +72,7 @@ function publication(overrides: Partial<Publication> = {}): Publication {
     image: null,
     document: null,
     hashtags: [],
+    important: false,
     est_masquee: false,
     motif_masquage: "",
     created_at: "2026-01-01T10:00:00Z",
@@ -392,7 +393,7 @@ describe("FilPage", () => {
     fireEvent.click(screen.getByText("fil.publier"));
 
     expect(creer.mutate).toHaveBeenCalledWith(
-      { contenu: "Nouvelle actu", image: undefined, document: undefined },
+      { contenu: "Nouvelle actu", image: undefined, document: undefined, important: false },
       expect.anything(),
     );
   });

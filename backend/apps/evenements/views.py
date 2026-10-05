@@ -38,8 +38,9 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.models import HistoriqueStatutCotisation, ModePaiement, StatutCotisation
 from apps.cotisations.notifications import notifier_paiement_confirme
 from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
+from apps.membres.models import StatutMembre
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import is_elevated_for_module
+from apps.rbac.services import est_membre_actif, is_elevated_for_module
 
 from .filters import CovoiturageFilter, EvenementFilter, InscriptionFilter
 from .models import (
@@ -99,11 +100,10 @@ class EvenementViewSet(ModelViewSet):
         ):
             return queryset
         queryset = queryset.filter(statut=StatutEvenement.PUBLIE)
-        if not user or not user.is_authenticated:
-            # Visiteur anonyme (page d'accueil publique, demande utilisateur 2026-09-26) :
-            # en plus de PUBLIE, seuls les événements explicitement ouverts aux non-membres
-            # sont renvoyés — voir Evenement.visible_public et EvenementPermission.
-            return queryset.filter(visible_public=True)
+        # Demande utilisateur du 2026-10-05 (point 1.1) : un visiteur anonyme voit désormais
+        # AUSSI les événements réservés aux membres, en affichage seul (badge "Nur für
+        # Mitglieder", bouton désactivé) — voir EvenementSerializer.reserve_membres. L'inscription
+        # reste bloquée côté serveur dans _inscrire_avec_capacite_verifiee.
         return queryset
 
     def perform_create(self, serializer):
@@ -164,6 +164,18 @@ class EvenementViewSet(ModelViewSet):
                 raise ValidationError(
                     {"evenement": "Cet événement n'est pas ouvert aux inscriptions."}
                 )
+            # Point 3 (2026-10-05) : un non-membre ne participe qu'aux événements visible_public,
+            # au tarif non-membre.
+            user_membre = getattr(membre, "user", None)
+            est_membre = (
+                est_membre_actif(user_membre)
+                if user_membre is not None
+                else membre.statut == StatutMembre.ACTIF
+            )
+            if not est_membre and not evenement.visible_public:
+                raise ValidationError(
+                    {"evenement": "Cet événement est réservé aux membres actifs."}
+                )
 
             inscription, created = Inscription.objects.get_or_create(
                 evenement=evenement,
@@ -202,7 +214,8 @@ class EvenementViewSet(ModelViewSet):
             # inscription.montant_accompagnants lit evenement.accompagnants_payants (déjà
             # verrouillé ci-dessus) — jamais fait confiance au frontend (CLAUDE.md §8).
             inscription.montant_paye = (
-                evenement.cout * places_demandees + inscription.montant_accompagnants
+                evenement.cout_pour(est_membre) * places_demandees
+                + inscription.montant_accompagnants
             )
             # Le statut dépend désormais du montant total dû (membre + accompagnants), pas
             # seulement de evenement.gratuit/cout : un événement gratuit pour le membre peut

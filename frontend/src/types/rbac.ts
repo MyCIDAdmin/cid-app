@@ -120,3 +120,19 @@ export interface UtilisateurRolesReponse {
  * voir docstring du modèle backend).
  */
 export type VisibiliteEffectiveReponse = Record<string, boolean>;
+
+/** Ligne de GET /rbac/visibilite-membre/ (point 9, 2026-10-05) — 2 colonnes : membre actif /
+ * compte connecté non-membre. */
+export interface VisibiliteModuleLigne {
+  module: string;
+  visible: boolean;
+  visible_non_membre: boolean;
+}
+
+export type GroupeVisibilite = "membre" | "non_membre";
+
+export interface SetVisibilitePayload {
+  module: string;
+  visible: boolean;
+  groupe: GroupeVisibilite;
+}

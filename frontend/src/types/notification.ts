@@ -39,7 +39,8 @@ export type TypeNotification =
   // backend (voir apps.communaute.notifications.notifier_mentions) : NotificationBell.tsx les
   // affiche telles quelles, sans mapping icône/libellé par type côté frontend (aucun des
   // types existants n'en a un).
-  | "communaute_mention";
+  | "communaute_mention"
+  | "communaute_info_importante";
 
 export interface Notification {
   id: string;

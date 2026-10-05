@@ -96,6 +96,10 @@ class TypeNotification(models.TextChoices):
     MEMBRE_STATUT_INACTIF = "membre_statut_inactif", _("Statut de membre désactivé")
     BOUTIQUE_BON_ACHAT_ACTIF = "boutique_bon_achat_actif", _("Bon d'achat prêt à l'emploi")
     COMMUNAUTE_MENTION = "communaute_mention", _("Vous avez été mentionné·e")
+    COMMUNAUTE_PUBLICATION_IMPORTANTE = (
+        "communaute_info_importante",
+        _("Neuigkeit importante"),
+    )
 
 
 class Notification(models.Model):

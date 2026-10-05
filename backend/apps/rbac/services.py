@@ -145,3 +145,47 @@ def has_admin_page_access(user, page_slug: str, required: str = NiveauAcces.LECT
     ligne pour ce rôle — défense en profondeur, cette fonction resterait sûre de toute façon."""
     niveau = get_admin_page_niveau(user, page_slug)
     return _NIVEAUX_ORDONNES[niveau] >= _NIVEAUX_ORDONNES[required]
+
+
+def est_membre_actif(user) -> bool:
+    """Point 3/4 (2026-10-05) : un compte "membre" n'est traité comme Mitglied que si sa fiche
+    Membre est ACTIVE (adhésion approuvée + payée). Un rôle supérieur (RH et au-delà) est
+    toujours traité comme membre — il gère l'association, jamais restreint par cette règle."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.role != Role.MEMBRE:
+        return True
+    from apps.membres.models import StatutMembre
+
+    membre = getattr(user, "membre", None)
+    return membre is not None and membre.statut == StatutMembre.ACTIF
+
+
+def visibilite_lignes() -> list[dict]:
+    """Les 2 colonnes de visibilité, complétées par défaut pour chaque clé de
+    registry.VISIBILITE_KEYS (voir ModuleVisibiliteMembre)."""
+    from .models import ModuleVisibiliteMembre
+    from .registry import VISIBILITE_KEYS, VISIBILITE_NON_MEMBRE_DEFAUT
+
+    existantes = {v.module: v for v in ModuleVisibiliteMembre.objects.all()}
+    lignes = []
+    for cle in VISIBILITE_KEYS:
+        ligne = existantes.get(cle)
+        non_membre = ligne.visible_non_membre if ligne is not None else None
+        lignes.append(
+            {
+                "module": cle,
+                "visible": ligne.visible if ligne is not None else True,
+                "visible_non_membre": (
+                    cle in VISIBILITE_NON_MEMBRE_DEFAUT if non_membre is None else non_membre
+                ),
+            }
+        )
+    return lignes
+
+
+def visibilite_effective(user) -> dict[str, bool]:
+    """Colonne applicable à `user` : "membre" si membre actif, "non-membre" sinon. Un rôle
+    supérieur ne passe jamais par ce filtre côté frontend (voir Sidebar.moduleEstVisible)."""
+    colonne = "visible" if est_membre_actif(user) else "visible_non_membre"
+    return {ligne["module"]: ligne[colonne] for ligne in visibilite_lignes()}

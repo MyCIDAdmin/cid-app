@@ -42,6 +42,9 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     places_max: 20,
     gratuit: true,
     cout: "0.00",
+    cout_non_membre: null,
+    cout_applicable: "0.00",
+    reserve_membres: false,
     accompagnants_payants: false,
     prix_accompagnant_adulte: "0.00",
     prix_accompagnant_enfant: "0.00",
@@ -89,9 +92,7 @@ describe("PublicEvenementsTab", () => {
   // description_html), pas l'afficher tel quel en tant que texte brut avec les balises visibles.
   it("rend la description au format HTML sur la kachel, sans afficher les balises", () => {
     vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
-      data: page([
-        evenement({ description: "<p>Départ à <strong>8h</strong> précises.</p>" }),
-      ]),
+      data: page([evenement({ description: "<p>Départ à <strong>8h</strong> précises.</p>" })]),
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
@@ -115,6 +116,19 @@ describe("PublicEvenementsTab", () => {
     expect(screen.getByText("Sortie supporters").closest("div")).toHaveStyle(
       "background-image: url(https://cdn.example.de/evenements/kachel.jpg)",
     );
+  });
+
+  it("affiche un événement réservé aux membres avec badge et bouton désactivé (anonyme)", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement({ reserve_membres: true })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<PublicEvenementsTab />);
+    const badges = screen.getAllByText("nur_fuer_mitglieder");
+    expect(badges.length).toBe(2); // badge + libellé du bouton
+    expect(screen.getByRole("button", { name: "nur_fuer_mitglieder" })).toBeDisabled();
   });
 
   it("garde le dégradé de repli tant qu'aucune image n'est téléversée", () => {
@@ -144,7 +158,7 @@ describe("PublicEvenementsTab", () => {
     expect(navigateMock).not.toHaveBeenCalledWith("/login");
   });
 
-  it("affiche une invite de connexion sur \"Meine Anmeldungen\" pour un visiteur anonyme", () => {
+  it('affiche une invite de connexion sur "Meine Anmeldungen" pour un visiteur anonyme', () => {
     renderWithProviders(<PublicEvenementsTab />);
     fireEvent.click(screen.getByText("tab_inscrits"));
 
@@ -152,7 +166,7 @@ describe("PublicEvenementsTab", () => {
     expect(screen.queryByText("aucune_inscription")).not.toBeInTheDocument();
   });
 
-  it("affiche les vraies inscriptions sur \"Meine Anmeldungen\" pour un utilisateur authentifié", () => {
+  it('affiche les vraies inscriptions sur "Meine Anmeldungen" pour un utilisateur authentifié', () => {
     useAuthStore.setState({
       isAuthenticated: true,
       user: { id: "u1", email: "m@example.com", role: "membre", langue_preferee: "fr" },
@@ -161,8 +175,6 @@ describe("PublicEvenementsTab", () => {
     fireEvent.click(screen.getByText("tab_inscrits"));
 
     expect(screen.getByText("aucune_inscription")).toBeInTheDocument();
-    expect(
-      screen.queryByText("evenements_public.connexion_requise_titre"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("evenements_public.connexion_requise_titre")).not.toBeInTheDocument();
   });
 });

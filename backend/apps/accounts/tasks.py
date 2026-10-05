@@ -75,9 +75,9 @@ def send_welcome_email(user_id):
     send_mail(
         subject="Bienvenue sur la plateforme CID",
         message=(
-            "Votre inscription a bien été enregistrée. Un membre du bureau "
-            "ou des RH doit valider votre compte avant que vous puissiez "
-            "vous connecter."
+            "Votre inscription a bien été enregistrée et votre compte est actif : "
+            "vous pouvez vous connecter dès maintenant. Pour profiter de tous les "
+            "avantages membres, demandez votre adhésion dans « Mon adhésion »."
         ),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[user.email],

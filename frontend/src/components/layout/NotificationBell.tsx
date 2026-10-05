@@ -99,12 +99,32 @@ export default function NotificationBell() {
                 key={notification.id}
                 type="button"
                 onClick={() => handleClicNotification(notification)}
-                className={`block w-full border-b border-text-tertiary/10 px-3 py-2 text-left last:border-0 hover:bg-bg-tertiary ${
-                  notification.lu ? "" : "bg-cal/20"
+                // Point 6 (2026-10-05) : non-lue nettement marquée (liseré rouge, pastille,
+                // texte gras) ; lue atténuée.
+                className={`block w-full border-b border-l-4 border-b-text-tertiary/10 px-3 py-2 text-left last:border-b-0 hover:bg-bg-tertiary ${
+                  notification.lu ? "border-l-transparent opacity-70" : "border-l-ca bg-cal/30"
                 }`}
               >
-                <div className="text-xs font-semibold text-text-primary">{notification.titre}</div>
-                <div className="text-xs text-text-secondary">{notification.message}</div>
+                <div
+                  className={`flex items-center gap-1.5 text-xs text-text-primary ${
+                    notification.lu ? "font-medium" : "font-bold"
+                  }`}
+                >
+                  {!notification.lu && (
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full bg-ca"
+                      aria-label={t("cloche.non_lue")}
+                    />
+                  )}
+                  {notification.titre}
+                </div>
+                <div
+                  className={`text-xs ${
+                    notification.lu ? "text-text-tertiary" : "font-semibold text-text-primary"
+                  }`}
+                >
+                  {notification.message}
+                </div>
                 <div className="mt-0.5 text-[10px] text-text-tertiary">
                   {formatRelatif(notification.created_at, t)}
                 </div>

@@ -38,6 +38,12 @@ export interface Evenement {
   places_max: number | null;
   gratuit: boolean;
   cout: string;
+  /** Tarif non-membre (point 3, 2026-10-05) — null = identique à `cout`. */
+  cout_non_membre: string | null;
+  /** Tarif par place applicable à l'utilisateur courant, calculé côté serveur. */
+  cout_applicable: string;
+  /** Événement non ouvert aux non-membres (point 1.1) : affichage seul + badge. */
+  reserve_membres: boolean;
   /** Begleitpersonen (module "Veranstaltungsverwaltung", 2026-09-25) — indépendant de
    * gratuit/cout : un événement gratuit pour le membre peut tout de même facturer ses
    * accompagnants, et inversement. */
@@ -75,6 +81,7 @@ export interface EvenementPayload {
   places_max?: number | null;
   gratuit?: boolean;
   cout?: string;
+  cout_non_membre?: string | null;
   accompagnants_payants?: boolean;
   prix_accompagnant_adulte?: string;
   prix_accompagnant_enfant?: string;

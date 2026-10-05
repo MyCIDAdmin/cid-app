@@ -132,6 +132,10 @@
     "erreur_annulation": "Impossible d'annuler l'évènement.",
     "modifier": "Modifier",
     "publier": "Publier",
-    "annuler_evenement": "Annuler l'évènement"
-  }
+    "annuler_evenement": "Annuler l'évènement",
+    "champ_cout_non_membre": "Tarif non-membre (€)",
+    "champ_cout_non_membre_placeholder": "Vide = même tarif"
+  },
+  "nur_fuer_mitglieder": "Réservé aux membres",
+  "reserve_membres_info": "Cet événement est réservé aux membres actifs."
 }

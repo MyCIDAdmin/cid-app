@@ -29,7 +29,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const loginSuccess = useAuthStore((s) => s.loginSuccess);
-  const destination = (location.state as LocationState | null)?.from?.pathname || "/dashboard";
+  const destination = (location.state as LocationState | null)?.from?.pathname || "/";
 
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");
