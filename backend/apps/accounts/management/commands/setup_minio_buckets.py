@@ -36,6 +36,19 @@ d'accès sans droit d'admin bucket) est journalisée mais n'interrompt ni les au
 le démarrage du backend — seuls l'upload/l'affichage de fichiers en dépendent, pas le reste de
 l'application.
 
+Cas "MinIO injoignable" (incident de déploiement Railway : minio.railway.internal ne résolvait
+pas au démarrage) : botocore lève alors EndpointConnectionError / ConnectTimeoutError, qui
+héritent de BotoCoreError et NON de ClientError — ils n'étaient donc pas interceptés, la
+commande sortait en erreur et la chaîne `&&` du CMD de Dockerfile.prod s'arrêtait avant
+`daphne` : aucun serveur web, tous les healthchecks /health/ en échec. Désormais :
+- toute BotoCoreError est journalisée et la commande se termine avec le code 0 ;
+- dès la première erreur de connexion, les buckets restants sont sautés (inutile de payer un
+  timeout par bucket) ;
+- timeouts de connexion courts et nombre de tentatives réduit, pour que le démarrage reste
+  bien sous le healthcheckTimeout de railway.toml même quand MinIO ne répond pas ;
+- filet de sécurité final : toute autre exception inattendue est journalisée, jamais propagée.
+Les buckets seront (re)configurés au prochain démarrage où MinIO est joignable.
+
 Usage : python manage.py setup_minio_buckets
 """
 
@@ -43,7 +56,7 @@ import json
 
 import boto3
 from botocore.client import Config
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -63,6 +76,13 @@ BUCKETS_PRIVES = [
     settings.MINIO_BUCKET_JUSTIFICATIFS,
     settings.MINIO_BUCKET_EXPORTS,
 ]
+
+
+# Timeouts courts : sans eux, botocore attend 60 s par tentative de connexion (et réessaie),
+# soit plusieurs minutes de blocage au démarrage si MinIO est injoignable.
+CONNECT_TIMEOUT_S = 5
+READ_TIMEOUT_S = 10
+MAX_TENTATIVES = 2
 
 
 def politique_lecture_publique(bucket_name: str) -> str:
@@ -85,25 +105,58 @@ class Command(BaseCommand):
     help = "Crée les buckets MinIO manquants et (re)configure leur politique publique/privée."
 
     def handle(self, *args, **options):
-        client = boto3.client(
-            "s3",
-            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            config=Config(
-                signature_version="s3v4",
-                s3={"addressing_style": settings.AWS_S3_ADDRESSING_STYLE},
-            ),
+        # Voir docstring de tête : cette commande ne doit JAMAIS faire échouer le démarrage.
+        try:
+            self._configurer_tous_les_buckets()
+        except Exception as err:  # noqa: BLE001 — filet de sécurité volontaire
+            self.stderr.write(
+                self.style.WARNING(
+                    f"setup_minio_buckets : erreur inattendue ({type(err).__name__}: {err}) — "
+                    "ignorée, le backend démarre quand même."
+                )
+            )
+
+    def _configurer_tous_les_buckets(self):
+        try:
+            client = boto3.client(
+                "s3",
+                endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                config=Config(
+                    signature_version="s3v4",
+                    s3={"addressing_style": settings.AWS_S3_ADDRESSING_STYLE},
+                    connect_timeout=CONNECT_TIMEOUT_S,
+                    read_timeout=READ_TIMEOUT_S,
+                    retries={"max_attempts": MAX_TENTATIVES, "mode": "standard"},
+                ),
+            )
+        except (BotoCoreError, ValueError) as err:
+            # ValueError : endpoint_url invalide/vide (variable d'environnement absente).
+            self._avertir_minio_indisponible(err)
+            return
+
+        buckets = [(nom, True) for nom in BUCKETS_PUBLICS] + [
+            (nom, False) for nom in BUCKETS_PRIVES
+        ]
+        for bucket_name, public in buckets:
+            if not self._configurer(client, bucket_name, public=public):
+                # MinIO injoignable : inutile d'attendre un timeout par bucket restant.
+                return
+
+    def _avertir_minio_indisponible(self, err):
+        self.stderr.write(
+            self.style.WARNING(
+                f"setup_minio_buckets : MinIO injoignable ({type(err).__name__}: {err}) — "
+                "configuration des buckets sautée, le backend démarre quand même. "
+                "Elle sera refaite au prochain démarrage."
+            )
         )
 
-        for bucket_name in BUCKETS_PUBLICS:
-            self._configurer(client, bucket_name, public=True)
-        for bucket_name in BUCKETS_PRIVES:
-            self._configurer(client, bucket_name, public=False)
-
     def _configurer(self, client, bucket_name, *, public):
+        """Retourne False si MinIO est injoignable (arrêter la boucle), True sinon."""
         if not bucket_name:
-            return
+            return True
         try:
             self._creer_bucket_si_absent(client, bucket_name)
             if public:
@@ -117,10 +170,15 @@ class Command(BaseCommand):
             self.stderr.write(
                 self.style.WARNING(f"  {bucket_name} : {err} — ignoré, à vérifier manuellement.")
             )
-            return
+            return True
+        except BotoCoreError as err:
+            # EndpointConnectionError, ConnectTimeoutError, NoCredentialsError, …
+            self._avertir_minio_indisponible(err)
+            return False
         self.stdout.write(
             self.style.SUCCESS(f"  {bucket_name} : OK ({'public' if public else 'privé'})")
         )
+        return True
 
     def _creer_bucket_si_absent(self, client, bucket_name):
         try:
