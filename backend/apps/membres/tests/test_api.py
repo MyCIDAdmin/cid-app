@@ -13,7 +13,8 @@ from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.membres.models import StatutMembre
+from apps.adhesions.tests.factories import SouscriptionFactory
+from apps.membres.models import Membre, StatutMembre
 from apps.membres.tests.factories import MembreFactory
 
 pytestmark = pytest.mark.django_db
@@ -425,6 +426,15 @@ def test_destroy_comme_bureau_admin_ok(api_client, bureau_admin_user):
     _auth(api_client, bureau_admin_user)
     resp = api_client.delete(reverse("membres:membre-detail", args=[membre.id]))
     assert resp.status_code == 204
+
+
+def test_destroy_membre_avec_souscription_409(api_client, bureau_admin_user):
+    souscription = SouscriptionFactory()
+    membre = souscription.membre
+    _auth(api_client, bureau_admin_user)
+    resp = api_client.delete(reverse("membres:membre-detail", args=[membre.id]))
+    assert resp.status_code == 409
+    assert Membre.objects.filter(id=membre.id).exists()
 
 
 # --- Action changer_statut (RH+) ---

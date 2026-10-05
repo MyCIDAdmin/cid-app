@@ -1,5 +1,5 @@
 import { screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
@@ -69,10 +69,25 @@ describe("NextMatchTile", () => {
     expect(screen.queryByText("Club Africain — Loin")).not.toBeInTheDocument();
   });
 
-  it("affiche « aujourd'hui » quand la rencontre a lieu le jour même", () => {
-    const dansUneHeure = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    mockRencontres([rencontre({ date_heure: dansUneHeure })]);
-    renderWithProviders(<NextMatchTile />);
-    expect(screen.getByText("nextMatch.aujourdhui")).toBeInTheDocument();
+  describe("avec horloge figée", () => {
+    // joursAvant() (NextMatchTile.tsx) calcule le jour civil via l'heure système locale du
+    // process — UTC sur les runners CI. Un "new Date(Date.now() + 1h)" avec l'horloge réelle
+    // est donc flaky tout près de minuit UTC (le calcul retombe alors sur le jour suivant) :
+    // on fige l'horloge sur un instant loin de tout minuit avant de calculer la rencontre.
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-06-15T12:00:00.000Z"));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("affiche « aujourd'hui » quand la rencontre a lieu le jour même", () => {
+      const dansUneHeure = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      mockRencontres([rencontre({ date_heure: dansUneHeure })]);
+      renderWithProviders(<NextMatchTile />);
+      expect(screen.getByText("nextMatch.aujourdhui")).toBeInTheDocument();
+    });
   });
 });

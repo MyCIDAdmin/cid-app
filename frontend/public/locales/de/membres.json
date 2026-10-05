@@ -109,7 +109,8 @@
     "confirmer_suppression_titre": "Mitglied löschen?",
     "confirmer_suppression_message": "Diese Aktion ist unwiderruflich. Möchten Sie {{nom}} wirklich löschen?",
     "erreur_statut": "Statusänderung fehlgeschlagen.",
-    "erreur_chargement": "Diese Mitgliederkarte konnte nicht geladen werden."
+    "erreur_chargement": "Diese Mitgliederkarte konnte nicht geladen werden.",
+    "erreur_suppression": "Löschen fehlgeschlagen."
   },
   "formulaire": {
     "titre_creer": "Mitglied hinzufügen",

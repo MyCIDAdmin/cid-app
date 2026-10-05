@@ -59,6 +59,20 @@
     "col_statut": "Statut",
     "col_date": "Date"
   },
+  "historique_statut": {
+    "titre": "Statut associatif par année",
+    "chargement": "Chargement…",
+    "erreur": "Impossible de charger l'historique.",
+    "aucun": "Aucun historique de statut par année pour le moment.",
+    "col_annee": "Année",
+    "col_statut": "Statut",
+    "col_date": "Date",
+    "statut": {
+      "actif": "Actif",
+      "en_attente": "En attente",
+      "inactif": "Inactif"
+    }
+  },
   "justificatif": {
     "titre": "Justificatif requis pour votre rabais",
     "fichier_label": "Fichier justificatif",

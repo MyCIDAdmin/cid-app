@@ -102,6 +102,19 @@ export interface ResultatImportHistorique {
   erreurs: LigneErreurImport[];
 }
 
+/** Ligne renvoyée par GET /membres/mon-historique/ (ajouté le 2026-09-29, voir
+ * history_views.HistoriqueStatutMembreSerializer côté backend) — une entrée par année pour le
+ * membre du compte connecté, alimentée par l'import Excel (imports_historique.py) et par
+ * apps.membres.services.enregistrer_statut_annuel. */
+export type RaisonChangementStatut = "paiement_confirme" | "echeance_depassee" | "manuel";
+
+export interface HistoriqueStatutEntry {
+  annee: number;
+  statut: StatutMembre;
+  raison: RaisonChangementStatut;
+  date_effet: string;
+}
+
 // 16 Länder — doit rester synchronisé avec apps.membres.models.Bundesland.
 export const BUNDESLANDER: { value: string; label: string }[] = [
   { value: "BW", label: "Baden-Württemberg" },

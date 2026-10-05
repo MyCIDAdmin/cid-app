@@ -5,6 +5,7 @@ import { apiClient } from "./client";
 import type {
   ChampExport,
   CursorPage,
+  HistoriqueStatutEntry,
   Membre,
   MembreFormValues,
   MembreListItem,
@@ -138,6 +139,14 @@ export async function telechargerTemplateImportHistorique(): Promise<Blob> {
   const { data } = await apiClient.get("/membres/import-historique/template/", {
     responseType: "blob",
   });
+  return data;
+}
+
+/** GET /membres/mon-historique/ — historique de statut associatif (une ligne par année) du
+ * membre lié au compte connecté, le plus récent en premier. Liste vide (jamais d'erreur) si
+ * aucune fiche Membre n'est associée — voir MonHistoriqueStatutView côté backend. */
+export async function getMonHistoriqueStatut(): Promise<HistoriqueStatutEntry[]> {
+  const { data } = await apiClient.get<HistoriqueStatutEntry[]>("/membres/mon-historique/");
   return data;
 }
 

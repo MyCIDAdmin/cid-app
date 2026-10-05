@@ -16,6 +16,7 @@ Vues API — app membres (TDD §2.4, complété AHM-51) :
 """
 
 from django.db.models import Prefetch
+from django.db.models.deletion import ProtectedError
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as drf_filters
 from rest_framework import status
@@ -25,6 +26,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.exceptions import Conflict
 from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import is_elevated_for_module
 
@@ -84,6 +86,17 @@ class MembreViewSet(ModelViewSet):
         if self.action == "list":
             return MembreListSerializer
         return MembreSerializer
+
+    def perform_destroy(self, instance):
+        """ProtectedError (ex. Souscription liée, on_delete=PROTECT) -> 409, comme
+        apps.rbac.views.RoleViewSet.perform_destroy pour le cas analogue."""
+        try:
+            instance.delete()
+        except ProtectedError as exc:
+            raise Conflict(
+                "Ce membre a encore des données liées (souscriptions, cotisations, "
+                "commandes...) — impossible de le supprimer directement."
+            ) from exc
 
     @action(detail=False, methods=["get", "patch"], url_path="moi")
     def moi(self, request):
