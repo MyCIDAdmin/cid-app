@@ -89,4 +89,21 @@ describe("AccueilTab", () => {
     fireEvent.click(screen.getByRole("button", { name: "hero.cta_mitglied_werden" }));
     expect(screen.getByTestId("vorschau-stub")).toBeInTheDocument();
   });
+  it("pose le texte directement sur la vidéo, sans boîte (retour du 2026-10-06)", () => {
+    mockConfiguration("https://cid-media.example/configuration-site/hero/video.mp4");
+    renderWithProviders(<AccueilTab />);
+    const titre = screen.getByRole("heading", { level: 1, name: "hero.titre" });
+    const bloc = titre.parentElement as HTMLElement;
+    expect(bloc).toHaveClass("hero-anim", "hero-text-sur-video");
+    expect(bloc.className).not.toMatch(/glass-panel|bg-/);
+  });
+
+  it("découpe le titre en mots animés tout en gardant un nom accessible complet", () => {
+    mockConfiguration(null);
+    renderWithProviders(<AccueilTab />);
+    const titre = screen.getByRole("heading", { level: 1 });
+    expect(titre).toHaveAccessibleName("hero.titre");
+    expect(titre.querySelectorAll(".hero-mot")).toHaveLength(1);
+    expect(titre.querySelector(".hero-mot")).toHaveStyle({ "--mot": "0" });
+  });
 });

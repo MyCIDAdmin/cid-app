@@ -306,7 +306,7 @@ input:-webkit-autofill:focus {
  * Demande utilisateur : "Glaseffekt in den Seiten", couleurs du Club Africain (rouge et blanc)
  * conservées, structure inchangée. Approche CSS-first : aucun composant n'est réécrit, la couche
  * cible (1) quelques classes-crochets ajoutées sur les racines (.glass-bar, .glass-sidebar,
- * .ambient-bg, .glass-panel, .glass-match, .card-lift) et (2) le motif de carte déjà utilisé
+ * .ambient-bg, .glass-match, .card-lift) et (2) le motif de carte déjà utilisé
  * partout dans l'app ("rounded-cid-lg bg-bg-primary shadow-sm") — sans toucher aux modales et
  * menus déroulants (shadow-lg/xl/2xl), qui restent opaques pour la lisibilité.
  * Un verre n'est visible que s'il y a quelque chose de coloré derrière lui : .ambient-bg pose
@@ -379,23 +379,88 @@ aside.glass-sidebar a[aria-current="page"] {
     0 6px 16px color-mix(in srgb, var(--color-ca) 35%, transparent);
 }
 
-/* Hero : panneau de verre dépoli posé sur la vidéo */
-.glass-panel {
-  /* Bien transparent : la vidéo du héros doit rester lisible derrière le texte. */
-  background-color: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  -webkit-backdrop-filter: blur(5px) saturate(120%);
-  backdrop-filter: blur(5px) saturate(120%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 10px 28px rgba(0, 0, 0, 0.22);
-}
-
-/* Ombre douce derrière le texte pour garder la lisibilité sur une vidéo claire. */
-.glass-panel :is(h1, h2, p) {
+/* Héros de l'accueil (retour 2026-10-06) : plus de boîte derrière le texte, il repose directement
+ * sur la vidéo ; une ombre douce garde la lisibilité sur les passages clairs. */
+.hero-text-sur-video :is(h1, p) {
   text-shadow:
     0 1px 14px rgba(0, 0, 0, 0.55),
     0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+/* Animation du texte du héros : titre mot par mot (flou → net), puis sous-titre et CTA, enfin
+ * un bref halo sur le titre. Les @keyframes sont en CSS brut (voir le commentaire de
+ * `.stagger-children` : pas de dépendance au scan JIT de Tailwind). Sans effet avec
+ * prefers-reduced-motion : le texte est alors affiché immédiatement. */
+.hero-mot {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hero-mot-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5em) scale(0.96);
+      filter: blur(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+      filter: blur(0);
+    }
+  }
+
+  @keyframes hero-texte-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes hero-cta-pop {
+    0% {
+      opacity: 0;
+      transform: translateY(12px) scale(0.9);
+    }
+    70% {
+      opacity: 1;
+      transform: translateY(0) scale(1.04);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes hero-halo {
+    0%,
+    100% {
+      filter: none;
+    }
+    45% {
+      filter: drop-shadow(0 0 14px rgba(255, 205, 205, 0.8));
+    }
+  }
+
+  .hero-anim .hero-mot {
+    animation: hero-mot-in 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(var(--mot, 0) * 110ms + 150ms);
+  }
+
+  .hero-anim h1 {
+    animation: hero-halo 1.5s ease-in-out 1.1s both;
+  }
+
+  .hero-anim p {
+    animation: hero-texte-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.8s both;
+  }
+
+  .hero-anim :is(a, button) {
+    animation: hero-cta-pop 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) 1.05s both;
+  }
 }
 
 /* Prochain match : verre rouge */
