@@ -779,7 +779,7 @@ export default function Sidebar() {
     // MobileNavDrawer (tiroir plein écran depuis le bouton menu de AppLayout) plutôt que cette
     // sidebar persistante, qui prendrait une largeur disproportionnée sur un écran de téléphone.
     <aside
-      className={`hidden h-screen flex-col overflow-hidden bg-sb text-white/90 transition-[width] duration-200 lg:flex ${
+      className={`glass-sidebar hidden h-screen flex-col overflow-hidden bg-sb text-white/90 transition-[width] duration-200 lg:flex ${
         collapsed ? "w-16" : "w-60"
       }`}
     >
