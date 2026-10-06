@@ -28,6 +28,7 @@ import { useTranslation } from "react-i18next";
 import {
   useCreerProduit,
   useModifierProduit,
+  useSupprimerProduit,
   useProduits,
   useTeleverserImageProduit,
 } from "../../hooks/useBoutique";
@@ -81,6 +82,9 @@ export default function GestionCatalogueTab({
   const produitsQuery = useProduits();
   const creerMutation = useCreerProduit();
   const modifierMutation = useModifierProduit();
+  const supprimerMutation = useSupprimerProduit();
+  const [produitASupprimer, setProduitASupprimer] = useState<string | null>(null);
+  const [suppressionErreur, setSuppressionErreur] = useState<{ produitId: string; message: string } | null>(null);
   const televerserImageMutation = useTeleverserImageProduit();
 
   const [form, setForm] = useState<ProduitPayload>(formulaireInitial);
@@ -546,7 +550,53 @@ export default function GestionCatalogueTab({
                       ? t("catalogue_admin.gerer_galerie")
                       : t("catalogue_admin.voir_galerie")}
                 </button>
+                {modifiable &&
+                  (produitASupprimer === produit.id ? (
+                    <span className="flex items-center gap-1 text-xs">
+                      <span className="text-status-dangerText">{t("catalogue_admin.supprimer_confirmer")}</span>
+                      <button
+                        type="button"
+                        disabled={supprimerMutation.isPending}
+                        onClick={() =>
+                          supprimerMutation.mutate(produit.id, {
+                            onSuccess: () => {
+                              setProduitASupprimer(null);
+                              setSuppressionErreur(null);
+                            },
+                            onError: (err) => {
+                              setProduitASupprimer(null);
+                              setSuppressionErreur({
+                                produitId: produit.id,
+                                message: extractApiErrorMessage(err, t("catalogue_admin.supprimer_erreur")),
+                              });
+                            },
+                          })
+                        }
+                        className="rounded-cid bg-status-dangerText px-2 py-1 text-white disabled:opacity-50"
+                      >
+                        {t("catalogue_admin.supprimer_oui")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setProduitASupprimer(null)}
+                        className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-text-secondary hover:bg-bg-tertiary"
+                      >
+                        {t("catalogue_admin.supprimer_non")}
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setProduitASupprimer(produit.id)}
+                      className="rounded-cid border border-status-dangerText/40 px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
+                    >
+                      {t("catalogue_admin.supprimer_produit")}
+                    </button>
+                  ))}
               </div>
+              {suppressionErreur?.produitId === produit.id && (
+                <p className="mt-1 text-[11px] text-status-dangerText">{suppressionErreur.message}</p>
+              )}
               {produitImageErreur?.produitId === produit.id && (
                 <p className="mt-1 text-[11px] text-status-dangerText">
                   {produitImageErreur.message}

@@ -288,7 +288,12 @@
     "galerie_supprimer": "Dieses Foto löschen",
     "gerer_galerie": "Galerie verwalten",
     "masquer_galerie": "Galerie ausblenden",
-    "voir_galerie": "Galerie ansehen"
+    "voir_galerie": "Galerie ansehen",
+    "supprimer_produit": "Löschen",
+    "supprimer_confirmer": "Wirklich löschen?",
+    "supprimer_oui": "Ja, löschen",
+    "supprimer_non": "Abbrechen",
+    "supprimer_erreur": "Der Artikel konnte nicht gelöscht werden."
   },
   "mes_bons_achat": {
     "titre": "Meine Gutscheine",

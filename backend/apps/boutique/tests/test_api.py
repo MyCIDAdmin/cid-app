@@ -2142,3 +2142,33 @@ def test_export_commandes_scope_membre_ne_voit_que_les_siennes(api_client):
     feuille = classeur.active
     assert feuille.max_row == 2
     assert feuille.cell(row=2, column=2).value == "Mine"
+
+
+def test_bureau_admin_peut_supprimer_un_produit_sans_commande(api_client):
+    from apps.boutique.models import Produit
+
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-del@example.de")
+    produit = ProduitFactory()
+    VarianteProduitFactory(produit=produit, stock=3)
+    resp = _auth(api_client, user).delete(_produit_detail_url(produit))
+    assert resp.status_code == 204
+    assert not Produit.objects.filter(id=produit.id).exists()
+
+
+def test_supprimer_un_produit_deja_commande_est_refuse_avec_409(api_client):
+    from apps.boutique.models import Produit
+
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-del2@example.de")
+    produit = ProduitFactory()
+    variante = VarianteProduitFactory(produit=produit, stock=3)
+    LigneCommandeFactory(variante=variante)
+    resp = _auth(api_client, user).delete(_produit_detail_url(produit))
+    assert resp.status_code == 409
+    assert Produit.objects.filter(id=produit.id).exists()
+
+
+def test_membre_ne_peut_pas_supprimer_un_produit(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "membre-del@example.de")
+    produit = ProduitFactory()
+    resp = _auth(api_client, user).delete(_produit_detail_url(produit))
+    assert resp.status_code == 403

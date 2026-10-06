@@ -288,7 +288,12 @@
     "galerie_supprimer": "Supprimer cette photo",
     "gerer_galerie": "Gérer la galerie",
     "masquer_galerie": "Masquer la galerie",
-    "voir_galerie": "Voir la galerie"
+    "voir_galerie": "Voir la galerie",
+    "supprimer_produit": "Supprimer",
+    "supprimer_confirmer": "Vraiment supprimer ?",
+    "supprimer_oui": "Oui, supprimer",
+    "supprimer_non": "Annuler",
+    "supprimer_erreur": "L'article n'a pas pu être supprimé."
   },
   "mes_bons_achat": {
     "titre": "Mes bons d'achat",
