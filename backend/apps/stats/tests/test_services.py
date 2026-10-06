@@ -232,6 +232,9 @@ def test_pyramide_ages_place_un_membre_dans_la_bonne_tranche():
     resultat = kpis_membres()
     tranche = next(t for t in resultat["pyramide_ages"] if t["tranche"] == "26–35 ans")
     assert tranche["nombre"] == 1
+    # Bornes numériques : le frontend construit le libellé dans la langue de l'utilisateur.
+    assert (tranche["age_min"], tranche["age_max"]) == (26, 35)
+    assert resultat["pyramide_ages"][-1]["age_max"] is None
 
 
 def test_repartition_par_ville():
