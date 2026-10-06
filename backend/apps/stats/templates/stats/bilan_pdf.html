@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="{{ langue }}">
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: A4;
+        margin: 2.2cm 2cm;
+        @bottom-center {
+            content: "{{ t.footer_page }}";
+            font-size: 8px;
+            color: #8a8a8a;
+        }
+    }
+    * { box-sizing: border-box; }
+    body {
+        font-family: "DejaVu Sans", "Helvetica Neue", Arial, sans-serif;
+        color: #1a1a1a;
+        font-size: 11px;
+        line-height: 1.5;
+    }
+    .header {
+        display: flex;
+        align-items: center;
+        border-bottom: 2px solid #CC0000;
+        padding-bottom: 14px;
+        margin-bottom: 24px;
+    }
+    .header img {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+        margin-right: 14px;
+    }
+    .header .assoc-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #8B0000;
+    }
+    .header .assoc-tagline {
+        font-size: 10px;
+        color: #555;
+        margin-top: 2px;
+    }
+    h1 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 4px 0;
+    }
+    .subtitle {
+        font-size: 10px;
+        color: #666;
+        margin-bottom: 22px;
+    }
+    h2.section {
+        font-size: 13px;
+        font-weight: 700;
+        color: #8B0000;
+        margin: 22px 0 8px 0;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+    }
+    h2.section:first-of-type { border-top: none; padding-top: 0; }
+    table.kpis {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 6px;
+    }
+    table.kpis th {
+        text-align: left;
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #888;
+        border-bottom: 1px solid #ddd;
+        padding: 6px 8px;
+    }
+    table.kpis td {
+        padding: 7px 8px;
+        border-bottom: 1px solid #eee;
+        font-size: 11px;
+    }
+    table.kpis .num { text-align: right; font-weight: 700; }
+    .footer-note {
+        margin-top: 30px;
+        padding-top: 12px;
+        border-top: 1px solid #ddd;
+        font-size: 9px;
+        color: #888;
+    }
+</style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ logo_data_uri }}" alt="CID">
+        <div><div class="assoc-name">{{ t.assoc_name }}</div><div class="assoc-tagline">{{ t.assoc_tagline }}</div></div>
+    </div>
+    <h1>{{ t.title }} {{ annee }}</h1>
+    <div class="subtitle">{{ t.recettes }} / {{ t.depenses }} / {{ t.resultat }}</div>
+
+    <h2 class="section">{{ t.recettes }}</h2>
+    <table class="kpis">
+        <thead><tr><th>{{ t.poste }}</th><th class="num">{{ annee }}</th><th class="num">{{ t.precedent }}</th></tr></thead>
+        <tbody>
+            {% for r in recettes %}<tr><td>{{ r.nom }}</td><td class="num">{{ r.montant }}</td><td class="num">{{ r.precedent }}</td></tr>{% endfor %}
+            <tr><td><b>Total</b></td><td class="num">{{ total_recettes }}</td><td class="num">{{ total_recettes_prec }}</td></tr>
+        </tbody>
+    </table>
+
+    <h2 class="section">{{ t.depenses }}</h2>
+    <table class="kpis">
+        <thead><tr><th>{{ t.poste }}</th><th class="num">{{ annee }}</th><th class="num">{{ t.budget }}</th><th class="num">{{ t.ecart }}</th><th class="num">{{ t.precedent }}</th></tr></thead>
+        <tbody>
+            {% for d in depenses %}<tr><td>{{ d.nom }}</td><td class="num">{{ d.montant }}</td><td class="num">{{ d.budget }}</td><td class="num">{{ d.ecart }}</td><td class="num">{{ d.precedent }}</td></tr>{% endfor %}
+            <tr><td><b>Total</b></td><td class="num">{{ total_depenses }}</td><td class="num">{{ budget_total }}</td><td class="num"></td><td class="num">{{ total_depenses_prec }}</td></tr>
+        </tbody>
+    </table>
+    {% if en_attente.nombre %}<div class="subtitle">{{ t.en_attente }} : {{ en_attente.nombre }} / {{ en_attente_montant }}</div>{% endif %}
+
+    <h2 class="section">{{ t.resultat }}</h2>
+    <table class="kpis"><tbody>
+        <tr><td>{{ annee }}</td><td class="num">{{ resultat }}</td></tr>
+        <tr><td>{{ t.precedent }}</td><td class="num">{{ resultat_prec }}</td></tr>
+    </tbody></table>
+
+    <h2 class="section">{{ t.mensuel }}</h2>
+    {{ graphique|safe }}
+
+    {% if evenements %}
+    <h2 class="section">{{ t.evenements }}</h2>
+    <table class="kpis">
+        <thead><tr><th>&nbsp;</th><th class="num">{{ t.recettes }}</th><th class="num">{{ t.depenses }}</th><th class="num">{{ t.resultat }}</th></tr></thead>
+        <tbody>{% for e in evenements %}<tr><td>{{ e.titre }}</td><td class="num">{{ e.recettes }}</td><td class="num">{{ e.depenses }}</td><td class="num">{{ e.resultat }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
+
+    {% if projets %}
+    <h2 class="section">{{ t.projets }}</h2>
+    <table class="kpis">
+        <thead><tr><th>&nbsp;</th><th class="num">{{ t.recettes }}</th><th class="num">{{ t.depenses }}</th><th class="num">{{ t.resultat }}</th></tr></thead>
+        <tbody>{% for p in projets %}<tr><td>{{ p.titre }}</td><td class="num">{{ p.recettes }}</td><td class="num">{{ p.depenses }}</td><td class="num">{{ p.resultat }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
+
+    <div class="footer-note">{{ t.footer_note }}</div>
+</body>
+</html>

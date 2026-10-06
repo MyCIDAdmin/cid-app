@@ -25,15 +25,20 @@ de requête simples, traduits en arguments de services.py).
 """
 
 from django.http import HttpResponse
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.finances.models import Depense
 from apps.membres.utils_http import xlsx_response
 
+from .bilan import bilan_annuel
 from .exports import construire_classeur_dashboard
+from .exports_bilan import construire_classeur_bilan
 from .pdf import generate_dashboard_pdf
+from .pdf_bilan import generate_bilan_pdf
 from .permissions import StatsPermission
 from .services import (
     TYPES_TRANSACTION,
@@ -97,12 +102,26 @@ def _type_transaction_depuis_requete(request):
     return brut
 
 
+def _mois_depuis_requete(request):
+    brut = request.query_params.get("mois")
+    if not brut:
+        return None
+    try:
+        mois = int(brut)
+    except ValueError as exc:
+        raise ValidationError({"mois": "Doit être un nombre entre 1 et 12."}) from exc
+    if not 1 <= mois <= 12:
+        raise ValidationError({"mois": "Doit être un nombre entre 1 et 12."})
+    return mois
+
+
 def _finances_depuis_requete(request):
     return finances_liste(
         annee=_annee_depuis_requete(request),
         type_transaction=_type_transaction_depuis_requete(request),
         tri=request.query_params.get("tri") or "date",
         ordre=request.query_params.get("ordre") or "desc",
+        mois=_mois_depuis_requete(request),
         **BaseStatsView()._filtres_communs(request),
     )
 
@@ -161,4 +180,36 @@ class StatsExportPdfView(BaseStatsView):
         )
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = 'attachment; filename="dashboard_stats.pdf"'
+        return response
+
+
+def _annee_obligatoire(request):
+    return _annee_depuis_requete(request) or timezone.localdate().year
+
+
+class StatsBilanView(BaseStatsView):
+    """GET /stats/bilan/?annee= — Jahresbilanz (recettes, dépenses par catégorie, Budget vs.
+    Ist, courbe mensuelle, résultat par événement/projet). Pas de filtres membre : le bilan
+    est celui de l'association entière."""
+
+    def get(self, request):
+        return Response(bilan_annuel(_annee_obligatoire(request)))
+
+
+class StatsExportBilanExcelView(BaseStatsView):
+    def get(self, request):
+        annee = _annee_obligatoire(request)
+        depenses = Depense.objects.filter(date_depense__year=annee).select_related(
+            "categorie", "evenement", "projet", "saisie_par", "decide_par"
+        )
+        classeur = construire_classeur_bilan(bilan_annuel(annee), depenses)
+        return xlsx_response(classeur, f"jahresbilanz_{annee}.xlsx")
+
+
+class StatsExportBilanPdfView(BaseStatsView):
+    def get(self, request):
+        annee = _annee_obligatoire(request)
+        pdf_bytes = generate_bilan_pdf(bilan=bilan_annuel(annee), user=request.user)
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="jahresbilanz_{annee}.pdf"'
         return response

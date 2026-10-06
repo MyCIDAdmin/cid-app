@@ -56,6 +56,7 @@ LOCAL_APPS = [
     "apps.vote",
     "apps.communaute",
     "apps.stats",
+    "apps.finances",
     "apps.notifications",
     "apps.projets",
     "apps.rbac",
