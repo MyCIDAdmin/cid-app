@@ -20,6 +20,8 @@ interface ImageCarouselProps {
    * "Die Bilder sollen automatisch nach ander wechselnd angezeigt [werden]"). */
   intervalMs?: number;
   className?: string;
+  /** "cover" : Bild füllt die Fläche vollständig (Kacheln, 2026-10-06) ; "contain" : ganzes Bild. */
+  fit?: "cover" | "contain";
 }
 
 /**
@@ -33,6 +35,7 @@ export default function ImageCarousel({
   titre,
   intervalMs = 4000,
   className = "",
+  fit = "contain",
 }: ImageCarouselProps) {
   const { t } = useTranslation("projets");
   const [index, setIndex] = useState(0);
@@ -63,7 +66,12 @@ export default function ImageCarousel({
         <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor">
           <rect x="3" y="5" width="18" height="14" rx="2" strokeWidth="1.5" />
           <circle cx="8.5" cy="10" r="1.5" strokeWidth="1.5" />
-          <path d="M21 15l-5-5-9 9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M21 15l-5-5-9 9"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
     );
@@ -90,7 +98,7 @@ export default function ImageCarousel({
         // zoomant sur une portion de l'image. object-contain affiche toujours l'image ENTIÈRE
         // (letterboxée au besoin sur les côtés, sur le fond bg-bg-tertiary du conteneur), jamais
         // recadrée.
-        className="h-full w-full object-contain transition-opacity duration-500"
+        className={`h-full w-full ${fit === "cover" ? "object-cover" : "object-contain"} transition-opacity duration-500`}
       />
       {images.length > 1 && (
         <>

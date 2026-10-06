@@ -103,7 +103,7 @@ export default function ProjetsPage() {
               max-w-2xl) — même pattern que CataloguePage/EvenementsPage : sm:2 colonnes,
               lg:3 colonnes. stagger-children (repris de MyCID, merge de design 2026-09-25) :
               apparition échelonnée à l'affichage de la liste. */}
-          <div className="grid gap-4 stagger-children sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 stagger-children md:grid-cols-2 2xl:grid-cols-3">
             {projetsFiltres.map((projet) => (
               <ProjetCard
                 key={projet.id}

@@ -332,11 +332,15 @@ class ProjetViewSet(ModelViewSet):
         totaux = Cotisation.objects.filter(
             projet__in=projets, statut=StatutCotisation.PAYEE
         ).aggregate(montant_collecte=Sum("montant"), nb_donateurs=Count("membre_id", distinct=True))
+        historie = projets.aggregate(
+            betrag=Sum("historisch_betrag"), anzahl=Sum("historisch_beitragende")
+        )
         return Response(
             {
                 "nb_projets": projets.count(),
-                "montant_collecte": totaux["montant_collecte"] or Decimal("0.00"),
-                "nb_donateurs": totaux["nb_donateurs"] or 0,
+                "montant_collecte": (totaux["montant_collecte"] or Decimal("0.00"))
+                + (historie["betrag"] or Decimal("0.00")),
+                "nb_donateurs": (totaux["nb_donateurs"] or 0) + (historie["anzahl"] or 0),
             }
         )
 

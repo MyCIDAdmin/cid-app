@@ -28,7 +28,8 @@
   "contributeurs": {
     "titre": "Contributeurs",
     "aucun": "Personne n'a encore contribué à ce projet.",
-    "chargement": "Chargement des contributeurs…"
+    "chargement": "Chargement des contributeurs…",
+    "historisch": "Repris de l'historique : {{montant}} de {{count}} contributeur(s) (saisi manuellement)."
   },
   "rapport": {
     "voir": "Voir le rapport",
@@ -93,7 +94,12 @@
     "images_titre": "Images de la kachel",
     "ajouter_image": "Ajouter une image",
     "aucun_responsable": "Aucun responsable",
-    "champ_sichtbarkeit": "Visibilité"
+    "champ_sichtbarkeit": "Visibilité",
+    "historie_titre": "Projet historique (données anciennes)",
+    "historie_hinweis": "Pour reprendre d'anciens projets : saisissez manuellement le montant collecté. Il compte dans le montant collecté et le nombre de contributeurs. La date limite devrait se situer dans le passé.",
+    "historie_betrag": "Montant collecté (€)",
+    "historie_beitragende": "Nombre de contributeurs",
+    "historie_jahr": "Année de la collecte"
   },
   "arbeitsbereich": {
     "titel": "Espace de travail",

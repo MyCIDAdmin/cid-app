@@ -679,7 +679,8 @@ def kpis_projets() -> dict:
         erledigt = pro_status.get(StatutAufgabe.ERLEDIGT, 0)
         for status, n in pro_status.items():
             gesamt_aufgaben[status] += n
-        z_ist, z_einnahmen = ist.get(pr.id, null), einnahmen.get(pr.id, null)
+        z_ist = ist.get(pr.id, null)
+        z_einnahmen = einnahmen.get(pr.id, null) + pr.historisch_betrag
         zeilen.append(
             {
                 "id": str(pr.id),

@@ -27,6 +27,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import BildHinweis from "../ui/BildHinweis";
+
 import {
   useAjouterImageMiseAJourProjet,
   useCreerMiseAJourProjet,
@@ -136,6 +138,7 @@ export default function RapportModal({ projet, onClose, autoriserAjout }: Rappor
                 onChange={(e) => setFichiers(Array.from(e.target.files ?? []))}
                 className="block w-full text-xs text-text-secondary"
               />
+              <BildHinweis variante="projekt" className="mt-1" />
             </div>
             {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
             <div className="flex justify-end">

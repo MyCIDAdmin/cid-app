@@ -19,6 +19,7 @@ import {
   usePublierEvenement,
   useTeleverserImageEvenement,
 } from "../../hooks/useEvenements";
+import BildHinweis from "../../components/ui/BildHinweis";
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Evenement, EvenementPayload, TypeEvenement } from "../../types/evenements";
@@ -595,7 +596,7 @@ export default function AdminEventsPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <h1 className="text-xl font-bold text-text-primary">{t("admin.titre")}</h1>
         {!afficherFormulaire && (
           <button
@@ -609,6 +610,7 @@ export default function AdminEventsPage() {
           </button>
         )}
       </div>
+      <BildHinweis variante="veranstaltung" className="mb-4" />
 
       {accessible && !modifiable && (
         <p className="mb-4 rounded-cid-lg bg-status-warningBg px-3 py-2 text-xs text-status-warningText">

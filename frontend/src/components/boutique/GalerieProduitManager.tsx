@@ -16,6 +16,8 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import BildHinweis from "../ui/BildHinweis";
+
 import { useAjouterImageProduit, useSupprimerImageProduit } from "../../hooks/useBoutique";
 import type { Produit } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -75,7 +77,7 @@ export default function GalerieProduitManager({
                 type="button"
                 onClick={() => handleSupprimer(image.id)}
                 disabled={suppressionEnCoursId === image.id || !modifiable}
-                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 aria-label={t("catalogue_admin.galerie_supprimer") ?? ""}
                 className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl bg-black/60 text-[10px] text-white disabled:opacity-40"
               >
@@ -101,11 +103,14 @@ export default function GalerieProduitManager({
         type="button"
         onClick={() => inputFichier.current?.click()}
         disabled={enCours || !modifiable}
-        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+        title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
         className="rounded-cid border border-text-tertiary/30 px-2.5 py-1 text-xs text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
       >
-        {enCours ? t("catalogue_admin.galerie_ajout_en_cours") : t("catalogue_admin.galerie_ajouter")}
+        {enCours
+          ? t("catalogue_admin.galerie_ajout_en_cours")
+          : t("catalogue_admin.galerie_ajouter")}
       </button>
+      <BildHinweis variante="shop" className="mt-1" />
     </div>
   );
 }

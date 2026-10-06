@@ -210,5 +210,16 @@
     "titel": "Carte de membre",
     "mitglied_seit": "Membre depuis",
     "gueltig_bis": "Valable jusqu'au"
+  },
+  "zahlung": {
+    "titel": "Comment payer votre adhésion",
+    "hinweis": "Votre inscription est enregistrée. Veuillez régler le montant par virement bancaire ou PayPal.",
+    "angebot": "Offre",
+    "betrag": "Montant",
+    "zweck": "Motif du paiement",
+    "nachweis_hinweis": "Veuillez encore téléverser votre justificatif. Le montant peut changer après vérification du rabais.",
+    "bestaetigung": "Le responsable financier confirme manuellement la réception du paiement dans l'application. Ces informations restent disponibles via « Afficher les infos de paiement ».",
+    "schliessen": "Compris",
+    "anzeigen": "Afficher les infos de paiement"
   }
 }

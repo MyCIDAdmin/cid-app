@@ -264,6 +264,29 @@ describe("MonAdhesionPage", () => {
     expect(mutate.mock.calls[0][0]).toEqual({ offre: "o1", rabais: "r1" });
   });
 
+  it("ouvre le fenêtre d'infos de paiement via le bouton (virement/PayPal, comme le shop)", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription()] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.queryByText("zahlung.titel")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("zahlung.anzeigen"));
+    expect(screen.getByText("zahlung.titel")).toBeInTheDocument();
+    expect(screen.getByText("paiement_instructions.virement_titre")).toBeInTheDocument();
+    expect(screen.getByText("paiement_instructions.paypal_titre")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("zahlung.schliessen"));
+    expect(screen.queryByText("zahlung.titel")).not.toBeInTheDocument();
+  });
+
   it("affiche le formulaire d'upload de justificatif et l'envoie (AHM-20)", () => {
     const mutate = vi.fn();
     vi.mocked(useAdhesionsHooks.useUploaderJustificatif).mockReturnValue({

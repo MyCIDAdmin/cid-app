@@ -19,6 +19,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import BildHinweis from "../../components/ui/BildHinweis";
+
 import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
 import RapportModal from "../../components/projets/RapportModal";
 import SichtbarkeitBadge from "../../components/projets/SichtbarkeitBadge";
@@ -91,6 +93,9 @@ function FormulaireProjet({
           cagnote_active: projet.cagnote_active,
           objectif_montant: projet.objectif_montant,
           date_limite: projet.date_limite,
+          historisch_betrag: projet.historisch_betrag ?? "0.00",
+          historisch_beitragende: projet.historisch_beitragende ?? 0,
+          historisch_jahr: projet.historisch_jahr ?? null,
           ordre: projet.ordre,
         }
       : FORMULAIRE_VIDE,
@@ -115,6 +120,12 @@ function FormulaireProjet({
       ...valeurs,
       responsable: responsableSelection?.id ?? null,
       objectif_montant: valeurs.cagnote_active ? valeurs.objectif_montant : null,
+      // Historie nur bei abgeschlossenem Projekt (sonst Backend-Validierung) — sonst zurücksetzen.
+      historisch_betrag:
+        valeurs.statut === "termine" ? valeurs.historisch_betrag || "0.00" : "0.00",
+      historisch_beitragende:
+        valeurs.statut === "termine" ? (valeurs.historisch_beitragende ?? 0) : 0,
+      historisch_jahr: valeurs.statut === "termine" ? (valeurs.historisch_jahr ?? null) : null,
     };
 
     try {
@@ -267,6 +278,70 @@ function FormulaireProjet({
         />
       </div>
 
+      {valeurs.statut === "termine" && (
+        <fieldset className="rounded-cid border border-text-tertiary/20 p-3">
+          <legend className="px-1 text-xs font-semibold text-text-primary">
+            {t("admin.historie_titre")}
+          </legend>
+          <p className="mb-2 text-xs text-text-tertiary">{t("admin.historie_hinweis")}</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label
+                htmlFor="admin-projet-hist-betrag"
+                className="mb-1 block text-xs font-medium text-text-secondary"
+              >
+                {t("admin.historie_betrag")}
+              </label>
+              <input
+                id="admin-projet-hist-betrag"
+                type="number"
+                min={0}
+                step="0.01"
+                value={valeurs.historisch_betrag ?? ""}
+                onChange={(e) => champ("historisch_betrag", e.target.value)}
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="admin-projet-hist-anzahl"
+                className="mb-1 block text-xs font-medium text-text-secondary"
+              >
+                {t("admin.historie_beitragende")}
+              </label>
+              <input
+                id="admin-projet-hist-anzahl"
+                type="number"
+                min={0}
+                step={1}
+                value={valeurs.historisch_beitragende ?? 0}
+                onChange={(e) => champ("historisch_beitragende", Number(e.target.value))}
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="admin-projet-hist-jahr"
+                className="mb-1 block text-xs font-medium text-text-secondary"
+              >
+                {t("admin.historie_jahr")}
+              </label>
+              <input
+                id="admin-projet-hist-jahr"
+                type="number"
+                min={2000}
+                max={2100}
+                value={valeurs.historisch_jahr ?? ""}
+                onChange={(e) =>
+                  champ("historisch_jahr", e.target.value ? Number(e.target.value) : null)
+                }
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+              />
+            </div>
+          </div>
+        </fieldset>
+      )}
+
       <div>
         <label className="mb-1 block text-xs font-medium text-text-secondary">
           {t("admin.images_titre")}
@@ -295,6 +370,7 @@ function FormulaireProjet({
           onChange={(e) => setNouvellesImages(Array.from(e.target.files ?? []))}
           className="block w-full text-xs text-text-secondary"
         />
+        <BildHinweis variante="projekt" className="mt-1" />
       </div>
 
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
