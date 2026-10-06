@@ -1,0 +1,68 @@
+{
+  "titre": "Finances",
+  "onglets": {
+    "depenses": "Dépenses",
+    "budget": "Budget",
+    "categories": "Catégories"
+  },
+  "annee": "Année",
+  "statut": "Statut",
+  "tous": "Tous",
+  "nouvelle_depense": "Nouvelle dépense",
+  "modifier": "Modifier",
+  "supprimer": "Supprimer",
+  "enregistrer": "Enregistrer",
+  "annuler": "Annuler",
+  "chargement": "Chargement…",
+  "erreur": "L'opération a échoué.",
+  "statuts": {
+    "en_attente": "À approuver",
+    "approuvee": "Approuvée",
+    "rejetee": "Rejetée"
+  },
+  "col": {
+    "date": "Date",
+    "fournisseur": "Fournisseur / bénéficiaire",
+    "categorie": "Catégorie",
+    "montant": "Montant",
+    "bezug": "Rattachement",
+    "statut": "Statut",
+    "saisie_par": "Saisi par",
+    "aktionen": "Actions"
+  },
+  "champ": {
+    "date": "Date",
+    "montant": "Montant (€)",
+    "categorie": "Catégorie",
+    "fournisseur": "Fournisseur / bénéficiaire",
+    "description": "Description",
+    "evenement": "Évènement (facultatif)",
+    "projet": "Projet (facultatif)",
+    "justificatif": "Justificatif (PDF, JPG, PNG, 5 Mo max.)",
+    "aucun": "— aucun —"
+  },
+  "voir_beleg": "Justificatif",
+  "approuver": "Approuver",
+  "rejeter": "Rejeter",
+  "motif": "Motif du rejet",
+  "motif_requis": "Merci d'indiquer un motif.",
+  "rejet_confirmer": "Confirmer le rejet",
+  "vier_augen": "Principe des quatre yeux : une dépense ne compte dans le bilan et les KPI qu'une fois approuvée par une autre personne.",
+  "eigene_ausgabe": "Saisie par vous – une autre personne doit l'approuver.",
+  "figee": "Les dépenses approuvées sont verrouillées.",
+  "supprimer_confirmer": "Supprimer vraiment cette dépense ?",
+  "aucune_depense": "Aucune dépense trouvée.",
+  "budget": {
+    "intro": "Budget annuel prévu par catégorie. Vide ou 0 = pas de budget.",
+    "enregistrer": "Enregistrer le budget",
+    "enregistre": "Budget enregistré."
+  },
+  "categories": {
+    "intro": "Les catégories classent les dépenses. Une catégorie utilisée se désactive au lieu d'être supprimée.",
+    "nouvelle": "Nouvelle catégorie",
+    "ajouter": "Ajouter",
+    "actif": "Active",
+    "desactiver": "Désactiver",
+    "activer": "Activer"
+  }
+}

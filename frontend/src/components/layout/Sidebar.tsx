@@ -53,6 +53,7 @@ import {
   IconCalendarPlus,
   IconCar,
   IconChartArea,
+  IconReceipt2,
   IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
@@ -307,6 +308,13 @@ export const NAV_ITEMS: NavItem[] = [
     icon: IconChartArea,
     group: "administration",
     pageSlug: "page_stats", // seuil de départ : Bureau Admin
+  },
+  {
+    to: "/admin/finances",
+    labelKey: "nav.finances",
+    icon: IconReceipt2,
+    group: "administration",
+    pageSlug: "page_finances", // seuil de départ : Directeur Financier (écriture), Bureau Admin (lecture)
   },
   // La route elle-même est aussi gated côté App.tsx (RequireRole, pageSlug="page_inscriptions").
   {

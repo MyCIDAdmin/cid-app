@@ -1,0 +1,129 @@
+"""
+Modèles — app finances (demande utilisateur du 2026-10-06 : module "Statistiken & KPIs"
+étendu pour le service financier — saisie des coûts, Jahresbilanz, Budget vs. Ist).
+
+  - CategorieDepense : liste configurable (la forme juridique de CID n'est pas encore figée —
+    voir seed dans la migration 0001 ; aucune catégorie n'est codée en dur côté code).
+  - Depense : une dépense avec justificatif optionnel. Principe des quatre yeux : une dépense
+    saisie est EN_ATTENTE et ne compte dans aucun KPI/bilan tant qu'une AUTRE personne ne l'a
+    pas APPROUVÉE (voir views.DepenseViewSet). Une dépense approuvée est figée (registre
+    append-only, comme Cotisation) ; seule une dépense en attente/rejetée peut être modifiée ou
+    supprimée.
+  - BudgetAnnuel : budget prévu par année et catégorie (Budget vs. Ist).
+"""
+
+import uuid
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.validators import MinValueValidator
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+from apps.adhesions.storage import JustificatifsStorage
+
+
+class CategorieDepense(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nom = models.CharField(max_length=100, unique=True)
+    actif = models.BooleanField(default=True)
+    ordre = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["ordre", "nom"]
+        verbose_name = _("Catégorie de dépense")
+        verbose_name_plural = _("Catégories de dépense")
+
+    def __str__(self):
+        return self.nom
+
+
+class StatutDepense(models.TextChoices):
+    EN_ATTENTE = "en_attente", _("En attente d'approbation")
+    APPROUVEE = "approuvee", _("Approuvée")
+    REJETEE = "rejetee", _("Rejetée")
+
+
+def depense_justificatif_path(instance, filename):
+    # `filename` est déjà réécrit côté serveur (<uuid>.<extension détectée>) par le serializer.
+    return f"depenses/{instance.date_depense.year}/{filename}"
+
+
+class Depense(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    date_depense = models.DateField()
+    montant = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
+    )
+    categorie = models.ForeignKey(
+        CategorieDepense, on_delete=models.PROTECT, related_name="depenses"
+    )
+    fournisseur = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    evenement = models.ForeignKey(
+        "evenements.Evenement",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="depenses",
+    )
+    projet = models.ForeignKey(
+        "projets.Projet",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="depenses",
+    )
+    justificatif = models.FileField(
+        upload_to=depense_justificatif_path, storage=JustificatifsStorage(), null=True, blank=True
+    )
+    statut = models.CharField(
+        max_length=20, choices=StatutDepense.choices, default=StatutDepense.EN_ATTENTE
+    )
+    saisie_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="depenses_saisies",
+    )
+    decide_par = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="depenses_decidees",
+    )
+    date_decision = models.DateTimeField(null=True, blank=True)
+    motif_rejet = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date_depense", "-created_at"]
+        indexes = [
+            models.Index(fields=["date_depense", "statut"], name="finances_dep_date_statut_idx")
+        ]
+
+    def __str__(self):
+        return f"{self.date_depense} {self.fournisseur} {self.montant}"
+
+
+class BudgetAnnuel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    annee = models.PositiveSmallIntegerField()
+    categorie = models.ForeignKey(
+        CategorieDepense, on_delete=models.CASCADE, related_name="budgets"
+    )
+    montant = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+    )
+
+    class Meta:
+        ordering = ["annee", "categorie__ordre"]
+        constraints = [
+            models.UniqueConstraint(fields=["annee", "categorie"], name="uniq_budget_annee_cat")
+        ]
+
+    def __str__(self):
+        return f"{self.annee} {self.categorie}: {self.montant}"

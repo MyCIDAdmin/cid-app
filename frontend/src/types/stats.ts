@@ -37,6 +37,7 @@ export interface KpisFinancier {
   revenus_boutique: string;
   revenus_adhesions: string;
   revenus_evenements: string;
+  revenus_projets: string;
   top_contributeurs: TopContributeur[];
 }
 
@@ -86,13 +87,7 @@ export interface KpisEvenements {
  * côté backend.
  */
 export type TypeTransaction =
-  | "cotisation"
-  | "don"
-  | "adhesion"
-  | "evenement"
-  | "boutique"
-  | "autre"
-  | "projet";
+  "cotisation" | "don" | "adhesion" | "evenement" | "boutique" | "autre" | "projet" | "depense";
 
 export interface FinanceRecord {
   id: string;
@@ -103,4 +98,60 @@ export interface FinanceRecord {
   description: string;
   montant: string;
   statut: string;
+}
+
+/** Jahresbilanz (apps.stats.bilan.bilan_annuel) — montants en chaînes décimales. */
+export type SourceRecette =
+  "cotisations" | "dons" | "projets" | "adhesions" | "boutique" | "evenements";
+
+export interface LigneRecetteBilan {
+  cle: SourceRecette;
+  montant: string;
+  montant_precedent: string;
+}
+
+export type StatutBudget = "aucun" | "ok" | "attention" | "depasse";
+
+export interface LigneDepenseBilan {
+  categorie_id: string;
+  nom: string;
+  montant: string;
+  montant_precedent: string;
+  budget: string;
+  ecart: string | null;
+  pourcentage_budget: number | null;
+  statut_budget: StatutBudget;
+}
+
+export interface MoisBilan {
+  mois: number;
+  recettes: string;
+  depenses: string;
+  cumul: string;
+}
+
+export interface ResultatBilan {
+  id: string;
+  titre: string;
+  date?: string;
+  recettes: string;
+  depenses: string;
+  resultat: string;
+}
+
+export interface Bilan {
+  annee: number;
+  recettes: { lignes: LigneRecetteBilan[]; total: string; total_precedent: string };
+  depenses: {
+    lignes: LigneDepenseBilan[];
+    total: string;
+    total_precedent: string;
+    budget_total: string;
+  };
+  resultat: string;
+  resultat_precedent: string;
+  mensuel: MoisBilan[];
+  depenses_en_attente: { nombre: number; montant: string };
+  resultats_evenements: ResultatBilan[];
+  resultats_projets: ResultatBilan[];
 }

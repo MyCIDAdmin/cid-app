@@ -28,7 +28,8 @@
     "page_notifications_params": "E-Mail-Benachrichtigungen",
     "page_projets": "Projekt- & Aktionsverwaltung",
     "page_albums": "Fotoalben-Verwaltung",
-    "albums": "Fotoalben"
+    "albums": "Fotoalben",
+    "page_finances": "Finanzen (Ausgaben, Budget, Bilanz)"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",
