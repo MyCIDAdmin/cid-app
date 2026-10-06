@@ -7,7 +7,7 @@
         size: A4;
         margin: 2.2cm 2cm;
         @bottom-center {
-            content: "{{ t.footer_page }}";
+            content: "{{ t.footer_page|safe }}";
             font-size: 8px;
             color: #8a8a8a;
         }
@@ -126,6 +126,7 @@
 
     <h2 class="section">{{ t.mensuel }}</h2>
     {{ graphique|safe }}
+    <div class="subtitle"><span style="color:#CC0000">&#9632;</span> {{ t.recettes }} &nbsp; <span style="color:#8a8a8a">&#9632;</span> {{ t.depenses }}</div>
 
     {% if evenements %}
     <h2 class="section">{{ t.evenements }}</h2>

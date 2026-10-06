@@ -23,5 +23,5 @@ def seed(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [("rbac", "0003_seed_pages_admin_matrice")]
+    dependencies = [("rbac", "0004_visibilite_non_membre")]
     operations = [migrations.RunPython(seed, migrations.RunPython.noop)]

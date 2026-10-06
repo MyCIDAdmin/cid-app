@@ -28,7 +28,8 @@
     "page_notifications_params": "Paramètres de notification",
     "page_projets": "Gestion des projets & actions",
     "page_albums": "Gestion des albums photo",
-    "albums": "Albums photos"
+    "albums": "Albums photos",
+    "page_finances": "Finances (dépenses, budget, bilan)"
   },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",

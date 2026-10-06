@@ -117,7 +117,7 @@ def bilan_annuel(annee: int) -> dict:
         montant = dep.get(cat.id, ZERO)
         precedent = dep_prec.get(cat.id, ZERO)
         budget = budgets.get(cat.id, ZERO)
-        if not (montant or precedent or budget or cat.actif):
+        if not (montant or precedent or budget):
             continue
         lignes_depenses.append(
             {

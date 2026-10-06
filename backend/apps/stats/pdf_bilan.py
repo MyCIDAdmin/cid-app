@@ -77,7 +77,7 @@ def _graphique_mensuel(mensuel) -> str:
             f'text-anchor="middle">{m["mois"]}</text>'
         )
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{largeur}" height="{hauteur}" '
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="100%" '
         f'viewBox="0 0 {largeur} {hauteur}">'
         f'<line x1="{marge}" y1="{hauteur - marge}" x2="{largeur - marge}" y2="{hauteur - marge}" '
         f'stroke="#ccc"/>{"".join(barres)}</svg>'

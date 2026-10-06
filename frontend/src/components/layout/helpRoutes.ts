@@ -16,10 +16,12 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/cotisations/relances", "relances"],
   ["/inscriptions", "inscriptions"],
   ["/stats", "stats"],
+  ["/admin/finances", "finances"],
 ];
 
 export function cleHilfe(pathname: string): string | null {
-  const treffer = HILFE_ROUTEN.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const treffer = HILFE_ROUTEN.find(
+    ([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
   return treffer ? treffer[1] : null;
 }
-

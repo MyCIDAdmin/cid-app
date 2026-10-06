@@ -58,6 +58,7 @@ import ProjetDetailPage from "./pages/projets/ProjetDetailPage";
 import ProjetsPage from "./pages/projets/ProjetsPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import FinancesPage from "./pages/finances/FinancesPage";
 import StatsPage from "./pages/stats/StatsPage";
 import CreerVoteWizardPage from "./pages/vote/CreerVoteWizardPage";
 import VotePage from "./pages/vote/VotePage";
@@ -302,6 +303,16 @@ export default function App() {
           element={
             <RequireRole pageSlug="page_stats">
               <StatsPage />
+            </RequireRole>
+          }
+        />
+        {/* Finances (dépenses, budget, catégories — 2026-10-06) : page de gestion `page_finances`,
+            écriture réservée à la matrice (Directeur Financier+ au départ). */}
+        <Route
+          path="/admin/finances"
+          element={
+            <RequireRole pageSlug="page_finances">
+              <FinancesPage />
             </RequireRole>
           }
         />

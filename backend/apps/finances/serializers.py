@@ -51,13 +51,14 @@ class DepenseSerializer(serializers.ModelSerializer):
             "justificatif",
             "justificatif_url",
             "statut",
+            "saisie_par",
             "saisie_par_nom",
             "decide_par_nom",
             "date_decision",
             "motif_rejet",
             "created_at",
         ]
-        read_only_fields = ["statut", "date_decision", "motif_rejet", "created_at"]
+        read_only_fields = ["statut", "saisie_par", "date_decision", "motif_rejet", "created_at"]
 
     def get_saisie_par_nom(self, obj):
         return _nom_utilisateur(obj.saisie_par)

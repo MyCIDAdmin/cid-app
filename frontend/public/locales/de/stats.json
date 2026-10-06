@@ -1,5 +1,7 @@
 {
-  "page": { "titre": "Statistiken & KPIs" },
+  "page": {
+    "titre": "Statistiken & KPIs"
+  },
   "chargement": "Wird geladen…",
   "erreur": "Diese Statistiken konnten nicht geladen werden.",
   "filtres": {
@@ -28,7 +30,8 @@
     "financier": "Finanzen",
     "membres": "Mitglieder",
     "evenements": "Veranstaltungen",
-    "finances": "Finanzdaten"
+    "finances": "Finanzdaten",
+    "bilan": "Jahresbilanz"
   },
   "financier": {
     "solde": "Saldo",
@@ -90,6 +93,44 @@
     "col_description": "Beschreibung",
     "col_montant": "Betrag",
     "col_statut": "Status",
-    "aucune_donnee": "Keine Finanzdaten für diesen Zeitraum."
+    "aucune_donnee": "Keine Finanzdaten für diesen Zeitraum.",
+    "type_depense": "Ausgabe",
+    "filtre_mois": "Monat: {{mois}}"
+  },
+  "bilan": {
+    "hinweis_drill": "Tipp: Ein Klick auf einen Balken öffnet die zugehörigen Einzelbuchungen.",
+    "export_pdf": "Jahresbericht (PDF)",
+    "export_excel": "Bilanz (Excel)",
+    "recettes": "Einnahmen",
+    "depenses": "Ausgaben",
+    "resultat": "Ergebnis",
+    "cumul": "Kumuliertes Ergebnis",
+    "vs_precedent": "Ergebnis vs. {{annee}}",
+    "en_attente": "{{nombre}} Ausgabe(n) über {{montant}} warten auf Freigabe und sind noch nicht enthalten.",
+    "mensuel": "Monatsverlauf",
+    "budget_vs_ist": "Budget vs. Ist",
+    "col_poste": "Einnahmequelle",
+    "col_precedent": "Vorjahr",
+    "col_categorie": "Kategorie",
+    "col_ist": "Ist",
+    "col_budget": "Budget",
+    "col_statut_budget": "Status",
+    "col_evenement": "Veranstaltung",
+    "col_projet": "Projekt",
+    "statut_aucun": "Kein Budget",
+    "statut_ok": "Im Rahmen",
+    "statut_attention": "Achtung",
+    "statut_depasse": "Überschritten",
+    "source_cotisations": "Beiträge",
+    "source_dons": "Spenden",
+    "source_projets": "Projektbeiträge",
+    "source_adhesions": "Mitgliedschaften",
+    "source_boutique": "Shop",
+    "source_evenements": "Veranstaltungen",
+    "aucune_depense": "Noch keine Ausgaben erfasst.",
+    "aucune_donnee": "Keine Daten für dieses Jahr.",
+    "voir_depenses": "Alle Ausgaben anzeigen",
+    "par_evenement": "Ergebnis je Veranstaltung",
+    "par_projet": "Ergebnis je Projekt"
   }
 }
