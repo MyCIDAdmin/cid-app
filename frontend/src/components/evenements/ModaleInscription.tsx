@@ -140,7 +140,7 @@ export default function ModaleInscription({
             Vorschau + Adresse anzeigen") — ne rend rien si `lieu` est vide, voir MapsApercu. */}
         <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} className="mb-3" />
 
-        <div className="mb-2 grid grid-cols-2 gap-2">
+        <div className="mb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="mb-1 block text-xs font-medium text-text-secondary">
               {t("modal_places")}
@@ -180,7 +180,7 @@ export default function ModaleInscription({
           <div className="mb-1.5 text-xs font-medium text-text-secondary">
             {t("modal_accompagnants_titre")}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label
                 htmlFor="modal-inscription-accompagnants-adultes"

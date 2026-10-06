@@ -239,7 +239,7 @@ export default function StatsPage() {
 
       {erreurExport && <p className="mb-2 text-xs text-status-dangerText">{erreurExport}</p>}
 
-      <div className="mb-4 flex gap-1 border-b border-text-tertiary/20">
+      <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/20">
         {(["financier", "bilan", "membres", "evenements", "projets", "finances"] as const).map(
           (o) => (
             <button

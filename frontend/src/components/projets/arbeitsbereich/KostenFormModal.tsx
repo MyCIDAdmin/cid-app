@@ -76,7 +76,7 @@ export default function KostenFormModal({
       >
         <h2 className="mb-1 text-base font-semibold text-text-primary">{titel}</h2>
         <p className="mb-3 text-xs text-text-tertiary">{t("arbeitsbereich.kosten.form.hinweis")}</p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor="kst-datum" className={LABEL}>
               {t("arbeitsbereich.kosten.form.datum")}

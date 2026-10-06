@@ -156,36 +156,38 @@ export default function BudgetTab({ modifiable }: { modifiable: boolean }) {
         )}
       </section>
 
-      <table className="w-full max-w-lg text-sm">
-        <tbody>
-          {categories.data
-            ?.filter((c) => c.actif || Number(montantServeur(c.id)) > 0)
-            .map((c) => (
-              <tr key={c.id} className="border-b border-text-tertiary/10">
-                <td className="py-1.5 pr-3 text-text-primary">
-                  {kategorieName(c.namen, c.nom, i18n.language)}
-                  {c.projektbudget && (
-                    <span className="ml-2 rounded-full bg-ca/10 px-2 py-0.5 text-[10px] font-medium text-ca">
-                      {t("budget.projekttopf")}
-                    </span>
-                  )}
-                </td>
-                <td className="py-1.5 text-right">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    aria-label={kategorieName(c.namen, c.nom, i18n.language)}
-                    disabled={!modifiable}
-                    value={valeur(c.id)}
-                    onChange={(e) => setSaisies((s) => ({ ...s, [c.id]: e.target.value }))}
-                    className="w-32 rounded-cid border border-text-tertiary/30 px-2 py-1 text-right text-sm"
-                  />
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+      <div className="overflow-x-auto">
+        <table className="w-full max-w-lg text-sm">
+          <tbody>
+            {categories.data
+              ?.filter((c) => c.actif || Number(montantServeur(c.id)) > 0)
+              .map((c) => (
+                <tr key={c.id} className="border-b border-text-tertiary/10">
+                  <td className="py-1.5 pr-3 text-text-primary">
+                    {kategorieName(c.namen, c.nom, i18n.language)}
+                    {c.projektbudget && (
+                      <span className="ml-2 rounded-full bg-ca/10 px-2 py-0.5 text-[10px] font-medium text-ca">
+                        {t("budget.projekttopf")}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-1.5 text-right">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      aria-label={kategorieName(c.namen, c.nom, i18n.language)}
+                      disabled={!modifiable}
+                      value={valeur(c.id)}
+                      onChange={(e) => setSaisies((s) => ({ ...s, [c.id]: e.target.value }))}
+                      className="w-32 rounded-cid border border-text-tertiary/30 px-2 py-1 text-right text-sm"
+                    />
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
 
       {projekte && Number(projekte.budget) + Number(projekte.geplant) > 0 && (
         <section className="mt-4 rounded-cid-lg border border-text-tertiary/15 p-3">

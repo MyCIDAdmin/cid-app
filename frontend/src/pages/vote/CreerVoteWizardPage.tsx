@@ -84,7 +84,9 @@ export default function CreerVoteWizardPage() {
 
   // Étape 2 — options
   const [modeCandidature, setModeCandidature] = useState<ModeCandidature>("individuel");
-  const [options, setOptions] = useState<VoteOptionInput[]>(optionsParDefaut("unique", "individuel"));
+  const [options, setOptions] = useState<VoteOptionInput[]>(
+    optionsParDefaut("unique", "individuel"),
+  );
 
   function changerType(type: TypeVote) {
     setTypeVote(type);
@@ -99,7 +101,9 @@ export default function CreerVoteWizardPage() {
   function ajouterOption() {
     setOptions((prev) => [
       ...prev,
-      modeCandidature === "liste" ? { label: "", candidats: [{ nom: "" }, { nom: "" }] } : { label: "" },
+      modeCandidature === "liste"
+        ? { label: "", candidats: [{ nom: "" }, { nom: "" }] }
+        : { label: "" },
     ]);
   }
 
@@ -170,9 +174,7 @@ export default function CreerVoteWizardPage() {
         if (modeCandidature !== "liste") return base;
         return {
           ...base,
-          candidats: (o.candidats ?? [])
-            .map((c) => ({ nom: c.nom.trim() }))
-            .filter((c) => c.nom),
+          candidats: (o.candidats ?? []).map((c) => ({ nom: c.nom.trim() })).filter((c) => c.nom),
         };
       });
   }
@@ -289,7 +291,7 @@ export default function CreerVoteWizardPage() {
                 className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-text-secondary">
                   {t("wizard.type_vote")}
@@ -374,7 +376,7 @@ export default function CreerVoteWizardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-text-secondary">
                   {t("wizard.membres_eligibles")}
@@ -604,7 +606,8 @@ export default function CreerVoteWizardPage() {
                 onClick={ajouterOption}
                 className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary"
               >
-                + {t(modeCandidature === "liste" ? "wizard.ajouter_liste" : "wizard.ajouter_option")}
+                +{" "}
+                {t(modeCandidature === "liste" ? "wizard.ajouter_liste" : "wizard.ajouter_option")}
               </button>
             )}
             <p className="rounded-cid bg-status-infoBg px-3 py-2 text-[11px] text-status-infoText">

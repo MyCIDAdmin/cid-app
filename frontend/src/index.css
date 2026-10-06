@@ -702,3 +702,18 @@ table tbody tr:hover > td {
 .dark .text-cad:not([class*="bg-white"]) {
   color: var(--color-ca-text);
 }
+
+/* Compatibilité mobile (demande utilisateur du 2026-10-06, point 3) : sous 640px, les champs de
+   saisie passent à 16px pour que iOS Safari ne zoome pas automatiquement au focus, et le texte
+   ne se redimensionne pas de lui-même en paysage. */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

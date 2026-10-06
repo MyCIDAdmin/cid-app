@@ -73,7 +73,7 @@ export default function DepenseFormModal({
         <h2 className="mb-4 text-base font-semibold text-text-primary">
           {depense ? t("modifier") : t("nouvelle_depense")}
         </h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor="dep-date" className={LABEL}>
               {t("champ.date")}

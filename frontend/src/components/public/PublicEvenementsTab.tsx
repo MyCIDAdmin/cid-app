@@ -27,7 +27,12 @@ import { Link, useNavigate } from "react-router-dom";
 
 import AnimatedProgress from "../ui/AnimatedProgress";
 import MapsApercu from "../ui/MapsApercu";
-import ModaleInscription, { formatDate, formatMontant, formatPeriode, formatPlageHoraire } from "../evenements/ModaleInscription";
+import ModaleInscription, {
+  formatDate,
+  formatMontant,
+  formatPeriode,
+  formatPlageHoraire,
+} from "../evenements/ModaleInscription";
 import { useAnnulerInscription, useEvenements, useInscriptions } from "../../hooks/useEvenements";
 import { estMembreActif, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -99,10 +104,14 @@ function EvenementKachel({
           )}
           <span>📍 {evenement.lieu}</span>
           {!bloqueNonMembre && evenement.point_rdv && (
-            <span>🚩 {t("point_rdv")} : {evenement.point_rdv}</span>
+            <span>
+              🚩 {t("point_rdv")} : {evenement.point_rdv}
+            </span>
           )}
           {!evenement.gratuit && evenement.date_limite_paiement && (
-            <span>💳 {t("paiement_avant", { date: formatDate(evenement.date_limite_paiement) })}</span>
+            <span>
+              💳 {t("paiement_avant", { date: formatDate(evenement.date_limite_paiement) })}
+            </span>
           )}
           <span>
             {evenement.places_max !== null
@@ -123,7 +132,9 @@ function EvenementKachel({
             {carteOuverte ? t("carte_masquer") : t("carte_afficher")}
           </button>
         )}
-        {!bloqueNonMembre && carteOuverte && <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />}
+        {!bloqueNonMembre && carteOuverte && (
+          <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />
+        )}
 
         {!passe && remplissage !== null && <AnimatedProgress value={remplissage} />}
 
@@ -294,7 +305,7 @@ export default function PublicEvenementsTab() {
         </p>
       </div>
 
-      <div className="mb-6 flex justify-center gap-1 border-b border-text-tertiary/20">
+      <div className="mb-6 flex justify-start gap-1 overflow-x-auto whitespace-nowrap border-b sm:justify-center border-text-tertiary/20">
         {(["avenir", "passes", "inscrits"] as const).map((val) => (
           <button
             key={val}

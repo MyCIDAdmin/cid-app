@@ -77,7 +77,11 @@ export default function ClassementTab() {
         <span className="text-xs font-bold text-text-tertiary">
           {t("live.classement_saison", { saison: lignes[0].saison })}
         </span>
-        <div className="flex gap-1" role="tablist" aria-label={t("live.classement_vue_label")}>
+        <div
+          className="flex gap-1 overflow-x-auto"
+          role="tablist"
+          aria-label={t("live.classement_vue_label")}
+        >
           {VUES.map((valeur) => (
             <button
               key={valeur}

@@ -554,38 +554,40 @@ export default function MonAdhesionPage() {
           <p className="text-sm text-text-tertiary">{t("historique.aucun")}</p>
         )}
         {mesSouscriptions.data && mesSouscriptions.data.results.length > 0 && (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
-                <th className="py-1">{t("historique.col_campagne")}</th>
-                <th className="py-1">{t("historique.col_offre")}</th>
-                <th className="py-1">{t("historique.col_prix")}</th>
-                <th className="py-1">{t("historique.col_statut")}</th>
-                <th className="py-1">{t("historique.col_date")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mesSouscriptions.data.results.map((s) => {
-                const camp = campagnesById.get(s.campagne);
-                const offreNom = camp?.offres.find((o) => o.id === s.offre)?.nom;
-                return (
-                  <tr key={s.id} className="border-b border-text-tertiary/10 last:border-0">
-                    <td className="py-1">{camp?.nom ?? "—"}</td>
-                    <td className="py-1">{offreNom ?? "—"}</td>
-                    <td className="py-1">{formatMontant(s.prix_paye)}</td>
-                    <td className="py-1">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[s.statut]}`}
-                      >
-                        {t(`statut.${s.statut}`)}
-                      </span>
-                    </td>
-                    <td className="py-1">{formatDate(s.date_souscription)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
+                  <th className="py-1">{t("historique.col_campagne")}</th>
+                  <th className="py-1">{t("historique.col_offre")}</th>
+                  <th className="py-1">{t("historique.col_prix")}</th>
+                  <th className="py-1">{t("historique.col_statut")}</th>
+                  <th className="py-1">{t("historique.col_date")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mesSouscriptions.data.results.map((s) => {
+                  const camp = campagnesById.get(s.campagne);
+                  const offreNom = camp?.offres.find((o) => o.id === s.offre)?.nom;
+                  return (
+                    <tr key={s.id} className="border-b border-text-tertiary/10 last:border-0">
+                      <td className="py-1">{camp?.nom ?? "—"}</td>
+                      <td className="py-1">{offreNom ?? "—"}</td>
+                      <td className="py-1">{formatMontant(s.prix_paye)}</td>
+                      <td className="py-1">
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[s.statut]}`}
+                        >
+                          {t(`statut.${s.statut}`)}
+                        </span>
+                      </td>
+                      <td className="py-1">{formatDate(s.date_souscription)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

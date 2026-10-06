@@ -107,7 +107,10 @@ export default function ProjetArbeitsbereichPage() {
       )}
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
 
-      <div role="tablist" className="flex gap-1 border-b border-text-tertiary/20">
+      <div
+        role="tablist"
+        className="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/20"
+      >
         {(["uebersicht", "aufgaben", "kosten", "team", "aktivitaet"] as const).map((r) => (
           <button
             key={r}

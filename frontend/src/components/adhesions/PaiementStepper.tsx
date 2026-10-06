@@ -431,11 +431,26 @@ export default function PaiementStepper() {
       <h2 className="mb-4 text-lg font-bold text-text-primary">{t("article.titre")}</h2>
 
       <div className="mb-5 flex items-center gap-3">
-        <EtapeIndicateur numero={1} label={t("etape.choisir")} active={etape === 1} franchie={etape > 1} />
+        <EtapeIndicateur
+          numero={1}
+          label={t("etape.choisir")}
+          active={etape === 1}
+          franchie={etape > 1}
+        />
         <div className="h-px w-8 bg-text-tertiary/30" />
-        <EtapeIndicateur numero={2} label={t("etape.paiement")} active={etape === 2} franchie={etape > 2} />
+        <EtapeIndicateur
+          numero={2}
+          label={t("etape.paiement")}
+          active={etape === 2}
+          franchie={etape > 2}
+        />
         <div className="h-px w-8 bg-text-tertiary/30" />
-        <EtapeIndicateur numero={3} label={t("etape.confirmation")} active={etape === 3} franchie={false} />
+        <EtapeIndicateur
+          numero={3}
+          label={t("etape.confirmation")}
+          active={etape === 3}
+          franchie={false}
+        />
       </div>
 
       {paiementId && etape === 1 && (
@@ -510,7 +525,10 @@ export default function PaiementStepper() {
 
             {articleChoisi === "don" && (
               <div className="mt-3">
-                <label htmlFor="don-montant" className="mb-1 block text-xs font-medium text-text-secondary">
+                <label
+                  htmlFor="don-montant"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
                   {t("article.don_montant_label")}
                 </label>
                 <input
@@ -565,49 +583,51 @@ export default function PaiementStepper() {
               )}
               {erreurRecu && <p className="mb-2 text-xs text-status-dangerText">{erreurRecu}</p>}
               {historique.data && historique.data.results.length > 0 && (
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
-                      <th className="py-1">{t("historique.col_date")}</th>
-                      <th className="py-1">{t("historique.col_libelle")}</th>
-                      <th className="py-1">{t("historique.col_montant")}</th>
-                      <th className="py-1">{t("historique.col_statut")}</th>
-                      <th className="py-1">{t("historique.col_recu")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Retour utilisateur du 2026-09-27 : la kachel ne doit pas étirer la page —
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
+                        <th className="py-1">{t("historique.col_date")}</th>
+                        <th className="py-1">{t("historique.col_libelle")}</th>
+                        <th className="py-1">{t("historique.col_montant")}</th>
+                        <th className="py-1">{t("historique.col_statut")}</th>
+                        <th className="py-1">{t("historique.col_recu")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Retour utilisateur du 2026-09-27 : la kachel ne doit pas étirer la page —
                         seuls les 5 paiements les plus récents sont affichés (le tri "-created_at"
                         du backend, voir CotisationViewSet.ordering, garantit qu'il s'agit bien
                         des plus récents, jamais d'un sous-ensemble arbitraire). */}
-                    {historique.data.results.slice(0, 5).map((c) => (
-                      <tr key={c.id} className="border-b border-text-tertiary/10 last:border-0">
-                        <td className="py-1">{formatDate(c.date_paiement ?? c.created_at)}</td>
-                        <td className="py-1">{c.libelle}</td>
-                        <td className="py-1">{formatMontant(Number(c.montant))}</td>
-                        <td className="py-1">
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[c.statut]}`}
-                          >
-                            {t(`statut.${c.statut}`)}
-                          </span>
-                        </td>
-                        <td className="py-1">
-                          {c.statut === "payee" && (
-                            <button
-                              type="button"
-                              onClick={() => telechargerRecu(c)}
-                              disabled={recuEnCours === c.id}
-                              className="font-medium text-ca hover:underline disabled:opacity-40"
+                      {historique.data.results.slice(0, 5).map((c) => (
+                        <tr key={c.id} className="border-b border-text-tertiary/10 last:border-0">
+                          <td className="py-1">{formatDate(c.date_paiement ?? c.created_at)}</td>
+                          <td className="py-1">{c.libelle}</td>
+                          <td className="py-1">{formatMontant(Number(c.montant))}</td>
+                          <td className="py-1">
+                            <span
+                              className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[c.statut]}`}
                             >
-                              {recuEnCours === c.id ? t("recu.en_cours") : t("recu.telecharger")}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                              {t(`statut.${c.statut}`)}
+                            </span>
+                          </td>
+                          <td className="py-1">
+                            {c.statut === "payee" && (
+                              <button
+                                type="button"
+                                onClick={() => telechargerRecu(c)}
+                                disabled={recuEnCours === c.id}
+                                className="font-medium text-ca hover:underline disabled:opacity-40"
+                              >
+                                {recuEnCours === c.id ? t("recu.en_cours") : t("recu.telecharger")}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
@@ -619,38 +639,49 @@ export default function PaiementStepper() {
           <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
             <h3 className="mb-3 text-xs font-bold text-text-primary">{t("paiement.titre")}</h3>
             <div className="space-y-2">
-              {(
-                [
-                  { mode: "virement_sepa" as const, titre: t("paiement.sepa_titre"), desc: t("paiement.sepa_description") },
-                  { mode: "paypal" as const, titre: t("paiement.paypal_titre"), desc: t("paiement.paypal_description") },
-                ]
-              )
+              {[
+                {
+                  mode: "virement_sepa" as const,
+                  titre: t("paiement.sepa_titre"),
+                  desc: t("paiement.sepa_description"),
+                },
+                {
+                  mode: "paypal" as const,
+                  titre: t("paiement.paypal_titre"),
+                  desc: t("paiement.paypal_description"),
+                },
+              ]
                 .filter((m) => MODES_PROPOSES.includes(m.mode))
                 .map((m) => (
-                <label
-                  key={m.mode}
-                  className={`flex cursor-pointer items-center gap-3 rounded-cid border px-3 py-2 ${
-                    modePaiement === m.mode ? "border-ca bg-cal/20" : "border-text-tertiary/20"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="mode_paiement"
-                    checked={modePaiement === m.mode}
-                    onChange={() => setModePaiement(m.mode)}
-                  />
-                  <div>
-                    <div className="text-sm font-semibold text-text-primary">{m.titre}</div>
-                    <div className="text-xs text-text-tertiary">{m.desc}</div>
-                  </div>
-                </label>
-              ))}
+                  <label
+                    key={m.mode}
+                    className={`flex cursor-pointer items-center gap-3 rounded-cid border px-3 py-2 ${
+                      modePaiement === m.mode ? "border-ca bg-cal/20" : "border-text-tertiary/20"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="mode_paiement"
+                      checked={modePaiement === m.mode}
+                      onChange={() => setModePaiement(m.mode)}
+                    />
+                    <div>
+                      <div className="text-sm font-semibold text-text-primary">{m.titre}</div>
+                      <div className="text-xs text-text-tertiary">{m.desc}</div>
+                    </div>
+                  </label>
+                ))}
             </div>
             <p className="mt-3 text-xs text-text-tertiary">
-              {MODES_GATEWAY.includes(modePaiement) ? t("paiement.note_gateway") : t("paiement.note")}
+              {MODES_GATEWAY.includes(modePaiement)
+                ? t("paiement.note_gateway")
+                : t("paiement.note")}
             </p>
             {!MODES_GATEWAY.includes(modePaiement) && (
-              <PaymentInstructions mode={modePaiement === "paypal" ? "paypal" : "virement_sepa"} className="mt-3" />
+              <PaymentInstructions
+                mode={modePaiement === "paypal" ? "paypal" : "virement_sepa"}
+                className="mt-3"
+              />
             )}
           </div>
 
@@ -705,7 +736,9 @@ export default function PaiementStepper() {
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-status-successBg text-2xl text-status-successText">
                 ✓
               </div>
-              <div className="mb-1 text-lg font-bold text-text-primary">{t("confirmation.titre")}</div>
+              <div className="mb-1 text-lg font-bold text-text-primary">
+                {t("confirmation.titre")}
+              </div>
               <div className="mb-4 text-sm text-text-tertiary">{t("confirmation.sous_titre")}</div>
             </>
           ) : (
@@ -718,9 +751,12 @@ export default function PaiementStepper() {
               <div className="mb-1 text-lg font-bold text-text-primary">
                 {t("confirmation.titre_attente")}
               </div>
-              <div className="mb-4 text-sm text-text-tertiary">{t("confirmation.sous_titre_attente")}</div>
+              <div className="mb-4 text-sm text-text-tertiary">
+                {t("confirmation.sous_titre_attente")}
+              </div>
 
-              {(resultat.mode_paiement === "virement_sepa" || resultat.mode_paiement === "paypal") && (
+              {(resultat.mode_paiement === "virement_sepa" ||
+                resultat.mode_paiement === "paypal") && (
                 <div className="mx-auto mb-4 max-w-sm">
                   <PaymentInstructions mode={resultat.mode_paiement} />
                 </div>
@@ -742,7 +778,9 @@ export default function PaiementStepper() {
                     </>
                   ) : (
                     redirectionEnCours && (
-                      <p className="text-sm text-text-tertiary">{t("paiement.redirection_en_cours")}</p>
+                      <p className="text-sm text-text-tertiary">
+                        {t("paiement.redirection_en_cours")}
+                      </p>
                     )
                   )}
                 </div>

@@ -173,7 +173,7 @@ export default function AufgabeModal({
               ? t("arbeitsbereich.modal.aufgabe_bearbeiten")
               : t("arbeitsbereich.modal.neue_aufgabe")}
           </h2>
-          <fieldset disabled={!bearbeitbar} className="grid grid-cols-2 gap-3">
+          <fieldset disabled={!bearbeitbar} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="col-span-2">
               <label htmlFor="aufg-titel" className={LABEL}>
                 {t("arbeitsbereich.modal.titel")}

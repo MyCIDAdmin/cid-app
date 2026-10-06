@@ -87,7 +87,7 @@ export default function LiveMatchPage() {
         )}
       </div>
 
-      <div className="mb-4 flex gap-1 border-b border-text-tertiary/20">
+      <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/20">
         {(["ticker", "tabelle", "spielplan", "statistiken"] as const).map((valeur) => (
           <button
             key={valeur}

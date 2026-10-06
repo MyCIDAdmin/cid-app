@@ -240,26 +240,28 @@ function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
                 {t("tippspiel.klassement_leer")}
               </p>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[10px] uppercase text-text-tertiary">
-                    <th className="px-3 py-2">{t("tippspiel.klassement_platz")}</th>
-                    <th className="px-3 py-2">{t("tippspiel.klassement_mitglied")}</th>
-                    <th className="px-3 py-2 text-right">{t("tippspiel.klassement_punkte")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {classement.map((ligne, index) => (
-                    <tr key={ligne.id} className="border-t border-text-tertiary/10">
-                      <td className="px-3 py-2 tabular-nums">{index + 1}</td>
-                      <td className="px-3 py-2">{ligne.membre_nom}</td>
-                      <td className="px-3 py-2 text-right font-bold tabular-nums">
-                        {ligne.total_points}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[10px] uppercase text-text-tertiary">
+                      <th className="px-3 py-2">{t("tippspiel.klassement_platz")}</th>
+                      <th className="px-3 py-2">{t("tippspiel.klassement_mitglied")}</th>
+                      <th className="px-3 py-2 text-right">{t("tippspiel.klassement_punkte")}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {classement.map((ligne, index) => (
+                      <tr key={ligne.id} className="border-t border-text-tertiary/10">
+                        <td className="px-3 py-2 tabular-nums">{index + 1}</td>
+                        <td className="px-3 py-2">{ligne.membre_nom}</td>
+                        <td className="px-3 py-2 text-right font-bold tabular-nums">
+                          {ligne.total_points}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </>

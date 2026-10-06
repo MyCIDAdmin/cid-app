@@ -132,10 +132,14 @@ function EvenementCarte({
           )}
           <span>📍 {evenement.lieu}</span>
           {!bloqueNonMembre && evenement.point_rdv && (
-            <span>🚩 {t("point_rdv")} : {evenement.point_rdv}</span>
+            <span>
+              🚩 {t("point_rdv")} : {evenement.point_rdv}
+            </span>
           )}
           {!evenement.gratuit && evenement.date_limite_paiement && (
-            <span>💳 {t("paiement_avant", { date: formatDate(evenement.date_limite_paiement) })}</span>
+            <span>
+              💳 {t("paiement_avant", { date: formatDate(evenement.date_limite_paiement) })}
+            </span>
           )}
           <span>
             {evenement.places_max !== null
@@ -161,7 +165,9 @@ function EvenementCarte({
             {carteOuverte ? t("carte_masquer") : t("carte_afficher")}
           </button>
         )}
-        {!bloqueNonMembre && carteOuverte && <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />}
+        {!bloqueNonMembre && carteOuverte && (
+          <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />
+        )}
 
         {!passe && remplissage !== null && (
           <div>
@@ -241,7 +247,7 @@ export default function EvenementsPage() {
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("titre")}</h1>
 
-      <div className="mb-4 flex gap-1 border-b border-text-tertiary/20">
+      <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/20">
         {(["avenir", "passes", "inscrits"] as const).map((val) => (
           <button
             key={val}

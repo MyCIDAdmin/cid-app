@@ -62,21 +62,23 @@ export default function AbschlussTab({ modifiable }: { modifiable: boolean }) {
             })}
           </p>
           {data.snapshot && (
-            <table className="mb-4 text-sm">
-              <caption className="mb-1 text-left text-[10px] uppercase text-text-tertiary">
-                {t("abschluss.eingefroren")}
-              </caption>
-              <tbody>
-                {(["recettes", "depenses", "resultat"] as const).map((k, i) => (
-                  <tr key={k}>
-                    <td className="pr-4 text-text-secondary">
-                      {t(["abschluss.einnahmen", "abschluss.ausgaben", "abschluss.ergebnis"][i])}
-                    </td>
-                    <td className="text-right font-medium">{formatMontant(data.snapshot![k])}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="mb-4 text-sm">
+                <caption className="mb-1 text-left text-[10px] uppercase text-text-tertiary">
+                  {t("abschluss.eingefroren")}
+                </caption>
+                <tbody>
+                  {(["recettes", "depenses", "resultat"] as const).map((k, i) => (
+                    <tr key={k}>
+                      <td className="pr-4 text-text-secondary">
+                        {t(["abschluss.einnahmen", "abschluss.ausgaben", "abschluss.ergebnis"][i])}
+                      </td>
+                      <td className="text-right font-medium">{formatMontant(data.snapshot![k])}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
           {istAppAdmin ? (
             <div className="flex flex-wrap items-center gap-2">
