@@ -15,6 +15,7 @@ from apps.finances.models import (
     CategorieDepense,
     Depense,
     FinanzProtokoll,
+    Gesamtbudget,
     Jahresabschluss,
     StatutDepense,
 )
@@ -111,6 +112,7 @@ def test_protokoll_endpoint_nur_lesen_und_filterbar(api_client, fin1, cat):
 
 
 def test_budget_aenderung_wird_protokolliert(api_client, fin1, cat):
+    Gesamtbudget.objects.create(annee=JAHR, montant=Decimal("1000"))
     api_client.force_authenticate(user=fin1)
     api_client.post(
         reverse("finances:budget"),

@@ -14,6 +14,20 @@ from apps.projets.models import ProjetImage, ProjetMiseAJourImage
 
 
 @pytest.fixture(autouse=True)
+def _projekttopf(db):
+    """Großzügiges Gesamt- und Projektbudget für alle Jahre — die Budgetregeln selbst prüft
+    test_budget.py (dort wird der Topf gezielt gesetzt)."""
+    from decimal import Decimal
+
+    from apps.finances.models import BudgetAnnuel, CategorieDepense, Gesamtbudget
+
+    kat = CategorieDepense.objects.get(projektbudget=True)
+    for jahr in range(2024, 2036):
+        Gesamtbudget.objects.create(annee=jahr, montant=Decimal("2000000"))
+        BudgetAnnuel.objects.create(annee=jahr, categorie=kat, montant=Decimal("1000000"))
+
+
+@pytest.fixture(autouse=True)
 def _projets_storage_local(tmp_path):
     champs = [
         ProjetImage._meta.get_field("image"),

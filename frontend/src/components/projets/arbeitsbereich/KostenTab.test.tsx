@@ -50,6 +50,9 @@ const UEBERSICHT: KostenUebersicht = {
   aufgaben: [],
   darf_erfassen: true,
   darf_plan_bearbeiten: true,
+  plan_jahr: null,
+  budget_jahr: 2026,
+  projektbudget: { jahr: 2026, budget: "500.00", geplant: "160.00", verfuegbar: "340.00" },
 };
 
 const PLAN: PlanKostenEintrag[] = [

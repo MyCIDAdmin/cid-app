@@ -300,6 +300,14 @@ export interface KostenUebersicht {
   aufgaben: KostenAufgabeZeile[];
   darf_erfassen: boolean;
   darf_plan_bearbeiten: boolean;
+  plan_jahr: number | null;
+  budget_jahr: number;
+  projektbudget: {
+    jahr: number;
+    budget: string;
+    geplant: string;
+    verfuegbar: string;
+  };
 }
 
 // --- Aktivitätsprotokoll (2026-10-07) ----------------------------------------------------------
@@ -316,6 +324,7 @@ export type AktivitaetAktion =
   | "sichtbarkeit"
   | "plan_gesetzt"
   | "plan_entfernt"
+  | "planjahr"
   | "kosten_erfasst"
   | "kosten_geloescht";
 

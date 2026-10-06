@@ -156,6 +156,11 @@ class Projet(models.Model):
     # Demande utilisateur point 4.
     date_limite = models.DateField(null=True, blank=True, verbose_name=_("Date limite"))
 
+    # Planjahr für die Budgetprüfung (Projekttopf der Finanzen). Leer = Jahr der Frist, sonst
+    # Erstellungsjahr — siehe `budget_jahr`. Änderbar nur über die Aktion `planjahr`, die den
+    # Projekttopf des Zieljahres prüft.
+    plan_jahr = models.PositiveSmallIntegerField(null=True, blank=True)
+
     ordre = models.PositiveIntegerField(default=0)
 
     created_by = models.ForeignKey(
@@ -216,6 +221,14 @@ class Projet(models.Model):
             .distinct()
             .count()
         )
+
+    @property
+    def budget_jahr(self) -> int:
+        if self.plan_jahr:
+            return self.plan_jahr
+        if self.date_limite:
+            return self.date_limite.year
+        return (self.created_at or timezone.now()).year
 
     @property
     def echeance_depassee(self) -> bool:
@@ -418,6 +431,7 @@ class AktionAktivitaet(models.TextChoices):
     SICHTBARKEIT = "sichtbarkeit", _("Visibilité modifiée")
     PLAN_GESETZT = "plan_gesetzt", _("Coût prévu défini")
     PLAN_ENTFERNT = "plan_entfernt", _("Coût prévu retiré")
+    PLANJAHR = "planjahr", _("Année de planification modifiée")
     KOSTEN_ERFASST = "kosten_erfasst", _("Coût saisi")
     KOSTEN_GELOESCHT = "kosten_geloescht", _("Coût supprimé")
 

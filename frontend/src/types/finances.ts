@@ -10,6 +10,8 @@ export interface CategorieDepense {
   nom_de: string;
   nom_ar: string;
   namen?: KategorieNamen;
+  /** Kennzeichnet die Kategorie „Projekte“ (Topf für die Plan-Kosten aller Projekte). */
+  projektbudget?: boolean;
   actif: boolean;
   ordre: number;
 }
@@ -62,6 +64,20 @@ export interface BudgetLigne {
   categorie_nom: string;
   categorie_namen?: KategorieNamen;
   montant: string;
+}
+
+/** Antwort von GET /finances/budget/uebersicht/ (Beträge als Dezimal-Strings). */
+export interface BudgetUebersicht {
+  annee: number;
+  gesamt: string;
+  zugeteilt: string;
+  verfuegbar: string;
+  projekte: {
+    kategorie: string | null;
+    budget: string;
+    geplant: string;
+    verfuegbar: string;
+  };
 }
 
 export type AktionProtokoll =

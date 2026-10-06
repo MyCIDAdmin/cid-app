@@ -144,6 +144,7 @@ class ProjetSerializer(serializers.ModelSerializer):
     montant_collecte = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     nb_contributeurs = serializers.IntegerField(read_only=True)
     echeance_depassee = serializers.BooleanField(read_only=True)
+    budget_jahr = serializers.IntegerField(read_only=True)
     est_gestionnaire = serializers.SerializerMethodField()
     meine_rolle = serializers.SerializerMethodField()
     darf_arbeitsbereich = serializers.SerializerMethodField()
@@ -164,6 +165,8 @@ class ProjetSerializer(serializers.ModelSerializer):
             "montant_collecte",
             "nb_contributeurs",
             "date_limite",
+            "plan_jahr",
+            "budget_jahr",
             "echeance_depassee",
             "ordre",
             "images",
@@ -175,7 +178,8 @@ class ProjetSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_by", "created_at", "updated_at"]
+        # plan_jahr nur über die Aktion `planjahr` (prüft den Projekttopf des Zieljahres).
+        read_only_fields = ["id", "created_by", "created_at", "updated_at", "plan_jahr"]
 
     def get_est_gestionnaire(self, obj) -> bool:
         request = self.context.get("request")

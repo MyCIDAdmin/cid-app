@@ -51,6 +51,7 @@ from apps.finances.services import diff, etat_depense, protokolliere, pruefe_jah
 from apps.membres.models import Membre
 
 from .aktivitaet import logge
+from .budget import geplante_summe, pruefe_jahreswechsel, pruefe_plan
 from .models import (
     AktionAktivitaet,
     Aufgabe,
@@ -119,7 +120,7 @@ class ProjetViewSet(ModelViewSet):
     def get_permissions(self):
         # La Direction d'un projet (pas seulement un gestionnaire) peut publier/dépublier : action
         # dédiée, contrôle d'objet fait dans la vue (voir `sichtbarkeit` ci-dessous).
-        if self.action == "sichtbarkeit":
+        if self.action in ("sichtbarkeit", "planjahr"):
             return [IsAuthenticated()]
         return super().get_permissions()
 
@@ -149,6 +150,36 @@ class ProjetViewSet(ModelViewSet):
         projet.sichtbarkeit = wert
         projet.save(update_fields=["sichtbarkeit", "updated_at"])
         logge(request.user, projet, AktionAktivitaet.SICHTBARKEIT, detail=wert)
+        return Response(self.get_serializer(projet).data)
+
+    @action(detail=True, methods=["post"])
+    def planjahr(self, request, pk=None):
+        """Setzt das Planjahr (Budgetprüfung) — Projektleitung oder Verwaltung. Leer = Standard
+        (Jahr der Frist, sonst Erstellungsjahr). Der Projekttopf des Zieljahres muss reichen."""
+        projet = self.get_object()
+        if not kann_team_verwalten(request.user, projet):
+            raise PermissionDenied("Nur die Projektleitung oder die Verwaltung darf das ändern.")
+        roh = request.data.get("plan_jahr")
+        if roh in (None, ""):
+            neu = None
+        else:
+            try:
+                neu = int(roh)
+            except (TypeError, ValueError):
+                raise ValidationError({"plan_jahr": "Ungültiges Jahr."})
+            if not 2000 <= neu <= 2100:
+                raise ValidationError({"plan_jahr": "Ungültiges Jahr."})
+        vorher = projet.plan_jahr
+        projet.plan_jahr = neu
+        pruefe_jahreswechsel(projet, projet.budget_jahr)
+        projet.save(update_fields=["plan_jahr", "updated_at"])
+        if vorher != neu:
+            logge(
+                request.user,
+                projet,
+                AktionAktivitaet.PLANJAHR,
+                str(projet.budget_jahr),
+            )
         return Response(self.get_serializer(projet).data)
 
     @action(detail=True, methods=["get"])
@@ -243,8 +274,20 @@ class ProjetViewSet(ModelViewSet):
                 "aufgaben": sorted(pro_aufgabe.values(), key=lambda a: a["titel"].lower()),
                 "darf_erfassen": kann_aufgaben_bearbeiten(request.user, projet),
                 "darf_plan_bearbeiten": kann_team_verwalten(request.user, projet),
+                "plan_jahr": projet.plan_jahr,
+                "budget_jahr": projet.budget_jahr,
+                "projektbudget": self._projektbudget(projet),
             }
         )
+
+    @staticmethod
+    def _projektbudget(projet):
+        """Projekttopf des Planjahres (Budget der Kategorie „Projekte“ − alle geplanten Kosten)."""
+        from apps.finances.budget import projektbudget
+
+        jahr = projet.budget_jahr
+        topf, geplant = projektbudget(jahr), geplante_summe(jahr)
+        return {"jahr": jahr, "budget": topf, "geplant": geplant, "verfuegbar": topf - geplant}
 
     @action(detail=True, methods=["get"])
     def contributeurs(self, request, pk=None):
@@ -664,6 +707,7 @@ class PlanKostenViewSet(ModelViewSet):
         if not arbeitsbereich_projekte(self.request.user).filter(pk=projet.pk).exists():
             raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
         self._pruefe_schreibrecht(projet)
+        pruefe_plan(projet, serializer.validated_data["betrag"])
         plan = serializer.save()
         logge(
             self.request.user,
@@ -675,6 +719,11 @@ class PlanKostenViewSet(ModelViewSet):
 
     def perform_update(self, serializer):
         self._pruefe_schreibrecht(serializer.instance.projet)
+        pruefe_plan(
+            serializer.instance.projet,
+            serializer.validated_data.get("betrag", serializer.instance.betrag),
+            ausser_plan=serializer.instance,
+        )
         plan = serializer.save()
         logge(
             self.request.user,

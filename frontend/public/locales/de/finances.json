@@ -58,7 +58,20 @@
   "budget": {
     "intro": "Geplantes Jahresbudget je Kategorie. Leer oder 0 = kein Budget.",
     "enregistrer": "Budget speichern",
-    "enregistre": "Budget gespeichert."
+    "enregistre": "Budget gespeichert.",
+    "gesamt": "Gesamtbudget",
+    "gesamt_speichern": "Speichern",
+    "gesamt_gespeichert": "Gesamtbudget gespeichert.",
+    "zugeteilt": "Auf Kategorien verteilt",
+    "verfuegbar": "Verfügbar",
+    "ueberschritten": "Das Gesamtbudget ist um {{betrag}} überschritten – bitte Kategorie-Budgets senken.",
+    "gesamt_zuerst": "Lege zuerst das Gesamtbudget des Jahres fest, bevor du es auf Kategorien verteilst.",
+    "projekttopf": "Projekttopf",
+    "projekte_titel": "Projekte – Planung im Jahr",
+    "projekte_budget": "Projektbudget",
+    "projekte_geplant": "Von Projekten geplant",
+    "projekte_verfuegbar": "Noch frei für Projekte",
+    "projekte_hinweis": "Die Plan-Kosten aller Projekte dieses Planjahres dürfen das Budget der Kategorie „Projekte“ nicht überschreiten."
   },
   "categories": {
     "intro": "Kategorien ordnen die Ausgaben. Genutzte Kategorien werden deaktiviert statt gelöscht.",

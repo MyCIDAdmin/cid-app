@@ -58,7 +58,20 @@
   "budget": {
     "intro": "Budget annuel prévu par catégorie. Vide ou 0 = pas de budget.",
     "enregistrer": "Enregistrer le budget",
-    "enregistre": "Budget enregistré."
+    "enregistre": "Budget enregistré.",
+    "gesamt": "Budget global",
+    "gesamt_speichern": "Enregistrer",
+    "gesamt_gespeichert": "Budget global enregistré.",
+    "zugeteilt": "Réparti par catégorie",
+    "verfuegbar": "Disponible",
+    "ueberschritten": "Le budget global est dépassé de {{betrag}} – veuillez réduire les budgets par catégorie.",
+    "gesamt_zuerst": "Définissez d'abord le budget global de l'année avant de le répartir par catégorie.",
+    "projekttopf": "Enveloppe projets",
+    "projekte_titel": "Projets – planification de l'année",
+    "projekte_budget": "Budget projets",
+    "projekte_geplant": "Planifié par les projets",
+    "projekte_verfuegbar": "Encore disponible pour les projets",
+    "projekte_hinweis": "Les coûts prévus de tous les projets de cette année de planification ne doivent pas dépasser le budget de la catégorie « Projets »."
   },
   "categories": {
     "intro": "Les catégories classent les dépenses. Une catégorie utilisée se désactive au lieu d'être supprimée.",
