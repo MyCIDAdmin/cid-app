@@ -75,6 +75,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import MitgliedsKarteAbschnitt from "../../components/adhesions/MitgliedsKarteAbschnitt";
 import PaiementStepper from "../../components/adhesions/PaiementStepper";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
@@ -254,7 +255,22 @@ export default function MonAdhesionPage() {
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("page.titre")}</h1>
 
-      {souscriptionActuelle && (
+      {/* Bezahlte Mitgliedschaft → digitale Mitgliedskarte im Stil des Angebots ; sonst (Antrag
+          offen, Nachweis fehlt …) bleibt die bisherige Statuskachel. */}
+      {souscriptionActuelle && dejaPayee && (
+        <MitgliedsKarteAbschnitt
+          stil={offreActuelle?.kartenstil}
+          angebot={offreActuelle?.nom ?? "—"}
+          kampagne={campagne?.nom}
+          gueltigBis={campagne ? formatDate(campagne.date_fin) : undefined}
+          vorteile={souscriptionActuelle.snapshot_avantages
+            .slice()
+            .sort((a, b) => a.ordre - b.ordre)
+            .map((av) => av.texte_fr)}
+        />
+      )}
+
+      {souscriptionActuelle && !dejaPayee && (
         <div className="mb-5 rounded-cid-lg bg-ca p-5 text-white shadow-sm">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/80">
             {t("hero.titre")}
@@ -547,38 +563,40 @@ export default function MonAdhesionPage() {
           <p className="text-sm text-text-tertiary">{t("historique.aucun")}</p>
         )}
         {mesSouscriptions.data && mesSouscriptions.data.results.length > 0 && (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
-                <th className="py-1">{t("historique.col_campagne")}</th>
-                <th className="py-1">{t("historique.col_offre")}</th>
-                <th className="py-1">{t("historique.col_prix")}</th>
-                <th className="py-1">{t("historique.col_statut")}</th>
-                <th className="py-1">{t("historique.col_date")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mesSouscriptions.data.results.map((s) => {
-                const camp = campagnesById.get(s.campagne);
-                const offreNom = camp?.offres.find((o) => o.id === s.offre)?.nom;
-                return (
-                  <tr key={s.id} className="border-b border-text-tertiary/10 last:border-0">
-                    <td className="py-1">{camp?.nom ?? "—"}</td>
-                    <td className="py-1">{offreNom ?? "—"}</td>
-                    <td className="py-1">{formatMontant(s.prix_paye)}</td>
-                    <td className="py-1">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[s.statut]}`}
-                      >
-                        {t(`statut.${s.statut}`)}
-                      </span>
-                    </td>
-                    <td className="py-1">{formatDate(s.date_souscription)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
+                  <th className="py-1">{t("historique.col_campagne")}</th>
+                  <th className="py-1">{t("historique.col_offre")}</th>
+                  <th className="py-1">{t("historique.col_prix")}</th>
+                  <th className="py-1">{t("historique.col_statut")}</th>
+                  <th className="py-1">{t("historique.col_date")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mesSouscriptions.data.results.map((s) => {
+                  const camp = campagnesById.get(s.campagne);
+                  const offreNom = camp?.offres.find((o) => o.id === s.offre)?.nom;
+                  return (
+                    <tr key={s.id} className="border-b border-text-tertiary/10 last:border-0">
+                      <td className="py-1">{camp?.nom ?? "—"}</td>
+                      <td className="py-1">{offreNom ?? "—"}</td>
+                      <td className="py-1">{formatMontant(s.prix_paye)}</td>
+                      <td className="py-1">
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[s.statut]}`}
+                        >
+                          {t(`statut.${s.statut}`)}
+                        </span>
+                      </td>
+                      <td className="py-1">{formatDate(s.date_souscription)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

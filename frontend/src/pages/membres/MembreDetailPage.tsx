@@ -55,8 +55,7 @@ export default function MembreDetailPage() {
     setErreurStatut(null);
     changerStatutMutation.mutate(nouveauStatut, {
       onSuccess: () => setNouveauStatut(""),
-      onError: (error) =>
-        setErreurStatut(extractApiErrorMessage(error, t("fiche.erreur_statut"))),
+      onError: (error) => setErreurStatut(extractApiErrorMessage(error, t("fiche.erreur_statut"))),
     });
   }
 
@@ -130,7 +129,7 @@ export default function MembreDetailPage() {
           <h2 className="mb-3 text-sm font-semibold text-text-primary">
             {t("fiche.section_personnelles")}
           </h2>
-          <dl className="grid grid-cols-2 gap-4">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Champ label={t("champ.prenom")} valeur={membre.prenom} />
             <Champ label={t("champ.nom")} valeur={membre.nom} />
             <Champ label={t("champ.date_naissance")} valeur={membre.date_naissance} />
@@ -146,7 +145,7 @@ export default function MembreDetailPage() {
           <h2 className="mb-3 text-sm font-semibold text-text-primary">
             {t("fiche.section_adresse")}
           </h2>
-          <dl className="grid grid-cols-2 gap-4">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Champ label={t("champ.pays")} valeur={t(`pays.${membre.pays}`)} />
             {membre.pays === PAYS_ALLEMAGNE && (
               <>
@@ -165,7 +164,7 @@ export default function MembreDetailPage() {
           <h2 className="mb-3 text-sm font-semibold text-text-primary">
             {t("fiche.section_associatives")}
           </h2>
-          <dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:grid-cols-4">
             <Champ label={t("champ.numero_membre")} valeur={membre.numero_membre} />
             <Champ label={t("champ.date_adhesion")} valeur={membre.date_adhesion} />
             <div>

@@ -154,13 +154,15 @@ export default function CategoriesTab({ modifiable }: { modifiable: boolean }) {
                       >
                         {t("categories.uebersetzungen")}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => modifier.mutate({ id: c.id, patch: { actif: !c.actif } })}
-                        className="text-xs font-medium text-ca hover:underline"
-                      >
-                        {c.actif ? t("categories.desactiver") : t("categories.activer")}
-                      </button>
+                      {!c.projektbudget && (
+                        <button
+                          type="button"
+                          onClick={() => modifier.mutate({ id: c.id, patch: { actif: !c.actif } })}
+                          className="text-xs font-medium text-ca hover:underline"
+                        >
+                          {c.actif ? t("categories.desactiver") : t("categories.activer")}
+                        </button>
+                      )}
                     </span>
                   )}
                 </div>

@@ -32,42 +32,44 @@ export default function VisibiliteModulesTab() {
   return (
     <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
       <p className="mb-3 text-xs text-text-tertiary">{t("visibilite.aide")}</p>
-      <table className="w-full max-w-xl text-sm">
-        <thead>
-          <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
-            <th className="px-3 py-2">{t("visibilite.module")}</th>
-            <th className="px-3 py-2 text-center">{t("visibilite.membre")}</th>
-            <th className="px-3 py-2 text-center">{t("visibilite.non_membre")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(lignesQuery.data ?? []).map((ligne) => (
-            <tr key={ligne.module} className="border-b border-text-tertiary/10 last:border-0">
-              <td className="px-3 py-2">{t(`modules.${ligne.module}`, ligne.module)}</td>
-              {COLONNES.map(({ groupe, champ }) => (
-                <td key={groupe} className="px-3 py-2 text-center">
-                  <input
-                    type="checkbox"
-                    aria-label={`${ligne.module} ${t(`visibilite.${groupe}`)}`}
-                    checked={Boolean(ligne[champ])}
-                    disabled={setCellule.isPending}
-                    onChange={(e) => {
-                      setErreur("");
-                      setCellule.mutate(
-                        { module: ligne.module, visible: e.target.checked, groupe },
-                        {
-                          onError: (err) =>
-                            setErreur(extractApiErrorMessage(err, t("visibilite.erreur"))),
-                        },
-                      );
-                    }}
-                  />
-                </td>
-              ))}
+      <div className="overflow-x-auto">
+        <table className="w-full max-w-xl text-sm">
+          <thead>
+            <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
+              <th className="px-3 py-2">{t("visibilite.module")}</th>
+              <th className="px-3 py-2 text-center">{t("visibilite.membre")}</th>
+              <th className="px-3 py-2 text-center">{t("visibilite.non_membre")}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {(lignesQuery.data ?? []).map((ligne) => (
+              <tr key={ligne.module} className="border-b border-text-tertiary/10 last:border-0">
+                <td className="px-3 py-2">{t(`modules.${ligne.module}`, ligne.module)}</td>
+                {COLONNES.map(({ groupe, champ }) => (
+                  <td key={groupe} className="px-3 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      aria-label={`${ligne.module} ${t(`visibilite.${groupe}`)}`}
+                      checked={Boolean(ligne[champ])}
+                      disabled={setCellule.isPending}
+                      onChange={(e) => {
+                        setErreur("");
+                        setCellule.mutate(
+                          { module: ligne.module, visible: e.target.checked, groupe },
+                          {
+                            onError: (err) =>
+                              setErreur(extractApiErrorMessage(err, t("visibilite.erreur"))),
+                          },
+                        );
+                      }}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {erreur && <p className="mt-2 text-xs text-status-dangerText">{erreur}</p>}
     </div>
   );

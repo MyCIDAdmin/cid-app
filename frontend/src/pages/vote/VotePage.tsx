@@ -122,7 +122,7 @@ export default function VotePage() {
         </div>
       )}
 
-      <div className="mb-4 flex gap-1 border-b border-text-tertiary/15">
+      <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/15">
         <button
           type="button"
           onClick={() => setOnglet("actif")}

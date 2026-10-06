@@ -9,6 +9,7 @@ import {
   usePlankostenAendern,
   usePlankostenErstellen,
   usePlankostenLoeschen,
+  usePlanjahrSetzen,
 } from "../../../hooks/useProjets";
 import type { Aufgabe, KostenPosition, StatutKosten } from "../../../types/projets";
 import { extractApiErrorMessage } from "../../../utils/apiError";
@@ -43,6 +44,7 @@ export default function KostenTab({
   const planErstellen = usePlankostenErstellen();
   const planAendern = usePlankostenAendern();
   const planLoeschen = usePlankostenLoeschen();
+  const planjahrSetzen = usePlanjahrSetzen();
   const kostenLoeschen = useKostenLoeschen();
   const [dialog, setDialog] = useState<{ position: KostenPosition | null } | null>(null);
   const [loeschen, setLoeschen] = useState<KostenPosition | null>(null);
@@ -105,6 +107,55 @@ export default function KostenTab({
       </div>
       <p className="text-xs text-text-tertiary">{t("arbeitsbereich.kosten.hinweis_freigabe")}</p>
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
+
+      <section className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+        <h3 className="mb-2 text-sm font-semibold text-text-primary">
+          {t("arbeitsbereich.kosten.projektbudget.titel", { jahr: daten.projektbudget.jahr })}
+        </h3>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {(["budget", "geplant", "verfuegbar"] as const).map((k) => (
+            <div key={k} className="rounded-cid border border-text-tertiary/15 p-3">
+              <p
+                className={`text-lg font-bold ${
+                  k === "verfuegbar" && Number(daten.projektbudget.verfuegbar) < 0
+                    ? "text-status-dangerText"
+                    : "text-text-primary"
+                }`}
+              >
+                {euro(daten.projektbudget[k])}
+              </p>
+              <p className="text-[10px] uppercase text-text-tertiary">
+                {t(`arbeitsbereich.kosten.projektbudget.${k}`)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-text-tertiary">
+          {t("arbeitsbereich.kosten.projektbudget.hinweis")}
+        </p>
+        {daten.darf_plan_bearbeiten && (
+          <div className="mt-2 flex items-center gap-2">
+            <label htmlFor="kosten-planjahr" className="text-xs text-text-secondary">
+              {t("arbeitsbereich.kosten.projektbudget.planjahr")}
+            </label>
+            <input
+              id="kosten-planjahr"
+              type="number"
+              min={2000}
+              max={2100}
+              defaultValue={daten.budget_jahr}
+              key={daten.budget_jahr}
+              onBlur={(e) => {
+                const wert = Number(e.target.value);
+                if (wert && wert !== daten.budget_jahr) {
+                  aktion(() => planjahrSetzen.mutateAsync({ projetId, planJahr: wert }));
+                }
+              }}
+              className="w-24 rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm"
+            />
+          </div>
+        )}
+      </section>
 
       <section className="space-y-2 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
         <h3 className="text-sm font-semibold text-text-primary">

@@ -48,6 +48,9 @@ export interface RabaisOffre {
  */
 export type CouleurOffre = "" | "cat_1" | "cat_2" | "cat_3";
 
+/** Look der digitalen Mitgliedskarte — Spiegel von apps.adhesions.models.KartenStil. Leer = Rubin. */
+export type KartenStil = "weiss" | "silber" | "gold" | "diamant" | "bronze" | "onyx" | "rubin";
+
 export interface OffreAdhesion {
   id: string;
   campagne: string;
@@ -65,6 +68,7 @@ export interface OffreAdhesion {
   // apps.adhesions.models.OffreAdhesion côté backend.
   icone: string | null;
   couleur: CouleurOffre;
+  kartenstil?: KartenStil | "";
   populaire: boolean;
   rabais: RabaisOffre[];
 }
@@ -118,6 +122,7 @@ export interface OffreCreatePayload {
   // `icone` n'apparaît volontairement pas ici : comme Produit.image (boutique), elle ne se
   // televerse qu'en multipart/form-data via un endpoint dédié — voir televerserIconeOffre.
   couleur?: CouleurOffre;
+  kartenstil?: KartenStil | "";
   populaire?: boolean;
 }
 

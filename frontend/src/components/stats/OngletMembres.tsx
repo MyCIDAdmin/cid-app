@@ -29,13 +29,21 @@ export default function OngletMembres({ filtres }: { filtres: StatsFiltres }) {
   if (isLoading) return <p className="text-sm text-text-tertiary">{t("chargement")}</p>;
   if (isError || !data) return <p className="text-sm text-status-dangerText">{t("erreur")}</p>;
 
+  /** Libellé de tranche d'âge dans la langue de l'utilisateur (le backend envoie les bornes). */
+  const trancheLabel = (r: TrancheAge) =>
+    r.age_min === undefined
+      ? r.tranche
+      : r.age_max == null
+        ? t("membres.tranche_plus", { min: r.age_min })
+        : t("membres.tranche_plage", { min: r.age_min, max: r.age_max });
+
   const colonnesVille: ColonneDetailBox<RepartitionVille>[] = [
     { cle: "ville_de", label: t("membres.col_ville") },
     { cle: "nombre", label: t("membres.col_nombre"), align: "right" },
   ];
 
   const colonnesAges: ColonneDetailBox<TrancheAge>[] = [
-    { cle: "tranche", label: t("membres.col_tranche") },
+    { cle: "tranche", label: t("membres.col_tranche"), render: (r) => trancheLabel(r) },
     { cle: "nombre", label: t("membres.col_nombre"), align: "right" },
   ];
 
@@ -80,7 +88,7 @@ export default function OngletMembres({ filtres }: { filtres: StatsFiltres }) {
         <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
           <h2 className="mb-3 text-xs font-bold text-text-primary">{t("membres.pyramide_ages")}</h2>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={data.pyramide_ages}>
+            <BarChart data={data.pyramide_ages.map((r) => ({ ...r, tranche: trancheLabel(r) }))}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--BR, #e5e7eb)" />
               <XAxis dataKey="tranche" tick={{ fontSize: 9 }} />
               <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />

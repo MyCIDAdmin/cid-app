@@ -42,7 +42,9 @@ function ParticipantsCovoiturage({ trajetId }: { trajetId: string }) {
   if (reservationsQuery.isLoading) return null;
 
   if (reservations.length === 0) {
-    return <p className="mt-1.5 text-[10px] text-text-tertiary">{t("covoiturage.aucune_reservation")}</p>;
+    return (
+      <p className="mt-1.5 text-[10px] text-text-tertiary">{t("covoiturage.aucune_reservation")}</p>
+    );
   }
 
   return (
@@ -277,7 +279,7 @@ export default function CovoituragePage() {
           onSubmit={proposerTrajet}
           className="mb-4 space-y-2 rounded-cid-lg bg-bg-primary p-3 shadow-sm"
         >
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
               type="text"
               value={depart}
@@ -293,7 +295,7 @@ export default function CovoituragePage() {
               className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
               type="date"
               aria-label={t("covoiturage.champ_date_label")}
@@ -309,7 +311,7 @@ export default function CovoituragePage() {
               className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             />
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <input
               type="number"
               min={1}

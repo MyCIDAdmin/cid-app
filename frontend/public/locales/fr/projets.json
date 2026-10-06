@@ -237,6 +237,14 @@
         "beleg": "Justificatif (PDF, JPG, PNG)",
         "abbrechen": "Annuler",
         "speichern": "Enregistrer"
+      },
+      "projektbudget": {
+        "titel": "Budget projets {{jahr}}",
+        "budget": "Budget projets (Finances)",
+        "geplant": "Planifié par tous les projets",
+        "verfuegbar": "Encore disponible",
+        "hinweis": "Les coûts prévus de tous les projets d'une année ne doivent pas dépasser le budget projets fixé par les Finances.",
+        "planjahr": "Année de planification"
       }
     },
     "aktivitaet": {
@@ -259,7 +267,8 @@
         "plan_gesetzt": "{{akteur}} a fixé le coût prévu pour {{objekt}} à {{betrag}}.",
         "plan_entfernt": "{{akteur}} a retiré le coût prévu pour {{objekt}}.",
         "kosten_erfasst": "{{akteur}} a saisi un coût : {{objekt}} ({{betrag}}).",
-        "kosten_geloescht": "{{akteur}} a supprimé la ligne de coût « {{objekt}} »."
+        "kosten_geloescht": "{{akteur}} a supprimé la ligne de coût « {{objekt}} ».",
+        "planjahr": "{{akteur}} a fixé l'année de planification à {{objekt}}."
       }
     }
   }

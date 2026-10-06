@@ -354,6 +354,15 @@ export function usePlankostenAendern() {
   });
 }
 
+export function usePlanjahrSetzen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ projetId, planJahr }: { projetId: string; planJahr: number | null }) =>
+      projetsApi.planjahrSetzen(projetId, planJahr),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
 export function usePlankostenLoeschen() {
   const queryClient = useQueryClient();
   return useMutation({

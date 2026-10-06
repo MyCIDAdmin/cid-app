@@ -50,6 +50,8 @@ export interface RepartitionVille {
 
 export interface TrancheAge {
   tranche: string;
+  age_min?: number;
+  age_max?: number | null;
   nombre: number;
 }
 

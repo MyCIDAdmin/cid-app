@@ -11,12 +11,14 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import Role
 
+from . import budget as budgetregeln
 from .models import (
     AktionProtokoll,
     BudgetAnnuel,
     CategorieDepense,
     Depense,
     FinanzProtokoll,
+    Gesamtbudget,
     Jahresabschluss,
     StatutDepense,
 )
@@ -26,6 +28,7 @@ from .serializers import (
     BudgetDefinirSerializer,
     CategorieDepenseSerializer,
     DepenseSerializer,
+    GesamtbudgetSerializer,
 )
 from .services import (
     diff,
@@ -261,8 +264,53 @@ class BudgetView(APIView):
                         annee=annee,
                         aenderungen={"montant": [str(alt), str(ligne["montant"])]},
                     )
+            # Kategorie-Budgets dürfen das Gesamtbudget nicht überschreiten, der Projekttopf nicht
+            # unter die geplanten Projektkosten fallen — sonst Rollback der ganzen Änderung.
+            budgetregeln.pruefe_kategorien(annee)
         qs = BudgetAnnuel.objects.filter(annee=annee).select_related("categorie")
         return Response(BudgetAnnuelSerializer(qs, many=True).data)
+
+
+class BudgetUebersichtView(APIView):
+    """GET /finances/budget/uebersicht/?annee= — Gesamtbudget, zugeteilt, verfügbar, Projekttopf."""
+
+    permission_classes = [FinancesPermission]
+
+    def get(self, request):
+        annee = _annee(request)
+        return Response(budgetregeln.uebersicht(annee))
+
+
+class GesamtbudgetView(APIView):
+    """POST /finances/budget/gesamt/ {annee, montant} — Gesamtbudget des Jahres festlegen. Es darf
+    nicht unter die bereits auf Kategorien verteilten Budgets fallen."""
+
+    permission_classes = [FinancesPermission]
+
+    def post(self, request):
+        s = GesamtbudgetSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        annee, montant = s.validated_data["annee"], s.validated_data["montant"]
+        pruefe_jahr(annee)
+        verteilt = budgetregeln.zugeteilt(annee)
+        if montant < verteilt:
+            raise budgetregeln.BudgetFehler(
+                f"Das Gesamtbudget {annee} darf nicht unter den bereits verteilten Kategorie-"
+                f"Budgets ({budgetregeln.euro(verteilt)}) liegen."
+            )
+        alt = budgetregeln.gesamtbudget(annee)
+        Gesamtbudget.objects.update_or_create(annee=annee, defaults={"montant": montant})
+        if alt != montant:
+            protokolliere(
+                request.user,
+                AktionProtokoll.BUDGET,
+                "gesamtbudget",
+                annee,
+                f"Gesamtbudget {annee}",
+                annee=annee,
+                aenderungen={"montant": [str(alt), str(montant)]},
+            )
+        return Response(budgetregeln.uebersicht(annee))
 
 
 class ProtokollView(APIView):

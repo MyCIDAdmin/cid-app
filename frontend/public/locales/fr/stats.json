@@ -63,7 +63,9 @@
     "aucune_donnee": "Aucune donnée disponible.",
     "col_ville": "Ville",
     "col_nombre": "Nombre",
-    "col_tranche": "Tranche d'âge"
+    "col_tranche": "Tranche d'âge",
+    "tranche_plage": "{{min}}–{{max}} ans",
+    "tranche_plus": "{{min}}+ ans"
   },
   "evenements": {
     "nombre": "Évènements",
@@ -96,7 +98,27 @@
     "col_statut": "Statut",
     "aucune_donnee": "Aucune donnée financière pour cette période.",
     "type_depense": "Dépense",
-    "filtre_mois": "Mois : {{mois}}"
+    "filtre_mois": "Mois : {{mois}}",
+    "statuts": {
+      "en_attente": "En attente",
+      "payee": "Payée",
+      "echouee": "Échouée",
+      "remboursee": "Remboursée",
+      "annulee": "Annulée",
+      "brouillon": "Brouillon",
+      "en_attente_justificatif": "En attente de justificatif",
+      "en_attente_paiement": "En attente de paiement",
+      "rabais_refuse": "Rabais refusé",
+      "expiree": "Expirée",
+      "confirmee": "Confirmée",
+      "en_preparation": "En préparation",
+      "expediee": "Expédiée",
+      "livree": "Livrée",
+      "approuvee": "Approuvée",
+      "rejetee": "Rejetée",
+      "en_cours": "En cours",
+      "termine": "Terminé"
+    }
   },
   "bilan": {
     "hinweis_drill": "Astuce : un clic sur une barre ouvre les écritures correspondantes.",

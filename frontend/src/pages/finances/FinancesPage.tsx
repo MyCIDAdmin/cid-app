@@ -25,7 +25,7 @@ export default function FinancesPage() {
     <div>
       <h1 className="mb-1 text-xl font-bold text-text-primary">{t("titre")}</h1>
       <p className="mb-4 text-xs text-text-tertiary">{t("vier_augen")}</p>
-      <div className="mb-4 flex gap-1 border-b border-text-tertiary/20">
+      <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/20">
         {(["depenses", "budget", "categories", "pruefung", "protokoll", "abschluss"] as const).map(
           (o) => (
             <button

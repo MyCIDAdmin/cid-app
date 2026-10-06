@@ -19,7 +19,10 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { telechargerTemplateImportHistorique, telechargerTemplateImportMembres } from "../../api/membres";
+import {
+  telechargerTemplateImportHistorique,
+  telechargerTemplateImportMembres,
+} from "../../api/membres";
 import { useImporterHistoriqueStatuts, useImporterMembres } from "../../hooks/useMembres";
 import type { LigneErreurImport } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -52,22 +55,27 @@ function TableauErreurs({
     return <p className="text-sm text-text-secondary">{aucuneErreur}</p>;
   }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
-          <th className="px-2 py-1">{colLigne}</th>
-          <th className="px-2 py-1">{colMessage}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {erreurs.map((erreur, index) => (
-          <tr key={`${erreur.ligne}-${index}`} className="border-b border-text-tertiary/10 last:border-0">
-            <td className="px-2 py-1">{erreur.ligne}</td>
-            <td className="px-2 py-1">{erreur.message}</td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
+            <th className="px-2 py-1">{colLigne}</th>
+            <th className="px-2 py-1">{colMessage}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {erreurs.map((erreur, index) => (
+            <tr
+              key={`${erreur.ligne}-${index}`}
+              className="border-b border-text-tertiary/10 last:border-0"
+            >
+              <td className="px-2 py-1">{erreur.ligne}</td>
+              <td className="px-2 py-1">{erreur.message}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -81,12 +89,14 @@ export default function MembreImportPage() {
   const [telechargementEnCours, setTelechargementEnCours] = useState(false);
   const [erreurTelechargement, setErreurTelechargement] = useState<string | null>(null);
 
-  const [fichierHistoriqueSelectionne, setFichierHistoriqueSelectionne] = useState<File | null>(null);
-  const [erreurLocaleHistorique, setErreurLocaleHistorique] = useState<string | null>(null);
-  const [telechargementHistoriqueEnCours, setTelechargementHistoriqueEnCours] = useState(false);
-  const [erreurTelechargementHistorique, setErreurTelechargementHistorique] = useState<string | null>(
+  const [fichierHistoriqueSelectionne, setFichierHistoriqueSelectionne] = useState<File | null>(
     null,
   );
+  const [erreurLocaleHistorique, setErreurLocaleHistorique] = useState<string | null>(null);
+  const [telechargementHistoriqueEnCours, setTelechargementHistoriqueEnCours] = useState(false);
+  const [erreurTelechargementHistorique, setErreurTelechargementHistorique] = useState<
+    string | null
+  >(null);
 
   const importMutation = useImporterMembres();
   const importHistoriqueMutation = useImporterHistoriqueStatuts();
@@ -180,10 +190,15 @@ export default function MembreImportPage() {
         </section>
 
         <section className="rounded-cid-lg bg-bg-primary p-5 shadow-sm">
-          <h2 className="mb-2 text-sm font-semibold text-text-primary">{t("import.upload_titre")}</h2>
+          <h2 className="mb-2 text-sm font-semibold text-text-primary">
+            {t("import.upload_titre")}
+          </h2>
           <form onSubmit={onSubmit} className="space-y-3">
             <div>
-              <label htmlFor="fichier-import" className="mb-1 block text-xs font-medium text-text-secondary">
+              <label
+                htmlFor="fichier-import"
+                className="mb-1 block text-xs font-medium text-text-secondary"
+              >
                 {t("import.choisir_fichier")}
               </label>
               <input
@@ -197,7 +212,9 @@ export default function MembreImportPage() {
                 }}
                 className="block w-full text-sm text-text-secondary"
               />
-              {erreurLocale && <p className="mt-1 text-xs text-status-dangerText">{erreurLocale}</p>}
+              {erreurLocale && (
+                <p className="mt-1 text-xs text-status-dangerText">{erreurLocale}</p>
+              )}
             </div>
             <button
               type="submit"
@@ -217,18 +234,24 @@ export default function MembreImportPage() {
 
       {resultat && (
         <section className="mt-4 rounded-cid-lg bg-bg-primary p-5 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-text-primary">{t("import.resultat_titre")}</h2>
-          <dl className="mb-4 grid grid-cols-3 gap-4 text-center">
+          <h2 className="mb-3 text-sm font-semibold text-text-primary">
+            {t("import.resultat_titre")}
+          </h2>
+          <dl className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div>
               <dt className="text-xs uppercase text-text-tertiary">{t("import.resultat_total")}</dt>
               <dd className="text-lg font-semibold text-text-primary">{resultat.total}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase text-text-tertiary">{t("import.resultat_importes")}</dt>
+              <dt className="text-xs uppercase text-text-tertiary">
+                {t("import.resultat_importes")}
+              </dt>
               <dd className="text-lg font-semibold text-status-successText">{resultat.importes}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase text-text-tertiary">{t("import.resultat_ignores")}</dt>
+              <dt className="text-xs uppercase text-text-tertiary">
+                {t("import.resultat_ignores")}
+              </dt>
               <dd className="text-lg font-semibold text-status-dangerText">{resultat.ignores}</dd>
             </div>
           </dl>
@@ -245,7 +268,9 @@ export default function MembreImportPage() {
         </section>
       )}
 
-      <h1 className="mb-4 mt-8 text-xl font-bold text-text-primary">{t("import_historique.titre")}</h1>
+      <h1 className="mb-4 mt-8 text-xl font-bold text-text-primary">
+        {t("import_historique.titre")}
+      </h1>
       <p className="mb-4 -mt-2 text-sm text-text-secondary">{t("import_historique.description")}</p>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -322,12 +347,14 @@ export default function MembreImportPage() {
           <h2 className="mb-3 text-sm font-semibold text-text-primary">
             {t("import_historique.resultat_titre")}
           </h2>
-          <dl className="mb-4 grid grid-cols-4 gap-4 text-center">
+          <dl className="mb-4 grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div>
               <dt className="text-xs uppercase text-text-tertiary">
                 {t("import_historique.resultat_total")}
               </dt>
-              <dd className="text-lg font-semibold text-text-primary">{resultatHistorique.total}</dd>
+              <dd className="text-lg font-semibold text-text-primary">
+                {resultatHistorique.total}
+              </dd>
             </div>
             <div>
               <dt className="text-xs uppercase text-text-tertiary">

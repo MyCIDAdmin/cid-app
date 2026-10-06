@@ -80,7 +80,7 @@ export default function AppLayout() {
             <UserMenu />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
           <Outlet />
         </main>
         {/* Variante compact (retour utilisateur du 2026-09-27 : footer trop grand + scrollbar

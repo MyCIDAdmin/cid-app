@@ -4,6 +4,7 @@ import type {
   Abschluss,
   AktionProtokoll,
   BudgetLigne,
+  BudgetUebersicht,
   CategorieDepense,
   Depense,
   DepensePayload,
@@ -83,6 +84,21 @@ export async function rejeterDepense(id: string, motif: string): Promise<Depense
 
 export async function getBudget(annee: number): Promise<BudgetLigne[]> {
   const { data } = await apiClient.get<BudgetLigne[]>("/finances/budget/", { params: { annee } });
+  return data;
+}
+
+export async function getBudgetUebersicht(annee: number): Promise<BudgetUebersicht> {
+  const { data } = await apiClient.get<BudgetUebersicht>("/finances/budget/uebersicht/", {
+    params: { annee },
+  });
+  return data;
+}
+
+export async function setGesamtbudget(annee: number, montant: string): Promise<BudgetUebersicht> {
+  const { data } = await apiClient.post<BudgetUebersicht>("/finances/budget/gesamt/", {
+    annee,
+    montant,
+  });
   return data;
 }
 

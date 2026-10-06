@@ -63,7 +63,9 @@
     "aucune_donnee": "Keine Daten verfügbar.",
     "col_ville": "Stadt",
     "col_nombre": "Anzahl",
-    "col_tranche": "Altersgruppe"
+    "col_tranche": "Altersgruppe",
+    "tranche_plage": "{{min}}–{{max}} Jahre",
+    "tranche_plus": "{{min}}+ Jahre"
   },
   "evenements": {
     "nombre": "Veranstaltungen",
@@ -96,7 +98,27 @@
     "col_statut": "Status",
     "aucune_donnee": "Keine Finanzdaten für diesen Zeitraum.",
     "type_depense": "Ausgabe",
-    "filtre_mois": "Monat: {{mois}}"
+    "filtre_mois": "Monat: {{mois}}",
+    "statuts": {
+      "en_attente": "Ausstehend",
+      "payee": "Bezahlt",
+      "echouee": "Fehlgeschlagen",
+      "remboursee": "Erstattet",
+      "annulee": "Storniert",
+      "brouillon": "Entwurf",
+      "en_attente_justificatif": "Warten auf Nachweis",
+      "en_attente_paiement": "Warten auf Zahlung",
+      "rabais_refuse": "Ermäßigung abgelehnt",
+      "expiree": "Abgelaufen",
+      "confirmee": "Bestätigt",
+      "en_preparation": "In Vorbereitung",
+      "expediee": "Versendet",
+      "livree": "Geliefert",
+      "approuvee": "Genehmigt",
+      "rejetee": "Abgelehnt",
+      "en_cours": "Laufend",
+      "termine": "Abgeschlossen"
+    }
   },
   "bilan": {
     "hinweis_drill": "Tipp: Ein Klick auf einen Balken öffnet die zugehörigen Einzelbuchungen.",

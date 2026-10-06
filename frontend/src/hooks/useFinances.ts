@@ -9,6 +9,7 @@ const keys = {
   categories: () => [...keys.all, "categories"] as const,
   depenses: (f: DepensesFiltres) => [...keys.all, "depenses", f] as const,
   budget: (annee: number) => [...keys.all, "budget", annee] as const,
+  budgetUebersicht: (annee: number) => [...keys.all, "budget-uebersicht", annee] as const,
 };
 
 export function useCategories() {
@@ -21,6 +22,13 @@ export function useDepenses(filtres: DepensesFiltres = {}) {
 
 export function useBudget(annee: number) {
   return useQuery({ queryKey: keys.budget(annee), queryFn: () => api.getBudget(annee) });
+}
+
+export function useBudgetUebersicht(annee: number) {
+  return useQuery({
+    queryKey: keys.budgetUebersicht(annee),
+    queryFn: () => api.getBudgetUebersicht(annee),
+  });
 }
 
 /** Une dépense approuvée change les KPIs/le bilan du module Statistiken & KPIs : on invalide
@@ -132,6 +140,15 @@ export function useJahrWiedereroeffnen() {
   return useMutation({
     mutationFn: ({ annee, grund }: { annee: number; grund: string }) =>
       api.jahrWiedereroeffnen(annee, grund),
+    onSuccess: invalider,
+  });
+}
+
+export function useGesamtbudgetSetzen() {
+  const invalider = useInvalider();
+  return useMutation({
+    mutationFn: ({ annee, montant }: { annee: number; montant: string }) =>
+      api.setGesamtbudget(annee, montant),
     onSuccess: invalider,
   });
 }

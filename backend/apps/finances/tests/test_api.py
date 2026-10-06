@@ -13,7 +13,13 @@ from apps.accounts.models import Role, User
 from apps.cotisations.models import StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.evenements.tests.factories import EvenementFactory, InscriptionFactory
-from apps.finances.models import BudgetAnnuel, CategorieDepense, Depense, StatutDepense
+from apps.finances.models import (
+    BudgetAnnuel,
+    CategorieDepense,
+    Depense,
+    Gesamtbudget,
+    StatutDepense,
+)
 from apps.membres.tests.factories import MembreFactory
 from apps.projets.tests.factories import ProjetFactory
 from apps.stats.bilan import bilan_annuel
@@ -174,6 +180,7 @@ def test_justificatif_format_invalide_refuse(api_client, dir_fin, categorie):
 
 
 def test_budget_definir_et_remise_a_zero(api_client, dir_fin, categorie):
+    Gesamtbudget.objects.create(annee=ANNEE, montant=Decimal("1000"))
     api_client.force_authenticate(user=dir_fin)
     url = reverse("finances:budget")
     r = api_client.post(

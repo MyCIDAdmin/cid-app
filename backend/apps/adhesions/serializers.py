@@ -85,6 +85,7 @@ class OffreAdhesionSerializer(serializers.ModelSerializer):
             "ordre",
             "icone",
             "couleur",
+            "kartenstil",
             "populaire",
             "rabais",
         ]

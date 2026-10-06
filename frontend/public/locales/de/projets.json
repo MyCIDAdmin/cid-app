@@ -237,6 +237,14 @@
         "beleg": "Beleg (PDF, JPG, PNG)",
         "abbrechen": "Abbrechen",
         "speichern": "Speichern"
+      },
+      "projektbudget": {
+        "titel": "Projektbudget {{jahr}}",
+        "budget": "Projektbudget (Finanzen)",
+        "geplant": "Von allen Projekten geplant",
+        "verfuegbar": "Noch frei",
+        "hinweis": "Die Plankosten aller Projekte eines Jahres dürfen das von den Finanzen festgelegte Projektbudget nicht überschreiten.",
+        "planjahr": "Planjahr"
       }
     },
     "aktivitaet": {
@@ -259,7 +267,8 @@
         "plan_gesetzt": "{{akteur}} hat die Plankosten für {{objekt}} auf {{betrag}} gesetzt.",
         "plan_entfernt": "{{akteur}} hat die Plankosten für {{objekt}} entfernt.",
         "kosten_erfasst": "{{akteur}} hat Kosten erfasst: {{objekt}} ({{betrag}}).",
-        "kosten_geloescht": "{{akteur}} hat die Kostenposition „{{objekt}}“ gelöscht."
+        "kosten_geloescht": "{{akteur}} hat die Kostenposition „{{objekt}}“ gelöscht.",
+        "planjahr": "{{akteur}} hat das Planjahr auf {{objekt}} gesetzt."
       }
     }
   }

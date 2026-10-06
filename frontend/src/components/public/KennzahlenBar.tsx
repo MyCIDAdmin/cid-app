@@ -31,11 +31,15 @@ export default function KennzahlenBar() {
   ];
 
   return (
-    <div className="card-lift grid grid-cols-3 gap-4 rounded-cid-lg bg-bg-primary p-6 shadow-sm">
+    <div className="card-lift grid grid-cols-3 gap-2 rounded-cid-lg bg-bg-primary p-4 sm:gap-4 sm:p-6 shadow-sm">
       {stats.map((stat) => (
         <div key={stat.labelKey} className="text-center">
           <div className="font-display text-2xl font-bold text-ca sm:text-3xl">
-            {stat.valeur === null ? "—" : <AnimatedNumber value={stat.valeur} format={stat.format} />}
+            {stat.valeur === null ? (
+              "—"
+            ) : (
+              <AnimatedNumber value={stat.valeur} format={stat.format} />
+            )}
           </div>
           <div className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary sm:text-xs">
             {t(stat.labelKey)}

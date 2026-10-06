@@ -3,9 +3,11 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     AbschlussView,
+    BudgetUebersichtView,
     BudgetView,
     CategorieDepenseViewSet,
     DepenseViewSet,
+    GesamtbudgetView,
     ProtokollView,
     PruefungView,
     WiedereroeffnenView,
@@ -19,6 +21,8 @@ router.register("depenses", DepenseViewSet, basename="depense")
 
 urlpatterns = [
     path("budget/", BudgetView.as_view(), name="budget"),
+    path("budget/uebersicht/", BudgetUebersichtView.as_view(), name="budget-uebersicht"),
+    path("budget/gesamt/", GesamtbudgetView.as_view(), name="budget-gesamt"),
     path("protokoll/", ProtokollView.as_view(), name="protokoll"),
     path("abschluss/", AbschlussView.as_view(), name="abschluss"),
     path("abschluss/wiedereroeffnen/", WiedereroeffnenView.as_view(), name="wiedereroeffnen"),

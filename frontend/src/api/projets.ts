@@ -298,6 +298,10 @@ export async function plankostenAendern(id: string, betrag: string): Promise<Pla
   return data;
 }
 
+export async function planjahrSetzen(projetId: string, planJahr: number | null): Promise<void> {
+  await apiClient.post(`/projets/projets/${projetId}/planjahr/`, { plan_jahr: planJahr });
+}
+
 export async function plankostenLoeschen(id: string): Promise<void> {
   await apiClient.delete(`/projets/plankosten/${id}/`);
 }

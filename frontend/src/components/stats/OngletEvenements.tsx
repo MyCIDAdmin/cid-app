@@ -19,14 +19,19 @@ function formatMontant(montant: string | number): string {
 }
 
 export default function OngletEvenements({ filtres }: { filtres: StatsFiltres }) {
-  const { t } = useTranslation("stats");
+  const { t } = useTranslation(["stats", "evenements"]);
+  const typLabel = (typ: string) => t(`evenements:type.${typ}`, { defaultValue: typ });
   const { data, isLoading, isError } = useStatsEvenements(filtres);
 
   if (isLoading) return <p className="text-sm text-text-tertiary">{t("chargement")}</p>;
   if (isError || !data) return <p className="text-sm text-status-dangerText">{t("erreur")}</p>;
 
   const colonnesType: ColonneDetailBox<RepartitionType>[] = [
-    { cle: "type_evenement", label: t("evenements.col_type") },
+    {
+      cle: "type_evenement",
+      label: t("evenements.col_type"),
+      render: (r) => typLabel(r.type_evenement),
+    },
     { cle: "nombre", label: t("evenements.col_nombre"), align: "right" },
   ];
 
@@ -43,11 +48,7 @@ export default function OngletEvenements({ filtres }: { filtres: StatsFiltres })
   return (
     <div>
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <AnimatedKpiTile
-          label={t("evenements.nombre")}
-          value={data.nombre_evenements}
-          accent
-        />
+        <AnimatedKpiTile label={t("evenements.nombre")} value={data.nombre_evenements} accent />
         <AnimatedKpiTile
           label={t("evenements.taux_remplissage")}
           value={data.taux_remplissage_moyen}
@@ -65,9 +66,11 @@ export default function OngletEvenements({ filtres }: { filtres: StatsFiltres })
           ) : (
             <>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={data.par_type}>
+                <BarChart
+                  data={data.par_type.map((r) => ({ ...r, label: typLabel(r.type_evenement) }))}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--BR, #e5e7eb)" />
-                  <XAxis dataKey="type_evenement" tick={{ fontSize: 10 }} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                   <Tooltip />
                   <Bar dataKey="nombre" fill="#CC0000" radius={[4, 4, 0, 0]} />

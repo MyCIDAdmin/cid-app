@@ -32,6 +32,9 @@ class CategorieDepense(models.Model):
     nom_ar = models.CharField(max_length=100, blank=True, default="")
     actif = models.BooleanField(default=True)
     ordre = models.PositiveSmallIntegerField(default=0)
+    # Genau eine Kategorie trägt dieses Kennzeichen: ihr Jahresbudget ist der Topf für die
+    # Plan-Kosten aller Projekte des Jahres (siehe apps.projets.budget).
+    projektbudget = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -143,6 +146,23 @@ class BudgetAnnuel(models.Model):
 
     def __str__(self):
         return f"{self.annee} {self.categorie}: {self.montant}"
+
+
+class Gesamtbudget(models.Model):
+    """Gesamtbudget eines Geschäftsjahres. Die Kategorie-Budgets (`BudgetAnnuel`) werden davon
+    abgezogen und dürfen es zusammen nie überschreiten."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    annee = models.PositiveSmallIntegerField(unique=True)
+    montant = models.DecimalField(
+        max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+    )
+
+    class Meta:
+        ordering = ["annee"]
+
+    def __str__(self):
+        return f"{self.annee}: {self.montant}"
 
 
 class AktionProtokoll(models.TextChoices):

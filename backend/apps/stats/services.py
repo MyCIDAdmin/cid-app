@@ -356,7 +356,11 @@ def kpis_membres(
                 date_naissance__gt=date_naissance_min, date_naissance__lte=date_naissance_max
             ).count()
             label = f"{age_min}–{age_max} ans"
-        pyramide_ages.append({"tranche": label, "nombre": nombre})
+        # age_min/age_max : le frontend construit le libellé dans la langue de l'utilisateur
+        # (`tranche` reste un repli lisible pour les anciens clients).
+        pyramide_ages.append(
+            {"tranche": label, "age_min": age_min, "age_max": age_max, "nombre": nombre}
+        )
 
     return {
         "total": total,

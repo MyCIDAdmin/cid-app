@@ -16,8 +16,15 @@ class CategorieDepenseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CategorieDepense
-        fields = ["id", "nom", "nom_de", "nom_ar", "namen", "actif", "ordre"]
-        read_only_fields = ["namen"]
+        fields = ["id", "nom", "nom_de", "nom_ar", "namen", "actif", "ordre", "projektbudget"]
+        read_only_fields = ["namen", "projektbudget"]
+
+    def validate_actif(self, wert):
+        if not wert and self.instance is not None and self.instance.projektbudget:
+            raise serializers.ValidationError(
+                "Die Kategorie „Projekte“ kann nicht deaktiviert werden."
+            )
+        return wert
 
 
 class DepenseSerializer(serializers.ModelSerializer):
@@ -110,6 +117,11 @@ class DepenseSerializer(serializers.ModelSerializer):
 class BudgetLigneSerializer(serializers.Serializer):
     categorie = serializers.PrimaryKeyRelatedField(queryset=CategorieDepense.objects.all())
     montant = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal("0"))
+
+
+class GesamtbudgetSerializer(serializers.Serializer):
+    annee = serializers.IntegerField(min_value=2000, max_value=2100)
+    montant = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0"))
 
 
 class BudgetDefinirSerializer(serializers.Serializer):

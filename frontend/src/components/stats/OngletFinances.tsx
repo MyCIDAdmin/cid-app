@@ -33,12 +33,8 @@ function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
 }
 
-/** Libellé de statut générique : les 4 sources (Cotisation/Souscription/Inscription/Commande)
- * ont chacune leur propre machine à états (voir apps.stats.services.finances_liste docstring,
- * ~15 valeurs possibles au total) — plutôt que dupliquer ces valeurs dans 4 espaces de
- * traduction différents pour cette seule colonne d'audit, le slug brut est mis en forme
- * (underscore -> espace, première lettre capitalisée). */
-function formatStatut(statut: string): string {
+/** Repli lisible pour une valeur de statut inconnue (underscore -> espace, majuscule initiale). */
+function formatStatutBrut(statut: string): string {
   const texte = statut.replace(/_/g, " ");
   return texte.charAt(0).toUpperCase() + texte.slice(1);
 }
@@ -75,7 +71,12 @@ export default function OngletFinances({
       render: (r) => formatMontant(r.montant),
       valeurTri: (r) => Number(r.montant),
     },
-    { cle: "statut", label: t("finances.col_statut"), render: (r) => formatStatut(r.statut) },
+    {
+      cle: "statut",
+      label: t("finances.col_statut"),
+      render: (r) =>
+        t(`finances.statuts.${r.statut}`, { defaultValue: formatStatutBrut(r.statut) }),
+    },
   ];
 
   return (
