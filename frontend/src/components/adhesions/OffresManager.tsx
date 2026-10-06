@@ -22,14 +22,23 @@ import {
   useSupprimerOffre,
   useTeleverserIconeOffre,
 } from "../../hooks/useAdhesions";
-import type { CampagneAdhesion, CouleurOffre, OffreCreatePayload } from "../../types/adhesion";
+import type {
+  CampagneAdhesion,
+  CouleurOffre,
+  KartenStil,
+  OffreCreatePayload,
+} from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { KARTEN_STILE } from "./kartenstile";
 import RabaisManager from "./RabaisManager";
 
 // Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" : "2. Färblich
 // highlighten") — reprend les 3 mêmes emplacements que ACCENTS_OFFRE côté MonAdhesionPage.tsx,
 // jamais un sélecteur de couleur libre (voir le docstring backend de CouleurOffre).
 const OPTIONS_COULEUR: CouleurOffre[] = ["", "cat_1", "cat_2", "cat_3"];
+
+// Look der digitalen Mitgliedskarte (2026-10-06) — leer = Rubin (CID-Rot).
+const OPTIONS_KARTENSTIL: KartenStil[] = [...KARTEN_STILE];
 
 function formulaireInitial(campagneId: string): OffreCreatePayload & { avantages_texte: string } {
   return {
@@ -97,6 +106,11 @@ export default function OffresManager({
   function modifierCouleur(offreId: string, couleur: CouleurOffre) {
     if (!modifiable) return;
     modifierMutation.mutate({ id: offreId, payload: { couleur } });
+  }
+
+  function modifierKartenstil(offreId: string, kartenstil: KartenStil | "") {
+    if (!modifiable) return;
+    modifierMutation.mutate({ id: offreId, payload: { kartenstil } });
   }
 
   function togglePopulaire(offreId: string, populaire: boolean) {
@@ -214,6 +228,24 @@ export default function OffresManager({
                       {valeur === ""
                         ? t("admin_offres.couleur_auto")
                         : t(`admin_offres.couleur_${valeur}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                {t("admin_offres.kartenstil_label")}
+                <select
+                  aria-label={`${t("admin_offres.kartenstil_label")} — ${offre.nom}`}
+                  value={offre.kartenstil ?? ""}
+                  onChange={(e) => modifierKartenstil(offre.id, e.target.value as KartenStil | "")}
+                  disabled={!modifiable}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                  className="rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
+                >
+                  <option value="">{t("admin_offres.kartenstil_standard")}</option>
+                  {OPTIONS_KARTENSTIL.map((wert) => (
+                    <option key={wert} value={wert}>
+                      {t(`admin_offres.kartenstil_${wert}`)}
                     </option>
                   ))}
                 </select>

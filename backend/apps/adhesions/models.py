@@ -110,6 +110,20 @@ class CouleurOffre(models.TextChoices):
     CAT_3 = "cat_3", _("Couleur 3")
 
 
+class KartenStil(models.TextChoices):
+    """Look der digitalen Mitgliedskarte eines Angebots (2026-10-06, „Meine Mitgliedschaft“).
+    Feste Auswahl statt freier Farbe : jeder Stil ist als Verlauf mit lesbarem Text gestaltet.
+    Leer = Standard (CID-Rot, „Rubin“)."""
+
+    WEISS = "weiss", _("Weiß")
+    SILBER = "silber", _("Silber")
+    GOLD = "gold", _("Gold")
+    DIAMANT = "diamant", _("Diamant")
+    BRONZE = "bronze", _("Bronze")
+    ONYX = "onyx", _("Onyx")
+    RUBIN = "rubin", _("Rubin (CID-Rot)")
+
+
 class OffreAdhesion(models.Model):
     """Offre d'adhésion (ex. Basic/Plus/Junior) rattachée à une campagne — FDD §6.1."""
 
@@ -153,6 +167,12 @@ class OffreAdhesion(models.Model):
         choices=CouleurOffre.choices,
         blank=True,
         help_text=_("Surlignage de couleur de la kachel. Vide = attribution automatique."),
+    )
+    kartenstil = models.CharField(
+        max_length=10,
+        choices=KartenStil.choices,
+        blank=True,
+        help_text=_("Look de la carte de membre numérique pour ce niveau. Vide = Rubin."),
     )
     populaire = models.BooleanField(
         default=False,

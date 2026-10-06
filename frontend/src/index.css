@@ -4,7 +4,7 @@
    plaçant l'import après @tailwind comme dans le fichier original de MyCID, PostCSS/Vite le
    supprime alors silencieusement du build (0 occurrence de "fonts.googleapis" dans le CSS
    compilé) — corrigé ici en le remontant avant les directives @tailwind. */
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -74,8 +74,16 @@
      automatiquement au clair/sombre au lieu d'être dupliqués dans le bloc .dark plus bas.
      color-mix() (Baseline 2023, supporté par tous les navigateurs ciblés par ce projet) évite
      de maintenir une variante rgba() séparée de --color-ca/--color-sb pour chaque thème. */
-  --gradient-card: linear-gradient(145deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
-  --gradient-hero: linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
+  --gradient-card: linear-gradient(
+    145deg,
+    var(--color-bg-primary) 0%,
+    var(--color-bg-secondary) 100%
+  );
+  --gradient-hero: linear-gradient(
+    180deg,
+    var(--color-bg-secondary) 0%,
+    var(--color-bg-tertiary) 100%
+  );
   --gradient-primary: linear-gradient(135deg, var(--color-ca) 0%, var(--color-cad) 100%);
   --shadow-card: 0 4px 20px color-mix(in srgb, var(--color-sb) 12%, transparent);
   --shadow-glow: 0 0 48px color-mix(in srgb, var(--color-ca) 20%, transparent);
@@ -163,11 +171,16 @@ html[dir="rtl"] {
 
 body {
   @apply bg-bg-tertiary text-text-primary transition-colors duration-150;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Oswald', system-ui, sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Oswald", system-ui, sans-serif;
 }
 
 /*
@@ -225,6 +238,42 @@ input:-webkit-autofill:focus {
 .cid-highlight-cible {
   animation: cid-pulse-cible 0.7s ease-in-out 2;
   border-radius: 0.5rem;
+}
+
+/*
+ * Glanz der digitalen Mitgliedskarte (2026-10-06, components/adhesions/MitgliedsKarte.tsx) — ein
+ * heller Streifen wandert langsam über die Karte (Metall/Hologramm). Steht still bei
+ * "Bewegung reduzieren". @keyframes in rohem CSS, nicht in tailwind.config (siehe fade-up unten).
+ */
+@keyframes cid-karte-glanz {
+  0% {
+    background-position: 130% 0;
+  }
+  100% {
+    background-position: -130% 0;
+  }
+}
+
+.cid-karte-glanz {
+  animation: cid-karte-glanz 6s ease-in-out infinite;
+}
+
+.cid-karte {
+  transition: transform 0.3s ease;
+}
+
+.cid-karte:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cid-karte-glanz {
+    animation: none;
+  }
+
+  .cid-karte:hover {
+    transform: none;
+  }
 }
 
 /*
@@ -306,12 +355,24 @@ input:-webkit-autofill:focus {
     animation: fade-up 0.5s ease-out forwards;
   }
 
-  .stagger-children > *:nth-child(1) { animation-delay: 0.06s; }
-  .stagger-children > *:nth-child(2) { animation-delay: 0.12s; }
-  .stagger-children > *:nth-child(3) { animation-delay: 0.18s; }
-  .stagger-children > *:nth-child(4) { animation-delay: 0.24s; }
-  .stagger-children > *:nth-child(5) { animation-delay: 0.30s; }
-  .stagger-children > *:nth-child(6) { animation-delay: 0.36s; }
+  .stagger-children > *:nth-child(1) {
+    animation-delay: 0.06s;
+  }
+  .stagger-children > *:nth-child(2) {
+    animation-delay: 0.12s;
+  }
+  .stagger-children > *:nth-child(3) {
+    animation-delay: 0.18s;
+  }
+  .stagger-children > *:nth-child(4) {
+    animation-delay: 0.24s;
+  }
+  .stagger-children > *:nth-child(5) {
+    animation-delay: 0.3s;
+  }
+  .stagger-children > *:nth-child(6) {
+    animation-delay: 0.36s;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -523,7 +584,11 @@ aside.glass-sidebar .ring-sb {
 /* Reflet lumineux qui suit la souris (--mx/--my posés par utils/glassPointer.ts) */
 .rounded-cid-lg.bg-bg-primary.shadow-sm:hover,
 .card-lift:hover {
-  background-image: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), var(--glass-sheen), transparent 62%);
+  background-image: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 0%),
+    var(--glass-sheen),
+    transparent 62%
+  );
 }
 
 /* Lignes de tableau */

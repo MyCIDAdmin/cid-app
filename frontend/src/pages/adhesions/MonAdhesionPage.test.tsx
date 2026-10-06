@@ -545,4 +545,27 @@ describe("MonAdhesionPage", () => {
 
     expect(screen.queryByText("hero.retirer")).not.toBeInTheDocument();
   });
+
+  it("zeigt bei bezahlter Mitgliedschaft die digitale Karte im Stil des Angebots", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription({ statut: "payee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.queryByText("hero.titre")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-kartenstil]")).not.toBeNull();
+  });
 });

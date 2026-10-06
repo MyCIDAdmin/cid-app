@@ -68,6 +68,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import MitgliedsKarteAbschnitt from "../../components/adhesions/MitgliedsKarteAbschnitt";
 import PaiementStepper from "../../components/adhesions/PaiementStepper";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
@@ -245,7 +246,22 @@ export default function MonAdhesionPage() {
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("page.titre")}</h1>
 
-      {souscriptionActuelle && (
+      {/* Bezahlte Mitgliedschaft → digitale Mitgliedskarte im Stil des Angebots ; sonst (Antrag
+          offen, Nachweis fehlt …) bleibt die bisherige Statuskachel. */}
+      {souscriptionActuelle && dejaPayee && (
+        <MitgliedsKarteAbschnitt
+          stil={offreActuelle?.kartenstil}
+          angebot={offreActuelle?.nom ?? "—"}
+          kampagne={campagne?.nom}
+          gueltigBis={campagne ? formatDate(campagne.date_fin) : undefined}
+          vorteile={souscriptionActuelle.snapshot_avantages
+            .slice()
+            .sort((a, b) => a.ordre - b.ordre)
+            .map((av) => av.texte_fr)}
+        />
+      )}
+
+      {souscriptionActuelle && !dejaPayee && (
         <div className="mb-5 rounded-cid-lg bg-ca p-5 text-white shadow-sm">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/80">
             {t("hero.titre")}

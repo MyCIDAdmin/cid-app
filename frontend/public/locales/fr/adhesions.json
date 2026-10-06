@@ -164,7 +164,16 @@
     "couleur_cat_3": "Couleur 3",
     "populaire_label": "Tag « Populaire »",
     "erreur": "L'offre n'a pas pu être enregistrée.",
-    "ajouter": "Ajouter cette offre"
+    "ajouter": "Ajouter cette offre",
+    "kartenstil_label": "Style de carte",
+    "kartenstil_standard": "Standard (Rubis)",
+    "kartenstil_weiss": "Blanc",
+    "kartenstil_silber": "Argent",
+    "kartenstil_gold": "Or",
+    "kartenstil_diamant": "Diamant",
+    "kartenstil_bronze": "Bronze",
+    "kartenstil_onyx": "Onyx",
+    "kartenstil_rubin": "Rubis (rouge CID)"
   },
   "admin_rabais": {
     "titre": "Rabais de cette offre",
@@ -195,5 +204,11 @@
     "enregistrer": "Enregistrer et adhérer",
     "requis": "Veuillez indiquer la CIN ou le passeport.",
     "erreur": "Impossible d'enregistrer le profil."
+  },
+  "karte": {
+    "aria": "Carte de membre numérique – {{angebot}}",
+    "titel": "Carte de membre",
+    "mitglied_seit": "Membre depuis",
+    "gueltig_bis": "Valable jusqu'au"
   }
 }

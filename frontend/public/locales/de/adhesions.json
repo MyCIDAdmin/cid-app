@@ -164,7 +164,16 @@
     "couleur_cat_3": "Farbe 3",
     "populaire_label": "Tag „Beliebt“",
     "erreur": "Das Angebot konnte nicht gespeichert werden.",
-    "ajouter": "Angebot hinzufügen"
+    "ajouter": "Angebot hinzufügen",
+    "kartenstil_label": "Kartenstil",
+    "kartenstil_standard": "Standard (Rubin)",
+    "kartenstil_weiss": "Weiß",
+    "kartenstil_silber": "Silber",
+    "kartenstil_gold": "Gold",
+    "kartenstil_diamant": "Diamant",
+    "kartenstil_bronze": "Bronze",
+    "kartenstil_onyx": "Onyx",
+    "kartenstil_rubin": "Rubin (CID-Rot)"
   },
   "admin_rabais": {
     "titre": "Rabatte dieses Angebots",
@@ -195,5 +204,11 @@
     "enregistrer": "Speichern und Mitglied werden",
     "requis": "Bitte CIN oder Passnummer angeben.",
     "erreur": "Profil konnte nicht gespeichert werden."
+  },
+  "karte": {
+    "aria": "Digitale Mitgliedskarte – {{angebot}}",
+    "titel": "Mitgliedskarte",
+    "mitglied_seit": "Mitglied seit",
+    "gueltig_bis": "Gültig bis"
   }
 }

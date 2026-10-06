@@ -805,6 +805,20 @@ def test_bureau_admin_definit_couleur_et_populaire_sur_une_offre(api_client):
     assert offre.populaire is True
 
 
+def test_bureau_admin_definit_le_kartenstil_d_une_offre(api_client):
+    offre = OffreAdhesionFactory()
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin-karte@example.de")
+    _auth(api_client, user)
+
+    resp = api_client.patch(_offre_detail_url(offre), {"kartenstil": "gold"})
+    assert resp.status_code == 200, resp.data
+    offre.refresh_from_db()
+    assert offre.kartenstil == "gold"
+
+    assert api_client.patch(_offre_detail_url(offre), {"kartenstil": "neon"}).status_code == 400
+    assert api_client.get(_offre_detail_url(offre)).data["kartenstil"] == "gold"
+
+
 def test_bureau_admin_uploade_une_icone_valide_pour_une_offre(api_client):
     offre = OffreAdhesionFactory()
     user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "admin-icone@example.de")
