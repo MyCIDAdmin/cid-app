@@ -54,3 +54,47 @@ export interface BudgetLigne {
   categorie_nom: string;
   montant: string;
 }
+
+export type AktionProtokoll =
+  | "erstellt"
+  | "geaendert"
+  | "geloescht"
+  | "freigegeben"
+  | "abgelehnt"
+  | "budget"
+  | "abgeschlossen"
+  | "wiedergeoeffnet";
+
+export interface ProtokollEintrag {
+  id: string;
+  zeitpunkt: string;
+  benutzer_name: string;
+  aktion: AktionProtokoll;
+  objekt_typ: string;
+  annee: number | null;
+  zusammenfassung: string;
+  aenderungen: Record<string, unknown>;
+}
+
+export interface Abschluss {
+  annee: number;
+  abgeschlossen: boolean;
+  abgeschlossen_am?: string;
+  abgeschlossen_durch?: string;
+  snapshot?: { recettes: string; depenses: string; resultat: string };
+  wiedergeoeffnet_am?: string | null;
+  wiedereroeffnung_grund?: string;
+  offene_ausgaben?: number;
+}
+
+export interface Pruefung {
+  annee: number;
+  abschluss: Abschluss;
+  anzahl_freigegeben: number;
+  summe_freigegeben: string;
+  anzahl_offen: number;
+  anzahl_abgelehnt: number;
+  schwelle: number;
+  ohne_beleg: Depense[];
+  grosse_ausgaben: Depense[];
+}

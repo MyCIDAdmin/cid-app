@@ -152,7 +152,10 @@
       "Eine andere Person mit Schreibrecht prüft die Ausgabe und gibt sie frei oder lehnt sie mit Begründung ab. Erst freigegebene Ausgaben zählen in Bilanz und KPIs.",
       "Abgelehnte Ausgaben lassen sich korrigieren und gehen dann erneut zur Freigabe.",
       "Im Reiter „Budget“ pro Kategorie das Jahresbudget eintragen; die Jahresbilanz zeigt dann Ist gegen Budget.",
-      "Im Reiter „Kategorien“ eigene Kategorien anlegen oder nicht mehr benötigte deaktivieren."
+      "Im Reiter „Kategorien“ eigene Kategorien anlegen oder nicht mehr benötigte deaktivieren.",
+      "Im Reiter „Protokoll“ sehen Sie lückenlos, wer wann was geändert hat.",
+      "Im Reiter „Prüfung“ finden Kassenprüfende Eckzahlen, Ausgaben ohne Beleg und große Beträge, nur lesend.",
+      "Im Reiter „Jahresabschluss“ sperren Sie ein Jahr, sobald alle Ausgaben entschieden sind. Wiedereröffnen kann nur der Administrator App."
     ]
   }
 }

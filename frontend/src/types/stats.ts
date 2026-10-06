@@ -151,6 +151,12 @@ export interface Bilan {
   resultat: string;
   resultat_precedent: string;
   mensuel: MoisBilan[];
+  abschluss: {
+    abgeschlossen: boolean;
+    abgeschlossen_am?: string;
+    resultat_eingefroren?: string;
+    abweichung?: string;
+  };
   depenses_en_attente: { nombre: number; montant: string };
   resultats_evenements: ResultatBilan[];
   resultats_projets: ResultatBilan[];

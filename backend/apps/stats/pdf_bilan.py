@@ -22,6 +22,7 @@ TEXTES = {
         "projets": "Résultat par projet",
         "mensuel": "Évolution mensuelle",
         "en_attente": "Dépenses en attente d'approbation (non incluses)",
+        "abgeschlossen": "Exercice clôturé le",
         "sources": {
             "cotisations": "Cotisations",
             "dons": "Dons",
@@ -44,6 +45,7 @@ TEXTES = {
         "projets": "Ergebnis je Projekt",
         "mensuel": "Monatsverlauf",
         "en_attente": "Ausgaben zur Freigabe ausstehend (nicht enthalten)",
+        "abgeschlossen": "Geschäftsjahr abgeschlossen am",
         "sources": {
             "cotisations": "Mitgliedsbeiträge",
             "dons": "Spenden",
@@ -142,6 +144,7 @@ def generate_bilan_pdf(*, bilan, user) -> bytes:
         ],
         "graphique": _graphique_mensuel(bilan["mensuel"]),
         "en_attente": bilan["depenses_en_attente"],
+        "abschluss": bilan["abschluss"],
         "en_attente_montant": m(bilan["depenses_en_attente"]["montant"]),
     }
     return HTML(string=render_to_string("stats/bilan_pdf.html", contexte)).write_pdf()

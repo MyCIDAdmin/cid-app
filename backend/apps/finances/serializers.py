@@ -5,18 +5,10 @@ import magic
 from rest_framework import serializers
 
 from .models import BudgetAnnuel, CategorieDepense, Depense, StatutDepense
+from .services import nom_utilisateur
 
 MIME_AUTORISES = {"application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png"}
 TAILLE_MAX = 5 * 1024 * 1024
-
-
-def _nom_utilisateur(user):
-    if user is None:
-        return ""
-    membre = getattr(user, "membre", None)
-    if membre is not None:
-        return f"{membre.prenom} {membre.nom}"
-    return user.email
 
 
 class CategorieDepenseSerializer(serializers.ModelSerializer):
@@ -61,10 +53,10 @@ class DepenseSerializer(serializers.ModelSerializer):
         read_only_fields = ["statut", "saisie_par", "date_decision", "motif_rejet", "created_at"]
 
     def get_saisie_par_nom(self, obj):
-        return _nom_utilisateur(obj.saisie_par)
+        return nom_utilisateur(obj.saisie_par)
 
     def get_decide_par_nom(self, obj):
-        return _nom_utilisateur(obj.decide_par)
+        return nom_utilisateur(obj.decide_par)
 
     def get_justificatif_url(self, obj):
         return obj.justificatif.url if obj.justificatif else None

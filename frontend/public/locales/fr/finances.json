@@ -3,7 +3,10 @@
   "onglets": {
     "depenses": "Dépenses",
     "budget": "Budget",
-    "categories": "Catégories"
+    "categories": "Catégories",
+    "protokoll": "Journal",
+    "abschluss": "Clôture annuelle",
+    "pruefung": "Contrôle"
   },
   "annee": "Année",
   "statut": "Statut",
@@ -64,5 +67,57 @@
     "actif": "Active",
     "desactiver": "Désactiver",
     "activer": "Activer"
+  },
+  "protokoll": {
+    "intro": "Journal complet de toutes les modifications des dépenses, du budget, des catégories et de la clôture. Les entrées ne peuvent pas être modifiées.",
+    "aktion": "Action",
+    "alle": "Toutes",
+    "zeit": "Date et heure",
+    "benutzer": "Utilisateur",
+    "text": "Quoi",
+    "aenderungen": "Modifications",
+    "leer": "Aucune entrée.",
+    "aktionen": {
+      "erstellt": "Créé",
+      "geaendert": "Modifié",
+      "geloescht": "Supprimé",
+      "freigegeben": "Approuvé",
+      "abgelehnt": "Rejeté",
+      "budget": "Budget",
+      "abgeschlossen": "Clôture",
+      "wiedergeoeffnet": "Rouvert"
+    }
+  },
+  "abschluss": {
+    "intro": "La clôture verrouille les dépenses et le budget de l'année. Les chiffres clés sont figés pour que les écarts ultérieurs restent visibles.",
+    "status_offen": "Cette année est ouverte.",
+    "status_zu": "Clôturée le {{datum}} par {{wer}}.",
+    "offene": "{{n}} dépense(s) attendent encore une décision. Décidez d'abord, puis clôturez.",
+    "abschliessen": "Clôturer l'année",
+    "bestaetigen_titel": "Clôturer l'exercice ?",
+    "bestaetigen_text": "Les dépenses et le budget de cette année seront verrouillés. Seul l'administrateur de l'application peut la rouvrir.",
+    "eingefroren": "Figé à la clôture",
+    "einnahmen": "Recettes",
+    "ausgaben": "Dépenses",
+    "ergebnis": "Résultat",
+    "wiedereroeffnen": "Rouvrir l'année",
+    "grund": "Motif (obligatoire)",
+    "wiedereroeffnet_info": "Dernière réouverture le {{datum}} : {{grund}}",
+    "nur_admin": "Seul l'administrateur de l'application peut rouvrir."
+  },
+  "pruefung": {
+    "intro": "Vue en lecture seule pour le contrôle des comptes : chiffres clés, anomalies et justificatifs. Pour les contrôleurs, le droit « Lecture » sur les pages Finances et Statistiques suffit dans la gestion des rôles.",
+    "freigegeben": "Dépenses approuvées",
+    "summe": "Total",
+    "offen": "En attente d'approbation",
+    "abgelehnt": "Rejetées",
+    "ohne_beleg": "Dépenses approuvées sans justificatif",
+    "grosse": "Dépenses à partir de {{betrag}} €",
+    "keine": "Aucune anomalie.",
+    "export_csv": "Écritures (CSV)",
+    "export_excel": "Bilan (Excel)",
+    "export_pdf": "Rapport annuel (PDF)",
+    "abgeschlossen": "Année clôturée",
+    "offen_jahr": "Année ouverte"
   }
 }

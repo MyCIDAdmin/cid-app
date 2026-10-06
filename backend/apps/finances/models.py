@@ -127,3 +127,60 @@ class BudgetAnnuel(models.Model):
 
     def __str__(self):
         return f"{self.annee} {self.categorie}: {self.montant}"
+
+
+class AktionProtokoll(models.TextChoices):
+    ERSTELLT = "erstellt", _("Erstellt")
+    GEAENDERT = "geaendert", _("Geändert")
+    GELOESCHT = "geloescht", _("Gelöscht")
+    FREIGEGEBEN = "freigegeben", _("Freigegeben")
+    ABGELEHNT = "abgelehnt", _("Abgelehnt")
+    BUDGET = "budget", _("Budget gesetzt")
+    ABGESCHLOSSEN = "abgeschlossen", _("Jahr abgeschlossen")
+    WIEDERGEOEFFNET = "wiedergeoeffnet", _("Jahr wiedereröffnet")
+
+
+class FinanzProtokoll(models.Model):
+    """Änderungsprotokoll (append-only) : wer hat wann was an Ausgaben, Kategorien, Budget und
+    Jahresabschluss getan. `benutzer_name` ist eine Momentaufnahme, damit der Eintrag auch nach
+    dem Löschen des Kontos lesbar bleibt ; `zusammenfassung` enthält bei gelöschten Ausgaben die
+    wesentlichen Daten, da das Objekt selbst dann nicht mehr existiert."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    zeitpunkt = models.DateTimeField(auto_now_add=True)
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    benutzer_name = models.CharField(max_length=200)
+    aktion = models.CharField(max_length=20, choices=AktionProtokoll.choices)
+    objekt_typ = models.CharField(max_length=20)  # depense | categorie | budget | jahr
+    objekt_id = models.CharField(max_length=64, blank=True)
+    annee = models.PositiveSmallIntegerField(null=True, blank=True)
+    zusammenfassung = models.CharField(max_length=300)
+    aenderungen = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-zeitpunkt"]
+        indexes = [models.Index(fields=["annee", "zeitpunkt"], name="finances_prot_annee_idx")]
+
+
+class Jahresabschluss(models.Model):
+    """Ein abgeschlossenes Geschäftsjahr sperrt Ausgaben und Budget dieses Jahres. `snapshot`
+    hält die Eckzahlen zum Abschlusszeitpunkt fest (Einnahmen, Ausgaben, Ergebnis), damit sich
+    später nachweisen lässt, ob sich die Zahlen nach dem Abschluss noch verändert haben."""
+
+    annee = models.PositiveSmallIntegerField(unique=True)
+    aktiv = models.BooleanField(default=True)
+    abgeschlossen_am = models.DateTimeField()
+    abgeschlossen_durch = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    snapshot = models.JSONField(default=dict)
+    wiedergeoeffnet_am = models.DateTimeField(null=True, blank=True)
+    wiedergeoeffnet_durch = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    wiedereroeffnung_grund = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-annee"]

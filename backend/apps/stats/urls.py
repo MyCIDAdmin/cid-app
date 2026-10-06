@@ -5,6 +5,7 @@ from .views import (
     StatsEvenementsView,
     StatsExportBilanExcelView,
     StatsExportBilanPdfView,
+    StatsExportBuchungenCsvView,
     StatsExportExcelView,
     StatsExportPdfView,
     StatsFinancesView,
@@ -22,6 +23,9 @@ urlpatterns = [
     path("bilan/", StatsBilanView.as_view(), name="bilan"),
     path("export/bilan-excel/", StatsExportBilanExcelView.as_view(), name="export-bilan-excel"),
     path("export/bilan-pdf/", StatsExportBilanPdfView.as_view(), name="export-bilan-pdf"),
+    path(
+        "export/buchungen-csv/", StatsExportBuchungenCsvView.as_view(), name="export-buchungen-csv"
+    ),
     path("export/excel/", StatsExportExcelView.as_view(), name="export-excel"),
     path("export/pdf/", StatsExportPdfView.as_view(), name="export-pdf"),
 ]

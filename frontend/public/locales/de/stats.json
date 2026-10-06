@@ -131,6 +131,9 @@
     "aucune_donnee": "Keine Daten für dieses Jahr.",
     "voir_depenses": "Alle Ausgaben anzeigen",
     "par_evenement": "Ergebnis je Veranstaltung",
-    "par_projet": "Ergebnis je Projekt"
+    "par_projet": "Ergebnis je Projekt",
+    "export_csv": "Buchungen (CSV)",
+    "abgeschlossen": "Abgeschlossen am {{datum}}",
+    "abweichung": "Seit dem Abschluss hat sich das Ergebnis um {{betrag}} verändert."
   }
 }

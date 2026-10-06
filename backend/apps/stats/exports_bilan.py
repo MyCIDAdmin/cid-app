@@ -138,3 +138,40 @@ def construire_classeur_bilan(bilan, depenses) -> Workbook:
             feuille.cell(row=i, column=col, value=v)
         feuille.cell(row=i, column=4).number_format = EUR
     return classeur
+
+
+def construire_csv_buchungen(zeilen) -> str:
+    """CSV für den Steuerberater : Semikolon, Dezimalkomma, Datum TT.MM.JJJJ, UTF-8 mit BOM
+    (öffnet in Excel/DATEV-Importen ohne Umlaut-Probleme). Ausgaben stehen negativ."""
+    import csv
+    import io
+
+    puffer = io.StringIO()
+    puffer.write("\ufeff")
+    w = csv.writer(puffer, delimiter=";", lineterminator="\r\n")
+    w.writerow(
+        [
+            "Datum",
+            "Typ",
+            "Kategorie",
+            "Beschreibung",
+            "Gegenpartei",
+            "Betrag (EUR)",
+            "Beleg",
+            "Referenz",
+        ]
+    )
+    for z in zeilen:
+        w.writerow(
+            [
+                z["datum"].strftime("%d.%m.%Y"),
+                z["typ"],
+                z["kategorie"],
+                z["beschreibung"],
+                z["gegenpartei"],
+                f"{z['betrag']:.2f}".replace(".", ","),
+                z["beleg"],
+                z["referenz"],
+            ]
+        )
+    return puffer.getvalue()
