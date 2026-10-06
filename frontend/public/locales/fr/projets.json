@@ -107,7 +107,8 @@
       "uebersicht": "Aperçu",
       "aufgaben": "Tâches",
       "team": "Équipe",
-      "kosten": "Coûts"
+      "kosten": "Coûts",
+      "aktivitaet": "Activité"
     },
     "sichtbarkeit": {
       "entwurf": "Brouillon",
@@ -236,6 +237,29 @@
         "beleg": "Justificatif (PDF, JPG, PNG)",
         "abbrechen": "Annuler",
         "speichern": "Enregistrer"
+      }
+    },
+    "aktivitaet": {
+      "fehler": "Impossible de charger le journal.",
+      "leer": "Aucune activité pour l'instant.",
+      "zustand": {
+        "veroeffentlicht": "publié",
+        "entwurf": "repassé en brouillon"
+      },
+      "aktion": {
+        "aufgabe_erstellt": "{{akteur}} a créé la tâche « {{objekt}} ».",
+        "aufgabe_verschoben": "{{akteur}} a déplacé « {{objekt}} » de {{von}} à {{nach}}.",
+        "aufgabe_zugewiesen": "{{akteur}} a assigné « {{objekt}} » à {{detail}}.",
+        "aufgabe_geloescht": "{{akteur}} a supprimé la tâche « {{objekt}} ».",
+        "aufgabe_kommentiert": "{{akteur}} a commenté « {{objekt}} ».",
+        "team_hinzugefuegt": "{{akteur}} a ajouté {{objekt}} à l'équipe ({{rolle}}).",
+        "team_rolle": "{{akteur}} a changé le rôle de {{objekt}} en {{rolle}}.",
+        "team_entfernt": "{{akteur}} a retiré {{objekt}} de l'équipe.",
+        "sichtbarkeit": "{{akteur}} a {{zustand}} le projet.",
+        "plan_gesetzt": "{{akteur}} a fixé le coût prévu pour {{objekt}} à {{betrag}}.",
+        "plan_entfernt": "{{akteur}} a retiré le coût prévu pour {{objekt}}.",
+        "kosten_erfasst": "{{akteur}} a saisi un coût : {{objekt}} ({{betrag}}).",
+        "kosten_geloescht": "{{akteur}} a supprimé la ligne de coût « {{objekt}} »."
       }
     }
   }

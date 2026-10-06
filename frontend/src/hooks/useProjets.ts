@@ -31,6 +31,7 @@ const projetsKeys = {
   team: (id: string) => [...projetsKeys.all, "team", id] as const,
   aufgaben: (id: string) => [...projetsKeys.all, "aufgaben", id] as const,
   kosten: (id: string) => [...projetsKeys.all, "kosten", id] as const,
+  aktivitaeten: (id: string) => [...projetsKeys.all, "aktivitaeten", id] as const,
   kommentare: (id: string) => [...projetsKeys.all, "kommentare", id] as const,
 };
 
@@ -396,5 +397,13 @@ export function useKostenLoeschen() {
   return useMutation({
     mutationFn: (id: string) => projetsApi.kostenLoeschen(id),
     onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useAktivitaeten(projetId: string | undefined) {
+  return useQuery({
+    queryKey: projetsKeys.aktivitaeten(projetId ?? ""),
+    queryFn: () => projetsApi.listAktivitaeten(projetId as string),
+    enabled: Boolean(projetId),
   });
 }

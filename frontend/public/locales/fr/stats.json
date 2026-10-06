@@ -31,7 +31,8 @@
     "membres": "Membres",
     "evenements": "Évènements",
     "finances": "Données financières",
-    "bilan": "Bilan annuel"
+    "bilan": "Bilan annuel",
+    "projets": "Projets"
   },
   "financier": {
     "solde": "Solde",
@@ -135,5 +136,25 @@
     "export_csv": "Écritures (CSV)",
     "abgeschlossen": "Clôturé le {{datum}}",
     "abweichung": "Le résultat a varié de {{betrag}} depuis la clôture."
+  },
+  "projekte": {
+    "gesamt": "Projets",
+    "veroeffentlicht": "Publiés / brouillons",
+    "aufgaben_quote": "Tâches terminées",
+    "ueberfaellig": "Tâches en retard",
+    "plan": "Coûts prévus",
+    "ist": "Coûts réels (approuvés)",
+    "auslastung": "Utilisation du budget",
+    "ergebnis": "Résultat (recettes − réel)",
+    "hinweis": "État actuel de tous les projets (brouillons inclus) ; les filtres ci-dessus ne s'appliquent pas ici.",
+    "je_projekt": "Indicateurs par projet",
+    "keine_daten": "Aucun projet pour l'instant.",
+    "col_projekt": "Projet",
+    "col_fortschritt": "Tâches",
+    "col_ueberfaellig": "En retard",
+    "col_plan": "Prévu",
+    "col_ist": "Réel",
+    "col_offen": "En attente",
+    "col_ergebnis": "Résultat"
   }
 }

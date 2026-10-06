@@ -107,7 +107,8 @@
       "uebersicht": "Übersicht",
       "aufgaben": "Aufgaben",
       "team": "Team",
-      "kosten": "Kosten"
+      "kosten": "Kosten",
+      "aktivitaet": "Aktivität"
     },
     "sichtbarkeit": {
       "entwurf": "Entwurf",
@@ -236,6 +237,29 @@
         "beleg": "Beleg (PDF, JPG, PNG)",
         "abbrechen": "Abbrechen",
         "speichern": "Speichern"
+      }
+    },
+    "aktivitaet": {
+      "fehler": "Das Protokoll konnte nicht geladen werden.",
+      "leer": "Noch keine Aktivität.",
+      "zustand": {
+        "veroeffentlicht": "veröffentlicht",
+        "entwurf": "in den Entwurf zurückgesetzt"
+      },
+      "aktion": {
+        "aufgabe_erstellt": "{{akteur}} hat die Aufgabe „{{objekt}}“ erstellt.",
+        "aufgabe_verschoben": "{{akteur}} hat „{{objekt}}“ von {{von}} nach {{nach}} verschoben.",
+        "aufgabe_zugewiesen": "{{akteur}} hat „{{objekt}}“ an {{detail}} zugewiesen.",
+        "aufgabe_geloescht": "{{akteur}} hat die Aufgabe „{{objekt}}“ gelöscht.",
+        "aufgabe_kommentiert": "{{akteur}} hat „{{objekt}}“ kommentiert.",
+        "team_hinzugefuegt": "{{akteur}} hat {{objekt}} als {{rolle}} zum Team hinzugefügt.",
+        "team_rolle": "{{akteur}} hat die Rolle von {{objekt}} auf {{rolle}} geändert.",
+        "team_entfernt": "{{akteur}} hat {{objekt}} aus dem Team entfernt.",
+        "sichtbarkeit": "{{akteur}} hat das Projekt {{zustand}}.",
+        "plan_gesetzt": "{{akteur}} hat die Plankosten für {{objekt}} auf {{betrag}} gesetzt.",
+        "plan_entfernt": "{{akteur}} hat die Plankosten für {{objekt}} entfernt.",
+        "kosten_erfasst": "{{akteur}} hat Kosten erfasst: {{objekt}} ({{betrag}}).",
+        "kosten_geloescht": "{{akteur}} hat die Kostenposition „{{objekt}}“ gelöscht."
       }
     }
   }

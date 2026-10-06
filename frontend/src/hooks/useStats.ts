@@ -17,6 +17,7 @@ const statsKeys = {
   all: ["stats"] as const,
   financier: (filtres: StatsFiltres) => [...statsKeys.all, "financier", filtres] as const,
   membres: (filtres: FiltresMembres) => [...statsKeys.all, "membres", filtres] as const,
+  projets: () => [...statsKeys.all, "projets"] as const,
   evenements: (filtres: StatsFiltres) => [...statsKeys.all, "evenements", filtres] as const,
   bilan: (annee: number) => [...statsKeys.all, "bilan", annee] as const,
   finances: (filtres: FiltresFinances) => [...statsKeys.all, "finances", filtres] as const,
@@ -59,4 +60,8 @@ export function useStatsBilan(annee: number) {
     queryKey: statsKeys.bilan(annee),
     queryFn: () => statsApi.getStatsBilan(annee),
   });
+}
+
+export function useStatsProjets() {
+  return useQuery({ queryKey: statsKeys.projets(), queryFn: () => statsApi.getStatsProjets() });
 }

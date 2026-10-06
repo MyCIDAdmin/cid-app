@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import AufgabeModal from "../../components/projets/arbeitsbereich/AufgabeModal";
+import AktivitaetTab from "../../components/projets/arbeitsbereich/AktivitaetTab";
 import KanbanBoard from "../../components/projets/arbeitsbereich/KanbanBoard";
 import KostenTab from "../../components/projets/arbeitsbereich/KostenTab";
 import TeamTab from "../../components/projets/arbeitsbereich/TeamTab";
@@ -20,7 +21,7 @@ import { useAufgaben, useProjet, useSichtbarkeitAendern, useTeam } from "../../h
 import type { Aufgabe, StatutAufgabe } from "../../types/projets";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
-type Reiter = "uebersicht" | "aufgaben" | "kosten" | "team";
+type Reiter = "uebersicht" | "aufgaben" | "kosten" | "team" | "aktivitaet";
 
 export default function ProjetArbeitsbereichPage() {
   const { t } = useTranslation("projets");
@@ -107,7 +108,7 @@ export default function ProjetArbeitsbereichPage() {
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
 
       <div role="tablist" className="flex gap-1 border-b border-text-tertiary/20">
-        {(["uebersicht", "aufgaben", "kosten", "team"] as const).map((r) => (
+        {(["uebersicht", "aufgaben", "kosten", "team", "aktivitaet"] as const).map((r) => (
           <button
             key={r}
             type="button"
@@ -140,6 +141,7 @@ export default function ProjetArbeitsbereichPage() {
       {reiter === "kosten" && (
         <KostenTab projetId={projet.id} aufgaben={aufgabenQuery.data ?? []} />
       )}
+      {reiter === "aktivitaet" && <AktivitaetTab projetId={projet.id} />}
       {reiter === "team" && <TeamTab projetId={projet.id} verwalten={projet.darf_team_verwalten} />}
 
       {dialog && (

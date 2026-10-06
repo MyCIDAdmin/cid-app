@@ -161,3 +161,44 @@ export interface Bilan {
   resultats_evenements: ResultatBilan[];
   resultats_projets: ResultatBilan[];
 }
+
+/** Projekt-Kennzahlen (2026-10-07) — miroir de apps.stats.services.kpis_projets. */
+export interface ProjektKennzahlZeile {
+  id: string;
+  titre: string;
+  statut: string;
+  sichtbarkeit: "entwurf" | "veroeffentlicht";
+  team: number;
+  aufgaben_gesamt: number;
+  aufgaben_erledigt: number;
+  prozent: number;
+  ueberfaellig: number;
+  plan: string;
+  ist: string;
+  offen: string;
+  einnahmen: string;
+  ergebnis: string;
+}
+
+export interface KpisProjets {
+  projekte_gesamt: number;
+  veroeffentlicht: number;
+  entwurf: number;
+  nach_status: { statut: string; nombre: number }[];
+  aufgaben: {
+    gesamt: number;
+    erledigt: number;
+    ueberfaellig: number;
+    quote: number;
+    pro_status: Record<string, number>;
+  };
+  kosten: {
+    plan: string;
+    ist: string;
+    offen: string;
+    einnahmen: string;
+    ergebnis: string;
+    auslastung: number | null;
+  };
+  projekte: ProjektKennzahlZeile[];
+}

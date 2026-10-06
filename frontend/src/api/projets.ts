@@ -4,6 +4,7 @@
 import { apiClient } from "./client";
 import type { CursorPage } from "../types/membre";
 import type {
+  AktivitaetEintrag,
   Arbeitsbereich,
   Aufgabe,
   AufgabeKommentar,
@@ -343,4 +344,13 @@ export async function kostenAendern(
 
 export async function kostenLoeschen(id: string): Promise<void> {
   await apiClient.delete(`/projets/kosten/${id}/`);
+}
+
+// --- Aktivitätsprotokoll (2026-10-07) ----------------------------------------------------------
+
+export async function listAktivitaeten(projetId: string): Promise<AktivitaetEintrag[]> {
+  const { data } = await apiClient.get<CursorPage<AktivitaetEintrag>>("/projets/aktivitaeten/", {
+    params: { projet: projetId },
+  });
+  return data.results;
 }

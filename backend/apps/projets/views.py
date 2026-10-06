@@ -43,17 +43,20 @@ from rest_framework.pagination import CursorPagination
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from apps.cotisations.models import Cotisation, StatutCotisation
 from apps.finances.models import AktionProtokoll, CategorieDepense, Depense, StatutDepense
 from apps.finances.services import diff, etat_depense, protokolliere, pruefe_jahr, resume_depense
 from apps.membres.models import Membre
 
+from .aktivitaet import logge
 from .models import (
+    AktionAktivitaet,
     Aufgabe,
     AufgabeKommentar,
     PlanKosten,
+    ProjetAktivitaet,
     ProjetImage,
     ProjetMiseAJour,
     ProjetMiseAJourImage,
@@ -78,6 +81,7 @@ from .serializers import (
     AufgabeSerializer,
     ContributeurSerializer,
     PlanKostenSerializer,
+    ProjetAktivitaetSerializer,
     ProjetImageSerializer,
     ProjetKostenSerializer,
     ProjetMiseAJourImageSerializer,
@@ -144,6 +148,7 @@ class ProjetViewSet(ModelViewSet):
             raise ValidationError({"sichtbarkeit": "Ungültiger Wert."})
         projet.sichtbarkeit = wert
         projet.save(update_fields=["sichtbarkeit", "updated_at"])
+        logge(request.user, projet, AktionAktivitaet.SICHTBARKEIT, detail=wert)
         return Response(self.get_serializer(projet).data)
 
     @action(detail=True, methods=["get"])
@@ -403,6 +408,10 @@ def _projekt_aus_daten(request, serializer, feld="projet"):
     return projet
 
 
+def _name(membre) -> str:
+    return f"{membre.prenom} {membre.nom}".strip()
+
+
 class ProjetTeamViewSet(ModelViewSet):
     """Équipe interne d'un projet (2026-10-06). Lecture : équipe, gestionnaires et service
     financier ; écriture : Direction du projet ou gestionnaire."""
@@ -430,7 +439,14 @@ class ProjetTeamViewSet(ModelViewSet):
         if not arbeitsbereich_projekte(self.request.user).filter(pk=projet.pk).exists():
             raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
         self._pruefe_schreibrecht(projet)
-        serializer.save()
+        eintrag = serializer.save()
+        logge(
+            self.request.user,
+            projet,
+            AktionAktivitaet.TEAM_HINZUGEFUEGT,
+            _name(eintrag.membre),
+            eintrag.rolle,
+        )
 
     def _letzte_leitung(self, eintrag) -> bool:
         return (
@@ -443,10 +459,19 @@ class ProjetTeamViewSet(ModelViewSet):
     def perform_update(self, serializer):
         eintrag = serializer.instance
         self._pruefe_schreibrecht(eintrag.projet)
+        vorher = eintrag.rolle
         neue_rolle = serializer.validated_data.get("rolle", eintrag.rolle)
         if neue_rolle != RolleProjet.LEITUNG and self._letzte_leitung(eintrag):
             raise ValidationError({"rolle": "Das Projekt braucht mindestens eine Projektleitung."})
-        serializer.save()
+        eintrag = serializer.save()
+        if eintrag.rolle != vorher:
+            logge(
+                self.request.user,
+                eintrag.projet,
+                AktionAktivitaet.TEAM_ROLLE,
+                _name(eintrag.membre),
+                eintrag.rolle,
+            )
 
     def perform_destroy(self, instance):
         self._pruefe_schreibrecht(instance.projet)
@@ -454,7 +479,9 @@ class ProjetTeamViewSet(ModelViewSet):
             raise ValidationError(
                 {"membre": "Die letzte Projektleitung kann nicht entfernt werden."}
             )
+        projet, name = instance.projet, _name(instance.membre)
         instance.delete()
+        logge(self.request.user, projet, AktionAktivitaet.TEAM_ENTFERNT, name)
 
 
 class AufgabeViewSet(ModelViewSet):
@@ -494,6 +521,7 @@ class AufgabeViewSet(ModelViewSet):
         self._setze_erledigt(aufgabe)
         aufgabe.save(update_fields=["erledigt_am"])
         notifier_aufgabe_zugewiesen(aufgabe, durch=membre)
+        logge(self.request.user, projet, AktionAktivitaet.AUFGABE_ERSTELLT, aufgabe.titel)
 
     def perform_update(self, serializer):
         aufgabe = serializer.instance
@@ -505,11 +533,20 @@ class AufgabeViewSet(ModelViewSet):
         aufgabe.save(update_fields=["erledigt_am"])
         if aufgabe.verantwortlich_id and aufgabe.verantwortlich_id != vorher:
             notifier_aufgabe_zugewiesen(aufgabe, durch=getattr(self.request.user, "membre", None))
+            logge(
+                self.request.user,
+                aufgabe.projet,
+                AktionAktivitaet.AUFGABE_ZUGEWIESEN,
+                aufgabe.titel,
+                _name(aufgabe.verantwortlich),
+            )
 
     def perform_destroy(self, instance):
         if not kann_team_verwalten(self.request.user, instance.projet):
             raise PermissionDenied("Nur Projektleitung oder Verwaltung darf Aufgaben löschen.")
+        projet, titel = instance.projet, instance.titel
         instance.delete()
+        logge(self.request.user, projet, AktionAktivitaet.AUFGABE_GELOESCHT, titel)
 
     @action(detail=True, methods=["post"])
     def verschieben(self, request, pk=None):
@@ -553,6 +590,14 @@ class AufgabeViewSet(ModelViewSet):
                     if eintrag.ordre != index:
                         Aufgabe.objects.filter(pk=eintrag.pk).update(ordre=index)
         aufgabe.refresh_from_db()
+        if alter_status != status:
+            logge(
+                request.user,
+                aufgabe.projet,
+                AktionAktivitaet.AUFGABE_VERSCHOBEN,
+                aufgabe.titel,
+                f"{alter_status}>{status}",
+            )
         return Response(self.get_serializer(self.get_queryset().get(pk=aufgabe.pk)).data)
 
 
@@ -580,6 +625,9 @@ class AufgabeKommentarViewSet(ModelViewSet):
             raise PermissionDenied("Keine Berechtigung, zu kommentieren.")
         kommentar = serializer.save(autor=getattr(self.request.user, "membre", None))
         notifier_kommentar(kommentar)
+        logge(
+            self.request.user, aufgabe.projet, AktionAktivitaet.AUFGABE_KOMMENTIERT, aufgabe.titel
+        )
 
     def perform_destroy(self, instance):
         membre = getattr(self.request.user, "membre", None)
@@ -614,15 +662,31 @@ class PlanKostenViewSet(ModelViewSet):
         if not arbeitsbereich_projekte(self.request.user).filter(pk=projet.pk).exists():
             raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
         self._pruefe_schreibrecht(projet)
-        serializer.save()
+        plan = serializer.save()
+        logge(
+            self.request.user,
+            projet,
+            AktionAktivitaet.PLAN_GESETZT,
+            plan.categorie.nom,
+            plan.betrag,
+        )
 
     def perform_update(self, serializer):
         self._pruefe_schreibrecht(serializer.instance.projet)
-        serializer.save()
+        plan = serializer.save()
+        logge(
+            self.request.user,
+            plan.projet,
+            AktionAktivitaet.PLAN_GESETZT,
+            plan.categorie.nom,
+            plan.betrag,
+        )
 
     def perform_destroy(self, instance):
         self._pruefe_schreibrecht(instance.projet)
+        projet, art = instance.projet, instance.categorie.nom
         instance.delete()
+        logge(self.request.user, projet, AktionAktivitaet.PLAN_ENTFERNT, art)
 
 
 class ProjetKostenViewSet(ModelViewSet):
@@ -661,6 +725,13 @@ class ProjetKostenViewSet(ModelViewSet):
             f"Projektkosten erfasst ({projet.titre}): {resume_depense(depense)}",
             annee=depense.date_depense.year,
         )
+        logge(
+            self.request.user,
+            projet,
+            AktionAktivitaet.KOSTEN_ERFASST,
+            depense.fournisseur,
+            depense.montant,
+        )
 
     def _pruefe_aenderbar(self, depense):
         user = self.request.user
@@ -696,7 +767,9 @@ class ProjetKostenViewSet(ModelViewSet):
     def perform_destroy(self, instance):
         self._pruefe_aenderbar(instance)
         resume, annee, pk = resume_depense(instance), instance.date_depense.year, instance.id
+        projet, lieferant = instance.projet, instance.fournisseur
         instance.delete()
+        logge(self.request.user, projet, AktionAktivitaet.KOSTEN_GELOESCHT, lieferant)
         protokolliere(
             self.request.user,
             AktionProtokoll.GELOESCHT,
@@ -704,4 +777,26 @@ class ProjetKostenViewSet(ModelViewSet):
             pk,
             f"Projektkosten gelöscht: {resume}",
             annee=annee,
+        )
+
+
+class AktivitaetCursorPagination(CursorPagination):
+    page_size = 50
+    ordering = ("-zeitpunkt", "id")
+
+
+class ProjetAktivitaetViewSet(ReadOnlyModelViewSet):
+    """Aktivitätsprotokoll (2026-10-07), nur lesend : Team, Verwaltung und Finanzen (lesend) —
+    dieselbe Sichtbarkeit wie der Arbeitsbereich. Geschrieben wird ausschließlich durch die Views
+    über `aktivitaet.logge`."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProjetAktivitaetSerializer
+    pagination_class = AktivitaetCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["projet"]
+
+    def get_queryset(self):
+        return ProjetAktivitaet.objects.filter(
+            projet__in=arbeitsbereich_projekte(self.request.user)
         )
