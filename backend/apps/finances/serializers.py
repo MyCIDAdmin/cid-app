@@ -12,13 +12,17 @@ TAILLE_MAX = 5 * 1024 * 1024
 
 
 class CategorieDepenseSerializer(serializers.ModelSerializer):
+    namen = serializers.DictField(read_only=True)
+
     class Meta:
         model = CategorieDepense
-        fields = ["id", "nom", "actif", "ordre"]
+        fields = ["id", "nom", "nom_de", "nom_ar", "namen", "actif", "ordre"]
+        read_only_fields = ["namen"]
 
 
 class DepenseSerializer(serializers.ModelSerializer):
     categorie_nom = serializers.CharField(source="categorie.nom", read_only=True)
+    categorie_namen = serializers.DictField(source="categorie.namen", read_only=True)
     evenement_titre = serializers.CharField(source="evenement.titre", read_only=True, default=None)
     projet_titre = serializers.CharField(source="projet.titre", read_only=True, default=None)
     aufgabe_titel = serializers.CharField(source="aufgabe.titel", read_only=True, default=None)
@@ -35,6 +39,7 @@ class DepenseSerializer(serializers.ModelSerializer):
             "montant",
             "categorie",
             "categorie_nom",
+            "categorie_namen",
             "fournisseur",
             "description",
             "evenement",
@@ -114,7 +119,8 @@ class BudgetDefinirSerializer(serializers.Serializer):
 
 class BudgetAnnuelSerializer(serializers.ModelSerializer):
     categorie_nom = serializers.CharField(source="categorie.nom", read_only=True)
+    categorie_namen = serializers.DictField(source="categorie.namen", read_only=True)
 
     class Meta:
         model = BudgetAnnuel
-        fields = ["id", "annee", "categorie", "categorie_nom", "montant"]
+        fields = ["id", "annee", "categorie", "categorie_nom", "categorie_namen", "montant"]

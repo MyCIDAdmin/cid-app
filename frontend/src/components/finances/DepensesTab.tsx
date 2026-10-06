@@ -11,6 +11,7 @@ import {
 import { useAuthStore } from "../../store/authStore";
 import type { Depense, StatutDepense } from "../../types/finances";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { kategorieName } from "../../utils/kategorie";
 import DepenseFormModal from "./DepenseFormModal";
 
 const CLASSE_STATUT: Record<StatutDepense, string> = {
@@ -24,7 +25,7 @@ function formatMontant(montant: string): string {
 }
 
 export default function DepensesTab({ modifiable }: { modifiable: boolean }) {
-  const { t } = useTranslation("finances");
+  const { t, i18n } = useTranslation("finances");
   const userId = useAuthStore((s) => s.user?.id);
   const [annee, setAnnee] = useState(new Date().getFullYear());
   const [statut, setStatut] = useState<StatutDepense | "">("");
@@ -145,7 +146,9 @@ export default function DepensesTab({ modifiable }: { modifiable: boolean }) {
                         {t("col.saisie_par")}: {d.saisie_par_nom}
                       </div>
                     </td>
-                    <td className="px-2 py-2">{d.categorie_nom}</td>
+                    <td className="px-2 py-2">
+                      {kategorieName(d.categorie_namen, d.categorie_nom, i18n.language)}
+                    </td>
                     <td className="px-2 py-2 text-right whitespace-nowrap">
                       {formatMontant(d.montant)}
                     </td>

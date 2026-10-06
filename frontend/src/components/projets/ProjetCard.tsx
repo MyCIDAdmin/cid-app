@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import AnimatedProgress from "../ui/AnimatedProgress";
 import ShareButton from "../ui/ShareButton";
@@ -289,6 +290,16 @@ export default function ProjetCard({
                 </button>
               )}
             </div>
+            {projet.darf_arbeitsbereich && (
+              <Link
+                to={`/projets/${projet.id}/arbeitsbereich`}
+                onClick={(e) => e.stopPropagation()}
+                className="mt-2 flex items-center justify-center gap-1.5 rounded-cid border border-ca px-3 py-1.5 text-sm font-medium text-ca hover:bg-ca/10"
+              >
+                {t("arbeitsbereich.oeffnen")}
+                <IconeFleche />
+              </Link>
+            )}
           </div>
         </div>
 

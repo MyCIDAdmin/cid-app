@@ -304,10 +304,20 @@ class AufgabeKommentarSerializer(serializers.ModelSerializer):
 
 class PlanKostenSerializer(serializers.ModelSerializer):
     categorie_nom = serializers.CharField(source="categorie.nom", read_only=True)
+    categorie_namen = serializers.DictField(source="categorie.namen", read_only=True)
 
     class Meta:
         model = PlanKosten
-        fields = ["id", "projet", "categorie", "categorie_nom", "betrag", "notiz", "updated_at"]
+        fields = [
+            "id",
+            "projet",
+            "categorie",
+            "categorie_nom",
+            "categorie_namen",
+            "betrag",
+            "notiz",
+            "updated_at",
+        ]
         read_only_fields = ["id", "updated_at"]
         # Eindeutigkeit prüft validate() mit einer klaren Meldung (Projekt/Kostenart ändern sich
         # nach dem Anlegen nie — update() ignoriert beide Felder).

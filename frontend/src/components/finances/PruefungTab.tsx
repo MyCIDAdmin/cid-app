@@ -5,6 +5,7 @@ import { exporterBilanExcel, exporterBilanPdf, exporterBuchungenCsv } from "../.
 import { usePruefung } from "../../hooks/useFinances";
 import type { Depense } from "../../types/finances";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { kategorieName } from "../../utils/kategorie";
 import { declencherTelechargement } from "../../utils/telechargement";
 
 function formatMontant(montant: string | number): string {
@@ -12,6 +13,7 @@ function formatMontant(montant: string | number): string {
 }
 
 function Liste({ titre, zeilen, leer }: { titre: string; zeilen: Depense[]; leer: string }) {
+  const { i18n } = useTranslation("finances");
   return (
     <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
       <h2 className="mb-2 text-xs font-bold text-text-primary">
@@ -24,7 +26,8 @@ function Liste({ titre, zeilen, leer }: { titre: string; zeilen: Depense[]; leer
           {zeilen.map((d) => (
             <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
               <span>
-                {d.date_depense} · {d.fournisseur} · {d.categorie_nom}
+                {d.date_depense} · {d.fournisseur} ·{" "}
+                {kategorieName(d.categorie_namen, d.categorie_nom, i18n.language)}
               </span>
               <span className="flex items-center gap-3">
                 <span className="font-medium">{formatMontant(d.montant)}</span>

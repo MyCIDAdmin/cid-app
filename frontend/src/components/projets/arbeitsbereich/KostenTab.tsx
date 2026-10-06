@@ -12,6 +12,7 @@ import {
 } from "../../../hooks/useProjets";
 import type { Aufgabe, KostenPosition, StatutKosten } from "../../../types/projets";
 import { extractApiErrorMessage } from "../../../utils/apiError";
+import { kategorieName } from "../../../utils/kategorie";
 import ConfirmDialog from "../../ui/ConfirmDialog";
 import KostenFormModal from "./KostenFormModal";
 
@@ -35,7 +36,7 @@ export default function KostenTab({
   projetId: string;
   aufgaben: Aufgabe[];
 }) {
-  const { t } = useTranslation("projets");
+  const { t, i18n } = useTranslation("projets");
   const uebersichtQuery = useKostenUebersicht(projetId);
   const planQuery = usePlankosten(projetId);
   const positionenQuery = useKosten(projetId);
@@ -130,12 +131,14 @@ export default function KostenTab({
                   const aendert = plan && bearbeiteterPlan?.id === plan.id;
                   return (
                     <tr key={z.categorie} className="border-t border-text-tertiary/10">
-                      <td className="py-1">{z.categorie_nom}</td>
+                      <td className="py-1">
+                        {kategorieName(z.categorie_namen, z.categorie_nom, i18n.language)}
+                      </td>
                       <td className="text-right">
                         {aendert ? (
                           <input
                             aria-label={t("arbeitsbereich.kosten.plan_betrag", {
-                              art: z.categorie_nom,
+                              art: kategorieName(z.categorie_namen, z.categorie_nom, i18n.language),
                             })}
                             type="number"
                             min="0"
@@ -221,7 +224,7 @@ export default function KostenTab({
               <option value="">{t("arbeitsbereich.kosten.kostenart_waehlen")}</option>
               {freieArten.map((k) => (
                 <option key={k.id} value={k.id}>
-                  {k.nom}
+                  {kategorieName(k.namen, k.nom, i18n.language)}
                 </option>
               ))}
             </select>
@@ -286,7 +289,8 @@ export default function KostenTab({
                 {p.fournisseur} · {euro(p.montant)}
               </p>
               <p className="text-xs text-text-tertiary">
-                {p.date_depense} · {p.categorie_nom}
+                {p.date_depense} ·{" "}
+                {kategorieName(p.categorie_namen, p.categorie_nom, i18n.language)}
                 {p.aufgabe_titel ? ` · ${p.aufgabe_titel}` : ""} · {p.saisie_par_nom}
               </p>
               {p.statut === "rejetee" && p.motif_rejet && (

@@ -129,6 +129,7 @@ def bilan_annuel(annee: int) -> dict:
             {
                 "categorie_id": str(cat.id),
                 "nom": cat.nom,
+                "namen": cat.namen,
                 "montant": montant,
                 "montant_precedent": precedent,
                 "budget": budget,

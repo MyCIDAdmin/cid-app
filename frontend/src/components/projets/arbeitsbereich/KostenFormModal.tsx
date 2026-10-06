@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useKostenAendern, useKostenErfassen } from "../../../hooks/useProjets";
 import type { Aufgabe, KostenartAuswahl, KostenPosition } from "../../../types/projets";
 import { extractApiErrorMessage } from "../../../utils/apiError";
+import { kategorieName } from "../../../utils/kategorie";
 
 const CHAMP = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -23,7 +24,7 @@ export default function KostenFormModal({
   aufgaben: Aufgabe[];
   onClose: () => void;
 }) {
-  const { t } = useTranslation("projets");
+  const { t, i18n } = useTranslation("projets");
   const erfassen = useKostenErfassen();
   const aendern = useKostenAendern();
   const [datum, setDatum] = useState(
@@ -130,7 +131,7 @@ export default function KostenFormModal({
               <option value="" />
               {kostenarten.map((k) => (
                 <option key={k.id} value={k.id}>
-                  {k.nom}
+                  {kategorieName(k.namen, k.nom, i18n.language)}
                 </option>
               ))}
             </select>

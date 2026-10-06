@@ -17,14 +17,16 @@ export async function listCategories(): Promise<CategorieDepense[]> {
   return data;
 }
 
-export async function creerCategorie(nom: string): Promise<CategorieDepense> {
-  const { data } = await apiClient.post<CategorieDepense>("/finances/categories/", { nom });
+export async function creerCategorie(
+  payload: Pick<CategorieDepense, "nom"> & Partial<Pick<CategorieDepense, "nom_de" | "nom_ar">>,
+): Promise<CategorieDepense> {
+  const { data } = await apiClient.post<CategorieDepense>("/finances/categories/", payload);
   return data;
 }
 
 export async function modifierCategorie(
   id: string,
-  patch: Partial<Pick<CategorieDepense, "nom" | "actif" | "ordre">>,
+  patch: Partial<Pick<CategorieDepense, "nom" | "nom_de" | "nom_ar" | "actif" | "ordre">>,
 ): Promise<CategorieDepense> {
   const { data } = await apiClient.patch<CategorieDepense>(`/finances/categories/${id}/`, patch);
   return data;

@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 
 import { useBudget, useCategories, useDefinirBudget } from "../../hooks/useFinances";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { kategorieName } from "../../utils/kategorie";
 
 export default function BudgetTab({ modifiable }: { modifiable: boolean }) {
-  const { t } = useTranslation("finances");
+  const { t, i18n } = useTranslation("finances");
   const [annee, setAnnee] = useState(new Date().getFullYear());
   const categories = useCategories();
   const budget = useBudget(annee);
@@ -59,13 +60,15 @@ export default function BudgetTab({ modifiable }: { modifiable: boolean }) {
             ?.filter((c) => c.actif || Number(montantServeur(c.id)) > 0)
             .map((c) => (
               <tr key={c.id} className="border-b border-text-tertiary/10">
-                <td className="py-1.5 pr-3 text-text-primary">{c.nom}</td>
+                <td className="py-1.5 pr-3 text-text-primary">
+                  {kategorieName(c.namen, c.nom, i18n.language)}
+                </td>
                 <td className="py-1.5 text-right">
                   <input
                     type="number"
                     min="0"
                     step="0.01"
-                    aria-label={c.nom}
+                    aria-label={kategorieName(c.namen, c.nom, i18n.language)}
                     disabled={!modifiable}
                     value={valeur(c.id)}
                     onChange={(e) => setSaisies((s) => ({ ...s, [c.id]: e.target.value }))}

@@ -66,7 +66,11 @@
     "ajouter": "Ajouter",
     "actif": "Active",
     "desactiver": "Désactiver",
-    "activer": "Activer"
+    "activer": "Activer",
+    "nom_fr": "Nom (français)",
+    "nom_de": "Nom (allemand)",
+    "nom_ar": "Nom (arabe)",
+    "uebersetzungen": "Modifier les noms"
   },
   "protokoll": {
     "intro": "Journal complet de toutes les modifications des dépenses, du budget, des catégories et de la clôture. Les entrées ne peuvent pas être modifiées.",
