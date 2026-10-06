@@ -26,7 +26,13 @@ export interface Evenement {
   description: string;
   date_evenement: string;
   heure: string | null;
+  /** Fin optionnelle (2026-10-06, point 2.4). */
+  date_fin: string | null;
+  heure_fin: string | null;
+  /** Échéance de paiement (point 2.3) — un rappel email part avant cette date si non payé. */
+  date_limite_paiement: string | null;
   lieu: string;
+  /** Vide pour un non-membre sur un événement réservé aux membres (masqué côté serveur). */
   point_rdv: string;
   /** Lien Google Maps saisi par l'admin (demande utilisateur 2026-09-27, point 11.2) — utilisé
    * uniquement comme cible du lien cliquable, jamais pour générer la vignette d'aperçu (voir
@@ -75,6 +81,9 @@ export interface EvenementPayload {
   description: string;
   date_evenement: string;
   heure?: string | null;
+  date_fin?: string | null;
+  heure_fin?: string | null;
+  date_limite_paiement?: string | null;
   lieu: string;
   point_rdv?: string;
   lieu_maps_url?: string;

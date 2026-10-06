@@ -1,0 +1,147 @@
+{
+  "bouton": "Aide",
+  "fermer": "Fermer",
+  "events": {
+    "titre": "Gestion des événements",
+    "intro": "Créez les événements, publiez-les et suivez les inscriptions.",
+    "schritte": [
+      "Choisissez « Nouvel événement » et renseignez titre, description, date, heure et lieu. Date de fin, heure de fin et date limite de paiement sont optionnelles.",
+      "Le point de rendez-vous et le lien Google Maps ne sont pas affichés aux non-membres pour un événement réservé aux membres.",
+      "Fixez prix, places et éventuels accompagnants. « Visible pour les non-membres » affiche aussi l'événement sur la page d'accueil publique.",
+      "L'événement n'est visible des membres qu'après « Publier » (un email d'invitation est envoyé). « Annuler » prévient tous les inscrits.",
+      "Si une date limite de paiement est fixée, les inscrits qui n'ont pas payé reçoivent automatiquement un rappel par email avant l'échéance."
+    ]
+  },
+  "boutique": {
+    "titre": "Gestion de la boutique",
+    "intro": "Gérez le catalogue de la boutique de l'association.",
+    "schritte": [
+      "Créez un article avec nom, description et prix ; il démarre en brouillon.",
+      "Avec « Gérer les variantes », renseignez tailles/couleurs et stock ; avec « Galerie », ajoutez des photos.",
+      "Avec le sélecteur de statut, publiez ou archivez l'article ; seuls les articles publiés sont visibles des clients.",
+      "« Supprimer » retire définitivement un article. Un article déjà commandé ne peut pas être supprimé : passez-le plutôt en « archivé »."
+    ]
+  },
+  "stats": {
+    "titre": "Statistiques & KPI",
+    "intro": "Les chiffres clés sur les membres, paiements et l'activité.",
+    "schritte": [
+      "Changez d'onglet pour voir les différents domaines.",
+      "Ajustez la période et les filtres en haut, les graphiques se mettent à jour.",
+      "Survolez un graphique pour voir les valeurs détaillées."
+    ]
+  },
+  "inscriptions": {
+    "titre": "Inscriptions",
+    "intro": "Vérifiez les nouveaux comptes et demandes d'adhésion.",
+    "schritte": [
+      "Consultez les inscriptions en attente et vérifiez les informations.",
+      "Validez ou refusez une inscription.",
+      "Les personnes validées sont enregistrées comme membres et peuvent se connecter."
+    ]
+  },
+  "justificatifs": {
+    "titre": "Justificatifs",
+    "intro": "Vérifiez les justificatifs soumis (par ex. pour une réduction).",
+    "schritte": [
+      "Ouvrez le justificatif dans la liste.",
+      "Acceptez-le ou refusez-le en indiquant un motif.",
+      "La personne est informée de la décision."
+    ]
+  },
+  "campagnes": {
+    "titre": "Campagnes d'adhésion",
+    "intro": "Gérez les campagnes d'adhésion et leurs offres.",
+    "schritte": [
+      "Créez une campagne avec sa période et sa description.",
+      "Avec « Gérer les offres », ajoutez les niveaux d'adhésion avec prix et avantages.",
+      "Publiez la campagne pour qu'elle apparaisse sur la page d'accueil et dans « Mon adhésion »."
+    ]
+  },
+  "paiements": {
+    "titre": "Paiements",
+    "intro": "Contrôlez les paiements en attente et confirmez leur réception.",
+    "schritte": [
+      "Consultez la liste des paiements en attente.",
+      "Une fois l'argent reçu, confirmez le paiement ; un reçu est généré.",
+      "Les paiements erronés ou en double peuvent être annulés."
+    ]
+  },
+  "relances": {
+    "titre": "Échéances",
+    "intro": "Définissez quand les membres sont relancés pour une cotisation impayée.",
+    "schritte": [
+      "Réglez les jours de relance avant et après l'échéance.",
+      "Enregistrez : les relances partent ensuite automatiquement par email."
+    ]
+  },
+  "roles": {
+    "titre": "Gestion des rôles",
+    "intro": "Définissez qui peut voir et modifier quelles pages d'administration.",
+    "schritte": [
+      "Sélectionnez une personne ou un rôle.",
+      "Attribuez par page « aucun accès », « lecture » ou « lecture et écriture ».",
+      "Les changements s'appliquent au prochain chargement de la page."
+    ]
+  },
+  "articles": {
+    "titre": "Articles de cotisation",
+    "intro": "Articles sélectionnables pour les cotisations et paiements.",
+    "schritte": [
+      "Créez un article avec nom et montant.",
+      "Désactivez les articles devenus inutiles plutôt que de les supprimer, pour garder l'historique des paiements lisible."
+    ]
+  },
+  "notifications": {
+    "titre": "Notifications par email",
+    "intro": "Activez ou désactivez les emails par domaine.",
+    "schritte": [
+      "Pour chaque module (événements, boutique…), choisissez si des emails sont envoyés.",
+      "Les notifications dans l'application (cloche) ne sont pas affectées."
+    ]
+  },
+  "projets": {
+    "titre": "Gestion des projets & actions",
+    "intro": "Créez et suivez les projets de collecte et les actions.",
+    "schritte": [
+      "Créez un projet avec titre, description, image et objectif de collecte.",
+      "Publiez-le pour que membres et visiteurs le voient et puissent donner.",
+      "Suivez l'avancement dans la liste et clôturez le projet à la fin."
+    ]
+  },
+  "albums": {
+    "titre": "Gestion des albums photo",
+    "intro": "Créez les albums photo de la galerie.",
+    "schritte": [
+      "Créez un album avec un titre et téléversez des photos.",
+      "Publiez-le pour qu'il apparaisse dans la galerie.",
+      "Supprimez des photos ou des albums entiers si nécessaire."
+    ]
+  },
+  "hero": {
+    "titre": "Vidéo d'accueil",
+    "intro": "Remplacez la vidéo de l'en-tête de la page d'accueil.",
+    "schritte": [
+      "Téléversez une nouvelle vidéo ou remplacez l'actuelle.",
+      "Après enregistrement, elle s'affiche sur la page d'accueil."
+    ]
+  },
+  "logos": {
+    "titre": "Logos des clubs",
+    "intro": "Gérez les logos des clubs pour le classement et le calendrier.",
+    "schritte": [
+      "Choisissez le club dans la liste.",
+      "Téléversez ou remplacez son logo.",
+      "Les logos s'affichent ensuite dans le classement et le calendrier."
+    ]
+  },
+  "quiz": {
+    "titre": "Gestion du quiz",
+    "intro": "Créez les questions de quiz pour la communauté.",
+    "schritte": [
+      "Créez un quiz ou une question avec ses réponses et marquez la bonne réponse.",
+      "Publiez pour que les membres puissent participer.",
+      "Consultez les résultats et le classement dans l'aperçu."
+    ]
+  }
+}

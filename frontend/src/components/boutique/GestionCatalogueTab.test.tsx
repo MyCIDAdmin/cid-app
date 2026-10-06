@@ -18,6 +18,7 @@ vi.mock("../../hooks/useBoutique", async () => {
     useCreerVariante: vi.fn(),
     useModifierVariante: vi.fn(),
     useSupprimerVariante: vi.fn(),
+    useSupprimerProduit: vi.fn(),
     useReglesReduction: vi.fn(),
     useCreerRegleReduction: vi.fn(),
     useModifierRegleReduction: vi.fn(),
@@ -64,10 +65,16 @@ function produit(overrides: Partial<Produit> = {}): Produit {
 describe("GestionCatalogueTab", () => {
   let creerMock: ReturnType<typeof vi.fn>;
   let modifierMock: ReturnType<typeof vi.fn>;
+  let supprimerMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     creerMock = vi.fn();
     modifierMock = vi.fn();
+    supprimerMock = vi.fn();
+    vi.mocked(useBoutiqueHooks.useSupprimerProduit).mockReturnValue({
+      mutate: supprimerMock,
+      isPending: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useSupprimerProduit>);
 
     vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
       data: { next: null, previous: null, results: [produit()] },
@@ -128,6 +135,29 @@ describe("GestionCatalogueTab", () => {
     renderWithProviders(<GestionCatalogueTab />);
     expect(screen.getByText("Mug CA 1920")).toBeInTheDocument();
     expect(screen.getByText(/catalogue_admin.stock_faible/)).toBeInTheDocument();
+  });
+
+  it("supprime un produit seulement après confirmation", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+
+    fireEvent.click(screen.getAllByText("catalogue_admin.supprimer_produit")[0]);
+    expect(supprimerMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("catalogue_admin.supprimer_oui"));
+    expect(supprimerMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("annule la suppression via le bouton Annuler", () => {
+    renderWithProviders(<GestionCatalogueTab />);
+
+    fireEvent.click(screen.getAllByText("catalogue_admin.supprimer_produit")[0]);
+    fireEvent.click(screen.getByText("catalogue_admin.supprimer_non"));
+    expect(supprimerMock).not.toHaveBeenCalled();
+    expect(screen.queryByText("catalogue_admin.supprimer_oui")).not.toBeInTheDocument();
+  });
+
+  it("n'affiche pas le bouton supprimer en lecture seule", () => {
+    renderWithProviders(<GestionCatalogueTab modifiable={false} />);
+    expect(screen.queryByText("catalogue_admin.supprimer_produit")).not.toBeInTheDocument();
   });
 
   it("soumet le formulaire de création avec les champs saisis", () => {

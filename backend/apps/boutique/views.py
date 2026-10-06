@@ -95,6 +95,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import ProtectedError
 from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -216,6 +217,26 @@ class ProduitViewSet(ModelViewSet):
         ):
             return queryset
         return queryset.filter(statut=StatutProduit.PUBLIE)
+
+    def destroy(self, request, *args, **kwargs):
+        # Demande utilisateur du 2026-10-06 (point 3.1) : Artikel löschen. Un produit déjà commandé
+        # reste référencé (LigneCommande -> VarianteProduit en PROTECT, historique comptable) : on
+        # répond alors 409 avec un message clair au lieu d'une 500 — l'admin passe le produit en
+        # "archivé" à la place.
+        produit = self.get_object()
+        try:
+            produit.delete()
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "Cet article figure dans des commandes et ne peut pas être supprimé. "
+                        "Passez-le au statut « archivé »."
+                    )
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProduitImageViewSet(ModelViewSet):

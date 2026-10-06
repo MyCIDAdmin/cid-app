@@ -81,6 +81,17 @@ class Evenement(models.Model):
 
     date_evenement = models.DateField()
     heure = models.TimeField(null=True, blank=True)
+    # Demande utilisateur du 2026-10-06 (point 2.4) : fin optionnelle (date et/ou heure) — vide =
+    # événement ponctuel comme avant.
+    date_fin = models.DateField(null=True, blank=True)
+    heure_fin = models.TimeField(null=True, blank=True)
+    # Point 2.3 : date limite de paiement de la participation ; passée sans paiement, un rappel
+    # email est envoyé (voir tasks.envoyer_rappels_paiement_evenements).
+    date_limite_paiement = models.DateField(
+        null=True,
+        blank=True,
+        help_text=_("Date limite pour régler la participation. Vide = pas d'échéance."),
+    )
     lieu = models.CharField(max_length=255, help_text=_("Stade/salle, ville, adresse complète."))
     point_rdv = models.CharField(max_length=255, blank=True)
     # Demande utilisateur du 2026-09-27, point 11.2 "Maps-Link für den Ort + Vorschau + Adresse
@@ -279,6 +290,12 @@ class Inscription(models.Model):
     # défaut à 0 — rétrocompatible avec les inscriptions existantes.
     nombre_accompagnants_adultes = models.PositiveSmallIntegerField(default=0)
     nombre_accompagnants_enfants = models.PositiveSmallIntegerField(default=0)
+
+    rappel_paiement_envoye_le = models.DateField(
+        null=True,
+        blank=True,
+        help_text=_("Idempotence du rappel de paiement (un seul rappel par inscription)."),
+    )
 
     montant_paye = models.DecimalField(
         max_digits=8,

@@ -134,8 +134,14 @@
     "publier": "Veröffentlichen",
     "annuler_evenement": "Veranstaltung absagen",
     "champ_cout_non_membre": "Preis Nicht-Mitglieder (€)",
-    "champ_cout_non_membre_placeholder": "Leer = gleicher Preis"
+    "champ_cout_non_membre_placeholder": "Leer = gleicher Preis",
+    "champ_fin_date": "Enddatum (optional)",
+    "champ_fin_heure": "Endzeit (optional)",
+    "champ_echeance_paiement": "Zahlungsfrist (optional)",
+    "champ_echeance_paiement_aide": "Wer bis dahin nicht bezahlt hat, bekommt eine Erinnerung per E-Mail."
   },
   "nur_fuer_mitglieder": "Nur für Mitglieder",
-  "reserve_membres_info": "Diese Veranstaltung ist nur für aktive Mitglieder."
+  "reserve_membres_info": "Diese Veranstaltung ist nur für aktive Mitglieder.",
+  "point_rdv": "Treffpunkt",
+  "paiement_avant": "Zahlung bis {{date}}"
 }

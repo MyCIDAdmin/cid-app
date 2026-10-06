@@ -22,6 +22,19 @@ import type { Evenement, RegimeAlimentaire } from "../../types/evenements";
 // PublicEvenementsTab) plutôt que déplacées dans un fichier séparé — react-refresh/only-export-
 // components ne dégrade que le Fast Refresh en dev, pas le comportement runtime (même choix que
 // CataloguePage.tsx/Sidebar.tsx).
+/** "18:00 – 22:00" / "18:00" / "" — plage horaire d'un événement (fin optionnelle, 2026-10-06). */
+// eslint-disable-next-line react-refresh/only-export-components
+export function formatPlageHoraire(heure: string | null, heureFin: string | null): string {
+  if (!heure) return "";
+  return heureFin ? `${heure.slice(0, 5)} – ${heureFin.slice(0, 5)}` : heure.slice(0, 5);
+}
+
+/** Date de l'événement, avec la date de fin si elle diffère : "12.10.2026 – 14.10.2026". */
+// eslint-disable-next-line react-refresh/only-export-components
+export function formatPeriode(debut: string, fin: string | null): string {
+  return fin && fin !== debut ? `${formatDate(debut)} – ${formatDate(fin)}` : formatDate(debut);
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { day: "2-digit", month: "long" });
