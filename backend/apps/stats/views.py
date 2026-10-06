@@ -46,6 +46,7 @@ from .services import (
     kpis_evenements,
     kpis_financier,
     kpis_membres,
+    kpis_projets,
 )
 
 
@@ -93,6 +94,13 @@ class StatsEvenementsView(BaseStatsView):
         return Response(
             kpis_evenements(annee=_annee_depuis_requete(request), **self._filtres_communs(request))
         )
+
+
+class StatsProjetsView(BaseStatsView):
+    """Projekt-Kennzahlen (2026-10-07) — Schnappschuss, ohne Jahres-/Mitgliederfilter."""
+
+    def get(self, request):
+        return Response(kpis_projets())
 
 
 def _type_transaction_depuis_requete(request):

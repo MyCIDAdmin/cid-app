@@ -404,3 +404,48 @@ class PlanKosten(models.Model):
 
     def __str__(self):
         return f"{self.projet} — {self.categorie}: {self.betrag}"
+
+
+class AktionAktivitaet(models.TextChoices):
+    AUFGABE_ERSTELLT = "aufgabe_erstellt", _("Tâche créée")
+    AUFGABE_VERSCHOBEN = "aufgabe_verschoben", _("Tâche déplacée")
+    AUFGABE_ZUGEWIESEN = "aufgabe_zugewiesen", _("Tâche assignée")
+    AUFGABE_GELOESCHT = "aufgabe_geloescht", _("Tâche supprimée")
+    AUFGABE_KOMMENTIERT = "aufgabe_kommentiert", _("Tâche commentée")
+    TEAM_HINZUGEFUEGT = "team_hinzugefuegt", _("Membre ajouté")
+    TEAM_ROLLE = "team_rolle", _("Rôle modifié")
+    TEAM_ENTFERNT = "team_entfernt", _("Membre retiré")
+    SICHTBARKEIT = "sichtbarkeit", _("Visibilité modifiée")
+    PLAN_GESETZT = "plan_gesetzt", _("Coût prévu défini")
+    PLAN_ENTFERNT = "plan_entfernt", _("Coût prévu retiré")
+    KOSTEN_ERFASST = "kosten_erfasst", _("Coût saisi")
+    KOSTEN_GELOESCHT = "kosten_geloescht", _("Coût supprimé")
+
+
+class ProjetAktivitaet(models.Model):
+    """Aktivitätsprotokoll eines Projekts (append-only, 2026-10-07) : wer hat wann was getan.
+    `akteur_name` ist eine Momentaufnahme, damit der Eintrag auch nach dem Löschen des Mitglieds
+    lesbar bleibt ; `objekt` (Titel/Name) und `detail` sind kurze, sprachneutrale Angaben — der
+    Satz selbst wird im Frontend aus `aktion` übersetzt. Das Protokoll hängt am Projekt (CASCADE).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name="aktivitaeten")
+    zeitpunkt = models.DateTimeField(auto_now_add=True)
+    akteur = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    akteur_name = models.CharField(max_length=200, blank=True)
+    aktion = models.CharField(max_length=30, choices=AktionAktivitaet.choices)
+    objekt = models.CharField(max_length=200, blank=True)
+    detail = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        db_table = "projets_aktivitaeten"
+        verbose_name = _("Activité du projet")
+        verbose_name_plural = _("Activités du projet")
+        ordering = ["-zeitpunkt", "id"]
+        indexes = [models.Index(fields=["projet", "-zeitpunkt"], name="projets_akt_proj_zeit_idx")]
+
+    def __str__(self):
+        return f"{self.projet} — {self.aktion}"

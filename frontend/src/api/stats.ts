@@ -9,6 +9,7 @@ import type {
   KpisEvenements,
   KpisFinancier,
   KpisMembres,
+  KpisProjets,
   StatsFiltres,
   TypeTransaction,
 } from "../types/stats";
@@ -121,5 +122,10 @@ export async function exporterBuchungenCsv(annee: number): Promise<Blob> {
     params: { annee },
     responseType: "blob",
   });
+  return data;
+}
+
+export async function getStatsProjets(): Promise<KpisProjets> {
+  const { data } = await apiClient.get<KpisProjets>("/stats/projets/");
   return data;
 }

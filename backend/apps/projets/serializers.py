@@ -23,6 +23,7 @@ from .models import (
     AufgabeKommentar,
     PlanKosten,
     Projet,
+    ProjetAktivitaet,
     ProjetImage,
     ProjetMiseAJour,
     ProjetMiseAJourImage,
@@ -350,3 +351,10 @@ class ProjetKostenSerializer(DepenseSerializer):
     def update(self, instance, validated_data):
         validated_data.pop("projet", None)
         return super().update(instance, validated_data)
+
+
+class ProjetAktivitaetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjetAktivitaet
+        fields = ["id", "projet", "zeitpunkt", "akteur_name", "aktion", "objekt", "detail"]
+        read_only_fields = fields

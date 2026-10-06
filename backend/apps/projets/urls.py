@@ -4,6 +4,7 @@ from .views import (
     AufgabeKommentarViewSet,
     AufgabeViewSet,
     PlanKostenViewSet,
+    ProjetAktivitaetViewSet,
     ProjetImageViewSet,
     ProjetKostenViewSet,
     ProjetMiseAJourImageViewSet,
@@ -21,6 +22,7 @@ router.register("aufgaben", AufgabeViewSet, basename="projet-aufgabe")
 router.register("aufgaben-kommentare", AufgabeKommentarViewSet, basename="projet-aufgabe-kommentar")
 router.register("plankosten", PlanKostenViewSet, basename="projet-plankosten")
 router.register("kosten", ProjetKostenViewSet, basename="projet-kosten")
+router.register("aktivitaeten", ProjetAktivitaetViewSet, basename="projet-aktivitaet")
 router.register("images", ProjetImageViewSet, basename="projet-image")
 router.register("mises-a-jour", ProjetMiseAJourViewSet, basename="projet-mise-a-jour")
 router.register(

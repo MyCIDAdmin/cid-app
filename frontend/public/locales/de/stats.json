@@ -31,7 +31,8 @@
     "membres": "Mitglieder",
     "evenements": "Veranstaltungen",
     "finances": "Finanzdaten",
-    "bilan": "Jahresbilanz"
+    "bilan": "Jahresbilanz",
+    "projets": "Projekte"
   },
   "financier": {
     "solde": "Saldo",
@@ -135,5 +136,25 @@
     "export_csv": "Buchungen (CSV)",
     "abgeschlossen": "Abgeschlossen am {{datum}}",
     "abweichung": "Seit dem Abschluss hat sich das Ergebnis um {{betrag}} verändert."
+  },
+  "projekte": {
+    "gesamt": "Projekte",
+    "veroeffentlicht": "Veröffentlicht / Entwurf",
+    "aufgaben_quote": "Aufgaben erledigt",
+    "ueberfaellig": "Überfällige Aufgaben",
+    "plan": "Plankosten",
+    "ist": "Ist-Kosten (freigegeben)",
+    "auslastung": "Budgetauslastung",
+    "ergebnis": "Ergebnis (Einnahmen − Ist)",
+    "hinweis": "Aktueller Stand über alle Projekte (auch Entwürfe); die Filter oben gelten hier nicht.",
+    "je_projekt": "Kennzahlen je Projekt",
+    "keine_daten": "Noch keine Projekte.",
+    "col_projekt": "Projekt",
+    "col_fortschritt": "Aufgaben",
+    "col_ueberfaellig": "Überfällig",
+    "col_plan": "Plan",
+    "col_ist": "Ist",
+    "col_offen": "Offen",
+    "col_ergebnis": "Ergebnis"
   }
 }

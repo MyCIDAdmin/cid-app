@@ -295,3 +295,30 @@ export interface KostenUebersicht {
   darf_erfassen: boolean;
   darf_plan_bearbeiten: boolean;
 }
+
+// --- Aktivitätsprotokoll (2026-10-07) ----------------------------------------------------------
+
+export type AktivitaetAktion =
+  | "aufgabe_erstellt"
+  | "aufgabe_verschoben"
+  | "aufgabe_zugewiesen"
+  | "aufgabe_geloescht"
+  | "aufgabe_kommentiert"
+  | "team_hinzugefuegt"
+  | "team_rolle"
+  | "team_entfernt"
+  | "sichtbarkeit"
+  | "plan_gesetzt"
+  | "plan_entfernt"
+  | "kosten_erfasst"
+  | "kosten_geloescht";
+
+export interface AktivitaetEintrag {
+  id: string;
+  projet: string;
+  zeitpunkt: string;
+  akteur_name: string;
+  aktion: AktivitaetAktion;
+  objekt: string;
+  detail: string;
+}

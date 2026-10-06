@@ -11,6 +11,7 @@ from .views import (
     StatsFinancesView,
     StatsFinancierView,
     StatsMembresView,
+    StatsProjetsView,
 )
 
 app_name = "stats"
@@ -19,6 +20,7 @@ urlpatterns = [
     path("financier/", StatsFinancierView.as_view(), name="financier"),
     path("membres/", StatsMembresView.as_view(), name="membres"),
     path("evenements/", StatsEvenementsView.as_view(), name="evenements"),
+    path("projets/", StatsProjetsView.as_view(), name="projets"),
     path("finances/", StatsFinancesView.as_view(), name="finances"),
     path("bilan/", StatsBilanView.as_view(), name="bilan"),
     path("export/bilan-excel/", StatsExportBilanExcelView.as_view(), name="export-bilan-excel"),

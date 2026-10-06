@@ -42,8 +42,9 @@ from apps.adhesions.models import Souscription, StatutSouscription
 from apps.boutique.models import Commande, StatutCommande
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle, montant_catalogue
 from apps.evenements.models import Evenement, Inscription, StatutEvenement, StatutInscription
-from apps.finances.models import Depense
+from apps.finances.models import Depense, StatutDepense
 from apps.membres.models import Membre, StatutMembre
+from apps.projets.models import Aufgabe, PlanKosten, Projet, ProjetMitglied, StatutAufgabe
 
 from .bilan import total_depenses
 
@@ -617,3 +618,121 @@ def finances_liste(
     inverse = ordre != "asc"
     lignes.sort(key=lambda ligne: ligne[tri], reverse=inverse)
     return lignes
+
+
+def kpis_projets() -> dict:
+    """Projekt-Kennzahlen (2026-10-07) : Fortschritt der Aufgaben, Plan/Ist/Offen der Kosten und
+    Ergebnis je Projekt. Ein Schnappschuss des aktuellen Stands über alle Projekte (auch Entwürfe,
+    die Statistik-Seite ist ohnehin nur für die Verwaltung) — kein Jahresfilter, da Projekte und
+    ihre Aufgaben über Jahre laufen. Ist = freigegebene Ausgaben, offen = noch nicht freigegeben,
+    abgelehnte zählen nirgends (wie in apps.projets `kosten-uebersicht`)."""
+    heute = timezone.localdate()
+    null = Decimal("0.00")
+
+    aufgaben_status = defaultdict(lambda: defaultdict(int))
+    for zeile in Aufgabe.objects.values("projet_id", "status").annotate(n=Count("id")):
+        aufgaben_status[zeile["projet_id"]][zeile["status"]] = zeile["n"]
+    ueberfaellig = {
+        z["projet_id"]: z["n"]
+        for z in Aufgabe.objects.exclude(status=StatutAufgabe.ERLEDIGT)
+        .filter(frist__lt=heute)
+        .values("projet_id")
+        .annotate(n=Count("id"))
+    }
+    team = {
+        z["projet_id"]: z["n"]
+        for z in ProjetMitglied.objects.values("projet_id").annotate(n=Count("id"))
+    }
+    plan = {
+        z["projet_id"]: z["t"]
+        for z in PlanKosten.objects.values("projet_id").annotate(t=Sum("betrag"))
+    }
+    ist, offen = {}, {}
+    for z in (
+        Depense.objects.filter(projet__isnull=False)
+        .exclude(statut=StatutDepense.REJETEE)
+        .values("projet_id", "statut")
+        .annotate(t=Sum("montant"))
+    ):
+        ziel = ist if z["statut"] == StatutDepense.APPROUVEE else offen
+        ziel[z["projet_id"]] = z["t"]
+    einnahmen = {
+        z["projet_id"]: z["t"]
+        for z in Cotisation.objects.filter(
+            type_article=TypeArticle.PROJET,
+            statut=StatutCotisation.PAYEE,
+            projet__isnull=False,
+        )
+        .values("projet_id")
+        .annotate(t=Sum("montant"))
+    }
+
+    zeilen = []
+    gesamt_aufgaben = defaultdict(int)
+    for pr in Projet.objects.order_by("titre"):
+        pro_status = aufgaben_status.get(pr.id, {})
+        anzahl = sum(pro_status.values())
+        erledigt = pro_status.get(StatutAufgabe.ERLEDIGT, 0)
+        for status, n in pro_status.items():
+            gesamt_aufgaben[status] += n
+        z_ist, z_einnahmen = ist.get(pr.id, null), einnahmen.get(pr.id, null)
+        zeilen.append(
+            {
+                "id": str(pr.id),
+                "titre": pr.titre,
+                "statut": pr.statut,
+                "sichtbarkeit": pr.sichtbarkeit,
+                "team": team.get(pr.id, 0),
+                "aufgaben_gesamt": anzahl,
+                "aufgaben_erledigt": erledigt,
+                "prozent": round(100 * erledigt / anzahl) if anzahl else 0,
+                "ueberfaellig": ueberfaellig.get(pr.id, 0),
+                "plan": plan.get(pr.id, null),
+                "ist": z_ist,
+                "offen": offen.get(pr.id, null),
+                "einnahmen": z_einnahmen,
+                "ergebnis": z_einnahmen - z_ist,
+            }
+        )
+
+    summe = lambda feld: sum((z[feld] for z in zeilen), null)  # noqa: E731
+    aufgaben_gesamt = sum(gesamt_aufgaben.values())
+    plan_gesamt, ist_gesamt = summe("plan"), summe("ist")
+    return {
+        "projekte_gesamt": len(zeilen),
+        "veroeffentlicht": sum(1 for z in zeilen if z["sichtbarkeit"] == "veroeffentlicht"),
+        "entwurf": sum(1 for z in zeilen if z["sichtbarkeit"] == "entwurf"),
+        "nach_status": [
+            {"statut": statut, "nombre": n}
+            for statut, n in sorted(
+                _zaehle(z["statut"] for z in zeilen).items(), key=lambda kv: -kv[1]
+            )
+        ],
+        "aufgaben": {
+            "gesamt": aufgaben_gesamt,
+            "erledigt": gesamt_aufgaben.get(StatutAufgabe.ERLEDIGT, 0),
+            "ueberfaellig": sum(ueberfaellig.values()),
+            "quote": (
+                round(100 * gesamt_aufgaben.get(StatutAufgabe.ERLEDIGT, 0) / aufgaben_gesamt)
+                if aufgaben_gesamt
+                else 0
+            ),
+            "pro_status": {code: gesamt_aufgaben.get(code, 0) for code in StatutAufgabe.values},
+        },
+        "kosten": {
+            "plan": plan_gesamt,
+            "ist": ist_gesamt,
+            "offen": summe("offen"),
+            "einnahmen": summe("einnahmen"),
+            "ergebnis": summe("ergebnis"),
+            "auslastung": round(100 * ist_gesamt / plan_gesamt) if plan_gesamt else None,
+        },
+        "projekte": zeilen,
+    }
+
+
+def _zaehle(werte) -> dict:
+    zaehler: dict = defaultdict(int)
+    for wert in werte:
+        zaehler[wert] += 1
+    return dict(zaehler)
