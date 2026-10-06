@@ -22,6 +22,8 @@ describe("HelpButton", () => {
     renderWithProviders(<HelpButton />, { route: "/admin/events", path: "/admin/events" });
     fireEvent.click(screen.getByLabelText("bouton"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+    // Portal in <body> : die Kopfleiste (backdrop-filter) darf nicht Bezugsrahmen für fixed sein.
+    expect(screen.getByRole("dialog").parentElement?.parentElement).toBe(document.body);
     fireEvent.click(screen.getByLabelText("fermer"));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });

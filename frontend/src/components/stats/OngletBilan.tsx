@@ -22,7 +22,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { exporterBilanExcel, exporterBilanPdf } from "../../api/stats";
+import { exporterBilanExcel, exporterBilanPdf, exporterBuchungenCsv } from "../../api/stats";
 import { useStatsBilan } from "../../hooks/useStats";
 import type {
   LigneDepenseBilan,
@@ -81,15 +81,17 @@ export default function OngletBilan({
 }) {
   const { t, i18n } = useTranslation("stats");
   const { data, isLoading, isError } = useStatsBilan(annee);
-  const [exportEnCours, setExportEnCours] = useState<"pdf" | "excel" | null>(null);
+  const [exportEnCours, setExportEnCours] = useState<"pdf" | "excel" | "csv" | null>(null);
   const [erreurExport, setErreurExport] = useState<string | null>(null);
 
-  async function exporter(format: "pdf" | "excel") {
+  async function exporter(format: "pdf" | "excel" | "csv") {
     setErreurExport(null);
     setExportEnCours(format);
     try {
       if (format === "pdf") {
         declencherTelechargement(await exporterBilanPdf(annee), `jahresbilanz_${annee}.pdf`);
+      } else if (format === "csv") {
+        declencherTelechargement(await exporterBuchungenCsv(annee), `buchungen_${annee}.csv`);
       } else {
         const { blob, nomFichier } = await exporterBilanExcel(annee);
         declencherTelechargement(blob, nomFichier);
@@ -209,7 +211,7 @@ export default function OngletBilan({
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <p className="text-xs text-text-tertiary">{t("bilan.hinweis_drill")}</p>
         <div className="ml-auto flex gap-2">
-          {(["pdf", "excel"] as const).map((f) => (
+          {(["pdf", "excel", "csv"] as const).map((f) => (
             <button
               key={f}
               type="button"
@@ -223,6 +225,18 @@ export default function OngletBilan({
         </div>
       </div>
       {erreurExport && <p className="mb-2 text-xs text-status-dangerText">{erreurExport}</p>}
+
+      {data.abschluss.abgeschlossen && (
+        <p className="mb-4 rounded-cid bg-status-infoBg px-3 py-2 text-xs text-status-infoText">
+          {t("bilan.abgeschlossen", {
+            datum: new Date(data.abschluss.abgeschlossen_am ?? "").toLocaleDateString(
+              i18n.language,
+            ),
+          })}
+          {Number(data.abschluss.abweichung) !== 0 &&
+            ` — ${t("bilan.abweichung", { betrag: formatMontant(data.abschluss.abweichung ?? 0) })}`}
+        </p>
+      )}
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <AnimatedKpiTile label={t("bilan.recettes")} value={formatMontant(data.recettes.total)} />

@@ -53,6 +53,7 @@ const bilan: Bilan = {
   },
   resultat: "180.00",
   resultat_precedent: "250.00",
+  abschluss: { abgeschlossen: false },
   mensuel: [{ mois: 1, recettes: "300.00", depenses: "120.00", cumul: "180.00" }],
   depenses_en_attente: { nombre: 2, montant: "75.00" },
   resultats_evenements: [

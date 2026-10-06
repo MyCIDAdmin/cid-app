@@ -7,11 +7,14 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { usePageAccess } from "../../hooks/useRbac";
+import AbschlussTab from "../../components/finances/AbschlussTab";
 import BudgetTab from "../../components/finances/BudgetTab";
 import CategoriesTab from "../../components/finances/CategoriesTab";
 import DepensesTab from "../../components/finances/DepensesTab";
+import ProtokollTab from "../../components/finances/ProtokollTab";
+import PruefungTab from "../../components/finances/PruefungTab";
 
-type Onglet = "depenses" | "budget" | "categories";
+type Onglet = "depenses" | "budget" | "categories" | "protokoll" | "pruefung" | "abschluss";
 
 export default function FinancesPage() {
   const { t } = useTranslation("finances");
@@ -23,24 +26,29 @@ export default function FinancesPage() {
       <h1 className="mb-1 text-xl font-bold text-text-primary">{t("titre")}</h1>
       <p className="mb-4 text-xs text-text-tertiary">{t("vier_augen")}</p>
       <div className="mb-4 flex gap-1 border-b border-text-tertiary/20">
-        {(["depenses", "budget", "categories"] as const).map((o) => (
-          <button
-            key={o}
-            type="button"
-            onClick={() => setOnglet(o)}
-            className={`px-3 py-2 text-sm font-medium ${
-              onglet === o
-                ? "border-b-2 border-ca text-ca"
-                : "text-text-tertiary hover:text-text-secondary"
-            }`}
-          >
-            {t(`onglets.${o}`)}
-          </button>
-        ))}
+        {(["depenses", "budget", "categories", "pruefung", "protokoll", "abschluss"] as const).map(
+          (o) => (
+            <button
+              key={o}
+              type="button"
+              onClick={() => setOnglet(o)}
+              className={`px-3 py-2 text-sm font-medium ${
+                onglet === o
+                  ? "border-b-2 border-ca text-ca"
+                  : "text-text-tertiary hover:text-text-secondary"
+              }`}
+            >
+              {t(`onglets.${o}`)}
+            </button>
+          ),
+        )}
       </div>
       {onglet === "depenses" && <DepensesTab modifiable={modifiable} />}
       {onglet === "budget" && <BudgetTab modifiable={modifiable} />}
       {onglet === "categories" && <CategoriesTab modifiable={modifiable} />}
+      {onglet === "pruefung" && <PruefungTab />}
+      {onglet === "protokoll" && <ProtokollTab />}
+      {onglet === "abschluss" && <AbschlussTab modifiable={modifiable} />}
     </div>
   );
 }

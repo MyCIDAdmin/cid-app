@@ -19,7 +19,13 @@ from apps.adhesions.models import Souscription, StatutSouscription
 from apps.boutique.models import Commande, StatutCommande
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle
 from apps.evenements.models import Evenement, Inscription, StatutInscription
-from apps.finances.models import BudgetAnnuel, CategorieDepense, Depense, StatutDepense
+from apps.finances.models import (
+    BudgetAnnuel,
+    CategorieDepense,
+    Depense,
+    Jahresabschluss,
+    StatutDepense,
+)
 from apps.projets.models import Projet
 
 ZERO = Decimal("0.00")
@@ -163,6 +169,7 @@ def bilan_annuel(annee: int) -> dict:
         "resultat_precedent": total_rec_prec - total_dep_prec,
         "mensuel": mensuel,
         "depenses_en_attente": {"nombre": a_approuver.count(), "montant": en_attente},
+        "abschluss": abschluss_info(annee, total_rec - total_dep),
         "resultats_evenements": resultats_evenements(annee),
         "resultats_projets": resultats_projets(annee),
     }
@@ -227,3 +234,117 @@ def resultats_projets(annee: int) -> list:
             {"id": str(pr.id), "titre": pr.titre, "recettes": r, "depenses": d, "resultat": r - d}
         )
     return sortie
+
+
+def abschluss_info(annee: int, resultat_aktuell: Decimal) -> dict:
+    """Status des Jahresabschlusses + Abweichung des heutigen Ergebnisses vom eingefrorenen."""
+    a = Jahresabschluss.objects.filter(annee=annee, aktiv=True).first()
+    if a is None:
+        return {"abgeschlossen": False}
+    eingefroren = Decimal(a.snapshot.get("resultat", "0"))
+    return {
+        "abgeschlossen": True,
+        "abgeschlossen_am": a.abgeschlossen_am,
+        "resultat_eingefroren": eingefroren,
+        "abweichung": resultat_aktuell - eingefroren,
+    }
+
+
+def ecritures_comptables(annee: int) -> list:
+    """Buchungsliste des Jahres (Einnahmen + freigegebene Ausgaben) — dieselben Quellen und
+    Regeln wie recettes_mensuelles/bilan_annuel, damit die Summe der Liste exakt dem Bilan
+    entspricht (Steuerberater-CSV)."""
+    zeilen = []
+
+    def add(datum, typ, kategorie, beschreibung, partei, betrag, beleg, referenz):
+        zeilen.append(
+            {
+                "datum": datum,
+                "typ": typ,
+                "kategorie": kategorie,
+                "beschreibung": beschreibung,
+                "gegenpartei": partei,
+                "betrag": betrag,
+                "beleg": beleg,
+                "referenz": referenz,
+            }
+        )
+
+    def nom(membre):
+        return f"{membre.prenom} {membre.nom}" if membre else ""
+
+    quellen = {
+        TypeArticle.COTISATION: "Beiträge",
+        TypeArticle.DON: "Spenden",
+        TypeArticle.PROJET: "Projektbeiträge",
+    }
+    for c in Cotisation.objects.filter(
+        statut=StatutCotisation.PAYEE, date_paiement__year=annee, type_article__in=quellen
+    ).select_related("membre"):
+        add(
+            c.date_paiement.date(),
+            "Einnahme",
+            quellen[c.type_article],
+            c.libelle,
+            nom(c.membre),
+            c.montant,
+            "",
+            c.reference_transaction or str(c.id),
+        )
+    for s in Souscription.objects.filter(
+        statut=StatutSouscription.PAYEE, date_souscription__year=annee
+    ).select_related("membre", "offre"):
+        add(
+            s.date_souscription.date(),
+            "Einnahme",
+            "Mitgliedschaften",
+            s.offre.nom,
+            nom(s.membre),
+            s.prix_paye,
+            "",
+            str(s.id),
+        )
+    for cmd in (
+        Commande.objects.filter(created_at__year=annee)
+        .exclude(statut__in=[StatutCommande.ANNULEE, StatutCommande.REMBOURSEE])
+        .select_related("membre")
+    ):
+        add(
+            cmd.created_at.date(),
+            "Einnahme",
+            "Shop",
+            cmd.numero_commande,
+            nom(cmd.membre),
+            cmd.montant_total,
+            "",
+            cmd.numero_commande,
+        )
+    for i in (
+        Inscription.objects.filter(evenement__date_evenement__year=annee)
+        .exclude(statut=StatutInscription.ANNULEE)
+        .select_related("membre", "evenement")
+    ):
+        if i.montant_paye:
+            add(
+                i.evenement.date_evenement,
+                "Einnahme",
+                "Veranstaltungen",
+                i.evenement.titre,
+                nom(i.membre),
+                i.montant_paye,
+                "",
+                str(i.id),
+            )
+    for d in _depenses_approuvees(annee).select_related("categorie"):
+        add(
+            d.date_depense,
+            "Ausgabe",
+            d.categorie.nom,
+            d.description or d.fournisseur,
+            d.fournisseur,
+            -d.montant,
+            "ja" if d.justificatif else "nein",
+            str(d.id),
+        )
+    zeilen.sort(key=lambda z: (z["datum"], z["typ"]))
+    return zeilen

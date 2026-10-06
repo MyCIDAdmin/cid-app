@@ -131,6 +131,9 @@
     "aucune_donnee": "Aucune donnée pour cette année.",
     "voir_depenses": "Voir toutes les dépenses",
     "par_evenement": "Résultat par évènement",
-    "par_projet": "Résultat par projet"
+    "par_projet": "Résultat par projet",
+    "export_csv": "Écritures (CSV)",
+    "abgeschlossen": "Clôturé le {{datum}}",
+    "abweichung": "Le résultat a varié de {{betrag}} depuis la clôture."
   }
 }

@@ -114,3 +114,12 @@ export async function exporterBilanPdf(annee: number): Promise<Blob> {
   });
   return data;
 }
+
+/** CSV der Buchungen eines Jahres für den Steuerberater (Semikolon, Dezimalkomma, UTF-8 mit BOM). */
+export async function exporterBuchungenCsv(annee: number): Promise<Blob> {
+  const { data } = await apiClient.get("/stats/export/buchungen-csv/", {
+    params: { annee },
+    responseType: "blob",
+  });
+  return data;
+}

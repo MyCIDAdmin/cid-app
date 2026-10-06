@@ -1,11 +1,15 @@
 /** Client API — module finances (backend/apps/finances). Réservé à la page `page_finances`. */
 import { apiClient } from "./client";
 import type {
+  Abschluss,
+  AktionProtokoll,
   BudgetLigne,
   CategorieDepense,
   Depense,
   DepensePayload,
   DepensesFiltres,
+  ProtokollEintrag,
+  Pruefung,
 } from "../types/finances";
 
 export async function listCategories(): Promise<CategorieDepense[]> {
@@ -85,5 +89,38 @@ export async function definirBudget(
   lignes: { categorie: string; montant: string }[],
 ): Promise<BudgetLigne[]> {
   const { data } = await apiClient.post<BudgetLigne[]>("/finances/budget/", { annee, lignes });
+  return data;
+}
+
+export async function getProtokoll(filtres: {
+  annee?: number;
+  aktion?: AktionProtokoll;
+}): Promise<ProtokollEintrag[]> {
+  const { data } = await apiClient.get<ProtokollEintrag[]>("/finances/protokoll/", {
+    params: filtres,
+  });
+  return data;
+}
+
+export async function getAbschluss(annee: number): Promise<Abschluss> {
+  const { data } = await apiClient.get<Abschluss>("/finances/abschluss/", { params: { annee } });
+  return data;
+}
+
+export async function jahrAbschliessen(annee: number): Promise<Abschluss> {
+  const { data } = await apiClient.post<Abschluss>("/finances/abschluss/", { annee });
+  return data;
+}
+
+export async function jahrWiedereroeffnen(annee: number, grund: string): Promise<Abschluss> {
+  const { data } = await apiClient.post<Abschluss>("/finances/abschluss/wiedereroeffnen/", {
+    annee,
+    grund,
+  });
+  return data;
+}
+
+export async function getPruefung(annee: number): Promise<Pruefung> {
+  const { data } = await apiClient.get<Pruefung>("/finances/pruefung/", { params: { annee } });
   return data;
 }

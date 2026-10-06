@@ -99,6 +99,8 @@
     <h1>{{ t.title }} {{ annee }}</h1>
     <div class="subtitle">{{ t.recettes }} / {{ t.depenses }} / {{ t.resultat }}</div>
 
+    {% if abschluss.abgeschlossen %}<div class="subtitle"><b>{{ t.abgeschlossen }} {{ abschluss.abgeschlossen_am|date:"d.m.Y" }}</b></div>{% endif %}
+
     <h2 class="section">{{ t.recettes }}</h2>
     <table class="kpis">
         <thead><tr><th>{{ t.poste }}</th><th class="num">{{ annee }}</th><th class="num">{{ t.precedent }}</th></tr></thead>

@@ -34,9 +34,9 @@ from rest_framework.views import APIView
 from apps.finances.models import Depense
 from apps.membres.utils_http import xlsx_response
 
-from .bilan import bilan_annuel
+from .bilan import bilan_annuel, ecritures_comptables
 from .exports import construire_classeur_dashboard
-from .exports_bilan import construire_classeur_bilan
+from .exports_bilan import construire_classeur_bilan, construire_csv_buchungen
 from .pdf import generate_dashboard_pdf
 from .pdf_bilan import generate_bilan_pdf
 from .permissions import StatsPermission
@@ -212,4 +212,15 @@ class StatsExportBilanPdfView(BaseStatsView):
         pdf_bytes = generate_bilan_pdf(bilan=bilan_annuel(annee), user=request.user)
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="jahresbilanz_{annee}.pdf"'
+        return response
+
+
+class StatsExportBuchungenCsvView(BaseStatsView):
+    """GET /stats/export/buchungen-csv/?annee= — Buchungsliste für den Steuerberater."""
+
+    def get(self, request):
+        annee = _annee_obligatoire(request)
+        contenu = construire_csv_buchungen(ecritures_comptables(annee))
+        response = HttpResponse(contenu, content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="buchungen_{annee}.csv"'
         return response
