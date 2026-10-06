@@ -161,6 +161,24 @@ class Projet(models.Model):
     # Projekttopf des Zieljahres prüft.
     plan_jahr = models.PositiveSmallIntegerField(null=True, blank=True)
 
+    # Historische Daten / Migration (Nutzerwunsch 2026-10-06) : ein vergangenes Projekt kann mit
+    # manuell erfasstem Beitrag angelegt werden, ohne einzelne Cotisation-Buchungen. Der Betrag
+    # zählt zu `montant_collecte`, die Anzahl zu `nb_contributeurs` ; `historisch_jahr` ordnet den
+    # Betrag der Jahresbilanz zu (leer = Jahr der Frist, sonst Erstellungsjahr).
+    historisch_betrag = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+        verbose_name=_("Manuell erfasster Beitrag (Historie)"),
+    )
+    historisch_beitragende = models.PositiveIntegerField(
+        default=0, verbose_name=_("Anzahl Beitragende (Historie)")
+    )
+    historisch_jahr = models.PositiveSmallIntegerField(
+        null=True, blank=True, verbose_name=_("Jahr des historischen Beitrags")
+    )
+
     ordre = models.PositiveIntegerField(default=0)
 
     created_by = models.ForeignKey(
@@ -209,7 +227,15 @@ class Projet(models.Model):
         total = Cotisation.objects.filter(projet=self, statut=StatutCotisation.PAYEE).aggregate(
             total=Sum("montant")
         )["total"]
-        return total or Decimal("0.00")
+        return (total or Decimal("0.00")) + self.historisch_betrag
+
+    @property
+    def historisch_jahr_effektiv(self) -> int:
+        if self.historisch_jahr:
+            return self.historisch_jahr
+        if self.date_limite:
+            return self.date_limite.year
+        return (self.created_at or timezone.now()).year
 
     @property
     def nb_contributeurs(self) -> int:
@@ -220,7 +246,7 @@ class Projet(models.Model):
             .values("membre_id")
             .distinct()
             .count()
-        )
+        ) + self.historisch_beitragende
 
     @property
     def budget_jahr(self) -> int:

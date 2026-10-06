@@ -40,6 +40,7 @@ import type {
   TypeProduit,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import BildHinweis from "../ui/BildHinweis";
 import GalerieProduitManager from "./GalerieProduitManager";
 import RegleReductionManager from "./RegleReductionManager";
 import VariantesManager from "./VariantesManager";
@@ -75,16 +76,17 @@ function formulaireInitial(): ProduitPayload {
   };
 }
 
-export default function GestionCatalogueTab({
-  modifiable = true,
-}: { modifiable?: boolean } = {}) {
+export default function GestionCatalogueTab({ modifiable = true }: { modifiable?: boolean } = {}) {
   const { t } = useTranslation(["boutique", "common"]);
   const produitsQuery = useProduits();
   const creerMutation = useCreerProduit();
   const modifierMutation = useModifierProduit();
   const supprimerMutation = useSupprimerProduit();
   const [produitASupprimer, setProduitASupprimer] = useState<string | null>(null);
-  const [suppressionErreur, setSuppressionErreur] = useState<{ produitId: string; message: string } | null>(null);
+  const [suppressionErreur, setSuppressionErreur] = useState<{
+    produitId: string;
+    message: string;
+  } | null>(null);
   const televerserImageMutation = useTeleverserImageProduit();
 
   const [form, setForm] = useState<ProduitPayload>(formulaireInitial);
@@ -123,7 +125,12 @@ export default function GestionCatalogueTab({
     setForm((f) => ({
       ...f,
       type_produit: type,
-      categorie: type === "bon_achat" ? "bon_achat" : f.categorie === "bon_achat" ? "vetements" : f.categorie,
+      categorie:
+        type === "bon_achat"
+          ? "bon_achat"
+          : f.categorie === "bon_achat"
+            ? "vetements"
+            : f.categorie,
     }));
   }
 
@@ -145,7 +152,10 @@ export default function GestionCatalogueTab({
 
   function modifierPrixMembre(produit: Produit, valeur: string) {
     if (!modifiable) return;
-    modifierMutation.mutate({ id: produit.id, payload: { prix_membre: valeur === "" ? null : valeur } });
+    modifierMutation.mutate({
+      id: produit.id,
+      payload: { prix_membre: valeur === "" ? null : valeur },
+    });
   }
 
   function handleImageChoisie(produit: Produit, e: ChangeEvent<HTMLInputElement>) {
@@ -169,6 +179,7 @@ export default function GestionCatalogueTab({
 
   return (
     <div>
+      <BildHinweis variante="shop" className="mb-3" />
       <div className="mb-5 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
         <h2 className="mb-3 text-xs font-bold text-text-primary">
           {t("catalogue_admin.nouveau_produit")}
@@ -274,9 +285,7 @@ export default function GestionCatalogueTab({
                   type="number"
                   min="0"
                   value={form.seuil_alerte_stock}
-                  onChange={(e) =>
-                    setForm({ ...form, seuil_alerte_stock: Number(e.target.value) })
-                  }
+                  onChange={(e) => setForm({ ...form, seuil_alerte_stock: Number(e.target.value) })}
                   className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
                 />
               </div>
@@ -377,7 +386,7 @@ export default function GestionCatalogueTab({
             <button
               type="submit"
               disabled={creerMutation.isPending || !modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="rounded-cid bg-ca px-4 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
             >
               {t("catalogue_admin.creer")}
@@ -452,7 +461,7 @@ export default function GestionCatalogueTab({
                     defaultValue={produit.pourcentage_reduction ?? ""}
                     onBlur={(e) => modifierRabais(produit, e.target.value)}
                     disabled={!modifiable}
-                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                    title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                     className="w-14 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
                   />
                 </label>
@@ -468,7 +477,7 @@ export default function GestionCatalogueTab({
                       defaultValue={produit.prix_membre ?? ""}
                       onBlur={(e) => modifierPrixMembre(produit, e.target.value)}
                       disabled={!modifiable}
-                      title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                      title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                       className="w-16 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
                     />
                   </label>
@@ -478,7 +487,7 @@ export default function GestionCatalogueTab({
                   value={produit.statut}
                   onChange={(e) => toggleStatut(produit, e.target.value as StatutProduit)}
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-xs disabled:opacity-40"
                 >
                   {STATUTS.map((s) => (
@@ -500,7 +509,7 @@ export default function GestionCatalogueTab({
                   type="button"
                   onClick={() => inputsFichierImage.current[produit.id]?.click()}
                   disabled={produitImageEnCours === produit.id || !modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
                 >
                   {produitImageEnCours === produit.id
@@ -553,7 +562,9 @@ export default function GestionCatalogueTab({
                 {modifiable &&
                   (produitASupprimer === produit.id ? (
                     <span className="flex items-center gap-1 text-xs">
-                      <span className="text-status-dangerText">{t("catalogue_admin.supprimer_confirmer")}</span>
+                      <span className="text-status-dangerText">
+                        {t("catalogue_admin.supprimer_confirmer")}
+                      </span>
                       <button
                         type="button"
                         disabled={supprimerMutation.isPending}
@@ -567,7 +578,10 @@ export default function GestionCatalogueTab({
                               setProduitASupprimer(null);
                               setSuppressionErreur({
                                 produitId: produit.id,
-                                message: extractApiErrorMessage(err, t("catalogue_admin.supprimer_erreur")),
+                                message: extractApiErrorMessage(
+                                  err,
+                                  t("catalogue_admin.supprimer_erreur"),
+                                ),
                               });
                             },
                           })
@@ -595,7 +609,9 @@ export default function GestionCatalogueTab({
                   ))}
               </div>
               {suppressionErreur?.produitId === produit.id && (
-                <p className="mt-1 text-[11px] text-status-dangerText">{suppressionErreur.message}</p>
+                <p className="mt-1 text-[11px] text-status-dangerText">
+                  {suppressionErreur.message}
+                </p>
               )}
               {produitImageErreur?.produitId === produit.id && (
                 <p className="mt-1 text-[11px] text-status-dangerText">

@@ -91,7 +91,7 @@ function EvenementCarte({
           garder titre/pastille de date lisibles, et description (HTML de l'éditeur riche,
           jamais retapée côté client) tronquée à 2 lignes juste en dessous. */}
       <div
-        className="relative flex h-28 flex-col justify-end bg-gradient-to-br from-ca to-cad bg-cover bg-center p-3"
+        className="relative flex aspect-video flex-col justify-end bg-gradient-to-br from-ca to-cad bg-cover bg-center p-3"
         style={evenement.image ? { backgroundImage: `url(${evenement.image})` } : undefined}
       >
         {evenement.image && (
@@ -113,7 +113,9 @@ function EvenementCarte({
             variant="inverse"
           />
         </div>
-        <h3 className="relative z-10 pr-16 text-base font-bold text-white">{evenement.titre}</h3>
+        <h3 className="relative z-10 pr-16 text-lg font-bold text-white drop-shadow">
+          {evenement.titre}
+        </h3>
       </div>
       <div className="space-y-2 p-3">
         {evenement.description && (
@@ -276,7 +278,7 @@ export default function EvenementsPage() {
               {onglet === "avenir" ? t("aucun_evenement") : t("aucun_evenement_passe")}
             </p>
           )}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
+          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3 stagger-children">
             {(onglet === "avenir" ? avenirQuery : passesQuery).data?.results.map((evenement) => (
               <EvenementCarte
                 key={evenement.id}

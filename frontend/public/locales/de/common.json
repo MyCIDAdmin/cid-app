@@ -104,5 +104,10 @@
     "aria_label": "Benutzermenü",
     "mon_profil": "Mein Profil",
     "preferences_titre": "Einstellungen"
+  },
+  "bild_hinweis": {
+    "shop": "Empfohlen: Querformat 16:10, mindestens 1200 × 750 px (JPG, PNG oder WebP, max. 10 MB). Das Bild füllt die Kachel vollständig aus – wichtige Motive bitte mittig platzieren, die Ränder können leicht beschnitten werden.",
+    "projekt": "Empfohlen: Querformat 16:9, mindestens 1280 × 720 px (JPG, PNG oder WebP, max. 10 MB). Das Bild füllt die Kachel vollständig aus – wichtige Motive bitte mittig platzieren, die Ränder können leicht beschnitten werden.",
+    "veranstaltung": "Empfohlen: Querformat 16:9, mindestens 1280 × 720 px (JPG, PNG oder WebP, max. 10 MB). Das Bild füllt die Kachel vollständig aus; Titel und Datum liegen unten bzw. oben – bitte dort keine wichtigen Details platzieren."
   }
 }

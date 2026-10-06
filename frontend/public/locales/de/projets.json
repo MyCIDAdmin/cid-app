@@ -28,7 +28,8 @@
   "contributeurs": {
     "titre": "Beitragende",
     "aucun": "Noch niemand hat zu diesem Projekt beigetragen.",
-    "chargement": "Beitragende werden geladen…"
+    "chargement": "Beitragende werden geladen…",
+    "historisch": "Aus der Historie übernommen: {{montant}} von {{count}} Beitragenden (manuell erfasst)."
   },
   "rapport": {
     "voir": "Bericht ansehen",
@@ -93,7 +94,12 @@
     "images_titre": "Bilder der Kachel",
     "ajouter_image": "Bild hinzufügen",
     "aucun_responsable": "Kein(e) Verantwortliche(r)",
-    "champ_sichtbarkeit": "Sichtbarkeit"
+    "champ_sichtbarkeit": "Sichtbarkeit",
+    "historie_titre": "Historisches Projekt (Altdaten)",
+    "historie_hinweis": "Für die Übernahme vergangener Projekte: den gesammelten Beitrag manuell erfassen. Er zählt zum gesammelten Betrag und zur Anzahl der Beitragenden. Das Datum bei „Frist“ sollte in der Vergangenheit liegen.",
+    "historie_betrag": "Gesammelter Beitrag (€)",
+    "historie_beitragende": "Anzahl Beitragende",
+    "historie_jahr": "Jahr des Beitrags"
   },
   "arbeitsbereich": {
     "titel": "Arbeitsbereich",

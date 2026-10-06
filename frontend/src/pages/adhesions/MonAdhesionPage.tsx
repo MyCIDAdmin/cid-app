@@ -77,6 +77,7 @@ import { useTranslation } from "react-i18next";
 
 import MitgliedsKarteAbschnitt from "../../components/adhesions/MitgliedsKarteAbschnitt";
 import PaiementStepper from "../../components/adhesions/PaiementStepper";
+import ZahlungsInfoDialog from "../../components/adhesions/ZahlungsInfoDialog";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
   useAnnulerSouscription,
@@ -230,14 +231,18 @@ export default function MonAdhesionPage() {
     );
   }
 
+  const [zahlungsInfoOffen, setZahlungsInfoOffen] = useState(false);
+
   function handleSouscrire() {
     if (!offreSelectionnee) return;
     souscrireMutation.mutate(
       { offre: offreSelectionnee.id, rabais: rabaisSelectionne?.id },
       {
-        onSuccess: () => {
+        onSuccess: (souscription) => {
           setOffreSelectionneeId(null);
           setRabaisSelectionneId(null);
+          // Wie beim Shop : direkt nach der Anmeldung die Zahlungsinfos zeigen.
+          if (souscription.statut !== "payee") setZahlungsInfoOffen(true);
         },
       },
     );
@@ -315,8 +320,18 @@ export default function MonAdhesionPage() {
               </div>
             </div>
           )}
+          {(souscriptionActuelle.statut === "en_attente_paiement" ||
+            souscriptionActuelle.statut === "en_attente_justificatif") && (
+            <button
+              type="button"
+              onClick={() => setZahlungsInfoOffen(true)}
+              className="mt-3 mr-2 rounded-cid bg-white px-3 py-1.5 text-xs font-semibold text-ca hover:bg-white/90"
+            >
+              {t("zahlung.anzeigen")}
+            </button>
+          )}
           {peutRetirer && (
-            <div className="mt-3">
+            <div className="mt-3 inline-block">
               <button
                 type="button"
                 onClick={() => setRetraitOuvert(true)}
@@ -332,6 +347,16 @@ export default function MonAdhesionPage() {
             </div>
           )}
         </div>
+      )}
+
+      {zahlungsInfoOffen && souscriptionActuelle && (
+        <ZahlungsInfoDialog
+          angebot={offreActuelle?.nom ?? "—"}
+          kampagne={campagne?.nom}
+          betrag={souscriptionActuelle.prix_paye}
+          nachweisOffen={souscriptionActuelle.statut === "en_attente_justificatif"}
+          onClose={() => setZahlungsInfoOffen(false)}
+        />
       )}
 
       {souscriptionActuelle?.statut === "en_attente_justificatif" && (

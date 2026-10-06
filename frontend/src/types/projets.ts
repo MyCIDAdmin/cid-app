@@ -71,6 +71,10 @@ export interface Projet {
   /** Toujours recalculé côté serveur (CLAUDE.md §8) — jamais dénormalisé, jamais déduit côté
    * client à partir des contributions individuelles. */
   montant_collecte: string;
+  /** Manuell erfasster Beitrag (Historie) — optional, ältere Fixtures kennen ihn nicht. */
+  historisch_betrag?: string;
+  historisch_beitragende?: number;
+  historisch_jahr?: number | null;
   /** Idem — jamais déduit du tableau `images`/`contributeurs` côté client. */
   nb_contributeurs: number;
   date_limite: string | null;
@@ -108,6 +112,9 @@ export interface ProjetPayload {
   cagnote_active?: boolean;
   objectif_montant?: string | null;
   date_limite?: string | null;
+  historisch_betrag?: string;
+  historisch_beitragende?: number;
+  historisch_jahr?: number | null;
   ordre?: number;
 }
 

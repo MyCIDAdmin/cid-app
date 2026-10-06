@@ -28,6 +28,7 @@ from .models import (
     ProjetMiseAJour,
     ProjetMiseAJourImage,
     ProjetMitglied,
+    StatutProjet,
 )
 from .permissions import (
     darf_arbeitsbereich,
@@ -164,6 +165,9 @@ class ProjetSerializer(serializers.ModelSerializer):
             "objectif_montant",
             "montant_collecte",
             "nb_contributeurs",
+            "historisch_betrag",
+            "historisch_beitragende",
+            "historisch_jahr",
             "date_limite",
             "plan_jahr",
             "budget_jahr",
@@ -180,6 +184,21 @@ class ProjetSerializer(serializers.ModelSerializer):
         ]
         # plan_jahr nur über die Aktion `planjahr` (prüft den Projekttopf des Zieljahres).
         read_only_fields = ["id", "created_by", "created_at", "updated_at", "plan_jahr"]
+
+    def validate(self, attrs):
+        betrag = attrs.get("historisch_betrag", getattr(self.instance, "historisch_betrag", 0))
+        anzahl = attrs.get(
+            "historisch_beitragende", getattr(self.instance, "historisch_beitragende", 0)
+        )
+        statut = attrs.get("statut", getattr(self.instance, "statut", None))
+        if (betrag or anzahl) and statut != StatutProjet.TERMINE:
+            raise serializers.ValidationError(
+                {
+                    "historisch_betrag": "Ein manuell erfasster Beitrag ist nur bei einem "
+                    "abgeschlossenen Projekt möglich."
+                }
+            )
+        return attrs
 
     def get_est_gestionnaire(self, obj) -> bool:
         request = self.context.get("request")

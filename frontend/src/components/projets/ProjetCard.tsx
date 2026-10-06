@@ -149,7 +149,12 @@ export default function ProjetCard({
             ci-dessous pour comment elle se cale sur cette même hauteur). */}
         <div className="flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-card-gradient shadow-card [backface-visibility:hidden]">
           <div className="relative">
-            <ImageCarousel images={projet.images} titre={projet.titre} className="h-44 shrink-0" />
+            <ImageCarousel
+              images={projet.images}
+              titre={projet.titre}
+              fit="cover"
+              className="aspect-video w-full shrink-0"
+            />
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-2">
               <span className="pointer-events-auto flex gap-1 drop-shadow">
                 <StatutProjetBadge statut={projet.statut} />
@@ -211,7 +216,7 @@ export default function ProjetCard({
                 utilisé ailleurs, voir CataloguePage.tsx) borne ici la kachel à 3 lignes, comme sur
                 mycid.org. */}
             <div
-              className="line-clamp-3 text-sm text-text-primary"
+              className="text-sm text-text-primary [overflow-wrap:anywhere]"
               // Texte riche produit par l'éditeur type Word (demande utilisateur point 1.2) —
               // affiché tel quel, jamais retapé côté client (voir RichTextEditor.tsx).
               dangerouslySetInnerHTML={{ __html: projet.description_html }}
@@ -313,9 +318,19 @@ export default function ProjetCard({
             {contributeursEnChargement && (
               <p className="text-sm text-text-secondary">{t("contributeurs.chargement")}</p>
             )}
-            {!contributeursEnChargement && contributeurs?.length === 0 && (
-              <p className="text-sm text-text-secondary">{t("contributeurs.aucun")}</p>
+            {Number(projet.historisch_betrag ?? 0) > 0 && (
+              <p className="rounded-cid bg-bg-tertiary/60 p-2 text-xs text-text-secondary">
+                {t("contributeurs.historisch", {
+                  montant: formatMontant(projet.historisch_betrag ?? 0),
+                  count: projet.historisch_beitragende ?? 0,
+                })}
+              </p>
             )}
+            {!contributeursEnChargement &&
+              contributeurs?.length === 0 &&
+              Number(projet.historisch_betrag ?? 0) === 0 && (
+                <p className="text-sm text-text-secondary">{t("contributeurs.aucun")}</p>
+              )}
             {contributeurs?.map((c) => (
               <div key={c.membre.id} className="flex items-center gap-2">
                 {c.membre.photo ? (

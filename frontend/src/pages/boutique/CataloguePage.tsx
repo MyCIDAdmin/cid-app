@@ -28,7 +28,12 @@ import { useProduits } from "../../hooks/useBoutique";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { useAuthStore } from "../../store/authStore";
 import { nombreArticlesPanier, totalPanier, usePanierStore } from "../../store/panierStore";
-import type { CategorieProduit, Produit, RegleReduction, VarianteProduit } from "../../types/boutique";
+import type {
+  CategorieProduit,
+  Produit,
+  RegleReduction,
+  VarianteProduit,
+} from "../../types/boutique";
 
 // "bon_achat" en dernier (demande utilisateur du 2026-09-23, "Gutschein soll als Kategorie im
 // shop auftauchen") — un onglet de catégorie comme les autres, jamais un module séparé.
@@ -173,7 +178,7 @@ function ProduitCarteBonAchat({
       ref={cardRef}
       className="flex flex-col overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm"
     >
-      <div className="relative flex h-40 items-center justify-center bg-cal">
+      <div className="relative flex aspect-[16/10] items-center justify-center bg-cal">
         <div className="absolute bottom-2 right-2 rounded-full bg-bg-primary/80 backdrop-blur-sm">
           <ShareButton path={`/boutique/${produit.id}`} titre={produit.nom} />
         </div>
@@ -297,7 +302,7 @@ function ProduitCarte({
       ref={cardRef}
       className="flex flex-col overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm"
     >
-      <div className="relative flex h-40 items-center justify-center bg-cal">
+      <div className="relative flex aspect-[16/10] items-center justify-center bg-cal">
         {produit.nouveaute && (
           <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-ca">
             {t("catalogue.badge_nouveaute")}
@@ -325,11 +330,7 @@ function ProduitCarte({
         <div className="absolute bottom-2 right-2 rounded-full bg-bg-primary/80 backdrop-blur-sm">
           <ShareButton path={`/boutique/${produit.id}`} titre={produit.nom} />
         </div>
-        <Link
-          to={`/boutique/${produit.id}`}
-          className="absolute inset-0"
-          aria-label={produit.nom}
-        >
+        <Link to={`/boutique/${produit.id}`} className="absolute inset-0" aria-label={produit.nom}>
           {produit.image ? (
             <img src={produit.image} alt={produit.nom} className="h-full w-full object-cover" />
           ) : (
@@ -338,7 +339,10 @@ function ProduitCarte({
         </Link>
       </div>
       <div className="flex flex-1 flex-col p-3">
-        <Link to={`/boutique/${produit.id}`} className="mb-0.5 text-sm font-bold text-text-primary hover:underline">
+        <Link
+          to={`/boutique/${produit.id}`}
+          className="mb-0.5 text-sm font-bold text-text-primary hover:underline"
+        >
           {produit.nom}
         </Link>
         <div className="mb-2 line-clamp-2 text-xs text-text-tertiary">{produit.description}</div>
@@ -381,7 +385,9 @@ function ProduitCarte({
               </span>
             </span>
           ) : (
-            <span className="text-base font-bold text-ca">{formatMontant(produit.prix_affiche)}</span>
+            <span className="text-base font-bold text-ca">
+              {formatMontant(produit.prix_affiche)}
+            </span>
           )}
           {!epuise && (
             <StepperQuantite
@@ -482,7 +488,7 @@ export default function CataloguePage() {
       )}
 
       {produitsQuery.data && produitsQuery.data.results.length > 0 && (
-        <div className="grid gap-4 stagger-children sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 stagger-children md:grid-cols-2 2xl:grid-cols-3">
           {produitsQuery.data.results.map((produit) =>
             produit.type_produit === "bon_achat" ? (
               <ProduitCarteBonAchat
@@ -516,5 +522,13 @@ export default function CataloguePage() {
 // ProduitDetailPage) plutôt que déplacées dans un fichier séparé — react-refresh/only-export-
 // components ne dégrade que le Fast Refresh en dev, pas le comportement runtime (même choix que
 // Sidebar.tsx/GROUP_ORDER).
-// eslint-disable-next-line react-refresh/only-export-components
-export { ProduitCarte, ProduitCarteBonAchat, StepperQuantite, formatMontant, labelVariante, labelRegleReduction };
+/* eslint-disable react-refresh/only-export-components */
+export {
+  ProduitCarte,
+  ProduitCarteBonAchat,
+  StepperQuantite,
+  formatMontant,
+  labelVariante,
+  labelRegleReduction,
+};
+/* eslint-enable react-refresh/only-export-components */

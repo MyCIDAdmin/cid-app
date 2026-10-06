@@ -221,6 +221,9 @@ def resultats_projets(annee: int) -> list:
         .values("projet_id")
         .annotate(t=Sum("montant"))
     }
+    for pr in Projet.objects.filter(historisch_betrag__gt=0):
+        if pr.historisch_jahr_effektiv == annee:
+            recettes[pr.id] = recettes.get(pr.id, ZERO) + pr.historisch_betrag
     depenses = {
         ligne["projet_id"]: ligne["t"]
         for ligne in _depenses_approuvees(annee)

@@ -224,5 +224,16 @@
     "titel": "Mitgliedskarte",
     "mitglied_seit": "Mitglied seit",
     "gueltig_bis": "Gültig bis"
+  },
+  "zahlung": {
+    "titel": "So bezahlen Sie Ihre Mitgliedschaft",
+    "hinweis": "Ihre Anmeldung ist eingegangen. Bitte überweisen Sie den Betrag per Banküberweisung oder PayPal.",
+    "angebot": "Angebot",
+    "betrag": "Betrag",
+    "zweck": "Verwendungszweck",
+    "nachweis_hinweis": "Bitte laden Sie noch Ihren Nachweis hoch. Der Betrag kann sich nach der Prüfung des Rabatts noch ändern.",
+    "bestaetigung": "Der Finanzverantwortliche bestätigt den Zahlungseingang manuell in der App, sobald er eingegangen ist. Die Angaben finden Sie jederzeit unter „Zahlungsinfos anzeigen“.",
+    "schliessen": "Verstanden",
+    "anzeigen": "Zahlungsinfos anzeigen"
   }
 }

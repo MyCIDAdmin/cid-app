@@ -74,7 +74,7 @@ function EvenementKachel({
           n'a été téléversée (voir AdminEventsPage.tsx) — un overlay dégradé reste posé par-dessus
           l'image pour garder le titre/la pastille de date lisibles quelle que soit l'image. */}
       <div
-        className="relative flex h-28 flex-col justify-end bg-gradient-to-br from-ca to-cad bg-cover bg-center p-3"
+        className="relative flex aspect-video flex-col justify-end bg-gradient-to-br from-ca to-cad bg-cover bg-center p-3"
         style={evenement.image ? { backgroundImage: `url(${evenement.image})` } : undefined}
       >
         {evenement.image && (
@@ -88,7 +88,9 @@ function EvenementKachel({
             {t("nur_fuer_mitglieder")}
           </span>
         )}
-        <h3 className="relative z-10 pr-16 text-base font-bold text-white">{evenement.titre}</h3>
+        <h3 className="relative z-10 pr-16 text-lg font-bold text-white drop-shadow">
+          {evenement.titre}
+        </h3>
       </div>
       <div className="space-y-2 p-3">
         {/* evenement.description contient désormais du HTML (éditeur riche AdminEventsPage,
@@ -333,7 +335,7 @@ export default function PublicEvenementsTab() {
               {sousOnglet === "avenir" ? t("aucun_evenement") : t("aucun_evenement_passe")}
             </p>
           )}
-          <div className="grid gap-4 stagger-children sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 stagger-children md:grid-cols-2 2xl:grid-cols-3">
             {requete.data?.results.map((evenement) => (
               <EvenementKachel
                 key={evenement.id}
