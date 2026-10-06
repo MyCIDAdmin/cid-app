@@ -522,7 +522,7 @@ export default function CataloguePage() {
 // ProduitDetailPage) plutôt que déplacées dans un fichier séparé — react-refresh/only-export-
 // components ne dégrade que le Fast Refresh en dev, pas le comportement runtime (même choix que
 // Sidebar.tsx/GROUP_ORDER).
-// eslint-disable-next-line react-refresh/only-export-components
+/* eslint-disable react-refresh/only-export-components */
 export {
   ProduitCarte,
   ProduitCarteBonAchat,
@@ -531,3 +531,4 @@ export {
   labelVariante,
   labelRegleReduction,
 };
+/* eslint-enable react-refresh/only-export-components */
