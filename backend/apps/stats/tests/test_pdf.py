@@ -74,3 +74,19 @@ def test_traductions_couvrent_fr_et_de():
             "revenus_adhesions",
             "revenus_evenements",
         }
+
+
+def test_generate_dashboard_pdf_komplett_mit_diagrammen_und_projekten():
+    from apps.stats.services import finances_liste, kpis_projets
+
+    pdf_bytes = generate_dashboard_pdf(
+        kpis_financier=kpis_financier(),
+        kpis_membres=kpis_membres(),
+        kpis_evenements=kpis_evenements(),
+        filtres_affiches="Jahr 2026",
+        langue="de",
+        kpis_projets=kpis_projets(),
+        finances=finances_liste(),
+        mensuel=[{"mois": "2026-01", "recettes": 10, "depenses": 4}],
+    )
+    assert pdf_bytes.startswith(b"%PDF-")

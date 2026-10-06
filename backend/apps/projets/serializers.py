@@ -17,6 +17,7 @@ from rest_framework import serializers
 from apps.communaute.validators import valider_et_reencoder_photo
 from apps.finances.serializers import DepenseSerializer
 from apps.membres.models import Membre
+from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import (
     Aufgabe,
@@ -151,10 +152,13 @@ class ProjetSerializer(serializers.ModelSerializer):
     darf_arbeitsbereich = serializers.SerializerMethodField()
     darf_team_verwalten = serializers.SerializerMethodField()
 
+    uebersetzungen = UebersetzungenField()
+
     class Meta:
         model = Projet
         fields = [
             "id",
+            "uebersetzungen",
             "titre",
             "description_html",
             "statut",

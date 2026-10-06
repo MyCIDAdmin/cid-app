@@ -44,6 +44,7 @@ import BildHinweis from "../ui/BildHinweis";
 import GalerieProduitManager from "./GalerieProduitManager";
 import RegleReductionManager from "./RegleReductionManager";
 import VariantesManager from "./VariantesManager";
+import UebersetzungenButton from "../ui/UebersetzungenButton";
 
 const CATEGORIES: CategorieProduit[] = [
   "vetements",
@@ -559,6 +560,13 @@ export default function GestionCatalogueTab({ modifiable = true }: { modifiable?
                       ? t("catalogue_admin.gerer_galerie")
                       : t("catalogue_admin.voir_galerie")}
                 </button>
+                {modifiable && (
+                  <UebersetzungenButton
+                    modell="boutique.produit"
+                    objektId={produit.id}
+                    className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+                  />
+                )}
                 {modifiable &&
                   (produitASupprimer === produit.id ? (
                     <span className="flex items-center gap-1 text-xs">

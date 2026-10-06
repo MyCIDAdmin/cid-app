@@ -213,7 +213,13 @@
     "statut_label": "Statut",
     "enregistrer": "Enregistrer",
     "annuler": "Annuler",
-    "erreur_modification": "La mise à jour a échoué."
+    "erreur_modification": "La mise à jour a échoué.",
+    "forme_V": "Victoire",
+    "forme_N": "Nul",
+    "forme_D": "Défaite",
+    "forme_kurz_V": "V",
+    "forme_kurz_N": "N",
+    "forme_kurz_D": "D"
   },
   "visionneuse": {
     "ouvrir": "Agrandir la photo",

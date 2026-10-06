@@ -37,6 +37,7 @@ import { useAnnulerInscription, useEvenements, useInscriptions } from "../../hoo
 import { estMembreActif, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Evenement } from "../../types/evenements";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 type SousOnglet = "avenir" | "passes" | "inscrits";
 
@@ -89,7 +90,7 @@ function EvenementKachel({
           </span>
         )}
         <h3 className="relative z-10 pr-16 text-lg font-bold text-white drop-shadow">
-          {evenement.titre}
+          {uebersetzt(evenement, "titre")}
         </h3>
       </div>
       <div className="space-y-2 p-3">
@@ -98,7 +99,7 @@ function EvenementKachel({
             client, même principe que ProjetCard.tsx pour description_html. */}
         <div
           className="line-clamp-2 text-xs text-text-tertiary"
-          dangerouslySetInnerHTML={{ __html: evenement.description }}
+          dangerouslySetInnerHTML={{ __html: uebersetzt(evenement, "description") }}
         />
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-tertiary">
           {evenement.heure && (

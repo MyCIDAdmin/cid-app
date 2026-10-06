@@ -5,6 +5,7 @@
  */
 
 import type { KategorieNamen } from "../utils/kategorie";
+import type { Uebersetzungen } from "../utils/uebersetzung";
 
 export type StatutProjet = "en_preparation" | "en_cours" | "termine" | "annule";
 
@@ -56,6 +57,8 @@ export interface ProjetMiseAJour {
 }
 
 export interface Projet {
+  /** DeepL-Übersetzungen der Textfelder (apps.uebersetzung), siehe utils/uebersetzung. */
+  uebersetzungen?: Uebersetzungen;
   id: string;
   titre: string;
   /** Texte riche produit par l'éditeur type Word (demande utilisateur point 1.2) — affiché tel

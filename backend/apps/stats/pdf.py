@@ -124,66 +124,357 @@ def _resoudre_langue(user) -> str:
     return user.langue_preferee if user and user.langue_preferee in TRADUCTIONS else "fr"
 
 
+TEXTE_DASHBOARD = {
+    "de": {
+        "erstellt": "Erstellt am",
+        "ueberblick": "Überblick",
+        "kpi_saldo": "Saldo",
+        "kpi_einnahmen": "Einnahmen",
+        "kpi_ausgaben": "Ausgaben",
+        "kpi_einzug": "Einzugsquote",
+        "kpi_mitglieder": "Mitglieder aktiv",
+        "kpi_veranstaltungen": "Veranstaltungen",
+        "kpi_projekte": "Projekte",
+        "chart_einnahmen_quellen": "Einnahmen nach Quelle",
+        "chart_monat": "Einnahmen und Ausgaben je Monat",
+        "serie_einnahmen": "Einnahmen",
+        "serie_ausgaben": "Ausgaben",
+        "quelle_shop": "Shop",
+        "quelle_mitgliedschaften": "Mitgliedschaften",
+        "quelle_veranstaltungen": "Veranstaltungen",
+        "quelle_projekte": "Projekte",
+        "quelle_sonstige": "Beiträge / Spenden / Sonstige",
+        "finanzdaten": "Finanzdaten (Detail)",
+        "datum": "Datum",
+        "typ": "Typ",
+        "mitglied": "Mitglied / Partei",
+        "beschreibung": "Beschreibung",
+        "betrag": "Betrag",
+        "status": "Status",
+        "gekuerzt": "Es werden die ersten {n} Buchungen angezeigt; vollständig im Excel-Export.",
+        "keine_daten": "Keine Daten für diesen Zeitraum.",
+        "chart_aktiv": "Aktive und inaktive Mitglieder",
+        "aktiv": "Aktiv",
+        "inaktiv": "Inaktiv",
+        "chart_alter": "Altersverteilung",
+        "chart_stadt": "Mitglieder nach Stadt",
+        "stadt": "Stadt",
+        "anzahl": "Anzahl",
+        "chart_teilnahme": "Teilnahme je Veranstaltung",
+        "serie_reserviert": "Reservierte Plätze",
+        "serie_max": "Maximale Plätze",
+        "veranstaltung": "Veranstaltung",
+        "plaetze": "Plätze",
+        "nach_typ": "Verteilung nach Typ",
+        "projekt": "Projekt",
+        "aufgaben": "Aufgaben",
+        "plan": "Plan",
+        "ist": "Ist",
+        "offen": "Offen",
+        "einnahmen": "Einnahmen",
+        "ergebnis": "Ergebnis",
+        "chart_projektstatus": "Projekte nach Status",
+        "aufgabenfortschritt": "Aufgabenfortschritt",
+        "kosten_gesamt": "Kosten gesamt",
+        "ueberfaellig": "überfällig",
+        "alter_jahre": "{a}–{b} Jahre",
+        "alter_plus": "{a}+ Jahre",
+    },
+    "fr": {
+        "erstellt": "Généré le",
+        "ueberblick": "Aperçu",
+        "kpi_saldo": "Solde",
+        "kpi_einnahmen": "Recettes",
+        "kpi_ausgaben": "Dépenses",
+        "kpi_einzug": "Taux de collecte",
+        "kpi_mitglieder": "Membres actifs",
+        "kpi_veranstaltungen": "Événements",
+        "kpi_projekte": "Projets",
+        "chart_einnahmen_quellen": "Recettes par source",
+        "chart_monat": "Recettes et dépenses par mois",
+        "serie_einnahmen": "Recettes",
+        "serie_ausgaben": "Dépenses",
+        "quelle_shop": "Boutique",
+        "quelle_mitgliedschaften": "Adhésions",
+        "quelle_veranstaltungen": "Événements",
+        "quelle_projekte": "Projets",
+        "quelle_sonstige": "Cotisations / dons / autres",
+        "finanzdaten": "Données financières (détail)",
+        "datum": "Date",
+        "typ": "Type",
+        "mitglied": "Membre / partie",
+        "beschreibung": "Description",
+        "betrag": "Montant",
+        "status": "Statut",
+        "gekuerzt": (
+            "Les {n} premières écritures sont affichées ; liste complète dans l'export Excel."
+        ),
+        "keine_daten": "Aucune donnée pour cette période.",
+        "chart_aktiv": "Membres actifs et inactifs",
+        "aktiv": "Actifs",
+        "inaktiv": "Inactifs",
+        "chart_alter": "Répartition par âge",
+        "chart_stadt": "Membres par ville",
+        "stadt": "Ville",
+        "anzahl": "Nombre",
+        "chart_teilnahme": "Participation par événement",
+        "serie_reserviert": "Places réservées",
+        "serie_max": "Places maximum",
+        "veranstaltung": "Événement",
+        "plaetze": "Places",
+        "nach_typ": "Répartition par type",
+        "projekt": "Projet",
+        "aufgaben": "Tâches",
+        "plan": "Prévu",
+        "ist": "Réel",
+        "offen": "Ouvert",
+        "einnahmen": "Recettes",
+        "ergebnis": "Résultat",
+        "chart_projektstatus": "Projets par statut",
+        "aufgabenfortschritt": "Avancement des tâches",
+        "kosten_gesamt": "Coûts total",
+        "ueberfaellig": "en retard",
+        "alter_jahre": "{a}–{b} ans",
+        "alter_plus": "{a}+ ans",
+    },
+}
+
+MAX_FINANZZEILEN = 300
+_MONATE = {
+    "de": ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"],
+    "fr": [
+        "Janv",
+        "Févr",
+        "Mars",
+        "Avr",
+        "Mai",
+        "Juin",
+        "Juil",
+        "Août",
+        "Sept",
+        "Oct",
+        "Nov",
+        "Déc",
+    ],
+}
+
+
+def _monatsname(mois, langue) -> str:
+    try:
+        return _MONATE[langue][int(mois) - 1]
+    except (ValueError, IndexError, KeyError):
+        return str(mois)
+
+
 def generate_dashboard_pdf(
-    *, kpis_financier, kpis_membres, kpis_evenements, user, filtres_affiches: str
+    *,
+    kpis_financier,
+    kpis_membres,
+    kpis_evenements,
+    user=None,
+    filtres_affiches: str,
+    langue: str | None = None,
+    kpis_projets=None,
+    finances=None,
+    mensuel=None,
 ) -> bytes:
-    """Construit le PDF du dashboard "Statistiken & KPIs" — `kpis_*` sont déjà calculés/filtrés
-    par l'appelant (voir apps.stats.views.StatsExportPdfView), `filtres_affiches` est un résumé
-    textuel déjà formé des filtres actifs (ex. "Année 2026 — Ville : Berlin"), affiché tel quel
-    en sous-titre plutôt que reconstruit ici (la vue connaît déjà le libellé de chaque filtre)."""
-    langue = _resoudre_langue(user)
+    """Komplettes Dashboard als PDF : Kennzahlen-Kacheln, Diagramme (server-seitig als SVG) und
+    Detailtabellen für Finanzen, Mitglieder, Veranstaltungen und Projekte. `kpis_*` sind vom
+    Aufrufer bereits berechnet/gefiltert (siehe apps.stats.views.StatsExportPdfView) ;
+    `langue` (de/fr) hat Vorrang vor der gespeicherten Nutzersprache."""
+    from django.utils import timezone
+
+    from . import charts, i18n
+
+    langue = langue if langue in TRADUCTIONS else _resoudre_langue(user)
     t = TRADUCTIONS[langue]
+    d = TEXTE_DASHBOARD[langue]
+    m = _formate_montant
+    lib = t["libelles_financier"]
 
     lignes_financier = [
-        (t["libelles_financier"]["solde"], _formate_montant(kpis_financier["solde"])),
-        (t["libelles_financier"]["recettes"], _formate_montant(kpis_financier["recettes"])),
-        (t["libelles_financier"]["depenses"], _formate_montant(kpis_financier["depenses"])),
-        (t["libelles_financier"]["taux_collecte"], f"{kpis_financier['taux_collecte']} %"),
-        (
-            t["libelles_financier"]["cotisations_en_attente"],
-            _formate_montant(kpis_financier["cotisations_en_attente"]),
-        ),
-        (
-            t["libelles_financier"]["revenus_boutique"],
-            _formate_montant(kpis_financier["revenus_boutique"]),
-        ),
-        (
-            t["libelles_financier"]["revenus_adhesions"],
-            _formate_montant(kpis_financier["revenus_adhesions"]),
-        ),
-        (
-            t["libelles_financier"]["revenus_evenements"],
-            _formate_montant(kpis_financier["revenus_evenements"]),
-        ),
+        (lib["solde"], m(kpis_financier["solde"])),
+        (lib["recettes"], m(kpis_financier["recettes"])),
+        (lib["depenses"], m(kpis_financier["depenses"])),
+        (lib["taux_collecte"], f"{kpis_financier['taux_collecte']} %"),
+        (lib["cotisations_en_attente"], m(kpis_financier["cotisations_en_attente"])),
+        (lib["revenus_boutique"], m(kpis_financier["revenus_boutique"])),
+        (lib["revenus_adhesions"], m(kpis_financier["revenus_adhesions"])),
+        (lib["revenus_evenements"], m(kpis_financier["revenus_evenements"])),
     ]
     lignes_membres = [
         (t["libelles_membres"]["total"], kpis_membres["total"]),
         (t["libelles_membres"]["actifs"], kpis_membres["actifs"]),
         (t["libelles_membres"]["inactifs"], kpis_membres["inactifs"]),
     ]
+    le = t["libelles_evenements"]
     lignes_evenements = [
-        (t["libelles_evenements"]["nombre_evenements"], kpis_evenements["nombre_evenements"]),
-        (
-            t["libelles_evenements"]["taux_remplissage_moyen"],
-            f"{kpis_evenements['taux_remplissage_moyen']} %",
-        ),
-        (t["libelles_evenements"]["inscriptions_totales"], kpis_evenements["inscriptions_totales"]),
-        (t["libelles_evenements"]["revenus"], _formate_montant(kpis_evenements["revenus"])),
+        (le["nombre_evenements"], kpis_evenements["nombre_evenements"]),
+        (le["taux_remplissage_moyen"], f"{kpis_evenements['taux_remplissage_moyen']} %"),
+        (le["inscriptions_totales"], kpis_evenements["inscriptions_totales"]),
+        (le["revenus"], m(kpis_evenements["revenus"])),
     ]
     top_contributeurs = [
-        {"nom": ligne["nom"], "total_formate": _formate_montant(ligne["total"])}
+        {"nom": ligne["nom"], "total_formate": m(ligne["total"])}
         for ligne in kpis_financier["top_contributeurs"]
     ]
+
+    # --- Kacheln -------------------------------------------------------------------------
+    kacheln = [
+        (d["kpi_saldo"], m(kpis_financier["solde"])),
+        (d["kpi_einnahmen"], m(kpis_financier["recettes"])),
+        (d["kpi_ausgaben"], m(kpis_financier["depenses"])),
+        (d["kpi_einzug"], f"{kpis_financier['taux_collecte']} %"),
+        (d["kpi_mitglieder"], kpis_membres["actifs"]),
+        (d["kpi_veranstaltungen"], kpis_evenements["nombre_evenements"]),
+    ]
+    if kpis_projets is not None:
+        kacheln.append((d["kpi_projekte"], kpis_projets["projekte_gesamt"]))
+
+    # --- Finanzen: Diagramme -------------------------------------------------------------
+    quellen = [
+        (d["quelle_shop"], kpis_financier["revenus_boutique"]),
+        (d["quelle_mitgliedschaften"], kpis_financier["revenus_adhesions"]),
+        (d["quelle_veranstaltungen"], kpis_financier["revenus_evenements"]),
+        (d["quelle_projekte"], kpis_financier.get("revenus_projets", 0)),
+    ]
+    sonstige = Decimal(str(kpis_financier["recettes"])) - sum(
+        (Decimal(str(w)) for _, w in quellen), Decimal("0")
+    )
+    if sonstige > 0:
+        quellen.append((d["quelle_sonstige"], sonstige))
+    diagramm_quellen = charts.balken_horizontal(
+        [(n, float(w)) for n, w in quellen if float(w) > 0], formatierer=m
+    )
+    diagramm_monat = ""
+    if mensuel:
+        diagramm_monat = charts.balken_gruppiert(
+            [_monatsname(x["mois"], langue) for x in mensuel],
+            [
+                (d["serie_einnahmen"], charts.ROT, [float(x["recettes"]) for x in mensuel]),
+                (d["serie_ausgaben"], charts.GRAU, [float(x["depenses"]) for x in mensuel]),
+            ],
+        )
+
+    # --- Finanzdetail --------------------------------------------------------------------
+    finanzzeilen, finanz_gekuerzt = [], False
+    if finances:
+        finanz_gekuerzt = len(finances) > MAX_FINANZZEILEN
+        for z in finances[:MAX_FINANZZEILEN]:
+            finanzzeilen.append(
+                {
+                    "datum": z["date"].strftime("%d.%m.%Y"),
+                    "typ": i18n.typ(z["type"], langue),
+                    "partei": z["membre_nom"],
+                    "beschreibung": z["description"],
+                    "betrag": m(z["montant"]),
+                    "negativ": z["montant"] < 0,
+                    "status": i18n.status(z["statut"], langue),
+                }
+            )
+
+    # --- Mitglieder ----------------------------------------------------------------------
+    diagramm_aktiv = charts.ring(
+        [(d["aktiv"], kpis_membres["actifs"]), (d["inaktiv"], kpis_membres["inactifs"])]
+    )
+    alter = []
+    for z in kpis_membres["pyramide_ages"]:
+        if z.get("age_min") is not None and z.get("age_max") is not None:
+            label = d["alter_jahre"].format(a=z["age_min"], b=z["age_max"])
+        elif z.get("age_min") is not None:
+            label = d["alter_plus"].format(a=z["age_min"])
+        else:
+            label = z["tranche"]
+        alter.append((label, z["nombre"]))
+    diagramm_alter = charts.balken_horizontal(alter, formatierer=lambda v: f"{v:g}")
+    staedte = [(z["ville_de"], z["nombre"]) for z in kpis_membres["par_ville"][:15]]
+    diagramm_staedte = charts.balken_horizontal(staedte[:10], formatierer=lambda v: f"{v:g}")
+
+    # --- Veranstaltungen -----------------------------------------------------------------
+    teilnahme = kpis_evenements["participation_par_evenement"][:12]
+    diagramm_teilnahme = ""
+    if teilnahme:
+        diagramm_teilnahme = charts.balken_gruppiert(
+            [e["titre"] for e in teilnahme],
+            [
+                (d["serie_reserviert"], charts.ROT, [e["places_reservees"] for e in teilnahme]),
+                (d["serie_max"], charts.GRAU, [e["places_max"] or 0 for e in teilnahme]),
+            ],
+        )
+    ereignisse = [
+        {
+            "titre": e["titre"],
+            "reserviert": e["places_reservees"],
+            "max": e["places_max"] if e["places_max"] is not None else "∞",
+        }
+        for e in kpis_evenements["participation_par_evenement"]
+    ]
+    nach_typ = [
+        (i18n.event_typ(z["type_evenement"], langue), z["nombre"])
+        for z in kpis_evenements["par_type"]
+    ]
+
+    # --- Projekte ------------------------------------------------------------------------
+    projekte = None
+    if kpis_projets is not None:
+        k = kpis_projets["kosten"]
+        projekte = {
+            "status_ring": charts.ring(
+                [
+                    (i18n.status(z["statut"], langue), z["nombre"])
+                    for z in kpis_projets["nach_status"]
+                ]
+            ),
+            "fortschritt": charts.fortschritt(kpis_projets["aufgaben"]["quote"]),
+            "quote": kpis_projets["aufgaben"]["quote"],
+            "aufgaben": kpis_projets["aufgaben"],
+            "kosten": [
+                (d["plan"], m(k["plan"])),
+                (d["ist"], m(k["ist"])),
+                (d["offen"], m(k["offen"])),
+                (d["einnahmen"], m(k["einnahmen"])),
+                (d["ergebnis"], m(k["ergebnis"])),
+            ],
+            "zeilen": [
+                {
+                    "titre": z["titre"],
+                    "status": i18n.status(z["statut"], langue),
+                    "aufgaben": f"{z['aufgaben_erledigt']}/{z['aufgaben_gesamt']}",
+                    "plan": m(z["plan"]),
+                    "ist": m(z["ist"]),
+                    "einnahmen": m(z["einnahmen"]),
+                    "ergebnis": m(z["ergebnis"]),
+                }
+                for z in kpis_projets["projekte"]
+            ],
+        }
 
     contexte = {
         "langue": langue,
         "t": t,
+        "d": d,
+        "erstellt": timezone.localtime().strftime("%d.%m.%Y %H:%M"),
         "logo_data_uri": _logo_data_uri(),
         "subtitre_filtres": filtres_affiches,
+        "kacheln": kacheln,
         "lignes_financier": lignes_financier,
         "lignes_membres": lignes_membres,
         "lignes_evenements": lignes_evenements,
         "top_contributeurs": top_contributeurs,
+        "diagramm_quellen": diagramm_quellen,
+        "diagramm_monat": diagramm_monat,
+        "finanzzeilen": finanzzeilen,
+        "finanz_gekuerzt": finanz_gekuerzt,
+        "finanz_max": MAX_FINANZZEILEN,
+        "gekuerzt_text": d["gekuerzt"].format(n=MAX_FINANZZEILEN),
+        "diagramm_aktiv": diagramm_aktiv,
+        "diagramm_alter": diagramm_alter,
+        "diagramm_staedte": diagramm_staedte,
+        "staedte": staedte,
+        "diagramm_teilnahme": diagramm_teilnahme,
+        "ereignisse": ereignisse,
+        "nach_typ": nach_typ,
+        "projekte": projekte,
     }
     html = render_to_string("stats/dashboard_pdf.html", contexte)
     return HTML(string=html).write_pdf()

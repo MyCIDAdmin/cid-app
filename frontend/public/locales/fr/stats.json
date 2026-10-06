@@ -32,7 +32,8 @@
     "evenements": "Évènements",
     "finances": "Données financières",
     "bilan": "Bilan annuel",
-    "projets": "Projets"
+    "projets": "Projets",
+    "pivot": "Pivot"
   },
   "financier": {
     "solde": "Solde",
@@ -178,5 +179,31 @@
     "col_ist": "Réel",
     "col_offen": "En attente",
     "col_ergebnis": "Résultat"
+  },
+  "pivot": {
+    "hinweis": "Choisissez lignes, colonnes et indicateur – le tableau se recalcule aussitôt. Base : toutes les recettes et dépenses approuvées de la période.",
+    "zeilen": "Lignes",
+    "spalten": "Colonnes",
+    "kennzahl": "Indicateur",
+    "keine": "– aucune –",
+    "tauschen": "Inverser lignes et colonnes",
+    "jahr_von": "De l'année",
+    "jahr_bis": "À l'année",
+    "summe": "Total",
+    "leer": "Aucune écriture sur la période.",
+    "laedt": "Calcul en cours …",
+    "fehler": "Impossible de charger l'analyse.",
+    "basis": "Base : {{n}} écritures",
+    "export_excel": "Excel",
+    "export_csv": "CSV",
+    "dim_jahr": "Année",
+    "dim_quartal": "Trimestre",
+    "dim_monat": "Mois",
+    "dim_typ": "Type (recette/dépense)",
+    "dim_kategorie": "Catégorie / source",
+    "dim_gegenpartei": "Contrepartie",
+    "kz_betrag": "Montant (somme)",
+    "kz_anzahl": "Nombre d'écritures",
+    "kz_durchschnitt": "Montant moyen"
   }
 }

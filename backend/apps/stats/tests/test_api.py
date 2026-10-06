@@ -207,7 +207,25 @@ def test_export_excel_retourne_un_classeur_xlsx(api_client):
     from openpyxl import load_workbook
 
     classeur = load_workbook(io.BytesIO(resp.content))
-    assert classeur.sheetnames == ["KPIs", "Finanzdaten"]
+    assert classeur.sheetnames == [
+        "Kennzahlen",
+        "Finanzdaten",
+        "Mitglieder",
+        "Veranstaltungen",
+        "Projekte",
+        "Top-Beitragende",
+    ]
+    assert classeur["Kennzahlen"]["A1"].value == "Kennzahl"
+
+
+def test_export_excel_franzoesisch_mit_langue_param(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "export-fr@example.de")
+    resp = _auth(api_client, user).get(reverse(EXPORT_EXCEL_URL), {"langue": "fr"})
+    import io
+
+    from openpyxl import load_workbook
+
+    assert load_workbook(io.BytesIO(resp.content)).sheetnames[0] == "Indicateurs"
 
 
 def test_export_pdf_non_authentifie_refuse(api_client):
@@ -283,3 +301,49 @@ def test_phase_d_super_admin_voit_toujours_les_stats_meme_si_matrice_dit_aucun(a
 
     resp = _auth(api_client, user).get(reverse(FINANCIER_URL))
     assert resp.status_code == 200
+
+
+# --- Pivot (2026-10-06) ------------------------------------------------------------------------
+
+
+def test_pivot_liefert_matrix_mit_summen(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "pivot@example.de")
+    jahr = datetime.date.today().year
+    CotisationFactory(
+        membre=membre,
+        type_article=TypeArticle.COTISATION,
+        montant=Decimal("45.00"),
+        statut=StatutCotisation.PAYEE,
+        date_paiement=datetime.datetime(jahr, 3, 5, tzinfo=datetime.timezone.utc),
+    )
+    resp = _auth(api_client, user).get(
+        reverse("stats:pivot"), {"zeilen": "kategorie", "spalten": "jahr", "kennzahl": "betrag"}
+    )
+    assert resp.status_code == 200
+    daten = resp.json()
+    assert daten["gesamt"] == 45.0
+    assert daten["spalten"] == [str(jahr)]
+    zeile = next(z for z in daten["zeilen"] if z["label"] == "Beiträge")
+    assert zeile["werte"] == [45.0] and zeile["summe"] == 45.0
+
+
+def test_pivot_ungueltige_dimension_400(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "pivot-bad@example.de")
+    resp = _auth(api_client, user).get(reverse("stats:pivot"), {"zeilen": "unsinn"})
+    assert resp.status_code == 400
+
+
+def test_pivot_membre_normal_verboten(api_client):
+    user, _ = _user_avec_membre(Role.MEMBRE, "pivot-m@example.de")
+    assert _auth(api_client, user).get(reverse("stats:pivot")).status_code == 403
+
+
+def test_pivot_export_csv_und_excel(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "pivot-exp@example.de")
+    client = _auth(api_client, user)
+    csv_resp = client.get(reverse("stats:export-pivot"), {"datei": "csv", "zeilen": "typ"})
+    assert csv_resp.status_code == 200
+    assert csv_resp["Content-Type"].startswith("text/csv")
+    xlsx = client.get(reverse("stats:export-pivot"), {"zeilen": "typ", "spalten": "monat"})
+    assert xlsx.status_code == 200
+    assert xlsx["Content-Disposition"].endswith('.xlsx"')

@@ -10,10 +10,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { telechargerFactureCommande } from "../../api/boutique";
 import { useCommandes, useConfirmerPaiementCommande } from "../../hooks/useBoutique";
+import BelegButton from "./BelegButton";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { ModePaiementCommande } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import InfoTip from "../ui/InfoTip";
 
 const MODES_CONFIRMATION: ModePaiementCommande[] = ["virement", "especes", "en_ligne"];
 
@@ -81,6 +84,13 @@ export default function ShopZahlungenPanel() {
                         : t("shop_zahlungen.non_paye")}
                     </td>
                     <td className="px-3 py-2 text-right">
+                      {c.date_paiement_confirme && (
+                        <BelegButton
+                          holen={() => telechargerFactureCommande(c.id)}
+                          dateiname={`rechnung-${c.numero_commande}.pdf`}
+                          label={t("shop_zahlungen.rechnung")}
+                        />
+                      )}
                       {aConfirmer && peutConfirmer && (
                         <div className="flex items-center justify-end gap-2">
                           <select
@@ -122,6 +132,7 @@ export default function ShopZahlungenPanel() {
                           >
                             {t("shop_zahlungen.confirmer")}
                           </button>
+                          <InfoTip k="shop_bestaetigen" />
                         </div>
                       )}
                     </td>

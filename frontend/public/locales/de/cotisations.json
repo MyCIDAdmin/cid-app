@@ -237,6 +237,7 @@
     "paiement": "Zahlung",
     "non_paye": "Offen",
     "mode": "Zahlungsart",
-    "confirmer": "Bestätigen"
+    "confirmer": "Bestätigen",
+    "rechnung": "Rechnung"
   }
 }

@@ -2,6 +2,7 @@
  * Client API — module stats (TDD §2.4, backend/apps/stats/views.py). Réservé Admin/DG/Bureau
  * Admin côté backend (StatsPermission) — voir RequireRole sur les routes correspondantes.
  */
+import i18n from "../i18n";
 import { apiClient } from "./client";
 import type {
   Bilan,
@@ -10,6 +11,8 @@ import type {
   KpisFinancier,
   KpisMembres,
   KpisProjets,
+  PivotAbfrage,
+  PivotErgebnis,
   StatsFiltres,
   TypeTransaction,
 } from "../types/stats";
@@ -49,6 +52,11 @@ export async function getStatsFinances(
   return data;
 }
 
+/** Sprache der Berichte (PDF/Excel/CSV): Oberflächensprache de/fr, sonst Deutsch. */
+function berichtSprache(): "de" | "fr" {
+  return i18n.language?.startsWith("fr") ? "fr" : "de";
+}
+
 /** Nom de fichier suggéré par le serveur (Content-Disposition) — même repli que
  * boutiqueApi.exporterCommandesExcel (voir sa docstring). */
 function nomFichierDepuisContentDisposition(contentDisposition: unknown, repli: string): string {
@@ -65,7 +73,7 @@ export async function exporterStatsExcel(
   filtres: StatsFiltres = {},
 ): Promise<{ blob: Blob; nomFichier: string }> {
   const { data, headers } = await apiClient.get("/stats/export/excel/", {
-    params: filtres,
+    params: { ...filtres, langue: berichtSprache() },
     responseType: "blob",
   });
   return {
@@ -80,7 +88,7 @@ export async function exporterStatsExcel(
 /** GET /stats/export/pdf/ — résumé PDF du dashboard, mêmes filtres. */
 export async function exporterStatsPdf(filtres: StatsFiltres = {}): Promise<Blob> {
   const { data } = await apiClient.get("/stats/export/pdf/", {
-    params: filtres,
+    params: { ...filtres, langue: berichtSprache() },
     responseType: "blob",
   });
   return data;
@@ -96,7 +104,7 @@ export async function exporterBilanExcel(
   annee: number,
 ): Promise<{ blob: Blob; nomFichier: string }> {
   const { data, headers } = await apiClient.get("/stats/export/bilan-excel/", {
-    params: { annee },
+    params: { annee, langue: berichtSprache() },
     responseType: "blob",
   });
   return {
@@ -110,7 +118,7 @@ export async function exporterBilanExcel(
 
 export async function exporterBilanPdf(annee: number): Promise<Blob> {
   const { data } = await apiClient.get("/stats/export/bilan-pdf/", {
-    params: { annee },
+    params: { annee, langue: berichtSprache() },
     responseType: "blob",
   });
   return data;
@@ -119,7 +127,7 @@ export async function exporterBilanPdf(annee: number): Promise<Blob> {
 /** CSV der Buchungen eines Jahres für den Steuerberater (Semikolon, Dezimalkomma, UTF-8 mit BOM). */
 export async function exporterBuchungenCsv(annee: number): Promise<Blob> {
   const { data } = await apiClient.get("/stats/export/buchungen-csv/", {
-    params: { annee },
+    params: { annee, langue: berichtSprache() },
     responseType: "blob",
   });
   return data;
@@ -128,4 +136,41 @@ export async function exporterBuchungenCsv(annee: number): Promise<Blob> {
 export async function getStatsProjets(): Promise<KpisProjets> {
   const { data } = await apiClient.get<KpisProjets>("/stats/projets/");
   return data;
+}
+
+function pivotParams(abfrage: PivotAbfrage) {
+  return {
+    zeilen: abfrage.zeilen,
+    spalten: abfrage.spalten || undefined,
+    kennzahl: abfrage.kennzahl,
+    jahr_von: abfrage.jahr_von,
+    jahr_bis: abfrage.jahr_bis,
+    langue: berichtSprache(),
+  };
+}
+
+/** GET /stats/pivot/ — dynamische Auswertung der Buchungen nach frei gewählten Dimensionen. */
+export async function getStatsPivot(abfrage: PivotAbfrage): Promise<PivotErgebnis> {
+  const { data } = await apiClient.get<PivotErgebnis>("/stats/pivot/", {
+    params: pivotParams(abfrage),
+  });
+  return data;
+}
+
+/** GET /stats/export/pivot/ — dieselbe Auswertung als Excel- oder CSV-Datei. */
+export async function exporterPivot(
+  abfrage: PivotAbfrage,
+  datei: "xlsx" | "csv",
+): Promise<{ blob: Blob; nomFichier: string }> {
+  const { data, headers } = await apiClient.get("/stats/export/pivot/", {
+    params: { ...pivotParams(abfrage), datei },
+    responseType: "blob",
+  });
+  return {
+    blob: data,
+    nomFichier: nomFichierDepuisContentDisposition(
+      headers["content-disposition"],
+      `pivot.${datei}`,
+    ),
+  };
 }

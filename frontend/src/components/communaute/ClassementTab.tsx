@@ -55,6 +55,31 @@ function statistiquesDeLaVue(ligne: ClassementLigue, vue: Vue) {
   };
 }
 
+const FORM_STIL: Record<string, string> = {
+  V: "bg-status-successBg text-status-successText",
+  N: "bg-bg-tertiary text-text-secondary",
+  D: "bg-status-dangerBg text-status-dangerText",
+};
+
+/** Letzte fünf Ergebnisse als farbige Kürzel (V/N/D intern → S/U/N je Sprache über i18n). */
+function FormChips({ forme }: { forme: string }) {
+  const { t } = useTranslation("communaute");
+  if (!forme) return <span className="text-text-tertiary">–</span>;
+  return (
+    <span className="flex gap-0.5">
+      {forme.split("").map((code, index) => (
+        <span
+          key={index}
+          title={t(`live.forme_${code}`, { defaultValue: code })}
+          className={`flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${FORM_STIL[code] ?? FORM_STIL.N}`}
+        >
+          {t(`live.forme_kurz_${code}`, { defaultValue: code })}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default function ClassementTab() {
   const { t } = useTranslation("communaute");
   const { data, isLoading, isError } = useClassementLigue();
@@ -154,8 +179,8 @@ export default function ClassementTab() {
                   {stats.points}
                 </td>
                 {vue === "ensemble" && (
-                  <td className="px-3 py-2 text-xs tracking-wide text-text-tertiary">
-                    {ligne.forme_recente}
+                  <td className="px-3 py-2">
+                    <FormChips forme={ligne.forme_recente} />
                   </td>
                 )}
               </tr>

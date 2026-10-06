@@ -112,7 +112,22 @@ describe("ClassementTab", () => {
     expect(screen.getByText("Club Africain")).toBeInTheDocument();
     expect(screen.getByText("ES Tunis")).toBeInTheDocument();
     expect(screen.getByText("24")).toBeInTheDocument();
-    expect(screen.getByText("VVVND")).toBeInTheDocument();
+    // Form als farbige Chips (ein Chip pro Ergebnis), nicht mehr als Rohtext.
+    expect(screen.getAllByText("V").length).toBeGreaterThanOrEqual(3);
+    expect(screen.getAllByText("N").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("D").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("zeigt einen Strich, wenn keine Form vorliegt", () => {
+    vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
+      data: page([ligne({ id: "l1", equipe: "ES Tunis", rang: 2, forme_recente: "" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
+
+    renderWithProviders(<ClassementTab />);
+
+    expect(screen.getByText("–")).toBeInTheDocument();
   });
 
   // Bascule Gesamt/Heim/Auswärts (2026-09-24, bascule SerpApi → GOAL API) — voir docstring

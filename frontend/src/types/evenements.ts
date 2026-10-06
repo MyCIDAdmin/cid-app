@@ -4,6 +4,8 @@
  * changement de schéma.
  */
 
+import type { Uebersetzungen } from "../utils/uebersetzung";
+
 export type TypeEvenement = "deplacement" | "fete" | "conference" | "tournoi" | "ag";
 export type StatutEvenement = "brouillon" | "publie" | "annule";
 export type RegimeAlimentaire = "aucun" | "halal" | "vegetarien";
@@ -20,6 +22,8 @@ export interface MembreResume {
 }
 
 export interface Evenement {
+  /** DeepL-Übersetzungen der Textfelder (apps.uebersetzung), siehe utils/uebersetzung. */
+  uebersetzungen?: Uebersetzungen;
   id: string;
   titre: string;
   type_evenement: TypeEvenement;

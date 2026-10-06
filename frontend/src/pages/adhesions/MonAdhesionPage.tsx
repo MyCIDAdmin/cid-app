@@ -90,6 +90,7 @@ import CompleterProfilIdentite, {
   estErreurProfilIncomplet,
 } from "../../components/adhesions/CompleterProfilIdentite";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 const STATUTS_RETIRABLES: StatutSouscription[] = [
   "brouillon",
@@ -464,14 +465,14 @@ export default function MonAdhesionPage() {
                     />
                   )}
                   <div className="text-center text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-                    {offre.nom}
+                    {uebersetzt(offre, "nom")}
                   </div>
                   <div className="mt-2 text-center font-display text-3xl font-bold text-text-primary">
                     {formatMontant(offre.prix_plein)}
                   </div>
                   {offre.description && (
                     <p className="mt-2 text-center text-sm text-text-secondary">
-                      {offre.description}
+                      {uebersetzt(offre, "description")}
                     </p>
                   )}
                   {texteConditionAge && (

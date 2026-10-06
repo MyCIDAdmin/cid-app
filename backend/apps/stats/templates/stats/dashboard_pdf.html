@@ -89,6 +89,34 @@
         font-size: 9px;
         color: #888;
     }
+    .kacheln { display: flex; flex-wrap: wrap; margin: 0 -4px 6px -4px; }
+    .kachel {
+        width: 29.5%;
+        margin: 4px 1.1%;
+        border: 1px solid #e3e3e3;
+        border-left: 3px solid #CC0000;
+        padding: 8px 10px;
+        page-break-inside: avoid;
+    }
+    .kachel .k-label { font-size: 8px; text-transform: uppercase; letter-spacing: .04em; color: #888; }
+    .kachel .k-wert { font-size: 17px; font-weight: 700; color: #1a1a1a; }
+    h3.sub { font-size: 11px; color: #444; margin: 14px 0 4px 0; page-break-after: avoid; }
+    .diagramm { margin: 4px 0 8px 0; page-break-inside: avoid; }
+    .diagramm svg { max-width: 100%; height: auto; }
+    .zwei { display: flex; }
+    .zwei > div { width: 48%; margin-right: 2%; }
+    table.liste { width: 100%; border-collapse: collapse; font-size: 9px; }
+    table.liste th {
+        text-align: left; font-size: 8px; text-transform: uppercase; color: #888;
+        border-bottom: 1px solid #ccc; padding: 4px 5px;
+    }
+    table.liste td { padding: 3px 5px; border-bottom: 1px solid #eee; vertical-align: top; }
+    table.liste tr { page-break-inside: avoid; }
+    table.liste thead { display: table-header-group; }
+    .num { text-align: right; }
+    .neg { color: #b00020; }
+    .leer { color: #888; font-style: italic; }
+    .seitenumbruch { page-break-before: always; }
 </style>
 </head>
 <body>
@@ -102,9 +130,16 @@
     </div>
 
     <h1>{{ t.title }}</h1>
-    <div class="subtitle">{{ subtitre_filtres }}</div>
+    <div class="subtitle">{{ subtitre_filtres }} · {{ d.erstellt }}: {{ erstellt }}</div>
 
-    <h2 class="section">{{ t.section_financier }}</h2>
+    <h2 class="section">{{ d.ueberblick }}</h2>
+    <div class="kacheln">
+        {% for label, wert in kacheln %}
+        <div class="kachel"><div class="k-label">{{ label }}</div><div class="k-wert">{{ wert }}</div></div>
+        {% endfor %}
+    </div>
+
+    <h2 class="section seitenumbruch">{{ t.section_financier }}</h2>
     <table class="kpis">
         <thead><tr><th>{{ t.indicateur }}</th><th class="num">{{ t.valeur }}</th></tr></thead>
         <tbody>
@@ -113,8 +148,45 @@
             {% endfor %}
         </tbody>
     </table>
+    <h3 class="sub">{{ d.chart_einnahmen_quellen }}</h3>
+    <div class="diagramm">{{ diagramm_quellen|safe }}</div>
+    {% if diagramm_monat %}
+    <h3 class="sub">{{ d.chart_monat }}</h3>
+    <div class="diagramm">{{ diagramm_monat|safe }}</div>
+    {% endif %}
+    {% if top_contributeurs %}
+    <h3 class="sub">{{ t.section_top_contributeurs }}</h3>
+    <table class="liste">
+        <thead><tr><th>{{ t.membre }}</th><th class="num">{{ t.total }}</th></tr></thead>
+        <tbody>
+            {% for ligne in top_contributeurs %}
+            <tr><td>{{ ligne.nom }}</td><td class="num">{{ ligne.total_formate }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    <h3 class="sub">{{ d.finanzdaten }}</h3>
+    {% if finanzzeilen %}
+    <table class="liste">
+        <thead><tr>
+            <th>{{ d.datum }}</th><th>{{ d.typ }}</th><th>{{ d.mitglied }}</th>
+            <th>{{ d.beschreibung }}</th><th class="num">{{ d.betrag }}</th><th>{{ d.status }}</th>
+        </tr></thead>
+        <tbody>
+            {% for z in finanzzeilen %}
+            <tr>
+                <td>{{ z.datum }}</td><td>{{ z.typ }}</td><td>{{ z.partei }}</td>
+                <td>{{ z.beschreibung }}</td>
+                <td class="num{% if z.negativ %} neg{% endif %}">{{ z.betrag }}</td>
+                <td>{{ z.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if finanz_gekuerzt %}<p class="leer">{{ gekuerzt_text }}</p>{% endif %}
+    {% else %}<p class="leer">{{ d.keine_daten }}</p>{% endif %}
 
-    <h2 class="section">{{ t.section_membres }}</h2>
+    <h2 class="section seitenumbruch">{{ t.section_membres }}</h2>
     <table class="kpis">
         <thead><tr><th>{{ t.indicateur }}</th><th class="num">{{ t.valeur }}</th></tr></thead>
         <tbody>
@@ -123,8 +195,20 @@
             {% endfor %}
         </tbody>
     </table>
+    <div class="zwei">
+        <div><h3 class="sub">{{ d.chart_aktiv }}</h3><div class="diagramm">{{ diagramm_aktiv|safe }}</div></div>
+        <div><h3 class="sub">{{ d.chart_alter }}</h3><div class="diagramm">{{ diagramm_alter|safe }}</div></div>
+    </div>
+    <h3 class="sub">{{ d.chart_stadt }}</h3>
+    <div class="diagramm">{{ diagramm_staedte|safe }}</div>
+    {% if staedte %}
+    <table class="liste">
+        <thead><tr><th>{{ d.stadt }}</th><th class="num">{{ d.anzahl }}</th></tr></thead>
+        <tbody>{% for name, n in staedte %}<tr><td>{{ name }}</td><td class="num">{{ n }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
 
-    <h2 class="section">{{ t.section_evenements }}</h2>
+    <h2 class="section seitenumbruch">{{ t.section_evenements }}</h2>
     <table class="kpis">
         <thead><tr><th>{{ t.indicateur }}</th><th class="num">{{ t.valeur }}</th></tr></thead>
         <tbody>
@@ -133,17 +217,51 @@
             {% endfor %}
         </tbody>
     </table>
+    {% if diagramm_teilnahme %}
+    <h3 class="sub">{{ d.chart_teilnahme }}</h3>
+    <div class="diagramm">{{ diagramm_teilnahme|safe }}</div>
+    {% endif %}
+    {% if ereignisse %}
+    <table class="liste">
+        <thead><tr><th>{{ d.veranstaltung }}</th><th class="num">{{ d.serie_reserviert }}</th><th class="num">{{ d.serie_max }}</th></tr></thead>
+        <tbody>{% for e in ereignisse %}<tr><td>{{ e.titre }}</td><td class="num">{{ e.reserviert }}</td><td class="num">{{ e.max }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
+    {% if nach_typ %}
+    <h3 class="sub">{{ d.nach_typ }}</h3>
+    <table class="liste">
+        <tbody>{% for name, n in nach_typ %}<tr><td>{{ name }}</td><td class="num">{{ n }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
 
-    {% if top_contributeurs %}
-    <h2 class="section">{{ t.section_top_contributeurs }}</h2>
-    <table class="kpis">
-        <thead><tr><th>{{ t.membre }}</th><th class="num">{{ t.total }}</th></tr></thead>
+    {% if projekte %}
+    <h2 class="section seitenumbruch">{{ d.kpi_projekte }}</h2>
+    <div class="zwei">
+        <div><h3 class="sub">{{ d.chart_projektstatus }}</h3><div class="diagramm">{{ projekte.status_ring|safe }}</div></div>
+        <div>
+            <h3 class="sub">{{ d.aufgabenfortschritt }} ({{ projekte.quote }} %)</h3>
+            <div class="diagramm">{{ projekte.fortschritt|safe }}</div>
+            <table class="liste"><tbody>
+                {% for name, wert in projekte.kosten %}<tr><td>{{ name }}</td><td class="num">{{ wert }}</td></tr>{% endfor %}
+            </tbody></table>
+        </div>
+    </div>
+    {% if projekte.zeilen %}
+    <table class="liste">
+        <thead><tr>
+            <th>{{ d.projekt }}</th><th>{{ d.status }}</th><th class="num">{{ d.aufgaben }}</th>
+            <th class="num">{{ d.plan }}</th><th class="num">{{ d.ist }}</th>
+            <th class="num">{{ d.einnahmen }}</th><th class="num">{{ d.ergebnis }}</th>
+        </tr></thead>
         <tbody>
-            {% for ligne in top_contributeurs %}
-            <tr><td>{{ ligne.nom }}</td><td class="num">{{ ligne.total_formate }}</td></tr>
+            {% for z in projekte.zeilen %}
+            <tr><td>{{ z.titre }}</td><td>{{ z.status }}</td><td class="num">{{ z.aufgaben }}</td>
+                <td class="num">{{ z.plan }}</td><td class="num">{{ z.ist }}</td>
+                <td class="num">{{ z.einnahmen }}</td><td class="num">{{ z.ergebnis }}</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
     {% endif %}
 
     <div class="footer-note">{{ t.footer_note }}</div>

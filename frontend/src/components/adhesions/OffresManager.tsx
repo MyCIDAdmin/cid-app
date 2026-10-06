@@ -13,6 +13,7 @@
  * AdminCampagnesPage) désactive l'ajout/modification/suppression d'offres et se propage à
  * RabaisManager.
  */
+import UebersetzungenButton from "../ui/UebersetzungenButton";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -166,6 +167,13 @@ export default function OffresManager({
                   "gérer les offres" de AdminCampagnesPage — c'est un dépli/repli d'affichage,
                   pas une action d'écriture, mais le libellé en lecture seule doit refléter
                   qu'aucune modification n'est possible derrière. */}
+              {modifiable && (
+                <UebersetzungenButton
+                  modell="adhesions.offreadhesion"
+                  objektId={offre.id}
+                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+                />
+              )}
               <button
                 type="button"
                 onClick={() => setOffreDepliee((cur) => (cur === offre.id ? null : offre.id))}

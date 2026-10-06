@@ -589,7 +589,7 @@ function NavItemLink({
         <Icon size={18} />
         {signale && (
           <span
-            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-ca ring-2 ring-sb"
+            className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-amber-300 shadow-[0_0_0_2px_var(--color-cad),0_0_6px_2px_rgba(252,211,77,0.7)]"
             aria-label={t("nav.point_activite", { module: t(item.labelKey) })}
             role="status"
           />

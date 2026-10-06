@@ -13,6 +13,7 @@ from rest_framework import serializers
 
 from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
+from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import (
     CampagneAdhesion,
@@ -70,10 +71,13 @@ class RabaisOffreSerializer(serializers.ModelSerializer):
 class OffreAdhesionSerializer(serializers.ModelSerializer):
     rabais = RabaisOffreSerializer(many=True, read_only=True)
 
+    uebersetzungen = UebersetzungenField()
+
     class Meta:
         model = OffreAdhesion
         fields = [
             "id",
+            "uebersetzungen",
             "campagne",
             "nom",
             "prix_plein",
@@ -101,10 +105,13 @@ class OffreAdhesionSerializer(serializers.ModelSerializer):
 class CampagneAdhesionSerializer(serializers.ModelSerializer):
     offres = OffreAdhesionSerializer(many=True, read_only=True)
 
+    uebersetzungen = UebersetzungenField()
+
     class Meta:
         model = CampagneAdhesion
         fields = [
             "id",
+            "uebersetzungen",
             "nom",
             "annee",
             "date_debut",

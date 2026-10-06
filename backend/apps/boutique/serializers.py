@@ -12,6 +12,7 @@ from rest_framework import serializers
 
 from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
+from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import (
     STATUTS_RETOURNABLES,
@@ -129,10 +130,13 @@ class ProduitSerializer(serializers.ModelSerializer):
     prix_affiche = serializers.SerializerMethodField()
     est_prix_membre = serializers.SerializerMethodField()
 
+    uebersetzungen = UebersetzungenField()
+
     class Meta:
         model = Produit
         fields = [
             "id",
+            "uebersetzungen",
             "nom",
             "categorie",
             "type_produit",

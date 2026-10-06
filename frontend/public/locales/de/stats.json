@@ -32,7 +32,8 @@
     "evenements": "Veranstaltungen",
     "finances": "Finanzdaten",
     "bilan": "Jahresbilanz",
-    "projets": "Projekte"
+    "projets": "Projekte",
+    "pivot": "Pivot"
   },
   "financier": {
     "solde": "Saldo",
@@ -178,5 +179,31 @@
     "col_ist": "Ist",
     "col_offen": "Offen",
     "col_ergebnis": "Ergebnis"
+  },
+  "pivot": {
+    "hinweis": "Wähle Zeilen, Spalten und Kennzahl – die Tabelle wird sofort neu berechnet. Grundlage: alle Einnahmen und freigegebenen Ausgaben im gewählten Zeitraum.",
+    "zeilen": "Zeilen",
+    "spalten": "Spalten",
+    "kennzahl": "Kennzahl",
+    "keine": "– keine –",
+    "tauschen": "Zeilen und Spalten tauschen",
+    "jahr_von": "Von Jahr",
+    "jahr_bis": "Bis Jahr",
+    "summe": "Summe",
+    "leer": "Keine Buchungen im gewählten Zeitraum.",
+    "laedt": "Wird berechnet …",
+    "fehler": "Auswertung konnte nicht geladen werden.",
+    "basis": "Basis: {{n}} Buchungen",
+    "export_excel": "Excel",
+    "export_csv": "CSV",
+    "dim_jahr": "Jahr",
+    "dim_quartal": "Quartal",
+    "dim_monat": "Monat",
+    "dim_typ": "Typ (Einnahme/Ausgabe)",
+    "dim_kategorie": "Kategorie / Quelle",
+    "dim_gegenpartei": "Gegenpartei",
+    "kz_betrag": "Betrag (Summe)",
+    "kz_anzahl": "Anzahl Buchungen",
+    "kz_durchschnitt": "Durchschnittsbetrag"
   }
 }

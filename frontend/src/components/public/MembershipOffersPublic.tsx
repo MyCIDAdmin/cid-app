@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import type { CampagneAdhesion, OffreAdhesion } from "../../types/adhesion";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 const ACCENTS = ["border-t-cat-1", "border-t-cat-2", "border-t-cat-3"] as const;
 const ACCENT_NEUTRE = "border-t-text-tertiary/30";
@@ -69,13 +70,15 @@ export default function MembershipOffersPublic({ campagne }: MembershipOffersPub
                 </span>
               )}
               <div className="text-center text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-                {offre.nom}
+                {uebersetzt(offre, "nom")}
               </div>
               <div className="mt-2 text-center font-display text-3xl font-bold text-text-primary">
                 {formatMontant(offre.prix_plein)}
               </div>
               {offre.description && (
-                <p className="mt-2 text-center text-sm text-text-secondary">{offre.description}</p>
+                <p className="mt-2 text-center text-sm text-text-secondary">
+                  {uebersetzt(offre, "description")}
+                </p>
               )}
 
               {avantages.length > 0 && (

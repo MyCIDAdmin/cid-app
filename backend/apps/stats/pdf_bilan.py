@@ -86,8 +86,8 @@ def _graphique_mensuel(mensuel) -> str:
     )
 
 
-def generate_bilan_pdf(*, bilan, user) -> bytes:
-    langue = _resoudre_langue(user)
+def generate_bilan_pdf(*, bilan, user=None, langue=None) -> bytes:
+    langue = langue if langue in TEXTES else _resoudre_langue(user)
     t = {**_TRAD_BASE[langue], **TEXTES[langue]}
     m = _formate_montant
     recettes = [
@@ -100,7 +100,7 @@ def generate_bilan_pdf(*, bilan, user) -> bytes:
     ]
     depenses = [
         {
-            "nom": d["nom"],
+            "nom": d["namen"].get(langue) or d["nom"],
             "montant": m(d["montant"]),
             "precedent": m(d["montant_precedent"]),
             "budget": m(d["budget"]) if d["budget"] else "—",
