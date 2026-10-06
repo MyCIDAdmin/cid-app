@@ -58,6 +58,10 @@ function projet(overrides: Partial<Projet> = {}): Projet {
     ordre: 0,
     images: [],
     est_gestionnaire: false,
+    sichtbarkeit: "veroeffentlicht",
+    meine_rolle: null,
+    darf_arbeitsbereich: false,
+    darf_team_verwalten: false,
     created_by: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -153,7 +157,7 @@ describe("ProjetsPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/cotisation?paiement=cot-1");
   });
 
-  it("navigue vers la page de détail /projets/:id au clic sur \"Voir le rapport\" (demande utilisateur 2026-09-26 : porter le comportement de mycid.org, page dédiée plutôt que modale)", () => {
+  it('navigue vers la page de détail /projets/:id au clic sur "Voir le rapport" (demande utilisateur 2026-09-26 : porter le comportement de mycid.org, page dédiée plutôt que modale)', () => {
     mockHooksParDefaut();
     vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
       data: page([projet()]),
@@ -210,7 +214,7 @@ describe("ProjetsPage", () => {
     expect(screen.getByText("kpi.total")).toBeInTheDocument();
   });
 
-  it("renvoie un visiteur anonyme vers /login au clic sur \"Contribuer\" au lieu d'ouvrir la modale (onglet public \"Projekte\", Phase D)", () => {
+  it('renvoie un visiteur anonyme vers /login au clic sur "Contribuer" au lieu d\'ouvrir la modale (onglet public "Projekte", Phase D)', () => {
     mockHooksParDefaut();
     useAuthStore.setState({ isAuthenticated: false, user: null });
     vi.mocked(useProjetsHooks.useProjets).mockReturnValue({

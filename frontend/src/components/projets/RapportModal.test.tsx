@@ -42,6 +42,10 @@ function projet(overrides: Partial<Projet> = {}): Projet {
     ordre: 0,
     images: [],
     est_gestionnaire: true,
+    sichtbarkeit: "veroeffentlicht",
+    meine_rolle: null,
+    darf_arbeitsbereich: false,
+    darf_team_verwalten: false,
     created_by: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -67,7 +71,11 @@ describe("RapportModal", () => {
     mockHooksParDefaut();
 
     renderWithProviders(
-      <RapportModal projet={projet({ est_gestionnaire: true })} onClose={vi.fn()} autoriserAjout={false} />,
+      <RapportModal
+        projet={projet({ est_gestionnaire: true })}
+        onClose={vi.fn()}
+        autoriserAjout={false}
+      />,
     );
 
     expect(screen.getByText("rapport.aucune_mise_a_jour")).toBeInTheDocument();
@@ -79,7 +87,11 @@ describe("RapportModal", () => {
     mockHooksParDefaut();
 
     renderWithProviders(
-      <RapportModal projet={projet({ est_gestionnaire: true })} onClose={vi.fn()} autoriserAjout={true} />,
+      <RapportModal
+        projet={projet({ est_gestionnaire: true })}
+        onClose={vi.fn()}
+        autoriserAjout={true}
+      />,
     );
 
     expect(screen.getByText("rapport.ajouter")).toBeInTheDocument();
@@ -90,7 +102,11 @@ describe("RapportModal", () => {
     mockHooksParDefaut();
 
     renderWithProviders(
-      <RapportModal projet={projet({ est_gestionnaire: false })} onClose={vi.fn()} autoriserAjout={true} />,
+      <RapportModal
+        projet={projet({ est_gestionnaire: false })}
+        onClose={vi.fn()}
+        autoriserAjout={true}
+      />,
     );
 
     expect(screen.queryByText("rapport.ajouter")).not.toBeInTheDocument();

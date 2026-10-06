@@ -17,7 +17,7 @@ from apps.accounts.models import Role, User
 from apps.cotisations.models import ModePaiement, StatutCotisation, TypeArticle
 from apps.cotisations.tests.factories import CotisationFactory
 from apps.membres.tests.factories import MembreFactory
-from apps.projets.models import StatutProjet
+from apps.projets.models import SichtbarkeitProjet, StatutProjet
 from apps.projets.tests.factories import ProjetFactory, ProjetImageFactory, ProjetMiseAJourFactory
 
 pytestmark = pytest.mark.django_db
@@ -80,7 +80,7 @@ def test_list_non_authentifie_voit_les_projets_publies(api_client):
     utilisateur), un visiteur anonyme peut lister les projets — get_queryset masque
     cependant "en_preparation" exactement comme pour un membre normal. Remplace l'ancien
     test qui attendait un refus 401 pur."""
-    ProjetFactory(statut=StatutProjet.EN_PREPARATION, titre="Secret")
+    ProjetFactory(sichtbarkeit=SichtbarkeitProjet.ENTWURF, titre="Secret")
     ProjetFactory(statut=StatutProjet.EN_COURS, titre="Visible")
     resp = api_client.get(reverse(PROJET_LIST_URL))
     assert resp.status_code == 200
@@ -96,7 +96,7 @@ def test_creer_projet_non_authentifie_refuse(api_client):
 
 def test_membre_normal_ne_voit_pas_projet_en_preparation(api_client):
     user, _ = _user_avec_membre(Role.MEMBRE, "p1@example.de")
-    ProjetFactory(statut=StatutProjet.EN_PREPARATION, titre="Secret")
+    ProjetFactory(sichtbarkeit=SichtbarkeitProjet.ENTWURF, titre="Secret")
     ProjetFactory(statut=StatutProjet.EN_COURS, titre="Visible")
     resp = _auth(api_client, user).get(reverse(PROJET_LIST_URL))
     assert resp.status_code == 200
@@ -107,7 +107,7 @@ def test_membre_normal_ne_voit_pas_projet_en_preparation(api_client):
 
 def test_bureau_admin_voit_projet_en_preparation(api_client):
     user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "p2@example.de")
-    ProjetFactory(statut=StatutProjet.EN_PREPARATION, titre="Secret")
+    ProjetFactory(sichtbarkeit=SichtbarkeitProjet.ENTWURF, titre="Secret")
     resp = _auth(api_client, user).get(reverse(PROJET_LIST_URL))
     titres = [p["titre"] for p in resp.data["results"]]
     assert "Secret" in titres
@@ -275,7 +275,7 @@ def _kennzahlen_url():
 def test_kennzahlen_agrege_montant_donateurs_distincts_et_nb_projets(api_client):
     """Kennzahlen "Donators / Gesammelt / Projekte" de la page d'accueil publique (demande
     utilisateur 2026-09-26) — ouvertes à tout le monde, y compris anonyme."""
-    ProjetFactory(statut=StatutProjet.EN_PREPARATION)  # masqué : ne compte pas dans nb_projets
+    ProjetFactory(sichtbarkeit=SichtbarkeitProjet.ENTWURF)  # masqué : ne compte pas dans nb_projets
     projet = ProjetFactory(statut=StatutProjet.EN_COURS)
     membre_a = MembreFactory()
     membre_b = MembreFactory()

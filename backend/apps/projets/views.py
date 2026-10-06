@@ -33,30 +33,50 @@ Stripe/PayPal ou la saisie pour autrui F-015).
 
 from decimal import Decimal
 
+from django.db import transaction
 from django.db.models import Count, Max, Sum
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.models import Cotisation, StatutCotisation
 from apps.membres.models import Membre
 
-from .models import Projet, ProjetImage, ProjetMiseAJour, ProjetMiseAJourImage, StatutProjet
+from .models import (
+    Aufgabe,
+    AufgabeKommentar,
+    ProjetImage,
+    ProjetMiseAJour,
+    ProjetMiseAJourImage,
+    ProjetMitglied,
+    RolleProjet,
+    SichtbarkeitProjet,
+    StatutAufgabe,
+)
+from .notifications import notifier_aufgabe_zugewiesen, notifier_kommentar
 from .permissions import (
-    GESTION_PROJETS_MIN_LEVEL,
     GestionContenuProjetPermission,
     ProjetPermission,
+    arbeitsbereich_projekte,
+    darf_arbeitsbereich,
     est_gestionnaire_projet,
+    kann_aufgaben_bearbeiten,
+    kann_team_verwalten,
+    sichtbare_projekte,
 )
 from .serializers import (
+    AufgabeKommentarSerializer,
+    AufgabeSerializer,
     ContributeurSerializer,
     ProjetImageSerializer,
     ProjetMiseAJourImageSerializer,
     ProjetMiseAJourSerializer,
+    ProjetMitgliedSerializer,
     ProjetSerializer,
 )
 
@@ -86,25 +106,67 @@ class ProjetViewSet(ModelViewSet):
     serializer_class = ProjetSerializer
     pagination_class = ProjetsCursorPagination
 
+    def get_permissions(self):
+        # La Direction d'un projet (pas seulement un gestionnaire) peut publier/dépublier : action
+        # dédiée, contrôle d'objet fait dans la vue (voir `sichtbarkeit` ci-dessous).
+        if self.action == "sichtbarkeit":
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
     def get_queryset(self):
-        queryset = Projet.objects.select_related("responsable", "created_by").prefetch_related(
-            "images"
+        # Visibilité : un brouillon n'est visible que de l'équipe et des gestionnaires (voir
+        # apps.projets.permissions.sichtbare_projekte) — remplace l'ancienne règle fondée sur le
+        # statut "en_preparation".
+        return (
+            sichtbare_projekte(self.request.user)
+            .select_related("responsable", "created_by")
+            .prefetch_related("images", "team")
         )
-        user = self.request.user
-        if (
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_PROJETS_MIN_LEVEL
-        ):
-            return queryset
-        # Un projet "en_preparation" reste masqué à tout rôle < Bureau Admin — même
-        # principe que Produit.statut="brouillon"/OffreAdhesionViewSet (voir
-        # apps.projets.models.StatutProjet).
-        return queryset.exclude(statut=StatutProjet.EN_PREPARATION)
 
     def perform_create(self, serializer):
         membre = getattr(self.request.user, "membre", None)
         serializer.save(created_by=membre)
+
+    @action(detail=True, methods=["post"])
+    def sichtbarkeit(self, request, pk=None):
+        """Publie/dépublie un projet — Direction du projet ou gestionnaire."""
+        projet = self.get_object()
+        if not kann_team_verwalten(request.user, projet):
+            raise PermissionDenied("Nur die Projektleitung oder die Verwaltung darf das ändern.")
+        wert = request.data.get("sichtbarkeit")
+        if wert not in SichtbarkeitProjet.values:
+            raise ValidationError({"sichtbarkeit": "Ungültiger Wert."})
+        projet.sichtbarkeit = wert
+        projet.save(update_fields=["sichtbarkeit", "updated_at"])
+        return Response(self.get_serializer(projet).data)
+
+    @action(detail=True, methods=["get"])
+    def arbeitsbereich(self, request, pk=None):
+        """Kennzahlen de l'espace de travail (progression des tâches) — équipe et lecture."""
+        projet = self.get_object()
+        if not darf_arbeitsbereich(request.user, projet):
+            raise PermissionDenied("Der Arbeitsbereich ist nur für das Projektteam sichtbar.")
+        aufgaben = Aufgabe.objects.filter(projet=projet)
+        gesamt = aufgaben.count()
+        erledigt = aufgaben.filter(status=StatutAufgabe.ERLEDIGT).count()
+        ueberfaellig = (
+            aufgaben.exclude(status=StatutAufgabe.ERLEDIGT)
+            .filter(frist__lt=timezone.localdate())
+            .count()
+        )
+        pro_status = {
+            row["status"]: row["n"] for row in aufgaben.values("status").annotate(n=Count("id"))
+        }
+        return Response(
+            {
+                "gesamt": gesamt,
+                "erledigt": erledigt,
+                "ueberfaellig": ueberfaellig,
+                "prozent": round(100 * erledigt / gesamt) if gesamt else 0,
+                "pro_status": {code: pro_status.get(code, 0) for code in StatutAufgabe.values},
+                "team_groesse": projet.team.count(),
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def contributeurs(self, request, pk=None):
@@ -168,7 +230,11 @@ class ProjetImageViewSet(ModelViewSet):
     pagination_class = ProjetsCursorPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["projet"]
-    queryset = ProjetImage.objects.select_related("projet", "uploaded_by")
+
+    def get_queryset(self):
+        return ProjetImage.objects.select_related("projet", "uploaded_by").filter(
+            projet__in=sichtbare_projekte(self.request.user)
+        )
 
     def perform_create(self, serializer):
         # has_object_permission n'est jamais appelée à la création (pas encore
@@ -193,9 +259,13 @@ class ProjetMiseAJourViewSet(ModelViewSet):
     pagination_class = MisesAJourCursorPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["projet"]
-    queryset = ProjetMiseAJour.objects.select_related("projet", "created_by").prefetch_related(
-        "images"
-    )
+
+    def get_queryset(self):
+        return (
+            ProjetMiseAJour.objects.select_related("projet", "created_by")
+            .prefetch_related("images")
+            .filter(projet__in=sichtbare_projekte(self.request.user))
+        )
 
     def perform_create(self, serializer):
         projet = serializer.validated_data.get("projet")
@@ -221,7 +291,11 @@ class ProjetMiseAJourImageViewSet(ModelViewSet):
     pagination_class = ProjetsCursorPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["mise_a_jour"]
-    queryset = ProjetMiseAJourImage.objects.select_related("mise_a_jour__projet")
+
+    def get_queryset(self):
+        return ProjetMiseAJourImage.objects.select_related("mise_a_jour__projet").filter(
+            mise_a_jour__projet__in=sichtbare_projekte(self.request.user)
+        )
 
     def perform_create(self, serializer):
         mise_a_jour = serializer.validated_data.get("mise_a_jour")
@@ -232,3 +306,213 @@ class ProjetMiseAJourImageViewSet(ModelViewSet):
                 "Seuls le Bureau Admin ou le responsable de ce projet peuvent ajouter " "une image."
             )
         serializer.save()
+
+
+class ArbeitsbereichCursorPagination(CursorPagination):
+    """Un tableau Kanban a besoin de toutes les tâches d'un projet d'un coup — page large."""
+
+    page_size = 200
+    ordering = ("ordre", "created_at", "id")
+
+
+class TeamCursorPagination(CursorPagination):
+    page_size = 100
+    ordering = ("created_at", "id")
+
+
+class KommentarCursorPagination(CursorPagination):
+    page_size = 100
+    ordering = ("created_at", "id")
+
+
+def _projekt_aus_daten(request, serializer, feld="projet"):
+    projet = serializer.validated_data.get(feld)
+    if projet is None:
+        raise ValidationError({feld: "Dieses Feld ist erforderlich."})
+    return projet
+
+
+class ProjetTeamViewSet(ModelViewSet):
+    """Équipe interne d'un projet (2026-10-06). Lecture : équipe, gestionnaires et service
+    financier ; écriture : Direction du projet ou gestionnaire."""
+
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProjetMitgliedSerializer
+    pagination_class = TeamCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["projet"]
+
+    def get_queryset(self):
+        return ProjetMitglied.objects.select_related("membre", "projet").filter(
+            projet__in=arbeitsbereich_projekte(self.request.user)
+        )
+
+    def _pruefe_schreibrecht(self, projet):
+        if not kann_team_verwalten(self.request.user, projet):
+            raise PermissionDenied(
+                "Nur die Projektleitung oder die Verwaltung darf das Team ändern."
+            )
+
+    def perform_create(self, serializer):
+        projet = _projekt_aus_daten(self.request, serializer)
+        if not arbeitsbereich_projekte(self.request.user).filter(pk=projet.pk).exists():
+            raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
+        self._pruefe_schreibrecht(projet)
+        serializer.save()
+
+    def _letzte_leitung(self, eintrag) -> bool:
+        return (
+            eintrag.rolle == RolleProjet.LEITUNG
+            and not ProjetMitglied.objects.filter(projet=eintrag.projet, rolle=RolleProjet.LEITUNG)
+            .exclude(pk=eintrag.pk)
+            .exists()
+        )
+
+    def perform_update(self, serializer):
+        eintrag = serializer.instance
+        self._pruefe_schreibrecht(eintrag.projet)
+        neue_rolle = serializer.validated_data.get("rolle", eintrag.rolle)
+        if neue_rolle != RolleProjet.LEITUNG and self._letzte_leitung(eintrag):
+            raise ValidationError({"rolle": "Das Projekt braucht mindestens eine Projektleitung."})
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._pruefe_schreibrecht(instance.projet)
+        if self._letzte_leitung(instance):
+            raise ValidationError(
+                {"membre": "Die letzte Projektleitung kann nicht entfernt werden."}
+            )
+        instance.delete()
+
+
+class AufgabeViewSet(ModelViewSet):
+    """Tâches d'un projet / tableau Kanban (2026-10-06). Lecture : équipe, gestionnaires et
+    service financier ; écriture : Direction, Collaboration et gestionnaires (jamais
+    Observateur) ; suppression : Direction et gestionnaires."""
+
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    permission_classes = [IsAuthenticated]
+    serializer_class = AufgabeSerializer
+    pagination_class = ArbeitsbereichCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["projet", "status", "verantwortlich"]
+
+    def get_queryset(self):
+        return (
+            Aufgabe.objects.select_related("projet", "verantwortlich", "created_by")
+            .annotate(kommentare_anzahl=Count("kommentare"))
+            .filter(projet__in=arbeitsbereich_projekte(self.request.user))
+        )
+
+    @staticmethod
+    def _setze_erledigt(aufgabe):
+        if aufgabe.status == StatutAufgabe.ERLEDIGT:
+            aufgabe.erledigt_am = aufgabe.erledigt_am or timezone.now()
+        else:
+            aufgabe.erledigt_am = None
+
+    def perform_create(self, serializer):
+        projet = _projekt_aus_daten(self.request, serializer)
+        if not arbeitsbereich_projekte(self.request.user).filter(pk=projet.pk).exists():
+            raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
+        if not kann_aufgaben_bearbeiten(self.request.user, projet):
+            raise PermissionDenied("Keine Berechtigung, Aufgaben zu erstellen.")
+        membre = getattr(self.request.user, "membre", None)
+        aufgabe = serializer.save(created_by=membre)
+        self._setze_erledigt(aufgabe)
+        aufgabe.save(update_fields=["erledigt_am"])
+        notifier_aufgabe_zugewiesen(aufgabe, durch=membre)
+
+    def perform_update(self, serializer):
+        aufgabe = serializer.instance
+        if not kann_aufgaben_bearbeiten(self.request.user, aufgabe.projet):
+            raise PermissionDenied("Keine Berechtigung, Aufgaben zu bearbeiten.")
+        vorher = aufgabe.verantwortlich_id
+        aufgabe = serializer.save()
+        self._setze_erledigt(aufgabe)
+        aufgabe.save(update_fields=["erledigt_am"])
+        if aufgabe.verantwortlich_id and aufgabe.verantwortlich_id != vorher:
+            notifier_aufgabe_zugewiesen(aufgabe, durch=getattr(self.request.user, "membre", None))
+
+    def perform_destroy(self, instance):
+        if not kann_team_verwalten(self.request.user, instance.projet):
+            raise PermissionDenied("Nur Projektleitung oder Verwaltung darf Aufgaben löschen.")
+        instance.delete()
+
+    @action(detail=True, methods=["post"])
+    def verschieben(self, request, pk=None):
+        """Déplacement Kanban : {status, position} — place la tâche à `position` dans la
+        colonne `status` et renumérote cette colonne (et l'ancienne) de façon contiguë."""
+        aufgabe = self.get_object()
+        if not kann_aufgaben_bearbeiten(request.user, aufgabe.projet):
+            raise PermissionDenied("Keine Berechtigung, Aufgaben zu verschieben.")
+        status = request.data.get("status", aufgabe.status)
+        if status not in StatutAufgabe.values:
+            raise ValidationError({"status": "Ungültiger Status."})
+        try:
+            position = max(int(request.data.get("position", 0)), 0)
+        except (TypeError, ValueError):
+            raise ValidationError({"position": "Ungültige Position."})
+        with transaction.atomic():
+            alter_status = aufgabe.status
+            aufgabe.status = status
+            self._setze_erledigt(aufgabe)
+            aufgabe.save(update_fields=["status", "erledigt_am", "updated_at"])
+            spalte = list(
+                Aufgabe.objects.filter(projet=aufgabe.projet, status=status)
+                .exclude(pk=aufgabe.pk)
+                .order_by("ordre", "created_at")
+            )
+            spalte.insert(min(position, len(spalte)), aufgabe)
+            spalten = [(status, spalte)]
+            if alter_status != status:
+                spalten.append(
+                    (
+                        alter_status,
+                        list(
+                            Aufgabe.objects.filter(
+                                projet=aufgabe.projet, status=alter_status
+                            ).order_by("ordre", "created_at")
+                        ),
+                    )
+                )
+            for _status, eintraege in spalten:
+                for index, eintrag in enumerate(eintraege):
+                    if eintrag.ordre != index:
+                        Aufgabe.objects.filter(pk=eintrag.pk).update(ordre=index)
+        aufgabe.refresh_from_db()
+        return Response(self.get_serializer(self.get_queryset().get(pk=aufgabe.pk)).data)
+
+
+class AufgabeKommentarViewSet(ModelViewSet):
+    """Commentaires d'une tâche. Lecture : comme les tâches ; ajout : Direction, Collaboration et
+    gestionnaires ; suppression : son auteur·e, la Direction ou un gestionnaire."""
+
+    http_method_names = ["get", "post", "delete", "head", "options"]
+    permission_classes = [IsAuthenticated]
+    serializer_class = AufgabeKommentarSerializer
+    pagination_class = KommentarCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["aufgabe"]
+
+    def get_queryset(self):
+        return AufgabeKommentar.objects.select_related("autor", "aufgabe__projet").filter(
+            aufgabe__projet__in=arbeitsbereich_projekte(self.request.user)
+        )
+
+    def perform_create(self, serializer):
+        aufgabe = _projekt_aus_daten(self.request, serializer, feld="aufgabe")
+        if not arbeitsbereich_projekte(self.request.user).filter(pk=aufgabe.projet_id).exists():
+            raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
+        if not kann_aufgaben_bearbeiten(self.request.user, aufgabe.projet):
+            raise PermissionDenied("Keine Berechtigung, zu kommentieren.")
+        kommentar = serializer.save(autor=getattr(self.request.user, "membre", None))
+        notifier_kommentar(kommentar)
+
+    def perform_destroy(self, instance):
+        membre = getattr(self.request.user, "membre", None)
+        eigener = membre is not None and instance.autor_id == membre.id
+        if not (eigener or kann_team_verwalten(self.request.user, instance.aufgabe.projet)):
+            raise PermissionDenied("Nur der Autor oder die Projektleitung darf löschen.")
+        instance.delete()

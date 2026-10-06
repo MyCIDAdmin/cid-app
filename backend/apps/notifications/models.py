@@ -100,6 +100,9 @@ class TypeNotification(models.TextChoices):
         "communaute_info_importante",
         _("Neuigkeit importante"),
     )
+    PROJEKT_AUFGABE_ZUGEWIESEN = "projekt_aufgabe_zugewiesen", _("Tâche de projet assignée")
+    PROJEKT_AUFGABE_KOMMENTAR = "projekt_aufgabe_kommentar", _("Nouveau commentaire de tâche")
+    PROJEKT_AUFGABE_FAELLIG = "projekt_aufgabe_faellig", _("Tâche de projet bientôt due")
 
 
 class Notification(models.Model):

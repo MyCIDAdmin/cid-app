@@ -6,6 +6,13 @@
 
 export type StatutProjet = "en_preparation" | "en_cours" | "termine" | "annule";
 
+/** Brouillon = visible uniquement pour l'équipe et la gestion ; Publié = visible pour tous
+ * (2026-10-06). Indépendant du statut de travail ci-dessus. */
+export type SichtbarkeitProjet = "entwurf" | "veroeffentlicht";
+export type RolleProjet = "leitung" | "mitarbeit" | "beobachter";
+export type StatutAufgabe = "offen" | "in_arbeit" | "review" | "erledigt";
+export type PrioritaetAufgabe = "niedrig" | "normal" | "hoch";
+
 /** Identité minimale d'un membre en lecture imbriquée (responsable, auteur d'une mise à jour,
  * contributeur) — même principe et même duplication volontaire que MembreResume
  * (types/evenements.ts) : pas de dépendance entre modules frontend qui n'en ont pas besoin.
@@ -53,6 +60,7 @@ export interface Projet {
    * quel (dangerouslySetInnerHTML côté page), jamais retapé/reconstruit côté client. */
   description_html: string;
   statut: StatutProjet;
+  sichtbarkeit: SichtbarkeitProjet;
   responsable: string | null;
   responsable_detail: MembreResumeProjet | null;
   /** Demande utilisateur point 2 : active/désactive les contributions libres. */
@@ -76,6 +84,12 @@ export interface Projet {
    * comparaison lui-même. Pilote l'affichage conditionnel du formulaire d'ajout de mise à
    * jour dans le rapport d'avancement (demande utilisateur point 7). */
   est_gestionnaire: boolean;
+  /** Rôle de l'utilisateur dans l'équipe du projet (calculé côté serveur), ou null. */
+  meine_rolle: RolleProjet | null;
+  /** Équipe, gestion ou service financier (lecture) — pilote le lien "Arbeitsbereich". */
+  darf_arbeitsbereich: boolean;
+  /** Direction du projet ou gestionnaire — pilote publication et gestion d'équipe. */
+  darf_team_verwalten: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -87,6 +101,7 @@ export interface ProjetPayload {
   titre: string;
   description_html?: string;
   statut?: StatutProjet;
+  sichtbarkeit?: SichtbarkeitProjet;
   responsable?: string | null;
   cagnote_active?: boolean;
   objectif_montant?: string | null;
@@ -141,4 +156,61 @@ export interface ProjetsKennzahlen {
   nb_projets: number;
   montant_collecte: string;
   nb_donateurs: number;
+}
+
+export interface ProjetMitglied {
+  id: string;
+  projet: string;
+  membre: string;
+  membre_detail: MembreResumeProjet | null;
+  rolle: RolleProjet;
+  created_at: string;
+}
+
+export interface Aufgabe {
+  id: string;
+  projet: string;
+  titel: string;
+  beschreibung: string;
+  verantwortlich: string | null;
+  verantwortlich_detail: MembreResumeProjet | null;
+  frist: string | null;
+  prioritaet: PrioritaetAufgabe;
+  status: StatutAufgabe;
+  ordre: number;
+  ueberfaellig: boolean;
+  erledigt_am: string | null;
+  kommentare_anzahl: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AufgabePayload {
+  projet: string;
+  titel: string;
+  beschreibung?: string;
+  verantwortlich?: string | null;
+  frist?: string | null;
+  prioritaet?: PrioritaetAufgabe;
+  status?: StatutAufgabe;
+}
+
+export interface AufgabeKommentar {
+  id: string;
+  aufgabe: string;
+  text: string;
+  autor: string | null;
+  autor_detail: MembreResumeProjet | null;
+  created_at: string;
+}
+
+/** Réponse de GET /projets/projets/{id}/arbeitsbereich/ — progression calculée côté serveur. */
+export interface Arbeitsbereich {
+  gesamt: number;
+  erledigt: number;
+  ueberfaellig: number;
+  prozent: number;
+  pro_status: Record<StatutAufgabe, number>;
+  team_groesse: number;
 }

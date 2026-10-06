@@ -138,7 +138,11 @@ class CotisationSerializer(serializers.ModelSerializer):
             if projet is None:
                 erreurs["projet"] = "Ce champ est requis pour ce type d'article."
             else:
-                if not projet.cagnote_active:
+                if projet.sichtbarkeit != "veroeffentlicht":
+                    # Un brouillon n'est visible que de l'équipe : jamais de contribution libre
+                    # tant que le projet n'est pas publié (2026-10-06).
+                    erreurs["projet"] = "Ce projet n'est pas encore publié."
+                elif not projet.cagnote_active:
                     erreurs["projet"] = (
                         "Les contributions libres ne sont pas activées pour ce projet."
                     )

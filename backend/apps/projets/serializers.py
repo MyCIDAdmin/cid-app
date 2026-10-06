@@ -17,8 +17,22 @@ from rest_framework import serializers
 from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 
-from .models import Projet, ProjetImage, ProjetMiseAJour, ProjetMiseAJourImage
-from .permissions import est_gestionnaire_projet
+from .models import (
+    Aufgabe,
+    AufgabeKommentar,
+    Projet,
+    ProjetImage,
+    ProjetMiseAJour,
+    ProjetMiseAJourImage,
+    ProjetMitglied,
+)
+from .permissions import (
+    darf_arbeitsbereich,
+    est_gestionnaire_projet,
+    kann_team_verwalten,
+    liest_alle_arbeitsbereiche,
+    rolle_im_projekt,
+)
 
 
 class MembreResumeSerializer(serializers.ModelSerializer):
@@ -128,6 +142,9 @@ class ProjetSerializer(serializers.ModelSerializer):
     nb_contributeurs = serializers.IntegerField(read_only=True)
     echeance_depassee = serializers.BooleanField(read_only=True)
     est_gestionnaire = serializers.SerializerMethodField()
+    meine_rolle = serializers.SerializerMethodField()
+    darf_arbeitsbereich = serializers.SerializerMethodField()
+    darf_team_verwalten = serializers.SerializerMethodField()
 
     class Meta:
         model = Projet
@@ -136,6 +153,7 @@ class ProjetSerializer(serializers.ModelSerializer):
             "titre",
             "description_html",
             "statut",
+            "sichtbarkeit",
             "responsable",
             "responsable_detail",
             "cagnote_active",
@@ -147,6 +165,9 @@ class ProjetSerializer(serializers.ModelSerializer):
             "ordre",
             "images",
             "est_gestionnaire",
+            "meine_rolle",
+            "darf_arbeitsbereich",
+            "darf_team_verwalten",
             "created_by",
             "created_at",
             "updated_at",
@@ -157,6 +178,22 @@ class ProjetSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = getattr(request, "user", None)
         return est_gestionnaire_projet(user, obj)
+
+    def _user(self):
+        return getattr(self.context.get("request"), "user", None)
+
+    def get_meine_rolle(self, obj) -> str | None:
+        return rolle_im_projekt(self._user(), obj)
+
+    def get_darf_arbeitsbereich(self, obj) -> bool:
+        # Le droit "lecture de tous les espaces" est le même pour tous les projets d'une liste :
+        # calculé une seule fois par requête (évite une requête RBAC par projet).
+        if "_leser" not in self.context:
+            self.context["_leser"] = liest_alle_arbeitsbereiche(self._user())
+        return darf_arbeitsbereich(self._user(), obj, leser=self.context["_leser"])
+
+    def get_darf_team_verwalten(self, obj) -> bool:
+        return kann_team_verwalten(self._user(), obj)
 
 
 class ContributeurSerializer(serializers.Serializer):
@@ -170,3 +207,93 @@ class ContributeurSerializer(serializers.Serializer):
     membre = MembreResumeSerializer(read_only=True)
     montant_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     derniere_contribution = serializers.DateTimeField(read_only=True)
+
+
+class ProjetMitgliedSerializer(serializers.ModelSerializer):
+    membre_detail = MembreResumeSerializer(source="membre", read_only=True)
+
+    class Meta:
+        model = ProjetMitglied
+        fields = ["id", "projet", "membre", "membre_detail", "rolle", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+    def update(self, instance, validated_data):
+        # Même verrou anti-IDOR que les autres serializers du module : ni le projet ni le
+        # membre d'une ligne d'équipe ne se réassignent, seul le rôle change.
+        validated_data.pop("projet", None)
+        validated_data.pop("membre", None)
+        return super().update(instance, validated_data)
+
+    def validate(self, attrs):
+        projet = attrs.get("projet")
+        membre = attrs.get("membre")
+        if self.instance is None and projet and membre:
+            if ProjetMitglied.objects.filter(projet=projet, membre=membre).exists():
+                raise serializers.ValidationError(
+                    {"membre": "Cette personne fait déjà partie de l'équipe."}
+                )
+        return attrs
+
+
+class AufgabeSerializer(serializers.ModelSerializer):
+    verantwortlich_detail = MembreResumeSerializer(source="verantwortlich", read_only=True)
+    ueberfaellig = serializers.BooleanField(read_only=True)
+    kommentare_anzahl = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Aufgabe
+        fields = [
+            "id",
+            "projet",
+            "titel",
+            "beschreibung",
+            "verantwortlich",
+            "verantwortlich_detail",
+            "frist",
+            "prioritaet",
+            "status",
+            "ordre",
+            "ueberfaellig",
+            "erledigt_am",
+            "kommentare_anzahl",
+            "created_by",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "erledigt_am", "created_by", "created_at", "updated_at"]
+        extra_kwargs = {"projet": {"required": True}}
+
+    def get_kommentare_anzahl(self, obj) -> int:
+        anzahl = getattr(obj, "kommentare_anzahl", None)
+        return anzahl if anzahl is not None else obj.kommentare.count()
+
+    def validate(self, attrs):
+        projet = attrs.get("projet") or (self.instance.projet if self.instance else None)
+        verantwortlich = attrs.get("verantwortlich")
+        if (
+            projet is not None
+            and verantwortlich is not None
+            and not ProjetMitglied.objects.filter(projet=projet, membre=verantwortlich).exists()
+        ):
+            raise serializers.ValidationError(
+                {"verantwortlich": "Die verantwortliche Person muss zum Projektteam gehören."}
+            )
+        return attrs
+
+    def update(self, instance, validated_data):
+        validated_data.pop("projet", None)
+        return super().update(instance, validated_data)
+
+
+class AufgabeKommentarSerializer(serializers.ModelSerializer):
+    autor_detail = MembreResumeSerializer(source="autor", read_only=True)
+
+    class Meta:
+        model = AufgabeKommentar
+        fields = ["id", "aufgabe", "text", "autor", "autor_detail", "created_at"]
+        read_only_fields = ["id", "autor", "created_at"]
+        extra_kwargs = {"aufgabe": {"required": True}}
+
+    def update(self, instance, validated_data):
+        validated_data.pop("aufgabe", None)
+        return super().update(instance, validated_data)

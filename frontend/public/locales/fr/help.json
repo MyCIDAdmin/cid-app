@@ -157,5 +157,15 @@
       "L'onglet « Contrôle » donne aux contrôleurs les chiffres clés, les dépenses sans justificatif et les gros montants, en lecture seule.",
       "L'onglet « Clôture annuelle » verrouille une année une fois toutes les dépenses tranchées. Seul l'administrateur de l'application peut la rouvrir."
     ]
+  },
+  "arbeitsbereich": {
+    "titel": "Espace de travail du projet",
+    "intro": "L'équipe du projet planifie ici tâches, équipe et progression. Seuls l'équipe et la gestion voient cet espace.",
+    "schritte": [
+      "Dans l'onglet « Tâches », créez des tâches et déplacez-les par glisser-déposer (ou via le champ statut) entre Ouverte, En cours, En revue et Terminée.",
+      "Définissez responsables et échéances : la personne assignée reçoit une notification, puis un rappel avant l'échéance.",
+      "Dans l'onglet « Équipe », la Direction du projet décide qui collabore ou ne peut que lire (Observateur).",
+      "Un projet est d'abord un brouillon. « Publier » rend la kachel visible pour tous les membres ; tâches et équipe restent toujours internes."
+    ]
   }
 }

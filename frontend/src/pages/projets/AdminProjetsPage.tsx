@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 
 import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
 import RapportModal from "../../components/projets/RapportModal";
+import SichtbarkeitBadge from "../../components/projets/SichtbarkeitBadge";
 import StatutProjetBadge from "../../components/projets/StatutProjetBadge";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import RichTextEditor from "../../components/ui/RichTextEditor";
@@ -35,14 +36,22 @@ import {
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { MembreListItem } from "../../types/membre";
-import type { MembreResumeProjet, Projet, ProjetPayload, StatutProjet } from "../../types/projets";
+import type {
+  MembreResumeProjet,
+  Projet,
+  ProjetPayload,
+  SichtbarkeitProjet,
+  StatutProjet,
+} from "../../types/projets";
 
 const STATUTS: StatutProjet[] = ["en_preparation", "en_cours", "termine", "annule"];
+const SICHTBARKEITEN: SichtbarkeitProjet[] = ["entwurf", "veroeffentlicht"];
 
 const FORMULAIRE_VIDE: ProjetPayload = {
   titre: "",
   description_html: "",
   statut: "en_preparation",
+  sichtbarkeit: "entwurf",
   responsable: null,
   cagnote_active: false,
   objectif_montant: null,
@@ -77,6 +86,7 @@ function FormulaireProjet({
           titre: projet.titre,
           description_html: projet.description_html,
           statut: projet.statut,
+          sichtbarkeit: projet.sichtbarkeit,
           responsable: projet.responsable,
           cagnote_active: projet.cagnote_active,
           objectif_montant: projet.objectif_montant,
@@ -172,6 +182,26 @@ function FormulaireProjet({
             {STATUTS.map((statut) => (
               <option key={statut} value={statut}>
                 {t(`statut.${statut}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="admin-projet-sichtbarkeit"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin.champ_sichtbarkeit")}
+          </label>
+          <select
+            id="admin-projet-sichtbarkeit"
+            value={valeurs.sichtbarkeit}
+            onChange={(e) => champ("sichtbarkeit", e.target.value as SichtbarkeitProjet)}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          >
+            {SICHTBARKEITEN.map((wert) => (
+              <option key={wert} value={wert}>
+                {t(`arbeitsbereich.sichtbarkeit.${wert}`)}
               </option>
             ))}
           </select>
@@ -280,7 +310,7 @@ function FormulaireProjet({
         <button
           type="submit"
           disabled={enCours || !modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
         >
           {projet ? t("admin.enregistrer") : t("admin.nouveau_projet")}
@@ -320,7 +350,8 @@ export default function AdminProjetsPage() {
   function confirmerSuppression() {
     if (!projetASupprimer) return;
     supprimer.mutate(projetASupprimer.id, {
-      onError: (err) => setErreurAction(extractApiErrorMessage(err, t("admin.erreur_enregistrement"))),
+      onError: (err) =>
+        setErreurAction(extractApiErrorMessage(err, t("admin.erreur_enregistrement"))),
     });
     setProjetASupprimer(null);
   }
@@ -333,7 +364,7 @@ export default function AdminProjetsPage() {
           <button
             type="button"
             disabled={!modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             onClick={ouvrirCreation}
             className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
           >
@@ -377,6 +408,7 @@ export default function AdminProjetsPage() {
                     {projet.titre}
                   </span>
                   <StatutProjetBadge statut={projet.statut} />
+                  <SichtbarkeitBadge sichtbarkeit={projet.sichtbarkeit} afficherPublie />
                 </div>
                 <div className="text-xs text-text-tertiary">
                   {projet.responsable_detail
@@ -397,7 +429,7 @@ export default function AdminProjetsPage() {
                 <button
                   type="button"
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   onClick={() => ouvrirEdition(projet)}
                   className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
                 >
@@ -406,7 +438,7 @@ export default function AdminProjetsPage() {
                 <button
                   type="button"
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   onClick={() => setProjetASupprimer(projet)}
                   className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                 >

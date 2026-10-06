@@ -92,6 +92,93 @@
     "confirmer_suppression": "Supprimer ce projet et toutes ses images ?",
     "images_titre": "Images de la kachel",
     "ajouter_image": "Ajouter une image",
-    "aucun_responsable": "Aucun responsable"
+    "aucun_responsable": "Aucun responsable",
+    "champ_sichtbarkeit": "Visibilité"
+  },
+  "arbeitsbereich": {
+    "titel": "Espace de travail",
+    "oeffnen": "Ouvrir l'espace de travail",
+    "zurueck": "Retour au projet",
+    "laden": "Chargement…",
+    "fehler_laden": "Impossible de charger le projet.",
+    "nur_team": "L'espace de travail n'est visible que de l'équipe du projet.",
+    "fehler": "Action impossible.",
+    "tab": {
+      "uebersicht": "Aperçu",
+      "aufgaben": "Tâches",
+      "team": "Équipe"
+    },
+    "sichtbarkeit": {
+      "entwurf": "Brouillon",
+      "veroeffentlicht": "Publié",
+      "veroeffentlichen": "Publier",
+      "zurueckziehen": "Repasser en brouillon",
+      "hinweis_entwurf": "Ce projet est un brouillon : seuls l'équipe du projet et la gestion le voient."
+    },
+    "rolle": {
+      "leitung": "Direction",
+      "mitarbeit": "Collaboration",
+      "beobachter": "Observateur"
+    },
+    "status": {
+      "offen": "Ouverte",
+      "in_arbeit": "En cours",
+      "review": "En revue",
+      "erledigt": "Terminée"
+    },
+    "prioritaet": {
+      "niedrig": "Basse",
+      "normal": "Normale",
+      "hoch": "Haute"
+    },
+    "uebersicht": {
+      "fortschritt": "Progression",
+      "zusammenfassung": "{{erledigt}} tâche(s) sur {{gesamt}} terminée(s) · {{team}} dans l'équipe",
+      "ueberfaellig": "En retard",
+      "naechste_fristen": "Prochaines échéances",
+      "keine_fristen": "Aucune échéance ouverte."
+    },
+    "aufgaben": {
+      "neu": "Nouvelle tâche",
+      "neu_in": "Nouvelle tâche dans « {{status}} »",
+      "ansicht_board": "Tableau",
+      "ansicht_liste": "Liste",
+      "filter_verantwortlich": "Filtrer par responsable",
+      "alle_verantwortlichen": "Tous les responsables",
+      "nicht_zugewiesen": "Non assignées",
+      "leer": "Aucune tâche.",
+      "spalte_leer": "Aucune tâche",
+      "frist": "Échéance {{datum}}",
+      "ueberfaellig": "En retard depuis le {{datum}}",
+      "kommentare": "{{count}} commentaire(s)",
+      "status_aendern": "Changer le statut de « {{titel}} »"
+    },
+    "modal": {
+      "neue_aufgabe": "Nouvelle tâche",
+      "aufgabe_bearbeiten": "Tâche",
+      "titel": "Titre",
+      "beschreibung": "Description",
+      "verantwortlich": "Responsable",
+      "niemand": "Personne",
+      "frist": "Échéance",
+      "prioritaet": "Priorité",
+      "status": "Statut",
+      "speichern": "Enregistrer",
+      "schliessen": "Fermer",
+      "loeschen": "Supprimer",
+      "kommentare": "Commentaires",
+      "keine_kommentare": "Aucun commentaire pour l'instant.",
+      "kommentar_platzhalter": "Écrire un commentaire…",
+      "kommentar_hinzufuegen": "Envoyer",
+      "kommentar_loeschen": "Supprimer"
+    },
+    "team": {
+      "hinzufuegen": "Ajouter un membre",
+      "mitglied_suchen": "Rechercher un membre…",
+      "rolle": "Rôle",
+      "rolle_von": "Rôle de {{name}}",
+      "entfernen": "Retirer",
+      "nur_lesen": "Seules la Direction du projet et la gestion peuvent modifier l'équipe."
+    }
   }
 }

@@ -92,6 +92,93 @@
     "confirmer_suppression": "Dieses Projekt und alle seine Bilder löschen?",
     "images_titre": "Bilder der Kachel",
     "ajouter_image": "Bild hinzufügen",
-    "aucun_responsable": "Kein(e) Verantwortliche(r)"
+    "aucun_responsable": "Kein(e) Verantwortliche(r)",
+    "champ_sichtbarkeit": "Sichtbarkeit"
+  },
+  "arbeitsbereich": {
+    "titel": "Arbeitsbereich",
+    "oeffnen": "Arbeitsbereich öffnen",
+    "zurueck": "Zurück zum Projekt",
+    "laden": "Wird geladen…",
+    "fehler_laden": "Das Projekt konnte nicht geladen werden.",
+    "nur_team": "Der Arbeitsbereich ist nur für das Projektteam sichtbar.",
+    "fehler": "Aktion fehlgeschlagen.",
+    "tab": {
+      "uebersicht": "Übersicht",
+      "aufgaben": "Aufgaben",
+      "team": "Team"
+    },
+    "sichtbarkeit": {
+      "entwurf": "Entwurf",
+      "veroeffentlicht": "Veröffentlicht",
+      "veroeffentlichen": "Veröffentlichen",
+      "zurueckziehen": "Zurück zum Entwurf",
+      "hinweis_entwurf": "Dieses Projekt ist ein Entwurf und nur für das Projektteam und die Verwaltung sichtbar."
+    },
+    "rolle": {
+      "leitung": "Projektleitung",
+      "mitarbeit": "Mitarbeit",
+      "beobachter": "Beobachter"
+    },
+    "status": {
+      "offen": "Offen",
+      "in_arbeit": "In Arbeit",
+      "review": "Review",
+      "erledigt": "Erledigt"
+    },
+    "prioritaet": {
+      "niedrig": "Niedrig",
+      "normal": "Normal",
+      "hoch": "Hoch"
+    },
+    "uebersicht": {
+      "fortschritt": "Fortschritt",
+      "zusammenfassung": "{{erledigt}} von {{gesamt}} Aufgaben erledigt · {{team}} im Team",
+      "ueberfaellig": "Überfällig",
+      "naechste_fristen": "Nächste Fristen",
+      "keine_fristen": "Keine offenen Fristen."
+    },
+    "aufgaben": {
+      "neu": "Neue Aufgabe",
+      "neu_in": "Neue Aufgabe in „{{status}}“",
+      "ansicht_board": "Board",
+      "ansicht_liste": "Liste",
+      "filter_verantwortlich": "Nach Verantwortlichen filtern",
+      "alle_verantwortlichen": "Alle Verantwortlichen",
+      "nicht_zugewiesen": "Nicht zugewiesen",
+      "leer": "Keine Aufgaben.",
+      "spalte_leer": "Keine Aufgaben",
+      "frist": "Frist {{datum}}",
+      "ueberfaellig": "Überfällig seit {{datum}}",
+      "kommentare": "{{count}} Kommentar(e)",
+      "status_aendern": "Status von „{{titel}}“ ändern"
+    },
+    "modal": {
+      "neue_aufgabe": "Neue Aufgabe",
+      "aufgabe_bearbeiten": "Aufgabe",
+      "titel": "Titel",
+      "beschreibung": "Beschreibung",
+      "verantwortlich": "Verantwortlich",
+      "niemand": "Niemand",
+      "frist": "Frist",
+      "prioritaet": "Priorität",
+      "status": "Status",
+      "speichern": "Speichern",
+      "schliessen": "Schließen",
+      "loeschen": "Löschen",
+      "kommentare": "Kommentare",
+      "keine_kommentare": "Noch keine Kommentare.",
+      "kommentar_platzhalter": "Kommentar schreiben…",
+      "kommentar_hinzufuegen": "Senden",
+      "kommentar_loeschen": "Löschen"
+    },
+    "team": {
+      "hinzufuegen": "Mitglied hinzufügen",
+      "mitglied_suchen": "Mitglied suchen…",
+      "rolle": "Rolle",
+      "rolle_von": "Rolle von {{name}}",
+      "entfernen": "Entfernen",
+      "nur_lesen": "Nur die Projektleitung und die Verwaltung können das Team ändern."
+    }
   }
 }

@@ -6,6 +6,7 @@ import ShareButton from "../ui/ShareButton";
 import { useContributeursProjet } from "../../hooks/useProjets";
 import type { Projet } from "../../types/projets";
 import ImageCarousel from "./ImageCarousel";
+import SichtbarkeitBadge from "./SichtbarkeitBadge";
 import StatutProjetBadge from "./StatutProjetBadge";
 
 interface ProjetCardProps {
@@ -64,7 +65,12 @@ function IconeCoeur() {
 function IconeFleche() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor">
-      <path d="M5 12h14M13 6l6 6-6 6" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M5 12h14M13 6l6 6-6 6"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -144,8 +150,9 @@ export default function ProjetCard({
           <div className="relative">
             <ImageCarousel images={projet.images} titre={projet.titre} className="h-44 shrink-0" />
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-2">
-              <span className="pointer-events-auto drop-shadow">
+              <span className="pointer-events-auto flex gap-1 drop-shadow">
                 <StatutProjetBadge statut={projet.statut} />
+                <SichtbarkeitBadge sichtbarkeit={projet.sichtbarkeit} />
               </span>
               <span className="pointer-events-auto rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
                 {annee}
@@ -161,7 +168,10 @@ export default function ProjetCard({
                   in Social Media zu Teilen") — ShareButton stoppe déjà lui-même la propagation
                   du clic (voir son implémentation), donc le retournement de la kachel (au clic
                   sur son corps) n'est pas déclenché par erreur. */}
-              <div className="flex shrink-0 items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="flex shrink-0 items-center gap-0.5"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <ShareButton
                   path={`/projets?projet=${projet.id}`}
                   titre={projet.titre}
