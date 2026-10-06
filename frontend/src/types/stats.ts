@@ -207,3 +207,27 @@ export interface KpisProjets {
   };
   projekte: ProjektKennzahlZeile[];
 }
+
+export type PivotDimension = "jahr" | "quartal" | "monat" | "typ" | "kategorie" | "gegenpartei";
+export type PivotKennzahl = "betrag" | "anzahl" | "durchschnitt";
+
+export interface PivotAbfrage {
+  zeilen: PivotDimension;
+  spalten: PivotDimension | "";
+  kennzahl: PivotKennzahl;
+  jahr_von: number;
+  jahr_bis: number;
+}
+
+export interface PivotErgebnis {
+  zeilen_dim: PivotDimension;
+  spalten_dim: PivotDimension | null;
+  kennzahl: PivotKennzahl;
+  jahr_von: number;
+  jahr_bis: number;
+  spalten: string[];
+  zeilen: { label: string; werte: number[]; summe: number }[];
+  spalten_summen: number[];
+  gesamt: number;
+  anzahl_buchungen: number;
+}

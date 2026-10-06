@@ -23,6 +23,7 @@ import ImageCarousel from "../../components/projets/ImageCarousel";
 import AnimatedProgress from "../../components/ui/AnimatedProgress";
 import ShareButton from "../../components/ui/ShareButton";
 import { useMisesAJourProjet, useProjet } from "../../hooks/useProjets";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
@@ -85,7 +86,9 @@ export default function ProjetDetailPage() {
 
             <div className="flex flex-col gap-3 p-4">
               <div className="flex items-start justify-between gap-2">
-                <h1 className="text-lg font-bold leading-snug text-text-primary">{projet.titre}</h1>
+                <h1 className="text-lg font-bold leading-snug text-text-primary">
+                  {uebersetzt(projet, "titre")}
+                </h1>
                 <div className="shrink-0">
                   <ShareButton
                     path={`/projets/${projet.id}`}
@@ -175,7 +178,7 @@ export default function ProjetDetailPage() {
                 </h2>
                 <div
                   className="prose prose-sm max-w-none text-text-primary"
-                  dangerouslySetInnerHTML={{ __html: projet.description_html }}
+                  dangerouslySetInnerHTML={{ __html: uebersetzt(projet, "description_html") }}
                 />
               </div>
             </div>

@@ -9,6 +9,7 @@ import type { Projet } from "../../types/projets";
 import ImageCarousel from "./ImageCarousel";
 import SichtbarkeitBadge from "./SichtbarkeitBadge";
 import StatutProjetBadge from "./StatutProjetBadge";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 interface ProjetCardProps {
   projet: Projet;
@@ -168,7 +169,7 @@ export default function ProjetCard({
           <div className="flex flex-col gap-2 p-4">
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-base font-semibold leading-snug text-text-primary">
-                {projet.titre}
+                {uebersetzt(projet, "titre")}
               </h3>
               {/* Partage social (demande utilisateur 2026-09-25, "Es soll möglich sein Elemente
                   in Social Media zu Teilen") — ShareButton stoppe déjà lui-même la propagation
@@ -219,7 +220,7 @@ export default function ProjetCard({
               className="text-sm text-text-primary [overflow-wrap:anywhere]"
               // Texte riche produit par l'éditeur type Word (demande utilisateur point 1.2) —
               // affiché tel quel, jamais retapé côté client (voir RichTextEditor.tsx).
-              dangerouslySetInnerHTML={{ __html: projet.description_html }}
+              dangerouslySetInnerHTML={{ __html: uebersetzt(projet, "description_html") }}
             />
 
             {projet.cagnote_active && (

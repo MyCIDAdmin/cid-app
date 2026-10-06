@@ -34,6 +34,7 @@ import type {
   RegleReduction,
   VarianteProduit,
 } from "../../types/boutique";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 // "bon_achat" en dernier (demande utilisateur du 2026-09-23, "Gutschein soll als Kategorie im
 // shop auftauchen") — un onglet de catégorie comme les autres, jamais un module séparé.
@@ -189,8 +190,12 @@ function ProduitCarteBonAchat({
         )}
       </div>
       <div className="flex flex-1 flex-col p-3">
-        <div className="mb-0.5 text-sm font-bold text-text-primary">{produit.nom}</div>
-        <div className="mb-2 line-clamp-2 text-xs text-text-tertiary">{produit.description}</div>
+        <div className="mb-0.5 text-sm font-bold text-text-primary">
+          {uebersetzt(produit, "nom")}
+        </div>
+        <div className="mb-2 line-clamp-2 text-xs text-text-tertiary">
+          {uebersetzt(produit, "description")}
+        </div>
 
         <label
           htmlFor={`bon-montant-${produit.id}`}
@@ -343,9 +348,11 @@ function ProduitCarte({
           to={`/boutique/${produit.id}`}
           className="mb-0.5 text-sm font-bold text-text-primary hover:underline"
         >
-          {produit.nom}
+          {uebersetzt(produit, "nom")}
         </Link>
-        <div className="mb-2 line-clamp-2 text-xs text-text-tertiary">{produit.description}</div>
+        <div className="mb-2 line-clamp-2 text-xs text-text-tertiary">
+          {uebersetzt(produit, "description")}
+        </div>
 
         {produit.variantes.length > 1 && (
           <select

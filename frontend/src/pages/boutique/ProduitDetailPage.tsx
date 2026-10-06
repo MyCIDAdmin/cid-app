@@ -32,6 +32,7 @@ import {
   labelRegleReduction,
   labelVariante,
 } from "./CataloguePage";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 export default function ProduitDetailPage() {
   const { t } = useTranslation("boutique");
@@ -56,10 +57,7 @@ export default function ProduitDetailPage() {
     setIndexGalerieActif(0);
   }, [produit?.id]);
   const imagesGalerie = produit
-    ? [
-        ...(produit.image ? [{ id: "principale", image: produit.image }] : []),
-        ...produit.images,
-      ]
+    ? [...(produit.image ? [{ id: "principale", image: produit.image }] : []), ...produit.images]
     : [];
   const imageAffichee = imagesGalerie[indexGalerieActif]?.image ?? produit?.image ?? null;
 
@@ -163,7 +161,9 @@ export default function ProduitDetailPage() {
             <span className="w-fit rounded-full bg-bg-tertiary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-text-tertiary">
               {t(`categorie.${produit.categorie}`)}
             </span>
-            <h1 className="text-xl font-bold leading-snug text-text-primary">{produit.nom}</h1>
+            <h1 className="text-xl font-bold leading-snug text-text-primary">
+              {uebersetzt(produit, "nom")}
+            </h1>
 
             {produit.est_prix_membre ? (
               <span className="flex flex-wrap items-baseline gap-2">
@@ -193,7 +193,7 @@ export default function ProduitDetailPage() {
             )}
 
             {produit.description && (
-              <p className="text-sm text-text-secondary">{produit.description}</p>
+              <p className="text-sm text-text-secondary">{uebersetzt(produit, "description")}</p>
             )}
 
             {produit.regles_reduction_actives.length > 0 && (

@@ -109,5 +109,32 @@
     "shop": "Recommandé : format paysage 16:10, au moins 1200 × 750 px (JPG, PNG ou WebP, 10 Mo max.). L'image remplit entièrement la kachel – placez les éléments importants au centre, les bords peuvent être légèrement rognés.",
     "projekt": "Recommandé : format paysage 16:9, au moins 1280 × 720 px (JPG, PNG ou WebP, 10 Mo max.). L'image remplit entièrement la kachel – placez les éléments importants au centre, les bords peuvent être légèrement rognés.",
     "veranstaltung": "Recommandé : format paysage 16:9, au moins 1280 × 720 px (JPG, PNG ou WebP, 10 Mo max.). L'image remplit entièrement la kachel ; le titre et la date se trouvent en bas et en haut – n'y placez pas de détails importants."
+  },
+  "uebersetzung": {
+    "button": "Traductions",
+    "titel": "Modifier les traductions",
+    "erklaerung": "À l'enregistrement, DeepL traduit automatiquement les textes dans les autres langues. Vous pouvez vérifier et corriger le résultat ici ; les corrections manuelles sont conservées tant que le texte d'origine ne change pas.",
+    "inaktiv": "La traduction automatique n'est pas active (DEEPL_API_KEY manquante). Vous pouvez tout de même traduire manuellement.",
+    "original": "Original",
+    "automatisch": "automatique",
+    "manuell": "manuel",
+    "speichern": "Enregistrer",
+    "neu": "Retraduire avec DeepL",
+    "laeuft": "En cours …",
+    "schliessen": "Fermer",
+    "gespeichert": "Enregistré.",
+    "neu_fertig": "Retraduit.",
+    "fehler": "Action impossible.",
+    "felder": {
+      "titre": "Titre",
+      "nom": "Nom",
+      "description": "Description",
+      "description_html": "Description"
+    },
+    "sprachen": {
+      "de": "Deutsch",
+      "fr": "Français",
+      "ar": "العربية"
+    }
   }
 }

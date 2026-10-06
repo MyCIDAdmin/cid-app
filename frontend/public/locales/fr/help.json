@@ -65,6 +65,50 @@
       "Consultez la liste des paiements en attente.",
       "Une fois l'argent reçu, confirmez le paiement ; un reçu est généré.",
       "Les paiements erronés ou en double peuvent être annulés."
+    ],
+    "workflows": [
+      {
+        "titre": "Confirmer un virement (SEPA)",
+        "wann": "Un membre a payé par virement et l'argent est arrivé sur le compte de l'association.",
+        "schritte": [
+          "Repérer le virement sur le relevé et noter montant et motif.",
+          "Dans la liste, choisir le statut « En attente » et retrouver le nom ou la référence.",
+          "Vérifier que le montant et le motif correspondent.",
+          "Si la date du virement diffère, renseigner la « date de transaction » (sinon : aujourd'hui).",
+          "Cliquer sur « Marquer comme payé »."
+        ],
+        "beispiel": "Amira vire 45 € le 28/09 pour « Adhésion Gold 2026 ». Le 30/09 vous voyez le virement : cherchez « Amira », indiquez le 28/09 comme date de transaction et confirmez.",
+        "danach": "Le statut passe à « Payé », l'adhésion devient active, le membre est notifié et peut télécharger son reçu (PDF). Le bouton « Reçu » apparaît dans la liste."
+      },
+      {
+        "titre": "Marquer une commande boutique comme payée",
+        "wann": "Une commande de la boutique a été payée.",
+        "schritte": [
+          "Dans « Paiements de la boutique », chercher la commande par numéro ou nom.",
+          "Vérifier l'encaissement sur le relevé.",
+          "Confirmer le paiement ; la commande peut alors être préparée et expédiée.",
+          "Au besoin, ouvrir la facture (PDF)."
+        ],
+        "beispiel": "Commande CID-2026-0042 (maillot, 59 €) : encaissement trouvé, confirmé. Le statut passe à « Payée ».",
+        "danach": "Les paiements boutique confirmés comptent immédiatement dans les KPI financiers et le bilan annuel."
+      },
+      {
+        "titre": "Corriger un paiement erroné ou en double",
+        "wann": "Un paiement a été confirmé par erreur ou saisi deux fois.",
+        "schritte": [
+          "Retrouver le paiement (filtre « Tous »).",
+          "Ouvrir « Afficher l'historique » pour voir qui a changé quoi et quand.",
+          "Dans « Changer le statut », choisir le nouveau statut (p. ex. Annulé) et indiquer un motif.",
+          "Enregistrer."
+        ],
+        "beispiel": "Karim apparaît deux fois comme « Payé » : annulez la seconde ligne avec le motif « Saisi en double ».",
+        "danach": "Chaque modification est tracée (personne, heure, motif) ; les KPI se recalculent."
+      }
+    ],
+    "tipps": [
+      "Les filtres (recherche, type d'article, mode de paiement, période) se combinent ; « Exporter Excel » exporte exactement la liste filtrée.",
+      "Les justificatifs (PDF) sont attachés aux lignes payées : « Reçu » pour les cotisations, « Facture » pour les commandes boutique.",
+      "Ne confirmez un paiement que lorsque l'argent est réellement sur le compte — le reçu part automatiquement au membre."
     ]
   },
   "relances": {
@@ -156,10 +200,53 @@
       "L'onglet « Journal » montre, sans lacune, qui a modifié quoi et quand.",
       "L'onglet « Contrôle » donne aux contrôleurs les chiffres clés, les dépenses sans justificatif et les gros montants, en lecture seule.",
       "L'onglet « Clôture annuelle » verrouille une année une fois toutes les dépenses tranchées. Seul l'administrateur de l'application peut la rouvrir."
+    ],
+    "workflows": [
+      {
+        "titre": "Saisir et valider une dépense",
+        "wann": "L'association a dépensé de l'argent (location de salle, matériel...).",
+        "schritte": [
+          "Onglet « Dépenses » → « Nouvelle dépense ».",
+          "Renseigner date, montant, catégorie et fournisseur ; rattacher éventuellement un événement ou un projet.",
+          "Joindre le justificatif (photo ou PDF).",
+          "Enregistrer — la dépense attend la validation.",
+          "Une seconde personne autorisée vérifie justificatif et montant puis valide ou refuse avec un motif."
+        ],
+        "beispiel": "Location de salle pour la fête d'été : 320 € le 14/07, catégorie « Événements », fournisseur « Stadthalle », justificatif PDF, rattachée à l'événement « Fête d'été 2026 ».",
+        "danach": "Seules les dépenses validées comptent dans le bilan, les KPI, le budget réel et le plan/réel du projet rattaché."
+      },
+      {
+        "titre": "Planifier le budget annuel",
+        "wann": "En début d'année ou lors d'un changement de planification.",
+        "schritte": [
+          "Ouvrir l'onglet « Budget » et choisir l'année.",
+          "Éventuellement saisir le budget global.",
+          "Définir le montant annuel par catégorie.",
+          "Enregistrer ; le réel et le feu tricolore apparaissent dans le bilan annuel."
+        ],
+        "beispiel": "Catégorie « Événements » : 5 000 € pour 2026. Avec 4 100 € de réel, le voyant passe à « Attention » (dès 80 % du budget).",
+        "danach": "Dans Statistiques & KPI → Bilan annuel, budget et réel sont comparés par catégorie."
+      },
+      {
+        "titre": "Clôturer l'exercice",
+        "wann": "Toutes les dépenses de l'année sont tranchées.",
+        "schritte": [
+          "Onglet « Dépenses » : plus aucune dépense en attente de validation.",
+          "Onglet « Contrôle » : dépenses sans justificatif et montants élevés.",
+          "Onglet « Clôture » → verrouiller l'année.",
+          "Éventuellement exporter le bilan (PDF/Excel) et la liste d'écritures (CSV) pour le comptable."
+        ],
+        "beispiel": "Début janvier, vous verrouillez 2025. Plus aucune modification n'est possible ; seul l'administrateur de l'application peut rouvrir l'année.",
+        "danach": "Le journal enregistre le verrouillage avec la personne et l'heure."
+      }
+    ],
+    "tipps": [
+      "Une dépense saisie par quelqu'un ne peut en général pas être validée par la même personne (principe des quatre yeux).",
+      "Les dépenses refusées peuvent être corrigées puis soumises à nouveau.",
+      "Tous les rapports (PDF, Excel, CSV) sont en allemand par défaut."
     ]
   },
   "arbeitsbereich": {
-    "titel": "Espace de travail du projet",
     "intro": "L'équipe du projet planifie ici tâches, équipe et progression. Seuls l'équipe et la gestion voient cet espace.",
     "schritte": [
       "Dans l'onglet « Tâches », créez des tâches et déplacez-les par glisser-déposer (ou via le champ statut) entre Ouverte, En cours, En revue et Terminée.",
@@ -167,6 +254,64 @@
       "Dans l'onglet « Équipe », la Direction du projet décide qui collabore ou ne peut que lire (Observateur).",
       "Dans l'onglet « Coûts », la Direction planifie des montants par catégorie ; l'équipe saisit les dépenses réelles avec justificatif. Elles ne comptent qu'après approbation par l'équipe financière et apparaissent alors dans la comparaison prévu/réel.",
       "Un projet est d'abord un brouillon. « Publier » rend la kachel visible pour tous les membres ; tâches et équipe restent toujours internes."
-    ]
+    ],
+    "workflows": [
+      {
+        "titre": "Planifier et répartir les tâches",
+        "wann": "L'équipe du projet démarre une nouvelle phase.",
+        "schritte": [
+          "Onglet « Tâches » → créer une tâche (titre, description).",
+          "Désigner un responsable et une échéance.",
+          "Faire glisser la tâche (ou changer le statut) de « Ouvert » à « En cours », « Revue » puis « Terminé ».",
+          "Clarifier les questions dans les commentaires."
+        ],
+        "beispiel": "Tâche « Imprimer l'affiche », responsable Sami, échéance 15/10. Sami reçoit une notification, puis un rappel peu avant le 15/10.",
+        "danach": "L'avancement apparaît sur la page du projet et dans Statistiques & KPI → Projets."
+      },
+      {
+        "titre": "Constituer l'équipe",
+        "wann": "Le projet a besoin de collaborateurs ou d'observateurs.",
+        "schritte": [
+          "Ouvrir l'onglet « Équipe » (responsable du projet).",
+          "Rechercher et ajouter un membre.",
+          "Choisir le rôle : collaborateur (peut modifier les tâches) ou observateur (lecture seule)."
+        ],
+        "beispiel": "Lina doit seulement suivre : rôle « Observateur ». Tarek participe : rôle « Collaborateur ».",
+        "danach": "Les personnes ajoutées voient l'espace de travail et sont notifiées lors des affectations."
+      },
+      {
+        "titre": "Planifier les coûts et saisir les dépenses",
+        "wann": "Le projet a un budget et des dépenses en cours.",
+        "schritte": [
+          "Onglet « Coûts » : le responsable saisit le plan par type de coût.",
+          "L'équipe saisit les dépenses réelles avec justificatif.",
+          "L'équipe financière valide (ou refuse).",
+          "Consulter prévu / réel / ouvert."
+        ],
+        "beispiel": "Plan « Impression » 150 €, facture réelle 168 € avec justificatif. Après validation, le réel est à 168 € ; l'écart plan/réel est de +18 €.",
+        "danach": "Les coûts validés alimentent le bilan annuel (« Résultat par projet ») et les KPI."
+      }
+    ],
+    "tipps": [
+      "Tâches et équipe restent toujours internes ; seule la tuile du projet devient visible pour les membres après « Publier ».",
+      "Les tâches en retard sont marquées en rouge et comptées dans les KPI des projets."
+    ],
+    "titre": "Espace de travail du projet"
+  },
+  "ueberblick": "Aperçu",
+  "workflows": "Procédures pas à pas",
+  "workflow_hinweis": "Ouvrez une procédure et cochez les étapes au fur et à mesure.",
+  "beispiel": "Exemple",
+  "danach": "Et ensuite ?",
+  "tipps": "Bon à savoir",
+  "fortschritt": "{{done}} étape(s) sur {{total}} terminée(s)",
+  "zuruecksetzen": "Réinitialiser",
+  "alle_fertig": "Terminé !",
+  "info": "Afficher l'aide",
+  "tip": {
+    "zahlung_bestaetigen": "Ne confirmez que si l'argent est réellement arrivé sur le compte. L'adhésion devient alors active, le membre est notifié et un reçu (PDF) est généré. Si la date du virement diffère, renseignez d'abord la date de transaction.",
+    "shop_bestaetigen": "Vérifiez l'encaissement sur le relevé puis confirmez. La commande peut ensuite être préparée et expédiée ; la facture (PDF) devient disponible.",
+    "ausgabe_freigeben": "Principe des quatre yeux : vous ne pouvez pas valider vos propres dépenses. Vérifiez montant, catégorie et justificatif. Un refus exige un motif ; la personne qui a saisi peut alors corriger. Seules les dépenses validées comptent dans le bilan et les KPI.",
+    "kosten": "Plan = coûts prévus par type (responsable du projet). Réel = dépenses validées par l'équipe financière avec justificatif. Ouvert = saisi mais pas encore validé. Les dépenses refusées ne comptent nulle part."
   }
 }

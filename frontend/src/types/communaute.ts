@@ -4,6 +4,8 @@
  * de changement de schéma.
  */
 
+import type { Uebersetzungen } from "../utils/uebersetzung";
+
 export type CategorieForum = "football_ca" | "vie_en_allemagne" | "emploi" | "general";
 
 export interface Auteur {
@@ -530,6 +532,8 @@ export interface TippspielTipPayload {
  * `date`/`lieu` (ajoutés le 2026-09-22, "Analog zum Modul Projekte eine Beschreibung zu
  * erfassen, das Datum und den Ort") : saisie libre à la création, distincts de `evenement`. */
 export interface Album {
+  /** DeepL-Übersetzungen der Textfelder (apps.uebersetzung), siehe utils/uebersetzung. */
+  uebersetzungen?: Uebersetzungen;
   id: string;
   nom: string;
   description: string;

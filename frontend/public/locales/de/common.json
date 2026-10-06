@@ -109,5 +109,32 @@
     "shop": "Empfohlen: Querformat 16:10, mindestens 1200 × 750 px (JPG, PNG oder WebP, max. 10 MB). Das Bild füllt die Kachel vollständig aus – wichtige Motive bitte mittig platzieren, die Ränder können leicht beschnitten werden.",
     "projekt": "Empfohlen: Querformat 16:9, mindestens 1280 × 720 px (JPG, PNG oder WebP, max. 10 MB). Das Bild füllt die Kachel vollständig aus – wichtige Motive bitte mittig platzieren, die Ränder können leicht beschnitten werden.",
     "veranstaltung": "Empfohlen: Querformat 16:9, mindestens 1280 × 720 px (JPG, PNG oder WebP, max. 10 MB). Das Bild füllt die Kachel vollständig aus; Titel und Datum liegen unten bzw. oben – bitte dort keine wichtigen Details platzieren."
+  },
+  "uebersetzung": {
+    "button": "Übersetzungen",
+    "titel": "Übersetzungen bearbeiten",
+    "erklaerung": "Beim Speichern übersetzt DeepL die Texte automatisch in die anderen Sprachen. Hier kannst du das Ergebnis prüfen und korrigieren; manuelle Korrekturen bleiben erhalten, solange der Originaltext unverändert ist.",
+    "inaktiv": "Die automatische Übersetzung ist nicht aktiv (DEEPL_API_KEY fehlt). Du kannst die Texte trotzdem manuell übersetzen.",
+    "original": "Original",
+    "automatisch": "automatisch",
+    "manuell": "manuell",
+    "speichern": "Speichern",
+    "neu": "Neu mit DeepL übersetzen",
+    "laeuft": "Läuft …",
+    "schliessen": "Schließen",
+    "gespeichert": "Gespeichert.",
+    "neu_fertig": "Neu übersetzt.",
+    "fehler": "Aktion fehlgeschlagen.",
+    "felder": {
+      "titre": "Titel",
+      "nom": "Name",
+      "description": "Beschreibung",
+      "description_html": "Beschreibung"
+    },
+    "sprachen": {
+      "de": "Deutsch",
+      "fr": "Français",
+      "ar": "العربية"
+    }
   }
 }

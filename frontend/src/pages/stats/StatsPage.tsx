@@ -21,6 +21,7 @@ import OngletEvenements from "../../components/stats/OngletEvenements";
 import OngletFinancier from "../../components/stats/OngletFinancier";
 import OngletFinances from "../../components/stats/OngletFinances";
 import OngletMembres from "../../components/stats/OngletMembres";
+import OngletPivot from "../../components/stats/OngletPivot";
 import OngletProjets from "../../components/stats/OngletProjets";
 import { exporterStatsExcel, exporterStatsPdf } from "../../api/stats";
 import { BUNDESLANDER, PAYS_MEMBRE } from "../../types/membre";
@@ -28,7 +29,7 @@ import type { StatsFiltres } from "../../types/stats";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { declencherTelechargement } from "../../utils/telechargement";
 
-type Onglet = "financier" | "bilan" | "membres" | "evenements" | "projets" | "finances";
+type Onglet = "financier" | "bilan" | "membres" | "evenements" | "projets" | "finances" | "pivot";
 
 const ANNEE_COURANTE = new Date().getFullYear();
 
@@ -240,25 +241,25 @@ export default function StatsPage() {
       {erreurExport && <p className="mb-2 text-xs text-status-dangerText">{erreurExport}</p>}
 
       <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/20">
-        {(["financier", "bilan", "membres", "evenements", "projets", "finances"] as const).map(
-          (o) => (
-            <button
-              key={o}
-              type="button"
-              onClick={() => {
-                setOnglet(o);
-                if (o !== "finances") setDrill(null);
-              }}
-              className={`px-3 py-2 text-sm font-medium ${
-                onglet === o
-                  ? "border-b-2 border-ca text-ca"
-                  : "text-text-tertiary hover:text-text-secondary"
-              }`}
-            >
-              {t(`onglets.${o}`)}
-            </button>
-          ),
-        )}
+        {(
+          ["financier", "bilan", "membres", "evenements", "projets", "finances", "pivot"] as const
+        ).map((o) => (
+          <button
+            key={o}
+            type="button"
+            onClick={() => {
+              setOnglet(o);
+              if (o !== "finances") setDrill(null);
+            }}
+            className={`px-3 py-2 text-sm font-medium ${
+              onglet === o
+                ? "border-b-2 border-ca text-ca"
+                : "text-text-tertiary hover:text-text-secondary"
+            }`}
+          >
+            {t(`onglets.${o}`)}
+          </button>
+        ))}
       </div>
 
       {onglet === "financier" && <OngletFinancier filtres={filtres} onDrill={ouvrirDetails} />}
@@ -266,6 +267,7 @@ export default function StatsPage() {
       {onglet === "membres" && <OngletMembres filtres={filtres} />}
       {onglet === "evenements" && <OngletEvenements filtres={filtres} />}
       {onglet === "projets" && <OngletProjets />}
+      {onglet === "pivot" && <OngletPivot />}
       {onglet === "finances" && (
         <OngletFinances filtres={filtres} drill={drill} onResetDrill={() => setDrill(null)} />
       )}

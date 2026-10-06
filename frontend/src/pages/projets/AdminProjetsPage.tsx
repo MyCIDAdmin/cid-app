@@ -45,6 +45,7 @@ import type {
   SichtbarkeitProjet,
   StatutProjet,
 } from "../../types/projets";
+import UebersetzungenButton from "../../components/ui/UebersetzungenButton";
 
 const STATUTS: StatutProjet[] = ["en_preparation", "en_cours", "termine", "annule"];
 const SICHTBARKEITEN: SichtbarkeitProjet[] = ["entwurf", "veroeffentlicht"];
@@ -502,6 +503,9 @@ export default function AdminProjetsPage() {
                 >
                   {t("rapport.voir")}
                 </button>
+                {modifiable && (
+                  <UebersetzungenButton modell="projets.projet" objektId={projet.id} />
+                )}
                 <button
                   type="button"
                   disabled={!modifiable}

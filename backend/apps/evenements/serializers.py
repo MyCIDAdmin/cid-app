@@ -12,6 +12,7 @@ from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 from apps.rbac.models import NiveauAcces
 from apps.rbac.services import est_membre_actif, has_admin_page_access
+from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import Covoiturage, Evenement, Inscription, ReservationCovoiturage, StatutEvenement
 
@@ -45,10 +46,13 @@ class EvenementSerializer(serializers.ModelSerializer):
     reserve_membres = serializers.SerializerMethodField()
     cout_applicable = serializers.SerializerMethodField()
 
+    uebersetzungen = UebersetzungenField()
+
     class Meta:
         model = Evenement
         fields = [
             "id",
+            "uebersetzungen",
             "titre",
             "type_evenement",
             "description",

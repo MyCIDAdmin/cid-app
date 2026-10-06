@@ -213,7 +213,13 @@
     "statut_label": "Status",
     "enregistrer": "Speichern",
     "annuler": "Abbrechen",
-    "erreur_modification": "Die Aktualisierung ist fehlgeschlagen."
+    "erreur_modification": "Die Aktualisierung ist fehlgeschlagen.",
+    "forme_V": "Sieg",
+    "forme_N": "Unentschieden",
+    "forme_D": "Niederlage",
+    "forme_kurz_V": "S",
+    "forme_kurz_N": "U",
+    "forme_kurz_D": "N"
   },
   "visionneuse": {
     "ouvrir": "Foto vergrößern",

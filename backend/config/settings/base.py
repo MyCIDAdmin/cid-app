@@ -60,6 +60,7 @@ LOCAL_APPS = [
     "apps.notifications",
     "apps.projets",
     "apps.rbac",
+    "apps.uebersetzung",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -359,6 +360,11 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 # classement complet avec répartition domicile/extérieur native, calendrier complet toutes
 # compétitions (198 rencontres) et statistiques individuelles par joueur (buts/passes/
 # cartons). Jamais de secret en dur dans le code (CLAUDE.md §8).
+# DeepL (automatische Übersetzung der Beschreibungstexte, apps.uebersetzung) : ohne Schlüssel
+# ist die Übersetzung inaktiv und die Oberfläche zeigt die Originaltexte. Schlüssel mit der
+# Endung ":fx" = kostenlose API, sonst Pro-API.
+DEEPL_API_KEY = os.environ.get("DEEPL_API_KEY", "")
+
 GOAL_API_KEY = os.environ.get("GOAL_API_KEY", "")
 # Identifiants GOAL API (CUID internes, pas des secrets) de la Ligue 1 tunisienne et de Club
 # Africain — confirmés par l'utilisateur via `/v1/countries/{id}/leagues` et la liste des

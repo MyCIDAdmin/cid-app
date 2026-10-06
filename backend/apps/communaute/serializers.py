@@ -9,6 +9,7 @@ from rest_framework import serializers
 
 from apps.accounts.models import ROLE_LEVELS
 from apps.membres.models import Membre, StatutMembre
+from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import (
     MODULES_AVEC_ARRIERE_PLAN,
@@ -653,7 +654,40 @@ class MatchCommentaireSerializer(serializers.ModelSerializer):
 
 
 class ClassementLigueSerializer(serializers.ModelSerializer):
-    """Lecture seule — toujours synchronisé depuis GOAL API, voir services.py."""
+    """Lecture seule — toujours synchronisé depuis GOAL API, voir services.py.
+
+    `forme_recente` (2026-10-06, "Spalte Form ist leer") : GOAL API ne l'expose pas sur
+    l'endpoint standings. Elle est donc DÉDUITE des rencontres terminées en base
+    (`RencontreCalendrier`, calendrier de l'équipe suivie) : cinq derniers résultats V/N/D, le
+    plus récent en dernier. Une équipe n'est renseignée que si la base couvre toutes ses
+    cinq dernières rencontres (sinon une forme partielle, p. ex. seulement les matchs contre
+    l'équipe suivie, serait trompeuse) — la colonne reste alors vide plutôt qu'inventée."""
+
+    forme_recente = serializers.SerializerMethodField()
+
+    def get_forme_recente(self, obj) -> str:
+        if obj.forme_recente:
+            return obj.forme_recente
+        formes = self.context.get("_formes_par_equipe")
+        if formes is None:
+            formes = {}
+            termines = RencontreCalendrier.objects.filter(
+                statut=StatutRencontre.TERMINEE,
+                score_domicile__isnull=False,
+                score_exterieur__isnull=False,
+            ).order_by("date_heure")
+            for r in termines:
+                for equipe, pour, contre in (
+                    (r.equipe_domicile, r.score_domicile, r.score_exterieur),
+                    (r.equipe_exterieur, r.score_exterieur, r.score_domicile),
+                ):
+                    code = "V" if pour > contre else ("N" if pour == contre else "D")
+                    formes.setdefault(equipe.strip().lower(), []).append(code)
+            self.context["_formes_par_equipe"] = formes
+        resultats = formes.get(obj.equipe.strip().lower(), [])
+        if len(resultats) < min(5, obj.joues or 5):
+            return ""
+        return "".join(resultats[-5:])
 
     class Meta:
         model = ClassementLigue
@@ -820,10 +854,13 @@ class AlbumSerializer(serializers.ModelSerializer):
     # lui-même, voir sa docstring.
     photo_couverture = serializers.SerializerMethodField()
 
+    uebersetzungen = UebersetzungenField()
+
     class Meta:
         model = Album
         fields = [
             "id",
+            "uebersetzungen",
             "nom",
             "description",
             "date",

@@ -65,6 +65,50 @@
       "Die Liste der ausstehenden Zahlungen ansehen.",
       "Sobald das Geld eingegangen ist, die Zahlung als bezahlt bestätigen; ein Beleg wird erzeugt.",
       "Falsche oder doppelte Zahlungen lassen sich stornieren."
+    ],
+    "workflows": [
+      {
+        "titre": "Überweisung bestätigen (SEPA)",
+        "wann": "Ein Mitglied hat per Überweisung bezahlt und das Geld ist auf dem Vereinskonto eingegangen.",
+        "schritte": [
+          "Im Kontoauszug den Eingang suchen und Betrag sowie Verwendungszweck notieren.",
+          "In der Liste den Status-Reiter „Ausstehend“ wählen und über die Suche den Namen oder die Referenz finden.",
+          "Prüfen: Betrag und Verwendungszweck stimmen mit der Zeile überein.",
+          "Bei abweichendem Überweisungsdatum das „Transaktionsdatum“ eintragen (sonst gilt heute).",
+          "Auf „Als bezahlt markieren“ klicken."
+        ],
+        "beispiel": "Amira überweist am 28.09. 45 € für „Mitgliedschaft Gold 2026“. Am 30.09. siehst du den Eingang. Du suchst „Amira“, trägst als Transaktionsdatum 28.09. ein und bestätigst.",
+        "danach": "Der Status wechselt auf „Bezahlt“, die Mitgliedschaft wird aktiv, das Mitglied wird benachrichtigt und kann den Beleg (PDF) herunterladen. In der Liste erscheint die Schaltfläche „Beleg“."
+      },
+      {
+        "titre": "Shop-Bestellung bezahlt melden",
+        "wann": "Eine Bestellung im Vereinsshop wurde bezahlt.",
+        "schritte": [
+          "Im Bereich „Zahlungen aus dem Shop“ die Bestellung über Nummer oder Namen suchen.",
+          "Zahlungseingang im Kontoauszug prüfen.",
+          "Zahlung bestätigen; danach kann die Bestellung vorbereitet und versendet werden.",
+          "Bei Bedarf über „Rechnung“ das PDF öffnen."
+        ],
+        "beispiel": "Bestellung CID-2026-0042 (Trikot, 59 €): Eingang am Kontoauszug gefunden, bestätigt. Der Status der Bestellung geht auf „Bezahlt“, das Lager sieht sie als nächste zu packende Bestellung.",
+        "danach": "Bestätigte Shop-Zahlungen zählen sofort in den Finanz-KPIs und der Jahresbilanz."
+      },
+      {
+        "titre": "Falsche oder doppelte Zahlung korrigieren",
+        "wann": "Ein Beitrag wurde versehentlich bestätigt oder zweimal erfasst.",
+        "schritte": [
+          "Beitrag in der Liste suchen (Status „Alle“ wählen).",
+          "„Verlauf anzeigen“ öffnen und prüfen, wer wann welchen Status gesetzt hat.",
+          "Unter „Status ändern“ den neuen Status wählen (z. B. Storniert) und einen Grund angeben.",
+          "Speichern."
+        ],
+        "beispiel": "Karim wurde zweimal als „Bezahlt“ erfasst. Du stornierst die zweite Zeile mit dem Grund „Doppelt erfasst“.",
+        "danach": "Jede Änderung steht mit Person, Zeit und Grund im Verlauf; die KPIs rechnen sich automatisch neu."
+      }
+    ],
+    "tipps": [
+      "Die Filter (Suche, Artikeltyp, Zahlungsmethode, Zeitraum) lassen sich kombinieren; „Excel exportieren“ exportiert genau die gefilterte Liste.",
+      "Belege (PDF) hängen direkt an bezahlten Zeilen: bei Beiträgen „Beleg“, bei Shop-Bestellungen „Rechnung“.",
+      "Bestätige eine Zahlung erst, wenn das Geld wirklich auf dem Konto ist — der Beleg geht automatisch an das Mitglied."
     ]
   },
   "relances": {
@@ -156,10 +200,53 @@
       "Im Reiter „Protokoll“ sehen Sie lückenlos, wer wann was geändert hat.",
       "Im Reiter „Prüfung“ finden Kassenprüfende Eckzahlen, Ausgaben ohne Beleg und große Beträge, nur lesend.",
       "Im Reiter „Jahresabschluss“ sperren Sie ein Jahr, sobald alle Ausgaben entschieden sind. Wiedereröffnen kann nur der Administrator App."
+    ],
+    "workflows": [
+      {
+        "titre": "Ausgabe erfassen und freigeben",
+        "wann": "Der Verein hat Geld ausgegeben (z. B. Saalmiete, Material).",
+        "schritte": [
+          "Reiter „Ausgaben“ → „Neue Ausgabe“.",
+          "Datum, Betrag, Kategorie und Lieferant eintragen; optional Veranstaltung oder Projekt zuordnen.",
+          "Beleg (Foto oder PDF) hochladen.",
+          "Speichern — die Ausgabe wartet nun auf Freigabe.",
+          "Eine zweite Person mit Schreibrecht öffnet die Ausgabe, prüft Beleg und Betrag und gibt frei oder lehnt mit Begründung ab."
+        ],
+        "beispiel": "Saalmiete für das Sommerfest: 320 € am 14.07., Kategorie „Veranstaltungen“, Lieferant „Stadthalle“, Beleg als PDF, zugeordnet zum Event „Sommerfest 2026“. Die Schatzmeisterin prüft und gibt frei.",
+        "danach": "Erst freigegebene Ausgaben zählen in Bilanz, KPIs, Budget-Ist und im Plan/Ist des zugeordneten Projekts."
+      },
+      {
+        "titre": "Jahresbudget planen",
+        "wann": "Zu Jahresbeginn oder bei Änderungen der Planung.",
+        "schritte": [
+          "Reiter „Budget“ öffnen und das Jahr wählen.",
+          "Optional das Gesamtbudget eintragen.",
+          "Pro Kategorie den Jahresbetrag setzen.",
+          "Speichern; Ist-Werte und Ampel erscheinen automatisch in der Jahresbilanz."
+        ],
+        "beispiel": "Kategorie „Veranstaltungen“: 5.000 € für 2026. Bei 4.100 € Ist steht die Ampel auf „Achtung“ (ab 80 % des Budgets).",
+        "danach": "Unter Statistiken & KPIs → Jahresbilanz siehst du Budget gegen Ist je Kategorie."
+      },
+      {
+        "titre": "Jahresabschluss durchführen",
+        "wann": "Alle Ausgaben des Jahres sind entschieden.",
+        "schritte": [
+          "Reiter „Ausgaben“: Es dürfen keine Ausgaben mehr auf Freigabe warten.",
+          "Reiter „Prüfung“: Ausgaben ohne Beleg und große Beträge ansehen.",
+          "Reiter „Jahresabschluss“ → Jahr sperren.",
+          "Optional in Statistiken & KPIs die Jahresbilanz (PDF/Excel) und die Buchungsliste (CSV) für den Steuerberater exportieren."
+        ],
+        "beispiel": "Anfang Januar sperrst du 2025. Danach sind Änderungen an Ausgaben von 2025 nicht mehr möglich; nur der Administrator App kann das Jahr wieder öffnen.",
+        "danach": "Das Protokoll hält die Sperrung mit Person und Zeitpunkt fest."
+      }
+    ],
+    "tipps": [
+      "Eine Ausgabe, die jemand selbst erfasst hat, kann er in der Regel nicht selbst freigeben (Vier-Augen-Prinzip).",
+      "Abgelehnte Ausgaben lassen sich korrigieren und gehen dann erneut zur Freigabe.",
+      "Alle Berichte (PDF, Excel, CSV) sind standardmäßig auf Deutsch."
     ]
   },
   "arbeitsbereich": {
-    "titel": "Projekt-Arbeitsbereich",
     "intro": "Hier plant das Projektteam Aufgaben, Team und Fortschritt. Nur Team und Verwaltung sehen diesen Bereich.",
     "schritte": [
       "Im Reiter „Aufgaben“ Aufgaben anlegen und per Drag-and-drop (oder über das Statusfeld) zwischen Offen, In Arbeit, Review und Erledigt verschieben.",
@@ -167,6 +254,64 @@
       "Im Reiter „Team“ legt die Projektleitung fest, wer mitarbeitet oder nur lesen darf (Beobachter).",
       "Im Reiter „Kosten“ plant die Projektleitung Beträge je Kostenart; das Team erfasst echte Ausgaben mit Beleg. Sie zählen erst nach Freigabe durch das Finanzteam und erscheinen dann im Plan/Ist-Vergleich.",
       "Ein Projekt ist zuerst ein Entwurf. Mit „Veröffentlichen“ wird die Kachel für alle Mitglieder sichtbar; Aufgaben und Team bleiben immer intern."
-    ]
+    ],
+    "workflows": [
+      {
+        "titre": "Aufgaben planen und verteilen",
+        "wann": "Das Projektteam startet in eine neue Phase.",
+        "schritte": [
+          "Reiter „Aufgaben“ → neue Aufgabe anlegen (Titel, Beschreibung).",
+          "Verantwortliche Person und Frist setzen.",
+          "Aufgabe per Drag-and-drop (oder Statusfeld) von „Offen“ nach „In Arbeit“, „Review“ und „Erledigt“ ziehen.",
+          "Im Kommentarfeld Rückfragen klären."
+        ],
+        "beispiel": "Aufgabe „Plakat drucken“, verantwortlich Sami, Frist 15.10. Sami bekommt eine Benachrichtigung und kurz vor dem 15.10. eine Erinnerung.",
+        "danach": "Der Aufgabenfortschritt (erledigt/gesamt) erscheint auf der Projektseite und in Statistiken & KPIs → Projekte."
+      },
+      {
+        "titre": "Team zusammenstellen",
+        "wann": "Das Projekt braucht weitere Mitarbeitende oder Zuschauer.",
+        "schritte": [
+          "Reiter „Team“ öffnen (nur Projektleitung).",
+          "Mitglied suchen und hinzufügen.",
+          "Rolle wählen: Mitarbeit (darf Aufgaben bearbeiten) oder Beobachter (nur lesen)."
+        ],
+        "beispiel": "Lina soll nur mitlesen: Rolle „Beobachter“. Tarek arbeitet mit: Rolle „Mitarbeit“.",
+        "danach": "Hinzugefügte Personen sehen den Arbeitsbereich und werden bei Zuweisungen benachrichtigt."
+      },
+      {
+        "titre": "Kosten planen und Ausgaben erfassen",
+        "wann": "Das Projekt hat ein Budget und laufende Ausgaben.",
+        "schritte": [
+          "Reiter „Kosten“: Die Projektleitung trägt den Plan je Kostenart ein.",
+          "Das Team erfasst echte Ausgaben mit Beleg.",
+          "Das Finanzteam gibt frei (oder lehnt ab).",
+          "Plan/Ist/Offen ansehen."
+        ],
+        "beispiel": "Plan „Druck“ 150 €, tatsächliche Rechnung 168 € mit Beleg. Nach Freigabe steht Ist bei 168 €; der Plan/Ist-Vergleich zeigt +18 €.",
+        "danach": "Freigegebene Kosten fließen in Jahresbilanz („Ergebnis je Projekt“) und KPIs."
+      }
+    ],
+    "tipps": [
+      "Aufgaben und Team bleiben immer intern; nur die Projektkachel wird mit „Veröffentlichen“ für Mitglieder sichtbar.",
+      "Überfällige Aufgaben werden rot markiert und in den Projekt-KPIs gezählt."
+    ],
+    "titre": "Projekt-Arbeitsbereich"
+  },
+  "ueberblick": "Überblick",
+  "workflows": "Abläufe Schritt für Schritt",
+  "workflow_hinweis": "Öffne einen Ablauf und hake die Schritte ab, während du sie erledigst.",
+  "beispiel": "Beispiel",
+  "danach": "Und danach?",
+  "tipps": "Gut zu wissen",
+  "fortschritt": "{{done}} von {{total}} Schritten erledigt",
+  "zuruecksetzen": "Zurücksetzen",
+  "alle_fertig": "Geschafft!",
+  "info": "Hinweis anzeigen",
+  "tip": {
+    "zahlung_bestaetigen": "Bestätige nur, wenn das Geld wirklich auf dem Vereinskonto eingegangen ist. Danach wird die Mitgliedschaft aktiv, das Mitglied benachrichtigt und ein Beleg (PDF) erzeugt. Bei abweichendem Überweisungsdatum zuerst das Transaktionsdatum eintragen.",
+    "shop_bestaetigen": "Zahlungseingang im Kontoauszug prüfen, dann bestätigen. Erst danach kann die Bestellung vorbereitet und versendet werden; die Rechnung (PDF) ist danach abrufbar.",
+    "ausgabe_freigeben": "Vier-Augen-Prinzip: Eigene Ausgaben kannst du nicht selbst freigeben. Prüfe Betrag, Kategorie und Beleg. Beim Ablehnen ist eine Begründung nötig; die erfassende Person kann die Ausgabe dann korrigieren. Erst freigegebene Ausgaben zählen in Bilanz und KPIs.",
+    "kosten": "Plan = geplante Kosten je Kostenart (Projektleitung). Ist = vom Finanzteam freigegebene Ausgaben mit Beleg. Offen = erfasst, aber noch nicht freigegeben. Abgelehnte Ausgaben zählen nirgends."
   }
 }

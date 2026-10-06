@@ -28,9 +28,11 @@ import {
   useSupprimerPhoto,
   useUploaderPhoto,
 } from "../../hooks/useCommunaute";
+import BildHinweis from "../../components/ui/BildHinweis";
 import { usePageAccess } from "../../hooks/useRbac";
 import type { Album, AlbumPayload } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import UebersetzungenButton from "../../components/ui/UebersetzungenButton";
 
 const FORMULAIRE_VIDE: AlbumPayload = {
   nom: "",
@@ -174,7 +176,7 @@ function FormulaireAlbum({
                 <button
                   type="button"
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   onClick={() => supprimerPhoto.mutate(photo.id)}
                   aria-label={t("admin_albums.supprimer") ?? ""}
                   className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl bg-black/60 text-[10px] text-white disabled:opacity-40"
@@ -190,11 +192,12 @@ function FormulaireAlbum({
           accept="image/jpeg,image/png,image/webp"
           multiple
           disabled={!modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           aria-label={t("admin_albums.ajouter_images") ?? ""}
           onChange={(e) => setNouvellesImages(Array.from(e.target.files ?? []))}
           className="block w-full text-xs text-text-secondary disabled:opacity-40"
         />
+        <BildHinweis variante="projekt" className="mt-1" />
       </div>
 
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
@@ -210,7 +213,7 @@ function FormulaireAlbum({
         <button
           type="submit"
           disabled={enCours || !modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
         >
           {album ? t("admin_albums.enregistrer") : t("admin_albums.nouvel_album")}
@@ -263,7 +266,7 @@ export default function AdminAlbumsPage() {
           <button
             type="button"
             disabled={!modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             onClick={ouvrirCreation}
             className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
           >
@@ -280,13 +283,19 @@ export default function AdminAlbumsPage() {
 
       {afficherFormulaire && (
         <div className="mb-5">
-          <FormulaireAlbum album={albumEnEdition} onTermine={fermerFormulaire} modifiable={modifiable} />
+          <FormulaireAlbum
+            album={albumEnEdition}
+            onTermine={fermerFormulaire}
+            modifiable={modifiable}
+          />
         </div>
       )}
 
       {erreurAction && <p className="mb-2 text-xs text-status-dangerText">{erreurAction}</p>}
 
-      {albumsQuery.isLoading && <p className="text-sm text-text-tertiary">{t("albums.chargement")}</p>}
+      {albumsQuery.isLoading && (
+        <p className="text-sm text-text-tertiary">{t("albums.chargement")}</p>
+      )}
       {albumsQuery.data?.results.length === 0 && (
         <p className="text-sm text-text-tertiary">{t("albums.aucun_album")}</p>
       )}
@@ -310,10 +319,13 @@ export default function AdminAlbumsPage() {
                 >
                   {t("admin_albums.voir")}
                 </Link>
+                {modifiable && (
+                  <UebersetzungenButton modell="communaute.album" objektId={album.id} />
+                )}
                 <button
                   type="button"
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   onClick={() => ouvrirEdition(album)}
                   className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
                 >
@@ -322,7 +334,7 @@ export default function AdminAlbumsPage() {
                 <button
                   type="button"
                   disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   onClick={() => setAlbumASupprimer(album)}
                   className="rounded-cid px-3 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerBg disabled:opacity-40"
                 >

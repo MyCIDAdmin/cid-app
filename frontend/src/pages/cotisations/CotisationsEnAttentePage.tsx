@@ -51,7 +51,8 @@
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { exporterCotisationsExcel } from "../../api/cotisations";
+import { exporterCotisationsExcel, telechargerRecuCotisation } from "../../api/cotisations";
+import BelegButton from "../../components/cotisations/BelegButton";
 import { useMembre } from "../../hooks/useMembres";
 import { usePageAccess } from "../../hooks/useRbac";
 import {
@@ -77,6 +78,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
 import ShopZahlungenPanel from "../../components/cotisations/ShopZahlungenPanel";
 import TippspielZahlungenPanel from "../../components/cotisations/TippspielZahlungenPanel";
+import InfoTip from "../../components/ui/InfoTip";
 
 /**
  * Types proposés par le formulaire "Barzahlung eintragen" (PaiementEspecesForm ci-dessous) —
@@ -259,6 +261,7 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
                   ? t("en_attente_paiement.en_cours")
                   : t("en_attente_paiement.confirmer")}
               </button>
+              <InfoTip k="zahlung_bestaetigen" />
             </div>
           )}
           {marquerPayeeMutation.isError && (
@@ -268,6 +271,15 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
                 t("en_attente_paiement.erreur_action"),
               )}
             </p>
+          )}
+
+          {cotisation.statut === "payee" && (
+            <div className="mb-2">
+              <BelegButton
+                holen={() => telechargerRecuCotisation(cotisation.id)}
+                dateiname={`beleg-${cotisation.reference_transaction ?? cotisation.id}.pdf`}
+              />
+            </div>
           )}
 
           <div className="flex flex-wrap items-center gap-1">

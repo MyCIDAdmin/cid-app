@@ -254,7 +254,7 @@ def abschluss_info(annee: int, resultat_aktuell: Decimal) -> dict:
     }
 
 
-def ecritures_comptables(annee: int) -> list:
+def ecritures_comptables(annee: int, langue: str = "de") -> list:
     """Buchungsliste des Jahres (Einnahmen + freigegebene Ausgaben) — dieselben Quellen und
     Regeln wie recettes_mensuelles/bilan_annuel, damit die Summe der Liste exakt dem Bilan
     entspricht (Steuerberater-CSV)."""
@@ -343,7 +343,7 @@ def ecritures_comptables(annee: int) -> list:
         add(
             d.date_depense,
             "Ausgabe",
-            d.categorie.nom,
+            d.categorie.namen.get(langue) or d.categorie.nom,
             d.description or d.fournisseur,
             d.fournisseur,
             -d.montant,

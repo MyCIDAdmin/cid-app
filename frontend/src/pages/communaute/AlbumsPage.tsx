@@ -22,6 +22,7 @@ import { Link } from "react-router-dom";
 
 import ShareButton from "../../components/ui/ShareButton";
 import { useAlbums } from "../../hooks/useCommunaute";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 export default function AlbumsPage() {
   const { t } = useTranslation("communaute");
@@ -41,7 +42,7 @@ export default function AlbumsPage() {
         <p className="text-sm text-text-tertiary">{t("albums.aucun_album")}</p>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
         {albumsQuery.data?.results.map((album) => (
           <div key={album.id} className="relative">
             <Link
@@ -52,11 +53,13 @@ export default function AlbumsPage() {
                 <img
                   src={album.photo_couverture}
                   alt=""
-                  className="h-24 w-full object-cover sm:h-28"
+                  className="aspect-video w-full object-cover"
                 />
               )}
               <div className="p-3">
-                <div className="pr-6 text-sm font-bold text-text-primary">{album.nom}</div>
+                <div className="pr-6 text-sm font-bold text-text-primary">
+                  {uebersetzt(album, "nom")}
+                </div>
                 {album.evenement && (
                   <div className="text-xs text-text-tertiary">{album.evenement.titre}</div>
                 )}

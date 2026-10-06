@@ -7,6 +7,8 @@
 /** "bon_achat" (demande utilisateur du 2026-09-23, "Gutschein soll als Kategorie im shop
  * auftauchen") : catégorie du produit-bon-d'achat intégré au catalogue — voir TypeProduit
  * ci-dessous pour la distinction structurelle (montant libre, sans stock). */
+import type { Uebersetzungen } from "../utils/uebersetzung";
+
 export type CategorieProduit =
   "vetements" | "accessoires" | "articles_club" | "cartes_docs" | "divers" | "bon_achat";
 
@@ -104,6 +106,8 @@ export interface ProduitImagePayload {
 }
 
 export interface Produit {
+  /** DeepL-Übersetzungen der Textfelder (apps.uebersetzung), siehe utils/uebersetzung. */
+  uebersetzungen?: Uebersetzungen;
   id: string;
   nom: string;
   categorie: CategorieProduit;

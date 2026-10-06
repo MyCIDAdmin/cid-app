@@ -237,6 +237,7 @@
     "paiement": "Paiement",
     "non_paye": "En attente",
     "mode": "Mode de paiement",
-    "confirmer": "Confirmer"
+    "confirmer": "Confirmer",
+    "rechnung": "Facture"
   }
 }

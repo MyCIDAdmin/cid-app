@@ -4,6 +4,8 @@
  * changement de schéma.
  */
 
+import type { Uebersetzungen } from "../utils/uebersetzung";
+
 export type StatutCampagne = "brouillon" | "publiee" | "cloturee";
 
 export type StatutSouscription =
@@ -52,6 +54,8 @@ export type CouleurOffre = "" | "cat_1" | "cat_2" | "cat_3";
 export type KartenStil = "weiss" | "silber" | "gold" | "diamant" | "bronze" | "onyx" | "rubin";
 
 export interface OffreAdhesion {
+  /** DeepL-Übersetzungen der Textfelder (apps.uebersetzung), siehe utils/uebersetzung. */
+  uebersetzungen?: Uebersetzungen;
   id: string;
   campagne: string;
   nom: string;
@@ -74,6 +78,8 @@ export interface OffreAdhesion {
 }
 
 export interface CampagneAdhesion {
+  /** DeepL-Übersetzungen der Textfelder (apps.uebersetzung), siehe utils/uebersetzung. */
+  uebersetzungen?: Uebersetzungen;
   id: string;
   nom: string;
   annee: number;

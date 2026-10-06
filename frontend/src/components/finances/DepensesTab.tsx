@@ -13,6 +13,7 @@ import type { Depense, StatutDepense } from "../../types/finances";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { kategorieName } from "../../utils/kategorie";
 import DepenseFormModal from "./DepenseFormModal";
+import InfoTip from "../ui/InfoTip";
 
 const CLASSE_STATUT: Record<StatutDepense, string> = {
   en_attente: "bg-status-warningBg text-status-warningText",
@@ -198,6 +199,7 @@ export default function DepensesTab({ modifiable }: { modifiable: boolean }) {
                             >
                               {t("rejeter")}
                             </button>
+                            <InfoTip k="ausgabe_freigeben" />
                           </>
                         )}
                         {modifiable && d.statut === "en_attente" && eigene && (

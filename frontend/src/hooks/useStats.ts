@@ -4,7 +4,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import * as statsApi from "../api/stats";
-import type { StatsFiltres, TypeTransaction } from "../types/stats";
+import type { PivotAbfrage, StatsFiltres, TypeTransaction } from "../types/stats";
 
 type FiltresMembres = Pick<
   StatsFiltres,
@@ -20,6 +20,7 @@ const statsKeys = {
   projets: () => [...statsKeys.all, "projets"] as const,
   evenements: (filtres: StatsFiltres) => [...statsKeys.all, "evenements", filtres] as const,
   bilan: (annee: number) => [...statsKeys.all, "bilan", annee] as const,
+  pivot: (abfrage: PivotAbfrage) => [...statsKeys.all, "pivot", abfrage] as const,
   finances: (filtres: FiltresFinances) => [...statsKeys.all, "finances", filtres] as const,
 };
 
@@ -64,4 +65,11 @@ export function useStatsBilan(annee: number) {
 
 export function useStatsProjets() {
   return useQuery({ queryKey: statsKeys.projets(), queryFn: () => statsApi.getStatsProjets() });
+}
+
+export function useStatsPivot(abfrage: PivotAbfrage) {
+  return useQuery({
+    queryKey: statsKeys.pivot(abfrage),
+    queryFn: () => statsApi.getStatsPivot(abfrage),
+  });
 }

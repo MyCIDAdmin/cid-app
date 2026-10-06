@@ -34,6 +34,7 @@ import { usePageAccess } from "../../hooks/useRbac";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Photo } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
@@ -122,7 +123,7 @@ function PhotoCarte({
               <button
                 type="button"
                 disabled={!moderationModifiable}
-                title={!moderationModifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                title={!moderationModifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 onClick={() => masquer.mutate(photo.id)}
                 className="hover:underline disabled:opacity-40"
               >
@@ -189,25 +190,33 @@ export default function AlbumDetailPage() {
       {albumQuery.data && (
         <div className="mb-4 flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="text-lg font-bold text-text-primary">{albumQuery.data.nom}</h1>
+            <h1 className="text-lg font-bold text-text-primary">
+              {uebersetzt(albumQuery.data, "nom")}
+            </h1>
             {(albumQuery.data.date || albumQuery.data.lieu) && (
               <p className="text-xs text-text-tertiary">
                 {[albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ")}
               </p>
             )}
             {albumQuery.data.description && (
-              <p className="text-sm text-text-tertiary">{albumQuery.data.description}</p>
+              <p className="text-sm text-text-tertiary">
+                {uebersetzt(albumQuery.data, "description")}
+              </p>
             )}
           </div>
           <ShareButton
             path={`/albums/${albumQuery.data.id}`}
             titre={albumQuery.data.nom}
-            texte={[albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ") || undefined}
+            texte={
+              [albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ") || undefined
+            }
           />
         </div>
       )}
 
-      {photosQuery.isLoading && <p className="text-sm text-text-tertiary">{t("albums.chargement")}</p>}
+      {photosQuery.isLoading && (
+        <p className="text-sm text-text-tertiary">{t("albums.chargement")}</p>
+      )}
       {photos.length === 0 && !photosQuery.isLoading && (
         <p className="text-sm text-text-tertiary">{t("albums.aucune_photo")}</p>
       )}
@@ -225,7 +234,9 @@ export default function AlbumDetailPage() {
       </div>
 
       {albumQuery.data && (
-        <p className="mt-2 text-[10px] text-text-tertiary">{formatDate(albumQuery.data.created_at)}</p>
+        <p className="mt-2 text-[10px] text-text-tertiary">
+          {formatDate(albumQuery.data.created_at)}
+        </p>
       )}
 
       {indexOuvert !== null && (

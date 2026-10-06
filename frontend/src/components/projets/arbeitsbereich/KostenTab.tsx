@@ -16,6 +16,7 @@ import { extractApiErrorMessage } from "../../../utils/apiError";
 import { kategorieName } from "../../../utils/kategorie";
 import ConfirmDialog from "../../ui/ConfirmDialog";
 import KostenFormModal from "./KostenFormModal";
+import InfoTip from "../../ui/InfoTip";
 
 const CLASSE_STATUT: Record<StatutKosten, string> = {
   en_attente: "bg-status-warningBg text-status-warningText",
@@ -105,7 +106,10 @@ export default function KostenTab({
           </div>
         ))}
       </div>
-      <p className="text-xs text-text-tertiary">{t("arbeitsbereich.kosten.hinweis_freigabe")}</p>
+      <p className="flex items-center gap-2 text-xs text-text-tertiary">
+        {t("arbeitsbereich.kosten.hinweis_freigabe")}
+        <InfoTip k="kosten" />
+      </p>
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
 
       <section className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">

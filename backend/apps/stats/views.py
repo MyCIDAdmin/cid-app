@@ -37,9 +37,11 @@ from apps.membres.utils_http import xlsx_response
 from .bilan import bilan_annuel, ecritures_comptables
 from .exports import construire_classeur_dashboard
 from .exports_bilan import construire_classeur_bilan, construire_csv_buchungen
+from .i18n import langue_aus_anfrage
 from .pdf import generate_dashboard_pdf
 from .pdf_bilan import generate_bilan_pdf
 from .permissions import StatsPermission
+from .pivot import DIMENSIONEN, KENNZAHLEN, pivot_berechnen, pivot_csv, pivot_excel
 from .services import (
     TYPES_TRANSACTION,
     finances_liste,
@@ -140,24 +142,36 @@ class StatsFinancesView(BaseStatsView):
 
 
 _LIBELLES_FILTRES = {
-    "ville": "Ville",
-    "statut": "Statut",
-    "land": "Bundesland",
-    "pays": "Pays",
-    "date_adhesion_apres": "Adhésion après",
-    "date_adhesion_avant": "Adhésion avant",
+    "de": {
+        "jahr": "Jahr",
+        "ville": "Stadt",
+        "statut": "Status",
+        "land": "Bundesland",
+        "pays": "Land",
+        "date_adhesion_apres": "Mitglied seit nach",
+        "date_adhesion_avant": "Mitglied seit vor",
+    },
+    "fr": {
+        "jahr": "Année",
+        "ville": "Ville",
+        "statut": "Statut",
+        "land": "Bundesland",
+        "pays": "Pays",
+        "date_adhesion_apres": "Adhésion après",
+        "date_adhesion_avant": "Adhésion avant",
+    },
 }
 
 
-def _libelle_filtres(request) -> str:
-    """Résumé textuel des filtres actifs, affiché en sous-titre du PDF (voir
-    apps.stats.pdf.generate_dashboard_pdf) — construit ici plutôt que dans pdf.py, qui ne connaît
-    pas les paramètres de requête bruts."""
+def _libelle_filtres(request, langue="de") -> str:
+    """Textuelle Zusammenfassung der aktiven Filter (Untertitel des PDF) — hier statt in pdf.py,
+    weil dort die rohen Abfrageparameter nicht bekannt sind."""
+    lib = _LIBELLES_FILTRES[langue]
     annee = _annee_depuis_requete(request)
-    morceaux = [f"Année {annee}"] if annee else []
+    morceaux = [f"{lib['jahr']} {annee}"] if annee else []
     for cle, valeur in BaseStatsView()._filtres_communs(request).items():
         if valeur:
-            morceaux.append(f"{_LIBELLES_FILTRES[cle]} : {valeur}")
+            morceaux.append(f"{lib[cle]}: {valeur}")
     return " — ".join(morceaux) if morceaux else "—"
 
 
@@ -170,6 +184,8 @@ class StatsExportExcelView(BaseStatsView):
             kpis_membres=kpis_membres(**filtres),
             kpis_evenements=kpis_evenements(annee=annee, **filtres),
             finances=finances_liste(annee=annee, **filtres),
+            kpis_projets=kpis_projets(),
+            langue=langue_aus_anfrage(request),
         )
         nom_fichier = f"dashboard_stats_{annee or ''}.xlsx".replace("__", "_")
         return xlsx_response(classeur, nom_fichier)
@@ -179,12 +195,17 @@ class StatsExportPdfView(BaseStatsView):
     def get(self, request):
         annee = _annee_depuis_requete(request)
         filtres = self._filtres_communs(request)
+        langue = langue_aus_anfrage(request)
         pdf_bytes = generate_dashboard_pdf(
             kpis_financier=kpis_financier(annee=annee, **filtres),
             kpis_membres=kpis_membres(**filtres),
             kpis_evenements=kpis_evenements(annee=annee, **filtres),
             user=request.user,
-            filtres_affiches=_libelle_filtres(request),
+            filtres_affiches=_libelle_filtres(request, langue),
+            langue=langue,
+            kpis_projets=kpis_projets(),
+            finances=finances_liste(annee=annee, **filtres),
+            mensuel=bilan_annuel(annee or timezone.localdate().year)["mensuel"],
         )
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = 'attachment; filename="dashboard_stats.pdf"'
@@ -210,14 +231,18 @@ class StatsExportBilanExcelView(BaseStatsView):
         depenses = Depense.objects.filter(date_depense__year=annee).select_related(
             "categorie", "evenement", "projet", "saisie_par", "decide_par"
         )
-        classeur = construire_classeur_bilan(bilan_annuel(annee), depenses)
+        classeur = construire_classeur_bilan(
+            bilan_annuel(annee), depenses, langue_aus_anfrage(request)
+        )
         return xlsx_response(classeur, f"jahresbilanz_{annee}.xlsx")
 
 
 class StatsExportBilanPdfView(BaseStatsView):
     def get(self, request):
         annee = _annee_obligatoire(request)
-        pdf_bytes = generate_bilan_pdf(bilan=bilan_annuel(annee), user=request.user)
+        pdf_bytes = generate_bilan_pdf(
+            bilan=bilan_annuel(annee), user=request.user, langue=langue_aus_anfrage(request)
+        )
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="jahresbilanz_{annee}.pdf"'
         return response
@@ -228,7 +253,65 @@ class StatsExportBuchungenCsvView(BaseStatsView):
 
     def get(self, request):
         annee = _annee_obligatoire(request)
-        contenu = construire_csv_buchungen(ecritures_comptables(annee))
+        langue = langue_aus_anfrage(request)
+        contenu = construire_csv_buchungen(ecritures_comptables(annee, langue), langue)
         response = HttpResponse(contenu, content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = f'attachment; filename="buchungen_{annee}.csv"'
         return response
+
+
+def _pivot_aus_anfrage(request):
+    q = request.query_params
+    zeilen = q.get("zeilen") or "kategorie"
+    spalten = q.get("spalten") or None
+    kennzahl = q.get("kennzahl") or "betrag"
+    if zeilen not in DIMENSIONEN:
+        raise ValidationError({"zeilen": "Unbekannte Dimension."})
+    if spalten and spalten not in DIMENSIONEN:
+        raise ValidationError({"spalten": "Unbekannte Dimension."})
+    if kennzahl not in KENNZAHLEN:
+        raise ValidationError({"kennzahl": "Unbekannte Kennzahl."})
+    heute = timezone.localdate().year
+    try:
+        jahr_bis = int(q.get("jahr_bis") or heute)
+        jahr_von = int(q.get("jahr_von") or jahr_bis - 2)
+    except ValueError as exc:
+        raise ValidationError({"jahr_von": "Jahre müssen Zahlen sein."}) from exc
+    if jahr_von > jahr_bis or jahr_bis - jahr_von > 9:
+        raise ValidationError({"jahr_von": "Zeitraum ungültig (höchstens 10 Jahre)."})
+    langue = langue_aus_anfrage(request)
+    return (
+        pivot_berechnen(
+            zeilen_dim=zeilen,
+            spalten_dim=spalten,
+            kennzahl=kennzahl,
+            jahr_von=jahr_von,
+            jahr_bis=jahr_bis,
+            langue=langue,
+        ),
+        langue,
+    )
+
+
+class StatsPivotView(BaseStatsView):
+    """GET /stats/pivot/?zeilen=&spalten=&kennzahl=&jahr_von=&jahr_bis= — dynamische Auswertung der
+    Buchungen (Einnahmen + freigegebene Ausgaben) nach frei gewählten Dimensionen."""
+
+    def get(self, request):
+        ergebnis, _ = _pivot_aus_anfrage(request)
+        return Response(ergebnis)
+
+
+class StatsExportPivotView(BaseStatsView):
+    """GET /stats/export/pivot/?datei=xlsx|csv — dieselben Parameter wie StatsPivotView."""
+
+    def get(self, request):
+        ergebnis, langue = _pivot_aus_anfrage(request)
+        name = f"pivot_{ergebnis['jahr_von']}-{ergebnis['jahr_bis']}"
+        if request.query_params.get("datei") == "csv":
+            antwort = HttpResponse(
+                pivot_csv(ergebnis, langue), content_type="text/csv; charset=utf-8"
+            )
+            antwort["Content-Disposition"] = f'attachment; filename="{name}.csv"'
+            return antwort
+        return xlsx_response(pivot_excel(ergebnis, langue), f"{name}.xlsx")

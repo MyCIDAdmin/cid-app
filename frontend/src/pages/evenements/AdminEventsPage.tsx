@@ -23,6 +23,7 @@ import BildHinweis from "../../components/ui/BildHinweis";
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Evenement, EvenementPayload, TypeEvenement } from "../../types/evenements";
+import UebersetzungenButton from "../../components/ui/UebersetzungenButton";
 
 const TYPES: TypeEvenement[] = ["deplacement", "fete", "conference", "tournoi", "ag"];
 
@@ -698,6 +699,9 @@ export default function AdminEventsPage() {
                     ? t("admin.image_en_cours")
                     : t("admin.image_televerser")}
                 </button>
+                {modifiable && (
+                  <UebersetzungenButton modell="evenements.evenement" objektId={evenement.id} />
+                )}
                 <button
                   type="button"
                   disabled={!modifiable}
