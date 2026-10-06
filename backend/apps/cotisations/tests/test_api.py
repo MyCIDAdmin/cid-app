@@ -1094,6 +1094,25 @@ def test_marquer_payee_sans_date_paiement_utilise_aujourdhui(api_client):
     assert timezone.localtime(cotisation.date_paiement).date() == timezone.localdate()
 
 
+def test_marquer_payee_avec_date_du_jour_garde_lheure_reelle(api_client):
+    """Das vorbelegte Datum "heute" darf nicht auf 00:00 zurückfallen (Reihenfolge der Belege)."""
+    from django.utils import timezone
+
+    user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg-date3@example.de")
+    cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)
+
+    _auth(api_client, user)
+    resp = api_client.post(
+        _marquer_payee_url(cotisation),
+        {"mode_paiement": "virement_sepa", "date_paiement": timezone.localdate().isoformat()},
+    )
+
+    assert resp.status_code == 200, resp.data
+    cotisation.refresh_from_db()
+    assert timezone.localtime(cotisation.date_paiement).date() == timezone.localdate()
+    assert (timezone.now() - cotisation.date_paiement).total_seconds() < 120
+
+
 def test_marquer_payee_refuse_date_paiement_future(api_client):
     user, _membre = _user_avec_membre(Role.DIR_FINANCIER, "dg-date3@example.de")
     cotisation = CotisationFactory(statut=StatutCotisation.EN_ATTENTE, reference_transaction=None)

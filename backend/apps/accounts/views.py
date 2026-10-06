@@ -22,6 +22,7 @@ import base64
 import io
 
 import qrcode
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core import signing
 from django.core.signing import BadSignature, SignatureExpired
@@ -39,6 +40,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.membres.models import StatutMembre
 
@@ -47,7 +49,9 @@ from .models import RegistrationDecision, Role
 from .permissions import HasInscriptionsAdminAccess, HasInscriptionsAdminWriteAccess, IsSuperAdmin
 from .serializers import (
     ChangeRoleSerializer,
+    DeviceAwareTokenRefreshSerializer,
     LoginSerializer,
+    PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     PendingRegistrationSerializer,
@@ -83,20 +87,31 @@ def _client_ip(request) -> str:
     return request.META.get("REMOTE_ADDR", "")
 
 
-def _issue_tokens(user: User, device_hash: str | None = None) -> dict:
+def _issue_tokens(user: User, device_hash: str | None = None, request=None) -> dict:
     """Émet les tokens JWT. `device_hash` (hash de `LoginSerializer.device_id`, distinct de
     `device_fingerprint`/2FA — voir ce serializer) : si fourni, applique d'abord "une seule
     session active par appareil" (retour utilisateur du 2026-09-24, task #218) : toute session
     encore active sur CE MÊME appareil est révoquée avant l'émission de la nouvelle — voir
-    services.enforce_single_session_per_device."""
+    services.enforce_single_session_per_device. Ensuite (2026-10-07) : au plus
+    settings.MAX_ACTIVE_DEVICES appareils actifs par utilisateur — l'appareil le plus ancien
+    (inactif depuis le plus longtemps) est déconnecté, voir services.enforce_max_devices."""
     if device_hash:
         revoked = services.enforce_single_session_per_device(user, device_hash)
         if revoked:
             services.log_audit_event("device_sessions_revoked", user=user, count=revoked)
+        retired = services.enforce_max_devices(user, device_hash)
+        if retired:
+            services.log_audit_event("device_limit_reached", user=user, count=retired)
 
     refresh = RefreshToken.for_user(user)
     refresh["role"] = user.role
-    services.track_device_session(user, refresh, device_hash)
+    services.track_device_session(
+        user,
+        refresh,
+        device_hash,
+        user_agent=request.META.get("HTTP_USER_AGENT", "") if request else "",
+        ip_address=_client_ip(request) if request else None,
+    )
     return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
 
@@ -155,7 +170,7 @@ class LoginView(APIView):
             )
 
         user.mark_login(ip)
-        tokens = _issue_tokens(user, device_hash)
+        tokens = _issue_tokens(user, device_hash, request)
         services.log_audit_event(
             "login_success",
             user=user,
@@ -233,7 +248,7 @@ class Verify2FAView(APIView):
         if new_ip:
             send_new_ip_alert_email.delay(str(user.id), ip)
 
-        tokens = _issue_tokens(user, payload.get("did"))
+        tokens = _issue_tokens(user, payload.get("did"), request)
         services.log_audit_event(
             "login_2fa_success", user=user, ip_address=ip, metadata={"method": data["method"]}
         )
@@ -707,3 +722,139 @@ class LogoutView(APIView):
             pass
         services.log_audit_event("logout", user=request.user, ip_address=_client_ip(request))
         return Response(status=status.HTTP_205_RESET_CONTENT)
+
+
+def _geraete_label(user_agent: str) -> dict:
+    """Grobe Zerlegung des User-Agents in Browser und Betriebssystem (nur Anzeige)."""
+    ua = user_agent or ""
+    browser = next(
+        (
+            name
+            for marker, name in (
+                ("Edg/", "Edge"),
+                ("OPR/", "Opera"),
+                ("Firefox/", "Firefox"),
+                ("Chrome/", "Chrome"),
+                ("Safari/", "Safari"),
+            )
+            if marker in ua
+        ),
+        "",
+    )
+    os_name = next(
+        (
+            name
+            for marker, name in (
+                ("Windows", "Windows"),
+                ("Android", "Android"),
+                ("iPhone", "iOS"),
+                ("iPad", "iOS"),
+                ("Mac OS X", "macOS"),
+                ("Linux", "Linux"),
+            )
+            if marker in ua
+        ),
+        "",
+    )
+    return {"browser": browser, "os": os_name}
+
+
+class SessionsView(APIView):
+    """GET /auth/sessions/ — aktive Geräte des Benutzers (Header X-Device-Id markiert das
+    aktuelle Gerät). Pro Gerät ein Eintrag, auch wenn mehrere Refresh-Token existieren."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        aktuelles = request.META.get("HTTP_X_DEVICE_ID", "")
+        aktuelles_hash = services.fingerprint_hash(aktuelles) if aktuelles else None
+
+        geraete: dict[str, dict] = {}
+        sessions = services.active_device_sessions(request.user).order_by("-last_seen_at")
+        for session in sessions:
+            h = session.device_fingerprint_hash
+            if h not in geraete:
+                geraete[h] = {
+                    "id": str(session.id),
+                    **_geraete_label(session.user_agent),
+                    "ip_address": session.ip_address,
+                    "last_seen_at": session.last_seen_at,
+                    "created_at": session.created_at,
+                    "is_current": h == aktuelles_hash,
+                }
+            else:
+                geraete[h]["created_at"] = min(geraete[h]["created_at"], session.created_at)
+        return Response(
+            {
+                "max_devices": settings.MAX_ACTIVE_DEVICES,
+                "results": sorted(
+                    geraete.values(),
+                    key=lambda g: (not g["is_current"], -g["last_seen_at"].timestamp()),
+                ),
+            }
+        )
+
+
+class SessionDetailView(APIView):
+    """DELETE /auth/sessions/{id}/ — meldet dieses Gerät ab (alle seine aktiven Sitzungen)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        session = generics.get_object_or_404(services.active_device_sessions(request.user), id=pk)
+        services.revoke_device(request.user, session.device_fingerprint_hash)
+        services.log_audit_event(
+            "device_session_revoked_by_user", user=request.user, ip_address=_client_ip(request)
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SessionsRevokeOthersView(APIView):
+    """POST /auth/sessions/revoke-others/ — meldet alle Geräte außer dem aktuellen
+    (Header X-Device-Id) ab."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        aktuelles = request.META.get("HTTP_X_DEVICE_ID", "")
+        aktuelles_hash = services.fingerprint_hash(aktuelles) if aktuelles else None
+        hashes = set(
+            services.active_device_sessions(request.user)
+            .exclude(device_fingerprint_hash=aktuelles_hash or "")
+            .values_list("device_fingerprint_hash", flat=True)
+        )
+        for h in hashes:
+            services.revoke_device(request.user, h)
+        if hashes:
+            services.log_audit_event(
+                "device_sessions_revoked_by_user",
+                user=request.user,
+                ip_address=_client_ip(request),
+                count=len(hashes),
+            )
+        return Response({"revoked": len(hashes)})
+
+
+class PasswordChangeView(APIView):
+    """POST /auth/password-change/ — Passwort ändern (aktuelles Passwort erforderlich)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+    def post(self, request):
+        serializer = PasswordChangeSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        request.user.set_password(serializer.validated_data["new_password"])
+        request.user.save(update_fields=["password"])
+        services.log_audit_event(
+            "password_changed", user=request.user, ip_address=_client_ip(request)
+        )
+        return Response({"message": "Passwort geändert."})
+
+
+class DeviceAwareTokenRefreshView(TokenRefreshView):
+    """Wie TokenRefreshView, übernimmt aber die DeviceSession auf das rotierte Refresh-Token
+    (siehe services.rotate_device_session)."""
+
+    serializer_class = DeviceAwareTokenRefreshSerializer

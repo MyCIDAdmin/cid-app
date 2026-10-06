@@ -9,6 +9,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -227,6 +228,11 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.accounts.exceptions.cid_exception_handler",
 }
 
+# Maximal gleichzeitig aktive Geräte pro Benutzer (Sicherheit, 2026-10-07): beim Login auf einem
+# weiteren Gerät wird das am längsten inaktive Gerät abgemeldet (siehe
+# apps.accounts.services.enforce_max_devices).
+MAX_ACTIVE_DEVICES = int(os.environ.get("MAX_ACTIVE_DEVICES", 3))
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
         minutes=int(os.environ.get("JWT_ACCESS_TOKEN_LIFETIME_MIN", 15))
@@ -250,6 +256,8 @@ CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
+# X-Device-Id: Geräteliste (GET /auth/sessions/) markiert damit das aktuelle Gerät.
+CORS_ALLOW_HEADERS = (*default_headers, "x-device-id")
 
 # =============================================================================
 # Stockage fichiers — MinIO (S3-compatible) via django-storages

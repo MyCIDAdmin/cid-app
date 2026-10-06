@@ -12,14 +12,12 @@
  * Sidebar qui a lui besoin d'un portail (RailGroupButton) pour survivre à son ancêtre en
  * overflow.
  */
-import { IconLogout, IconUserCircle } from "@tabler/icons-react";
+import { IconLogout, IconSettings, IconUserCircle } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useAuthStore } from "../../store/authStore";
-import LanguageSwitcher from "./LanguageSwitcher";
-import ThemeToggle from "./ThemeToggle";
 
 function initiales(user: { prenom?: string; nom?: string; email: string }): string {
   if (user.prenom && user.nom) {
@@ -91,15 +89,15 @@ export default function UserMenu() {
             <IconUserCircle size={16} className="shrink-0" />
             {t("menu_utilisateur.mon_profil")}
           </Link>
-          <div className="border-t border-text-tertiary/20 px-3 py-2">
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-              {t("menu_utilisateur.preferences_titre")}
-            </p>
-            <div className="flex items-center justify-between gap-2">
-              <LanguageSwitcher />
-              <ThemeToggle />
-            </div>
-          </div>
+          <Link
+            to="/mon-profil?onglet=einstellungen"
+            onClick={() => setOuvert(false)}
+            role="menuitem"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-tertiary"
+          >
+            <IconSettings size={16} className="shrink-0" />
+            {t("menu_utilisateur.einstellungen")}
+          </Link>
           <button
             type="button"
             onClick={handleLogout}

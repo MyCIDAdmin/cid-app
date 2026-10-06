@@ -51,6 +51,7 @@
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { heuteIso } from "../../utils/datum";
 import { exporterCotisationsExcel, telechargerRecuCotisation } from "../../api/cotisations";
 import BelegButton from "../../components/cotisations/BelegButton";
 import { useMembre } from "../../hooks/useMembres";
@@ -180,11 +181,11 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
   // Zahlungsbestätigung Im Modul 'Zahlungen' [...] das Transaktionsdatum bei der Bestätigung
   // hinzufügen") — vide par défaut (comportement inchangé : date du jour côté backend, voir
   // ChangerStatutCotisationPayload). "YYYY-MM-DD", format natif de `<input type="date">`.
-  const [datePaiement, setDatePaiement] = useState("");
+  const [datePaiement, setDatePaiement] = useState(heuteIso());
   const [historiqueOuvert, setHistoriqueOuvert] = useState(false);
   const [nouveauStatut, setNouveauStatut] = useState<StatutCotisation>(cotisation.statut);
   const [motif, setMotif] = useState("");
-  const [dateChangementStatut, setDateChangementStatut] = useState("");
+  const [dateChangementStatut, setDateChangementStatut] = useState(heuteIso());
 
   const historique = useHistoriqueStatutsCotisation(cotisation.id, historiqueOuvert);
 
@@ -199,12 +200,16 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
     changerStatutMutation.mutate(
       {
         id: cotisation.id,
-        payload: { statut: nouveauStatut, motif, date_paiement: dateChangementStatut || undefined },
+        payload: {
+          statut: nouveauStatut,
+          motif,
+          date_paiement: nouveauStatut === "payee" ? dateChangementStatut || undefined : undefined,
+        },
       },
       {
         onSuccess: () => {
           setMotif("");
-          setDateChangementStatut("");
+          setDateChangementStatut(heuteIso());
         },
       },
     );
@@ -214,6 +219,9 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
     <>
       <tr className="border-b border-text-tertiary/10 last:border-0 align-top">
         <td className="px-4 py-2">{formatDate(cotisation.created_at)}</td>
+        <td className="px-4 py-2">
+          {cotisation.date_paiement ? formatDate(cotisation.date_paiement) : "–"}
+        </td>
         <td className="px-4 py-2">
           {membre.isLoading
             ? t("en_attente_paiement.chargement")
@@ -245,7 +253,7 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
                 aria-label={t("en_attente_paiement.date_paiement_label")}
                 value={datePaiement}
                 onChange={(e) => setDatePaiement(e.target.value)}
-                max={new Date().toISOString().slice(0, 10)}
+                max={heuteIso()}
                 disabled={!modifiable}
                 title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
@@ -315,7 +323,7 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
                 aria-label={t("en_attente_paiement.date_paiement_label")}
                 value={dateChangementStatut}
                 onChange={(e) => setDateChangementStatut(e.target.value)}
-                max={new Date().toISOString().slice(0, 10)}
+                max={heuteIso()}
                 disabled={!modifiable}
                 title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                 className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
@@ -358,7 +366,7 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
       </tr>
       {historiqueOuvert && (
         <tr className="border-b border-text-tertiary/10 last:border-0 bg-bg-tertiary/30">
-          <td colSpan={6} className="px-4 py-3">
+          <td colSpan={7} className="px-4 py-3">
             {historique.isLoading && (
               <p className="text-xs text-text-tertiary">{t("en_attente_paiement.chargement")}</p>
             )}
@@ -1185,6 +1193,7 @@ export default function CotisationsEnAttentePage() {
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
               <th className="px-4 py-2">{t("en_attente_paiement.col_date")}</th>
+              <th className="px-4 py-2">{t("en_attente_paiement.col_transaktionsdatum")}</th>
               <th className="px-4 py-2">{t("en_attente_paiement.col_membre")}</th>
               <th className="px-4 py-2">{t("en_attente_paiement.col_libelle")}</th>
               <th className="px-4 py-2">{t("en_attente_paiement.col_montant")}</th>
@@ -1195,21 +1204,21 @@ export default function CotisationsEnAttentePage() {
           <tbody>
             {gestion.isLoading && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
+                <td colSpan={7} className="px-4 py-6 text-center text-text-tertiary">
                   {t("en_attente_paiement.chargement")}
                 </td>
               </tr>
             )}
             {gestion.isError && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-status-dangerText">
+                <td colSpan={7} className="px-4 py-6 text-center text-status-dangerText">
                   {t("en_attente_paiement.erreur_chargement")}
                 </td>
               </tr>
             )}
             {gestion.data && gestion.data.results.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-text-tertiary">
+                <td colSpan={7} className="px-4 py-6 text-center text-text-tertiary">
                   {t("en_attente_paiement.aucun")}
                 </td>
               </tr>

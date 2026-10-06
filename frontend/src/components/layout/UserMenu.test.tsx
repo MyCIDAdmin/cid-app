@@ -65,7 +65,8 @@ describe("UserMenu", () => {
     expect(screen.getByText("riadh.bchini@example.de")).toBeInTheDocument();
     const lienProfil = screen.getByText("menu_utilisateur.mon_profil").closest("a");
     expect(lienProfil).toHaveAttribute("href", "/mon-profil");
-    expect(screen.getByText("menu_utilisateur.preferences_titre")).toBeInTheDocument();
+    const lienEinstellungen = screen.getByText("menu_utilisateur.einstellungen").closest("a");
+    expect(lienEinstellungen).toHaveAttribute("href", "/mon-profil?onglet=einstellungen");
     expect(screen.getByText("action.deconnexion")).toBeInTheDocument();
   });
 

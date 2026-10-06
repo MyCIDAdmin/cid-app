@@ -84,6 +84,7 @@
     "titre": "Paiements",
     "sous_titre": "Cotisations en attente d'un paiement reçu hors ligne (virement SEPA, chèque, espèces…) — confirmez la réception pour les marquer comme payées. Le filtre ci-dessous permet aussi de retrouver n'importe quelle cotisation pour corriger son statut.",
     "col_date": "Date",
+    "col_transaktionsdatum": "Date de transaction",
     "col_membre": "Membre",
     "col_libelle": "Article",
     "col_montant": "Montant",
@@ -103,7 +104,7 @@
       "especes": "Espèces"
     },
     "confirmer": "Marquer comme payée",
-    "date_paiement_label": "Date de la transaction (optionnel, par défaut : aujourd'hui)",
+    "date_paiement_label": "Date de la transaction (par défaut : aujourd'hui)",
     "en_cours": "Confirmation…",
     "erreur_action": "Le paiement n'a pas pu être confirmé.",
     "filtre_statut": "Statut",
@@ -236,6 +237,7 @@
     "statut": "Statut",
     "paiement": "Paiement",
     "non_paye": "En attente",
+    "transaktionsdatum": "Date de la transaction (par défaut : aujourd'hui)",
     "mode": "Mode de paiement",
     "confirmer": "Confirmer",
     "rechnung": "Facture"

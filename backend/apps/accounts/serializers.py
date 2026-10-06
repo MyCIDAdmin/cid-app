@@ -1,12 +1,21 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from apps.membres.models import Bundesland, Membre, Pays, Sexe, StatutMembre
 
+from . import services
 from .models import Role
 
 User = get_user_model()
+
+
+# Erlaubte Anzeige-Präferenzen (User.ui_praeferenzen) mit Wert-Validator.
+UI_PRAEFERENZEN_SCHEMA = {
+    "theme": lambda v: v in ("light", "dark"),
+    "sidebar_collapsed": lambda v: isinstance(v, bool),
+}
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -27,6 +36,27 @@ class UserSerializer(serializers.ModelSerializer):
     prenom = serializers.SerializerMethodField()
     nom = serializers.SerializerMethodField()
     statut_membre = serializers.SerializerMethodField()
+    ui_praeferenzen = serializers.JSONField(required=False)
+
+    def validate_ui_praeferenzen(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Ein Objekt wird erwartet.")
+        unbekannt = set(value) - set(UI_PRAEFERENZEN_SCHEMA)
+        if unbekannt:
+            raise serializers.ValidationError(f"Unbekannte Einstellungen: {sorted(unbekannt)}")
+        for key, wert in value.items():
+            if not UI_PRAEFERENZEN_SCHEMA[key](wert):
+                raise serializers.ValidationError(f"Ungültiger Wert für {key}.")
+        return value
+
+    def update(self, instance, validated_data):
+        # Teil-Updates mergen, damit z. B. {"theme": "dark"} die übrigen Werte nicht löscht.
+        if "ui_praeferenzen" in validated_data:
+            validated_data["ui_praeferenzen"] = {
+                **(instance.ui_praeferenzen or {}),
+                **validated_data["ui_praeferenzen"],
+            }
+        return super().update(instance, validated_data)
 
     class Meta:
         model = User
@@ -35,6 +65,7 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "role",
             "langue_preferee",
+            "ui_praeferenzen",
             "is_active",
             "require_2fa",
             "created_at",
@@ -287,3 +318,37 @@ class PendingRegistrationSerializer(serializers.ModelSerializer):
 
     def get_ville(self, obj):
         return obj.membre.ville_de if hasattr(obj, "membre") else ""
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    """Passwort ändern (Einstellungen unter "Mein Profil")."""
+
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate_new_password(self, value):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        try:
+            validate_password(value, user=self.context["request"].user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
+        return value
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        if not user.check_password(attrs["current_password"]):
+            raise serializers.ValidationError(
+                {"current_password": "Das aktuelle Passwort ist nicht korrekt."}
+            )
+        return attrs
+
+
+class DeviceAwareTokenRefreshSerializer(TokenRefreshSerializer):
+    """Übernimmt die DeviceSession auf das rotierte Refresh-Token (rotate_device_session)."""
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        if data.get("refresh"):
+            services.rotate_device_session(attrs["refresh"], data["refresh"])
+        return data

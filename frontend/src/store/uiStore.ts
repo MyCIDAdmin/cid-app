@@ -41,6 +41,9 @@ interface UiState {
   toggleGroup: (key: SidebarGroupKey) => void;
   theme: Theme;
   toggleTheme: () => void;
+  /** Direkt setzen (Anwenden der gespeicherten Präferenz beim Login, siehe usePraeferenzenSync). */
+  setTheme: (theme: Theme) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -63,6 +66,12 @@ export const useUiStore = create<UiState>()(
           document.documentElement.classList.toggle("dark", theme === "dark");
           return { theme };
         }),
+      setTheme: (theme) =>
+        set(() => {
+          document.documentElement.classList.toggle("dark", theme === "dark");
+          return { theme };
+        }),
+      setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     }),
     { name: "cid-ui", storage: createJSONStorage(() => localStorage) },
   ),

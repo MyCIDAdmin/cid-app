@@ -71,11 +71,18 @@ const dynamicAuthStorage: StateStorage = {
   },
 };
 
+/** Gespeicherte Anzeige-Präferenzen (User.ui_praeferenzen, siehe usePraeferenzenSync). */
+export interface UiPraeferenzen {
+  theme?: "light" | "dark";
+  sidebar_collapsed?: boolean;
+}
+
 export interface CidUser {
   id: string;
   email: string;
   role: "membre" | "rh" | "bureau_admin" | "dir_financier" | "super_admin";
   langue_preferee: "fr" | "de" | "ar";
+  ui_praeferenzen?: UiPraeferenzen;
   // AHM-52 : vides pour un compte sans fiche Membre liée (superuser, RH créé
   // hors auto-inscription) — voir UserSerializer.get_prenom/get_nom côté
   // backend. Le frontend doit retomber sur l'email dans ce cas.

@@ -140,6 +140,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         default="fr",
     )
 
+    # --- Anzeige-Präferenzen (Einstellungen unter "Mein Profil"), werden bei jeder neuen
+    # Anmeldung angewendet. Erlaubte Schlüssel: siehe UserSerializer (UI_PRAEFERENZEN_SCHEMA). ---
+    ui_praeferenzen = models.JSONField(default=dict, blank=True)
+
     # --- Sécurité / 2FA conditionnel (SCD §3.3) ---
     require_2fa = models.BooleanField(
         default=False, help_text=_("Force le 2FA même pour un Membre Normal.")
@@ -241,6 +245,11 @@ class DeviceSession(models.Model):
     )
     device_fingerprint_hash = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Geräteliste unter "Mein Profil" (Limit von 3 aktiven Geräten pro Benutzer, 2026-10-07):
+    # Bezeichnung des Geräts (gekürzter User-Agent), IP und letzte Aktivität (Token-Refresh).
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    last_seen_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = "device_sessions"

@@ -43,6 +43,14 @@ def test_reference_transaction_non_regeneree_a_la_mise_a_jour():
     assert cotisation.reference_transaction == reference_initiale
 
 
+def test_date_paiement_automatique_auch_mit_vorhandener_referenz():
+    cotisation = CotisationFactory(
+        statut=StatutCotisation.PAYEE, reference_transaction="TXN-2026-ABCDEF12", date_paiement=None
+    )
+    assert cotisation.date_paiement is not None
+    assert cotisation.reference_transaction == "TXN-2026-ABCDEF12"
+
+
 def test_deux_references_distinctes():
     c1 = CotisationFactory(statut=StatutCotisation.PAYEE, reference_transaction=None)
     c2 = CotisationFactory(statut=StatutCotisation.PAYEE, reference_transaction=None)

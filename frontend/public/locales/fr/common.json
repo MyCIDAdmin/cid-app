@@ -103,7 +103,8 @@
   "menu_utilisateur": {
     "aria_label": "Menu utilisateur",
     "mon_profil": "Mon profil",
-    "preferences_titre": "Préférences"
+    "preferences_titre": "Préférences",
+    "einstellungen": "Paramètres"
   },
   "bild_hinweis": {
     "shop": "Recommandé : format paysage 16:10, au moins 1200 × 750 px (JPG, PNG ou WebP, 10 Mo max.). L'image remplit entièrement la kachel – placez les éléments importants au centre, les bords peuvent être légèrement rognés.",
@@ -135,6 +136,60 @@
       "de": "Deutsch",
       "fr": "Français",
       "ar": "العربية"
+    }
+  },
+  "mon_profil": {
+    "onglet_profil": "Profil",
+    "onglet_einstellungen": "Paramètres"
+  },
+  "einstellungen": {
+    "laden": "Chargement…",
+    "abbrechen": "Annuler",
+    "sprache": "Langue",
+    "anzeigemodus": "Mode d'affichage",
+    "hell": "Clair",
+    "dunkel": "Sombre",
+    "seitenleiste": "Barre latérale",
+    "seitenleiste_klein": "Réduite",
+    "seitenleiste_gross": "Dépliée",
+    "darstellung": {
+      "titel": "Affichage",
+      "hinweis": "Enregistré dans votre compte et appliqué à chaque connexion, sur chaque appareil."
+    },
+    "passwort": {
+      "titel": "Changer le mot de passe",
+      "aktuell": "Mot de passe actuel",
+      "neu": "Nouveau mot de passe",
+      "wiederholung": "Répéter le nouveau mot de passe",
+      "speichern": "Changer le mot de passe",
+      "zu_kurz": "Le nouveau mot de passe doit contenir au moins 8 caractères.",
+      "nicht_gleich": "Les mots de passe ne correspondent pas.",
+      "erfolg": "Mot de passe modifié.",
+      "fehler": "Le mot de passe n'a pas pu être modifié."
+    },
+    "zwei_faktor": {
+      "titel": "Authentification à deux facteurs",
+      "hinweis": "Protection supplémentaire via une application d'authentification (ex. Google Authenticator).",
+      "aktiv": "Active",
+      "inaktiv": "Inactive",
+      "aktivieren": "Activer",
+      "deaktivieren": "Désactiver",
+      "scannen": "Scannez le QR code avec l'application d'authentification puis saisissez le code à 6 chiffres.",
+      "qr_alt": "QR code pour l'application d'authentification",
+      "code": "Code à 6 chiffres",
+      "bestaetigen": "Confirmer",
+      "fehler": "Action échouée."
+    },
+    "geraete": {
+      "titel": "Appareils et sessions",
+      "hinweis": "Par sécurité, {{max}} appareils au maximum peuvent être connectés en même temps. Lorsqu'un nouvel appareil se connecte, celui inactif depuis le plus longtemps est déconnecté.",
+      "fehler": "Les appareils n'ont pas pu être chargés.",
+      "leer": "Aucun appareil actif.",
+      "unbekannt": "Appareil inconnu",
+      "dieses": "Cet appareil",
+      "zuletzt": "Dernière activité : {{datum}}",
+      "abmelden": "Déconnecter",
+      "alle_anderen": "Déconnecter tous les autres appareils"
     }
   }
 }
