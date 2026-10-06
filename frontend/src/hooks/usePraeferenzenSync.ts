@@ -91,7 +91,6 @@ export default function usePraeferenzenSync(): void {
     angewendetFuer.current = user.id;
     if (hatGespeichertePraeferenzen(user)) anwenden(user);
     else void speichern();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Änderungen speichern
