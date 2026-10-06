@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
+import usePraeferenzenSync from "./hooks/usePraeferenzenSync";
 import RequireAuth from "./components/RequireAuth";
 import RequireRole from "./components/RequireRole";
 import AdminConfigurationSitePage from "./pages/admin/AdminConfigurationSitePage";
@@ -50,6 +51,7 @@ import ErstattungsrichtliniePage from "./pages/public/legal/Erstattungsrichtlini
 import ImpressumPage from "./pages/public/legal/ImpressumPage";
 import NutzungsbedingungenPage from "./pages/public/legal/NutzungsbedingungenPage";
 import MembreFormPage from "./pages/membres/MembreFormPage";
+import MonProfilPage from "./pages/membres/MonProfilPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -66,6 +68,7 @@ import VotePage from "./pages/vote/VotePage";
 import { ROLE_LEVELS } from "./store/authStore";
 
 export default function App() {
+  usePraeferenzenSync();
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
@@ -119,7 +122,7 @@ export default function App() {
             (via useMembreMoi/useUpdateMembreMoi) sur ce chemin exact, voir sa docstring de tête.
             Un compte sans fiche Membre liée (superuser, RH créé hors auto-inscription) voit un
             message explicite plutôt qu'un formulaire cassé (404 de /membres/moi/). */}
-        <Route path="/mon-profil" element={<MembreFormPage />} />
+        <Route path="/mon-profil" element={<MonProfilPage />} />
         {/* Import Excel (RICEFW W-008/F-019) — même gate RH+ que
             MembreImportView côté API. */}
         <Route

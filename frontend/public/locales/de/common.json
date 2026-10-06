@@ -103,7 +103,8 @@
   "menu_utilisateur": {
     "aria_label": "Benutzermenü",
     "mon_profil": "Mein Profil",
-    "preferences_titre": "Einstellungen"
+    "preferences_titre": "Einstellungen",
+    "einstellungen": "Einstellungen"
   },
   "bild_hinweis": {
     "shop": "Empfohlen: Querformat 16:10, mindestens 1200 × 750 px (JPG, PNG oder WebP, max. 10 MB). Das Bild füllt die Kachel vollständig aus – wichtige Motive bitte mittig platzieren, die Ränder können leicht beschnitten werden.",
@@ -135,6 +136,60 @@
       "de": "Deutsch",
       "fr": "Français",
       "ar": "العربية"
+    }
+  },
+  "mon_profil": {
+    "onglet_profil": "Profil",
+    "onglet_einstellungen": "Einstellungen"
+  },
+  "einstellungen": {
+    "laden": "Wird geladen…",
+    "abbrechen": "Abbrechen",
+    "sprache": "Sprache",
+    "anzeigemodus": "Anzeigemodus",
+    "hell": "Hell",
+    "dunkel": "Dunkel",
+    "seitenleiste": "Seitenleiste",
+    "seitenleiste_klein": "Eingeklappt",
+    "seitenleiste_gross": "Ausgeklappt",
+    "darstellung": {
+      "titel": "Darstellung",
+      "hinweis": "Wird in Ihrem Konto gespeichert und bei jeder Anmeldung auf jedem Gerät angewendet."
+    },
+    "passwort": {
+      "titel": "Passwort ändern",
+      "aktuell": "Aktuelles Passwort",
+      "neu": "Neues Passwort",
+      "wiederholung": "Neues Passwort wiederholen",
+      "speichern": "Passwort ändern",
+      "zu_kurz": "Das neue Passwort muss mindestens 8 Zeichen lang sein.",
+      "nicht_gleich": "Die Passwörter stimmen nicht überein.",
+      "erfolg": "Passwort geändert.",
+      "fehler": "Das Passwort konnte nicht geändert werden."
+    },
+    "zwei_faktor": {
+      "titel": "Zwei-Faktor-Authentifizierung",
+      "hinweis": "Zusätzlicher Schutz per Authenticator-App (z. B. Google Authenticator).",
+      "aktiv": "Aktiv",
+      "inaktiv": "Nicht aktiv",
+      "aktivieren": "Aktivieren",
+      "deaktivieren": "Deaktivieren",
+      "scannen": "QR-Code mit der Authenticator-App scannen und den 6-stelligen Code eingeben.",
+      "qr_alt": "QR-Code für die Authenticator-App",
+      "code": "6-stelliger Code",
+      "bestaetigen": "Bestätigen",
+      "fehler": "Aktion fehlgeschlagen."
+    },
+    "geraete": {
+      "titel": "Geräte & Sitzungen",
+      "hinweis": "Aus Sicherheitsgründen sind höchstens {{max}} Geräte gleichzeitig angemeldet. Meldet sich ein weiteres Gerät an, wird das am längsten inaktive abgemeldet.",
+      "fehler": "Die Geräte konnten nicht geladen werden.",
+      "leer": "Keine aktiven Geräte.",
+      "unbekannt": "Unbekanntes Gerät",
+      "dieses": "Dieses Gerät",
+      "zuletzt": "Zuletzt aktiv: {{datum}}",
+      "abmelden": "Abmelden",
+      "alle_anderen": "Alle anderen Geräte abmelden"
     }
   }
 }

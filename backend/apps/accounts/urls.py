@@ -1,5 +1,4 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
 
 from . import views
 
@@ -8,7 +7,11 @@ app_name = "accounts"
 urlpatterns = [
     path("login/", views.LoginView.as_view(), name="login"),
     path("logout/", views.LogoutView.as_view(), name="logout"),
-    path("token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
+    path(
+        "token/refresh/",
+        views.DeviceAwareTokenRefreshView.as_view(),
+        name="token-refresh",
+    ),
     path("register/", views.RegisterView.as_view(), name="register"),
     path("register/confirm/", views.RegisterConfirmView.as_view(), name="register-confirm"),
     path(
@@ -44,6 +47,14 @@ urlpatterns = [
         name="user-change-role",
     ),
     path("me/", views.MeView.as_view(), name="me"),
+    path("password-change/", views.PasswordChangeView.as_view(), name="password-change"),
+    path("sessions/", views.SessionsView.as_view(), name="sessions"),
+    path(
+        "sessions/revoke-others/",
+        views.SessionsRevokeOthersView.as_view(),
+        name="sessions-revoke-others",
+    ),
+    path("sessions/<uuid:pk>/", views.SessionDetailView.as_view(), name="session-detail"),
     path("2fa/send-otp/", views.SendOTPView.as_view(), name="2fa-send-otp"),
     path("2fa/verify/", views.Verify2FAView.as_view(), name="2fa-verify"),
     path("2fa/totp/", views.TOTPSetupView.as_view(), name="2fa-totp"),

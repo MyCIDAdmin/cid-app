@@ -178,6 +178,9 @@ def _debut_jour_aware(date_value):
     ConfirmerPaiementCommandeSerializer.date_paiement, ajouté le 2026-09-29) en datetime aware à
     minuit heure locale — même helper que apps.cotisations.views._debut_jour_aware,
     `Commande.date_paiement_confirme` restant un DateTimeField (voir models.py)."""
+    if date_value == timezone.localdate():
+        # Heutiges Datum: echte Uhrzeit behalten (statt 00:00)
+        return timezone.now()
     return timezone.make_aware(datetime.combine(date_value, time.min))
 
 

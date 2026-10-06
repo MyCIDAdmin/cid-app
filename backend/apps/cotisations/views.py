@@ -114,6 +114,9 @@ def _debut_jour_aware(date_value):
     MarquerPayeeSerializer/ChangerStatutCotisationSerializer.date_paiement, ajouté le
     2026-09-29) en datetime aware à minuit heure locale — `Cotisation.date_paiement` reste un
     DateTimeField (voir models.py), seule la date importe pour ce réglage rétroactif."""
+    if date_value == timezone.localdate():
+        # Heutiges Datum: echte Uhrzeit behalten (statt 00:00)
+        return timezone.now()
     return timezone.make_aware(datetime.combine(date_value, time.min))
 
 

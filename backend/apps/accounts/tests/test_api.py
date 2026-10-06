@@ -923,3 +923,256 @@ def test_role_personnalise_lecture_ecriture_peut_approuver_et_refuser(api_client
     assert resp_refuse.status_code == 200, resp_refuse.data
     inscription_a_refuser.refresh_from_db()
     assert inscription_a_refuser.registration_decision == RegistrationDecision.REFUSE
+
+
+# --- 2026-10-07 : höchstens 3 aktive Geräte pro Benutzer, Geräteliste, Präferenzen --------------
+
+
+def _login_geraet(api_client, device_id, email="membre@example.com", user_agent=""):
+    resp = api_client.post(
+        reverse("accounts:login"),
+        {"email": email, "password": "Password123!", "device_id": device_id},
+        format="json",
+        HTTP_USER_AGENT=user_agent,
+    )
+    assert resp.status_code == 200, resp.data
+    return resp.data
+
+
+def _refresh(api_client, refresh):
+    return api_client.post(reverse("accounts:token-refresh"), {"refresh": refresh}, format="json")
+
+
+def test_viertes_geraet_meldet_aeltestes_ab(api_client, membre_actif):
+    a = _login_geraet(api_client, "geraet-a")
+    b = _login_geraet(api_client, "geraet-b")
+    c = _login_geraet(api_client, "geraet-c")
+    d = _login_geraet(api_client, "geraet-d")
+
+    assert _refresh(api_client, a["refresh"]).status_code == 401
+    for sitzung in (b, c, d):
+        assert _refresh(api_client, sitzung["refresh"]).status_code == 200
+
+
+def test_geraetelimit_beruecksichtigt_letzte_aktivitaet(api_client, membre_actif):
+    a = _login_geraet(api_client, "geraet-a")
+    b = _login_geraet(api_client, "geraet-b")
+    c = _login_geraet(api_client, "geraet-c")
+
+    # A war zuerst da, wird aber jetzt benutzt (Token-Refresh) -> B ist das am längsten inaktive.
+    refresh_a = _refresh(api_client, a["refresh"])
+    assert refresh_a.status_code == 200
+    d = _login_geraet(api_client, "geraet-d")
+
+    assert _refresh(api_client, b["refresh"]).status_code == 401
+    assert _refresh(api_client, refresh_a.data["refresh"]).status_code == 200
+    assert _refresh(api_client, c["refresh"]).status_code == 200
+    assert _refresh(api_client, d["refresh"]).status_code == 200
+
+
+def test_refresh_uebernimmt_sitzung_fuer_gleiche_geraete_regel(api_client, membre_actif):
+    """Nach der Token-Rotation muss ein erneuter Login auf demselben Gerät das rotierte
+    Refresh-Token ebenfalls beenden (bisher blieb es unauffindbar)."""
+    erste = _login_geraet(api_client, "geraet-a")
+    rotiert = _refresh(api_client, erste["refresh"])
+    assert rotiert.status_code == 200
+
+    _login_geraet(api_client, "geraet-a")
+
+    assert _refresh(api_client, rotiert.data["refresh"]).status_code == 401
+
+
+def test_geraetelimit_ohne_device_id_wird_nicht_erzwungen(api_client, membre_actif):
+    sitzungen = [
+        api_client.post(
+            reverse("accounts:login"),
+            {"email": "membre@example.com", "password": "Password123!"},
+            format="json",
+        ).data
+        for _ in range(5)
+    ]
+    for sitzung in sitzungen:
+        assert _refresh(api_client, sitzung["refresh"]).status_code == 200
+
+
+def test_geraetelimit_betrifft_andere_benutzer_nicht(api_client, membre_actif):
+    User.objects.create_user(email="zweiter@example.com", password="Password123!", is_active=True)
+    fremd = _login_geraet(api_client, "geraet-a", email="zweiter@example.com")
+    for name in ("geraet-a", "geraet-b", "geraet-c", "geraet-d"):
+        _login_geraet(api_client, name)
+
+    assert _refresh(api_client, fremd["refresh"]).status_code == 200
+
+
+def test_geraetelimit_wird_im_audit_log_vermerkt(api_client, membre_actif):
+    from apps.accounts.models import AuditLogEntry
+
+    for name in ("geraet-a", "geraet-b", "geraet-c", "geraet-d"):
+        _login_geraet(api_client, name)
+
+    eintrag = AuditLogEntry.objects.filter(action="device_limit_reached").first()
+    assert eintrag is not None
+    assert eintrag.metadata["count"] == 1
+
+
+def _auth(api_client, sitzung):
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {sitzung['access']}")
+
+
+def test_sitzungsliste_zeigt_geraete_und_markiert_aktuelles(api_client, membre_actif):
+    chrome = "Mozilla/5.0 (Windows NT 10.0; Win64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36"
+    a = _login_geraet(api_client, "geraet-a", user_agent=chrome)
+    _login_geraet(api_client, "geraet-b", user_agent="Mozilla/5.0 (iPhone) Safari/604.1")
+
+    _auth(api_client, a)
+    resp = api_client.get(reverse("accounts:sessions"), HTTP_X_DEVICE_ID="geraet-a")
+
+    assert resp.status_code == 200
+    assert resp.data["max_devices"] == 3
+    assert len(resp.data["results"]) == 2
+    aktuell = resp.data["results"][0]
+    assert aktuell["is_current"] is True
+    assert aktuell["browser"] == "Chrome"
+    assert aktuell["os"] == "Windows"
+    assert resp.data["results"][1]["is_current"] is False
+    assert resp.data["results"][1]["os"] == "iOS"
+
+
+def test_sitzungsliste_erfordert_login(api_client):
+    assert api_client.get(reverse("accounts:sessions")).status_code == 401
+
+
+def test_sitzung_beenden_meldet_geraet_ab(api_client, membre_actif):
+    a = _login_geraet(api_client, "geraet-a")
+    b = _login_geraet(api_client, "geraet-b")
+
+    _auth(api_client, a)
+    liste = api_client.get(reverse("accounts:sessions"), HTTP_X_DEVICE_ID="geraet-a")
+    fremdes = next(g for g in liste.data["results"] if not g["is_current"])
+
+    resp = api_client.delete(reverse("accounts:session-detail", args=[fremdes["id"]]))
+
+    assert resp.status_code == 204
+    assert _refresh(api_client, b["refresh"]).status_code == 401
+    assert _refresh(api_client, a["refresh"]).status_code == 200
+
+
+def test_sitzung_eines_anderen_benutzers_nicht_beendbar(api_client, membre_actif):
+    User.objects.create_user(email="zweiter@example.com", password="Password123!", is_active=True)
+    fremd = _login_geraet(api_client, "geraet-x", email="zweiter@example.com")
+    _auth(api_client, fremd)
+    fremd_id = api_client.get(reverse("accounts:sessions")).data["results"][0]["id"]
+
+    eigener = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, eigener)
+    resp = api_client.delete(reverse("accounts:session-detail", args=[fremd_id]))
+
+    assert resp.status_code == 404
+    assert _refresh(api_client, fremd["refresh"]).status_code == 200
+
+
+def test_alle_anderen_geraete_abmelden(api_client, membre_actif):
+    a = _login_geraet(api_client, "geraet-a")
+    b = _login_geraet(api_client, "geraet-b")
+    c = _login_geraet(api_client, "geraet-c")
+
+    _auth(api_client, a)
+    resp = api_client.post(reverse("accounts:sessions-revoke-others"), HTTP_X_DEVICE_ID="geraet-a")
+
+    assert resp.status_code == 200
+    assert resp.data["revoked"] == 2
+    assert _refresh(api_client, b["refresh"]).status_code == 401
+    assert _refresh(api_client, c["refresh"]).status_code == 401
+    assert _refresh(api_client, a["refresh"]).status_code == 200
+
+
+def test_passwort_aendern(api_client, membre_actif):
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+
+    resp = api_client.post(
+        reverse("accounts:password-change"),
+        {"current_password": "Password123!", "new_password": "NeuesPasswort456!"},
+        format="json",
+    )
+
+    assert resp.status_code == 200, resp.data
+    membre_actif.refresh_from_db()
+    assert membre_actif.check_password("NeuesPasswort456!")
+
+
+def test_passwort_aendern_falsches_aktuelles_passwort(api_client, membre_actif):
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+
+    resp = api_client.post(
+        reverse("accounts:password-change"),
+        {"current_password": "falsch", "new_password": "NeuesPasswort456!"},
+        format="json",
+    )
+
+    assert resp.status_code == 400
+    membre_actif.refresh_from_db()
+    assert membre_actif.check_password("Password123!")
+
+
+def test_passwort_aendern_schwaches_passwort_abgelehnt(api_client, membre_actif):
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+
+    resp = api_client.post(
+        reverse("accounts:password-change"),
+        {"current_password": "Password123!", "new_password": "123"},
+        format="json",
+    )
+
+    assert resp.status_code == 400
+
+
+def test_praeferenzen_werden_gespeichert_und_gemerged(api_client, membre_actif):
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+
+    r1 = api_client.patch(
+        reverse("accounts:me"),
+        {"langue_preferee": "de", "ui_praeferenzen": {"theme": "dark"}},
+        format="json",
+    )
+    assert r1.status_code == 200, r1.data
+    r2 = api_client.patch(
+        reverse("accounts:me"), {"ui_praeferenzen": {"sidebar_collapsed": False}}, format="json"
+    )
+    assert r2.status_code == 200, r2.data
+
+    membre_actif.refresh_from_db()
+    assert membre_actif.langue_preferee == "de"
+    assert membre_actif.ui_praeferenzen == {"theme": "dark", "sidebar_collapsed": False}
+
+
+def test_praeferenzen_beim_login_in_user_enthalten(api_client, membre_actif):
+    membre_actif.langue_preferee = "de"
+    membre_actif.ui_praeferenzen = {"theme": "dark"}
+    membre_actif.save()
+
+    daten = _login_geraet(api_client, "geraet-a")
+
+    assert daten["user"]["langue_preferee"] == "de"
+    assert daten["user"]["ui_praeferenzen"] == {"theme": "dark"}
+
+
+def test_praeferenzen_ungueltige_werte_abgelehnt(api_client, membre_actif):
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+
+    assert (
+        api_client.patch(
+            reverse("accounts:me"), {"ui_praeferenzen": {"theme": "pink"}}, format="json"
+        ).status_code
+        == 400
+    )
+    assert (
+        api_client.patch(
+            reverse("accounts:me"), {"ui_praeferenzen": {"unbekannt": 1}}, format="json"
+        ).status_code
+        == 400
+    )

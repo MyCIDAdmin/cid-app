@@ -16,6 +16,7 @@ import BelegButton from "./BelegButton";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { ModePaiementCommande } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { heuteIso } from "../../utils/datum";
 import InfoTip from "../ui/InfoTip";
 
 const MODES_CONFIRMATION: ModePaiementCommande[] = ["virement", "especes", "en_ligne"];
@@ -33,6 +34,7 @@ export default function ShopZahlungenPanel() {
   const commandesQuery = useCommandes({});
   const confirmer = useConfirmerPaiementCommande();
   const [modes, setModes] = useState<Record<string, ModePaiementCommande>>({});
+  const [daten, setDaten] = useState<Record<string, string>>({});
   const [erreur, setErreur] = useState("");
 
   if (!peutVoir) return null;
@@ -110,6 +112,14 @@ export default function ShopZahlungenPanel() {
                               </option>
                             ))}
                           </select>
+                          <input
+                            type="date"
+                            aria-label={t("shop_zahlungen.transaktionsdatum")}
+                            value={daten[c.id] ?? heuteIso()}
+                            max={heuteIso()}
+                            onChange={(e) => setDaten((d) => ({ ...d, [c.id]: e.target.value }))}
+                            className="rounded-cid border border-text-tertiary/30 bg-bg-primary px-1 py-0.5 text-xs"
+                          />
                           <button
                             type="button"
                             disabled={confirmer.isPending}
@@ -118,7 +128,10 @@ export default function ShopZahlungenPanel() {
                               confirmer.mutate(
                                 {
                                   id: c.id,
-                                  payload: { mode_paiement: modes[c.id] ?? "virement" },
+                                  payload: {
+                                    mode_paiement: modes[c.id] ?? "virement",
+                                    date_paiement: daten[c.id] || heuteIso(),
+                                  },
                                 },
                                 {
                                   onError: (err) =>

@@ -84,6 +84,7 @@
     "titre": "Zahlungen",
     "sous_titre": "Mitgliedsbeiträge, die auf eine offline erhaltene Zahlung warten (SEPA-Überweisung, Scheck, Bar) — bestätigen Sie den Erhalt, um sie als bezahlt zu markieren. Mit dem Filter unten finden Sie auch jeden anderen Beitrag, um dessen Status zu korrigieren.",
     "col_date": "Datum",
+    "col_transaktionsdatum": "Transaktionsdatum",
     "col_membre": "Mitglied",
     "col_libelle": "Artikel",
     "col_montant": "Betrag",
@@ -103,7 +104,7 @@
       "especes": "Bar"
     },
     "confirmer": "Als bezahlt markieren",
-    "date_paiement_label": "Transaktionsdatum (optional, Standard: heute)",
+    "date_paiement_label": "Transaktionsdatum (Standard: heute)",
     "en_cours": "Wird bestätigt…",
     "erreur_action": "Die Zahlung konnte nicht bestätigt werden.",
     "filtre_statut": "Status",
@@ -236,6 +237,7 @@
     "statut": "Status",
     "paiement": "Zahlung",
     "non_paye": "Offen",
+    "transaktionsdatum": "Transaktionsdatum (Standard: heute)",
     "mode": "Zahlungsart",
     "confirmer": "Bestätigen",
     "rechnung": "Rechnung"

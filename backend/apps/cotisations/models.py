@@ -311,10 +311,12 @@ class Cotisation(models.Model):
         return f"{self.libelle} — {self.membre} ({self.get_statut_display()})"
 
     def save(self, *args, **kwargs):
-        if self.statut == StatutCotisation.PAYEE and not self.reference_transaction:
+        if self.statut == StatutCotisation.PAYEE:
+            # Transaktionsdatum immer setzen, sobald bezahlt (auch bei vorhandener Referenz)
             if not self.date_paiement:
                 self.date_paiement = timezone.now()
-            self.reference_transaction = self._generate_reference_transaction()
+            if not self.reference_transaction:
+                self.reference_transaction = self._generate_reference_transaction()
         super().save(*args, **kwargs)
 
     def _generate_reference_transaction(self) -> str:

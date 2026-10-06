@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { CidUser } from "../store/authStore";
+import type { CidUser, UiPraeferenzen } from "../store/authStore";
 import { getDeviceId } from "../utils/deviceId";
 
 export interface LoginResponse {
@@ -83,7 +83,10 @@ export async function register(payload: RegisterPayload): Promise<void> {
 }
 
 /** POST /auth/register/confirm/ — code à 6 chiffres reçu par email. */
-export async function confirmRegistration(email: string, code: string): Promise<{ message: string }> {
+export async function confirmRegistration(
+  email: string,
+  code: string,
+): Promise<{ message: string }> {
   const { data } = await apiClient.post<{ message: string }>("/auth/register/confirm/", {
     email,
     code,
@@ -119,4 +122,78 @@ export async function confirmPasswordReset(
     new_password: newPassword,
   });
   return data;
+}
+
+/** Präferenzen speichern (Sprache, Anzeigemodus, Seitenleiste) — PATCH /auth/me/. */
+export async function speicherePraeferenzen(payload: {
+  langue_preferee?: "fr" | "de";
+  ui_praeferenzen?: UiPraeferenzen;
+}): Promise<CidUser> {
+  const { data } = await apiClient.patch<CidUser>("/auth/me/", payload);
+  return data;
+}
+
+export interface GeraeteSitzung {
+  id: string;
+  browser: string;
+  os: string;
+  ip_address: string | null;
+  last_seen_at: string;
+  created_at: string;
+  is_current: boolean;
+}
+
+export interface GeraeteListe {
+  max_devices: number;
+  results: GeraeteSitzung[];
+}
+
+const deviceHeader = () => ({ headers: { "X-Device-Id": getDeviceId() } });
+
+export async function fetchGeraete(): Promise<GeraeteListe> {
+  const { data } = await apiClient.get<GeraeteListe>("/auth/sessions/", deviceHeader());
+  return data;
+}
+
+export async function geraetAbmelden(id: string): Promise<void> {
+  await apiClient.delete(`/auth/sessions/${id}/`);
+}
+
+export async function andereGeraeteAbmelden(): Promise<{ revoked: number }> {
+  const { data } = await apiClient.post<{ revoked: number }>(
+    "/auth/sessions/revoke-others/",
+    {},
+    deviceHeader(),
+  );
+  return data;
+}
+
+export async function passwortAendern(
+  current_password: string,
+  new_password: string,
+): Promise<void> {
+  await apiClient.post("/auth/password-change/", { current_password, new_password });
+}
+
+export interface TotpSetup {
+  qr_code_base64: string;
+  otpauth_url: string;
+}
+
+export async function fetchTotpStatus(): Promise<{ totp_enabled: boolean }> {
+  const { data } = await apiClient.get<{ totp_enabled: boolean }>("/auth/2fa/totp/");
+  return data;
+}
+
+export async function startTotpSetup(): Promise<TotpSetup> {
+  const { data } = await apiClient.post<TotpSetup>("/auth/2fa/totp/");
+  return data;
+}
+
+export async function confirmTotp(code: string): Promise<void> {
+  await apiClient.post("/auth/2fa/totp/confirm/", { code });
+}
+
+export async function disableTotp(): Promise<void> {
+  await apiClient.delete("/auth/2fa/totp/");
 }

@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import { heuteIso } from "../../utils/datum";
 import * as cotisationsApi from "../../api/cotisations";
 import * as useAdhesionsHooks from "../../hooks/useAdhesions";
 import * as useBoutiqueHooks from "../../hooks/useBoutique";
@@ -259,8 +260,49 @@ describe("CotisationsEnAttentePage", () => {
     expect(mutate).toHaveBeenCalledTimes(1);
     expect(mutate.mock.calls[0][0]).toEqual({
       id: "c1",
-      payload: { mode_paiement: "carte" },
+      payload: { mode_paiement: "carte", date_paiement: heuteIso() },
     });
+  });
+
+  it("zeigt das Transaktionsdatum in der Liste und bei offenen Zahlungen einen Strich", () => {
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          cotisationEnAttente({
+            id: "c-bezahlt",
+            statut: "payee",
+            date_paiement: "2026-03-15T12:00:00Z",
+          }),
+          cotisationEnAttente({ id: "c-offen" }),
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    expect(screen.getByText("en_attente_paiement.col_transaktionsdatum")).toBeInTheDocument();
+    expect(
+      screen.getByText(new Date("2026-03-15T12:00:00Z").toLocaleDateString()),
+    ).toBeInTheDocument();
+    expect(screen.getByText("–")).toBeInTheDocument();
+  });
+
+  it("belegt das Transaktionsdatum standardmäßig mit dem heutigen Datum", () => {
+    vi.mocked(useCotisationsHooks.useCotisationsGestion).mockReturnValue({
+      data: { next: null, previous: null, results: [cotisationEnAttente()] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCotisationsHooks.useCotisationsGestion>);
+
+    renderWithProviders(<CotisationsEnAttentePage />);
+
+    expect(screen.getByLabelText("en_attente_paiement.date_paiement_label")).toHaveValue(
+      heuteIso(),
+    );
   });
 
   it("confirme le paiement avec une date de transaction backdatée (demande utilisateur du 2026-09-29)", () => {
