@@ -1,0 +1,147 @@
+{
+  "bouton": "Hilfe",
+  "fermer": "Schließen",
+  "events": {
+    "titre": "Veranstaltungsverwaltung",
+    "intro": "Hier legst du Veranstaltungen an, veröffentlichst sie und siehst die Anmeldungen.",
+    "schritte": [
+      "„Neue Veranstaltung“ wählen und Titel, Beschreibung, Datum, Uhrzeit und Ort ausfüllen. Enddatum, Endzeit und Zahlungsfrist sind optional.",
+      "Treffpunkt und Google-Maps-Link werden Nicht-Mitgliedern bei „nur für Mitglieder“-Veranstaltungen nicht angezeigt.",
+      "Preis, Plätze und ggf. Begleitpersonen festlegen. Mit „Für Nicht-Mitglieder sichtbar“ erscheint die Veranstaltung auch auf der öffentlichen Startseite.",
+      "Erst mit „Veröffentlichen“ ist die Veranstaltung für Mitglieder sichtbar; dabei geht eine Einladungs-Mail raus. Mit „Absagen“ werden alle Angemeldeten informiert.",
+      "Ist eine Zahlungsfrist gesetzt, erhalten Angemeldete ohne Zahlung kurz vor Ablauf automatisch eine Erinnerung per E-Mail."
+    ]
+  },
+  "boutique": {
+    "titre": "Shop-Verwaltung",
+    "intro": "Hier pflegst du den Katalog des Vereinsshops.",
+    "schritte": [
+      "Neuen Artikel mit Name, Beschreibung und Preis anlegen; er startet als Entwurf.",
+      "Über „Varianten verwalten“ Größen/Farben mit Bestand pflegen, über „Galerie“ weitere Fotos hinzufügen.",
+      "Mit dem Status-Auswahlfeld Artikel veröffentlichen oder archivieren; nur veröffentlichte Artikel sehen Kundinnen und Kunden.",
+      "„Löschen“ entfernt einen Artikel endgültig. Artikel mit bestehenden Bestellungen können nicht gelöscht werden – setze sie stattdessen auf „archiviert“."
+    ]
+  },
+  "stats": {
+    "titre": "Statistiken & KPIs",
+    "intro": "Kennzahlen zu Mitgliedern, Zahlungen und Aktivität auf einen Blick.",
+    "schritte": [
+      "Zwischen den Reitern wechseln, um verschiedene Bereiche zu sehen.",
+      "Zeitraum und Filter oben anpassen, die Diagramme aktualisieren sich automatisch.",
+      "Mit dem Mauszeiger über ein Diagramm fahren, um Einzelwerte zu sehen."
+    ]
+  },
+  "inscriptions": {
+    "titre": "Registrierungen",
+    "intro": "Neue Konten und Mitgliedschaftsanträge prüfen.",
+    "schritte": [
+      "Offene Registrierungen in der Liste ansehen und die Angaben prüfen.",
+      "Eine Registrierung freigeben oder ablehnen.",
+      "Freigegebene Personen werden als Mitglieder geführt und können sich anmelden."
+    ]
+  },
+  "justificatifs": {
+    "titre": "Nachweise",
+    "intro": "Eingereichte Nachweise (z. B. für Ermäßigungen) prüfen.",
+    "schritte": [
+      "Den Nachweis in der Liste öffnen und ansehen.",
+      "Annehmen oder mit Begründung ablehnen.",
+      "Die Person wird über die Entscheidung benachrichtigt."
+    ]
+  },
+  "campagnes": {
+    "titre": "Mitgliedschaftskampagnen",
+    "intro": "Hier verwaltest du die Mitgliedschaftskampagnen und ihre Angebote.",
+    "schritte": [
+      "Eine Kampagne mit Zeitraum und Beschreibung anlegen.",
+      "Über „Angebote verwalten“ die Mitgliedschaftsstufen mit Preisen und Vorteilen hinzufügen.",
+      "Kampagne veröffentlichen, damit Interessierte sie auf der Startseite und unter „Meine Mitgliedschaft“ sehen."
+    ]
+  },
+  "paiements": {
+    "titre": "Zahlungen",
+    "intro": "Offene Zahlungen prüfen und den Zahlungseingang bestätigen.",
+    "schritte": [
+      "Die Liste der ausstehenden Zahlungen ansehen.",
+      "Sobald das Geld eingegangen ist, die Zahlung als bezahlt bestätigen; ein Beleg wird erzeugt.",
+      "Falsche oder doppelte Zahlungen lassen sich stornieren."
+    ]
+  },
+  "relances": {
+    "titre": "Fälligkeitstermine",
+    "intro": "Lege fest, wann Mitglieder an offene Beiträge erinnert werden.",
+    "schritte": [
+      "Die Erinnerungstage vor und nach der Fälligkeit einstellen.",
+      "Speichern – die Erinnerungen laufen danach automatisch per E-Mail."
+    ]
+  },
+  "roles": {
+    "titre": "Rollenverwaltung",
+    "intro": "Bestimme, wer welche Verwaltungsseiten sehen und ändern darf.",
+    "schritte": [
+      "Eine Person oder Rolle auswählen.",
+      "Pro Seite „kein Zugriff“, „Lesen“ oder „Lesen und Schreiben“ vergeben.",
+      "Änderungen gelten sofort beim nächsten Laden der Seite."
+    ]
+  },
+  "articles": {
+    "titre": "Beitragsartikel",
+    "intro": "Artikel, die bei Beiträgen und Zahlungen ausgewählt werden können.",
+    "schritte": [
+      "Einen Artikel mit Name und Betrag anlegen.",
+      "Nicht mehr benötigte Artikel deaktivieren statt zu löschen, damit bisherige Zahlungen nachvollziehbar bleiben."
+    ]
+  },
+  "notifications": {
+    "titre": "E-Mail-Benachrichtigungen",
+    "intro": "Schalte E-Mails je Bereich ein oder aus.",
+    "schritte": [
+      "Für jedes Modul (z. B. Veranstaltungen, Shop) festlegen, ob E-Mails verschickt werden.",
+      "Die Benachrichtigungen in der App (Glocke) bleiben davon unberührt."
+    ]
+  },
+  "projets": {
+    "titre": "Projekt- & Aktionsverwaltung",
+    "intro": "Spendenprojekte und Aktionen anlegen und betreuen.",
+    "schritte": [
+      "Neues Projekt mit Titel, Beschreibung, Bild und Spendenziel anlegen.",
+      "Veröffentlichen, damit Mitglieder und Besucher es sehen und spenden können.",
+      "Den Fortschritt in der Liste verfolgen und das Projekt am Ende abschließen."
+    ]
+  },
+  "albums": {
+    "titre": "Fotoalben-Verwaltung",
+    "intro": "Fotoalben für die Galerie anlegen.",
+    "schritte": [
+      "Neues Album mit Titel erstellen und Fotos hochladen.",
+      "Veröffentlichen, damit das Album in der Galerie erscheint.",
+      "Fotos oder ganze Alben bei Bedarf wieder entfernen."
+    ]
+  },
+  "hero": {
+    "titre": "Hero-Video",
+    "intro": "Das Video im Kopfbereich der Startseite austauschen.",
+    "schritte": [
+      "Ein neues Video hochladen oder das aktuelle ersetzen.",
+      "Nach dem Speichern erscheint es auf der Startseite."
+    ]
+  },
+  "logos": {
+    "titre": "Vereinslogos",
+    "intro": "Logos der Vereine für Tabelle und Spielplan pflegen.",
+    "schritte": [
+      "Den Verein in der Liste auswählen.",
+      "Ein Logo hochladen oder austauschen.",
+      "Die Logos erscheinen danach in Tabelle und Spielplan."
+    ]
+  },
+  "quiz": {
+    "titre": "Quiz-Verwaltung",
+    "intro": "Quizfragen für die Community anlegen.",
+    "schritte": [
+      "Neues Quiz oder neue Frage mit Antwortmöglichkeiten erstellen und die richtige Antwort markieren.",
+      "Veröffentlichen, damit Mitglieder teilnehmen können.",
+      "Ergebnisse und Rangliste in der Übersicht ansehen."
+    ]
+  }
+}

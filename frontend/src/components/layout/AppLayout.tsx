@@ -1,4 +1,5 @@
 import { IconMenu2 } from "@tabler/icons-react";
+import HelpButton from "./HelpButton";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
@@ -58,7 +59,7 @@ export default function AppLayout() {
             2026-09-26, plan "Öffentliche mycid.org-Startseite" section A) : "/" redirige déjà
             vers /dashboard pour un membre actif (voir HomeRoute.tsx), donc un simple lien
             suffit — pas de cas particulier à gérer ici. */}
-        <header className="glass-bar flex items-center justify-between gap-2 border-b border-text-tertiary/10 bg-bg-primary px-4 py-2 sm:px-6">
+        <header className="glass-bar relative z-30 flex items-center justify-between gap-2 border-b border-text-tertiary/10 bg-bg-primary px-4 py-2 sm:px-6">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -72,6 +73,7 @@ export default function AppLayout() {
                 de la Sidebar reste, et ramène à la Startseite (point 9). */}
           </div>
           <div className="flex flex-1 items-center justify-end gap-2">
+            <HelpButton />
             <LanguageSwitcher />
             <ThemeToggle />
             <NotificationBell />
