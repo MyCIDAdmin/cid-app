@@ -372,3 +372,35 @@ class AufgabeKommentar(models.Model):
         verbose_name = _("Commentaire de tâche")
         verbose_name_plural = _("Commentaires de tâche")
         ordering = ["created_at"]
+
+
+class PlanKosten(models.Model):
+    """Coût prévu d'un projet par catégorie de dépense (ajouté le 2026-10-06). Les coûts réels
+    ("Ist") ne sont PAS dupliqués ici : ce sont les `finances.Depense` approuvées liées au
+    projet — une seule source de vérité, comparée au plan par `kosten-uebersicht`."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name="plankosten")
+    categorie = models.ForeignKey(
+        "finances.CategorieDepense", on_delete=models.PROTECT, related_name="+"
+    )
+    betrag = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
+    )
+    notiz = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "projets_plankosten"
+        verbose_name = _("Coût prévu")
+        verbose_name_plural = _("Coûts prévus")
+        ordering = ["categorie__ordre", "categorie__nom"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["projet", "categorie"], name="projets_plankosten_unique_categorie"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.projet} — {self.categorie}: {self.betrag}"

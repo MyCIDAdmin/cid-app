@@ -40,16 +40,20 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.cotisations.models import Cotisation, StatutCotisation
+from apps.finances.models import AktionProtokoll, CategorieDepense, Depense, StatutDepense
+from apps.finances.services import diff, etat_depense, protokolliere, pruefe_jahr, resume_depense
 from apps.membres.models import Membre
 
 from .models import (
     Aufgabe,
     AufgabeKommentar,
+    PlanKosten,
     ProjetImage,
     ProjetMiseAJour,
     ProjetMiseAJourImage,
@@ -73,7 +77,9 @@ from .serializers import (
     AufgabeKommentarSerializer,
     AufgabeSerializer,
     ContributeurSerializer,
+    PlanKostenSerializer,
     ProjetImageSerializer,
+    ProjetKostenSerializer,
     ProjetMiseAJourImageSerializer,
     ProjetMiseAJourSerializer,
     ProjetMitgliedSerializer,
@@ -165,6 +171,71 @@ class ProjetViewSet(ModelViewSet):
                 "prozent": round(100 * erledigt / gesamt) if gesamt else 0,
                 "pro_status": {code: pro_status.get(code, 0) for code in StatutAufgabe.values},
                 "team_groesse": projet.team.count(),
+            }
+        )
+
+    @action(detail=True, methods=["get"], url_path="kosten-uebersicht")
+    def kosten_uebersicht(self, request, pk=None):
+        """Plan/Ist-Vergleich (2026-10-06) : Plan je Kostenart, Ist = freigegebene Ausgaben
+        (Vier-Augen-Prinzip der Finanzen), "offen" = noch nicht freigegeben ; abgelehnte
+        Ausgaben zählen nirgends. Einnahmen = bezahlte Beiträge zum Projekt."""
+        projet = self.get_object()
+        if not darf_arbeitsbereich(request.user, projet):
+            raise PermissionDenied("Die Kosten sind nur für das Projektteam sichtbar.")
+        zero = Decimal("0.00")
+        zeilen: dict = {}
+
+        def zeile(cat_id, cat_nom):
+            return zeilen.setdefault(
+                cat_id,
+                {
+                    "categorie": cat_id,
+                    "categorie_nom": cat_nom,
+                    "plan": zero,
+                    "ist": zero,
+                    "offen": zero,
+                },
+            )
+
+        for plan in PlanKosten.objects.filter(projet=projet).select_related("categorie"):
+            zeile(plan.categorie_id, plan.categorie.nom)["plan"] = plan.betrag
+        depenses = Depense.objects.filter(projet=projet).exclude(statut=StatutDepense.REJETEE)
+        pro_aufgabe: dict = {}
+        for d in depenses.select_related("categorie", "aufgabe"):
+            feld = "ist" if d.statut == StatutDepense.APPROUVEE else "offen"
+            z = zeile(d.categorie_id, d.categorie.nom)
+            z[feld] += d.montant
+            if d.aufgabe_id:
+                a = pro_aufgabe.setdefault(
+                    d.aufgabe_id,
+                    {"aufgabe": d.aufgabe_id, "titel": d.aufgabe.titel, "ist": zero, "offen": zero},
+                )
+                a[feld] += d.montant
+        kategorien = sorted(zeilen.values(), key=lambda z: z["categorie_nom"].lower())
+        for z in kategorien:
+            z["abweichung"] = z["plan"] - z["ist"]
+            z["prozent"] = round(100 * z["ist"] / z["plan"]) if z["plan"] else None
+        plan_gesamt = sum((z["plan"] for z in kategorien), zero)
+        ist_gesamt = sum((z["ist"] for z in kategorien), zero)
+        offen_gesamt = sum((z["offen"] for z in kategorien), zero)
+        einnahmen = projet.montant_collecte
+        return Response(
+            {
+                "plan_gesamt": plan_gesamt,
+                "ist_gesamt": ist_gesamt,
+                "offen_gesamt": offen_gesamt,
+                "abweichung": plan_gesamt - ist_gesamt,
+                "einnahmen": einnahmen,
+                "ergebnis": einnahmen - ist_gesamt,
+                "kategorien": kategorien,
+                # Auswahl für Plan/Erfassung : Teammitglieder haben keinen Zugriff auf die
+                # Finanzseite, daher liefert die Übersicht die aktiven Kostenarten mit.
+                "kostenarten": [
+                    {"id": c.id, "nom": c.nom} for c in CategorieDepense.objects.filter(actif=True)
+                ],
+                "aufgaben": sorted(pro_aufgabe.values(), key=lambda a: a["titel"].lower()),
+                "darf_erfassen": kann_aufgaben_bearbeiten(request.user, projet),
+                "darf_plan_bearbeiten": kann_team_verwalten(request.user, projet),
             }
         )
 
@@ -516,3 +587,121 @@ class AufgabeKommentarViewSet(ModelViewSet):
         if not (eigener or kann_team_verwalten(self.request.user, instance.aufgabe.projet)):
             raise PermissionDenied("Nur der Autor oder die Projektleitung darf löschen.")
         instance.delete()
+
+
+class PlanKostenViewSet(ModelViewSet):
+    """Plankosten je Kostenart (2026-10-06). Lecture : Team, Verwaltung und Finanzen (lesend) ;
+    Schreiben : Projektleitung und Verwaltung."""
+
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    permission_classes = [IsAuthenticated]
+    serializer_class = PlanKostenSerializer
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["projet"]
+
+    def get_queryset(self):
+        return PlanKosten.objects.select_related("categorie", "projet").filter(
+            projet__in=arbeitsbereich_projekte(self.request.user)
+        )
+
+    def _pruefe_schreibrecht(self, projet):
+        if not kann_team_verwalten(self.request.user, projet):
+            raise PermissionDenied("Nur die Projektleitung oder die Verwaltung plant die Kosten.")
+
+    def perform_create(self, serializer):
+        projet = _projekt_aus_daten(self.request, serializer)
+        if not arbeitsbereich_projekte(self.request.user).filter(pk=projet.pk).exists():
+            raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
+        self._pruefe_schreibrecht(projet)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._pruefe_schreibrecht(serializer.instance.projet)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._pruefe_schreibrecht(instance.projet)
+        instance.delete()
+
+
+class ProjetKostenViewSet(ModelViewSet):
+    """Ist-Kosten eines Projekts (2026-10-06) = `finances.Depense` mit gesetztem Projekt. Das
+    Projektteam (Leitung, Mitarbeit, Verwaltung — nie Beobachter) erfasst sie ; sie starten
+    "en_attente" und zählen erst nach Freigabe durch eine ANDERE Person der Finanzen (bestehendes
+    Vier-Augen-Prinzip in apps.finances, unverändert). Freigegebene Ausgaben sind eingefroren ;
+    ein abgeschlossenes Geschäftsjahr sperrt (409). Änderungen landen im Finanz-Protokoll."""
+
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProjetKostenSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["projet", "statut", "aufgabe"]
+
+    def get_queryset(self):
+        return Depense.objects.select_related(
+            "categorie", "projet", "aufgabe", "saisie_par", "decide_par"
+        ).filter(projet__in=arbeitsbereich_projekte(self.request.user))
+
+    def perform_create(self, serializer):
+        projet = _projekt_aus_daten(self.request, serializer)
+        if not arbeitsbereich_projekte(self.request.user).filter(pk=projet.pk).exists():
+            raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
+        if not kann_aufgaben_bearbeiten(self.request.user, projet):
+            raise PermissionDenied("Keine Berechtigung, Kosten zu erfassen.")
+        pruefe_jahr(serializer.validated_data["date_depense"].year)
+        depense = serializer.save(saisie_par=self.request.user)
+        protokolliere(
+            self.request.user,
+            AktionProtokoll.ERSTELLT,
+            "depense",
+            depense.id,
+            f"Projektkosten erfasst ({projet.titre}): {resume_depense(depense)}",
+            annee=depense.date_depense.year,
+        )
+
+    def _pruefe_aenderbar(self, depense):
+        user = self.request.user
+        if not (depense.saisie_par_id == user.id or kann_team_verwalten(user, depense.projet)):
+            raise PermissionDenied("Nur die erfassende Person oder die Projektleitung darf das.")
+        if depense.statut == StatutDepense.APPROUVEE:
+            raise ValidationError(
+                {"detail": "Eine freigegebene Ausgabe kann nicht mehr geändert werden."}
+            )
+        pruefe_jahr(depense.date_depense.year)
+
+    def perform_update(self, serializer):
+        depense = serializer.instance
+        self._pruefe_aenderbar(depense)
+        avant = etat_depense(depense)
+        neues_datum = serializer.validated_data.get("date_depense")
+        if neues_datum:
+            pruefe_jahr(neues_datum.year)
+        depense = serializer.save()
+        depense = self.get_queryset().get(pk=depense.pk)
+        aenderungen = diff(avant, etat_depense(depense))
+        if aenderungen:
+            protokolliere(
+                self.request.user,
+                AktionProtokoll.GEAENDERT,
+                "depense",
+                depense.id,
+                f"Projektkosten geändert: {resume_depense(depense)}",
+                annee=depense.date_depense.year,
+                aenderungen=aenderungen,
+            )
+
+    def perform_destroy(self, instance):
+        self._pruefe_aenderbar(instance)
+        resume, annee, pk = resume_depense(instance), instance.date_depense.year, instance.id
+        instance.delete()
+        protokolliere(
+            self.request.user,
+            AktionProtokoll.GELOESCHT,
+            "depense",
+            pk,
+            f"Projektkosten gelöscht: {resume}",
+            annee=annee,
+        )

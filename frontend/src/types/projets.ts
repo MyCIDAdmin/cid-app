@@ -214,3 +214,84 @@ export interface Arbeitsbereich {
   pro_status: Record<StatutAufgabe, number>;
   team_groesse: number;
 }
+
+// --- Coûts du projet : plan / réel (2026-10-06) -------------------------------------------------
+
+export type StatutKosten = "en_attente" | "approuvee" | "rejetee";
+
+export interface KostenartAuswahl {
+  id: string;
+  nom: string;
+}
+
+export interface PlanKostenEintrag {
+  id: string;
+  projet: string;
+  categorie: string;
+  categorie_nom: string;
+  betrag: string;
+  notiz: string;
+}
+
+/** Une ligne réelle = `finances.Depense` liée au projet ; approuvée par le service financier. */
+export interface KostenPosition {
+  id: string;
+  projet: string;
+  date_depense: string;
+  montant: string;
+  categorie: string;
+  categorie_nom: string;
+  fournisseur: string;
+  description: string;
+  aufgabe: string | null;
+  aufgabe_titel: string | null;
+  justificatif_url: string | null;
+  statut: StatutKosten;
+  saisie_par: string | null;
+  saisie_par_nom: string;
+  decide_par_nom: string;
+  motif_rejet: string;
+}
+
+export interface KostenPositionPayload {
+  projet: string;
+  date_depense: string;
+  montant: string;
+  categorie: string;
+  fournisseur: string;
+  description: string;
+  aufgabe: string | null;
+  justificatif?: File | null;
+}
+
+export interface KostenZeile {
+  categorie: string;
+  categorie_nom: string;
+  plan: string;
+  ist: string;
+  offen: string;
+  abweichung: string;
+  prozent: number | null;
+}
+
+export interface KostenAufgabeZeile {
+  aufgabe: string;
+  titel: string;
+  ist: string;
+  offen: string;
+}
+
+/** Réponse de GET /projets/projets/{id}/kosten-uebersicht/. */
+export interface KostenUebersicht {
+  plan_gesamt: string;
+  ist_gesamt: string;
+  offen_gesamt: string;
+  abweichung: string;
+  einnahmen: string;
+  ergebnis: string;
+  kategorien: KostenZeile[];
+  kostenarten: KostenartAuswahl[];
+  aufgaben: KostenAufgabeZeile[];
+  darf_erfassen: boolean;
+  darf_plan_bearbeiten: boolean;
+}

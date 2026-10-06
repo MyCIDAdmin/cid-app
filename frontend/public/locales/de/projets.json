@@ -106,7 +106,8 @@
     "tab": {
       "uebersicht": "Übersicht",
       "aufgaben": "Aufgaben",
-      "team": "Team"
+      "team": "Team",
+      "kosten": "Kosten"
     },
     "sichtbarkeit": {
       "entwurf": "Entwurf",
@@ -179,6 +180,63 @@
       "rolle_von": "Rolle von {{name}}",
       "entfernen": "Entfernen",
       "nur_lesen": "Nur die Projektleitung und die Verwaltung können das Team ändern."
+    },
+    "kosten": {
+      "fehler": "Die Kosten konnten nicht geladen werden.",
+      "hinweis_freigabe": "Erfasste Kosten zählen erst nach der Freigabe durch das Finanzteam (Vier-Augen-Prinzip). „Offen“ = noch nicht freigegeben.",
+      "kachel": {
+        "plan": "Plankosten",
+        "ist": "Ist (freigegeben)",
+        "offen": "Offen zur Freigabe",
+        "abweichung": "Restbudget",
+        "einnahmen": "Einnahmen (Beiträge)",
+        "ergebnis": "Ergebnis"
+      },
+      "plan_ist": "Plan / Ist je Kostenart",
+      "kein_plan": "Noch keine Plankosten oder Ausgaben erfasst.",
+      "spalte": {
+        "kostenart": "Kostenart",
+        "plan": "Plan",
+        "ist": "Ist",
+        "offen": "Offen",
+        "abweichung": "Rest"
+      },
+      "plan_betrag": "Plan für {{art}}",
+      "plan_aendern": "Ändern",
+      "plan_entfernen": "Entfernen",
+      "plan_hinzufuegen": "Plan hinzufügen",
+      "kostenart_waehlen": "Kostenart wählen",
+      "speichern": "Speichern",
+      "positionen": "Ist-Kosten",
+      "erfassen": "Kosten erfassen",
+      "keine_positionen": "Noch keine Kosten erfasst.",
+      "beleg": "Beleg",
+      "bearbeiten": "Bearbeiten",
+      "loeschen": "Löschen",
+      "loeschen_titel": "Kosten löschen",
+      "loeschen_frage": "Diese noch nicht freigegebene Kostenposition wirklich löschen?",
+      "abgelehnt_grund": "Abgelehnt: {{grund}}",
+      "pro_aufgabe": "Kosten je Aufgabe",
+      "statut": {
+        "en_attente": "Wartet auf Freigabe",
+        "approuvee": "Freigegeben",
+        "rejetee": "Abgelehnt"
+      },
+      "form": {
+        "neu": "Kosten erfassen",
+        "bearbeiten": "Kosten bearbeiten",
+        "hinweis": "Die Freigabe erfolgt durch das Finanzteam.",
+        "datum": "Datum",
+        "betrag": "Betrag (€)",
+        "lieferant": "Lieferant / Zweck",
+        "kostenart": "Kostenart",
+        "aufgabe": "Aufgabe (optional)",
+        "keine_aufgabe": "Keine Aufgabe",
+        "beschreibung": "Beschreibung",
+        "beleg": "Beleg (PDF, JPG, PNG)",
+        "abbrechen": "Abbrechen",
+        "speichern": "Speichern"
+      }
     }
   }
 }

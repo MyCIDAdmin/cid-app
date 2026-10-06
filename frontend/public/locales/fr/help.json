@@ -165,6 +165,7 @@
       "Dans l'onglet « Tâches », créez des tâches et déplacez-les par glisser-déposer (ou via le champ statut) entre Ouverte, En cours, En revue et Terminée.",
       "Définissez responsables et échéances : la personne assignée reçoit une notification, puis un rappel avant l'échéance.",
       "Dans l'onglet « Équipe », la Direction du projet décide qui collabore ou ne peut que lire (Observateur).",
+      "Dans l'onglet « Coûts », la Direction planifie des montants par catégorie ; l'équipe saisit les dépenses réelles avec justificatif. Elles ne comptent qu'après approbation par l'équipe financière et apparaissent alors dans la comparaison prévu/réel.",
       "Un projet est d'abord un brouillon. « Publier » rend la kachel visible pour tous les membres ; tâches et équipe restent toujours internes."
     ]
   }

@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as projetsApi from "../api/projets";
 import type {
   AufgabePayload,
+  KostenPositionPayload,
   ProjetImagePayload,
   RolleProjet,
   SichtbarkeitProjet,
@@ -29,6 +30,7 @@ const projetsKeys = {
   arbeitsbereich: (id: string) => [...projetsKeys.all, "arbeitsbereich", id] as const,
   team: (id: string) => [...projetsKeys.all, "team", id] as const,
   aufgaben: (id: string) => [...projetsKeys.all, "aufgaben", id] as const,
+  kosten: (id: string) => [...projetsKeys.all, "kosten", id] as const,
   kommentare: (id: string) => [...projetsKeys.all, "kommentare", id] as const,
 };
 
@@ -309,6 +311,90 @@ export function useKommentarLoeschen() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => projetsApi.kommentarLoeschen(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+// --- Coûts du projet : plan / réel (2026-10-06) -------------------------------------------------
+// Toute mutation invalide la clé racine "projets" (aperçu, plan et lignes restent cohérents) ;
+// l'approbation se fait côté finances, donc un rafraîchissement ré-affiche le nouveau statut.
+
+export function useKostenUebersicht(projetId: string | undefined) {
+  return useQuery({
+    queryKey: [...projetsKeys.kosten(projetId ?? ""), "uebersicht"],
+    queryFn: () => projetsApi.getKostenUebersicht(projetId as string),
+    enabled: Boolean(projetId),
+  });
+}
+
+export function usePlankosten(projetId: string | undefined) {
+  return useQuery({
+    queryKey: [...projetsKeys.kosten(projetId ?? ""), "plan"],
+    queryFn: () => projetsApi.listPlankosten(projetId as string),
+    enabled: Boolean(projetId),
+  });
+}
+
+export function usePlankostenErstellen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { projet: string; categorie: string; betrag: string }) =>
+      projetsApi.plankostenErstellen(payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function usePlankostenAendern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, betrag }: { id: string; betrag: string }) =>
+      projetsApi.plankostenAendern(id, betrag),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function usePlankostenLoeschen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.plankostenLoeschen(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useKosten(projetId: string | undefined) {
+  return useQuery({
+    queryKey: [...projetsKeys.kosten(projetId ?? ""), "positionen"],
+    queryFn: () => projetsApi.listKosten(projetId as string),
+    enabled: Boolean(projetId),
+  });
+}
+
+export function useKostenErfassen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: KostenPositionPayload) => projetsApi.kostenErfassen(payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useKostenAendern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<Omit<KostenPositionPayload, "projet">>;
+    }) => projetsApi.kostenAendern(id, payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useKostenLoeschen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.kostenLoeschen(id),
     onSuccess: () => invalidateProjets(queryClient),
   });
 }

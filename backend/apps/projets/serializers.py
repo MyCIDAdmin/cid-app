@@ -15,11 +15,13 @@ réel vérifié, ré-encodage Pillow, EXIF supprimé).
 from rest_framework import serializers
 
 from apps.communaute.validators import valider_et_reencoder_photo
+from apps.finances.serializers import DepenseSerializer
 from apps.membres.models import Membre
 
 from .models import (
     Aufgabe,
     AufgabeKommentar,
+    PlanKosten,
     Projet,
     ProjetImage,
     ProjetMiseAJour,
@@ -296,4 +298,55 @@ class AufgabeKommentarSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         validated_data.pop("aufgabe", None)
+        return super().update(instance, validated_data)
+
+
+class PlanKostenSerializer(serializers.ModelSerializer):
+    categorie_nom = serializers.CharField(source="categorie.nom", read_only=True)
+
+    class Meta:
+        model = PlanKosten
+        fields = ["id", "projet", "categorie", "categorie_nom", "betrag", "notiz", "updated_at"]
+        read_only_fields = ["id", "updated_at"]
+        # Eindeutigkeit prüft validate() mit einer klaren Meldung (Projekt/Kostenart ändern sich
+        # nach dem Anlegen nie — update() ignoriert beide Felder).
+        validators = []
+
+    def validate_categorie(self, categorie):
+        if not categorie.actif:
+            raise serializers.ValidationError("Kostenart deaktiviert.")
+        return categorie
+
+    def validate(self, attrs):
+        projet, categorie = attrs.get("projet"), attrs.get("categorie")
+        if (
+            self.instance is None
+            and projet
+            and categorie
+            and PlanKosten.objects.filter(projet=projet, categorie=categorie).exists()
+        ):
+            raise serializers.ValidationError(
+                {"categorie": "Für diese Kostenart gibt es schon einen Plan."}
+            )
+        return attrs
+
+    def update(self, instance, validated_data):
+        validated_data.pop("projet", None)
+        validated_data.pop("categorie", None)
+        return super().update(instance, validated_data)
+
+
+class ProjetKostenSerializer(DepenseSerializer):
+    """Ist-Kosten eines Projekts = `finances.Depense` mit gesetztem Projekt. Dieselbe Validierung
+    (Beleg, aktive Kostenart, Aufgabe gehört zum Projekt), aber ohne Veranstaltung ; das Projekt
+    ist Pflicht und danach unveränderlich."""
+
+    class Meta(DepenseSerializer.Meta):
+        fields = [
+            f for f in DepenseSerializer.Meta.fields if f not in ("evenement", "evenement_titre")
+        ]
+        extra_kwargs = {"projet": {"required": True, "allow_null": False}}
+
+    def update(self, instance, validated_data):
+        validated_data.pop("projet", None)
         return super().update(instance, validated_data)

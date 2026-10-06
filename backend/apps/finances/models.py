@@ -75,6 +75,13 @@ class Depense(models.Model):
         blank=True,
         related_name="depenses",
     )
+    aufgabe = models.ForeignKey(
+        "projets.Aufgabe",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="depenses",
+    )
     justificatif = models.FileField(
         upload_to=depense_justificatif_path, storage=JustificatifsStorage(), null=True, blank=True
     )

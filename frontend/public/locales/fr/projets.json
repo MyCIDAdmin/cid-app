@@ -106,7 +106,8 @@
     "tab": {
       "uebersicht": "Aperçu",
       "aufgaben": "Tâches",
-      "team": "Équipe"
+      "team": "Équipe",
+      "kosten": "Coûts"
     },
     "sichtbarkeit": {
       "entwurf": "Brouillon",
@@ -179,6 +180,63 @@
       "rolle_von": "Rôle de {{name}}",
       "entfernen": "Retirer",
       "nur_lesen": "Seules la Direction du projet et la gestion peuvent modifier l'équipe."
+    },
+    "kosten": {
+      "fehler": "Impossible de charger les coûts.",
+      "hinweis_freigabe": "Les coûts saisis ne comptent qu'après approbation par l'équipe financière (principe des quatre yeux). « En attente » = pas encore approuvé.",
+      "kachel": {
+        "plan": "Coûts prévus",
+        "ist": "Réel (approuvé)",
+        "offen": "En attente d'approbation",
+        "abweichung": "Budget restant",
+        "einnahmen": "Recettes (contributions)",
+        "ergebnis": "Résultat"
+      },
+      "plan_ist": "Prévu / réel par catégorie",
+      "kein_plan": "Aucun coût prévu ni dépense saisi pour l'instant.",
+      "spalte": {
+        "kostenart": "Catégorie",
+        "plan": "Prévu",
+        "ist": "Réel",
+        "offen": "En attente",
+        "abweichung": "Reste"
+      },
+      "plan_betrag": "Prévu pour {{art}}",
+      "plan_aendern": "Modifier",
+      "plan_entfernen": "Retirer",
+      "plan_hinzufuegen": "Ajouter au plan",
+      "kostenart_waehlen": "Choisir une catégorie",
+      "speichern": "Enregistrer",
+      "positionen": "Coûts réels",
+      "erfassen": "Saisir un coût",
+      "keine_positionen": "Aucun coût saisi pour l'instant.",
+      "beleg": "Justificatif",
+      "bearbeiten": "Modifier",
+      "loeschen": "Supprimer",
+      "loeschen_titel": "Supprimer le coût",
+      "loeschen_frage": "Supprimer vraiment cette ligne de coût non encore approuvée ?",
+      "abgelehnt_grund": "Refusé : {{grund}}",
+      "pro_aufgabe": "Coûts par tâche",
+      "statut": {
+        "en_attente": "En attente d'approbation",
+        "approuvee": "Approuvé",
+        "rejetee": "Refusé"
+      },
+      "form": {
+        "neu": "Saisir un coût",
+        "bearbeiten": "Modifier le coût",
+        "hinweis": "L'approbation est faite par l'équipe financière.",
+        "datum": "Date",
+        "betrag": "Montant (€)",
+        "lieferant": "Fournisseur / objet",
+        "kostenart": "Catégorie",
+        "aufgabe": "Tâche (facultatif)",
+        "keine_aufgabe": "Aucune tâche",
+        "beschreibung": "Description",
+        "beleg": "Justificatif (PDF, JPG, PNG)",
+        "abbrechen": "Annuler",
+        "speichern": "Enregistrer"
+      }
     }
   }
 }

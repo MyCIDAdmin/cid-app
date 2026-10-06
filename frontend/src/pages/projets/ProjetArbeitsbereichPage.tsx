@@ -11,6 +11,7 @@ import { Link, useParams } from "react-router-dom";
 
 import AufgabeModal from "../../components/projets/arbeitsbereich/AufgabeModal";
 import KanbanBoard from "../../components/projets/arbeitsbereich/KanbanBoard";
+import KostenTab from "../../components/projets/arbeitsbereich/KostenTab";
 import TeamTab from "../../components/projets/arbeitsbereich/TeamTab";
 import UebersichtTab from "../../components/projets/arbeitsbereich/UebersichtTab";
 import SichtbarkeitBadge from "../../components/projets/SichtbarkeitBadge";
@@ -19,7 +20,7 @@ import { useAufgaben, useProjet, useSichtbarkeitAendern, useTeam } from "../../h
 import type { Aufgabe, StatutAufgabe } from "../../types/projets";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
-type Reiter = "uebersicht" | "aufgaben" | "team";
+type Reiter = "uebersicht" | "aufgaben" | "kosten" | "team";
 
 export default function ProjetArbeitsbereichPage() {
   const { t } = useTranslation("projets");
@@ -106,7 +107,7 @@ export default function ProjetArbeitsbereichPage() {
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
 
       <div role="tablist" className="flex gap-1 border-b border-text-tertiary/20">
-        {(["uebersicht", "aufgaben", "team"] as const).map((r) => (
+        {(["uebersicht", "aufgaben", "kosten", "team"] as const).map((r) => (
           <button
             key={r}
             type="button"
@@ -135,6 +136,9 @@ export default function ProjetArbeitsbereichPage() {
           onOeffnen={(aufgabe) => setDialog({ aufgabe, status: aufgabe.status })}
           onNeu={(status) => setDialog({ aufgabe: null, status })}
         />
+      )}
+      {reiter === "kosten" && (
+        <KostenTab projetId={projet.id} aufgaben={aufgabenQuery.data ?? []} />
       )}
       {reiter === "team" && <TeamTab projetId={projet.id} verwalten={projet.darf_team_verwalten} />}
 
