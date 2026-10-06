@@ -20,6 +20,7 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
 ];
 
 export function cleHilfe(pathname: string): string | null {
+  if (/^\/projets\/[^/]+\/arbeitsbereich$/.test(pathname)) return "arbeitsbereich";
   const treffer = HILFE_ROUTEN.find(
     ([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

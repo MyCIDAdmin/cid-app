@@ -4,7 +4,15 @@
 import { apiClient } from "./client";
 import type { CursorPage } from "../types/membre";
 import type {
+  Arbeitsbereich,
+  Aufgabe,
+  AufgabeKommentar,
+  AufgabePayload,
   Contributeur,
+  ProjetMitglied,
+  RolleProjet,
+  SichtbarkeitProjet,
+  StatutAufgabe,
   Projet,
   ProjetImage,
   ProjetImagePayload,
@@ -45,10 +53,7 @@ export async function creerProjet(payload: ProjetPayload): Promise<Projet> {
   return data;
 }
 
-export async function modifierProjet(
-  id: string,
-  payload: Partial<ProjetPayload>,
-): Promise<Projet> {
+export async function modifierProjet(id: string, payload: Partial<ProjetPayload>): Promise<Projet> {
   const { data } = await apiClient.patch<Projet>(`/projets/projets/${id}/`, payload);
   return data;
 }
@@ -156,4 +161,102 @@ export async function ajouterImageMiseAJourProjet(
 
 export async function supprimerImageMiseAJourProjet(id: string): Promise<void> {
   await apiClient.delete(`/projets/mises-a-jour-images/${id}/`);
+}
+
+// --- Espace de travail : visibilité, équipe, tâches (2026-10-06) ---------------------------
+
+export async function aendereSichtbarkeit(
+  id: string,
+  sichtbarkeit: SichtbarkeitProjet,
+): Promise<Projet> {
+  const { data } = await apiClient.post<Projet>(`/projets/projets/${id}/sichtbarkeit/`, {
+    sichtbarkeit,
+  });
+  return data;
+}
+
+export async function getArbeitsbereich(id: string): Promise<Arbeitsbereich> {
+  const { data } = await apiClient.get<Arbeitsbereich>(`/projets/projets/${id}/arbeitsbereich/`);
+  return data;
+}
+
+export async function listTeam(projetId: string): Promise<ProjetMitglied[]> {
+  const { data } = await apiClient.get<CursorPage<ProjetMitglied>>("/projets/team/", {
+    params: { projet: projetId },
+  });
+  return data.results;
+}
+
+export async function teamHinzufuegen(payload: {
+  projet: string;
+  membre: string;
+  rolle: RolleProjet;
+}): Promise<ProjetMitglied> {
+  const { data } = await apiClient.post<ProjetMitglied>("/projets/team/", payload);
+  return data;
+}
+
+export async function teamRolleAendern(id: string, rolle: RolleProjet): Promise<ProjetMitglied> {
+  const { data } = await apiClient.patch<ProjetMitglied>(`/projets/team/${id}/`, { rolle });
+  return data;
+}
+
+export async function teamEntfernen(id: string): Promise<void> {
+  await apiClient.delete(`/projets/team/${id}/`);
+}
+
+export async function listAufgaben(projetId: string): Promise<Aufgabe[]> {
+  const { data } = await apiClient.get<CursorPage<Aufgabe>>("/projets/aufgaben/", {
+    params: { projet: projetId },
+  });
+  return data.results;
+}
+
+export async function aufgabeErstellen(payload: AufgabePayload): Promise<Aufgabe> {
+  const { data } = await apiClient.post<Aufgabe>("/projets/aufgaben/", payload);
+  return data;
+}
+
+export async function aufgabeAendern(
+  id: string,
+  payload: Partial<Omit<AufgabePayload, "projet">>,
+): Promise<Aufgabe> {
+  const { data } = await apiClient.patch<Aufgabe>(`/projets/aufgaben/${id}/`, payload);
+  return data;
+}
+
+export async function aufgabeLoeschen(id: string): Promise<void> {
+  await apiClient.delete(`/projets/aufgaben/${id}/`);
+}
+
+export async function aufgabeVerschieben(
+  id: string,
+  status: StatutAufgabe,
+  position: number,
+): Promise<Aufgabe> {
+  const { data } = await apiClient.post<Aufgabe>(`/projets/aufgaben/${id}/verschieben/`, {
+    status,
+    position,
+  });
+  return data;
+}
+
+export async function listKommentare(aufgabeId: string): Promise<AufgabeKommentar[]> {
+  const { data } = await apiClient.get<CursorPage<AufgabeKommentar>>(
+    "/projets/aufgaben-kommentare/",
+    { params: { aufgabe: aufgabeId } },
+  );
+  return data.results;
+}
+
+export async function kommentarErstellen(aufgabe: string, text: string): Promise<AufgabeKommentar> {
+  const { data } = await apiClient.post<AufgabeKommentar>("/projets/aufgaben-kommentare/", {
+    aufgabe,
+    text,
+  });
+  return data;
+}
+
+export async function kommentarLoeschen(id: string): Promise<void> {
+  await apiClient.delete(`/projets/aufgaben-kommentare/${id}/`);
 }

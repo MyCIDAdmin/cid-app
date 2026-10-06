@@ -31,11 +31,14 @@ demande utilisateur, voir docstring de module de models.py pour le détail des 8
     saisie-pour-autrui).
 """
 
+from django.db.models import Q
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access
+
+from .models import Projet, ProjetMitglied, RolleProjet, SichtbarkeitProjet
 
 GESTION_PROJETS_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
 
@@ -97,3 +100,102 @@ class GestionContenuProjetPermission(BasePermission):
         # `mise_a_jour` (voir models.py) — on remonte jusqu'au Projet dans ce cas.
         projet = obj.projet if hasattr(obj, "projet") else obj.mise_a_jour.projet
         return est_gestionnaire_projet(request.user, projet)
+
+
+# --- Visibilité, équipe et espace de travail (ajoutés le 2026-10-06) ---------------------------
+#
+#   - Un projet "Brouillon" n'est visible que de l'équipe du projet et des gestionnaires
+#     (Bureau Admin+ ou accès à la page de gestion des projets) ; un projet "Publié" l'est de
+#     tous, y compris d'un visiteur anonyme (page d'accueil publique).
+#   - L'espace de travail (tâches, équipe, plus tard coûts) n'est visible que de l'équipe, des
+#     gestionnaires et — en lecture seule — du service financier (page_finances).
+#   - Écriture : Direction + gestionnaires gèrent l'équipe ; Direction, Collaboration et
+#     gestionnaires gèrent les tâches ; Observateur = lecture seule.
+
+
+def _est_connecte(user) -> bool:
+    return bool(user and user.is_authenticated)
+
+
+def ist_verwalter(user) -> bool:
+    """Gestionnaire (écriture) : Bureau Admin+ ou écriture sur la page de gestion des projets."""
+    if not _est_connecte(user):
+        return False
+    if ROLE_LEVELS.get(user.role, 0) >= GESTION_PROJETS_MIN_LEVEL:
+        return True
+    return has_admin_page_access(user, "page_projets", required=NiveauAcces.LECTURE_ECRITURE)
+
+
+def sieht_alle_projekte(user) -> bool:
+    """Voit aussi les brouillons : gestionnaires, y compris en simple lecture sur la page."""
+    if not _est_connecte(user):
+        return False
+    if ROLE_LEVELS.get(user.role, 0) >= GESTION_PROJETS_MIN_LEVEL:
+        return True
+    return has_admin_page_access(user, "page_projets", required=NiveauAcces.LECTURE)
+
+
+def liest_alle_arbeitsbereiche(user) -> bool:
+    """Lecture seule de tous les espaces de travail (projets visibles) : gestionnaires et
+    service financier."""
+    if sieht_alle_projekte(user):
+        return True
+    return _est_connecte(user) and has_admin_page_access(
+        user, "page_finances", required=NiveauAcces.LECTURE
+    )
+
+
+def _membre(user):
+    return getattr(user, "membre", None) if _est_connecte(user) else None
+
+
+def sichtbare_projekte(user):
+    """Queryset des projets visibles pour `user` — voir en-tête de section."""
+    queryset = Projet.objects.all()
+    if sieht_alle_projekte(user):
+        return queryset
+    bedingung = Q(sichtbarkeit=SichtbarkeitProjet.VEROEFFENTLICHT)
+    membre = _membre(user)
+    if membre is not None:
+        bedingung |= Q(pk__in=ProjetMitglied.objects.filter(membre=membre).values("projet_id"))
+    return queryset.filter(bedingung)
+
+
+def arbeitsbereich_projekte(user):
+    """Projets dont `user` peut ouvrir l'espace de travail (visibles ET équipe/lecture)."""
+    queryset = sichtbare_projekte(user)
+    if liest_alle_arbeitsbereiche(user):
+        return queryset
+    membre = _membre(user)
+    if membre is None:
+        return queryset.none()
+    return queryset.filter(pk__in=ProjetMitglied.objects.filter(membre=membre).values("projet_id"))
+
+
+def rolle_im_projekt(user, projet) -> str | None:
+    """Rôle du membre dans l'équipe du projet, ou None. Utilise le préchargement
+    `prefetch_related("team")` quand il existe (pas de requête par projet en liste)."""
+    membre = _membre(user)
+    if membre is None:
+        return None
+    for eintrag in projet.team.all():
+        if eintrag.membre_id == membre.id:
+            return eintrag.rolle
+    return None
+
+
+def darf_arbeitsbereich(user, projet, leser: bool | None = None) -> bool:
+    if rolle_im_projekt(user, projet) is not None:
+        return True
+    return liest_alle_arbeitsbereiche(user) if leser is None else leser
+
+
+def kann_team_verwalten(user, projet) -> bool:
+    return ist_verwalter(user) or rolle_im_projekt(user, projet) == RolleProjet.LEITUNG
+
+
+def kann_aufgaben_bearbeiten(user, projet) -> bool:
+    return ist_verwalter(user) or rolle_im_projekt(user, projet) in (
+        RolleProjet.LEITUNG,
+        RolleProjet.MITARBEIT,
+    )

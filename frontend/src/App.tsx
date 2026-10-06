@@ -54,6 +54,7 @@ import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembresListPage from "./pages/membres/MembresListPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AdminProjetsPage from "./pages/projets/AdminProjetsPage";
+import ProjetArbeitsbereichPage from "./pages/projets/ProjetArbeitsbereichPage";
 import ProjetDetailPage from "./pages/projets/ProjetDetailPage";
 import ProjetsPage from "./pages/projets/ProjetsPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -424,6 +425,9 @@ export default function App() {
             modale) — même niveau d'accès que /projets ci-dessus, voir docstring
             ProjetDetailPage. */}
         <Route path="/projets/:id" element={<ProjetDetailPage />} />
+        {/* Espace de travail interne (équipe/tâches) — le serveur filtre l'accès, voir
+            ProjetArbeitsbereichPage. */}
+        <Route path="/projets/:id/arbeitsbereich" element={<ProjetArbeitsbereichPage />} />
         {/* Phase D : piloté par la matrice (page_projets), seuil de départ inchangé (Bureau
             Admin+) — voir note Phase D plus haut. */}
         <Route

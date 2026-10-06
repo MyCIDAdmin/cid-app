@@ -8,7 +8,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as projetsApi from "../api/projets";
 import type {
+  AufgabePayload,
   ProjetImagePayload,
+  RolleProjet,
+  SichtbarkeitProjet,
+  StatutAufgabe,
   ProjetMiseAJourImagePayload,
   ProjetMiseAJourPayload,
   ProjetPayload,
@@ -22,6 +26,10 @@ const projetsKeys = {
   contributeurs: (id: string) => [...projetsKeys.all, "contributeurs", id] as const,
   misesAJour: (projetId: string) => [...projetsKeys.all, "mises-a-jour", projetId] as const,
   kennzahlen: () => [...projetsKeys.all, "kennzahlen"] as const,
+  arbeitsbereich: (id: string) => [...projetsKeys.all, "arbeitsbereich", id] as const,
+  team: (id: string) => [...projetsKeys.all, "team", id] as const,
+  aufgaben: (id: string) => [...projetsKeys.all, "aufgaben", id] as const,
+  kommentare: (id: string) => [...projetsKeys.all, "kommentare", id] as const,
 };
 
 export function useProjets(filtres: projetsApi.ProjetsFiltres = {}) {
@@ -170,5 +178,137 @@ export function useSupprimerImageMiseAJourProjet() {
   return useMutation({
     mutationFn: (id: string) => projetsApi.supprimerImageMiseAJourProjet(id),
     onSuccess: () => invalidateMisesAJour(queryClient),
+  });
+}
+
+// --- Espace de travail : visibilité, équipe, tâches (2026-10-06) ---------------------------
+
+export function useSichtbarkeitAendern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, sichtbarkeit }: { id: string; sichtbarkeit: SichtbarkeitProjet }) =>
+      projetsApi.aendereSichtbarkeit(id, sichtbarkeit),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useArbeitsbereich(projetId: string | undefined) {
+  return useQuery({
+    queryKey: projetsKeys.arbeitsbereich(projetId ?? ""),
+    queryFn: () => projetsApi.getArbeitsbereich(projetId as string),
+    enabled: Boolean(projetId),
+  });
+}
+
+export function useTeam(projetId: string | undefined) {
+  return useQuery({
+    queryKey: projetsKeys.team(projetId ?? ""),
+    queryFn: () => projetsApi.listTeam(projetId as string),
+    enabled: Boolean(projetId),
+  });
+}
+
+export function useTeamHinzufuegen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { projet: string; membre: string; rolle: RolleProjet }) =>
+      projetsApi.teamHinzufuegen(payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useTeamRolleAendern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, rolle }: { id: string; rolle: RolleProjet }) =>
+      projetsApi.teamRolleAendern(id, rolle),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useTeamEntfernen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.teamEntfernen(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useAufgaben(projetId: string | undefined) {
+  return useQuery({
+    queryKey: projetsKeys.aufgaben(projetId ?? ""),
+    queryFn: () => projetsApi.listAufgaben(projetId as string),
+    enabled: Boolean(projetId),
+  });
+}
+
+export function useAufgabeErstellen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AufgabePayload) => projetsApi.aufgabeErstellen(payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useAufgabeAendern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<Omit<AufgabePayload, "projet">>;
+    }) => projetsApi.aufgabeAendern(id, payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useAufgabeLoeschen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.aufgabeLoeschen(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useAufgabeVerschieben() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      status,
+      position,
+    }: {
+      id: string;
+      status: StatutAufgabe;
+      position: number;
+    }) => projetsApi.aufgabeVerschieben(id, status, position),
+    onSettled: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useKommentare(aufgabeId: string | undefined) {
+  return useQuery({
+    queryKey: projetsKeys.kommentare(aufgabeId ?? ""),
+    queryFn: () => projetsApi.listKommentare(aufgabeId as string),
+    enabled: Boolean(aufgabeId),
+  });
+}
+
+export function useKommentarErstellen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ aufgabe, text }: { aufgabe: string; text: string }) =>
+      projetsApi.kommentarErstellen(aufgabe, text),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useKommentarLoeschen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.kommentarLoeschen(id),
+    onSuccess: () => invalidateProjets(queryClient),
   });
 }

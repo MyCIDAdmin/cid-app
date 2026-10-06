@@ -7,6 +7,7 @@ from apps.projets.models import (
     ProjetImage,
     ProjetMiseAJour,
     ProjetMiseAJourImage,
+    SichtbarkeitProjet,
     StatutProjet,
 )
 
@@ -18,6 +19,7 @@ class ProjetFactory(DjangoModelFactory):
     titre = factory.Sequence(lambda n: f"Projet {n}")
     description_html = "<p>Description du projet.</p>"
     statut = StatutProjet.EN_COURS
+    sichtbarkeit = SichtbarkeitProjet.VEROEFFENTLICHT
     responsable = factory.SubFactory(MembreFactory)
     cagnote_active = False
     objectif_montant = None

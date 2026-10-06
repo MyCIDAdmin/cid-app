@@ -17,6 +17,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import ModaleContribution from "../../components/projets/ModaleContribution";
 import RapportListe from "../../components/projets/RapportListe";
+import SichtbarkeitBadge from "../../components/projets/SichtbarkeitBadge";
 import StatutProjetBadge from "../../components/projets/StatutProjetBadge";
 import ImageCarousel from "../../components/projets/ImageCarousel";
 import AnimatedProgress from "../../components/ui/AnimatedProgress";
@@ -47,9 +48,7 @@ export default function ProjetDetailPage() {
       ? Math.min(100, (Number(projet.montant_collecte) / Number(projet.objectif_montant)) * 100)
       : null;
   const objectifAtteint = progression !== null && progression >= 100;
-  const proposeContribution = Boolean(
-    projet && projet.cagnote_active && !projet.echeance_depassee,
-  );
+  const proposeContribution = Boolean(projet && projet.cagnote_active && !projet.echeance_depassee);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -68,10 +67,15 @@ export default function ProjetDetailPage() {
         <>
           <div className="overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-card-gradient shadow-card">
             <div className="relative">
-              <ImageCarousel images={projet.images} titre={projet.titre} className="h-56 shrink-0" />
+              <ImageCarousel
+                images={projet.images}
+                titre={projet.titre}
+                className="h-56 shrink-0"
+              />
               <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-2">
-                <span className="pointer-events-auto drop-shadow">
+                <span className="pointer-events-auto flex gap-1 drop-shadow">
                   <StatutProjetBadge statut={projet.statut} />
+                  <SichtbarkeitBadge sichtbarkeit={projet.sichtbarkeit} />
                 </span>
                 <span className="pointer-events-auto rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
                   {new Date(projet.created_at).getFullYear()}
@@ -97,6 +101,15 @@ export default function ProjetDetailPage() {
                     nom: `${projet.responsable_detail.prenom} ${projet.responsable_detail.nom}`,
                   })}
                 </p>
+              )}
+
+              {projet.darf_arbeitsbereich && (
+                <Link
+                  to={`/projets/${projet.id}/arbeitsbereich`}
+                  className="self-start rounded-cid border border-ca px-3 py-1.5 text-sm font-medium text-ca hover:bg-ca/10"
+                >
+                  {t("arbeitsbereich.oeffnen")}
+                </Link>
               )}
 
               {projet.date_limite && (

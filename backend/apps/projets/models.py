@@ -71,6 +71,36 @@ class StatutProjet(models.TextChoices):
     ANNULE = "annule", _("Annulé")
 
 
+class SichtbarkeitProjet(models.TextChoices):
+    """Sichtbarkeit (ajoutée le 2026-10-06, demande utilisateur : "Nur die veröffentlichten
+    dürfen für User sichtbar sein") — INDÉPENDANTE du statut de travail ci-dessus : un projet
+    "en cours" peut rester interne, un projet "en préparation" peut déjà être annoncé. Un
+    brouillon n'est visible que de l'équipe du projet et des gestionnaires (voir
+    apps.projets.permissions.sichtbare_projekte)."""
+
+    ENTWURF = "entwurf", _("Brouillon")
+    VEROEFFENTLICHT = "veroeffentlicht", _("Publié")
+
+
+class RolleProjet(models.TextChoices):
+    LEITUNG = "leitung", _("Direction")
+    MITARBEIT = "mitarbeit", _("Collaboration")
+    BEOBACHTER = "beobachter", _("Observateur")
+
+
+class StatutAufgabe(models.TextChoices):
+    OFFEN = "offen", _("Ouverte")
+    IN_ARBEIT = "in_arbeit", _("En cours")
+    REVIEW = "review", _("En revue")
+    ERLEDIGT = "erledigt", _("Terminée")
+
+
+class PrioritaetAufgabe(models.TextChoices):
+    NIEDRIG = "niedrig", _("Basse")
+    NORMAL = "normal", _("Normale")
+    HOCH = "hoch", _("Haute")
+
+
 class Projet(models.Model):
     """Un projet/action — une "kachel" (demande utilisateur point 1)."""
 
@@ -83,6 +113,13 @@ class Projet(models.Model):
 
     statut = models.CharField(
         max_length=20, choices=StatutProjet.choices, default=StatutProjet.EN_PREPARATION
+    )
+
+    sichtbarkeit = models.CharField(
+        max_length=20,
+        choices=SichtbarkeitProjet.choices,
+        default=SichtbarkeitProjet.ENTWURF,
+        verbose_name=_("Visibilité"),
     )
 
     # Le·la responsable peut gérer les images/mises à jour de CE projet au même titre qu'un
@@ -135,10 +172,25 @@ class Projet(models.Model):
         verbose_name = _("Projet / Action")
         verbose_name_plural = _("Projets / Actions")
         ordering = ["ordre", "-created_at"]
-        indexes = [models.Index(fields=["statut"])]
+        indexes = [
+            models.Index(fields=["statut"]),
+            models.Index(fields=["sichtbarkeit"], name="projets_proj_sichtbk_idx"),
+        ]
 
     def __str__(self):
         return self.titre
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Le·la responsable fait toujours partie de l'équipe, avec le rôle Direction (ajouté le
+        # 2026-10-06). Un ancien responsable reste dans l'équipe : le retirer est un geste
+        # explicite de la Direction, jamais un effet de bord d'un changement de responsable.
+        if self.responsable_id:
+            ProjetMitglied.objects.update_or_create(
+                projet=self,
+                membre_id=self.responsable_id,
+                defaults={"rolle": RolleProjet.LEITUNG},
+            )
 
     @property
     def montant_collecte(self) -> Decimal:
@@ -228,3 +280,95 @@ class ProjetMiseAJourImage(models.Model):
         verbose_name = _("Image de mise à jour")
         verbose_name_plural = _("Images de mise à jour")
         ordering = ["ordre", "created_at"]
+
+
+class ProjetMitglied(models.Model):
+    """Membre de l'équipe interne d'un projet (ajouté le 2026-10-06). Seule l'équipe (plus les
+    gestionnaires) voit l'espace de travail — tâches, coûts — d'un projet."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name="team")
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="projekt_mitgliedschaften"
+    )
+    rolle = models.CharField(
+        max_length=20, choices=RolleProjet.choices, default=RolleProjet.MITARBEIT
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "projets_team"
+        verbose_name = _("Membre de l'équipe projet")
+        verbose_name_plural = _("Équipes projet")
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["projet", "membre"], name="projets_team_unique_membre")
+        ]
+
+    def __str__(self):
+        return f"{self.membre} — {self.projet} ({self.rolle})"
+
+
+class Aufgabe(models.Model):
+    """Tâche d'un projet, affichée sur un tableau Kanban (ajouté le 2026-10-06). `ordre` =
+    position dans la colonne de son statut."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name="aufgaben")
+    titel = models.CharField(max_length=200)
+    beschreibung = models.TextField(blank=True)
+    verantwortlich = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="projekt_aufgaben",
+    )
+    frist = models.DateField(null=True, blank=True)
+    prioritaet = models.CharField(
+        max_length=10, choices=PrioritaetAufgabe.choices, default=PrioritaetAufgabe.NORMAL
+    )
+    status = models.CharField(
+        max_length=12, choices=StatutAufgabe.choices, default=StatutAufgabe.OFFEN
+    )
+    ordre = models.PositiveIntegerField(default=0)
+    erledigt_am = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "projets_aufgaben"
+        verbose_name = _("Tâche de projet")
+        verbose_name_plural = _("Tâches de projet")
+        ordering = ["ordre", "created_at"]
+        indexes = [models.Index(fields=["projet", "status"], name="projets_aufg_proj_status_idx")]
+
+    def __str__(self):
+        return self.titel
+
+    @property
+    def ueberfaellig(self) -> bool:
+        return bool(
+            self.frist
+            and self.status != StatutAufgabe.ERLEDIGT
+            and self.frist < timezone.now().date()
+        )
+
+
+class AufgabeKommentar(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    aufgabe = models.ForeignKey(Aufgabe, on_delete=models.CASCADE, related_name="kommentare")
+    text = models.TextField()
+    autor = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "projets_aufgaben_kommentare"
+        verbose_name = _("Commentaire de tâche")
+        verbose_name_plural = _("Commentaires de tâche")
+        ordering = ["created_at"]
