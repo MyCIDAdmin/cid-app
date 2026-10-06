@@ -35,6 +35,9 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     description: "Déplacement collectif.",
     date_evenement: "2026-12-01",
     heure: "18:00:00",
+    date_fin: null,
+    heure_fin: null,
+    date_limite_paiement: null,
     lieu: "Berlin",
     point_rdv: "",
     lieu_maps_url: "",
@@ -129,6 +132,41 @@ describe("PublicEvenementsTab", () => {
     const badges = screen.getAllByText("nur_fuer_mitglieder");
     expect(badges.length).toBe(2); // badge + libellé du bouton
     expect(screen.getByRole("button", { name: "nur_fuer_mitglieder" })).toBeDisabled();
+  });
+
+  it("masque point de rendez-vous et carte pour un non-membre sur un événement réservé", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([evenement({ reserve_membres: true, point_rdv: "Gare centrale" })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<PublicEvenementsTab />);
+    expect(screen.queryByText(/Gare centrale/)).not.toBeInTheDocument();
+    expect(screen.queryByText("carte_afficher")).not.toBeInTheDocument();
+  });
+
+  it("affiche point de rendez-vous, carte et échéance de paiement sur un événement public", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([
+        evenement({
+          reserve_membres: false,
+          point_rdv: "Gare centrale",
+          gratuit: false,
+          date_limite_paiement: "2099-05-01",
+          heure: "18:00:00",
+          heure_fin: "22:30:00",
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<PublicEvenementsTab />);
+    expect(screen.getByText(/Gare centrale/)).toBeInTheDocument();
+    expect(screen.getByText("carte_afficher")).toBeInTheDocument();
+    expect(screen.getByText(/18:00 – 22:30/)).toBeInTheDocument();
+    expect(screen.getByText(/paiement_avant/)).toBeInTheDocument();
   });
 
   it("garde le dégradé de repli tant qu'aucune image n'est téléversée", () => {

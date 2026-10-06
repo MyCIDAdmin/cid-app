@@ -10,7 +10,8 @@ from rest_framework import serializers
 
 from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
-from apps.rbac.services import est_membre_actif
+from apps.rbac.models import NiveauAcces
+from apps.rbac.services import est_membre_actif, has_admin_page_access
 
 from .models import Covoiturage, Evenement, Inscription, ReservationCovoiturage, StatutEvenement
 
@@ -53,6 +54,9 @@ class EvenementSerializer(serializers.ModelSerializer):
             "description",
             "date_evenement",
             "heure",
+            "date_fin",
+            "heure_fin",
+            "date_limite_paiement",
             "lieu",
             "point_rdv",
             "lieu_maps_url",
@@ -89,7 +93,52 @@ class EvenementSerializer(serializers.ModelSerializer):
     def get_cout_applicable(self, obj) -> str:
         return str(obj.cout_pour(self._est_membre()))
 
+    def _peut_voir_details_membres(self) -> bool:
+        # Membre actif OU gestionnaire de la page Veranstaltungsverwaltung (sinon l'admin qui
+        # édite un événement le recevrait vidé de son point RDV et l'écraserait en l'enregistrant).
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if self._est_membre():
+            return True
+        return bool(
+            user
+            and user.is_authenticated
+            and has_admin_page_access(user, "page_events", required=NiveauAcces.LECTURE)
+        )
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Point 2.1/2.2 (2026-10-06) : pour un événement réservé aux membres, le point de
+        # rendez-vous et le lien Google Maps ne sont jamais envoyés à un visiteur/non-membre
+        # (masqués côté serveur, pas seulement dans l'interface).
+        if not instance.visible_public and not self._peut_voir_details_membres():
+            data["point_rdv"] = ""
+            data["lieu_maps_url"] = ""
+        return data
+
     def validate(self, attrs):
+        def valeur(nom):
+            return attrs.get(nom, getattr(self.instance, nom, None))
+
+        debut, fin = valeur("date_evenement"), valeur("date_fin")
+        heure, heure_fin = valeur("heure"), valeur("heure_fin")
+        if debut and fin and fin < debut:
+            raise serializers.ValidationError(
+                {"date_fin": "La date de fin ne peut pas précéder la date de début."}
+            )
+        if heure_fin and not fin and heure and debut and heure_fin <= heure:
+            raise serializers.ValidationError(
+                {"heure_fin": "L'heure de fin doit être postérieure à l'heure de début."}
+            )
+        if fin and debut and fin == debut and heure and heure_fin and heure_fin <= heure:
+            raise serializers.ValidationError(
+                {"heure_fin": "L'heure de fin doit être postérieure à l'heure de début."}
+            )
+        limite = valeur("date_limite_paiement")
+        if limite and debut and limite > debut:
+            raise serializers.ValidationError(
+                {"date_limite_paiement": "L'échéance de paiement doit précéder l'événement."}
+            )
         places_max = attrs.get("places_max", getattr(self.instance, "places_max", None))
         if places_max is not None and places_max <= 0:
             raise serializers.ValidationError(

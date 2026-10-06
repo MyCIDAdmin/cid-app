@@ -39,6 +39,9 @@ const FORMULAIRE_VIDE: EvenementPayload = {
   description: "",
   date_evenement: "",
   heure: "",
+  date_fin: "",
+  heure_fin: "",
+  date_limite_paiement: "",
   lieu: "",
   point_rdv: "",
   lieu_maps_url: "",
@@ -72,6 +75,9 @@ function FormulaireEvenement({
           description: evenement.description,
           date_evenement: evenement.date_evenement,
           heure: evenement.heure ?? "",
+          date_fin: evenement.date_fin ?? "",
+          heure_fin: evenement.heure_fin ?? "",
+          date_limite_paiement: evenement.date_limite_paiement ?? "",
           lieu: evenement.lieu,
           point_rdv: evenement.point_rdv,
           lieu_maps_url: evenement.lieu_maps_url,
@@ -105,7 +111,13 @@ function FormulaireEvenement({
     ) {
       return;
     }
-    const payload: EvenementPayload = { ...valeurs, heure: valeurs.heure || null };
+    const payload: EvenementPayload = {
+      ...valeurs,
+      heure: valeurs.heure || null,
+      date_fin: valeurs.date_fin || null,
+      heure_fin: valeurs.heure_fin || null,
+      date_limite_paiement: valeurs.date_limite_paiement || null,
+    };
     const surErreur = (err: unknown) =>
       setErreur(extractApiErrorMessage(err, t("admin.erreur_enregistrement")));
 
@@ -201,6 +213,59 @@ function FormulaireEvenement({
             onChange={(e) => champ("heure", e.target.value)}
             className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div>
+          <label
+            htmlFor="admin-event-date-fin"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin.champ_fin_date")}
+          </label>
+          <input
+            id="admin-event-date-fin"
+            type="date"
+            value={valeurs.date_fin ?? ""}
+            min={valeurs.date_evenement || undefined}
+            onChange={(e) => champ("date_fin", e.target.value)}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="admin-event-heure-fin"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin.champ_fin_heure")}
+          </label>
+          <input
+            id="admin-event-heure-fin"
+            type="time"
+            value={valeurs.heure_fin ?? ""}
+            onChange={(e) => champ("heure_fin", e.target.value)}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="admin-event-limite-paiement"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin.champ_echeance_paiement")}
+          </label>
+          <input
+            id="admin-event-limite-paiement"
+            type="date"
+            value={valeurs.date_limite_paiement ?? ""}
+            max={valeurs.date_evenement || undefined}
+            onChange={(e) => champ("date_limite_paiement", e.target.value)}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+          <p className="mt-0.5 text-[10px] text-text-tertiary">
+            {t("admin.champ_echeance_paiement_aide")}
+          </p>
         </div>
       </div>
 

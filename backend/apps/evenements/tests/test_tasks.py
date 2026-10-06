@@ -167,3 +167,77 @@ def test_annulation_envoyee_aux_inscrits_non_annules(mailoutbox):
 
 def test_annulation_evenement_introuvable_ne_leve_pas():
     assert envoyer_annulation_evenement("00000000-0000-0000-0000-000000000000") == 0
+
+
+# --- Mails im CID-Layout + Zahlungserinnerung (2026-10-06, Punkte 2.3 / 5) ---
+
+
+def test_invitation_ist_dreisprachig_im_cid_layout(mailoutbox):
+    _membre_actif_avec_compte("trilingue@example.de")
+    evenement = EvenementFactory(titre="Fanabend", point_rdv="Haupteingang")
+
+    envoyer_invitations_evenement(str(evenement.id))
+
+    mail = mailoutbox[0]
+    html = mail.alternatives[0][0]
+    assert mail.alternatives[0][1] == "text/html"
+    # Deutsch zuerst, dann Französisch, dann Arabisch (rtl)
+    de, fr, ar = (
+        html.index(f">{t}</h1>")
+        for t in (
+            "Neue Veranstaltung: Fanabend",
+            "Nouvel événement : Fanabend",
+            "فعالية جديدة: Fanabend",
+        )
+    )
+    assert de < fr < ar
+    assert 'dir="rtl"' in html
+    assert "Clubistes in Deutschland" in html
+    assert "Haupteingang" in html
+
+
+def test_rappel_paiement_envoye_une_seule_fois(mailoutbox):
+    from apps.evenements.tasks import envoyer_rappels_paiement_evenements
+
+    membre = _membre_actif_avec_compte("zahler@example.de")
+    aujourdhui = datetime.date(2027, 3, 1)
+    evenement = EvenementFactory(
+        date_evenement=aujourdhui + datetime.timedelta(days=10),
+        date_limite_paiement=aujourdhui + datetime.timedelta(days=2),
+        statut="publie",
+    )
+    inscription = InscriptionFactory(
+        evenement=evenement, membre=membre, statut=StatutInscription.EN_ATTENTE_PAIEMENT
+    )
+
+    assert envoyer_rappels_paiement_evenements(today=aujourdhui) == 1
+    assert len(mailoutbox) == 1
+    assert "Zahlungserinnerung" in mailoutbox[0].subject
+    inscription.refresh_from_db()
+    assert inscription.rappel_paiement_envoye_le == aujourdhui
+    # Zweiter Lauf am selben Tag: kein weiterer Versand
+    assert envoyer_rappels_paiement_evenements(today=aujourdhui) == 0
+    assert len(mailoutbox) == 1
+
+
+def test_rappel_paiement_ignore_payes_et_echeances_lointaines(mailoutbox):
+    from apps.evenements.tasks import envoyer_rappels_paiement_evenements
+
+    aujourdhui = datetime.date(2027, 3, 1)
+    paye = _membre_actif_avec_compte("paye@example.de")
+    loin = _membre_actif_avec_compte("loin@example.de")
+    ev_proche = EvenementFactory(
+        date_evenement=aujourdhui + datetime.timedelta(days=10),
+        date_limite_paiement=aujourdhui + datetime.timedelta(days=1),
+        statut="publie",
+    )
+    ev_loin = EvenementFactory(
+        date_evenement=aujourdhui + datetime.timedelta(days=30),
+        date_limite_paiement=aujourdhui + datetime.timedelta(days=20),
+        statut="publie",
+    )
+    InscriptionFactory(evenement=ev_proche, membre=paye, statut=StatutInscription.CONFIRMEE)
+    InscriptionFactory(evenement=ev_loin, membre=loin, statut=StatutInscription.EN_ATTENTE_PAIEMENT)
+
+    assert envoyer_rappels_paiement_evenements(today=aujourdhui) == 0
+    assert len(mailoutbox) == 0

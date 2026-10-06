@@ -34,6 +34,8 @@ import MapsApercu from "../../components/ui/MapsApercu";
 import ShareButton from "../../components/ui/ShareButton";
 import ModaleInscription, {
   formatDate,
+  formatPeriode,
+  formatPlageHoraire,
   formatMontant,
 } from "../../components/evenements/ModaleInscription";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
@@ -102,7 +104,7 @@ function EvenementCarte({
         )}
         <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
           <span className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ca">
-            {formatDate(evenement.date_evenement)}
+            {formatPeriode(evenement.date_evenement, evenement.date_fin)}
           </span>
           <ShareButton
             path={`/evenements?evenement=${evenement.id}`}
@@ -125,8 +127,16 @@ function EvenementCarte({
               utilisateur du 2026-09-29, point 2 : "Icons für Zeit und Ort wie im Tab der
               Startseite übernehmen") — evenement.heure n'était jusqu'ici affichée nulle part
               sur cette carte, contrairement à la Startseite. */}
-          {evenement.heure && <span>🕒 {evenement.heure.slice(0, 5)}</span>}
+          {evenement.heure && (
+            <span>🕒 {formatPlageHoraire(evenement.heure, evenement.heure_fin)}</span>
+          )}
           <span>📍 {evenement.lieu}</span>
+          {!bloqueNonMembre && evenement.point_rdv && (
+            <span>🚩 {t("point_rdv")} : {evenement.point_rdv}</span>
+          )}
+          {!evenement.gratuit && evenement.date_limite_paiement && (
+            <span>💳 {t("paiement_avant", { date: formatDate(evenement.date_limite_paiement) })}</span>
+          )}
           <span>
             {evenement.places_max !== null
               ? t("places_sur_max", {
@@ -142,7 +152,7 @@ function EvenementCarte({
           </span>
         </div>
 
-        {evenement.lieu.trim() && (
+        {!bloqueNonMembre && evenement.lieu.trim() && (
           <button
             type="button"
             onClick={() => setCarteOuverte((v) => !v)}
@@ -151,7 +161,7 @@ function EvenementCarte({
             {carteOuverte ? t("carte_masquer") : t("carte_afficher")}
           </button>
         )}
-        {carteOuverte && <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />}
+        {!bloqueNonMembre && carteOuverte && <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />}
 
         {!passe && remplissage !== null && (
           <div>

@@ -27,7 +27,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import AnimatedProgress from "../ui/AnimatedProgress";
 import MapsApercu from "../ui/MapsApercu";
-import ModaleInscription, { formatDate, formatMontant } from "../evenements/ModaleInscription";
+import ModaleInscription, { formatDate, formatMontant, formatPeriode, formatPlageHoraire } from "../evenements/ModaleInscription";
 import { useAnnulerInscription, useEvenements, useInscriptions } from "../../hooks/useEvenements";
 import { estMembreActif, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -76,7 +76,7 @@ function EvenementKachel({
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
         )}
         <span className="absolute right-3 top-3 z-10 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-ca">
-          {formatDate(evenement.date_evenement)}
+          {formatPeriode(evenement.date_evenement, evenement.date_fin)}
         </span>
         {evenement.reserve_membres && (
           <span className="absolute left-3 top-3 z-10 rounded-full bg-sb/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
@@ -94,8 +94,16 @@ function EvenementKachel({
           dangerouslySetInnerHTML={{ __html: evenement.description }}
         />
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-tertiary">
-          {evenement.heure && <span>🕒 {evenement.heure.slice(0, 5)}</span>}
+          {evenement.heure && (
+            <span>🕒 {formatPlageHoraire(evenement.heure, evenement.heure_fin)}</span>
+          )}
           <span>📍 {evenement.lieu}</span>
+          {!bloqueNonMembre && evenement.point_rdv && (
+            <span>🚩 {t("point_rdv")} : {evenement.point_rdv}</span>
+          )}
+          {!evenement.gratuit && evenement.date_limite_paiement && (
+            <span>💳 {t("paiement_avant", { date: formatDate(evenement.date_limite_paiement) })}</span>
+          )}
           <span>
             {evenement.places_max !== null
               ? t("places_sur_max", {
@@ -106,7 +114,7 @@ function EvenementKachel({
           </span>
         </div>
 
-        {evenement.lieu.trim() && (
+        {!bloqueNonMembre && evenement.lieu.trim() && (
           <button
             type="button"
             onClick={() => setCarteOuverte((v) => !v)}
@@ -115,7 +123,7 @@ function EvenementKachel({
             {carteOuverte ? t("carte_masquer") : t("carte_afficher")}
           </button>
         )}
-        {carteOuverte && <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />}
+        {!bloqueNonMembre && carteOuverte && <MapsApercu adresse={evenement.lieu} mapsUrl={evenement.lieu_maps_url} />}
 
         {!passe && remplissage !== null && <AnimatedProgress value={remplissage} />}
 

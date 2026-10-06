@@ -1,5 +1,6 @@
 """Tests API — app evenements (FDD §2.2/§3.4, SCD §2.3 A01 : IDOR)."""
 
+import datetime
 import io
 from decimal import Decimal
 
@@ -1013,3 +1014,53 @@ def test_non_membre_paie_le_tarif_non_membre(api_client):
     )
     assert resp.status_code == 200, resp.data
     assert Decimal(resp.data["montant_paye"]) == Decimal("50.00")
+
+
+def test_point_rdv_et_maps_masques_pour_visiteur_sur_evenement_reserve(api_client):
+    """2026-10-06 (points 2.1/2.2) : jamais envoyés à un anonyme pour un événement réservé aux
+    membres, mais conservés pour un événement public."""
+    EvenementFactory(
+        statut=StatutEvenement.PUBLIE,
+        titre="Reserve",
+        point_rdv="Gare",
+        lieu_maps_url="https://maps.example/x",
+    )
+    EvenementFactory(
+        statut=StatutEvenement.PUBLIE,
+        titre="Public",
+        visible_public=True,
+        point_rdv="Parvis",
+        lieu_maps_url="https://maps.example/y",
+    )
+    resp = api_client.get(reverse(EVENEMENT_LIST_URL))
+    par_titre = {e["titre"]: e for e in resp.data["results"]}
+    assert par_titre["Reserve"]["point_rdv"] == ""
+    assert par_titre["Reserve"]["lieu_maps_url"] == ""
+    assert par_titre["Public"]["point_rdv"] == "Parvis"
+    assert par_titre["Public"]["lieu_maps_url"] == "https://maps.example/y"
+
+
+def test_point_rdv_visible_pour_membre_actif_et_admin(api_client):
+    EvenementFactory(statut=StatutEvenement.PUBLIE, titre="Reserve", point_rdv="Gare")
+    for role, email in ((Role.MEMBRE, "mm@example.de"), (Role.BUREAU_ADMIN, "bb@example.de")):
+        user, _ = _user_avec_membre(role, email)
+        resp = _auth(api_client, user).get(reverse(EVENEMENT_LIST_URL))
+        assert resp.data["results"][0]["point_rdv"] == "Gare"
+
+
+def test_date_fin_avant_debut_refusee(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "fin@example.de")
+    evenement = EvenementFactory(date_evenement=datetime.date(2027, 5, 10))
+    from apps.evenements.serializers import EvenementSerializer
+
+    serializer = EvenementSerializer(
+        instance=evenement, data={"date_fin": "2027-05-09"}, partial=True
+    )
+    assert not serializer.is_valid()
+    assert "date_fin" in serializer.errors
+    ok = EvenementSerializer(
+        instance=evenement,
+        data={"date_fin": "2027-05-11", "heure_fin": "18:00", "date_limite_paiement": "2027-05-01"},
+        partial=True,
+    )
+    assert ok.is_valid(), ok.errors

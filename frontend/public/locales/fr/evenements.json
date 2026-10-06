@@ -134,8 +134,14 @@
     "publier": "Publier",
     "annuler_evenement": "Annuler l'évènement",
     "champ_cout_non_membre": "Tarif non-membre (€)",
-    "champ_cout_non_membre_placeholder": "Vide = même tarif"
+    "champ_cout_non_membre_placeholder": "Vide = même tarif",
+    "champ_fin_date": "Date de fin (optionnel)",
+    "champ_fin_heure": "Heure de fin (optionnel)",
+    "champ_echeance_paiement": "Date limite de paiement (optionnel)",
+    "champ_echeance_paiement_aide": "Les inscrits n'ayant pas payé reçoivent un rappel par email."
   },
   "nur_fuer_mitglieder": "Réservé aux membres",
-  "reserve_membres_info": "Cet événement est réservé aux membres actifs."
+  "reserve_membres_info": "Cet événement est réservé aux membres actifs.",
+  "point_rdv": "Point de rendez-vous",
+  "paiement_avant": "Paiement avant le {{date}}"
 }
