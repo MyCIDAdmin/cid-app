@@ -165,6 +165,7 @@
       "Im Reiter „Aufgaben“ Aufgaben anlegen und per Drag-and-drop (oder über das Statusfeld) zwischen Offen, In Arbeit, Review und Erledigt verschieben.",
       "Verantwortliche und Fristen setzen: Die zugewiesene Person bekommt eine Benachrichtigung, und kurz vor der Frist eine Erinnerung.",
       "Im Reiter „Team“ legt die Projektleitung fest, wer mitarbeitet oder nur lesen darf (Beobachter).",
+      "Im Reiter „Kosten“ plant die Projektleitung Beträge je Kostenart; das Team erfasst echte Ausgaben mit Beleg. Sie zählen erst nach Freigabe durch das Finanzteam und erscheinen dann im Plan/Ist-Vergleich.",
       "Ein Projekt ist zuerst ein Entwurf. Mit „Veröffentlichen“ wird die Kachel für alle Mitglieder sichtbar; Aufgaben und Team bleiben immer intern."
     ]
   }

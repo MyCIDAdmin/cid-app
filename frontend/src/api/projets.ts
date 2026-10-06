@@ -9,6 +9,10 @@ import type {
   AufgabeKommentar,
   AufgabePayload,
   Contributeur,
+  KostenPosition,
+  KostenPositionPayload,
+  KostenUebersicht,
+  PlanKostenEintrag,
   ProjetMitglied,
   RolleProjet,
   SichtbarkeitProjet,
@@ -259,4 +263,84 @@ export async function kommentarErstellen(aufgabe: string, text: string): Promise
 
 export async function kommentarLoeschen(id: string): Promise<void> {
   await apiClient.delete(`/projets/aufgaben-kommentare/${id}/`);
+}
+
+// --- Coûts du projet : plan / réel (2026-10-06) -------------------------------------------------
+
+export async function getKostenUebersicht(id: string): Promise<KostenUebersicht> {
+  const { data } = await apiClient.get<KostenUebersicht>(
+    `/projets/projets/${id}/kosten-uebersicht/`,
+  );
+  return data;
+}
+
+export async function listPlankosten(projetId: string): Promise<PlanKostenEintrag[]> {
+  const { data } = await apiClient.get<PlanKostenEintrag[]>("/projets/plankosten/", {
+    params: { projet: projetId },
+  });
+  return data;
+}
+
+export async function plankostenErstellen(payload: {
+  projet: string;
+  categorie: string;
+  betrag: string;
+}): Promise<PlanKostenEintrag> {
+  const { data } = await apiClient.post<PlanKostenEintrag>("/projets/plankosten/", payload);
+  return data;
+}
+
+export async function plankostenAendern(id: string, betrag: string): Promise<PlanKostenEintrag> {
+  const { data } = await apiClient.patch<PlanKostenEintrag>(`/projets/plankosten/${id}/`, {
+    betrag,
+  });
+  return data;
+}
+
+export async function plankostenLoeschen(id: string): Promise<void> {
+  await apiClient.delete(`/projets/plankosten/${id}/`);
+}
+
+export async function listKosten(projetId: string): Promise<KostenPosition[]> {
+  const { data } = await apiClient.get<KostenPosition[]>("/projets/kosten/", {
+    params: { projet: projetId },
+  });
+  return data;
+}
+
+/** multipart/form-data (Beleg PDF/JPG/PNG) — axios fixe lui-même le Content-Type du FormData. */
+function kostenFormData(payload: Partial<KostenPositionPayload>): FormData {
+  const formData = new FormData();
+  for (const [cle, valeur] of Object.entries(payload)) {
+    if (valeur === undefined) continue;
+    if (valeur === null) {
+      if (cle !== "justificatif") formData.append(cle, "");
+      continue;
+    }
+    formData.append(cle, valeur instanceof File ? valeur : String(valeur));
+  }
+  return formData;
+}
+
+export async function kostenErfassen(payload: KostenPositionPayload): Promise<KostenPosition> {
+  const { data } = await apiClient.post<KostenPosition>(
+    "/projets/kosten/",
+    kostenFormData(payload),
+  );
+  return data;
+}
+
+export async function kostenAendern(
+  id: string,
+  payload: Partial<Omit<KostenPositionPayload, "projet">>,
+): Promise<KostenPosition> {
+  const { data } = await apiClient.patch<KostenPosition>(
+    `/projets/kosten/${id}/`,
+    kostenFormData(payload),
+  );
+  return data;
+}
+
+export async function kostenLoeschen(id: string): Promise<void> {
+  await apiClient.delete(`/projets/kosten/${id}/`);
 }

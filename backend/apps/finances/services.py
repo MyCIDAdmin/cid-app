@@ -48,6 +48,7 @@ def etat_depense(depense) -> dict:
         "description": depense.description,
         "evenement": depense.evenement.titre if depense.evenement else "",
         "projet": depense.projet.titre if depense.projet else "",
+        "aufgabe": depense.aufgabe.titel if depense.aufgabe else "",
         "justificatif": bool(depense.justificatif),
     }
 

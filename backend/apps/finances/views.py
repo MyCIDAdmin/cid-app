@@ -96,7 +96,7 @@ class DepenseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Depense.objects.select_related(
-            "categorie", "evenement", "projet", "saisie_par", "decide_par"
+            "categorie", "evenement", "projet", "aufgabe", "saisie_par", "decide_par"
         )
         p = self.request.query_params
         if p.get("annee"):
@@ -145,7 +145,7 @@ class DepenseViewSet(viewsets.ModelViewSet):
         if neues_jahr:
             pruefe_jahr(neues_jahr.year)
         depense = serializer.save()
-        depense = Depense.objects.select_related("categorie", "evenement", "projet").get(
+        depense = Depense.objects.select_related("categorie", "evenement", "projet", "aufgabe").get(
             pk=depense.pk
         )
         aenderungen = diff(self._avant, etat_depense(depense))

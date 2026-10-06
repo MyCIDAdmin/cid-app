@@ -21,6 +21,7 @@ class DepenseSerializer(serializers.ModelSerializer):
     categorie_nom = serializers.CharField(source="categorie.nom", read_only=True)
     evenement_titre = serializers.CharField(source="evenement.titre", read_only=True, default=None)
     projet_titre = serializers.CharField(source="projet.titre", read_only=True, default=None)
+    aufgabe_titel = serializers.CharField(source="aufgabe.titel", read_only=True, default=None)
     saisie_par_nom = serializers.SerializerMethodField()
     decide_par_nom = serializers.SerializerMethodField()
     justificatif_url = serializers.SerializerMethodField()
@@ -40,6 +41,8 @@ class DepenseSerializer(serializers.ModelSerializer):
             "evenement_titre",
             "projet",
             "projet_titre",
+            "aufgabe",
+            "aufgabe_titel",
             "justificatif",
             "justificatif_url",
             "statut",
@@ -65,6 +68,16 @@ class DepenseSerializer(serializers.ModelSerializer):
         if not categorie.actif:
             raise serializers.ValidationError("Catégorie désactivée.")
         return categorie
+
+    def validate(self, attrs):
+        # Eine Aufgabe gehört immer zum Projekt der Ausgabe (2026-10-06).
+        aufgabe = attrs.get("aufgabe", self.instance.aufgabe if self.instance else None)
+        projet = attrs.get("projet", self.instance.projet if self.instance else None)
+        if aufgabe is not None and (projet is None or aufgabe.projet_id != projet.id):
+            raise serializers.ValidationError(
+                {"aufgabe": "Die Aufgabe gehört nicht zum gewählten Projekt."}
+            )
+        return attrs
 
     def validate_justificatif(self, fichier):
         if fichier is None:

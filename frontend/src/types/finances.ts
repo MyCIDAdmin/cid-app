@@ -21,6 +21,8 @@ export interface Depense {
   evenement_titre: string | null;
   projet: string | null;
   projet_titre: string | null;
+  aufgabe?: string | null;
+  aufgabe_titel?: string | null;
   justificatif_url: string | null;
   statut: StatutDepense;
   saisie_par: string | null;
