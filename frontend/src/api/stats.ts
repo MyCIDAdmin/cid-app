@@ -4,6 +4,7 @@
  */
 import { apiClient } from "./client";
 import type {
+  Bilan,
   FinanceRecord,
   KpisEvenements,
   KpisFinancier,
@@ -39,7 +40,7 @@ export async function getStatsEvenements(filtres: StatsFiltres = {}): Promise<Kp
  * StatistiquesTab.tsx — évite un aller-retour réseau à chaque clic d'en-tête de colonne.
  */
 export async function getStatsFinances(
-  filtres: StatsFiltres & { type_transaction?: TypeTransaction } = {},
+  filtres: StatsFiltres & { type_transaction?: TypeTransaction; mois?: number } = {},
 ): Promise<{ results: FinanceRecord[] }> {
   const { data } = await apiClient.get<{ results: FinanceRecord[] }>("/stats/finances/", {
     params: filtres,
@@ -79,6 +80,45 @@ export async function exporterStatsExcel(
 export async function exporterStatsPdf(filtres: StatsFiltres = {}): Promise<Blob> {
   const { data } = await apiClient.get("/stats/export/pdf/", {
     params: filtres,
+    responseType: "blob",
+  });
+  return data;
+}
+
+/** GET /stats/bilan/ — Jahresbilanz de l'association (sans filtres membre). */
+export async function getStatsBilan(annee: number): Promise<Bilan> {
+  const { data } = await apiClient.get<Bilan>("/stats/bilan/", { params: { annee } });
+  return data;
+}
+
+export async function exporterBilanExcel(
+  annee: number,
+): Promise<{ blob: Blob; nomFichier: string }> {
+  const { data, headers } = await apiClient.get("/stats/export/bilan-excel/", {
+    params: { annee },
+    responseType: "blob",
+  });
+  return {
+    blob: data,
+    nomFichier: nomFichierDepuisContentDisposition(
+      headers["content-disposition"],
+      `jahresbilanz_${annee}.xlsx`,
+    ),
+  };
+}
+
+export async function exporterBilanPdf(annee: number): Promise<Blob> {
+  const { data } = await apiClient.get("/stats/export/bilan-pdf/", {
+    params: { annee },
+    responseType: "blob",
+  });
+  return data;
+}
+
+/** CSV der Buchungen eines Jahres für den Steuerberater (Semikolon, Dezimalkomma, UTF-8 mit BOM). */
+export async function exporterBuchungenCsv(annee: number): Promise<Blob> {
+  const { data } = await apiClient.get("/stats/export/buchungen-csv/", {
+    params: { annee },
     responseType: "blob",
   });
   return data;

@@ -16,6 +16,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import OngletBilan, { type Drill } from "../../components/stats/OngletBilan";
 import OngletEvenements from "../../components/stats/OngletEvenements";
 import OngletFinancier from "../../components/stats/OngletFinancier";
 import OngletFinances from "../../components/stats/OngletFinances";
@@ -24,23 +25,11 @@ import { exporterStatsExcel, exporterStatsPdf } from "../../api/stats";
 import { BUNDESLANDER, PAYS_MEMBRE } from "../../types/membre";
 import type { StatsFiltres } from "../../types/stats";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { declencherTelechargement } from "../../utils/telechargement";
 
-type Onglet = "financier" | "membres" | "evenements" | "finances";
+type Onglet = "financier" | "bilan" | "membres" | "evenements" | "finances";
 
 const ANNEE_COURANTE = new Date().getFullYear();
-
-/** Déclenche le téléchargement d'un blob côté navigateur — même pattern que
- * GestionCommandesTab.declencherTelechargement. */
-function declencherTelechargement(blob: Blob, nomFichier: string) {
-  const url = window.URL.createObjectURL(blob);
-  const lien = document.createElement("a");
-  lien.href = url;
-  lien.download = nomFichier;
-  document.body.appendChild(lien);
-  lien.click();
-  lien.remove();
-  window.URL.revokeObjectURL(url);
-}
 
 export default function StatsPage() {
   const { t } = useTranslation("stats");
@@ -55,6 +44,8 @@ export default function StatsPage() {
   const [pays, setPays] = useState("");
   const [dateAdhesionApres, setDateAdhesionApres] = useState("");
   const [dateAdhesionAvant, setDateAdhesionAvant] = useState("");
+  // Drill-down depuis un graphique du bilan/financier : ouvre "Finanzdaten" pré-filtré.
+  const [drill, setDrill] = useState<Drill | null>(null);
   const [exportEnCours, setExportEnCours] = useState<"pdf" | "excel" | null>(null);
   const [erreurExport, setErreurExport] = useState<string | null>(null);
 
@@ -67,6 +58,11 @@ export default function StatsPage() {
     date_adhesion_apres: dateAdhesionApres || undefined,
     date_adhesion_avant: dateAdhesionAvant || undefined,
   };
+
+  function ouvrirDetails(d: Drill) {
+    setDrill(d);
+    setOnglet("finances");
+  }
 
   async function exporterPdf() {
     setErreurExport(null);
@@ -243,11 +239,14 @@ export default function StatsPage() {
       {erreurExport && <p className="mb-2 text-xs text-status-dangerText">{erreurExport}</p>}
 
       <div className="mb-4 flex gap-1 border-b border-text-tertiary/20">
-        {(["financier", "membres", "evenements", "finances"] as const).map((o) => (
+        {(["financier", "bilan", "membres", "evenements", "finances"] as const).map((o) => (
           <button
             key={o}
             type="button"
-            onClick={() => setOnglet(o)}
+            onClick={() => {
+              setOnglet(o);
+              if (o !== "finances") setDrill(null);
+            }}
             className={`px-3 py-2 text-sm font-medium ${
               onglet === o
                 ? "border-b-2 border-ca text-ca"
@@ -259,10 +258,13 @@ export default function StatsPage() {
         ))}
       </div>
 
-      {onglet === "financier" && <OngletFinancier filtres={filtres} />}
+      {onglet === "financier" && <OngletFinancier filtres={filtres} onDrill={ouvrirDetails} />}
+      {onglet === "bilan" && <OngletBilan annee={annee} onDrill={ouvrirDetails} />}
       {onglet === "membres" && <OngletMembres filtres={filtres} />}
       {onglet === "evenements" && <OngletEvenements filtres={filtres} />}
-      {onglet === "finances" && <OngletFinances filtres={filtres} />}
+      {onglet === "finances" && (
+        <OngletFinances filtres={filtres} drill={drill} onResetDrill={() => setDrill(null)} />
+      )}
     </div>
   );
 }

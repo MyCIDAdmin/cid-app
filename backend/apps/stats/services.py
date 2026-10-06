@@ -42,7 +42,10 @@ from apps.adhesions.models import Souscription, StatutSouscription
 from apps.boutique.models import Commande, StatutCommande
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle, montant_catalogue
 from apps.evenements.models import Evenement, Inscription, StatutEvenement, StatutInscription
+from apps.finances.models import Depense
 from apps.membres.models import Membre, StatutMembre
+
+from .bilan import total_depenses
 
 # Types de transaction exposés par finances_liste() (onglet "Finanzdaten", module "Statistiken &
 # KPIs", demande utilisateur du 2026-09-25 : "Tab für alle Finanzdaten (filterbar/sortierbar)").
@@ -54,6 +57,7 @@ TYPE_TRANSACTION_EVENEMENT = "evenement"
 TYPE_TRANSACTION_BOUTIQUE = "boutique"
 TYPE_TRANSACTION_AUTRE = "autre"
 TYPE_TRANSACTION_PROJET = "projet"
+TYPE_TRANSACTION_DEPENSE = "depense"
 TYPES_TRANSACTION = {
     TYPE_TRANSACTION_COTISATION,
     TYPE_TRANSACTION_DON,
@@ -62,6 +66,7 @@ TYPES_TRANSACTION = {
     TYPE_TRANSACTION_BOUTIQUE,
     TYPE_TRANSACTION_AUTRE,
     TYPE_TRANSACTION_PROJET,
+    TYPE_TRANSACTION_DEPENSE,
 }
 _CHAMPS_TRI_FINANCES = {"date", "montant", "membre_nom", "type", "statut"}
 
@@ -131,6 +136,9 @@ def kpis_financier(
     revenus_dons = cotisations_payees.filter(type_article=TypeArticle.DON).aggregate(
         t=Sum("montant")
     )["t"] or Decimal("0.00")
+    revenus_projets = cotisations_payees.filter(type_article=TypeArticle.PROJET).aggregate(
+        t=Sum("montant")
+    )["t"] or Decimal("0.00")
 
     souscriptions_payees = _filtrer_par_membre(
         Souscription.objects.filter(statut=StatutSouscription.PAYEE, date_souscription__year=annee),
@@ -165,10 +173,11 @@ def kpis_financier(
         "0.00"
     )
 
-    depenses = Decimal("0.00")  # voir docstring de module
+    depenses = total_depenses(annee)  # dépenses APPROUVÉES (apps.finances), voir bilan.py
     recettes = (
         recettes_cotisations
         + revenus_dons
+        + revenus_projets
         + revenus_adhesions
         + revenus_boutique
         + revenus_evenements
@@ -215,6 +224,7 @@ def kpis_financier(
         "revenus_boutique": revenus_boutique,
         "revenus_adhesions": revenus_adhesions,
         "revenus_evenements": revenus_evenements,
+        "revenus_projets": revenus_projets,
         "top_contributeurs": _top_contributeurs(annee, ville, statut, **filtres_membre),
     }
 
@@ -436,6 +446,7 @@ def finances_liste(
     date_adhesion_avant=None,
     tri="date",
     ordre="desc",
+    mois=None,
 ) -> list:
     """
     Onglet "Finanzdaten" (module "Statistiken & KPIs", demande utilisateur du 2026-09-25 :
@@ -579,6 +590,28 @@ def finances_liste(
                 commande.montant_total,
                 commande.statut,
             )
+
+    # Dépenses (type "depense", montant NÉGATIF, quel que soit leur statut — registre d'audit
+    # complet comme les autres types). Sans pertinence quand un filtre portant sur le MEMBRE est
+    # actif (ville/statut/land/pays/date d'adhésion) : une dépense n'a pas de membre.
+    filtre_membre_actif = any([ville, statut, land, pays, date_adhesion_apres, date_adhesion_avant])
+    if not filtre_membre_actif and type_transaction in (None, TYPE_TRANSACTION_DEPENSE):
+        for dep in Depense.objects.filter(date_depense__year=annee).select_related("categorie"):
+            lignes.append(
+                {
+                    "id": f"{TYPE_TRANSACTION_DEPENSE}:{dep.id}",
+                    "type": TYPE_TRANSACTION_DEPENSE,
+                    "date": dep.date_depense,
+                    "membre_id": "",
+                    "membre_nom": dep.fournisseur,
+                    "description": dep.categorie.nom,
+                    "montant": -dep.montant,
+                    "statut": dep.statut,
+                }
+            )
+
+    if mois:
+        lignes = [ligne for ligne in lignes if ligne["date"].month == int(mois)]
 
     tri = tri if tri in _CHAMPS_TRI_FINANCES else "date"
     inverse = ordre != "asc"

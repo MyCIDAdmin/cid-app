@@ -37,6 +37,7 @@ i18n
       "projets",
       "public",
       "help",
+      "finances",
     ],
     defaultNS: "common",
     backend: {

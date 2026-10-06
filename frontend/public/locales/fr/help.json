@@ -143,5 +143,19 @@
       "Publiez pour que les membres puissent participer.",
       "Consultez les résultats et le classement dans l'aperçu."
     ]
+  },
+  "finances": {
+    "titre": "Finances",
+    "intro": "Saisir les dépenses, planifier le budget et alimenter le bilan annuel.",
+    "schritte": [
+      "Dans l'onglet « Dépenses », cliquez sur « Nouvelle dépense » : date, montant, catégorie, fournisseur, et si possible le justificatif.",
+      "Une autre personne ayant le droit d'écriture vérifie, puis approuve ou rejette avec un motif. Seules les dépenses approuvées comptent dans le bilan et les KPI.",
+      "Une dépense rejetée peut être corrigée ; elle repart alors en validation.",
+      "Dans l'onglet « Budget », saisissez le budget annuel par catégorie ; le bilan compare ensuite le réalisé au budget.",
+      "Dans l'onglet « Catégories », créez vos catégories ou désactivez celles devenues inutiles.",
+      "L'onglet « Journal » montre, sans lacune, qui a modifié quoi et quand.",
+      "L'onglet « Contrôle » donne aux contrôleurs les chiffres clés, les dépenses sans justificatif et les gros montants, en lecture seule.",
+      "L'onglet « Clôture annuelle » verrouille une année une fois toutes les dépenses tranchées. Seul l'administrateur de l'application peut la rouvrir."
+    ]
   }
 }

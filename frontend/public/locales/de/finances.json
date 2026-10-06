@@ -1,0 +1,123 @@
+{
+  "titre": "Finanzen",
+  "onglets": {
+    "depenses": "Ausgaben",
+    "budget": "Budget",
+    "categories": "Kategorien",
+    "protokoll": "Protokoll",
+    "abschluss": "Jahresabschluss",
+    "pruefung": "Prüfung"
+  },
+  "annee": "Jahr",
+  "statut": "Status",
+  "tous": "Alle",
+  "nouvelle_depense": "Neue Ausgabe",
+  "modifier": "Bearbeiten",
+  "supprimer": "Löschen",
+  "enregistrer": "Speichern",
+  "annuler": "Abbrechen",
+  "chargement": "Laden…",
+  "erreur": "Das hat nicht geklappt.",
+  "statuts": {
+    "en_attente": "Zur Freigabe",
+    "approuvee": "Freigegeben",
+    "rejetee": "Abgelehnt"
+  },
+  "col": {
+    "date": "Datum",
+    "fournisseur": "Lieferant / Empfänger",
+    "categorie": "Kategorie",
+    "montant": "Betrag",
+    "bezug": "Bezug",
+    "statut": "Status",
+    "saisie_par": "Erfasst von",
+    "aktionen": "Aktionen"
+  },
+  "champ": {
+    "date": "Datum",
+    "montant": "Betrag (€)",
+    "categorie": "Kategorie",
+    "fournisseur": "Lieferant / Empfänger",
+    "description": "Beschreibung",
+    "evenement": "Veranstaltung (optional)",
+    "projet": "Projekt (optional)",
+    "justificatif": "Beleg (PDF, JPG, PNG, max. 5 MB)",
+    "aucun": "— keine —"
+  },
+  "voir_beleg": "Beleg",
+  "approuver": "Freigeben",
+  "rejeter": "Ablehnen",
+  "motif": "Grund der Ablehnung",
+  "motif_requis": "Bitte einen Grund angeben.",
+  "rejet_confirmer": "Ablehnen bestätigen",
+  "vier_augen": "Vier-Augen-Prinzip: Eine Ausgabe zählt erst in Bilanz und KPIs, wenn eine andere Person sie freigegeben hat.",
+  "eigene_ausgabe": "Von Ihnen erfasst – eine andere Person muss freigeben.",
+  "figee": "Freigegebene Ausgaben sind gesperrt.",
+  "supprimer_confirmer": "Diese Ausgabe wirklich löschen?",
+  "aucune_depense": "Keine Ausgaben gefunden.",
+  "budget": {
+    "intro": "Geplantes Jahresbudget je Kategorie. Leer oder 0 = kein Budget.",
+    "enregistrer": "Budget speichern",
+    "enregistre": "Budget gespeichert."
+  },
+  "categories": {
+    "intro": "Kategorien ordnen die Ausgaben. Genutzte Kategorien werden deaktiviert statt gelöscht.",
+    "nouvelle": "Neue Kategorie",
+    "ajouter": "Hinzufügen",
+    "actif": "Aktiv",
+    "desactiver": "Deaktivieren",
+    "activer": "Aktivieren"
+  },
+  "protokoll": {
+    "intro": "Lückenloses Protokoll aller Änderungen an Ausgaben, Budget, Kategorien und Jahresabschluss. Einträge können nicht verändert werden.",
+    "aktion": "Aktion",
+    "alle": "Alle",
+    "zeit": "Zeitpunkt",
+    "benutzer": "Benutzer",
+    "text": "Was",
+    "aenderungen": "Änderungen",
+    "leer": "Keine Einträge.",
+    "aktionen": {
+      "erstellt": "Erstellt",
+      "geaendert": "Geändert",
+      "geloescht": "Gelöscht",
+      "freigegeben": "Freigegeben",
+      "abgelehnt": "Abgelehnt",
+      "budget": "Budget",
+      "abgeschlossen": "Abschluss",
+      "wiedergeoeffnet": "Wiedereröffnet"
+    }
+  },
+  "abschluss": {
+    "intro": "Mit dem Jahresabschluss werden Ausgaben und Budget des Jahres gesperrt. Die Eckzahlen werden festgehalten, damit spätere Abweichungen sichtbar bleiben.",
+    "status_offen": "Dieses Jahr ist offen.",
+    "status_zu": "Abgeschlossen am {{datum}} von {{wer}}.",
+    "offene": "{{n}} Ausgabe(n) warten noch auf Freigabe. Erst entscheiden, dann abschließen.",
+    "abschliessen": "Jahr abschließen",
+    "bestaetigen_titel": "Geschäftsjahr abschließen?",
+    "bestaetigen_text": "Danach sind Ausgaben und Budget dieses Jahres gesperrt. Nur der Administrator App kann das Jahr wieder öffnen.",
+    "eingefroren": "Zum Abschluss festgehalten",
+    "einnahmen": "Einnahmen",
+    "ausgaben": "Ausgaben",
+    "ergebnis": "Ergebnis",
+    "wiedereroeffnen": "Jahr wiedereröffnen",
+    "grund": "Begründung (Pflicht)",
+    "wiedereroeffnet_info": "Zuletzt wiedereröffnet am {{datum}}: {{grund}}",
+    "nur_admin": "Wiedereröffnen darf nur der Administrator App."
+  },
+  "pruefung": {
+    "intro": "Nur-Lese-Ansicht für die Kassenprüfung: Eckzahlen, Auffälligkeiten und Belege. Für Prüfende genügt in der Rollenverwaltung „Lesen“ auf der Seite Finanzen und Statistiken.",
+    "freigegeben": "Freigegebene Ausgaben",
+    "summe": "Summe",
+    "offen": "Zur Freigabe offen",
+    "abgelehnt": "Abgelehnt",
+    "ohne_beleg": "Freigegebene Ausgaben ohne Beleg",
+    "grosse": "Ausgaben ab {{betrag}} €",
+    "keine": "Keine Auffälligkeiten.",
+    "export_csv": "Buchungen (CSV)",
+    "export_excel": "Bilanz (Excel)",
+    "export_pdf": "Jahresbericht (PDF)",
+    "abgeschlossen": "Jahr abgeschlossen",
+    "offen_jahr": "Jahr offen"
+  }
+}

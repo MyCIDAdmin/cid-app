@@ -1,5 +1,7 @@
 {
-  "page": { "titre": "Statistiques & KPIs" },
+  "page": {
+    "titre": "Statistiques & KPIs"
+  },
   "chargement": "Chargement…",
   "erreur": "Impossible de charger ces statistiques.",
   "filtres": {
@@ -28,7 +30,8 @@
     "financier": "Financier",
     "membres": "Membres",
     "evenements": "Évènements",
-    "finances": "Données financières"
+    "finances": "Données financières",
+    "bilan": "Bilan annuel"
   },
   "financier": {
     "solde": "Solde",
@@ -90,6 +93,47 @@
     "col_description": "Description",
     "col_montant": "Montant",
     "col_statut": "Statut",
-    "aucune_donnee": "Aucune donnée financière pour cette période."
+    "aucune_donnee": "Aucune donnée financière pour cette période.",
+    "type_depense": "Dépense",
+    "filtre_mois": "Mois : {{mois}}"
+  },
+  "bilan": {
+    "hinweis_drill": "Astuce : un clic sur une barre ouvre les écritures correspondantes.",
+    "export_pdf": "Rapport annuel (PDF)",
+    "export_excel": "Bilan (Excel)",
+    "recettes": "Recettes",
+    "depenses": "Dépenses",
+    "resultat": "Résultat",
+    "cumul": "Résultat cumulé",
+    "vs_precedent": "Résultat vs. {{annee}}",
+    "en_attente": "{{nombre}} dépense(s) de {{montant}} en attente d'approbation, non incluses.",
+    "mensuel": "Évolution mensuelle",
+    "budget_vs_ist": "Budget vs. réalisé",
+    "col_poste": "Source de recette",
+    "col_precedent": "Année préc.",
+    "col_categorie": "Catégorie",
+    "col_ist": "Réalisé",
+    "col_budget": "Budget",
+    "col_statut_budget": "Statut",
+    "col_evenement": "Évènement",
+    "col_projet": "Projet",
+    "statut_aucun": "Pas de budget",
+    "statut_ok": "Dans les clous",
+    "statut_attention": "Attention",
+    "statut_depasse": "Dépassé",
+    "source_cotisations": "Cotisations",
+    "source_dons": "Dons",
+    "source_projets": "Contributions aux projets",
+    "source_adhesions": "Adhésions",
+    "source_boutique": "Boutique",
+    "source_evenements": "Évènements",
+    "aucune_depense": "Aucune dépense saisie.",
+    "aucune_donnee": "Aucune donnée pour cette année.",
+    "voir_depenses": "Voir toutes les dépenses",
+    "par_evenement": "Résultat par évènement",
+    "par_projet": "Résultat par projet",
+    "export_csv": "Écritures (CSV)",
+    "abgeschlossen": "Clôturé le {{datum}}",
+    "abweichung": "Le résultat a varié de {{betrag}} depuis la clôture."
   }
 }

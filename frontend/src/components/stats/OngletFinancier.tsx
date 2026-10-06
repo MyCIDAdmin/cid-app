@@ -15,6 +15,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 import { useStatsFinancier } from "../../hooks/useStats";
 import type { StatsFiltres, TopContributeur } from "../../types/stats";
+import type { Drill } from "./OngletBilan";
 import AnimatedKpiTile from "./AnimatedKpiTile";
 import DetailBoxTriable, { type ColonneDetailBox } from "./DetailBoxTriable";
 
@@ -23,12 +24,18 @@ function formatMontant(montant: string | number): string {
 }
 
 interface RevenuSource {
-  cle: string;
+  cle: "boutique" | "adhesions" | "evenements";
   nom: string;
   montant: number;
 }
 
-export default function OngletFinancier({ filtres }: { filtres: StatsFiltres }) {
+export default function OngletFinancier({
+  filtres,
+  onDrill,
+}: {
+  filtres: StatsFiltres;
+  onDrill?: (drill: Drill) => void;
+}) {
   const { t } = useTranslation("stats");
   const { data, isLoading, isError } = useStatsFinancier(filtres);
 
@@ -36,7 +43,11 @@ export default function OngletFinancier({ filtres }: { filtres: StatsFiltres }) 
   if (isError || !data) return <p className="text-sm text-status-dangerText">{t("erreur")}</p>;
 
   const revenus: RevenuSource[] = [
-    { cle: "boutique", nom: t("financier.revenus_boutique"), montant: Number(data.revenus_boutique) },
+    {
+      cle: "boutique",
+      nom: t("financier.revenus_boutique"),
+      montant: Number(data.revenus_boutique),
+    },
     {
       cle: "adhesions",
       nom: t("financier.revenus_adhesions"),
@@ -124,7 +135,22 @@ export default function OngletFinancier({ filtres }: { filtres: StatsFiltres }) 
               <XAxis dataKey="nom" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} />
               <Tooltip formatter={(value: number) => formatMontant(value)} />
-              <Bar dataKey="montant" fill="#CC0000" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="montant"
+                fill="#CC0000"
+                radius={[4, 4, 0, 0]}
+                cursor={onDrill ? "pointer" : undefined}
+                onClick={(d: RevenuSource) =>
+                  onDrill?.({
+                    type:
+                      d.cle === "adhesions"
+                        ? "adhesion"
+                        : d.cle === "evenements"
+                          ? "evenement"
+                          : "boutique",
+                  })
+                }
+              />
             </BarChart>
           </ResponsiveContainer>
           <div className="mt-3">

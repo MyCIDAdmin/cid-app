@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 
 import { useStatsFinances } from "../../hooks/useStats";
 import type { FinanceRecord, StatsFiltres, TypeTransaction } from "../../types/stats";
+import type { Drill } from "./OngletBilan";
 import DetailBoxTriable, { type ColonneDetailBox } from "./DetailBoxTriable";
 
 const TYPES_TRANSACTION: TypeTransaction[] = [
@@ -25,6 +26,7 @@ const TYPES_TRANSACTION: TypeTransaction[] = [
   "boutique",
   "autre",
   "projet",
+  "depense",
 ];
 
 function formatMontant(montant: string | number): string {
@@ -41,13 +43,24 @@ function formatStatut(statut: string): string {
   return texte.charAt(0).toUpperCase() + texte.slice(1);
 }
 
-export default function OngletFinances({ filtres }: { filtres: StatsFiltres }) {
-  const { t } = useTranslation("stats");
-  const [typeTransaction, setTypeTransaction] = useState<TypeTransaction | "">("");
+export default function OngletFinances({
+  filtres,
+  drill = null,
+  onResetDrill,
+}: {
+  filtres: StatsFiltres;
+  /** Pré-filtre venu d'un clic sur un graphique (Jahresbilanz/Financier) — type et/ou mois. */
+  drill?: Drill | null;
+  onResetDrill?: () => void;
+}) {
+  const { t, i18n } = useTranslation("stats");
+  const [typeTransaction, setTypeTransaction] = useState<TypeTransaction | "">(drill?.type ?? "");
+  const mois = drill?.mois;
 
   const { data, isLoading, isError } = useStatsFinances({
     ...filtres,
     type_transaction: typeTransaction || undefined,
+    mois,
   });
 
   const colonnes: ColonneDetailBox<FinanceRecord>[] = [
@@ -89,6 +102,18 @@ export default function OngletFinances({ filtres }: { filtres: StatsFiltres }) {
             ))}
           </select>
         </div>
+        {mois && (
+          <button
+            type="button"
+            onClick={onResetDrill}
+            className="rounded-full bg-bg-tertiary px-3 py-1 text-xs text-text-secondary hover:bg-text-tertiary/20"
+          >
+            {t("finances.filtre_mois", {
+              mois: new Date(2000, mois - 1, 1).toLocaleString(i18n.language, { month: "long" }),
+            })}{" "}
+            ✕
+          </button>
+        )}
       </div>
 
       {isLoading ? (

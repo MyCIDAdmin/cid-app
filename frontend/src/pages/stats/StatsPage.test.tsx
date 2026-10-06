@@ -41,8 +41,16 @@ const financier: KpisFinancier = {
   revenus_boutique: "30.00",
   revenus_adhesions: "50.00",
   revenus_evenements: "15.00",
+  revenus_projets: "0.00",
   top_contributeurs: [
-    { membre_id: "m1", nom: "Sana W.", cotisations: "200.00", evenements: "0.00", dons: "0.00", total: "200.00" },
+    {
+      membre_id: "m1",
+      nom: "Sana W.",
+      cotisations: "200.00",
+      evenements: "0.00",
+      dons: "0.00",
+      total: "200.00",
+    },
   ],
 };
 
