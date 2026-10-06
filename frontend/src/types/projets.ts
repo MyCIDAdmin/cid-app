@@ -4,6 +4,8 @@
  * changement de schéma.
  */
 
+import type { KategorieNamen } from "../utils/kategorie";
+
 export type StatutProjet = "en_preparation" | "en_cours" | "termine" | "annule";
 
 /** Brouillon = visible uniquement pour l'équipe et la gestion ; Publié = visible pour tous
@@ -222,6 +224,7 @@ export type StatutKosten = "en_attente" | "approuvee" | "rejetee";
 export interface KostenartAuswahl {
   id: string;
   nom: string;
+  namen?: KategorieNamen;
 }
 
 export interface PlanKostenEintrag {
@@ -229,6 +232,7 @@ export interface PlanKostenEintrag {
   projet: string;
   categorie: string;
   categorie_nom: string;
+  categorie_namen?: KategorieNamen;
   betrag: string;
   notiz: string;
 }
@@ -241,6 +245,7 @@ export interface KostenPosition {
   montant: string;
   categorie: string;
   categorie_nom: string;
+  categorie_namen?: KategorieNamen;
   fournisseur: string;
   description: string;
   aufgabe: string | null;
@@ -267,6 +272,7 @@ export interface KostenPositionPayload {
 export interface KostenZeile {
   categorie: string;
   categorie_nom: string;
+  categorie_namen?: KategorieNamen;
   plan: string;
   ist: string;
   offen: string;

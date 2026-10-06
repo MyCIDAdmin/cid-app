@@ -1,10 +1,15 @@
 /** Types — module finances (Ausgaben, Budget). Miroir de apps.finances.serializers. */
 
+import type { KategorieNamen } from "../utils/kategorie";
+
 export type StatutDepense = "en_attente" | "approuvee" | "rejetee";
 
 export interface CategorieDepense {
   id: string;
   nom: string;
+  nom_de: string;
+  nom_ar: string;
+  namen?: KategorieNamen;
   actif: boolean;
   ordre: number;
 }
@@ -15,6 +20,7 @@ export interface Depense {
   montant: string;
   categorie: string;
   categorie_nom: string;
+  categorie_namen?: KategorieNamen;
   fournisseur: string;
   description: string;
   evenement: string | null;
@@ -54,6 +60,7 @@ export interface BudgetLigne {
   annee: number;
   categorie: string;
   categorie_nom: string;
+  categorie_namen?: KategorieNamen;
   montant: string;
 }
 

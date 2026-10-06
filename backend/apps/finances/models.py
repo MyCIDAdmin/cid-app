@@ -25,7 +25,11 @@ from apps.adhesions.storage import JustificatifsStorage
 
 class CategorieDepense(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # `nom` = Französisch (Referenz, eindeutig). `nom_de`/`nom_ar` sind optionale Übersetzungen ;
+    # fehlt eine, zeigt die Oberfläche den französischen Namen (siehe `namen`).
     nom = models.CharField(max_length=100, unique=True)
+    nom_de = models.CharField(max_length=100, blank=True, default="")
+    nom_ar = models.CharField(max_length=100, blank=True, default="")
     actif = models.BooleanField(default=True)
     ordre = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -37,6 +41,11 @@ class CategorieDepense(models.Model):
 
     def __str__(self):
         return self.nom
+
+    @property
+    def namen(self) -> dict:
+        """Name je Sprache, mit Rückfall auf Französisch."""
+        return {"fr": self.nom, "de": self.nom_de or self.nom, "ar": self.nom_ar or self.nom}
 
 
 class StatutDepense(models.TextChoices):

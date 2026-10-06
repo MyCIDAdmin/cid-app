@@ -215,4 +215,21 @@ describe("ProjetCard", () => {
 
     expect(onModifier).toHaveBeenCalledWith(unProjet);
   });
+
+  it("zeigt den direkten Link zum Arbeitsbereich nur für Berechtigte", () => {
+    vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
+      data: undefined,
+      isPending: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useContributeursProjet>);
+
+    const { unmount } = renderWithProviders(<ProjetCard projet={projet()} />);
+    expect(screen.queryByText("arbeitsbereich.oeffnen")).not.toBeInTheDocument();
+    unmount();
+
+    renderWithProviders(<ProjetCard projet={projet({ darf_arbeitsbereich: true })} />);
+    expect(screen.getByRole("link", { name: /arbeitsbereich.oeffnen/ })).toHaveAttribute(
+      "href",
+      "/projets/proj-1/arbeitsbereich",
+    );
+  });
 });

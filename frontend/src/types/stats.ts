@@ -4,6 +4,8 @@
  * Événements ; Engagement/Projets restent R2, hors périmètre).
  */
 
+import type { KategorieNamen } from "../utils/kategorie";
+
 /** Filtres communs aux 3 onglets (mockup #pg-stats, filter-bar). land/pays/date_adhesion_*
  * ajoutés le 2026-09-19 (demande utilisateur : "Bei ... Statistiken & KPIs füge mehr
  * Filtermöglichten hinzu z.B. Bundesland") — voir apps.stats.views.BaseStatsView._filtres_communs
@@ -115,6 +117,7 @@ export type StatutBudget = "aucun" | "ok" | "attention" | "depasse";
 export interface LigneDepenseBilan {
   categorie_id: string;
   nom: string;
+  namen?: KategorieNamen;
   montant: string;
   montant_precedent: string;
   budget: string;

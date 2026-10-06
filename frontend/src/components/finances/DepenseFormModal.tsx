@@ -6,6 +6,7 @@ import { useCategories, useCreerDepense, useModifierDepense } from "../../hooks/
 import { useProjets } from "../../hooks/useProjets";
 import type { Depense } from "../../types/finances";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { kategorieName } from "../../utils/kategorie";
 
 const CHAMP = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -19,7 +20,7 @@ export default function DepenseFormModal({
   depense: Depense | null;
   onClose: () => void;
 }) {
-  const { t } = useTranslation("finances");
+  const { t, i18n } = useTranslation("finances");
   const categories = useCategories();
   const evenements = useEvenements();
   const projets = useProjets();
@@ -129,7 +130,7 @@ export default function DepenseFormModal({
                 ?.filter((c) => c.actif || c.id === depense?.categorie)
                 .map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.nom}
+                    {kategorieName(c.namen, c.nom, i18n.language)}
                   </option>
                 ))}
             </select>

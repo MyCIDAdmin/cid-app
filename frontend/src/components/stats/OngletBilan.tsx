@@ -33,6 +33,7 @@ import type {
   TypeTransaction,
 } from "../../types/stats";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { kategorieName } from "../../utils/kategorie";
 import { declencherTelechargement } from "../../utils/telechargement";
 import AnimatedKpiTile from "./AnimatedKpiTile";
 import DetailBoxTriable, { type ColonneDetailBox } from "./DetailBoxTriable";
@@ -333,7 +334,10 @@ export default function OngletBilan({
           <h2 className="mb-3 text-xs font-bold text-text-primary">{t("bilan.budget_vs_ist")}</h2>
           <DetailBoxTriable
             colonnes={colonnesDepenses}
-            lignes={data.depenses.lignes}
+            lignes={data.depenses.lignes.map((l) => ({
+              ...l,
+              nom: kategorieName(l.namen, l.nom, i18n.language),
+            }))}
             getRowKey={(r) => r.categorie_id}
             triInitial="montant"
             directionInitiale="desc"

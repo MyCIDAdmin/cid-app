@@ -197,6 +197,50 @@ def test_categorie_utilisee_se_desactive_sans_suppression(api_client, dir_fin, c
     assert api_client.delete(url).status_code == 405
 
 
+def test_standardkategorien_sind_uebersetzt():
+    cat = CategorieDepense.objects.get(nom="Transport")
+    assert cat.namen == {"fr": "Transport", "de": "Transport", "ar": "النقل"}
+    autres = CategorieDepense.objects.get(nom="Autres")
+    assert autres.namen["de"] == "Sonstiges"
+    assert all(c.nom_de and c.nom_ar for c in CategorieDepense.objects.all())
+
+
+def test_kategorie_namen_rueckfall_auf_franzoesisch():
+    cat = CategorieDepense.objects.create(nom="Fournitures spéciales")
+    assert cat.namen == {
+        "fr": "Fournitures spéciales",
+        "de": "Fournitures spéciales",
+        "ar": "Fournitures spéciales",
+    }
+
+
+def test_kategorie_uebersetzungen_ueber_api_pflegen(api_client, dir_fin):
+    api_client.force_authenticate(user=dir_fin)
+    r = api_client.post(
+        reverse("finances:categorie-list"),
+        {"nom": "Cadeaux", "nom_de": "Geschenke", "nom_ar": "هدايا"},
+        format="json",
+    )
+    assert r.status_code == 201
+    assert r.data["namen"] == {"fr": "Cadeaux", "de": "Geschenke", "ar": "هدايا"}
+    r = api_client.patch(
+        reverse("finances:categorie-detail", args=[r.data["id"]]),
+        {"nom_de": "Präsente"},
+        format="json",
+    )
+    assert r.status_code == 200 and r.data["namen"]["de"] == "Präsente"
+
+
+def test_depense_liefert_kategorie_namen(api_client, dir_fin, categorie):
+    categorie.nom_de = "Kategorie DE"
+    categorie.save()
+    d = _depense(categorie, dir_fin, "10.00", StatutDepense.EN_ATTENTE)
+    api_client.force_authenticate(user=dir_fin)
+    r = api_client.get(reverse("finances:depense-detail", args=[d.id]))
+    assert r.status_code == 200
+    assert r.data["categorie_namen"]["de"] == "Kategorie DE"
+
+
 # --- Jahresbilanz -----------------------------------------------------------------------
 
 

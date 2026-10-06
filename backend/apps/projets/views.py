@@ -190,12 +190,13 @@ class ProjetViewSet(ModelViewSet):
         zero = Decimal("0.00")
         zeilen: dict = {}
 
-        def zeile(cat_id, cat_nom):
+        def zeile(cat_id, cat):
             return zeilen.setdefault(
                 cat_id,
                 {
                     "categorie": cat_id,
-                    "categorie_nom": cat_nom,
+                    "categorie_nom": cat.nom,
+                    "categorie_namen": cat.namen,
                     "plan": zero,
                     "ist": zero,
                     "offen": zero,
@@ -203,12 +204,12 @@ class ProjetViewSet(ModelViewSet):
             )
 
         for plan in PlanKosten.objects.filter(projet=projet).select_related("categorie"):
-            zeile(plan.categorie_id, plan.categorie.nom)["plan"] = plan.betrag
+            zeile(plan.categorie_id, plan.categorie)["plan"] = plan.betrag
         depenses = Depense.objects.filter(projet=projet).exclude(statut=StatutDepense.REJETEE)
         pro_aufgabe: dict = {}
         for d in depenses.select_related("categorie", "aufgabe"):
             feld = "ist" if d.statut == StatutDepense.APPROUVEE else "offen"
-            z = zeile(d.categorie_id, d.categorie.nom)
+            z = zeile(d.categorie_id, d.categorie)
             z[feld] += d.montant
             if d.aufgabe_id:
                 a = pro_aufgabe.setdefault(
@@ -236,7 +237,8 @@ class ProjetViewSet(ModelViewSet):
                 # Auswahl für Plan/Erfassung : Teammitglieder haben keinen Zugriff auf die
                 # Finanzseite, daher liefert die Übersicht die aktiven Kostenarten mit.
                 "kostenarten": [
-                    {"id": c.id, "nom": c.nom} for c in CategorieDepense.objects.filter(actif=True)
+                    {"id": c.id, "nom": c.nom, "namen": c.namen}
+                    for c in CategorieDepense.objects.filter(actif=True)
                 ],
                 "aufgaben": sorted(pro_aufgabe.values(), key=lambda a: a["titel"].lower()),
                 "darf_erfassen": kann_aufgaben_bearbeiten(request.user, projet),
