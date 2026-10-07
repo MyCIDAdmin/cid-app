@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 
 import openpyxl
 
-from .models import Membre, RaisonChangementStatut, StatutMembre
+from .models import CIN_PLATZHALTER, Membre, RaisonChangementStatut, StatutMembre
 from .services import enregistrer_statut_annuel
 
 ANNEE_MIN = 2000
@@ -161,6 +161,8 @@ def _resoudre_membre(email, cin, cache_email: dict, cache_cin: dict) -> Membre:
     DIFFÉRENTS (ambigu — jamais deviner lequel privilégier)."""
     email_norm = _normalize(email)
     cin_norm = str(cin).strip() if cin not in (None, "") else ""
+    if cin_norm == CIN_PLATZHALTER:  # Platzhalter = keine echte CIN
+        cin_norm = ""
 
     membre_email = cache_email.get(email_norm) if email_norm else None
     membre_cin = cache_cin.get(cin_norm) if cin_norm else None
@@ -212,7 +214,7 @@ def importer_historique_statuts(fichier) -> ResultatImportHistorique:
     cache_email, cache_cin = {}, {}
     for membre in Membre.objects.all():
         cache_email[membre.email.lower()] = membre
-        if membre.cin:
+        if membre.cin and membre.cin != CIN_PLATZHALTER:
             cache_cin[membre.cin] = membre
 
     for numero_ligne, row in enumerate(lignes, start=2):  # ligne 1 = en-têtes

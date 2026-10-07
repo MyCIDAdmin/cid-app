@@ -59,6 +59,12 @@ def test_evaluer_cin_identique_donne_90_sans_atteindre_100():
     assert c.score == 90
 
 
+def test_evaluer_cin_platzhalter_ist_kein_treffer():
+    importe = _importe(email="a@example.de", cin="00000000", prenom="Aaa", nom="Bbb")
+    inscrit = _inscrit(email="b@example.de", cin="00000000", prenom="Ccc", nom="Ddd")
+    assert evaluer(inscrit, importe) is None
+
+
 def test_evaluer_nom_exact_sans_accents_ni_casse():
     importe = _importe(email="a@example.de", cin="1", prenom="Éric", nom="Ben-Ali")
     inscrit = _inscrit(email="b@example.de", cin="2", prenom="eric", nom="BEN ALI")

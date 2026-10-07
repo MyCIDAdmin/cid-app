@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 
 from django.db import IntegrityError, transaction
 
-from .models import Membre, Sexe
+from .models import CIN_PLATZHALTER, Membre, Sexe
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,8 @@ def _normaliser_texte(valeur) -> str:
 
 
 def _normaliser_cin(valeur) -> str:
-    return "".join(c for c in str(valeur or "").lower() if c.isalnum())
+    normalisee = "".join(c for c in str(valeur or "").lower() if c.isalnum())
+    return "" if normalisee == CIN_PLATZHALTER else normalisee
 
 
 def _nom_complet(membre: Membre) -> str:

@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 
 import openpyxl
 
-from .models import Bundesland, Membre, Sexe, StatutMembre
+from .models import CIN_PLATZHALTER, Bundesland, Membre, Sexe, StatutMembre
 
 # Colonnes attendues dans la feuille (1ère ligne = en-têtes). Plusieurs
 # libellés tolérés par colonne (casse et accents ignorés à la comparaison).
@@ -117,6 +117,7 @@ def construire_classeur_template():
         + ", ".join(f"{code} ({label})" for code, label in Bundesland.choices)
     )
     notes["A6"] = "Dates au format JJ/MM/AAAA."
+    notes["A7"] = f"cin : si vide, remplacé automatiquement par {CIN_PLATZHALTER} (valeur neutre)."
     notes.column_dimensions["A"].width = 100
 
     return classeur
@@ -230,7 +231,9 @@ def _parse_row(row, mapping: dict, emails_vus: set, cins_vus: set) -> Membre:
     date_naissance = _parse_date(cell("date_naissance"), "date_naissance")
     email = cell("email")
     telephone = _texte_ou_vide(cell("telephone", required=False))
-    cin = _texte_ou_vide(cell("cin", required=False)) or None
+    # CIN leer -> Platzhalter "00000000" (kein echter Identifikator, siehe CIN_PLATZHALTER).
+    cin = _texte_ou_vide(cell("cin", required=False)) or CIN_PLATZHALTER
+    cin_reel = cin != CIN_PLATZHALTER
     adresse_de = cell("adresse_de")
     ville_de = cell("ville_de")
     date_adhesion = _parse_date(cell("date_adhesion"), "date_adhesion")
@@ -239,10 +242,10 @@ def _parse_row(row, mapping: dict, emails_vus: set, cins_vus: set) -> Membre:
         raise ValueError(f"email invalide : {email!r}")
 
     email_norm = email.lower()
-    if email_norm in emails_vus or (cin and cin in cins_vus):
+    if email_norm in emails_vus or (cin_reel and cin in cins_vus):
         raise ValueError(f"doublon dans le fichier (email ou CIN déjà vu) : {email}")
     emails_vus.add(email_norm)
-    if cin:
+    if cin_reel:
         cins_vus.add(cin)
 
     sexe_brut = _normalize(cell("sexe", required=False))
@@ -302,7 +305,7 @@ def _cin_email_existants() -> tuple:
         # standard ici car EncryptedCharField déchiffre à la désérialisation
         # de la valeur BDD, avant renvoi par le queryset).
         emails.add(email.lower())
-        if cin:
+        if cin and cin != CIN_PLATZHALTER:
             cins.add(cin)
     return emails, cins
 
