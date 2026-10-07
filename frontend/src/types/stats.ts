@@ -208,7 +208,8 @@ export interface KpisProjets {
   projekte: ProjektKennzahlZeile[];
 }
 
-export type PivotDimension = "jahr" | "quartal" | "monat" | "typ" | "kategorie" | "gegenpartei";
+export type PivotDimension =
+  "jahr" | "quartal" | "monat" | "typ" | "kategorie" | "gegenpartei" | "partner";
 export type PivotKennzahl = "einnahmen" | "ausgaben" | "saldo" | "anzahl" | "durchschnitt";
 export type PivotTypFilter = "" | "einnahme" | "ausgabe";
 
@@ -226,6 +227,7 @@ export interface PivotAbfrage {
 export interface PivotOptionen {
   kategorie: string[];
   typ: string[];
+  partner?: string[];
 }
 
 export interface PivotSpalte {

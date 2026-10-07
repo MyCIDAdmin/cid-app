@@ -260,7 +260,7 @@ def ecritures_comptables(annee: int, langue: str = "de") -> list:
     entspricht (Steuerberater-CSV)."""
     zeilen = []
 
-    def add(datum, typ, kategorie, beschreibung, partei, betrag, beleg, referenz):
+    def add(datum, typ, kategorie, beschreibung, partei, betrag, beleg, referenz, partner=""):
         zeilen.append(
             {
                 "datum": datum,
@@ -271,6 +271,7 @@ def ecritures_comptables(annee: int, langue: str = "de") -> list:
                 "betrag": betrag,
                 "beleg": beleg,
                 "referenz": referenz,
+                "partner": partner,
             }
         )
 
@@ -339,7 +340,7 @@ def ecritures_comptables(annee: int, langue: str = "de") -> list:
                 "",
                 str(i.id),
             )
-    for d in _depenses_approuvees(annee).select_related("categorie"):
+    for d in _depenses_approuvees(annee).select_related("categorie", "partner"):
         add(
             d.date_depense,
             "Ausgabe",
@@ -349,6 +350,7 @@ def ecritures_comptables(annee: int, langue: str = "de") -> list:
             -d.montant,
             "ja" if d.justificatif else "nein",
             str(d.id),
+            d.partner.nom if d.partner_id else "",
         )
     zeilen.sort(key=lambda z: (z["datum"], z["typ"]))
     return zeilen

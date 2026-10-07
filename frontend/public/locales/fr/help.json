@@ -313,5 +313,60 @@
     "shop_bestaetigen": "Vérifiez l'encaissement sur le relevé puis confirmez. La commande peut ensuite être préparée et expédiée ; la facture (PDF) devient disponible.",
     "ausgabe_freigeben": "Principe des quatre yeux : vous ne pouvez pas valider vos propres dépenses. Vérifiez montant, catégorie et justificatif. Un refus exige un motif ; la personne qui a saisi peut alors corriger. Seules les dépenses validées comptent dans le bilan et les KPI.",
     "kosten": "Plan = coûts prévus par type (responsable du projet). Réel = dépenses validées par l'équipe financière avec justificatif. Ouvert = saisi mais pas encore validé. Les dépenses refusées ne comptent nulle part."
+  },
+  "partner": {
+    "titre": "Partenaires",
+    "intro": "Fournisseurs, sponsors et partenaires de coopération au même endroit : contacts, contrats, évaluations, offres – et les projets, événements et produits concernés.",
+    "schritte": [
+      "« Nouveau partenaire » crée une société (nom, type, catégories, coordonnées générales, logo). Les partenaires archivés disparaissent de la liste mais gardent leur historique.",
+      "Dans la fiche, gérez plusieurs personnes de contact ; l'une d'elles est le contact principal et apparaît dans la liste.",
+      "Sous « Documents », joignez contrats, offres et autres pièces. Pour les contrats avec une date de fin, le système rappelle 60 et 14 jours avant l'échéance.",
+      "Sous « Liens », rattachez le partenaire à des projets, événements ou produits de la boutique (rôle : fournisseur, sponsor, coopération…). La case « Afficher le logo » montre son logo sur la page du projet ou de l'événement (par défaut : seulement sponsor et coopération).",
+      "Sous « Évaluations », attribuez 1 à 5 étoiles pour la qualité, le rapport qualité-prix, la fiabilité et la communication. Un jour après la fin d'un événement ou d'un projet, le système rappelle d'évaluer les partenaires liés.",
+      "« Comparaison d'offres » met côte à côte plusieurs offres par projet ; « Attribuer » marque l'offre retenue et lie automatiquement le partenaire au projet comme fournisseur.",
+      "Les dépenses peuvent être rattachées à un partenaire. « Importer depuis les dépenses » crée une fois les partenaires à partir des noms de fournisseurs existants – avec un aperçu avant toute écriture. Dans Statistiques & KPI, le tableau croisé peut être ventilé par « Partenaire »."
+    ],
+    "workflows": [
+      {
+        "titre": "Saisir un nouveau fournisseur avec contrat",
+        "wann": "Un nouveau prestataire va travailler durablement avec l'association.",
+        "schritte": [
+          "« Nouveau partenaire », nom, type « Fournisseur » et catégorie, enregistrer.",
+          "Dans la fiche, créer le contact principal avec e-mail et téléphone.",
+          "Sous « Documents », charger le contrat et saisir la fin du contrat.",
+          "Éventuellement charger le logo."
+        ],
+        "beispiel": "Catering Schmidt : contrat jusqu'au 31/12/2027. Le 01/11/2027 et le 17/12/2027, le créateur et les Bureau Admins reçoivent un rappel.",
+        "danach": "Le partenaire est sélectionnable dans les dépenses et retrouvable par nom, catégorie et contact."
+      },
+      {
+        "titre": "Comparer des offres pour un projet",
+        "wann": "Plusieurs offres existent pour une action.",
+        "schritte": [
+          "Cliquer sur « Comparaison d'offres » et choisir le projet.",
+          "Saisir pour chaque prestataire une offre avec montant, validité et éventuellement un document.",
+          "Le tableau classe les montants par ordre croissant avec l'écart au moins cher et la note actuelle du partenaire.",
+          "Sur l'offre retenue, cliquer sur « Attribuer » ; les autres sont marquées refusées."
+        ],
+        "beispiel": "Trois imprimeurs proposent 480 €, 520 € et 610 € pour la brochure. Le marché va au deuxième, mieux noté.",
+        "danach": "Le gagnant est lié au projet comme fournisseur. Aucune écriture ni ligne de coûts n'est créée automatiquement. « Réinitialiser » annule l'attribution."
+      },
+      {
+        "titre": "Reprendre les fournisseurs des dépenses existantes",
+        "wann": "Une seule fois après l'introduction du module.",
+        "schritte": [
+          "Cliquer sur « Importer depuis les dépenses ».",
+          "Vérifier l'aperçu : les noms identiques (casse, espaces) sont regroupés, les partenaires existants reconnus.",
+          "Confirmer – les nouveaux partenaires sont créés et les dépenses rattachées."
+        ],
+        "beispiel": "« Druckerei Meier » et « druckerei meier » deviennent un seul partenaire avec toutes ses dépenses.",
+        "danach": "Les dépenses par partenaire et le tableau croisé « Partenaire » fonctionnent pour les écritures importées."
+      }
+    ],
+    "tipps": [
+      "Les logos apparaissent publiquement sur les pages de projets et d'événements – ne les activez qu'avec l'accord du partenaire.",
+      "Les partenaires ne sont jamais supprimés, seulement archivés ; évaluations et liens restent traçables.",
+      "Lecture : RH et plus ; modification et évaluation : Bureau Admin et plus."
+    ]
   }
 }

@@ -275,7 +275,8 @@ def _liste(q, name):
 
 def _pivot_aus_anfrage(request):
     q = request.query_params
-    zeilen = _liste(q, "zeilen") or ["kategorie"]
+    # Fehlt der Parameter ganz, gilt die Voreinstellung; ein leerer Wert heißt "keine Zeilen".
+    zeilen = _liste(q, "zeilen") if "zeilen" in q else ["kategorie"]
     spalten = _liste(q, "spalten")
     kennzahlen = _liste(q, "kennzahlen") or ["einnahmen", "ausgaben", "saldo"]
     alle = zeilen + spalten

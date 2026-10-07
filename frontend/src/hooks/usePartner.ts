@@ -3,10 +3,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as partnerApi from "../api/partner";
 import type {
+  AngebotDaten,
   BewertungDaten,
+  DokumentDaten,
+  PartnerDokument,
   PartnerFiltre,
   PartnerKategorie,
+  PartnerKontaktDaten,
   PartnerSchreibDaten,
+  PartnerVerknuepfung,
   VerknuepfungDaten,
   ZielTyp,
 } from "../types/partner";
@@ -18,12 +23,14 @@ const keys = {
   bewertungen: (id: string) => [...keys.all, "bewertungen", id] as const,
   kategorien: () => [...keys.all, "kategorien"] as const,
   ziele: (typ: ZielTyp, q: string) => [...keys.all, "ziele", typ, q] as const,
+  angebote: (projetId: string) => [...keys.all, "angebote", projetId] as const,
 };
 
-export function usePartnerListe(filtre: PartnerFiltre) {
+export function usePartnerListe(filtre: PartnerFiltre, enabled = true) {
   return useQuery({
     queryKey: keys.liste(filtre),
     queryFn: () => partnerApi.getPartnerListe(filtre),
+    enabled,
   });
 }
 
@@ -129,5 +136,134 @@ export function useAendernKategorie() {
       daten: Partial<Pick<PartnerKategorie, "nom" | "nom_fr" | "actif">>;
     }) => partnerApi.aendernKategorie(id, daten),
     onSuccess: invalidieren,
+  });
+}
+
+export function useCreerKontakt(partnerId: string) {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (daten: PartnerKontaktDaten) => partnerApi.creerKontakt(partnerId, daten),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useAendernKontakt() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: ({ id, daten }: { id: string; daten: Partial<PartnerKontaktDaten> }) =>
+      partnerApi.aendernKontakt(id, daten),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useLoescheKontakt() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (id: string) => partnerApi.loescheKontakt(id),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useLadeLogoHoch(id: string) {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (datei: File) => partnerApi.ladeLogoHoch(id, datei),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useEntferneLogo(id: string) {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: () => partnerApi.entferneLogo(id),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useLadeDokumentHoch(partnerId: string) {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (daten: DokumentDaten) => partnerApi.ladeDokumentHoch(partnerId, daten),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useAendernDokument() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: ({
+      id,
+      daten,
+    }: {
+      id: string;
+      daten: Partial<Pick<PartnerDokument, "titel" | "typ" | "gueltig_bis" | "notiz">>;
+    }) => partnerApi.aendernDokument(id, daten),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useLoescheDokument() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (id: string) => partnerApi.loescheDokument(id),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useAendernVerknuepfung() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: ({
+      id,
+      daten,
+    }: {
+      id: string;
+      daten: Partial<Pick<PartnerVerknuepfung, "notiz" | "logo_anzeigen">>;
+    }) => partnerApi.aendernVerknuepfung(id, daten),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useAngebote(projetId: string) {
+  return useQuery({
+    queryKey: keys.angebote(projetId),
+    queryFn: () => partnerApi.getAngebote(projetId),
+    enabled: !!projetId,
+  });
+}
+
+export function useCreerAngebot() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (daten: AngebotDaten) => partnerApi.creerAngebot(daten),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useLoescheAngebot() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (id: string) => partnerApi.loescheAngebot(id),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useAngebotAktion() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: ({ id, aktion }: { id: string; aktion: "zuschlag" | "zuruecksetzen" }) =>
+      partnerApi.angebotAktion(id, aktion),
+    onSuccess: invalidieren,
+  });
+}
+
+/** Vorschau (bestaetigen = false) und endgültiger Import aus den Ausgaben. */
+export function useImportAusgaben() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (bestaetigen: boolean) => partnerApi.importAusgaben(bestaetigen),
+    onSuccess: (ergebnis) => {
+      if (ergebnis.bestaetigt) queryClient.invalidateQueries({ queryKey: keys.all });
+    },
   });
 }

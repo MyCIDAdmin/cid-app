@@ -99,7 +99,7 @@ class DepenseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Depense.objects.select_related(
-            "categorie", "evenement", "projet", "aufgabe", "saisie_par", "decide_par"
+            "categorie", "evenement", "projet", "aufgabe", "saisie_par", "decide_par", "partner"
         )
         p = self.request.query_params
         if p.get("annee"):

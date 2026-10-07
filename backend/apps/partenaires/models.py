@@ -4,11 +4,15 @@ für gezielte Listen ("alle Caterer", "alle Druckereien"). Partner werden nie ge
 archiviert (Historie von Verknüpfungen und Bewertungen bleibt erhalten)."""
 
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
+
+from apps.adhesions.storage import JustificatifsStorage
+from apps.projets.storage import ProjetsStorage
 
 
 class PartnerTyp(models.TextChoices):
@@ -40,6 +44,17 @@ class PartnerKategorie(models.Model):
         return self.nom
 
 
+def partner_logo_path(instance, filename):
+    # Öffentlicher Bucket "projets" (Logos erscheinen auf Projekt-/Veranstaltungsseiten) ;
+    # `filename` wird vom Validator serverseitig neu vergeben.
+    return f"partner-logos/{instance.pk}/{uuid.uuid4()}_{filename}"
+
+
+def partner_dokument_path(instance, filename):
+    # Privater Bucket "justificatifs" (Verträge, Angebote) — nur über signierte URLs.
+    return f"partner-dokumente/{instance.partner_id}/{filename}"
+
+
 class Partner(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nom = models.CharField("Name", max_length=200)
@@ -52,7 +67,10 @@ class Partner(models.Model):
         default=False, help_text="Bevorzugter Partner/Lieferant (in Listen hervorgehoben)."
     )
 
-    ansprechpartner = models.CharField(max_length=200, blank=True)
+    logo = models.ImageField(
+        upload_to=partner_logo_path, storage=ProjetsStorage(), null=True, blank=True
+    )
+    # Zentrale Kontaktdaten der Firma ; Personen stehen in PartnerKontakt.
     email = models.EmailField(blank=True)
     telefon = models.CharField(max_length=50, blank=True)
     website = models.URLField(blank=True)
@@ -81,6 +99,27 @@ class Partner(models.Model):
 
     def __str__(self):
         return self.nom
+
+
+class PartnerKontakt(models.Model):
+    """Eine Ansprechperson des Partners (mehrere je Partner, einer davon Hauptkontakt)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name="kontakte")
+    name = models.CharField(max_length=200)
+    funktion = models.CharField(max_length=150, blank=True)
+    email = models.EmailField(blank=True)
+    telefon = models.CharField(max_length=50, blank=True)
+    hauptkontakt = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-hauptkontakt", "name"]
+        verbose_name = "Ansprechperson"
+        verbose_name_plural = "Ansprechpersonen"
+
+    def __str__(self):
+        return f"{self.name} ({self.partner})"
 
 
 class VerknuepfungRolle(models.TextChoices):
@@ -124,6 +163,11 @@ class PartnerVerknuepfung(models.Model):
         max_length=15, choices=VerknuepfungRolle.choices, default=VerknuepfungRolle.SONSTIGE
     )
     notiz = models.CharField(max_length=300, blank=True)
+    logo_anzeigen = models.BooleanField(
+        default=False,
+        help_text="Partner-Logo auf der Seite des Projekts / der Veranstaltung zeigen.",
+    )
+    bewertung_erinnert = models.BooleanField(default=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -205,3 +249,81 @@ class PartnerBewertung(models.Model):
             (self.qualitaet + self.preis_leistung + self.zuverlaessigkeit + self.kommunikation) / 4,
             2,
         )
+
+
+class DokumentTyp(models.TextChoices):
+    VERTRAG = "vertrag", "Vertrag"
+    ANGEBOT = "angebot", "Angebot"
+    SONSTIGES = "sonstiges", "Sonstiges"
+
+
+class PartnerDokument(models.Model):
+    """Vertrag/Angebot/sonstiges Dokument eines Partners. `gueltig_bis` ist bei Verträgen das
+    Vertragsende (Erinnerung 60 und 14 Tage vorher, siehe tasks.py)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name="dokumente")
+    typ = models.CharField(max_length=10, choices=DokumentTyp.choices, default=DokumentTyp.VERTRAG)
+    titel = models.CharField(max_length=200)
+    datei = models.FileField(upload_to=partner_dokument_path, storage=JustificatifsStorage())
+    gueltig_bis = models.DateField(null=True, blank=True)
+    notiz = models.CharField(max_length=300, blank=True)
+    hochgeladen_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    erinnert_60 = models.BooleanField(default=False)
+    erinnert_14 = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["gueltig_bis", "-created_at"]
+        verbose_name = "Partner-Dokument"
+        verbose_name_plural = "Partner-Dokumente"
+
+    def __str__(self):
+        return f"{self.titel} ({self.partner})"
+
+
+class AngebotStatus(models.TextChoices):
+    OFFEN = "offen", "Offen"
+    ZUSCHLAG = "zuschlag", "Zuschlag"
+    ABGELEHNT = "abgelehnt", "Abgelehnt"
+
+
+class Angebot(models.Model):
+    """Angebot eines Partners für ein Projekt/eine Aktion (Angebotsvergleich) — je Projekt
+    höchstens ein Zuschlag."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projet = models.ForeignKey(
+        "projets.Projet", on_delete=models.CASCADE, related_name="partner_angebote"
+    )
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name="angebote")
+    betrag = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
+    )
+    gueltig_bis = models.DateField(null=True, blank=True)
+    beschreibung = models.CharField(max_length=300, blank=True)
+    dokument = models.ForeignKey(
+        PartnerDokument, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    status = models.CharField(
+        max_length=10, choices=AngebotStatus.choices, default=AngebotStatus.OFFEN
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["betrag", "created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["projet"],
+                condition=Q(status="zuschlag"),
+                name="angebot_ein_zuschlag_je_projekt",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.partner} → {self.projet_id}: {self.betrag}"

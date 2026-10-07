@@ -445,3 +445,24 @@ def test_pivot_export_csv_und_excel(api_client):
     )
     assert xlsx.status_code == 200
     assert xlsx["Content-Disposition"].endswith('.xlsx"')
+
+
+def test_pivot_ohne_zeilendimension_liefert_gesamtzeile(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "p0@example.de")
+    jahr = datetime.date.today().year
+    _beitrag(membre, jahr, "100.00")
+    _ausgabe(jahr, "30.00")
+    resp = _auth(api_client, user).get(
+        reverse("stats:pivot"), {"zeilen": "", "kennzahlen": "einnahmen,ausgaben"}
+    )
+    assert resp.status_code == 200, resp.data
+    daten = resp.json()
+    assert daten["zeilen_dims"] == []
+    assert len(daten["zeilen"]) == 1
+    assert daten["zeilen"][0]["label"] == "Summe"
+    assert daten["zeilen"][0]["summe"] == [100.0, 30.0]
+    # Export darf ohne Zeilendimension nicht abstürzen
+    export = _auth(api_client, user).get(
+        reverse("stats:export-pivot"), {"zeilen": "", "datei": "csv"}
+    )
+    assert export.status_code == 200

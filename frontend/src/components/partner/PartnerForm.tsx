@@ -26,7 +26,6 @@ interface Props {
 
 type TextFeld =
   | "nom"
-  | "ansprechpartner"
   | "email"
   | "telefon"
   | "website"
@@ -52,7 +51,6 @@ export default function PartnerForm({
     typ: (partner?.typ ?? "partner") as PartnerTyp,
     bevorzugt: partner?.bevorzugt ?? false,
     kategorien: partner?.kategorien ?? [],
-    ansprechpartner: partner?.ansprechpartner ?? "",
     email: partner?.email ?? "",
     telefon: partner?.telefon ?? "",
     website: partner?.website ?? "",
@@ -161,7 +159,6 @@ export default function PartnerForm({
         </div>
       </div>
 
-      {textFeld("ansprechpartner")}
       {textFeld("email", "email")}
       {textFeld("telefon", "tel")}
       {textFeld("website", "url")}

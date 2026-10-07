@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import ImportPanel from "../../components/partner/ImportPanel";
 import KategorienPanel from "../../components/partner/KategorienPanel";
 import PartnerForm from "../../components/partner/PartnerForm";
 import { Sterne } from "../../components/partner/Sterne";
@@ -38,6 +39,7 @@ export default function AdminPartnerPage() {
   });
   const [neu, setNeu] = useState(false);
   const [kategorienOffen, setKategorienOffen] = useState(false);
+  const [importOffen, setImportOffen] = useState(false);
   const liste = usePartnerListe(filtre);
   const kategorien = usePartnerKategorien();
   const anlegen = useCreerPartner();
@@ -58,8 +60,26 @@ export default function AdminPartnerPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-bold text-text-primary">{t("titel")}</h1>
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Link
+            to="/admin/partner/angebote"
+            className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+          >
+            {t("angebotsvergleich")}
+          </Link>
+          {schreibbar && (
+            <button
+              type="button"
+              onClick={() => setImportOffen((o) => !o)}
+              aria-expanded={importOffen}
+              className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+            >
+              {t("aus_ausgaben_importieren")}
+            </button>
+          )}
+        </div>
         {schreibbar && (
-          <div className="ml-auto flex gap-2">
+          <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setKategorienOffen((o) => !o)}
@@ -86,6 +106,7 @@ export default function AdminPartnerPage() {
       )}
 
       {schreibbar && kategorienOffen && <KategorienPanel />}
+      {schreibbar && importOffen && <ImportPanel onClose={() => setImportOffen(false)} />}
 
       {schreibbar && neu && (
         <section className="mb-4 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
@@ -234,6 +255,7 @@ export default function AdminPartnerPage() {
                 <th className="px-3 py-2">{t("feld_nom")}</th>
                 <th className="px-3 py-2">{t("feld_typ")}</th>
                 <th className="px-3 py-2">{t("feld_kategorien")}</th>
+                <th className="px-3 py-2">{t("hauptkontakt")}</th>
                 <th className="px-3 py-2">{t("feld_ville")}</th>
                 <th className="px-3 py-2">{t("bewertung")}</th>
                 <th className="px-3 py-2 text-right">{t("verknuepfungen")}</th>
@@ -254,6 +276,14 @@ export default function AdminPartnerPage() {
                       )}
                       {p.nom}
                     </Link>
+                    {p.logo_url && (
+                      <img
+                        src={p.logo_url}
+                        alt=""
+                        loading="lazy"
+                        className="ml-2 inline-block h-5 max-w-[3rem] object-contain align-middle"
+                      />
+                    )}
                     {p.statut !== "aktiv" && (
                       <span className="ml-2 rounded-full bg-bg-tertiary px-2 py-0.5 text-[11px] text-text-tertiary">
                         {t(`status_${p.statut}`)}
@@ -267,6 +297,7 @@ export default function AdminPartnerPage() {
                       .map((k, i) => (k ? kategorieName(k, i18n.language) : p.kategorien_namen[i]))
                       .join(", ")}
                   </td>
+                  <td className="px-3 py-2 text-xs text-text-secondary">{p.hauptkontakt_name}</td>
                   <td className="px-3 py-2">{p.ville}</td>
                   <td className="px-3 py-2">
                     <Sterne wert={p.bewertung_schnitt} />

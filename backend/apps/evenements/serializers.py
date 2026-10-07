@@ -45,6 +45,7 @@ class EvenementSerializer(serializers.ModelSerializer):
     # Point 1.1/3 (2026-10-05) : affichage seul pour les non-membres/anonymes.
     reserve_membres = serializers.SerializerMethodField()
     cout_applicable = serializers.SerializerMethodField()
+    partner_logos = serializers.SerializerMethodField()
 
     uebersetzungen = UebersetzungenField()
 
@@ -70,6 +71,7 @@ class EvenementSerializer(serializers.ModelSerializer):
             "cout",
             "cout_non_membre",
             "cout_applicable",
+            "partner_logos",
             "reserve_membres",
             "accompagnants_payants",
             "prix_accompagnant_adulte",
@@ -119,6 +121,11 @@ class EvenementSerializer(serializers.ModelSerializer):
             data["point_rdv"] = ""
             data["lieu_maps_url"] = ""
         return data
+
+    def get_partner_logos(self, obj) -> list:
+        from apps.partenaires.services import partner_logos
+
+        return partner_logos(obj, "evenement")
 
     def validate(self, attrs):
         def valeur(nom):

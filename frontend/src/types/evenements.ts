@@ -5,6 +5,7 @@
  */
 
 import type { Uebersetzungen } from "../utils/uebersetzung";
+import type { PartnerLogoEintrag } from "./partner";
 
 export type TypeEvenement = "deplacement" | "fete" | "conference" | "tournoi" | "ag";
 export type StatutEvenement = "brouillon" | "publie" | "annule";
@@ -54,6 +55,8 @@ export interface Evenement {
   cout_applicable: string;
   /** Événement non ouvert aux non-membres (point 1.1) : affichage seul + badge. */
   reserve_membres: boolean;
+  /** Logos verknüpfter Partner (nur mit Haken "Logo zeigen"), vom Server gefiltert. */
+  partner_logos?: PartnerLogoEintrag[];
   /** Begleitpersonen (module "Veranstaltungsverwaltung", 2026-09-25) — indépendant de
    * gratuit/cout : un événement gratuit pour le membre peut tout de même facturer ses
    * accompagnants, et inversement. */

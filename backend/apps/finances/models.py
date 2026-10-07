@@ -72,6 +72,16 @@ class Depense(models.Model):
         CategorieDepense, on_delete=models.PROTECT, related_name="depenses"
     )
     fournisseur = models.CharField(max_length=200)
+    # Optionale Verknüpfung mit einem Business Partner/Lieferanten (2026-10-07) ; `fournisseur`
+    # bleibt als Freitext erhalten (Altdaten, Belegtext) und wird bei Wahl eines Partners mit
+    # dessen Namen vorbelegt.
+    partner = models.ForeignKey(
+        "partenaires.Partner",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ausgaben",
+    )
     description = models.TextField(blank=True)
     evenement = models.ForeignKey(
         "evenements.Evenement",

@@ -653,6 +653,15 @@ class MatchCommentaireSerializer(serializers.ModelSerializer):
 # ---------------------------------------------------------------------------
 
 
+def est_ligue_1(competition: str) -> bool:
+    """Wettbewerbsname der Ligue 1 (GOAL API liefert z. B. "Tunisian Ligue Professionnelle 1",
+    manuell gepflegt oft "Ligue 1") — ohne Pokal, Champions League u. Ä."""
+    nom = " ".join((competition or "").lower().split())
+    return nom in {"ligue 1", "ligue1"} or any(
+        marke in nom for marke in ("ligue 1", "ligue professionnelle 1", "ligue pro 1")
+    )
+
+
 class ClassementLigueSerializer(serializers.ModelSerializer):
     """Lecture seule — toujours synchronisé depuis GOAL API, voir services.py.
 
@@ -676,7 +685,8 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
                 score_domicile__isnull=False,
                 score_exterieur__isnull=False,
             ).order_by("date_heure")
-            for r in termines:
+            # Nur Ligue-1-Spiele (2026-10-07) : Pokal und CAF-Wettbewerbe zählen nicht zur Form.
+            for r in (r for r in termines if est_ligue_1(r.competition)):
                 for equipe, pour, contre in (
                     (r.equipe_domicile, r.score_domicile, r.score_exterieur),
                     (r.equipe_exterieur, r.score_exterieur, r.score_domicile),

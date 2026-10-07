@@ -6,6 +6,7 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/admin/configuration-site", "hero"],
   ["/admin/fan-club-logos", "logos"],
   ["/admin/notifications", "notifications"],
+  ["/admin/partner", "partner"],
   ["/admin/boutique", "boutique"],
   ["/admin/events", "events"],
   ["/admin/projets", "projets"],

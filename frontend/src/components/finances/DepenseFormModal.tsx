@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useEvenements } from "../../hooks/useEvenements";
 import { useCategories, useCreerDepense, useModifierDepense } from "../../hooks/useFinances";
 import { useProjets } from "../../hooks/useProjets";
+import PartnerAuswahl from "../partner/PartnerAuswahl";
 import type { Depense } from "../../types/finances";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { kategorieName } from "../../utils/kategorie";
@@ -31,6 +32,7 @@ export default function DepenseFormModal({
   const [montant, setMontant] = useState(depense?.montant ?? "");
   const [categorie, setCategorie] = useState(depense?.categorie ?? "");
   const [fournisseur, setFournisseur] = useState(depense?.fournisseur ?? "");
+  const [partner, setPartner] = useState(depense?.partner ?? "");
   const [description, setDescription] = useState(depense?.description ?? "");
   const [evenement, setEvenement] = useState(depense?.evenement ?? "");
   const [projet, setProjet] = useState(depense?.projet ?? "");
@@ -45,6 +47,7 @@ export default function DepenseFormModal({
       montant,
       categorie,
       fournisseur,
+      partner: partner || null,
       description,
       evenement: evenement || null,
       projet: projet || null,
@@ -114,6 +117,17 @@ export default function DepenseFormModal({
               className={CHAMP}
             />
           </div>
+          <PartnerAuswahl
+            id="dep-partner"
+            value={partner}
+            aktuellerName={depense?.partner_name}
+            onChange={(id, name) => {
+              setPartner(id);
+              if (name) setFournisseur(name);
+            }}
+            className={CHAMP}
+            labelClassName={LABEL}
+          />
           <div className="col-span-2">
             <label htmlFor="dep-categorie" className={LABEL}>
               {t("champ.categorie")}

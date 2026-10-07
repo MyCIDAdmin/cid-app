@@ -42,6 +42,7 @@ import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { useAnnulerInscription, useEvenements, useInscriptions } from "../../hooks/useEvenements";
 import { estMembreActif, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import PartnerLogos from "../../components/partner/PartnerLogos";
 import type { Evenement } from "../../types/evenements";
 import { uebersetzt } from "../../utils/uebersetzung";
 
@@ -125,6 +126,7 @@ function EvenementCarte({
             dangerouslySetInnerHTML={{ __html: uebersetzt(evenement, "description") }}
           />
         )}
+        <PartnerLogos logos={evenement.partner_logos} />
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-tertiary">
           {/* Icônes Zeit/Ort reprises telles quelles de PublicEvenementsTab.tsx (retour
               utilisateur du 2026-09-29, point 2 : "Icons für Zeit und Ort wie im Tab der

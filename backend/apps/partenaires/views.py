@@ -1,29 +1,45 @@
+from collections import Counter
+from decimal import Decimal
+
 from django.apps import apps
-from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField, Q
+from django.db import transaction
+from django.db.models import Avg, Count, Exists, ExpressionWrapper, F, FloatField, OuterRef, Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import Role
 
 from .models import (
+    Angebot,
+    AngebotStatus,
     Partner,
     PartnerBewertung,
+    PartnerDokument,
     PartnerKategorie,
+    PartnerKontakt,
     PartnerStatus,
+    PartnerTyp,
     PartnerVerknuepfung,
     VerknuepfungRolle,
 )
 from .permissions import PartnerPermission
 from .serializers import (
+    LOGO_STANDARD_ROLLEN,
+    AngebotSerializer,
     PartnerBewertungSerializer,
     PartnerDetailSerializer,
+    PartnerDokumentSerializer,
     PartnerKategorieSerializer,
+    PartnerKontaktSerializer,
+    PartnerLogoSerializer,
     PartnerSerializer,
     PartnerVerknuepfungCreateSerializer,
     PartnerVerknuepfungSerializer,
+    PartnerVerknuepfungUpdateSerializer,
 )
 
 ZIEL_MODELLE = {
@@ -49,13 +65,14 @@ class PartnerViewSet(viewsets.ModelViewSet):
 
     permission_classes = [PartnerPermission]
     pagination_class = None
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_serializer_class(self):
         return PartnerDetailSerializer if self.action == "retrieve" else PartnerSerializer
 
     def get_queryset(self):
-        qs = Partner.objects.prefetch_related("kategorien").annotate(
+        qs = Partner.objects.prefetch_related("kategorien", "kontakte").annotate(
             bewertung_schnitt=Avg(
                 ExpressionWrapper(
                     (
@@ -91,7 +108,9 @@ class PartnerViewSet(viewsets.ModelViewSet):
         if suche:
             qs = qs.filter(
                 Q(nom__icontains=suche)
-                | Q(ansprechpartner__icontains=suche)
+                | Exists(
+                    PartnerKontakt.objects.filter(partner=OuterRef("pk"), name__icontains=suche)
+                )
                 | Q(ville__icontains=suche)
                 | Q(email__icontains=suche)
             )
@@ -107,6 +126,37 @@ class PartnerViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        # Partner werden archiviert, nie gelöscht (Historie von Verknüpfungen/Bewertungen).
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    @action(detail=True, methods=["post", "delete"])
+    def logo(self, request, pk=None):
+        partner = self.get_object()
+        if request.method == "DELETE":
+            if partner.logo:
+                partner.logo.delete(save=False)
+            partner.logo = None
+            partner.save(update_fields=["logo", "updated_at"])
+        else:
+            serializer = PartnerLogoSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            if partner.logo:
+                partner.logo.delete(save=False)
+            partner.logo = serializer.validated_data["logo"]
+            partner.save(update_fields=["logo", "updated_at"])
+        return Response(PartnerSerializer(partner).data)
+
+    @action(detail=True, methods=["get", "post"])
+    def dokumente(self, request, pk=None):
+        partner = self.get_object()
+        if request.method == "GET":
+            return Response(PartnerDokumentSerializer(partner.dokumente.all(), many=True).data)
+        serializer = PartnerDokumentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(partner=partner, hochgeladen_von=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
     def archivieren(self, request, pk=None):
@@ -133,6 +183,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
         if ziel is None:
             raise ValidationError({"ziel_id": "Ziel nicht gefunden."})
         rolle = daten.get("rolle", VerknuepfungRolle.SONSTIGE)
+        logo_anzeigen = daten.get("logo_anzeigen", rolle in LOGO_STANDARD_ROLLEN)
         vorhanden = PartnerVerknuepfung.objects.filter(
             partner=partner, rolle=rolle, **{daten["ziel_typ"]: ziel}
         )
@@ -142,6 +193,7 @@ class PartnerViewSet(viewsets.ModelViewSet):
             partner=partner,
             rolle=rolle,
             notiz=daten.get("notiz", ""),
+            logo_anzeigen=logo_anzeigen,
             created_by=request.user,
             **{daten["ziel_typ"]: ziel},
         )
@@ -182,12 +234,87 @@ class PartnerKategorieViewSet(
         )
 
 
+class PartnerKontaktViewSet(
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Ansprechpersonen: Anlegen (mit `partner`), Ändern, Löschen ; genau ein Hauptkontakt."""
+
+    permission_classes = [PartnerPermission]
+    serializer_class = PartnerKontaktSerializer
+    queryset = PartnerKontakt.objects.all()
+    http_method_names = ["post", "patch", "delete", "head", "options"]
+
+    @staticmethod
+    def _hauptkontakt_festlegen(kontakt):
+        if kontakt.hauptkontakt:
+            PartnerKontakt.objects.filter(partner=kontakt.partner).exclude(pk=kontakt.pk).update(
+                hauptkontakt=False
+            )
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        kontakt = serializer.save()
+        # Der erste Kontakt eines Partners ist automatisch der Hauptkontakt.
+        if (
+            not PartnerKontakt.objects.filter(partner=kontakt.partner)
+            .exclude(pk=kontakt.pk)
+            .exists()
+        ):
+            kontakt.hauptkontakt = True
+            kontakt.save(update_fields=["hauptkontakt"])
+        self._hauptkontakt_festlegen(kontakt)
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        self._hauptkontakt_festlegen(serializer.save())
+
+
+class PartnerDokumentView(APIView):
+    """PATCH (Titel, Typ, Gültig bis, Notiz) und DELETE eines Partner-Dokuments."""
+
+    permission_classes = [PartnerPermission]
+
+    def _hole(self, pk):
+        dokument = PartnerDokument.objects.filter(pk=pk).first()
+        if dokument is None:
+            raise NotFound()
+        return dokument
+
+    def patch(self, request, pk):
+        dokument = self._hole(pk)
+        serializer = PartnerDokumentSerializer(dokument, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        dokument = self._hole(pk)
+        if dokument.datei:
+            dokument.datei.delete(save=False)
+        dokument.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class PartnerVerknuepfungLoeschenView(APIView):
     permission_classes = [PartnerPermission]
 
     def delete(self, request, pk):
         PartnerVerknuepfung.objects.filter(pk=pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def patch(self, request, pk):
+        verknuepfung = PartnerVerknuepfung.objects.filter(pk=pk).first()
+        if verknuepfung is None:
+            raise NotFound()
+        serializer = PartnerVerknuepfungUpdateSerializer(
+            verknuepfung, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(PartnerVerknuepfungSerializer(verknuepfung).data)
 
 
 class PartnerBewertungLoeschenView(APIView):
@@ -221,4 +348,148 @@ class PartnerZieleView(APIView):
             qs = qs.filter(**{f"{feld}__icontains": suche})
         return Response(
             [{"id": str(o.pk), "label": getattr(o, feld)} for o in qs.order_by(feld)[:20]]
+        )
+
+
+def _bewertung_schnitt():
+    return Avg(
+        ExpressionWrapper(
+            (
+                F("partner__bewertungen__qualitaet")
+                + F("partner__bewertungen__preis_leistung")
+                + F("partner__bewertungen__zuverlaessigkeit")
+                + F("partner__bewertungen__kommunikation")
+            )
+            / 4.0,
+            output_field=FloatField(),
+        )
+    )
+
+
+class AngebotViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Angebotsvergleich je Projekt: `?projet=<id>` ; Zuschlag/Zurücksetzen als Aktionen."""
+
+    permission_classes = [PartnerPermission]
+    serializer_class = AngebotSerializer
+    pagination_class = None
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        qs = Angebot.objects.select_related("partner", "dokument").annotate(
+            partner_note=_bewertung_schnitt()
+        )
+        projet = self.request.query_params.get("projet")
+        if projet:
+            qs = qs.filter(projet=projet)
+        elif self.action == "list":
+            raise ValidationError({"projet": "Projekt angeben."})
+        return qs.order_by("betrag", "created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    def perform_update(self, serializer):
+        if serializer.instance.status != AngebotStatus.OFFEN:
+            raise ValidationError("Nur offene Angebote können geändert werden.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.status == AngebotStatus.ZUSCHLAG:
+            raise ValidationError("Zuschlag zuerst zurücksetzen.")
+        instance.delete()
+
+    @action(detail=True, methods=["post"])
+    def zuschlag(self, request, pk=None):
+        angebot = self.get_object()
+        with transaction.atomic():
+            Angebot.objects.filter(projet=angebot.projet).exclude(pk=angebot.pk).update(
+                status=AngebotStatus.ABGELEHNT
+            )
+            Angebot.objects.filter(pk=angebot.pk).update(status=AngebotStatus.ZUSCHLAG)
+            # Der Gewinner wird (falls noch nicht geschehen) automatisch mit dem Projekt verknüpft.
+            PartnerVerknuepfung.objects.get_or_create(
+                partner=angebot.partner,
+                projet=angebot.projet,
+                rolle=VerknuepfungRolle.LIEFERANT,
+                defaults={"created_by": request.user},
+            )
+        return Response(AngebotSerializer(self.get_queryset().get(pk=angebot.pk)).data)
+
+    @action(detail=True, methods=["post"])
+    def zuruecksetzen(self, request, pk=None):
+        angebot = self.get_object()
+        Angebot.objects.filter(projet=angebot.projet).update(status=AngebotStatus.OFFEN)
+        return Response(AngebotSerializer(self.get_queryset().get(pk=angebot.pk)).data)
+
+
+def _name(schreibweisen: Counter) -> str:
+    """Häufigste Schreibweise ; bei Gleichstand die alphabetisch erste (deterministisch)."""
+    return sorted(schreibweisen.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+
+
+def _norm(name: str) -> str:
+    return " ".join((name or "").lower().split())
+
+
+class AusgabenImportView(APIView):
+    """POST /partenaires/import-ausgaben/ — Lieferantennamen aus Ausgaben als Partner anlegen und
+    die Ausgaben verknüpfen. Ohne `bestaetigen: true` nur Vorschau (nichts wird geschrieben)."""
+
+    permission_classes = [PartnerPermission]
+
+    def post(self, request):
+        from apps.finances.models import Depense
+
+        bestaetigen = str(request.data.get("bestaetigen", "")).lower() in {"1", "true"}
+        gruppen: dict[str, dict] = {}
+        for d in Depense.objects.filter(partner__isnull=True).exclude(fournisseur=""):
+            key = _norm(d.fournisseur)
+            if not key:
+                continue
+            eintrag = gruppen.setdefault(
+                key, {"schreibweisen": Counter(), "ids": [], "summe": Decimal("0")}
+            )
+            eintrag["schreibweisen"][" ".join(d.fournisseur.split())] += 1
+            eintrag["ids"].append(d.pk)
+            eintrag["summe"] += d.montant
+        vorhanden = {_norm(p.nom): p for p in Partner.objects.all()}
+
+        vorschau = []
+        for key, g in sorted(gruppen.items()):
+            name = _name(g["schreibweisen"])
+            vorschau.append(
+                {
+                    "name": name,
+                    "anzahl": len(g["ids"]),
+                    "summe": float(g["summe"]),
+                    "neu": key not in vorhanden,
+                }
+            )
+        if not bestaetigen:
+            return Response({"gruppen": vorschau, "bestaetigt": False})
+
+        neu = verknuepft = 0
+        with transaction.atomic():
+            for key, g in gruppen.items():
+                partner = vorhanden.get(key)
+                if partner is None:
+                    name = _name(g["schreibweisen"])
+                    partner = Partner.objects.create(
+                        nom=name, typ=PartnerTyp.LIEFERANT, created_by=request.user
+                    )
+                    neu += 1
+                verknuepft += Depense.objects.filter(pk__in=g["ids"]).update(partner=partner)
+        return Response(
+            {
+                "gruppen": vorschau,
+                "bestaetigt": True,
+                "partner_neu": neu,
+                "ausgaben_verknuepft": verknuepft,
+            }
         )

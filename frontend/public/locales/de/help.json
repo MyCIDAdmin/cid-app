@@ -313,5 +313,60 @@
     "shop_bestaetigen": "Zahlungseingang im Kontoauszug prüfen, dann bestätigen. Erst danach kann die Bestellung vorbereitet und versendet werden; die Rechnung (PDF) ist danach abrufbar.",
     "ausgabe_freigeben": "Vier-Augen-Prinzip: Eigene Ausgaben kannst du nicht selbst freigeben. Prüfe Betrag, Kategorie und Beleg. Beim Ablehnen ist eine Begründung nötig; die erfassende Person kann die Ausgabe dann korrigieren. Erst freigegebene Ausgaben zählen in Bilanz und KPIs.",
     "kosten": "Plan = geplante Kosten je Kostenart (Projektleitung). Ist = vom Finanzteam freigegebene Ausgaben mit Beleg. Offen = erfasst, aber noch nicht freigegeben. Abgelehnte Ausgaben zählen nirgends."
+  },
+  "partner": {
+    "titre": "Business Partner",
+    "intro": "Lieferanten, Sponsoren und Kooperationspartner an einem Ort: Kontakte, Verträge, Bewertungen, Angebote – und welche Projekte, Veranstaltungen und Produkte sie betreffen.",
+    "schritte": [
+      "„Neuer Partner“ legt eine Firma an (Name, Typ, Kategorien, zentrale Kontaktdaten, Logo). Archivierte Partner verschwinden aus der Liste, bleiben aber mit Historie erhalten.",
+      "Im Partner-Detail pflegen Sie mehrere Ansprechpersonen; eine davon ist der Hauptkontakt und erscheint in der Liste.",
+      "Unter „Dokumente“ hängen Sie Verträge, Angebote und anderes an den Partner. Bei Verträgen mit Ablaufdatum erinnert das System 60 und 14 Tage vor Vertragsende.",
+      "Unter „Verknüpfungen“ ordnen Sie den Partner Projekten, Veranstaltungen oder Shop-Produkten zu (Rolle: Lieferant, Sponsor, Kooperation …). Mit dem Haken „Logo zeigen“ erscheint sein Logo auf der Projekt- bzw. Veranstaltungsseite (Standard: nur bei Sponsor und Kooperation).",
+      "Unter „Bewertungen“ vergeben Sie 1–5 Sterne für Qualität, Preis-Leistung, Zuverlässigkeit und Kommunikation. Einen Tag nach Ende einer Veranstaltung oder eines Projekts erinnert das System an die Bewertung der verknüpften Partner.",
+      "„Angebotsvergleich“ stellt je Projekt mehrere Angebote nebeneinander; „Zuschlag“ markiert das gewählte Angebot und verknüpft den Partner automatisch als Lieferant mit dem Projekt.",
+      "Ausgaben können einem Partner zugeordnet werden. „Aus Ausgaben importieren“ legt aus den bisherigen Lieferantennamen einmalig Partner an – mit Vorschau, bevor etwas geschrieben wird. In Statistiken & KPIs lässt sich der Pivot nach „Business Partner“ aufschlüsseln."
+    ],
+    "workflows": [
+      {
+        "titre": "Neuen Lieferanten mit Vertrag erfassen",
+        "wann": "Ein neuer Dienstleister soll dauerhaft mit dem Verein arbeiten.",
+        "schritte": [
+          "„Neuer Partner“, Name, Typ „Lieferant“ und Kategorie wählen, speichern.",
+          "Im Detail den Hauptkontakt mit E-Mail und Telefon anlegen.",
+          "Unter „Dokumente“ den Vertrag hochladen und das Vertragsende eintragen.",
+          "Optional das Logo hochladen."
+        ],
+        "beispiel": "Catering Schmidt: Vertrag bis 31.12.2027. Am 01.11.2027 und am 17.12.2027 erhalten Ersteller und Bureau Admins eine Erinnerung.",
+        "danach": "Der Partner ist in Ausgaben auswählbar und in der Liste über Name, Kategorie und Ansprechperson auffindbar."
+      },
+      {
+        "titre": "Angebote für ein Projekt vergleichen",
+        "wann": "Für eine Aktion liegen mehrere Angebote vor.",
+        "schritte": [
+          "Auf „Angebotsvergleich“ klicken und das Projekt wählen.",
+          "Für jeden Anbieter ein Angebot mit Betrag, Gültigkeit und optional Dokument erfassen.",
+          "Die Tabelle zeigt Beträge aufsteigend mit Differenz zum günstigsten und der bisherigen Partner-Note.",
+          "Beim gewählten Angebot „Zuschlag“ klicken; die übrigen werden als abgelehnt markiert."
+        ],
+        "beispiel": "Drei Druckereien bieten für die Festschrift 480 €, 520 € und 610 € an. Der Zuschlag geht an die mittlere, weil sie die beste Note hat.",
+        "danach": "Der Gewinner ist als Lieferant mit dem Projekt verknüpft. Eine Buchung oder Kostenposition entsteht nicht automatisch. „Zurücksetzen“ macht den Zuschlag rückgängig."
+      },
+      {
+        "titre": "Lieferanten aus bisherigen Ausgaben übernehmen",
+        "wann": "Einmalig nach der Einführung des Moduls.",
+        "schritte": [
+          "„Aus Ausgaben importieren“ klicken.",
+          "Die Vorschau prüfen: gleiche Namen (Groß-/Kleinschreibung, Leerzeichen) werden zusammengefasst, vorhandene Partner erkannt.",
+          "Bestätigen – neue Partner werden angelegt und die Ausgaben verknüpft."
+        ],
+        "beispiel": "„Druckerei Meier“ und „druckerei meier“ werden zu einem Partner mit allen zugehörigen Ausgaben.",
+        "danach": "Ausgaben je Partner und der Pivot „Business Partner“ funktionieren ab sofort für die importierten Buchungen."
+      }
+    ],
+    "tipps": [
+      "Logos erscheinen öffentlich auf Projekt- und Veranstaltungsseiten – nur mit Einverständnis des Partners aktivieren.",
+      "Partner werden nie gelöscht, nur archiviert; so bleiben Bewertungen und Verknüpfungen nachvollziehbar.",
+      "Lesen dürfen RH und höher, Pflegen und Bewerten ab Bureau Admin."
+    ]
   }
 }
