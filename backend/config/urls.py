@@ -26,6 +26,7 @@ urlpatterns = [
     path("api/v1/projets/", include("apps.projets.urls")),
     path("api/v1/rbac/", include("apps.rbac.urls")),
     path("api/v1/uebersetzungen/", include("apps.uebersetzung.urls")),
+    path("api/v1/partenaires/", include("apps.partenaires.urls")),
 ]
 
 if settings.DEBUG:

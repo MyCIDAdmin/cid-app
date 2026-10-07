@@ -181,12 +181,7 @@
     "col_ergebnis": "Ergebnis"
   },
   "pivot": {
-    "hinweis": "Wähle Zeilen, Spalten und Kennzahl – die Tabelle wird sofort neu berechnet. Grundlage: alle Einnahmen und freigegebenen Ausgaben im gewählten Zeitraum.",
-    "zeilen": "Zeilen",
-    "spalten": "Spalten",
-    "kennzahl": "Kennzahl",
     "keine": "– keine –",
-    "tauschen": "Zeilen und Spalten tauschen",
     "jahr_von": "Von Jahr",
     "jahr_bis": "Bis Jahr",
     "summe": "Summe",
@@ -202,8 +197,28 @@
     "dim_typ": "Typ (Einnahme/Ausgabe)",
     "dim_kategorie": "Kategorie / Quelle",
     "dim_gegenpartei": "Gegenpartei",
-    "kz_betrag": "Betrag (Summe)",
     "kz_anzahl": "Anzahl Buchungen",
-    "kz_durchschnitt": "Durchschnittsbetrag"
+    "kz_durchschnitt": "Durchschnittsbetrag",
+    "hinweis": "Wähle bis zu drei Dimensionen für Zeilen und Spalten sowie beliebig viele Kennzahlen – die Tabelle wird sofort neu berechnet. Grundlage: alle Einnahmen und freigegebenen Ausgaben im gewählten Zeitraum.",
+    "zeilen": "Zeilen",
+    "spalten": "Spalten",
+    "kennzahlen": "Kennzahlen",
+    "max_hinweis": "Höchstens 3 Dimensionen je Achse.",
+    "entfernen": "{{name}} entfernen",
+    "hinzufuegen": "+ Dimension",
+    "tauschen": "Zeilen und Spalten tauschen",
+    "kz_einnahmen": "Einnahmen",
+    "kz_ausgaben": "Ausgaben",
+    "kz_saldo": "Saldo (Einnahmen − Ausgaben)",
+    "filter": "Filter",
+    "filter_typ": "Art",
+    "filter_alle": "Einnahmen und Ausgaben",
+    "filter_einnahmen": "Nur Einnahmen",
+    "filter_ausgaben": "Nur Ausgaben",
+    "filter_kategorie": "Kategorie / Quelle",
+    "filter_kategorie_alle": "Alle Kategorien",
+    "filter_gegenpartei": "Gegenpartei enthält",
+    "filter_zuruecksetzen": "Filter zurücksetzen",
+    "gefiltert": "Gefiltert nach"
   }
 }

@@ -49,6 +49,7 @@ import {
   IconBellRinging,
   IconBroadcast,
   IconBuildingStore,
+  IconHeartHandshake,
   IconCalendarEvent,
   IconCalendarPlus,
   IconCar,
@@ -91,7 +92,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useMarquerLuesPrefixe, useNotificationsNonLues } from "../../hooks/useNotifications";
 import { useMesAcces, useVisibiliteEffective } from "../../hooks/useRbac";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
-import { type SidebarGroupKey, useUiStore } from "../../store/uiStore";
+import { type SidebarGroupKey, type SidebarSubgroupKey, useUiStore } from "../../store/uiStore";
 import { pageEstAccessible } from "../../types/rbac";
 import BrandLogo from "../ui/BrandLogo";
 
@@ -137,6 +138,45 @@ export const GROUP_LABEL_KEYS: Record<SidebarGroupKey, string> = {
   communaute: "nav_groupe.communaute",
   contenu: "nav_groupe.contenu",
   administration: "nav_groupe.administration",
+};
+
+// Untergruppen der Gruppe "administration" (Redesign vom 2026-10-07, Variante A: nach
+// Fachbereich) in fester Reihenfolge, mit Label-Key (nav_untergruppe.* in common.json).
+// eslint-disable-next-line react-refresh/only-export-components
+export const SUBGROUP_ORDER: SidebarSubgroupKey[] = [
+  "mitglieder",
+  "finanzen",
+  "aktivitaeten",
+  "community",
+  "system",
+];
+// eslint-disable-next-line react-refresh/only-export-components
+export const SUBGROUP_LABEL_KEYS: Record<SidebarSubgroupKey, string> = {
+  mitglieder: "nav_untergruppe.mitglieder",
+  finanzen: "nav_untergruppe.finanzen",
+  aktivitaeten: "nav_untergruppe.aktivitaeten",
+  community: "nav_untergruppe.community",
+  system: "nav_untergruppe.system",
+};
+
+// Zuordnung + Reihenfolge der Verwaltungs-Einträge innerhalb ihrer Untergruppe.
+const ADMIN_SUBGROUPS: Record<SidebarSubgroupKey, string[]> = {
+  mitglieder: [
+    "/inscriptions",
+    "/admin/campagnes-adhesion",
+    "/admin/justificatifs",
+    "/admin/roles",
+  ],
+  finanzen: [
+    "/admin/finances",
+    "/cotisations/en-attente",
+    "/cotisations/relances",
+    "/admin/articles-cotisation",
+    "/stats",
+  ],
+  aktivitaeten: ["/admin/events", "/admin/projets", "/admin/boutique", "/admin/partner"],
+  community: ["/admin/quiz", "/admin/albums", "/admin/fan-club-logos", "/admin/configuration-site"],
+  system: ["/admin/notifications"],
 };
 
 // Icône représentative par groupe (mode rail replié uniquement, voir docstring de module) — un
@@ -402,6 +442,15 @@ export const NAV_ITEMS: NavItem[] = [
     group: "administration",
     minRoleLevel: ROLE_LEVELS.bureau_admin,
   },
+  // Business Partner & Lieferanten (Nutzerwunsch 2026-10-07) — Lesen ab RH, Pflegen ab Bureau
+  // Admin (PartnerPermission) ; minRoleLevel direkt, hors matrice apps.rbac.
+  {
+    to: "/admin/partner",
+    labelKey: "nav.admin_partner",
+    icon: IconHeartHandshake,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.rh,
+  },
   // Logos d'équipes du Fan-Club (retour utilisateur du 2026-09-28 : "Fan-Club: Vereins-Logos
   // anzeigen + Upload-Möglichkeit") — même raisonnement que /admin/configuration-site
   // ci-dessus (minRoleLevel direct, hors matrice apps.rbac : réglage ponctuel, pas une page
@@ -415,10 +464,23 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export interface SidebarNavGroup {
-  key: SidebarGroupKey;
+export interface SidebarNavSubgroup {
+  key: SidebarSubgroupKey;
   items: NavItem[];
   hasActiveItem: boolean;
+  /** Neuigkeit (roter/gelber Punkt) bei mindestens einem Eintrag dieser Untergruppe. */
+  hasSignal: boolean;
+}
+
+export interface SidebarNavGroup {
+  key: SidebarGroupKey;
+  /** Flach, bei Gruppen mit Untergruppen bereits in Untergruppen-Reihenfolge sortiert. */
+  items: NavItem[];
+  hasActiveItem: boolean;
+  /** Neuigkeit bei mindestens einem Eintrag der Gruppe. */
+  hasSignal: boolean;
+  /** Nur für "administration" gefüllt, sonst leer. */
+  subgroups: SidebarNavSubgroup[];
 }
 
 /**
@@ -552,8 +614,35 @@ export function useSidebarNav() {
   // jamais à forcer le dépli (voir docstring : la préférence de repli de l'utilisateur reste
   // toujours prioritaire).
   const groups: SidebarNavGroup[] = GROUP_ORDER.map((key) => {
-    const items = visibleItems.filter((item) => item.group === key);
-    return { key, items, hasActiveItem: items.some(isItemActive) };
+    let items = visibleItems.filter((item) => item.group === key);
+    let subgroups: SidebarNavSubgroup[] = [];
+    if (key === "administration") {
+      subgroups = SUBGROUP_ORDER.map((subKey) => {
+        const order = ADMIN_SUBGROUPS[subKey];
+        const subItems = items
+          .filter((item) => order.includes(item.to))
+          .sort((a, b) => order.indexOf(a.to) - order.indexOf(b.to));
+        return {
+          key: subKey,
+          items: subItems,
+          hasActiveItem: subItems.some(isItemActive),
+          hasSignal: subItems.some(itemALeSignal),
+        };
+      }).filter((sub) => sub.items.length > 0);
+      // Einträge ohne Untergruppe (sollte nicht vorkommen) bleiben am Ende erhalten.
+      const zugeordnet = new Set(subgroups.flatMap((sub) => sub.items.map((i) => i.to)));
+      items = [
+        ...subgroups.flatMap((sub) => sub.items),
+        ...items.filter((i) => !zugeordnet.has(i.to)),
+      ];
+    }
+    return {
+      key,
+      items,
+      subgroups,
+      hasActiveItem: items.some(isItemActive),
+      hasSignal: items.some(itemALeSignal),
+    };
   }).filter((group) => group.items.length > 0);
 
   return { visibleItems, groups, isItemActive, itemALeSignal, handleClicItem };
@@ -600,6 +689,96 @@ function NavItemLink({
   );
 }
 
+/** Punkt "Neuigkeit" an Gruppen-/Untergruppen-Überschriften (gleiche Optik wie am Eintrag). */
+function SignalDot({ label }: { label: string }) {
+  return (
+    <span
+      role="status"
+      aria-label={label}
+      className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-300 shadow-[0_0_0_2px_var(--color-cad),0_0_6px_2px_rgba(252,211,77,0.7)]"
+    />
+  );
+}
+
+/** Einträge einer Gruppe: bei Gruppen mit Untergruppen unter einklappbaren Zwischenüberschriften
+ * (`collapsible`) bzw. festen Überschriften im Flyout des Icon-Modus. */
+function GroupItems({
+  group,
+  isItemActive,
+  itemALeSignal,
+  onNavigate,
+  collapsible,
+}: {
+  group: SidebarNavGroup;
+  isItemActive: (item: NavItem) => boolean;
+  itemALeSignal: (item: NavItem) => boolean;
+  onNavigate: (item: NavItem) => void;
+  collapsible: boolean;
+}) {
+  const { t } = useTranslation("common");
+  const collapsedSubgroups = useUiStore((s) => s.collapsedSubgroups);
+  const toggleSubgroup = useUiStore((s) => s.toggleSubgroup);
+
+  const renderItem = (item: NavItem) => (
+    <NavItemLink
+      key={item.to}
+      item={item}
+      active={isItemActive(item)}
+      signale={itemALeSignal(item)}
+      onNavigate={() => onNavigate(item)}
+    />
+  );
+
+  if (group.subgroups.length === 0) return <>{group.items.map(renderItem)}</>;
+
+  return (
+    <>
+      {group.subgroups.map((sub) => {
+        const expanded = !collapsible || !collapsedSubgroups[sub.key];
+        const label = t(SUBGROUP_LABEL_KEYS[sub.key]);
+        const titleClass = `flex min-w-0 items-center gap-2 truncate ${
+          sub.hasActiveItem ? "text-white/70" : "text-white/40"
+        }`;
+        return (
+          <div key={sub.key} className="pt-1">
+            {collapsible ? (
+              <button
+                type="button"
+                onClick={() => toggleSubgroup(sub.key)}
+                aria-expanded={expanded}
+                className="flex w-full items-center justify-between rounded-cid px-3 py-1 pl-4 text-[11px] font-medium tracking-wide transition hover:text-white/70"
+              >
+                <span className={titleClass}>
+                  <span className="truncate">{label}</span>
+                  {sub.hasSignal && (
+                    <SignalDot label={t("nav.point_activite", { module: label })} />
+                  )}
+                </span>
+                <IconChevronDown
+                  size={12}
+                  className={`shrink-0 text-white/40 transition-transform ${
+                    expanded ? "" : "-rotate-90"
+                  }`}
+                />
+              </button>
+            ) : (
+              <div className="px-2 pb-0.5 pt-1 text-[11px] font-medium text-white/40">
+                <span className={titleClass}>
+                  <span className="truncate">{label}</span>
+                  {sub.hasSignal && (
+                    <SignalDot label={t("nav.point_activite", { module: label })} />
+                  )}
+                </span>
+              </div>
+            )}
+            {expanded && <div className="space-y-1">{sub.items.map(renderItem)}</div>}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 /** Accordéon groupé (libellés visibles) — mode déplié de `Sidebar` ET tiroir mobile
  * (`MobileNavDrawer`), d'où son export : même logique de dépli/repli par groupe (uiStore), donc
  * mieux vaut un seul composant que deux implémentations qui pourraient diverger. */
@@ -633,7 +812,14 @@ export function NavAccordionList({
                 group.hasActiveItem ? "text-white/70" : "text-white/40"
               }`}
             >
-              <span className="truncate">{t(GROUP_LABEL_KEYS[group.key])}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate">{t(GROUP_LABEL_KEYS[group.key])}</span>
+                {group.hasSignal && !expanded && (
+                  <SignalDot
+                    label={t("nav.point_activite", { module: t(GROUP_LABEL_KEYS[group.key]) })}
+                  />
+                )}
+              </span>
               <IconChevronDown
                 size={14}
                 className={`shrink-0 transition-transform ${expanded ? "" : "-rotate-90"}`}
@@ -641,15 +827,13 @@ export function NavAccordionList({
             </button>
             {expanded && (
               <div className="space-y-1">
-                {group.items.map((item) => (
-                  <NavItemLink
-                    key={item.to}
-                    item={item}
-                    active={isItemActive(item)}
-                    signale={itemALeSignal(item)}
-                    onNavigate={() => onNavigate(item)}
-                  />
-                ))}
+                <GroupItems
+                  group={group}
+                  isItemActive={isItemActive}
+                  itemALeSignal={itemALeSignal}
+                  onNavigate={onNavigate}
+                  collapsible
+                />
               </div>
             )}
           </div>
@@ -742,7 +926,16 @@ function RailGroupButton({
             : "text-white/60 hover:bg-white/5 hover:text-white"
         }`}
       >
-        <GroupIcon size={20} />
+        <span className="relative">
+          <GroupIcon size={20} />
+          {group.hasSignal && (
+            <span
+              role="status"
+              aria-label={t("nav.point_activite", { module: label })}
+              className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-amber-300 shadow-[0_0_0_2px_var(--color-cad),0_0_6px_2px_rgba(252,211,77,0.7)]"
+            />
+          )}
+        </span>
       </button>
       {ouvert &&
         position &&
@@ -757,18 +950,16 @@ function RailGroupButton({
             <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
               {label}
             </div>
-            {group.items.map((item) => (
-              <NavItemLink
-                key={item.to}
-                item={item}
-                active={isItemActive(item)}
-                signale={itemALeSignal(item)}
-                onNavigate={() => {
-                  onNavigate(item);
-                  setOuvert(false);
-                }}
-              />
-            ))}
+            <GroupItems
+              group={group}
+              isItemActive={isItemActive}
+              itemALeSignal={itemALeSignal}
+              collapsible={false}
+              onNavigate={(item) => {
+                onNavigate(item);
+                setOuvert(false);
+              }}
+            />
           </div>,
           document.body,
         )}

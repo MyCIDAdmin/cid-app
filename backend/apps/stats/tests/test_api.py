@@ -306,25 +306,120 @@ def test_phase_d_super_admin_voit_toujours_les_stats_meme_si_matrice_dit_aucun(a
 # --- Pivot (2026-10-06) ------------------------------------------------------------------------
 
 
+def _beitrag(membre, jahr, montant="45.00", monat=3):
+    return CotisationFactory(
+        membre=membre,
+        type_article=TypeArticle.COTISATION,
+        montant=Decimal(montant),
+        statut=StatutCotisation.PAYEE,
+        date_paiement=datetime.datetime(jahr, monat, 5, 12, tzinfo=datetime.timezone.utc),
+    )
+
+
+def _ausgabe(jahr, montant="20.00", lieferant="Druckerei Meier"):
+    from apps.finances.models import CategorieDepense, Depense, StatutDepense
+
+    return Depense.objects.create(
+        date_depense=datetime.date(jahr, 4, 2),
+        montant=Decimal(montant),
+        categorie=CategorieDepense.objects.filter(actif=True).first(),
+        fournisseur=lieferant,
+        statut=StatutDepense.APPROUVEE,
+    )
+
+
 def test_pivot_liefert_matrix_mit_summen(api_client):
     user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "pivot@example.de")
     jahr = datetime.date.today().year
-    CotisationFactory(
-        membre=membre,
-        type_article=TypeArticle.COTISATION,
-        montant=Decimal("45.00"),
-        statut=StatutCotisation.PAYEE,
-        date_paiement=datetime.datetime(jahr, 3, 5, tzinfo=datetime.timezone.utc),
-    )
+    _beitrag(membre, jahr)
     resp = _auth(api_client, user).get(
-        reverse("stats:pivot"), {"zeilen": "kategorie", "spalten": "jahr", "kennzahl": "betrag"}
+        reverse("stats:pivot"),
+        {"zeilen": "kategorie", "spalten": "jahr", "kennzahlen": "einnahmen"},
     )
     assert resp.status_code == 200
     daten = resp.json()
-    assert daten["gesamt"] == 45.0
-    assert daten["spalten"] == [str(jahr)]
+    assert daten["gesamt"] == [45.0]
+    assert [s["label"] for s in daten["spalten"]] == [str(jahr)]
     zeile = next(z for z in daten["zeilen"] if z["label"] == "Beiträge")
-    assert zeile["werte"] == [45.0] and zeile["summe"] == 45.0
+    assert zeile["werte"] == [[45.0]] and zeile["summe"] == [45.0]
+
+
+def test_pivot_trennt_einnahmen_und_ausgaben(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "pivot-ea@example.de")
+    jahr = datetime.date.today().year
+    _beitrag(membre, jahr, "100.00")
+    _ausgabe(jahr, "30.00")
+    resp = _auth(api_client, user).get(
+        reverse("stats:pivot"),
+        {"zeilen": "jahr", "kennzahlen": "einnahmen,ausgaben,saldo,anzahl"},
+    )
+    assert resp.status_code == 200
+    daten = resp.json()
+    assert daten["kennzahlen"] == ["einnahmen", "ausgaben", "saldo", "anzahl"]
+    # Ausgaben erscheinen positiv und getrennt, der Saldo ist die Differenz.
+    assert daten["gesamt"] == [100.0, 30.0, 70.0, 2]
+    assert daten["zeilen"][0]["summe"] == [100.0, 30.0, 70.0, 2]
+
+
+def test_pivot_mehrere_dimensionen_je_achse(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "pivot-md@example.de")
+    jahr = datetime.date.today().year
+    _beitrag(membre, jahr, "100.00", monat=1)
+    _ausgabe(jahr, "30.00")
+    resp = _auth(api_client, user).get(
+        reverse("stats:pivot"),
+        {"zeilen": "jahr,typ", "spalten": "kategorie", "kennzahlen": "saldo,anzahl"},
+    )
+    assert resp.status_code == 200
+    daten = resp.json()
+    assert daten["zeilen_dims"] == ["jahr", "typ"]
+    labels = {tuple(z["labels"]) for z in daten["zeilen"]}
+    assert labels == {(str(jahr), "Einnahme"), (str(jahr), "Ausgabe")}
+    assert all(len(w) == 2 for z in daten["zeilen"] for w in z["werte"])
+    assert len(daten["spalten"]) == 2  # Beiträge + Ausgabenkategorie
+
+
+def test_pivot_filter_typ_kategorie_und_gegenpartei(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "pivot-f@example.de")
+    jahr = datetime.date.today().year
+    _beitrag(membre, jahr, "100.00")
+    _ausgabe(jahr, "30.00", "Druckerei Meier")
+    _ausgabe(jahr, "10.00", "Catering Schmidt")
+    client = _auth(api_client, user)
+    basis = {"zeilen": "typ", "kennzahlen": "saldo"}
+
+    nur_ausgaben = client.get(reverse("stats:pivot"), {**basis, "f_typ": "ausgabe"}).json()
+    assert nur_ausgaben["gesamt"] == [-40.0]
+    assert nur_ausgaben["anzahl_buchungen"] == 2
+
+    lieferant = client.get(reverse("stats:pivot"), {**basis, "f_gegenpartei": "druckerei"}).json()
+    assert lieferant["gesamt"] == [-30.0]
+
+    kategorie = client.get(reverse("stats:pivot"), {**basis, "f_kategorie": "Beiträge"}).json()
+    assert kategorie["gesamt"] == [100.0]
+    assert kategorie["filter"] == {"kategorie": ["Beiträge"]}
+
+
+def test_pivot_optionen_liefern_kategorien(api_client):
+    user, membre = _user_avec_membre(Role.BUREAU_ADMIN, "pivot-o@example.de")
+    _beitrag(membre, datetime.date.today().year)
+    resp = _auth(api_client, user).get(reverse("stats:pivot-optionen"))
+    assert resp.status_code == 200
+    assert "Beiträge" in resp.json()["kategorie"]
+    assert resp.json()["typ"] == ["einnahme", "ausgabe"]
+
+
+def test_pivot_dimension_doppelt_oder_zu_viele_400(api_client):
+    user, _ = _user_avec_membre(Role.BUREAU_ADMIN, "pivot-dup@example.de")
+    client = _auth(api_client, user)
+    assert (
+        client.get(reverse("stats:pivot"), {"zeilen": "jahr", "spalten": "jahr"}).status_code == 400
+    )
+    assert (
+        client.get(reverse("stats:pivot"), {"zeilen": "jahr,monat,typ,kategorie"}).status_code
+        == 400
+    )
+    assert client.get(reverse("stats:pivot"), {"kennzahlen": "umsatz"}).status_code == 400
 
 
 def test_pivot_ungueltige_dimension_400(api_client):
@@ -344,6 +439,9 @@ def test_pivot_export_csv_und_excel(api_client):
     csv_resp = client.get(reverse("stats:export-pivot"), {"datei": "csv", "zeilen": "typ"})
     assert csv_resp.status_code == 200
     assert csv_resp["Content-Type"].startswith("text/csv")
-    xlsx = client.get(reverse("stats:export-pivot"), {"zeilen": "typ", "spalten": "monat"})
+    xlsx = client.get(
+        reverse("stats:export-pivot"),
+        {"zeilen": "typ,kategorie", "spalten": "monat", "kennzahlen": "einnahmen,ausgaben"},
+    )
     assert xlsx.status_code == 200
     assert xlsx["Content-Disposition"].endswith('.xlsx"')

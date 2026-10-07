@@ -13,6 +13,7 @@ import type {
   KpisProjets,
   PivotAbfrage,
   PivotErgebnis,
+  PivotOptionen,
   StatsFiltres,
   TypeTransaction,
 } from "../types/stats";
@@ -140,13 +141,24 @@ export async function getStatsProjets(): Promise<KpisProjets> {
 
 function pivotParams(abfrage: PivotAbfrage) {
   return {
-    zeilen: abfrage.zeilen,
-    spalten: abfrage.spalten || undefined,
-    kennzahl: abfrage.kennzahl,
+    zeilen: abfrage.zeilen.join(","),
+    spalten: abfrage.spalten.length ? abfrage.spalten.join(",") : undefined,
+    kennzahlen: abfrage.kennzahlen.join(","),
     jahr_von: abfrage.jahr_von,
     jahr_bis: abfrage.jahr_bis,
+    f_typ: abfrage.typ || undefined,
+    f_kategorie: abfrage.kategorie.length ? abfrage.kategorie.join(",") : undefined,
+    f_gegenpartei: abfrage.gegenpartei.trim() || undefined,
     langue: berichtSprache(),
   };
+}
+
+/** GET /stats/pivot/optionen/ — Auswahlwerte der Pivot-Filter im gewählten Zeitraum. */
+export async function getPivotOptionen(jahrVon: number, jahrBis: number): Promise<PivotOptionen> {
+  const { data } = await apiClient.get<PivotOptionen>("/stats/pivot/optionen/", {
+    params: { jahr_von: jahrVon, jahr_bis: jahrBis, langue: berichtSprache() },
+  });
+  return data;
 }
 
 /** GET /stats/pivot/ — dynamische Auswertung der Buchungen nach frei gewählten Dimensionen. */

@@ -209,25 +209,50 @@ export interface KpisProjets {
 }
 
 export type PivotDimension = "jahr" | "quartal" | "monat" | "typ" | "kategorie" | "gegenpartei";
-export type PivotKennzahl = "betrag" | "anzahl" | "durchschnitt";
+export type PivotKennzahl = "einnahmen" | "ausgaben" | "saldo" | "anzahl" | "durchschnitt";
+export type PivotTypFilter = "" | "einnahme" | "ausgabe";
 
 export interface PivotAbfrage {
-  zeilen: PivotDimension;
-  spalten: PivotDimension | "";
-  kennzahl: PivotKennzahl;
+  zeilen: PivotDimension[];
+  spalten: PivotDimension[];
+  kennzahlen: PivotKennzahl[];
   jahr_von: number;
   jahr_bis: number;
+  typ: PivotTypFilter;
+  kategorie: string[];
+  gegenpartei: string;
+}
+
+export interface PivotOptionen {
+  kategorie: string[];
+  typ: string[];
+}
+
+export interface PivotSpalte {
+  labels: string[];
+  label: string;
+}
+
+export interface PivotZeile {
+  labels: string[];
+  label: string;
+  /** werte[spalte][kennzahl] */
+  werte: number[][];
+  /** summe[kennzahl] */
+  summe: number[];
 }
 
 export interface PivotErgebnis {
-  zeilen_dim: PivotDimension;
-  spalten_dim: PivotDimension | null;
-  kennzahl: PivotKennzahl;
+  zeilen_dims: PivotDimension[];
+  spalten_dims: PivotDimension[];
+  kennzahlen: PivotKennzahl[];
   jahr_von: number;
   jahr_bis: number;
-  spalten: string[];
-  zeilen: { label: string; werte: number[]; summe: number }[];
-  spalten_summen: number[];
-  gesamt: number;
+  filter: Record<string, string[]>;
+  spalten: PivotSpalte[];
+  zeilen: PivotZeile[];
+  /** spalten_summen[spalte][kennzahl] */
+  spalten_summen: number[][];
+  gesamt: number[];
   anzahl_buchungen: number;
 }

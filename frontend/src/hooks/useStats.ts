@@ -21,6 +21,8 @@ const statsKeys = {
   evenements: (filtres: StatsFiltres) => [...statsKeys.all, "evenements", filtres] as const,
   bilan: (annee: number) => [...statsKeys.all, "bilan", annee] as const,
   pivot: (abfrage: PivotAbfrage) => [...statsKeys.all, "pivot", abfrage] as const,
+  pivotOptionen: (von: number, bis: number) =>
+    [...statsKeys.all, "pivot-optionen", von, bis] as const,
   finances: (filtres: FiltresFinances) => [...statsKeys.all, "finances", filtres] as const,
 };
 
@@ -71,5 +73,12 @@ export function useStatsPivot(abfrage: PivotAbfrage) {
   return useQuery({
     queryKey: statsKeys.pivot(abfrage),
     queryFn: () => statsApi.getStatsPivot(abfrage),
+  });
+}
+
+export function usePivotOptionen(jahrVon: number, jahrBis: number) {
+  return useQuery({
+    queryKey: statsKeys.pivotOptionen(jahrVon, jahrBis),
+    queryFn: () => statsApi.getPivotOptionen(jahrVon, jahrBis),
   });
 }

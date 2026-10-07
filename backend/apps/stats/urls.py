@@ -12,6 +12,7 @@ from .views import (
     StatsFinancesView,
     StatsFinancierView,
     StatsMembresView,
+    StatsPivotOptionenView,
     StatsPivotView,
     StatsProjetsView,
 )
@@ -25,6 +26,7 @@ urlpatterns = [
     path("projets/", StatsProjetsView.as_view(), name="projets"),
     path("finances/", StatsFinancesView.as_view(), name="finances"),
     path("pivot/", StatsPivotView.as_view(), name="pivot"),
+    path("pivot/optionen/", StatsPivotOptionenView.as_view(), name="pivot-optionen"),
     path("export/pivot/", StatsExportPivotView.as_view(), name="export-pivot"),
     path("bilan/", StatsBilanView.as_view(), name="bilan"),
     path("export/bilan-excel/", StatsExportBilanExcelView.as_view(), name="export-bilan-excel"),

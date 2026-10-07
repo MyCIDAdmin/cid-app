@@ -34,7 +34,8 @@
     "configuration_site": "Hero-Video",
     "fan_club_logos": "Vereinslogos",
     "startseite": "Startseite",
-    "finances": "Finanzen"
+    "finances": "Finanzen",
+    "admin_partner": "Business Partner"
   },
   "nav_groupe": {
     "general": "Allgemein",
@@ -191,5 +192,12 @@
       "abmelden": "Abmelden",
       "alle_anderen": "Alle anderen Geräte abmelden"
     }
+  },
+  "nav_untergruppe": {
+    "mitglieder": "Mitglieder & Zugang",
+    "finanzen": "Finanzen & Zahlungen",
+    "aktivitaeten": "Aktivitäten & Partner",
+    "community": "Community & Inhalte",
+    "system": "System"
   }
 }
