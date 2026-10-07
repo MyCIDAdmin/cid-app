@@ -14,6 +14,7 @@ import AccueilTab from "./AccueilTab";
 vi.mock("./NextMatchTile", () => ({ default: () => <div data-testid="next-match-stub" /> }));
 vi.mock("./KennzahlenBar", () => ({ default: () => <div data-testid="kennzahlen-stub" /> }));
 vi.mock("./FanClubPreview", () => ({ default: () => <div data-testid="fanclub-stub" /> }));
+vi.mock("./SponsorenBanner", () => ({ default: () => <div data-testid="sponsoren-stub" /> }));
 vi.mock("./MitgliedWerdenVorschau", () => ({
   default: () => <div data-testid="vorschau-stub" />,
 }));
@@ -48,7 +49,7 @@ describe("AccueilTab", () => {
     const ids = Array.from(document.querySelectorAll("[data-testid]")).map((el) =>
       el.getAttribute("data-testid"),
     );
-    expect(ids).toEqual(["next-match-stub", "kennzahlen-stub", "fanclub-stub"]);
+    expect(ids).toEqual(["next-match-stub", "kennzahlen-stub", "fanclub-stub", "sponsoren-stub"]);
   });
 
   it("ne montre pas la section adhésion sur la Startseite (retour utilisateur du 2026-09-27)", () => {

@@ -6,9 +6,11 @@ import type {
   AngebotDaten,
   BewertungDaten,
   DokumentDaten,
+  EinnahmeDaten,
   PartnerDokument,
   PartnerFiltre,
   PartnerKategorie,
+  PartnerReportingFiltre,
   PartnerKontaktDaten,
   PartnerSchreibDaten,
   PartnerVerknuepfung,
@@ -23,6 +25,9 @@ const keys = {
   bewertungen: (id: string) => [...keys.all, "bewertungen", id] as const,
   kategorien: () => [...keys.all, "kategorien"] as const,
   ziele: (typ: ZielTyp, q: string) => [...keys.all, "ziele", typ, q] as const,
+  einnahmen: (id: string) => [...keys.all, "einnahmen", id] as const,
+  reporting: (f: PartnerReportingFiltre) => [...keys.all, "reporting", f] as const,
+  banner: () => [...keys.all, "banner"] as const,
   angebote: (projetId: string) => [...keys.all, "angebote", projetId] as const,
 };
 
@@ -265,5 +270,44 @@ export function useImportAusgaben() {
     onSuccess: (ergebnis) => {
       if (ergebnis.bestaetigt) queryClient.invalidateQueries({ queryKey: keys.all });
     },
+  });
+}
+
+export function useEinnahmen(partnerId: string) {
+  return useQuery({
+    queryKey: keys.einnahmen(partnerId),
+    queryFn: () => partnerApi.getEinnahmen(partnerId),
+  });
+}
+
+export function useCreerEinnahme() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (daten: EinnahmeDaten) => partnerApi.creerEinnahme(daten),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useLoescheEinnahme() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: (id: string) => partnerApi.loescheEinnahme(id),
+    onSuccess: invalidieren,
+  });
+}
+
+export function usePartnerReporting(filtre: PartnerReportingFiltre) {
+  return useQuery({
+    queryKey: keys.reporting(filtre),
+    queryFn: () => partnerApi.getReporting(filtre),
+  });
+}
+
+/** Öffentlich lesbar (Startseite): keine Anmeldung nötig, selten geändert. */
+export function usePartnerBanner() {
+  return useQuery({
+    queryKey: keys.banner(),
+    queryFn: () => partnerApi.getBanner(),
+    staleTime: 5 * 60 * 1000,
   });
 }

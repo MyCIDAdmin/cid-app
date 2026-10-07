@@ -8,6 +8,11 @@ from .import_views import (
     MembreImportTemplateView,
     MembreImportView,
 )
+from .reporting_views import (
+    AktivitaetenReportingView,
+    MitgliederReportingExportView,
+    MitgliederReportingView,
+)
 from .views import MembreViewSet
 
 app_name = "membres"
@@ -34,4 +39,15 @@ urlpatterns = [
         name="membre-import-historique-template",
     ),
     path("export/", MembreExportView.as_view(), name="membre-export"),
+    path("reporting/mitglieder/", MitgliederReportingView.as_view(), name="membre-reporting"),
+    path(
+        "reporting/aktivitaeten/",
+        AktivitaetenReportingView.as_view(),
+        name="membre-reporting-aktivitaeten",
+    ),
+    path(
+        "reporting/export/",
+        MitgliederReportingExportView.as_view(),
+        name="membre-reporting-export",
+    ),
 ] + router.urls

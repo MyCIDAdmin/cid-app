@@ -324,7 +324,10 @@
       "Sous « Liens », rattachez le partenaire à des projets, événements ou produits de la boutique (rôle : fournisseur, sponsor, coopération…). La case « Afficher le logo » montre son logo sur la page du projet ou de l'événement (par défaut : seulement sponsor et coopération).",
       "Sous « Évaluations », attribuez 1 à 5 étoiles pour la qualité, le rapport qualité-prix, la fiabilité et la communication. Un jour après la fin d'un événement ou d'un projet, le système rappelle d'évaluer les partenaires liés.",
       "« Comparaison d'offres » met côte à côte plusieurs offres par projet ; « Attribuer » marque l'offre retenue et lie automatiquement le partenaire au projet comme fournisseur.",
-      "Les dépenses peuvent être rattachées à un partenaire. « Importer depuis les dépenses » crée une fois les partenaires à partir des noms de fournisseurs existants – avec un aperçu avant toute écriture. Dans Statistiques & KPI, le tableau croisé peut être ventilé par « Partenaire »."
+      "Les dépenses peuvent être rattachées à un partenaire. « Importer depuis les dépenses » crée une fois les partenaires à partir des noms de fournisseurs existants – avec un aperçu avant toute écriture. Dans Statistiques & KPI, le tableau croisé peut être ventilé par « Partenaire ».",
+      "Onglet « Reporting » : tous les partenaires et fournisseurs avec projets, événements et articles boutique liés, recettes, dépenses, chiffre d’affaires et solde. Les filtres (type, catégorie, rôle, lien, période, CA) agissent sur la liste, les indicateurs et l’export Excel ; les lignes peuvent être dépliées.",
+      "Les recettes (par ex. sponsoring) se saisissent dans la fiche du partenaire sous « Recettes ». Chiffre d’affaires = recettes + dépenses approuvées sur la période choisie.",
+      "Avec « Afficher dans la bannière de la page d’accueil » dans le formulaire, le logo du partenaire (actif) apparaît dans la bannière « Nos sponsors et partenaires ». Un clic sur le logo ouvre le site web – s’il est renseigné."
     ],
     "workflows": [
       {
@@ -361,6 +364,17 @@
         ],
         "beispiel": "« Druckerei Meier » et « druckerei meier » deviennent un seul partenaire avec toutes ses dépenses.",
         "danach": "Les dépenses par partenaire et le tableau croisé « Partenaire » fonctionnent pour les écritures importées."
+      },
+      {
+        "titre": "Afficher un sponsor sur la page d’accueil",
+        "wann": "Un sponsor doit apparaître avec son logo sur la page d’accueil.",
+        "schritte": [
+          "Ouvrir ou créer le partenaire, téléverser le logo et renseigner éventuellement le site web.",
+          "Cocher « Afficher dans la bannière de la page d’accueil » et enregistrer.",
+          "Saisir le montant du sponsoring sous « Recettes »."
+        ],
+        "beispiel": "Sponsor AG verse 500 € : logo dans la bannière, 500 € de recettes dans le reporting.",
+        "danach": "Le logo apparaît immédiatement. Pour le retirer, décocher la case ou archiver le partenaire."
       }
     ],
     "tipps": [

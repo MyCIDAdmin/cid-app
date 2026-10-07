@@ -324,7 +324,10 @@
       "Unter „Verknüpfungen“ ordnen Sie den Partner Projekten, Veranstaltungen oder Shop-Produkten zu (Rolle: Lieferant, Sponsor, Kooperation …). Mit dem Haken „Logo zeigen“ erscheint sein Logo auf der Projekt- bzw. Veranstaltungsseite (Standard: nur bei Sponsor und Kooperation).",
       "Unter „Bewertungen“ vergeben Sie 1–5 Sterne für Qualität, Preis-Leistung, Zuverlässigkeit und Kommunikation. Einen Tag nach Ende einer Veranstaltung oder eines Projekts erinnert das System an die Bewertung der verknüpften Partner.",
       "„Angebotsvergleich“ stellt je Projekt mehrere Angebote nebeneinander; „Zuschlag“ markiert das gewählte Angebot und verknüpft den Partner automatisch als Lieferant mit dem Projekt.",
-      "Ausgaben können einem Partner zugeordnet werden. „Aus Ausgaben importieren“ legt aus den bisherigen Lieferantennamen einmalig Partner an – mit Vorschau, bevor etwas geschrieben wird. In Statistiken & KPIs lässt sich der Pivot nach „Business Partner“ aufschlüsseln."
+      "Ausgaben können einem Partner zugeordnet werden. „Aus Ausgaben importieren“ legt aus den bisherigen Lieferantennamen einmalig Partner an – mit Vorschau, bevor etwas geschrieben wird. In Statistiken & KPIs lässt sich der Pivot nach „Business Partner“ aufschlüsseln.",
+      "Tab „Reporting“: alle Partner und Lieferanten mit verknüpften Projekten, Veranstaltungen und Shop-Artikeln, Einnahmen, Ausgaben, Umsatz und Saldo. Filter (Typ, Kategorie, Rolle, Verknüpfung, Zeitraum, Umsatz) wirken auf Liste, Kennzahlen und den Excel-Export; die Zeilen lassen sich aufklappen.",
+      "Einnahmen (z. B. Sponsoring) erfassen Sie im Partner-Detail unter „Einnahmen“. Umsatz = Einnahmen + genehmigte Ausgaben im gewählten Zeitraum.",
+      "Mit „Im Startseiten-Banner anzeigen“ im Partner-Formular erscheint das Logo des (aktiven) Partners im Banner „Unsere Sponsoren und Business Partner“ auf der Startseite. Ein Klick auf das Logo öffnet die Website – wenn sie beim Partner eingetragen ist."
     ],
     "workflows": [
       {
@@ -361,6 +364,17 @@
         ],
         "beispiel": "„Druckerei Meier“ und „druckerei meier“ werden zu einem Partner mit allen zugehörigen Ausgaben.",
         "danach": "Ausgaben je Partner und der Pivot „Business Partner“ funktionieren ab sofort für die importierten Buchungen."
+      },
+      {
+        "titre": "Sponsor auf der Startseite zeigen",
+        "wann": "Ein Sponsor soll mit seinem Logo auf der Startseite erscheinen.",
+        "schritte": [
+          "Partner öffnen bzw. anlegen, Logo hochladen und optional die Website eintragen.",
+          "Im Formular „Im Startseiten-Banner anzeigen“ ankreuzen und speichern.",
+          "Sponsoring-Betrag unter „Einnahmen“ erfassen."
+        ],
+        "beispiel": "Sponsor AG zahlt 500 € Sponsoring: Logo im Banner, 500 € Einnahmen im Reporting.",
+        "danach": "Das Logo erscheint sofort auf der Startseite. Zum Ausblenden den Haken entfernen oder den Partner archivieren."
       }
     ],
     "tipps": [

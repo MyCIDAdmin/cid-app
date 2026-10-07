@@ -2,17 +2,22 @@
 import type {
   Angebot,
   AngebotDaten,
+  BannerPartner,
   BewertungDaten,
   DokumentDaten,
+  EinnahmeDaten,
   ImportErgebnis,
   Partner,
   PartnerBewertung,
   PartnerDetail,
   PartnerDokument,
+  PartnerEinnahme,
   PartnerFiltre,
   PartnerKategorie,
   PartnerKontakt,
   PartnerKontaktDaten,
+  PartnerReporting,
+  PartnerReportingFiltre,
   PartnerSchreibDaten,
   PartnerVerknuepfung,
   VerknuepfungDaten,
@@ -240,5 +245,63 @@ export async function importAusgaben(bestaetigen: boolean): Promise<ImportErgebn
   const { data } = await apiClient.post<ImportErgebnis>("/partenaires/import-ausgaben/", {
     bestaetigen,
   });
+  return data;
+}
+
+export async function getEinnahmen(partnerId: string): Promise<PartnerEinnahme[]> {
+  const { data } = await apiClient.get<PartnerEinnahme[]>("/partenaires/einnahmen/", {
+    params: { partner: partnerId },
+  });
+  return data;
+}
+
+export async function creerEinnahme(daten: EinnahmeDaten): Promise<PartnerEinnahme> {
+  const { data } = await apiClient.post<PartnerEinnahme>("/partenaires/einnahmen/", daten);
+  return data;
+}
+
+export async function loescheEinnahme(id: string): Promise<void> {
+  await apiClient.delete(`/partenaires/einnahmen/${id}/`);
+}
+
+function reportingParams(f: PartnerReportingFiltre) {
+  return {
+    q: f.q.trim() || undefined,
+    typ: f.typ || undefined,
+    statut: f.statut || undefined,
+    kategorie: f.kategorie.length ? f.kategorie.join(",") : undefined,
+    rolle: f.rolle || undefined,
+    ziel_typ: f.ziel_typ || undefined,
+    bevorzugt: f.bevorzugt ? "1" : undefined,
+    auf_startseite: f.auf_startseite ? "1" : undefined,
+    von: f.von || undefined,
+    bis: f.bis || undefined,
+    min_umsatz: f.min_umsatz.trim() || undefined,
+    max_umsatz: f.max_umsatz.trim() || undefined,
+    sortierung: f.sortierung,
+  };
+}
+
+export async function getReporting(filtre: PartnerReportingFiltre): Promise<PartnerReporting> {
+  const { data } = await apiClient.get<PartnerReporting>("/partenaires/reporting/", {
+    params: reportingParams(filtre),
+  });
+  return data;
+}
+
+export async function exportReporting(
+  filtre: PartnerReportingFiltre,
+): Promise<{ blob: Blob; nomFichier: string }> {
+  const { data, headers } = await apiClient.get("/partenaires/reporting/export/", {
+    params: reportingParams(filtre),
+    responseType: "blob",
+  });
+  const treffer = /filename="?([^"]+)"?/.exec(String(headers["content-disposition"] ?? ""));
+  return { blob: data, nomFichier: treffer?.[1] ?? "reporting_partner.xlsx" };
+}
+
+/** Öffentlich (ohne Anmeldung): Logos für das Startseiten-Banner. */
+export async function getBanner(): Promise<BannerPartner[]> {
+  const { data } = await apiClient.get<BannerPartner[]>("/partenaires/banner/");
   return data;
 }

@@ -10,6 +10,7 @@ from .models import (
     Partner,
     PartnerBewertung,
     PartnerDokument,
+    PartnerEinnahme,
     PartnerKategorie,
     PartnerKontakt,
     PartnerVerknuepfung,
@@ -212,6 +213,7 @@ class PartnerSerializer(serializers.ModelSerializer):
             "typ",
             "statut",
             "bevorzugt",
+            "auf_startseite",
             "kategorien",
             "kategorien_namen",
             "logo_url",
@@ -303,4 +305,30 @@ class AngebotSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data.pop("projet", None)  # Projekt und Partner bleiben fest
         validated_data.pop("partner", None)
+        return super().update(instance, validated_data)
+
+
+class PartnerEinnahmeSerializer(serializers.ModelSerializer):
+    projet_titre = serializers.CharField(source="projet.titre", read_only=True, default="")
+    evenement_titre = serializers.CharField(source="evenement.titre", read_only=True, default="")
+
+    class Meta:
+        model = PartnerEinnahme
+        fields = [
+            "id",
+            "partner",
+            "datum",
+            "betrag",
+            "art",
+            "bezeichnung",
+            "projet",
+            "projet_titre",
+            "evenement",
+            "evenement_titre",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def update(self, instance, validated_data):
+        validated_data.pop("partner", None)  # eine Einnahme wechselt nie den Partner
         return super().update(instance, validated_data)

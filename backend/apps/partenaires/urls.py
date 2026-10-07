@@ -1,11 +1,14 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .reporting import PartnerReportingExportView, PartnerReportingView
 from .views import (
     AngebotViewSet,
     AusgabenImportView,
+    PartnerBannerView,
     PartnerBewertungLoeschenView,
     PartnerDokumentView,
+    PartnerEinnahmeViewSet,
     PartnerKategorieViewSet,
     PartnerKontaktViewSet,
     PartnerVerknuepfungLoeschenView,
@@ -20,8 +23,12 @@ router.register("partner", PartnerViewSet, basename="partner")
 router.register("kategorien", PartnerKategorieViewSet, basename="kategorie")
 router.register("kontakte", PartnerKontaktViewSet, basename="kontakt")
 router.register("angebote", AngebotViewSet, basename="angebot")
+router.register("einnahmen", PartnerEinnahmeViewSet, basename="einnahme")
 
 urlpatterns = [
+    path("banner/", PartnerBannerView.as_view(), name="banner"),
+    path("reporting/", PartnerReportingView.as_view(), name="reporting"),
+    path("reporting/export/", PartnerReportingExportView.as_view(), name="reporting-export"),
     path("ziele/", PartnerZieleView.as_view(), name="ziele"),
     path("import-ausgaben/", AusgabenImportView.as_view(), name="import-ausgaben"),
     path("dokumente/<uuid:pk>/", PartnerDokumentView.as_view(), name="dokument"),

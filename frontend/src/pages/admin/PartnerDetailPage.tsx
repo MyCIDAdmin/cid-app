@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 
 import BewertungenPanel from "../../components/partner/BewertungenPanel";
 import DokumentePanel from "../../components/partner/DokumentePanel";
+import EinnahmenPanel from "../../components/partner/EinnahmenPanel";
 import KontaktePanel from "../../components/partner/KontaktePanel";
 import PartnerForm from "../../components/partner/PartnerForm";
 import PartnerLogoPanel from "../../components/partner/PartnerLogoPanel";
@@ -100,6 +101,7 @@ export default function PartnerDetailPage() {
         dokumente={partner.dokumente}
         schreibbar={schreibbar}
       />
+      <EinnahmenPanel partnerId={partner.id} schreibbar={schreibbar} />
       <VerknuepfungenPanel
         partnerId={partner.id}
         verknuepfungen={partner.verknuepfungen}

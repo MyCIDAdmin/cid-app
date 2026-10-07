@@ -9,6 +9,7 @@
  *      n'affiche rien tant qu'aucune rencontre à venir n'est connue.
  *   2. Kennzahlen (Donateurs/Collecté/Projets)
  *   3. Fan-Club (classement + calendrier, réutilisation pure du module existant)
+ *   4. Banner "Unsere Sponsoren und Business Partner" (Nutzerwunsch 2026-10-07, SponsorenBanner.tsx)
  * Le point "Aktives Projekt" du mockup mycid.org n'est PAS repris ici (décision utilisateur
  * explicite, point 2.1.6) — le footer applicatif est déjà posé par PublicHomePage.tsx.
  *
@@ -32,6 +33,7 @@ import HeroVideo from "./HeroVideo";
 import KennzahlenBar from "./KennzahlenBar";
 import MitgliedWerdenVorschau from "./MitgliedWerdenVorschau";
 import NextMatchTile from "./NextMatchTile";
+import SponsorenBanner from "./SponsorenBanner";
 import { useConfigurationSitePublic } from "../../hooks/useCommunaute";
 import { useAuthStore } from "../../store/authStore";
 
@@ -107,6 +109,7 @@ export default function AccueilTab() {
       <NextMatchTile />
       <KennzahlenBar />
       <FanClubPreview />
+      <SponsorenBanner />
     </div>
   );
 }
