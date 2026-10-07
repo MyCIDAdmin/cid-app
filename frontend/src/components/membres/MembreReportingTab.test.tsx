@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as reportingApi from "../../api/membreReporting";
 import * as reportingHooks from "../../hooks/useMembreReporting";
+import * as useMembresHooks from "../../hooks/useMembres";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import type { AktivitaetenReporting, MitgliederReporting } from "../../types/membreReporting";
 import MembreReportingTab from "./MembreReportingTab";
@@ -11,6 +12,7 @@ vi.mock("../../hooks/useMembreReporting", () => ({
   useMitgliederReporting: vi.fn(),
   useAktivitaetenReporting: vi.fn(),
 }));
+vi.mock("../../hooks/useMembres", () => ({ useMembresList: vi.fn() }));
 vi.mock("../../api/membreReporting", () => ({ exportMembreReporting: vi.fn() }));
 vi.mock("../../utils/telechargement", () => ({ declencherTelechargement: vi.fn() }));
 
@@ -82,6 +84,10 @@ function ergebnis<T>(data: T) {
 
 describe("MembreReportingTab", () => {
   beforeEach(() => {
+    vi.mocked(useMembresHooks.useMembresList).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembresList>);
     vi.mocked(reportingHooks.useMitgliederReporting).mockReturnValue(
       ergebnis(mitglieder) as unknown as ReturnType<typeof reportingHooks.useMitgliederReporting>,
     );
@@ -117,7 +123,7 @@ describe("MembreReportingTab", () => {
     fireEvent.click(screen.getByRole("button", { name: "reporting.aktivitaeten_zeigen" }));
     const letzter = vi.mocked(reportingHooks.useAktivitaetenReporting).mock.lastCall;
     expect(letzter?.[0]).toMatchObject({ membre: "m1" });
-    expect(screen.getByRole("button", { name: /reporting.nur_mitglied/ })).toBeInTheDocument();
+    expect(screen.getByText("Anna Aktiv (CA-2026-001)")).toBeInTheDocument();
   });
 
   it("übergibt Filter und setzt die Seite zurück", () => {
@@ -159,5 +165,24 @@ describe("MembreReportingTab", () => {
     renderWithProviders(<MembreReportingTab />);
     fireEvent.click(screen.getByRole("button", { name: "reporting.weiter" }));
     expect(vi.mocked(reportingHooks.useMitgliederReporting).mock.lastCall?.[1]).toBe(2);
+  });
+
+  it("filtert über die Mitgliedersuche auf ein einzelnes Mitglied", () => {
+    vi.mocked(useMembresHooks.useMembresList).mockReturnValue({
+      data: {
+        results: [
+          { id: "m9", prenom: "Rolf", nom: "Ruhig", numero_membre: "CA-2026-002", email: "" },
+        ],
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembresList>);
+    renderWithProviders(<MembreReportingTab />);
+    fireEvent.change(screen.getByPlaceholderText("reporting.filter_mitglied_placeholder"), {
+      target: { value: "Rolf" },
+    });
+    fireEvent.click(screen.getByText(/Rolf Ruhig/));
+    expect(vi.mocked(reportingHooks.useMitgliederReporting).mock.lastCall?.[0]).toMatchObject({
+      membre: "m9",
+    });
   });
 });

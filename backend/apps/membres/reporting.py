@@ -8,7 +8,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.db.models import Count, DecimalField, Exists, F, OuterRef, Sum, Value
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Cast, Coalesce
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
@@ -43,6 +43,8 @@ NICHT_GEZAEHLT = {
     "projektbeitrag": {"en_attente", "echouee", "remboursee", "annulee"},
 }
 _BETRAG = DecimalField(max_digits=10, decimal_places=2)
+# NULL mit Typ: `SUM(NULL)` ist in PostgreSQL mehrdeutig ("function sum(unknown) is not unique").
+_KEIN_BETRAG = Cast(Value(None), output_field=_BETRAG)
 
 
 def _quelle(typ):
@@ -65,10 +67,10 @@ def _quelle(typ):
         return qs.filter(projet__isnull=(typ == "beitrag"))
     if typ == "projektmitarbeit":
         return ProjetMitglied.objects.select_related("membre", "projet").annotate(
-            _datum=F("created_at"), _betrag=Value(None, output_field=_BETRAG)
+            _datum=F("created_at"), _betrag=_KEIN_BETRAG
         )
     return HistoriqueStatutMembre.objects.select_related("membre").annotate(
-        _datum=F("date_effet"), _betrag=Value(None, output_field=_BETRAG)
+        _datum=F("date_effet"), _betrag=_KEIN_BETRAG
     )
 
 

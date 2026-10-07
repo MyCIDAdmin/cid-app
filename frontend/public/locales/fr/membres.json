@@ -201,7 +201,6 @@
     "filter_min_aktivitaeten": "Min. activités",
     "filter_typ": "Type",
     "ohne_aktivitaet": "Uniquement sans activité",
-    "nur_mitglied": "Uniquement {{name}}",
     "sort_nom": "Nom",
     "sort_aktivitaeten": "Activités (plus nombreuses d’abord)",
     "sort_betrag": "Montant (plus élevé d’abord)",
@@ -255,6 +254,8 @@
       "brouillon": "Brouillon",
       "actif": "Actif",
       "inactif": "Inactif"
-    }
+    },
+    "filter_mitglied": "Membre précis",
+    "filter_mitglied_placeholder": "Rechercher nom ou numéro…"
   }
 }
