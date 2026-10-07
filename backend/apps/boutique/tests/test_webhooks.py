@@ -65,6 +65,13 @@ def _post_json(client, url_name, body: dict, headers: dict | None = None):
     )
 
 
+@pytest.fixture(autouse=True)
+def _stripe_webhook_secret(settings):
+    """Die Signaturprüfung selbst wird gemockt ; ein Secret muss aber konfiguriert sein, weil der
+    Webhook ohne Secret abgelehnt wird (fail closed, Sicherheitsprüfung 2026-10-07)."""
+    settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
+
+
 # --- Stripe ---
 
 
@@ -74,6 +81,14 @@ def test_stripe_signature_invalide_refusee(client):
         side_effect=stripe.error.SignatureVerificationError("bad sig", "sig"),
     ):
         resp = _post_json(client, STRIPE_WEBHOOK_URL, {}, {"HTTP_STRIPE_SIGNATURE": "xxx"})
+
+    assert resp.status_code == 400
+
+
+def test_stripe_ohne_konfiguriertes_secret_wird_abgelehnt(client, settings):
+    settings.STRIPE_WEBHOOK_SECRET = ""
+
+    resp = _post_json(client, STRIPE_WEBHOOK_URL, {}, {"HTTP_STRIPE_SIGNATURE": "xxx"})
 
     assert resp.status_code == 400
 

@@ -10,6 +10,8 @@ Gleicher Stil (roter Kopf #CC0000, fixierte Kopfzeile) wie die anderen Exporte d
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
+from apps.membres.utils_http import safe_cell
+
 from . import i18n
 
 _EN_TETE_STYLE = Font(bold=True, color="FFFFFF")
@@ -127,7 +129,7 @@ def _ecrire_en_tete(feuille, colonnes):
 def _zeilen_schreiben(feuille, zeilen):
     for ligne_idx, valeurs in enumerate(zeilen, start=2):
         for col_idx, valeur in enumerate(valeurs, start=1):
-            feuille.cell(row=ligne_idx, column=col_idx, value=valeur)
+            feuille.cell(row=ligne_idx, column=col_idx, value=safe_cell(valeur))
 
 
 def _blatt(classeur, titel, spalten, zeilen, *, erstes=False, breiten=None):

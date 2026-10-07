@@ -66,7 +66,11 @@ def construire_evenement_stripe(payload: bytes, sig_header: str) -> stripe.Event
     test)."""
     secrets = [s.strip() for s in settings.STRIPE_WEBHOOK_SECRET.split(",") if s.strip()]
     if not secrets:
-        secrets = [settings.STRIPE_WEBHOOK_SECRET]
+        # Fail closed (2026-10-07, Sicherheitsprüfung) : ohne konfiguriertes Secret ließe sich ein
+        # Webhook mit leerem HMAC-Schlüssel fälschen und Zahlungen gratis bestätigen.
+        raise stripe.error.SignatureVerificationError(
+            "STRIPE_WEBHOOK_SECRET ist nicht konfiguriert.", sig_header
+        )
     derniere_erreur: stripe.error.SignatureVerificationError
     for secret in secrets:
         try:

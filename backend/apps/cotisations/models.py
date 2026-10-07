@@ -274,7 +274,7 @@ class Cotisation(models.Model):
     statut = models.CharField(
         max_length=20, choices=StatutCotisation.choices, default=StatutCotisation.EN_ATTENTE
     )
-    reference_transaction = models.CharField(max_length=30, unique=True, blank=True, null=True)
+    reference_transaction = models.CharField(max_length=64, unique=True, blank=True, null=True)
 
     # Pertinent uniquement pour type_article=cotisation — utilisé par le pipeline de relance
     # (RICEFW W-001 : "Identifier membres actifs sans cotisation N").

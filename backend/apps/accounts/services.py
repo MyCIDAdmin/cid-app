@@ -174,6 +174,22 @@ def enforce_single_session_per_device(user, device_fingerprint_hash: str | None)
     return count
 
 
+def revoke_all_sessions(user) -> int:
+    """Blacklistet ALLE noch gültigen Refresh-Tokens von `user` (nach Passwortänderung/-reset :
+    ein bereits gestohlenes Refresh-Token darf das neue Passwort nicht überleben). Laufende
+    Access-Tokens enden spätestens nach JWT_ACCESS_TOKEN_LIFETIME_MIN. Gibt die Anzahl zurück."""
+    from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
+    a_revoquer = OutstandingToken.objects.filter(
+        user=user, expires_at__gt=timezone.now(), blacklistedtoken__isnull=True
+    )
+    count = 0
+    for token in a_revoquer:
+        BlacklistedToken.objects.get_or_create(token=token)
+        count += 1
+    return count
+
+
 def track_device_session(
     user,
     refresh_token,

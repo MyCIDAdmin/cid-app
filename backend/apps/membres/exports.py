@@ -41,6 +41,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle
+from apps.membres.utils_http import safe_cell
 
 # Champs de tri acceptés par MembreExportView (voir export_views.py) — liste blanche
 # volontairement restreinte à des champs réellement utiles pour trier un répertoire membres,
@@ -208,7 +209,7 @@ def construire_classeur_export(queryset, champs: list | None = None) -> Workbook
     for membre in queryset:
         valeurs = _valeurs_membre(membre, cotisations_payees_ids=cotisations_payees_ids)
         for col_idx, cle in enumerate(champs, start=1):
-            cellule = feuille.cell(row=ligne_idx, column=col_idx, value=valeurs[cle])
+            cellule = feuille.cell(row=ligne_idx, column=col_idx, value=safe_cell(valeurs[cle]))
             if cle in CHAMPS_TEXTE:
                 cellule.number_format = "@"
         ligne_idx += 1
