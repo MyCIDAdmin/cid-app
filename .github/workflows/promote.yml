@@ -1,0 +1,68 @@
+name: Promote to PROD
+
+# Release-Promotion DEV -> PROD (Vereins-Repo). Wird nur durch einen Tag "release-*" ausgelöst.
+# Der Tag muss auf einem Commit liegen, der in main enthalten ist und dessen CI grün ist.
+# Gepusht wird OHNE Force: weicht das Vereins-Repo ab, bricht der Lauf ab (kein Überschreiben).
+# Benötigt: Secret PROD_DEPLOY_KEY (privater SSH-Deploy-Key mit Schreibrecht im Vereins-Repo),
+# optional Repository-Variable PROD_REPO (Standard: MyCIDAdmin/cid-app).
+
+on:
+  push:
+    tags: ["release-*"]
+
+permissions:
+  contents: read
+  checks: read
+  statuses: read
+
+jobs:
+  promote:
+    name: Release nach PROD übertragen
+    runs-on: ubuntu-latest
+    env:
+      PROD_REPO: ${{ vars.PROD_REPO || 'MyCIDAdmin/cid-app' }}
+      TAG: ${{ github.ref_name }}
+      SHA: ${{ github.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag muss auf main liegen
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$SHA" origin/main; then
+            echo "::error::Commit $SHA ist nicht in main enthalten — nur geprüfte main-Stände dürfen nach PROD."
+            exit 1
+          fi
+
+      - name: CI des Commits muss grün sein
+        run: |
+          result=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" \
+            --jq '[.check_runs[] | select(.name != "Release nach PROD übertragen")] | {total: length, bad: ([.[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length)}')
+          echo "$result"
+          total=$(echo "$result" | jq .total)
+          bad=$(echo "$result" | jq .bad)
+          if [ "$total" -eq 0 ] || [ "$bad" -ne 0 ]; then
+            echo "::error::Keine grüne CI für $SHA (Checks: $total, nicht erfolgreich: $bad)."
+            exit 1
+          fi
+
+      - name: Nach PROD pushen (ohne Force)
+        env:
+          PROD_DEPLOY_KEY: ${{ secrets.PROD_DEPLOY_KEY }}
+        run: |
+          if [ -z "$PROD_DEPLOY_KEY" ]; then
+            echo "::error::Secret PROD_DEPLOY_KEY fehlt."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$PROD_DEPLOY_KEY" > ~/.ssh/prod_deploy
+          chmod 600 ~/.ssh/prod_deploy
+          ssh-keyscan -t ed25519,rsa github.com >> ~/.ssh/known_hosts
+          git remote add prod "git@github.com:${PROD_REPO}.git"
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/prod_deploy -o IdentitiesOnly=yes"
+          git push prod "$SHA:refs/heads/main" "refs/tags/$TAG"
+          rm -f ~/.ssh/prod_deploy
+          echo "Übertragen: $TAG ($SHA) -> $PROD_REPO main" >> "$GITHUB_STEP_SUMMARY"

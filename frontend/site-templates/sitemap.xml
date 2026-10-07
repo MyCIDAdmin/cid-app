@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>__SITE_URL__/</loc></url>
+  <url><loc>__SITE_URL__/?onglet=evenements</loc></url>
+  <url><loc>__SITE_URL__/?onglet=projets</loc></url>
+  <url><loc>__SITE_URL__/?onglet=shop</loc></url>
+  <url><loc>__SITE_URL__/?onglet=galerie</loc></url>
+  <url><loc>__SITE_URL__/?onglet=apropos</loc></url>
+  <url><loc>__SITE_URL__/impressum</loc></url>
+  <url><loc>__SITE_URL__/datenschutz</loc></url>
+  <url><loc>__SITE_URL__/nutzungsbedingungen</loc></url>
+  <url><loc>__SITE_URL__/erstattungsrichtlinie</loc></url>
+</urlset>

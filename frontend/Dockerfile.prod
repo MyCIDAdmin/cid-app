@@ -9,8 +9,10 @@ COPY . .
 # Les variables VITE_* doivent être présentes au build (Railway build args)
 ARG VITE_API_BASE_URL
 ARG VITE_WS_BASE_URL
+ARG VITE_SITE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
-    VITE_WS_BASE_URL=$VITE_WS_BASE_URL
+    VITE_WS_BASE_URL=$VITE_WS_BASE_URL \
+    VITE_SITE_URL=$VITE_SITE_URL
 RUN npm run build
 
 # --- Stage 2 : service statique via nginx ---
