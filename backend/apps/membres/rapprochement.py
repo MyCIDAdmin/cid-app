@@ -14,8 +14,10 @@ Règles (décision utilisateur, 2026-10-07) :
     saisis librement à l'inscription, donc jamais suffisants seuls pour une liaison
     automatique (sinon il suffirait de taper le CIN d'autrui pour reprendre sa fiche) : ils
     ne produisent qu'une SUGGESTION avec un score, à confirmer par RH/Admin.
-  - Après liaison, la fiche importée est conservée telle quelle (numéro, statut, date
-    d'adhésion, historique) ; les champs vides y sont complétés depuis la saisie du membre.
+  - Après liaison, la fiche importée est conservée (numéro, statut, date d'adhésion,
+    historique) mais les données personnelles saisies par le membre à l'inscription
+    ÉCRASENT celles de l'import (décision utilisateur, 2026-10-07) : c'est lui qui connaît ses
+    données actuelles. Un champ laissé vide à l'inscription n'efface jamais la valeur importée.
 """
 
 import difflib
@@ -25,7 +27,7 @@ from dataclasses import dataclass, field
 
 from django.db import IntegrityError, transaction
 
-from .models import Membre
+from .models import Membre, Sexe
 
 logger = logging.getLogger(__name__)
 
@@ -38,18 +40,23 @@ BONUS_DATE_NAISSANCE = 25
 BONUS_CRITERE_SUPPLEMENTAIRE = 5
 SEUIL_NOM_PROCHE = 0.88
 
-# Champs vides de la fiche importée complétés depuis la fiche d'inscription lors d'une liaison.
-_CHAMPS_A_COMPLETER = (
-    "telephone",
+# Données personnelles saisies par le membre à l'inscription : elles remplacent celles de la
+# fiche importée lors d'une liaison (sauf si laissées vides). Jamais : numero_membre, statut,
+# date_adhesion, historique — ils restent ceux de la fiche importée.
+_CHAMPS_SAISIE_UTILISATEUR = (
+    "prenom",
+    "nom",
+    "date_naissance",
+    "sexe",
     "cin",
     "passeport",
+    "telephone",
     "adresse_de",
     "code_postal_de",
     "ville_de",
     "land_de",
     "ville_origine_tn",
     "gouvernorat_tn",
-    "date_naissance",
 )
 
 
@@ -177,7 +184,8 @@ def inscrits_a_rapprocher(seuil=SEUIL_SUGGESTION, limite_candidats=5) -> list:
 
 def fusionner(inscrit: Membre, importe: Membre) -> Membre:
     """
-    Rattache le compte de `inscrit` à la fiche `importe`, puis supprime la fiche d'inscription
+    Rattache le compte de `inscrit` à la fiche `importe`, reprend sur celle-ci les données
+    personnelles saisies par le membre (non vides), puis supprime la fiche d'inscription
     (devenue doublon). Tout ce qui pointait déjà vers `inscrit` (commandes, likes, historique de
     statut...) est reporté sur `importe`. Renvoie la fiche conservée.
     """
@@ -211,9 +219,10 @@ def fusionner(inscrit: Membre, importe: Membre) -> Membre:
             champs = ["user", "email", "updated_at"]
             importe.user = user
             importe.email = user.email
-            for nom_champ in _CHAMPS_A_COMPLETER:
-                if not getattr(importe, nom_champ) and getattr(inscrit, nom_champ):
-                    setattr(importe, nom_champ, getattr(inscrit, nom_champ))
+            for nom_champ in _CHAMPS_SAISIE_UTILISATEUR:
+                valeur = getattr(inscrit, nom_champ)
+                if valeur and valeur != Sexe.NON_RENSEIGNE:
+                    setattr(importe, nom_champ, valeur)
                     champs.append(nom_champ)
             if not importe.photo and inscrit.photo:
                 importe.photo = inscrit.photo.name

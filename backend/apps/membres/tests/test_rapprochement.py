@@ -117,9 +117,9 @@ def test_candidats_pour_trie_par_score_et_ignore_les_fiches_avec_compte():
 # --- Liaison automatique ---------------------------------------------------
 
 
-def test_lier_automatiquement_email_unique_conserve_la_fiche_importee():
+def test_lier_automatiquement_email_unique_conserve_numero_statut_et_historique():
     importe = _importe(email="Sami@Example.de", statut=StatutMembre.ACTIF, cin="999")
-    numero = importe.numero_membre
+    numero, adhesion = importe.numero_membre, importe.date_adhesion
     inscrit = _inscrit(email="sami@example.de", cin="123", telephone="+49 111", prenom="Sami")
     user = inscrit.user
 
@@ -128,20 +128,47 @@ def test_lier_automatiquement_email_unique_conserve_la_fiche_importee():
     assert conserve.pk == importe.pk
     importe.refresh_from_db()
     assert importe.user_id == user.id
+    assert importe.email == "sami@example.de"
     assert importe.numero_membre == numero
+    assert importe.date_adhesion == adhesion
     assert importe.statut == StatutMembre.ACTIF  # statut importé conservé
-    assert importe.cin == "999"  # champ renseigné : pas écrasé
     assert not Membre.objects.filter(pk=inscrit.pk).exists()
     assert Membre.objects.filter(user=user).count() == 1
 
 
-def test_lier_automatiquement_complete_les_champs_vides():
-    importe = _importe(email="sami@example.de", passeport=None, cin=None)
-    inscrit = _inscrit(email="sami@example.de", cin="4242", passeport="P1")
+def test_lier_automatiquement_les_donnees_saisies_ecrasent_celles_de_l_import():
+    importe = _importe(
+        email="sami@example.de",
+        prenom="Samy",
+        nom="Ben Salah",
+        cin="999",
+        telephone="+49 000",
+        ville_de="Hamburg",
+    )
+    inscrit = _inscrit(
+        email="sami@example.de",
+        prenom="Sami",
+        nom="Bensalah",
+        cin="4242",
+        telephone="+49 111",
+        ville_de="Berlin",
+    )
     lier_automatiquement(inscrit)
     importe.refresh_from_db()
+    assert (importe.prenom, importe.nom) == ("Sami", "Bensalah")
     assert importe.cin == "4242"
-    assert importe.passeport == "P1"
+    assert importe.telephone == "+49 111"
+    assert importe.ville_de == "Berlin"
+
+
+def test_lier_automatiquement_un_champ_vide_n_efface_pas_la_valeur_importee():
+    importe = _importe(email="sami@example.de", cin="999", passeport="P-IMPORT", land_de="BY")
+    inscrit = _inscrit(email="sami@example.de", cin="", passeport="", land_de="")
+    lier_automatiquement(inscrit)
+    importe.refresh_from_db()
+    assert importe.cin == "999"
+    assert importe.passeport == "P-IMPORT"
+    assert importe.land_de == "BY"
 
 
 def test_lier_automatiquement_ambigu_ne_fait_rien():
