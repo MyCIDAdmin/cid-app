@@ -1,5 +1,5 @@
 /**
- * Banner "Unsere Sponsoren und Business Partner" auf der Startseite (Nutzerwunsch 2026-10-07).
+ * Banner "Unsere Sponsoren und Partner" auf der Startseite (Nutzerwunsch 2026-10-07).
  * Zeigt mittig die Logos der Partner, bei denen in der Partnerverwaltung der Schalter "Im
  * Startseiten-Banner anzeigen" gesetzt ist (der Server liefert nur aktive Partner mit Logo, siehe
  * PartnerBannerView). Ein Klick auf das Logo öffnet die Website des Partners — nur wenn sie
@@ -53,7 +53,7 @@ export default function SponsorenBanner() {
               alt={p.nom}
               title={p.nom}
               loading="lazy"
-              className="h-14 max-w-[9rem] object-contain"
+              className="h-24 max-w-[16rem] object-contain"
             />
           );
           const ziel = p.website ? sicherUrl(p.website) : null;
