@@ -25,6 +25,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import { formatBetrag } from "../../utils/partner";
 import { declencherTelechargement } from "../../utils/telechargement";
 import StatutBadge from "../ui/StatutBadge";
+import MembreSearchPicker from "./MembreSearchPicker";
 
 const FELD = "rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -94,7 +95,12 @@ export default function MembreReportingTab() {
   const [ansicht, setAnsicht] = useState<ReportingAnsicht>("mitglieder");
   const [filtre, setFiltre] = useState<MembreReportingFiltre>(START);
   const [seite, setSeite] = useState(1);
-  const [membreName, setMembreName] = useState("");
+  const [auswahl, setAuswahl] = useState<{
+    id: string;
+    prenom: string;
+    nom: string;
+    numero_membre?: string;
+  } | null>(null);
   const [exportLaeuft, setExportLaeuft] = useState(false);
   const [exportFehler, setExportFehler] = useState<string | null>(null);
 
@@ -175,6 +181,17 @@ export default function MembreReportingTab() {
       </div>
 
       <div className="mb-3 flex flex-wrap items-end gap-3">
+        <div className="w-60">
+          <span className={LABEL}>{t("reporting.filter_mitglied")}</span>
+          <MembreSearchPicker
+            selection={auswahl}
+            placeholder={t("reporting.filter_mitglied_placeholder")}
+            onSelect={(m) => {
+              setAuswahl(m ?? null);
+              setze("membre", m?.id ?? "");
+            }}
+          />
+        </div>
         <div>
           <label htmlFor="mrep-q" className={LABEL}>
             {t("liste.recherche")}
@@ -420,7 +437,7 @@ export default function MembreReportingTab() {
           type="button"
           onClick={() => {
             setFiltre(START);
-            setMembreName("");
+            setAuswahl(null);
             setSeite(1);
           }}
           className="pb-1.5 text-sm text-text-secondary underline"
@@ -455,18 +472,6 @@ export default function MembreReportingTab() {
             </button>
           );
         })}
-        {filtre.membre && (
-          <button
-            type="button"
-            onClick={() => {
-              setze("membre", "");
-              setMembreName("");
-            }}
-            className="ml-2 rounded-full bg-bg-tertiary px-2.5 py-1 text-xs text-text-secondary"
-          >
-            {t("reporting.nur_mitglied", { name: membreName })} ✕
-          </button>
-        )}
       </div>
 
       {ansicht === "mitglieder" && mitglieder.data && (
@@ -571,7 +576,12 @@ export default function MembreReportingTab() {
                       type="button"
                       onClick={() => {
                         setFiltre((alt) => ({ ...alt, membre: m.id }));
-                        setMembreName(`${m.prenom} ${m.nom}`);
+                        setAuswahl({
+                          id: m.id,
+                          prenom: m.prenom,
+                          nom: m.nom,
+                          numero_membre: m.numero_membre,
+                        });
                         setSeite(1);
                         setAnsicht("aktivitaeten");
                       }}

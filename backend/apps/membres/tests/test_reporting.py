@@ -197,3 +197,12 @@ def test_export_mitglieder_und_aktivitaeten(daten):
     zeilen = list(mappe["Aktivitäten"].iter_rows(min_row=2))
     assert len(zeilen) == 1
     assert zeilen[0][1].value == "bestellung"
+
+
+def test_summe_ohne_betrag_hat_typisiertes_null():
+    """PostgreSQL kennt `SUM(NULL)` nicht eindeutig; die Betragsspalte muss ein CAST sein."""
+    from apps.membres.reporting import _quelle
+
+    for typ in ("projektmitarbeit", "statuswechsel"):
+        sql = str(_quelle(typ).query).upper()
+        assert "CAST(NULL AS" in sql.replace("  ", " ") or "NULL::" in sql, sql
