@@ -61,7 +61,7 @@ export default function SponsorenBanner() {
           );
           const ziel = p.website ? sicherUrl(p.website) : null;
           return (
-            <li key={p.id} className="rounded-cid border border-text-tertiary/20 bg-white p-2.5">
+            <li key={p.id} className="p-2.5">
               {ziel ? (
                 <a href={ziel} target="_blank" rel="noopener noreferrer" aria-label={p.nom}>
                   {bild}
