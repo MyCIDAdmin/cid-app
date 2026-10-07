@@ -25,6 +25,7 @@ import AnimatedProgress from "../../components/ui/AnimatedProgress";
 import ShareButton from "../../components/ui/ShareButton";
 import { useMisesAJourProjet, useProjet } from "../../hooks/useProjets";
 import { uebersetzt } from "../../utils/uebersetzung";
+import { bereinigeHtml } from "../../utils/sicheresHtml";
 
 function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
@@ -179,7 +180,9 @@ export default function ProjetDetailPage() {
                 </h2>
                 <div
                   className="prose prose-sm max-w-none text-text-primary"
-                  dangerouslySetInnerHTML={{ __html: uebersetzt(projet, "description_html") }}
+                  dangerouslySetInnerHTML={{
+                    __html: bereinigeHtml(uebersetzt(projet, "description_html")),
+                  }}
                 />
               </div>
               <PartnerLogos logos={projet.partner_logos} />

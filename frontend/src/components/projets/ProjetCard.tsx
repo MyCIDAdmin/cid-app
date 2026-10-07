@@ -10,6 +10,7 @@ import ImageCarousel from "./ImageCarousel";
 import SichtbarkeitBadge from "./SichtbarkeitBadge";
 import StatutProjetBadge from "./StatutProjetBadge";
 import { uebersetzt } from "../../utils/uebersetzung";
+import { bereinigeHtml } from "../../utils/sicheresHtml";
 
 interface ProjetCardProps {
   projet: Projet;
@@ -220,7 +221,9 @@ export default function ProjetCard({
               className="text-sm text-text-primary [overflow-wrap:anywhere]"
               // Texte riche produit par l'éditeur type Word (demande utilisateur point 1.2) —
               // affiché tel quel, jamais retapé côté client (voir RichTextEditor.tsx).
-              dangerouslySetInnerHTML={{ __html: uebersetzt(projet, "description_html") }}
+              dangerouslySetInnerHTML={{
+                __html: bereinigeHtml(uebersetzt(projet, "description_html")),
+              }}
             />
 
             {projet.cagnote_active && (

@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import type { ProjetMiseAJour } from "../../types/projets";
 import ImageCarousel from "./ImageCarousel";
+import { bereinigeHtml } from "../../utils/sicheresHtml";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString();
@@ -33,14 +34,16 @@ export default function RapportListe({ misesAJour, chargement }: RapportListePro
         <article key={maj.id} className="space-y-2 rounded-cid border border-text-tertiary/20 p-3">
           <div className="flex items-baseline justify-between gap-2">
             <h3 className="text-sm font-semibold text-text-primary">{maj.titre}</h3>
-            <span className="shrink-0 text-xs text-text-tertiary">{formatDate(maj.created_at)}</span>
+            <span className="shrink-0 text-xs text-text-tertiary">
+              {formatDate(maj.created_at)}
+            </span>
           </div>
           {maj.images.length > 0 && (
             <ImageCarousel images={maj.images} titre={maj.titre} className="h-40" />
           )}
           <div
             className="prose prose-sm max-w-none text-text-primary"
-            dangerouslySetInnerHTML={{ __html: maj.contenu_html }}
+            dangerouslySetInnerHTML={{ __html: bereinigeHtml(maj.contenu_html) }}
           />
           {maj.created_by_detail && (
             <p className="text-xs text-text-tertiary">

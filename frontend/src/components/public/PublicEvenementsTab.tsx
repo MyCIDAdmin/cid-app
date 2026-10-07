@@ -38,6 +38,7 @@ import { estMembreActif, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Evenement } from "../../types/evenements";
 import { uebersetzt } from "../../utils/uebersetzung";
+import { bereinigeHtml } from "../../utils/sicheresHtml";
 
 type SousOnglet = "avenir" | "passes" | "inscrits";
 
@@ -99,7 +100,7 @@ function EvenementKachel({
             client, même principe que ProjetCard.tsx pour description_html. */}
         <div
           className="line-clamp-2 text-xs text-text-tertiary"
-          dangerouslySetInnerHTML={{ __html: uebersetzt(evenement, "description") }}
+          dangerouslySetInnerHTML={{ __html: bereinigeHtml(uebersetzt(evenement, "description")) }}
         />
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-tertiary">
           {evenement.heure && (
