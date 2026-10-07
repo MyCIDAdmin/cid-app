@@ -212,7 +212,8 @@ def importer_historique_statuts(fichier) -> ResultatImportHistorique:
     cache_email, cache_cin = {}, {}
     for membre in Membre.objects.all():
         cache_email[membre.email.lower()] = membre
-        cache_cin[membre.cin] = membre
+        if membre.cin:
+            cache_cin[membre.cin] = membre
 
     for numero_ligne, row in enumerate(lignes, start=2):  # ligne 1 = en-têtes
         if row is None or all(c is None for c in row):
@@ -220,7 +221,7 @@ def importer_historique_statuts(fichier) -> ResultatImportHistorique:
         resultat.total += 1
 
         email = row[identite["email"]]
-        cin = row[identite["cin"]]
+        cin = row[identite["cin"]] if "cin" in identite else None
         try:
             membre = _resoudre_membre(email, cin, cache_email, cache_cin)
         except ValueError as exc:
