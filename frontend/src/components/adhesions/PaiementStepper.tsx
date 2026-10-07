@@ -116,6 +116,7 @@ import {
 import { MONTANTS_CATALOGUE } from "../../types/cotisation";
 import type { Cotisation, ModePaiement, TypeArticleStepper } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { leiteZuZahlungWeiter } from "../../utils/sicherUrl";
 
 const DON_LIBELLE = "Don libre à l'association";
 
@@ -238,7 +239,7 @@ export default function PaiementStepper() {
     setRedirectionEnCours(true);
     initierPaiementMutation.mutate(cotisationId, {
       onSuccess: ({ redirect_url }) => {
-        window.location.href = redirect_url;
+        if (!leiteZuZahlungWeiter(redirect_url)) setRedirectionEnCours(false);
       },
       onError: (error) => {
         setRedirectionEnCours(false);

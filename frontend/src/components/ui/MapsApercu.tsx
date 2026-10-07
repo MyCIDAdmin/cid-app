@@ -16,6 +16,8 @@
 import { IconExternalLink, IconMapPin } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
+import { sicherUrl } from "../../utils/sicherUrl";
+
 export interface MapsApercuProps {
   /** Adresse texte affichée et utilisée pour générer la vignette d'aperçu. */
   adresse: string;
@@ -29,6 +31,7 @@ export default function MapsApercu({ adresse, mapsUrl, className = "" }: MapsApe
   const { t } = useTranslation("common");
 
   if (!adresse.trim()) return null;
+  const ziel = sicherUrl(mapsUrl);
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -41,11 +44,11 @@ export default function MapsApercu({ adresse, mapsUrl, className = "" }: MapsApe
         src={`https://www.google.com/maps?q=${encodeURIComponent(adresse)}&output=embed`}
         className="h-40 w-full rounded-cid border-0"
         loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
+        referrerPolicy="strict-origin-when-cross-origin"
       />
-      {mapsUrl && (
+      {ziel && (
         <a
-          href={mapsUrl}
+          href={ziel}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs font-medium text-ca hover:underline"

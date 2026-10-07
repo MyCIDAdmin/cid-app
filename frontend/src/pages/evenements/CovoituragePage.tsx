@@ -12,7 +12,7 @@
  * `remarques`, un champ texte libre distinct de `lieu_rendez_vous` (point de RDV structuré),
  * saisi à la création et affiché tel quel sur la tuile.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import MapsApercu from "../../components/ui/MapsApercu";
@@ -24,6 +24,7 @@ import {
   useRejoindreTrajet,
   useReservationsCovoiturage,
 } from "../../hooks/useEvenements";
+import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Covoiturage } from "../../types/evenements";
 
@@ -71,6 +72,9 @@ function formatMontant(montant: string): string {
 
 function ModaleRejoindre({ trajet, onClose }: { trajet: Covoiturage; onClose: () => void }) {
   const { t } = useTranslation("evenements");
+  const { t: tc } = useTranslation("common");
+  const titreId = useId();
+  useEscapeSchliessen(onClose);
   const rejoindre = useRejoindreTrajet();
   const [places, setPlaces] = useState(1);
   const [pointPriseEnCharge, setPointPriseEnCharge] = useState("");
@@ -96,14 +100,20 @@ function ModaleRejoindre({ trajet, onClose }: { trajet: Covoiturage; onClose: ()
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-4 shadow-lg">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titreId}
+        className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-4 shadow-lg"
+      >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-bold text-text-primary">
+          <h2 id={titreId} className="text-base font-bold text-text-primary">
             {t("covoiturage.modal_rejoindre_titre")}
           </h2>
           <button
             type="button"
             onClick={onClose}
+            aria-label={tc("action.fermer")}
             className="text-text-tertiary hover:text-text-primary"
           >
             ×

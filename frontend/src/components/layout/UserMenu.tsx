@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import { abmelden } from "../../api/abmelden";
 import { useAuthStore } from "../../store/authStore";
 
 function initiales(user: { prenom?: string; nom?: string; email: string }): string {
@@ -30,7 +31,6 @@ export default function UserMenu() {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
   const [ouvert, setOuvert] = useState(false);
   const panneauRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +50,7 @@ export default function UserMenu() {
     // Même geste que Sidebar.handleLogout/MobileNavDrawer.handleLogout (vide le cache React
     // Query, atterrit sur la Startseite publique) — la déconnexion elle-même a déménagé ici
     // (retour utilisateur du 2026-09-28) : ces deux endroits ne l'affichent plus.
-    logout();
+    abmelden();
     setOuvert(false);
     navigate("/", { replace: true });
   }

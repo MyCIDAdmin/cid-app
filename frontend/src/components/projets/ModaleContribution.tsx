@@ -6,10 +6,11 @@
  * de mycid.org). Crée une Cotisation en attente puis navigue vers `/cotisation?paiement=<id>` —
  * même pattern que ModaleInscription/onPayer dans EvenementsPage.tsx, voir sa docstring.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useContribuerProjet } from "../../hooks/useCotisations";
+import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { ModePaiement } from "../../types/cotisation";
 import type { Projet } from "../../types/projets";
@@ -27,6 +28,8 @@ export default function ModaleContribution({
 }) {
   const { t } = useTranslation(["projets", "cotisations", "common"]);
   const contribuer = useContribuerProjet();
+  const titreId = useId();
+  useEscapeSchliessen(onClose);
   const [montant, setMontant] = useState("");
   const [modePaiement, setModePaiement] = useState<ModePaiement>("virement_sepa");
   const [libelle, setLibelle] = useState("");
@@ -51,14 +54,20 @@ export default function ModaleContribution({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-4 shadow-lg">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titreId}
+        className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-4 shadow-lg"
+      >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-bold text-text-primary">
+          <h2 id={titreId} className="text-base font-bold text-text-primary">
             {t("modal_contribution.titre", { titre: projet.titre })}
           </h2>
           <button
             type="button"
             onClick={onClose}
+            aria-label={t("common:action.fermer")}
             className="text-text-tertiary hover:text-text-primary"
           >
             ×

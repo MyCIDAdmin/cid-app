@@ -18,6 +18,7 @@
  *     — voir UeberUnsTab.tsx.
  */
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
 import AccueilTab from "../../components/public/AccueilTab";
@@ -47,6 +48,7 @@ function PageEmbarquee({ children }: { children: ReactNode }) {
 }
 
 export default function PublicHomePage() {
+  const { t } = useTranslation("common");
   const [searchParams, setSearchParams] = useSearchParams();
   const onglet = ongletDepuisParam(searchParams.get("onglet"));
 
@@ -62,9 +64,15 @@ export default function PublicHomePage() {
 
   return (
     <div className="ambient-bg flex min-h-screen flex-col bg-bg-tertiary">
+      <a
+        href="#contenu"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-cid focus:bg-bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-text-primary focus:shadow-lg"
+      >
+        {t("action.aller_contenu")}
+      </a>
       <PublicTopNav onglet={onglet} onChangeOnglet={changerOnglet} />
 
-      <main className="flex-1">
+      <main id="contenu" tabIndex={-1} className="flex-1 outline-none">
         {onglet === "accueil" && <AccueilTab />}
         {onglet === "evenements" && <PublicEvenementsTab />}
         {onglet === "projets" && (

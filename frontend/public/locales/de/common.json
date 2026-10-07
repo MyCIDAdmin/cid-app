@@ -43,7 +43,13 @@
     "contenu": "Inhalte",
     "administration": "Verwaltung"
   },
+  "video": {
+    "pause": "Video pausieren",
+    "lecture": "Video abspielen"
+  },
   "action": {
+    "fermer": "Schließen",
+    "aller_contenu": "Zum Inhalt springen",
     "annuler": "Abbrechen",
     "confirmer": "Bestätigen",
     "deconnexion": "Abmelden",

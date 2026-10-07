@@ -53,6 +53,7 @@ import type {
   PasserelleCommande,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { leiteZuZahlungWeiter } from "../../utils/sicherUrl";
 
 const PAIEMENT_EN_LIGNE_ACTIF = false;
 
@@ -209,7 +210,7 @@ export default function PanierCommandePage() {
       { id: commandeConfirmee.id, payload: { passerelle } },
       {
         onSuccess: ({ redirect_url }) => {
-          window.location.href = redirect_url;
+          leiteZuZahlungWeiter(redirect_url);
         },
         onError: (error) => {
           setErreurPaiement(extractApiErrorMessage(error, t("commande.erreur_paiement")));
@@ -263,7 +264,9 @@ export default function PanierCommandePage() {
                 disabled={paiementMutation.isPending}
                 className="rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
               >
-                {paiementMutation.isPending ? t("commande.payer_en_cours") : t("commande.payer_stripe")}
+                {paiementMutation.isPending
+                  ? t("commande.payer_en_cours")
+                  : t("commande.payer_stripe")}
               </button>
               <button
                 type="button"
@@ -271,7 +274,9 @@ export default function PanierCommandePage() {
                 disabled={paiementMutation.isPending}
                 className="rounded-cid border border-ca px-3 py-2 text-sm font-medium text-ca hover:bg-cal/20 disabled:opacity-40"
               >
-                {paiementMutation.isPending ? t("commande.payer_en_cours") : t("commande.payer_paypal")}
+                {paiementMutation.isPending
+                  ? t("commande.payer_en_cours")
+                  : t("commande.payer_paypal")}
               </button>
             </div>
           </div>
@@ -382,8 +387,7 @@ export default function PanierCommandePage() {
                       </div>
                     )}
                     {(() => {
-                      const { quantiteOfferte, pourcentageApplique } =
-                        calculerReductionArticle(a);
+                      const { quantiteOfferte, pourcentageApplique } = calculerReductionArticle(a);
                       if (quantiteOfferte <= 0 && !pourcentageApplique) return null;
                       return (
                         <div className="mt-0.5 text-[11px] font-medium text-cad">
@@ -423,7 +427,9 @@ export default function PanierCommandePage() {
                       const brut = Number(a.prixUnitaire) * a.quantite;
                       const net = sousTotalNetArticle(a);
                       if (net >= brut) {
-                        return <span className="text-sm font-bold text-ca">{formatMontant(net)}</span>;
+                        return (
+                          <span className="text-sm font-bold text-ca">{formatMontant(net)}</span>
+                        );
                       }
                       return (
                         <span className="flex flex-col items-end">
@@ -659,9 +665,7 @@ export default function PanierCommandePage() {
               <span className="text-sm font-semibold text-text-primary">
                 {bonAchatVerifie ? t("commande.total_a_payer") : t("commande.total")}
               </span>
-              <span className="text-lg font-bold text-ca">
-                {formatMontant(totalApresBonAchat)}
-              </span>
+              <span className="text-lg font-bold text-ca">{formatMontant(totalApresBonAchat)}</span>
             </div>
           </div>
           {passerCommandeMutation.isError && (

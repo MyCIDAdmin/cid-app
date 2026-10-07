@@ -21,6 +21,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useCommande, useInitierPaiementEnLigneCommande } from "../../hooks/useBoutique";
 import type { PasserelleCommande } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { leiteZuZahlungWeiter } from "../../utils/sicherUrl";
 
 function formatMontant(montant: number): string {
   return `${montant.toFixed(2).replace(".", ",")} €`;
@@ -44,7 +45,7 @@ export default function CommandeRetourPage() {
       { id: commande.id, payload: { passerelle } },
       {
         onSuccess: ({ redirect_url }) => {
-          window.location.href = redirect_url;
+          leiteZuZahlungWeiter(redirect_url);
         },
         onError: (error) => {
           setErreurReessai(extractApiErrorMessage(error, t("retour_paiement.erreur_reessai")));
@@ -56,7 +57,9 @@ export default function CommandeRetourPage() {
   if (!commandeId) {
     return (
       <div className="mx-auto max-w-md rounded-cid-lg bg-bg-primary p-8 text-center shadow-sm">
-        <div className="mb-3 text-sm text-status-dangerText">{t("retour_paiement.introuvable")}</div>
+        <div className="mb-3 text-sm text-status-dangerText">
+          {t("retour_paiement.introuvable")}
+        </div>
         <Link to="/boutique" className="text-sm font-medium text-ca hover:underline">
           {t("retour_paiement.retour_catalogue")}
         </Link>
@@ -75,7 +78,9 @@ export default function CommandeRetourPage() {
   if (isError || !commande) {
     return (
       <div className="mx-auto max-w-md rounded-cid-lg bg-bg-primary p-8 text-center shadow-sm">
-        <div className="mb-3 text-sm text-status-dangerText">{t("retour_paiement.introuvable")}</div>
+        <div className="mb-3 text-sm text-status-dangerText">
+          {t("retour_paiement.introuvable")}
+        </div>
         <Link to="/boutique" className="text-sm font-medium text-ca hover:underline">
           {t("retour_paiement.retour_catalogue")}
         </Link>

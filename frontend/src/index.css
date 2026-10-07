@@ -4,7 +4,17 @@
    plaçant l'import après @tailwind comme dans le fichier original de MyCID, PostCSS/Vite le
    supprime alors silencieusement du build (0 occurrence de "fonts.googleapis" dans le CSS
    compilé) — corrigé ici en le remontant avant les directives @tailwind. */
-@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+/* Schriften lokal ausgeliefert (2026-10-07, Sicherheitsprüfung) : der Google-Fonts-Import
+   übertrug die IP-Adresse jedes Besuchers an Google (DSGVO) und blockierte das Rendering. */
+@import "@fontsource/oswald/latin-400.css";
+@import "@fontsource/oswald/latin-500.css";
+@import "@fontsource/oswald/latin-600.css";
+@import "@fontsource/oswald/latin-700.css";
+@import "@fontsource/inter/latin-300.css";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
 
 @tailwind base;
 @tailwind components;
@@ -716,4 +726,17 @@ html {
   textarea {
     font-size: 16px;
   }
+}
+
+/* Sichtbarer Tastaturfokus für alle interaktiven Elemente (WCAG 2.4.7) — nur bei Tastatur-
+   Navigation, die Mausbedienung bleibt unverändert. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--color-ca);
+  outline-offset: 2px;
 }
