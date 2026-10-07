@@ -7,6 +7,7 @@
 import { Link } from "react-router-dom";
 
 import type { ConfigurationSitePublic } from "../../types/communaute";
+import { istInternerPfad, sicherUrl } from "../../utils/sicherUrl";
 
 interface Kachel {
   media: string;
@@ -52,21 +53,23 @@ export default function HeroKacheln({ config }: { config: ConfigurationSitePubli
     <div className="grid gap-4 md:grid-cols-2" data-testid="hero-kacheln">
       {kacheln.map((kachel, index) => {
         const span = kachel.pleine ? "md:col-span-2" : "";
-        if (!kachel.lien) {
+        const intern = istInternerPfad(kachel.lien);
+        const extern = intern ? null : sicherUrl(kachel.lien);
+        if (!intern && !extern) {
           return (
             <div key={index} className={`${classe} ${span}`}>
               <Contenu kachel={kachel} />
             </div>
           );
         }
-        return kachel.lien.startsWith("/") ? (
+        return intern ? (
           <Link key={index} to={kachel.lien} className={`${classe} ${span} hover:shadow-lg`}>
             <Contenu kachel={kachel} />
           </Link>
         ) : (
           <a
             key={index}
-            href={kachel.lien}
+            href={extern ?? undefined}
             target="_blank"
             rel="noopener noreferrer"
             className={`${classe} ${span} hover:shadow-lg`}

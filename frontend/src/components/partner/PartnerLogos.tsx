@@ -4,10 +4,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { PartnerLogoEintrag } from "../../types/partner";
-
-function sicherUrl(url: string): string | null {
-  return /^https?:\/\//i.test(url) ? url : null;
-}
+import { sicherUrl } from "../../utils/sicherUrl";
 
 export default function PartnerLogos({
   logos,

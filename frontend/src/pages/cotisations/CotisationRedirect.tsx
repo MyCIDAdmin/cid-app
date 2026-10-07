@@ -14,5 +14,10 @@ export default function CotisationRedirect() {
   const [params] = useSearchParams();
   const paiement = params.get("paiement");
 
-  return <Navigate to={paiement ? `/mon-adhesion?paiement=${paiement}` : "/mon-adhesion"} replace />;
+  return (
+    <Navigate
+      to={paiement ? `/mon-adhesion?paiement=${encodeURIComponent(paiement)}` : "/mon-adhesion"}
+      replace
+    />
+  );
 }

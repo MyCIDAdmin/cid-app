@@ -11,10 +11,7 @@ import { Link } from "react-router-dom";
 
 import { usePartnerBanner } from "../../hooks/usePartner";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
-
-function sicherUrl(url: string): string | null {
-  return /^https?:\/\//i.test(url) ? url : null;
-}
+import { sicherUrl } from "../../utils/sicherUrl";
 
 export default function SponsorenBanner() {
   const { t } = useTranslation("public");

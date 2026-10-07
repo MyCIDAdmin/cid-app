@@ -18,6 +18,7 @@ import { telechargerRecuCotisation } from "../../api/cotisations";
 import { useCotisation, useInitierPaiementEnLigne } from "../../hooks/useCotisations";
 import type { ModePaiement } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { leiteZuZahlungWeiter } from "../../utils/sicherUrl";
 
 const MODES_GATEWAY: ModePaiement[] = ["carte", "paypal"];
 
@@ -36,13 +37,7 @@ export default function CotisationRetourPage() {
   const cotisationId = searchParams.get("cotisation") ?? undefined;
   const annule = searchParams.get("annule") === "1";
 
-  const {
-    data: cotisation,
-    isLoading,
-    isError,
-    isFetching,
-    refetch,
-  } = useCotisation(cotisationId);
+  const { data: cotisation, isLoading, isError, isFetching, refetch } = useCotisation(cotisationId);
   const reessaiMutation = useInitierPaiementEnLigne();
 
   const [recuEnCours, setRecuEnCours] = useState(false);
@@ -75,7 +70,7 @@ export default function CotisationRetourPage() {
     setErreurReessai(null);
     reessaiMutation.mutate(cotisation.id, {
       onSuccess: ({ redirect_url }) => {
-        window.location.href = redirect_url;
+        leiteZuZahlungWeiter(redirect_url);
       },
       onError: (error) => {
         setErreurReessai(extractApiErrorMessage(error, t("retour.erreur_reessai")));

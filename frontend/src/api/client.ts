@@ -11,9 +11,19 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000
 
 export const apiClient = axios.create({ baseURL: API_BASE_URL });
 
+/** Das Token darf nur an die eigene API gehen — nie an absolute Fremd-URLs (z. B. `next`-Links). */
+function istApiAnfrage(config: InternalAxiosRequestConfig): boolean {
+  try {
+    const ziel = new URL(apiClient.getUri(config), window.location.origin);
+    return ziel.origin === new URL(API_BASE_URL, window.location.origin).origin;
+  } catch {
+    return false;
+  }
+}
+
 apiClient.interceptors.request.use((config) => {
   const { accessToken } = useAuthStore.getState();
-  if (accessToken) {
+  if (accessToken && istApiAnfrage(config)) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
   return config;
@@ -41,7 +51,9 @@ async function refreshAccessToken(): Promise<string> {
     setTokens(data.access, data.refresh);
     return data.access as string;
   } catch (err) {
-    logout();
+    // Nur bei abgelehntem Token ausloggen — bei Netzwerk-/Serverfehlern bleibt die Sitzung bestehen.
+    const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+    if (status === 400 || status === 401 || status === 403) logout();
     throw err;
   }
 }

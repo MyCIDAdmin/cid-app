@@ -4,7 +4,7 @@
  * le paramètre `?token=` et n'est jamais affiché ni modifiable par
  * l'utilisateur, seulement transmis tel quel à l'API de confirmation.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -30,7 +30,14 @@ type FormValues = z.infer<typeof resetSchema>;
 export default function ResetPasswordPage() {
   const { t } = useTranslation("auth");
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
+  // Token einmalig übernehmen und danach aus der Adresszeile entfernen (Browser-Verlauf,
+  // Referrer, Screenshots) — er bleibt nur im Speicher dieser Seite.
+  const [token] = useState(() => searchParams.get("token"));
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("token")) {
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+    }
+  }, []);
 
   const [succes, setSucces] = useState(false);
   const [erreurServeur, setErreurServeur] = useState<string | null>(null);
