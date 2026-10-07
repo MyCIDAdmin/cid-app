@@ -41,7 +41,16 @@ from .i18n import langue_aus_anfrage
 from .pdf import generate_dashboard_pdf
 from .pdf_bilan import generate_bilan_pdf
 from .permissions import StatsPermission
-from .pivot import DIMENSIONEN, KENNZAHLEN, pivot_berechnen, pivot_csv, pivot_excel
+from .pivot import (
+    DIMENSIONEN,
+    FILTER_MAX_WERTE,
+    KENNZAHLEN,
+    MAX_DIMENSIONEN,
+    filter_optionen,
+    pivot_berechnen,
+    pivot_csv,
+    pivot_excel,
+)
 from .services import (
     TYPES_TRANSACTION,
     finances_liste,
@@ -260,17 +269,44 @@ class StatsExportBuchungenCsvView(BaseStatsView):
         return response
 
 
+def _liste(q, name):
+    return [w.strip() for w in (q.get(name) or "").split(",") if w.strip()]
+
+
 def _pivot_aus_anfrage(request):
     q = request.query_params
-    zeilen = q.get("zeilen") or "kategorie"
-    spalten = q.get("spalten") or None
-    kennzahl = q.get("kennzahl") or "betrag"
-    if zeilen not in DIMENSIONEN:
+    zeilen = _liste(q, "zeilen") or ["kategorie"]
+    spalten = _liste(q, "spalten")
+    kennzahlen = _liste(q, "kennzahlen") or ["einnahmen", "ausgaben", "saldo"]
+    alle = zeilen + spalten
+    if any(d not in DIMENSIONEN for d in alle):
         raise ValidationError({"zeilen": "Unbekannte Dimension."})
-    if spalten and spalten not in DIMENSIONEN:
-        raise ValidationError({"spalten": "Unbekannte Dimension."})
-    if kennzahl not in KENNZAHLEN:
-        raise ValidationError({"kennzahl": "Unbekannte Kennzahl."})
+    if len(set(alle)) != len(alle):
+        raise ValidationError({"zeilen": "Eine Dimension kann nur einmal verwendet werden."})
+    if len(zeilen) > MAX_DIMENSIONEN or len(spalten) > MAX_DIMENSIONEN:
+        raise ValidationError({"zeilen": f"Höchstens {MAX_DIMENSIONEN} Dimensionen je Achse."})
+    if any(k not in KENNZAHLEN for k in kennzahlen):
+        raise ValidationError({"kennzahlen": "Unbekannte Kennzahl."})
+    jahr_von, jahr_bis = _zeitraum(q)
+    # Filter: f_<dimension>=wert1,wert2
+    filter_ = {d: _liste(q, f"f_{d}")[:FILTER_MAX_WERTE] for d in DIMENSIONEN}
+    filter_ = {d: w for d, w in filter_.items() if w}
+    langue = langue_aus_anfrage(request)
+    return (
+        pivot_berechnen(
+            zeilen_dims=zeilen,
+            spalten_dims=spalten,
+            kennzahlen=kennzahlen,
+            jahr_von=jahr_von,
+            jahr_bis=jahr_bis,
+            langue=langue,
+            filter_=filter_,
+        ),
+        langue,
+    )
+
+
+def _zeitraum(q):
     heute = timezone.localdate().year
     try:
         jahr_bis = int(q.get("jahr_bis") or heute)
@@ -279,23 +315,21 @@ def _pivot_aus_anfrage(request):
         raise ValidationError({"jahr_von": "Jahre müssen Zahlen sein."}) from exc
     if jahr_von > jahr_bis or jahr_bis - jahr_von > 9:
         raise ValidationError({"jahr_von": "Zeitraum ungültig (höchstens 10 Jahre)."})
-    langue = langue_aus_anfrage(request)
-    return (
-        pivot_berechnen(
-            zeilen_dim=zeilen,
-            spalten_dim=spalten,
-            kennzahl=kennzahl,
-            jahr_von=jahr_von,
-            jahr_bis=jahr_bis,
-            langue=langue,
-        ),
-        langue,
-    )
+    return jahr_von, jahr_bis
+
+
+class StatsPivotOptionenView(BaseStatsView):
+    """GET /stats/pivot/optionen/?jahr_von=&jahr_bis= — Auswahlwerte für die Pivot-Filter."""
+
+    def get(self, request):
+        jahr_von, jahr_bis = _zeitraum(request.query_params)
+        return Response(filter_optionen(jahr_von, jahr_bis, langue_aus_anfrage(request)))
 
 
 class StatsPivotView(BaseStatsView):
-    """GET /stats/pivot/?zeilen=&spalten=&kennzahl=&jahr_von=&jahr_bis= — dynamische Auswertung der
-    Buchungen (Einnahmen + freigegebene Ausgaben) nach frei gewählten Dimensionen."""
+    """GET /stats/pivot/?zeilen=a,b&spalten=c&kennzahlen=einnahmen,ausgaben&jahr_von=&jahr_bis=
+    &f_<dimension>=w1,w2 — dynamische Auswertung der Buchungen (Einnahmen + freigegebene
+    Ausgaben) nach frei gewählten Dimensionen, Kennzahlen und Filtern."""
 
     def get(self, request):
         ergebnis, _ = _pivot_aus_anfrage(request)

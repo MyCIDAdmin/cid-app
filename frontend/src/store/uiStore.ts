@@ -22,6 +22,8 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export type SidebarGroupKey = "general" | "communaute" | "contenu" | "administration";
+export type SidebarSubgroupKey =
+  "mitglieder" | "finanzen" | "aktivitaeten" | "community" | "system";
 export type Theme = "light" | "dark";
 
 export const DEFAULT_COLLAPSED_GROUPS: Record<SidebarGroupKey, boolean> = {
@@ -34,11 +36,22 @@ export const DEFAULT_COLLAPSED_GROUPS: Record<SidebarGroupKey, boolean> = {
   administration: true,
 };
 
+// Untergruppen der Verwaltung (Redesign 2026-10-07): standardmäßig alle aufgeklappt.
+export const DEFAULT_COLLAPSED_SUBGROUPS: Record<SidebarSubgroupKey, boolean> = {
+  mitglieder: false,
+  finanzen: false,
+  aktivitaeten: false,
+  community: false,
+  system: false,
+};
+
 interface UiState {
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
   collapsedGroups: Record<SidebarGroupKey, boolean>;
   toggleGroup: (key: SidebarGroupKey) => void;
+  collapsedSubgroups: Record<SidebarSubgroupKey, boolean>;
+  toggleSubgroup: (key: SidebarSubgroupKey) => void;
   theme: Theme;
   toggleTheme: () => void;
   /** Direkt setzen (Anwenden der gespeicherten Präferenz beim Login, siehe usePraeferenzenSync). */
@@ -58,6 +71,15 @@ export const useUiStore = create<UiState>()(
       toggleGroup: (key) =>
         set((state) => ({
           collapsedGroups: { ...state.collapsedGroups, [key]: !state.collapsedGroups[key] },
+        })),
+      collapsedSubgroups: DEFAULT_COLLAPSED_SUBGROUPS,
+      toggleSubgroup: (key) =>
+        set((state) => ({
+          collapsedSubgroups: {
+            ...DEFAULT_COLLAPSED_SUBGROUPS,
+            ...state.collapsedSubgroups,
+            [key]: !state.collapsedSubgroups?.[key],
+          },
         })),
       theme: "light",
       toggleTheme: () =>

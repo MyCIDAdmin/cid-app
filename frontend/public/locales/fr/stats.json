@@ -181,12 +181,7 @@
     "col_ergebnis": "Résultat"
   },
   "pivot": {
-    "hinweis": "Choisissez lignes, colonnes et indicateur – le tableau se recalcule aussitôt. Base : toutes les recettes et dépenses approuvées de la période.",
-    "zeilen": "Lignes",
-    "spalten": "Colonnes",
-    "kennzahl": "Indicateur",
     "keine": "– aucune –",
-    "tauschen": "Inverser lignes et colonnes",
     "jahr_von": "De l'année",
     "jahr_bis": "À l'année",
     "summe": "Total",
@@ -202,8 +197,28 @@
     "dim_typ": "Type (recette/dépense)",
     "dim_kategorie": "Catégorie / source",
     "dim_gegenpartei": "Contrepartie",
-    "kz_betrag": "Montant (somme)",
     "kz_anzahl": "Nombre d'écritures",
-    "kz_durchschnitt": "Montant moyen"
+    "kz_durchschnitt": "Montant moyen",
+    "hinweis": "Choisissez jusqu'à trois dimensions pour les lignes et les colonnes ainsi que plusieurs indicateurs – le tableau est recalculé immédiatement. Base : toutes les recettes et dépenses validées de la période.",
+    "zeilen": "Lignes",
+    "spalten": "Colonnes",
+    "kennzahlen": "Indicateurs",
+    "max_hinweis": "3 dimensions maximum par axe.",
+    "entfernen": "Retirer {{name}}",
+    "hinzufuegen": "+ Dimension",
+    "tauschen": "Inverser lignes et colonnes",
+    "kz_einnahmen": "Recettes",
+    "kz_ausgaben": "Dépenses",
+    "kz_saldo": "Solde (recettes − dépenses)",
+    "filter": "Filtres",
+    "filter_typ": "Nature",
+    "filter_alle": "Recettes et dépenses",
+    "filter_einnahmen": "Recettes uniquement",
+    "filter_ausgaben": "Dépenses uniquement",
+    "filter_kategorie": "Catégorie / source",
+    "filter_kategorie_alle": "Toutes les catégories",
+    "filter_gegenpartei": "Contrepartie contient",
+    "filter_zuruecksetzen": "Réinitialiser les filtres",
+    "gefiltert": "Filtré par"
   }
 }

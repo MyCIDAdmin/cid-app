@@ -38,6 +38,7 @@ i18n
       "public",
       "help",
       "finances",
+      "partner",
     ],
     defaultNS: "common",
     backend: {

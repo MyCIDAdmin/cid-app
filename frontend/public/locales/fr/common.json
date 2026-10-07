@@ -34,7 +34,8 @@
     "configuration_site": "Vidéo du hero",
     "fan_club_logos": "Logos des clubs",
     "startseite": "Accueil",
-    "finances": "Finances"
+    "finances": "Finances",
+    "admin_partner": "Business Partner"
   },
   "nav_groupe": {
     "general": "Général",
@@ -191,5 +192,12 @@
       "abmelden": "Déconnecter",
       "alle_anderen": "Déconnecter tous les autres appareils"
     }
+  },
+  "nav_untergruppe": {
+    "mitglieder": "Membres & accès",
+    "finanzen": "Finances & paiements",
+    "aktivitaeten": "Activités & partenaires",
+    "community": "Communauté & contenus",
+    "system": "Système"
   }
 }

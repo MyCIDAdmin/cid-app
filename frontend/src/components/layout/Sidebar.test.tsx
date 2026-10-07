@@ -1,11 +1,15 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useNotificationsHooks from "../../hooks/useNotifications";
 import * as useRbacHooks from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
-import { DEFAULT_COLLAPSED_GROUPS, useUiStore } from "../../store/uiStore";
+import {
+  DEFAULT_COLLAPSED_GROUPS,
+  DEFAULT_COLLAPSED_SUBGROUPS,
+  useUiStore,
+} from "../../store/uiStore";
 import type { Notification } from "../../types/notification";
 import Sidebar, { getGroupForPath } from "./Sidebar";
 
@@ -458,6 +462,94 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
 // Ajouté le 2026-09-26 (plan "Öffentliche mycid.org-Startseite" section B) — AppLayout.tsx s'en
 // sert pour décider si le PublicFooter apparaît sous la page courante. Fonction pure, testée
 // directement plutôt qu'en passant par un rendu complet de Sidebar/AppLayout.
+describe("Sidebar — Untergruppen in der Verwaltung (Variante A, 2026-10-07)", () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      accessToken: "access",
+      refreshToken: "refresh",
+      user: administrateur,
+      isAuthenticated: true,
+    });
+    useUiStore.setState({
+      sidebarCollapsed: false,
+      collapsedGroups: { ...DEFAULT_COLLAPSED_GROUPS, administration: false },
+      collapsedSubgroups: DEFAULT_COLLAPSED_SUBGROUPS,
+    });
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+    vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
+    mockMesAcces();
+    mockVisibiliteEffective();
+  });
+
+  it("gliedert die Verwaltung in fünf Untergruppen, standardmäßig aufgeklappt", () => {
+    renderWithProviders(<Sidebar />);
+
+    for (const key of ["mitglieder", "finanzen", "aktivitaeten", "community", "system"]) {
+      expect(screen.getByText(`nav_untergruppe.${key}`)).toBeInTheDocument();
+    }
+    expect(screen.getByText("nav.admin_events")).toBeInTheDocument();
+    expect(screen.getByText("nav.admin_partner")).toBeInTheDocument();
+  });
+
+  it("klappt eine Untergruppe per Klick zu und wieder auf (Zustand im uiStore)", () => {
+    renderWithProviders(<Sidebar />);
+
+    const kopf = screen.getByRole("button", { name: /nav_untergruppe\.aktivitaeten/ });
+    expect(kopf).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(kopf);
+
+    expect(useUiStore.getState().collapsedSubgroups.aktivitaeten).toBe(true);
+    expect(screen.queryByText("nav.admin_events")).not.toBeInTheDocument();
+    // andere Untergruppen bleiben offen
+    expect(screen.getByText("nav.admin_quiz")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /nav_untergruppe\.aktivitaeten/ }));
+    expect(screen.getByText("nav.admin_events")).toBeInTheDocument();
+  });
+
+  it("zeigt den Punkt auch an der Untergruppe, wenn darunter etwas Neues liegt", () => {
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [notification({ lien: "/admin/events" })] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+
+    renderWithProviders(<Sidebar />);
+
+    const kopf = screen.getByRole("button", { name: /nav_untergruppe\.aktivitaeten/ });
+    expect(within(kopf).getByRole("status")).toBeInTheDocument();
+    const andere = screen.getByRole("button", { name: /nav_untergruppe\.mitglieder/ });
+    expect(within(andere).queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("behält den Punkt an der zugeklappten Untergruppe", () => {
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [notification({ lien: "/admin/events" })] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+
+    renderWithProviders(<Sidebar />);
+    fireEvent.click(screen.getByRole("button", { name: /nav_untergruppe\.aktivitaeten/ }));
+
+    const kopf = screen.getByRole("button", { name: /nav_untergruppe\.aktivitaeten/ });
+    expect(within(kopf).getByRole("status")).toBeInTheDocument();
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+  });
+
+  it("zeigt den Punkt an der zugeklappten Gruppe Verwaltung", () => {
+    useUiStore.setState({ collapsedGroups: DEFAULT_COLLAPSED_GROUPS });
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [notification({ lien: "/admin/events" })] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+
+    renderWithProviders(<Sidebar />);
+
+    const kopf = screen.getByText("nav_groupe.administration").closest("button") as HTMLElement;
+    expect(within(kopf).getByRole("status")).toBeInTheDocument();
+  });
+});
+
 describe("getGroupForPath", () => {
   it("retrouve le groupe d'un item exact", () => {
     expect(getGroupForPath("/dashboard")).toBe("general");

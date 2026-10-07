@@ -1,9 +1,12 @@
 """Pivot-Auswertung (Nutzerwunsch 2026-10-06 : "Tab mit Pivot, um dynamisch und dimensional auf
-Basis unterschiedlicher Dimensionen und Kennzahlen zu reporten").
+Basis unterschiedlicher Dimensionen und Kennzahlen zu reporten") — erweitert am 2026-10-07 :
+mehrere Dimensionen je Achse, mehrere Kennzahlen gleichzeitig, Filter, Einnahmen und Ausgaben
+getrennt (vorher wurden beide in einem Betrag saldiert).
 
 Datengrundlage sind die Buchungen aus apps.stats.bilan.ecritures_comptables (Einnahmen aller
-Quellen + freigegebene Ausgaben) über mehrere Jahre. Der Aufrufer wählt eine Zeilen- und eine
-(optionale) Spaltendimension sowie eine Kennzahl ; das Ergebnis enthält die Matrix samt Summen.
+Quellen + freigegebene Ausgaben) über mehrere Jahre. Der Aufrufer wählt 1-3 Zeilen- und 0-3
+Spaltendimensionen, 1-5 Kennzahlen und optionale Filter ; das Ergebnis enthält die Matrix samt
+Summen.
 """
 
 import csv
@@ -18,7 +21,9 @@ from .bilan import ecritures_comptables
 from .exports import _ecrire_en_tete
 
 DIMENSIONEN = ("jahr", "quartal", "monat", "typ", "kategorie", "gegenpartei")
-KENNZAHLEN = ("betrag", "anzahl", "durchschnitt")
+KENNZAHLEN = ("einnahmen", "ausgaben", "saldo", "anzahl", "durchschnitt")
+MAX_DIMENSIONEN = 3
+FILTER_MAX_WERTE = 50
 
 LABELS = {
     "de": {
@@ -28,9 +33,11 @@ LABELS = {
         "typ": "Typ",
         "kategorie": "Kategorie",
         "gegenpartei": "Gegenpartei",
-        "betrag": "Betrag (€)",
+        "einnahmen": "Einnahmen (€)",
+        "ausgaben": "Ausgaben (€)",
+        "saldo": "Saldo (€)",
         "anzahl": "Anzahl Buchungen",
-        "durchschnitt": "Durchschnitt (€)",
+        "durchschnitt": "Ø Buchung (€)",
         "summe": "Summe",
         "ohne": "(ohne)",
         "blatt": "Pivot",
@@ -42,15 +49,19 @@ LABELS = {
         "typ": "Type",
         "kategorie": "Catégorie",
         "gegenpartei": "Contrepartie",
-        "betrag": "Montant (€)",
+        "einnahmen": "Recettes (€)",
+        "ausgaben": "Dépenses (€)",
+        "saldo": "Solde (€)",
         "anzahl": "Nombre d'écritures",
-        "durchschnitt": "Moyenne (€)",
+        "durchschnitt": "Moy. écriture (€)",
         "summe": "Total",
         "ohne": "(vide)",
         "blatt": "Pivot",
     },
 }
 TYP_FR = {"Einnahme": "Recette", "Ausgabe": "Dépense"}
+# Filterwerte für "typ" kommen sprachunabhängig als "einnahme"/"ausgabe".
+TYP_ROH = {"einnahme": "Einnahme", "ausgabe": "Ausgabe"}
 
 
 def _wert(zeile, dimension, langue):
@@ -68,67 +79,142 @@ def _wert(zeile, dimension, langue):
     return zeile["gegenpartei"]
 
 
-def pivot_berechnen(
-    *, zeilen_dim, spalten_dim=None, kennzahl="betrag", jahr_von, jahr_bis, langue="de"
-) -> dict:
-    if zeilen_dim not in DIMENSIONEN or (spalten_dim and spalten_dim not in DIMENSIONEN):
-        raise ValueError("dimension")
-    if kennzahl not in KENNZAHLEN:
-        raise ValueError("kennzahl")
-    ohne = LABELS[langue]["ohne"]
-    buchungen = []
+def buchungen_laden(jahr_von, jahr_bis, langue="de"):
+    zeilen = []
     for jahr in range(jahr_von, jahr_bis + 1):
-        buchungen.extend(ecritures_comptables(jahr, langue))
+        zeilen.extend(ecritures_comptables(jahr, langue))
+    return zeilen
 
-    summen = defaultdict(Decimal)
-    anzahlen = defaultdict(int)
-    for b in buchungen:
-        z = _wert(b, zeilen_dim, langue) or ohne
-        s = (_wert(b, spalten_dim, langue) or ohne) if spalten_dim else ""
-        for schluessel in ((z, s), (z, None), (None, s), (None, None)):
-            summen[schluessel] += Decimal(str(b["betrag"]))
-            anzahlen[schluessel] += 1
 
-    def zahl(schluessel):
-        if kennzahl == "anzahl":
-            return anzahlen.get(schluessel, 0)
-        if kennzahl == "durchschnitt":
-            n = anzahlen.get(schluessel, 0)
-            return float(round(summen[schluessel] / n, 2)) if n else 0
-        return float(round(summen.get(schluessel, Decimal("0")), 2))
+def _passt(buchung, filter_, langue):
+    """Filter : {dimension: [werte]} ; "typ" nimmt einnahme/ausgabe, "gegenpartei" ist eine
+    Teilzeichenfolge-Suche (Groß-/Kleinschreibung egal), alle anderen exakte Werte (ODER
+    innerhalb einer Dimension, UND zwischen Dimensionen)."""
+    for dim, werte in filter_.items():
+        if not werte:
+            continue
+        if dim == "typ":
+            if buchung["typ"] not in {TYP_ROH.get(w.lower(), w) for w in werte}:
+                return False
+        elif dim == "gegenpartei":
+            name = (buchung["gegenpartei"] or "").lower()
+            if not any(w.lower() in name for w in werte):
+                return False
+        elif _wert(buchung, dim, langue) not in werte:
+            return False
+    return True
 
-    zeilen = sorted({k[0] for k in summen if k[0] is not None})
-    spalten = sorted({k[1] for k in summen if k[1] not in (None, "")}) if spalten_dim else []
-    spalten_keys = spalten if spalten_dim else [""]
+
+def filter_optionen(jahr_von, jahr_bis, langue="de") -> dict:
+    """Auswahlwerte für die Filter (Kategorien + Typen) im angegebenen Zeitraum."""
+    buchungen = buchungen_laden(jahr_von, jahr_bis, langue)
     return {
-        "zeilen_dim": zeilen_dim,
-        "spalten_dim": spalten_dim,
-        "kennzahl": kennzahl,
+        "kategorie": sorted({b["kategorie"] for b in buchungen if b["kategorie"]}),
+        "typ": ["einnahme", "ausgabe"],
+    }
+
+
+def pivot_berechnen(
+    *,
+    zeilen_dims,
+    spalten_dims=(),
+    kennzahlen=("saldo",),
+    jahr_von,
+    jahr_bis,
+    langue="de",
+    filter_=None,
+) -> dict:
+    zeilen_dims, spalten_dims, kennzahlen = list(zeilen_dims), list(spalten_dims), list(kennzahlen)
+    alle = zeilen_dims + spalten_dims
+    if not zeilen_dims or len(zeilen_dims) > MAX_DIMENSIONEN or len(spalten_dims) > MAX_DIMENSIONEN:
+        raise ValueError("dimension")
+    if any(d not in DIMENSIONEN for d in alle) or len(set(alle)) != len(alle):
+        raise ValueError("dimension")
+    if not kennzahlen or any(k not in KENNZAHLEN for k in kennzahlen):
+        raise ValueError("kennzahl")
+    filter_ = filter_ or {}
+    ohne = LABELS[langue]["ohne"]
+    buchungen = [
+        b for b in buchungen_laden(jahr_von, jahr_bis, langue) if _passt(b, filter_, langue)
+    ]
+
+    # Je Schlüssel (Zeile, Spalte) : [Einnahmen, Ausgaben, Anzahl, Summe der Beträge (absolut)]
+    summen = defaultdict(lambda: [Decimal("0"), Decimal("0"), 0, Decimal("0")])
+    for b in buchungen:
+        z = tuple(_wert(b, d, langue) or ohne for d in zeilen_dims)
+        s = tuple(_wert(b, d, langue) or ohne for d in spalten_dims)
+        betrag = Decimal(str(b["betrag"]))
+        for schluessel in ((z, s), (z, None), (None, s), (None, None)):
+            eintrag = summen[schluessel]
+            if betrag >= 0:
+                eintrag[0] += betrag
+            else:
+                eintrag[1] += -betrag
+            eintrag[2] += 1
+            eintrag[3] += abs(betrag)
+
+    def zahlen(schluessel):
+        einnahmen, ausgaben, n, absolut = summen.get(
+            schluessel, [Decimal("0"), Decimal("0"), 0, Decimal("0")]
+        )
+        werte = {
+            "einnahmen": float(round(einnahmen, 2)),
+            "ausgaben": float(round(ausgaben, 2)),
+            "saldo": float(round(einnahmen - ausgaben, 2)),
+            "anzahl": n,
+            "durchschnitt": float(round(absolut / n, 2)) if n else 0,
+        }
+        return [werte[k] for k in kennzahlen]
+
+    zeilen_keys = sorted({k[0] for k in summen if k[0] is not None})
+    spalten_keys = (
+        sorted({k[1] for k in summen if k[1] is not None and k[1] != ()}) if spalten_dims else []
+    )
+    return {
+        "zeilen_dims": zeilen_dims,
+        "spalten_dims": spalten_dims,
+        "kennzahlen": kennzahlen,
         "jahr_von": jahr_von,
         "jahr_bis": jahr_bis,
-        "spalten": spalten,
+        "filter": {k: list(v) for k, v in filter_.items() if v},
+        "spalten": [{"labels": list(k), "label": " / ".join(k)} for k in spalten_keys],
         "zeilen": [
             {
-                "label": z,
-                "werte": [zahl((z, s)) for s in spalten] if spalten_dim else [],
-                "summe": zahl((z, None)),
+                "labels": list(z),
+                "label": " / ".join(z),
+                "werte": [zahlen((z, s)) for s in spalten_keys],
+                "summe": zahlen((z, None)),
             }
-            for z in zeilen
+            for z in zeilen_keys
         ],
-        "spalten_summen": [zahl((None, s)) for s in spalten_keys] if spalten_dim else [],
-        "gesamt": zahl((None, None)),
+        "spalten_summen": [zahlen((None, s)) for s in spalten_keys],
+        "gesamt": zahlen((None, None)),
         "anzahl_buchungen": len(buchungen),
     }
 
 
 def _tabelle(ergebnis, langue):
     lab = LABELS[langue]
-    kopf = [lab[ergebnis["zeilen_dim"]]]
-    if ergebnis["spalten_dim"]:
-        kopf += list(ergebnis["spalten"])
-    kopf.append(lab["summe"])
-    zeilen = [[z["label"], *z["werte"], z["summe"]] for z in ergebnis["zeilen"]]
-    zeilen.append([lab["summe"], *ergebnis["spalten_summen"], ergebnis["gesamt"]])
+    kz = ergebnis["kennzahlen"]
+    kopf = [" / ".join(lab[d] for d in ergebnis["zeilen_dims"])]
+
+    def spaltenkopf(label):
+        return [f"{label} – {lab[k]}" if label and len(kz) > 1 else (label or lab[k]) for k in kz]
+
+    for sp in ergebnis["spalten"]:
+        kopf += spaltenkopf(sp["label"])
+    kopf += spaltenkopf(lab["summe"]) if ergebnis["spalten"] or len(kz) > 1 else [lab["summe"]]
+    zeilen = [
+        [z["label"], *[w for werte in z["werte"] for w in werte], *z["summe"]]
+        for z in ergebnis["zeilen"]
+    ]
+    zeilen.append(
+        [
+            lab["summe"],
+            *[w for werte in ergebnis["spalten_summen"] for w in werte],
+            *ergebnis["gesamt"],
+        ]
+    )
     return kopf, zeilen
 
 
@@ -145,6 +231,7 @@ def pivot_csv(ergebnis, langue="de") -> str:
 
 def pivot_excel(ergebnis, langue="de") -> Workbook:
     kopf, zeilen = _tabelle(ergebnis, langue)
+    kz = ergebnis["kennzahlen"]
     lab = LABELS[langue]
     classeur = Workbook()
     blatt = classeur.active
@@ -153,9 +240,9 @@ def pivot_excel(ergebnis, langue="de") -> Workbook:
     for i, z in enumerate(zeilen, start=2):
         for j, x in enumerate(z, start=1):
             zelle = blatt.cell(row=i, column=j, value=x)
-            if j > 1 and ergebnis["kennzahl"] != "anzahl":
+            if j > 1 and kz[(j - 2) % len(kz)] != "anzahl":
                 zelle.number_format = '#,##0.00 "€"'
-            if i == len(zeilen) + 1 or j == len(z):
+            if i == len(zeilen) + 1:
                 zelle.font = Font(bold=True)
     blatt.column_dimensions["A"].width = 34
     return classeur

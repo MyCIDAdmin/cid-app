@@ -7,7 +7,9 @@ import RequireRole from "./components/RequireRole";
 import AdminConfigurationSitePage from "./pages/admin/AdminConfigurationSitePage";
 import AdminFanClubLogosPage from "./pages/admin/AdminFanClubLogosPage";
 import ArticlesCatalogueCotisationPage from "./pages/admin/ArticlesCatalogueCotisationPage";
+import AdminPartnerPage from "./pages/admin/AdminPartnerPage";
 import GestionRolesPage from "./pages/admin/GestionRolesPage";
+import PartnerDetailPage from "./pages/admin/PartnerDetailPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import ParametresNotificationPage from "./pages/admin/ParametresNotificationPage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
@@ -212,6 +214,24 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
               <GestionRolesPage />
+            </RequireRole>
+          }
+        />
+        {/* Business Partner & Lieferanten (Nutzerwunsch 2026-10-07) — Lesen ab RH, Pflegen ab
+            Bureau Admin (PartnerPermission) ; minRoleLevel direkt, wie /admin/configuration-site. */}
+        <Route
+          path="/admin/partner"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <AdminPartnerPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/partner/:id"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <PartnerDetailPage />
             </RequireRole>
           }
         />
