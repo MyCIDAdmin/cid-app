@@ -309,3 +309,22 @@ Ces éléments ne remettent pas en cause Railway comme point de départ, mais
 justifient l'architecture 100% portable ci-dessus : elle garde la bascule
 vers Hetzner/Docker Compose (déjà documentée dans le SDD) ouverte à tout
 moment, sans coût de réécriture.
+
+## 11. Umgebungen DEV / PROD und Release-Promotion (ab 2026-10-07)
+
+| | DEV | PROD |
+|---|---|---|
+| GitHub | `GhaziHabita/cid-app` (Entwicklung, PRs, CI) | `MyCIDAdmin/cid-app` (nur Releases, keine direkten Commits) |
+| Railway | privates Projekt | Vereins-Konto, Projekt `cid-prod` |
+| Domain | my-cid.de / api.my-cid.de | mycid.org / api.mycid.org |
+| Daten/Zahlung | Testdaten, Stripe-Test/PayPal-Sandbox | echte Daten, Stripe/PayPal live |
+| Secrets | eigene | eigene, **nie** zwischen den Umgebungen kopieren |
+
+**Promotion:** Feature-Branch → PR → `main` (CI grün) → Tag `release-YYYY.MM.DD[-n]` auf dem main-Commit.
+Der Workflow `.github/workflows/promote.yml` prüft (Commit in main, CI grün) und pusht den Commit
+ohne Force nach `MyCIDAdmin/cid-app` `main`; Railway-PROD deployt von dort. Voraussetzung: Secret
+`PROD_DEPLOY_KEY` (SSH-Deploy-Key mit Schreibrecht im Vereins-Repo). Rollback: älteren Tag erneut
+deployen (Railway „Redeploy“); Migrationen nur vorwärtskompatibel schreiben.
+
+**Umgebungsabhängige Frontend-Build-Variablen (Railway → frontend → Variables):**
+`VITE_API_BASE_URL`, `VITE_WS_BASE_URL`, `VITE_SITE_URL` (z. B. `https://mycid.org`).
