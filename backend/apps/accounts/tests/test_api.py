@@ -1176,3 +1176,36 @@ def test_praeferenzen_ungueltige_werte_abgelehnt(api_client, membre_actif):
         ).status_code
         == 400
     )
+
+
+def test_me_email_ist_schreibgeschuetzt(api_client, membre_actif):
+    """Sicherheitsprüfung 2026-10-07 : kein Kontoübernahme-Weg über PATCH /auth/me/."""
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+
+    resp = api_client.patch(
+        reverse("accounts:me"),
+        {"email": "angreifer@example.com", "langue_preferee": "fr"},
+        format="json",
+    )
+
+    assert resp.status_code == 200, resp.data
+    membre_actif.refresh_from_db()
+    assert membre_actif.email == "membre@example.com"
+    assert membre_actif.langue_preferee == "fr"
+
+
+def test_passwort_aendern_entwertet_alle_refresh_tokens(api_client, membre_actif):
+    a = _login_geraet(api_client, "geraet-a")
+    b = _login_geraet(api_client, "geraet-b")
+    _auth(api_client, a)
+
+    resp = api_client.post(
+        reverse("accounts:password-change"),
+        {"current_password": "Password123!", "new_password": "NeuesPasswort456!"},
+        format="json",
+    )
+
+    assert resp.status_code == 200, resp.data
+    assert _refresh(api_client, a["refresh"]).status_code == 401
+    assert _refresh(api_client, b["refresh"]).status_code == 401

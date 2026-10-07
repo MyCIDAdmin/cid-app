@@ -45,6 +45,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import PartnerLogos from "../../components/partner/PartnerLogos";
 import type { Evenement } from "../../types/evenements";
 import { uebersetzt } from "../../utils/uebersetzung";
+import { bereinigeHtml } from "../../utils/sicheresHtml";
 
 type Onglet = "avenir" | "passes" | "inscrits";
 
@@ -123,7 +124,9 @@ function EvenementCarte({
         {evenement.description && (
           <div
             className="line-clamp-2 text-xs text-text-tertiary"
-            dangerouslySetInnerHTML={{ __html: uebersetzt(evenement, "description") }}
+            dangerouslySetInnerHTML={{
+              __html: bereinigeHtml(uebersetzt(evenement, "description")),
+            }}
           />
         )}
         <PartnerLogos logos={evenement.partner_logos} />

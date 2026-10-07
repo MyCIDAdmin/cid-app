@@ -25,6 +25,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import Role, User
 from apps.boutique.models import (
     BonAchat,
+    Commande,
     ModePaiementCommande,
     StatutBonAchat,
     StatutCommande,
@@ -598,3 +599,47 @@ def test_annuler_commande_restitue_le_solde_du_bon_achat(api_client):
     bon.refresh_from_db()
     assert bon.solde == Decimal("10.00")
     assert bon.statut == StatutBonAchat.ACTIF
+
+
+def _commande_bon_par_bon_existant(api_client, email="storno@example.de"):
+    produit = ProduitBonAchatFactory()
+    variante = produit.variantes.get()
+    user, membre = _user_avec_membre(Role.MEMBRE, email)
+    bon_existant = BonAchatFactory(solde=Decimal("100.00"))
+    _auth(api_client, user)
+    resp = api_client.post(
+        reverse(PASSER_URL),
+        {
+            "lignes": [{"variante": str(variante.id), "quantite": 1, "montant": "40.00"}],
+            "code_bon_achat": bon_existant.code,
+            **_adresse_livraison(),
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    return resp.data["id"], membre, bon_existant
+
+
+def test_storno_bestaetigter_gutschein_bestellung_entwertet_erzeugten_gutschein(api_client):
+    """Sicherheitsprüfung 2026-10-07 : Gutschein per Gutschein kaufen + stornieren erzeugte
+    unbegrenzt Guthaben, weil nur der alte Gutschein zurückgebucht wurde."""
+    commande_id, membre, bon_existant = _commande_bon_par_bon_existant(api_client)
+
+    resp = api_client.post(reverse("boutique:commande-annuler", args=[commande_id]))
+
+    assert resp.status_code == 200, resp.data
+    bon_existant.refresh_from_db()
+    assert bon_existant.solde == Decimal("100.00")
+    neuer_bon = BonAchat.objects.get(achete_par=membre)
+    assert neuer_bon.solde == Decimal("0.00")
+    assert neuer_bon.statut == StatutBonAchat.EPUISE
+
+
+def test_storno_gesperrt_wenn_erzeugter_gutschein_schon_eingeloest(api_client):
+    commande_id, membre, _bon_existant = _commande_bon_par_bon_existant(api_client)
+    BonAchat.objects.filter(achete_par=membre).update(solde=Decimal("10.00"))
+
+    resp = api_client.post(reverse("boutique:commande-annuler", args=[commande_id]))
+
+    assert resp.status_code == 400
+    assert Commande.objects.get(pk=commande_id).statut == StatutCommande.CONFIRMEE

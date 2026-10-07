@@ -335,6 +335,30 @@ def _restituer_stock(commande):
         variante.save(update_fields=["stock"])
 
 
+def _annuler_bons_generes(commande):
+    """Bestätigte Bestellungen mit Gutschein-Positionen : die erzeugten Gutscheine werden bei der
+    Stornierung entwertet (sonst bliebe der Gutschein trotz Rückerstattung nutzbar). Schon
+    (teil-)eingelöste oder nicht zuordenbare (Altbestand) Gutscheine verhindern die Stornierung."""
+    if commande.statut == StatutCommande.EN_ATTENTE:
+        return
+    if not commande.lignes.filter(variante__produit__type_produit=TypeProduit.BON_ACHAT).exists():
+        return
+    bons = list(BonAchat.objects.select_for_update().filter(commande_origine=commande))
+    if not bons or any(bon.solde < bon.montant_initial for bon in bons):
+        raise ValidationError(
+            {
+                "statut": (
+                    "Diese Bestellung enthält Gutscheine, die nicht mehr automatisch entwertet "
+                    "werden können (bereits eingelöst oder Altbestand) — Stornierung gesperrt."
+                )
+            }
+        )
+    for bon in bons:
+        bon.solde = Decimal("0.00")
+        bon.statut = StatutBonAchat.EPUISE
+        bon.save(update_fields=["solde", "statut", "updated_at"])
+
+
 def _restituer_bon_achat(commande):
     """Restitue le solde d'un bon d'achat appliqué à une commande annulée (demande utilisateur
     du 2026-09-23, appelée aux côtés de `_restituer_stock` dans `annuler`/`changer_statut`) —
@@ -425,6 +449,7 @@ def _generer_bons_achat(commande):
     for ligne in lignes_bon_achat:
         for _i in range(ligne.quantite):
             bon = BonAchat(
+                commande_origine=commande,
                 montant_initial=ligne.prix_unitaire,
                 solde=ligne.prix_unitaire,
                 achete_par=commande.membre,
@@ -682,6 +707,12 @@ class CommandeViewSet(ModelViewSet):
                 {"statut": "Cette commande ne peut plus être annulée à ce stade."}
             )
         with transaction.atomic():
+            commande = Commande.objects.select_for_update().get(pk=commande.pk)
+            if commande.statut not in STATUTS_ANNULABLES:
+                raise ValidationError(
+                    {"statut": "Cette commande ne peut plus être annulée à ce stade."}
+                )
+            _annuler_bons_generes(commande)
             _restituer_stock(commande)
             _restituer_bon_achat(commande)
             commande.statut = StatutCommande.ANNULEE
@@ -713,6 +744,7 @@ class CommandeViewSet(ModelViewSet):
 
         with transaction.atomic():
             if nouveau_statut == StatutCommande.ANNULEE:
+                _annuler_bons_generes(commande)
                 _restituer_stock(commande)
                 _restituer_bon_achat(commande)
             commande.statut = nouveau_statut

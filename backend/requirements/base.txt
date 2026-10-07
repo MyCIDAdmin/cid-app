@@ -1,14 +1,14 @@
 # --- Core ---
-Django==4.2.16
-djangorestframework==3.15.2
+Django==4.2.30
+djangorestframework==3.17.2
 django-cors-headers==4.4.0
 django-filter==24.3
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 dj-database-url==2.2.0
 psycopg[binary]==3.2.3
 
 # --- Auth / 2FA / RBAC ---
-djangorestframework-simplejwt==5.3.1
+djangorestframework-simplejwt==5.5.1
 django-otp==1.5.4
 pyotp==2.9.0
 qrcode==7.4.2
@@ -17,12 +17,16 @@ argon2-cffi==23.1.0
 
 # --- Chiffrement champs sensibles ---
 django-encrypted-model-fields==0.6.5
-cryptography==43.0.1
+cryptography==49.0.0
 
 # --- WebSocket / temps réel ---
 channels==4.1.0
 channels-redis==4.2.0
-daphne==4.1.2
+daphne==4.2.2
+# Transitive Abhängigkeiten von daphne, wegen bekannter Sicherheitslücken explizit angehoben
+# (Sicherheitsprüfung 2026-10-07, pip-audit).
+Twisted==26.4.0
+pyOpenSSL==26.4.0
 
 # --- Async / tâches planifiées ---
 celery==5.4.0
@@ -52,10 +56,10 @@ python-magic==0.4.27
 # via `requests` (pas de SDK officiel Python maintenu pour PayPal Checkout v2 REST au même niveau
 # de qualité que le SDK Stripe — l'API REST elle-même est simple : OAuth2 + 2 endpoints JSON).
 stripe==11.1.0
-requests==2.32.3
+requests==2.33.0
 
 # --- Utilitaires ---
-Pillow==10.4.0
+Pillow==12.3.0
 gunicorn==23.0.0
 
 # --- Email (ajouté le 2026-09-19) ---

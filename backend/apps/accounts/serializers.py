@@ -73,8 +73,11 @@ class UserSerializer(serializers.ModelSerializer):
             "nom",
             "statut_membre",
         ]
+        # `email` ist schreibgeschützt (2026-10-07, Sicherheitsprüfung) : sonst genügt ein
+        # gestohlenes Access-Token, um per PATCH /auth/me/ die Login-/Reset-Adresse umzubiegen.
         read_only_fields = [
             "id",
+            "email",
             "role",
             "is_active",
             "require_2fa",

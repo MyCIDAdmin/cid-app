@@ -18,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.finances.models import Depense, StatutDepense
-from apps.membres.utils_http import xlsx_response
+from apps.membres.utils_http import safe_zeile, xlsx_response
 
 from .models import Angebot, AngebotStatus, PartnerEinnahme, VerknuepfungRolle
 from .permissions import PartnerPermission
@@ -225,31 +225,35 @@ class PartnerReportingExportView(APIView):
         blatt.append(KOPF)
         for z in zeilen:
             blatt.append(
-                [
-                    z["nom"],
-                    z["typ"],
-                    z["statut"],
-                    ", ".join(z["kategorien_namen"]),
-                    z["hauptkontakt_name"],
-                    z["email"],
-                    z["telefon"],
-                    z["ville"],
-                    z["website"],
-                    z["bewertung_schnitt"],
-                    float(z["einnahmen_summe"]),
-                    float(z["ausgaben_summe"]),
-                    float(z["umsatz"]),
-                    float(z["saldo"]),
-                    z["angebote_anzahl"],
-                    z["zuschlaege_anzahl"],
-                    len(z["verknuepfungen"]),
-                ]
+                safe_zeile(
+                    [
+                        z["nom"],
+                        z["typ"],
+                        z["statut"],
+                        ", ".join(z["kategorien_namen"]),
+                        z["hauptkontakt_name"],
+                        z["email"],
+                        z["telefon"],
+                        z["ville"],
+                        z["website"],
+                        z["bewertung_schnitt"],
+                        float(z["einnahmen_summe"]),
+                        float(z["ausgaben_summe"]),
+                        float(z["umsatz"]),
+                        float(z["saldo"]),
+                        z["angebote_anzahl"],
+                        z["zuschlaege_anzahl"],
+                        len(z["verknuepfungen"]),
+                    ]
+                )
             )
         verknuepfungen = wb.create_sheet("Verknüpfungen")
         verknuepfungen.append(["Partner", "Art", "Element", "Rolle"])
         for z in zeilen:
             for v in z["verknuepfungen"]:
-                verknuepfungen.append([z["nom"], v["ziel_typ"], v["ziel_label"], v["rolle"]])
+                verknuepfungen.append(
+                    safe_zeile([z["nom"], v["ziel_typ"], v["ziel_label"], v["rolle"]])
+                )
         for blatt_ in (blatt, verknuepfungen):
             for zelle in blatt_[1]:
                 zelle.font = Font(bold=True, color="FFFFFF")

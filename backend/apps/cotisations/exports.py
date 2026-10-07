@@ -13,6 +13,8 @@ deux modules, pour une seule identité visuelle d'export dans toute l'applicatio
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
+from apps.membres.utils_http import safe_cell
+
 _EN_TETE_STYLE = Font(bold=True, color="FFFFFF")
 _REMPLISSAGE = PatternFill(start_color="CC0000", end_color="CC0000", fill_type="solid")
 
@@ -81,7 +83,7 @@ def construire_classeur_cotisations(queryset) -> Workbook:
             ),
         ]
         for col_idx, valeur in enumerate(valeurs, start=1):
-            cellule = feuille.cell(row=ligne_idx, column=col_idx, value=valeur)
+            cellule = feuille.cell(row=ligne_idx, column=col_idx, value=safe_cell(valeur))
             if col_idx in _COLONNES_TEXTE:
                 cellule.number_format = "@"
         ligne_idx += 1

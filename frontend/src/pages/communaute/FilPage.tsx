@@ -36,6 +36,7 @@ import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore
 import type { Commentaire, Publication } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { apercuTexteDepuisHtml, texteBrutDepuisHtml } from "../../utils/html";
+import { bereinigeHtml } from "../../utils/sicheresHtml";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
@@ -211,7 +212,7 @@ function PublicationCarte({
           des balises HTML brutes dans un partage navigator.share/email seraient illisibles. */}
       <div
         className="prose prose-sm my-2 max-w-none text-text-secondary [&_span[data-type='mention']]:font-semibold [&_span[data-type='mention']]:text-ca"
-        dangerouslySetInnerHTML={{ __html: publication.contenu }}
+        dangerouslySetInnerHTML={{ __html: bereinigeHtml(publication.contenu) }}
       />
 
       {publication.image && (

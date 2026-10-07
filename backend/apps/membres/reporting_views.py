@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsRHOrAbove
 
 from .reporting import AKTIVITAETS_TYPEN, TYPEN, aktivitaeten, mitglieder_liste
-from .utils_http import xlsx_response
+from .utils_http import safe_zeile, xlsx_response
 
 MAX_SEITENGROESSE = 200
 
@@ -116,15 +116,17 @@ class MitgliederReportingExportView(APIView):
             zeilen, _anzahl, _summen = aktivitaeten(request.query_params)
             for z in zeilen:
                 blatt.append(
-                    [
-                        z["datum"][:16].replace("T", " "),
-                        z["typ"],
-                        z["membre_name"],
-                        z["numero_membre"],
-                        z["titel"],
-                        float(z["betrag"]) if z["betrag"] is not None else None,
-                        z["statut"],
-                    ]
+                    safe_zeile(
+                        [
+                            z["datum"][:16].replace("T", " "),
+                            z["typ"],
+                            z["membre_name"],
+                            z["numero_membre"],
+                            z["titel"],
+                            float(z["betrag"]) if z["betrag"] is not None else None,
+                            z["statut"],
+                        ]
+                    )
                 )
             name = "aktivitaeten"
         else:
@@ -151,31 +153,35 @@ class MitgliederReportingExportView(APIView):
             )
             for z in mitglieder_liste(request.query_params):
                 blatt.append(
-                    [
-                        z["numero_membre"],
-                        z["nom"],
-                        z["prenom"],
-                        z["email"],
-                        z["pays"],
-                        z["ville"],
-                        z["statut"],
-                        z["date_adhesion"],
-                    ]
-                    + [z["aktivitaeten"][t] for t in AKTIVITAETS_TYPEN]
-                    + [z["aktivitaeten_gesamt"], float(z["betrag_gesamt"])]
-                )
-                blatt.cell(row=blatt.max_row, column=1).number_format = "@"
-                for h in z["historie"]:
-                    historie.append(
+                    safe_zeile(
                         [
                             z["numero_membre"],
                             z["nom"],
                             z["prenom"],
-                            h["annee"],
-                            h["statut"],
-                            h["raison"],
-                            h["date_effet"],
+                            z["email"],
+                            z["pays"],
+                            z["ville"],
+                            z["statut"],
+                            z["date_adhesion"],
                         ]
+                        + [z["aktivitaeten"][t] for t in AKTIVITAETS_TYPEN]
+                        + [z["aktivitaeten_gesamt"], float(z["betrag_gesamt"])]
+                    )
+                )
+                blatt.cell(row=blatt.max_row, column=1).number_format = "@"
+                for h in z["historie"]:
+                    historie.append(
+                        safe_zeile(
+                            [
+                                z["numero_membre"],
+                                z["nom"],
+                                z["prenom"],
+                                h["annee"],
+                                h["statut"],
+                                h["raison"],
+                                h["date_effet"],
+                            ]
+                        )
                     )
             _breiten(historie)
             name = "mitglieder"

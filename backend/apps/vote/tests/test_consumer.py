@@ -178,3 +178,23 @@ def test_vote_avec_session_fermee_refuse():
 
     asyncio.run(run())
     assert VoteExprime.objects.filter(session=session).count() == 0
+
+
+def test_vote_nicht_wahlberechtigtes_mitglied_wird_abgelehnt():
+    """Sicherheitsprüfung 2026-10-07 : die Wählerschaft der Sitzung gilt auch beim Stimmabgeben."""
+    from apps.membres.models import StatutMembre
+
+    session = VoteSessionFactory()
+    option = VoteOptionFactory(session=session)
+    _, membre = user_membre_avec_fiche(email="ws-inaktiv@example.de", statut=StatutMembre.INACTIF)
+
+    async def run():
+        communicator, _ = await _connect(session, membre.user)
+        await communicator.receive_json_from()
+        await communicator.send_json_to({"type": "voter", "choix": [str(option.id)]})
+        antwort = await communicator.receive_json_from()
+        assert antwort["type"] == "erreur"
+        await communicator.disconnect()
+
+    asyncio.run(run())
+    assert VoteExprime.objects.filter(session=session).count() == 0

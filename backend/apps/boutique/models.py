@@ -816,6 +816,15 @@ class BonAchat(models.Model):
         ),
     )
 
+    commande_origine = models.ForeignKey(
+        "boutique.Commande",
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="bons_generes",
+        help_text=_("Bestellung, die diesen Gutschein erzeugt hat (zum Entwerten bei Storno)."),
+    )
     achete_par = models.ForeignKey(
         "membres.Membre", on_delete=models.PROTECT, related_name="bons_achat_achetes"
     )

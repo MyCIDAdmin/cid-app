@@ -4,6 +4,8 @@ totaux/écarts, afin que le service financier puisse corriger/compléter les chi
 from openpyxl import Workbook
 from openpyxl.styles import Font
 
+from apps.membres.utils_http import safe_cell, safe_csv
+
 from . import i18n
 from .exports import _ecrire_en_tete
 
@@ -162,7 +164,7 @@ def construire_classeur_bilan(bilan, depenses, langue="de") -> Workbook:
     debut = ligne + 1
     for d in bilan["depenses"]["lignes"]:
         ligne += 1
-        feuille.cell(row=ligne, column=1, value=d["namen"].get(langue) or d["nom"])
+        feuille.cell(row=ligne, column=1, value=safe_cell(d["namen"].get(langue) or d["nom"]))
         feuille.cell(row=ligne, column=2, value=_f(d["montant"]))
         feuille.cell(row=ligne, column=3, value=_f(d["montant_precedent"]))
         feuille.cell(row=ligne, column=4, value=f"=B{ligne}-C{ligne}")
@@ -188,7 +190,7 @@ def construire_classeur_bilan(bilan, depenses, langue="de") -> Workbook:
         feuille, [x["kategorie"], x["budget"], x["ist"], x["abweichung"], x["prozent"], x["status"]]
     )
     for i, d in enumerate(bilan["depenses"]["lignes"], start=2):
-        feuille.cell(row=i, column=1, value=d["namen"].get(langue) or d["nom"])
+        feuille.cell(row=i, column=1, value=safe_cell(d["namen"].get(langue) or d["nom"]))
         feuille.cell(row=i, column=2, value=_f(d["budget"])).number_format = EUR
         feuille.cell(row=i, column=3, value=_f(d["montant"])).number_format = EUR
         feuille.cell(row=i, column=4, value=f"=B{i}-C{i}").number_format = EUR
@@ -216,7 +218,7 @@ def construire_classeur_bilan(bilan, depenses, langue="de") -> Workbook:
         feuille = classeur.create_sheet(titre)
         _ecrire_en_tete(feuille, [x["titel"], x["einn"], x["ausg"], x["erg"]])
         for i, e in enumerate(bilan[cle], start=2):
-            feuille.cell(row=i, column=1, value=e["titre"])
+            feuille.cell(row=i, column=1, value=safe_cell(e["titre"]))
             feuille.cell(row=i, column=2, value=_f(e["recettes"])).number_format = EUR
             feuille.cell(row=i, column=3, value=_f(e["depenses"])).number_format = EUR
             feuille.cell(row=i, column=4, value=f"=B{i}-C{i}").number_format = EUR
@@ -251,7 +253,7 @@ def construire_classeur_bilan(bilan, depenses, langue="de") -> Workbook:
             d.decide_par.email if d.decide_par else "",
         ]
         for col, v in enumerate(valeurs, start=1):
-            feuille.cell(row=i, column=col, value=v)
+            feuille.cell(row=i, column=col, value=safe_cell(v))
         feuille.cell(row=i, column=4).number_format = EUR
     return classeur
 
@@ -271,12 +273,12 @@ def construire_csv_buchungen(zeilen, langue="de") -> str:
             [
                 z["datum"].strftime("%d.%m.%Y"),
                 z["typ"] if langue == "de" else TYP_CSV.get(z["typ"], z["typ"]),
-                z["kategorie"],
-                z["beschreibung"],
-                z["gegenpartei"],
+                safe_csv(z["kategorie"]),
+                safe_csv(z["beschreibung"]),
+                safe_csv(z["gegenpartei"]),
                 f"{z['betrag']:.2f}".replace(".", ","),
-                z["beleg"],
-                z["referenz"],
+                safe_csv(z["beleg"]),
+                safe_csv(z["referenz"]),
             ]
         )
     return puffer.getvalue()

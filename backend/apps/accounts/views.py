@@ -481,6 +481,7 @@ class PasswordResetConfirmView(APIView):
         user = services.verify_password_reset_token(data["token"])
         user.set_password(data["new_password"])
         user.save(update_fields=["password"])
+        services.revoke_all_sessions(user)
         services.log_audit_event(
             "password_reset_confirmed", user=user, ip_address=_client_ip(request)
         )
@@ -847,6 +848,7 @@ class PasswordChangeView(APIView):
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save(update_fields=["password"])
+        services.revoke_all_sessions(request.user)
         services.log_audit_event(
             "password_changed", user=request.user, ip_address=_client_ip(request)
         )

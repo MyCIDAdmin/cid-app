@@ -27,10 +27,11 @@ choix invalide)."""
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from .models import ChoixExprime, ModeAnonymat, ParticipationVote, StatutSession, VoteExprime
 from .security import compute_voter_token
-from .services import participation_payload, valider_choix_pour_type
+from .services import membres_eligibles_qs, participation_payload, valider_choix_pour_type
 
 
 class VoteConsumer(AsyncJsonWebsocketConsumer):
@@ -114,12 +115,19 @@ class VoteConsumer(AsyncJsonWebsocketConsumer):
         session = VoteSession.objects.filter(id=self.session_id).first()
         if session is None or session.statut != StatutSession.OUVERTE:
             return "session_close"
+        # Das Ende zählt auch, wenn der Celery-Beat-Task die Sitzung noch nicht geschlossen hat.
+        if session.date_fin and timezone.now() >= session.date_fin:
+            return "session_close"
 
         valider_choix_pour_type(session.type_vote, choix_ids, session.nb_choix_max)
 
         membre = getattr(user, "membre", None)
         if membre is None:
             raise ValueError("Aucune fiche membre associée à ce compte utilisateur.")
+        # Berechtigung serverseitig erzwingen (2026-10-07) : bisher zählte jede Stimme eines
+        # angemeldeten Mitglieds, auch außerhalb der Wählerschaft der Sitzung.
+        if not membres_eligibles_qs(session).filter(pk=membre.id).exists():
+            raise ValueError("Vous n'êtes pas éligible à cette session de vote.")
 
         token_hash = compute_voter_token(membre.id, session.id, session.anonymat_sel)
 
