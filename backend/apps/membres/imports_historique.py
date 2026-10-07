@@ -73,7 +73,7 @@ class ResultatImportHistorique:
 
 
 class ImportHistoriqueSchemaError(Exception):
-    """Le fichier n'a pas les colonnes obligatoires (email, cin) ou aucune colonne d'année
+    """Le fichier n'a pas la colonne obligatoire (email) ou aucune colonne d'année
     reconnue — rejeté avant toute lecture de ligne."""
 
 
@@ -133,7 +133,10 @@ def construire_classeur_template_historique():
         feuille.cell(row=2, column=col_idx, value=valeur)
 
     notes = classeur.create_sheet("Notes")
-    notes["A1"] = "Colonnes obligatoires : email, cin (identifient un membre DÉJÀ EXISTANT)."
+    notes["A1"] = (
+        "Colonne obligatoire : email. Colonne cin facultative (aide à retrouver un membre "
+        "dont l'email a changé). Identifient un membre DÉJÀ EXISTANT."
+    )
     notes["A2"] = (
         "Une colonne par année (n'importe quel en-tête numérique à 4 chiffres, ex. 2020, "
         "2021, ...) — valeur : actif / inactif. Cellule vide = aucune donnée pour ce membre "
@@ -190,7 +193,8 @@ def importer_historique_statuts(fichier) -> ResultatImportHistorique:
         raise ImportHistoriqueSchemaError("Le fichier est vide.")
 
     identite = _map_identite(entetes)
-    manquantes = [c for c in ("email", "cin") if c not in identite]
+    # cin facultatif depuis le 2026-10-07 (membres sans CIN) : l'email suffit à identifier.
+    manquantes = [c for c in ("email",) if c not in identite]
     if manquantes:
         raise ImportHistoriqueSchemaError(
             "Colonnes obligatoires manquantes : " + ", ".join(manquantes)

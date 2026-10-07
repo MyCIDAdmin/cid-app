@@ -196,6 +196,16 @@ def test_import_sans_colonnes_obligatoires_leve_schema_error():
         importer_historique_statuts(fichier)
 
 
+def test_import_sans_colonne_cin_fonctionne_avec_email_seul():
+    membre = MembreFactory(email="sanscin@example.de", cin=None)
+    fichier = _xlsx_file(["email", "2024"], [["sanscin@example.de", "actif"]])
+
+    resultat = importer_historique_statuts(fichier)
+
+    assert resultat.entrees_importees == 1
+    assert membre.historique_statuts.filter(annee=2024).exists()
+
+
 def test_import_sans_colonne_annee_leve_schema_error():
     fichier = _xlsx_file(["email", "cin"], [["riadh@example.de", "11112222"]])
 
