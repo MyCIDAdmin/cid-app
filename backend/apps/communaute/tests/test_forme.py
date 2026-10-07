@@ -39,9 +39,29 @@ def test_form_leer_wenn_spiele_fehlen():
     assert ClassementLigueSerializer(eintrag).data["forme_recente"] == ""
 
 
-def test_gespeicherte_form_hat_vorrang():
-    eintrag = ClassementLigueFactory(equipe="Club Africain", forme_recente="VVVVV")
-    assert ClassementLigueSerializer(eintrag).data["forme_recente"] == "VVVVV"
+def test_gespeicherte_form_wird_ignoriert():
+    """Altwerte (alle Wettbewerbe/Saisons gemischt) dürfen die Ligue-1-Form nicht verfälschen."""
+    eintrag = ClassementLigueFactory(equipe="Club Africain", joues=5, forme_recente="VVVVV")
+    for i in range(5):
+        _spiel(i, "Club Africain", f"Gegner {i}", 0, 1)
+    assert ClassementLigueSerializer(eintrag).data["forme_recente"] == "DDDDD"
+
+
+def test_gespeicherte_form_ohne_spiele_bleibt_leer():
+    eintrag = ClassementLigueFactory(equipe="Club Africain", joues=5, forme_recente="VVVVV")
+    assert ClassementLigueSerializer(eintrag).data["forme_recente"] == ""
+
+
+def test_form_zaehlt_nur_spiele_der_tabellensaison():
+    eintrag = ClassementLigueFactory(
+        saison="2026-2027", equipe="Club Africain", joues=3, forme_recente=""
+    )
+    # Vorsaison (2025-2026) darf nicht in die Form der laufenden Saison einfließen
+    for i in range(3):
+        _spiel(-300 + i, "Club Africain", f"Alt {i}", 0, 2)  # 2025 : drei Niederlagen
+    for i in range(3):
+        _spiel(200 + i, "Club Africain", f"Neu {i}", 2, 0)  # Juli 2026 ff. : drei Siege
+    assert ClassementLigueSerializer(eintrag).data["forme_recente"] == "VVV"
 
 
 def test_form_zaehlt_nur_ligue_1_spiele():

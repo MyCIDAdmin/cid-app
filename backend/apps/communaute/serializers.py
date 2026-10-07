@@ -1,6 +1,7 @@
 """Serializers — app communaute, tous les lots (Fil d'actualité + Forum ; Messagerie +
 Groupes ; Live Match + Albums + Quiz — Phase 4B, voir docstring de tête models.py)."""
 
+import datetime
 from datetime import timedelta
 
 from django.db.models import Count
@@ -675,29 +676,43 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
     forme_recente = serializers.SerializerMethodField()
 
     def get_forme_recente(self, obj) -> str:
-        if obj.forme_recente:
-            return obj.forme_recente
-        formes = self.context.get("_formes_par_equipe")
-        if formes is None:
-            formes = {}
-            termines = RencontreCalendrier.objects.filter(
-                statut=StatutRencontre.TERMINEE,
-                score_domicile__isnull=False,
-                score_exterieur__isnull=False,
-            ).order_by("date_heure")
-            # Nur Ligue-1-Spiele (2026-10-07) : Pokal und CAF-Wettbewerbe zählen nicht zur Form.
-            for r in (r for r in termines if est_ligue_1(r.competition)):
-                for equipe, pour, contre in (
-                    (r.equipe_domicile, r.score_domicile, r.score_exterieur),
-                    (r.equipe_exterieur, r.score_exterieur, r.score_domicile),
-                ):
-                    code = "V" if pour > contre else ("N" if pour == contre else "D")
-                    formes.setdefault(equipe.strip().lower(), []).append(code)
-            self.context["_formes_par_equipe"] = formes
-        resultats = formes.get(obj.equipe.strip().lower(), [])
+        # Ein gespeicherter Wert wird bewusst ignoriert (2026-10-07) : Altdaten (SerpApi `strForm`)
+        # mischen alle Wettbewerbe und Saisons; maßgeblich sind nur Ligue-1-Spiele der Saison.
+        formen = self.context.setdefault("_formes_par_saison", {})
+        if obj.saison not in formen:
+            formen[obj.saison] = self._formes_ligue_1(obj.saison)
+        resultats = formen[obj.saison].get(obj.equipe.strip().lower(), [])
         if len(resultats) < min(5, obj.joues or 5):
             return ""
         return "".join(resultats[-5:])
+
+    @staticmethod
+    def _formes_ligue_1(saison: str) -> dict:
+        """Ergebnisse (V/N/D, ältestes zuerst) je Team aus beendeten Ligue-1-Spielen der Saison
+        `saison` ("2026-2027" = 1.7.2026 bis 30.6.2027) — Pokal, CAF, Freundschaftsspiele und
+        Spiele früherer Saisons zählen nicht zur Form."""
+        formen: dict = {}
+        try:
+            jahr = int(str(saison)[:4])
+        except ValueError:
+            return formen
+        beginn = datetime.datetime(jahr, 7, 1, tzinfo=datetime.timezone.utc)
+        ende = datetime.datetime(jahr + 1, 7, 1, tzinfo=datetime.timezone.utc)
+        termines = RencontreCalendrier.objects.filter(
+            statut=StatutRencontre.TERMINEE,
+            score_domicile__isnull=False,
+            score_exterieur__isnull=False,
+            date_heure__gte=beginn,
+            date_heure__lt=ende,
+        ).order_by("date_heure")
+        for r in (r for r in termines if est_ligue_1(r.competition)):
+            for equipe, pour, contre in (
+                (r.equipe_domicile, r.score_domicile, r.score_exterieur),
+                (r.equipe_exterieur, r.score_exterieur, r.score_domicile),
+            ):
+                code = "V" if pour > contre else ("N" if pour == contre else "D")
+                formen.setdefault(equipe.strip().lower(), []).append(code)
+        return formen
 
     class Meta:
         model = ClassementLigue
