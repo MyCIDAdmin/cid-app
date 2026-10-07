@@ -150,5 +150,10 @@
     "erreur": "Impossible d'enregistrer la tuile.",
     "enregistre": "Enregistré.",
     "enregistrer": "Enregistrer"
+  },
+  "sponsoren": {
+    "titel": "Nos sponsors et partenaires",
+    "platzhalter": "Les logos de nos sponsors et partenaires apparaîtront ici. Activez pour cela « Afficher dans la bannière de la page d’accueil » sur un partenaire avec logo. (Visible uniquement par l’administration.)",
+    "zur_verwaltung": "Vers la gestion des partenaires →"
   }
 }

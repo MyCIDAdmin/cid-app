@@ -19,6 +19,10 @@ vi.mock("../../hooks/usePartner", async () => {
   };
 });
 
+vi.mock("../../components/partner/PartnerReportingTab", () => ({
+  default: () => <div data-testid="reporting-stub" />,
+}));
+
 const catering: PartnerKategorie = {
   id: "k1",
   nom: "Catering",
@@ -34,6 +38,7 @@ function partner(extra: Partial<Partner> = {}): Partner {
     typ: "lieferant",
     statut: "aktiv",
     bevorzugt: true,
+    auf_startseite: false,
     kategorien: ["k1"],
     kategorien_namen: ["Catering"],
     logo_url: null,
@@ -157,5 +162,22 @@ describe("AdminPartnerPage", () => {
       expect.objectContaining({ nom: "Neu AG", typ: "partner", zahlungsziel_tage: null }),
       expect.anything(),
     );
+  });
+
+  it("wechselt über die Tab-Leiste zum Reporting", () => {
+    renderWithProviders(<AdminPartnerPage />);
+    expect(screen.queryByTestId("reporting-stub")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "tab_reporting" }));
+    expect(screen.getByTestId("reporting-stub")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "tab_liste" }));
+    expect(screen.queryByTestId("reporting-stub")).not.toBeInTheDocument();
+  });
+
+  it("öffnet das Reporting direkt über ?tab=reporting", () => {
+    renderWithProviders(<AdminPartnerPage />, {
+      route: "/admin/partner?tab=reporting",
+      path: "/admin/partner",
+    });
+    expect(screen.getByTestId("reporting-stub")).toBeInTheDocument();
   });
 });

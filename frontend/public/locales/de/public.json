@@ -150,5 +150,10 @@
     "erreur": "Kachel konnte nicht gespeichert werden.",
     "enregistre": "Gespeichert.",
     "enregistrer": "Speichern"
+  },
+  "sponsoren": {
+    "titel": "Unsere Sponsoren und Business Partner",
+    "platzhalter": "Hier erscheinen die Logos unserer Sponsoren und Business Partner. Aktivieren Sie dazu in der Partnerverwaltung bei einem Partner mit Logo „Im Startseiten-Banner anzeigen“. (Nur für die Verwaltung sichtbar.)",
+    "zur_verwaltung": "Zur Partnerverwaltung →"
   }
 }

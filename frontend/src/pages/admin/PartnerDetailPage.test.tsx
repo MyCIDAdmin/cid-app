@@ -30,6 +30,7 @@ const detail: PartnerDetail = {
   typ: "lieferant",
   statut: "aktiv",
   bevorzugt: false,
+  auf_startseite: false,
   kategorien: [],
   kategorien_namen: [],
   logo_url: null,

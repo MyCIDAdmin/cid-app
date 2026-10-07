@@ -8,6 +8,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -19,6 +20,7 @@ from .models import (
     Partner,
     PartnerBewertung,
     PartnerDokument,
+    PartnerEinnahme,
     PartnerKategorie,
     PartnerKontakt,
     PartnerStatus,
@@ -33,6 +35,7 @@ from .serializers import (
     PartnerBewertungSerializer,
     PartnerDetailSerializer,
     PartnerDokumentSerializer,
+    PartnerEinnahmeSerializer,
     PartnerKategorieSerializer,
     PartnerKontaktSerializer,
     PartnerLogoSerializer,
@@ -59,6 +62,61 @@ def _liste(wert):
     return [w.strip() for w in (wert or "").split(",") if w.strip()]
 
 
+def partner_basis_queryset():
+    return Partner.objects.prefetch_related("kategorien", "kontakte").annotate(
+        bewertung_schnitt=Avg(
+            ExpressionWrapper(
+                (
+                    F("bewertungen__qualitaet")
+                    + F("bewertungen__preis_leistung")
+                    + F("bewertungen__zuverlaessigkeit")
+                    + F("bewertungen__kommunikation")
+                )
+                / 4.0,
+                output_field=FloatField(),
+            )
+        ),
+        bewertung_anzahl=Count("bewertungen", distinct=True),
+        verknuepfungen_anzahl=Count("verknuepfungen", distinct=True),
+    )
+
+
+def filtere_partner(qs, q):
+    """Filter der Partnerliste — auch vom Reporting (reporting.py) genutzt."""
+    statut = q.get("statut")
+    if statut in PartnerStatus.values:
+        qs = qs.filter(statut=statut)
+    elif q.get("alle") != "1":
+        qs = qs.exclude(statut=PartnerStatus.ARCHIVIERT)
+    if q.get("typ") in ("partner", "lieferant"):
+        # "Lieferant" schließt "beides" ein, ebenso "Partner".
+        qs = qs.filter(typ__in=[q["typ"], "beides"])
+    kategorien = _liste(q.get("kategorie"))
+    if kategorien:
+        qs = qs.filter(kategorien__in=kategorien).distinct()
+    if q.get("bevorzugt") == "1":
+        qs = qs.filter(bevorzugt=True)
+    if q.get("auf_startseite") == "1":
+        qs = qs.filter(auf_startseite=True)
+    suche = (q.get("q") or "").strip()
+    if suche:
+        qs = qs.filter(
+            Q(nom__icontains=suche)
+            | Exists(PartnerKontakt.objects.filter(partner=OuterRef("pk"), name__icontains=suche))
+            | Q(ville__icontains=suche)
+            | Q(email__icontains=suche)
+        )
+    for ziel in ("projet", "evenement", "produit"):
+        if q.get(ziel):
+            qs = qs.filter(**{f"verknuepfungen__{ziel}": q[ziel]}).distinct()
+    if q.get("min_note"):
+        try:
+            qs = qs.filter(bewertung_schnitt__gte=float(q["min_note"]))
+        except ValueError as exc:
+            raise ValidationError({"min_note": "Zahl erwartet."}) from exc
+    return qs.order_by(SORTIERUNG.get(q.get("ordering"), "nom"), "nom")
+
+
 class PartnerViewSet(viewsets.ModelViewSet):
     """/partenaires/partner/ — Lesen ab RH, Pflegen/Bewerten ab Bureau Admin ; kein DELETE
     (Archivieren statt Löschen)."""
@@ -72,57 +130,10 @@ class PartnerViewSet(viewsets.ModelViewSet):
         return PartnerDetailSerializer if self.action == "retrieve" else PartnerSerializer
 
     def get_queryset(self):
-        qs = Partner.objects.prefetch_related("kategorien", "kontakte").annotate(
-            bewertung_schnitt=Avg(
-                ExpressionWrapper(
-                    (
-                        F("bewertungen__qualitaet")
-                        + F("bewertungen__preis_leistung")
-                        + F("bewertungen__zuverlaessigkeit")
-                        + F("bewertungen__kommunikation")
-                    )
-                    / 4.0,
-                    output_field=FloatField(),
-                )
-            ),
-            bewertung_anzahl=Count("bewertungen", distinct=True),
-            verknuepfungen_anzahl=Count("verknuepfungen", distinct=True),
-        )
+        qs = partner_basis_queryset()
         if self.action != "list":
             return qs
-        q = self.request.query_params
-        statut = q.get("statut")
-        if statut in PartnerStatus.values:
-            qs = qs.filter(statut=statut)
-        elif q.get("alle") != "1":
-            qs = qs.exclude(statut=PartnerStatus.ARCHIVIERT)
-        if q.get("typ") in ("partner", "lieferant"):
-            # "Lieferant" schließt "beides" ein, ebenso "Partner".
-            qs = qs.filter(typ__in=[q["typ"], "beides"])
-        kategorien = _liste(q.get("kategorie"))
-        if kategorien:
-            qs = qs.filter(kategorien__in=kategorien).distinct()
-        if q.get("bevorzugt") == "1":
-            qs = qs.filter(bevorzugt=True)
-        suche = (q.get("q") or "").strip()
-        if suche:
-            qs = qs.filter(
-                Q(nom__icontains=suche)
-                | Exists(
-                    PartnerKontakt.objects.filter(partner=OuterRef("pk"), name__icontains=suche)
-                )
-                | Q(ville__icontains=suche)
-                | Q(email__icontains=suche)
-            )
-        for ziel in ("projet", "evenement", "produit"):
-            if q.get(ziel):
-                qs = qs.filter(**{f"verknuepfungen__{ziel}": q[ziel]}).distinct()
-        if q.get("min_note"):
-            try:
-                qs = qs.filter(bewertung_schnitt__gte=float(q["min_note"]))
-            except ValueError as exc:
-                raise ValidationError({"min_note": "Zahl erwartet."}) from exc
-        return qs.order_by(SORTIERUNG.get(q.get("ordering"), "nom"), "nom")
+        return filtere_partner(qs, self.request.query_params)
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -270,6 +281,55 @@ class PartnerKontaktViewSet(
     @transaction.atomic
     def perform_update(self, serializer):
         self._hauptkontakt_festlegen(serializer.save())
+
+
+class PartnerEinnahmeViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """/partenaires/einnahmen/?partner=<id> — Einnahmen von Partnern (z. B. Sponsoring) ;
+    Lesen ab RH, Pflegen ab Bureau Admin."""
+
+    permission_classes = [PartnerPermission]
+    serializer_class = PartnerEinnahmeSerializer
+    pagination_class = None
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        qs = PartnerEinnahme.objects.select_related("projet", "evenement")
+        if self.request.query_params.get("partner"):
+            qs = qs.filter(partner=self.request.query_params["partner"])
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class PartnerBannerView(APIView):
+    """GET /partenaires/banner/ — öffentlich (Startseite, auch ohne Anmeldung) : Logos der
+    aktiven Partner mit gesetztem Schalter `auf_startseite` und vorhandenem Logo. Nur Name,
+    Logo und Website — keine internen Daten."""
+
+    permission_classes = [AllowAny]
+    authentication_classes: list = []
+    pagination_class = None
+
+    def get(self, request):
+        qs = (
+            Partner.objects.filter(auf_startseite=True, statut=PartnerStatus.AKTIV)
+            .exclude(logo="")
+            .exclude(logo__isnull=True)
+            .order_by("-bevorzugt", "nom")
+        )
+        return Response(
+            [
+                {"id": str(p.pk), "nom": p.nom, "logo_url": p.logo.url, "website": p.website}
+                for p in qs
+            ]
+        )
 
 
 class PartnerDokumentView(APIView):

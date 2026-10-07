@@ -66,6 +66,10 @@ class Partner(models.Model):
     bevorzugt = models.BooleanField(
         default=False, help_text="Bevorzugter Partner/Lieferant (in Listen hervorgehoben)."
     )
+    auf_startseite = models.BooleanField(
+        default=False,
+        help_text='Logo im Banner "Unsere Sponsoren und Business Partner" der Startseite zeigen.',
+    )
 
     logo = models.ImageField(
         upload_to=partner_logo_path, storage=ProjetsStorage(), null=True, blank=True
@@ -327,3 +331,44 @@ class Angebot(models.Model):
 
     def __str__(self):
         return f"{self.partner} → {self.projet_id}: {self.betrag}"
+
+
+class EinnahmeArt(models.TextChoices):
+    SPONSORING = "sponsoring", "Sponsoring"
+    SPENDE = "spende", "Spende"
+    SONSTIGE = "sonstige", "Sonstige Einnahme"
+
+
+class PartnerEinnahme(models.Model):
+    """Einnahme von einem Partner (z. B. Sponsoring-Betrag) — Gegenstück zu den genehmigten
+    Ausgaben (`finances.Depense.partner`) für das Partner-Reporting (Umsatz = Einnahmen +
+    Ausgaben)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name="einnahmen")
+    datum = models.DateField()
+    betrag = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
+    )
+    art = models.CharField(
+        max_length=12, choices=EinnahmeArt.choices, default=EinnahmeArt.SPONSORING
+    )
+    bezeichnung = models.CharField(max_length=200, blank=True)
+    projet = models.ForeignKey(
+        "projets.Projet", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    evenement = models.ForeignKey(
+        "evenements.Evenement", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-datum", "-created_at"]
+        verbose_name = "Partner-Einnahme"
+        verbose_name_plural = "Partner-Einnahmen"
+
+    def __str__(self):
+        return f"{self.partner} {self.datum} {self.betrag}"

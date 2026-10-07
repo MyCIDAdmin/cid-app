@@ -50,6 +50,7 @@ export default function PartnerForm({
     nom: partner?.nom ?? "",
     typ: (partner?.typ ?? "partner") as PartnerTyp,
     bevorzugt: partner?.bevorzugt ?? false,
+    auf_startseite: partner?.auf_startseite ?? false,
     kategorien: partner?.kategorien ?? [],
     email: partner?.email ?? "",
     telefon: partner?.telefon ?? "",
@@ -133,6 +134,18 @@ export default function PartnerForm({
         />
         {t("feld_bevorzugt")}
       </label>
+      <div className="self-end pb-1.5">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={werte.auf_startseite}
+            disabled={readOnly}
+            onChange={(e) => setze("auf_startseite", e.target.checked)}
+          />
+          {t("feld_auf_startseite")}
+        </label>
+        <p className="ml-6 text-[11px] text-text-tertiary">{t("feld_auf_startseite_hinweis")}</p>
+      </div>
 
       <div className="sm:col-span-2">
         <span className={LABEL}>{t("feld_kategorien")}</span>

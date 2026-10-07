@@ -56,7 +56,7 @@ import NutzungsbedingungenPage from "./pages/public/legal/NutzungsbedingungenPag
 import MembreFormPage from "./pages/membres/MembreFormPage";
 import MonProfilPage from "./pages/membres/MonProfilPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
-import MembresListPage from "./pages/membres/MembresListPage";
+import MembresPage from "./pages/membres/MembresPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AdminProjetsPage from "./pages/projets/AdminProjetsPage";
 import ProjetArbeitsbereichPage from "./pages/projets/ProjetArbeitsbereichPage";
@@ -101,7 +101,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         {/* Lecture ouverte à tout authentifié — le backend scope déjà le
             queryset par rôle (apps.membres.views.MembreViewSet). */}
-        <Route path="/membres" element={<MembresListPage />} />
+        <Route path="/membres" element={<MembresPage />} />
         <Route path="/membres/:id" element={<MembreDetailPage />} />
         {/* Créer reste RH+ côté API — gated ici pour ne pas afficher un
             formulaire inopérant. */}

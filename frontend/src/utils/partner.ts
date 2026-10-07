@@ -16,3 +16,12 @@ export function tageBis(datum: string, heute = new Date()): number {
   const start = new Date(heute.getFullYear(), heute.getMonth(), heute.getDate());
   return Math.round((ziel.getTime() - start.getTime()) / TAG_MS);
 }
+
+/** Betrag (Dezimal-String oder Zahl) als Euro-Betrag in der Sprache der Oberfläche. */
+export function formatBetrag(wert: string | number, sprache: string): string {
+  const zahl = typeof wert === "number" ? wert : Number(wert);
+  return new Intl.NumberFormat(sprache === "fr" ? "fr-FR" : "de-DE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(Number.isFinite(zahl) ? zahl : 0);
+}

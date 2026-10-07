@@ -20,6 +20,8 @@ export interface Partner {
   typ: PartnerTyp;
   statut: PartnerStatus;
   bevorzugt: boolean;
+  /** Logo im Startseiten-Banner "Unsere Sponsoren und Business Partner" zeigen. */
+  auf_startseite: boolean;
   kategorien: string[];
   kategorien_namen: string[];
   logo_url: string | null;
@@ -229,3 +231,105 @@ export const VERKNUEPFUNG_ROLLEN: VerknuepfungRolle[] = [
 
 /** Bei diesen Rollen ist "Logo zeigen" standardmäßig angehakt (wie im Backend). */
 export const LOGO_STANDARD_ROLLEN: VerknuepfungRolle[] = ["sponsor", "kooperation"];
+
+export type EinnahmeArt = "sponsoring" | "spende" | "sonstige";
+export const EINNAHME_ARTEN: EinnahmeArt[] = ["sponsoring", "spende", "sonstige"];
+
+export interface PartnerEinnahme {
+  id: string;
+  partner: string;
+  datum: string;
+  /** Dezimal-String, z. B. "250.00". */
+  betrag: string;
+  art: EinnahmeArt;
+  bezeichnung: string;
+  projet: string | null;
+  projet_titre: string;
+  evenement: string | null;
+  evenement_titre: string;
+  created_at: string;
+}
+
+export interface EinnahmeDaten {
+  partner: string;
+  datum: string;
+  betrag: string;
+  art: EinnahmeArt;
+  bezeichnung?: string;
+}
+
+/** Eintrag des öffentlichen Startseiten-Banners (GET /partenaires/banner/, ohne Anmeldung). */
+export interface BannerPartner {
+  id: string;
+  nom: string;
+  logo_url: string;
+  website: string;
+}
+
+export interface ReportingVerknuepfung {
+  id: string;
+  ziel_typ: ZielTyp;
+  ziel_id: string | null;
+  ziel_label: string;
+  rolle: VerknuepfungRolle;
+}
+
+/** Beträge sind Dezimal-Strings (z. B. "1200.50"). */
+export interface PartnerReportingZeile {
+  id: string;
+  nom: string;
+  typ: PartnerTyp;
+  statut: PartnerStatus;
+  bevorzugt: boolean;
+  auf_startseite: boolean;
+  kategorien_namen: string[];
+  website: string;
+  email: string;
+  telefon: string;
+  ville: string;
+  pays: string;
+  hauptkontakt_name: string;
+  bewertung_schnitt: number | null;
+  bewertung_anzahl: number;
+  ausgaben_summe: string;
+  ausgaben_anzahl: number;
+  einnahmen_summe: string;
+  einnahmen_anzahl: number;
+  umsatz: string;
+  saldo: string;
+  angebote_anzahl: number;
+  zuschlaege_anzahl: number;
+  zuschlaege_summe: string;
+  verknuepfungen: ReportingVerknuepfung[];
+}
+
+export interface PartnerReporting {
+  summen: {
+    partner: number;
+    ausgaben: string;
+    einnahmen: string;
+    umsatz: string;
+    saldo: string;
+    verknuepfungen: number;
+  };
+  ergebnisse: PartnerReportingZeile[];
+}
+
+export type ReportingSortierung =
+  "nom" | "umsatz" | "einnahmen" | "ausgaben" | "saldo" | "verknuepfungen";
+
+export interface PartnerReportingFiltre {
+  q: string;
+  typ: "" | "partner" | "lieferant";
+  statut: "" | PartnerStatus;
+  kategorie: string[];
+  rolle: "" | VerknuepfungRolle;
+  ziel_typ: "" | ZielTyp;
+  bevorzugt: boolean;
+  auf_startseite: boolean;
+  von: string;
+  bis: string;
+  min_umsatz: string;
+  max_umsatz: string;
+  sortierung: ReportingSortierung;
+}
