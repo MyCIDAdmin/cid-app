@@ -8,12 +8,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import Role, User
 from apps.boutique.tests.factories import ProduitFactory
 from apps.evenements.tests.factories import EvenementFactory
-from apps.partenaires.models import (
-    Partner,
-    PartnerKategorie,
-    PartnerStatus,
-    PartnerVerknuepfung,
-)
+from apps.partenaires.models import Partner, PartnerKategorie, PartnerStatus, PartnerVerknuepfung
 from apps.projets.tests.factories import ProjetFactory
 
 pytestmark = pytest.mark.django_db
