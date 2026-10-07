@@ -9,6 +9,11 @@ from .import_views import (
     MembreImportTemplateView,
     MembreImportView,
 )
+from .rapprochement_views import (
+    RapprochementEcarterView,
+    RapprochementFusionnerView,
+    RapprochementListView,
+)
 from .reporting_views import (
     AktivitaetenReportingView,
     MitgliederReportingExportView,
@@ -38,6 +43,17 @@ urlpatterns = [
         "import-historique/template/",
         HistoriqueStatutImportTemplateView.as_view(),
         name="membre-import-historique-template",
+    ),
+    path("rapprochement/", RapprochementListView.as_view(), name="membre-rapprochement"),
+    path(
+        "rapprochement/fusionner/",
+        RapprochementFusionnerView.as_view(),
+        name="membre-rapprochement-fusionner",
+    ),
+    path(
+        "rapprochement/ecarter/",
+        RapprochementEcarterView.as_view(),
+        name="membre-rapprochement-ecarter",
     ),
     path("mon-historique/", MonHistoriqueStatutView.as_view(), name="membre-mon-historique"),
     path("export/", MembreExportView.as_view(), name="membre-export"),

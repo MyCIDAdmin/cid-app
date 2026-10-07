@@ -16,6 +16,7 @@ const membresKeys = {
   detail: (id: string) => [...membresKeys.all, "detail", id] as const,
   moi: () => [...membresKeys.all, "moi"] as const,
   monHistorique: () => [...membresKeys.all, "mon-historique"] as const,
+  rapprochement: () => [...membresKeys.all, "rapprochement"] as const,
 };
 
 export function useMembresList(
@@ -128,5 +129,30 @@ export function useImporterHistoriqueStatuts() {
   return useMutation({
     mutationFn: (fichier: File) => membresApi.importerHistoriqueStatuts(fichier),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
+  });
+}
+
+/** Zuordnung (Rapprochement) — Konten mit Vorschlägen, RH+. */
+export function useRapprochementList() {
+  return useQuery({
+    queryKey: membresKeys.rapprochement(),
+    queryFn: membresApi.getRapprochement,
+  });
+}
+
+export function useFusionnerRapprochement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ inscritId, importeId }: { inscritId: string; importeId: string }) =>
+      membresApi.fusionnerRapprochement(inscritId, importeId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
+  });
+}
+
+export function useEcarterRapprochement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (inscritId: string) => membresApi.ecarterRapprochement(inscritId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.rapprochement() }),
   });
 }

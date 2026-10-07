@@ -57,6 +57,7 @@ import NutzungsbedingungenPage from "./pages/public/legal/NutzungsbedingungenPag
 import MembreFormPage from "./pages/membres/MembreFormPage";
 import MonProfilPage from "./pages/membres/MonProfilPage";
 import MembreImportPage from "./pages/membres/MembreImportPage";
+import MembreRapprochementPage from "./pages/membres/MembreRapprochementPage";
 import MembresPage from "./pages/membres/MembresPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AdminProjetsPage from "./pages/projets/AdminProjetsPage";
@@ -136,6 +137,15 @@ export default function App() {
             element={
               <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
                 <MembreImportPage />
+              </RequireRole>
+            }
+          />
+          {/* Zuordnung neuer Konten zu importierten Karten — gleiche RH+-Schranke wie der Import. */}
+          <Route
+            path="/membres/zuordnung"
+            element={
+              <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+                <MembreRapprochementPage />
               </RequireRole>
             }
           />

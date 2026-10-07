@@ -135,6 +135,12 @@ export default function MembresListPage() {
               {t("liste.importer")}
             </Link>
             <Link
+              to="/membres/zuordnung"
+              className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+            >
+              {t("liste.zuordnung")}
+            </Link>
+            <Link
               to="/membres/nouveau"
               className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
             >

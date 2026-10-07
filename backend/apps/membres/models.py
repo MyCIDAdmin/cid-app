@@ -177,6 +177,13 @@ class Membre(models.Model):
         max_length=20, choices=StatutMembre.choices, default=StatutMembre.EN_ATTENTE
     )
     date_adhesion = models.DateField(default=_aujourd_hui)
+    rapprochement_ecarte = models.BooleanField(
+        default=False,
+        help_text=_(
+            "RH/Admin a confirmé qu'aucune fiche importée ne correspond à ce compte "
+            "— exclu de la liste de rapprochement."
+        ),
+    )
 
     photo = models.ImageField(
         upload_to=membre_photo_upload_path,

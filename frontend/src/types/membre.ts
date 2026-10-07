@@ -203,3 +203,32 @@ export const CHAMPS_EXPORT: { value: ChampExport; labelKey: string }[] = [
   { value: "date_adhesion", labelKey: "champ.date_adhesion" },
   { value: "cotisation_annee_en_cours", labelKey: "champ.cotisation_annee_en_cours" },
 ];
+
+/** Zuordnung Konto <-> importierte Karte (GET /membres/rapprochement/) — voir
+ * apps.membres.rapprochement. `raisons` : email, cin, nom, nom_proche, date_naissance. */
+export interface RapprochementFiche {
+  id: string;
+  numero_membre: string;
+  prenom: string;
+  nom: string;
+  email: string;
+  date_naissance: string;
+  ville_de: string;
+  statut: StatutMembre;
+  date_adhesion: string;
+}
+
+export interface RapprochementCandidat extends RapprochementFiche {
+  score: number;
+  raisons: string[];
+}
+
+export interface RapprochementLigne {
+  inscrit: RapprochementFiche & { compte_cree_le: string };
+  candidats: RapprochementCandidat[];
+}
+
+export interface RapprochementListe {
+  count: number;
+  results: RapprochementLigne[];
+}

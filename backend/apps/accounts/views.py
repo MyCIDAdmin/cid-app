@@ -42,7 +42,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from apps.membres.models import StatutMembre
+from apps.membres.models import Membre, StatutMembre
+from apps.membres.rapprochement import lier_automatiquement
 
 from . import services
 from .models import RegistrationDecision, Role
@@ -333,6 +334,12 @@ class RegisterConfirmView(APIView):
                 "registration_decided_at",
             ]
         )
+        # Rapprochement (2026-10-07) : l'email vient d'être prouvé par le code — si une fiche
+        # importée (sans compte) porte cet email, elle est rattachée à ce compte au lieu de
+        # laisser un doublon. CIN/nom : suggestions pour RH/Admin (apps.membres.rapprochement).
+        membre_inscrit = Membre.objects.filter(user=user).first()
+        if membre_inscrit is not None:
+            lier_automatiquement(membre_inscrit)
         send_welcome_email.delay(str(user.id))
         # Notification staff conservée (information, plus aucune action requise).
         notifier_nouvelle_inscription_rh.delay(str(user.id))
