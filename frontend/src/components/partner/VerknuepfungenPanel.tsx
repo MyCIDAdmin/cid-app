@@ -2,8 +2,14 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { useLoescheVerknuepfung, useVerknuepfen, useZiele } from "../../hooks/usePartner";
 import {
+  useAendernVerknuepfung,
+  useLoescheVerknuepfung,
+  useVerknuepfen,
+  useZiele,
+} from "../../hooks/usePartner";
+import {
+  LOGO_STANDARD_ROLLEN,
   VERKNUEPFUNG_ROLLEN,
   type PartnerVerknuepfung,
   type VerknuepfungRolle,
@@ -33,17 +39,28 @@ function NeueVerknuepfung({ partnerId }: { partnerId: string }) {
   const [zielId, setZielId] = useState("");
   const [rolle, setRolle] = useState<VerknuepfungRolle>("lieferant");
   const [notiz, setNotiz] = useState("");
+  // null = noch nicht angefasst: der Haken folgt dann der Rolle (Sponsor/Kooperation = an)
+  const [logoManuell, setLogoManuell] = useState<boolean | null>(null);
+  const logoAnzeigen = logoManuell ?? LOGO_STANDARD_ROLLEN.includes(rolle);
+  const logoMoeglich = typ !== "produit";
   const ziele = useZiele(typ, suche);
   const verknuepfen = useVerknuepfen(partnerId);
 
   function absenden(e: React.FormEvent) {
     e.preventDefault();
     verknuepfen.mutate(
-      { ziel_typ: typ, ziel_id: zielId, rolle, notiz },
+      {
+        ziel_typ: typ,
+        ziel_id: zielId,
+        rolle,
+        notiz,
+        ...(logoMoeglich ? { logo_anzeigen: logoAnzeigen } : {}),
+      },
       {
         onSuccess: () => {
           setZielId("");
           setNotiz("");
+          setLogoManuell(null);
         },
       },
     );
@@ -150,6 +167,16 @@ function NeueVerknuepfung({ partnerId }: { partnerId: string }) {
           className={`${FELD} w-full`}
         />
       </div>
+      {logoMoeglich && (
+        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={logoAnzeigen}
+            onChange={(e) => setLogoManuell(e.target.checked)}
+          />
+          {t("logo_zeigen")}
+        </label>
+      )}
       {verknuepfen.isError && (
         <p className="text-xs text-status-dangerText sm:col-span-2">
           {extractApiErrorMessage(verknuepfen.error, t("fehler_aktion"))}
@@ -171,6 +198,7 @@ function NeueVerknuepfung({ partnerId }: { partnerId: string }) {
 export default function VerknuepfungenPanel({ partnerId, verknuepfungen, schreibbar }: Props) {
   const { t } = useTranslation("partner");
   const loeschen = useLoescheVerknuepfung();
+  const logoAendern = useAendernVerknuepfung();
 
   return (
     <section className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
@@ -196,6 +224,20 @@ export default function VerknuepfungenPanel({ partnerId, verknuepfungen, schreib
               )}
               <span className="text-xs text-text-tertiary">{t(`rolle_${v.rolle}`)}</span>
               {v.notiz && <span className="text-xs text-text-secondary">· {v.notiz}</span>}
+              {v.ziel_typ !== "produit" && (
+                <label className="flex items-center gap-1 text-xs text-text-secondary">
+                  <input
+                    type="checkbox"
+                    checked={v.logo_anzeigen}
+                    disabled={!schreibbar || logoAendern.isPending}
+                    aria-label={t("logo_zeigen_fuer", { name: v.ziel_label })}
+                    onChange={(e) =>
+                      logoAendern.mutate({ id: v.id, daten: { logo_anzeigen: e.target.checked } })
+                    }
+                  />
+                  {t("logo_zeigen_kurz")}
+                </label>
+              )}
               {schreibbar && (
                 <button
                   type="button"
@@ -211,9 +253,9 @@ export default function VerknuepfungenPanel({ partnerId, verknuepfungen, schreib
           ))}
         </ul>
       )}
-      {loeschen.isError && (
+      {(loeschen.isError || logoAendern.isError) && (
         <p className="mt-2 text-xs text-status-dangerText">
-          {extractApiErrorMessage(loeschen.error, t("fehler_aktion"))}
+          {extractApiErrorMessage(loeschen.error ?? logoAendern.error, t("fehler_aktion"))}
         </p>
       )}
       {schreibbar && <NeueVerknuepfung partnerId={partnerId} />}

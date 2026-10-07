@@ -39,6 +39,7 @@ from apps.cotisations.models import HistoriqueStatutCotisation, ModePaiement, St
 from apps.cotisations.notifications import notifier_paiement_confirme
 from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 from apps.membres.models import StatutMembre
+from apps.partenaires.services import logo_prefetch
 from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import est_membre_actif, is_elevated_for_module
 
@@ -91,7 +92,11 @@ class EvenementViewSet(ModelViewSet):
     filterset_class = EvenementFilter
 
     def get_queryset(self):
-        queryset = Evenement.objects.select_related("organisateur", "created_by").all()
+        queryset = (
+            Evenement.objects.select_related("organisateur", "created_by")
+            .prefetch_related(logo_prefetch())
+            .all()
+        )
         user = self.request.user
         if (
             user

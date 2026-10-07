@@ -8,6 +8,7 @@ import AdminConfigurationSitePage from "./pages/admin/AdminConfigurationSitePage
 import AdminFanClubLogosPage from "./pages/admin/AdminFanClubLogosPage";
 import ArticlesCatalogueCotisationPage from "./pages/admin/ArticlesCatalogueCotisationPage";
 import AdminPartnerPage from "./pages/admin/AdminPartnerPage";
+import AngebotsvergleichPage from "./pages/admin/AngebotsvergleichPage";
 import GestionRolesPage from "./pages/admin/GestionRolesPage";
 import PartnerDetailPage from "./pages/admin/PartnerDetailPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
@@ -224,6 +225,14 @@ export default function App() {
           element={
             <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
               <AdminPartnerPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/partner/angebote"
+          element={
+            <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <AngebotsvergleichPage />
             </RequireRole>
           }
         />

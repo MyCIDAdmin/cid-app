@@ -5,6 +5,7 @@ import { useKostenAendern, useKostenErfassen } from "../../../hooks/useProjets";
 import type { Aufgabe, KostenartAuswahl, KostenPosition } from "../../../types/projets";
 import { extractApiErrorMessage } from "../../../utils/apiError";
 import { kategorieName } from "../../../utils/kategorie";
+import PartnerAuswahl from "../../partner/PartnerAuswahl";
 
 const CHAMP = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -33,6 +34,7 @@ export default function KostenFormModal({
   const [montant, setMontant] = useState(position?.montant ?? "");
   const [kostenart, setKostenart] = useState(position?.categorie ?? "");
   const [lieferant, setLieferant] = useState(position?.fournisseur ?? "");
+  const [partner, setPartner] = useState(position?.partner ?? "");
   const [beschreibung, setBeschreibung] = useState(position?.description ?? "");
   const [aufgabe, setAufgabe] = useState(position?.aufgabe ?? "");
   const [beleg, setBeleg] = useState<File | null>(null);
@@ -46,6 +48,7 @@ export default function KostenFormModal({
       montant,
       categorie: kostenart,
       fournisseur: lieferant,
+      partner: partner || null,
       description: beschreibung,
       aufgabe: aufgabe || null,
       ...(beleg ? { justificatif: beleg } : {}),
@@ -117,6 +120,17 @@ export default function KostenFormModal({
               className={CHAMP}
             />
           </div>
+          <PartnerAuswahl
+            id="kst-partner"
+            value={partner}
+            aktuellerName={position?.partner_name}
+            onChange={(id, name) => {
+              setPartner(id);
+              if (name) setLieferant(name);
+            }}
+            className={CHAMP}
+            labelClassName={LABEL}
+          />
           <div>
             <label htmlFor="kst-art" className={LABEL}>
               {t("arbeitsbereich.kosten.form.kostenart")}

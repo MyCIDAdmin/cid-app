@@ -32,7 +32,8 @@ const detail: PartnerDetail = {
   bevorzugt: false,
   kategorien: [],
   kategorien_namen: [],
-  ansprechpartner: "",
+  logo_url: null,
+  hauptkontakt_name: "",
   email: "",
   telefon: "",
   website: "",
@@ -48,6 +49,30 @@ const detail: PartnerDetail = {
   verknuepfungen_anzahl: 1,
   created_at: "2026-10-01T10:00:00Z",
   updated_at: "2026-10-01T10:00:00Z",
+  kontakte: [
+    {
+      id: "c1",
+      partner: "p1",
+      name: "Anna Muster",
+      funktion: "Vertrieb",
+      email: "anna@lecker.de",
+      telefon: "",
+      hauptkontakt: true,
+    },
+  ],
+  dokumente: [
+    {
+      id: "d1",
+      partner: "p1",
+      typ: "vertrag",
+      titel: "Rahmenvertrag",
+      datei_url: "https://files.example/v.pdf",
+      gueltig_bis: "2099-12-31",
+      notiz: "",
+      hochgeladen_von_name: "Ghazi",
+      created_at: "2026-10-01T10:00:00Z",
+    },
+  ],
   verknuepfungen: [
     {
       id: "v1",
@@ -56,6 +81,7 @@ const detail: PartnerDetail = {
       ziel_label: "Sommerfest",
       rolle: "lieferant",
       notiz: "Getränke",
+      logo_anzeigen: false,
       created_at: "2026-10-01T10:00:00Z",
     },
   ],

@@ -20,7 +20,7 @@ from openpyxl.styles import Font
 from .bilan import ecritures_comptables
 from .exports import _ecrire_en_tete
 
-DIMENSIONEN = ("jahr", "quartal", "monat", "typ", "kategorie", "gegenpartei")
+DIMENSIONEN = ("jahr", "quartal", "monat", "typ", "kategorie", "gegenpartei", "partner")
 KENNZAHLEN = ("einnahmen", "ausgaben", "saldo", "anzahl", "durchschnitt")
 MAX_DIMENSIONEN = 3
 FILTER_MAX_WERTE = 50
@@ -33,6 +33,7 @@ LABELS = {
         "typ": "Typ",
         "kategorie": "Kategorie",
         "gegenpartei": "Gegenpartei",
+        "partner": "Business Partner",
         "einnahmen": "Einnahmen (€)",
         "ausgaben": "Ausgaben (€)",
         "saldo": "Saldo (€)",
@@ -49,6 +50,7 @@ LABELS = {
         "typ": "Type",
         "kategorie": "Catégorie",
         "gegenpartei": "Contrepartie",
+        "partner": "Partenaire",
         "einnahmen": "Recettes (€)",
         "ausgaben": "Dépenses (€)",
         "saldo": "Solde (€)",
@@ -76,6 +78,8 @@ def _wert(zeile, dimension, langue):
         return zeile["typ"] if langue == "de" else TYP_FR.get(zeile["typ"], zeile["typ"])
     if dimension == "kategorie":
         return zeile["kategorie"]
+    if dimension == "partner":
+        return zeile.get("partner", "")
     return zeile["gegenpartei"]
 
 
@@ -111,6 +115,7 @@ def filter_optionen(jahr_von, jahr_bis, langue="de") -> dict:
     return {
         "kategorie": sorted({b["kategorie"] for b in buchungen if b["kategorie"]}),
         "typ": ["einnahme", "ausgabe"],
+        "partner": sorted({b["partner"] for b in buchungen if b.get("partner")}),
     }
 
 
@@ -126,7 +131,8 @@ def pivot_berechnen(
 ) -> dict:
     zeilen_dims, spalten_dims, kennzahlen = list(zeilen_dims), list(spalten_dims), list(kennzahlen)
     alle = zeilen_dims + spalten_dims
-    if not zeilen_dims or len(zeilen_dims) > MAX_DIMENSIONEN or len(spalten_dims) > MAX_DIMENSIONEN:
+    # Ohne Zeilendimension (2026-10-07) gibt es nur die Gesamtzeile.
+    if len(zeilen_dims) > MAX_DIMENSIONEN or len(spalten_dims) > MAX_DIMENSIONEN:
         raise ValueError("dimension")
     if any(d not in DIMENSIONEN for d in alle) or len(set(alle)) != len(alle):
         raise ValueError("dimension")
@@ -181,7 +187,7 @@ def pivot_berechnen(
         "zeilen": [
             {
                 "labels": list(z),
-                "label": " / ".join(z),
+                "label": " / ".join(z) or LABELS[langue]["summe"],
                 "werte": [zahlen((z, s)) for s in spalten_keys],
                 "summe": zahlen((z, None)),
             }
@@ -208,13 +214,14 @@ def _tabelle(ergebnis, langue):
         [z["label"], *[w for werte in z["werte"] for w in werte], *z["summe"]]
         for z in ergebnis["zeilen"]
     ]
-    zeilen.append(
-        [
-            lab["summe"],
-            *[w for werte in ergebnis["spalten_summen"] for w in werte],
-            *ergebnis["gesamt"],
-        ]
-    )
+    if ergebnis["zeilen_dims"]:  # ohne Zeilendimension ist die einzige Zeile schon die Summe
+        zeilen.append(
+            [
+                lab["summe"],
+                *[w for werte in ergebnis["spalten_summen"] for w in werte],
+                *ergebnis["gesamt"],
+            ]
+        )
     return kopf, zeilen
 
 

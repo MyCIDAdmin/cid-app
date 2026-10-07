@@ -148,6 +148,7 @@ class ProjetSerializer(serializers.ModelSerializer):
     echeance_depassee = serializers.BooleanField(read_only=True)
     budget_jahr = serializers.IntegerField(read_only=True)
     est_gestionnaire = serializers.SerializerMethodField()
+    partner_logos = serializers.SerializerMethodField()
     meine_rolle = serializers.SerializerMethodField()
     darf_arbeitsbereich = serializers.SerializerMethodField()
     darf_team_verwalten = serializers.SerializerMethodField()
@@ -179,6 +180,7 @@ class ProjetSerializer(serializers.ModelSerializer):
             "ordre",
             "images",
             "est_gestionnaire",
+            "partner_logos",
             "meine_rolle",
             "darf_arbeitsbereich",
             "darf_team_verwalten",
@@ -203,6 +205,11 @@ class ProjetSerializer(serializers.ModelSerializer):
                 }
             )
         return attrs
+
+    def get_partner_logos(self, obj) -> list:
+        from apps.partenaires.services import partner_logos
+
+        return partner_logos(obj, "projet")
 
     def get_est_gestionnaire(self, obj) -> bool:
         request = self.context.get("request")

@@ -24,6 +24,8 @@ export interface Depense {
   categorie_nom: string;
   categorie_namen?: KategorieNamen;
   fournisseur: string;
+  partner?: string | null;
+  partner_name?: string | null;
   description: string;
   evenement: string | null;
   evenement_titre: string | null;
@@ -46,6 +48,7 @@ export interface DepensePayload {
   montant: string;
   categorie: string;
   fournisseur: string;
+  partner?: string | null;
   description: string;
   evenement: string | null;
   projet: string | null;

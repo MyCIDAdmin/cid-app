@@ -20,6 +20,7 @@ import RapportListe from "../../components/projets/RapportListe";
 import SichtbarkeitBadge from "../../components/projets/SichtbarkeitBadge";
 import StatutProjetBadge from "../../components/projets/StatutProjetBadge";
 import ImageCarousel from "../../components/projets/ImageCarousel";
+import PartnerLogos from "../../components/partner/PartnerLogos";
 import AnimatedProgress from "../../components/ui/AnimatedProgress";
 import ShareButton from "../../components/ui/ShareButton";
 import { useMisesAJourProjet, useProjet } from "../../hooks/useProjets";
@@ -181,6 +182,7 @@ export default function ProjetDetailPage() {
                   dangerouslySetInnerHTML={{ __html: uebersetzt(projet, "description_html") }}
                 />
               </div>
+              <PartnerLogos logos={projet.partner_logos} />
             </div>
           </div>
 

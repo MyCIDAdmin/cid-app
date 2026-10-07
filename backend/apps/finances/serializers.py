@@ -37,9 +37,11 @@ class DepenseSerializer(serializers.ModelSerializer):
     decide_par_nom = serializers.SerializerMethodField()
     justificatif_url = serializers.SerializerMethodField()
     justificatif = serializers.FileField(write_only=True, required=False, allow_null=True)
+    partner_name = serializers.CharField(source="partner.nom", read_only=True, default=None)
 
     class Meta:
         model = Depense
+        extra_kwargs = {"fournisseur": {"required": False, "allow_blank": True}}
         fields = [
             "id",
             "date_depense",
@@ -48,6 +50,8 @@ class DepenseSerializer(serializers.ModelSerializer):
             "categorie_nom",
             "categorie_namen",
             "fournisseur",
+            "partner",
+            "partner_name",
             "description",
             "evenement",
             "evenement_titre",
@@ -82,6 +86,15 @@ class DepenseSerializer(serializers.ModelSerializer):
         return categorie
 
     def validate(self, attrs):
+        # Lieferant: Freitext oder Business Partner (dessen Name wird dann übernommen).
+        partner = (
+            attrs["partner"] if "partner" in attrs else getattr(self.instance, "partner", None)
+        )
+        fournisseur = attrs.get("fournisseur", getattr(self.instance, "fournisseur", ""))
+        if not (fournisseur or "").strip():
+            if partner is None:
+                raise serializers.ValidationError({"fournisseur": "Pflichtfeld."})
+            attrs["fournisseur"] = partner.nom
         # Eine Aufgabe gehört immer zum Projekt der Ausgabe (2026-10-06).
         aufgabe = attrs.get("aufgabe", self.instance.aufgabe if self.instance else None)
         projet = attrs.get("projet", self.instance.projet if self.instance else None)

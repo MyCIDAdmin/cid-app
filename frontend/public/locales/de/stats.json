@@ -219,6 +219,7 @@
     "filter_kategorie_alle": "Alle Kategorien",
     "filter_gegenpartei": "Gegenpartei enthält",
     "filter_zuruecksetzen": "Filter zurücksetzen",
-    "gefiltert": "Gefiltert nach"
+    "gefiltert": "Gefiltert nach",
+    "dim_partner": "Business Partner"
   }
 }

@@ -118,4 +118,12 @@ describe("OngletPivot", () => {
       expect.objectContaining({ zeilen: ["jahr"], spalten: ["kategorie"] }),
     );
   });
+
+  it("lässt die voreingestellte Zeilendimension entfernen (nur Gesamtzeile)", () => {
+    renderWithProviders(<OngletPivot />);
+    const entfernen = screen.getAllByRole("button", { name: "pivot.entfernen" });
+    expect(entfernen[0]).toBeEnabled();
+    fireEvent.click(entfernen[0]);
+    expect(letzteAbfrage().zeilen).toEqual([]);
+  });
 });

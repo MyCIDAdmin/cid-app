@@ -26,6 +26,7 @@ const DIMENSIONEN: PivotDimension[] = [
   "typ",
   "kategorie",
   "gegenpartei",
+  "partner",
 ];
 const KENNZAHLEN: PivotKennzahl[] = ["einnahmen", "ausgaben", "saldo", "anzahl", "durchschnitt"];
 const MAX_DIMENSIONEN = 3;
@@ -208,7 +209,7 @@ export default function OngletPivot() {
           titel={t("pivot.zeilen")}
           gewaehlt={abfrage.zeilen}
           verfuegbar={DIMENSIONEN.filter((d) => !abfrage.spalten.includes(d))}
-          mindestens={1}
+          mindestens={0}
           onChange={(dims) => setze("zeilen", dims)}
         />
         <button
@@ -445,7 +446,7 @@ export default function OngletPivot() {
                 </tr>
               ))}
             </tbody>
-            {zeilen.length > 0 && (
+            {zeilen.length > 0 && data.zeilen_dims.length > 0 && (
               <tfoot>
                 <tr className="border-t-2 border-text-tertiary/30 font-semibold">
                   <td className="px-3 py-2">{t("pivot.summe")}</td>

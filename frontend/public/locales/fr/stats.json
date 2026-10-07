@@ -219,6 +219,7 @@
     "filter_kategorie_alle": "Toutes les catégories",
     "filter_gegenpartei": "Contrepartie contient",
     "filter_zuruecksetzen": "Réinitialiser les filtres",
-    "gefiltert": "Filtré par"
+    "gefiltert": "Filtré par",
+    "dim_partner": "Partenaire"
   }
 }

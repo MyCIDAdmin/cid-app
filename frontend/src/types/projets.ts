@@ -6,6 +6,7 @@
 
 import type { KategorieNamen } from "../utils/kategorie";
 import type { Uebersetzungen } from "../utils/uebersetzung";
+import type { PartnerLogoEintrag } from "./partner";
 
 export type StatutProjet = "en_preparation" | "en_cours" | "termine" | "annule";
 
@@ -93,6 +94,8 @@ export interface Projet {
    * comparaison lui-même. Pilote l'affichage conditionnel du formulaire d'ajout de mise à
    * jour dans le rapport d'avancement (demande utilisateur point 7). */
   est_gestionnaire: boolean;
+  /** Logos verknüpfter Partner (nur mit Haken "Logo zeigen"), vom Server gefiltert. */
+  partner_logos?: PartnerLogoEintrag[];
   /** Rôle de l'utilisateur dans l'équipe du projet (calculé côté serveur), ou null. */
   meine_rolle: RolleProjet | null;
   /** Équipe, gestion ou service financier (lecture) — pilote le lien "Arbeitsbereich". */
@@ -257,6 +260,8 @@ export interface KostenPosition {
   categorie_nom: string;
   categorie_namen?: KategorieNamen;
   fournisseur: string;
+  partner?: string | null;
+  partner_name?: string | null;
   description: string;
   aufgabe: string | null;
   aufgabe_titel: string | null;
@@ -274,6 +279,7 @@ export interface KostenPositionPayload {
   montant: string;
   categorie: string;
   fournisseur: string;
+  partner?: string | null;
   description: string;
   aufgabe: string | null;
   justificatif?: File | null;

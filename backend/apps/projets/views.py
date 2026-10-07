@@ -49,6 +49,7 @@ from apps.cotisations.models import Cotisation, StatutCotisation
 from apps.finances.models import AktionProtokoll, CategorieDepense, Depense, StatutDepense
 from apps.finances.services import diff, etat_depense, protokolliere, pruefe_jahr, resume_depense
 from apps.membres.models import Membre
+from apps.partenaires.services import logo_prefetch
 
 from .aktivitaet import logge
 from .budget import geplante_summe, pruefe_jahreswechsel, pruefe_plan
@@ -131,7 +132,7 @@ class ProjetViewSet(ModelViewSet):
         return (
             sichtbare_projekte(self.request.user)
             .select_related("responsable", "created_by")
-            .prefetch_related("images", "team")
+            .prefetch_related("images", "team", logo_prefetch())
         )
 
     def perform_create(self, serializer):

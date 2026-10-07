@@ -7,3 +7,12 @@ export function kategorieName(
 ): string {
   return sprache.startsWith("fr") && k.nom_fr ? k.nom_fr : k.nom;
 }
+
+const TAG_MS = 86_400_000;
+
+/** Verbleibende Tage bis zum Datum (negativ = abgelaufen). */
+export function tageBis(datum: string, heute = new Date()): number {
+  const ziel = new Date(`${datum}T00:00:00`);
+  const start = new Date(heute.getFullYear(), heute.getMonth(), heute.getDate());
+  return Math.round((ziel.getTime() - start.getTime()) / TAG_MS);
+}

@@ -1,11 +1,18 @@
 /** API — Business Partner & Lieferanten (/partenaires/). */
 import type {
+  Angebot,
+  AngebotDaten,
   BewertungDaten,
+  DokumentDaten,
+  ImportErgebnis,
   Partner,
   PartnerBewertung,
   PartnerDetail,
+  PartnerDokument,
   PartnerFiltre,
   PartnerKategorie,
+  PartnerKontakt,
+  PartnerKontaktDaten,
   PartnerSchreibDaten,
   PartnerVerknuepfung,
   VerknuepfungDaten,
@@ -114,6 +121,124 @@ export async function aendernKategorie(
 export async function getZiele(typ: ZielTyp, q: string): Promise<ZielOption[]> {
   const { data } = await apiClient.get<ZielOption[]>("/partenaires/ziele/", {
     params: { typ, q: q.trim() || undefined },
+  });
+  return data;
+}
+
+// --- Ansprechpersonen -------------------------------------------------------------------
+
+export async function creerKontakt(
+  partnerId: string,
+  daten: PartnerKontaktDaten,
+): Promise<PartnerKontakt> {
+  const { data } = await apiClient.post<PartnerKontakt>("/partenaires/kontakte/", {
+    ...daten,
+    partner: partnerId,
+  });
+  return data;
+}
+
+export async function aendernKontakt(
+  id: string,
+  daten: Partial<PartnerKontaktDaten>,
+): Promise<PartnerKontakt> {
+  const { data } = await apiClient.patch<PartnerKontakt>(`/partenaires/kontakte/${id}/`, daten);
+  return data;
+}
+
+export async function loescheKontakt(id: string): Promise<void> {
+  await apiClient.delete(`/partenaires/kontakte/${id}/`);
+}
+
+// --- Logo -------------------------------------------------------------------------------
+
+export async function ladeLogoHoch(id: string, datei: File): Promise<Partner> {
+  const formData = new FormData();
+  formData.append("logo", datei);
+  const { data } = await apiClient.post<Partner>(`/partenaires/partner/${id}/logo/`, formData);
+  return data;
+}
+
+export async function entferneLogo(id: string): Promise<Partner> {
+  const { data } = await apiClient.delete<Partner>(`/partenaires/partner/${id}/logo/`);
+  return data;
+}
+
+// --- Dokumente --------------------------------------------------------------------------
+
+export async function ladeDokumentHoch(
+  partnerId: string,
+  daten: DokumentDaten,
+): Promise<PartnerDokument> {
+  const formData = new FormData();
+  formData.append("datei", daten.datei);
+  formData.append("titel", daten.titel);
+  formData.append("typ", daten.typ);
+  if (daten.gueltig_bis) formData.append("gueltig_bis", daten.gueltig_bis);
+  if (daten.notiz) formData.append("notiz", daten.notiz);
+  const { data } = await apiClient.post<PartnerDokument>(
+    `/partenaires/partner/${partnerId}/dokumente/`,
+    formData,
+  );
+  return data;
+}
+
+export async function aendernDokument(
+  id: string,
+  daten: Partial<Pick<PartnerDokument, "titel" | "typ" | "gueltig_bis" | "notiz">>,
+): Promise<PartnerDokument> {
+  const { data } = await apiClient.patch<PartnerDokument>(`/partenaires/dokumente/${id}/`, daten);
+  return data;
+}
+
+export async function loescheDokument(id: string): Promise<void> {
+  await apiClient.delete(`/partenaires/dokumente/${id}/`);
+}
+
+// --- Verknüpfung (Logo-Haken) -------------------------------------------------------------
+
+export async function aendernVerknuepfung(
+  id: string,
+  daten: Partial<Pick<PartnerVerknuepfung, "notiz" | "logo_anzeigen">>,
+): Promise<PartnerVerknuepfung> {
+  const { data } = await apiClient.patch<PartnerVerknuepfung>(
+    `/partenaires/verknuepfungen/${id}/`,
+    daten,
+  );
+  return data;
+}
+
+// --- Angebotsvergleich --------------------------------------------------------------------
+
+export async function getAngebote(projetId: string): Promise<Angebot[]> {
+  const { data } = await apiClient.get<Angebot[]>("/partenaires/angebote/", {
+    params: { projet: projetId },
+  });
+  return data;
+}
+
+export async function creerAngebot(daten: AngebotDaten): Promise<Angebot> {
+  const { data } = await apiClient.post<Angebot>("/partenaires/angebote/", daten);
+  return data;
+}
+
+export async function loescheAngebot(id: string): Promise<void> {
+  await apiClient.delete(`/partenaires/angebote/${id}/`);
+}
+
+export async function angebotAktion(
+  id: string,
+  aktion: "zuschlag" | "zuruecksetzen",
+): Promise<Angebot> {
+  const { data } = await apiClient.post<Angebot>(`/partenaires/angebote/${id}/${aktion}/`);
+  return data;
+}
+
+// --- Import aus Ausgaben --------------------------------------------------------------------
+
+export async function importAusgaben(bestaetigen: boolean): Promise<ImportErgebnis> {
+  const { data } = await apiClient.post<ImportErgebnis>("/partenaires/import-ausgaben/", {
+    bestaetigen,
   });
   return data;
 }

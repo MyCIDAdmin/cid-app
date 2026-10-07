@@ -1,10 +1,13 @@
-/** Business Partner — Detail: Stammdaten, Verknüpfungen (Projekte/Veranstaltungen/Produkte),
- * Bewertungen und Archivieren/Reaktivieren. */
+/** Business Partner — Detail: Stammdaten, Logo, Ansprechpersonen, Dokumente,
+ * Verknüpfungen (Projekte/Veranstaltungen/Produkte), Bewertungen und Archivieren/Reaktivieren. */
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import BewertungenPanel from "../../components/partner/BewertungenPanel";
+import DokumentePanel from "../../components/partner/DokumentePanel";
+import KontaktePanel from "../../components/partner/KontaktePanel";
 import PartnerForm from "../../components/partner/PartnerForm";
+import PartnerLogoPanel from "../../components/partner/PartnerLogoPanel";
 import { Sterne } from "../../components/partner/Sterne";
 import VerknuepfungenPanel from "../../components/partner/VerknuepfungenPanel";
 import {
@@ -85,6 +88,18 @@ export default function PartnerDetailPage() {
         />
       </section>
 
+      <PartnerLogoPanel
+        partnerId={partner.id}
+        nom={partner.nom}
+        logoUrl={partner.logo_url}
+        schreibbar={schreibbar}
+      />
+      <KontaktePanel partnerId={partner.id} kontakte={partner.kontakte} schreibbar={schreibbar} />
+      <DokumentePanel
+        partnerId={partner.id}
+        dokumente={partner.dokumente}
+        schreibbar={schreibbar}
+      />
       <VerknuepfungenPanel
         partnerId={partner.id}
         verknuepfungen={partner.verknuepfungen}
