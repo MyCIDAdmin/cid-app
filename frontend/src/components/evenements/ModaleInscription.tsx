@@ -10,9 +10,10 @@
  * (et la capacité) est toujours recalculé et vérifié côté serveur, jamais fait confiance au
  * frontend (CLAUDE.md §8, voir InscrirePayload/EvenementViewSet.inscrire).
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { useInscrire } from "../../hooks/useEvenements";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import MapsApercu from "../ui/MapsApercu";
@@ -55,6 +56,9 @@ export default function ModaleInscription({
   onPayer: (cotisationId: string) => void;
 }) {
   const { t } = useTranslation("evenements");
+  const { t: tc } = useTranslation("common");
+  const titreId = useId();
+  useEscapeSchliessen(onClose);
   const inscrire = useInscrire();
   const [places, setPlaces] = useState(1);
   const [accompagnantsAdultes, setAccompagnantsAdultes] = useState(0);
@@ -109,12 +113,20 @@ export default function ModaleInscription({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-4 shadow-lg">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titreId}
+        className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-4 shadow-lg"
+      >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-bold text-text-primary">{t("modal_inscription_titre")}</h2>
+          <h2 id={titreId} className="text-base font-bold text-text-primary">
+            {t("modal_inscription_titre")}
+          </h2>
           <button
             type="button"
             onClick={onClose}
+            aria-label={tc("action.fermer")}
             className="text-text-tertiary hover:text-text-primary"
           >
             ×

@@ -42,6 +42,12 @@ export default function AppLayout() {
     // (overflow-y-auto) qui défile en interne, jamais le document — la sidebar reste alors
     // toujours alignée sur exactement 100vh, quelle que soit la longueur de la page.
     <div className="ambient-bg flex h-screen">
+      <a
+        href="#contenu"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-cid focus:bg-bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-text-primary focus:shadow-lg"
+      >
+        {t("action.aller_contenu")}
+      </a>
       <Sidebar />
       <MobileNavDrawer open={tiroirMobileOuvert} onClose={() => setTiroirMobileOuvert(false)} />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -80,7 +86,7 @@ export default function AppLayout() {
             <UserMenu />
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+        <main id="contenu" tabIndex={-1} className="flex-1 overflow-y-auto p-3 outline-none sm:p-6">
           <Outlet />
         </main>
         {/* Variante compact (retour utilisateur du 2026-09-27 : footer trop grand + scrollbar

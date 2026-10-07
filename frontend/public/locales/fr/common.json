@@ -43,7 +43,13 @@
     "contenu": "Contenu",
     "administration": "Administration"
   },
+  "video": {
+    "pause": "Mettre la vidéo en pause",
+    "lecture": "Lire la vidéo"
+  },
   "action": {
+    "fermer": "Fermer",
+    "aller_contenu": "Aller au contenu",
     "annuler": "Annuler",
     "confirmer": "Confirmer",
     "deconnexion": "Se déconnecter",

@@ -24,7 +24,7 @@
  * PAS afficher le formulaire d'ajout — bien plus sûr qu'un booléen qu'il faudrait se souvenir de
  * passer à `false`.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import BildHinweis from "../ui/BildHinweis";
@@ -34,6 +34,7 @@ import {
   useCreerMiseAJourProjet,
   useMisesAJourProjet,
 } from "../../hooks/useProjets";
+import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Projet } from "../../types/projets";
 import RichTextEditor from "../ui/RichTextEditor";
@@ -50,6 +51,9 @@ interface RapportModalProps {
 
 export default function RapportModal({ projet, onClose, autoriserAjout }: RapportModalProps) {
   const { t } = useTranslation("projets");
+  const { t: tc } = useTranslation("common");
+  const titreId = useId();
+  useEscapeSchliessen(onClose);
   const misesAJourQuery = useMisesAJourProjet(projet.id);
   const creerMiseAJour = useCreerMiseAJourProjet();
   const ajouterImage = useAjouterImageMiseAJourProjet();
@@ -89,15 +93,20 @@ export default function RapportModal({ projet, onClose, autoriserAjout }: Rappor
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-cid-lg bg-bg-primary shadow-lg">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titreId}
+        className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-cid-lg bg-bg-primary shadow-lg"
+      >
         <div className="flex items-center justify-between border-b border-text-tertiary/20 p-4">
-          <h2 className="text-base font-bold text-text-primary">
+          <h2 id={titreId} className="text-base font-bold text-text-primary">
             {t("rapport.titre")} — {projet.titre}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={tc("action.fermer")}
             className="text-text-tertiary hover:text-text-primary"
           >
             ×
