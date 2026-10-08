@@ -90,6 +90,31 @@ describe("PublicEvenementsTab", () => {
     expect(screen.getByText("Sortie supporters")).toBeInTheDocument();
   });
 
+  // Régression du 2026-10-08 : la kachel publique n'affichait aucun prix du tout.
+  it("affiche les prix membre / non-membre et accompagnants sur la kachel publique", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([
+        evenement({
+          gratuit: false,
+          cout: "35.00",
+          cout_non_membre: "50.00",
+          cout_applicable: "50.00",
+          accompagnants_payants: true,
+          prix_accompagnant_adulte: "10.00",
+          prix_accompagnant_enfant: "5.00",
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<PublicEvenementsTab />);
+
+    expect(screen.getByText("preis_mitglieder")).toBeInTheDocument();
+    expect(screen.getByText("preis_nichtmitglieder")).toBeInTheDocument();
+    expect(screen.getByText("preis_begleitpersonen")).toBeInTheDocument();
+  });
+
   // evenement.description contient désormais du HTML (éditeur riche AdminEventsPage, demande
   // utilisateur du 2026-09-27 point 11.3) — la kachel doit le RENDRE (comme ProjetCard pour
   // description_html), pas l'afficher tel quel en tant que texte brut avec les balises visibles.

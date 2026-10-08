@@ -143,6 +143,31 @@ describe("EvenementsPage", () => {
     expect(screen.getByText("Déplacement Stuttgart")).toBeInTheDocument();
   });
 
+  // Régression du 2026-10-08 : prix non-membre et accompagnants (adultes/enfants + limite d'âge)
+  // définis dans l'administration n'apparaissaient pas sur la Kachel.
+  it("affiche prix non-membre et prix accompagnants sur la Kachel quand ils sont définis", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([
+        evenement({
+          cout: "35.00",
+          cout_non_membre: "50.00",
+          accompagnants_payants: true,
+          prix_accompagnant_adulte: "10.00",
+          prix_accompagnant_enfant: "5.00",
+          age_limite_accompagnant_enfant: 12,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<EvenementsPage />);
+
+    expect(screen.getByText("preis_mitglieder")).toBeInTheDocument();
+    expect(screen.getByText("preis_nichtmitglieder")).toBeInTheDocument();
+    expect(screen.getByText("preis_begleitpersonen")).toBeInTheDocument();
+  });
+
   // Régression du 2026-09-28 (retour utilisateur, points 2.1/2.2 : la description et l'image
   // n'apparaissaient pas du tout sur la Kachel — voir docstring EvenementCarte).
   it("affiche la description et la bannière (image ou dégradé de repli) de la Kachel", () => {
