@@ -298,6 +298,219 @@
     ],
     "titre": "Espace de travail du projet"
   },
+  "membres": {
+    "titre": "Module Membres",
+    "intro": "Retrouvez ici tous les membres de l'association : recherche, consultation, export et, avec les droits RH, import de données. Ce que vous voyez dépend de votre rôle.",
+    "schritte": [
+      "Annuaire : la liste affiche numéro, nom, ville et statut. Les filtres (recherche, statut, ville, Land, pays de résidence, date d'adhésion) permettent de l'affiner.",
+      "Un clic sur une ligne ouvre la fiche membre : données personnelles, adresse et informations associatives.",
+      "À partir du rôle RH : ajouter, modifier, changer le statut, exporter en Excel, importer des données et rapprocher les nouveaux comptes.",
+      "À partir du rôle RH, l'onglet « Reporting » donne l'historique de statut et toutes les activités par membre.",
+      "Les boutons « Importer » et « Zuordnung » en haut à droite mènent aux pages qui ont chacune leur propre aide détaillée."
+    ],
+    "workflows": [
+      {
+        "titre": "Trouver un membre",
+        "wann": "Vous cherchez une personne ou un groupe de membres.",
+        "schritte": [
+          "Saisir nom, prénom ou email dans le champ « Recherche ».",
+          "Si besoin, choisir statut, ville, Land, pays de résidence ou une période d'adhésion.",
+          "Cliquer sur « Filtrer ». « Réinitialiser » vide tous les filtres.",
+          "Cliquer sur une ligne pour ouvrir la fiche."
+        ],
+        "danach": "Les filtres s'appliquent aussi à l'export Excel : seule la liste filtrée est exportée."
+      },
+      {
+        "titre": "Créer un membre à la main (RH)",
+        "wann": "Une personne doit être saisie sans passer par l'import Excel.",
+        "schritte": [
+          "Cliquer sur « + Ajouter un membre » en haut à droite.",
+          "Renseigner les champs obligatoires. Le numéro de CIN ou de passeport est requis.",
+          "Vérifier statut, date d'adhésion et adresse puis cliquer sur « Enregistrer ».",
+          "Le numéro de membre (format CA-année-numéro) est attribué automatiquement."
+        ],
+        "danach": "La personne n'a pas encore de compte. Si elle s'inscrit plus tard avec le même email, elle est automatiquement rattachée à cette fiche."
+      },
+      {
+        "titre": "Changer le statut (RH)",
+        "wann": "Un membre est activé ou passé inactif.",
+        "schritte": [
+          "Ouvrir la fiche du membre.",
+          "Dans « Changer le statut », choisir le nouveau statut.",
+          "Cliquer sur « Appliquer »."
+        ],
+        "danach": "Le statut courant s'applique immédiatement (vote, communauté, inscription aux événements). L'historique par année est visible dans l'historique de statut."
+      },
+      {
+        "titre": "Exporter la liste en Excel (RH)",
+        "wann": "Vous avez besoin des données pour une analyse ou une liste d'envoi.",
+        "schritte": [
+          "Filtrer et choisir le tri si nécessaire.",
+          "Cliquer sur « Exporter en Excel ».",
+          "Sélectionner les colonnes à inclure (au moins une).",
+          "Confirmer avec « Exporter » : le fichier est téléchargé."
+        ],
+        "beispiel": "Tous les membres actifs de Berlin, triés par nom, avec les colonnes nom, email et téléphone."
+      }
+    ],
+    "tipps": [
+      "Sans rôle RH, vous ne voyez que votre propre fiche, pas la liste de tous les membres.",
+      "Les statuts : « Membre (actif) », « Non-membre (nouveau) » pour une inscription récente et « Non-membre (ancien) » pour les inactifs.",
+      "Seul le niveau bureau/admin peut supprimer définitivement un membre ; l'action est irréversible.",
+      "CIN et passeport sont stockés chiffrés et n'apparaissent que de façon limitée dans les listes."
+    ]
+  },
+  "membres_import": {
+    "titre": "Import : mode d'emploi",
+    "intro": "Il existe deux imports : membres (données de base) et historique de statut (actif/inactif par année). Tous deux se font en trois étapes : vérifier, confirmer, rapport. Rien n'est enregistré avant la confirmation.",
+    "schritte": [
+      "Télécharger le template et le remplir dans Excel (.xlsx uniquement, 5 Mo maximum, première feuille, première ligne = en-têtes).",
+      "Choisir le fichier et cliquer sur « Vérifier ». Rien n'est importé : vous obtenez une liste de contrôle avec statut et motif par ligne.",
+      "Parcourir la liste : nouvelles lignes, doublons, lignes inchangées et erreurs. Pour les doublons, vous choisissez un par un ceux qui seront écrasés.",
+      "Cliquer sur « Confirmer l'import ». L'écriture n'a lieu qu'à ce moment-là.",
+      "Consulter le résultat et télécharger le rapport (Excel) : votre fichier avec les colonnes supplémentaires « Status » et « Grund »."
+    ],
+    "workflows": [
+      {
+        "titre": "1. Importer des membres (données de base)",
+        "wann": "Vous reprenez des membres depuis une liste Excel (p. ex. fichier historique) dans la plateforme.",
+        "schritte": [
+          "Dans « Importer des membres », télécharger le template Excel.",
+          "Une ligne par membre. Colonnes obligatoires : prenom, nom, date_naissance, email, adresse_de, ville_de, date_adhesion. Toutes les autres sont facultatives.",
+          "Enregistrer le fichier, le choisir sous « Importer un fichier » et cliquer sur « Vérifier ».",
+          "Examiner chaque ligne de la liste de contrôle (voir « Lire la liste de contrôle »).",
+          "Pour les doublons, cocher les lignes à écraser. Les doublons non cochés restent inchangés.",
+          "Cliquer sur « Confirmer l'import » puis télécharger le rapport."
+        ],
+        "beispiel": "Sur 300 lignes, 250 sont nouvelles, 40 sont des doublons et 10 sont en erreur. Vous cochez 12 doublons dont le téléphone a changé. À la confirmation : 250 membres créés, 12 mis à jour, 28 doublons ignorés ; les 10 erreurs figurent dans le rapport avec leur motif.",
+        "danach": "Les membres importés n'ont pas encore de login. S'ils s'inscrivent plus tard avec le même email et confirment le code, ils sont rattachés automatiquement."
+      },
+      {
+        "titre": "2. Colonnes et formats du fichier membres",
+        "wann": "Vous remplissez le template ou obtenez des erreurs de format.",
+        "schritte": [
+          "Dates (date_naissance, date_adhesion) : JJ/MM/AAAA, p. ex. 15/03/1985. AAAA-MM-JJ et JJ.MM.AAAA sont aussi compris.",
+          "email : adresse valide avec « @ ». Avec le CIN, c'est le critère de doublon.",
+          "sexe (facultatif) : Homme/Femme (ou H/F). Vide = non renseigné.",
+          "statut (facultatif) : actif, en_attente ou inactif. Vide = actif, car les membres importés sont considérés comme déjà actifs.",
+          "land_de (facultatif) : code à 2 lettres (p. ex. BE, BY) ou nom complet (p. ex. Bayern). Une valeur inconnue provoque une erreur sur la ligne.",
+          "cin et telephone (facultatifs) : les nombres Excel sont repris correctement. Un CIN vide est remplacé automatiquement par 00000000. Cette valeur neutre ne compte jamais comme doublon ni comme correspondance.",
+          "Les lignes vides sont ignorées. Les noms de colonnes peuvent aussi utiliser les variantes (p. ex. « Prénom », « E-Mail », « Ville »)."
+        ]
+      },
+      {
+        "titre": "3. Lire la liste de contrôle",
+        "wann": "Vous avez cliqué sur « Vérifier » et la liste s'affiche.",
+        "schritte": [
+          "Nouveau : la personne n'existe pas encore. Elle sera créée à la confirmation.",
+          "Doublon : l'email ou le CIN appartient déjà à un membre et au moins une valeur diffère. Les différences figurent sous la ligne (ancienne valeur barrée → nouvelle). Seules ces lignes ont une case à cocher.",
+          "Inchangé : doublon sans différence. Il n'y a rien à écraser.",
+          "Erreur : la ligne ne sera pas importée. Le motif est indiqué (champ obligatoire manquant, email invalide, doublon dans le fichier, email et CIN de membres différents…).",
+          "Les boutons de filtre au-dessus de la liste n'affichent qu'un statut. « Sélectionner tous les doublons » et « Désélectionner tout » facilitent la sélection en masse."
+        ],
+        "danach": "CIN et passeport n'apparaissent que masqués (••••1234)."
+      },
+      {
+        "titre": "4. Écraser les doublons : que se passe-t-il exactement ?",
+        "wann": "Vous voulez mettre à jour les données de base de plusieurs membres d'un coup.",
+        "schritte": [
+          "Le système détecte un doublon par email identique (casse ignorée) ou CIN réel identique.",
+          "À l'écrasement, seules les cellules renseignées sont reprises. Une cellule vide du fichier laisse les données existantes intactes.",
+          "Le numéro de membre ne change jamais.",
+          "Si le membre a déjà un compte, son email reste inchangé (lié à la connexion). Tous les autres champs renseignés sont écrasés.",
+          "Le statut n'est écrasé que si la colonne « statut » contient une valeur valide pour la ligne.",
+          "Les doublons non cochés sont ignorés et notés « Übersprungen » dans le rapport."
+        ],
+        "beispiel": "Le fichier contient un nouveau téléphone pour Amira et des champs vides pour la ville et le passeport. Après écrasement, Amira a le nouveau numéro ; ville et passeport restent comme avant."
+      },
+      {
+        "titre": "5. Importer l'historique de statut",
+        "wann": "Vous voulez renseigner, pour des membres existants, les années où ils étaient actifs ou inactifs.",
+        "schritte": [
+          "Les membres doivent déjà exister (import 1 ou création manuelle). Cet import ne crée jamais de membre.",
+          "Télécharger le template sous « Importer un historique de statut ». Colonne obligatoire : email. Facultative : cin. Puis une colonne par année, en-tête = l'année (p. ex. 2022, 2023, 2024).",
+          "Saisir « actif » ou « inactif » dans les cellules d'année. Cellule vide = aucune information pour cette année (pas une erreur).",
+          "Cliquer sur « Vérifier ». Les nouvelles années sont « Nouveau », les années existantes différentes « Doublon », les identiques « Inchangé ».",
+          "Cocher les doublons dont les années existantes doivent être écrasées. Les nouvelles années sont toujours importées, même si le doublon n'est pas coché.",
+          "Cliquer sur « Confirmer l'import » et télécharger le rapport."
+        ],
+        "beispiel": "Un membre a dans le fichier 2022 = actif et 2023 = inactif. 2022 n'existe pas encore (nouveau), 2023 figure comme actif dans l'historique (différent). Sans case cochée, seule 2022 est ajoutée (« Teilweise importiert ») ; avec la case, 2023 est aussi écrasée.",
+        "danach": "Aucune notification ni email n'est envoyé. Le statut courant d'un membre ne suit que l'année la plus récente ; des ajouts plus anciens ne le modifient pas."
+      },
+      {
+        "titre": "6. Comprendre le rapport",
+        "wann": "L'import est terminé.",
+        "schritte": [
+          "Cliquer sur « Télécharger le rapport (Excel) ».",
+          "Le fichier contient toutes les colonnes de votre fichier d'origine et, à droite, les nouvelles colonnes « Status » et « Grund ».",
+          "Valeurs de statut : Importiert, Überschrieben, Teilweise importiert (historique seulement), Übersprungen, Unverändert, Fehler. Les cellules sont colorées.",
+          "La colonne « Grund » indique p. ex. le numéro de membre attribué, les champs écrasés ou la cause de l'erreur."
+        ],
+        "danach": "Corrigez les lignes en erreur dans le rapport ou dans votre fichier d'origine et ne réimportez que ces lignes."
+      },
+      {
+        "titre": "7. Ordre recommandé pour la reprise de données",
+        "wann": "Vous alimentez la plateforme pour la première fois ou reprenez de gros volumes.",
+        "schritte": [
+          "D'abord les membres, ensuite l'historique de statut.",
+          "Essayer d'abord sur l'environnement de test (DEV) avec un petit fichier de 5 à 10 lignes et contrôler le rapport.",
+          "Vérifier ensuite le fichier complet. Corriger les lignes en erreur avant de confirmer.",
+          "Refaire l'import en production avec le même fichier vérifié.",
+          "Après l'import, contrôler sous « Zuordnung » si des comptes récents peuvent être rapprochés de membres importés."
+        ]
+      },
+      {
+        "titre": "8. Messages d'erreur fréquents et solutions",
+        "wann": "Une erreur apparaît dans la liste de contrôle ou le rapport.",
+        "schritte": [
+          "« Pflichtspalten fehlen » : une colonne manque ou son en-tête est mal écrit. Utiliser le template.",
+          "« Pflichtfeld fehlt » : une valeur obligatoire est vide dans la ligne. La compléter.",
+          "« Datum ungültig » : utiliser JJ/MM/AAAA. Pour une vraie date Excel, une cellule de type date suffit.",
+          "« Bundesland nicht erkannt » : utiliser le code ou le nom complet, ou laisser la cellule vide.",
+          "« Doppelt in der Datei » : l'email ou le CIN figure déjà dans une ligne précédente. Supprimer l'une des deux lignes.",
+          "« E-Mail/CIN passen zu mehreren Mitgliedern » : en base, email et CIN appartiennent à des personnes différentes. Clarifier manuellement (vérifier les fiches) puis réimporter.",
+          "« Kein bestehendes Mitglied » (historique) : email ou CIN inconnu. Créer d'abord le membre.",
+          "« Format non supporté » ou « fichier trop volumineux » : .xlsx uniquement, 5 Mo maximum. Pour un ancien .xls, « Enregistrer sous .xlsx » dans Excel."
+        ]
+      }
+    ],
+    "tipps": [
+      "« Vérifier » ne modifie rien. Vous pouvez vérifier, corriger et recharger le fichier autant de fois que nécessaire.",
+      "À la confirmation, le fichier est réévalué. Si la base a changé entre-temps, c'est le nouvel état qui compte.",
+      "Choisissez les doublons en connaissance de cause. Une valeur écrasée ne se rétablit que manuellement ou par un nouvel import.",
+      "Conservez le rapport : il documente le traitement de chaque ligne.",
+      "Les motifs de la liste de contrôle et du rapport sont toujours en allemand.",
+      "L'import et le rapprochement sont réservés aux rôles RH et supérieurs."
+    ]
+  },
+  "membres_zuordnung": {
+    "titre": "Rapprocher des comptes et des membres",
+    "intro": "Les membres importés n'ont pas de login. Quand quelqu'un s'inscrit seul, une nouvelle fiche est créée. Vous les fusionnez ici pour éviter les doublons.",
+    "schritte": [
+      "Si l'email est identique et confirmé par code, le rattachement est automatique. Vous n'avez rien à faire.",
+      "Cette liste contient les autres comptes récents qui ressemblent à un membre importé (par CIN ou nom).",
+      "Chaque suggestion indique une probabilité (« très probable », « probable », « possible ») et les raisons (email, CIN, nom, date de naissance).",
+      "« Zuordnen » relie le compte à la fiche importée. « Aucune correspondance » retire le compte de la liste."
+    ],
+    "workflows": [
+      {
+        "titre": "Rattacher un compte à une fiche importée",
+        "wann": "Un compte récemment inscrit apparaît dans la liste.",
+        "schritte": [
+          "Comparer le compte et les fiches proposées (nom, email, CIN, date de naissance).",
+          "Pour une suggestion qui convient, choisir « Zuordnen ».",
+          "Confirmer avec « Oui, relier ».",
+          "Si aucune fiche ne convient, choisir « Aucune correspondance »."
+        ],
+        "danach": "Après le rattachement, numéro de membre, statut, date d'adhésion et historique de la fiche importée sont conservés. Les données saisies par le membre à l'inscription écrasent les données de base importées (champs renseignés seulement)."
+      }
+    ],
+    "tipps": [
+      "Un CIN ou un nom seul ne prouve rien. C'est pourquoi il n'y a ici que des suggestions que vous confirmez.",
+      "Pour « possible », vérifiez toujours la date de naissance avant de rapprocher.",
+      "Le rattachement ne peut pas être annulé automatiquement."
+    ]
+  },
   "ueberblick": "Aperçu",
   "workflows": "Procédures pas à pas",
   "workflow_hinweis": "Ouvrez une procédure et cochez les étapes au fur et à mesure.",
