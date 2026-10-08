@@ -15,6 +15,21 @@ describe("HelpButton", () => {
     expect(cleHilfe("/dashboard")).toBeNull();
   });
 
+  it("ordnet alle Seiten des Moduls Mitglieder der passenden Hilfe zu", () => {
+    expect(cleHilfe("/membres")).toBe("membres");
+    expect(cleHilfe("/membres/123")).toBe("membres");
+    expect(cleHilfe("/membres/nouveau")).toBe("membres");
+    expect(cleHilfe("/membres/123/modifier")).toBe("membres");
+    expect(cleHilfe("/membres/import")).toBe("membres_import");
+    expect(cleHilfe("/membres/zuordnung")).toBe("membres_zuordnung");
+  });
+
+  it("zeigt den Hilfe-Button auf der Import-Seite", () => {
+    renderWithProviders(<HelpButton />, { route: "/membres/import", path: "/membres/import" });
+    fireEvent.click(screen.getByLabelText("bouton"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("erscheint nicht auf Seiten ohne Hilfetext", () => {
     renderWithProviders(<HelpButton />, { route: "/dashboard", path: "/dashboard" });
     expect(screen.queryByLabelText("bouton")).not.toBeInTheDocument();

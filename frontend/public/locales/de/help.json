@@ -298,6 +298,219 @@
     ],
     "titre": "Projekt-Arbeitsbereich"
   },
+  "membres": {
+    "titre": "Modul Mitglieder",
+    "intro": "Hier findest du alle Vereinsmitglieder, kannst sie suchen, bearbeiten, exportieren und – mit RH-Rechten – Daten importieren. Was du siehst, hängt von deiner Rolle ab.",
+    "schritte": [
+      "Verzeichnis: Die Liste zeigt Mitglieder mit Nummer, Name, Stadt und Status. Mit den Filtern (Suche, Status, Stadt, Bundesland, Wohnsitzland, Beitrittsdatum) grenzt du sie ein.",
+      "Eine Zeile öffnet die Mitgliederkarte mit persönlichen Daten, Adresse und Vereinsdaten.",
+      "Ab Rolle RH: Mitglied hinzufügen, bearbeiten, Status ändern, Excel exportieren, Daten importieren und neue Konten zuordnen.",
+      "Ab Rolle RH gibt es zusätzlich den Tab „Reporting“ mit Statushistorie und allen Aktivitäten pro Mitglied.",
+      "Die Schaltflächen „Importieren“ und „Zuordnung“ oben rechts führen zu den Seiten, die jeweils eine eigene, ausführliche Hilfe haben."
+    ],
+    "workflows": [
+      {
+        "titre": "Mitglied finden",
+        "wann": "Du suchst eine Person oder eine Gruppe von Mitgliedern.",
+        "schritte": [
+          "Im Feld „Suche“ Name, Vorname oder E-Mail eingeben.",
+          "Bei Bedarf Status, Stadt, Bundesland, Wohnsitzland oder einen Beitrittszeitraum wählen.",
+          "„Filtern“ klicken. Mit „Zurücksetzen“ werden alle Filter geleert.",
+          "Eine Zeile anklicken, um die Mitgliederkarte zu öffnen."
+        ],
+        "danach": "Die Filter wirken auch auf den Excel-Export: Exportiert wird genau die gefilterte Liste."
+      },
+      {
+        "titre": "Mitglied von Hand anlegen (RH)",
+        "wann": "Eine einzelne Person soll ohne Excel-Import erfasst werden.",
+        "schritte": [
+          "Oben rechts „+ Mitglied hinzufügen“ wählen.",
+          "Pflichtangaben ausfüllen. Ausweisnummer (CIN) oder Reisepassnummer ist erforderlich.",
+          "Status, Beitrittsdatum und Adresse prüfen und „Speichern“ klicken.",
+          "Die Mitgliedsnummer (Format CA-Jahr-Nummer) wird automatisch vergeben."
+        ],
+        "danach": "Die Person hat noch kein Konto. Registriert sie sich später mit derselben E-Mail-Adresse, wird sie automatisch mit dieser Karte verknüpft."
+      },
+      {
+        "titre": "Status ändern (RH)",
+        "wann": "Ein Mitglied wird aktiviert oder auf inaktiv gesetzt.",
+        "schritte": [
+          "Mitgliederkarte öffnen.",
+          "Im Bereich „Status ändern“ den neuen Status wählen.",
+          "„Anwenden“ klicken."
+        ],
+        "danach": "Der aktuelle Status gilt sofort für Rechte wie Abstimmung, Community und Veranstaltungsanmeldung. Der Verlauf pro Jahr steht in der Statushistorie."
+      },
+      {
+        "titre": "Mitgliederliste als Excel exportieren (RH)",
+        "wann": "Du brauchst die Daten für Auswertungen oder eine Versandliste.",
+        "schritte": [
+          "Optional filtern und die Sortierung wählen.",
+          "„Excel exportieren“ klicken.",
+          "Die Spalten auswählen, die in die Datei sollen (mindestens eine).",
+          "„Exportieren“ bestätigen. Die Datei wird heruntergeladen."
+        ],
+        "beispiel": "Alle aktiven Mitglieder in Berlin, sortiert nach Name, mit Spalten Name, E-Mail und Telefon."
+      }
+    ],
+    "tipps": [
+      "Ohne RH-Rolle siehst du nur deine eigene Mitgliederkarte, nicht die Liste aller Mitglieder.",
+      "Status-Begriffe: „Mitglied (aktiv)“, „Nicht-Mitglied (neu)“ bei Neuregistrierung und „Nicht-Mitglied (ehemalig)“ für inaktive Personen.",
+      "Mitglieder endgültig löschen darf nur die Bureau-/Admin-Ebene; die Aktion lässt sich nicht rückgängig machen.",
+      "Ausweisnummer (CIN) und Reisepass werden verschlüsselt gespeichert und in Listen nur eingeschränkt angezeigt."
+    ]
+  },
+  "membres_import": {
+    "titre": "Import: so funktioniert er",
+    "intro": "Es gibt zwei Importe: Mitglieder (Stammdaten) und Statushistorie (aktiv/inaktiv pro Jahr). Beide laufen in drei Schritten – Prüfen, Bestätigen, Bericht. Vor dem Bestätigen wird nichts gespeichert.",
+    "schritte": [
+      "Vorlage herunterladen und in Excel ausfüllen (nur .xlsx, höchstens 5 MB, erste Tabelle, erste Zeile = Spaltenüberschriften).",
+      "Datei auswählen und „Prüfen“ klicken. Es wird nichts importiert, du erhältst eine Prüfliste mit Status und Grund pro Zeile.",
+      "Prüfliste durchgehen: neue Zeilen, Dubletten, unveränderte Zeilen und Fehler. Bei Dubletten wählst du einzeln aus, welche überschrieben werden.",
+      "„Import bestätigen“ klicken. Erst jetzt wird geschrieben.",
+      "Ergebnis ansehen und den Bericht (Excel) herunterladen: deine Datei mit den zusätzlichen Spalten „Status“ und „Grund“."
+    ],
+    "workflows": [
+      {
+        "titre": "1. Mitglieder importieren (Stammdaten)",
+        "wann": "Du übernimmst Mitglieder aus einer Excel-Liste (z. B. Altbestand) in die Plattform.",
+        "schritte": [
+          "Im Bereich „Mitglieder importieren“ die Excel-Vorlage herunterladen.",
+          "Pro Mitglied eine Zeile ausfüllen. Pflichtspalten: prenom, nom, date_naissance, email, adresse_de, ville_de, date_adhesion. Alle anderen Spalten sind optional.",
+          "Datei speichern, unter „Datei importieren“ auswählen und „Prüfen“ klicken.",
+          "In der Prüfliste jede Zeile ansehen (siehe Ablauf „Prüfliste lesen“).",
+          "Bei Dubletten die Zeilen ankreuzen, die überschrieben werden sollen. Nicht angekreuzte Dubletten bleiben unverändert.",
+          "„Import bestätigen“ klicken und danach den Bericht herunterladen."
+        ],
+        "beispiel": "Aus 300 Zeilen sind 250 neu, 40 Dubletten und 10 fehlerhaft. Du kreuzt 12 Dubletten an, bei denen sich die Telefonnummer geändert hat. Beim Bestätigen werden 250 Mitglieder angelegt, 12 aktualisiert, 28 Dubletten übersprungen; die 10 Fehler stehen im Bericht mit Grund.",
+        "danach": "Importierte Mitglieder haben noch kein Login. Registrieren sie sich später mit derselben E-Mail-Adresse und bestätigen den Code, werden sie automatisch verknüpft."
+      },
+      {
+        "titre": "2. Spalten und Formate der Mitglieder-Datei",
+        "wann": "Du füllst die Vorlage aus oder bekommst Fehler wegen Formaten.",
+        "schritte": [
+          "Datum (date_naissance, date_adhesion): TT/MM/JJJJ, z. B. 15/03/1985. Auch JJJJ-MM-TT und TT.MM.JJJJ werden verstanden.",
+          "email: gültige Adresse mit „@“. Sie ist zusammen mit der CIN das Kriterium für Dubletten.",
+          "sexe (optional): Homme/Femme (auch H/F). Leer = nicht angegeben.",
+          "statut (optional): actif, en_attente oder inactif. Leer = actif, denn importierte Mitglieder gelten als bereits aktiv.",
+          "land_de (optional): Kürzel mit 2 Buchstaben (z. B. BE, BY) oder voller Name (z. B. Bayern). Unbekannte Werte führen zu einem Fehler in der Zeile.",
+          "cin und telephone (optional): Zahlen aus Excel werden korrekt übernommen. Eine leere CIN wird automatisch durch 00000000 ersetzt. Dieser Platzhalter zählt nie als Dublette oder Treffer.",
+          "Leere Zeilen werden ignoriert. Spaltennamen dürfen auch in der Alternativschreibweise stehen (z. B. „Prénom“, „E-Mail“, „Ville“)."
+        ]
+      },
+      {
+        "titre": "3. Prüfliste lesen",
+        "wann": "Du hast „Prüfen“ geklickt und siehst die Liste.",
+        "schritte": [
+          "Neu: Die Person existiert noch nicht. Sie wird beim Bestätigen angelegt.",
+          "Dublette: E-Mail oder CIN gehört schon zu einem Mitglied, und mindestens ein Wert weicht ab. Die Abweichungen stehen unter der Zeile (alt durchgestrichen → neu). Nur hier gibt es ein Auswahlkästchen.",
+          "Unverändert: Dublette ohne Abweichungen. Es gibt nichts zu überschreiben.",
+          "Fehler: Die Zeile wird nicht importiert. Der Grund steht in der Zeile (z. B. Pflichtfeld fehlt, E-Mail ungültig, doppelt in der Datei, E-Mail und CIN gehören zu verschiedenen Mitgliedern).",
+          "Mit den Filter-Knöpfen über der Liste zeigst du nur einen Status. „Alle Dubletten wählen“ und „Auswahl aufheben“ erleichtern die Massenauswahl."
+        ],
+        "danach": "CIN und Reisepass erscheinen in der Liste nur maskiert (••••1234)."
+      },
+      {
+        "titre": "4. Dubletten überschreiben: was passiert genau?",
+        "wann": "Du willst Stammdaten mehrerer Mitglieder in einem Rutsch aktualisieren.",
+        "schritte": [
+          "Dubletten erkennt das System an gleicher E-Mail (Groß-/Kleinschreibung egal) oder gleicher echter CIN.",
+          "Beim Überschreiben werden nur gefüllte Zellen übernommen. Leere Zellen der Datei lassen die bestehenden Daten unangetastet.",
+          "Die Mitgliedsnummer bleibt immer unverändert.",
+          "Hat das Mitglied schon ein Benutzerkonto, bleibt seine E-Mail-Adresse unverändert (sie ist an das Login gebunden). Alle anderen gefüllten Felder werden überschrieben.",
+          "Der Status wird nur überschrieben, wenn die Spalte „statut“ in der Zeile einen gültigen Wert enthält.",
+          "Nicht angekreuzte Dubletten werden übersprungen und im Bericht als „Übersprungen“ vermerkt."
+        ],
+        "beispiel": "Die Datei enthält für Amira eine neue Telefonnummer und leere Felder bei Stadt und Reisepass. Nach dem Überschreiben hat Amira die neue Nummer, Stadt und Reisepass bleiben wie vorher."
+      },
+      {
+        "titre": "5. Statushistorie importieren",
+        "wann": "Du willst für bestehende Mitglieder nachtragen, in welchen Jahren sie aktiv oder inaktiv waren.",
+        "schritte": [
+          "Zuerst müssen die Mitglieder existieren (Import 1 oder manuell angelegt). Dieser Import legt nie neue Mitglieder an.",
+          "Vorlage im Bereich „Statushistorie importieren“ herunterladen. Pflichtspalte: email. Optional: cin. Danach eine Spalte pro Jahr, Überschrift = Jahreszahl (z. B. 2022, 2023, 2024).",
+          "In die Jahreszellen „actif“ oder „inactif“ eintragen. Leere Zelle = keine Angabe für dieses Jahr (kein Fehler).",
+          "„Prüfen“ klicken. Neue Jahre stehen als „Neu“, abweichende bestehende Jahre als „Dublette“, identische Jahre als „Unverändert“.",
+          "Dubletten ankreuzen, deren bestehende Jahre überschrieben werden sollen. Neue Jahre werden immer importiert, auch wenn die Dublette nicht angekreuzt ist.",
+          "„Import bestätigen“ klicken und den Bericht herunterladen."
+        ],
+        "beispiel": "Ein Mitglied hat in der Datei 2022 = actif und 2023 = inactif. 2022 existiert noch nicht (neu), 2023 steht bisher als aktiv in der Historie (abweichend). Ohne Häkchen wird nur 2022 ergänzt („Teilweise importiert“); mit Häkchen wird auch 2023 überschrieben.",
+        "danach": "Es werden keine Benachrichtigungen oder E-Mails versendet. Der aktuelle Status eines Mitglieds folgt nur dem jüngsten Jahr, ältere Nachträge ändern ihn nicht."
+      },
+      {
+        "titre": "6. Bericht verstehen",
+        "wann": "Der Import ist abgeschlossen.",
+        "schritte": [
+          "„Bericht herunterladen (Excel)“ klicken.",
+          "Die Datei enthält alle Spalten deiner Originaldatei und rechts die neuen Spalten „Status“ und „Grund“.",
+          "Status-Werte: Importiert, Überschrieben, Teilweise importiert (nur Historie), Übersprungen, Unverändert, Fehler. Die Zellen sind farbig markiert.",
+          "Die Spalte „Grund“ nennt z. B. die vergebene Mitgliedsnummer, die überschriebenen Felder oder die Fehlerursache."
+        ],
+        "danach": "Korrigiere die Fehlerzeilen direkt im Bericht oder in deiner Originaldatei und importiere nur diese Zeilen erneut."
+      },
+      {
+        "titre": "7. Empfohlene Reihenfolge bei der Datenübernahme",
+        "wann": "Du befüllst die Plattform erstmalig oder spielst größere Bestände ein.",
+        "schritte": [
+          "Zuerst Mitglieder importieren, dann die Statushistorie.",
+          "Zuerst auf der Testumgebung (DEV) mit einer kleinen Datei von etwa 5 bis 10 Zeilen probieren und den Bericht kontrollieren.",
+          "Danach die komplette Datei prüfen. Fehlerzeilen korrigieren, bevor du bestätigst.",
+          "Den Import in der Produktivumgebung mit derselben, geprüften Datei wiederholen.",
+          "Nach dem Import unter „Zuordnung“ kontrollieren, ob sich Neuregistrierte ähnlichen importierten Mitgliedern zuordnen lassen."
+        ]
+      },
+      {
+        "titre": "8. Häufige Fehlermeldungen und Lösungen",
+        "wann": "In der Prüfliste oder im Bericht steht ein Fehler.",
+        "schritte": [
+          "„Pflichtspalten fehlen“: In der Datei fehlt eine Spalte oder die Überschrift ist falsch geschrieben. Vorlage verwenden.",
+          "„Pflichtfeld fehlt“: In der Zeile ist ein Pflichtwert leer. Ergänzen.",
+          "„Datum ungültig“: Format TT/MM/JJJJ nutzen. Bei echten Excel-Datumswerten genügt eine normale Datumszelle.",
+          "„Bundesland nicht erkannt“: Kürzel oder vollständigen Namen verwenden, oder die Zelle leer lassen.",
+          "„Doppelt in der Datei“: E-Mail oder CIN kommt in einer früheren Zeile schon vor. Eine der beiden Zeilen entfernen.",
+          "„E-Mail/CIN passen zu mehreren Mitgliedern“: In der Datenbank gehören E-Mail und CIN zu verschiedenen Personen. Manuell klären (Mitgliederkarten prüfen), dann erneut importieren.",
+          "„Kein bestehendes Mitglied“ (Historie): Die E-Mail oder CIN ist unbekannt. Zuerst das Mitglied anlegen.",
+          "„Format nicht unterstützt“ oder „Datei zu groß“: Nur .xlsx bis 5 MB. Bei älteren .xls-Dateien in Excel „Speichern unter .xlsx“ wählen."
+        ]
+      }
+    ],
+    "tipps": [
+      "Prüfen verändert nichts. Du kannst die Datei beliebig oft prüfen, korrigieren und neu hochladen.",
+      "Beim Bestätigen wird die Datei erneut ausgewertet. Hat sich die Datenbank inzwischen geändert, gilt der neue Stand.",
+      "Wähle die Dubletten bewusst aus. Ein einmal überschriebener Wert lässt sich nur manuell oder durch einen erneuten Import zurücksetzen.",
+      "Bewahre den Bericht auf. Er dokumentiert, welche Zeile wie verarbeitet wurde.",
+      "Die Gründe in der Prüfliste und im Bericht erscheinen immer auf Deutsch.",
+      "Import und Zuordnung dürfen nur Nutzer mit Rolle RH oder höher."
+    ]
+  },
+  "membres_zuordnung": {
+    "titre": "Konten Mitgliedern zuordnen",
+    "intro": "Importierte Mitglieder haben kein Login. Registriert sich jemand selbst, entsteht eine neue Karte. Hier führst du beide zusammen, damit niemand doppelt geführt wird.",
+    "schritte": [
+      "Bei gleicher, per Code bestätigter E-Mail-Adresse wird automatisch verknüpft. Du musst nichts tun.",
+      "In dieser Liste stehen die übrigen neuen Konten, die einem importierten Mitglied ähneln (nach CIN oder Name).",
+      "Jeder Vorschlag zeigt eine Wahrscheinlichkeit („sehr wahrscheinlich“, „wahrscheinlich“, „möglich“) und die Gründe (E-Mail, CIN, Name, Geburtsdatum).",
+      "„Zuordnen“ verknüpft das Konto mit der importierten Karte. „Kein Treffer“ entfernt das Konto aus der Liste."
+    ],
+    "workflows": [
+      {
+        "titre": "Konto einer importierten Karte zuordnen",
+        "wann": "Ein neu registriertes Konto steht in der Liste.",
+        "schritte": [
+          "Konto und die vorgeschlagenen Karten vergleichen (Name, E-Mail, CIN, Geburtsdatum).",
+          "Bei einem passenden Vorschlag „Zuordnen“ wählen.",
+          "Mit „Ja, verknüpfen“ bestätigen.",
+          "Passt keine Karte, „Kein Treffer“ wählen."
+        ],
+        "danach": "Nach der Verknüpfung bleiben Mitgliedsnummer, Status, Beitrittsdatum und Historie der importierten Karte erhalten. Die Angaben, die das Mitglied bei der Registrierung selbst eingegeben hat, überschreiben die importierten Stammdaten (nur gefüllte Felder)."
+      }
+    ],
+    "tipps": [
+      "Eine CIN oder ein Name allein ist kein Beweis. Deshalb gibt es hier nur Vorschläge, die du bestätigst.",
+      "Prüfe bei „möglich“ immer das Geburtsdatum, bevor du zuordnest.",
+      "Die Verknüpfung lässt sich nicht automatisch rückgängig machen."
+    ]
+  },
   "ueberblick": "Überblick",
   "workflows": "Abläufe Schritt für Schritt",
   "workflow_hinweis": "Öffne einen Ablauf und hake die Schritte ab, während du sie erledigst.",
