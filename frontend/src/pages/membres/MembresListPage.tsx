@@ -43,10 +43,9 @@ export default function MembresListPage() {
   const [dateAdhesionAvant, setDateAdhesionAvant] = useState("");
   const [pageUrl, setPageUrl] = useState<string | null>(null);
   const [aSupprimer, setASupprimer] = useState<{ id: string; nom: string } | null>(null);
-  // Tri utilisé uniquement pour l'export Excel (demande utilisateur du 2026-09-16) — l'écran
-  // reste paginé par curseur à ordre fixe (nom, prénom, voir MembreCursorPagination côté
-  // backend), qui ne supporte pas un tri dynamique par requête ; le fichier exporté, lui, n'est
-  // pas paginé et peut donc être trié librement (voir apps.membres.exports côté backend).
+  // Tri du tableau ET de l'export Excel (même sélecteur) — le backend (MembreOrderingFilter)
+  // applique `ordering` à la pagination par curseur avec un départage (nom, prénom, id) stable ;
+  // le fichier exporté n'est pas paginé (voir apps.membres.exports).
   const [ordering, setOrdering] = useState<MembresOrdering>("nom");
   const [exportEnCours, setExportEnCours] = useState(false);
   const [erreurExport, setErreurExport] = useState<string | null>(null);
@@ -64,7 +63,7 @@ export default function MembresListPage() {
     date_adhesion_apres: dateAdhesionApres,
     date_adhesion_avant: dateAdhesionAvant,
   };
-  const { data, isLoading, isError } = useMembresList(filters, pageUrl);
+  const { data, isLoading, isError } = useMembresList({ ...filters, ordering }, pageUrl);
   const deleteMutation = useDeleteMembre();
 
   async function exporter() {
@@ -291,8 +290,7 @@ export default function MembresListPage() {
 
         {peutGerer && (
           <>
-            {/* Tri : n'affecte que l'export Excel ci-dessous, pas le tableau à l'écran (voir
-                commentaire sur `ordering` plus haut). */}
+            {/* Tri : s'applique au tableau et à l'export Excel (voir commentaire sur `ordering`). */}
             <div className="ml-auto">
               <label
                 htmlFor="membres-tri"
@@ -303,7 +301,10 @@ export default function MembresListPage() {
               <select
                 id="membres-tri"
                 value={ordering}
-                onChange={(e) => setOrdering(e.target.value as MembresOrdering)}
+                onChange={(e) => {
+                  setOrdering(e.target.value as MembresOrdering);
+                  setPageUrl(null); // un autre tri repart de la première page
+                }}
                 className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
               >
                 <option value="nom">{t("liste.tri_nom_asc")}</option>

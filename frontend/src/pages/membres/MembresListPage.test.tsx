@@ -226,6 +226,27 @@ describe("MembresListPage", () => {
       expect(cases.every((c) => c.checked)).toBe(true);
     });
 
+    it("applique le tri choisi au tableau (requête de liste) et repart de la première page", async () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList({ data: { ...page, next: "http://api/membres/?cursor=abc" } });
+
+      renderWithProviders(<MembresListPage />);
+      // Page 2 ouverte, puis changement de tri -> retour page 1 avec le nouvel ordre.
+      fireEvent.click(screen.getByText("liste.suivant"));
+      fireEvent.change(screen.getByLabelText("liste.trier_par"), {
+        target: { value: "-date_adhesion" },
+      });
+
+      await waitFor(() => {
+        const appels = vi.mocked(useMembresHooks.useMembresList).mock.calls;
+        const dernier = appels[appels.length - 1];
+        expect(dernier[0]).toEqual(expect.objectContaining({ ordering: "-date_adhesion" }));
+        expect(dernier[1]).toBeNull();
+      });
+    });
+
     it("exporte avec les filtres, le tri et toutes les colonnes après confirmation, pour un rôle RH+", async () => {
       useAuthStore.setState({
         user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
