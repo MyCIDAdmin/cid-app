@@ -45,6 +45,24 @@ class MembreCursorPagination(CursorPagination):
     ordering = ("nom", "prenom", "id")
 
 
+class MembreOrderingFilter(drf_filters.OrderingFilter):
+    """Tri du Verzeichnis (paramètre `ordering`, liste blanche — un champ inconnu est ignoré).
+
+    Sert aussi à MembreCursorPagination : DRF y utilise le premier backend de filtre qui expose
+    `get_ordering`. On complète toujours l'ordre par (nom, prenom, id) pour qu'il soit total —
+    indispensable pour que la pagination par curseur reste stable (homonymes, valeurs égales)."""
+
+    ordering_fields = ["nom", "prenom", "numero_membre", "statut", "ville_de", "date_adhesion"]
+    ordering_param = "ordering"
+    DEPARTAGE = ("nom", "prenom", "id")
+
+    def get_ordering(self, request, queryset, view):
+        champs = list(super().get_ordering(request, queryset, view) or [])
+        deja = {champ.lstrip("-") for champ in champs}
+        champs.extend(champ for champ in self.DEPARTAGE if champ not in deja)
+        return champs
+
+
 class MembreViewSet(ModelViewSet):
     # apps.rbac Phase B (ajouté le 2026-09-23) : module_access_permission("membres") est une
     # porte SUPPLÉMENTAIRE (DRF combine permission_classes en ET logique) — elle ouvre l'accès
@@ -52,7 +70,7 @@ class MembreViewSet(ModelViewSet):
     # qui reste la source de vérité pour les 5 rôles système et pour le scope objet par objet.
     permission_classes = [MembrePermission, module_access_permission("membres")]
     pagination_class = MembreCursorPagination
-    filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter]
+    filter_backends = [MembreOrderingFilter, DjangoFilterBackend, drf_filters.SearchFilter]
     filterset_class = MembreFilter
     search_fields = ["nom", "prenom", "numero_membre", "email"]
 

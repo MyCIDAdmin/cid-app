@@ -95,6 +95,76 @@ def test_list_comme_rh_retourne_tous_les_membres(api_client, rh_user):
     assert len(resp.data["results"]) == 3
 
 
+def _noms(resp):
+    return [m["nom"] for m in resp.data["results"]]
+
+
+def test_list_tri_par_defaut_nom_prenom(api_client, rh_user):
+    MembreFactory(nom="Zied", prenom="Amir")
+    MembreFactory(nom="Abid", prenom="Zouhair")
+    MembreFactory(nom="Abid", prenom="Ali")
+    _auth(api_client, rh_user)
+    resp = api_client.get(reverse("membres:membre-list"))
+    assert [(m["nom"], m["prenom"]) for m in resp.data["results"]] == [
+        ("Abid", "Ali"),
+        ("Abid", "Zouhair"),
+        ("Zied", "Amir"),
+    ]
+
+
+def test_list_tri_nom_descendant(api_client, rh_user):
+    for nom in ("Bouazizi", "Abid", "Zied"):
+        MembreFactory(nom=nom)
+    _auth(api_client, rh_user)
+    resp = api_client.get(reverse("membres:membre-list"), {"ordering": "-nom"})
+    assert resp.status_code == 200
+    assert _noms(resp) == ["Zied", "Bouazizi", "Abid"]
+
+
+def test_list_tri_date_adhesion_recentes_d_abord(api_client, rh_user):
+    from datetime import date
+
+    MembreFactory(nom="Alt", date_adhesion=date(2020, 1, 1))
+    MembreFactory(nom="Neu", date_adhesion=date(2026, 5, 1))
+    MembreFactory(nom="Mitte", date_adhesion=date(2023, 3, 3))
+    _auth(api_client, rh_user)
+    resp = api_client.get(reverse("membres:membre-list"), {"ordering": "-date_adhesion"})
+    assert _noms(resp) == ["Neu", "Mitte", "Alt"]
+
+
+def test_list_tri_ville_et_statut(api_client, rh_user):
+    MembreFactory(nom="A", ville_de="München", statut=StatutMembre.ACTIF)
+    MembreFactory(nom="B", ville_de="Berlin", statut=StatutMembre.ACTIF)
+    _auth(api_client, rh_user)
+    resp = api_client.get(reverse("membres:membre-list"), {"ordering": "ville_de"})
+    assert _noms(resp) == ["B", "A"]
+
+
+def test_list_tri_champ_inconnu_est_ignore(api_client, rh_user):
+    for nom in ("B", "A"):
+        MembreFactory(nom=nom)
+    _auth(api_client, rh_user)
+    resp = api_client.get(reverse("membres:membre-list"), {"ordering": "password"})
+    assert resp.status_code == 200
+    assert _noms(resp) == ["A", "B"]
+
+
+def test_list_tri_reste_stable_sur_plusieurs_pages(api_client, rh_user):
+    """Tri décroissant sur >1 page : aucune fiche perdue ni dupliquée entre les pages."""
+    MembreFactory.create_batch(25)
+    _auth(api_client, rh_user)
+    url = reverse("membres:membre-list")
+    vus = []
+    resp = api_client.get(url, {"ordering": "-nom"})
+    while True:
+        vus += [m["id"] for m in resp.data["results"]]
+        if not resp.data["next"]:
+            break
+        resp = api_client.get(resp.data["next"])
+    assert len(vus) == 25
+    assert len(set(vus)) == 25
+
+
 def test_list_comme_membre_ne_retourne_que_sa_propre_fiche(api_client, membre_user):
     MembreFactory.create_batch(2)  # d'autres fiches, sans lien à membre_user
     ma_fiche = MembreFactory(user=membre_user)

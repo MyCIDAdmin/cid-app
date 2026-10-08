@@ -30,6 +30,8 @@ export interface MembresListFilters {
    * 2026-09-19, demande utilisateur : "füge mehr Filtermöglichten hinzu z.B. Bundesland"). */
   date_adhesion_apres?: string;
   date_adhesion_avant?: string;
+  /** Tri (liste blanche côté backend, voir MembreOrderingFilter) — "-" pour descendant. */
+  ordering?: MembresOrdering;
 }
 
 export async function listMembres(
@@ -162,9 +164,9 @@ export async function getMonHistoriqueStatut(): Promise<HistoriqueStatutEntry[]>
   return data;
 }
 
-/** Champs de tri acceptés par GET /membres/export/ — voir apps.membres.exports.ORDERING_FIELDS
- * côté backend (liste blanche, un champ inconnu retombe silencieusement sur le tri par défaut
- * nom/prénom plutôt que de faire échouer l'export). */
+/** Champs de tri acceptés par GET /membres/ (voir MembreOrderingFilter) et GET /membres/export/
+ * (apps.membres.exports.ORDERING_FIELDS) — liste blanche côté backend, un champ inconnu retombe
+ * silencieusement sur le tri par défaut nom/prénom plutôt que de faire échouer la requête. */
 export type MembresOrdering =
   | "nom"
   | "-nom"
@@ -174,7 +176,6 @@ export type MembresOrdering =
   | "ville_de";
 
 export interface MembresExportParams extends MembresListFilters {
-  ordering?: MembresOrdering;
   /** Sous-ensemble de colonnes à exporter (voir apps.membres.exports.CHAMPS_EXPORT côté
    * backend) — toutes les colonnes si omis/vide. */
   champs?: ChampExport[];

@@ -1,9 +1,9 @@
 import { fireEvent, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
-import type { RencontreCalendrier, TippspielTip } from "../../types/communaute";
+import type { EquipeLogo, RencontreCalendrier, TippspielTip } from "../../types/communaute";
 import TippspielTippAbgabe from "./TippspielTippAbgabe";
 
 vi.mock("../../hooks/useCommunaute", async () => {
@@ -14,8 +14,21 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useTippspielTipps: vi.fn(),
     useCreerTippspielTip: vi.fn(),
     useModifierTippspielTip: vi.fn(),
+    useEquipesLogos: vi.fn(),
   };
 });
+
+// EquipeLogoImage (logos de clubs, voir EquipeLogoImage.tsx) appelle useEquipesLogos() en
+// interne — liste vide par défaut pour ne dépendre d'aucun réseau.
+function mockLogos(data: EquipeLogo[] = []) {
+  vi.mocked(useCommunauteHooks.useEquipesLogos).mockReturnValue({
+    data,
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof useCommunauteHooks.useEquipesLogos>);
+}
+
+beforeEach(() => mockLogos());
 
 function page<T>(results: T[]) {
   return { count: results.length, next: null, previous: null, results };
@@ -200,5 +213,42 @@ describe("TippspielTippAbgabe", () => {
       { id: "tip1", payload: { score_domicile: 4, score_exterieur: 1 } },
       expect.anything(),
     );
+  });
+
+  // Retour utilisateur du 2026-10-08 : "Im Tippspiel die Logos der Vereine übernehmen, wenn
+  // die vorhanden sind" — un logo n'apparaît que pour les clubs qui en ont un.
+  it("affiche le logo des clubs qui en ont un, sans image cassée pour les autres", () => {
+    mockLogos([
+      {
+        id: 1,
+        equipe: "Club Africain",
+        logo: "http://cdn/ca.png",
+        modifie_par: null,
+        updated_at: "2026-09-28T10:00:00Z",
+      },
+    ]);
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([rencontre()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+    vi.mocked(useCommunauteHooks.useTippspielTipps).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTipps>);
+    vi.mocked(useCommunauteHooks.useCreerTippspielTip).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useCreerTippspielTip>>(),
+    );
+    vi.mocked(useCommunauteHooks.useModifierTippspielTip).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspielTip>>(),
+    );
+
+    const { container } = renderWithProviders(<TippspielTippAbgabe tippspielId="tp1" />);
+
+    const images = container.querySelectorAll("img");
+    expect(images).toHaveLength(1);
+    expect(images[0]).toHaveAttribute("src", "http://cdn/ca.png");
+    expect(screen.getByText(/Club Africain — ES Tunis/)).toBeInTheDocument();
   });
 });
