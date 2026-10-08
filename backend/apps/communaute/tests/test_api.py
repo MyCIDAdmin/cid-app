@@ -3,6 +3,7 @@ Groupes ; Live Match + Albums + Quiz — Phase 4B, CID-SCD-001 §résumé "Forum
 
 import io
 from datetime import timedelta
+from datetime import timezone as dt_timezone
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -1597,15 +1598,15 @@ def test_calendrier_masque_les_anciennes_annees_par_defaut(api_client):
     annee_actuelle = timezone.localdate().year
     RencontreCalendrierFactory(
         equipe_exterieur="Ancienne Rencontre",
-        date_heure=timezone.datetime(annee_actuelle - 3, 6, 1, tzinfo=timezone.utc),
+        date_heure=timezone.datetime(annee_actuelle - 3, 6, 1, tzinfo=dt_timezone.utc),
     )
     RencontreCalendrierFactory(
         equipe_exterieur="Rencontre Actuelle",
-        date_heure=timezone.datetime(annee_actuelle, 6, 1, tzinfo=timezone.utc),
+        date_heure=timezone.datetime(annee_actuelle, 6, 1, tzinfo=dt_timezone.utc),
     )
     RencontreCalendrierFactory(
         equipe_exterieur="Rencontre Annee Prochaine",
-        date_heure=timezone.datetime(annee_actuelle + 1, 6, 1, tzinfo=timezone.utc),
+        date_heure=timezone.datetime(annee_actuelle + 1, 6, 1, tzinfo=dt_timezone.utc),
     )
 
     resp = _auth(api_client, user).get(reverse(CALENDRIER_LIST_URL))
@@ -1619,11 +1620,11 @@ def test_calendrier_parametre_periode_toutes(api_client):
     annee_actuelle = timezone.localdate().year
     RencontreCalendrierFactory(
         equipe_exterieur="Ancienne Rencontre",
-        date_heure=timezone.datetime(annee_actuelle - 3, 6, 1, tzinfo=timezone.utc),
+        date_heure=timezone.datetime(annee_actuelle - 3, 6, 1, tzinfo=dt_timezone.utc),
     )
     RencontreCalendrierFactory(
         equipe_exterieur="Rencontre Actuelle",
-        date_heure=timezone.datetime(annee_actuelle, 6, 1, tzinfo=timezone.utc),
+        date_heure=timezone.datetime(annee_actuelle, 6, 1, tzinfo=dt_timezone.utc),
     )
 
     resp = _auth(api_client, user).get(reverse(CALENDRIER_LIST_URL), {"periode": "toutes"})

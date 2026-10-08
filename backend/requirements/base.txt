@@ -1,18 +1,18 @@
 # --- Core ---
-Django==4.2.30
+Django==5.2.18
 djangorestframework==3.17.2
-django-cors-headers==4.4.0
-django-filter==24.3
+django-cors-headers==4.9.0
+django-filter==26.2
 python-dotenv==1.2.2
 dj-database-url==2.2.0
 psycopg[binary]==3.2.3
 
 # --- Auth / 2FA / RBAC ---
 djangorestframework-simplejwt==5.5.1
-django-otp==1.5.4
+django-otp==1.7.3
 pyotp==2.9.0
 qrcode==7.4.2
-django-axes==7.0.0
+django-axes==8.3.1
 argon2-cffi==23.1.0
 
 # --- Chiffrement champs sensibles ---
@@ -20,7 +20,7 @@ django-encrypted-model-fields==0.6.5
 cryptography==49.0.0
 
 # --- WebSocket / temps réel ---
-channels==4.1.0
+channels==4.3.2
 channels-redis==4.2.0
 daphne==4.2.2
 # Transitive Abhängigkeiten von daphne, wegen bekannter Sicherheitslücken explizit angehoben
@@ -31,10 +31,10 @@ pyOpenSSL==26.4.0
 # --- Async / tâches planifiées ---
 celery==5.4.0
 redis==5.0.8
-django-celery-beat==2.7.0
+django-celery-beat==2.9.0
 
 # --- Stockage fichiers S3-compatible (MinIO) ---
-django-storages==1.14.4
+django-storages==1.14.6
 boto3==1.35.24
 
 # --- PDF / exports ---
@@ -65,6 +65,5 @@ gunicorn==23.0.0
 # --- Email (ajouté le 2026-09-19) ---
 # Backend API HTTPS pour Brevo (via BREVO_API_KEY, voir config/settings/base.py et prod.py) —
 # alternative au SMTP classique, qui reste bloqué par Railway sur les plans Free/Trial/Hobby.
-# 14.0 est la dernière version de django-anymail encore compatible avec Django 4.2 (>=15.0
-# exige Django>=5.0).
-django-anymail==14.0
+# 15.x exige Django>=5.0 (Umstieg auf Django 5.2 LTS am 2026-10-08).
+django-anymail==15.2

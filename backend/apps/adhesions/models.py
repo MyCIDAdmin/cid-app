@@ -242,7 +242,7 @@ class RabaisOffre(models.Model):
         ordering = ["offre", "type_rabais"]
         constraints = [
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(montant_reduction__isnull=False, pct_reduction__isnull=True)
                     | models.Q(montant_reduction__isnull=True, pct_reduction__isnull=False)
                 ),
