@@ -5,6 +5,8 @@ name: Promote to PROD
 # Gepusht wird OHNE Force: weicht das Vereins-Repo ab, bricht der Lauf ab (kein Überschreiben).
 # Benötigt: Secret PROD_DEPLOY_KEY (privater SSH-Deploy-Key mit Schreibrecht im Vereins-Repo),
 # optional Repository-Variable PROD_REPO (Standard: MyCIDAdmin/cid-app).
+# Läuft ausschließlich im DEV-Repo: Im Vereins-Repo kommt der Tag ebenfalls an, dort gibt es
+# weder das Secret noch einen Grund zu promoten — der Job wird dort übersprungen statt rot.
 
 on:
   push:
@@ -18,6 +20,7 @@ permissions:
 jobs:
   promote:
     name: Release nach PROD übertragen
+    if: github.repository == 'GhaziHabita/cid-app'
     runs-on: ubuntu-latest
     env:
       PROD_REPO: ${{ vars.PROD_REPO || 'MyCIDAdmin/cid-app' }}
