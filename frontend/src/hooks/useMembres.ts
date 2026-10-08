@@ -7,7 +7,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import * as membresApi from "../api/membres";
 import type { MembresListFilters } from "../api/membres";
-import type { MembreFormValues, StatutMembre } from "../types/membre";
+import type { ImportArt, MembreFormValues, StatutMembre } from "../types/membre";
 
 const membresKeys = {
   all: ["membres"] as const,
@@ -112,22 +112,20 @@ export function useChangerStatutMembre(id: string) {
   });
 }
 
-export function useImporterMembres() {
-  const queryClient = useQueryClient();
+/** Import Excel, Prüfphase (aucune écriture) — voir membresApi.pruefenImport. */
+export function usePruefenImport(art: ImportArt) {
   return useMutation({
-    mutationFn: (fichier: File) => membresApi.importerMembres(fichier),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
+    mutationFn: (fichier: File) => membresApi.pruefenImport(art, fichier),
   });
 }
 
-/** Ajouté le 2026-09-19 — voir membresApi.importerHistoriqueStatuts. N'invalide pas la liste
- * membres (le statut COURANT n'est modifié que si l'année importée est la plus récente connue
- * pour ce membre — voir apps.membres.services.enregistrer_statut_annuel côté backend) : on
- * invalide quand même par prudence, l'import restant peu fréquent. */
-export function useImporterHistoriqueStatuts() {
+/** Import Excel, Bestätigungsphase. Invalide la liste membres (nouvelles fiches / écrasements ;
+ * l'historique peut aussi changer le statut courant). */
+export function useBestaetigenImport(art: ImportArt) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (fichier: File) => membresApi.importerHistoriqueStatuts(fichier),
+    mutationFn: ({ fichier, ueberschreiben }: { fichier: File; ueberschreiben: number[] }) =>
+      membresApi.bestaetigenImport(art, fichier, ueberschreiben),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
   });
 }

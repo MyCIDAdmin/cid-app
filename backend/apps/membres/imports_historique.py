@@ -25,56 +25,64 @@ que apps.membres.services.enregistrer_statut_annuel, réutilisé ici avec `notif
 contrairement à un paiement confirmé ou une échéance dépassée, un import en masse de données
 historiques n'est pas un événement personnel pour le membre et ne doit jamais déclencher
 notification/email (potentiellement des centaines à la fois).
+
+Zweistufig seit 2026-10-08 (Prüfliste -> Bestätigung -> Bericht, siehe import_gemeinsam) :
+`analyser_historique` wertet die Datei aus ohne zu schreiben ; `ausfuehren_historique` schreibt
+neue Jahreseinträge immer, überschreibt abweichende bestehende Einträge aber NUR für die vom
+Nutzer gewählten Zeilen (Dubletten). Eine Zeile mit einem ungültigen Jahreswert wird als Ganzes
+abgelehnt (Fehler) statt teilweise importiert.
 """
 
 import datetime
-from dataclasses import dataclass, field
+import logging
 
-import openpyxl
+from django.db import transaction
 
-from .models import CIN_PLATZHALTER, Membre, RaisonChangementStatut, StatutMembre
+from .import_gemeinsam import (
+    ERG_FEHLER,
+    ERG_IMPORTIERT,
+    ERG_TEILWEISE,
+    ERG_UEBERSCHRIEBEN,
+    ERG_UEBERSPRUNGEN,
+    ERG_UNVERAENDERT,
+    STATUS_DUBLETTE,
+    STATUS_FEHLER,
+    STATUS_NEU,
+    STATUS_UNVERAENDERT,
+    Analyse,
+    Ergebnis,
+    ImportDateiFehler,
+    ZeileAnalyse,
+    ZeilenErgebnis,
+    erzeuge_bericht,
+    lies_kopfzeile_und_zeilen,
+    oeffne_arbeitsmappe,
+)
+from .models import (
+    CIN_PLATZHALTER,
+    HistoriqueStatutMembre,
+    Membre,
+    RaisonChangementStatut,
+    StatutMembre,
+)
 from .services import enregistrer_statut_annuel
+
+logger = logging.getLogger(__name__)
 
 ANNEE_MIN = 2000
 ANNEE_MAX = 2100  # large marge défensive — un en-tête hors de cette plage n'est simplement pas
 # traité comme une colonne d'année (ex. un futur en-tête "total" ou "notes" resterait ignoré).
 
 _STATUT_ALIASES = {"actif": StatutMembre.ACTIF, "inactif": StatutMembre.INACTIF}
+_STATUT_TEXT = {StatutMembre.ACTIF: "aktiv", StatutMembre.INACTIF: "inaktiv"}
+
+ART_NEU = "neu"
+ART_ABWEICHEND = "abweichend"
+ART_GLEICH = "gleich"
 
 
 def _normalize(value) -> str:
     return str(value).strip().lower() if value is not None else ""
-
-
-@dataclass
-class LigneErreurHistorique:
-    ligne: int
-    message: str
-
-
-@dataclass
-class ResultatImportHistorique:
-    total: int = 0
-    lignes_traitees: int = 0
-    entrees_importees: int = (
-        0  # nombre de cellules (membre, année) écrites, toutes lignes confondues
-    )
-    lignes_ignorees: int = 0
-    erreurs: list = field(default_factory=list)  # list[LigneErreurHistorique]
-
-    def as_dict(self):
-        return {
-            "total": self.total,
-            "lignes_traitees": self.lignes_traitees,
-            "entrees_importees": self.entrees_importees,
-            "lignes_ignorees": self.lignes_ignorees,
-            "erreurs": [{"ligne": e.ligne, "message": e.message} for e in self.erreurs],
-        }
-
-
-class ImportHistoriqueSchemaError(Exception):
-    """Le fichier n'a pas la colonne obligatoire (email) ou aucune colonne d'année
-    reconnue — rejeté avant toute lecture de ligne."""
 
 
 def _map_identite(header_row) -> dict:
@@ -168,104 +176,218 @@ def _resoudre_membre(email, cin, cache_email: dict, cache_cin: dict) -> Membre:
     membre_cin = cache_cin.get(cin_norm) if cin_norm else None
 
     if membre_email and membre_cin and membre_email.id != membre_cin.id:
-        raise ValueError(f"email {email!r} et cin {cin!r} désignent 2 membres différents en base")
+        raise ValueError(f"E-Mail {email!r} und CIN {cin!r} gehören zu 2 verschiedenen Mitgliedern")
     membre = membre_email or membre_cin
     if membre is None:
-        raise ValueError(f"aucun membre existant pour email={email!r} / cin={cin!r}")
+        raise ValueError(f"Kein bestehendes Mitglied für E-Mail={email!r} / CIN={cin!r}")
     return membre
 
 
-def importer_historique_statuts(fichier) -> ResultatImportHistorique:
-    """
-    `fichier` : objet fichier (ex. InMemoryUploadedFile) positionné au début, contenant un
-    classeur .xlsx avec une feuille de données en première position, 1ère ligne = en-têtes.
-    """
-    resultat = ResultatImportHistorique()
-
-    try:
-        classeur = openpyxl.load_workbook(fichier, read_only=True, data_only=True)
-    except Exception as exc:  # openpyxl lève plusieurs types selon le problème
-        raise ImportHistoriqueSchemaError(f"Fichier Excel illisible : {exc}") from exc
-
-    feuille = classeur.worksheets[0]
-    lignes = feuille.iter_rows(values_only=True)
-    try:
-        entetes = next(lignes)
-    except StopIteration:
-        raise ImportHistoriqueSchemaError("Le fichier est vide.")
-
-    identite = _map_identite(entetes)
-    # cin facultatif depuis le 2026-10-07 (membres sans CIN) : l'email suffit à identifier.
-    manquantes = [c for c in ("email",) if c not in identite]
-    if manquantes:
-        raise ImportHistoriqueSchemaError(
-            "Colonnes obligatoires manquantes : " + ", ".join(manquantes)
-        )
-
-    annees_colonnes = _annees_colonnes(entetes)
-    if not annees_colonnes:
-        raise ImportHistoriqueSchemaError(
-            "Aucune colonne d'année reconnue (en-tête numérique à 4 chiffres attendu, ex. 2024)."
-        )
-
-    # Caches de résolution — un seul passage sur tous les Membre (déchiffrement CIN inclus, même
-    # logique/limite documentée que apps.membres.imports._cin_email_existants), plutôt qu'une
-    # requête par ligne du fichier.
+def _lade_caches() -> tuple:
     cache_email, cache_cin = {}, {}
-    for membre in Membre.objects.all():
-        cache_email[membre.email.lower()] = membre
+    for membre in Membre.objects.select_related("user"):
+        cache_email[membre.email.strip().lower()] = membre
         if membre.cin and membre.cin != CIN_PLATZHALTER:
             cache_cin[membre.cin] = membre
+    return cache_email, cache_cin
 
-    for numero_ligne, row in enumerate(lignes, start=2):  # ligne 1 = en-têtes
-        if row is None or all(c is None for c in row):
-            continue  # ligne vide — ignorée silencieusement, pas une erreur
-        resultat.total += 1
 
-        email = row[identite["email"]]
-        cin = row[identite["cin"]] if "cin" in identite else None
+def _bezeichnung(membre: Membre) -> str:
+    return f"{membre.numero_membre} ({membre.prenom} {membre.nom})"
+
+
+def analyser_historique(fichier, dateiname: str = "") -> Analyse:
+    """
+    PRÜFPHASE — wertet die Datei aus, schreibt nichts. Pro Zeile werden die Jahreswerte mit den
+    bereits gespeicherten Einträgen verglichen : neu / abweichend (-> Dublette, wählbar) /
+    gleich. Wirft ImportDateiFehler bei unlesbarer Datei oder fehlenden Spalten.
+    """
+    classeur = oeffne_arbeitsmappe(fichier)
+    kopf, daten = lies_kopfzeile_und_zeilen(classeur)
+
+    identite = _map_identite(kopf)
+    # cin facultatif depuis le 2026-10-07 (membres sans CIN) : l'email suffit à identifier.
+    if "email" not in identite:
+        raise ImportDateiFehler("Pflichtspalten fehlen: email")
+    annees_colonnes = _annees_colonnes(kopf)
+    if not annees_colonnes:
+        raise ImportDateiFehler(
+            "Keine Jahresspalte erkannt (Kopfzeile mit 4-stelliger Zahl erwartet, z. B. 2024)."
+        )
+
+    cache_email, cache_cin = _lade_caches()
+    bestehend = {}  # membre_id -> {annee: statut}
+    for membre_id, annee, statut in HistoriqueStatutMembre.objects.values_list(
+        "membre_id", "annee", "statut"
+    ):
+        bestehend.setdefault(membre_id, {})[annee] = statut
+
+    gesehen = {}  # membre_id -> Zeilennummer der ersten Fundstelle
+    zeilen = []
+    for nummer, row in daten:
+        email = row[identite["email"]] if identite["email"] < len(row) else None
+        cin = row[identite["cin"]] if "cin" in identite and identite["cin"] < len(row) else None
+        anzeige = {"prenom": "", "nom": "", "email": str(email or "").strip()}
         try:
             membre = _resoudre_membre(email, cin, cache_email, cache_cin)
         except ValueError as exc:
-            resultat.erreurs.append(LigneErreurHistorique(ligne=numero_ligne, message=str(exc)))
-            resultat.lignes_ignorees += 1
+            zeilen.append(
+                ZeileAnalyse(ligne=nummer, status=STATUS_FEHLER, grund=str(exc), anzeige=anzeige)
+            )
             continue
+        anzeige.update(prenom=membre.prenom, nom=membre.nom)
 
-        entrees_ligne = 0
-        erreurs_ligne = []
-        # Ordre chronologique croissant : enregistrer_statut_annuel ne fait progresser le
-        # statut COURANT que vers l'année la plus récente déjà connue — traiter les colonnes
-        # dans l'ordre du fichier plutôt que par année pourrait, pour la même ligne, écrire une
-        # année récente puis une année plus ancienne et laisser le statut courant dans un état
-        # qui dépend de l'ordre des colonnes plutôt que du contenu.
+        if membre.id in gesehen:
+            zeilen.append(
+                ZeileAnalyse(
+                    ligne=nummer,
+                    status=STATUS_FEHLER,
+                    grund=(
+                        "Mitglied kommt in der Datei mehrfach vor "
+                        f"(bereits in Zeile {gesehen[membre.id]})"
+                    ),
+                    anzeige=anzeige,
+                    existant=membre,
+                )
+            )
+            continue
+        gesehen[membre.id] = nummer
+
+        eintraege, fehler = [], []
+        vorhanden = bestehend.get(membre.id, {})
         for annee in sorted(annees_colonnes):
             idx = annees_colonnes[annee]
-            valeur_brute = _normalize(row[idx]) if idx < len(row) else ""
-            if not valeur_brute:
-                continue  # cellule vide : aucune donnée pour ce (membre, année)
-            statut = _STATUT_ALIASES.get(valeur_brute)
+            roh = row[idx] if idx < len(row) else None
+            wert = _normalize(roh)
+            if not wert:
+                continue  # leere Zelle : keine Angabe für dieses Jahr
+            statut = _STATUT_ALIASES.get(wert)
             if statut is None:
-                erreurs_ligne.append(f"année {annee} : valeur invalide {row[idx]!r}")
+                fehler.append(f"Jahr {annee}: ungültiger Wert {roh!r}")
                 continue
-            enregistrer_statut_annuel(
-                membre,
-                annee,
-                statut,
-                RaisonChangementStatut.MANUEL,
-                date_effet=datetime.datetime(annee, 1, 1, tzinfo=datetime.timezone.utc),
-                notifier_membre=False,
-            )
-            entrees_ligne += 1
+            alt = vorhanden.get(annee)
+            if alt is None:
+                art = ART_NEU
+            elif alt == statut:
+                art = ART_GLEICH
+            else:
+                art = ART_ABWEICHEND
+            eintraege.append((annee, statut, alt, art))
 
-        if erreurs_ligne:
-            resultat.erreurs.append(
-                LigneErreurHistorique(ligne=numero_ligne, message="; ".join(erreurs_ligne))
+        if fehler:
+            zeilen.append(
+                ZeileAnalyse(
+                    ligne=nummer,
+                    status=STATUS_FEHLER,
+                    grund="; ".join(fehler),
+                    anzeige=anzeige,
+                    existant=membre,
+                )
             )
-        if entrees_ligne:
-            resultat.entrees_importees += entrees_ligne
-            resultat.lignes_traitees += 1
-        elif not erreurs_ligne:
-            # Ligne reconnue (membre trouvé) mais sans aucune cellule d'année renseignée.
-            resultat.lignes_ignorees += 1
+            continue
 
-    return resultat
+        aenderungen = [
+            {
+                "champ": str(annee),
+                "label": str(annee),
+                "alt": _STATUT_TEXT[alt] if alt else "",
+                "neu": _STATUT_TEXT[statut],
+                "art": art,
+            }
+            for annee, statut, alt, art in eintraege
+            if art != ART_GLEICH
+        ]
+        abweichend = any(art == ART_ABWEICHEND for *_, art in eintraege)
+        if not eintraege:
+            status, grund = STATUS_UNVERAENDERT, "Keine Jahreswerte in dieser Zeile"
+        elif not aenderungen:
+            status, grund = STATUS_UNVERAENDERT, "Alle Jahre sind bereits identisch vorhanden"
+        elif abweichend:
+            status = STATUS_DUBLETTE
+            anzahl = sum(1 for *_, art in eintraege if art == ART_ABWEICHEND)
+            grund = f"{anzahl} bestehende(r) Jahreseintrag/-einträge weicht/weichen ab"
+        else:
+            status = STATUS_NEU
+            grund = f"{len(aenderungen)} neue(r) Jahreseintrag/-einträge"
+        zeilen.append(
+            ZeileAnalyse(
+                ligne=nummer,
+                status=status,
+                grund=grund,
+                anzeige=anzeige,
+                existant=membre,
+                aenderungen=aenderungen,
+                daten=eintraege,
+            )
+        )
+
+    return Analyse(zeilen=zeilen, classeur=classeur, dateiname=dateiname)
+
+
+def _schreibe(membre: Membre, eintraege) -> None:
+    # Ordre chronologique croissant : enregistrer_statut_annuel ne fait progresser le statut
+    # COURANT que vers l'année la plus récente déjà connue.
+    for annee, statut, _alt, _art in sorted(eintraege):
+        enregistrer_statut_annuel(
+            membre,
+            annee,
+            statut,
+            RaisonChangementStatut.MANUEL,
+            date_effet=datetime.datetime(annee, 1, 1, tzinfo=datetime.timezone.utc),
+            notifier_membre=False,  # Massenimport : nie Benachrichtigung/E-Mail (siehe Docstring)
+        )
+
+
+def ausfuehren_historique(fichier, ueberschreiben, dateiname: str = "") -> Ergebnis:
+    """
+    BESTÄTIGUNGSPHASE — erneute Auswertung, dann : neue Jahreseinträge werden immer
+    geschrieben, abweichende bestehende nur für Zeilennummern in `ueberschreiben`. Liefert den
+    Bericht (Originaldatei + Status/Grund).
+    """
+    ueberschreiben = set(ueberschreiben or ())
+    analyse = analyser_historique(fichier, dateiname)
+
+    ergebnisse = []
+    for zeile in analyse.zeilen:
+        if zeile.status == STATUS_FEHLER:
+            ergebnisse.append(ZeilenErgebnis(zeile.ligne, ERG_FEHLER, zeile.grund))
+        elif zeile.status == STATUS_UNVERAENDERT:
+            ergebnisse.append(ZeilenErgebnis(zeile.ligne, ERG_UNVERAENDERT, zeile.grund))
+        else:
+            ergebnisse.append(_zeile_schreiben(zeile, zeile.ligne in ueberschreiben))
+
+    name, inhalt = erzeuge_bericht(analyse.classeur, ergebnisse, dateiname)
+    logger.info("import historique: %s Zeilen verarbeitet", len(ergebnisse))
+    return Ergebnis(zeilen=ergebnisse, bericht_name=name, bericht_bytes=inhalt)
+
+
+def _jahre(eintraege) -> str:
+    return ", ".join(str(e[0]) for e in eintraege)
+
+
+def _zeile_schreiben(zeile: ZeileAnalyse, ueberschreiben: bool) -> ZeilenErgebnis:
+    neue = [e for e in zeile.daten if e[3] == ART_NEU]
+    abweichende = [e for e in zeile.daten if e[3] == ART_ABWEICHEND]
+    zu_schreiben = neue + (abweichende if ueberschreiben else [])
+
+    if zu_schreiben:
+        try:
+            with transaction.atomic():
+                _schreibe(zeile.existant, zu_schreiben)
+        except Exception:  # noqa: BLE001 — eine fehlerhafte Zeile darf den Rest nicht stoppen
+            logger.exception("import historique: Zeile %s nicht gespeichert", zeile.ligne)
+            return ZeilenErgebnis(zeile.ligne, ERG_FEHLER, "Technischer Fehler beim Speichern")
+
+    if zeile.status == STATUS_NEU:
+        return ZeilenErgebnis(zeile.ligne, ERG_IMPORTIERT, f"Jahre importiert: {_jahre(neue)}")
+    if ueberschreiben:
+        grund = f"Jahre überschrieben: {_jahre(abweichende)}"
+        if neue:
+            grund += f" ; neu importiert: {_jahre(neue)}"
+        return ZeilenErgebnis(zeile.ligne, ERG_UEBERSCHRIEBEN, grund)
+    nicht = f"Dublette — nicht zum Überschreiben ausgewählt (Jahre: {_jahre(abweichende)})"
+    if neue:
+        return ZeilenErgebnis(
+            zeile.ligne, ERG_TEILWEISE, f"{nicht} ; neu importiert: {_jahre(neue)}"
+        )
+    return ZeilenErgebnis(zeile.ligne, ERG_UEBERSPRUNGEN, nicht)

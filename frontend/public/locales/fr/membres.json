@@ -132,17 +132,7 @@
     "upload_titre": "Importer un fichier",
     "choisir_fichier": "Choisir un fichier .xlsx",
     "aucun_fichier": "Aucun fichier sélectionné.",
-    "importer": "Importer",
-    "import_en_cours": "Import en cours…",
-    "erreur_import": "Une erreur est survenue lors de l'import.",
-    "resultat_titre": "Résultat de l'import",
-    "resultat_total": "Lignes lues",
-    "resultat_importes": "Importés",
-    "resultat_ignores": "Ignorés",
-    "resultat_erreurs_titre": "Erreurs",
-    "resultat_aucune_erreur": "Aucune erreur.",
-    "col_ligne": "Ligne",
-    "col_message": "Message"
+    "erreur_import": "Une erreur est survenue lors de l'import."
   },
   "profil": {
     "titre": "Mon profil",
@@ -167,18 +157,7 @@
     "upload_titre": "Importer un fichier",
     "choisir_fichier": "Choisir un fichier .xlsx",
     "aucun_fichier": "Aucun fichier sélectionné.",
-    "importer": "Importer",
-    "import_en_cours": "Import en cours…",
-    "erreur_import": "Une erreur est survenue lors de l'import.",
-    "resultat_titre": "Résultat de l'import",
-    "resultat_total": "Lignes lues",
-    "resultat_traitees": "Lignes traitées",
-    "resultat_importees": "Entrées importées",
-    "resultat_ignorees": "Lignes ignorées",
-    "resultat_erreurs_titre": "Erreurs",
-    "resultat_aucune_erreur": "Aucune erreur.",
-    "col_ligne": "Ligne",
-    "col_message": "Message"
+    "erreur_import": "Une erreur est survenue lors de l'import."
   },
   "tab_verzeichnis": "Répertoire",
   "tab_reporting": "Reporting",
@@ -283,5 +262,50 @@
       "nom_proche": "Nom proche",
       "date_naissance": "Date de naissance"
     }
+  },
+  "import_pruefung": {
+    "pruefen": "Vérifier",
+    "pruefen_laeuft": "Vérification en cours…",
+    "titre": "Liste de contrôle — rien n'a encore été importé",
+    "hinweis_membres": "Les nouvelles lignes sont créées à la confirmation. Pour les doublons, choisissez ligne par ligne si les données de base existantes doivent être écrasées : uniquement les cellules renseignées ; le numéro de membre est conservé, de même que l'email d'une fiche liée à un compte.",
+    "hinweis_historique": "Les nouvelles entrées annuelles sont toujours importées à la confirmation. Si une entrée annuelle existante diffère (doublon), elle n'est écrasée que si vous cochez explicitement la ligne.",
+    "filter": "Filtre",
+    "filter_alle": "Toutes",
+    "status": {
+      "neu": "Nouveau",
+      "dublette": "Doublon",
+      "unveraendert": "Inchangé",
+      "fehler": "Erreur"
+    },
+    "alle_waehlen": "Sélectionner tous les doublons",
+    "auswahl_aufheben": "Désélectionner tout",
+    "ausgewaehlt": "Sélectionnés pour écrasement",
+    "keine_zeilen": "Le fichier ne contient aucune ligne de données.",
+    "col_ueberschreiben": "Écraser",
+    "col_zeile": "Ligne",
+    "col_status": "Statut",
+    "col_person": "Personne",
+    "col_details": "Détails",
+    "col_grund": "Motif",
+    "ueberschreiben_zeile": "Écraser, ligne",
+    "leer": "vide",
+    "neu_hinweis": "nouveau",
+    "bestaetigen": "Confirmer l'import",
+    "bestaetigen_laeuft": "Import en cours…",
+    "abbrechen": "Annuler",
+    "zusammenfassung": "À la confirmation : {{neu}} nouvelle(s) ligne(s), {{ueberschreiben}} doublon(s) à écraser.",
+    "ergebnis_titre": "Import terminé",
+    "gelesen": "Lignes lues",
+    "ergebnis": {
+      "importiert": "Importés",
+      "ueberschrieben": "Écrasés",
+      "teilweise": "Partiellement importés",
+      "uebersprungen": "Ignorés",
+      "unveraendert": "Inchangés",
+      "fehler": "Erreurs"
+    },
+    "bericht_herunterladen": "Télécharger le rapport (Excel)",
+    "bericht_fehler": "Impossible de générer le rapport.",
+    "neuer_import": "Nouvel import"
   }
 }
