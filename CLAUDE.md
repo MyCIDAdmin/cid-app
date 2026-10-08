@@ -17,7 +17,7 @@ React, 100% open source.
 
 ## 2. Stack technique (versions exactes — voir TDD §1)
 
-- **Backend** : Django 4.2 LTS + DRF 3.15, PostgreSQL 15, Redis 7,
+- **Backend** : Django 5.2 LTS + DRF 3.17, PostgreSQL 15, Redis 7,
   Django Channels 4 + Daphne (WebSocket/ASGI), Celery 5 + Celery Beat,
   MinIO (S3-compatible), WeasyPrint/ReportLab (PDF), openpyxl (Excel).
 - **Frontend** : React 18 + Vite 5, TypeScript, Tailwind CSS 3,

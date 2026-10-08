@@ -185,7 +185,7 @@ class PartnerVerknuepfung(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.CheckConstraint(
-                check=(
+                condition=(
                     Q(projet__isnull=False, evenement__isnull=True, produit__isnull=True)
                     | Q(projet__isnull=True, evenement__isnull=False, produit__isnull=True)
                     | Q(projet__isnull=True, evenement__isnull=True, produit__isnull=False)

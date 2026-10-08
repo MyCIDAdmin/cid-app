@@ -2,7 +2,7 @@
 
 # --- Monitoring production ---
 sentry-sdk==2.14.0
-django-prometheus==2.3.1
+django-prometheus==2.5.0
 
 # --- Fichiers statiques (admin Django) sans dépendre d'un CDN externe ---
 whitenoise==6.7.0
