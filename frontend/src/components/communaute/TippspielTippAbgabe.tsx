@@ -21,6 +21,7 @@ import {
 } from "../../hooks/useCommunaute";
 import type { RencontreCalendrier, TippspielTip } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import EquipeLogoImage from "./EquipeLogoImage";
 
 const UN_JOUR_MS = 24 * 60 * 60 * 1000;
 
@@ -98,8 +99,21 @@ function LigneTipp({ tippspielId, rencontre, tip }: LigneProps) {
       className="flex flex-wrap items-center justify-between gap-2 rounded-cid-lg bg-bg-primary p-3 shadow-sm"
     >
       <div className="min-w-0">
-        <div className="truncate text-sm font-bold text-text-primary">
-          {rencontre.equipe_domicile} — {rencontre.equipe_exterieur}
+        {/* Logos de clubs (retour utilisateur du 2026-10-08 : "Im Tippspiel die Logos der Vereine
+            übernehmen, wenn die vorhanden sind") — même composant que Tabelle/Spielplan/Nächstes
+            Spiel ; EquipeLogoImage n'affiche rien tant qu'aucun logo n'existe pour ce nom. */}
+        <div className="flex min-w-0 items-center gap-1.5 text-sm font-bold text-text-primary">
+          <EquipeLogoImage
+            equipe={rencontre.equipe_domicile}
+            className="h-6 w-6 shrink-0 object-contain"
+          />
+          <span className="truncate">
+            {rencontre.equipe_domicile} — {rencontre.equipe_exterieur}
+          </span>
+          <EquipeLogoImage
+            equipe={rencontre.equipe_exterieur}
+            className="h-6 w-6 shrink-0 object-contain"
+          />
         </div>
         <div className="text-xs text-text-tertiary">{formatDate(rencontre.date_heure)}</div>
       </div>
