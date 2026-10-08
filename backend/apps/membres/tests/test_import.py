@@ -226,11 +226,68 @@ def test_import_doublon_avec_membre_deja_en_base(api_client, rh_user):
     assert Membre.objects.count() == 1  # pas de doublon créé
 
 
+# --- CIN et téléphone facultatifs (décision du 2026-10-07) ---
+
+
+def test_import_sans_cin_ni_telephone_reussit(api_client, rh_user):
+    fichier = _xlsx_file(
+        [
+            _ligne(email="a@example.de", cin="", telephone=""),
+            _ligne(
+                email="b@example.de", cin=None, telephone=None
+            ),  # 2 lignes sans CIN : pas un doublon
+        ]
+    )
+    resp = _import(_auth(api_client, rh_user), fichier)
+    assert resp.status_code == 200
+    assert resp.data["importes"] == 2
+    assert resp.data["erreurs"] == []
+    membre = Membre.objects.get(email="a@example.de")
+    assert membre.cin == "00000000"  # leere CIN -> Platzhalter
+    assert Membre.objects.get(email="b@example.de").cin == "00000000"
+    assert membre.telephone == ""
+
+
+def test_import_colonnes_cin_et_telephone_absentes_du_fichier(api_client, rh_user):
+    idx = [DEFAULT_HEADERS.index("cin"), DEFAULT_HEADERS.index("telephone")]
+    headers = [h for i, h in enumerate(DEFAULT_HEADERS) if i not in idx]
+    ligne = [v for i, v in enumerate(_ligne(email="a@example.de")) if i not in idx]
+    resp = _import(_auth(api_client, rh_user), _xlsx_file([ligne], headers=headers))
+    assert resp.status_code == 200
+    assert resp.data["importes"] == 1
+    assert Membre.objects.get(email="a@example.de").cin == "00000000"
+
+
+def test_import_cin_et_telephone_numeriques_excel(api_client, rh_user):
+    fichier = _xlsx_file([_ligne(email="a@example.de", cin=12345678.0, telephone=4917011111)])
+    resp = _import(_auth(api_client, rh_user), fichier)
+    assert resp.data["importes"] == 1
+    membre = Membre.objects.get(email="a@example.de")
+    assert membre.cin == "12345678"
+    assert membre.telephone == "4917011111"
+
+
+def test_import_membre_en_base_avec_cin_platzhalter_ne_bloque_pas_les_lignes_sans_cin(
+    api_client, rh_user
+):
+    MembreFactory(email="existant@example.de", cin="00000000")
+    fichier = _xlsx_file([_ligne(email="nouveau@example.de", cin="")])
+    resp = _import(_auth(api_client, rh_user), fichier)
+    assert resp.data["importes"] == 1
+
+
+def test_import_membre_en_base_sans_cin_ne_bloque_pas_les_lignes_sans_cin(api_client, rh_user):
+    MembreFactory(email="existant@example.de", cin=None)
+    fichier = _xlsx_file([_ligne(email="nouveau@example.de", cin="")])
+    resp = _import(_auth(api_client, rh_user), fichier)
+    assert resp.data["importes"] == 1
+
+
 # --- Validation fichier / permissions ---
 
 
 def test_import_colonne_obligatoire_manquante_400(api_client, rh_user):
-    headers_incomplets = [h for h in DEFAULT_HEADERS if h != "cin"]
+    headers_incomplets = [h for h in DEFAULT_HEADERS if h != "email"]
     fichier = _xlsx_file([], headers=headers_incomplets)
     resp = _import(_auth(api_client, rh_user), fichier)
     assert resp.status_code == 400

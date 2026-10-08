@@ -9,6 +9,7 @@ import type {
   Membre,
   MembreFormValues,
   MembreListItem,
+  RapprochementListe,
   ResultatImportHistorique,
   ResultatImportMembres,
   StatutMembre,
@@ -197,4 +198,23 @@ export async function exporterMembres(
     responseType: "blob",
   });
   return { blob: data, nomFichier: nomFichierDepuisContentDisposition(headers["content-disposition"]) };
+}
+
+/** GET /membres/rapprochement/ (RH+) — Konten mit Vorschlägen importierter Karten (+ Score). */
+export async function getRapprochement(): Promise<RapprochementListe> {
+  const { data } = await apiClient.get<RapprochementListe>("/membres/rapprochement/");
+  return data;
+}
+
+/** POST /membres/rapprochement/fusionner/ — verknüpft das Konto mit der importierten Karte. */
+export async function fusionnerRapprochement(inscritId: string, importeId: string): Promise<void> {
+  await apiClient.post("/membres/rapprochement/fusionner/", {
+    inscrit_id: inscritId,
+    importe_id: importeId,
+  });
+}
+
+/** POST /membres/rapprochement/ecarter/ — "Kein Treffer" (Konto verschwindet aus der Liste). */
+export async function ecarterRapprochement(inscritId: string): Promise<void> {
+  await apiClient.post("/membres/rapprochement/ecarter/", { inscrit_id: inscritId });
 }

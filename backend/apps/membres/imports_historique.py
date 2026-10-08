@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 
 import openpyxl
 
-from .models import Membre, RaisonChangementStatut, StatutMembre
+from .models import CIN_PLATZHALTER, Membre, RaisonChangementStatut, StatutMembre
 from .services import enregistrer_statut_annuel
 
 ANNEE_MIN = 2000
@@ -73,7 +73,7 @@ class ResultatImportHistorique:
 
 
 class ImportHistoriqueSchemaError(Exception):
-    """Le fichier n'a pas les colonnes obligatoires (email, cin) ou aucune colonne d'année
+    """Le fichier n'a pas la colonne obligatoire (email) ou aucune colonne d'année
     reconnue — rejeté avant toute lecture de ligne."""
 
 
@@ -133,7 +133,10 @@ def construire_classeur_template_historique():
         feuille.cell(row=2, column=col_idx, value=valeur)
 
     notes = classeur.create_sheet("Notes")
-    notes["A1"] = "Colonnes obligatoires : email, cin (identifient un membre DÉJÀ EXISTANT)."
+    notes["A1"] = (
+        "Colonne obligatoire : email. Colonne cin facultative (aide à retrouver un membre "
+        "dont l'email a changé). Identifient un membre DÉJÀ EXISTANT."
+    )
     notes["A2"] = (
         "Une colonne par année (n'importe quel en-tête numérique à 4 chiffres, ex. 2020, "
         "2021, ...) — valeur : actif / inactif. Cellule vide = aucune donnée pour ce membre "
@@ -158,6 +161,8 @@ def _resoudre_membre(email, cin, cache_email: dict, cache_cin: dict) -> Membre:
     DIFFÉRENTS (ambigu — jamais deviner lequel privilégier)."""
     email_norm = _normalize(email)
     cin_norm = str(cin).strip() if cin not in (None, "") else ""
+    if cin_norm == CIN_PLATZHALTER:  # Platzhalter = keine echte CIN
+        cin_norm = ""
 
     membre_email = cache_email.get(email_norm) if email_norm else None
     membre_cin = cache_cin.get(cin_norm) if cin_norm else None
@@ -190,7 +195,8 @@ def importer_historique_statuts(fichier) -> ResultatImportHistorique:
         raise ImportHistoriqueSchemaError("Le fichier est vide.")
 
     identite = _map_identite(entetes)
-    manquantes = [c for c in ("email", "cin") if c not in identite]
+    # cin facultatif depuis le 2026-10-07 (membres sans CIN) : l'email suffit à identifier.
+    manquantes = [c for c in ("email",) if c not in identite]
     if manquantes:
         raise ImportHistoriqueSchemaError(
             "Colonnes obligatoires manquantes : " + ", ".join(manquantes)
@@ -208,7 +214,8 @@ def importer_historique_statuts(fichier) -> ResultatImportHistorique:
     cache_email, cache_cin = {}, {}
     for membre in Membre.objects.all():
         cache_email[membre.email.lower()] = membre
-        cache_cin[membre.cin] = membre
+        if membre.cin and membre.cin != CIN_PLATZHALTER:
+            cache_cin[membre.cin] = membre
 
     for numero_ligne, row in enumerate(lignes, start=2):  # ligne 1 = en-têtes
         if row is None or all(c is None for c in row):
@@ -216,7 +223,7 @@ def importer_historique_statuts(fichier) -> ResultatImportHistorique:
         resultat.total += 1
 
         email = row[identite["email"]]
-        cin = row[identite["cin"]]
+        cin = row[identite["cin"]] if "cin" in identite else None
         try:
             membre = _resoudre_membre(email, cin, cache_email, cache_cin)
         except ValueError as exc:

@@ -94,7 +94,8 @@
     "suivant": "Suivant",
     "confirmer_suppression_titre": "Supprimer ce membre ?",
     "confirmer_suppression_message": "Cette action est irréversible. Confirmez-vous la suppression de {{nom}} ?",
-    "col_offre": "Offre"
+    "col_offre": "Offre",
+    "zuordnung": "Rapprochement"
   },
   "fiche": {
     "retour": "Retour à la liste",
@@ -257,5 +258,30 @@
     },
     "filter_mitglied": "Membre précis",
     "filter_mitglied_placeholder": "Rechercher nom ou numéro…"
+  },
+  "rapprochement": {
+    "titre": "Rapprocher les comptes des membres",
+    "beschreibung": "Ces comptes récemment inscrits ressemblent à des membres importés. Avec le même email confirmé, la liaison est automatique ; vous examinez ici les autres suggestions selon leur probabilité.",
+    "konto": "Compte",
+    "vorschlaege": "Suggestions",
+    "zuordnen": "Rapprocher",
+    "confirmer": "Oui, lier",
+    "annuler": "Annuler",
+    "kein_treffer": "Aucune correspondance",
+    "leer": "Aucun rapprochement en attente.",
+    "laden": "Chargement…",
+    "erreur": "Le rapprochement a échoué.",
+    "niveau": {
+      "haut": "très probable",
+      "moyen": "probable",
+      "bas": "possible"
+    },
+    "raison": {
+      "email": "Email",
+      "cin": "CIN",
+      "nom": "Nom",
+      "nom_proche": "Nom proche",
+      "date_naissance": "Date de naissance"
+    }
   }
 }

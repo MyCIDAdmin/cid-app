@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 
 import openpyxl
 
-from .models import Bundesland, Membre, Sexe, StatutMembre
+from .models import CIN_PLATZHALTER, Bundesland, Membre, Sexe, StatutMembre
 
 # Colonnes attendues dans la feuille (1ère ligne = en-têtes). Plusieurs
 # libellés tolérés par colonne (casse et accents ignorés à la comparaison).
@@ -36,14 +36,16 @@ REQUIRED_COLUMNS = {
     "nom": ("nom",),
     "date_naissance": ("date_naissance", "date de naissance"),
     "email": ("email", "e-mail", "mail"),
-    "telephone": ("telephone", "téléphone", "tel", "tél"),
-    "cin": ("cin",),
     "adresse_de": ("adresse_de", "adresse (allemagne)", "adresse"),
     "ville_de": ("ville_de", "ville (allemagne)", "ville"),
     "date_adhesion": ("date_adhesion", "date d'adhesion", "date d'adhésion"),
 }
+# telephone et cin sont facultatifs depuis le 2026-10-07 (décision utilisateur : beaucoup
+# d'anciens membres n'ont ni l'un ni l'autre dans les registres historiques).
 OPTIONAL_COLUMNS = {
     "sexe": ("sexe",),
+    "telephone": ("telephone", "téléphone", "tel", "tél"),
+    "cin": ("cin",),
     "passeport": ("passeport",),
     "code_postal_de": ("code_postal_de", "code postal"),
     "land_de": ("land_de", "land", "bundesland", "region"),
@@ -115,6 +117,7 @@ def construire_classeur_template():
         + ", ".join(f"{code} ({label})" for code, label in Bundesland.choices)
     )
     notes["A6"] = "Dates au format JJ/MM/AAAA."
+    notes["A7"] = f"cin : si vide, remplacé automatiquement par {CIN_PLATZHALTER} (valeur neutre)."
     notes.column_dimensions["A"].width = 100
 
     return classeur
@@ -194,6 +197,15 @@ def _parse_date(value, champ: str) -> datetime.date:
     raise ValueError(f"{champ} invalide (attendu date, reçu {value!r})")
 
 
+def _texte_ou_vide(valeur) -> str:
+    """Cellule -> texte. Excel stocke souvent CIN/téléphone comme nombres (12345678.0)."""
+    if valeur is None:
+        return ""
+    if isinstance(valeur, float) and valeur.is_integer():
+        valeur = int(valeur)
+    return str(valeur).strip()
+
+
 def _parse_row(row, mapping: dict, emails_vus: set, cins_vus: set) -> Membre:
     """
     Construit (sans l'enregistrer) un Membre à partir d'une ligne, ou lève
@@ -218,8 +230,10 @@ def _parse_row(row, mapping: dict, emails_vus: set, cins_vus: set) -> Membre:
     nom = cell("nom")
     date_naissance = _parse_date(cell("date_naissance"), "date_naissance")
     email = cell("email")
-    telephone = cell("telephone")
-    cin = str(cell("cin"))
+    telephone = _texte_ou_vide(cell("telephone", required=False))
+    # CIN leer -> Platzhalter "00000000" (kein echter Identifikator, siehe CIN_PLATZHALTER).
+    cin = _texte_ou_vide(cell("cin", required=False)) or CIN_PLATZHALTER
+    cin_reel = cin != CIN_PLATZHALTER
     adresse_de = cell("adresse_de")
     ville_de = cell("ville_de")
     date_adhesion = _parse_date(cell("date_adhesion"), "date_adhesion")
@@ -228,10 +242,11 @@ def _parse_row(row, mapping: dict, emails_vus: set, cins_vus: set) -> Membre:
         raise ValueError(f"email invalide : {email!r}")
 
     email_norm = email.lower()
-    if email_norm in emails_vus or cin in cins_vus:
+    if email_norm in emails_vus or (cin_reel and cin in cins_vus):
         raise ValueError(f"doublon dans le fichier (email ou CIN déjà vu) : {email}")
     emails_vus.add(email_norm)
-    cins_vus.add(cin)
+    if cin_reel:
+        cins_vus.add(cin)
 
     sexe_brut = _normalize(cell("sexe", required=False))
     sexe = _SEXE_ALIASES.get(sexe_brut, Sexe.NON_RENSEIGNE)
@@ -261,7 +276,7 @@ def _parse_row(row, mapping: dict, emails_vus: set, cins_vus: set) -> Membre:
         date_naissance=date_naissance,
         sexe=sexe,
         email=email,
-        telephone=str(telephone),
+        telephone=telephone,
         cin=cin,
         passeport=passeport,
         adresse_de=adresse_de,
@@ -290,7 +305,8 @@ def _cin_email_existants() -> tuple:
         # standard ici car EncryptedCharField déchiffre à la désérialisation
         # de la valeur BDD, avant renvoi par le queryset).
         emails.add(email.lower())
-        cins.add(cin)
+        if cin and cin != CIN_PLATZHALTER:
+            cins.add(cin)
     return emails, cins
 
 
@@ -325,7 +341,9 @@ def importer_membres(fichier) -> ResultatImport:
         resultat.total += 1
         try:
             membre = _parse_row(row, mapping, emails_vus_fichier, cins_vus_fichier)
-            if membre.email.lower() in emails_existants or membre.cin in cins_existants:
+            if membre.email.lower() in emails_existants or (
+                membre.cin and membre.cin in cins_existants
+            ):
                 raise ValueError("doublon avec un membre déjà en base (email ou CIN)")
         except ValueError as exc:
             resultat.erreurs.append(LigneErreur(ligne=numero_ligne, message=str(exc)))

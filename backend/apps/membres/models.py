@@ -23,6 +23,10 @@ from encrypted_model_fields.fields import EncryptedCharField
 
 from apps.membres.storage import MembrePhotoStorage
 
+# Platzhalter-CIN für Mitglieder ohne bekannte Ausweisnummer (Import, Entscheidung vom
+# 2026-10-07). Kein echter Identifikator: zählt weder als Duplikat noch als Treffer beim Zuordnen.
+CIN_PLATZHALTER = "00000000"
+
 
 class StatutMembre(models.TextChoices):
     """Statut associatif — formulaire fiche membre (mockup pg-admin-nouveau-membre)."""
@@ -177,6 +181,13 @@ class Membre(models.Model):
         max_length=20, choices=StatutMembre.choices, default=StatutMembre.EN_ATTENTE
     )
     date_adhesion = models.DateField(default=_aujourd_hui)
+    rapprochement_ecarte = models.BooleanField(
+        default=False,
+        help_text=_(
+            "RH/Admin a confirmé qu'aucune fiche importée ne correspond à ce compte "
+            "— exclu de la liste de rapprochement."
+        ),
+    )
 
     photo = models.ImageField(
         upload_to=membre_photo_upload_path,

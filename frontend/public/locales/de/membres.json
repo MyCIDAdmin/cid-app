@@ -94,7 +94,8 @@
     "suivant": "Weiter",
     "confirmer_suppression_titre": "Mitglied löschen?",
     "confirmer_suppression_message": "Diese Aktion ist unwiderruflich. Möchten Sie {{nom}} wirklich löschen?",
-    "col_offre": "Angebot"
+    "col_offre": "Angebot",
+    "zuordnung": "Zuordnung"
   },
   "fiche": {
     "retour": "Zurück zur Liste",
@@ -257,5 +258,30 @@
     },
     "filter_mitglied": "Einzelnes Mitglied",
     "filter_mitglied_placeholder": "Name oder Nummer suchen…"
+  },
+  "rapprochement": {
+    "titre": "Konten Mitgliedern zuordnen",
+    "beschreibung": "Diese neu registrierten Konten ähneln importierten Mitgliedern. Bei gleicher bestätigter E-Mail wird automatisch verknüpft; hier prüfen Sie die übrigen Vorschläge nach Wahrscheinlichkeit.",
+    "konto": "Konto",
+    "vorschlaege": "Vorschläge",
+    "zuordnen": "Zuordnen",
+    "confirmer": "Ja, verknüpfen",
+    "annuler": "Abbrechen",
+    "kein_treffer": "Kein Treffer",
+    "leer": "Keine offenen Zuordnungen.",
+    "laden": "Laden…",
+    "erreur": "Die Zuordnung ist fehlgeschlagen.",
+    "niveau": {
+      "haut": "sehr wahrscheinlich",
+      "moyen": "wahrscheinlich",
+      "bas": "möglich"
+    },
+    "raison": {
+      "email": "E-Mail",
+      "cin": "CIN",
+      "nom": "Name",
+      "nom_proche": "Name ähnlich",
+      "date_naissance": "Geburtsdatum"
+    }
   }
 }
