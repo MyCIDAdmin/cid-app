@@ -132,17 +132,7 @@
     "upload_titre": "Datei importieren",
     "choisir_fichier": "Eine .xlsx-Datei auswählen",
     "aucun_fichier": "Keine Datei ausgewählt.",
-    "importer": "Importieren",
-    "import_en_cours": "Import läuft…",
-    "erreur_import": "Beim Import ist ein Fehler aufgetreten.",
-    "resultat_titre": "Import-Ergebnis",
-    "resultat_total": "Gelesene Zeilen",
-    "resultat_importes": "Importiert",
-    "resultat_ignores": "Übersprungen",
-    "resultat_erreurs_titre": "Fehler",
-    "resultat_aucune_erreur": "Keine Fehler.",
-    "col_ligne": "Zeile",
-    "col_message": "Meldung"
+    "erreur_import": "Beim Import ist ein Fehler aufgetreten."
   },
   "profil": {
     "titre": "Mein Profil",
@@ -167,18 +157,7 @@
     "upload_titre": "Datei importieren",
     "choisir_fichier": "Eine .xlsx-Datei auswählen",
     "aucun_fichier": "Keine Datei ausgewählt.",
-    "importer": "Importieren",
-    "import_en_cours": "Import läuft…",
-    "erreur_import": "Beim Import ist ein Fehler aufgetreten.",
-    "resultat_titre": "Import-Ergebnis",
-    "resultat_total": "Gelesene Zeilen",
-    "resultat_traitees": "Verarbeitete Zeilen",
-    "resultat_importees": "Importierte Einträge",
-    "resultat_ignorees": "Übersprungene Zeilen",
-    "resultat_erreurs_titre": "Fehler",
-    "resultat_aucune_erreur": "Keine Fehler.",
-    "col_ligne": "Zeile",
-    "col_message": "Meldung"
+    "erreur_import": "Beim Import ist ein Fehler aufgetreten."
   },
   "tab_verzeichnis": "Verzeichnis",
   "tab_reporting": "Reporting",
@@ -283,5 +262,50 @@
       "nom_proche": "Name ähnlich",
       "date_naissance": "Geburtsdatum"
     }
+  },
+  "import_pruefung": {
+    "pruefen": "Prüfen",
+    "pruefen_laeuft": "Wird geprüft…",
+    "titre": "Prüfliste — es wurde noch nichts importiert",
+    "hinweis_membres": "Neue Zeilen werden beim Bestätigen angelegt. Bei Dubletten können Sie einzeln wählen, ob die bestehenden Stammdaten überschrieben werden: nur gefüllte Zellen, die Mitgliedsnummer bleibt, die E-Mail eines Mitglieds mit Benutzerkonto bleibt ebenfalls unverändert.",
+    "hinweis_historique": "Neue Jahreseinträge werden beim Bestätigen immer importiert. Weicht ein bestehender Jahreseintrag ab (Dublette), wird er nur überschrieben, wenn Sie die Zeile ausdrücklich wählen.",
+    "filter": "Filter",
+    "filter_alle": "Alle",
+    "status": {
+      "neu": "Neu",
+      "dublette": "Dublette",
+      "unveraendert": "Unverändert",
+      "fehler": "Fehler"
+    },
+    "alle_waehlen": "Alle Dubletten wählen",
+    "auswahl_aufheben": "Auswahl aufheben",
+    "ausgewaehlt": "Zum Überschreiben gewählt",
+    "keine_zeilen": "Die Datei enthält keine Datenzeilen.",
+    "col_ueberschreiben": "Überschreiben",
+    "col_zeile": "Zeile",
+    "col_status": "Status",
+    "col_person": "Person",
+    "col_details": "Details",
+    "col_grund": "Grund",
+    "ueberschreiben_zeile": "Überschreiben, Zeile",
+    "leer": "leer",
+    "neu_hinweis": "neu",
+    "bestaetigen": "Import bestätigen",
+    "bestaetigen_laeuft": "Import läuft…",
+    "abbrechen": "Abbrechen",
+    "zusammenfassung": "Beim Bestätigen: {{neu}} neue Zeile(n), {{ueberschreiben}} Dublette(n) überschreiben.",
+    "ergebnis_titre": "Import abgeschlossen",
+    "gelesen": "Gelesene Zeilen",
+    "ergebnis": {
+      "importiert": "Importiert",
+      "ueberschrieben": "Überschrieben",
+      "teilweise": "Teilweise importiert",
+      "uebersprungen": "Übersprungen",
+      "unveraendert": "Unverändert",
+      "fehler": "Fehler"
+    },
+    "bericht_herunterladen": "Bericht herunterladen (Excel)",
+    "bericht_fehler": "Der Bericht konnte nicht erstellt werden.",
+    "neuer_import": "Neuen Import starten"
   }
 }

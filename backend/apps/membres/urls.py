@@ -4,10 +4,12 @@ from rest_framework.routers import DefaultRouter
 from .export_views import MembreExportView
 from .history_views import MonHistoriqueStatutView
 from .import_views import (
+    HistoriqueStatutImportBestaetigenView,
+    HistoriqueStatutImportPruefenView,
     HistoriqueStatutImportTemplateView,
-    HistoriqueStatutImportView,
+    MembreImportBestaetigenView,
+    MembreImportPruefenView,
     MembreImportTemplateView,
-    MembreImportView,
 )
 from .rapprochement_views import (
     RapprochementEcarterView,
@@ -26,18 +28,28 @@ app_name = "membres"
 router = DefaultRouter()
 router.register("", MembreViewSet, basename="membre")
 
-# "import/", "import/template/", "import-historique/", "import-historique/template/",
-# "mon-historique/" et "export/" doivent être déclarés AVANT les routes du router : le lookup
+# "import/...", "import-historique/...", "mon-historique/" et "export/" doivent être déclarés
+# AVANT les routes du router : le lookup
 # par défaut de MembreViewSet (`/membres/{pk}/`) utilise le regex générique DRF [^/.]+, qui
 # matcherait aussi ces chaînes littérales comme un pk. Django résout les urlpatterns dans
 # l'ordre — ces chemins explicites gagnent.
 urlpatterns = [
-    path("import/", MembreImportView.as_view(), name="membre-import"),
+    path("import/pruefen/", MembreImportPruefenView.as_view(), name="membre-import-pruefen"),
+    path(
+        "import/bestaetigen/",
+        MembreImportBestaetigenView.as_view(),
+        name="membre-import-bestaetigen",
+    ),
     path("import/template/", MembreImportTemplateView.as_view(), name="membre-import-template"),
     path(
-        "import-historique/",
-        HistoriqueStatutImportView.as_view(),
-        name="membre-import-historique",
+        "import-historique/pruefen/",
+        HistoriqueStatutImportPruefenView.as_view(),
+        name="membre-import-historique-pruefen",
+    ),
+    path(
+        "import-historique/bestaetigen/",
+        HistoriqueStatutImportBestaetigenView.as_view(),
+        name="membre-import-historique-bestaetigen",
     ),
     path(
         "import-historique/template/",

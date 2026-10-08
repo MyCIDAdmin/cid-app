@@ -6,12 +6,13 @@ import type {
   ChampExport,
   CursorPage,
   HistoriqueStatutEntry,
+  ImportArt,
+  ImportErgebnis,
+  ImportPruefung,
   Membre,
   MembreFormValues,
   MembreListItem,
   RapprochementListe,
-  ResultatImportHistorique,
-  ResultatImportMembres,
   StatutMembre,
 } from "../types/membre";
 
@@ -104,33 +105,43 @@ export async function changerStatutMembre(id: string, statut: StatutMembre): Pro
   return data;
 }
 
-/** POST /membres/import/ (RICEFW W-008/F-019, réservé RH+) — champ multipart `fichier`. */
-export async function importerMembres(fichier: File): Promise<ResultatImportMembres> {
+const IMPORT_BASIS: Record<ImportArt, string> = {
+  membres: "/membres/import",
+  historique: "/membres/import-historique",
+};
+
+/** POST /membres/import[-historique]/pruefen/ (RH+) — Prüfphase : analysiert die Datei, schreibt
+ * nichts. Champ multipart `fichier`. */
+export async function pruefenImport(art: ImportArt, fichier: File): Promise<ImportPruefung> {
   const formData = new FormData();
   formData.append("fichier", fichier);
-  const { data } = await apiClient.post<ResultatImportMembres>("/membres/import/", formData, {
+  const { data } = await apiClient.post<ImportPruefung>(`${IMPORT_BASIS[art]}/pruefen/`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+  return data;
+}
+
+/** POST /membres/import[-historique]/bestaetigen/ (RH+) — dieselbe Datei erneut + Zeilennummern
+ * der zu überschreibenden Dubletten ; importiert und liefert den Bericht (Excel, base64). */
+export async function bestaetigenImport(
+  art: ImportArt,
+  fichier: File,
+  ueberschreiben: number[],
+): Promise<ImportErgebnis> {
+  const formData = new FormData();
+  formData.append("fichier", fichier);
+  ueberschreiben.forEach((ligne) => formData.append("ueberschreiben", String(ligne)));
+  const { data } = await apiClient.post<ImportErgebnis>(
+    `${IMPORT_BASIS[art]}/bestaetigen/`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
   return data;
 }
 
 /** GET /membres/import/template/ — classeur vierge à compléter avant import. */
 export async function telechargerTemplateImportMembres(): Promise<Blob> {
   const { data } = await apiClient.get("/membres/import/template/", { responseType: "blob" });
-  return data;
-}
-
-/** POST /membres/import-historique/ (ajouté le 2026-09-19, réservé RH+) — importe l'historique
- * de statut associatif par année (une colonne par année) pour des membres déjà existants,
- * identifiés par email + cin — voir apps.membres.imports_historique côté backend. */
-export async function importerHistoriqueStatuts(fichier: File): Promise<ResultatImportHistorique> {
-  const formData = new FormData();
-  formData.append("fichier", fichier);
-  const { data } = await apiClient.post<ResultatImportHistorique>(
-    "/membres/import-historique/",
-    formData,
-    { headers: { "Content-Type": "multipart/form-data" } },
-  );
   return data;
 }
 

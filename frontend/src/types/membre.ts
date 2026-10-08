@@ -79,27 +79,64 @@ export interface CursorPage<T> {
   results: T[];
 }
 
-/** Réponse de POST /membres/import/ (voir apps.membres.imports.ResultatImport.as_dict). */
-export interface LigneErreurImport {
+/**
+ * Import Excel en deux temps (2026-10-08, voir apps.membres.import_gemeinsam) : POST `.../pruefen/`
+ * renvoie la liste de contrôle (rien n'est écrit), POST `.../bestaetigen/` importe, écrase les
+ * doublons choisis et renvoie le rapport Excel (colonnes Status/Grund) en base64.
+ */
+export type ImportArt = "membres" | "historique";
+
+export type ImportZeilenStatus = "neu" | "dublette" | "unveraendert" | "fehler";
+
+export type ImportErgebnisArt =
+  "importiert" | "ueberschrieben" | "teilweise" | "uebersprungen" | "unveraendert" | "fehler";
+
+/** Un champ (membres) ou une année (historique) qui changerait pour une ligne. */
+export interface ImportAenderung {
+  champ: string;
+  label: string;
+  alt: string;
+  neu: string;
+  art: "neu" | "abweichend";
+}
+
+export interface ImportBestehendesMitglied {
+  id: string;
+  numero_membre: string;
+  prenom: string;
+  nom: string;
+  email: string;
+  a_un_compte: boolean;
+}
+
+export interface ImportPruefZeile {
   ligne: number;
-  message: string;
+  status: ImportZeilenStatus;
+  grund: string;
+  ueberschreibbar: boolean;
+  anzeige: { prenom?: string; nom?: string; email?: string };
+  existant: ImportBestehendesMitglied | null;
+  aenderungen: ImportAenderung[];
 }
 
-export interface ResultatImportMembres {
+export interface ImportPruefung {
   total: number;
-  importes: number;
-  ignores: number;
-  erreurs: LigneErreurImport[];
+  zaehler: Record<ImportZeilenStatus, number>;
+  zeilen: ImportPruefZeile[];
 }
 
-/** Réponse de POST /membres/import-historique/ (ajouté le 2026-09-19) — voir
- * apps.membres.imports_historique.ResultatImportHistorique.as_dict. */
-export interface ResultatImportHistorique {
+export interface ImportZeilenErgebnis {
+  ligne: number;
+  ergebnis: ImportErgebnisArt;
+  status: string;
+  grund: string;
+}
+
+export interface ImportErgebnis {
   total: number;
-  lignes_traitees: number;
-  entrees_importees: number;
-  lignes_ignorees: number;
-  erreurs: LigneErreurImport[];
+  zaehler: Record<ImportErgebnisArt, number>;
+  zeilen: ImportZeilenErgebnis[];
+  bericht: { dateiname: string; inhalt_base64: string };
 }
 
 /** Ligne renvoyée par GET /membres/mon-historique/ (ajouté le 2026-09-29, voir

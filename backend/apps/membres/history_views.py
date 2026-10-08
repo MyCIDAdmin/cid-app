@@ -3,7 +3,7 @@ Vue API — historique de statut associatif du membre courant, par année.
 
 Alimente la section "Jährlicher Mitgliedschaftsstatus" du widget "Mitgliedschaftsverlauf"
 (frontend/src/pages/adhesions/MonAdhesionPage.tsx). Expose en lecture seule ce que
-apps.membres.imports_historique.importer_historique_statuts et
+apps.membres.imports_historique.ausfuehren_historique et
 apps.membres.services.enregistrer_statut_annuel écrivent dans HistoriqueStatutMembre —
 jusqu'ici cette table n'était lue par aucune vue API (le seul point de lecture existant était
 interne à services.py, pour un contrôle d'idempotence, voir sa docstring). Résultat concret

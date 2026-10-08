@@ -1,6 +1,10 @@
 """
 Vue API — import Excel des membres historiques (RICEFW C-001/W-008).
 
+Depuis le 2026-10-08 chaque import se fait en deux appels sans état (voir import_gemeinsam) :
+`.../pruefen/` (analyse, rien n'est écrit) puis `.../bestaetigen/` (le même fichier + les numéros
+de ligne de doublons à écraser -> import + rapport Excel en base64).
+
 Fichier séparé de views.py : ce n'est pas une action du ViewSet (le routeur
 DRF standard ne gère pas bien les uploads multipart sur une action de
 ModelViewSet aux côtés du parsing JSON par défaut des autres actions), et
@@ -15,11 +19,12 @@ from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsRHOrAbove
 
-from .imports import ImportSchemaError, construire_classeur_template, importer_membres
+from .import_gemeinsam import ImportDateiFehler
+from .imports import analyser_membres, ausfuehren_membres, construire_classeur_template
 from .imports_historique import (
-    ImportHistoriqueSchemaError,
+    analyser_historique,
+    ausfuehren_historique,
     construire_classeur_template_historique,
-    importer_historique_statuts,
 )
 from .utils_http import xlsx_response
 
@@ -89,30 +94,92 @@ def _fichier_xlsx_valide_ou_erreur(request):
     return fichier, None
 
 
-class MembreImportView(APIView):
-    """
-    POST /api/v1/membres/import/ — réservé RH+ (même niveau que la création
-    manuelle de fiches membres, voir apps.membres.permissions).
-    Champ multipart attendu : `fichier`.
-    """
+def _schema_fehler(exc):
+    return Response(
+        {"code": "schema_invalide", "message": str(exc), "details": {}},
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
+def _zeilen_zum_ueberschreiben(request):
+    """Zeilennummern der Dubletten, die überschrieben werden sollen : Mehrfachfeld
+    `ueberschreiben` (FormData.append je Zeile). Gibt (set, None) oder (None, Response-Fehler)."""
+    werte = []
+    for roh in request.data.getlist("ueberschreiben"):
+        werte.extend(teil for teil in str(roh).split(",") if teil.strip())
+    try:
+        nummern = {int(w) for w in werte}
+    except ValueError:
+        return None, Response(
+            {
+                "code": "ueberschreiben_ungueltig",
+                "message": "Ungültige Zeilennummer in 'ueberschreiben'.",
+                "details": {},
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if any(n < 2 for n in nummern):
+        return None, Response(
+            {
+                "code": "ueberschreiben_ungueltig",
+                "message": "Ungültige Zeilennummer in 'ueberschreiben'.",
+                "details": {},
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return nummern, None
+
+
+class _ImportPruefenBasis(APIView):
+    """PRÜFPHASE — Datei analysieren, nichts schreiben. Reserviert RH+ (wie die Vorlage)."""
 
     permission_classes = [IsRHOrAbove]
     parser_classes = [MultiPartParser]
+    analysieren = None
 
     def post(self, request):
         fichier, erreur = _fichier_xlsx_valide_ou_erreur(request)
         if erreur:
             return erreur
-
         try:
-            resultat = importer_membres(fichier)
-        except ImportSchemaError as exc:
-            return Response(
-                {"code": "schema_invalide", "message": str(exc), "details": {}},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            analyse = type(self).analysieren(fichier, fichier.name)
+        except ImportDateiFehler as exc:
+            return _schema_fehler(exc)
+        return Response(analyse.as_dict(), status=status.HTTP_200_OK)
 
-        return Response(resultat.as_dict(), status=status.HTTP_200_OK)
+
+class _ImportBestaetigenBasis(APIView):
+    """BESTÄTIGUNGSPHASE — dieselbe Datei erneut + Zeilennummern der zu überschreibenden
+    Dubletten ; importiert, überschreibt und liefert den Bericht (Excel, base64)."""
+
+    permission_classes = [IsRHOrAbove]
+    parser_classes = [MultiPartParser]
+    ausfuehren = None
+
+    def post(self, request):
+        fichier, erreur = _fichier_xlsx_valide_ou_erreur(request)
+        if erreur:
+            return erreur
+        nummern, erreur = _zeilen_zum_ueberschreiben(request)
+        if erreur:
+            return erreur
+        try:
+            ergebnis = type(self).ausfuehren(fichier, nummern, fichier.name)
+        except ImportDateiFehler as exc:
+            return _schema_fehler(exc)
+        return Response(ergebnis.as_dict(), status=status.HTTP_200_OK)
+
+
+class MembreImportPruefenView(_ImportPruefenBasis):
+    """POST /api/v1/membres/import/pruefen/ — Champ multipart : `fichier`."""
+
+    analysieren = staticmethod(analyser_membres)
+
+
+class MembreImportBestaetigenView(_ImportBestaetigenBasis):
+    """POST /api/v1/membres/import/bestaetigen/ — `fichier` + `ueberschreiben` (Zeilennummern)."""
+
+    ausfuehren = staticmethod(ausfuehren_membres)
 
 
 class MembreImportTemplateView(APIView):
@@ -130,32 +197,17 @@ class MembreImportTemplateView(APIView):
         return xlsx_response(classeur, "template_import_membres.xlsx")
 
 
-class HistoriqueStatutImportView(APIView):
-    """
-    POST /api/v1/membres/import-historique/ — import Excel de l'historique de statut associatif
-    PAR ANNÉE (demande utilisateur du 2026-09-19, voir apps.membres.imports_historique) pour des
-    membres DÉJÀ EN BASE. Réservé RH+, même niveau que MembreImportView — c'est aussi une
-    opération de rattrapage de master data, pas une action métier courante. Champ multipart
-    attendu : `fichier`.
-    """
+class HistoriqueStatutImportPruefenView(_ImportPruefenBasis):
+    """POST /api/v1/membres/import-historique/pruefen/ — Prüfphase des Statushistorie-Imports
+    (demande utilisateur du 2026-09-19, voir apps.membres.imports_historique)."""
 
-    permission_classes = [IsRHOrAbove]
-    parser_classes = [MultiPartParser]
+    analysieren = staticmethod(analyser_historique)
 
-    def post(self, request):
-        fichier, erreur = _fichier_xlsx_valide_ou_erreur(request)
-        if erreur:
-            return erreur
 
-        try:
-            resultat = importer_historique_statuts(fichier)
-        except ImportHistoriqueSchemaError as exc:
-            return Response(
-                {"code": "schema_invalide", "message": str(exc), "details": {}},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+class HistoriqueStatutImportBestaetigenView(_ImportBestaetigenBasis):
+    """POST /api/v1/membres/import-historique/bestaetigen/ — `fichier` + `ueberschreiben`."""
 
-        return Response(resultat.as_dict(), status=status.HTTP_200_OK)
+    ausfuehren = staticmethod(ausfuehren_historique)
 
 
 class HistoriqueStatutImportTemplateView(APIView):
