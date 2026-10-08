@@ -42,6 +42,7 @@ import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { useAnnulerInscription, useEvenements, useInscriptions } from "../../hooks/useEvenements";
 import { estMembreActif, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import EvenementPreise from "../../components/evenements/EvenementPreise";
 import PartnerLogos from "../../components/partner/PartnerLogos";
 import type { Evenement } from "../../types/evenements";
 import { uebersetzt } from "../../utils/uebersetzung";
@@ -157,11 +158,7 @@ function EvenementCarte({
                 })
               : t("places_illimitees")}
           </span>
-          <span>
-            {evenement.gratuit
-              ? t("gratuit")
-              : t("cout_par_personne", { cout: formatMontant(evenement.cout_applicable) })}
-          </span>
+          <EvenementPreise evenement={evenement} />
         </div>
 
         {!bloqueNonMembre && evenement.lieu.trim() && (

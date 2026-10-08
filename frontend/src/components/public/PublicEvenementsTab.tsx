@@ -26,6 +26,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import AnimatedProgress from "../ui/AnimatedProgress";
+import EvenementPreise from "../evenements/EvenementPreise";
 import MapsApercu from "../ui/MapsApercu";
 import ModaleInscription, {
   formatDate,
@@ -125,6 +126,7 @@ function EvenementKachel({
                 })
               : t("places_illimitees")}
           </span>
+          <EvenementPreise evenement={evenement} />
         </div>
 
         {!bloqueNonMembre && evenement.lieu.trim() && (
