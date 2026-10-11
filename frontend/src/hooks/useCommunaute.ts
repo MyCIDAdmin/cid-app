@@ -77,10 +77,14 @@ function invalidateSujets(queryClient: ReturnType<typeof useQueryClient>) {
 
 // --- Fil d'actualité ---
 
-export function usePublications(filtres: communauteApi.PublicationsFiltres = {}) {
+export function usePublications(
+  filtres: communauteApi.PublicationsFiltres = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: communauteKeys.publications(filtres),
     queryFn: () => communauteApi.listPublications(filtres),
+    enabled: options.enabled ?? true,
   });
 }
 

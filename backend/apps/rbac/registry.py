@@ -46,18 +46,113 @@ MODULE_LABELS = {
 }
 
 # ---------------------------------------------------------------------------
-# Clés de VISIBILITÉ DE MENU (demande utilisateur du 2026-10-05, point 9) — les 10 modules
-# ci-dessus + "albums" : les Fotoalben vivent dans apps.communaute mais doivent pouvoir être
-# montrés à un non-membre sans ouvrir le reste de la communauté (fil, forum, messagerie...).
-# Utilisé UNIQUEMENT par ModuleVisibiliteMembre (jamais par la matrice d'accès).
-VISIBILITE_KEYS = MODULES + ["albums"]
-VISIBILITE_LABELS = {**MODULE_LABELS, "albums": "Albums photos"}
+# Clés de VISIBILITÉ DE MENU — une clé par ENTRÉE de la Sidebar (hors groupe "Administration",
+# géré par la matrice des 14 pages de gestion ci-dessous).
+#
+# Historique : demande du 2026-10-05 (point 9) = 10 modules + "albums", ce qui regroupait toute la
+# communauté (Fil, Forum, Messagerie, Gruppen, Fan-Club, Quiz) sous la seule clé "communaute" et le
+# Covoiturage sous "evenements". Demande du 2026-10-11 : chaque entrée de menu se règle
+# INDIVIDUELLEMENT (tableau "Sichtbarkeit" de la Rollenverwaltung). La clé de chaque entrée est
+# donc désormais propre ; `MENU_PARENT_LEGACY` rattache les nouvelles clés à l'ancienne clé
+# groupée dont elles héritent leur réglage lors de la migration de données (voir migration 0006).
+#
+# "Dashboard" et "Startseite" ne figurent pas ici : toujours visibles. "Mitglieder" (clé
+# `membres`) reste réglable côté menu, mais l'API des membres se limite déjà elle-même à la fiche
+# du compte pour un rôle < RH (MembreViewSet.get_queryset) — aucune barrière d'API supplémentaire.
+MENU_ITEMS = [
+    # (clé, libellé, groupe de la Sidebar, module de la matrice d'accès, pages de gestion liées)
+    ("membres", "Mitglieder", "general", "membres", ()),
+    ("adhesions", "Meine Mitgliedschaft", "general", "adhesions", ("page_campagnes_adhesion",)),
+    (
+        "evenements",
+        "Veranstaltungen",
+        "general",
+        "evenements",
+        ("page_events", "page_inscriptions"),
+    ),
+    ("covoiturage", "Fahrgemeinschaften", "general", "evenements", ("page_events",)),
+    ("projets", "Aktionen & Projekte", "general", "projets", ("page_projets",)),
+    ("boutique", "Shop", "general", "boutique", ("page_boutique",)),
+    ("fil", "Neuigkeiten (Fil)", "communaute", "communaute", ()),
+    ("forum", "Forum", "communaute", "communaute", ()),
+    ("messagerie", "Nachrichten", "communaute", "communaute", ()),
+    ("groupes", "Gruppen", "communaute", "communaute", ()),
+    ("live", "Fan-Club (Live, Tabelle, Tippspiel)", "communaute", "communaute", ()),
+    ("albums", "Fotoalben", "contenu", "communaute", ("page_albums",)),
+    ("quiz", "Quiz", "contenu", "communaute", ("page_quiz",)),
+    ("vote", "Abstimmungen", "contenu", "vote", ()),
+]
+MENU_KEYS = [cle for cle, *_ in MENU_ITEMS]
+MENU_LABELS = {cle: libelle for cle, libelle, *_ in MENU_ITEMS}
+MENU_GROUPE = {cle: groupe for cle, _l, groupe, *_ in MENU_ITEMS}
+MENU_MODULE_MATRICE = {cle: module for cle, _l, _g, module, _p in MENU_ITEMS}
+MENU_PAGES_ADMIN = {cle: pages for cle, _l, _g, _m, pages in MENU_ITEMS}
 
-# Défaut "non-membre" (compte connecté sans fiche Membre ACTIVE, demande utilisateur du
-# 2026-10-05, point 3) quand aucune ligne ModuleVisibiliteMembre n'existe, ou que sa colonne
-# `visible_non_membre` est vide : Meine Mitgliedschaft (adhesions), Veranstaltungen,
-# Aktionen & Projekte, Shop, Fotoalben. Tout le reste est masqué par défaut.
-VISIBILITE_NON_MEMBRE_DEFAUT = {"adhesions", "evenements", "projets", "boutique", "albums"}
+# Ancienne clé groupée dont chaque nouvelle clé hérite son réglage (migration 0006) — les clés
+# sans entrée ici existaient déjà telles quelles.
+MENU_PARENT_LEGACY = {
+    "fil": "communaute",
+    "forum": "communaute",
+    "messagerie": "communaute",
+    "groupes": "communaute",
+    "live": "communaute",
+    "quiz": "communaute",
+    "covoiturage": "evenements",
+}
+
+VISIBILITE_KEYS = list(MENU_KEYS)
+VISIBILITE_LABELS = dict(MENU_LABELS)
+
+# Défaut "non-membre" (compte connecté sans fiche Membre ACTIVE) quand aucune ligne
+# ModuleVisibiliteMembre n'existe, ou que sa colonne `visible_non_membre` est vide :
+# Meine Mitgliedschaft, Veranstaltungen (+ Fahrgemeinschaften, comme avant la séparation des
+# clés), Aktionen & Projekte, Shop, Fotoalben. Tout le reste est masqué ET refusé par l'API.
+VISIBILITE_NON_MEMBRE_DEFAUT = {
+    "adhesions",
+    "evenements",
+    "covoiturage",
+    "projets",
+    "boutique",
+    "albums",
+}
+
+# Préfixes d'URL d'API -> clé de menu (barrière "non-membre", voir services.gate_nicht_mitglied).
+# Le préfixe le PLUS LONG gagne. Un chemin absent de cette liste n'est jamais barré par ce
+# mécanisme : auth, notifications, cotisations (paiements — chaque compte n'y voit que ses
+# propres lignes), membres (scopé à soi-même sous RH), rbac, partenaires, traductions et les
+# lectures PUBLIQUES de la Startseite (classement, calendrier, logos, configuration du site).
+# Les pages de gestion (stats, finances, ...) se règlent séparément via la matrice des pages.
+API_PREFIXES_MENU = [
+    ("/api/v1/adhesions/", "adhesions"),
+    ("/api/v1/evenements/covoiturages/", "covoiturage"),
+    ("/api/v1/evenements/reservations-covoiturage/", "covoiturage"),
+    ("/api/v1/evenements/", "evenements"),
+    ("/api/v1/projets/", "projets"),
+    ("/api/v1/boutique/", "boutique"),
+    ("/api/v1/votes/", "vote"),
+    ("/api/v1/communaute/publications/", "fil"),
+    ("/api/v1/communaute/commentaires/", "fil"),
+    ("/api/v1/communaute/sujets/", "forum"),
+    ("/api/v1/communaute/reponses-forum/", "forum"),
+    ("/api/v1/communaute/conversations/", "messagerie"),
+    ("/api/v1/communaute/messages-prives/", "messagerie"),
+    ("/api/v1/communaute/membres-recherche/", "messagerie"),
+    ("/api/v1/communaute/groupes/", "groupes"),
+    ("/api/v1/communaute/messages-groupe/", "groupes"),
+    ("/api/v1/communaute/matchs/", "live"),
+    ("/api/v1/communaute/match-commentaires/", "live"),
+    ("/api/v1/communaute/match-evenements/", "live"),
+    ("/api/v1/communaute/statistiques-joueurs/", "live"),
+    ("/api/v1/communaute/tippspiel/", "live"),
+    ("/api/v1/communaute/tippspiel-teilnahmen/", "live"),
+    ("/api/v1/communaute/tippspiel-tipps/", "live"),
+    ("/api/v1/communaute/albums/", "albums"),
+    ("/api/v1/communaute/photos/", "albums"),
+    ("/api/v1/communaute/photo-commentaires/", "albums"),
+    ("/api/v1/communaute/quiz/", "quiz"),
+    ("/api/v1/communaute/quiz-questions/", "quiz"),
+    ("/api/v1/communaute/quiz-choix/", "quiz"),
+]
 
 # ---------------------------------------------------------------------------
 # Pages de gestion (Phase D, ajoutée le 2026-09-23, demande utilisateur : "Ich möchte dass du

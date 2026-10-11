@@ -7,14 +7,14 @@
   "modules": {
     "membres": "Mitglieder",
     "cotisations": "Beiträge",
-    "adhesions": "Mitgliedschaften",
+    "adhesions": "Meine Mitgliedschaft",
     "evenements": "Veranstaltungen",
-    "boutique": "Boutique",
-    "vote": "Abstimmung",
+    "boutique": "Shop",
+    "vote": "Abstimmungen",
     "communaute": "Gemeinschaft",
     "stats": "Statistiken",
     "notifications": "Benachrichtigungen",
-    "projets": "Projekte",
+    "projets": "Aktionen & Projekte",
     "page_quiz": "Quiz-Verwaltung",
     "page_boutique": "Shop-Verwaltung",
     "page_events": "Veranstaltungsverwaltung",
@@ -29,7 +29,14 @@
     "page_projets": "Projekt- & Aktionsverwaltung",
     "page_albums": "Fotoalben-Verwaltung",
     "albums": "Fotoalben",
-    "page_finances": "Finanzen (Ausgaben, Budget, Bilanz)"
+    "page_finances": "Finanzen (Ausgaben, Budget, Bilanz)",
+    "fil": "Neuigkeiten",
+    "forum": "Forum",
+    "messagerie": "Nachrichten",
+    "groupes": "Gruppen",
+    "live": "Fan-Club (Live, Tabelle, Tippspiel)",
+    "quiz": "Quiz",
+    "covoiturage": "Fahrgemeinschaften"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",
@@ -37,7 +44,7 @@
     "fermer": "Schließen",
     "chargement_roles": "Rollen werden geladen…",
     "erreur_chargement_roles": "Die Rollen des Benutzers konnten nicht geladen werden.",
-    "role_membre_verrouille": "Normales Mitglied ist immer inbegriffen und kann nicht abgewählt werden.",
+    "role_membre_verrouille": "Normales Mitglied ist die technische Basisrolle jedes Kontos und kann nicht abgewählt werden. Sie gibt allein keine Mitglieder-Rechte: Ob ein Konto die Mitglieder-Module sieht, hängt nur vom Status der Mitgliedschaft ab (aktiv oder nicht aktiv, siehe Tabelle Sichtbarkeit).",
     "enregistrer": "Speichern",
     "annuler": "Abbrechen",
     "succes_message": "Die Rollen von {{email}} wurden aktualisiert.",
@@ -82,9 +89,14 @@
   "visibilite": {
     "chargement": "Wird geladen…",
     "erreur": "Sichtbarkeit konnte nicht gespeichert/geladen werden.",
-    "aide": "Welche Module im Menü des Rollen „Mitglied“ angezeigt werden – getrennt für aktive Mitglieder und angemeldete Nicht-Mitglieder. Höhere Rollen sehen immer alles.",
+    "aide": "Welche Einträge im Menü erscheinen – getrennt für aktive Mitglieder und angemeldete Nicht-Mitglieder. Für Nicht-Mitglieder gilt die Spalte verbindlich: Ist ein Eintrag dort nicht angehakt, sind Seite und Daten gesperrt, nicht nur das Menü. Höhere Rollen sehen immer alles. Verwaltungsseiten werden in der Zugriffsmatrix gesteuert.",
     "module": "Modul",
     "membre": "Mitglied",
-    "non_membre": "Nicht-Mitglied"
+    "non_membre": "Nicht-Mitglied",
+    "groupes": {
+      "general": "Allgemein",
+      "communaute": "Gemeinschaft",
+      "contenu": "Inhalte"
+    }
   }
 }

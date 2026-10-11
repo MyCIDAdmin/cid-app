@@ -4,6 +4,7 @@ import AppLayout from "./components/layout/AppLayout";
 import RouteAnnouncer from "./components/layout/RouteAnnouncer";
 import usePraeferenzenSync from "./hooks/usePraeferenzenSync";
 import RequireAuth from "./components/RequireAuth";
+import RequireMenuModule from "./components/RequireMenuModule";
 import RequireRole from "./components/RequireRole";
 import AdminConfigurationSitePage from "./pages/admin/AdminConfigurationSitePage";
 import AdminFanClubLogosPage from "./pages/admin/AdminFanClubLogosPage";
@@ -190,7 +191,14 @@ export default function App() {
             page membre ouverte à tout authentifié (campagne active, offres,
             souscription, historique) ; gestion des campagnes réservée
             Bureau Admin+ (même niveau que CataloguePermission côté API). */}
-          <Route path="/mon-adhesion" element={<MonAdhesionPage />} />
+          <Route
+            path="/mon-adhesion"
+            element={
+              <RequireMenuModule cle="adhesions">
+                <MonAdhesionPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Phase D : piloté par la matrice (page_campagnes_adhesion), seuil de départ inchangé
             (Bureau Admin+) — voir note Phase D plus haut. */}
           <Route
@@ -318,20 +326,48 @@ export default function App() {
             Kategorie im shop auftauchen und nicht als eigenes Modul") : c'est désormais un
             produit du catalogue comme un autre (voir CataloguePage), acheté via le panier/
             passer() normal — /boutique/bon-achat/acheter est donc retirée. */}
-          <Route path="/boutique" element={<BoutiquePage />} />
-          <Route path="/boutique/panier" element={<PanierCommandePage />} />
+          <Route
+            path="/boutique"
+            element={
+              <RequireMenuModule cle="boutique">
+                <BoutiquePage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/boutique/panier"
+            element={
+              <RequireMenuModule cle="boutique">
+                <PanierCommandePage />
+              </RequireMenuModule>
+            }
+          />
           {/* Retour de paiement en ligne (ajouté le 2026-09-17, même principe que
             /cotisation/retour) — cible de success_url/cancel_url (Stripe) et return_url/
             cancel_url (PayPal), voir apps.cotisations.gateways (partagé avec apps.boutique) —
             ouvert à tout authentifié, même scope IDOR que /boutique/commandes/{id}/. */}
-          <Route path="/boutique/commande/retour" element={<CommandeRetourPage />} />
+          <Route
+            path="/boutique/commande/retour"
+            element={
+              <RequireMenuModule cle="boutique">
+                <CommandeRetourPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Détail d'un produit (demande utilisateur 2026-09-26, voir docstring ProduitDetailPage
             — porte la structure de https://www.mycid.org/shop/:id) ; React Router priorise déjà
             les segments statiques (/boutique/panier, /boutique/commande/retour) sur ce `:id`
             quel que soit l'ordre de déclaration, donc pas de conflit de route. Même scope
             d'accès que /boutique (le backend ne renvoie de toute façon que les produits publiés
             à un rôle < Bureau Admin, voir ProduitViewSet.get_queryset). */}
-          <Route path="/boutique/:id" element={<ProduitDetailPage />} />
+          <Route
+            path="/boutique/:id"
+            element={
+              <RequireMenuModule cle="boutique">
+                <ProduitDetailPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Phase D : piloté par la matrice (page_boutique), seuil de départ inchangé (Bureau
             Admin+) — voir note Phase D plus haut. */}
           <Route
@@ -371,16 +407,51 @@ export default function App() {
             ROLES_GESTION_VOTE côté backend, apps.vote.permissions). RequireRole (basé sur
             ROLE_LEVELS) laisserait donc passer le Dir. Financier à tort — la page gère elle-
             même cet accès (voir CreerVoteWizardPage), même principe que MembreFormPage. */}
-          <Route path="/votes" element={<VotePage />} />
-          <Route path="/votes/creer" element={<CreerVoteWizardPage />} />
+          <Route
+            path="/votes"
+            element={
+              <RequireMenuModule cle="vote">
+                <VotePage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/votes/creer"
+            element={
+              <RequireMenuModule cle="vote">
+                <CreerVoteWizardPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) —
             ouverts à tout authentifié, même principe que /boutique et /votes : le backend
             scope déjà la visibilité (publications/sujets masqués visibles Bureau Admin+
             seulement, voir PublicationViewSet/SujetViewSet.get_queryset) et les actions de
             modération (masquer/épingler/verrouiller, voir ContenuCommunautePermission). */}
-          <Route path="/fil" element={<FilPage />} />
-          <Route path="/forum" element={<ForumPage />} />
-          <Route path="/forum/:id" element={<ForumSujetPage />} />
+          <Route
+            path="/fil"
+            element={
+              <RequireMenuModule cle="fil">
+                <FilPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/forum"
+            element={
+              <RequireMenuModule cle="forum">
+                <ForumPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/forum/:id"
+            element={
+              <RequireMenuModule cle="forum">
+                <ForumSujetPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Messagerie privée + Groupes de chat (mockup #pg-messagerie/#pg-groupes, Release
             Plan §3.2, Phase 4A/4B) — ouverts à tout authentifié ; l'IDOR sur une conversation
             (participants uniquement) et la visibilité des groupes privés sont imposés côté
@@ -388,10 +459,38 @@ export default function App() {
             pas de RequireRole, même principe que /fil et /forum. L'envoi de messages ne passe
             jamais par ces pages REST mais par les hooks WebSocket dédiés (voir
             useMessagerieSocket/useGroupeChatSocket). */}
-          <Route path="/messagerie" element={<MessageriePage />} />
-          <Route path="/messagerie/:id" element={<MessagerieConversationPage />} />
-          <Route path="/groupes" element={<GroupesPage />} />
-          <Route path="/groupes/:id" element={<GroupeChatPage />} />
+          <Route
+            path="/messagerie"
+            element={
+              <RequireMenuModule cle="messagerie">
+                <MessageriePage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/messagerie/:id"
+            element={
+              <RequireMenuModule cle="messagerie">
+                <MessagerieConversationPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/groupes"
+            element={
+              <RequireMenuModule cle="groupes">
+                <GroupesPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/groupes/:id"
+            element={
+              <RequireMenuModule cle="groupes">
+                <GroupeChatPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Live Match, Albums photos, Quiz (mockup #pg-live/#pg-albums/#pg-quiz, Release Plan
             §3.2, troisième lot Phase 4B) — ouverts à tout authentifié, même principe que /fil
             et /groupes : le backend scope déjà la visibilité et réserve la gestion (piloter un
@@ -400,8 +499,22 @@ export default function App() {
             donc pas de RequireRole, les pages elles-mêmes masquent les actions de gestion.
             L'envoi des commentaires/réactions du Live Match ne passe jamais par REST mais par
             useLiveMatchSocket, même principe que /groupes/:id. */}
-          <Route path="/live" element={<LiveMatchPage />} />
-          <Route path="/live/:id" element={<LiveMatchDetailPage />} />
+          <Route
+            path="/live"
+            element={
+              <RequireMenuModule cle="live">
+                <LiveMatchPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/live/:id"
+            element={
+              <RequireMenuModule cle="live">
+                <LiveMatchDetailPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Albums photos (resserré le 2026-09-22 sur demande utilisateur : "Im Modul Album,
             sollen Albums nur angezeigt werden. Die Verwaltung der Albums soll im Bereich Admin
             stattfinden.") — la page membre reste ouverte à tout authentifié, en lecture seule
@@ -409,8 +522,22 @@ export default function App() {
             suppression d'album ET l'upload de photos passent désormais exclusivement par
             /admin/albums, réservée Bureau Admin+ comme le reste de cette section (même niveau
             qu'AlbumPermission/PhotoPermission côté API). */}
-          <Route path="/albums" element={<AlbumsPage />} />
-          <Route path="/albums/:id" element={<AlbumDetailPage />} />
+          <Route
+            path="/albums"
+            element={
+              <RequireMenuModule cle="albums">
+                <AlbumsPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/albums/:id"
+            element={
+              <RequireMenuModule cle="albums">
+                <AlbumDetailPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Phase D : piloté par la matrice (page_albums), seuil de départ inchangé (Bureau
             Admin+) — voir note Phase D plus haut. */}
           <Route
@@ -421,8 +548,22 @@ export default function App() {
               </RequireRole>
             }
           />
-          <Route path="/quiz" element={<QuizPage />} />
-          <Route path="/quiz/:id" element={<QuizDetailPage />} />
+          <Route
+            path="/quiz"
+            element={
+              <RequireMenuModule cle="quiz">
+                <QuizPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/quiz/:id"
+            element={
+              <RequireMenuModule cle="quiz">
+                <QuizDetailPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Gestion des quiz (mockup #pg-quiz, Bureau Admin+) — création de quiz/questions/choix,
             même niveau que GestionQuizPermission côté API. Corrige le bug remonté en test
             manuel Phase 4 ("beim Quiz ist es nicht möglich Quiz anzulegen") : jusqu'ici, cette
@@ -445,8 +586,22 @@ export default function App() {
             (InscriptionPermission/ReservationCovoituragePermission) ; gestion du catalogue
             (créer/modifier/publier/annuler) réservée Bureau Admin+, même niveau que
             EvenementPermission côté API. */}
-          <Route path="/evenements" element={<EvenementsPage />} />
-          <Route path="/covoiturage" element={<CovoituragePage />} />
+          <Route
+            path="/evenements"
+            element={
+              <RequireMenuModule cle="evenements">
+                <EvenementsPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/covoiturage"
+            element={
+              <RequireMenuModule cle="covoiturage">
+                <CovoituragePage />
+              </RequireMenuModule>
+            }
+          />
           {/* Phase D : piloté par la matrice (page_events), seuil de départ inchangé (Bureau
             Admin+) — voir note Phase D plus haut. */}
           <Route
@@ -464,15 +619,36 @@ export default function App() {
             (GestionContenuProjetPermission/est_gestionnaire_projet) ; gestion complète du Projet
             lui-même (créer/modifier/statut/cagnote/échéance/responsable/images) réservée Bureau
             Admin+, même niveau que ProjetPermission côté API. */}
-          <Route path="/projets" element={<ProjetsPage />} />
+          <Route
+            path="/projets"
+            element={
+              <RequireMenuModule cle="projets">
+                <ProjetsPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Détail d'un projet (demande utilisateur 2026-09-26 : porter la structure de
             https://www.mycid.org/projects — "View Project" ouvre une page dédiée, jamais une
             modale) — même niveau d'accès que /projets ci-dessus, voir docstring
             ProjetDetailPage. */}
-          <Route path="/projets/:id" element={<ProjetDetailPage />} />
+          <Route
+            path="/projets/:id"
+            element={
+              <RequireMenuModule cle="projets">
+                <ProjetDetailPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Espace de travail interne (équipe/tâches) — le serveur filtre l'accès, voir
             ProjetArbeitsbereichPage. */}
-          <Route path="/projets/:id/arbeitsbereich" element={<ProjetArbeitsbereichPage />} />
+          <Route
+            path="/projets/:id/arbeitsbereich"
+            element={
+              <RequireMenuModule cle="projets">
+                <ProjetArbeitsbereichPage />
+              </RequireMenuModule>
+            }
+          />
           {/* Phase D : piloté par la matrice (page_projets), seuil de départ inchangé (Bureau
             Admin+) — voir note Phase D plus haut. */}
           <Route

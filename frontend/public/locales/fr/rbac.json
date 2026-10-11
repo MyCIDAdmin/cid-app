@@ -7,14 +7,14 @@
   "modules": {
     "membres": "Membres",
     "cotisations": "Cotisations",
-    "adhesions": "Adhésions",
+    "adhesions": "Mon adhésion",
     "evenements": "Événements",
     "boutique": "Boutique",
-    "vote": "Vote",
+    "vote": "Votes",
     "communaute": "Communauté",
     "stats": "Statistiques",
     "notifications": "Notifications",
-    "projets": "Projets",
+    "projets": "Actions & projets",
     "page_quiz": "Gestion des quiz",
     "page_boutique": "Gestion de la boutique",
     "page_events": "Gestion des événements",
@@ -29,7 +29,14 @@
     "page_projets": "Gestion des projets & actions",
     "page_albums": "Gestion des albums photo",
     "albums": "Albums photos",
-    "page_finances": "Finances (dépenses, budget, bilan)"
+    "page_finances": "Finances (dépenses, budget, bilan)",
+    "fil": "Actualités",
+    "forum": "Forum",
+    "messagerie": "Messagerie",
+    "groupes": "Groupes",
+    "live": "Fan-Club (live, classement, Tippspiel)",
+    "quiz": "Quiz",
+    "covoiturage": "Covoiturage"
   },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",
@@ -37,7 +44,7 @@
     "fermer": "Fermer",
     "chargement_roles": "Chargement des rôles…",
     "erreur_chargement_roles": "Impossible de charger les rôles de l'utilisateur.",
-    "role_membre_verrouille": "Membre Normal est toujours inclus et ne peut pas être décoché.",
+    "role_membre_verrouille": "Membre Normal est le rôle de base technique de chaque compte et ne peut pas être décoché. Il ne donne à lui seul aucun droit de membre : l'accès aux modules membres dépend uniquement du statut d'adhésion (actif ou non, voir le tableau Visibilité).",
     "enregistrer": "Enregistrer",
     "annuler": "Annuler",
     "succes_message": "Les rôles de {{email}} ont été mis à jour.",
@@ -82,9 +89,14 @@
   "visibilite": {
     "chargement": "Chargement…",
     "erreur": "Impossible de charger/enregistrer la visibilité.",
-    "aide": "Modules affichés dans le menu du rôle « Membre » – séparément pour les membres actifs et les comptes connectés non-membres. Les rôles supérieurs voient toujours tout.",
+    "aide": "Entrées affichées dans le menu – séparément pour les membres actifs et les comptes connectés non-membres. Pour les non-membres, la colonne est contraignante : une entrée non cochée est bloquée (page et données), pas seulement masquée. Les rôles supérieurs voient toujours tout. Les pages de gestion se règlent dans la matrice d'accès.",
     "module": "Module",
     "membre": "Membre",
-    "non_membre": "Non-membre"
+    "non_membre": "Non-membre",
+    "groupes": {
+      "general": "Général",
+      "communaute": "Communauté",
+      "contenu": "Contenus"
+    }
   }
 }

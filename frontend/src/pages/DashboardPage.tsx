@@ -47,6 +47,7 @@ import { useMesCotisations } from "../hooks/useCotisations";
 import { usePublications } from "../hooks/useCommunaute";
 import { useEvenements, useInscriptions } from "../hooks/useEvenements";
 import { useStatsFinancier, useStatsMembres } from "../hooks/useStats";
+import { useModuleOuvert } from "../hooks/useRbac";
 import { useSessionVoteActive } from "../hooks/useVote";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../store/authStore";
 import type { Cotisation, StatutCotisation, TypeArticle } from "../types/cotisation";
@@ -142,8 +143,12 @@ export default function DashboardPage() {
   const evenementsQuery = useEvenements({ date_apres: aujourdhuiISO() });
   const cotisationsQuery = useMesCotisations();
   const inscriptionsAttenteQuery = useInscriptions({ statut: "en_attente_paiement" });
-  const voteActifQuery = useSessionVoteActive();
-  const publicationsQuery = usePublications();
+  // Un compte non-membre n'a accès ni au Fil ni aux Votes (apps.rbac.authentication, 403) — on
+  // n'interroge pas ces API pour lui (2026-10-11), le tableau de bord n'affiche alors rien de plus.
+  const filOuvert = useModuleOuvert("fil").ouvert;
+  const voteOuvertModule = useModuleOuvert("vote").ouvert;
+  const voteActifQuery = useSessionVoteActive({ enabled: voteOuvertModule });
+  const publicationsQuery = usePublications({}, { enabled: filOuvert });
   const statsMembresQuery = useStatsMembres({}, { enabled: estGestion });
   const statsFinancierQuery = useStatsFinancier({}, { enabled: estGestion });
 

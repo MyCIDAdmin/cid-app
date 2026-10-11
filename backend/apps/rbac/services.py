@@ -165,7 +165,7 @@ def visibilite_lignes() -> list[dict]:
     """Les 2 colonnes de visibilité, complétées par défaut pour chaque clé de
     registry.VISIBILITE_KEYS (voir ModuleVisibiliteMembre)."""
     from .models import ModuleVisibiliteMembre
-    from .registry import VISIBILITE_KEYS, VISIBILITE_NON_MEMBRE_DEFAUT
+    from .registry import MENU_GROUPE, VISIBILITE_KEYS, VISIBILITE_NON_MEMBRE_DEFAUT
 
     existantes = {v.module: v for v in ModuleVisibiliteMembre.objects.all()}
     lignes = []
@@ -175,6 +175,9 @@ def visibilite_lignes() -> list[dict]:
         lignes.append(
             {
                 "module": cle,
+                # Groupe de la Sidebar (general / communaute / contenu) — le tableau Sichtbarkeit
+                # s'en sert pour regrouper les lignes sous les mêmes titres que le menu.
+                "menu_groupe": MENU_GROUPE[cle],
                 "visible": ligne.visible if ligne is not None else True,
                 "visible_non_membre": (
                     cle in VISIBILITE_NON_MEMBRE_DEFAUT if non_membre is None else non_membre
@@ -184,8 +187,69 @@ def visibilite_lignes() -> list[dict]:
     return lignes
 
 
+def _exception_fonction(user, cle: str) -> bool:
+    """Un compte non-membre garde quand même l'accès à `cle` s'il porte une FONCTION dans
+    l'association : un rôle personnalisé ADDITIONNEL qui donne au moins la lecture sur le module
+    de la matrice, ou un accès (même en lecture) à l'une des pages de gestion liées (ex. un
+    "Quiz-Manager" doit pouvoir ouvrir la gestion des quiz même sans adhésion active). Le plancher
+    "Membre Normal" n'élève jamais (voir is_elevated_for_module, qui l'exclut par construction) :
+    c'est justement lui qu'on ne veut plus voir ouvrir les modules membres à un compte inactif."""
+    from .registry import MENU_MODULE_MATRICE, MENU_PAGES_ADMIN
+
+    if is_elevated_for_module(user, MENU_MODULE_MATRICE[cle]):
+        return True
+    return any(has_admin_page_access(user, page) for page in MENU_PAGES_ADMIN.get(cle, ()))
+
+
 def visibilite_effective(user) -> dict[str, bool]:
-    """Colonne applicable à `user` : "membre" si membre actif, "non-membre" sinon. Un rôle
-    supérieur ne passe jamais par ce filtre côté frontend (voir Sidebar.moduleEstVisible)."""
-    colonne = "visible" if est_membre_actif(user) else "visible_non_membre"
-    return {ligne["module"]: ligne[colonne] for ligne in visibilite_lignes()}
+    """Pour chaque clé de menu : ce que `user` peut voir ET utiliser. Membre actif : colonne
+    "membre" (réglage de MENU uniquement — l'API reste ouverte). Sinon : colonne "non-membre",
+    qui est ici une vraie BARRIÈRE (voir gate_nicht_mitglied), sauf fonction particulière
+    (_exception_fonction). Un rôle supérieur (RH et au-delà) ne passe jamais par ce filtre côté
+    frontend (voir Sidebar.moduleEstVisible)."""
+    actif = est_membre_actif(user)
+    colonne = "visible" if actif else "visible_non_membre"
+    effectif = {ligne["module"]: ligne[colonne] for ligne in visibilite_lignes()}
+    if not actif:
+        for cle, visible in effectif.items():
+            if not visible and _exception_fonction(user, cle):
+                effectif[cle] = True
+    return effectif
+
+
+def cle_menu_pour_chemin(path: str) -> str | None:
+    """Clé de menu correspondant à un chemin d'API (préfixe le plus long), ou None si le chemin
+    n'est pas soumis à la barrière non-membre — voir registry.API_PREFIXES_MENU."""
+    from .registry import API_PREFIXES_MENU
+
+    meilleure, meilleure_longueur = None, -1
+    for prefixe, cle in API_PREFIXES_MENU:
+        if path.startswith(prefixe) and len(prefixe) > meilleure_longueur:
+            meilleure, meilleure_longueur = cle, len(prefixe)
+    return meilleure
+
+
+def acces_cle_menu(user, cle: str) -> bool:
+    """Garantie "non-membre" (demande du 2026-10-11) : un compte dont la fiche Membre n'est PAS
+    active (nouveau compte en attente, ancien membre inactif, membre non renouvelé dans la
+    nouvelle campagne, ou compte sans fiche) n'atteint que les modules cochés dans la colonne
+    "Nicht-Mitglied" du tableau Sichtbarkeit — et ce côté API, pas seulement dans le menu.
+    Membre actif et rôles supérieurs (RH+) : toujours autorisés."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if est_membre_actif(user):
+        return True
+    ligne = next((ligne for ligne in visibilite_lignes() if ligne["module"] == cle), None)
+    if ligne is not None and ligne["visible_non_membre"]:
+        return True
+    return _exception_fonction(user, cle)
+
+
+def gate_nicht_mitglied(user, path: str) -> bool:
+    """True si `user` peut atteindre `path` (voir acces_cle_menu). Appelée pour CHAQUE requête
+    d'API authentifiée par apps.rbac.authentication.GatedJWTAuthentication ; le test de préfixe
+    (sans base de données) passe en premier pour que les chemins non concernés ne coûtent rien."""
+    cle = cle_menu_pour_chemin(path)
+    if cle is None:
+        return True
+    return acces_cle_menu(user, cle)

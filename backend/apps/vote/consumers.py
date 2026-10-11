@@ -29,6 +29,8 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.rbac.services import acces_cle_menu
+
 from .models import ChoixExprime, ModeAnonymat, ParticipationVote, StatutSession, VoteExprime
 from .security import compute_voter_token
 from .services import membres_eligibles_qs, participation_payload, valider_choix_pour_type
@@ -42,6 +44,11 @@ class VoteConsumer(AsyncJsonWebsocketConsumer):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
             await self.close(code=4001)
+            return
+
+        # Barrière non-membre (2026-10-11, voir apps.rbac.authentication) : même règle que l'API.
+        if not await database_sync_to_async(acces_cle_menu)(user, "vote"):
+            await self.close(code=4003)
             return
 
         session = await self._get_session()

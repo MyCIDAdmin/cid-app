@@ -124,6 +124,27 @@ export function useVisibiliteEffective() {
 }
 
 /**
+ * Le compte courant peut-il ouvrir l'entrée de menu `cle` (apps.rbac.registry.MENU_ITEMS) ?
+ * Un rôle supérieur au "Membre Normal" : toujours. Sinon la réponse du backend
+ * (`visibilite_effective`) fait foi — elle reflète le statut ACTUEL de la fiche Membre, pas
+ * celui mémorisé dans le jeton à la connexion. Tant que la réponse n'est pas arrivée, un membre
+ * n'est pas encore considéré comme autorisé (`ouvert=false`, `chargement=true`) : mieux vaut
+ * attendre une requête que d'appeler une API qui répondrait 403 (voir DashboardPage). Ajouté le
+ * 2026-10-11 avec la barrière non-membre (apps.rbac.authentication).
+ */
+export function useModuleOuvert(cle: string): { ouvert: boolean; chargement: boolean } {
+  const user = useAuthStore((s) => s.user);
+  const { data, isLoading } = useVisibiliteEffective();
+  if (user?.role !== undefined && user.role !== "membre") {
+    return { ouvert: true, chargement: false };
+  }
+  if (isLoading || data === undefined) {
+    return { ouvert: false, chargement: true };
+  }
+  return { ouvert: data[cle] !== false, chargement: false };
+}
+
+/**
  * Convenience hook (ajouté le 2026-09-24, task #216) au-dessus de useMesAcces() pour les 13
  * pages de gestion elles-mêmes : répond aux DEUX questions dont une page a besoin pour son
  * propre affichage — "puis-je voir cette page" (déjà tranché en amont par RequireRole/Sidebar au

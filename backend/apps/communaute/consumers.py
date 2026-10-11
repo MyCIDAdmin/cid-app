@@ -44,6 +44,8 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.core.cache import cache
 from django.db.models import Count
 
+from apps.rbac.services import acces_cle_menu
+
 from .models import (
     Conversation,
     GroupeChat,
@@ -72,6 +74,11 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
             await self.close(code=4001)
+            return
+
+        # Barrière non-membre (2026-10-11, voir apps.rbac.authentication) : même règle que l'API.
+        if not await database_sync_to_async(acces_cle_menu)(user, "messagerie"):
+            await self.close(code=4003)
             return
 
         # `user.membre` est une relation inverse (OneToOne) — jamais résolue en dehors
@@ -263,6 +270,11 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4001)
             return
 
+        # Barrière non-membre (2026-10-11, voir apps.rbac.authentication) : même règle que l'API.
+        if not await database_sync_to_async(acces_cle_menu)(user, "groupes"):
+            await self.close(code=4003)
+            return
+
         membre_id = await self._get_membre_id(user)
         if membre_id is None:
             await self.close(code=4001)
@@ -396,6 +408,11 @@ class LiveMatchConsumer(AsyncJsonWebsocketConsumer):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
             await self.close(code=4001)
+            return
+
+        # Barrière non-membre (2026-10-11, voir apps.rbac.authentication) : même règle que l'API.
+        if not await database_sync_to_async(acces_cle_menu)(user, "live"):
+            await self.close(code=4003)
             return
 
         membre_id = await self._get_membre_id(user)
