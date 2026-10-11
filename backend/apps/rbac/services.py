@@ -187,34 +187,17 @@ def visibilite_lignes() -> list[dict]:
     return lignes
 
 
-def _exception_fonction(user, cle: str) -> bool:
-    """Un compte non-membre garde quand même l'accès à `cle` s'il porte une FONCTION dans
-    l'association : un rôle personnalisé ADDITIONNEL qui donne au moins la lecture sur le module
-    de la matrice, ou un accès (même en lecture) à l'une des pages de gestion liées (ex. un
-    "Quiz-Manager" doit pouvoir ouvrir la gestion des quiz même sans adhésion active). Le plancher
-    "Membre Normal" n'élève jamais (voir is_elevated_for_module, qui l'exclut par construction) :
-    c'est justement lui qu'on ne veut plus voir ouvrir les modules membres à un compte inactif."""
-    from .registry import MENU_MODULE_MATRICE, MENU_PAGES_ADMIN
-
-    if is_elevated_for_module(user, MENU_MODULE_MATRICE[cle]):
-        return True
-    return any(has_admin_page_access(user, page) for page in MENU_PAGES_ADMIN.get(cle, ()))
-
-
 def visibilite_effective(user) -> dict[str, bool]:
     """Pour chaque clé de menu : ce que `user` peut voir ET utiliser. Membre actif : colonne
     "membre" (réglage de MENU uniquement — l'API reste ouverte). Sinon : colonne "non-membre",
-    qui est ici une vraie BARRIÈRE (voir gate_nicht_mitglied), sauf fonction particulière
-    (_exception_fonction). Un rôle supérieur (RH et au-delà) ne passe jamais par ce filtre côté
+    qui est ici une vraie BARRIÈRE (voir gate_nicht_mitglied) et la SEULE source de vérité : aucun
+    rôle supplémentaire (même personnalisé, même avec accès matrice ou pages de gestion) ne
+    l'élargit — voir le retour du 2026-10-11 (rôle "Nicht Mitglieder" à "Lecture & écriture").
+    Un rôle supérieur (RH et au-delà) ne passe jamais par ce filtre côté
     frontend (voir Sidebar.moduleEstVisible)."""
     actif = est_membre_actif(user)
     colonne = "visible" if actif else "visible_non_membre"
-    effectif = {ligne["module"]: ligne[colonne] for ligne in visibilite_lignes()}
-    if not actif:
-        for cle, visible in effectif.items():
-            if not visible and _exception_fonction(user, cle):
-                effectif[cle] = True
-    return effectif
+    return {ligne["module"]: ligne[colonne] for ligne in visibilite_lignes()}
 
 
 def cle_menu_pour_chemin(path: str) -> str | None:
@@ -234,15 +217,14 @@ def acces_cle_menu(user, cle: str) -> bool:
     active (nouveau compte en attente, ancien membre inactif, membre non renouvelé dans la
     nouvelle campagne, ou compte sans fiche) n'atteint que les modules cochés dans la colonne
     "Nicht-Mitglied" du tableau Sichtbarkeit — et ce côté API, pas seulement dans le menu.
-    Membre actif et rôles supérieurs (RH+) : toujours autorisés."""
+    Membre actif et rôles supérieurs (RH+) : toujours autorisés. Aucune autre exception : un rôle
+    additionnel (personnalisé ou non) n'ouvre jamais un module à un non-membre."""
     if not user or not getattr(user, "is_authenticated", False):
         return False
     if est_membre_actif(user):
         return True
     ligne = next((ligne for ligne in visibilite_lignes() if ligne["module"] == cle), None)
-    if ligne is not None and ligne["visible_non_membre"]:
-        return True
-    return _exception_fonction(user, cle)
+    return ligne is not None and bool(ligne["visible_non_membre"])
 
 
 def gate_nicht_mitglied(user, path: str) -> bool:

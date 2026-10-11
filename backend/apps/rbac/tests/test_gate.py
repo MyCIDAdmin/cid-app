@@ -143,30 +143,43 @@ def test_le_plancher_membre_normal_n_ouvre_rien_a_un_non_membre():
     assert _client(user).get(FIL).status_code == 403
 
 
-def test_un_role_personnalise_additionnel_donne_acces_au_module_correspondant():
-    user = _compte(StatutMembre.INACTIF)
+def _role_tout_ouvert():
+    """Reproduit le rôle personnalisé "Nicht Mitglieder" de la production (retour du 2026-10-11) :
+    "Lecture & écriture" sur tous les modules ET toutes les pages de gestion."""
     role = RoleDefinitionFactory()
-    RoleModulePermissionFactory(role=role, module="communaute", niveau_acces=NiveauAcces.LECTURE)
-    UserRoleAssignmentFactory(user=user, role=role)
-    assert _client(user).get(FIL).status_code == 200
+    for module in (*MODULES, *PAGES_ADMIN):
+        RoleModulePermissionFactory(
+            role=role, module=module, niveau_acces=NiveauAcces.LECTURE_ECRITURE
+        )
+    return role
 
 
-def test_un_role_personnalise_sans_acces_ne_change_rien():
+def test_un_role_personnalise_additionnel_n_ouvre_aucun_module_a_un_non_membre():
     user = _compte(StatutMembre.INACTIF)
-    role = RoleDefinitionFactory()
-    RoleModulePermissionFactory(role=role, module="boutique", niveau_acces=NiveauAcces.LECTURE)
-    UserRoleAssignmentFactory(user=user, role=role)
-    assert _client(user).get(FIL).status_code == 403
+    UserRoleAssignmentFactory(user=user, role=_role_tout_ouvert())
+    client = _client(user)
+    assert client.get(FIL).status_code == 403
+    assert services.acces_cle_menu(user, "quiz") is False
+    assert services.acces_cle_menu(user, "vote") is False
 
 
-def test_acces_a_la_page_de_gestion_liee_ouvre_le_module_meme_sans_adhesion():
-    """Un "Quiz-Manager" doit pouvoir ouvrir ses pages sans adhésion active."""
+def test_un_acces_a_une_page_de_gestion_n_ouvre_pas_le_module_a_un_non_membre():
     user = _compte(StatutMembre.INACTIF)
     role = RoleDefinitionFactory()
     RoleModulePermissionFactory(role=role, module="page_quiz", niveau_acces=NiveauAcces.LECTURE)
     UserRoleAssignmentFactory(user=user, role=role)
-    assert services.acces_cle_menu(user, "quiz") is True
-    assert services.acces_cle_menu(user, "fil") is False
+    assert services.acces_cle_menu(user, "quiz") is False
+
+
+def test_la_colonne_non_membre_reste_la_seule_source_meme_avec_un_role_additionnel():
+    user = _compte(StatutMembre.INACTIF)
+    UserRoleAssignmentFactory(user=user, role=_role_tout_ouvert())
+    ModuleVisibiliteMembre.objects.update_or_create(
+        module="forum", defaults={"visible": True, "visible_non_membre": True}
+    )
+    client = _client(user)
+    assert client.get(FORUM).status_code == 200
+    assert client.get(FIL).status_code == 403
 
 
 # --- visibilité effective (menu + routes frontend) -----------------------------------------
@@ -178,15 +191,11 @@ def test_visibilite_effective_non_membre_ne_montre_que_les_modules_coches():
     assert {cle for cle, visible in effectif.items() if visible} == VISIBILITE_NON_MEMBRE_DEFAUT
 
 
-def test_visibilite_effective_non_membre_inclut_l_exception_de_fonction():
+def test_visibilite_effective_non_membre_ignore_les_roles_additionnels():
     user = _compte(StatutMembre.INACTIF)
-    role = RoleDefinitionFactory()
-    RoleModulePermissionFactory(role=role, module="communaute", niveau_acces=NiveauAcces.LECTURE)
-    UserRoleAssignmentFactory(user=user, role=role)
+    UserRoleAssignmentFactory(user=user, role=_role_tout_ouvert())
     effectif = services.visibilite_effective(user)
-    assert effectif["fil"] is True and effectif["forum"] is True
-    assert effectif["boutique"] is True  # défaut non-membre, inchangé
-    assert effectif["vote"] is False
+    assert {cle for cle, visible in effectif.items() if visible} == VISIBILITE_NON_MEMBRE_DEFAUT
 
 
 # --- registre / cohérence --------------------------------------------------------------------

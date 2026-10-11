@@ -89,7 +89,7 @@
   "visibilite": {
     "chargement": "Chargement…",
     "erreur": "Impossible de charger/enregistrer la visibilité.",
-    "aide": "Entrées affichées dans le menu – séparément pour les membres actifs et les comptes connectés non-membres. Pour les non-membres, la colonne est contraignante : une entrée non cochée est bloquée (page et données), pas seulement masquée. Les rôles supérieurs voient toujours tout. Les pages de gestion se règlent dans la matrice d'accès.",
+    "aide": "Entrées affichées dans le menu – séparément pour les membres actifs et les comptes connectés non-membres. Pour les non-membres, la colonne est contraignante : une entrée non cochée est bloquée (page et données), pas seulement masquée. Les rôles supplémentaires (même personnalisés) n'élargissent pas cette colonne. Les rôles supérieurs voient toujours tout. Les pages de gestion se règlent dans la matrice d'accès.",
     "module": "Module",
     "membre": "Membre",
     "non_membre": "Non-membre",

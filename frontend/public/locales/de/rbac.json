@@ -89,7 +89,7 @@
   "visibilite": {
     "chargement": "Wird geladen…",
     "erreur": "Sichtbarkeit konnte nicht gespeichert/geladen werden.",
-    "aide": "Welche Einträge im Menü erscheinen – getrennt für aktive Mitglieder und angemeldete Nicht-Mitglieder. Für Nicht-Mitglieder gilt die Spalte verbindlich: Ist ein Eintrag dort nicht angehakt, sind Seite und Daten gesperrt, nicht nur das Menü. Höhere Rollen sehen immer alles. Verwaltungsseiten werden in der Zugriffsmatrix gesteuert.",
+    "aide": "Welche Einträge im Menü erscheinen – getrennt für aktive Mitglieder und angemeldete Nicht-Mitglieder. Für Nicht-Mitglieder gilt die Spalte verbindlich: Ist ein Eintrag dort nicht angehakt, sind Seite und Daten gesperrt, nicht nur das Menü. Zusätzliche Rollen (auch eigene) erweitern diese Spalte nicht. Höhere Rollen sehen immer alles. Verwaltungsseiten werden in der Zugriffsmatrix gesteuert.",
     "module": "Modul",
     "membre": "Mitglied",
     "non_membre": "Nicht-Mitglied",
