@@ -1,10 +1,16 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import i18n from "../../i18n";
 import deEvenements from "../../../public/locales/de/evenements.json";
+import frCommon from "../../../public/locales/fr/common.json";
 import frEvenements from "../../../public/locales/fr/evenements.json";
 import EvenementPreise from "./EvenementPreise";
+
+function renderMitRouter(element: React.ReactElement) {
+  return render(<MemoryRouter>{element}</MemoryRouter>);
+}
 
 type Props = Parameters<typeof EvenementPreise>[0]["evenement"];
 
@@ -29,35 +35,36 @@ function preise(overrides: Partial<Props> = {}): Props {
 // uniquement pour vérifier que les trois nouvelles clés existent dans les deux langues.
 beforeAll(() => {
   i18n.addResourceBundle("fr", "evenements", frEvenements, true, true);
+  i18n.addResourceBundle("fr", "common", frCommon, true, true);
 });
 
 describe("EvenementPreise (prix sur la kachel)", () => {
   it("affiche « Gratuit » pour un événement gratuit, sans autre prix", () => {
-    render(<EvenementPreise evenement={preise({ gratuit: true, cout: "0.00" })} />);
+    renderMitRouter(<EvenementPreise evenement={preise({ gratuit: true, cout: "0.00" })} />);
     expect(screen.getByText("Gratuit")).toBeInTheDocument();
     expect(screen.queryByText(/Membres/)).not.toBeInTheDocument();
   });
 
   it("affiche un seul prix quand le prix non-membre est vide", () => {
-    render(<EvenementPreise evenement={preise()} />);
+    renderMitRouter(<EvenementPreise evenement={preise()} />);
     expect(screen.getByText("35,00 € / pers.")).toBeInTheDocument();
     expect(screen.queryByText(/Non-membres/)).not.toBeInTheDocument();
   });
 
   it("affiche un seul prix quand le prix non-membre est identique au prix membre", () => {
-    render(<EvenementPreise evenement={preise({ cout_non_membre: "35.00" })} />);
+    renderMitRouter(<EvenementPreise evenement={preise({ cout_non_membre: "35.00" })} />);
     expect(screen.getByText("35,00 € / pers.")).toBeInTheDocument();
     expect(screen.queryByText(/Non-membres/)).not.toBeInTheDocument();
   });
 
   it("sépare prix membre et prix non-membre quand ils diffèrent", () => {
-    render(<EvenementPreise evenement={preise({ cout_non_membre: "50.00" })} />);
+    renderMitRouter(<EvenementPreise evenement={preise({ cout_non_membre: "50.00" })} />);
     expect(screen.getByText("Membres : 35,00 € / pers.")).toBeInTheDocument();
     expect(screen.getByText("Non-membres : 50,00 € / pers.")).toBeInTheDocument();
   });
 
   it("affiche les prix accompagnants avec la limite d'âge enfant quand ils sont payants", () => {
-    render(
+    renderMitRouter(
       <EvenementPreise
         evenement={preise({
           accompagnants_payants: true,
@@ -73,7 +80,7 @@ describe("EvenementPreise (prix sur la kachel)", () => {
   });
 
   it("affiche un prix accompagnant de 0 comme « Gratuit »", () => {
-    render(
+    renderMitRouter(
       <EvenementPreise
         evenement={preise({
           accompagnants_payants: true,
@@ -88,7 +95,7 @@ describe("EvenementPreise (prix sur la kachel)", () => {
   });
 
   it("n'affiche pas de ligne accompagnants quand ils ne sont pas payants", () => {
-    render(<EvenementPreise evenement={preise({ prix_accompagnant_adulte: "10.00" })} />);
+    renderMitRouter(<EvenementPreise evenement={preise({ prix_accompagnant_adulte: "10.00" })} />);
     expect(screen.queryByText(/Accompagnants/)).not.toBeInTheDocument();
   });
 
@@ -97,5 +104,50 @@ describe("EvenementPreise (prix sur la kachel)", () => {
       expect(deEvenements).toHaveProperty(cle);
       expect(frEvenements).toHaveProperty(cle);
     }
+  });
+  it("zeigt einem Nicht-Mitglied den eigenen Preis und den Mitgliederpreis als Hinweis", () => {
+    renderMitRouter(
+      <EvenementPreise
+        evenement={preise({ cout: "35.00", cout_non_membre: "50.00", cout_applicable: "50.00" })}
+      />,
+    );
+    expect(screen.getByText("50,00 € / pers.")).toBeInTheDocument();
+    expect(screen.getByTestId("mitglieder-preis-hinweis")).toHaveTextContent(
+      "Les membres paient seulement 35,00 € — vous économisez 15,00 €",
+    );
+    expect(screen.queryByText(/Non-membres/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Devenir membre" })).toHaveAttribute(
+      "href",
+      "/mon-adhesion",
+    );
+  });
+
+  it("zeigt einem Mitglied keinen Werbehinweis, sondern weiter beide Preise", () => {
+    renderMitRouter(
+      <EvenementPreise
+        evenement={preise({ cout: "35.00", cout_non_membre: "50.00", cout_applicable: "35.00" })}
+      />,
+    );
+    expect(screen.queryByTestId("mitglieder-preis-hinweis")).not.toBeInTheDocument();
+    expect(screen.getByText("Membres : 35,00 € / pers.")).toBeInTheDocument();
+    expect(screen.getByText("Non-membres : 50,00 € / pers.")).toBeInTheDocument();
+  });
+
+  it("zeigt keinen Hinweis, wenn der Nicht-Mitglieder-Preis niedriger ist als der Mitgliederpreis", () => {
+    renderMitRouter(
+      <EvenementPreise
+        evenement={preise({ cout: "35.00", cout_non_membre: "20.00", cout_applicable: "20.00" })}
+      />,
+    );
+    expect(screen.queryByTestId("mitglieder-preis-hinweis")).not.toBeInTheDocument();
+  });
+
+  it("zeigt keinen Hinweis bei kostenlosen Veranstaltungen", () => {
+    renderMitRouter(
+      <EvenementPreise
+        evenement={preise({ gratuit: true, cout: "0.00", cout_non_membre: "10.00" })}
+      />,
+    );
+    expect(screen.queryByTestId("mitglieder-preis-hinweis")).not.toBeInTheDocument();
   });
 });

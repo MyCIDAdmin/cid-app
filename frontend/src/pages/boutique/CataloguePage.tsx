@@ -27,6 +27,7 @@ import ShareButton from "../../components/ui/ShareButton";
 import { useProduits } from "../../hooks/useBoutique";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { useAuthStore } from "../../store/authStore";
+import MitgliederPreisHinweis from "../../components/MitgliederPreisHinweis";
 import { nombreArticlesPanier, totalPanier, usePanierStore } from "../../store/panierStore";
 import type {
   CategorieProduit,
@@ -406,6 +407,14 @@ function ProduitCarte({
             />
           )}
         </div>
+
+        {!produit.est_prix_membre && (
+          <MitgliederPreisHinweis
+            mitgliederPreis={produit.prix_membre}
+            aktuellerPreis={produit.prix_affiche}
+            className="mb-2"
+          />
+        )}
 
         {produit.regles_reduction_actives.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1">

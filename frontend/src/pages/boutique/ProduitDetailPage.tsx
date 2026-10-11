@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
+import MitgliederPreisHinweis from "../../components/MitgliederPreisHinweis";
 import ShareButton from "../../components/ui/ShareButton";
 import { useProduit } from "../../hooks/useBoutique";
 import { usePanierStore } from "../../store/panierStore";
@@ -190,6 +191,14 @@ export default function ProduitDetailPage() {
               <span className="text-2xl font-bold text-ca">
                 {formatMontant(produit.prix_affiche)}
               </span>
+            )}
+
+            {!produit.est_prix_membre && (
+              <MitgliederPreisHinweis
+                mitgliederPreis={produit.prix_membre}
+                aktuellerPreis={produit.prix_affiche}
+                className="w-fit"
+              />
             )}
 
             {produit.description && (

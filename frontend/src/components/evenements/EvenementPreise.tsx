@@ -14,6 +14,8 @@
 import { useTranslation } from "react-i18next";
 
 import type { Evenement } from "../../types/evenements";
+import { mitgliederPreisIstGuenstiger } from "../../utils/mitgliederPreis";
+import MitgliederPreisHinweis from "../MitgliederPreisHinweis";
 import { formatMontant } from "./ModaleInscription";
 
 type PreisFelder = Pick<
@@ -37,16 +39,30 @@ export default function EvenementPreise({ evenement }: { evenement: PreisFelder 
     evenement.cout_non_membre !== undefined &&
     Number(evenement.cout_non_membre) !== Number(evenement.cout);
 
+  // Nicht-Mitglied (der Server hat `cout_applicable` auf den Nicht-Mitglieder-Preis gesetzt) UND
+  // der Mitgliederpreis ist günstiger : statt beider Preise den eigenen Preis zeigen und den
+  // Mitgliederpreis als Hinweis hervorheben (Anfrage vom 2026-10-11).
+  const mitgliederHinweis =
+    preisUnterschied &&
+    Number(evenement.cout_applicable) === Number(evenement.cout_non_membre) &&
+    mitgliederPreisIstGuenstiger(evenement.cout, evenement.cout_applicable);
+
   const montantOderKostenlos = (montant: string) =>
     Number(montant) === 0 ? t("gratuit") : formatMontant(montant);
 
   return (
     <>
       {evenement.gratuit && <span>{t("gratuit")}</span>}
-      {!evenement.gratuit && !preisUnterschied && (
+      {!evenement.gratuit && (!preisUnterschied || mitgliederHinweis) && (
         <span>{t("cout_par_personne", { cout: formatMontant(evenement.cout_applicable) })}</span>
       )}
-      {preisUnterschied && (
+      {mitgliederHinweis && (
+        <MitgliederPreisHinweis
+          mitgliederPreis={evenement.cout}
+          aktuellerPreis={evenement.cout_applicable}
+        />
+      )}
+      {preisUnterschied && !mitgliederHinweis && (
         <>
           <span>{t("preis_mitglieder", { cout: montantOderKostenlos(evenement.cout) })}</span>
           <span>

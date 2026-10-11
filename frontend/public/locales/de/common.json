@@ -205,5 +205,9 @@
     "aktivitaeten": "Aktivitäten & Partner",
     "community": "Community & Inhalte",
     "system": "System"
+  },
+  "mitgliederpreis": {
+    "hinweis": "👑 Mitglieder zahlen nur {{preis}} – du sparst {{ersparnis}}",
+    "cta": "Mitglied werden"
   }
 }

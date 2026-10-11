@@ -78,6 +78,34 @@ describe("CataloguePage", () => {
     expect(screen.getByText("45,00 €")).toBeInTheDocument();
   });
 
+  describe("Hinweis « Mitglieder zahlen nur X » für Nicht-Mitglieder", () => {
+    function mitProdukt(overrides: Partial<Produit>) {
+      vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+        data: { next: null, previous: null, results: [produit(overrides)] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+    }
+
+    it("erscheint bei einem günstigeren Mitgliederpreis, wenn man ihn nicht bekommt", () => {
+      mitProdukt({ prix_membre: "35.00", est_prix_membre: false });
+      renderWithProviders(<CataloguePage />);
+      expect(screen.getByTestId("mitglieder-preis-hinweis")).toBeInTheDocument();
+    });
+
+    it("erscheint nicht, wenn man den Mitgliederpreis schon bekommt", () => {
+      mitProdukt({ prix_membre: "35.00", prix_affiche: "35.00", est_prix_membre: true });
+      renderWithProviders(<CataloguePage />);
+      expect(screen.queryByTestId("mitglieder-preis-hinweis")).not.toBeInTheDocument();
+    });
+
+    it("erscheint nicht, wenn das Produkt keinen Mitgliederpreis hat", () => {
+      mitProdukt({ prix_membre: null });
+      renderWithProviders(<CataloguePage />);
+      expect(screen.queryByTestId("mitglieder-preis-hinweis")).not.toBeInTheDocument();
+    });
+  });
+
   it("ajoute un article au panier au clic sur Ajouter", () => {
     renderWithProviders(<CataloguePage />);
     fireEvent.click(screen.getByText(/catalogue.ajouter/));
@@ -310,7 +338,7 @@ describe("CataloguePage", () => {
     expect(screen.getByText("catalogue.aucun_produit")).toBeInTheDocument();
   });
 
-  it("renvoie un visiteur anonyme vers /login au clic sur \"Ajouter\" au lieu de remplir le panier (onglet public \"Shop\", Phase D)", () => {
+  it('renvoie un visiteur anonyme vers /login au clic sur "Ajouter" au lieu de remplir le panier (onglet public "Shop", Phase D)', () => {
     useAuthStore.setState({ isAuthenticated: false, user: null });
 
     renderWithProviders(<CataloguePage />);
@@ -320,7 +348,7 @@ describe("CataloguePage", () => {
     expect(usePanierStore.getState().articles).toHaveLength(0);
   });
 
-  it("renvoie un visiteur anonyme vers /login au clic sur \"Ajouter\" d'un bon d'achat (onglet public \"Shop\", Phase D)", () => {
+  it('renvoie un visiteur anonyme vers /login au clic sur "Ajouter" d\'un bon d\'achat (onglet public "Shop", Phase D)', () => {
     useAuthStore.setState({ isAuthenticated: false, user: null });
     vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
       data: { next: null, previous: null, results: [produitBonAchat()] },

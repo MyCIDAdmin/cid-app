@@ -110,9 +110,33 @@ describe("PublicEvenementsTab", () => {
 
     renderWithProviders(<PublicEvenementsTab />);
 
+    // Besucher (zahlt den Nicht-Mitglieder-Preis) : eigener Preis + Hinweis auf den Mitgliederpreis
+    // statt beider Preise nebeneinander (Anfrage vom 2026-10-11).
+    expect(screen.getByText("cout_par_personne")).toBeInTheDocument();
+    expect(screen.getByTestId("mitglieder-preis-hinweis")).toBeInTheDocument();
+    expect(screen.queryByText("preis_nichtmitglieder")).not.toBeInTheDocument();
+    expect(screen.getByText("preis_begleitpersonen")).toBeInTheDocument();
+  });
+
+  it("zeigt einem Mitglied weiter beide Preise, ohne Werbehinweis", () => {
+    vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue({
+      data: page([
+        evenement({
+          gratuit: false,
+          cout: "35.00",
+          cout_non_membre: "50.00",
+          cout_applicable: "35.00",
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>);
+
+    renderWithProviders(<PublicEvenementsTab />);
+
     expect(screen.getByText("preis_mitglieder")).toBeInTheDocument();
     expect(screen.getByText("preis_nichtmitglieder")).toBeInTheDocument();
-    expect(screen.getByText("preis_begleitpersonen")).toBeInTheDocument();
+    expect(screen.queryByTestId("mitglieder-preis-hinweis")).not.toBeInTheDocument();
   });
 
   // evenement.description contient désormais du HTML (éditeur riche AdminEventsPage, demande

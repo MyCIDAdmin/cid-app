@@ -84,6 +84,31 @@ describe("ProduitDetailPage", () => {
     expect(screen.getByText("45,00 €")).toBeInTheDocument();
   });
 
+  it("zeigt Nicht-Mitgliedern den günstigeren Mitgliederpreis als Hinweis", () => {
+    vi.mocked(useBoutiqueHooks.useProduit).mockReturnValue({
+      data: produit({ prix_membre: "35.00", est_prix_membre: false }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduit>);
+
+    renderPage();
+
+    expect(screen.getByTestId("mitglieder-preis-hinweis")).toBeInTheDocument();
+    expect(screen.getByText("45,00 €")).toBeInTheDocument();
+  });
+
+  it("zeigt Mitgliedern, die den Mitgliederpreis schon bekommen, keinen Hinweis", () => {
+    vi.mocked(useBoutiqueHooks.useProduit).mockReturnValue({
+      data: produit({ prix_membre: "35.00", prix_affiche: "35.00", est_prix_membre: true }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduit>);
+
+    renderPage();
+
+    expect(screen.queryByTestId("mitglieder-preis-hinweis")).not.toBeInTheDocument();
+  });
+
   it("ajoute le produit au panier avec le prix affiché (prix_affiche), pas le prix catalogue", () => {
     vi.mocked(useBoutiqueHooks.useProduit).mockReturnValue({
       data: produit({ prix_affiche: "35.00", est_prix_membre: true }),
