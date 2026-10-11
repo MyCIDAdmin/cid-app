@@ -153,6 +153,70 @@ function LigneTipp({ tippspielId, rencontre, tip }: LigneProps) {
   );
 }
 
+/**
+ * Historique (retour utilisateur du 2026-10-11 : "vergangene Spiele und deren Tippergebnisse
+ * verschwinden") — tout pronostic déjà enregistré dont la rencontre n'est plus ouverte à la
+ * saisie (match passé, ou sous la date-limite d'un jour) reste visible en lecture seule, avec le
+ * score réel (une fois joué) et les points attribués. `rencontre_infos` est fourni par l'API :
+ * aucune dépendance à la pagination du calendrier.
+ */
+function HistoriqueTipps({ tipps }: { tipps: TippspielTip[] }) {
+  const { t } = useTranslation("communaute");
+  if (tipps.length === 0) return null;
+  return (
+    <section className="mt-6 space-y-2" data-testid="tippspiel-historie">
+      <h4 className="text-sm font-bold text-text-primary">{t("tippspiel.historie_titel")}</h4>
+      {tipps.map((tip) => {
+        const r = tip.rencontre_infos;
+        const gespielt = r.score_domicile !== null && r.score_exterieur !== null;
+        return (
+          <div
+            key={tip.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-cid border border-text-tertiary/20 p-3"
+          >
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-1.5 text-sm font-bold text-text-primary">
+                <EquipeLogoImage
+                  equipe={r.equipe_domicile}
+                  className="h-6 w-6 shrink-0 object-contain"
+                />
+                <span className="truncate">
+                  {r.equipe_domicile} — {r.equipe_exterieur}
+                </span>
+                <EquipeLogoImage
+                  equipe={r.equipe_exterieur}
+                  className="h-6 w-6 shrink-0 object-contain"
+                />
+              </div>
+              <div className="text-xs text-text-tertiary">{formatDate(r.date_heure)}</div>
+            </div>
+            <dl className="flex items-center gap-4 text-xs">
+              <div>
+                <dt className="text-text-tertiary">{t("tippspiel.historie_ergebnis")}</dt>
+                <dd className="font-bold tabular-nums text-text-primary">
+                  {gespielt ? `${r.score_domicile} : ${r.score_exterieur}` : "–"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-text-tertiary">{t("tippspiel.historie_dein_tipp")}</dt>
+                <dd className="font-bold tabular-nums text-text-primary">
+                  {tip.score_domicile} : {tip.score_exterieur}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-text-tertiary">{t("tippspiel.historie_punkte")}</dt>
+                <dd className="font-bold tabular-nums text-text-primary">
+                  {tip.points ?? t("tippspiel.historie_offen")}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 export default function TippspielTippAbgabe({ tippspielId }: { tippspielId: string }) {
   const { t } = useTranslation("communaute");
   const calendrierQuery = useCalendrierRencontres();
@@ -168,23 +232,38 @@ export default function TippspielTippAbgabe({ tippspielId }: { tippspielId: stri
     return carte;
   }, [tippsQuery.data]);
 
+  const historie = useMemo(() => {
+    const offene = new Set(rencontres.map((r) => r.id));
+    return (tippsQuery.data?.results ?? [])
+      .filter((tip) => !offene.has(tip.rencontre))
+      .sort(
+        (a, b) =>
+          new Date(b.rencontre_infos.date_heure).getTime() -
+          new Date(a.rencontre_infos.date_heure).getTime(),
+      );
+  }, [rencontres, tippsQuery.data]);
+
   if (calendrierQuery.isLoading || tippsQuery.isLoading) {
     return <p className="text-sm text-text-tertiary">{t("tippspiel.chargement")}</p>;
   }
-  if (rencontres.length === 0) {
-    return <p className="text-sm text-text-tertiary">{t("tippspiel.tipps_leer")}</p>;
-  }
 
   return (
-    <div className="space-y-2">
-      {rencontres.map((rencontre) => (
-        <LigneTipp
-          key={rencontre.id}
-          tippspielId={tippspielId}
-          rencontre={rencontre}
-          tip={tippsParRencontre.get(rencontre.id)}
-        />
-      ))}
+    <div>
+      {rencontres.length === 0 ? (
+        <p className="text-sm text-text-tertiary">{t("tippspiel.tipps_leer")}</p>
+      ) : (
+        <div className="space-y-2">
+          {rencontres.map((rencontre) => (
+            <LigneTipp
+              key={rencontre.id}
+              tippspielId={tippspielId}
+              rencontre={rencontre}
+              tip={tippsParRencontre.get(rencontre.id)}
+            />
+          ))}
+        </div>
+      )}
+      <HistoriqueTipps tipps={historie} />
     </div>
   );
 }

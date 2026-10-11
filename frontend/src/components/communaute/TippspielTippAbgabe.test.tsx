@@ -144,14 +144,13 @@ describe("TippspielTippAbgabe", () => {
 
     renderWithProviders(<TippspielTippAbgabe tippspielId="tp1" />);
 
-    expect(
-      screen.getByLabelText("tippspiel.tipp_heim_label"),
-    ).toHaveValue(2);
+    expect(screen.getByLabelText("tippspiel.tipp_heim_label")).toHaveValue(2);
     expect(screen.getByLabelText("tippspiel.tipp_gast_label")).toHaveValue(1);
   });
 
   it("crée un nouveau pronostic quand aucun n'existe encore pour cette rencontre", () => {
-    const creerMutation = mutationMock<ReturnType<typeof useCommunauteHooks.useCreerTippspielTip>>();
+    const creerMutation =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useCreerTippspielTip>>();
     vi.mocked(useCommunauteHooks.useCreerTippspielTip).mockReturnValue(creerMutation);
     vi.mocked(useCommunauteHooks.useModifierTippspielTip).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspielTip>>(),
@@ -184,9 +183,8 @@ describe("TippspielTippAbgabe", () => {
   });
 
   it("modifie un pronostic existant plutôt que d'en créer un nouveau", () => {
-    const modifierMutation = mutationMock<
-      ReturnType<typeof useCommunauteHooks.useModifierTippspielTip>
-    >();
+    const modifierMutation =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspielTip>>();
     vi.mocked(useCommunauteHooks.useModifierTippspielTip).mockReturnValue(modifierMutation);
     vi.mocked(useCommunauteHooks.useCreerTippspielTip).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useCreerTippspielTip>>(),
@@ -250,5 +248,52 @@ describe("TippspielTippAbgabe", () => {
     expect(images).toHaveLength(1);
     expect(images[0]).toHaveAttribute("src", "http://cdn/ca.png");
     expect(screen.getByText(/Club Africain — ES Tunis/)).toBeInTheDocument();
+  });
+
+  // Retour utilisateur du 2026-10-11 : "vergangene Spiele und deren Tippergebnisse
+  // verschwinden" — un pronostic sur une rencontre passée reste visible en lecture seule.
+  it("affiche l'historique des pronostics sur les rencontres passées", () => {
+    const passee = rencontre({
+      id: "r-passee",
+      date_heure: "2026-03-01T18:00:00Z",
+      est_a_venir: false,
+      score_domicile: 2,
+      score_exterieur: 1,
+      statut: "FINISHED",
+    });
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([passee]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+    vi.mocked(useCommunauteHooks.useTippspielTipps).mockReturnValue({
+      data: page([
+        tip({
+          id: "t-passe",
+          rencontre: "r-passee",
+          rencontre_infos: passee,
+          score_domicile: 1,
+          score_exterieur: 1,
+          points: 3,
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTipps>);
+    vi.mocked(useCommunauteHooks.useCreerTippspielTip).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useCreerTippspielTip>>(),
+    );
+    vi.mocked(useCommunauteHooks.useModifierTippspielTip).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspielTip>>(),
+    );
+
+    renderWithProviders(<TippspielTippAbgabe tippspielId="tp1" />);
+
+    const historie = screen.getByTestId("tippspiel-historie");
+    expect(historie).toHaveTextContent("Club Africain — ES Tunis");
+    expect(historie).toHaveTextContent("2 : 1");
+    expect(historie).toHaveTextContent("1 : 1");
+    expect(historie).toHaveTextContent("3");
+    expect(screen.getByText("tippspiel.tipps_leer")).toBeInTheDocument();
   });
 });
