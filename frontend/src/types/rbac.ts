@@ -125,6 +125,8 @@ export type VisibiliteEffectiveReponse = Record<string, boolean>;
  * compte connecté non-membre. */
 export interface VisibiliteModuleLigne {
   module: string;
+  /** Groupe de la Sidebar de l'entrée (2026-10-11) — sert à regrouper les lignes du tableau. */
+  menu_groupe: "general" | "communaute" | "contenu";
   visible: boolean;
   visible_non_membre: boolean;
 }

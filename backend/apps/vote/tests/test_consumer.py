@@ -183,7 +183,14 @@ def test_vote_avec_session_fermee_refuse():
 def test_vote_nicht_wahlberechtigtes_mitglied_wird_abgelehnt():
     """Sicherheitsprüfung 2026-10-07 : die Wählerschaft der Sitzung gilt auch beim Stimmabgeben."""
     from apps.membres.models import StatutMembre
+    from apps.rbac.models import ModuleVisibiliteMembre
 
+    # Seit 2026-10-11 (Nicht-Mitglieder-Sperre) erreicht ein inaktives Mitglied das Vote-Modul nur,
+    # wenn "Abstimmungen" in der Spalte "Nicht-Mitglied" angehakt ist — hier ist es das, damit
+    # die Wählerschaft-Prüfung selbst weiter getestet wird.
+    ModuleVisibiliteMembre.objects.update_or_create(
+        module="vote", defaults={"visible_non_membre": True}
+    )
     session = VoteSessionFactory()
     option = VoteOptionFactory(session=session)
     _, membre = user_membre_avec_fiche(email="ws-inaktiv@example.de", statut=StatutMembre.INACTIF)
@@ -198,3 +205,18 @@ def test_vote_nicht_wahlberechtigtes_mitglied_wird_abgelehnt():
 
     asyncio.run(run())
     assert VoteExprime.objects.filter(session=session).count() == 0
+
+
+def test_vote_verbindung_fuer_nicht_mitglied_standardmaessig_gesperrt():
+    """Nicht-Mitglieder-Sperre (2026-10-11, apps.rbac.authentication) : "Abstimmungen" ist in der
+    Spalte "Nicht-Mitglied" standardmäßig NICHT angehakt — die Verbindung wird abgelehnt."""
+    from apps.membres.models import StatutMembre
+
+    session = VoteSessionFactory()
+    _, membre = user_membre_avec_fiche(email="ws-nm@example.de", statut=StatutMembre.INACTIF)
+
+    async def run():
+        _communicator, connected = await _connect(session, membre.user)
+        assert connected is False
+
+    asyncio.run(run())

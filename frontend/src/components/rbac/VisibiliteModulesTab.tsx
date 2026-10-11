@@ -4,12 +4,16 @@
  * "Mitglied" (fiche Membre active) et "Nicht-Mitglied" (compte connecté sans adhésion active).
  * Ne concerne que le rôle système "Membre Normal" : un rôle supérieur voit toujours tout.
  */
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useSetVisibiliteModule, useVisibiliteModules } from "../../hooks/useRbac";
 import type { GroupeVisibilite, VisibiliteModuleLigne } from "../../types/rbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
+
+// Même ordre et mêmes titres que les groupes de la Sidebar (hors "Administration", réglée par la
+// matrice d'accès) — le backend renvoie `menu_groupe` pour chaque ligne.
+const GROUPES: VisibiliteModuleLigne["menu_groupe"][] = ["general", "communaute", "contenu"];
 
 const COLONNES: { groupe: GroupeVisibilite; champ: keyof VisibiliteModuleLigne }[] = [
   { groupe: "membre", champ: "visible" },
@@ -42,31 +46,51 @@ export default function VisibiliteModulesTab() {
             </tr>
           </thead>
           <tbody>
-            {(lignesQuery.data ?? []).map((ligne) => (
-              <tr key={ligne.module} className="border-b border-text-tertiary/10 last:border-0">
-                <td className="px-3 py-2">{t(`modules.${ligne.module}`, ligne.module)}</td>
-                {COLONNES.map(({ groupe, champ }) => (
-                  <td key={groupe} className="px-3 py-2 text-center">
-                    <input
-                      type="checkbox"
-                      aria-label={`${ligne.module} ${t(`visibilite.${groupe}`)}`}
-                      checked={Boolean(ligne[champ])}
-                      disabled={setCellule.isPending}
-                      onChange={(e) => {
-                        setErreur("");
-                        setCellule.mutate(
-                          { module: ligne.module, visible: e.target.checked, groupe },
-                          {
-                            onError: (err) =>
-                              setErreur(extractApiErrorMessage(err, t("visibilite.erreur"))),
-                          },
-                        );
-                      }}
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {GROUPES.map((menuGroupe) => {
+              const lignes = (lignesQuery.data ?? []).filter((l) => l.menu_groupe === menuGroupe);
+              if (lignes.length === 0) return null;
+              return (
+                <Fragment key={menuGroupe}>
+                  <tr className="bg-text-tertiary/5">
+                    <th
+                      colSpan={3}
+                      scope="colgroup"
+                      className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary"
+                    >
+                      {t(`visibilite.groupes.${menuGroupe}`)}
+                    </th>
+                  </tr>
+                  {lignes.map((ligne) => (
+                    <tr
+                      key={ligne.module}
+                      className="border-b border-text-tertiary/10 last:border-0"
+                    >
+                      <td className="px-3 py-2">{t(`modules.${ligne.module}`, ligne.module)}</td>
+                      {COLONNES.map(({ groupe, champ }) => (
+                        <td key={groupe} className="px-3 py-2 text-center">
+                          <input
+                            type="checkbox"
+                            aria-label={`${ligne.module} ${t(`visibilite.${groupe}`)}`}
+                            checked={Boolean(ligne[champ])}
+                            disabled={setCellule.isPending}
+                            onChange={(e) => {
+                              setErreur("");
+                              setCellule.mutate(
+                                { module: ligne.module, visible: e.target.checked, groupe },
+                                {
+                                  onError: (err) =>
+                                    setErreur(extractApiErrorMessage(err, t("visibilite.erreur"))),
+                                },
+                              );
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

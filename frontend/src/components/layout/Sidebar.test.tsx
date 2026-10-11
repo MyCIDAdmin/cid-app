@@ -415,8 +415,9 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
     mockVisibiliteEffective({
       data: {
         evenements: false,
+        covoiturage: false,
         boutique: false,
-        communaute: false,
+        fil: false,
         albums: false,
         vote: false,
         projets: false,
@@ -434,6 +435,20 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
     // "membres" et "adhesions" ne sont pas dans la liste ci-dessus : toujours visibles.
     expect(screen.getByText("nav.membres")).toBeInTheDocument();
     expect(screen.getByText("nav.mon_adhesion")).toBeInTheDocument();
+  });
+
+  // Demande du 2026-10-11 ("Gemeinschaft"-Module alle zusammen) : chaque entrée de la communauté
+  // (Fil, Forum, Messagerie, Gruppen, Fan-Club) et Quiz se règle désormais seule.
+  it("masque une seule entrée de la communauté sans toucher aux autres", () => {
+    mockVisibiliteEffective({ data: { forum: false, quiz: false } });
+    renderWithProviders(<Sidebar />);
+
+    expect(screen.queryByText("nav.forum")).not.toBeInTheDocument();
+    expect(screen.queryByText("nav.quiz")).not.toBeInTheDocument();
+    expect(screen.getByText("nav.fil")).toBeInTheDocument();
+    expect(screen.getByText("nav.messagerie")).toBeInTheDocument();
+    expect(screen.getByText("nav.groupes")).toBeInTheDocument();
+    expect(screen.getByText("nav.live")).toBeInTheDocument();
   });
 
   it("module absent de la réponse (aucune ligne en base) reste visible, même défaut que le backend", () => {

@@ -35,6 +35,7 @@ from apps.communaute.tests.factories import (
     MembreGroupeFactory,
     user_membre_avec_fiche,
 )
+from apps.membres.models import StatutMembre
 
 pytestmark = pytest.mark.django_db(transaction=True, serialized_rollback=True)
 
@@ -477,6 +478,33 @@ def test_connexion_live_refusee_sans_authentification():
             _application(), "/ws/live/00000000-0000-0000-0000-000000000000/"
         )
         connected, _ = await communicator.connect()
+        assert connected is False
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
+def test_connexion_live_refusee_a_un_non_membre():
+    """Barrière non-membre (2026-10-11, apps.rbac.authentication) : le WebSocket applique la même
+    règle que l'API — un compte dont la fiche n'est pas active n'ouvre pas le Fan-Club."""
+    _, m1 = user_membre_avec_fiche(email="live-nm@example.de", statut=StatutMembre.INACTIF)
+    match = MatchFactory()
+
+    async def run():
+        communicator, connected = await _connect(f"/ws/live/{match.id}/", m1.user)
+        assert connected is False
+        await communicator.disconnect()
+
+    asyncio.run(run())
+
+
+def test_connexion_messagerie_refusee_a_un_non_membre():
+    _, m1 = user_membre_avec_fiche(email="msg-nm@example.de", statut=StatutMembre.EN_ATTENTE)
+
+    async def run():
+        communicator, connected = await _connect(
+            "/ws/messagerie/00000000-0000-0000-0000-000000000000/", m1.user
+        )
         assert connected is False
         await communicator.disconnect()
 

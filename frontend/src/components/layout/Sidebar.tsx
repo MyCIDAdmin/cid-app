@@ -229,7 +229,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.covoiturage",
     icon: IconCar,
     group: "general",
-    module: "evenements",
+    module: "covoiturage",
   },
   // Projets & Actions (module ajouté le 2026-09-22 sur demande utilisateur) — ouvert à tout
   // authentifié, même principe que /evenements : le backend ne renvoie de toute façon pas les
@@ -255,16 +255,17 @@ export const NAV_ITEMS: NavItem[] = [
   },
   // Fil d'actualité + Forum (mockup #pg-fil/#pg-forum, Release Plan §3.2, Phase 4A) — ouverts à
   // tout authentifié, même principe que /mon-adhesion : le backend scope déjà la visibilité (voir
-  // PublicationViewSet/SujetViewSet.get_queryset). `module: "communaute"` sur toutes les entrées
-  // de ce groupe (fil/forum/messagerie/groupes/live/albums/quiz vivent toutes dans apps.communaute,
-  // voir CLAUDE.md §3 — un seul module de registry.MODULES pour l'ensemble de ce périmètre).
-  { to: "/fil", labelKey: "nav.fil", icon: IconNews, group: "communaute", module: "communaute" },
+  // PublicationViewSet/SujetViewSet.get_queryset). Depuis le 2026-10-11, chaque entrée a sa PROPRE
+  // clé `module` (fil/forum/messagerie/groupes/live/quiz/albums/covoiturage — voir
+  // apps.rbac.registry.MENU_ITEMS) : elles se règlent individuellement dans le tableau
+  // Sichtbarkeit, alors qu'elles partageaient jusque-là la seule clé "communaute".
+  { to: "/fil", labelKey: "nav.fil", icon: IconNews, group: "communaute", module: "fil" },
   {
     to: "/forum",
     labelKey: "nav.forum",
     icon: IconMessageCircle2,
     group: "communaute",
-    module: "communaute",
+    module: "forum",
   },
   // Messagerie privée + Groupes de chat (mockup #pg-messagerie/#pg-groupes, Release Plan
   // §3.2, Phase 4A/4B) — ouverts à tout authentifié, même principe que /fil et /forum.
@@ -273,14 +274,14 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.messagerie",
     icon: IconMail,
     group: "communaute",
-    module: "communaute",
+    module: "messagerie",
   },
   {
     to: "/groupes",
     labelKey: "nav.groupes",
     icon: IconUsersGroup,
     group: "communaute",
-    module: "communaute",
+    module: "groupes",
   },
   // Live Match (mockup #pg-live, Release Plan §3.2, troisième lot Phase 4B) — ouvert à tout
   // authentifié, même principe que /fil et /groupes.
@@ -289,7 +290,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.live",
     icon: IconBroadcast,
     group: "communaute",
-    module: "communaute",
+    module: "live",
   },
   // Albums photos, Quiz (mockup #pg-albums/#pg-quiz) + Votes & Élections (mockup #pg-vote, FDD
   // §3.5/F-008) — ouverts à tout authentifié : le backend scope déjà la visibilité (résultats de
@@ -310,7 +311,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.quiz",
     icon: IconHelpCircle,
     group: "contenu",
-    module: "communaute",
+    module: "quiz",
   },
   { to: "/votes", labelKey: "nav.votes", icon: IconGavel, group: "contenu", module: "vote" },
   // Gestion des quiz (mockup #pg-quiz) — Bureau Admin+ seulement, même niveau que

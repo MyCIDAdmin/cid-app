@@ -15,10 +15,11 @@ const voteKeys = {
 };
 
 /** Session active (`statut=ouverte`) — au plus une à la fois côté UI (mockup #vote-tab-actif). */
-export function useSessionVoteActive() {
+export function useSessionVoteActive(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: voteKeys.sessions({ statut: "ouverte" }),
     queryFn: () => voteApi.listVoteSessions({ statut: "ouverte" }),
+    enabled: options.enabled ?? true,
     // Filet de sécurité si le WebSocket est momentanément indisponible : le compteur/timer
     // reste malgré tout à jour via un polling REST discret.
     refetchInterval: 30_000,

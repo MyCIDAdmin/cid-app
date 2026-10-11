@@ -81,6 +81,7 @@ class ModuleVisibiliteCellSerializer(serializers.Serializer):
     modules sans ligne en base, voir views.ModuleVisibiliteView."""
 
     module = serializers.CharField()
+    menu_groupe = serializers.CharField()
     visible = serializers.BooleanField()
     visible_non_membre = serializers.BooleanField()
 
