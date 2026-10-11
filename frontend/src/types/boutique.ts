@@ -121,7 +121,9 @@ export interface Produit {
   /** Prix membre optionnel (demande utilisateur, mycid.org/shop — badge "Mitglieder Preis").
    * Voir Produit.prix_membre côté backend : ne PAS utiliser cette valeur directement pour
    * décider quoi afficher — c'est `prix_affiche`/`est_prix_membre` (ci-dessous) qui portent la
-   * décision déjà résolue côté serveur (CLAUDE.md §8). Exposé surtout pour l'admin (édition). */
+   * décision déjà résolue côté serveur (CLAUDE.md §8). Exposé pour l'admin (édition) et, en simple
+   * affichage, pour l'incitation « Mitglieder zahlen nur X » faite aux non-membres
+   * (MitgliederPreisHinweis) — jamais pour calculer un montant. */
   prix_membre: string | null;
   /** Prix à AFFICHER (et qui sera réellement facturé) pour l'utilisateur courant — déjà résolu
    * côté serveur entre `prix_membre` et `prix_final` selon son statut membre (voir
