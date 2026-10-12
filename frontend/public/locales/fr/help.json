@@ -362,7 +362,7 @@
   },
   "membres_import": {
     "titre": "Import : mode d'emploi",
-    "intro": "Il existe deux imports : membres (données de base) et historique de statut (actif/inactif par année). Tous deux se font en trois étapes : vérifier, confirmer, rapport. Rien n'est enregistré avant la confirmation.",
+    "intro": "Il existe deux imports : membres (données de base) et historique (statut annuel actif/inactif ou – avec offre et montant – adhésions passées). Tous deux se font en trois étapes : vérifier, confirmer, rapport. Rien n'est enregistré avant la confirmation.",
     "schritte": [
       "Télécharger le template et le remplir dans Excel (.xlsx uniquement, 5 Mo maximum, première feuille, première ligne = en-têtes).",
       "Choisir le fichier et cliquer sur « Vérifier ». Rien n'est importé : vous obtenez une liste de contrôle avec statut et motif par ligne.",
@@ -438,21 +438,37 @@
         "danach": "Aucune notification ni email n'est envoyé. Le statut courant d'un membre ne suit que l'année la plus récente ; des ajouts plus anciens ne le modifient pas."
       },
       {
-        "titre": "6. Comprendre le rapport",
+        "titre": "6. Importer l'historique avec offre et montant",
+        "wann": "Vous voulez renseigner, pour des membres existants, des adhésions passées avec l'offre (p. ex. Gold) et le montant payé.",
+        "schritte": [
+          "Les membres doivent déjà exister. Cet import ne crée jamais de membre.",
+          "Sous « Importer un historique de statut », télécharger le template « Template offre + montant ». Une ligne = un membre + une année + une offre + un montant. Plusieurs années = plusieurs lignes.",
+          "Colonnes obligatoires : email, jahr, angebot. Facultatives : cin, kampagne, betrag, zahlungsdatum (JJ.MM.AAAA), zahlungsart (carte, virement, PayPal ou espèces). La colonne « jahr » décide : elle active le format « offre + montant » ; sans elle, c'est le format simple avec une colonne par année.",
+          "Charger le fichier et cliquer sur « Vérifier ». Sous chaque ligne figure ce qui serait créé : campagne, offre, montant, date de paiement et statut annuel « actif ».",
+          "Les campagnes manquantes sont créées archivées, les offres manquantes invisibles (non sélectionnables par les membres). Si l'offre est nouvelle, le montant est obligatoire ; sinon, sans montant, c'est le prix de l'offre qui s'applique.",
+          "S'il existe déjà pour ce membre et cette année une adhésion différente ou un statut annuel « inactif », la ligne apparaît comme doublon. Seuls les doublons cochés sont écrasés.",
+          "Cliquer sur « Confirmer l'import » et télécharger le rapport."
+        ],
+        "beispiel": "Ahmed était membre en 2023 avec l'offre « Gold » et a payé 120 € par virement le 15.03.2023. Vous saisissez une ligne : email, jahr 2023, angebot Gold, betrag 120, zahlungsdatum 15.03.2023, zahlungsart virement. Après l'import, Ahmed a pour 2023 une adhésion « Gold » payée, un paiement de 120 € sous « Paiements » et le statut annuel « actif ».",
+        "danach": "Aucun email ni notification n'est envoyé. Le paiement apparaît comme payé dans le registre des paiements et compte dans les chiffres financiers de l'année. Les campagnes archivées figurent sous « Campagnes d'adhésion »."
+      },
+      {
+        "titre": "7. Comprendre le rapport",
         "wann": "L'import est terminé.",
         "schritte": [
           "Cliquer sur « Télécharger le rapport (Excel) ».",
           "Le fichier contient toutes les colonnes de votre fichier d'origine et, à droite, les nouvelles colonnes « Status » et « Grund ».",
           "Valeurs de statut : Importiert, Überschrieben, Teilweise importiert (historique seulement), Übersprungen, Unverändert, Fehler. Les cellules sont colorées.",
-          "La colonne « Grund » indique p. ex. le numéro de membre attribué, les champs écrasés ou la cause de l'erreur."
+          "La colonne « Grund » indique p. ex. le numéro de membre attribué, les champs écrasés ou la cause de l'erreur.",
+          "Dans le format « offre + montant », la colonne « Grund » indique l'année, l'offre et le montant."
         ],
         "danach": "Corrigez les lignes en erreur dans le rapport ou dans votre fichier d'origine et ne réimportez que ces lignes."
       },
       {
-        "titre": "7. Ordre recommandé pour la reprise de données",
+        "titre": "8. Ordre recommandé pour la reprise de données",
         "wann": "Vous alimentez la plateforme pour la première fois ou reprenez de gros volumes.",
         "schritte": [
-          "D'abord les membres, ensuite l'historique de statut.",
+          "D'abord les membres, ensuite l'historique (statut annuel ou offre + montant).",
           "Essayer d'abord sur l'environnement de test (DEV) avec un petit fichier de 5 à 10 lignes et contrôler le rapport.",
           "Vérifier ensuite le fichier complet. Corriger les lignes en erreur avant de confirmer.",
           "Refaire l'import en production avec le même fichier vérifié.",
@@ -460,7 +476,7 @@
         ]
       },
       {
-        "titre": "8. Messages d'erreur fréquents et solutions",
+        "titre": "9. Messages d'erreur fréquents et solutions",
         "wann": "Une erreur apparaît dans la liste de contrôle ou le rapport.",
         "schritte": [
           "« Pflichtspalten fehlen » : une colonne manque ou son en-tête est mal écrit. Utiliser le template.",
@@ -470,13 +486,17 @@
           "« Doppelt in der Datei » : l'email ou le CIN figure déjà dans une ligne précédente. Supprimer l'une des deux lignes.",
           "« E-Mail/CIN passen zu mehreren Mitgliedern » : en base, email et CIN appartiennent à des personnes différentes. Clarifier manuellement (vérifier les fiches) puis réimporter.",
           "« Kein bestehendes Mitglied » (historique) : email ou CIN inconnu. Créer d'abord le membre.",
-          "« Format non supporté » ou « fichier trop volumineux » : .xlsx uniquement, 5 Mo maximum. Pour un ancien .xls, « Enregistrer sous .xlsx » dans Excel."
+          "« Format non supporté » ou « fichier trop volumineux » : .xlsx uniquement, 5 Mo maximum. Pour un ancien .xls, « Enregistrer sous .xlsx » dans Excel.",
+          "« Betrag erforderlich » (offre + montant) : l'offre n'existe pas encore dans cette campagne et doit être créée. Saisir le montant (0 est autorisé).",
+          "« Mehrere Kampagnen im Jahr … » (offre + montant) : plusieurs campagnes de même rang existent cette année-là. Écrire le nom exact dans la colonne « kampagne ».",
+          "« Ungültiges Jahr », « Ungültiger Betrag », « Ungültiges Zahlungsdatum », « Unbekannte Zahlungsart » : corriger la valeur dans la colonne indiquée."
         ]
       }
     ],
     "tipps": [
       "« Vérifier » ne modifie rien. Vous pouvez vérifier, corriger et recharger le fichier autant de fois que nécessaire.",
       "À la confirmation, le fichier est réévalué. Si la base a changé entre-temps, c'est le nouvel état qui compte.",
+      "L'import « offre + montant » crée de vrais paiements dans le registre. Testez-le donc d'abord sur DEV avec quelques lignes.",
       "Choisissez les doublons en connaissance de cause. Une valeur écrasée ne se rétablit que manuellement ou par un nouvel import.",
       "Conservez le rapport : il documente le traitement de chaque ligne.",
       "Les motifs de la liste de contrôle et du rapport sont toujours en allemand.",
