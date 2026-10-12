@@ -83,6 +83,13 @@ export interface VarianteProduit {
   taille: string;
   couleur: string;
   stock: number;
+  /** Release 6: eigener Preis / Mitgliederpreis der Variante (Rohwerte, null = Produktpreis). */
+  prix?: string | null;
+  prix_membre?: string | null;
+  /** Release 6: vom Server aufgelöster Preis für den aktuellen Benutzer (siehe utils/produit). */
+  prix_final?: string;
+  prix_affiche?: string;
+  est_prix_membre?: boolean;
 }
 
 /** Photo supplémentaire de la galerie produit (demande utilisateur du 2026-09-27, point 13.1
@@ -158,6 +165,11 @@ export interface Produit {
   reservierung_frist: string | null;
   reservierung_max_gesamt: number | null;
   reservierung_max_pro_mitglied: number | null;
+  /** Release 6: Tage bis zur Zahlung (Modus „reservieren und bezahlen“); null = kein Verfall. */
+  reservierung_zahlungsfrist_tage?: number | null;
+  /** Release 6: günstigster Variantenpreis und ob die Varianten verschieden viel kosten. */
+  prix_ab?: string;
+  preise_unterschiedlich?: boolean;
   /** Restmenge laut Gesamtlimit; null = unbegrenzt / keine Reservierung. */
   reservierung_verfuegbar: number | null;
   /** Frist nicht abgelaufen und Gesamtlimit nicht erreicht (immer true bei Modus "aus"). */
@@ -206,6 +218,7 @@ export interface ProduitPayload {
   reservierung_frist?: string | null;
   reservierung_max_gesamt?: number | null;
   reservierung_max_pro_mitglied?: number | null;
+  reservierung_zahlungsfrist_tage?: number | null;
   statut?: StatutProduit;
   nouveaute?: boolean;
   seuil_alerte_stock?: number;
@@ -224,6 +237,8 @@ export interface VariantePayload {
   taille?: string;
   couleur?: string;
   stock: number;
+  prix?: string | null;
+  prix_membre?: string | null;
 }
 
 export interface LigneCommande {
@@ -310,6 +325,8 @@ export interface Commande {
    * qu'aucun paiement n'a été confirmé. */
   mode_paiement: ModePaiementCommande | "";
   date_paiement_confirme: string | null;
+  /** Release 6: Zahlungsfrist einer Reservierung; danach wird die unbezahlte Bestellung storniert. */
+  zahlung_bis?: string | null;
   paiement_confirme_par: string | null;
   /** Référence externe du paiement PSP (ex. "STRIPE-pi_xxx" / "PAYPAL-xxx") — renseignée
    * uniquement pour un paiement confirmé automatiquement via webhook, jamais pour une
@@ -339,10 +356,11 @@ export interface LigneCommandeEntree {
 
 export interface PasserCommandePayload {
   lignes: LigneCommandeEntree[];
-  nom_destinataire: string;
-  adresse_livraison: string;
-  code_postal_livraison: string;
-  ville_livraison: string;
+  /** Adresse: Pflicht, außer der Warenkorb besteht nur aus Reservierungsartikeln (Abholung). */
+  nom_destinataire?: string;
+  adresse_livraison?: string;
+  code_postal_livraison?: string;
+  ville_livraison?: string;
   pays_livraison: string;
   telephone_livraison?: string;
   /** Code de bon d'achat optionnel (demande utilisateur du 2026-09-23) — déduit du total, la

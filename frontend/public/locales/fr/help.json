@@ -20,7 +20,8 @@
       "Avec « Gérer les variantes », renseignez tailles/couleurs et stock ; avec « Galerie », ajoutez des photos.",
       "Avec le sélecteur de statut, publiez ou archivez l'article ; seuls les articles publiés sont visibles des clients.",
       "« Supprimer » retire définitivement un article. Un article déjà commandé ne peut pas être supprimé : passez-le plutôt en « archivé ».",
-      "Avec « Réservation » sur un article, vous activez la réservation (avec date limite et limites de quantité) ; la liste se trouve dans l’onglet « Réservations »."
+      "Avec « Réservation » sur un article, vous activez la réservation (avec date limite et limites de quantité) ; la liste se trouve dans l’onglet « Réservations ».",
+      "Prix par variante : dans la liste des variantes d'un article, on peut saisir un prix et un prix membre par variante (vide = prix du produit). Le stock est aussi géré par variante et affiché dans la boutique pour la variante choisie."
     ],
     "workflows": [
       {
@@ -56,12 +57,25 @@
         ],
         "beispiel": "Lors du match, vous remettez les billets et cochez chaque réservation comme retirée.",
         "danach": "Le statut change ; les quantités annulées sont à nouveau libres. Rien n’est supprimé."
+      },
+      {
+        "titre": "Réservation avec paiement (billets, maillots)",
+        "wann": "Les membres doivent réserver de façon ferme, mais ne gardent l'article que s'ils paient.",
+        "schritte": [
+          "Sur l'article, sous « Réservation », choisir le mode « Réserver et payer en ligne ».",
+          "Saisir le délai de paiement en jours (p. ex. 7) et, si besoin, date limite, quantité totale et quantité par membre.",
+          "Le membre commande sans adresse de livraison (retrait) et paie par virement ou PayPal.",
+          "En cas de virement, confirmer le paiement sous « Commandes »."
+        ],
+        "beispiel": "40 billets en deux catégories à prix différents pour le match ; qui ne paie pas sous 7 jours perd sa réservation.",
+        "danach": "Les commandes impayées sont annulées automatiquement après le délai et la quantité est libérée."
       }
     ],
     "tipps": [
       "Les bons d’achat ne peuvent pas être réservés.",
       "Les membres voient leurs réservations sous « Mes commandes » et peuvent les annuler eux-mêmes jusqu’à la date limite.",
-      "Le total au-dessus de l’onglet compte les pièces filtrées."
+      "Le total au-dessus de l’onglet compte les pièces filtrées.",
+      "L'export Excel sous « Commandes » suit les filtres (statut, date, destinataire et autant d'articles que voulu) et contient les feuilles Positions, Totaux par variante et Réservations."
     ]
   },
   "stats": {

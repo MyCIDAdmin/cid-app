@@ -36,6 +36,7 @@ import type {
   RegleReduction,
   VarianteProduit,
 } from "../../types/boutique";
+import { bestandInfo, preisInfo } from "../../utils/produit";
 import { reservierungGeschlossen } from "../../utils/reservierung";
 import { uebersetzt } from "../../utils/uebersetzung";
 
@@ -270,6 +271,9 @@ function ProduitCarte({
   const [quantite, setQuantite] = useState(1);
 
   const varianteSelectionnee = produit.variantes.find((v) => v.id === varianteId);
+  // Release 6 : Preis und Bestand der gewählten Variante (Rückfall: Produktwerte).
+  const preis = preisInfo(produit, varianteSelectionnee);
+  const bestand = bestandInfo(produit, varianteSelectionnee);
   // Reservierung (Release 4) : "nur reservieren" ersetzt den Warenkorb-Button durch das
   // Reservierungsformular; bei geschlossener Reservierung/Frist wird auch die Bestellung gesperrt.
   const nurReservieren = produit.reservierung_modus === "nur_reservieren";
@@ -299,9 +303,11 @@ function ProduitCarte({
         // prix_affiche (jamais prix/prix_final seuls) : déjà résolu côté serveur — prix membre
         // si applicable (produit.est_prix_membre), sinon prix soldé/catalogue (CLAUDE.md §8 —
         // simple indicatif ici, le montant réel est de toute façon recalculé côté serveur).
-        prixUnitaire: produit.prix_affiche,
+        prixUnitaire: preis.affiche,
         stockDisponible: varianteSelectionnee.stock,
         typeProduit: "physique",
+        abholung: produit.reservierung_modus === "reservieren_und_bezahlen",
+        zahlungsfristTage: produit.reservierung_zahlungsfrist_tage ?? null,
         // Instantané des paliers actifs (demande utilisateur du 2026-09-23) — voir
         // panierStore.calculerReductionArticle, purement indicatif.
         reglesReduction: produit.regles_reduction_actives,
@@ -374,20 +380,23 @@ function ProduitCarte({
           >
             {produit.variantes.map((v) => (
               <option key={v.id} value={v.id} disabled={v.stock <= 0}>
-                {labelVariante(v)} {v.stock <= 0 ? `— ${t("catalogue.rupture")}` : ""}
+                {labelVariante(v)} {v.stock <= 0 ? `— ${t("catalogue.rupture")}` : `(${v.stock})`}
+                {produit.preise_unterschiedlich && v.prix_affiche
+                  ? ` · ${formatMontant(v.prix_affiche)}`
+                  : ""}
               </option>
             ))}
           </select>
         )}
 
         <div className="mb-2 flex items-center justify-between gap-2">
-          {produit.est_prix_membre ? (
+          {preis.istMitglied ? (
             <span className="flex flex-wrap items-baseline gap-1.5">
               <span className="text-base font-bold text-status-dangerText">
-                {formatMontant(produit.prix_affiche)}
+                {formatMontant(preis.affiche)}
               </span>
               <span className="text-xs text-text-tertiary line-through">
-                {formatMontant(produit.prix_final)}
+                {formatMontant(preis.final)}
               </span>
               <span className="rounded-full bg-status-successBg px-1.5 py-0.5 text-[9px] font-bold text-status-successText">
                 {t("catalogue.badge_prix_membre")}
@@ -396,16 +405,14 @@ function ProduitCarte({
           ) : produit.pourcentage_reduction ? (
             <span className="flex items-baseline gap-1.5">
               <span className="text-xs text-text-tertiary line-through">
-                {formatMontant(produit.prix)}
+                {formatMontant(preis.basis)}
               </span>
               <span className="text-base font-bold text-status-dangerText">
-                {formatMontant(produit.prix_affiche)}
+                {formatMontant(preis.affiche)}
               </span>
             </span>
           ) : (
-            <span className="text-base font-bold text-ca">
-              {formatMontant(produit.prix_affiche)}
-            </span>
+            <span className="text-base font-bold text-ca">{formatMontant(preis.affiche)}</span>
           )}
           {!epuise && !nurReservieren && (
             <StepperQuantite
@@ -418,10 +425,10 @@ function ProduitCarte({
           )}
         </div>
 
-        {!produit.est_prix_membre && (
+        {!preis.istMitglied && (
           <MitgliederPreisHinweis
-            mitgliederPreis={produit.prix_membre}
-            aktuellerPreis={produit.prix_affiche}
+            mitgliederPreis={varianteSelectionnee?.prix_membre ?? produit.prix_membre}
+            aktuellerPreis={preis.affiche}
             className="mb-2"
           />
         )}
@@ -442,11 +449,11 @@ function ProduitCarte({
         {!nurReservieren && (
           <>
             <div className="mb-2 text-[10px] text-text-tertiary">
-              {produit.en_rupture
+              {bestand.rupture
                 ? t("catalogue.rupture")
-                : produit.stock_faible
-                  ? t("catalogue.stock_faible", { stock: produit.stock_total })
-                  : t("catalogue.en_stock", { stock: produit.stock_total })}
+                : bestand.faible
+                  ? t("catalogue.stock_faible", { stock: bestand.stock })
+                  : t("catalogue.en_stock", { stock: bestand.stock })}
             </div>
 
             <button

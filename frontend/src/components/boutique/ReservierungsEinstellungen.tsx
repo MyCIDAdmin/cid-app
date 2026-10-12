@@ -37,8 +37,12 @@ export default function ReservierungsEinstellungen({
   const [maxMitglied, setMaxMitglied] = useState(
     String(produit.reservierung_max_pro_mitglied ?? ""),
   );
+  const [zahlungsfrist, setZahlungsfrist] = useState(
+    String(produit.reservierung_zahlungsfrist_tage ?? ""),
+  );
   const [gespeichert, setGespeichert] = useState(false);
   const ohne = modus === "aus";
+  const mitZahlung = modus === "reservieren_und_bezahlen";
 
   function onSpeichern() {
     setGespeichert(false);
@@ -50,6 +54,8 @@ export default function ReservierungsEinstellungen({
           reservierung_frist: ohne || !frist ? null : new Date(frist).toISOString(),
           reservierung_max_gesamt: ohne || !maxGesamt ? null : Number(maxGesamt),
           reservierung_max_pro_mitglied: ohne || !maxMitglied ? null : Number(maxMitglied),
+          reservierung_zahlungsfrist_tage:
+            !mitZahlung || !zahlungsfrist ? null : Number(zahlungsfrist),
         },
       },
       { onSuccess: () => setGespeichert(true) },
@@ -106,6 +112,18 @@ export default function ReservierungsEinstellungen({
             value={maxMitglied}
             disabled={!modifiable || ohne}
             onChange={(e) => setMaxMitglied(e.target.value)}
+            className={FELD}
+          />
+        </label>
+        <label className="text-[11px] text-text-secondary md:col-span-2">
+          {t("boutique:reservierung_admin.zahlungsfrist_tage")}
+          <input
+            type="number"
+            min={1}
+            max={90}
+            value={zahlungsfrist}
+            disabled={!modifiable || !mitZahlung}
+            onChange={(e) => setZahlungsfrist(e.target.value)}
             className={FELD}
           />
         </label>

@@ -32,16 +32,35 @@ export default function VariantesManager({
   const [taille, setTaille] = useState("");
   const [couleur, setCouleur] = useState("");
   const [stock, setStock] = useState(0);
+  const [prix, setPrix] = useState("");
+  const [prixMembre, setPrixMembre] = useState("");
+
+  // Release 6 : Preis pro Variante (leer = Produktpreis) — gespeichert beim Verlassen des Feldes.
+  function preisSpeichern(id: string, feld: "prix" | "prix_membre", wert: string, alt: unknown) {
+    if (!modifiable) return;
+    const neu = wert.trim() === "" ? null : Number(wert).toFixed(2);
+    if (neu === (alt ?? null)) return;
+    modifierMutation.mutate({ id, produitId: produit.id, payload: { [feld]: neu } });
+  }
 
   function handleAjouter(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     creerMutation.mutate(
-      { produit: produit.id, taille, couleur, stock },
+      {
+        produit: produit.id,
+        taille,
+        couleur,
+        stock,
+        prix: prix.trim() === "" ? null : Number(prix).toFixed(2),
+        prix_membre: prixMembre.trim() === "" ? null : Number(prixMembre).toFixed(2),
+      },
       {
         onSuccess: () => {
           setTaille("");
           setCouleur("");
           setStock(0);
+          setPrix("");
+          setPrixMembre("");
         },
       },
     );
@@ -77,14 +96,29 @@ export default function VariantesManager({
                 });
               }}
               disabled={!modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="w-16 rounded-cid border border-text-tertiary/30 px-1.5 py-0.5 text-right disabled:opacity-40"
             />
+            {(["prix", "prix_membre"] as const).map((feld) => (
+              <input
+                key={`${v.id}-${feld}-${v[feld] ?? ""}`}
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue={v[feld] ?? ""}
+                placeholder={t(`catalogue_admin.variante_${feld}_platzhalter`)}
+                aria-label={t(`catalogue_admin.variante_${feld}_label`)}
+                onBlur={(e) => preisSpeichern(v.id, feld, e.target.value, v[feld])}
+                disabled={!modifiable}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                className="w-20 rounded-cid border border-text-tertiary/30 px-1.5 py-0.5 text-right disabled:opacity-40"
+              />
+            ))}
             <button
               type="button"
               onClick={() => supprimerMutation.mutate({ id: v.id, produitId: produit.id })}
               disabled={!modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="text-text-tertiary hover:text-status-dangerText disabled:opacity-40"
               aria-label={t("catalogue_admin.supprimer_variante")}
             >
@@ -133,10 +167,43 @@ export default function VariantesManager({
             className="w-16 rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-xs"
           />
         </div>
+        <div>
+          <label htmlFor={`prix-${produit.id}`} className="block text-[10px] text-text-tertiary">
+            {t("catalogue_admin.variante_prix_label")}
+          </label>
+          <input
+            id={`prix-${produit.id}`}
+            type="number"
+            min={0}
+            step="0.01"
+            value={prix}
+            placeholder={t("catalogue_admin.variante_prix_platzhalter")}
+            onChange={(e) => setPrix(e.target.value)}
+            className="w-20 rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-xs"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={`prix-membre-${produit.id}`}
+            className="block text-[10px] text-text-tertiary"
+          >
+            {t("catalogue_admin.variante_prix_membre_label")}
+          </label>
+          <input
+            id={`prix-membre-${produit.id}`}
+            type="number"
+            min={0}
+            step="0.01"
+            value={prixMembre}
+            placeholder={t("catalogue_admin.variante_prix_membre_platzhalter")}
+            onChange={(e) => setPrixMembre(e.target.value)}
+            className="w-20 rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-xs"
+          />
+        </div>
         <button
           type="submit"
           disabled={creerMutation.isPending || !modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="rounded-cid bg-ca px-2.5 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
         >
           {t("catalogue_admin.ajouter_variante")}

@@ -38,6 +38,7 @@ import {
   useConfirmerPaiementCommande,
   useCreerRetourLot,
   useExpedierCommande,
+  useProduits,
 } from "../../hooks/useBoutique";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import {
@@ -122,6 +123,9 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
   const [filtreDestinataire, setFiltreDestinataire] = useState("");
   const [filtreDateApres, setFiltreDateApres] = useState("");
   const [filtreDateAvant, setFiltreDateAvant] = useState("");
+  // Release 6 : Bestellungen/Export pro Artikel (ein oder mehrere Artikel).
+  const [filtreProduits, setFiltreProduits] = useState<string[]>([]);
+  const produitsQuery = useProduits();
   const [commandeAAnnuler, setCommandeAAnnuler] = useState<Commande | null>(null);
   const [modePaiementParCommande, setModePaiementParCommande] = useState<
     Record<string, ModePaiementCommande>
@@ -163,6 +167,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
     destinataire: filtreDestinataire || undefined,
     date_apres: filtreDateApres || undefined,
     date_avant: filtreDateAvant || undefined,
+    produit: filtreProduits.length > 0 ? filtreProduits.join(",") : undefined,
   });
   const changerStatutMutation = useChangerStatutCommande();
   const annulerMutation = useAnnulerCommande();
@@ -205,6 +210,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
         destinataire: filtreDestinataire || undefined,
         date_apres: filtreDateApres || undefined,
         date_avant: filtreDateAvant || undefined,
+        produit: filtreProduits.length > 0 ? filtreProduits.join(",") : undefined,
       });
       declencherTelechargement(blob, nomFichier);
     } catch (error) {
@@ -340,6 +346,36 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
             className="mt-0.5 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
           />
         </label>
+        <details className="relative text-xs">
+          <summary className="cursor-pointer rounded-cid border border-text-tertiary/30 px-3 py-1.5 font-medium text-text-secondary">
+            {t("commandes_admin.filtre_artikel", { count: filtreProduits.length })}
+          </summary>
+          <div className="absolute z-20 mt-1 max-h-60 w-64 overflow-y-auto rounded-cid border border-text-tertiary/30 bg-bg-primary p-2 shadow-md">
+            {(produitsQuery.data?.results ?? []).map((p) => (
+              <label key={p.id} className="flex items-center gap-2 py-0.5">
+                <input
+                  type="checkbox"
+                  checked={filtreProduits.includes(p.id)}
+                  onChange={(e) =>
+                    setFiltreProduits((alt) =>
+                      e.target.checked ? [...alt, p.id] : alt.filter((id) => id !== p.id),
+                    )
+                  }
+                />
+                <span className="truncate">{p.nom}</span>
+              </label>
+            ))}
+            {filtreProduits.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setFiltreProduits([])}
+                className="mt-1 text-ca hover:underline"
+              >
+                {t("commandes_admin.filtre_artikel_zuruecksetzen")}
+              </button>
+            )}
+          </div>
+        </details>
         <button
           type="button"
           onClick={exporterExcel}

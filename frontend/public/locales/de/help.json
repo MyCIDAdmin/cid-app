@@ -20,7 +20,8 @@
       "Über „Varianten verwalten“ Größen/Farben mit Bestand pflegen, über „Galerie“ weitere Fotos hinzufügen.",
       "Mit dem Status-Auswahlfeld Artikel veröffentlichen oder archivieren; nur veröffentlichte Artikel sehen Kundinnen und Kunden.",
       "„Löschen“ entfernt einen Artikel endgültig. Artikel mit bestehenden Bestellungen können nicht gelöscht werden – setze sie stattdessen auf „archiviert“.",
-      "Über „Reservierung“ bei einem Artikel schaltest du das Reservieren ein (mit Frist und Mengenlimits); die Liste siehst du im Tab „Reservierungen“."
+      "Über „Reservierung“ bei einem Artikel schaltest du das Reservieren ein (mit Frist und Mengenlimits); die Liste siehst du im Tab „Reservierungen“.",
+      "Preis pro Variante: In der Variantenliste eines Artikels können Preis und Mitgliederpreis je Variante eingetragen werden (leer = Produktpreis). Der Bestand wird ebenfalls pro Variante geführt und im Shop für die gewählte Variante angezeigt."
     ],
     "workflows": [
       {
@@ -56,12 +57,25 @@
         ],
         "beispiel": "Beim Spiel gibst du die Tickets aus und hakst jede Reservierung als abgeholt ab.",
         "danach": "Der Status wechselt; stornierte Mengen werden wieder frei. Es wird nichts gelöscht."
+      },
+      {
+        "titre": "Reservierung mit Zahlung (Tickets, Trikots)",
+        "wann": "Mitglieder sollen Ware verbindlich reservieren, aber nur mit Zahlung behalten dürfen.",
+        "schritte": [
+          "Beim Artikel unter „Reservierung“ den Modus „Reservieren und online bezahlen“ wählen.",
+          "Zahlungsfrist in Tagen eintragen (z. B. 7) sowie optional Frist, Gesamtmenge und Menge pro Mitglied.",
+          "Das Mitglied bestellt ohne Lieferadresse (Abholung) und zahlt per Überweisung oder PayPal.",
+          "Bei Überweisung die Zahlung unter „Bestellungen“ bestätigen."
+        ],
+        "beispiel": "Für das Spiel gibt es 40 Tickets in zwei Kategorien mit verschiedenen Preisen; wer nicht in 7 Tagen zahlt, verliert die Reservierung.",
+        "danach": "Unbezahlte Bestellungen werden nach der Frist automatisch storniert und die Menge wird wieder frei."
       }
     ],
     "tipps": [
       "Gutscheine können nicht reserviert werden.",
       "Mitglieder sehen ihre Reservierungen unter „Meine Bestellungen“ und können sie bis zur Frist selbst stornieren.",
-      "Die Summe über dem Reservierungstab zählt die gefilterten Stücke."
+      "Die Summe über dem Reservierungstab zählt die gefilterten Stücke.",
+      "Der Excel-Export unter „Bestellungen“ folgt den Filtern (Status, Datum, Empfänger und beliebig viele Artikel) und enthält die Blätter Positionen, Summen pro Variante und Reservierungen."
     ]
   },
   "stats": {

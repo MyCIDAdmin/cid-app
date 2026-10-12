@@ -146,6 +146,23 @@ describe("PanierCommandePage", () => {
     );
   });
 
+  it("verlangt für Reservierungsartikel keine Lieferadresse (Release 6)", () => {
+    usePanierStore.setState({
+      articles: [articleTest({ abholung: true, zahlungsfristTage: 7 })],
+    });
+    renderWithProviders(<PanierCommandePage />);
+    fireEvent.click(screen.getByText("commande.continuer_livraison"));
+
+    expect(screen.queryByLabelText("commande.adresse_label")).not.toBeInTheDocument();
+    expect(screen.getByText(/commande.abholung_hinweis/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("commande.continuer_confirmation"));
+    fireEvent.click(screen.getByText("commande.confirmer_commande"));
+
+    const payload = passerCommandeMock.mock.calls[0][0];
+    expect(payload.lignes).toEqual([{ variante: "v1", quantite: 1 }]);
+    expect(payload.adresse_livraison).toBeUndefined();
+  });
+
   it("inclut le montant choisi pour une ligne bon d'achat et l'affiche sans taille/couleur", () => {
     usePanierStore.setState({
       articles: [
@@ -384,10 +401,7 @@ describe("PanierCommandePage", () => {
     });
     fireEvent.click(screen.getByText("commande.bon_achat_verifier"));
 
-    expect(verifierBonAchatMock).toHaveBeenCalledWith(
-      { code: "bon-abc12345" },
-      expect.anything(),
-    );
+    expect(verifierBonAchatMock).toHaveBeenCalledWith({ code: "bon-abc12345" }, expect.anything());
     // 45,00 € (total du panier) - 20,00 € (solde du bon) = 25,00 €.
     expect(screen.getByText("25,00 €")).toBeInTheDocument();
 

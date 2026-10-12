@@ -104,7 +104,12 @@
     "bon_achat_deduit": "Gutschein abgezogen: -{{montant}}",
     "total_a_payer": "Zu zahlender Betrag",
     "bon_achat_applique": "Gutschein angewendet: -{{montant}} — es verbleiben {{reste}} zu zahlen.",
-    "bon_achat_couvre_tout": "Diese Bestellung wurde vollständig durch Ihren Gutschein beglichen (-{{montant}}) — es ist keine weitere Zahlung erforderlich."
+    "bon_achat_couvre_tout": "Diese Bestellung wurde vollständig durch Ihren Gutschein beglichen (-{{montant}}) — es ist keine weitere Zahlung erforderlich.",
+    "abholung_hinweis": "Reservierte Artikel werden vor Ort abgeholt – eine Lieferadresse ist nicht nötig.",
+    "zahlungsfrist_hinweis": "Bitte innerhalb von {{tage}} Tagen bezahlen, sonst verfällt die Reservierung.",
+    "abholung_kurz": "Abholung vor Ort",
+    "zahlungsfrist_label": "Zahlungsfrist",
+    "zahlungsfrist_tage": "{{tage}} Tage nach Bestellung (danach verfällt die Reservierung)"
   },
   "retour_paiement": {
     "chargement": "Zahlung wird überprüft…",
@@ -173,7 +178,9 @@
     "erreur_document": "Das Dokument konnte nicht heruntergeladen werden.",
     "exporter_excel": "Als Excel exportieren",
     "export_en_cours": "Export läuft…",
-    "export_erreur": "Der Export ist fehlgeschlagen."
+    "export_erreur": "Der Export ist fehlgeschlagen.",
+    "filtre_artikel": "Artikel ({{count}})",
+    "filtre_artikel_zuruecksetzen": "Alle Artikel"
   },
   "mes_commandes": {
     "titre": "Meine Bestellungen",
@@ -187,7 +194,8 @@
     "voir_details": "Sendungsverfolgung ansehen",
     "confirmer_annulation_titre": "Diese Bestellung stornieren?",
     "confirmer_annulation_message": "Die Bestellung {{numero}} wird storniert und der Bestand wird zurückgebucht.",
-    "annuler": "Bestellung stornieren"
+    "annuler": "Bestellung stornieren",
+    "zahlung_bis": "Zahlung bis {{date}} – danach verfällt die Reservierung"
   },
   "paiement": {
     "mode_label": "Zahlungsart",
@@ -294,7 +302,11 @@
     "supprimer_confirmer": "Wirklich löschen?",
     "supprimer_oui": "Ja, löschen",
     "supprimer_non": "Abbrechen",
-    "supprimer_erreur": "Der Artikel konnte nicht gelöscht werden."
+    "supprimer_erreur": "Der Artikel konnte nicht gelöscht werden.",
+    "variante_prix_label": "Preis (€)",
+    "variante_prix_platzhalter": "Produktpreis",
+    "variante_prix_membre_label": "Mitgl.-Preis (€)",
+    "variante_prix_membre_platzhalter": "Produkt"
   },
   "mes_bons_achat": {
     "titre": "Meine Gutscheine",
@@ -337,10 +349,11 @@
     "max_pro_mitglied": "Maximal pro Mitglied",
     "hinweis_aus": "Das Produkt wird ganz normal verkauft.",
     "hinweis_nur_reservieren": "Mitglieder reservieren eine Menge, bezahlt wird später oder vor Ort. Die Reservierungen sehen Sie im Tab „Reservierungen“.",
-    "hinweis_reservieren_und_bezahlen": "Mitglieder bestellen wie gewohnt und zahlen online; Frist und Mengenlimits gelten für die Bestellung.",
+    "hinweis_reservieren_und_bezahlen": "Normale Bestellung (Überweisung/PayPal) ohne Lieferadresse (Abholung). Frist und Mengen werden geprüft; unbezahlte Bestellungen verfallen nach der Zahlungsfrist automatisch und die Menge wird wieder frei.",
     "speichern": "Speichern",
     "gespeichert": "Gespeichert.",
-    "fehler": "Speichern fehlgeschlagen."
+    "fehler": "Speichern fehlgeschlagen.",
+    "zahlungsfrist_tage": "Zahlungsfrist (Tage)"
   },
   "reservierungen_tab": {
     "alle_produkte": "Alle Produkte",

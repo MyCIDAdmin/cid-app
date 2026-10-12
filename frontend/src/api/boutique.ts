@@ -206,6 +206,9 @@ export interface CommandesFiltres {
    * Commande.created_at, jamais à l'heure exacte. */
   date_apres?: string;
   date_avant?: string;
+  /** Release 6: ein oder mehrere Artikel (UUIDs, kommagetrennt) — nur Bestellungen mit diesen
+   * Artikeln; beim Export zeigen „Positionen“/„Summen“ dann nur diese Artikel. */
+  produit?: string;
   cursor?: string;
 }
 
@@ -354,9 +357,9 @@ export async function exporterCommandesExcel(
 ): Promise<{ blob: Blob; nomFichier: string }> {
   // `cursor` n'a pas de sens pour un export (jamais paginé, voir CommandeViewSet.export) —
   // omis explicitement plutôt que transmis tel quel au cas où l'appelant le fournirait.
-  const { statut, destinataire, date_apres, date_avant } = filtres;
+  const { statut, destinataire, date_apres, date_avant, produit } = filtres;
   const { data, headers } = await apiClient.get("/boutique/commandes/export/", {
-    params: { statut, destinataire, date_apres, date_avant },
+    params: { statut, destinataire, date_apres, date_avant, produit },
     responseType: "blob",
   });
   return {

@@ -369,4 +369,51 @@ describe("CataloguePage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/login");
     expect(usePanierStore.getState().articles).toHaveLength(0);
   });
+
+  it("zeigt Preis und Bestand der gewählten Variante (Release 6)", () => {
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          produit({
+            variantes: [
+              {
+                id: "vs",
+                produit: "p1",
+                taille: "S",
+                couleur: "",
+                stock: 4,
+                prix_affiche: "35.00",
+                prix_final: "35.00",
+                est_prix_membre: false,
+              },
+              {
+                id: "vl",
+                produit: "p1",
+                taille: "L",
+                couleur: "",
+                stock: 9,
+                prix_affiche: "50.00",
+                prix_final: "50.00",
+                est_prix_membre: false,
+              },
+            ],
+            stock_total: 13,
+            preise_unterschiedlich: true,
+          }),
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+    renderWithProviders(<CataloguePage />);
+    expect(screen.getByText("35,00 €")).toBeInTheDocument();
+    expect(screen.getByText("catalogue.stock_faible")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("catalogue.variante_label"), {
+      target: { value: "vl" },
+    });
+    expect(screen.getByText("50,00 €")).toBeInTheDocument();
+    expect(screen.getByText("catalogue.en_stock")).toBeInTheDocument();
+  });
 });

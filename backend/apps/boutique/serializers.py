@@ -38,10 +38,45 @@ from .models import (
 
 
 class VarianteProduitSerializer(serializers.ModelSerializer):
+    """Variante mit Bestand und optionalem eigenem Preis (Release 6, 2026-10-12). `prix` und
+    `prix_membre` sind die Rohwerte (Verwaltung) ; `prix_affiche`/`est_prix_membre` der für den
+    aktuellen Benutzer gültige Preis — immer über Produit.prix_pour_membre (CLAUDE.md §8)."""
+
+    prix_final = serializers.SerializerMethodField()
+    prix_affiche = serializers.SerializerMethodField()
+    est_prix_membre = serializers.SerializerMethodField()
+
     class Meta:
         model = VarianteProduit
-        fields = ["id", "produit", "taille", "couleur", "stock"]
+        fields = [
+            "id",
+            "produit",
+            "taille",
+            "couleur",
+            "stock",
+            "prix",
+            "prix_membre",
+            "prix_final",
+            "prix_affiche",
+            "est_prix_membre",
+        ]
         read_only_fields = ["id"]
+
+    def _membre_courant(self):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return getattr(user, "membre", None) if user is not None else None
+
+    def get_prix_final(self, variante):
+        return str(variante.produit.prix_final_pour(variante))
+
+    def get_prix_affiche(self, variante):
+        prix, _ist = variante.produit.prix_pour_membre(self._membre_courant(), variante)
+        return str(prix)
+
+    def get_est_prix_membre(self, variante):
+        _prix, ist = variante.produit.prix_pour_membre(self._membre_courant(), variante)
+        return ist
 
 
 class ProduitImageSerializer(serializers.ModelSerializer):
@@ -135,6 +170,8 @@ class ProduitSerializer(serializers.ModelSerializer):
     # Reservierung (Release 4): Restmenge (None = unbegrenzt), ob noch offen (Frist + Limit) und
     # was das angemeldete Mitglied schon reserviert/bestellt hat — nur zur Anzeige, die
     # verbindliche Prüfung passiert serverseitig in apps.boutique.reservierungen.
+    prix_ab = serializers.SerializerMethodField()
+    preise_unterschiedlich = serializers.SerializerMethodField()
     reservierung_verfuegbar = serializers.SerializerMethodField()
     reservierung_offen = serializers.SerializerMethodField()
     reservierung_meine_menge = serializers.SerializerMethodField()
@@ -156,6 +193,8 @@ class ProduitSerializer(serializers.ModelSerializer):
             "prix_membre",
             "prix_affiche",
             "est_prix_membre",
+            "prix_ab",
+            "preise_unterschiedlich",
             "image",
             "images",
             "statut",
@@ -171,6 +210,7 @@ class ProduitSerializer(serializers.ModelSerializer):
             "reservierung_frist",
             "reservierung_max_gesamt",
             "reservierung_max_pro_mitglied",
+            "reservierung_zahlungsfrist_tage",
             "reservierung_verfuegbar",
             "reservierung_offen",
             "reservierung_meine_menge",
@@ -199,6 +239,21 @@ class ProduitSerializer(serializers.ModelSerializer):
     def get_est_prix_membre(self, produit):
         _prix, est_prix_membre = produit.prix_pour_membre(self._membre_courant())
         return est_prix_membre
+
+    def _variantenpreise(self, produit):
+        membre = self._membre_courant()
+        return [
+            produit.prix_pour_membre(membre, v)[0]
+            for v in produit.variantes.all()
+            if v.produit_id == produit.id
+        ] or [produit.prix_pour_membre(membre)[0]]
+
+    def get_prix_ab(self, produit):
+        """Günstigster Preis über alle Varianten (für „ab X €“ im Katalog)."""
+        return str(min(self._variantenpreise(produit)))
+
+    def get_preise_unterschiedlich(self, produit):
+        return len(set(self._variantenpreise(produit))) > 1
 
     def validate(self, attrs):
         modus = attrs.get(
@@ -417,6 +472,7 @@ class CommandeSerializer(serializers.ModelSerializer):
             "date_paiement_confirme",
             "paiement_confirme_par",
             "reference_paiement",
+            "zahlung_bis",
             "numero_suivi",
             "transporteur",
             "date_expedition",
@@ -511,10 +567,12 @@ class PasserCommandeSerializer(serializers.Serializer):
     le verrouillage de stock atomiques (SELECT FOR UPDATE)."""
 
     lignes = LigneCommandeEntreeSerializer(many=True)
-    nom_destinataire = serializers.CharField(max_length=200)
-    adresse_livraison = serializers.CharField(max_length=255)
-    code_postal_livraison = serializers.CharField(max_length=10)
-    ville_livraison = serializers.CharField(max_length=100)
+    # Release 6 : Lieferadresse nur Pflicht, wenn der Warenkorb nicht ausschließlich aus
+    # abzuholenden Reservierungsartikeln besteht (siehe validate).
+    nom_destinataire = serializers.CharField(max_length=200, required=False)
+    adresse_livraison = serializers.CharField(max_length=255, required=False)
+    code_postal_livraison = serializers.CharField(max_length=10, required=False)
+    ville_livraison = serializers.CharField(max_length=100, required=False)
     pays_livraison = serializers.CharField(max_length=100, default="Allemagne")
     telephone_livraison = serializers.CharField(max_length=30, required=False, allow_blank=True)
     # Code de bon d'achat optionnel (demande utilisateur du 2026-09-23) — la validité (existe,
@@ -522,6 +580,28 @@ class PasserCommandeSerializer(serializers.Serializer):
     # jamais ici : un code peut être consommé par une commande concurrente entre la validation du
     # serializer et l'exécution de la vue (même raison que le stock, voir CLAUDE.md §8).
     code_bon_achat = serializers.CharField(max_length=20, required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        lignes = attrs.get("lignes") or []
+        nur_abholung = bool(lignes) and all(
+            z["variante"].produit.reservierung_modus == ReservierungsModus.RESERVIEREN_UND_BEZAHLEN
+            for z in lignes
+        )
+        attrs["nur_abholung"] = nur_abholung
+        if not nur_abholung:
+            fehlend = {
+                feld: "Ce champ est obligatoire."
+                for feld in (
+                    "nom_destinataire",
+                    "adresse_livraison",
+                    "code_postal_livraison",
+                    "ville_livraison",
+                )
+                if not attrs.get(feld)
+            }
+            if fehlend:
+                raise serializers.ValidationError(fehlend)
+        return attrs
 
     def validate_lignes(self, lignes):
         if not lignes:

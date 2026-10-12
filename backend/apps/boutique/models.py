@@ -243,6 +243,16 @@ class Produit(models.Model):
         blank=True,
         help_text=_("Maximale Menge pro Mitglied; leer = unbegrenzt."),
     )
+    reservierung_zahlungsfrist_tage = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(90)],
+        help_text=_(
+            "Nur Modus „Reservieren und bezahlen“ (Release 6): Tage bis zur Zahlung. Wird die "
+            "Bestellung bis dahin nicht bezahlt, verfällt sie automatisch und die Menge wird "
+            "freigegeben. Leer = kein automatischer Verfall."
+        ),
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -294,15 +304,33 @@ class Produit(models.Model):
 
     @property
     def prix_final(self) -> Decimal:
-        """Prix effectivement facturé — applique `pourcentage_reduction` s'il est défini
-        (CLAUDE.md §8 : c'est CETTE valeur, jamais `prix` seul, qui doit être recalculée
+        """Prix effectivement facturé (sans variante) — applique `pourcentage_reduction` s'il est
+        défini (CLAUDE.md §8 : c'est CETTE valeur, jamais `prix` seul, qui doit être recalculée
         côté serveur et gelée sur LigneCommande.prix_unitaire — voir CommandeViewSet.passer)."""
-        if not self.pourcentage_reduction:
-            return self.prix
-        facteur = Decimal(100 - self.pourcentage_reduction) / Decimal(100)
-        return (self.prix * facteur).quantize(Decimal("0.01"))
+        return self.prix_final_pour()
 
-    def prix_pour_membre(self, membre) -> tuple[Decimal, bool]:
+    def prix_final_pour(self, variante=None) -> Decimal:
+        """Wie `prix_final`, aber mit dem eigenen Preis der Variante (Release 6, 2026-10-12 :
+        z. B. Trikot S/M/L oder Stadionplätze mit unterschiedlichen Preisen). Hat die Variante
+        keinen eigenen Preis, gilt der Produktpreis."""
+        basis = variante.prix if variante is not None and variante.prix is not None else self.prix
+        if not self.pourcentage_reduction:
+            return basis
+        facteur = Decimal(100 - self.pourcentage_reduction) / Decimal(100)
+        return (basis * facteur).quantize(Decimal("0.01"))
+
+    def prix_membre_pour(self, variante=None):
+        """Mitgliederpreis der Variante: eigener Mitgliederpreis, sonst der des Produkts — aber
+        nur, solange die Variante keinen eigenen (abweichenden) Normalpreis hat; ein fester
+        Produkt-Mitgliederpreis passt nicht zu einem anderen Variantenpreis."""
+        if variante is not None:
+            if variante.prix_membre is not None:
+                return variante.prix_membre
+            if variante.prix is not None:
+                return None
+        return self.prix_membre
+
+    def prix_pour_membre(self, membre, variante=None) -> tuple[Decimal, bool]:
         """Résout le prix EFFECTIF pour `membre` (instance apps.membres.Membre, ou None pour un
         visiteur/anonyme) — SEUL point qui doit décider entre `prix_membre` et `prix_final`, à
         appeler aussi bien pour l'affichage (ProduitSerializer.get_prix_affiche) que pour le
@@ -311,17 +339,15 @@ class Produit(models.Model):
         entièrement côté serveur, `membre` vient toujours de request.user.membre ou d'un membre
         cible explicite côté serveur, jamais d'un indicateur envoyé par le client).
 
-        Retourne (prix, est_prix_membre) : `prix_membre` s'applique uniquement si défini ET que
-        `membre` est actif (StatutMembre.ACTIF) — jamais de cumul avec `pourcentage_reduction`,
+        Retourne (prix, est_prix_membre) : le prix membre s'applique uniquement s'il est défini ET
+        que `membre` est actif (StatutMembre.ACTIF) — jamais de cumul avec `pourcentage_reduction`,
         contrairement à la réduction par quantité qui continue elle de s'appliquer par-dessus
-        (voir _construire_ligne_avec_reduction)."""
-        if (
-            self.prix_membre is not None
-            and membre is not None
-            and membre.statut == StatutMembre.ACTIF
-        ):
-            return self.prix_membre, True
-        return self.prix_final, False
+        (voir _construire_ligne_avec_reduction). `variante` (Release 6) : prix propre à la
+        déclinaison, voir prix_final_pour/prix_membre_pour."""
+        prix_membre = self.prix_membre_pour(variante)
+        if prix_membre is not None and membre is not None and membre.statut == StatutMembre.ACTIF:
+            return prix_membre, True
+        return self.prix_final_pour(variante), False
 
 
 def produit_image_galerie_upload_path(instance, filename):
@@ -362,6 +388,22 @@ class VarianteProduit(models.Model):
     taille = models.CharField(max_length=20, blank=True)
     couleur = models.CharField(max_length=50, blank=True)
     stock = models.PositiveIntegerField(default=0)
+    prix = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_("Eigener Preis dieser Variante (Release 6); leer = Preis des Produkts."),
+    )
+    prix_membre = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=_("Eigener Mitgliederpreis dieser Variante; leer = siehe Produkt."),
+    )
 
     class Meta:
         db_table = "boutique_variantes"
@@ -640,6 +682,15 @@ class Commande(models.Model):
     )
 
     # --- Expédition (voir CommandeViewSet.expedier) ---
+    zahlung_bis = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "Release 6: Zahlungsfrist einer Reservierung (Modus „Reservieren und bezahlen“). "
+            "Unbezahlte Bestellungen werden danach automatisch storniert (Menge wird frei)."
+        ),
+    )
+
     numero_suivi = models.CharField(max_length=100, blank=True)
     transporteur = models.CharField(max_length=100, blank=True)
     date_expedition = models.DateTimeField(
