@@ -174,6 +174,13 @@ export default function PanierCommandePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stocksQuery.data]);
 
+  // Release 6 : nur Reservierungsartikel -> Abholung vor Ort, keine Lieferadresse.
+  const nurAbholung = articles.length > 0 && articles.every((a) => a.abholung);
+  const fristTage = articles
+    .filter((a) => a.abholung && a.zahlungsfristTage)
+    .map((a) => a.zahlungsfristTage as number);
+  const kuerzesteFrist = fristTage.length > 0 ? Math.min(...fristTage) : null;
+
   const articlesIndisponibles = articles.filter((a) => a.stockDisponible <= 0 || a.quantite <= 0);
   const panierBloque = articlesIndisponibles.length > 0;
 
@@ -192,7 +199,9 @@ export default function PanierCommandePage() {
         // bon_achat_montant_min()/max() (CLAUDE.md §8), voir LigneCommandeEntree.montant.
         ...(estArticleBonAchat(a) && { montant: a.prixUnitaire }),
       })),
-      ...livraison,
+      ...(nurAbholung
+        ? { nom_destinataire: livraison.nom_destinataire, pays_livraison: livraison.pays_livraison }
+        : livraison),
       ...(bonAchatVerifie && { code_bon_achat: bonAchatVerifie.code }),
     };
     passerCommandeMutation.mutate(payload, {
@@ -475,6 +484,13 @@ export default function PanierCommandePage() {
           onSubmit={handleValiderLivraison}
           className="grid gap-3 rounded-cid-lg bg-bg-primary p-4 shadow-sm md:grid-cols-2"
         >
+          {nurAbholung && (
+            <p className="rounded-cid bg-bg-secondary px-3 py-2 text-sm text-text-secondary md:col-span-2">
+              {t("commande.abholung_hinweis")}
+              {kuerzesteFrist !== null &&
+                ` ${t("commande.zahlungsfrist_hinweis", { tage: kuerzesteFrist })}`}
+            </p>
+          )}
           <div className="md:col-span-2">
             <label htmlFor="liv-nom" className="mb-1 block text-xs font-medium text-text-secondary">
               {t("commande.destinataire_label")}
@@ -487,76 +503,90 @@ export default function PanierCommandePage() {
               className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
             />
           </div>
-          <div className="md:col-span-2">
-            <label
-              htmlFor="liv-adresse"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("commande.adresse_label")}
-            </label>
-            <input
-              id="liv-adresse"
-              required
-              value={livraison.adresse_livraison}
-              onChange={(e) => setLivraison({ ...livraison, adresse_livraison: e.target.value })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label htmlFor="liv-cp" className="mb-1 block text-xs font-medium text-text-secondary">
-              {t("commande.code_postal_label")}
-            </label>
-            <input
-              id="liv-cp"
-              required
-              value={livraison.code_postal_livraison}
-              onChange={(e) =>
-                setLivraison({ ...livraison, code_postal_livraison: e.target.value })
-              }
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="liv-ville"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("commande.ville_label")}
-            </label>
-            <input
-              id="liv-ville"
-              required
-              value={livraison.ville_livraison}
-              onChange={(e) => setLivraison({ ...livraison, ville_livraison: e.target.value })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="liv-pays"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("commande.pays_label")}
-            </label>
-            <input
-              id="liv-pays"
-              required
-              value={livraison.pays_livraison}
-              onChange={(e) => setLivraison({ ...livraison, pays_livraison: e.target.value })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label htmlFor="liv-tel" className="mb-1 block text-xs font-medium text-text-secondary">
-              {t("commande.telephone_label")}
-            </label>
-            <input
-              id="liv-tel"
-              value={livraison.telephone_livraison}
-              onChange={(e) => setLivraison({ ...livraison, telephone_livraison: e.target.value })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
+          {!nurAbholung && (
+            <>
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="liv-adresse"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("commande.adresse_label")}
+                </label>
+                <input
+                  id="liv-adresse"
+                  required
+                  value={livraison.adresse_livraison}
+                  onChange={(e) =>
+                    setLivraison({ ...livraison, adresse_livraison: e.target.value })
+                  }
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="liv-cp"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("commande.code_postal_label")}
+                </label>
+                <input
+                  id="liv-cp"
+                  required
+                  value={livraison.code_postal_livraison}
+                  onChange={(e) =>
+                    setLivraison({ ...livraison, code_postal_livraison: e.target.value })
+                  }
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="liv-ville"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("commande.ville_label")}
+                </label>
+                <input
+                  id="liv-ville"
+                  required
+                  value={livraison.ville_livraison}
+                  onChange={(e) => setLivraison({ ...livraison, ville_livraison: e.target.value })}
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="liv-pays"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("commande.pays_label")}
+                </label>
+                <input
+                  id="liv-pays"
+                  required
+                  value={livraison.pays_livraison}
+                  onChange={(e) => setLivraison({ ...livraison, pays_livraison: e.target.value })}
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="liv-tel"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("commande.telephone_label")}
+                </label>
+                <input
+                  id="liv-tel"
+                  value={livraison.telephone_livraison}
+                  onChange={(e) =>
+                    setLivraison({ ...livraison, telephone_livraison: e.target.value })
+                  }
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </div>
+            </>
+          )}
           <div className="flex gap-2 md:col-span-2">
             <button
               type="button"
@@ -585,9 +615,23 @@ export default function PanierCommandePage() {
             <dd className="text-text-primary">{livraison.nom_destinataire}</dd>
             <dt className="text-text-tertiary">{t("commande.adresse_label")}</dt>
             <dd className="text-text-primary">
-              {livraison.adresse_livraison}, {livraison.code_postal_livraison}{" "}
-              {livraison.ville_livraison}, {livraison.pays_livraison}
+              {nurAbholung ? (
+                t("commande.abholung_kurz")
+              ) : (
+                <>
+                  {livraison.adresse_livraison}, {livraison.code_postal_livraison}{" "}
+                  {livraison.ville_livraison}, {livraison.pays_livraison}
+                </>
+              )}
             </dd>
+            {nurAbholung && kuerzesteFrist !== null && (
+              <>
+                <dt className="text-text-tertiary">{t("commande.zahlungsfrist_label")}</dt>
+                <dd className="text-text-primary">
+                  {t("commande.zahlungsfrist_tage", { tage: kuerzesteFrist })}
+                </dd>
+              </>
+            )}
           </dl>
 
           <div className="mb-4 border-t border-text-tertiary/20 pt-3">

@@ -21,10 +21,12 @@ import logging
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, send_mail
+from django.db import transaction
+from django.utils import timezone
 
 from apps.notifications.services import email_module_actif
 
-from .models import BonAchat, Commande
+from .models import BonAchat, Commande, StatutCommande
 
 logger = logging.getLogger(__name__)
 
@@ -202,3 +204,43 @@ def envoyer_email_bon_achat_code(bon_achat_id) -> None:
             bon.code,
             email,
         )
+
+
+@shared_task
+def verfallene_zahlungen_stornieren(jetzt=None) -> int:
+    """Release 6 (2026-10-12): unbezahlte Reservierungs-Bestellungen nach Ablauf der Zahlungsfrist
+    (`Commande.zahlung_bis`) automatisch stornieren — Bestand wird wieder frei, ein eingelöster
+    Gutschein wird zurückgebucht (gleiche Schritte wie `CommandeViewSet.annuler`). Idempotent:
+    nur Bestellungen, die unter Sperre noch `en_attente` sind. Gibt die Anzahl zurück."""
+    from .notifications import notifier_commande_annulee
+    from .views import _annuler_bons_generes, _restituer_bon_achat, _restituer_stock
+
+    jetzt = jetzt or timezone.now()
+    kandidaten = list(
+        Commande.objects.filter(
+            statut=StatutCommande.EN_ATTENTE, zahlung_bis__isnull=False, zahlung_bis__lt=jetzt
+        ).values_list("id", flat=True)
+    )
+    anzahl = 0
+    for commande_id in kandidaten:
+        with transaction.atomic():
+            commande = Commande.objects.select_for_update().get(pk=commande_id)
+            if (
+                commande.statut != StatutCommande.EN_ATTENTE
+                or commande.zahlung_bis is None
+                or commande.zahlung_bis >= jetzt
+            ):
+                continue
+            _annuler_bons_generes(commande)
+            _restituer_stock(commande)
+            _restituer_bon_achat(commande)
+            commande.statut = StatutCommande.ANNULEE
+            commande.save(update_fields=["statut", "updated_at"])
+        try:
+            notifier_commande_annulee(commande)
+        except Exception:  # noqa: BLE001 — Benachrichtigung darf den Verfall nie blockieren
+            logger.exception(
+                "Benachrichtigung für verfallene Bestellung %s fehlgeschlagen", commande_id
+            )
+        anzahl += 1
+    return anzahl

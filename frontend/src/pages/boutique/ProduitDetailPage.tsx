@@ -34,6 +34,7 @@ import {
   labelRegleReduction,
   labelVariante,
 } from "./CataloguePage";
+import { bestandInfo, preisInfo } from "../../utils/produit";
 import { reservierungGeschlossen } from "../../utils/reservierung";
 import { uebersetzt } from "../../utils/uebersetzung";
 
@@ -67,6 +68,8 @@ export default function ProduitDetailPage() {
   const varianteSelectionnee = produit?.variantes.find(
     (v) => v.id === (varianteId || variantesEnStock[0]?.id),
   );
+  const preis = produit ? preisInfo(produit, varianteSelectionnee) : null;
+  const bestand = produit ? bestandInfo(produit, varianteSelectionnee) : null;
   const nurReservieren = produit?.reservierung_modus === "nur_reservieren";
   const geschlossen = produit ? reservierungGeschlossen(produit) : false;
   const epuise =
@@ -88,9 +91,11 @@ export default function ProduitDetailPage() {
         couleur: varianteSelectionnee.couleur,
         // prix_affiche (jamais prix/prix_final seuls) : déjà résolu côté serveur, voir docstring
         // ci-dessus — même principe que ProduitCarte (CataloguePage).
-        prixUnitaire: produit.prix_affiche,
+        prixUnitaire: preisInfo(produit, varianteSelectionnee).affiche,
         stockDisponible: varianteSelectionnee.stock,
         typeProduit: "physique",
+        abholung: produit.reservierung_modus === "reservieren_und_bezahlen",
+        zahlungsfristTage: produit.reservierung_zahlungsfrist_tage ?? null,
         reglesReduction: produit.regles_reduction_actives,
       },
       quantite,
@@ -118,7 +123,7 @@ export default function ProduitDetailPage() {
                 {t("catalogue.badge_nouveaute")}
               </span>
             )}
-            {produit.est_prix_membre ? (
+            {preis?.istMitglied ? (
               <span className="absolute right-3 top-3 rounded-full bg-status-dangerText px-2 py-0.5 text-[10px] font-bold text-white shadow">
                 👑 {t("catalogue.badge_prix_membre")}
               </span>
@@ -171,13 +176,13 @@ export default function ProduitDetailPage() {
               {uebersetzt(produit, "nom")}
             </h1>
 
-            {produit.est_prix_membre ? (
+            {preis?.istMitglied ? (
               <span className="flex flex-wrap items-baseline gap-2">
                 <span className="text-2xl font-bold text-status-dangerText">
-                  {formatMontant(produit.prix_affiche)}
+                  {formatMontant(preis?.affiche ?? produit.prix_affiche)}
                 </span>
                 <span className="text-sm text-text-tertiary line-through">
-                  {formatMontant(produit.prix_final)}
+                  {formatMontant(preis?.final ?? produit.prix_final)}
                 </span>
                 <span className="rounded-full bg-status-successBg px-2 py-0.5 text-xs font-bold text-status-successText">
                   {t("catalogue.badge_prix_membre")}
@@ -186,22 +191,22 @@ export default function ProduitDetailPage() {
             ) : produit.pourcentage_reduction ? (
               <span className="flex items-baseline gap-2">
                 <span className="text-sm text-text-tertiary line-through">
-                  {formatMontant(produit.prix)}
+                  {formatMontant(preis?.basis ?? produit.prix)}
                 </span>
                 <span className="text-2xl font-bold text-status-dangerText">
-                  {formatMontant(produit.prix_affiche)}
+                  {formatMontant(preis?.affiche ?? produit.prix_affiche)}
                 </span>
               </span>
             ) : (
               <span className="text-2xl font-bold text-ca">
-                {formatMontant(produit.prix_affiche)}
+                {formatMontant(preis?.affiche ?? produit.prix_affiche)}
               </span>
             )}
 
-            {!produit.est_prix_membre && (
+            {!preis?.istMitglied && (
               <MitgliederPreisHinweis
-                mitgliederPreis={produit.prix_membre}
-                aktuellerPreis={produit.prix_affiche}
+                mitgliederPreis={varianteSelectionnee?.prix_membre ?? produit.prix_membre}
+                aktuellerPreis={preis?.affiche ?? produit.prix_affiche}
                 className="w-fit"
               />
             )}
@@ -238,11 +243,11 @@ export default function ProduitDetailPage() {
                 {!nurReservieren && (
                   <>
                     <div className="text-xs text-text-tertiary">
-                      {produit.en_rupture
+                      {bestand?.rupture
                         ? t("catalogue.rupture")
-                        : produit.stock_faible
-                          ? t("catalogue.stock_faible", { stock: produit.stock_total })
-                          : t("catalogue.en_stock", { stock: produit.stock_total })}
+                        : bestand?.faible
+                          ? t("catalogue.stock_faible", { stock: bestand.stock })
+                          : t("catalogue.en_stock", { stock: bestand?.stock ?? 0 })}
                     </div>
 
                     {produit.variantes.length > 1 && (
@@ -254,7 +259,11 @@ export default function ProduitDetailPage() {
                       >
                         {produit.variantes.map((v) => (
                           <option key={v.id} value={v.id} disabled={v.stock <= 0}>
-                            {labelVariante(v)} {v.stock <= 0 ? `— ${t("catalogue.rupture")}` : ""}
+                            {labelVariante(v)}{" "}
+                            {v.stock <= 0 ? `— ${t("catalogue.rupture")}` : `(${v.stock})`}
+                            {produit.preise_unterschiedlich && v.prix_affiche
+                              ? ` · ${formatMontant(v.prix_affiche)}`
+                              : ""}
                           </option>
                         ))}
                       </select>

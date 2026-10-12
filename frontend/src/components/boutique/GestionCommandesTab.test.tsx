@@ -18,6 +18,7 @@ vi.mock("../../hooks/useBoutique", async () => {
     useConfirmerPaiementCommande: vi.fn(),
     useExpedierCommande: vi.fn(),
     useCreerRetourLot: vi.fn(),
+    useProduits: vi.fn(),
   };
 });
 
@@ -100,6 +101,16 @@ describe("GestionCommandesTab", () => {
     confirmerPaiementMock = vi.fn();
     expedierMock = vi.fn();
     creerRetourMock = vi.fn();
+    vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          { id: "p1", nom: "Trikot" },
+          { id: "p2", nom: "Ticket" },
+        ],
+      },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
 
     vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
       data: { next: null, previous: null, results: [commande()] },
@@ -601,5 +612,21 @@ describe("GestionCommandesTab", () => {
 
     await waitFor(() => expect(boutiqueApi.exporterCommandesExcel).toHaveBeenCalled());
     expect(window.URL.createObjectURL).toHaveBeenCalledWith(blob);
+  });
+
+  it("exportiert nur die gewählten Artikel (Release 6)", async () => {
+    vi.mocked(boutiqueApi.exporterCommandesExcel).mockResolvedValue({
+      blob: new Blob(["x"]),
+      nomFichier: "export.xlsx",
+    });
+    renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByLabelText("Trikot"));
+    fireEvent.click(screen.getByLabelText("Ticket"));
+    fireEvent.click(screen.getByText("commandes_admin.exporter_excel"));
+    await waitFor(() =>
+      expect(boutiqueApi.exporterCommandesExcel).toHaveBeenCalledWith(
+        expect.objectContaining({ produit: "p1,p2" }),
+      ),
+    );
   });
 });

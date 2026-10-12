@@ -18,8 +18,19 @@ class ProduitFilter(django_filters.FilterSet):
         fields = ["categorie", "type_produit", "statut", "nouveaute"]
 
 
+class UUIDInFilter(django_filters.BaseInFilter, django_filters.UUIDFilter):
+    """?feld=<uuid>,<uuid>,… (kommagetrennt)."""
+
+
+class CharInFilter(django_filters.BaseInFilter, django_filters.CharFilter):
+    """?feld=a,b,c (kommagetrennt)."""
+
+
 class CommandeFilter(django_filters.FilterSet):
     statut = django_filters.ChoiceFilter(choices=StatutCommande.choices)
+    # Release 6 (Excel-Export pro Artikel): mehrere Artikel / Status gleichzeitig filtern.
+    produit = UUIDInFilter(field_name="lignes__variante__produit_id", distinct=True)
+    statuts = CharInFilter(field_name="statut")
     membre = django_filters.UUIDFilter(field_name="membre_id")
     # Ajoutés le 2026-09-25 (demande utilisateur, module "Shop-Verwaltung" : "Filtermöglichkeiten
     # hinzufügen z.B. Datumsintervall, Empfänger") — même convention que

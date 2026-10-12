@@ -57,6 +57,10 @@ export interface ArticlePanier {
    * Toujours vide pour "bon_achat" (aucune réduction quantité ne s'y applique).
    */
   reglesReduction?: RegleReduction[];
+  /** Release 6: Reservierungsartikel (Modus „reservieren und bezahlen“) -> Abholung vor Ort,
+   * keine Lieferadresse; `zahlungsfristTage` = Tage bis zur Zahlung (null = kein Verfall). */
+  abholung?: boolean;
+  zahlungsfristTage?: number | null;
 }
 
 export function estArticleBonAchat(article: ArticlePanier): boolean {

@@ -104,7 +104,12 @@
     "bon_achat_deduit": "Bon d'achat déduit : -{{montant}}",
     "total_a_payer": "Total à payer",
     "bon_achat_applique": "Bon d'achat appliqué : -{{montant}} — il reste {{reste}} à régler.",
-    "bon_achat_couvre_tout": "Cette commande a été entièrement réglée par votre bon d'achat (-{{montant}}) — aucun paiement supplémentaire n'est nécessaire."
+    "bon_achat_couvre_tout": "Cette commande a été entièrement réglée par votre bon d'achat (-{{montant}}) — aucun paiement supplémentaire n'est nécessaire.",
+    "abholung_hinweis": "Les articles réservés sont à retirer sur place – aucune adresse de livraison n'est nécessaire.",
+    "zahlungsfrist_hinweis": "Merci de payer sous {{tage}} jours, sinon la réservation expire.",
+    "abholung_kurz": "Retrait sur place",
+    "zahlungsfrist_label": "Délai de paiement",
+    "zahlungsfrist_tage": "{{tage}} jours après la commande (puis la réservation expire)"
   },
   "retour_paiement": {
     "chargement": "Vérification du paiement…",
@@ -173,7 +178,9 @@
     "erreur_document": "Le document n'a pas pu être téléchargé.",
     "exporter_excel": "Exporter en Excel",
     "export_en_cours": "Export en cours…",
-    "export_erreur": "L'export a échoué."
+    "export_erreur": "L'export a échoué.",
+    "filtre_artikel": "Articles ({{count}})",
+    "filtre_artikel_zuruecksetzen": "Tous les articles"
   },
   "mes_commandes": {
     "titre": "Mes commandes",
@@ -187,7 +194,8 @@
     "voir_details": "Voir le suivi",
     "confirmer_annulation_titre": "Annuler cette commande ?",
     "confirmer_annulation_message": "La commande {{numero}} sera annulée et le stock restitué.",
-    "annuler": "Annuler la commande"
+    "annuler": "Annuler la commande",
+    "zahlung_bis": "Paiement avant le {{date}} – la réservation expire ensuite"
   },
   "paiement": {
     "mode_label": "Mode de paiement",
@@ -294,7 +302,11 @@
     "supprimer_confirmer": "Vraiment supprimer ?",
     "supprimer_oui": "Oui, supprimer",
     "supprimer_non": "Annuler",
-    "supprimer_erreur": "L'article n'a pas pu être supprimé."
+    "supprimer_erreur": "L'article n'a pas pu être supprimé.",
+    "variante_prix_label": "Prix (€)",
+    "variante_prix_platzhalter": "Prix produit",
+    "variante_prix_membre_label": "Prix membre (€)",
+    "variante_prix_membre_platzhalter": "Produit"
   },
   "mes_bons_achat": {
     "titre": "Mes bons d'achat",
@@ -337,10 +349,11 @@
     "max_pro_mitglied": "Maximum par membre",
     "hinweis_aus": "Le produit est vendu normalement.",
     "hinweis_nur_reservieren": "Les membres réservent une quantité, le paiement se fait plus tard ou sur place. Les réservations se trouvent dans l’onglet « Réservations ».",
-    "hinweis_reservieren_und_bezahlen": "Les membres commandent comme d’habitude et paient en ligne ; la date limite et les limites de quantité s’appliquent à la commande.",
+    "hinweis_reservieren_und_bezahlen": "Commande normale (virement/PayPal) sans adresse de livraison (retrait). Délai et quantités contrôlés ; les commandes impayées expirent automatiquement après le délai et la quantité est libérée.",
     "speichern": "Enregistrer",
     "gespeichert": "Enregistré.",
-    "fehler": "Échec de l’enregistrement."
+    "fehler": "Échec de l’enregistrement.",
+    "zahlungsfrist_tage": "Délai de paiement (jours)"
   },
   "reservierungen_tab": {
     "alle_produkte": "Tous les produits",

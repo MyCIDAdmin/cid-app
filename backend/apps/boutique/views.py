@@ -90,7 +90,7 @@ tête de models.py) :
     BonAchat correspondant(s), déjà ACTIF, et envoie l'email/notification existants.
 """
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -132,6 +132,7 @@ from .models import (
     ProduitImage,
     RegleReduction,
     Reservierung,
+    ReservierungsModus,
     Retour,
     StatutBonAchat,
     StatutCommande,
@@ -414,7 +415,7 @@ def _construire_ligne_avec_reduction(variante, quantite, montant=None, membre=No
         }
         return ligne_kwargs, sous_total_net
 
-    prix_unitaire, _est_prix_membre = variante.produit.prix_pour_membre(membre)
+    prix_unitaire, _est_prix_membre = variante.produit.prix_pour_membre(membre, variante)
     reduction = calculer_reduction_quantite(variante.produit, quantite)
 
     quantite_payee = quantite - reduction.quantite_offerte
@@ -546,14 +547,36 @@ class CommandeViewSet(ModelViewSet):
                         }
                     )
 
+            # Release 6 : nur Reservierungsartikel -> Abholung vor Ort, keine Lieferadresse ;
+            # Zahlungsfrist = kürzeste Frist der Reservierungsartikel im Warenkorb.
+            tage = [
+                variantes[z["variante"].id].produit.reservierung_zahlungsfrist_tage
+                for z in lignes_demandees
+                if variantes[z["variante"].id].produit.reservierung_modus
+                == ReservierungsModus.RESERVIEREN_UND_BEZAHLEN
+                and variantes[z["variante"].id].produit.reservierung_zahlungsfrist_tage
+            ]
+            zahlung_bis = timezone.now() + timedelta(days=min(tage)) if tage else None
+            if data["nur_abholung"]:
+                adresse = {
+                    "nom_destinataire": data.get("nom_destinataire") or str(membre),
+                    "adresse_livraison": "Abholung vor Ort (Reservierung)",
+                    "code_postal_livraison": "00000",
+                    "ville_livraison": "Abholung",
+                }
+            else:
+                adresse = {
+                    "nom_destinataire": data["nom_destinataire"],
+                    "adresse_livraison": data["adresse_livraison"],
+                    "code_postal_livraison": data["code_postal_livraison"],
+                    "ville_livraison": data["ville_livraison"],
+                }
             commande = Commande.objects.create(
                 membre=membre,
-                nom_destinataire=data["nom_destinataire"],
-                adresse_livraison=data["adresse_livraison"],
-                code_postal_livraison=data["code_postal_livraison"],
-                ville_livraison=data["ville_livraison"],
                 pays_livraison=data["pays_livraison"],
                 telephone_livraison=data.get("telephone_livraison", ""),
+                zahlung_bis=zahlung_bis,
+                **adresse,
             )
 
             montant_total = Decimal("0.00")
@@ -1008,7 +1031,17 @@ class CommandeViewSet(ModelViewSet):
         page du cursor.
         """
         queryset = self.filter_queryset(self.get_queryset())
-        classeur = construire_classeur_commandes(queryset)
+        # Release 6 : ?produit=<uuid>,<uuid> (mehrere Artikel) und ?statuts=a,b filtern die
+        # Bestellungen ; die Blätter „Positionen“/„Summen“ zeigen dann nur diese Artikel. Das
+        # Blatt „Reservierungen“ sieht nur die Verwaltung (gleicher Scope wie get_queryset).
+        produkt_ids = [p for p in (request.query_params.get("produit") or "").split(",") if p]
+        user = request.user
+        sieht_alle = ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL or (
+            is_elevated_for_module(user, "boutique")
+        )
+        classeur = construire_classeur_commandes(
+            queryset, produkt_ids=produkt_ids, mit_reservierungen=sieht_alle
+        )
         nom_fichier = f"export_commandes_{timezone.localtime():%Y%m%d_%H%M}.xlsx"
         return xlsx_response(classeur, nom_fichier)
 

@@ -72,6 +72,11 @@ function CommandeCarte({
             {t("mes_commandes.passee_le", { date: formatDate(commande.created_at) })} ·{" "}
             {t("mes_commandes.articles", { count: nombreArticles })}
           </div>
+          {commande.statut === "en_attente" && commande.zahlung_bis && (
+            <div className="text-xs font-medium text-status-warningText">
+              {t("mes_commandes.zahlung_bis", { date: formatDate(commande.zahlung_bis) })}
+            </div>
+          )}
         </div>
         <span
           className={`inline-block shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[commande.statut]}`}
@@ -81,9 +86,7 @@ function CommandeCarte({
       </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-text-tertiary/10 pt-2">
-        <span className="text-base font-bold text-ca">
-          {formatMontant(commande.montant_total)}
-        </span>
+        <span className="text-base font-bold text-ca">{formatMontant(commande.montant_total)}</span>
         <div className="flex gap-2">
           {commande.numero_suivi && (
             <Link
