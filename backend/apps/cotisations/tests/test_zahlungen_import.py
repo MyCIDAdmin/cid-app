@@ -270,3 +270,77 @@ def test_api_ohne_matrix_recht_verweigert():
     client.force_authenticate(user=user)
     assert client.get(reverse("cotisations:zahlungseingang-list")).status_code == 403
     assert client.get(reverse("cotisations:zahlungen-import-template")).status_code == 403
+
+
+# ── Release 5 : verwaltbare Dropdown-Listen ──────────────────────────────────────────────────
+
+
+def test_vorlage_hat_versteckte_listen_und_dropdowns():
+    from apps.cotisations.imports_zahlungen import construire_classeur_template_zahlungen
+
+    wb = construire_classeur_template_zahlungen()
+    assert wb["Listen"].sheet_state == "hidden"
+    assert wb["Listen"]["A1"].value == "zahlungsart"
+    werte = [c.value for c in wb["Listen"]["A"][1:] if c.value]
+    assert {"Überweisung", "PayPal", "Bar", "Karte"} <= set(werte)
+    validierungen = {
+        str(next(iter(v.sqref.ranges)).coord)[0]: v
+        for v in wb["Zahlungen"].data_validations.dataValidation
+    }
+    assert validierungen["C"].errorStyle == "stop"  # zahlungsart = Spalte C
+    assert validierungen["E"].errorStyle == "warning"  # verwendungszweck = Spalte E
+    assert validierungen["C"].formula1.startswith("=Listen!$A$2:$A$")
+
+
+def test_inaktiver_wert_verschwindet_aus_dropdown_bleibt_aber_importierbar():
+    from apps.cotisations.imports_zahlungen import construire_classeur_template_zahlungen
+    from apps.cotisations.models import ImportListenWert
+
+    ImportListenWert.objects.filter(bezeichnung="Karte").update(aktiv=False)
+    wb = construire_classeur_template_zahlungen()
+    assert "Karte" not in [c.value for c in wb["Listen"]["A"]]
+    analyse = analyser_zahlungen(_xlsx([["15.03.2026", 10, "Karte", "", "", "", "", "", ""]]))
+    assert _z(analyse)[2].daten["modus"] == ModePaiement.CARTE
+
+
+def test_eigener_listenwert_wird_auf_modus_abgebildet():
+    from apps.cotisations.models import ImportListenWert
+
+    ImportListenWert.objects.create(
+        liste="zahlungsart", bezeichnung="Lastschrift", modus="virement_sepa"
+    )
+    analyse = analyser_zahlungen(_xlsx([["15.03.2026", 10, "lastschrift", "", "", "", "", "", ""]]))
+    assert _z(analyse)[2].daten["modus"] == ModePaiement.VIREMENT_SEPA
+
+
+def test_api_listenwerte_crud_und_validierung(fin_client):
+    url = reverse("cotisations:import-listenwert-list")
+    liste = fin_client.get(url, {"liste": "zahlungsart"})
+    assert liste.status_code == 200
+    assert len(liste.data) == 4
+    ohne_modus = fin_client.post(url, {"liste": "zahlungsart", "bezeichnung": "Scheck"})
+    assert ohne_modus.status_code == 400
+    neu = fin_client.post(
+        url, {"liste": "zahlungsart", "bezeichnung": "Scheck", "modus": "especes"}
+    )
+    assert neu.status_code == 201, neu.data
+    doppelt = fin_client.post(
+        url, {"liste": "zahlungsart", "bezeichnung": "scheck", "modus": "especes"}
+    )
+    assert doppelt.status_code == 400
+    zweck = fin_client.post(
+        url, {"liste": "verwendungszweck", "bezeichnung": "Fanartikel", "modus": "paypal"}
+    )
+    assert zweck.status_code == 201 and zweck.data["modus"] == ""
+    detail = reverse("cotisations:import-listenwert-detail", args=[neu.data["id"]])
+    assert fin_client.patch(detail, {"aktiv": False}).status_code == 200
+    assert fin_client.delete(detail).status_code == 204
+
+
+def test_api_listenwerte_ohne_matrix_recht_verweigert():
+    user = User.objects.create_user(
+        email="rh-liste@example.de", password="Password123!", role=Role.RH, is_active=True
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+    assert client.get(reverse("cotisations:import-listenwert-list")).status_code == 403

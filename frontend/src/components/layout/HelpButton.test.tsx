@@ -10,6 +10,7 @@ describe("HelpButton", () => {
     expect(cleHilfe("/admin/boutique")).toBe("boutique");
     expect(cleHilfe("/admin/boutique/x")).toBe("boutique");
     expect(cleHilfe("/cotisations/en-attente")).toBe("paiements");
+    expect(cleHilfe("/cotisations/en-attente", "?tab=import")).toBe("zahlungen_import");
     expect(cleHilfe("/admin/partner")).toBe("partner");
     expect(cleHilfe("/admin/partner/angebote")).toBe("partner");
     expect(cleHilfe("/dashboard")).toBeNull();

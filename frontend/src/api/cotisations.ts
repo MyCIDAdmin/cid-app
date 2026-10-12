@@ -19,6 +19,9 @@ import type {
 } from "../types/cotisation";
 import type { CursorPage } from "../types/membre";
 import type {
+  ImportListe,
+  ImportListenWert,
+  ImportListenWertPayload,
   Zahlungseingang,
   ZahlungseingaengeFiltres,
   ZahlungseingangPatch,
@@ -350,4 +353,34 @@ export async function zahlungseingangAktion(
     `/cotisations/zahlungseingaenge/${id}/${aktion}/`,
   );
   return data;
+}
+
+/** GET /cotisations/import-listen/ — Dropdown-Werte der Import-Vorlage (Release 5). */
+export async function listImportListenwerte(liste?: ImportListe): Promise<ImportListenWert[]> {
+  const { data } = await apiClient.get<ImportListenWert[]>("/cotisations/import-listen/", {
+    params: liste ? { liste } : {},
+  });
+  return data;
+}
+
+export async function erstelleImportListenwert(
+  payload: ImportListenWertPayload,
+): Promise<ImportListenWert> {
+  const { data } = await apiClient.post<ImportListenWert>("/cotisations/import-listen/", payload);
+  return data;
+}
+
+export async function aendereImportListenwert(
+  id: string,
+  payload: ImportListenWertPayload,
+): Promise<ImportListenWert> {
+  const { data } = await apiClient.patch<ImportListenWert>(
+    `/cotisations/import-listen/${id}/`,
+    payload,
+  );
+  return data;
+}
+
+export async function loescheImportListenwert(id: string): Promise<void> {
+  await apiClient.delete(`/cotisations/import-listen/${id}/`);
 }

@@ -45,6 +45,8 @@ from apps.membres.imports_historique import (
 
 from .models import (
     Cotisation,
+    ImportListe,
+    ImportListenWert,
     StatutCotisation,
     StatutZahlungseingang,
     TypeArticle,
@@ -94,6 +96,43 @@ def _zelle(row, mapping, champ):
     return row[idx] if idx is not None and idx < len(row) else None
 
 
+_DROPDOWN_ZEILEN = 1000  # Zeilen 2..1000 der Vorlage erhalten die Auswahlliste
+
+
+def _dropdowns_anbringen(classeur, feuille, kopf):
+    """Verstecktes Blatt „Listen“ + Datenüberprüfung für zahlungsart (streng) und
+    verwendungszweck (Warnung: freier Text bleibt möglich)."""
+    from openpyxl.utils import get_column_letter
+    from openpyxl.worksheet.datavalidation import DataValidation
+
+    listen = classeur.create_sheet("Listen")
+    spalten = [
+        ("zahlungsart", ImportListe.ZAHLUNGSART, "stop"),
+        ("verwendungszweck", ImportListe.VERWENDUNGSZWECK, "warning"),
+    ]
+    for lcol, (feld, liste, stil) in enumerate(spalten, start=1):
+        werte = _listenwerte(liste)
+        listen.cell(row=1, column=lcol, value=feld)
+        for zeile, wert in enumerate(werte, start=2):
+            listen.cell(row=zeile, column=lcol, value=wert)
+        if not werte:
+            continue
+        buchstabe = get_column_letter(lcol)
+        validierung = DataValidation(
+            type="list",
+            formula1=f"=Listen!${buchstabe}$2:${buchstabe}${len(werte) + 1}",
+            allow_blank=True,
+            errorStyle=stil,
+            showErrorMessage=True,
+            errorTitle=feld,
+            error="Bitte einen Wert aus der Liste wählen.",
+        )
+        ziel = get_column_letter(kopf.index(feld) + 1)
+        validierung.add(f"{ziel}2:{ziel}{_DROPDOWN_ZEILEN}")
+        feuille.add_data_validation(validierung)
+    listen.sheet_state = "hidden"
+
+
 def construire_classeur_template_zahlungen():
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
@@ -118,6 +157,7 @@ def construire_classeur_template_zahlungen():
     for zeile, werte in enumerate(beispiele, start=2):
         for col, wert in enumerate(werte, start=1):
             feuille.cell(row=zeile, column=col, value=wert)
+    _dropdowns_anbringen(classeur, feuille, kopf)
     notes = classeur.create_sheet("Notes")
     hinweise = [
         "Pflicht: datum (TT.MM.JJJJ) und betrag. Alles andere ist optional.",
@@ -127,12 +167,31 @@ def construire_classeur_template_zahlungen():
         "und kann später in der Oberfläche ergänzt, korrigiert, zugeordnet und gebucht werden.",
         "referenz verhindert doppelte Importe: dieselbe Referenz wird nie ein zweites Mal "
         "übernommen. jahr gilt für Mitgliedsbeiträge (Standard: Jahr des Datums).",
+        "zahlungsart und verwendungszweck sind Auswahllisten (Blatt „Listen“). Die Werte werden in "
+        "der Oberfläche unter Zahlungen > Importieren > „Listen verwalten“ gepflegt ; bei "
+        "verwendungszweck ist auch freier Text erlaubt.",
         "Importierte Zahlungen lösen keine Benachrichtigung aus und ändern keinen Mitgliedsstatus.",
     ]
     for i, text in enumerate(hinweise, start=1):
         notes.cell(row=i, column=1, value=text)
     notes.column_dimensions["A"].width = 120
     return classeur
+
+
+def _modus_aus_liste(roh, listen_modus: dict) -> str:
+    """Zahlungsart: zuerst die verwalteten Listenwerte (auch inaktive), dann die festen Aliase."""
+    text = _normalize(roh)
+    if text in listen_modus:
+        return listen_modus[text]
+    return _parse_modus(roh)
+
+
+def _listenwerte(liste: str) -> list[str]:
+    return list(
+        ImportListenWert.objects.filter(liste=liste, aktiv=True).values_list(
+            "bezeichnung", flat=True
+        )
+    )
 
 
 def _fmt(betrag) -> str:
@@ -154,6 +213,10 @@ def analyser_zahlungen(fichier, dateiname: str = "", importeur=None) -> Analyse:
     identite = _map_identite(kopf)
 
     cache_email, cache_cin = _lade_caches()
+    listen_modus = {
+        _normalize(w.bezeichnung): w.modus
+        for w in ImportListenWert.objects.filter(liste=ImportListe.ZAHLUNGSART).exclude(modus="")
+    }
     referenzen_db = set(
         Zahlungseingang.objects.exclude(status=StatutZahlungseingang.VERWORFEN)
         .exclude(referenz="")
@@ -185,7 +248,7 @@ def analyser_zahlungen(fichier, dateiname: str = "", importeur=None) -> Analyse:
             betrag = _parse_betrag(_zelle(row, spalten, "betrag"))
             if betrag is None or betrag <= 0:
                 raise ValueError("Betrag fehlt oder ist nicht größer als 0")
-            modus = _parse_modus(_zelle(row, spalten, "modus"))
+            modus = _modus_aus_liste(_zelle(row, spalten, "modus"), listen_modus)
             artikel_roh = _normalize(_zelle(row, spalten, "artikel"))
             artikel = ""
             if artikel_roh:

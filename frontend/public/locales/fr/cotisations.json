@@ -161,7 +161,9 @@
     "especes_stock": "Stock : {{stock}}",
     "especes_soumettre": "Enregistrer",
     "especes_annuler": "Annuler",
-    "especes_erreur": "Le paiement en espèces n'a pas pu être enregistré."
+    "especes_erreur": "Le paiement en espèces n'a pas pu être enregistré.",
+    "reiter_zahlungen": "Paiements",
+    "reiter_import": "Importer des paiements"
   },
   "configuration_relance": {
     "titre": "Échéances des relances",
@@ -287,5 +289,32 @@
       "paypal": "PayPal",
       "carte": "Carte"
     }
+  },
+  "import_listen": {
+    "oeffnen": "Gérer les listes de choix du modèle",
+    "schliessen": "Fermer les listes de choix",
+    "hinweis": "Ces valeurs apparaissent en liste déroulante dans le modèle Excel (colonnes zahlungsart et verwendungszweck). Les valeurs inactives disparaissent du modèle mais restent reconnues à l'import. Retélécharger ensuite le modèle.",
+    "liste": {
+      "zahlungsart": "Mode de paiement",
+      "verwendungszweck": "Objet du paiement"
+    },
+    "modus": {
+      "virement_sepa": "Virement (SEPA)",
+      "paypal": "PayPal",
+      "especes": "Espèces",
+      "carte": "Carte"
+    },
+    "neuer_wert": "Nouvelle valeur",
+    "neuer_wert_aria": {
+      "zahlungsart": "Nouveau mode de paiement",
+      "verwendungszweck": "Nouvel objet du paiement"
+    },
+    "modus_label": "Type de comptabilisation",
+    "hinzufuegen": "Ajouter",
+    "aktivieren": "Activer",
+    "deaktivieren": "Désactiver",
+    "entfernen": "Supprimer",
+    "leer": "Aucune valeur.",
+    "erreur": "Échec de l'enregistrement."
   }
 }

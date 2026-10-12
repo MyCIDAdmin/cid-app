@@ -24,7 +24,9 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/admin/finances", "finances"],
 ];
 
-export function cleHilfe(pathname: string): string | null {
+export function cleHilfe(pathname: string, search = ""): string | null {
+  if (pathname === "/cotisations/en-attente" && new URLSearchParams(search).get("tab") === "import")
+    return "zahlungen_import";
   if (/^\/projets\/[^/]+\/arbeitsbereich$/.test(pathname)) return "arbeitsbereich";
   const treffer = HILFE_ROUTEN.find(
     ([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`),

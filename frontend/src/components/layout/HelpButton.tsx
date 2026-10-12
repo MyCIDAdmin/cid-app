@@ -118,13 +118,13 @@ export function WorkflowKarte({ workflow }: { workflow: Workflow }) {
 
 export default function HelpButton() {
   const { t } = useTranslation("help");
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const [offen, setOffen] = useState(false);
-  const cle = cleHilfe(pathname);
+  const cle = cleHilfe(pathname, search);
 
   useEffect(() => {
     setOffen(false);
-  }, [pathname]);
+  }, [pathname, search]);
 
   useEffect(() => {
     if (!offen) return;

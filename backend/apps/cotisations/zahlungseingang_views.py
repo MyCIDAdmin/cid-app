@@ -17,7 +17,7 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateMode
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from apps.membres.import_views import _ImportBestaetigenBasis, _ImportPruefenBasis
 from apps.membres.models import Membre
@@ -29,7 +29,7 @@ from .imports_zahlungen import (
     ausfuehren_zahlungen,
     construire_classeur_template_zahlungen,
 )
-from .models import StatutZahlungseingang, Zahlungseingang
+from .models import ImportListe, ImportListenWert, StatutZahlungseingang, Zahlungseingang
 from .zahlungseingang_services import ARTIKEL_ERLAUBT, buchen, fehlende_angaben
 
 ZahlungsImportPermission = page_admin_permission("page_zahlungen_import")
@@ -155,3 +155,50 @@ class ZahlungsImportTemplateView(APIView):
         return xlsx_response(
             construire_classeur_template_zahlungen(), "template_import_zahlungen.xlsx"
         )
+
+
+class ImportListenWertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImportListenWert
+        fields = ["id", "liste", "bezeichnung", "modus", "aktiv", "reihenfolge"]
+        read_only_fields = ["id"]
+
+    def validate_bezeichnung(self, wert):
+        wert = (wert or "").strip()
+        if not wert:
+            raise serializers.ValidationError("Bezeichnung erforderlich.")
+        return wert
+
+    def validate(self, attrs):
+        inst = self.instance
+        liste = attrs.get("liste", inst.liste if inst else None)
+        modus = attrs.get("modus", inst.modus if inst else "")
+        bezeichnung = attrs.get("bezeichnung", inst.bezeichnung if inst else "")
+        if liste == ImportListe.ZAHLUNGSART and not modus:
+            raise serializers.ValidationError(
+                {"modus": "Für eine Zahlungsart ist die zugehörige Buchungsart Pflicht."}
+            )
+        if liste == ImportListe.VERWENDUNGSZWECK:
+            attrs["modus"] = ""
+        doppelt = ImportListenWert.objects.filter(liste=liste, bezeichnung__iexact=bezeichnung)
+        if inst:
+            doppelt = doppelt.exclude(pk=inst.pk)
+        if doppelt.exists():
+            raise serializers.ValidationError({"bezeichnung": "Dieser Wert existiert bereits."})
+        return attrs
+
+
+class ImportListenWertViewSet(ModelViewSet):
+    """CRUD der Dropdown-Werte der Import-Vorlage — Matrix-Seite `page_zahlungen_import`."""
+
+    permission_classes = [ZahlungsImportPermission]
+    serializer_class = ImportListenWertSerializer
+    pagination_class = None
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        qs = ImportListenWert.objects.all()
+        liste = self.request.query_params.get("liste")
+        if liste in ImportListe.values:
+            qs = qs.filter(liste=liste)
+        return qs

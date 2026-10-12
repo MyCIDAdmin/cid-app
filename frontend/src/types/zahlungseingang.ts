@@ -50,3 +50,18 @@ export interface ZahlungseingaengeFiltres {
 export type ZahlungseingangPatch = Partial<
   Pick<Zahlungseingang, "membre" | "type_article" | "annee" | "libelle" | "mode_paiement" | "datum">
 >;
+
+/** Verwaltbare Dropdown-Werte der Excel-Vorlage (Release 5, apps.cotisations.ImportListenWert). */
+export type ImportListe = "zahlungsart" | "verwendungszweck";
+
+export interface ImportListenWert {
+  id: string;
+  liste: ImportListe;
+  bezeichnung: string;
+  /** Nur bei Liste „zahlungsart“: zugehöriger Buchungsmodus. */
+  modus: ModePaiement | "";
+  aktiv: boolean;
+  reihenfolge: number;
+}
+
+export type ImportListenWertPayload = Partial<Omit<ImportListenWert, "id">>;

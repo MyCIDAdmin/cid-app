@@ -14,7 +14,12 @@ import type {
   CotisationSaisieEspecesPayload,
   ModePaiement,
 } from "../types/cotisation";
-import type { ZahlungseingaengeFiltres, ZahlungseingangPatch } from "../types/zahlungseingang";
+import type {
+  ImportListe,
+  ImportListenWertPayload,
+  ZahlungseingaengeFiltres,
+  ZahlungseingangPatch,
+} from "../types/zahlungseingang";
 
 const cotisationsKeys = {
   all: ["cotisations"] as const,
@@ -27,6 +32,7 @@ const cotisationsKeys = {
   configurationsRelance: () => [...cotisationsKeys.all, "configurations-relance"] as const,
   zahlungseingaenge: (filtres: ZahlungseingaengeFiltres, url: string | null) =>
     [...cotisationsKeys.all, "zahlungseingaenge", filtres, url] as const,
+  importListen: (liste?: ImportListe) => [...cotisationsKeys.all, "import-listen", liste] as const,
   articlesCatalogue: () => [...cotisationsKeys.all, "articles-catalogue"] as const,
 };
 
@@ -264,6 +270,33 @@ export function useZahlungseingangAktion() {
       id: number;
       aktion: "buchen" | "verwerfen" | "wiederherstellen";
     }) => cotisationsApi.zahlungseingangAktion(id, aktion),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
+  });
+}
+
+/** Verwaltbare Dropdown-Werte der Import-Vorlage (Release 5). */
+export function useImportListenwerte(liste?: ImportListe) {
+  return useQuery({
+    queryKey: cotisationsKeys.importListen(liste),
+    queryFn: () => cotisationsApi.listImportListenwerte(liste),
+  });
+}
+
+export function useImportListenwertSpeichern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id?: string; payload: ImportListenWertPayload }) =>
+      id
+        ? cotisationsApi.aendereImportListenwert(id, payload)
+        : cotisationsApi.erstelleImportListenwert(payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
+  });
+}
+
+export function useImportListenwertLoeschen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => cotisationsApi.loescheImportListenwert(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
   });
 }
