@@ -143,6 +143,19 @@ describe("ImportAssistent", () => {
     expect(membresApi.telechargerTemplateImportMembres).not.toHaveBeenCalled();
   });
 
+  it("propose en plus le template « offre + montant » pour l'historique", async () => {
+    vi.mocked(membresApi.telechargerTemplateImportHistorique).mockResolvedValue(
+      new Blob(["contenu"]),
+    );
+
+    renderWithProviders(<ImportAssistent art="historique" />);
+    fireEvent.click(screen.getByText("import_historique.template_bouton_beitraege"));
+
+    await waitFor(() =>
+      expect(membresApi.telechargerTemplateImportHistorique).toHaveBeenCalledWith("beitraege"),
+    );
+  });
+
   it("affiche une erreur locale si on vérifie sans fichier", () => {
     renderWithProviders(<ImportAssistent art="membres" />);
 

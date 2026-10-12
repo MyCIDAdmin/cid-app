@@ -106,10 +106,15 @@ def _annees_colonnes(header_row) -> dict:
     return annees
 
 
-def construire_classeur_template_historique():
+def construire_classeur_template_historique(variante: str = "jahre"):
     """Classeur vierge — email/cin + colonnes d'exemple pour les 6 dernières années écoulées.
     L'import lui-même accepte n'importe quelle colonne d'année (voir docstring de module) : ce
     ne sont que des colonnes d'exemple pour guider la saisie, pas une liste figée."""
+    if variante == "beitraege":
+        from .imports_beitraege import construire_classeur_template_beitraege
+
+        return construire_classeur_template_beitraege()
+
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
 
@@ -196,7 +201,7 @@ def _bezeichnung(membre: Membre) -> str:
     return f"{membre.numero_membre} ({membre.prenom} {membre.nom})"
 
 
-def analyser_historique(fichier, dateiname: str = "") -> Analyse:
+def analyser_historique(fichier, dateiname: str = "", importeur=None) -> Analyse:
     """
     PRÜFPHASE — wertet die Datei aus, schreibt nichts. Pro Zeile werden die Jahreswerte mit den
     bereits gespeicherten Einträgen verglichen : neu / abweichend (-> Dublette, wählbar) /
@@ -204,6 +209,12 @@ def analyser_historique(fichier, dateiname: str = "") -> Analyse:
     """
     classeur = oeffne_arbeitsmappe(fichier)
     kopf, daten = lies_kopfzeile_und_zeilen(classeur)
+
+    # Release 2 (2026-10-12) : Spalte „jahr" -> langes Format mit Angebot + Beitrag.
+    from .imports_beitraege import analyser_beitraege, ist_langes_format
+
+    if ist_langes_format(kopf):
+        return analyser_beitraege(classeur, kopf, daten, dateiname)
 
     identite = _map_identite(kopf)
     # cin facultatif depuis le 2026-10-07 (membres sans CIN) : l'email suffit à identifier.
@@ -338,12 +349,14 @@ def _schreibe(membre: Membre, eintraege) -> None:
         )
 
 
-def ausfuehren_historique(fichier, ueberschreiben, dateiname: str = "") -> Ergebnis:
+def ausfuehren_historique(fichier, ueberschreiben, dateiname: str = "", importeur=None) -> Ergebnis:
     """
     BESTÄTIGUNGSPHASE — erneute Auswertung, dann : neue Jahreseinträge werden immer
     geschrieben, abweichende bestehende nur für Zeilennummern in `ueberschreiben`. Liefert den
     Bericht (Originaldatei + Status/Grund).
     """
+    from .imports_beitraege import BeitragsDaten, schreibe_beitrag_zeile
+
     ueberschreiben = set(ueberschreiben or ())
     analyse = analyser_historique(fichier, dateiname)
 
@@ -354,7 +367,11 @@ def ausfuehren_historique(fichier, ueberschreiben, dateiname: str = "") -> Ergeb
         elif zeile.status == STATUS_UNVERAENDERT:
             ergebnisse.append(ZeilenErgebnis(zeile.ligne, ERG_UNVERAENDERT, zeile.grund))
         else:
-            ergebnisse.append(_zeile_schreiben(zeile, zeile.ligne in ueberschreiben))
+            ueber = zeile.ligne in ueberschreiben
+            if isinstance(zeile.daten, BeitragsDaten):
+                ergebnisse.append(schreibe_beitrag_zeile(zeile, ueber, importeur))
+            else:
+                ergebnisse.append(_zeile_schreiben(zeile, ueber))
 
     name, inhalt = erzeuge_bericht(analyse.classeur, ergebnisse, dateiname)
     logger.info("import historique: %s Zeilen verarbeitet", len(ergebnisse))

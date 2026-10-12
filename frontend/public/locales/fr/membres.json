@@ -149,15 +149,16 @@
   },
   "import_historique": {
     "titre": "Importer un historique de statut",
-    "description": "Importez le statut associatif (actif/inactif) de membres déjà existants pour les années passées — une colonne par année. Les membres sont identifiés par email + CIN.",
+    "description": "Importez les années passées de membres déjà existants. Variante 1 : statut associatif (actif/inactif), une colonne par année. Variante 2 : adhésion avec offre et montant — une ligne = membre + année + offre + montant ; les campagnes et offres manquantes sont créées archivées. Les membres sont identifiés par email et/ou CIN.",
     "template_titre": "Template Excel",
     "template_description": "Téléchargez le classeur vierge, complétez-le puis importez-le ci-dessous.",
-    "template_bouton": "Télécharger le template",
+    "template_bouton": "Template statut annuel",
     "erreur_template": "Impossible de télécharger le template.",
     "upload_titre": "Importer un fichier",
     "choisir_fichier": "Choisir un fichier .xlsx",
     "aucun_fichier": "Aucun fichier sélectionné.",
-    "erreur_import": "Une erreur est survenue lors de l'import."
+    "erreur_import": "Une erreur est survenue lors de l'import.",
+    "template_bouton_beitraege": "Template offre + montant"
   },
   "tab_verzeichnis": "Répertoire",
   "tab_reporting": "Reporting",

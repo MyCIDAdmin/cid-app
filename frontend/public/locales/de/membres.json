@@ -149,15 +149,16 @@
   },
   "import_historique": {
     "titre": "Statushistorie importieren",
-    "description": "Importieren Sie den Vereinsstatus (aktiv/inaktiv) bereits bestehender Mitglieder für vergangene Jahre — eine Spalte pro Jahr. Mitglieder werden anhand von E-Mail + Personalausweisnr. (CIN) identifiziert.",
+    "description": "Importieren Sie vergangene Jahre bereits bestehender Mitglieder. Variante 1: Vereinsstatus (aktiv/inaktiv) mit einer Spalte pro Jahr. Variante 2: Mitgliedschaft mit Angebot und Beitrag — eine Zeile = Mitglied + Jahr + Angebot + Beitrag; fehlende Kampagnen und Angebote werden archiviert angelegt. Mitglieder werden anhand von E-Mail und/oder Personalausweisnr. (CIN) identifiziert.",
     "template_titre": "Excel-Vorlage",
     "template_description": "Laden Sie die leere Vorlage herunter, füllen Sie sie aus und importieren Sie sie anschließend hier.",
-    "template_bouton": "Vorlage herunterladen",
+    "template_bouton": "Vorlage Jahresstatus",
     "erreur_template": "Die Vorlage konnte nicht heruntergeladen werden.",
     "upload_titre": "Datei importieren",
     "choisir_fichier": "Eine .xlsx-Datei auswählen",
     "aucun_fichier": "Keine Datei ausgewählt.",
-    "erreur_import": "Beim Import ist ein Fehler aufgetreten."
+    "erreur_import": "Beim Import ist ein Fehler aufgetreten.",
+    "template_bouton_beitraege": "Vorlage Angebot + Beitrag"
   },
   "tab_verzeichnis": "Verzeichnis",
   "tab_reporting": "Reporting",
