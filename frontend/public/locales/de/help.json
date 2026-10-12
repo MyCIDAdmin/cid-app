@@ -19,7 +19,49 @@
       "Neuen Artikel mit Name, Beschreibung und Preis anlegen; er startet als Entwurf.",
       "Über „Varianten verwalten“ Größen/Farben mit Bestand pflegen, über „Galerie“ weitere Fotos hinzufügen.",
       "Mit dem Status-Auswahlfeld Artikel veröffentlichen oder archivieren; nur veröffentlichte Artikel sehen Kundinnen und Kunden.",
-      "„Löschen“ entfernt einen Artikel endgültig. Artikel mit bestehenden Bestellungen können nicht gelöscht werden – setze sie stattdessen auf „archiviert“."
+      "„Löschen“ entfernt einen Artikel endgültig. Artikel mit bestehenden Bestellungen können nicht gelöscht werden – setze sie stattdessen auf „archiviert“.",
+      "Über „Reservierung“ bei einem Artikel schaltest du das Reservieren ein (mit Frist und Mengenlimits); die Liste siehst du im Tab „Reservierungen“."
+    ],
+    "workflows": [
+      {
+        "titre": "Artikel reservierbar machen (z. B. Tickets)",
+        "wann": "Du willst Plätze oder Artikel vorab verteilen; bezahlt wird später oder vor Ort.",
+        "schritte": [
+          "Im Tab „Katalog“ beim Artikel auf „Reservierung“ klicken.",
+          "Modus „Nur reservieren (ohne Zahlung)“ wählen.",
+          "Frist, maximale Gesamtmenge und Maximum pro Mitglied eintragen (leer = unbegrenzt).",
+          "„Speichern“ klicken und prüfen, dass der Artikel „veröffentlicht“ ist."
+        ],
+        "beispiel": "40 Tickets fürs Auswärtsspiel, höchstens 4 pro Mitglied, Frist 20.10. um 18:00 Uhr.",
+        "danach": "Im Shop steht beim Artikel „Reservieren“ statt „In den Warenkorb“, dazu Restmenge und Frist. Nach Fristende oder wenn alles vergeben ist, ist der Artikel gesperrt."
+      },
+      {
+        "titre": "Reservieren und online bezahlen",
+        "wann": "Mitglieder sollen die Menge direkt bezahlen, aber nur bis zu einer Frist und mit Limits.",
+        "schritte": [
+          "Beim Artikel auf „Reservierung“ klicken.",
+          "Modus „Reservieren und online bezahlen“ wählen.",
+          "Frist und Mengenlimits eintragen und „Speichern“ klicken."
+        ],
+        "beispiel": "Fan-Schals: höchstens 100 Stück insgesamt, 2 pro Mitglied, Bestellung bis Monatsende.",
+        "danach": "Mitglieder bestellen wie gewohnt. Frist und Limits werden bei der Bestellung geprüft; stornierte Bestellungen geben die Menge wieder frei."
+      },
+      {
+        "titre": "Reservierungen abarbeiten",
+        "wann": "Die Frist ist vorbei oder die Ware wird ausgegeben.",
+        "schritte": [
+          "Tab „Reservierungen“ öffnen und nach Artikel und Status filtern.",
+          "Bei erledigten Reservierungen auf „Abgeholt / erledigt“ klicken.",
+          "Nicht benötigte Reservierungen mit „Stornieren“ freigeben."
+        ],
+        "beispiel": "Beim Spiel gibst du die Tickets aus und hakst jede Reservierung als abgeholt ab.",
+        "danach": "Der Status wechselt; stornierte Mengen werden wieder frei. Es wird nichts gelöscht."
+      }
+    ],
+    "tipps": [
+      "Gutscheine können nicht reserviert werden.",
+      "Mitglieder sehen ihre Reservierungen unter „Meine Bestellungen“ und können sie bis zur Frist selbst stornieren.",
+      "Die Summe über dem Reservierungstab zählt die gefilterten Stücke."
     ]
   },
   "stats": {

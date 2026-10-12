@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import ReservierungsBox from "../../components/boutique/ReservierungsBox";
 import ShareButton from "../../components/ui/ShareButton";
 import { useProduits } from "../../hooks/useBoutique";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
@@ -35,6 +36,7 @@ import type {
   RegleReduction,
   VarianteProduit,
 } from "../../types/boutique";
+import { reservierungGeschlossen } from "../../utils/reservierung";
 import { uebersetzt } from "../../utils/uebersetzung";
 
 // "bon_achat" en dernier (demande utilisateur du 2026-09-23, "Gutschein soll als Kategorie im
@@ -268,7 +270,12 @@ function ProduitCarte({
   const [quantite, setQuantite] = useState(1);
 
   const varianteSelectionnee = produit.variantes.find((v) => v.id === varianteId);
-  const epuise = !varianteSelectionnee || varianteSelectionnee.stock <= 0;
+  // Reservierung (Release 4) : "nur reservieren" ersetzt den Warenkorb-Button durch das
+  // Reservierungsformular; bei geschlossener Reservierung/Frist wird auch die Bestellung gesperrt.
+  const nurReservieren = produit.reservierung_modus === "nur_reservieren";
+  const epuise =
+    !nurReservieren &&
+    (!varianteSelectionnee || varianteSelectionnee.stock <= 0 || reservierungGeschlossen(produit));
 
   function handleChangerVariante(id: string) {
     setVarianteId(id);
@@ -328,12 +335,15 @@ function ProduitCarte({
             </span>
           )
         )}
-        {epuise && (
+        {epuise && !reservierungGeschlossen(produit) && (
           <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/70 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
             {t("catalogue.rupture")}
           </span>
         )}
-        <div className="absolute bottom-2 right-2 rounded-full bg-bg-primary/80 backdrop-blur-sm">
+        {/* z-10 : le lien-image ci-dessous (absolute inset-0) est plus tard dans le DOM et recouvrait
+            sinon le bouton de partage (invisible/non cliquable sur les produits, contrairement à
+            la carte bon d'achat qui n'a pas ce lien). */}
+        <div className="absolute bottom-2 right-2 z-10 rounded-full bg-bg-primary/80 backdrop-blur-sm">
           <ShareButton path={`/boutique/${produit.id}`} titre={produit.nom} />
         </div>
         <Link to={`/boutique/${produit.id}`} className="absolute inset-0" aria-label={produit.nom}>
@@ -355,7 +365,7 @@ function ProduitCarte({
           {uebersetzt(produit, "description")}
         </div>
 
-        {produit.variantes.length > 1 && (
+        {produit.variantes.length > 1 && !nurReservieren && (
           <select
             aria-label={t("catalogue.variante_label")}
             value={varianteId}
@@ -397,7 +407,7 @@ function ProduitCarte({
               {formatMontant(produit.prix_affiche)}
             </span>
           )}
-          {!epuise && (
+          {!epuise && !nurReservieren && (
             <StepperQuantite
               quantite={quantite}
               max={varianteSelectionnee?.stock ?? 1}
@@ -428,22 +438,32 @@ function ProduitCarte({
             ))}
           </div>
         )}
-        <div className="mb-2 text-[10px] text-text-tertiary">
-          {produit.en_rupture
-            ? t("catalogue.rupture")
-            : produit.stock_faible
-              ? t("catalogue.stock_faible", { stock: produit.stock_total })
-              : t("catalogue.en_stock", { stock: produit.stock_total })}
-        </div>
+        <ReservierungsBox produit={produit} />
+        {!nurReservieren && (
+          <>
+            <div className="mb-2 text-[10px] text-text-tertiary">
+              {produit.en_rupture
+                ? t("catalogue.rupture")
+                : produit.stock_faible
+                  ? t("catalogue.stock_faible", { stock: produit.stock_total })
+                  : t("catalogue.en_stock", { stock: produit.stock_total })}
+            </div>
 
-        <button
-          type="button"
-          onClick={handleAjouter}
-          disabled={epuise}
-          className="mt-auto w-full rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
-        >
-          🛒 {epuise ? t("catalogue.rupture") : t("catalogue.ajouter")}
-        </button>
+            <button
+              type="button"
+              onClick={handleAjouter}
+              disabled={epuise}
+              className="mt-auto w-full rounded-cid bg-ca px-3 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+            >
+              🛒{" "}
+              {epuise
+                ? reservierungGeschlossen(produit)
+                  ? t("reservierung.geschlossen")
+                  : t("catalogue.rupture")
+                : t("catalogue.ajouter")}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

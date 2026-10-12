@@ -19,6 +19,8 @@ import type {
   ProduitPayload,
   RegleReduction,
   RegleReductionPayload,
+  Reservierung,
+  ReservierungPayload,
   Retour,
   RetourLotPayload,
   RetourPayload,
@@ -423,5 +425,30 @@ export async function verifierBonAchat(
     "/boutique/bons-achat/verifier/",
     payload,
   );
+  return data;
+}
+
+/** GET /boutique/reservierungen/ — eigene (Mitglied) bzw. alle (Shop-Verwaltung). */
+export async function listReservierungen(
+  filtres: { produit?: string; statut?: string; meine?: string } = {},
+): Promise<CursorPage<Reservierung>> {
+  const params = Object.fromEntries(Object.entries(filtres).filter(([, v]) => v));
+  const { data } = await apiClient.get<CursorPage<Reservierung>>("/boutique/reservierungen/", {
+    params,
+  });
+  return data;
+}
+
+export async function erstelleReservierung(payload: ReservierungPayload): Promise<Reservierung> {
+  const { data } = await apiClient.post<Reservierung>("/boutique/reservierungen/", payload);
+  return data;
+}
+
+/** POST /boutique/reservierungen/<id>/stornieren|abholen/ */
+export async function reservierungAktion(
+  id: string,
+  aktion: "stornieren" | "abholen",
+): Promise<Reservierung> {
+  const { data } = await apiClient.post<Reservierung>(`/boutique/reservierungen/${id}/${aktion}/`);
   return data;
 }

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as boutiqueApi from "../api/boutique";
 import type {
+  ReservierungPayload,
   ChangerStatutCommandePayload,
   ConfirmerPaiementCommandePayload,
   ExpedierCommandePayload,
@@ -37,6 +38,8 @@ const boutiqueKeys = {
     [...boutiqueKeys.all, "regles-reduction", filtres] as const,
   bonsAchat: (filtres: boutiqueApi.BonsAchatFiltres = {}) =>
     [...boutiqueKeys.all, "bons-achat", filtres] as const,
+  reservierungen: (filtres: { produit?: string; statut?: string; meine?: string } = {}) =>
+    [...boutiqueKeys.all, "reservierungen", filtres] as const,
 };
 
 function invalidateCommandes(queryClient: ReturnType<typeof useQueryClient>) {
@@ -408,5 +411,40 @@ export function useBonsAchat(filtres: boutiqueApi.BonsAchatFiltres = {}) {
 export function useVerifierBonAchat() {
   return useMutation({
     mutationFn: (payload: VerifierBonAchatPayload) => boutiqueApi.verifierBonAchat(payload),
+  });
+}
+
+/** Reservierungen (Release 4): eigene bzw. — mit Shop-Verwaltungsrecht — alle. */
+export function useReservierungen(
+  filtres: { produit?: string; statut?: string; meine?: string } = {},
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: boutiqueKeys.reservierungen(filtres),
+    queryFn: () => boutiqueApi.listReservierungen(filtres),
+    enabled: options.enabled ?? true,
+  });
+}
+
+function invalidateReservierungen(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "reservierungen"] });
+  // Restmengen am Produkt ändern sich mit jeder Reservierung/Stornierung.
+  invalidateProduits(queryClient);
+}
+
+export function useErstelleReservierung() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ReservierungPayload) => boutiqueApi.erstelleReservierung(payload),
+    onSuccess: () => invalidateReservierungen(queryClient),
+  });
+}
+
+export function useReservierungAktion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, aktion }: { id: string; aktion: "stornieren" | "abholen" }) =>
+      boutiqueApi.reservierungAktion(id, aktion),
+    onSuccess: () => invalidateReservierungen(queryClient),
   });
 }
