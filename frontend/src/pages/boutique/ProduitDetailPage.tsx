@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import MitgliederPreisHinweis from "../../components/MitgliederPreisHinweis";
+import { ExklusivBadge, ExklusivHinweis } from "../../components/boutique/ExklusivHinweis";
 import ReservierungsBox from "../../components/boutique/ReservierungsBox";
 import ShareButton from "../../components/ui/ShareButton";
 import { useProduit } from "../../hooks/useBoutique";
@@ -118,10 +119,15 @@ export default function ProduitDetailPage() {
       {produit && (
         <div className="overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-card-gradient shadow-card sm:grid sm:grid-cols-2">
           <div className="relative flex h-64 items-center justify-center bg-cal sm:h-full">
-            {produit.nouveaute && (
-              <span className="absolute left-3 top-3 rounded px-1.5 py-0.5 text-[10px] font-bold text-white bg-ca">
-                {t("catalogue.badge_nouveaute")}
-              </span>
+            {(produit.nouveaute || produit.nur_mitglieder) && (
+              <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1">
+                {produit.nouveaute && (
+                  <span className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white bg-ca">
+                    {t("catalogue.badge_nouveaute")}
+                  </span>
+                )}
+                {produit.nur_mitglieder && <ExklusivBadge />}
+              </div>
             )}
             {preis?.istMitglied ? (
               <span className="absolute right-3 top-3 rounded-full bg-status-dangerText px-2 py-0.5 text-[10px] font-bold text-white shadow">
@@ -237,6 +243,8 @@ export default function ProduitDetailPage() {
               >
                 {t("detail.choisir_montant_catalogue")}
               </Link>
+            ) : produit.zugang_gesperrt ? (
+              <ExklusivHinweis />
             ) : (
               <>
                 <ReservierungsBox produit={produit} />

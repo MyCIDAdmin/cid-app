@@ -172,6 +172,9 @@ class ProduitSerializer(serializers.ModelSerializer):
     # verbindliche Prüfung passiert serverseitig in apps.boutique.reservierungen.
     prix_ab = serializers.SerializerMethodField()
     preise_unterschiedlich = serializers.SerializerMethodField()
+    # „Exklusiv für Mitglieder“ : `nur_mitglieder` (schreibbar) + `zugang_gesperrt` (nur Anzeige:
+    # True, wenn der aktuelle Nutzer kein aktives Mitglied ist) — verbindlich prüft der Server.
+    zugang_gesperrt = serializers.SerializerMethodField()
     reservierung_verfuegbar = serializers.SerializerMethodField()
     reservierung_offen = serializers.SerializerMethodField()
     reservierung_meine_menge = serializers.SerializerMethodField()
@@ -199,6 +202,8 @@ class ProduitSerializer(serializers.ModelSerializer):
             "images",
             "statut",
             "nouveaute",
+            "nur_mitglieder",
+            "zugang_gesperrt",
             "seuil_alerte_stock",
             "stock_initial",
             "variantes",
@@ -239,6 +244,9 @@ class ProduitSerializer(serializers.ModelSerializer):
     def get_est_prix_membre(self, produit):
         _prix, est_prix_membre = produit.prix_pour_membre(self._membre_courant())
         return est_prix_membre
+
+    def get_zugang_gesperrt(self, produit):
+        return not produit.ist_zugaenglich_fuer(self._membre_courant())
 
     def _variantenpreise(self, produit):
         membre = self._membre_courant()

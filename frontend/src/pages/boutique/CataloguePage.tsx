@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import { ExklusivBadge, ExklusivHinweis } from "../../components/boutique/ExklusivHinweis";
 import ReservierungsBox from "../../components/boutique/ReservierungsBox";
 import ShareButton from "../../components/ui/ShareButton";
 import { useProduits } from "../../hooks/useBoutique";
@@ -277,6 +278,7 @@ function ProduitCarte({
   // Reservierung (Release 4) : "nur reservieren" ersetzt den Warenkorb-Button durch das
   // Reservierungsformular; bei geschlossener Reservierung/Frist wird auch die Bestellung gesperrt.
   const nurReservieren = produit.reservierung_modus === "nur_reservieren";
+  const gesperrt = produit.zugang_gesperrt === true;
   const epuise =
     !nurReservieren &&
     (!varianteSelectionnee || varianteSelectionnee.stock <= 0 || reservierungGeschlossen(produit));
@@ -322,27 +324,34 @@ function ProduitCarte({
       className="flex flex-col overflow-hidden rounded-cid-lg bg-bg-primary shadow-sm"
     >
       <div className="relative flex aspect-[16/10] items-center justify-center bg-cal">
-        {produit.nouveaute && (
-          <span className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-ca">
-            {t("catalogue.badge_nouveaute")}
-          </span>
+        {/* z-10 + pointer-events-none : das Bild-Link-Overlay unten (absolute inset-0) steht
+            später im DOM und verdeckte sonst alle Badges (Fix Release 7). */}
+        {(produit.nouveaute || produit.nur_mitglieder) && (
+          <div className="pointer-events-none absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
+            {produit.nouveaute && (
+              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-ca">
+                {t("catalogue.badge_nouveaute")}
+              </span>
+            )}
+            {produit.nur_mitglieder && <ExklusivBadge />}
+          </div>
         )}
         {/* Badge coin (mycid.org/shop) : "Mitglieder Preis" a priorité sur le rabais générique —
             c'est LUI qui détermine le montant réellement facturé (voir prix_pour_membre côté
             backend), afficher les deux à la fois serait trompeur. */}
         {produit.est_prix_membre ? (
-          <span className="absolute right-2 top-2 rounded-full bg-status-dangerText px-2 py-0.5 text-[9px] font-bold text-white shadow">
+          <span className="pointer-events-none absolute right-2 top-2 z-10 rounded-full bg-status-dangerText px-2 py-0.5 text-[9px] font-bold text-white shadow">
             👑 {t("catalogue.badge_prix_membre")}
           </span>
         ) : (
           produit.pourcentage_reduction && (
-            <span className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-status-dangerText">
+            <span className="pointer-events-none absolute right-2 top-2 z-10 rounded px-1.5 py-0.5 text-[9px] font-bold text-white bg-status-dangerText">
               {t("catalogue.badge_rabais", { pct: produit.pourcentage_reduction })}
             </span>
           )
         )}
         {epuise && !reservierungGeschlossen(produit) && (
-          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/70 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+          <span className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/70 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
             {t("catalogue.rupture")}
           </span>
         )}
@@ -414,7 +423,7 @@ function ProduitCarte({
           ) : (
             <span className="text-base font-bold text-ca">{formatMontant(preis.affiche)}</span>
           )}
-          {!epuise && !nurReservieren && (
+          {!epuise && !nurReservieren && !gesperrt && (
             <StepperQuantite
               quantite={quantite}
               max={varianteSelectionnee?.stock ?? 1}
@@ -425,7 +434,7 @@ function ProduitCarte({
           )}
         </div>
 
-        {!preis.istMitglied && (
+        {!preis.istMitglied && !gesperrt && (
           <MitgliederPreisHinweis
             mitgliederPreis={varianteSelectionnee?.prix_membre ?? produit.prix_membre}
             aktuellerPreis={preis.affiche}
@@ -445,8 +454,9 @@ function ProduitCarte({
             ))}
           </div>
         )}
-        <ReservierungsBox produit={produit} />
-        {!nurReservieren && (
+        {gesperrt && <ExklusivHinweis />}
+        {!gesperrt && <ReservierungsBox produit={produit} />}
+        {!nurReservieren && !gesperrt && (
           <>
             <div className="mb-2 text-[10px] text-text-tertiary">
               {bestand.rupture

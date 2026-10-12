@@ -416,4 +416,48 @@ describe("CataloguePage", () => {
     expect(screen.getByText("50,00 €")).toBeInTheDocument();
     expect(screen.getByText("catalogue.en_stock")).toBeInTheDocument();
   });
+
+  describe("Release 7 : Badges sichtbar und „Exklusiv für Mitglieder“", () => {
+    function mitProdukt(overrides: Partial<Produit>) {
+      vi.mocked(useBoutiqueHooks.useProduits).mockReturnValue({
+        data: { next: null, previous: null, results: [produit(overrides)] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useBoutiqueHooks.useProduits>);
+    }
+
+    it("legt NEU und Mitglieder-Preis über das Bild-Link-Overlay (z-10, nicht klickbar)", () => {
+      mitProdukt({
+        nouveaute: true,
+        prix_membre: "35.00",
+        prix_affiche: "35.00",
+        est_prix_membre: true,
+      });
+      renderWithProviders(<CataloguePage />);
+      for (const text of ["catalogue.badge_nouveaute", /catalogue.badge_prix_membre/]) {
+        const badge = screen
+          .getAllByText(text)[0]
+          .closest("span, div[class*='z-10']") as HTMLElement;
+        const container = badge.closest("[class*='z-10']") as HTMLElement;
+        expect(container.className).toContain("z-10");
+        expect(container.className).toContain("pointer-events-none");
+      }
+    });
+
+    it("zeigt bei gesperrtem Exklusiv-Artikel Badge und Hinweis statt Kaufen-Button", () => {
+      mitProdukt({ nur_mitglieder: true, zugang_gesperrt: true });
+      renderWithProviders(<CataloguePage />);
+      expect(screen.getByText(/catalogue.badge_exklusiv/)).toBeInTheDocument();
+      expect(screen.getByText(/catalogue.exklusiv_hinweis/)).toBeInTheDocument();
+      expect(screen.queryByText(/catalogue.ajouter/)).not.toBeInTheDocument();
+    });
+
+    it("zeigt Mitgliedern den normalen Kaufen-Button, aber weiter das Badge", () => {
+      mitProdukt({ nur_mitglieder: true, zugang_gesperrt: false });
+      renderWithProviders(<CataloguePage />);
+      expect(screen.getByText(/catalogue.badge_exklusiv/)).toBeInTheDocument();
+      expect(screen.queryByText(/catalogue.exklusiv_hinweis/)).not.toBeInTheDocument();
+      expect(screen.getByText(/catalogue.ajouter/)).toBeInTheDocument();
+    });
+  });
 });

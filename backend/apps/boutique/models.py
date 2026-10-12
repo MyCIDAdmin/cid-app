@@ -195,6 +195,13 @@ class Produit(models.Model):
     nouveaute = models.BooleanField(
         default=False, help_text=_('Affiche le badge "Nouveauté" dans le catalogue.')
     )
+    nur_mitglieder = models.BooleanField(
+        default=False,
+        help_text=_(
+            "Exklusiv für Mitglieder : sichtbar für alle, aber nur aktive Mitglieder dürfen "
+            "bestellen oder reservieren (serverseitig geprüft)."
+        ),
+    )
     seuil_alerte_stock = models.PositiveIntegerField(
         default=5, help_text=_("Alerte admin quand le stock total d'une variante passe en dessous.")
     )
@@ -329,6 +336,13 @@ class Produit(models.Model):
             if variante.prix is not None:
                 return None
         return self.prix_membre
+
+    def ist_zugaenglich_fuer(self, membre) -> bool:
+        """Artikel „nur für Mitglieder“ : nur ein aktives Mitglied (StatutMembre.ACTIF) darf
+        bestellen/reservieren — dieselbe Regel wie beim Mitgliederpreis."""
+        if not self.nur_mitglieder:
+            return True
+        return membre is not None and membre.statut == StatutMembre.ACTIF
 
     def prix_pour_membre(self, membre, variante=None) -> tuple[Decimal, bool]:
         """Résout le prix EFFECTIF pour `membre` (instance apps.membres.Membre, ou None pour un

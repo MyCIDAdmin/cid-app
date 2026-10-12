@@ -73,6 +73,7 @@ function formulaireInitial(): ProduitPayload {
     statut: "brouillon",
     type_produit: "physique",
     nouveaute: false,
+    nur_mitglieder: false,
     seuil_alerte_stock: 5,
     stock_initial: 0,
   };
@@ -378,6 +379,14 @@ export default function GestionCatalogueTab({ modifiable = true }: { modifiable?
               onChange={(e) => setForm({ ...form, nouveaute: e.target.checked })}
             />
             {t("catalogue_admin.nouveaute_label")}
+          </label>
+          <label className="flex items-center gap-2 text-xs text-text-secondary">
+            <input
+              type="checkbox"
+              checked={form.nur_mitglieder ?? false}
+              onChange={(e) => setForm({ ...form, nur_mitglieder: e.target.checked })}
+            />
+            {t("catalogue_admin.nur_mitglieder_label")}
           </label>
 
           {creerMutation.isError && (

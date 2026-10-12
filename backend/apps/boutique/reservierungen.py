@@ -71,6 +71,14 @@ def ist_offen(produit: Produit) -> bool:
     return rest is None or rest > 0
 
 
+def pruefe_zugang(produkte, membre, feld: str = "lignes") -> None:
+    """Wirft ValidationError, wenn ein Artikel „nur für Mitglieder“ von einem Nicht-Mitglied
+    (kein aktives Mitglied) bestellt/reserviert würde."""
+    for produkt in produkte:
+        if not produkt.ist_zugaenglich_fuer(membre):
+            raise ValidationError({feld: f"« {produkt.nom} » ist exklusiv für aktive Mitglieder."})
+
+
 def pruefe_menge(produit: Produit, membre, quantite: int) -> None:
     """Wirft ValidationError, wenn Frist oder Limits verletzt würden. MUSS unter einer
     Zeilensperre des Produkts aufgerufen werden (`Produit.objects.select_for_update()`)."""
@@ -112,6 +120,7 @@ def pruefe_bestellung(lignes, membre) -> None:
     produkte = {
         str(p.id): p for p in Produit.objects.select_for_update().filter(id__in=produkt_ids)
     }
+    pruefe_zugang(produkte.values(), membre)
     pro_produkt: dict[str, int] = {}
     for zeile in lignes:
         pid = str(zeile["variante"].produit_id)
