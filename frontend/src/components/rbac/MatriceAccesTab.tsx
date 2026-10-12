@@ -15,14 +15,17 @@
  * personnalisé (is_system=false) n'a pas de clé de traduction — son nom, choisi librement par
  * l'admin, reste affiché tel quel dans toutes les langues, par nature.
  *
+ * Mise en page (2026-10-12, point 4) : modules en lignes, deux cases "Lesen"/"Schreiben" par rôle,
+ * comme l'onglet Sichtbarkeit — voir utils/niveauAcces.ts pour la correspondance avec les niveaux.
+ *
  * Verrouillage Administrateur App (Phase D, ajouté le 2026-09-23) : pour les colonnes
- * `categorie === "page_admin"` (les 13 pages de gestion), la cellule "super_admin" est un
- * `<select>` désactivé forcé sur "lecture_ecriture" avec tooltip — reflète le bypass hardcodé
+ * `categorie === "page_admin"` (les 13 pages de gestion), les deux cases de "super_admin" sont
+ * désactivées et forcées sur "lecture_ecriture" avec tooltip — reflète le bypass hardcodé
  * côté backend (rbac_services.has_admin_page_access ignore la matrice pour super_admin, voir
  * POST /rbac/matrix/set/ qui refuse aussi ce couple avec 400). Même motif que le bouton
  * Löschen désactivé pour is_system ci-dessous.
  */
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -31,10 +34,16 @@ import {
   useSetMatriceCellule,
   useSupprimerRole,
 } from "../../hooks/useRbac";
-import type { ModuleInfo, NiveauAcces, RoleDefinition } from "../../types/rbac";
+import type { CategorieModule, ModuleInfo, NiveauAcces, RoleDefinition } from "../../types/rbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { niveauApresClic } from "../../utils/niveauAcces";
 
-const NIVEAUX: NiveauAcces[] = ["aucun", "lecture", "lecture_ecriture"];
+// Même mise en page que l'onglet "Sichtbarkeit" (demande utilisateur du 2026-10-12, point 4) :
+// une ligne par module (regroupées par catégorie), deux cases à cocher par rôle — "Lesen" et
+// "Schreiben" — à la place de l'ancienne liste déroulante. Le niveau backend reste inchangé
+// (aucun / lecture / lecture_ecriture) : "Schreiben" suppose "Lesen" (cocher Schreiben coche
+// aussi Lesen, décocher Lesen décoche aussi Schreiben).
+const CATEGORIES: CategorieModule[] = ["donnees", "page_admin"];
 
 export default function MatriceAccesTab() {
   const { t } = useTranslation(["rbac", "utilisateurs"]);
@@ -115,94 +124,146 @@ export default function MatriceAccesTab() {
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
-              <th className="sticky left-0 bg-bg-primary px-4 py-2">{t("acces.col_role")}</th>
-              {matrice.modules.map((module) => (
-                <th key={module.slug} className="whitespace-nowrap px-3 py-2">
-                  {libelleModule(module)}
-                </th>
-              ))}
-              <th className="px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {matrice.roles.map((role) => (
-              <tr key={role.id} className="border-b border-text-tertiary/10 last:border-0">
-                <td className="sticky left-0 bg-bg-primary px-4 py-2 font-medium text-text-primary">
-                  <div className="flex items-center gap-2">
-                    <span>{libelleRole(role)}</span>
+            <tr className="border-b border-text-tertiary/20 text-xs font-semibold uppercase text-text-tertiary">
+              <th rowSpan={2} className="sticky left-0 bg-bg-primary px-4 py-2 text-left">
+                {t("acces.col_module")}
+              </th>
+              {matrice.roles.map((role) => (
+                <th
+                  key={role.id}
+                  colSpan={2}
+                  className="border-l border-text-tertiary/10 px-3 py-2"
+                >
+                  <div className="flex flex-col items-center gap-1 normal-case">
+                    <span className="font-semibold text-text-primary">{libelleRole(role)}</span>
                     <span
                       className={`rounded-full px-1.5 py-0.5 text-[10px] uppercase ${
-                        role.is_system
-                          ? "bg-bg-tertiary text-text-tertiary"
-                          : "bg-ca/10 text-ca"
+                        role.is_system ? "bg-bg-tertiary text-text-tertiary" : "bg-ca/10 text-ca"
                       }`}
                     >
                       {role.is_system ? t("acces.role_systeme") : t("acces.role_personnalise")}
                     </span>
-                  </div>
-                </td>
-                {matrice.modules.map((module) => {
-                  const verrouillee = role.slug === "super_admin" && module.categorie === "page_admin";
-                  return (
-                    <td key={module.slug} className="px-3 py-2">
-                      <select
-                        aria-label={`${libelleRole(role)} — ${libelleModule(module)}`}
-                        value={verrouillee ? "lecture_ecriture" : celluleValeur(role.id, module.slug)}
-                        disabled={verrouillee}
-                        title={verrouillee ? t("acces.cellule.verrouillee_super_admin") ?? "" : ""}
-                        onChange={(e) =>
-                          changerCellule(role.id, module.slug, e.target.value as NiveauAcces)
-                        }
-                        className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
-                      >
-                        {NIVEAUX.map((niveau) => (
-                          <option key={niveau} value={niveau}>
-                            {t(`acces.niveau.${niveau}`)}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  );
-                })}
-                <td className="px-3 py-2 text-right">
-                  {confirmationSuppression === role.id ? (
-                    <div className="flex items-center justify-end gap-1">
+                    {confirmationSuppression === role.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => supprimerRole(role.id)}
+                          disabled={supprimerRoleMutation.isPending}
+                          className="rounded-cid bg-status-dangerText px-2 py-1 text-xs font-medium text-white disabled:opacity-40"
+                        >
+                          {t("acces.supprimer.bouton")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmationSuppression(null)}
+                          className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary"
+                        >
+                          {t("attribution.annuler")}
+                        </button>
+                      </div>
+                    ) : (
                       <button
                         type="button"
-                        onClick={() => supprimerRole(role.id)}
-                        disabled={supprimerRoleMutation.isPending}
-                        className="rounded-cid bg-status-dangerText px-2 py-1 text-xs font-medium text-white disabled:opacity-40"
+                        disabled={role.is_system}
+                        title={role.is_system ? (t("acces.supprimer.erreur_systeme") ?? "") : ""}
+                        onClick={() => setConfirmationSuppression(role.id)}
+                        className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary disabled:opacity-30"
                       >
                         {t("acces.supprimer.bouton")}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmationSuppression(null)}
-                        className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary"
-                      >
-                        {t("attribution.annuler")}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={role.is_system}
-                      title={role.is_system ? t("acces.supprimer.erreur_systeme") ?? "" : ""}
-                      onClick={() => setConfirmationSuppression(role.id)}
-                      className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary disabled:opacity-30"
+                    )}
+                    {erreursSuppression[role.id] && (
+                      <p className="max-w-[10rem] text-xs font-normal text-status-dangerText">
+                        {erreursSuppression[role.id]}
+                      </p>
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+            <tr className="border-b border-text-tertiary/20 text-xs font-semibold uppercase text-text-tertiary">
+              {matrice.roles.map((role) => (
+                <Fragment key={role.id}>
+                  <th className="border-l border-text-tertiary/10 px-3 py-1.5 text-center">
+                    {t("acces.col_lecture")}
+                  </th>
+                  <th className="px-3 py-1.5 text-center">{t("acces.col_ecriture")}</th>
+                </Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {CATEGORIES.map((categorie) => {
+              const modules = matrice.modules.filter((m) => m.categorie === categorie);
+              if (modules.length === 0) return null;
+              return (
+                <Fragment key={categorie}>
+                  <tr className="bg-text-tertiary/5">
+                    <th
+                      colSpan={1 + matrice.roles.length * 2}
+                      scope="colgroup"
+                      className="px-4 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary"
                     >
-                      {t("acces.supprimer.bouton")}
-                    </button>
-                  )}
-                  {erreursSuppression[role.id] && (
-                    <p className="mt-1 max-w-[12rem] text-right text-xs text-status-dangerText">
-                      {erreursSuppression[role.id]}
-                    </p>
-                  )}
-                </td>
-              </tr>
-            ))}
+                      {t(`acces.groupes.${categorie}`)}
+                    </th>
+                  </tr>
+                  {modules.map((module) => (
+                    <tr
+                      key={module.slug}
+                      className="border-b border-text-tertiary/10 last:border-0"
+                    >
+                      <td className="sticky left-0 bg-bg-primary px-4 py-2 font-medium text-text-primary">
+                        {libelleModule(module)}
+                      </td>
+                      {matrice.roles.map((role) => {
+                        const verrouillee =
+                          role.slug === "super_admin" && module.categorie === "page_admin";
+                        const niveau: NiveauAcces = verrouillee
+                          ? "lecture_ecriture"
+                          : celluleValeur(role.id, module.slug);
+                        const titre = verrouillee
+                          ? (t("acces.cellule.verrouillee_super_admin") ?? "")
+                          : "";
+                        return (
+                          <Fragment key={role.id}>
+                            {(["lecture", "ecriture"] as const).map((champ, i) => (
+                              <td
+                                key={champ}
+                                className={`px-3 py-2 text-center ${
+                                  i === 0 ? "border-l border-text-tertiary/10" : ""
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  aria-label={`${libelleRole(role)} — ${libelleModule(module)} (${t(
+                                    `acces.col_${champ}`,
+                                  )})`}
+                                  title={titre}
+                                  checked={
+                                    champ === "lecture"
+                                      ? niveau !== "aucun"
+                                      : niveau === "lecture_ecriture"
+                                  }
+                                  disabled={verrouillee}
+                                  onChange={(e) =>
+                                    changerCellule(
+                                      role.id,
+                                      module.slug,
+                                      niveauApresClic(niveau, champ, e.target.checked),
+                                    )
+                                  }
+                                  className="disabled:opacity-40"
+                                />
+                              </td>
+                            ))}
+                          </Fragment>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -226,7 +287,10 @@ export default function MatriceAccesTab() {
         )}
         <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label htmlFor="rbac-nouveau-nom" className="mb-1 block text-xs font-medium text-text-secondary">
+            <label
+              htmlFor="rbac-nouveau-nom"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
               {t("acces.nouveau_role.nom_label")}
             </label>
             <input
@@ -239,7 +303,10 @@ export default function MatriceAccesTab() {
             />
           </div>
           <div>
-            <label htmlFor="rbac-nouveau-slug" className="mb-1 block text-xs font-medium text-text-secondary">
+            <label
+              htmlFor="rbac-nouveau-slug"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
               {t("acces.nouveau_role.slug_label")}
             </label>
             <input

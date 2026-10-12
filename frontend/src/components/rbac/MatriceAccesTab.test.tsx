@@ -103,22 +103,60 @@ describe("MatriceAccesTab", () => {
 
     expect(screen.getByText("Normales Mitglied")).toBeInTheDocument();
     expect(screen.getByText("Vertrieb")).toBeInTheDocument();
-    expect(
-      (screen.getByLabelText("Vertrieb — Mitglieder") as HTMLSelectElement).value,
-    ).toBe("lecture");
+    expect(screen.getByLabelText("Vertrieb — Mitglieder (acces.col_lecture)")).toBeChecked();
+    expect(screen.getByLabelText("Vertrieb — Mitglieder (acces.col_ecriture)")).not.toBeChecked();
   });
 
   it("change une cellule de la matrice", () => {
     renderWithProviders(<MatriceAccesTab />);
 
-    fireEvent.change(screen.getByLabelText("Vertrieb — Mitglieder"), {
-      target: { value: "lecture_ecriture" },
-    });
+    fireEvent.click(screen.getByLabelText("Vertrieb — Mitglieder (acces.col_ecriture)"));
 
     expect(setCelluleMutate).toHaveBeenCalledWith({
       role_id: "role-vertrieb",
       module: "membres",
       niveau_acces: "lecture_ecriture",
+    });
+  });
+
+  it("Lesen abhaken setzt die Zelle auf aucun (auch Schreiben)", () => {
+    vi.mocked(useRbacHooks.useRbacMatrice).mockReturnValue({
+      data: {
+        ...matrice,
+        cells: [{ role_id: "role-vertrieb", module: "membres", niveau_acces: "lecture_ecriture" }],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useRbacHooks.useRbacMatrice>);
+    renderWithProviders(<MatriceAccesTab />);
+
+    expect(screen.getByLabelText("Vertrieb — Mitglieder (acces.col_ecriture)")).toBeChecked();
+    fireEvent.click(screen.getByLabelText("Vertrieb — Mitglieder (acces.col_lecture)"));
+
+    expect(setCelluleMutate).toHaveBeenCalledWith({
+      role_id: "role-vertrieb",
+      module: "membres",
+      niveau_acces: "aucun",
+    });
+  });
+
+  it("Schreiben abhaken lässt Lesen bestehen", () => {
+    vi.mocked(useRbacHooks.useRbacMatrice).mockReturnValue({
+      data: {
+        ...matrice,
+        cells: [{ role_id: "role-vertrieb", module: "membres", niveau_acces: "lecture_ecriture" }],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useRbacHooks.useRbacMatrice>);
+    renderWithProviders(<MatriceAccesTab />);
+
+    fireEvent.click(screen.getByLabelText("Vertrieb — Mitglieder (acces.col_ecriture)"));
+
+    expect(setCelluleMutate).toHaveBeenCalledWith({
+      role_id: "role-vertrieb",
+      module: "membres",
+      niveau_acces: "lecture",
     });
   });
 
@@ -138,14 +176,19 @@ describe("MatriceAccesTab", () => {
 
     const boutons = screen.getAllByText("acces.supprimer.bouton");
     fireEvent.click(boutons[1]);
-    fireEvent.click(screen.getByText("acces.supprimer.bouton", { selector: "button.bg-status-dangerText" }));
+    fireEvent.click(
+      screen.getByText("acces.supprimer.bouton", { selector: "button.bg-status-dangerText" }),
+    );
 
-    await waitFor(() => expect(supprimerRoleMutate).toHaveBeenCalledWith("role-vertrieb", expect.anything()));
+    await waitFor(() =>
+      expect(supprimerRoleMutate).toHaveBeenCalledWith("role-vertrieb", expect.anything()),
+    );
   });
 
   it("crée un nouveau rôle personnalisé", async () => {
-    creerRoleMutate.mockImplementation((_payload, { onSuccess }: { onSuccess: (r: unknown) => void }) =>
-      onSuccess({ id: "role-design", nom: "Design" }),
+    creerRoleMutate.mockImplementation(
+      (_payload, { onSuccess }: { onSuccess: (r: unknown) => void }) =>
+        onSuccess({ id: "role-design", nom: "Design" }),
     );
     renderWithProviders(<MatriceAccesTab />);
 
@@ -175,28 +218,34 @@ describe("MatriceAccesTab", () => {
       } as unknown as ReturnType<typeof useRbacHooks.useRbacMatrice>);
     });
 
-    it("désactive et force à lecture_ecriture la cellule super_admin d'une page de gestion", () => {
+    it("désactive et force à lecture_ecriture les cases super_admin d'une page de gestion", () => {
       renderWithProviders(<MatriceAccesTab />);
 
-      const cellule = screen.getByLabelText("App-Administrator — Quiz-Verwaltung") as HTMLSelectElement;
-      expect(cellule).toBeDisabled();
-      expect(cellule.value).toBe("lecture_ecriture");
-      expect(cellule.title).toBe("acces.cellule.verrouillee_super_admin");
+      for (const suffixe of ["(acces.col_lecture)", "(acces.col_ecriture)"]) {
+        const case_ = screen.getByLabelText(`App-Administrator — Quiz-Verwaltung ${suffixe}`);
+        expect(case_).toBeDisabled();
+        expect(case_).toBeChecked();
+        expect(case_).toHaveAttribute("title", "acces.cellule.verrouillee_super_admin");
+      }
     });
 
     it("laisse modifiable la cellule super_admin d'un module de données classique", () => {
       renderWithProviders(<MatriceAccesTab />);
 
-      const cellule = screen.getByLabelText("App-Administrator — Mitglieder") as HTMLSelectElement;
-      expect(cellule).not.toBeDisabled();
+      expect(
+        screen.getByLabelText("App-Administrator — Mitglieder (acces.col_lecture)"),
+      ).not.toBeDisabled();
+      expect(
+        screen.getByLabelText("App-Administrator — Mitglieder (acces.col_ecriture)"),
+      ).not.toBeDisabled();
     });
 
     it("laisse modifiable la cellule d'un rôle personnalisé sur une page de gestion", () => {
       renderWithProviders(<MatriceAccesTab />);
 
-      const cellule = screen.getByLabelText("Vertrieb — Quiz-Verwaltung") as HTMLSelectElement;
-      expect(cellule).not.toBeDisabled();
-      expect(cellule.value).toBe("aucun");
+      const lecture = screen.getByLabelText("Vertrieb — Quiz-Verwaltung (acces.col_lecture)");
+      expect(lecture).not.toBeDisabled();
+      expect(lecture).not.toBeChecked();
     });
   });
 
