@@ -362,7 +362,7 @@
   },
   "membres_import": {
     "titre": "Import: so funktioniert er",
-    "intro": "Es gibt zwei Importe: Mitglieder (Stammdaten) und Statushistorie (aktiv/inaktiv pro Jahr). Beide laufen in drei Schritten – Prüfen, Bestätigen, Bericht. Vor dem Bestätigen wird nichts gespeichert.",
+    "intro": "Es gibt zwei Importe: Mitglieder (Stammdaten) und Historie (Jahresstatus aktiv/inaktiv oder – mit Angebot und Beitrag – vergangene Mitgliedschaften). Beide laufen in drei Schritten – Prüfen, Bestätigen, Bericht. Vor dem Bestätigen wird nichts gespeichert.",
     "schritte": [
       "Vorlage herunterladen und in Excel ausfüllen (nur .xlsx, höchstens 5 MB, erste Tabelle, erste Zeile = Spaltenüberschriften).",
       "Datei auswählen und „Prüfen“ klicken. Es wird nichts importiert, du erhältst eine Prüfliste mit Status und Grund pro Zeile.",
@@ -438,21 +438,37 @@
         "danach": "Es werden keine Benachrichtigungen oder E-Mails versendet. Der aktuelle Status eines Mitglieds folgt nur dem jüngsten Jahr, ältere Nachträge ändern ihn nicht."
       },
       {
-        "titre": "6. Bericht verstehen",
+        "titre": "6. Historie mit Angebot und Beitrag importieren",
+        "wann": "Du willst für bestehende Mitglieder vergangene Mitgliedschaften samt Angebot (z. B. Gold) und gezahltem Beitrag nachtragen.",
+        "schritte": [
+          "Die Mitglieder müssen schon existieren. Dieser Import legt nie neue Mitglieder an.",
+          "Im Bereich „Statushistorie importieren“ die Vorlage „Vorlage Angebot + Beitrag“ herunterladen. Eine Zeile = ein Mitglied + ein Jahr + ein Angebot + ein Beitrag. Mehrere Jahre = mehrere Zeilen.",
+          "Pflichtspalten: email, jahr, angebot. Optional: cin, kampagne, betrag, zahlungsdatum (TT.MM.JJJJ), zahlungsart (Karte, Überweisung, PayPal oder Bar). Die Spalte „jahr“ entscheidet: Sie schaltet das Format „Angebot + Beitrag“ ein, ohne sie gilt das einfache Format mit einer Spalte pro Jahr.",
+          "Datei hochladen und „Prüfen“ klicken. Unter jeder Zeile steht, was angelegt würde: Kampagne, Angebot, Beitrag, Zahlungsdatum und Jahresstatus „aktiv“.",
+          "Fehlende Kampagnen werden archiviert angelegt, fehlende Angebote unsichtbar (nicht für Mitglieder wählbar). Ist das Angebot neu, ist der Betrag Pflicht; sonst gilt ohne Betrag der Angebotspreis.",
+          "Gibt es für Mitglied und Jahr schon eine abweichende Mitgliedschaft oder einen Jahresstatus „inaktiv“, erscheint die Zeile als Dublette. Nur angekreuzte Dubletten werden überschrieben.",
+          "„Import bestätigen“ klicken und den Bericht herunterladen."
+        ],
+        "beispiel": "Ahmed war 2023 Mitglied mit Angebot „Gold“ und hat am 15.03.2023 per Überweisung 120 € gezahlt. Du trägst eine Zeile ein: email, jahr 2023, angebot Gold, betrag 120, zahlungsdatum 15.03.2023, zahlungsart Überweisung. Nach dem Import hat Ahmed für 2023 eine bezahlte Mitgliedschaft „Gold“, eine Zahlung über 120 € unter „Zahlungen“ und den Jahresstatus „aktiv“.",
+        "danach": "Es werden keine E-Mails oder Benachrichtigungen versendet. Die Zahlung erscheint als bezahlt im Zahlungsregister und zählt in den Finanzzahlen des Jahres. Archivierte Kampagnen findest du unter „Mitgliedschaftskampagnen“."
+      },
+      {
+        "titre": "7. Bericht verstehen",
         "wann": "Der Import ist abgeschlossen.",
         "schritte": [
           "„Bericht herunterladen (Excel)“ klicken.",
           "Die Datei enthält alle Spalten deiner Originaldatei und rechts die neuen Spalten „Status“ und „Grund“.",
           "Status-Werte: Importiert, Überschrieben, Teilweise importiert (nur Historie), Übersprungen, Unverändert, Fehler. Die Zellen sind farbig markiert.",
-          "Die Spalte „Grund“ nennt z. B. die vergebene Mitgliedsnummer, die überschriebenen Felder oder die Fehlerursache."
+          "Die Spalte „Grund“ nennt z. B. die vergebene Mitgliedsnummer, die überschriebenen Felder oder die Fehlerursache.",
+          "Im Format „Angebot + Beitrag“ nennt die Spalte „Grund“ Jahr, Angebot und Betrag."
         ],
         "danach": "Korrigiere die Fehlerzeilen direkt im Bericht oder in deiner Originaldatei und importiere nur diese Zeilen erneut."
       },
       {
-        "titre": "7. Empfohlene Reihenfolge bei der Datenübernahme",
+        "titre": "8. Empfohlene Reihenfolge bei der Datenübernahme",
         "wann": "Du befüllst die Plattform erstmalig oder spielst größere Bestände ein.",
         "schritte": [
-          "Zuerst Mitglieder importieren, dann die Statushistorie.",
+          "Zuerst Mitglieder importieren, dann die Historie (Jahresstatus oder Angebot + Beitrag).",
           "Zuerst auf der Testumgebung (DEV) mit einer kleinen Datei von etwa 5 bis 10 Zeilen probieren und den Bericht kontrollieren.",
           "Danach die komplette Datei prüfen. Fehlerzeilen korrigieren, bevor du bestätigst.",
           "Den Import in der Produktivumgebung mit derselben, geprüften Datei wiederholen.",
@@ -460,7 +476,7 @@
         ]
       },
       {
-        "titre": "8. Häufige Fehlermeldungen und Lösungen",
+        "titre": "9. Häufige Fehlermeldungen und Lösungen",
         "wann": "In der Prüfliste oder im Bericht steht ein Fehler.",
         "schritte": [
           "„Pflichtspalten fehlen“: In der Datei fehlt eine Spalte oder die Überschrift ist falsch geschrieben. Vorlage verwenden.",
@@ -470,13 +486,17 @@
           "„Doppelt in der Datei“: E-Mail oder CIN kommt in einer früheren Zeile schon vor. Eine der beiden Zeilen entfernen.",
           "„E-Mail/CIN passen zu mehreren Mitgliedern“: In der Datenbank gehören E-Mail und CIN zu verschiedenen Personen. Manuell klären (Mitgliederkarten prüfen), dann erneut importieren.",
           "„Kein bestehendes Mitglied“ (Historie): Die E-Mail oder CIN ist unbekannt. Zuerst das Mitglied anlegen.",
-          "„Format nicht unterstützt“ oder „Datei zu groß“: Nur .xlsx bis 5 MB. Bei älteren .xls-Dateien in Excel „Speichern unter .xlsx“ wählen."
+          "„Format nicht unterstützt“ oder „Datei zu groß“: Nur .xlsx bis 5 MB. Bei älteren .xls-Dateien in Excel „Speichern unter .xlsx“ wählen.",
+          "„Betrag erforderlich“ (Angebot + Beitrag): Das Angebot gibt es in dieser Kampagne noch nicht und soll neu angelegt werden. Betrag eintragen (0 ist erlaubt).",
+          "„Mehrere Kampagnen im Jahr …“ (Angebot + Beitrag): Im Jahr gibt es mehrere gleichrangige Kampagnen. Den genauen Namen in die Spalte „kampagne“ schreiben.",
+          "„Ungültiges Jahr“, „Ungültiger Betrag“, „Ungültiges Zahlungsdatum“, „Unbekannte Zahlungsart“: Wert in der genannten Spalte korrigieren."
         ]
       }
     ],
     "tipps": [
       "Prüfen verändert nichts. Du kannst die Datei beliebig oft prüfen, korrigieren und neu hochladen.",
       "Beim Bestätigen wird die Datei erneut ausgewertet. Hat sich die Datenbank inzwischen geändert, gilt der neue Stand.",
+      "Beim Import „Angebot + Beitrag“ entstehen echte Zahlungen im Zahlungsregister. Teste ihn deshalb zuerst auf DEV mit wenigen Zeilen.",
       "Wähle die Dubletten bewusst aus. Ein einmal überschriebener Wert lässt sich nur manuell oder durch einen erneuten Import zurücksetzen.",
       "Bewahre den Bericht auf. Er dokumentiert, welche Zeile wie verarbeitet wurde.",
       "Die Gründe in der Prüfliste und im Bericht erscheinen immer auf Deutsch.",
