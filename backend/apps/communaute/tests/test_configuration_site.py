@@ -199,3 +199,18 @@ def test_patch_kachel_refuse_un_lien_javascript(api_client):
         reverse(CONFIGURATION_SITE_URL), {"kachel2_lien": "javascript:alert(1)"}, format="multipart"
     )
     assert resp.status_code == 400
+
+
+def test_patch_kachel_speichert_die_link_beschriftung(api_client):
+    user, _membre = _user_avec_membre(Role.BUREAU_ADMIN, "bureau-kachel3@example.de")
+    resp = _auth(api_client, user).patch(
+        reverse(CONFIGURATION_SITE_URL),
+        {"kachel2_lien": "/boutique", "kachel2_lien_text": "Zum Shop"},
+        format="multipart",
+    )
+    assert resp.status_code == 200, resp.data
+    assert resp.data["kachel2_lien_text"] == "Zum Shop"
+    # Öffentlich lesbar (Startseite) und standardmäßig leer.
+    anonym = api_client.get(reverse(CONFIGURATION_SITE_URL))
+    assert anonym.data["kachel2_lien_text"] == "Zum Shop"
+    assert anonym.data["kachel1_lien_text"] == ""

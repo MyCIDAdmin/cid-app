@@ -149,11 +149,14 @@
     "largeur_pleine": "Pleine largeur",
     "erreur": "Impossible d'enregistrer la tuile.",
     "enregistre": "Enregistré.",
-    "enregistrer": "Enregistrer"
+    "enregistrer": "Enregistrer",
+    "lien_text": "Texte du lien (visible, avec icône de lien)",
+    "lien_text_platzhalter": "p. ex. Vers la boutique"
   },
   "sponsoren": {
     "titel": "Nos sponsors et partenaires",
     "platzhalter": "Les logos de nos sponsors et partenaires apparaîtront ici. Activez pour cela « Afficher dans la bannière de la page d’accueil » sur un partenaire avec logo. (Visible uniquement par l’administration.)",
     "zur_verwaltung": "Vers la gestion des partenaires →"
-  }
+  },
+  "kacheln_lien_standard": "En savoir plus"
 }

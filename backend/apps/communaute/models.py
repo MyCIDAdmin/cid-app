@@ -1646,6 +1646,8 @@ class ConfigurationSitePublic(models.Model):
     kachel1_titre = models.CharField(max_length=120, blank=True)
     kachel1_texte = models.CharField(max_length=300, blank=True)
     kachel1_lien = models.CharField(max_length=500, blank=True)
+    # Beschriftung des Links (sichtbar + klickbar unter dem Bild); leer = Standardtext im Frontend.
+    kachel1_lien_text = models.CharField(max_length=80, blank=True)
     kachel1_largeur = models.CharField(
         max_length=10, choices=LargeurKachel.choices, default=LargeurKachel.DEMI
     )
@@ -1656,6 +1658,8 @@ class ConfigurationSitePublic(models.Model):
     kachel2_titre = models.CharField(max_length=120, blank=True)
     kachel2_texte = models.CharField(max_length=300, blank=True)
     kachel2_lien = models.CharField(max_length=500, blank=True)
+    # Beschriftung des Links (sichtbar + klickbar unter dem Bild); leer = Standardtext im Frontend.
+    kachel2_lien_text = models.CharField(max_length=80, blank=True)
     kachel2_largeur = models.CharField(
         max_length=10, choices=LargeurKachel.choices, default=LargeurKachel.DEMI
     )

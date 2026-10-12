@@ -4,6 +4,7 @@
  * dans le module "Hero-Video" (AdminConfigurationSitePage). Une Kachel inactive ou sans média
  * n'est pas affichée.
  */
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import type { ConfigurationSitePublic } from "../../types/communaute";
@@ -14,6 +15,7 @@ interface Kachel {
   titre: string;
   texte: string;
   lien: string;
+  lienText: string;
   pleine: boolean;
 }
 
@@ -25,19 +27,51 @@ function kachelsDepuis(config: ConfigurationSitePublic): Kachel[] {
       titre: config[`kachel${i}_titre`],
       texte: config[`kachel${i}_texte`],
       lien: config[`kachel${i}_lien`],
+      lienText: (config[`kachel${i}_lien_text`] ?? "").trim(),
       pleine: config[`kachel${i}_largeur`] === "pleine",
     }))
     .filter((k): k is typeof k & { media: string } => k.active && Boolean(k.media));
 }
 
-function Contenu({ kachel }: { kachel: Kachel }) {
+/** Kleines Kettenglied-Symbol: zeigt, dass hinter der Kachel ein Link liegt. */
+function LinkIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-3.5 w-3.5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5" />
+      <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5" />
+    </svg>
+  );
+}
+
+/** `verlinkt` = Kachel hat einen gültigen Link: dann erscheint die Beschriftung (Fallback:
+ * Standardtext) als erkennbarer Link-Text mit Symbol — die ganze Kachel bleibt klickbar. */
+function Contenu({ kachel, verlinkt }: { kachel: Kachel; verlinkt: boolean }) {
+  const { t } = useTranslation("public");
   return (
     <>
       <img src={kachel.media} alt={kachel.titre} className="w-full object-cover" loading="lazy" />
-      {(kachel.titre || kachel.texte) && (
+      {(kachel.titre || kachel.texte || verlinkt) && (
         <div className="p-3 text-center">
           {kachel.titre && <h3 className="text-sm font-bold text-text-primary">{kachel.titre}</h3>}
           {kachel.texte && <p className="mt-1 text-xs text-text-secondary">{kachel.texte}</p>}
+          {verlinkt && (
+            <span
+              data-testid="kachel-link-text"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-ca underline underline-offset-2"
+            >
+              <LinkIcon />
+              {kachel.lienText || t("kacheln_lien_standard")}
+            </span>
+          )}
         </div>
       )}
     </>
@@ -58,13 +92,13 @@ export default function HeroKacheln({ config }: { config: ConfigurationSitePubli
         if (!intern && !extern) {
           return (
             <div key={index} className={`${classe} ${span}`}>
-              <Contenu kachel={kachel} />
+              <Contenu kachel={kachel} verlinkt={false} />
             </div>
           );
         }
         return intern ? (
           <Link key={index} to={kachel.lien} className={`${classe} ${span} hover:shadow-lg`}>
-            <Contenu kachel={kachel} />
+            <Contenu kachel={kachel} verlinkt />
           </Link>
         ) : (
           <a
@@ -74,7 +108,7 @@ export default function HeroKacheln({ config }: { config: ConfigurationSitePubli
             rel="noopener noreferrer"
             className={`${classe} ${span} hover:shadow-lg`}
           >
-            <Contenu kachel={kachel} />
+            <Contenu kachel={kachel} verlinkt />
           </a>
         );
       })}

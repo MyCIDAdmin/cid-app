@@ -779,6 +779,7 @@ export async function modifierKachelHero(
     titre?: string;
     texte?: string;
     lien?: string;
+    lien_text?: string;
     largeur?: "pleine" | "demi";
   },
 ): Promise<ConfigurationSitePublic> {

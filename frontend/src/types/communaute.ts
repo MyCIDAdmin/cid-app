@@ -712,12 +712,14 @@ export interface ConfigurationSitePublic {
   kachel1_titre: string;
   kachel1_texte: string;
   kachel1_lien: string;
+  kachel1_lien_text: string;
   kachel1_largeur: LargeurKachel;
   kachel2_active: boolean;
   kachel2_media: string | null;
   kachel2_titre: string;
   kachel2_texte: string;
   kachel2_lien: string;
+  kachel2_lien_text: string;
   kachel2_largeur: LargeurKachel;
   modifie_par: string | null;
   updated_at: string;

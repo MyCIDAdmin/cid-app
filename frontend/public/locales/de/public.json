@@ -149,11 +149,14 @@
     "largeur_pleine": "Ganze Seitenbreite",
     "erreur": "Kachel konnte nicht gespeichert werden.",
     "enregistre": "Gespeichert.",
-    "enregistrer": "Speichern"
+    "enregistrer": "Speichern",
+    "lien_text": "Link-Beschriftung (sichtbar, mit Link-Symbol)",
+    "lien_text_platzhalter": "z.B. Zum Shop"
   },
   "sponsoren": {
     "titel": "Unsere Sponsoren und Partner",
     "platzhalter": "Hier erscheinen die Logos unserer Sponsoren und Partner. Aktivieren Sie dazu in der Partnerverwaltung bei einem Partner mit Logo „Im Startseiten-Banner anzeigen“. (Nur für die Verwaltung sichtbar.)",
     "zur_verwaltung": "Zur Partnerverwaltung →"
-  }
+  },
+  "kacheln_lien_standard": "Mehr erfahren"
 }
