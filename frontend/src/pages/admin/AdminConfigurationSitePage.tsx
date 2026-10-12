@@ -261,6 +261,7 @@ function KachelHeroCard({ index, config }: { index: 1 | 2; config: Configuration
   const [titre, setTitre] = useState(config[`kachel${index}_titre`]);
   const [texte, setTexte] = useState(config[`kachel${index}_texte`]);
   const [lien, setLien] = useState(config[`kachel${index}_lien`]);
+  const [lienText, setLienText] = useState(config[`kachel${index}_lien_text`]);
   const [largeur, setLargeur] = useState(config[`kachel${index}_largeur`]);
   const [active, setActive] = useState(config[`kachel${index}_active`]);
   const [media, setMedia] = useState<File | undefined>(undefined);
@@ -273,7 +274,7 @@ function KachelHeroCard({ index, config }: { index: 1 | 2; config: Configuration
     setErreur(null);
     setOk(false);
     modifier.mutate(
-      { index, valeurs: { active, titre, texte, lien, largeur, media } },
+      { index, valeurs: { active, titre, texte, lien, lien_text: lienText, largeur, media } },
       {
         onSuccess: () => {
           setMedia(undefined);
@@ -322,6 +323,16 @@ function KachelHeroCard({ index, config }: { index: 1 | 2; config: Configuration
           value={lien}
           onChange={(e) => setLien(e.target.value)}
           placeholder="/boutique"
+          className={champ}
+        />
+      </label>
+      <label className="block text-xs text-text-secondary">
+        {t("admin_kacheln.lien_text")}
+        <input
+          value={lienText}
+          onChange={(e) => setLienText(e.target.value)}
+          maxLength={80}
+          placeholder={t("admin_kacheln.lien_text_platzhalter")}
           className={champ}
         />
       </label>
