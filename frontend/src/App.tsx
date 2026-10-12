@@ -39,7 +39,6 @@ import MessageriePage from "./pages/communaute/MessageriePage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
-import ZahlungsImportPage from "./pages/cotisations/ZahlungsImportPage";
 import CotisationRedirect from "./pages/cotisations/CotisationRedirect";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
@@ -188,14 +187,11 @@ export default function App() {
               </RequireRole>
             }
           />
-          {/* Zahlungen importieren & nachbearbeiten (Release 3) — Matrix-Seite page_zahlungen_import. */}
+          {/* Release 5 : „Zahlungen importieren“ ist ein Reiter der Seite Zahlungen — alte Adresse
+              leitet dorthin weiter (Matrix-Seite page_zahlungen_import gilt für den Reiter). */}
           <Route
             path="/cotisations/import"
-            element={
-              <RequireRole pageSlug="page_zahlungen_import">
-                <ZahlungsImportPage />
-              </RequireRole>
-            }
+            element={<Navigate to="/cotisations/en-attente?tab=import" replace />}
           />
           {/* Adhésions (mockup #pg-mon-adhesion / #pg-admin-adhesion, AHM-21) —
             page membre ouverte à tout authentifié (campagne active, offres,

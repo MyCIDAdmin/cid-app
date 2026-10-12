@@ -25,6 +25,7 @@ import type {
   ZahlungsArtikel,
 } from "../../types/zahlungseingang";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import ImportListenVerwaltung from "../../components/cotisations/ImportListenVerwaltung";
 import ImportAssistent from "../membres/ImportAssistent";
 
 const ARTIKEL: ZahlungsArtikel[] = ["cotisation", "adhesion", "don", "autre_libre"];
@@ -223,7 +224,7 @@ function ZahlungsZeile({ eingang, modifiable }: { eingang: Zahlungseingang; modi
   );
 }
 
-export default function ZahlungsImportPage() {
+export default function ZahlungsImportPage({ eingebettet = false }: { eingebettet?: boolean }) {
   const { t } = useTranslation(["cotisations", "common"]);
   const { accessible, modifiable } = usePageAccess("page_zahlungen_import");
   const [status, setStatus] = useState<StatusZahlungseingang | "">("offen");
@@ -233,7 +234,11 @@ export default function ZahlungsImportPage() {
 
   return (
     <div>
-      <h1 className="mb-2 text-xl font-bold text-text-primary">{t("zahlungen_import.titre")}</h1>
+      {eingebettet ? (
+        <h2 className="mb-2 text-lg font-bold text-text-primary">{t("zahlungen_import.titre")}</h2>
+      ) : (
+        <h1 className="mb-2 text-xl font-bold text-text-primary">{t("zahlungen_import.titre")}</h1>
+      )}
       <p className="mb-4 text-sm text-text-secondary">{t("zahlungen_import.beschreibung")}</p>
 
       {accessible && !modifiable && (
@@ -243,6 +248,7 @@ export default function ZahlungsImportPage() {
       )}
 
       {modifiable && <ImportAssistent art="zahlungen" />}
+      {accessible && <ImportListenVerwaltung modifiable={modifiable} />}
 
       <h2 className="mb-2 mt-8 text-lg font-semibold text-text-primary">
         {t("zahlungen_import.liste_titre")}

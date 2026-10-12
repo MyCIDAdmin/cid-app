@@ -158,6 +158,7 @@
     "intro": "Importez des paiements depuis Excel (p. ex. relevé bancaire) en une fois, puis complétez les entrées incomplètes, attribuez-les à un membre et validez-les.",
     "schritte": [
       "Téléchargez le modèle et remplissez-le (date, montant, mode de paiement, référence, motif ; si connus e-mail/CIN, article, année).",
+      "Les valeurs des listes déroulantes (mode de paiement, objet) se gèrent via « Gérer les listes de choix du modèle » ; retélécharger ensuite le modèle.",
       "Choisissez le fichier et cliquez sur « Prüfen » – rien n’est encore enregistré.",
       "Consultez la liste de contrôle, cliquez sur « Import bestätigen » et téléchargez le rapport Excel.",
       "En bas, dans la liste « Ouvert », complétez les entrées sans membre ou sans article et validez-les."

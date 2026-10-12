@@ -16,6 +16,12 @@ import CotisationsEnAttentePage from "./CotisationsEnAttentePage";
 
 // task #216 : usePageAccess mocké partout (accès complet par défaut, comme avant l'introduction
 // de la distinction lecture/lecture_ecriture) — describe dédié plus bas pour le mode lecture seule.
+vi.mock("./ZahlungsImportPage", () => ({
+  default: ({ eingebettet }: { eingebettet?: boolean }) => (
+    <div data-testid="import-tab">{eingebettet ? "eingebettet" : "eigene-seite"}</div>
+  ),
+}));
+
 vi.mock("../../hooks/useRbac", async () => {
   const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
   return { ...actual, usePageAccess: vi.fn() };
@@ -1055,5 +1061,42 @@ describe("CotisationsEnAttentePage", () => {
 
       expect(mutate).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("CotisationsEnAttentePage — Reiter „Zahlungen importieren“ (Release 5)", () => {
+  beforeEach(() => {
+    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+      accessible: true,
+      modifiable: true,
+      isLoading: false,
+    });
+  });
+
+  it("zeigt den Import-Reiter eingebettet, wenn ?tab=import gesetzt ist", () => {
+    renderWithProviders(<CotisationsEnAttentePage />, { route: "/?tab=import" });
+    expect(screen.getByTestId("import-tab")).toHaveTextContent("eingebettet");
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
+  });
+
+  it("wechselt per Klick auf den Reiter zum Import", () => {
+    renderWithProviders(<CotisationsEnAttentePage />);
+    expect(screen.queryByTestId("import-tab")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /reiter_import/ }));
+    expect(screen.getByTestId("import-tab")).toBeInTheDocument();
+  });
+
+  it("blendet die Reiter ohne Matrix-Zugriff auf den Import aus", () => {
+    vi.mocked(useRbacHooks.usePageAccess).mockImplementation(
+      (slug: string) =>
+        ({
+          accessible: slug !== "page_zahlungen_import",
+          modifiable: true,
+          isLoading: false,
+        }) as ReturnType<typeof useRbacHooks.usePageAccess>,
+    );
+    renderWithProviders(<CotisationsEnAttentePage />, { route: "/?tab=import" });
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("import-tab")).not.toBeInTheDocument();
   });
 });

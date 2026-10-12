@@ -161,7 +161,9 @@
     "especes_stock": "Bestand: {{stock}}",
     "especes_soumettre": "Speichern",
     "especes_annuler": "Abbrechen",
-    "especes_erreur": "Die Barzahlung konnte nicht gespeichert werden."
+    "especes_erreur": "Die Barzahlung konnte nicht gespeichert werden.",
+    "reiter_zahlungen": "Zahlungen",
+    "reiter_import": "Zahlungen importieren"
   },
   "configuration_relance": {
     "titre": "Fälligkeitstermine",
@@ -287,5 +289,32 @@
       "paypal": "PayPal",
       "carte": "Karte"
     }
+  },
+  "import_listen": {
+    "oeffnen": "Auswahllisten der Vorlage verwalten",
+    "schliessen": "Auswahllisten schließen",
+    "hinweis": "Diese Werte erscheinen als Dropdown in der Excel-Vorlage (Spalten zahlungsart und verwendungszweck). Inaktive Werte verschwinden aus der Vorlage, werden beim Import aber weiter erkannt. Die Vorlage danach neu herunterladen.",
+    "liste": {
+      "zahlungsart": "Zahlungsart",
+      "verwendungszweck": "Verwendungszweck"
+    },
+    "modus": {
+      "virement_sepa": "Überweisung (SEPA)",
+      "paypal": "PayPal",
+      "especes": "Bar",
+      "carte": "Karte"
+    },
+    "neuer_wert": "Neuer Wert",
+    "neuer_wert_aria": {
+      "zahlungsart": "Neue Zahlungsart",
+      "verwendungszweck": "Neuer Verwendungszweck"
+    },
+    "modus_label": "Buchungsart",
+    "hinzufuegen": "Hinzufügen",
+    "aktivieren": "Aktivieren",
+    "deaktivieren": "Deaktivieren",
+    "entfernen": "Entfernen",
+    "leer": "Noch keine Werte.",
+    "erreur": "Speichern fehlgeschlagen."
   }
 }

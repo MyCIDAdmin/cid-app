@@ -158,6 +158,7 @@
     "intro": "Zahlungen aus Excel (z. B. Kontoauszug) in einem Rutsch importieren und danach unvollständige Einträge ergänzen, einem Mitglied zuordnen und buchen.",
     "schritte": [
       "Die Vorlage herunterladen und mit den Zahlungen füllen (Datum, Betrag, Zahlungsart, Referenz, Verwendungszweck; falls bekannt E-Mail/CIN, Artikel, Jahr).",
+      "Die Werte der Dropdown-Spalten (Zahlungsart, Verwendungszweck) pflegst du über „Auswahllisten der Vorlage verwalten“; danach die Vorlage neu herunterladen.",
       "Datei wählen und „Prüfen“ klicken – dabei wird noch nichts gespeichert.",
       "Prüfliste ansehen und „Import bestätigen“ klicken; den Excel-Bericht herunterladen.",
       "Unten in der Liste „Offen“ die Einträge ohne Mitglied oder Artikel ergänzen und buchen."

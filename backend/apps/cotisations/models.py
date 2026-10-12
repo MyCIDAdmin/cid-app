@@ -72,6 +72,7 @@ from decimal import Decimal
 
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -532,3 +533,38 @@ class Zahlungseingang(models.Model):
 
     def __str__(self):
         return f"{self.datum} {self.betrag} € ({self.get_status_display()})"
+
+
+class ImportListe(models.TextChoices):
+    ZAHLUNGSART = "zahlungsart", _("Zahlungsart")
+    VERWENDUNGSZWECK = "verwendungszweck", _("Verwendungszweck")
+
+
+class ImportListenWert(models.Model):
+    """Verwaltbarer Auswahlwert für die Dropdown-Spalten der Excel-Vorlage „Zahlungen
+    importieren“ (Release 5, 2026-10-12). Liste `zahlungsart` : jeder Wert gehört zu einer festen
+    `ModePaiement` (Pflicht) ; Liste `verwendungszweck` : reiner Text. Inaktive Werte erscheinen
+    nicht mehr im Dropdown, werden beim Import aber weiter erkannt (alte Dateien)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    liste = models.CharField(max_length=20, choices=ImportListe.choices)
+    bezeichnung = models.CharField(max_length=100)
+    modus = models.CharField(max_length=20, choices=ModePaiement.choices, blank=True)
+    aktiv = models.BooleanField(default=True)
+    reihenfolge = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "cotisations_import_listenwerte"
+        verbose_name = _("Listenwert Zahlungsimport")
+        verbose_name_plural = _("Listenwerte Zahlungsimport")
+        ordering = ["liste", "reihenfolge", "bezeichnung"]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("bezeichnung"),
+                "liste",
+                name="uniq_import_listenwert_liste_bezeichnung",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.liste}: {self.bezeichnung}"

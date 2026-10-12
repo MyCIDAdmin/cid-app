@@ -49,6 +49,7 @@
  * GestionCommandesTab.tsx (module Shop-Verwaltung).
  */
 import { type FormEvent, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { heuteIso } from "../../utils/datum";
@@ -77,6 +78,7 @@ import type {
 import type { MembreListItem } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import MembreSearchPicker from "../../components/membres/MembreSearchPicker";
+import ZahlungsImportPage from "./ZahlungsImportPage";
 import ShopZahlungenPanel from "../../components/cotisations/ShopZahlungenPanel";
 import TippspielZahlungenPanel from "../../components/cotisations/TippspielZahlungenPanel";
 import InfoTip from "../../components/ui/InfoTip";
@@ -980,7 +982,7 @@ function PaiementEspecesForm({ onClose }: PaiementEspecesFormProps) {
   );
 }
 
-export default function CotisationsEnAttentePage() {
+function ZahlungenTab() {
   const { t } = useTranslation(["cotisations", "common"]);
   const { accessible, modifiable } = usePageAccess("page_cotisations_attente");
   const [statutFiltre, setStatutFiltre] = useState<StatutCotisation | "">("en_attente");
@@ -1229,6 +1231,43 @@ export default function CotisationsEnAttentePage() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Seite „Zahlungen" mit Reitern (Release 5, 2026-10-12): „Zahlungen" (bisherige Verwaltung) und
+ * „Zahlungen importieren" (vorher eigene Seite /cotisations/import, Matrix-Seite
+ * page_zahlungen_import). Der Reiter steht in der URL (?tab=import), damit Links und die
+ * Weiterleitung der alten Adresse funktionieren.
+ */
+export default function CotisationsEnAttentePage() {
+  const { t } = useTranslation("cotisations");
+  const [params, setParams] = useSearchParams();
+  const importZugriff = usePageAccess("page_zahlungen_import").accessible;
+  const importAktiv = importZugriff && params.get("tab") === "import";
+
+  function waehle(tab: "zahlungen" | "import") {
+    setParams(tab === "import" ? { tab: "import" } : {}, { replace: true });
+  }
+
+  return (
+    <div>
+      {importZugriff && (
+        <div role="tablist" className="mb-4 flex gap-1 border-b border-text-tertiary/20">
+          <TabButton
+            active={!importAktiv}
+            onClick={() => waehle("zahlungen")}
+            label={t("en_attente_paiement.reiter_zahlungen")}
+          />
+          <TabButton
+            active={importAktiv}
+            onClick={() => waehle("import")}
+            label={t("en_attente_paiement.reiter_import")}
+          />
+        </div>
+      )}
+      {importAktiv ? <ZahlungsImportPage eingebettet /> : <ZahlungenTab />}
     </div>
   );
 }
