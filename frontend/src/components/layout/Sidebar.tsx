@@ -441,7 +441,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.configuration_site",
     icon: IconVideo,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_configuration_site", // Matrix der Rollenverwaltung (seit 2026-10-12)
   },
   // Business Partner & Lieferanten (Nutzerwunsch 2026-10-07) — Lesen ab RH, Pflegen ab Bureau
   // Admin (PartnerPermission) ; minRoleLevel direkt, hors matrice apps.rbac.
@@ -450,7 +450,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.admin_partner",
     icon: IconHeartHandshake,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.rh,
+    pageSlug: "page_partner", // Matrix der Rollenverwaltung (seit 2026-10-12)
   },
   // Logos d'équipes du Fan-Club (retour utilisateur du 2026-09-28 : "Fan-Club: Vereins-Logos
   // anzeigen + Upload-Möglichkeit") — même raisonnement que /admin/configuration-site
@@ -461,7 +461,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.fan_club_logos",
     icon: IconShirtSport,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.bureau_admin,
+    pageSlug: "page_fan_club_logos", // Matrix der Rollenverwaltung (seit 2026-10-12)
   },
 ];
 

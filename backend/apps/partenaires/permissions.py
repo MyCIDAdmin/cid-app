@@ -1,15 +1,7 @@
-"""Lesen ab Rolle RH (alle Verwaltungsrollen), Pflegen und Bewerten ab Bureau Admin."""
+"""Zugriff auf Business Partner & Lieferanten über die Matrix der Rollenverwaltung (Seite
+`page_partner`, ab 2026-10-12): Lesen = Stufe `lecture`, Pflegen/Bewerten = `lecture_ecriture`.
+Startwerte (Migration rbac 0007): Lesen ab RH, Pflegen ab Bureau Admin — wie zuvor."""
 
-from rest_framework.permissions import SAFE_METHODS, BasePermission
+from apps.rbac.permissions import page_admin_permission
 
-from apps.accounts.models import ROLE_LEVELS, Role
-
-
-class PartnerPermission(BasePermission):
-    def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        level = ROLE_LEVELS.get(user.role, 0)
-        mindest = Role.RH if request.method in SAFE_METHODS else Role.BUREAU_ADMIN
-        return level >= ROLE_LEVELS[mindest]
+PartnerPermission = page_admin_permission("page_partner")

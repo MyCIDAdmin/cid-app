@@ -15,6 +15,9 @@
  * personnalisé (is_system=false) n'a pas de clé de traduction — son nom, choisi librement par
  * l'admin, reste affiché tel quel dans toutes les langues, par nature.
  *
+ * Kopfzeile fixiert (2026-10-12) : die Tabelle scrollt in einem Container mit begrenzter Höhe,
+ * `thead` ist sticky — Rollen- und Lesen/Schreiben-Köpfe bleiben beim Scrollen sichtbar.
+ *
  * Mise en page (2026-10-12, point 4) : modules en lignes, deux cases "Lesen"/"Schreiben" par rôle,
  * comme l'onglet Sichtbarkeit — voir utils/niveauAcces.ts pour la correspondance avec les niveaux.
  *
@@ -121,18 +124,18 @@ export default function MatriceAccesTab() {
       <h2 className="mb-1 text-base font-semibold text-text-primary">{t("acces.titre")}</h2>
       <p className="mb-4 text-sm text-text-secondary">{t("acces.description")}</p>
 
-      <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
+      <div className="max-h-[75vh] overflow-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-20 bg-bg-primary shadow-[0_1px_0_0_rgba(0,0,0,0.08)]">
             <tr className="border-b border-text-tertiary/20 text-xs font-semibold uppercase text-text-tertiary">
-              <th rowSpan={2} className="sticky left-0 bg-bg-primary px-4 py-2 text-left">
+              <th rowSpan={2} className="sticky left-0 z-30 bg-bg-primary px-4 py-2 text-left">
                 {t("acces.col_module")}
               </th>
               {matrice.roles.map((role) => (
                 <th
                   key={role.id}
                   colSpan={2}
-                  className="border-l border-text-tertiary/10 px-3 py-2"
+                  className="border-l border-text-tertiary/10 bg-bg-primary px-3 py-2"
                 >
                   <div className="flex flex-col items-center gap-1 normal-case">
                     <span className="font-semibold text-text-primary">{libelleRole(role)}</span>
@@ -184,10 +187,12 @@ export default function MatriceAccesTab() {
             <tr className="border-b border-text-tertiary/20 text-xs font-semibold uppercase text-text-tertiary">
               {matrice.roles.map((role) => (
                 <Fragment key={role.id}>
-                  <th className="border-l border-text-tertiary/10 px-3 py-1.5 text-center">
+                  <th className="border-l border-text-tertiary/10 bg-bg-primary px-3 py-1.5 text-center">
                     {t("acces.col_lecture")}
                   </th>
-                  <th className="px-3 py-1.5 text-center">{t("acces.col_ecriture")}</th>
+                  <th className="bg-bg-primary px-3 py-1.5 text-center">
+                    {t("acces.col_ecriture")}
+                  </th>
                 </Fragment>
               ))}
             </tr>
@@ -212,7 +217,7 @@ export default function MatriceAccesTab() {
                       key={module.slug}
                       className="border-b border-text-tertiary/10 last:border-0"
                     >
-                      <td className="sticky left-0 bg-bg-primary px-4 py-2 font-medium text-text-primary">
+                      <td className="sticky left-0 z-10 bg-bg-primary px-4 py-2 font-medium text-text-primary">
                         {libelleModule(module)}
                       </td>
                       {matrice.roles.map((role) => {

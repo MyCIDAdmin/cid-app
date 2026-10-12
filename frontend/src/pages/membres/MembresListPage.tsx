@@ -14,6 +14,7 @@ import StatutBadge from "../../components/ui/StatutBadge";
 import { exporterMembres } from "../../api/membres";
 import type { MembresOrdering } from "../../api/membres";
 import { useDeleteMembre, useMembresList } from "../../hooks/useMembres";
+import { usePageAccess } from "../../hooks/useRbac";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { BUNDESLANDER, CHAMPS_EXPORT, PAYS_ALLEMAGNE, PAYS_MEMBRE } from "../../types/membre";
 import type { ChampExport, StatutMembre } from "../../types/membre";
@@ -29,6 +30,9 @@ export default function MembresListPage() {
   const { t } = useTranslation("membres");
   const user = useAuthStore((s) => s.user);
   const peutGerer = hasRoleAtLeast(user, ROLE_LEVELS.rh);
+  // Import und Zuordnung hängen seit 2026-10-12 an der Matrix der Rollenverwaltung.
+  const importZugriff = usePageAccess("page_membres_import").accessible;
+  const zuordnungZugriff = usePageAccess("page_membres_zuordnung").accessible;
   const peutSupprimer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
 
   const [statut, setStatut] = useState<StatutMembre | "">("");
@@ -125,26 +129,32 @@ export default function MembresListPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-text-primary">{t("liste.titre")}</h1>
-        {peutGerer && (
+        {(peutGerer || importZugriff || zuordnungZugriff) && (
           <div className="flex gap-2">
-            <Link
-              to="/membres/import"
-              className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
-            >
-              {t("liste.importer")}
-            </Link>
-            <Link
-              to="/membres/zuordnung"
-              className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
-            >
-              {t("liste.zuordnung")}
-            </Link>
-            <Link
-              to="/membres/nouveau"
-              className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
-            >
-              + {t("liste.ajouter")}
-            </Link>
+            {importZugriff && (
+              <Link
+                to="/membres/import"
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("liste.importer")}
+              </Link>
+            )}
+            {zuordnungZugriff && (
+              <Link
+                to="/membres/zuordnung"
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("liste.zuordnung")}
+              </Link>
+            )}
+            {peutGerer && (
+              <Link
+                to="/membres/nouveau"
+                className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad"
+              >
+                + {t("liste.ajouter")}
+              </Link>
+            )}
           </div>
         )}
       </div>

@@ -18,6 +18,7 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.models import NiveauAcces
+from apps.rbac.permissions import page_admin_permission
 from apps.rbac.services import has_admin_page_access
 
 MODERATION_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
@@ -449,23 +450,11 @@ class TippspielTipPermission(BasePermission):
         return membre is not None and obj.teilnahme.membre_id == membre.id
 
 
-class ConfigurationSitePublicPermission(BasePermission):
-    """GET public (AllowAny) — la page d'accueil publique (visiteur anonyme inclus) doit
-    pouvoir récupérer l'URL de la vidéo de hero, même principe que ClassementLigueViewSet/
-    RencontreCalendrierViewSet (widget "Club Africain Live" de la même page). PATCH réservé
-    au Bureau Admin+ via un seuil `ROLE_LEVELS` direct — PAS via la matrice apps.rbac
-    (PAGES_ADMIN, liste explicite des pages nommées par l'utilisateur, voir docstring
-    apps.rbac.registry) : même choix que /admin/roles côté frontend (RequireRole
-    minRoleLevel), volontairement hors matrice pour ce réglage ponctuel."""
-
-    def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        user = request.user
-        return (
-            bool(user and user.is_authenticated)
-            and ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
-        )
+ConfigurationSitePublicPermission = page_admin_permission(
+    "page_configuration_site", public_read=True
+)
+# Seit 2026-10-12 über die Matrix (Seite `page_configuration_site`; Lesen öffentlich,
+# Ändern = lecture_ecriture, Startwert: Bureau Admin und höher), kein fester Schwellwert mehr.
 
 
 class ArrierePlanModulePermission(BasePermission):
@@ -488,20 +477,6 @@ class ArrierePlanModulePermission(BasePermission):
         return ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
 
 
-class EquipeLogoPermission(BasePermission):
-    """Même principe que ConfigurationSitePublicPermission ci-dessus (2026-09-28, retour
-    utilisateur "Fan-Club: Vereins-Logos anzeigen + Upload-Möglichkeit") : lecture (liste des
-    logos) ouverte à AllowAny — les logos apparaissent sur la Startseite publique (widget
-    "Club Africain Live"), même raisonnement que ClassementLigueViewSet/
-    RencontreCalendrierViewSet — écriture (upload/suppression) réservée au Bureau Admin+ via
-    un seuil `ROLE_LEVELS` direct, volontairement hors matrice apps.rbac (même choix que
-    /admin/configuration-site)."""
-
-    def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        user = request.user
-        return (
-            bool(user and user.is_authenticated)
-            and ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
-        )
+EquipeLogoPermission = page_admin_permission("page_fan_club_logos", public_read=True)
+# Seit 2026-10-12 über die Matrix (Seite `page_fan_club_logos`; Lesen öffentlich,
+# Ändern = lecture_ecriture, Startwert: Bureau Admin und höher), kein fester Schwellwert mehr.

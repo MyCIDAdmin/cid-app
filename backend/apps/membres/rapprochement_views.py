@@ -13,7 +13,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import IsRHOrAbove
+from apps.rbac.permissions import page_admin_permission
 
 from .models import Membre
 from .rapprochement import RapprochementError, fusionner, inscrits_a_rapprocher
@@ -38,12 +38,16 @@ class FusionnerSerializer(serializers.Serializer):
     importe_id = serializers.UUIDField()
 
 
+# Seit 2026-10-12 über die Matrix der Rollenverwaltung (`page_membres_zuordnung`, Start RH+).
+MembresZuordnungPermission = page_admin_permission("page_membres_zuordnung")
+
+
 class EcarterSerializer(serializers.Serializer):
     inscrit_id = serializers.UUIDField()
 
 
 class RapprochementListView(APIView):
-    permission_classes = [IsRHOrAbove]
+    permission_classes = [MembresZuordnungPermission]
 
     def get(self, request):
         donnees = []
@@ -61,7 +65,7 @@ class RapprochementListView(APIView):
 
 
 class RapprochementFusionnerView(APIView):
-    permission_classes = [IsRHOrAbove]
+    permission_classes = [MembresZuordnungPermission]
 
     def post(self, request):
         serializer = FusionnerSerializer(data=request.data)
@@ -79,7 +83,7 @@ class RapprochementFusionnerView(APIView):
 
 
 class RapprochementEcarterView(APIView):
-    permission_classes = [IsRHOrAbove]
+    permission_classes = [MembresZuordnungPermission]
 
     def post(self, request):
         serializer = EcarterSerializer(data=request.data)

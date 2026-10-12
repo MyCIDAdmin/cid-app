@@ -187,6 +187,14 @@ PAGES_ADMIN = [
     "page_projets",
     "page_albums",
     "page_finances",
+    # Ergänzt am 2026-10-12 (Prüfung der Rollenverwaltung: diese 5 Verwaltungsseiten fehlten in der
+    # Matrix und waren fest an ROLE_LEVELS gebunden). Seed-Schwellen = bisheriges Verhalten, siehe
+    # Migration 0007.
+    "page_partner",
+    "page_membres_import",
+    "page_membres_zuordnung",
+    "page_configuration_site",
+    "page_fan_club_logos",
 ]
 
 PAGE_ADMIN_LABELS = {
@@ -204,6 +212,11 @@ PAGE_ADMIN_LABELS = {
     "page_projets": "Gestion des projets & actions",
     "page_albums": "Gestion des albums photos",
     "page_finances": "Finances (dépenses, budget, bilan)",
+    "page_partner": "Business Partner & fournisseurs",
+    "page_membres_import": "Import de membres et d'historique",
+    "page_membres_zuordnung": "Rattachement des comptes aux membres",
+    "page_configuration_site": "Configuration du site (vidéo hero)",
+    "page_fan_club_logos": "Logos des clubs (Fan-Club)",
 }
 
 # Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour

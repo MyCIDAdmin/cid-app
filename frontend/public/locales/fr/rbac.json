@@ -36,7 +36,12 @@
     "groupes": "Groupes",
     "live": "Fan-Club (live, classement, Tippspiel)",
     "quiz": "Quiz",
-    "covoiturage": "Covoiturage"
+    "covoiturage": "Covoiturage",
+    "page_partner": "Business Partner & fournisseurs",
+    "page_membres_import": "Import de membres (base & historique)",
+    "page_membres_zuordnung": "Rattacher les comptes aux membres",
+    "page_configuration_site": "Page d'accueil : vidéo hero",
+    "page_fan_club_logos": "Fan-Club : logos des clubs"
   },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",

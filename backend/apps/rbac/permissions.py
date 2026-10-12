@@ -42,3 +42,23 @@ def module_access_permission(module: str) -> type[ModuleAccessPermission]:
     une classe complète par app métier en Phase B. Usage :
     `permission_classes = [MembrePermission, module_access_permission("membres")]`."""
     return type(f"ModuleAccessPermission_{module}", (ModuleAccessPermission,), {"module": module})
+
+
+def page_admin_permission(page_slug: str, public_read: bool = False):
+    """Fabrik für Verwaltungsseiten der Matrix (registry.PAGES_ADMIN): Lesen verlangt `lecture`,
+    jede ändernde Methode `lecture_ecriture` auf `page_slug`. `public_read=True` lässt GET/HEAD/
+    OPTIONS ohne Anmeldung zu (Startseite zeigt Hero-Video bzw. Vereinslogos öffentlich)."""
+
+    class _PageAdminPermission(BasePermission):
+        def has_permission(self, request, view):
+            lesend = request.method in SAFE_METHODS
+            if lesend and public_read:
+                return True
+            user = request.user
+            if not user or not user.is_authenticated:
+                return False
+            requis = NiveauAcces.LECTURE if lesend else NiveauAcces.LECTURE_ECRITURE
+            return services.has_admin_page_access(user, page_slug, requis)
+
+    _PageAdminPermission.__name__ = f"PageAdminPermission_{page_slug}"
+    return _PageAdminPermission
