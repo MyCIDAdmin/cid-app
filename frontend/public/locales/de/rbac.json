@@ -41,7 +41,8 @@
     "page_membres_import": "Mitglieder-Import (Stammdaten & Historie)",
     "page_membres_zuordnung": "Konten Mitgliedern zuordnen",
     "page_configuration_site": "Startseite: Hero-Video",
-    "page_fan_club_logos": "Fan-Club: Vereinslogos"
+    "page_fan_club_logos": "Fan-Club: Vereinslogos",
+    "page_zahlungen_import": "Zahlungen importieren"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",

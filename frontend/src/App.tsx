@@ -39,6 +39,7 @@ import MessageriePage from "./pages/communaute/MessageriePage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
+import ZahlungsImportPage from "./pages/cotisations/ZahlungsImportPage";
 import CotisationRedirect from "./pages/cotisations/CotisationRedirect";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
@@ -184,6 +185,15 @@ export default function App() {
             element={
               <RequireRole pageSlug="page_cotisations_relances">
                 <ConfigurationRelancePage />
+              </RequireRole>
+            }
+          />
+          {/* Zahlungen importieren & nachbearbeiten (Release 3) — Matrix-Seite page_zahlungen_import. */}
+          <Route
+            path="/cotisations/import"
+            element={
+              <RequireRole pageSlug="page_zahlungen_import">
+                <ZahlungsImportPage />
               </RequireRole>
             }
           />

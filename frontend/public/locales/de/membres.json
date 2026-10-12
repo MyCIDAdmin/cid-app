@@ -307,6 +307,19 @@
     },
     "bericht_herunterladen": "Bericht herunterladen (Excel)",
     "bericht_fehler": "Der Bericht konnte nicht erstellt werden.",
-    "neuer_import": "Neuen Import starten"
+    "neuer_import": "Neuen Import starten",
+    "hinweis_zahlungen": "Vollständige Zeilen (Mitglied + Artikel) werden beim Bestätigen direkt als bezahlte Zahlung gebucht, ohne E-Mail an das Mitglied. Unvollständige Zeilen landen als „offen“ in der Zahlungsliste und können dort ergänzt, zugeordnet und gebucht werden. Bereits importierte Zahlungen (gleiche Referenz) werden übersprungen."
+  },
+  "import_zahlungen": {
+    "titre": "Zahlungen importieren",
+    "description": "Importieren Sie Zahlungen per Excel – auch ohne Zuordnung zu einem Mitglied.",
+    "template_titre": "Excel-Vorlage",
+    "template_description": "Laden Sie die leere Vorlage herunter, füllen Sie sie aus und importieren Sie sie anschließend hier. Pro Zeile: Datum, Betrag, Zahlungsart, Referenz, Verwendungszweck sowie – falls bekannt – E-Mail/CIN, Artikel und Jahr.",
+    "template_bouton": "Vorlage herunterladen",
+    "erreur_template": "Die Vorlage konnte nicht heruntergeladen werden.",
+    "upload_titre": "Datei importieren",
+    "choisir_fichier": "Eine .xlsx-Datei auswählen",
+    "aucun_fichier": "Keine Datei ausgewählt.",
+    "erreur_import": "Beim Import ist ein Fehler aufgetreten."
   }
 }

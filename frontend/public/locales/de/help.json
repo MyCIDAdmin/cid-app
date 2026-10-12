@@ -111,6 +111,57 @@
       "Bestätige eine Zahlung erst, wenn das Geld wirklich auf dem Konto ist — der Beleg geht automatisch an das Mitglied."
     ]
   },
+  "zahlungen_import": {
+    "titre": "Zahlungen importieren",
+    "intro": "Zahlungen aus Excel (z. B. Kontoauszug) in einem Rutsch importieren und danach unvollständige Einträge ergänzen, einem Mitglied zuordnen und buchen.",
+    "schritte": [
+      "Die Vorlage herunterladen und mit den Zahlungen füllen (Datum, Betrag, Zahlungsart, Referenz, Verwendungszweck; falls bekannt E-Mail/CIN, Artikel, Jahr).",
+      "Datei wählen und „Prüfen“ klicken – dabei wird noch nichts gespeichert.",
+      "Prüfliste ansehen und „Import bestätigen“ klicken; den Excel-Bericht herunterladen.",
+      "Unten in der Liste „Offen“ die Einträge ohne Mitglied oder Artikel ergänzen und buchen."
+    ],
+    "workflows": [
+      {
+        "titre": "Kontoauszug importieren",
+        "wann": "Du hast viele Zahlungen aus der Bank oder einer Excel-Liste und willst sie nicht einzeln erfassen.",
+        "schritte": [
+          "„Vorlage herunterladen“ klicken und die Zahlungen eintragen.",
+          "Datei auswählen und „Prüfen“ klicken.",
+          "Prüfliste kontrollieren: Neue Zeilen, Dubletten (gleiche Referenz) und Fehler.",
+          "„Import bestätigen“ klicken und den Bericht herunterladen."
+        ],
+        "beispiel": "Du trägst 40 Überweisungen aus dem September ein; bei 31 steht die E-Mail des Mitglieds, bei 9 nur der Verwendungszweck.",
+        "danach": "Die 31 vollständigen Zeilen sind sofort als bezahlt gebucht (ohne E-Mail an die Mitglieder). Die 9 übrigen erscheinen in der Liste „Offen“."
+      },
+      {
+        "titre": "Offene Zahlung zuordnen und buchen",
+        "wann": "Ein importierter Eintrag hat noch kein Mitglied oder keinen Artikel.",
+        "schritte": [
+          "Filter „Offen“ wählen.",
+          "Im Feld „Mitglied suchen…“ Namen oder E-Mail eingeben und das Mitglied anklicken.",
+          "Artikel (z. B. Mitgliedsbeitrag) und Jahr prüfen oder korrigieren.",
+          "„Buchen“ klicken."
+        ],
+        "beispiel": "Referenz „Beitrag Amira 2026“ ohne E-Mail: Du suchst „Amira“, wählst sie aus, Artikel „Mitgliedsbeitrag“, Jahr 2026, Buchen.",
+        "danach": "Der Eintrag wird „Gebucht“, die Zahlung erscheint beim Mitglied und in der Zahlungsliste; der Jahresstatus des Mitglieds wird aktualisiert."
+      },
+      {
+        "titre": "Falschen oder doppelten Eintrag ausblenden",
+        "wann": "Ein Eintrag gehört nicht ins System (z. B. private Überweisung).",
+        "schritte": [
+          "In der Liste „Offen“ auf „Verwerfen“ klicken.",
+          "Zum Rückgängigmachen den Filter „Verworfen“ wählen und „Wiederherstellen“ klicken."
+        ],
+        "beispiel": "Eine Rückerstattung steht im Kontoauszug: Du verwirfst sie.",
+        "danach": "Der Eintrag wird ausgeblendet, aber nie gelöscht."
+      }
+    ],
+    "tipps": [
+      "Ohne E-Mail/CIN kann das Mitglied nicht automatisch erkannt werden – der Eintrag bleibt dann offen, nichts geht verloren.",
+      "Eine bereits importierte Referenz wird beim erneuten Import übersprungen, die Datei kann also gefahrlos nochmal geladen werden.",
+      "Gebuchte Zahlungen lassen sich hier nicht mehr ändern; Korrekturen laufen über die Zahlungsliste."
+    ]
+  },
   "relances": {
     "titre": "Fälligkeitstermine",
     "intro": "Lege fest, wann Mitglieder an offene Beiträge erinnert werden.",

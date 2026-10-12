@@ -110,6 +110,7 @@ export async function changerStatutMembre(id: string, statut: StatutMembre): Pro
 const IMPORT_BASIS: Record<ImportArt, string> = {
   membres: "/membres/import",
   historique: "/membres/import-historique",
+  zahlungen: "/cotisations/import-zahlungen", // Release 3 : Zahlungen-Import (apps.cotisations)
 };
 
 /** POST /membres/import[-historique]/pruefen/ (RH+) — Prüfphase : analysiert die Datei, schreibt

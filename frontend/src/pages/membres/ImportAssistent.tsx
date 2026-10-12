@@ -8,6 +8,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { telechargerTemplateImportZahlungen } from "../../api/cotisations";
 import {
   telechargerTemplateImportHistorique,
   telechargerTemplateImportMembres,
@@ -358,7 +359,8 @@ function ErgebnisAnsicht({ ergebnis, onNeu }: { ergebnis: ImportErgebnis; onNeu:
 export default function ImportAssistent({ art }: { art: ImportArt }) {
   const { t } = useTranslation("membres");
   // Beschriftungen der Vorlage/Datei-Karte liegen weiterhin in den Namespaces import / import_historique.
-  const ns = art === "membres" ? "import" : "import_historique";
+  const ns =
+    art === "membres" ? "import" : art === "zahlungen" ? "import_zahlungen" : "import_historique";
   const dateiRef = useRef<HTMLInputElement>(null);
 
   const [datei, setDatei] = useState<File | null>(null);
@@ -377,18 +379,22 @@ export default function ImportAssistent({ art }: { art: ImportArt }) {
     setVorlageFehler(null);
     setVorlageLaeuft(true);
     try {
-      const blob =
-        art === "membres"
-          ? await telechargerTemplateImportMembres()
-          : await telechargerTemplateImportHistorique(variante);
-      declencherTelechargement(
-        blob,
-        art === "membres"
-          ? "template_import_membres.xlsx"
-          : variante === "beitraege"
+      let blob: Blob;
+      let dateiname: string;
+      if (art === "membres") {
+        blob = await telechargerTemplateImportMembres();
+        dateiname = "template_import_membres.xlsx";
+      } else if (art === "zahlungen") {
+        blob = await telechargerTemplateImportZahlungen();
+        dateiname = "template_import_zahlungen.xlsx";
+      } else {
+        blob = await telechargerTemplateImportHistorique(variante);
+        dateiname =
+          variante === "beitraege"
             ? "template_import_historie_beitraege.xlsx"
-            : "template_import_historique.xlsx",
-      );
+            : "template_import_historique.xlsx";
+      }
+      declencherTelechargement(blob, dateiname);
     } catch (error) {
       setVorlageFehler(extractApiErrorMessage(error, t(`${ns}.erreur_template`)));
     } finally {

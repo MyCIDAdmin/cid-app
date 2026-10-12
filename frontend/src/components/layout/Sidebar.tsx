@@ -47,6 +47,7 @@
  */
 import {
   IconBellRinging,
+  IconFileImport,
   IconBroadcast,
   IconBuildingStore,
   IconHeartHandshake,
@@ -171,6 +172,7 @@ const ADMIN_SUBGROUPS: Record<SidebarSubgroupKey, string[]> = {
     "/admin/finances",
     "/cotisations/en-attente",
     "/cotisations/relances",
+    "/cotisations/import",
     "/admin/articles-cotisation",
     "/stats",
   ],
@@ -392,6 +394,13 @@ export const NAV_ITEMS: NavItem[] = [
     icon: IconBellRinging,
     group: "administration",
     pageSlug: "page_cotisations_relances", // seuil de départ : Directeur Financier
+  },
+  {
+    to: "/cotisations/import",
+    labelKey: "nav.zahlungen_import",
+    icon: IconFileImport,
+    group: "administration",
+    pageSlug: "page_zahlungen_import", // Release 3 : seuil de départ Directeur Financier
   },
   // Gestion des rôles utilisateurs (SCD §4.2/§8.1) — Admin App seulement, même niveau que
   // UsersListView/ChangeUserRoleView côté API. Volontairement HORS matrice (risque

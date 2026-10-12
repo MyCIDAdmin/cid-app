@@ -3,6 +3,12 @@ from rest_framework.routers import DefaultRouter
 
 from .views import ArticleCatalogueViewSet, ConfigurationRelanceViewSet, CotisationViewSet
 from .webhooks import PayPalWebhookView, StripeWebhookView
+from .zahlungseingang_views import (
+    ZahlungseingangViewSet,
+    ZahlungsImportBestaetigenView,
+    ZahlungsImportPruefenView,
+    ZahlungsImportTemplateView,
+)
 
 app_name = "cotisations"
 
@@ -13,10 +19,26 @@ router = DefaultRouter()
 router.register(
     "configurations-relance", ConfigurationRelanceViewSet, basename="configuration-relance"
 )
+router.register("zahlungseingaenge", ZahlungseingangViewSet, basename="zahlungseingang")
 router.register("articles-catalogue", ArticleCatalogueViewSet, basename="article-catalogue")
 router.register("", CotisationViewSet, basename="cotisation")
 
 urlpatterns = [
+    path(
+        "import-zahlungen/pruefen/",
+        ZahlungsImportPruefenView.as_view(),
+        name="zahlungen-import-pruefen",
+    ),
+    path(
+        "import-zahlungen/bestaetigen/",
+        ZahlungsImportBestaetigenView.as_view(),
+        name="zahlungen-import-bestaetigen",
+    ),
+    path(
+        "import-zahlungen/template/",
+        ZahlungsImportTemplateView.as_view(),
+        name="zahlungen-import-template",
+    ),
     # Webhooks PSP (AHM-46) : vues Django brutes, pas DRF — voir docstring de webhooks.py. Placés
     # avant `router.urls` pour la même raison que ci-dessus (éviter que la route de détail du
     # router ne les intercepte comme un pk).

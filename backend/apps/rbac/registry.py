@@ -195,6 +195,8 @@ PAGES_ADMIN = [
     "page_membres_zuordnung",
     "page_configuration_site",
     "page_fan_club_logos",
+    # Release 3 (2026-10-12): Excel-Import von Zahlungen und Verwaltung offener Zahlungseingänge.
+    "page_zahlungen_import",
 ]
 
 PAGE_ADMIN_LABELS = {
@@ -217,6 +219,7 @@ PAGE_ADMIN_LABELS = {
     "page_membres_zuordnung": "Rattachement des comptes aux membres",
     "page_configuration_site": "Configuration du site (vidéo hero)",
     "page_fan_club_logos": "Logos des clubs (Fan-Club)",
+    "page_zahlungen_import": "Import de paiements (Excel)",
 }
 
 # Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour
