@@ -136,7 +136,7 @@ export default function App() {
           <Route
             path="/membres/import"
             element={
-              <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <RequireRole pageSlug="page_membres_import">
                 <MembreImportPage />
               </RequireRole>
             }
@@ -145,7 +145,7 @@ export default function App() {
           <Route
             path="/membres/zuordnung"
             element={
-              <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <RequireRole pageSlug="page_membres_zuordnung">
                 <MembreRapprochementPage />
               </RequireRole>
             }
@@ -244,7 +244,7 @@ export default function App() {
           <Route
             path="/admin/partner"
             element={
-              <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <RequireRole pageSlug="page_partner">
                 <AdminPartnerPage />
               </RequireRole>
             }
@@ -252,7 +252,7 @@ export default function App() {
           <Route
             path="/admin/partner/angebote"
             element={
-              <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <RequireRole pageSlug="page_partner">
                 <AngebotsvergleichPage />
               </RequireRole>
             }
@@ -260,7 +260,7 @@ export default function App() {
           <Route
             path="/admin/partner/:id"
             element={
-              <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <RequireRole pageSlug="page_partner">
                 <PartnerDetailPage />
               </RequireRole>
             }
@@ -272,7 +272,7 @@ export default function App() {
           <Route
             path="/admin/configuration-site"
             element={
-              <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <RequireRole pageSlug="page_configuration_site">
                 <AdminConfigurationSitePage />
               </RequireRole>
             }
@@ -283,7 +283,7 @@ export default function App() {
           <Route
             path="/admin/fan-club-logos"
             element={
-              <RequireRole minRoleLevel={ROLE_LEVELS.bureau_admin}>
+              <RequireRole pageSlug="page_fan_club_logos">
                 <AdminFanClubLogosPage />
               </RequireRole>
             }

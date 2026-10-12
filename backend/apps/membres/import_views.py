@@ -17,7 +17,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import IsRHOrAbove
+from apps.rbac.permissions import page_admin_permission
 
 from .import_gemeinsam import ImportDateiFehler
 from .imports import analyser_membres, ausfuehren_membres, construire_classeur_template
@@ -27,6 +27,9 @@ from .imports_historique import (
     construire_classeur_template_historique,
 )
 from .utils_http import xlsx_response
+
+# Seit 2026-10-12 über die Matrix der Rollenverwaltung (Seite `page_membres_import`, Startwert RH+).
+MembresImportPermission = page_admin_permission("page_membres_import")
 
 # ~300 lignes historiques (RICEFW C-001) → un .xlsx de cette taille ne
 # dépasse jamais quelques centaines de Ko. 5 Mo laisse une large marge tout
@@ -141,7 +144,7 @@ def _extra(view, request) -> dict:
 class _ImportPruefenBasis(APIView):
     """PRÜFPHASE — Datei analysieren, nichts schreiben. Reserviert RH+ (wie die Vorlage)."""
 
-    permission_classes = [IsRHOrAbove]
+    permission_classes = [MembresImportPermission]
     parser_classes = [MultiPartParser]
     analysieren = None
     mit_importeur = False
@@ -161,7 +164,7 @@ class _ImportBestaetigenBasis(APIView):
     """BESTÄTIGUNGSPHASE — dieselbe Datei erneut + Zeilennummern der zu überschreibenden
     Dubletten ; importiert, überschreibt und liefert den Bericht (Excel, base64)."""
 
-    permission_classes = [IsRHOrAbove]
+    permission_classes = [MembresImportPermission]
     parser_classes = [MultiPartParser]
     ausfuehren = None
     mit_importeur = False
@@ -202,7 +205,7 @@ class MembreImportTemplateView(APIView):
     commande manage.py generer_template_import_membres, voir ce module).
     """
 
-    permission_classes = [IsRHOrAbove]
+    permission_classes = [MembresImportPermission]
 
     def get(self, request):
         classeur = construire_classeur_template()
@@ -229,7 +232,7 @@ class HistoriqueStatutImportTemplateView(APIView):
     HistoriqueStatutImportView). Sert le classeur vierge construit par
     apps.membres.imports_historique.construire_classeur_template_historique."""
 
-    permission_classes = [IsRHOrAbove]
+    permission_classes = [MembresImportPermission]
 
     def get(self, request):
         variante = "beitraege" if request.query_params.get("variante") == "beitraege" else "jahre"

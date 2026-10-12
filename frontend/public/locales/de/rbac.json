@@ -36,7 +36,12 @@
     "groupes": "Gruppen",
     "live": "Fan-Club (Live, Tabelle, Tippspiel)",
     "quiz": "Quiz",
-    "covoiturage": "Fahrgemeinschaften"
+    "covoiturage": "Fahrgemeinschaften",
+    "page_partner": "Business Partner & Lieferanten",
+    "page_membres_import": "Mitglieder-Import (Stammdaten & Historie)",
+    "page_membres_zuordnung": "Konten Mitgliedern zuordnen",
+    "page_configuration_site": "Startseite: Hero-Video",
+    "page_fan_club_logos": "Fan-Club: Vereinslogos"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",
