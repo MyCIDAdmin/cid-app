@@ -147,10 +147,14 @@ export async function telechargerTemplateImportMembres(): Promise<Blob> {
   return data;
 }
 
-/** GET /membres/import-historique/template/ — classeur vierge (email/cin + colonnes d'exemple
- * par année) à compléter avant import. */
-export async function telechargerTemplateImportHistorique(): Promise<Blob> {
+/** GET /membres/import-historique/template/ — classeur vierge à compléter avant import :
+ * variante "jahre" (email/cin + une colonne par année, actif/inactif) ou "beitraege" (une ligne =
+ * membre + année + offre + montant, Release 2). */
+export async function telechargerTemplateImportHistorique(
+  variante: "jahre" | "beitraege" = "jahre",
+): Promise<Blob> {
   const { data } = await apiClient.get("/membres/import-historique/template/", {
+    params: variante === "beitraege" ? { variante } : undefined,
     responseType: "blob",
   });
   return data;

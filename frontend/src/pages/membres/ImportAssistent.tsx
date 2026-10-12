@@ -373,17 +373,21 @@ export default function ImportAssistent({ art }: { art: ImportArt }) {
   const pruefung = pruefenMutation.data;
   const ergebnis = bestaetigenMutation.data;
 
-  async function vorlageLaden() {
+  async function vorlageLaden(variante: "jahre" | "beitraege" = "jahre") {
     setVorlageFehler(null);
     setVorlageLaeuft(true);
     try {
       const blob =
         art === "membres"
           ? await telechargerTemplateImportMembres()
-          : await telechargerTemplateImportHistorique();
+          : await telechargerTemplateImportHistorique(variante);
       declencherTelechargement(
         blob,
-        art === "membres" ? "template_import_membres.xlsx" : "template_import_historique.xlsx",
+        art === "membres"
+          ? "template_import_membres.xlsx"
+          : variante === "beitraege"
+            ? "template_import_historie_beitraege.xlsx"
+            : "template_import_historique.xlsx",
       );
     } catch (error) {
       setVorlageFehler(extractApiErrorMessage(error, t(`${ns}.erreur_template`)));
@@ -434,12 +438,22 @@ export default function ImportAssistent({ art }: { art: ImportArt }) {
             <p className="mb-3 text-sm text-text-secondary">{t(`${ns}.template_description`)}</p>
             <button
               type="button"
-              onClick={vorlageLaden}
+              onClick={() => void vorlageLaden()}
               disabled={vorlageLaeuft}
               className={BUTTON_PRIMAER}
             >
               {t(`${ns}.template_bouton`)}
             </button>
+            {art === "historique" && (
+              <button
+                type="button"
+                onClick={() => void vorlageLaden("beitraege")}
+                disabled={vorlageLaeuft}
+                className={`${BUTTON_PRIMAER} ml-2`}
+              >
+                {t("import_historique.template_bouton_beitraege")}
+              </button>
+            )}
             {vorlageFehler && (
               <p className="mt-2 text-sm text-status-dangerText">{vorlageFehler}</p>
             )}

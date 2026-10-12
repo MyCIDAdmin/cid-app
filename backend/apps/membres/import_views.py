@@ -130,19 +130,28 @@ def _zeilen_zum_ueberschreiben(request):
     return nummern, None
 
 
+def _extra(view, request) -> dict:
+    """Importierendes Mitglied (nur Historie-Import : Ersteller archivierter Kampagnen und
+    `saisie_par` der Zahlungen) — die Mitglieder-Importe kennen den Parameter nicht."""
+    if not view.mit_importeur:
+        return {}
+    return {"importeur": getattr(request.user, "membre", None)}
+
+
 class _ImportPruefenBasis(APIView):
     """PRÜFPHASE — Datei analysieren, nichts schreiben. Reserviert RH+ (wie die Vorlage)."""
 
     permission_classes = [IsRHOrAbove]
     parser_classes = [MultiPartParser]
     analysieren = None
+    mit_importeur = False
 
     def post(self, request):
         fichier, erreur = _fichier_xlsx_valide_ou_erreur(request)
         if erreur:
             return erreur
         try:
-            analyse = type(self).analysieren(fichier, fichier.name)
+            analyse = type(self).analysieren(fichier, fichier.name, **_extra(self, request))
         except ImportDateiFehler as exc:
             return _schema_fehler(exc)
         return Response(analyse.as_dict(), status=status.HTTP_200_OK)
@@ -155,6 +164,7 @@ class _ImportBestaetigenBasis(APIView):
     permission_classes = [IsRHOrAbove]
     parser_classes = [MultiPartParser]
     ausfuehren = None
+    mit_importeur = False
 
     def post(self, request):
         fichier, erreur = _fichier_xlsx_valide_ou_erreur(request)
@@ -164,7 +174,9 @@ class _ImportBestaetigenBasis(APIView):
         if erreur:
             return erreur
         try:
-            ergebnis = type(self).ausfuehren(fichier, nummern, fichier.name)
+            ergebnis = type(self).ausfuehren(
+                fichier, nummern, fichier.name, **_extra(self, request)
+            )
         except ImportDateiFehler as exc:
             return _schema_fehler(exc)
         return Response(ergebnis.as_dict(), status=status.HTTP_200_OK)
@@ -202,12 +214,14 @@ class HistoriqueStatutImportPruefenView(_ImportPruefenBasis):
     (demande utilisateur du 2026-09-19, voir apps.membres.imports_historique)."""
 
     analysieren = staticmethod(analyser_historique)
+    mit_importeur = True
 
 
 class HistoriqueStatutImportBestaetigenView(_ImportBestaetigenBasis):
     """POST /api/v1/membres/import-historique/bestaetigen/ — `fichier` + `ueberschreiben`."""
 
     ausfuehren = staticmethod(ausfuehren_historique)
+    mit_importeur = True
 
 
 class HistoriqueStatutImportTemplateView(APIView):
@@ -218,5 +232,11 @@ class HistoriqueStatutImportTemplateView(APIView):
     permission_classes = [IsRHOrAbove]
 
     def get(self, request):
-        classeur = construire_classeur_template_historique()
-        return xlsx_response(classeur, "template_import_historique_statut.xlsx")
+        variante = "beitraege" if request.query_params.get("variante") == "beitraege" else "jahre"
+        classeur = construire_classeur_template_historique(variante)
+        nom = (
+            "template_import_historie_beitraege.xlsx"
+            if variante == "beitraege"
+            else "template_import_historique_statut.xlsx"
+        )
+        return xlsx_response(classeur, nom)
