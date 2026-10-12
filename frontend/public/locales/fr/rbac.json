@@ -84,6 +84,13 @@
       "erreur_encore_attribuee": "Ce rôle est encore attribué à au moins un utilisateur — retirez-le d'abord.",
       "succes": "Le rôle a été supprimé.",
       "erreur": "Le rôle n'a pas pu être supprimé."
+    },
+    "col_module": "Module",
+    "col_lecture": "Lecture",
+    "col_ecriture": "Écriture",
+    "groupes": {
+      "donnees": "Modules",
+      "page_admin": "Pages d'administration"
     }
   },
   "visibilite": {

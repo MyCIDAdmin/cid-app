@@ -84,6 +84,13 @@
       "erreur_encore_attribuee": "Diese Rolle ist noch mindestens einem Benutzer zugewiesen — entfernen Sie sie zuerst.",
       "succes": "Die Rolle wurde gelöscht.",
       "erreur": "Die Rolle konnte nicht gelöscht werden."
+    },
+    "col_module": "Modul",
+    "col_lecture": "Lesen",
+    "col_ecriture": "Schreiben",
+    "groupes": {
+      "donnees": "Module",
+      "page_admin": "Verwaltungsseiten"
     }
   },
   "visibilite": {
