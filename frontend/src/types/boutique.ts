@@ -149,6 +149,10 @@ export interface Produit {
    * montant libre au lieu du sélecteur taille/couleur pour "bon_achat". */
   type_produit: TypeProduit;
   nouveaute: boolean;
+  /** Release 7 : „Exklusiv für Mitglieder“ — sichtbar für alle; `zugang_gesperrt` kommt vom Server
+   * (true, wenn der aktuelle Nutzer kein aktives Mitglied ist). */
+  nur_mitglieder?: boolean;
+  zugang_gesperrt?: boolean;
   seuil_alerte_stock: number;
   variantes: VarianteProduit[];
   stock_total: number;
@@ -221,6 +225,7 @@ export interface ProduitPayload {
   reservierung_zahlungsfrist_tage?: number | null;
   statut?: StatutProduit;
   nouveaute?: boolean;
+  nur_mitglieder?: boolean;
   seuil_alerte_stock?: number;
   /** Écriture seule, à la création uniquement — crée une variante "unique" (taille/couleur
    * vides) avec ce stock. Ignoré par le backend en modification (PATCH), et pour un produit

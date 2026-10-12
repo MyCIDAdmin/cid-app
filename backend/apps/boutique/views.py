@@ -694,6 +694,7 @@ class CommandeViewSet(ModelViewSet):
                 .select_related("produit")
                 .get(id=data["variante"].id)
             )
+            reservierungen.pruefe_zugang([variante.produit], membre_cible, "variante")
             if not est_bon_achat and variante.stock < quantite:
                 raise ValidationError(
                     {
@@ -1232,6 +1233,7 @@ class ReservierungViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin, 
         with transaction.atomic():
             # Zeilensperre: Limits gelten auch bei gleichzeitigen Anfragen.
             produit = Produit.objects.select_for_update().get(pk=data["produit"].pk)
+            reservierungen.pruefe_zugang([produit], membre, "produit")
             reservierungen.pruefe_menge(produit, membre, data["quantite"])
             reservierung = serializer.save(membre=membre)
         return Response(self.get_serializer(reservierung).data, status=status.HTTP_201_CREATED)

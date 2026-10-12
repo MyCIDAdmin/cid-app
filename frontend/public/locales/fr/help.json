@@ -75,7 +75,8 @@
       "Les bons d’achat ne peuvent pas être réservés.",
       "Les membres voient leurs réservations sous « Mes commandes » et peuvent les annuler eux-mêmes jusqu’à la date limite.",
       "Le total au-dessus de l’onglet compte les pièces filtrées.",
-      "L'export Excel sous « Commandes » suit les filtres (statut, date, destinataire et autant d'articles que voulu) et contient les feuilles Positions, Totaux par variante et Réservations."
+      "L'export Excel sous « Commandes » suit les filtres (statut, date, destinataire et autant d'articles que voulu) et contient les feuilles Positions, Totaux par variante et Réservations.",
+      "Avec « Exclusif aux membres » dans le formulaire article, l'article reste visible par tous, mais seuls les membres actifs peuvent le commander ou le réserver ; les autres voient un message à la place du bouton d'achat."
     ]
   },
   "stats": {

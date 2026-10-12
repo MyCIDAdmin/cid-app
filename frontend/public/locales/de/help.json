@@ -75,7 +75,8 @@
       "Gutscheine können nicht reserviert werden.",
       "Mitglieder sehen ihre Reservierungen unter „Meine Bestellungen“ und können sie bis zur Frist selbst stornieren.",
       "Die Summe über dem Reservierungstab zählt die gefilterten Stücke.",
-      "Der Excel-Export unter „Bestellungen“ folgt den Filtern (Status, Datum, Empfänger und beliebig viele Artikel) und enthält die Blätter Positionen, Summen pro Variante und Reservierungen."
+      "Der Excel-Export unter „Bestellungen“ folgt den Filtern (Status, Datum, Empfänger und beliebig viele Artikel) und enthält die Blätter Positionen, Summen pro Variante und Reservierungen.",
+      "Mit „Exklusiv nur für Mitglieder“ im Artikelformular bleibt ein Artikel für alle sichtbar, bestellen oder reservieren dürfen ihn aber nur aktive Mitglieder; alle anderen sehen einen Hinweis statt des Kaufen-Buttons."
     ]
   },
   "stats": {
