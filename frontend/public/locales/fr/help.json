@@ -111,6 +111,57 @@
       "Ne confirmez un paiement que lorsque l'argent est réellement sur le compte — le reçu part automatiquement au membre."
     ]
   },
+  "zahlungen_import": {
+    "titre": "Importer des paiements",
+    "intro": "Importez des paiements depuis Excel (p. ex. relevé bancaire) en une fois, puis complétez les entrées incomplètes, attribuez-les à un membre et validez-les.",
+    "schritte": [
+      "Téléchargez le modèle et remplissez-le (date, montant, mode de paiement, référence, motif ; si connus e-mail/CIN, article, année).",
+      "Choisissez le fichier et cliquez sur « Prüfen » – rien n’est encore enregistré.",
+      "Consultez la liste de contrôle, cliquez sur « Import bestätigen » et téléchargez le rapport Excel.",
+      "En bas, dans la liste « Ouvert », complétez les entrées sans membre ou sans article et validez-les."
+    ],
+    "workflows": [
+      {
+        "titre": "Importer un relevé bancaire",
+        "wann": "Vous avez beaucoup de paiements issus de la banque ou d’une liste Excel et ne voulez pas les saisir un par un.",
+        "schritte": [
+          "Cliquez sur « Télécharger le modèle » et saisissez les paiements.",
+          "Choisissez le fichier et cliquez sur « Prüfen ».",
+          "Contrôlez la liste : nouvelles lignes, doublons (même référence) et erreurs.",
+          "Cliquez sur « Import bestätigen » et téléchargez le rapport."
+        ],
+        "beispiel": "Vous saisissez 40 virements de septembre ; pour 31, l’e-mail du membre est indiqué, pour 9 seulement le motif.",
+        "danach": "Les 31 lignes complètes sont immédiatement enregistrées comme payées (sans e-mail aux membres). Les 9 autres apparaissent dans la liste « Ouvert »."
+      },
+      {
+        "titre": "Attribuer et valider un paiement ouvert",
+        "wann": "Une entrée importée n’a pas encore de membre ou d’article.",
+        "schritte": [
+          "Choisissez le filtre « Ouvert ».",
+          "Dans « Rechercher un membre… », saisissez le nom ou l’e-mail et cliquez sur le membre.",
+          "Vérifiez ou corrigez l’article (p. ex. cotisation) et l’année.",
+          "Cliquez sur « Valider »."
+        ],
+        "beispiel": "Référence « Beitrag Amira 2026 » sans e-mail : vous cherchez « Amira », la sélectionnez, article « Cotisation », année 2026, Valider.",
+        "danach": "L’entrée passe à « Validé », le paiement apparaît chez le membre et dans la liste des paiements ; le statut annuel du membre est mis à jour."
+      },
+      {
+        "titre": "Écarter une entrée erronée ou en double",
+        "wann": "Une entrée n’a pas sa place dans le système (p. ex. virement privé).",
+        "schritte": [
+          "Dans la liste « Ouvert », cliquez sur « Écarter ».",
+          "Pour annuler, choisissez le filtre « Écarté » et cliquez sur « Rétablir »."
+        ],
+        "beispiel": "Un remboursement figure sur le relevé : vous l’écartez.",
+        "danach": "L’entrée est masquée, mais jamais supprimée."
+      }
+    ],
+    "tipps": [
+      "Sans e-mail/CIN, le membre ne peut pas être reconnu automatiquement – l’entrée reste ouverte, rien n’est perdu.",
+      "Une référence déjà importée est ignorée lors d’un nouvel import : le fichier peut être rechargé sans risque.",
+      "Les paiements validés ne sont plus modifiables ici ; les corrections passent par la liste des paiements."
+    ]
+  },
   "relances": {
     "titre": "Échéances",
     "intro": "Définissez quand les membres sont relancés pour une cotisation impayée.",

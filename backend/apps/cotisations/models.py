@@ -470,3 +470,65 @@ class HistoriqueStatutCotisation(models.Model):
 
     def __str__(self):
         return f"{self.cotisation_id} : {self.ancien_statut} → {self.nouveau_statut}"
+
+
+class StatutZahlungseingang(models.TextChoices):
+    OFFEN = "offen", _("Offen (nicht gebucht)")
+    GEBUCHT = "gebucht", _("Gebucht")
+    VERWORFEN = "verworfen", _("Verworfen")
+
+
+class Zahlungseingang(models.Model):
+    """Per Excel importierter Zahlungseingang (Release 3, 2026-10-12) — Zwischenspeicher VOR dem
+    eigentlichen Zahlungsregister `Cotisation`. Ein Eingang ist `offen`, solange Mitglied oder
+    Artikel fehlen (oder noch korrigiert wird) ; sobald beides vorliegt, wird er gebucht und es
+    entsteht eine bezahlte `Cotisation` (Verknüpfung in `cotisation`). Nichts wird jemals
+    gelöscht: `verworfen` blendet einen Eintrag nur aus (Nachvollziehbarkeit, Finanzregister)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    datum = models.DateField()
+    betrag = models.DecimalField(
+        max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
+    )
+    mode_paiement = models.CharField(max_length=20, choices=ModePaiement.choices, blank=True)
+    referenz = models.CharField(max_length=64, blank=True)
+    verwendungszweck = models.CharField(max_length=255, blank=True)
+
+    membre = models.ForeignKey(
+        "membres.Membre",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="zahlungen_import",
+    )
+    type_article = models.CharField(max_length=20, choices=TypeArticle.choices, blank=True)
+    annee = models.PositiveSmallIntegerField(null=True, blank=True)
+    libelle = models.CharField(max_length=200, blank=True)
+
+    status = models.CharField(
+        max_length=20, choices=StatutZahlungseingang.choices, default=StatutZahlungseingang.OFFEN
+    )
+    cotisation = models.OneToOneField(
+        Cotisation, on_delete=models.SET_NULL, null=True, blank=True, related_name="eingang"
+    )
+    hinweis = models.CharField(
+        max_length=255, blank=True, help_text=_("Grund, warum der Eintrag noch offen ist.")
+    )
+
+    quelle_datei = models.CharField(max_length=200, blank=True)
+    importiert_von = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "cotisations_zahlungseingaenge"
+        verbose_name = _("Zahlungseingang")
+        verbose_name_plural = _("Zahlungseingänge")
+        ordering = ["-datum", "-created_at"]
+        indexes = [models.Index(fields=["status", "datum"]), models.Index(fields=["referenz"])]
+
+    def __str__(self):
+        return f"{self.datum} {self.betrag} € ({self.get_status_display()})"

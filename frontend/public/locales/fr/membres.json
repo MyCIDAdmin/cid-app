@@ -307,6 +307,19 @@
     },
     "bericht_herunterladen": "Télécharger le rapport (Excel)",
     "bericht_fehler": "Impossible de générer le rapport.",
-    "neuer_import": "Nouvel import"
+    "neuer_import": "Nouvel import",
+    "hinweis_zahlungen": "Les lignes complètes (membre + article) sont enregistrées directement comme paiement effectué, sans e-mail au membre. Les lignes incomplètes restent « ouvertes » dans la liste des paiements, où l’on peut les compléter, les attribuer et les valider. Les paiements déjà importés (même référence) sont ignorés."
+  },
+  "import_zahlungen": {
+    "titre": "Importer des paiements",
+    "description": "Importez des paiements par Excel – même sans attribution à un membre.",
+    "template_titre": "Modèle Excel",
+    "template_description": "Téléchargez le modèle vierge, complétez-le puis importez-le ici. Par ligne : date, montant, mode de paiement, référence, motif et – si connus – e-mail/CIN, article et année.",
+    "template_bouton": "Télécharger le modèle",
+    "erreur_template": "Le modèle n’a pas pu être téléchargé.",
+    "upload_titre": "Importer le fichier",
+    "choisir_fichier": "Choisir un fichier .xlsx",
+    "aucun_fichier": "Aucun fichier sélectionné.",
+    "erreur_import": "Une erreur est survenue lors de l’import."
   }
 }

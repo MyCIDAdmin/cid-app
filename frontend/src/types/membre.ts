@@ -84,7 +84,7 @@ export interface CursorPage<T> {
  * renvoie la liste de contrôle (rien n'est écrit), POST `.../bestaetigen/` importe, écrase les
  * doublons choisis et renvoie le rapport Excel (colonnes Status/Grund) en base64.
  */
-export type ImportArt = "membres" | "historique";
+export type ImportArt = "membres" | "historique" | "zahlungen";
 
 export type ImportZeilenStatus = "neu" | "dublette" | "unveraendert" | "fehler";
 

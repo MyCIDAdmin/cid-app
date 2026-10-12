@@ -1,7 +1,7 @@
 /**
  * Hooks React Query — module cotisations.
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as cotisationsApi from "../api/cotisations";
 import type {
@@ -14,6 +14,7 @@ import type {
   CotisationSaisieEspecesPayload,
   ModePaiement,
 } from "../types/cotisation";
+import type { ZahlungseingaengeFiltres, ZahlungseingangPatch } from "../types/zahlungseingang";
 
 const cotisationsKeys = {
   all: ["cotisations"] as const,
@@ -24,6 +25,8 @@ const cotisationsKeys = {
     [...cotisationsKeys.all, "gestion", filtres] as const,
   historiqueStatuts: (id: string) => [...cotisationsKeys.all, "historique-statuts", id] as const,
   configurationsRelance: () => [...cotisationsKeys.all, "configurations-relance"] as const,
+  zahlungseingaenge: (filtres: ZahlungseingaengeFiltres, url: string | null) =>
+    [...cotisationsKeys.all, "zahlungseingaenge", filtres, url] as const,
   articlesCatalogue: () => [...cotisationsKeys.all, "articles-catalogue"] as const,
 };
 
@@ -230,5 +233,37 @@ export function useModifierArticleCatalogue() {
     }) => cotisationsApi.modifierArticleCatalogue(id, payload),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: cotisationsKeys.articlesCatalogue() }),
+  });
+}
+
+/** Importierte Zahlungen (Release 3) — `url` = `next` der Pagination. */
+export function useZahlungseingaenge(filtres: ZahlungseingaengeFiltres, url: string | null) {
+  return useQuery({
+    queryKey: cotisationsKeys.zahlungseingaenge(filtres, url),
+    queryFn: () => cotisationsApi.listZahlungseingaenge(filtres, url),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAendereZahlungseingang() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: ZahlungseingangPatch }) =>
+      cotisationsApi.aendereZahlungseingang(id, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
+  });
+}
+
+export function useZahlungseingangAktion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      aktion,
+    }: {
+      id: number;
+      aktion: "buchen" | "verwerfen" | "wiederherstellen";
+    }) => cotisationsApi.zahlungseingangAktion(id, aktion),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cotisationsKeys.all }),
   });
 }

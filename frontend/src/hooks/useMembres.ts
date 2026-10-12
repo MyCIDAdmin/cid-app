@@ -126,7 +126,11 @@ export function useBestaetigenImport(art: ImportArt) {
   return useMutation({
     mutationFn: ({ fichier, ueberschreiben }: { fichier: File; ueberschreiben: number[] }) =>
       membresApi.bestaetigenImport(art, fichier, ueberschreiben),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: membresKeys.all });
+      // Zahlungen-Import (Release 3) legt Zahlungseingänge und gebuchte Cotisations an.
+      if (art === "zahlungen") void queryClient.invalidateQueries({ queryKey: ["cotisations"] });
+    },
   });
 }
 

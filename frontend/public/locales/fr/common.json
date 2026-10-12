@@ -35,7 +35,8 @@
     "fan_club_logos": "Logos des clubs",
     "startseite": "Accueil",
     "finances": "Finances",
-    "admin_partner": "Business Partner"
+    "admin_partner": "Business Partner",
+    "zahlungen_import": "Importer des paiements"
   },
   "nav_groupe": {
     "general": "Général",

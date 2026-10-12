@@ -18,6 +18,11 @@ import type {
   PaiementEnLigneResponse,
 } from "../types/cotisation";
 import type { CursorPage } from "../types/membre";
+import type {
+  Zahlungseingang,
+  ZahlungseingaengeFiltres,
+  ZahlungseingangPatch,
+} from "../types/zahlungseingang";
 
 /**
  * Historique des paiements (mockup #pg-cotisation, tableau "Historique des
@@ -292,6 +297,57 @@ export async function modifierArticleCatalogue(
   const { data } = await apiClient.patch<ArticleCatalogue>(
     `/cotisations/articles-catalogue/${id}/`,
     payload,
+  );
+  return data;
+}
+
+/** GET /cotisations/import-zahlungen/template/ — Excel-Vorlage für den Zahlungen-Import (R3). */
+export async function telechargerTemplateImportZahlungen(): Promise<Blob> {
+  const { data } = await apiClient.get("/cotisations/import-zahlungen/template/", {
+    responseType: "blob",
+  });
+  return data;
+}
+
+/** GET /cotisations/zahlungseingaenge/ — importierte Zahlungen (Release 3). `url` = Folgeseite
+ * (`next` der Pagination). */
+export async function listZahlungseingaenge(
+  filtres: ZahlungseingaengeFiltres = {},
+  url: string | null = null,
+): Promise<CursorPage<Zahlungseingang>> {
+  if (url) {
+    const { data } = await apiClient.get<CursorPage<Zahlungseingang>>(url);
+    return data;
+  }
+  const params = Object.fromEntries(
+    Object.entries(filtres).filter(([, wert]) => wert !== undefined && wert !== ""),
+  );
+  const { data } = await apiClient.get<CursorPage<Zahlungseingang>>(
+    "/cotisations/zahlungseingaenge/",
+    { params },
+  );
+  return data;
+}
+
+/** PATCH /cotisations/zahlungseingaenge/<id>/ — offenen Eintrag korrigieren / zuordnen. */
+export async function aendereZahlungseingang(
+  id: number,
+  payload: ZahlungseingangPatch,
+): Promise<Zahlungseingang> {
+  const { data } = await apiClient.patch<Zahlungseingang>(
+    `/cotisations/zahlungseingaenge/${id}/`,
+    payload,
+  );
+  return data;
+}
+
+/** POST …/<id>/buchen|verwerfen|wiederherstellen/ */
+export async function zahlungseingangAktion(
+  id: number,
+  aktion: "buchen" | "verwerfen" | "wiederherstellen",
+): Promise<Zahlungseingang> {
+  const { data } = await apiClient.post<Zahlungseingang>(
+    `/cotisations/zahlungseingaenge/${id}/${aktion}/`,
   );
   return data;
 }

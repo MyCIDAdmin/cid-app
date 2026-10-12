@@ -241,5 +241,51 @@
     "mode": "Mode de paiement",
     "confirmer": "Confirmer",
     "rechnung": "Facture"
+  },
+  "zahlungen_import": {
+    "titre": "Importer des paiements",
+    "beschreibung": "Importez des paiements par Excel, puis complétez les entrées incomplètes, attribuez-les à un membre et validez-les. Rien n’est supprimé.",
+    "liste_titre": "Paiements importés",
+    "filter_status": "Filtrer par statut",
+    "alle": "Tous",
+    "suche": "Recherche (référence, motif, membre)",
+    "mitglied_suchen": "Rechercher un membre…",
+    "kein_treffer": "Aucun résultat",
+    "ohne_mitglied": "Aucun membre attribué",
+    "fehlt": "Il manque encore : {{was}}",
+    "buchen": "Valider",
+    "verwerfen": "Écarter",
+    "wiederherstellen": "Rétablir",
+    "col_datum": "Date",
+    "col_betrag": "Montant",
+    "col_zahlung": "Paiement",
+    "col_mitglied": "Membre",
+    "col_artikel": "Article",
+    "col_jahr": "Année",
+    "col_modus": "Mode de paiement",
+    "col_aktionen": "Actions",
+    "chargement": "Chargement…",
+    "erreur_chargement": "Impossible de charger les paiements.",
+    "erreur_action": "L’action a échoué.",
+    "leer": "Aucun paiement trouvé.",
+    "weiter": "Charger la suite",
+    "zur_ersten_seite": "Première page",
+    "status": {
+      "offen": "Ouvert",
+      "gebucht": "Validé",
+      "verworfen": "Écarté"
+    },
+    "artikel": {
+      "cotisation": "Cotisation",
+      "adhesion": "Adhésion",
+      "don": "Don",
+      "autre_libre": "Autre"
+    },
+    "modus": {
+      "virement_sepa": "Virement",
+      "especes": "Espèces",
+      "paypal": "PayPal",
+      "carte": "Carte"
+    }
   }
 }

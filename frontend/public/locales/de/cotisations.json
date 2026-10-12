@@ -241,5 +241,51 @@
     "mode": "Zahlungsart",
     "confirmer": "Bestätigen",
     "rechnung": "Rechnung"
+  },
+  "zahlungen_import": {
+    "titre": "Zahlungen importieren",
+    "beschreibung": "Zahlungen per Excel importieren und danach unvollständige Einträge ergänzen, einem Mitglied zuordnen und buchen. Es wird nichts gelöscht.",
+    "liste_titre": "Importierte Zahlungen",
+    "filter_status": "Status filtern",
+    "alle": "Alle",
+    "suche": "Suche (Referenz, Zweck, Mitglied)",
+    "mitglied_suchen": "Mitglied suchen…",
+    "kein_treffer": "Kein Treffer",
+    "ohne_mitglied": "Kein Mitglied zugeordnet",
+    "fehlt": "Es fehlt noch: {{was}}",
+    "buchen": "Buchen",
+    "verwerfen": "Verwerfen",
+    "wiederherstellen": "Wiederherstellen",
+    "col_datum": "Datum",
+    "col_betrag": "Betrag",
+    "col_zahlung": "Zahlung",
+    "col_mitglied": "Mitglied",
+    "col_artikel": "Artikel",
+    "col_jahr": "Jahr",
+    "col_modus": "Zahlungsart",
+    "col_aktionen": "Aktionen",
+    "chargement": "Wird geladen…",
+    "erreur_chargement": "Die Zahlungen konnten nicht geladen werden.",
+    "erreur_action": "Die Aktion ist fehlgeschlagen.",
+    "leer": "Keine Zahlungen gefunden.",
+    "weiter": "Weitere laden",
+    "zur_ersten_seite": "Zur ersten Seite",
+    "status": {
+      "offen": "Offen",
+      "gebucht": "Gebucht",
+      "verworfen": "Verworfen"
+    },
+    "artikel": {
+      "cotisation": "Mitgliedsbeitrag",
+      "adhesion": "Mitgliedschaft",
+      "don": "Spende",
+      "autre_libre": "Sonstiges"
+    },
+    "modus": {
+      "virement_sepa": "Überweisung",
+      "especes": "Bar",
+      "paypal": "PayPal",
+      "carte": "Karte"
+    }
   }
 }
