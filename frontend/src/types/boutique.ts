@@ -152,8 +152,44 @@ export interface Produit {
    * PanierCommandePage). L'admin gère l'ensemble des règles (actives et inactives) via
    * /boutique/regles-reduction/?produit=<id>, voir RegleReductionManager. */
   regles_reduction_actives: RegleReduction[];
+  /** Reservierung (Release 4, 2026-10-12) — Modus pro Produkt, siehe Backend
+   * apps.boutique.reservierungen. */
+  reservierung_modus: ReservierungsModus;
+  reservierung_frist: string | null;
+  reservierung_max_gesamt: number | null;
+  reservierung_max_pro_mitglied: number | null;
+  /** Restmenge laut Gesamtlimit; null = unbegrenzt / keine Reservierung. */
+  reservierung_verfuegbar: number | null;
+  /** Frist nicht abgelaufen und Gesamtlimit nicht erreicht (immer true bei Modus "aus"). */
+  reservierung_offen: boolean;
+  /** Was das angemeldete Mitglied bereits reserviert/bestellt hat (0 für Besucher). */
+  reservierung_meine_menge: number;
   created_at: string;
   updated_at: string;
+}
+
+export type ReservierungsModus = "aus" | "nur_reservieren" | "reservieren_und_bezahlen";
+export type StatutReservierung = "aktiv" | "abgeholt" | "storniert";
+
+export interface Reservierung {
+  id: string;
+  produit: string;
+  produit_nom: string;
+  variante: string | null;
+  variante_label: string;
+  membre: string;
+  membre_info: { id: string; prenom: string; nom: string; email: string };
+  quantite: number;
+  statut: StatutReservierung;
+  bemerkung: string;
+  created_at: string;
+}
+
+export interface ReservierungPayload {
+  produit: string;
+  variante?: string | null;
+  quantite: number;
+  bemerkung?: string;
 }
 
 /** Payload de POST/PATCH /boutique/produits/ (Bureau Admin+, CatalogueBoutiquePermission). */
@@ -166,6 +202,10 @@ export interface ProduitPayload {
   /** Voir Produit.prix_membre — optionnel, réservé aux produits "physique" (sans objet pour un
    * "bon_achat", voir GestionCatalogueTab). */
   prix_membre?: string | null;
+  reservierung_modus?: ReservierungsModus;
+  reservierung_frist?: string | null;
+  reservierung_max_gesamt?: number | null;
+  reservierung_max_pro_mitglied?: number | null;
   statut?: StatutProduit;
   nouveaute?: boolean;
   seuil_alerte_stock?: number;

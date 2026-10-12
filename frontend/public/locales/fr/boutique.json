@@ -145,7 +145,8 @@
     "kpi_stocks_alerte": "Stocks en alerte",
     "onglet_commandes": "Commandes",
     "onglet_catalogue": "Catalogue",
-    "onglet_bons_achat": "Bons d'achat"
+    "onglet_bons_achat": "Bons d'achat",
+    "onglet_reservierungen": "Réservations"
   },
   "commandes_admin": {
     "tous": "Toutes",
@@ -309,5 +310,56 @@
     "col_code": "Code",
     "col_solde": "Solde",
     "aucun_bon": "Aucun bon d'achat pour ce filtre."
+  },
+  "reservierung": {
+    "info_frist": "Réservation jusqu’au {{datum}}",
+    "info_verfuegbar": "Encore {{anzahl}} disponible(s)",
+    "info_max_pro_mitglied": "Max. {{anzahl}} par membre",
+    "info_meine": "Déjà à votre nom : {{anzahl}}",
+    "geschlossen": "Réservation terminée",
+    "ausgebucht": "Complet",
+    "reservieren": "Réserver",
+    "menge": "Quantité",
+    "erfolg": "Réservation enregistrée.",
+    "fehler": "La réservation a échoué.",
+    "meine_titel": "Mes réservations",
+    "stornieren": "Annuler"
+  },
+  "reservierung_admin": {
+    "titel": "Réservation",
+    "bouton": "Réservation",
+    "modus": "Mode",
+    "modus_aus": "Pas de réservation (vente normale)",
+    "modus_nur_reservieren": "Réserver uniquement (sans paiement)",
+    "modus_reservieren_und_bezahlen": "Réserver et payer en ligne",
+    "frist": "Date limite (date et heure)",
+    "max_gesamt": "Quantité totale maximale",
+    "max_pro_mitglied": "Maximum par membre",
+    "hinweis_aus": "Le produit est vendu normalement.",
+    "hinweis_nur_reservieren": "Les membres réservent une quantité, le paiement se fait plus tard ou sur place. Les réservations se trouvent dans l’onglet « Réservations ».",
+    "hinweis_reservieren_und_bezahlen": "Les membres commandent comme d’habitude et paient en ligne ; la date limite et les limites de quantité s’appliquent à la commande.",
+    "speichern": "Enregistrer",
+    "gespeichert": "Enregistré.",
+    "fehler": "Échec de l’enregistrement."
+  },
+  "reservierungen_tab": {
+    "alle_produkte": "Tous les produits",
+    "alle_status": "Tous les statuts",
+    "col_produkt": "Produit",
+    "col_mitglied": "Membre",
+    "col_menge": "Quantité",
+    "col_status": "Statut",
+    "col_datum": "Date",
+    "col_aktionen": "Actions",
+    "abholen": "Retiré / terminé",
+    "stornieren": "Annuler",
+    "summe": "Total : {{anzahl}} pièce(s)",
+    "leer": "Aucune réservation trouvée.",
+    "fehler": "L’action a échoué.",
+    "status": {
+      "aktiv": "Réservé",
+      "abgeholt": "Retiré",
+      "storniert": "Annulé"
+    }
   }
 }

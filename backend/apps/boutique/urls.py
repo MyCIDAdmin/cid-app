@@ -7,6 +7,7 @@ from .views import (
     ProduitImageViewSet,
     ProduitViewSet,
     RegleReductionViewSet,
+    ReservierungViewSet,
     RetourViewSet,
     VarianteProduitViewSet,
 )
@@ -21,6 +22,7 @@ router.register("variantes", VarianteProduitViewSet, basename="variante")
 router.register("commandes", CommandeViewSet, basename="commande")
 router.register("retours", RetourViewSet, basename="retour")
 router.register("regles-reduction", RegleReductionViewSet, basename="regle-reduction")
+router.register("reservierungen", ReservierungViewSet, basename="reservierung")
 router.register("bons-achat", BonAchatViewSet, basename="bon-achat")
 
 urlpatterns = [

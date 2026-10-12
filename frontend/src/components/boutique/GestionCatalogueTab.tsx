@@ -43,6 +43,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import BildHinweis from "../ui/BildHinweis";
 import GalerieProduitManager from "./GalerieProduitManager";
 import RegleReductionManager from "./RegleReductionManager";
+import ReservierungsEinstellungen from "./ReservierungsEinstellungen";
 import VariantesManager from "./VariantesManager";
 import UebersetzungenButton from "../ui/UebersetzungenButton";
 
@@ -94,6 +95,7 @@ export default function GestionCatalogueTab({ modifiable = true }: { modifiable?
   const [produitDeplie, setProduitDeplie] = useState<string | null>(null);
   const [produitReductionDeplie, setProduitReductionDeplie] = useState<string | null>(null);
   const [produitGalerieDeplie, setProduitGalerieDeplie] = useState<string | null>(null);
+  const [produitReservierungDeplie, setProduitReservierungDeplie] = useState<string | null>(null);
   const [produitImageEnCours, setProduitImageEnCours] = useState<string | null>(null);
   const [produitImageErreur, setProduitImageErreur] = useState<{
     produitId: string;
@@ -547,6 +549,20 @@ export default function GestionCatalogueTab({ modifiable = true }: { modifiable?
                       ? t("catalogue_admin.gerer_regles_reduction")
                       : t("catalogue_admin.voir_regles_reduction")}
                 </button>
+                {produit.type_produit !== "bon_achat" && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setProduitReservierungDeplie((cur) =>
+                        cur === produit.id ? null : produit.id,
+                      )
+                    }
+                    className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+                  >
+                    {produit.reservierung_modus !== "aus" ? "● " : ""}
+                    {t("reservierung_admin.bouton")}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() =>
@@ -628,6 +644,9 @@ export default function GestionCatalogueTab({ modifiable = true }: { modifiable?
               )}
               {produitDeplie === produit.id && (
                 <VariantesManager produit={produit} modifiable={modifiable} />
+              )}
+              {produitReservierungDeplie === produit.id && (
+                <ReservierungsEinstellungen produit={produit} modifiable={modifiable} />
               )}
               {produitReductionDeplie === produit.id && (
                 <RegleReductionManager produit={produit} modifiable={modifiable} />

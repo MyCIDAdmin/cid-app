@@ -16,10 +16,11 @@ import { useTranslation } from "react-i18next";
 import GestionBonsAchatTab from "../../components/boutique/GestionBonsAchatTab";
 import GestionCatalogueTab from "../../components/boutique/GestionCatalogueTab";
 import GestionCommandesTab from "../../components/boutique/GestionCommandesTab";
+import GestionReservierungenTab from "../../components/boutique/GestionReservierungenTab";
 import { useCommandes, useProduits } from "../../hooks/useBoutique";
 import { usePageAccess } from "../../hooks/useRbac";
 
-type Onglet = "commandes" | "catalogue" | "bons_achat";
+type Onglet = "commandes" | "catalogue" | "bons_achat" | "reservierungen";
 
 export default function AdminBoutiquePage() {
   const { t } = useTranslation(["boutique", "common"]);
@@ -113,11 +114,23 @@ export default function AdminBoutiquePage() {
         >
           {t("admin.onglet_bons_achat")}
         </button>
+        <button
+          type="button"
+          onClick={() => setOnglet("reservierungen")}
+          className={`px-3 py-2 text-sm font-medium ${
+            onglet === "reservierungen"
+              ? "border-b-2 border-ca text-ca"
+              : "text-text-tertiary hover:text-text-secondary"
+          }`}
+        >
+          {t("admin.onglet_reservierungen")}
+        </button>
       </div>
 
       {onglet === "commandes" && <GestionCommandesTab modifiable={modifiable} />}
       {onglet === "catalogue" && <GestionCatalogueTab modifiable={modifiable} />}
       {onglet === "bons_achat" && <GestionBonsAchatTab />}
+      {onglet === "reservierungen" && <GestionReservierungenTab modifiable={modifiable} />}
     </div>
   );
 }

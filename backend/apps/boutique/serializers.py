@@ -14,6 +14,7 @@ from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 from apps.uebersetzung.serializers import UebersetzungenField
 
+from . import reservierungen
 from .models import (
     STATUTS_RETOURNABLES,
     BonAchat,
@@ -24,6 +25,8 @@ from .models import (
     Produit,
     ProduitImage,
     RegleReduction,
+    Reservierung,
+    ReservierungsModus,
     Retour,
     StatutCommande,
     TypeProduit,
@@ -129,6 +132,12 @@ class ProduitSerializer(serializers.ModelSerializer):
     # partir de ces deux champs en lecture seule.
     prix_affiche = serializers.SerializerMethodField()
     est_prix_membre = serializers.SerializerMethodField()
+    # Reservierung (Release 4): Restmenge (None = unbegrenzt), ob noch offen (Frist + Limit) und
+    # was das angemeldete Mitglied schon reserviert/bestellt hat — nur zur Anzeige, die
+    # verbindliche Prüfung passiert serverseitig in apps.boutique.reservierungen.
+    reservierung_verfuegbar = serializers.SerializerMethodField()
+    reservierung_offen = serializers.SerializerMethodField()
+    reservierung_meine_menge = serializers.SerializerMethodField()
 
     uebersetzungen = UebersetzungenField()
 
@@ -158,10 +167,21 @@ class ProduitSerializer(serializers.ModelSerializer):
             "stock_faible",
             "en_rupture",
             "regles_reduction_actives",
+            "reservierung_modus",
+            "reservierung_frist",
+            "reservierung_max_gesamt",
+            "reservierung_max_pro_mitglied",
+            "reservierung_verfuegbar",
+            "reservierung_offen",
+            "reservierung_meine_menge",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+        extra_kwargs = {
+            "reservierung_max_gesamt": {"min_value": 1},
+            "reservierung_max_pro_mitglied": {"min_value": 1},
+        }
 
     def _membre_courant(self):
         """Le membre du user de la requête en cours, ou None (visiteur non lié à une fiche
@@ -179,6 +199,32 @@ class ProduitSerializer(serializers.ModelSerializer):
     def get_est_prix_membre(self, produit):
         _prix, est_prix_membre = produit.prix_pour_membre(self._membre_courant())
         return est_prix_membre
+
+    def validate(self, attrs):
+        modus = attrs.get(
+            "reservierung_modus",
+            getattr(self.instance, "reservierung_modus", ReservierungsModus.AUS),
+        )
+        typ = attrs.get(
+            "type_produit", getattr(self.instance, "type_produit", TypeProduit.PHYSIQUE)
+        )
+        if modus != ReservierungsModus.AUS and typ == TypeProduit.BON_ACHAT:
+            raise serializers.ValidationError(
+                {"reservierung_modus": "Gutscheine können nicht reserviert werden."}
+            )
+        return attrs
+
+    def get_reservierung_verfuegbar(self, produit):
+        return reservierungen.verfuegbare_menge(produit)
+
+    def get_reservierung_offen(self, produit):
+        return reservierungen.ist_offen(produit)
+
+    def get_reservierung_meine_menge(self, produit):
+        membre = self._membre_courant()
+        if membre is None or produit.reservierung_modus == ReservierungsModus.AUS:
+            return 0
+        return reservierungen.reservierte_menge(produit, membre)
 
     def get_regles_reduction_actives(self, produit):
         regles = [r for r in produit.regles_reduction.all() if r.actif]
@@ -628,3 +674,46 @@ class BonAchatVerificationSerializer(serializers.ModelSerializer):
         model = BonAchat
         fields = ["code", "solde", "statut", "date_expiration", "utilisable"]
         read_only_fields = fields
+
+
+class ReservierungSerializer(serializers.ModelSerializer):
+    """Reservierung (Release 4). Schreibbar sind nur produit/variante/quantite/bemerkung; das
+    Mitglied ist immer der angemeldete Benutzer, der Status ändert sich nur über Aktionen."""
+
+    produit_nom = serializers.CharField(source="produit.nom", read_only=True)
+    variante_label = serializers.SerializerMethodField()
+    membre_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Reservierung
+        fields = [
+            "id", "produit", "produit_nom", "variante", "variante_label", "membre",
+            "membre_info", "quantite", "statut", "bemerkung", "created_at",
+        ]  # fmt: skip
+        read_only_fields = ["id", "membre", "statut", "created_at"]
+
+    def get_variante_label(self, obj) -> str:
+        if obj.variante is None:
+            return ""
+        return " / ".join(filter(None, [obj.variante.taille, obj.variante.couleur]))
+
+    def get_membre_info(self, obj) -> dict:
+        m = obj.membre
+        return {"id": str(m.id), "prenom": m.prenom, "nom": m.nom, "email": m.email}
+
+    def validate(self, attrs):
+        produit = attrs["produit"]
+        variante = attrs.get("variante")
+        if produit.statut != "publie":
+            raise serializers.ValidationError({"produit": "Das Produkt ist nicht verfügbar."})
+        if produit.reservierung_modus != ReservierungsModus.NUR_RESERVIEREN:
+            raise serializers.ValidationError(
+                {"produit": "Dieses Produkt kann nicht reserviert werden."}
+            )
+        if variante is not None and variante.produit_id != produit.id:
+            raise serializers.ValidationError({"variante": "Variante passt nicht zum Produkt."})
+        if variante is None and produit.variantes.count() > 1:
+            raise serializers.ValidationError({"variante": "Bitte eine Variante wählen."})
+        if attrs["quantite"] < 1:
+            raise serializers.ValidationError({"quantite": "Mindestens 1."})
+        return attrs

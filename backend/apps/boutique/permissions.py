@@ -161,3 +161,36 @@ class BonAchatPermission(BasePermission):
             return True
         membre = getattr(user, "membre", None)
         return membre is not None and obj.achete_par_id == membre.id
+
+
+class ReservierungPermission(BasePermission):
+    """Reservierung (Release 4): jedes angemeldete Mitglied legt eigene Reservierungen an und
+    storniert sie; Verwaltung (alle sehen, "abgeholt" setzen, fremde stornieren) = Seite
+    `page_boutique` (Lesen für ansehen, Schreiben für ändern), wie Shop-Verwaltung."""
+
+    ADMIN_ACTIONS = ("abholen",)
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if getattr(view, "action", None) in self.ADMIN_ACTIONS:
+            return has_admin_page_access(
+                user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE
+            )
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if has_admin_page_access(
+            user,
+            "page_boutique",
+            required=(
+                NiveauAcces.LECTURE
+                if request.method in SAFE_METHODS
+                else NiveauAcces.LECTURE_ECRITURE
+            ),
+        ):
+            return True
+        membre = getattr(user, "membre", None)
+        return membre is not None and obj.membre_id == membre.id

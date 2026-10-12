@@ -141,6 +141,17 @@ class StatutProduit(models.TextChoices):
     ARCHIVE = "archive", _("Archivé")
 
 
+class ReservierungsModus(models.TextChoices):
+    """Reservierung im Shop (Release 4, 2026-10-12) — pro Produkt wählbar. AUS = normaler Verkauf.
+    NUR_RESERVIEREN = Mitglied reserviert Menge, bezahlt später/vor Ort (Reservierung, keine
+    Bestellung). RESERVIEREN_UND_BEZAHLEN = normale Bestellung (Online-Zahlung), aber mit Frist
+    und Mengenlimits — siehe apps.boutique.reservierungen."""
+
+    AUS = "aus", _("Keine Reservierung")
+    NUR_RESERVIEREN = "nur_reservieren", _("Nur reservieren")
+    RESERVIEREN_UND_BEZAHLEN = "reservieren_und_bezahlen", _("Reservieren und online bezahlen")
+
+
 def produit_image_upload_path(instance, filename):
     return f"{instance.id}/{filename}"
 
@@ -209,6 +220,28 @@ class Produit(models.Model):
             "s'applique, toujours recalculé côté serveur (CLAUDE.md §8, même choke point que "
             "prix_final : CommandeViewSet._construire_ligne_avec_reduction)."
         ),
+    )
+
+    # --- Reservierung (Release 4, 2026-10-12) — siehe ReservierungsModus / reservierungen.py ---
+    reservierung_modus = models.CharField(
+        max_length=30,
+        choices=ReservierungsModus.choices,
+        default=ReservierungsModus.AUS,
+    )
+    reservierung_frist = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_("Letzter Zeitpunkt für Reservierung/Bestellung; leer = keine Frist."),
+    )
+    reservierung_max_gesamt = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=_("Maximale Gesamtmenge über alle Mitglieder; leer = unbegrenzt."),
+    )
+    reservierung_max_pro_mitglied = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=_("Maximale Menge pro Mitglied; leer = unbegrenzt."),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -936,3 +969,47 @@ class UtilisationBonAchat(models.Model):
 
     def __str__(self):
         return f"{self.montant} € de {self.bon_achat.code} sur {self.commande.numero_commande}"
+
+
+class StatutReservierung(models.TextChoices):
+    AKTIV = "aktiv", _("Reserviert")
+    ABGEHOLT = "abgeholt", _("Abgeholt / erledigt")
+    STORNIERT = "storniert", _("Storniert")
+
+
+class Reservierung(models.Model):
+    """Reservierung eines Produkts ohne Online-Zahlung (Release 4, Modus NUR_RESERVIEREN).
+    Zählt gegen die Limits des Produkts, solange sie nicht storniert ist. Wird nie gelöscht."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    produit = models.ForeignKey(Produit, on_delete=models.PROTECT, related_name="reservierungen")
+    variante = models.ForeignKey(
+        VarianteProduit,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="reservierungen",
+    )
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.PROTECT, related_name="reservierungen"
+    )
+    quantite = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    statut = models.CharField(
+        max_length=20, choices=StatutReservierung.choices, default=StatutReservierung.AKTIV
+    )
+    bemerkung = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "boutique_reservierungen"
+        verbose_name = _("Reservierung")
+        verbose_name_plural = _("Reservierungen")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["produit", "statut"]),
+            models.Index(fields=["membre", "statut"]),
+        ]
+
+    def __str__(self):
+        return f"{self.produit} × {self.quantite} ({self.membre})"

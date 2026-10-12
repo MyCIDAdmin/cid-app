@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import MitgliederPreisHinweis from "../../components/MitgliederPreisHinweis";
+import ReservierungsBox from "../../components/boutique/ReservierungsBox";
 import ShareButton from "../../components/ui/ShareButton";
 import { useProduit } from "../../hooks/useBoutique";
 import { usePanierStore } from "../../store/panierStore";
@@ -33,6 +34,7 @@ import {
   labelRegleReduction,
   labelVariante,
 } from "./CataloguePage";
+import { reservierungGeschlossen } from "../../utils/reservierung";
 import { uebersetzt } from "../../utils/uebersetzung";
 
 export default function ProduitDetailPage() {
@@ -65,7 +67,10 @@ export default function ProduitDetailPage() {
   const varianteSelectionnee = produit?.variantes.find(
     (v) => v.id === (varianteId || variantesEnStock[0]?.id),
   );
-  const epuise = !varianteSelectionnee || varianteSelectionnee.stock <= 0;
+  const nurReservieren = produit?.reservierung_modus === "nur_reservieren";
+  const geschlossen = produit ? reservierungGeschlossen(produit) : false;
+  const epuise =
+    !nurReservieren && (!varianteSelectionnee || varianteSelectionnee.stock <= 0 || geschlossen);
 
   function handleChangerVariante(nouvelId: string) {
     setVarianteId(nouvelId);
@@ -124,7 +129,7 @@ export default function ProduitDetailPage() {
                 </span>
               )
             )}
-            {epuise && produit.type_produit !== "bon_achat" && (
+            {epuise && !geschlossen && produit.type_produit !== "bon_achat" && (
               <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/70 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
                 {t("catalogue.rupture")}
               </span>
@@ -229,52 +234,62 @@ export default function ProduitDetailPage() {
               </Link>
             ) : (
               <>
-                <div className="text-xs text-text-tertiary">
-                  {produit.en_rupture
-                    ? t("catalogue.rupture")
-                    : produit.stock_faible
-                      ? t("catalogue.stock_faible", { stock: produit.stock_total })
-                      : t("catalogue.en_stock", { stock: produit.stock_total })}
-                </div>
+                <ReservierungsBox produit={produit} />
+                {!nurReservieren && (
+                  <>
+                    <div className="text-xs text-text-tertiary">
+                      {produit.en_rupture
+                        ? t("catalogue.rupture")
+                        : produit.stock_faible
+                          ? t("catalogue.stock_faible", { stock: produit.stock_total })
+                          : t("catalogue.en_stock", { stock: produit.stock_total })}
+                    </div>
 
-                {produit.variantes.length > 1 && (
-                  <select
-                    aria-label={t("catalogue.variante_label")}
-                    value={varianteSelectionnee?.id ?? ""}
-                    onChange={(e) => handleChangerVariante(e.target.value)}
-                    className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                  >
-                    {produit.variantes.map((v) => (
-                      <option key={v.id} value={v.id} disabled={v.stock <= 0}>
-                        {labelVariante(v)} {v.stock <= 0 ? `— ${t("catalogue.rupture")}` : ""}
-                      </option>
-                    ))}
-                  </select>
+                    {produit.variantes.length > 1 && (
+                      <select
+                        aria-label={t("catalogue.variante_label")}
+                        value={varianteSelectionnee?.id ?? ""}
+                        onChange={(e) => handleChangerVariante(e.target.value)}
+                        className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                      >
+                        {produit.variantes.map((v) => (
+                          <option key={v.id} value={v.id} disabled={v.stock <= 0}>
+                            {labelVariante(v)} {v.stock <= 0 ? `— ${t("catalogue.rupture")}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {!epuise && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-text-secondary">
+                          {t("detail.quantite_label")}
+                        </span>
+                        <StepperQuantite
+                          quantite={quantite}
+                          max={varianteSelectionnee?.stock ?? 1}
+                          onChange={setQuantite}
+                          labelDiminuer={t("commande.diminuer")}
+                          labelAugmenter={t("commande.augmenter")}
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleAjouter}
+                      disabled={epuise}
+                      className="mt-2 w-full rounded-cid bg-ca px-4 py-2.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+                    >
+                      🛒{" "}
+                      {epuise
+                        ? geschlossen
+                          ? t("reservierung.geschlossen")
+                          : t("catalogue.rupture")
+                        : t("catalogue.ajouter")}
+                    </button>
+                  </>
                 )}
-
-                {!epuise && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium text-text-secondary">
-                      {t("detail.quantite_label")}
-                    </span>
-                    <StepperQuantite
-                      quantite={quantite}
-                      max={varianteSelectionnee?.stock ?? 1}
-                      onChange={setQuantite}
-                      labelDiminuer={t("commande.diminuer")}
-                      labelAugmenter={t("commande.augmenter")}
-                    />
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleAjouter}
-                  disabled={epuise}
-                  className="mt-2 w-full rounded-cid bg-ca px-4 py-2.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
-                >
-                  🛒 {epuise ? t("catalogue.rupture") : t("catalogue.ajouter")}
-                </button>
               </>
             )}
           </div>

@@ -102,17 +102,20 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 from apps.membres.utils_http import xlsx_response
+from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import is_elevated_for_module
+from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
+from . import reservierungen
 from .exports import construire_classeur_commandes
 from .filters import CommandeFilter, ProduitFilter, RetourFilter
 from .models import (
@@ -128,10 +131,12 @@ from .models import (
     Produit,
     ProduitImage,
     RegleReduction,
+    Reservierung,
     Retour,
     StatutBonAchat,
     StatutCommande,
     StatutProduit,
+    StatutReservierung,
     TypeProduit,
     UtilisationBonAchat,
     VarianteProduit,
@@ -151,6 +156,7 @@ from .permissions import (
     BonAchatPermission,
     CatalogueBoutiquePermission,
     CommandePermission,
+    ReservierungPermission,
     RetourPermission,
 )
 from .serializers import (
@@ -165,6 +171,7 @@ from .serializers import (
     ProduitImageSerializer,
     ProduitSerializer,
     RegleReductionSerializer,
+    ReservierungSerializer,
     RetourLotSerializer,
     RetourSerializer,
     VarianteProduitSerializer,
@@ -512,6 +519,15 @@ class CommandeViewSet(ModelViewSet):
                 .prefetch_related("produit__regles_reduction")
                 .filter(id__in=variante_ids)
             }
+
+            # Release 4 : Reservierungsfrist und Mengenlimits (Produktzeilen werden gesperrt).
+            reservierungen.pruefe_bestellung(
+                [
+                    {"variante": variantes[z["variante"].id], "quantite": z["quantite"]}
+                    for z in lignes_demandees
+                ],
+                membre,
+            )
 
             for ligne in lignes_demandees:
                 variante = variantes[ligne["variante"].id]
@@ -1148,3 +1164,64 @@ class BonAchatViewSet(ModelViewSet):
         except BonAchat.DoesNotExist as exc:
             raise NotFound({"code": "Code de bon d'achat invalide."}) from exc
         return Response(BonAchatVerificationSerializer(bon).data)
+
+
+class ReservierungViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
+    """Reservierungen (Release 4, 2026-10-12) — Modus NUR_RESERVIEREN, siehe reservierungen.py.
+    Mitglieder sehen/stornieren nur ihre eigenen, die Shop-Verwaltung (page_boutique) alle."""
+
+    permission_classes = [ReservierungPermission]
+    serializer_class = ReservierungSerializer
+    pagination_class = BoutiqueCursorPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["produit", "statut"]
+
+    def get_queryset(self):
+        qs = Reservierung.objects.select_related("produit", "variante", "membre")
+        user = self.request.user
+        # ?meine=1 : auch die Verwaltung kann nur die eigenen Reservierungen abfragen ("Meine
+        # Bestellungen und Reservierungen" im Mitgliedsbereich).
+        nur_eigene = self.request.query_params.get("meine") == "1"
+        if not nur_eigene and has_admin_page_access(
+            user, "page_boutique", required=NiveauAcces.LECTURE
+        ):
+            return qs
+        membre = getattr(user, "membre", None)
+        return qs.filter(membre=membre) if membre is not None else qs.none()
+
+    def create(self, request, *args, **kwargs):
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            raise ValidationError({"membre": "Kein Mitglied mit diesem Konto verknüpft."})
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        with transaction.atomic():
+            # Zeilensperre: Limits gelten auch bei gleichzeitigen Anfragen.
+            produit = Produit.objects.select_for_update().get(pk=data["produit"].pk)
+            reservierungen.pruefe_menge(produit, membre, data["quantite"])
+            reservierung = serializer.save(membre=membre)
+        return Response(self.get_serializer(reservierung).data, status=status.HTTP_201_CREATED)
+
+    def _wechseln(self, reservierung, ziel):
+        if reservierung.statut != StatutReservierung.AKTIV:
+            raise ValidationError({"statut": "Nur aktive Reservierungen können geändert werden."})
+        reservierung.statut = ziel
+        reservierung.save(update_fields=["statut", "updated_at"])
+        return Response(self.get_serializer(reservierung).data)
+
+    @action(detail=True, methods=["post"])
+    def stornieren(self, request, pk=None):
+        reservierung = self.get_object()
+        verwaltung = has_admin_page_access(
+            request.user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE
+        )
+        if not verwaltung and reservierungen.frist_abgelaufen(reservierung.produit):
+            raise ValidationError(
+                {"statut": "Nach Ablauf der Frist kann nur die Verwaltung stornieren."}
+            )
+        return self._wechseln(reservierung, StatutReservierung.STORNIERT)
+
+    @action(detail=True, methods=["post"])
+    def abholen(self, request, pk=None):
+        return self._wechseln(self.get_object(), StatutReservierung.ABGEHOLT)

@@ -145,7 +145,8 @@
     "kpi_stocks_alerte": "Bestandswarnungen",
     "onglet_commandes": "Bestellungen",
     "onglet_catalogue": "Katalog",
-    "onglet_bons_achat": "Gutscheine"
+    "onglet_bons_achat": "Gutscheine",
+    "onglet_reservierungen": "Reservierungen"
   },
   "commandes_admin": {
     "tous": "Alle",
@@ -309,5 +310,56 @@
     "col_code": "Code",
     "col_solde": "Guthaben",
     "aucun_bon": "Kein Gutschein für diesen Filter."
+  },
+  "reservierung": {
+    "info_frist": "Reservierung bis {{datum}}",
+    "info_verfuegbar": "Noch {{anzahl}} verfügbar",
+    "info_max_pro_mitglied": "Max. {{anzahl}} pro Mitglied",
+    "info_meine": "Bereits von Ihnen: {{anzahl}}",
+    "geschlossen": "Reservierung beendet",
+    "ausgebucht": "Ausgebucht",
+    "reservieren": "Reservieren",
+    "menge": "Menge",
+    "erfolg": "Reservierung gespeichert.",
+    "fehler": "Die Reservierung ist fehlgeschlagen.",
+    "meine_titel": "Meine Reservierungen",
+    "stornieren": "Stornieren"
+  },
+  "reservierung_admin": {
+    "titel": "Reservierung",
+    "bouton": "Reservierung",
+    "modus": "Modus",
+    "modus_aus": "Keine Reservierung (normaler Verkauf)",
+    "modus_nur_reservieren": "Nur reservieren (ohne Zahlung)",
+    "modus_reservieren_und_bezahlen": "Reservieren und online bezahlen",
+    "frist": "Frist (Datum und Uhrzeit)",
+    "max_gesamt": "Maximale Gesamtmenge",
+    "max_pro_mitglied": "Maximal pro Mitglied",
+    "hinweis_aus": "Das Produkt wird ganz normal verkauft.",
+    "hinweis_nur_reservieren": "Mitglieder reservieren eine Menge, bezahlt wird später oder vor Ort. Die Reservierungen sehen Sie im Tab „Reservierungen“.",
+    "hinweis_reservieren_und_bezahlen": "Mitglieder bestellen wie gewohnt und zahlen online; Frist und Mengenlimits gelten für die Bestellung.",
+    "speichern": "Speichern",
+    "gespeichert": "Gespeichert.",
+    "fehler": "Speichern fehlgeschlagen."
+  },
+  "reservierungen_tab": {
+    "alle_produkte": "Alle Produkte",
+    "alle_status": "Alle Status",
+    "col_produkt": "Produkt",
+    "col_mitglied": "Mitglied",
+    "col_menge": "Menge",
+    "col_status": "Status",
+    "col_datum": "Datum",
+    "col_aktionen": "Aktionen",
+    "abholen": "Abgeholt / erledigt",
+    "stornieren": "Stornieren",
+    "summe": "Summe: {{anzahl}} Stück",
+    "leer": "Keine Reservierungen gefunden.",
+    "fehler": "Die Aktion ist fehlgeschlagen.",
+    "status": {
+      "aktiv": "Reserviert",
+      "abgeholt": "Abgeholt",
+      "storniert": "Storniert"
+    }
   }
 }

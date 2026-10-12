@@ -22,7 +22,12 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
-import { useAnnulerCommande, useCommandes } from "../../hooks/useBoutique";
+import {
+  useAnnulerCommande,
+  useCommandes,
+  useReservierungAktion,
+  useReservierungen,
+} from "../../hooks/useBoutique";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { STATUTS_ANNULABLES, type Commande, type StatutCommande } from "../../types/boutique";
 
@@ -103,6 +108,51 @@ function CommandeCarte({
   );
 }
 
+/** Eigene Reservierungen (Release 4): ansehen und — solange aktiv — stornieren. */
+function MeineReservierungen() {
+  const { t } = useTranslation("boutique");
+  const liste = useReservierungen({ meine: "1" });
+  const aktion = useReservierungAktion();
+  const eintraege = liste.data?.results ?? [];
+  if (eintraege.length === 0) return null;
+
+  return (
+    <section className="mb-6">
+      <h2 className="mb-2 text-base font-semibold text-text-primary">
+        {t("reservierung.meine_titel")}
+      </h2>
+      <div className="space-y-2">
+        {eintraege.map((r) => (
+          <div
+            key={r.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-cid-lg bg-bg-primary p-3 shadow-sm"
+          >
+            <div>
+              <div className="text-sm font-medium text-text-primary">
+                {r.quantite} × {r.produit_nom}
+                {r.variante_label ? ` (${r.variante_label})` : ""}
+              </div>
+              <div className="text-xs text-text-tertiary">
+                {formatDate(r.created_at)} · {t(`reservierungen_tab.status.${r.statut}`)}
+              </div>
+            </div>
+            {r.statut === "aktiv" && (
+              <button
+                type="button"
+                disabled={aktion.isPending}
+                onClick={() => aktion.mutate({ id: r.id, aktion: "stornieren" })}
+                className="rounded-cid border border-text-tertiary/30 px-2.5 py-1 text-xs text-status-dangerText hover:bg-bg-tertiary disabled:opacity-40"
+              >
+                {t("reservierung.stornieren")}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function MesCommandesPage() {
   const { t } = useTranslation("boutique");
   const commandesQuery = useCommandes();
@@ -118,6 +168,8 @@ export default function MesCommandesPage() {
   return (
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("mes_commandes.titre")}</h1>
+
+      <MeineReservierungen />
 
       {commandesQuery.isLoading && (
         <p className="text-sm text-text-tertiary">{t("mes_commandes.chargement")}</p>

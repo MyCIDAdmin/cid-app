@@ -19,7 +19,49 @@
       "Créez un article avec nom, description et prix ; il démarre en brouillon.",
       "Avec « Gérer les variantes », renseignez tailles/couleurs et stock ; avec « Galerie », ajoutez des photos.",
       "Avec le sélecteur de statut, publiez ou archivez l'article ; seuls les articles publiés sont visibles des clients.",
-      "« Supprimer » retire définitivement un article. Un article déjà commandé ne peut pas être supprimé : passez-le plutôt en « archivé »."
+      "« Supprimer » retire définitivement un article. Un article déjà commandé ne peut pas être supprimé : passez-le plutôt en « archivé ».",
+      "Avec « Réservation » sur un article, vous activez la réservation (avec date limite et limites de quantité) ; la liste se trouve dans l’onglet « Réservations »."
+    ],
+    "workflows": [
+      {
+        "titre": "Rendre un article réservable (p. ex. billets)",
+        "wann": "Vous voulez répartir des places ou des articles à l’avance ; le paiement se fait plus tard ou sur place.",
+        "schritte": [
+          "Dans l’onglet « Catalogue », cliquez sur « Réservation » pour l’article.",
+          "Choisissez le mode « Réserver uniquement (sans paiement) ».",
+          "Saisissez la date limite, la quantité totale maximale et le maximum par membre (vide = illimité).",
+          "Cliquez sur « Enregistrer » et vérifiez que l’article est « publié »."
+        ],
+        "beispiel": "40 billets pour le match à l’extérieur, 4 au maximum par membre, date limite le 20/10 à 18h00.",
+        "danach": "Dans la boutique, l’article affiche « Réserver » au lieu du panier, avec quantité restante et date limite. Après la date limite ou quand tout est pris, il est bloqué."
+      },
+      {
+        "titre": "Réserver et payer en ligne",
+        "wann": "Les membres doivent payer directement, mais seulement jusqu’à une date limite et avec des limites.",
+        "schritte": [
+          "Cliquez sur « Réservation » pour l’article.",
+          "Choisissez le mode « Réserver et payer en ligne ».",
+          "Saisissez la date limite et les limites de quantité, puis « Enregistrer »."
+        ],
+        "beispiel": "Écharpes : 100 pièces au total, 2 par membre, commande jusqu’à la fin du mois.",
+        "danach": "Les membres commandent comme d’habitude. La date limite et les limites sont vérifiées à la commande ; une commande annulée libère la quantité."
+      },
+      {
+        "titre": "Traiter les réservations",
+        "wann": "La date limite est passée ou les articles sont remis.",
+        "schritte": [
+          "Ouvrez l’onglet « Réservations » et filtrez par article et statut.",
+          "Pour les réservations terminées, cliquez sur « Retiré / terminé ».",
+          "Libérez les réservations inutiles avec « Annuler »."
+        ],
+        "beispiel": "Lors du match, vous remettez les billets et cochez chaque réservation comme retirée.",
+        "danach": "Le statut change ; les quantités annulées sont à nouveau libres. Rien n’est supprimé."
+      }
+    ],
+    "tipps": [
+      "Les bons d’achat ne peuvent pas être réservés.",
+      "Les membres voient leurs réservations sous « Mes commandes » et peuvent les annuler eux-mêmes jusqu’à la date limite.",
+      "Le total au-dessus de l’onglet compte les pièces filtrées."
     ]
   },
   "stats": {
