@@ -7,6 +7,7 @@
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
+import FaehigkeitenReportingTab from "../../components/membres/FaehigkeitenReportingTab";
 import MembreReportingTab from "../../components/membres/MembreReportingTab";
 import TabLeiste from "../../components/ui/TabLeiste";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
@@ -19,7 +20,9 @@ export default function MembresPage() {
     ROLE_LEVELS.rh,
   );
   const [params, setParams] = useSearchParams();
-  const tab = peutBerichten && params.get("tab") === "reporting" ? "reporting" : "verzeichnis";
+  const roh = params.get("tab");
+  const tab =
+    peutBerichten && (roh === "reporting" || roh === "faehigkeiten") ? roh : "verzeichnis";
 
   if (!peutBerichten) return <MembresListPage />;
   return (
@@ -31,9 +34,12 @@ export default function MembresPage() {
         tabs={[
           { id: "verzeichnis", label: t("tab_verzeichnis") },
           { id: "reporting", label: t("tab_reporting") },
+          { id: "faehigkeiten", label: t("tab_faehigkeiten") },
         ]}
       />
-      {tab === "reporting" ? <MembreReportingTab /> : <MembresListPage />}
+      {tab === "reporting" && <MembreReportingTab />}
+      {tab === "faehigkeiten" && <FaehigkeitenReportingTab />}
+      {tab === "verzeichnis" && <MembresListPage />}
     </div>
   );
 }

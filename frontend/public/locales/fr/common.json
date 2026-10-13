@@ -148,7 +148,8 @@
   },
   "mon_profil": {
     "onglet_profil": "Profil",
-    "onglet_einstellungen": "Paramètres"
+    "onglet_einstellungen": "Paramètres",
+    "onglet_faehigkeiten": "Compétences"
   },
   "einstellungen": {
     "laden": "Chargement…",

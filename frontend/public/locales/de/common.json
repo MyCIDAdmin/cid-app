@@ -148,7 +148,8 @@
   },
   "mon_profil": {
     "onglet_profil": "Profil",
-    "onglet_einstellungen": "Einstellungen"
+    "onglet_einstellungen": "Einstellungen",
+    "onglet_faehigkeiten": "Fähigkeiten"
   },
   "einstellungen": {
     "laden": "Wird geladen…",

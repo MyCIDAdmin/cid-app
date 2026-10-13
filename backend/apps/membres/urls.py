@@ -2,6 +2,13 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .export_views import MembreExportView
+from .faehigkeiten_views import (
+    FaehigkeitenReportingExportView,
+    FaehigkeitenReportingView,
+    FaehigkeitListeView,
+    FaehigkeitLoeschenView,
+    MeineFaehigkeitenView,
+)
 from .history_views import MonHistoriqueStatutView
 from .import_views import (
     HistoriqueStatutImportBestaetigenView,
@@ -66,6 +73,19 @@ urlpatterns = [
         "rapprochement/ecarter/",
         RapprochementEcarterView.as_view(),
         name="membre-rapprochement-ecarter",
+    ),
+    path("faehigkeiten/", FaehigkeitListeView.as_view(), name="faehigkeit-liste"),
+    path("faehigkeiten/<uuid:pk>/", FaehigkeitLoeschenView.as_view(), name="faehigkeit-loeschen"),
+    path("mes-faehigkeiten/", MeineFaehigkeitenView.as_view(), name="mes-faehigkeiten"),
+    path(
+        "reporting/faehigkeiten/",
+        FaehigkeitenReportingView.as_view(),
+        name="faehigkeiten-reporting",
+    ),
+    path(
+        "reporting/faehigkeiten/export/",
+        FaehigkeitenReportingExportView.as_view(),
+        name="faehigkeiten-reporting-export",
     ),
     path("mon-historique/", MonHistoriqueStatutView.as_view(), name="membre-mon-historique"),
     path("export/", MembreExportView.as_view(), name="membre-export"),

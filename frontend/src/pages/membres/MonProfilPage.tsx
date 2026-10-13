@@ -1,5 +1,5 @@
 /**
- * "Mein Profil" (/mon-profil) — Container mit zwei Tabs (Wunsch vom 2026-10-07: "Einstellungen"
+ * "Mein Profil" (/mon-profil) — Container mit drei Tabs (Wunsch vom 2026-10-07: "Einstellungen"
  * zieht aus dem Benutzermenü nach "Mein Profil" um): "Profil" (bisheriges Formular,
  * MembreFormPage im Profil-Modus) und "Einstellungen" (EinstellungenTab). Der Tab steht in
  * `?onglet=` (Standard "profil"), damit das Benutzermenü direkt auf die Einstellungen verlinken
@@ -9,16 +9,17 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
 import EinstellungenTab from "../../components/profil/EinstellungenTab";
+import FaehigkeitenTab from "../../components/profil/FaehigkeitenTab";
 import MembreFormPage from "./MembreFormPage";
 
-const ONGLETS = ["profil", "einstellungen"] as const;
+const ONGLETS = ["profil", "faehigkeiten", "einstellungen"] as const;
 type Onglet = (typeof ONGLETS)[number];
 
 export default function MonProfilPage() {
   const { t } = useTranslation("common");
   const [params, setParams] = useSearchParams();
   const roh = params.get("onglet");
-  const onglet: Onglet = roh === "einstellungen" ? "einstellungen" : "profil";
+  const onglet: Onglet = ONGLETS.find((o) => o === roh) ?? "profil";
 
   function waehlen(neu: Onglet) {
     setParams(neu === "profil" ? {} : { onglet: neu }, { replace: true });
@@ -44,7 +45,9 @@ export default function MonProfilPage() {
           </button>
         ))}
       </div>
-      {onglet === "profil" ? <MembreFormPage /> : <EinstellungenTab />}
+      {onglet === "profil" && <MembreFormPage />}
+      {onglet === "faehigkeiten" && <FaehigkeitenTab />}
+      {onglet === "einstellungen" && <EinstellungenTab />}
     </div>
   );
 }
