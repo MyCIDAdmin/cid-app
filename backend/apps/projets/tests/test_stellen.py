@@ -187,3 +187,11 @@ def test_passende_mitglieder_aus_der_faehigkeiten_datenbank(szenario):
 def test_projektliste_zeigt_anzahl_offener_stellen(szenario):
     resp = _client().get(reverse("projets:projet-detail", args=[szenario["projet"].id]))
     assert resp.status_code == 200 and resp.data["stellen_offen"] == 1
+
+
+def test_projektuebergreifende_liste_offener_stellen_mit_projekttitel(szenario):
+    """Übersicht (Dashboard): alle offenen Stellen sichtbarer Projekte, mit Projekttitel."""
+    user, _ = _user(email="mitglied@example.de")
+    antwort = _client(user).get(reverse(LISTE), {"status": "offen"})
+    assert antwort.status_code == 200
+    assert [s["projet_titre"] for s in antwort.json()] == [szenario["projet"].titre]

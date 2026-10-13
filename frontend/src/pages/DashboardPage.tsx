@@ -47,6 +47,7 @@ import { useMesCotisations } from "../hooks/useCotisations";
 import { usePublications } from "../hooks/useCommunaute";
 import { useEvenements, useInscriptions } from "../hooks/useEvenements";
 import { useStatsFinancier, useStatsMembres } from "../hooks/useStats";
+import { useOffeneStellen } from "../hooks/useProjets";
 import { useModuleOuvert } from "../hooks/useRbac";
 import { useSessionVoteActive } from "../hooks/useVote";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../store/authStore";
@@ -148,6 +149,8 @@ export default function DashboardPage() {
   const filOuvert = useModuleOuvert("fil").ouvert;
   const voteOuvertModule = useModuleOuvert("vote").ouvert;
   const voteActifQuery = useSessionVoteActive({ enabled: voteOuvertModule });
+  const projetsOuvert = useModuleOuvert("projets").ouvert;
+  const stellenQuery = useOffeneStellen({ enabled: projetsOuvert });
   const publicationsQuery = usePublications({}, { enabled: filOuvert });
   const statsMembresQuery = useStatsMembres({}, { enabled: estGestion });
   const statsFinancierQuery = useStatsFinancier({}, { enabled: estGestion });
@@ -171,6 +174,9 @@ export default function DashboardPage() {
   );
   const inscriptionsEnAttente = inscriptionsAttenteQuery.data?.results ?? [];
   const publications = publicationsQuery.data?.results.slice(0, 3) ?? [];
+  const offeneStellen = [...(stellenQuery.data ?? [])]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 5);
   const voteOuvert = (voteActifQuery.data?.results.length ?? 0) > 0;
   const evenementsAVenirNombre = evenementsQuery.data?.results.length ?? 0;
 
@@ -351,6 +357,33 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+
+      {offeneStellen.length > 0 && (
+        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm" data-testid="dashboard-stellen">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-semibold text-text-primary">{t("stellen.titre")}</span>
+            <Link to="/projets" className="text-xs text-ca hover:underline">
+              {t("stellen.voir_tout")}
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {offeneStellen.map((stelle) => (
+              <li
+                key={stelle.id}
+                className="animate-slide-in-fade rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
+              >
+                <Link to={`/projets/${stelle.projet}`} className="block">
+                  <span className="font-medium text-text-primary">🙋 {stelle.titel}</span>
+                  {stelle.projet_titre && (
+                    <span className="text-text-secondary"> — {stelle.projet_titre}</span>
+                  )}
+                  <span className="ml-2 text-xs text-ca">{t("stellen.mehr")}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
         <div className="mb-2 flex items-center justify-between">

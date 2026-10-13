@@ -38,5 +38,10 @@
     "titre": "Dernières publications",
     "voir_tout": "Voir tout",
     "aucune": "Aucune publication pour l'instant."
+  },
+  "stellen": {
+    "titre": "Bénévoles recherchés",
+    "voir_tout": "Tous les projets",
+    "mehr": "Vers le projet →"
   }
 }

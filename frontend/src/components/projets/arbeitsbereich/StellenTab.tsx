@@ -19,6 +19,7 @@ import {
 } from "../../../hooks/useProjets";
 import type { ProjetStelle, StatutStelle } from "../../../types/projets";
 import { extractApiErrorMessage } from "../../../utils/apiError";
+import { useFaehigkeitLabel } from "../../../utils/faehigkeitLabel";
 
 const FELD = "rounded-cid border border-text-tertiary/30 bg-bg-primary px-2 py-1.5 text-sm";
 
@@ -115,6 +116,7 @@ export default function StellenTab({
   verwalten: boolean;
 }) {
   const { t } = useTranslation("projets");
+  const faehigkeitLabel = useFaehigkeitLabel();
   const stellen = useStellen(projetId);
   const katalog = useFaehigkeitenKatalog();
   const erstellen = useStelleErstellen();
@@ -184,7 +186,7 @@ export default function StellenTab({
               <option value="">{t("stellen.ohne_faehigkeit")}</option>
               {(katalog.data ?? []).map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.bezeichnung}
+                  {faehigkeitLabel(f.bezeichnung)}
                 </option>
               ))}
             </select>
@@ -230,7 +232,7 @@ export default function StellenTab({
                 <p className="text-xs text-text-tertiary">
                   {t(`stellen.status_stelle.${s.status}`)} ·{" "}
                   {t("stellen.besetzt_von", { angenommen: s.angenommen, anzahl: s.anzahl })}
-                  {s.faehigkeit_name ? ` · ${s.faehigkeit_name}` : ""}
+                  {s.faehigkeit_name ? ` · ${faehigkeitLabel(s.faehigkeit_name)}` : ""}
                 </p>
               </div>
               {verwalten && (

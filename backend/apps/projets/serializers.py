@@ -419,6 +419,7 @@ class StelleSerializer(serializers.ModelSerializer):
     Bewerberzahl werden aus dem Request-Nutzer berechnet — nie vom Client geliefert."""
 
     faehigkeit_name = serializers.CharField(source="faehigkeit.bezeichnung", read_only=True)
+    projet_titre = serializers.CharField(source="projet.titre", read_only=True)
     angenommen = serializers.SerializerMethodField()
     freie_plaetze = serializers.SerializerMethodField()
     meine_bewerbung = serializers.SerializerMethodField()
@@ -429,6 +430,7 @@ class StelleSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "projet",
+            "projet_titre",
             "titel",
             "beschreibung",
             "faehigkeit",

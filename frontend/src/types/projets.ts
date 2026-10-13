@@ -366,6 +366,7 @@ export type StatutBewerbung = "offen" | "angenommen" | "abgelehnt" | "zurueckgez
 export interface ProjetStelle {
   id: string;
   projet: string;
+  projet_titre?: string;
   titel: string;
   beschreibung: string;
   faehigkeit: string | null;

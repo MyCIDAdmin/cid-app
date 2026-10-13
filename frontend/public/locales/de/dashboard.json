@@ -38,5 +38,10 @@
     "titre": "Neueste Beiträge",
     "voir_tout": "Alle anzeigen",
     "aucune": "Noch keine Beiträge."
+  },
+  "stellen": {
+    "titre": "Gesucht: Helferinnen und Helfer",
+    "voir_tout": "Alle Projekte",
+    "mehr": "Zum Projekt →"
   }
 }
