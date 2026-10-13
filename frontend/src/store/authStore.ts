@@ -75,6 +75,8 @@ const dynamicAuthStorage: StateStorage = {
 export interface UiPraeferenzen {
   theme?: "light" | "dark";
   sidebar_collapsed?: boolean;
+  /** Wochenübersicht des Kalenders montags per E-Mail (Release 17, Opt-in). */
+  kalender_wochenmail?: boolean;
 }
 
 export interface CidUser {

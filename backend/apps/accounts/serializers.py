@@ -15,6 +15,7 @@ User = get_user_model()
 UI_PRAEFERENZEN_SCHEMA = {
     "theme": lambda v: v in ("light", "dark"),
     "sidebar_collapsed": lambda v: isinstance(v, bool),
+    "kalender_wochenmail": lambda v: isinstance(v, bool),
 }
 
 

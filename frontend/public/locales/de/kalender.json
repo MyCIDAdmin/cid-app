@@ -148,5 +148,9 @@
       "faehigkeit": "Benötigte Fähigkeit",
       "keine_faehigkeit": "Keine bestimmte Fähigkeit"
     }
-  }
+  },
+  "ics_herunterladen": "Zum Kalender hinzufügen (.ics)",
+  "wochenmail": "Wochenübersicht montags per E-Mail",
+  "wochenmail_hinweis": "Termine, Aufgaben und Dienste der Woche. Jederzeit abschaltbar.",
+  "wochenmail_fehler": "Einstellung konnte nicht gespeichert werden."
 }

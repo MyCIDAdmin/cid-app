@@ -3,11 +3,22 @@ Veranstaltungen, eigene Aufgaben-Fristen, Umfragen-Fristen, Abstimmungen und Spi
 
 from datetime import datetime, time
 
+from django.db.models import Q
 from django.utils import timezone
 
-from apps.communaute.models import Match
+from apps.adhesions.models import CampagneAdhesion, StatutCampagne
+from apps.boutique.models import (
+    Commande,
+    Produit,
+    ReservierungsModus,
+    StatutCommande,
+    StatutProduit,
+)
+from apps.communaute.models import Match, RencontreCalendrier, StatutRencontre
+from apps.cotisations.models import ConfigurationRelance, Cotisation, StatutCotisation, TypeArticle
 from apps.evenements.models import Evenement, StatutEvenement
-from apps.projets.models import Aufgabe, StatutAufgabe
+from apps.membres.models import StatutMembre
+from apps.projets.models import Aufgabe, Projet, ProjetMitglied, StatutAufgabe, StatutProjet
 from apps.umfragen.models import Umfrage
 from apps.vote.models import StatutSession, VoteSession
 
@@ -38,6 +49,168 @@ def _eintrag(quelle, objekt_id, titel, beginn, **extra):
     }
     eintrag.update(extra)
     return eintrag
+
+
+def _spiel_eintraege(von, bis) -> list[dict]:
+    """Spiele : der synchronisierte Spielplan (GOAL API) ; live gepflegte `Match`-Einträge nur,
+    wenn der Plan zur selben Zeit kein Spiel enthält (sonst doppelt)."""
+    ergebnis = []
+    plan = list(
+        RencontreCalendrier.objects.filter(date_heure__gte=von, date_heure__lt=bis).exclude(
+            statut=StatutRencontre.ANNULEE
+        )
+    )
+    for r in plan:
+        titel = f"{r.equipe_domicile} – {r.equipe_exterieur}"
+        if r.statut == StatutRencontre.REPORTEE:
+            titel += " (verschoben)"
+        ergebnis.append(
+            _eintrag(
+                "spieltag",
+                r.pk,
+                titel,
+                r.date_heure,
+                beschreibung=r.competition,
+                kategorie="spieltag",
+                link="/live",
+            )
+        )
+    for m in Match.objects.filter(date_heure__gte=von, date_heure__lt=bis):
+        if any(abs((r.date_heure - m.date_heure).total_seconds()) < 6 * 3600 for r in plan):
+            continue
+        ergebnis.append(
+            _eintrag(
+                "spieltag",
+                m.pk,
+                f"Club Africain – {m.adversaire}",
+                m.date_heure,
+                ort=m.lieu,
+                beschreibung=m.competition,
+                kategorie="spieltag",
+                link="/live",
+            )
+        )
+    return ergebnis
+
+
+def _vereins_fristen(von, bis, tag_von, tag_bis) -> list[dict]:
+    """Fristen für alle Mitglieder : Zahlungsfrist einer Veranstaltung, Verlängerungsfrist einer
+    Mitgliedschaftskampagne, Reservierungsfrist eines Shop-Artikels."""
+    ergebnis = []
+    for e in Evenement.objects.filter(
+        statut=StatutEvenement.PUBLIE,
+        date_limite_paiement__gte=tag_von,
+        date_limite_paiement__lt=tag_bis,
+    ):
+        ergebnis.append(
+            _eintrag(
+                "event_zahlung",
+                e.pk,
+                f"Zahlungsfrist: {e.titre}",
+                _tag_start(e.date_limite_paiement),
+                ganztaegig=True,
+                kategorie="frist",
+                link=f"/evenements?evenement={e.pk}",
+            )
+        )
+    for k in CampagneAdhesion.objects.filter(
+        statut=StatutCampagne.PUBLIEE,
+        date_limite_renouvellement__gte=tag_von,
+        date_limite_renouvellement__lt=tag_bis,
+    ):
+        ergebnis.append(
+            _eintrag(
+                "kampagne",
+                k.pk,
+                f"Mitgliedschaft verlängern bis: {k.nom}",
+                _tag_start(k.date_limite_renouvellement),
+                ganztaegig=True,
+                kategorie="frist",
+                link="/mon-adhesion",
+            )
+        )
+    for p in Produit.objects.filter(
+        statut=StatutProduit.PUBLIE, reservierung_frist__gte=von, reservierung_frist__lt=bis
+    ).exclude(reservierung_modus=ReservierungsModus.AUS):
+        ergebnis.append(
+            _eintrag(
+                "shop_reservierung",
+                p.pk,
+                f"Reservierung bis: {p.nom}",
+                p.reservierung_frist,
+                kategorie="frist",
+                link="/boutique",
+            )
+        )
+    return ergebnis
+
+
+def _eigene_fristen(membre, tag_von, tag_bis) -> list[dict]:
+    """Nur für die betroffene Person : eigener Mitgliedsbeitrag und eigene Shop-Zahlung."""
+    ergebnis = []
+    if membre.statut == StatutMembre.ACTIF:
+        for c in ConfigurationRelance.objects.filter(
+            date_echeance__gte=tag_von, date_echeance__lt=tag_bis
+        ):
+            bezahlt = Cotisation.objects.filter(
+                membre=membre,
+                type_article=TypeArticle.COTISATION,
+                annee=c.annee,
+                statut=StatutCotisation.PAYEE,
+            ).exists()
+            if not bezahlt:
+                ergebnis.append(
+                    _eintrag(
+                        "beitrag",
+                        c.pk,
+                        f"Mitgliedsbeitrag {c.annee} fällig",
+                        _tag_start(c.date_echeance),
+                        ganztaegig=True,
+                        kategorie="frist",
+                        sichtbarkeit="meine",
+                        link="/mon-adhesion",
+                    )
+                )
+    von = _tag_start(tag_von)
+    bis = _tag_start(tag_bis)
+    for b in Commande.objects.filter(
+        membre=membre, statut=StatutCommande.EN_ATTENTE, zahlung_bis__gte=von, zahlung_bis__lt=bis
+    ):
+        ergebnis.append(
+            _eintrag(
+                "bestellung_zahlung",
+                b.pk,
+                "Shop: Zahlung fällig",
+                b.zahlung_bis,
+                kategorie="frist",
+                sichtbarkeit="meine",
+                link="/boutique",
+            )
+        )
+    return ergebnis
+
+
+def _projekt_fristen(membre, tag_von, tag_bis) -> list[dict]:
+    """Projekt-Fristen für Projektmitglieder und Verantwortliche."""
+    eigene = ProjetMitglied.objects.filter(membre=membre).values("projet_id")
+    projekte = Projet.objects.filter(
+        date_limite__gte=tag_von,
+        date_limite__lt=tag_bis,
+        statut__in=[StatutProjet.EN_COURS, StatutProjet.EN_PREPARATION],
+    ).filter(Q(pk__in=eigene) | Q(responsable=membre))
+    return [
+        _eintrag(
+            "projekt",
+            p.pk,
+            f"Projekt-Frist: {p.titre}",
+            _tag_start(p.date_limite),
+            ganztaegig=True,
+            kategorie="projekt",
+            sichtbarkeit="meine",
+            link=f"/projets/{p.pk}",
+        )
+        for p in projekte
+    ]
 
 
 def _dienst_eintraege(user, von, bis) -> list[dict]:
@@ -107,19 +280,8 @@ def feed_eintraege(user, von, bis, *, nur_oeffentlich=False) -> list[dict]:
         return eintraege
 
     if mitglied:
-        for m in Match.objects.filter(date_heure__gte=von, date_heure__lt=bis):
-            eintraege.append(
-                _eintrag(
-                    "spieltag",
-                    m.pk,
-                    f"Club Africain – {m.adversaire}",
-                    m.date_heure,
-                    ort=m.lieu,
-                    beschreibung=m.competition,
-                    kategorie="spieltag",
-                    link="/live",
-                )
-            )
+        eintraege.extend(_spiel_eintraege(von, bis))
+        eintraege.extend(_vereins_fristen(von, bis, tag_von, tag_bis))
         for u in Umfrage.objects.filter(veroeffentlicht=True, frist__gte=von, frist__lt=bis):
             eintraege.append(
                 _eintrag(
@@ -150,6 +312,8 @@ def feed_eintraege(user, von, bis, *, nur_oeffentlich=False) -> list[dict]:
 
     membre = getattr(user, "membre", None) if user is not None else None
     if membre is not None:
+        eintraege.extend(_eigene_fristen(membre, tag_von, tag_bis))
+        eintraege.extend(_projekt_fristen(membre, tag_von, tag_bis))
         aufgaben = (
             Aufgabe.objects.filter(verantwortlich=membre, frist__gte=tag_von, frist__lt=tag_bis)
             .exclude(status=StatutAufgabe.ERLEDIGT)

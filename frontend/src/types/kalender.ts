@@ -35,7 +35,19 @@ export type TerminStatus = "vorgeschlagen" | "freigegeben" | "abgelehnt";
 export type Antwort = "ausstehend" | "zusage" | "vielleicht" | "absage";
 export type Ansicht = "verein" | "buero" | "meine";
 export type Quelle =
-  "termin" | "event" | "aufgabe" | "spieltag" | "umfrage" | "abstimmung" | "dienst";
+  | "termin"
+  | "event"
+  | "aufgabe"
+  | "spieltag"
+  | "umfrage"
+  | "abstimmung"
+  | "dienst"
+  | "event_zahlung"
+  | "kampagne"
+  | "shop_reservierung"
+  | "beitrag"
+  | "bestellung_zahlung"
+  | "projekt";
 
 /** Ein Eintrag der Kalenderansicht (ein Vorkommen eines Termins oder ein Feed-Eintrag). */
 export interface KalenderEintrag {
@@ -57,6 +69,7 @@ export interface KalenderEintrag {
   projekt_titel?: string;
   wichtig: boolean;
   wiederholung: Wiederholung;
+  wiederholung_bis?: string | null;
   status?: TerminStatus;
   meine_antwort?: Antwort | null;
   editierbar?: boolean;
