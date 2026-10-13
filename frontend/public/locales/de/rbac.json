@@ -42,7 +42,10 @@
     "page_membres_zuordnung": "Konten Mitgliedern zuordnen",
     "page_configuration_site": "Startseite: Hero-Video",
     "page_fan_club_logos": "Fan-Club: Vereinslogos",
-    "page_zahlungen_import": "Zahlungen importieren"
+    "page_zahlungen_import": "Zahlungen importieren",
+    "kalender": "Kalender",
+    "page_kalender": "Büro-Kalender (Termine pflegen)",
+    "page_kalender_vorschlag": "Terminvorschläge einreichen"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",

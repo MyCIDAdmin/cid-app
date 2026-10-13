@@ -1,0 +1,118 @@
+{
+  "titel": "Calendrier",
+  "laden": "Chargement des rendez-vous …",
+  "fehler_laden": "Le calendrier n'a pas pu être chargé.",
+  "leer": "Aucun rendez-vous ce mois-ci.",
+  "weitere": "+{{count}} autres",
+  "heute": "Aujourd'hui",
+  "schliessen": "Fermer",
+  "abbrechen": "Annuler",
+  "vorheriger_monat": "Mois précédent",
+  "naechster_monat": "Mois suivant",
+  "neuer_termin": "Nouveau rendez-vous",
+  "termin_vorschlagen": "Proposer un rendez-vous",
+  "tab": {
+    "verein": "Calendrier de l'association",
+    "buero": "Calendrier du bureau",
+    "meine": "Mes rendez-vous & tâches"
+  },
+  "modus": {
+    "label": "Affichage",
+    "monat": "Mois",
+    "liste": "Liste"
+  },
+  "filter": {
+    "kategorie": "Filtrer par catégorie",
+    "alle": "Toutes les catégories"
+  },
+  "kategorie": {
+    "sitzung": "Réunion",
+    "veranstaltung": "Évènement",
+    "frist": "Échéance",
+    "projekt": "Projet",
+    "spieltag": "Jour de match",
+    "abwesenheit": "Absence",
+    "dienst": "Permanence",
+    "vereinsdatum": "Date importante",
+    "sonstiges": "Autre"
+  },
+  "sichtbarkeit": {
+    "kreis": "Un cercle seulement",
+    "aufgabentraeger": "Tous les responsables de tâches",
+    "mitglieder": "Tous les membres",
+    "oeffentlich": "Public (sans connexion)"
+  },
+  "kreis": {
+    "bureau": "Bureau",
+    "projekt": "Équipe de projet"
+  },
+  "wiederholung": {
+    "keine": "Une fois",
+    "woechentlich": "Chaque semaine",
+    "zweiwoechentlich": "Toutes les deux semaines",
+    "monatlich": "Chaque mois"
+  },
+  "antwort": {
+    "ausstehend": "En attente",
+    "zusage": "Présent",
+    "vielleicht": "Peut-être",
+    "absage": "Absent"
+  },
+  "status": {
+    "vorgeschlagen_kurz": "Proposition",
+    "vorgeschlagen_hinweis": "Proposition – en attente de validation par le bureau."
+  },
+  "meine_antwort": "Ta réponse",
+  "eingeladen": "Invités",
+  "link_oeffnen": "Ouvrir le lien",
+  "im_modul_oeffnen": "Ouvrir dans le module",
+  "freigeben": "Valider",
+  "ablehnen": "Refuser",
+  "ankuendigen": "Annoncer dans l'actualité",
+  "angekuendigt": "Annoncé",
+  "bearbeiten": "Modifier",
+  "loeschen": "Supprimer",
+  "loeschen_titel": "Supprimer le rendez-vous ?",
+  "loeschen_frage": "Le rendez-vous sera retiré pour tout le monde.",
+  "fehler_aktion": "L'action a échoué.",
+  "fehler_speichern": "Le rendez-vous n'a pas pu être enregistré.",
+  "form": {
+    "neu": "Nouveau rendez-vous",
+    "bearbeiten": "Modifier le rendez-vous",
+    "vorschlagen": "Proposer un rendez-vous",
+    "vorschlag_hinweis": "Ta proposition n'apparaît qu'après validation par le bureau.",
+    "titel": "Titre",
+    "kategorie": "Catégorie",
+    "ganztaegig": "Toute la journée",
+    "beginn": "Début",
+    "ende": "Fin (facultatif)",
+    "ort": "Lieu",
+    "link": "Lien (p. ex. visioconférence)",
+    "beschreibung": "Description",
+    "sichtbarkeit": "Qui voit ce rendez-vous ?",
+    "kreis": "Cercle",
+    "projekt": "Projet",
+    "projekt_waehlen": "Choisir un projet …",
+    "wiederholung": "Répétition",
+    "wiederholung_bis": "Répéter jusqu'au",
+    "erinnerung": "Rappel",
+    "keine_erinnerung": "Aucun",
+    "stunden_vorher": "{{count}} h avant",
+    "wichtig": "Rendez-vous important (mis en avant)",
+    "einladen": "Inviter des personnes",
+    "person_suchen": "Chercher un nom (2 lettres min.)",
+    "entfernen": "Retirer {{name}}",
+    "speichern": "Enregistrer",
+    "vorschlag_senden": "Envoyer la proposition"
+  },
+  "widget": {
+    "titel": "Prochains rendez-vous",
+    "alle": "Vers le calendrier",
+    "keine": "Aucun rendez-vous à venir."
+  },
+  "oeffentlich": {
+    "titel": "Rendez-vous",
+    "anmelden": "Se connecter",
+    "leer": "Aucun rendez-vous public n'est prévu pour le moment."
+  }
+}

@@ -10,6 +10,7 @@ UEBERSETZBAR = {
     "umfragen.umfrage": ["titel", "beschreibung"],
     "umfragen.umfragefrage": ["text", "thema"],
     "umfragen.umfrageoption": ["text"],
+    "kalender.termin": ["titel", "beschreibung", "ort"],
 }
 
 # Felder mit HTML-Inhalt (DeepL erhält die Tags, übersetzt nur den Text).

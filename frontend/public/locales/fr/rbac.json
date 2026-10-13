@@ -42,7 +42,10 @@
     "page_membres_zuordnung": "Rattacher les comptes aux membres",
     "page_configuration_site": "Page d'accueil : vidéo hero",
     "page_fan_club_logos": "Fan-Club : logos des clubs",
-    "page_zahlungen_import": "Import de paiements"
+    "page_zahlungen_import": "Import de paiements",
+    "kalender": "Calendrier",
+    "page_kalender": "Calendrier du bureau (gérer les rendez-vous)",
+    "page_kalender_vorschlag": "Proposer des rendez-vous"
   },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",

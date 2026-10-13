@@ -1,0 +1,118 @@
+{
+  "titel": "Kalender",
+  "laden": "Lade Termine …",
+  "fehler_laden": "Der Kalender konnte nicht geladen werden.",
+  "leer": "Keine Termine in diesem Monat.",
+  "weitere": "+{{count}} weitere",
+  "heute": "Heute",
+  "schliessen": "Schließen",
+  "abbrechen": "Abbrechen",
+  "vorheriger_monat": "Vorheriger Monat",
+  "naechster_monat": "Nächster Monat",
+  "neuer_termin": "Neuer Termin",
+  "termin_vorschlagen": "Termin vorschlagen",
+  "tab": {
+    "verein": "Vereinskalender",
+    "buero": "Büro-Kalender",
+    "meine": "Meine Termine & Aufgaben"
+  },
+  "modus": {
+    "label": "Darstellung",
+    "monat": "Monat",
+    "liste": "Liste"
+  },
+  "filter": {
+    "kategorie": "Kategorie filtern",
+    "alle": "Alle Kategorien"
+  },
+  "kategorie": {
+    "sitzung": "Sitzung",
+    "veranstaltung": "Veranstaltung",
+    "frist": "Frist",
+    "projekt": "Projekt",
+    "spieltag": "Spieltag",
+    "abwesenheit": "Abwesenheit",
+    "dienst": "Dienst",
+    "vereinsdatum": "Vereinsdatum",
+    "sonstiges": "Sonstiges"
+  },
+  "sichtbarkeit": {
+    "kreis": "Nur ein Kreis",
+    "aufgabentraeger": "Alle Aufgabenträger",
+    "mitglieder": "Alle Mitglieder",
+    "oeffentlich": "Öffentlich (ohne Anmeldung)"
+  },
+  "kreis": {
+    "bureau": "Bureau",
+    "projekt": "Projektteam"
+  },
+  "wiederholung": {
+    "keine": "Einmalig",
+    "woechentlich": "Wöchentlich",
+    "zweiwoechentlich": "Alle zwei Wochen",
+    "monatlich": "Monatlich"
+  },
+  "antwort": {
+    "ausstehend": "Ausstehend",
+    "zusage": "Zusage",
+    "vielleicht": "Vielleicht",
+    "absage": "Absage"
+  },
+  "status": {
+    "vorgeschlagen_kurz": "Vorschlag",
+    "vorgeschlagen_hinweis": "Vorschlag – wartet auf Freigabe durch das Bureau."
+  },
+  "meine_antwort": "Deine Antwort",
+  "eingeladen": "Eingeladen",
+  "link_oeffnen": "Link öffnen",
+  "im_modul_oeffnen": "Im Modul öffnen",
+  "freigeben": "Freigeben",
+  "ablehnen": "Ablehnen",
+  "ankuendigen": "In Neuigkeiten ankündigen",
+  "angekuendigt": "Angekündigt",
+  "bearbeiten": "Bearbeiten",
+  "loeschen": "Löschen",
+  "loeschen_titel": "Termin löschen?",
+  "loeschen_frage": "Der Termin wird für alle entfernt.",
+  "fehler_aktion": "Die Aktion ist fehlgeschlagen.",
+  "fehler_speichern": "Der Termin konnte nicht gespeichert werden.",
+  "form": {
+    "neu": "Neuer Termin",
+    "bearbeiten": "Termin bearbeiten",
+    "vorschlagen": "Termin vorschlagen",
+    "vorschlag_hinweis": "Dein Vorschlag erscheint erst, wenn das Bureau ihn freigibt.",
+    "titel": "Titel",
+    "kategorie": "Kategorie",
+    "ganztaegig": "Ganztägig",
+    "beginn": "Beginn",
+    "ende": "Ende (optional)",
+    "ort": "Ort",
+    "link": "Link (z. B. Videokonferenz)",
+    "beschreibung": "Beschreibung",
+    "sichtbarkeit": "Wer sieht den Termin?",
+    "kreis": "Kreis",
+    "projekt": "Projekt",
+    "projekt_waehlen": "Projekt wählen …",
+    "wiederholung": "Wiederholung",
+    "wiederholung_bis": "Wiederholen bis",
+    "erinnerung": "Erinnerung",
+    "keine_erinnerung": "Keine",
+    "stunden_vorher": "{{count}} Std. vorher",
+    "wichtig": "Wichtiger Termin (hervorgehoben)",
+    "einladen": "Personen einladen",
+    "person_suchen": "Name suchen (mind. 2 Buchstaben)",
+    "entfernen": "{{name}} entfernen",
+    "speichern": "Speichern",
+    "vorschlag_senden": "Vorschlag senden"
+  },
+  "widget": {
+    "titel": "Nächste Termine",
+    "alle": "Zum Kalender",
+    "keine": "Keine anstehenden Termine."
+  },
+  "oeffentlich": {
+    "titel": "Termine",
+    "anmelden": "Anmelden",
+    "leer": "Zurzeit sind keine öffentlichen Termine geplant."
+  }
+}
