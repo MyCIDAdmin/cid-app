@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { umfrageBericht } from "../../api/umfragen";
+import { umfrageBericht, umfrageExcel } from "../../api/umfragen";
 import { useUmfrageErgebnisse } from "../../hooks/useUmfragen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { declencherTelechargement } from "../../utils/telechargement";
@@ -15,18 +15,22 @@ import { gruppiereNachThema } from "../../utils/umfragen";
 export default function UmfrageErgebnisse({ umfrageId }: { umfrageId: string }) {
   const { t } = useTranslation("umfragen");
   const ergebnisse = useUmfrageErgebnisse(umfrageId, true);
-  const [pdfLaeuft, setPdfLaeuft] = useState(false);
-  const [pdfFehler, setPdfFehler] = useState("");
+  const [exportLaeuft, setExportLaeuft] = useState<"pdf" | "excel" | null>(null);
+  const [exportFehler, setExportFehler] = useState("");
 
-  async function pdfHerunterladen() {
-    setPdfFehler("");
-    setPdfLaeuft(true);
+  async function exportieren(art: "pdf" | "excel") {
+    setExportFehler("");
+    setExportLaeuft(art);
     try {
-      declencherTelechargement(await umfrageBericht(umfrageId), `umfrage-bericht.pdf`);
+      if (art === "pdf") {
+        declencherTelechargement(await umfrageBericht(umfrageId), "umfrage-bericht.pdf");
+      } else {
+        declencherTelechargement(await umfrageExcel(umfrageId), "umfrage-ergebnisse.xlsx");
+      }
     } catch (err) {
-      setPdfFehler(extractApiErrorMessage(err, t("ergebnisse.pdf_fehler")));
+      setExportFehler(extractApiErrorMessage(err, t("ergebnisse.export_fehler")));
     } finally {
-      setPdfLaeuft(false);
+      setExportLaeuft(null);
     }
   }
 
@@ -42,16 +46,21 @@ export default function UmfrageErgebnisse({ umfrageId }: { umfrageId: string }) 
     <section className="space-y-4" data-testid="umfrage-ergebnisse">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-bold text-text-primary">{t("ergebnisse.titel")}</h2>
-        <button
-          type="button"
-          onClick={pdfHerunterladen}
-          disabled={pdfLaeuft}
-          className="rounded-cid border border-ca px-3 py-1 text-xs font-medium text-ca disabled:opacity-50"
-        >
-          {pdfLaeuft ? t("ergebnisse.pdf_laeuft") : t("ergebnisse.pdf")}
-        </button>
+        <span className="flex flex-wrap gap-2">
+          {(["pdf", "excel"] as const).map((art) => (
+            <button
+              key={art}
+              type="button"
+              onClick={() => exportieren(art)}
+              disabled={exportLaeuft !== null}
+              className="rounded-cid border border-ca px-3 py-1 text-xs font-medium text-ca disabled:opacity-50"
+            >
+              {exportLaeuft === art ? t("ergebnisse.export_laeuft") : t(`ergebnisse.${art}`)}
+            </button>
+          ))}
+        </span>
       </div>
-      {pdfFehler && <p className="text-xs text-status-dangerText">{pdfFehler}</p>}
+      {exportFehler && <p className="text-xs text-status-dangerText">{exportFehler}</p>}
       <p className="text-xs text-text-tertiary">
         {t("ergebnisse.teilnehmende", { count: daten.teilnehmende })}
       </p>

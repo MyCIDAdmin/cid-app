@@ -60,8 +60,9 @@
     "nach_frist": "Tu verras les résultats après l'échéance.",
     "kommentare": "Remarques",
     "pdf": "Télécharger le rapport PDF",
-    "pdf_laeuft": "Création du rapport …",
-    "pdf_fehler": "Le rapport n'a pas pu être créé."
+    "excel": "Télécharger l'export Excel",
+    "export_laeuft": "Création en cours …",
+    "export_fehler": "L'export n'a pas pu être créé."
   },
   "admin": {
     "neu": "Nouveau sondage",

@@ -414,3 +414,56 @@ def test_bericht_inhalt_in_berichtssprache(admin, monkeypatch):
     assert gesehen["titel"] == "Fête d'été"
     assert [g["thema"] for g in gesehen["gruppen"]] == ["Date", "Essen"]
     assert gesehen["einreichungen"] and gesehen["einreichungen"][0]["name"]
+
+
+# --- Release 14: Excel-Export ----------------------------------------------------------------
+def test_excel_export_enthaelt_auswertung_freitext_und_namen(admin):
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    umfrage = _anlegen(admin, ergebnis_modus="live", anonym=False, fragen=_themen_daten()["fragen"])
+    f1, f2, f3 = list(umfrage.fragen.all())
+    for i in range(2):
+        user, _ = _user(email=f"x{i}@example.de")
+        res = _client(user).post(
+            reverse("umfragen:umfrage-teilnehmen", args=[umfrage.id]),
+            {
+                "antworten": [
+                    {"frage": str(f1.id), "optionen": [str(f1.optionen.all()[0].id)]},
+                    {
+                        "frage": str(f2.id),
+                        "optionen": [str(f2.optionen.all()[0].id)],
+                        "text": "Vegan",
+                    },
+                    {"frage": str(f3.id), "text": f"Idee {i}"},
+                ]
+            },
+            format="json",
+        )
+        assert res.status_code == 201, res.json()
+    res = _client(admin).get(reverse("umfragen:umfrage-excel", args=[umfrage.id]), {"lang": "de"})
+    assert res.status_code == 200
+    assert "spreadsheetml" in res["Content-Type"]
+    mappe = load_workbook(BytesIO(res.content))
+    assert mappe.sheetnames == ["Auswertung", "Freitext", "Einzelantworten"]
+    zeilen = list(mappe["Auswertung"].iter_rows(values_only=True))
+    assert zeilen[1] == ("Termin", "Welcher Tag?", "Samstag", 2, 100)
+    texte = [z[3] for z in mappe["Freitext"].iter_rows(min_row=2, values_only=True)]
+    assert sorted(texte) == ["Idee 0", "Idee 1", "Vegan", "Vegan"]
+    einzel = list(mappe["Einzelantworten"].iter_rows(min_row=2, values_only=True))
+    assert len(einzel) == 2 and einzel[0][3] == "Samstag"
+
+
+def test_excel_export_anonym_ohne_einzelblatt_und_gesperrt_vor_freigabe(admin):
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    umfrage = _anlegen(admin, ergebnis_modus="nach_frist")
+    user, _ = _user(email="y@example.de")
+    _teilnehmen(_client(user), umfrage)
+    url = reverse("umfragen:umfrage-excel", args=[umfrage.id])
+    assert _client(user).get(url).status_code == 403
+    mappe = load_workbook(BytesIO(_client(admin).get(url, {"lang": "fr"}).content))
+    assert mappe.sheetnames == ["Résultats", "Texte libre"]
