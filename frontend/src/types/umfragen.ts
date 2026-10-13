@@ -1,24 +1,30 @@
-/** Umfragen (Release 11) — Spiegel von apps.umfragen. */
+/** Umfragen (Release 11/12) — Spiegel von apps.umfragen. */
+import type { Uebersetzbar } from "../utils/uebersetzung";
+
 export type Zielgruppe = "mitglieder" | "konten";
 export type ErgebnisModus = "admin" | "nach_frist" | "live";
 export type FrageTyp = "einzel" | "mehrfach" | "freitext";
 
-export interface UmfrageOption {
+export interface UmfrageOption extends Uebersetzbar {
   id?: string;
   text: string;
   ordre?: number;
 }
 
-export interface UmfrageFrage {
+export interface UmfrageFrage extends Uebersetzbar {
   id?: string;
   text: string;
+  /** Thema/Kategorie ; Fragen mit gleichem Thema werden gruppiert (leer = ohne Thema). */
+  thema?: string;
   typ: FrageTyp;
   pflicht: boolean;
+  /** Auswahlfragen: zusätzliches Freitextfeld (Kommentar) zur Antwort. */
+  freitext_zusatz?: boolean;
   ordre?: number;
   optionen: UmfrageOption[];
 }
 
-export interface Umfrage {
+export interface Umfrage extends Uebersetzbar {
   id: string;
   titel: string;
   beschreibung: string;
@@ -54,16 +60,17 @@ export interface AntwortEingabe {
   text?: string;
 }
 
-export interface ErgebnisOption {
+export interface ErgebnisOption extends Uebersetzbar {
   id: string;
   text: string;
   anzahl: number;
   anteil: number;
 }
 
-export interface ErgebnisFrage {
+export interface ErgebnisFrage extends Uebersetzbar {
   id: string;
   text: string;
+  thema?: string;
   typ: FrageTyp;
   beantwortet?: number;
   optionen?: ErgebnisOption[];

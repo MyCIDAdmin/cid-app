@@ -1,6 +1,7 @@
 /**
  * Formular „Umfrage anlegen/bearbeiten“ (Release 11, Verwaltung): Titel, Beschreibung, Zielgruppe,
- * anonym/namentlich, Ergebnis-Sichtbarkeit, Frist und Fragen (Einzel-/Mehrfachauswahl, Freitext).
+ * anonym/namentlich, Ergebnis-Sichtbarkeit, Frist und Fragen (Einzel-/Mehrfachauswahl, Freitext)
+ * mit Thema (Gruppierung) und optionalem Kommentarfeld ; Übersetzungen (DeepL) lassen sich korrigieren.
  * Nach der ersten Teilnahme sind Fragen, Zielgruppe und Anonymität gesperrt (Backend-Regel).
  */
 import { useState } from "react";
@@ -14,6 +15,7 @@ import type {
   UmfragePayload,
   Zielgruppe,
 } from "../../types/umfragen";
+import UebersetzungenButton from "../ui/UebersetzungenButton";
 import { vonLokalInput, zuLokalInput } from "../../utils/umfragen";
 
 const FELD = "w-full rounded-cid border border-text-tertiary/30 bg-bg-primary px-2 py-1.5 text-sm";
@@ -21,8 +23,10 @@ const FELD = "w-full rounded-cid border border-text-tertiary/30 bg-bg-primary px
 function leereFrage(): UmfrageFrage {
   return {
     text: "",
+    thema: "",
     typ: "einzel",
     pflicht: true,
+    freitext_zusatz: false,
     optionen: [{ text: "" }, { text: "" }],
   };
 }
@@ -67,6 +71,7 @@ export default function UmfrageFormular({
   function aenderTyp(index: number, typ: FrageTyp) {
     aendereFrage(index, {
       typ,
+      ...(typ === "freitext" ? { freitext_zusatz: false } : {}),
       optionen:
         typ === "freitext"
           ? []
@@ -84,10 +89,13 @@ export default function UmfrageFormular({
       .map((f) => ({
         ...f,
         text: f.text.trim(),
+        thema: (f.thema ?? "").trim(),
         optionen:
           f.typ === "freitext"
             ? []
-            : f.optionen.filter((o) => o.text.trim()).map((o) => ({ text: o.text.trim() })),
+            : f.optionen
+                .filter((o) => o.text.trim())
+                .map((o) => ({ ...(o.id ? { id: o.id } : {}), text: o.text.trim() })),
       }));
     onSpeichern(
       {
@@ -122,6 +130,13 @@ export default function UmfrageFormular({
         placeholder={t("admin.titel")}
         className={FELD}
       />
+      {umfrage && (
+        <UebersetzungenButton
+          modell="umfragen.umfrage"
+          objektId={umfrage.id}
+          className="text-xs text-ca underline"
+        />
+      )}
       <textarea
         value={beschreibung}
         onChange={(e) => setBeschreibung(e.target.value)}
@@ -200,6 +215,13 @@ export default function UmfrageFormular({
       {!gesperrt && (
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase text-text-tertiary">{t("admin.fragen")}</h3>
+          <datalist id="umfrage-themen">
+            {Array.from(new Set(fragen.map((f) => (f.thema ?? "").trim()).filter(Boolean))).map(
+              (thema) => (
+                <option key={thema} value={thema} />
+              ),
+            )}
+          </datalist>
           {fragen.map((frage, fi) => (
             <div key={fi} className="space-y-2 rounded-cid border border-text-tertiary/20 p-2">
               <div className="flex flex-wrap gap-2">
@@ -222,6 +244,15 @@ export default function UmfrageFormular({
                   <option value="freitext">{t("typ.freitext")}</option>
                 </select>
               </div>
+              <input
+                value={frage.thema ?? ""}
+                onChange={(e) => aendereFrage(fi, { thema: e.target.value })}
+                maxLength={120}
+                list="umfrage-themen"
+                aria-label={t("admin.thema")}
+                placeholder={t("admin.thema")}
+                className={FELD}
+              />
               {frage.typ !== "freitext" && (
                 <div className="space-y-1">
                   {frage.optionen.map((option, oi) => (
@@ -261,15 +292,34 @@ export default function UmfrageFormular({
                   </button>
                 </div>
               )}
-              <div className="flex items-center justify-between text-xs">
-                <label className="flex items-center gap-1 text-text-secondary">
-                  <input
-                    type="checkbox"
-                    checked={frage.pflicht}
-                    onChange={(e) => aendereFrage(fi, { pflicht: e.target.checked })}
-                  />
-                  {t("admin.pflicht")}
-                </label>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-1 text-text-secondary">
+                    <input
+                      type="checkbox"
+                      checked={frage.pflicht}
+                      onChange={(e) => aendereFrage(fi, { pflicht: e.target.checked })}
+                    />
+                    {t("admin.pflicht")}
+                  </label>
+                  {frage.typ !== "freitext" && (
+                    <label className="flex items-center gap-1 text-text-secondary">
+                      <input
+                        type="checkbox"
+                        checked={frage.freitext_zusatz ?? false}
+                        onChange={(e) => aendereFrage(fi, { freitext_zusatz: e.target.checked })}
+                      />
+                      {t("admin.freitext_zusatz")}
+                    </label>
+                  )}
+                  {frage.id && (
+                    <UebersetzungenButton
+                      modell="umfragen.umfragefrage"
+                      objektId={frage.id}
+                      className="text-ca underline"
+                    />
+                  )}
+                </span>
                 {fragen.length > 1 && (
                   <button
                     type="button"

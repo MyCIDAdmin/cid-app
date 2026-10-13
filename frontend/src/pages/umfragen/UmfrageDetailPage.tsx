@@ -12,7 +12,8 @@ import UmfrageErgebnisse from "../../components/umfragen/UmfrageErgebnisse";
 import { useUmfrage, useUmfrageTeilnehmen } from "../../hooks/useUmfragen";
 import type { AntwortEingabe, Umfrage } from "../../types/umfragen";
 import { extractApiErrorMessage } from "../../utils/apiError";
-import { formatiereFrist } from "../../utils/umfragen";
+import { uebersetzt } from "../../utils/uebersetzung";
+import { formatiereFrist, gruppiereNachThema } from "../../utils/umfragen";
 
 type Eingabe = Record<string, { optionen: string[]; text: string }>;
 
@@ -45,14 +46,17 @@ function Fragebogen({ umfrage }: { umfrage: Umfrage }) {
       return frage.pflicht && leer;
     });
     if (fehlend) {
-      setFehler(t("fragebogen.pflicht", { frage: fehlend.text }));
+      setFehler(t("fragebogen.pflicht", { frage: uebersetzt(fehlend, "text") }));
       return;
     }
     const antworten: AntwortEingabe[] = umfrage.fragen.map((frage) => {
       const w = wert(frage.id as string);
-      return frage.typ === "freitext"
-        ? { frage: frage.id as string, text: w.text }
-        : { frage: frage.id as string, optionen: w.optionen };
+      if (frage.typ === "freitext") return { frage: frage.id as string, text: w.text };
+      return {
+        frage: frage.id as string,
+        optionen: w.optionen,
+        ...(frage.freitext_zusatz ? { text: w.text } : {}),
+      };
     });
     teilnehmen.mutate(
       { id: umfrage.id, antworten },
@@ -62,45 +66,70 @@ function Fragebogen({ umfrage }: { umfrage: Umfrage }) {
 
   return (
     <form onSubmit={absenden} className="space-y-3" data-testid="umfrage-fragebogen">
-      {umfrage.fragen.map((frage) => {
-        const id = frage.id as string;
-        return (
-          <fieldset key={id} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-            <legend className="px-1 text-sm font-semibold text-text-primary">
-              {frage.text}
-              {frage.pflicht && <span className="text-status-dangerText"> *</span>}
-            </legend>
-            <p className="mb-2 text-[11px] text-text-tertiary">{t(`typ_hinweis.${frage.typ}`)}</p>
-            {frage.typ === "freitext" ? (
-              <textarea
-                value={wert(id).text}
-                onChange={(e) => setze(id, { text: e.target.value })}
-                maxLength={2000}
-                rows={3}
-                aria-label={frage.text}
-                className="w-full rounded-cid border border-text-tertiary/30 p-2 text-sm"
-              />
-            ) : (
-              <div className="space-y-1">
-                {frage.optionen.map((option) => (
-                  <label
-                    key={option.id}
-                    className="flex cursor-pointer items-center gap-2 text-sm text-text-primary"
-                  >
-                    <input
-                      type={frage.typ === "mehrfach" ? "checkbox" : "radio"}
-                      name={id}
-                      checked={wert(id).optionen.includes(option.id as string)}
-                      onChange={() => umschalten(id, option.id as string, frage.typ === "mehrfach")}
-                    />
-                    {option.text}
-                  </label>
-                ))}
-              </div>
-            )}
-          </fieldset>
-        );
-      })}
+      {gruppiereNachThema(umfrage.fragen).map((gruppe) => (
+        <section key={gruppe.thema} className="space-y-3" data-testid="umfrage-thema">
+          {gruppe.thema && (
+            <h2 className="border-b border-text-tertiary/20 pb-1 text-sm font-bold text-ca">
+              {uebersetzt(gruppe.fragen[0], "thema")}
+            </h2>
+          )}
+          {gruppe.fragen.map((frage) => {
+            const id = frage.id as string;
+            const text = uebersetzt(frage, "text");
+            return (
+              <fieldset key={id} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+                <legend className="px-1 text-sm font-semibold text-text-primary">
+                  {text}
+                  {frage.pflicht && <span className="text-status-dangerText"> *</span>}
+                </legend>
+                <p className="mb-2 text-[11px] text-text-tertiary">
+                  {t(`typ_hinweis.${frage.typ}`)}
+                </p>
+                {frage.typ === "freitext" ? (
+                  <textarea
+                    value={wert(id).text}
+                    onChange={(e) => setze(id, { text: e.target.value })}
+                    maxLength={2000}
+                    rows={3}
+                    aria-label={text}
+                    className="w-full rounded-cid border border-text-tertiary/30 p-2 text-sm"
+                  />
+                ) : (
+                  <div className="space-y-1">
+                    {frage.optionen.map((option) => (
+                      <label
+                        key={option.id}
+                        className="flex cursor-pointer items-center gap-2 text-sm text-text-primary"
+                      >
+                        <input
+                          type={frage.typ === "mehrfach" ? "checkbox" : "radio"}
+                          name={id}
+                          checked={wert(id).optionen.includes(option.id as string)}
+                          onChange={() =>
+                            umschalten(id, option.id as string, frage.typ === "mehrfach")
+                          }
+                        />
+                        {uebersetzt(option, "text")}
+                      </label>
+                    ))}
+                    {frage.freitext_zusatz && (
+                      <textarea
+                        value={wert(id).text}
+                        onChange={(e) => setze(id, { text: e.target.value })}
+                        maxLength={2000}
+                        rows={2}
+                        placeholder={t("fragebogen.kommentar")}
+                        aria-label={`${text} – ${t("fragebogen.kommentar")}`}
+                        className="mt-2 w-full rounded-cid border border-text-tertiary/30 p-2 text-sm"
+                      />
+                    )}
+                  </div>
+                )}
+              </fieldset>
+            );
+          })}
+        </section>
+      ))}
       {fehler && <p className="text-xs text-status-dangerText">{fehler}</p>}
       <button
         type="submit"
@@ -141,11 +170,15 @@ export default function UmfrageDetailPage() {
         <img src={u.bild} alt="" className="max-h-56 w-full rounded-cid-lg object-cover" />
       )}
       <div className="flex items-start justify-between gap-2">
-        <h1 className="text-xl font-bold text-text-primary">{u.titel}</h1>
-        {u.veroeffentlicht && <ShareButton path={`/umfragen/${u.id}`} titre={u.titel} />}
+        <h1 className="text-xl font-bold text-text-primary">{uebersetzt(u, "titel")}</h1>
+        {u.veroeffentlicht && (
+          <ShareButton path={`/umfragen/${u.id}`} titre={uebersetzt(u, "titel")} />
+        )}
       </div>
       {u.beschreibung && (
-        <p className="whitespace-pre-line text-sm text-text-secondary">{u.beschreibung}</p>
+        <p className="whitespace-pre-line text-sm text-text-secondary">
+          {uebersetzt(u, "beschreibung")}
+        </p>
       )}
       <p className="text-xs text-text-tertiary">
         {t(u.abgelaufen ? "beendet_am" : "bis", { datum: formatiereFrist(u.frist) })} ·{" "}

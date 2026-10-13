@@ -43,7 +43,8 @@
   "fragebogen": {
     "senden": "Envoyer mes réponses",
     "pflicht": "Merci de répondre : {{frage}}",
-    "fehler": "Une erreur est survenue. Veuillez réessayer."
+    "fehler": "Une erreur est survenue. Veuillez réessayer.",
+    "kommentar": "Remarque (facultatif)"
   },
   "danke": "Merci de ta participation !",
   "frist_abgelaufen": "L'échéance de ce sondage est dépassée.",
@@ -56,7 +57,8 @@
     "wer_was": "Qui a répondu quoi ?",
     "keine_teilnahmen": "Aucune participation pour l'instant.",
     "nur_verwaltung": "Seule l'administration voit les résultats.",
-    "nach_frist": "Tu verras les résultats après l'échéance."
+    "nach_frist": "Tu verras les résultats après l'échéance.",
+    "kommentare": "Remarques"
   },
   "admin": {
     "neu": "Nouveau sondage",
@@ -88,6 +90,8 @@
     "angekuendigt": "Annoncé dans les actualités",
     "loeschen": "Supprimer",
     "loeschen_bestaetigen": "Supprimer vraiment le sondage « {{titel}} » ?",
-    "fehler": "Une erreur est survenue. Veuillez réessayer."
+    "fehler": "Une erreur est survenue. Veuillez réessayer.",
+    "thema": "Thème / catégorie (facultatif)",
+    "freitext_zusatz": "Ajouter un champ de texte libre"
   }
 }

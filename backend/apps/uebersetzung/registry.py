@@ -7,6 +7,9 @@ UEBERSETZBAR = {
     "adhesions.campagneadhesion": ["nom", "description"],
     "adhesions.offreadhesion": ["nom", "description"],
     "communaute.album": ["nom", "description"],
+    "umfragen.umfrage": ["titel", "beschreibung"],
+    "umfragen.umfragefrage": ["text", "thema"],
+    "umfragen.umfrageoption": ["text"],
 }
 
 # Felder mit HTML-Inhalt (DeepL erhält die Tags, übersetzt nur den Text).

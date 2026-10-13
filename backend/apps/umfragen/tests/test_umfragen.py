@@ -265,3 +265,118 @@ def test_veroeffentlichen_braucht_zukuenftige_frist(admin):
     Umfrage.objects.filter(id=umfrage.id).update(frist=timezone.now() - timedelta(days=1))
     url = reverse("umfragen:umfrage-veroeffentlichen", args=[umfrage.id])
     assert _client(admin).post(url).status_code == 400
+
+
+# --- Release 12: Themen, Freitext-Zusatz, Übersetzungen ------------------------------------
+def _themen_daten():
+    daten = _daten()
+    daten["fragen"][0]["thema"] = "Termin"
+    daten["fragen"][1].update(thema="Essen", freitext_zusatz=True)
+    daten["fragen"][2].update(thema="Essen", freitext_zusatz=True)  # Freitext: Zusatz entfällt
+    return daten
+
+
+def test_thema_und_freitext_zusatz_werden_gespeichert(admin):
+    res = _client(admin).post(reverse(LISTE), _themen_daten(), format="json")
+    assert res.status_code == 201, res.json()
+    f1, f2, f3 = res.json()["fragen"]
+    assert (f1["thema"], f1["freitext_zusatz"]) == ("Termin", False)
+    assert (f2["thema"], f2["freitext_zusatz"]) == ("Essen", True)
+    assert f3["freitext_zusatz"] is False
+    assert res.json()["uebersetzungen"] == {} and f1["uebersetzungen"] == {}
+
+
+def test_antwort_mit_kommentar_zaehlt_nur_die_option(admin):
+    umfrage = _anlegen(admin, fragen=_themen_daten()["fragen"])
+    f1, f2, f3 = list(umfrage.fragen.all())
+    o1 = list(f1.optionen.all())
+    o2 = list(f2.optionen.all())
+    for i, kommentar in enumerate(["Vegan bitte", "", "Ohne Nüsse"]):
+        user, _ = _user(email=f"k{i}@example.de")
+        res = _client(user).post(
+            reverse("umfragen:umfrage-teilnehmen", args=[umfrage.id]),
+            {
+                "antworten": [
+                    {"frage": str(f1.id), "optionen": [str(o1[0].id)], "text": "wird ignoriert"},
+                    {"frage": str(f2.id), "optionen": [str(o2[0].id)], "text": kommentar},
+                    {"frage": str(f3.id), "text": "x"},
+                ]
+            },
+            format="json",
+        )
+        assert res.status_code == 201, res.json()
+    daten = _client(admin).get(reverse("umfragen:umfrage-ergebnisse", args=[umfrage.id])).json()
+    einzel, mehrfach, _ = daten["fragen"]
+    assert einzel["thema"] == "Termin" and "freitexte" not in einzel
+    assert mehrfach["beantwortet"] == 3
+    assert mehrfach["optionen"][0]["anzahl"] == 3
+    assert sorted(mehrfach["freitexte"]) == ["Ohne Nüsse", "Vegan bitte"]
+    assert UmfrageAntwort.objects.filter(frage=f1, freitext="").count() == 3
+
+
+def test_kommentar_allein_zaehlt_nur_bei_optionaler_frage(admin):
+    umfrage = _anlegen(admin, fragen=_themen_daten()["fragen"])
+    f1, f2, f3 = list(umfrage.fragen.all())
+    o1 = list(f1.optionen.all())
+    user, _ = _user(email="allein@example.de")
+    res = _client(user).post(
+        reverse("umfragen:umfrage-teilnehmen", args=[umfrage.id]),
+        {
+            "antworten": [
+                {"frage": str(f1.id), "optionen": [str(o1[0].id)]},
+                {"frage": str(f2.id), "text": "Nur ein Kommentar"},
+            ]
+        },
+        format="json",
+    )
+    assert res.status_code == 201, res.json()
+    assert UmfrageAntwort.objects.filter(frage=f2, option=None, freitext="Nur ein Kommentar")
+
+
+def test_bearbeiten_behaelt_ids_und_uebersetzungen(admin):
+    from apps.uebersetzung.services import manuell_speichern
+
+    umfrage = _anlegen(admin, veroeffentlichen=False)
+    f1 = umfrage.fragen.first()
+    o1 = f1.optionen.first()
+    manuell_speichern(umfrage, "titel", "fr", "Fête d'été")
+    manuell_speichern(f1, "text", "fr", "Quel jour ?")
+    manuell_speichern(o1, "text", "fr", "Samedi")
+    daten = _client(admin).get(reverse("umfragen:umfrage-detail", args=[umfrage.id])).json()
+    assert daten["uebersetzungen"]["titel"]["fr"] == "Fête d'été"
+    assert daten["fragen"][0]["uebersetzungen"]["text"]["fr"] == "Quel jour ?"
+    assert daten["fragen"][0]["optionen"][0]["uebersetzungen"]["text"]["fr"] == "Samedi"
+
+    daten["fragen"][0]["thema"] = "Neues Thema"
+    daten["fragen"][0]["optionen"].append({"text": "Montag"})
+    res = _client(admin).patch(
+        reverse("umfragen:umfrage-detail", args=[umfrage.id]),
+        {"fragen": daten["fragen"]},
+        format="json",
+    )
+    assert res.status_code == 200, res.json()
+    f = res.json()["fragen"][0]
+    assert f["id"] == str(f1.id) and f["thema"] == "Neues Thema"
+    assert f["uebersetzungen"]["text"]["fr"] == "Quel jour ?"
+    assert f["optionen"][0]["id"] == str(o1.id)
+    assert f["optionen"][0]["uebersetzungen"]["text"]["fr"] == "Samedi"
+    assert len(f["optionen"]) == 3 and f["optionen"][2]["uebersetzungen"] == {}
+    # Text geändert -> alte Übersetzung passt nicht mehr und wird nicht mehr geliefert.
+    daten2 = res.json()["fragen"]
+    daten2[0]["text"] = "Welcher Wochentag?"
+    res = _client(admin).patch(
+        reverse("umfragen:umfrage-detail", args=[umfrage.id]), {"fragen": daten2}, format="json"
+    )
+    assert res.json()["fragen"][0]["uebersetzungen"] == {}
+
+
+def test_ergebnisse_und_oeffentlich_liefern_uebersetzungen(admin):
+    from apps.uebersetzung.services import manuell_speichern
+
+    umfrage = _anlegen(admin)
+    manuell_speichern(umfrage, "titel", "fr", "Fête d'été")
+    manuell_speichern(umfrage.fragen.first(), "text", "fr", "Quel jour ?")
+    res = _client().get(reverse("umfragen:umfrage-oeffentlich", args=[umfrage.id])).json()
+    assert res["uebersetzungen"]["titel"]["fr"] == "Fête d'été"
+    daten = _client(admin).get(reverse("umfragen:umfrage-ergebnisse", args=[umfrage.id])).json()
+    assert daten["fragen"][0]["uebersetzungen"]["text"]["fr"] == "Quel jour ?"
