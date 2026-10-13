@@ -14,6 +14,7 @@ vi.mock("../../hooks/useKalender", async () => {
     useKalenderZugang: vi.fn(),
     useKalenderEintraege: vi.fn(),
     useTermin: vi.fn(() => ({ data: undefined })),
+    useEintragAusblenden: vi.fn(),
   };
 });
 vi.mock("../../hooks/useProjets", () => ({ useProjets: () => ({ data: { results: [] } }) }));
@@ -31,7 +32,14 @@ function zugang(extra: Partial<KalenderZugang> = {}) {
   } as unknown as ReturnType<typeof hooks.useKalenderZugang>);
 }
 
+const ausblendenMock = vi.fn().mockResolvedValue(undefined);
+
 beforeEach(() => {
+  ausblendenMock.mockClear();
+  vi.mocked(hooks.useEintragAusblenden).mockReturnValue({
+    mutateAsync: ausblendenMock,
+    isPending: false,
+  } as unknown as ReturnType<typeof hooks.useEintragAusblenden>);
   vi.mocked(hooks.useKalenderEintraege).mockReturnValue({
     data: [eintrag()],
     isLoading: false,
@@ -80,5 +88,64 @@ describe("KalenderPage", () => {
     fireEvent.change(screen.getByLabelText("modus.label"), { target: { value: "liste" } });
     fireEvent.change(screen.getByLabelText("filter.kategorie"), { target: { value: "frist" } });
     expect(screen.queryByText("Vorstandssitzung")).not.toBeInTheDocument();
+  });
+
+  it("blendet ein Spiel mit Schreibrecht aus", async () => {
+    zugang({ schreiben: true });
+    vi.mocked(hooks.useKalenderEintraege).mockReturnValue({
+      data: [
+        eintrag({
+          id: "spieltag:s1",
+          quelle: "spieltag",
+          objekt_id: "s1",
+          titel: "Club Africain – ESS",
+          ausblendbar: true,
+          ausgeblendet: false,
+        }),
+      ],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof hooks.useKalenderEintraege>);
+    renderWithProviders(<KalenderPage />);
+    fireEvent.change(screen.getByLabelText("modus.label"), { target: { value: "liste" } });
+    fireEvent.click(screen.getByText("Club Africain – ESS"));
+    fireEvent.click(screen.getByText("ausblenden"));
+    expect(ausblendenMock).toHaveBeenCalledWith({
+      quelle: "spieltag",
+      objekt_id: "s1",
+      ausgeblendet: true,
+    });
+  });
+
+  it("zeigt Ausgeblendetes markiert und bietet Einblenden an", () => {
+    zugang({ schreiben: true });
+    vi.mocked(hooks.useKalenderEintraege).mockReturnValue({
+      data: [
+        eintrag({
+          id: "spieltag:s1",
+          quelle: "spieltag",
+          objekt_id: "s1",
+          titel: "Club Africain – ESS",
+          ausblendbar: true,
+          ausgeblendet: true,
+        }),
+      ],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof hooks.useKalenderEintraege>);
+    renderWithProviders(<KalenderPage />);
+    fireEvent.change(screen.getByLabelText("modus.label"), { target: { value: "liste" } });
+    expect(screen.getByText(/ausgeblendet_kurz/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Club Africain – ESS/));
+    expect(screen.getByText("ausgeblendet_hinweis")).toBeInTheDocument();
+    expect(screen.getByText("einblenden")).toBeInTheDocument();
+  });
+
+  it("bietet Mitgliedern kein Ausblenden an", () => {
+    zugang();
+    renderWithProviders(<KalenderPage />);
+    fireEvent.change(screen.getByLabelText("modus.label"), { target: { value: "liste" } });
+    fireEvent.click(screen.getByText("Vorstandssitzung"));
+    expect(screen.queryByText("ausblenden")).not.toBeInTheDocument();
   });
 });

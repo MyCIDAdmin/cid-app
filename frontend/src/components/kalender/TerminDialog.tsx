@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import {
+  useEintragAusblenden,
   useTermin,
   useTerminAktion,
   useTerminAntworten,
@@ -40,6 +41,7 @@ export default function TerminDialog({ eintrag, zugang, onSchliessen, onBearbeit
   const aktion = useTerminAktion();
   const antworten = useTerminAntworten();
   const loeschen = useTerminLoeschen();
+  const ausblenden = useEintragAusblenden();
   const [fehler, setFehler] = useState("");
   const [loeschenFrage, setLoeschenFrage] = useState(false);
   const schreiben = Boolean(zugang?.schreiben) && istTermin;
@@ -149,6 +151,33 @@ export default function TerminDialog({ eintrag, zugang, onSchliessen, onBearbeit
             📅 {t("ics_herunterladen")}
           </button>
         </p>
+
+        {eintrag.ausblendbar && eintrag.objekt_id && (
+          <div className="mt-4">
+            {eintrag.ausgeblendet && (
+              <p className="mb-1 rounded bg-status-warningBg px-2 py-1 text-xs text-status-warningText">
+                {t("ausgeblendet_hinweis")}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={ausblenden.isPending}
+              onClick={() =>
+                ausfuehren(
+                  ausblenden.mutateAsync({
+                    quelle: eintrag.quelle,
+                    objekt_id: eintrag.objekt_id as string,
+                    ausgeblendet: !eintrag.ausgeblendet,
+                  }),
+                  onSchliessen,
+                )
+              }
+              className={`${KNOPF} text-text-primary`}
+            >
+              {eintrag.ausgeblendet ? t("einblenden") : t("ausblenden")}
+            </button>
+          </div>
+        )}
 
         {meineAntwort !== null && termin && (
           <div className="mt-4">

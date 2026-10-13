@@ -70,6 +70,10 @@ export interface KalenderEintrag {
   wichtig: boolean;
   wiederholung: Wiederholung;
   wiederholung_bis?: string | null;
+  /** Nur Feed-Einträge : vom Bureau ausgeblendet (für Nicht-Schreibende gar nicht geliefert). */
+  ausgeblendet?: boolean;
+  /** Nur mit Schreibrecht : dieser Feed-Eintrag kann aus-/eingeblendet werden. */
+  ausblendbar?: boolean;
   status?: TerminStatus;
   meine_antwort?: Antwort | null;
   editierbar?: boolean;

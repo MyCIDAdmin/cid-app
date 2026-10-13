@@ -62,6 +62,11 @@ export function useTerminAendern() {
   });
 }
 
+export function useEintragAusblenden() {
+  const invalidieren = useInvalidieren();
+  return useMutation({ mutationFn: api.eintragAusblenden, onSuccess: invalidieren });
+}
+
 export function useTerminLoeschen() {
   const invalidieren = useInvalidieren();
   return useMutation({ mutationFn: api.terminLoeschen, onSuccess: invalidieren });

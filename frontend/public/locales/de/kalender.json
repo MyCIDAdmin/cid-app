@@ -152,5 +152,9 @@
   "ics_herunterladen": "Zum Kalender hinzufügen (.ics)",
   "wochenmail": "Wochenübersicht montags per E-Mail",
   "wochenmail_hinweis": "Termine, Aufgaben und Dienste der Woche. Jederzeit abschaltbar.",
-  "wochenmail_fehler": "Einstellung konnte nicht gespeichert werden."
+  "wochenmail_fehler": "Einstellung konnte nicht gespeichert werden.",
+  "ausblenden": "Im Kalender ausblenden",
+  "einblenden": "Im Kalender wieder einblenden",
+  "ausgeblendet_kurz": "ausgeblendet",
+  "ausgeblendet_hinweis": "Dieser Eintrag ist für Mitglieder ausgeblendet – nur du siehst ihn."
 }
