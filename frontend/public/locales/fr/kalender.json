@@ -148,5 +148,9 @@
       "faehigkeit": "Compétence requise",
       "keine_faehigkeit": "Aucune compétence particulière"
     }
-  }
+  },
+  "ics_herunterladen": "Ajouter à mon calendrier (.ics)",
+  "wochenmail": "Récapitulatif hebdomadaire par e-mail (le lundi)",
+  "wochenmail_hinweis": "Rendez-vous, tâches et services de la semaine. Désactivable à tout moment.",
+  "wochenmail_fehler": "Le paramètre n'a pas pu être enregistré."
 }

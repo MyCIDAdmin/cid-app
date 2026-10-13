@@ -10,6 +10,7 @@ import KalenderAnsicht from "../../components/kalender/KalenderAnsicht";
 import OffeneDienste from "../../components/kalender/OffeneDienste";
 import TerminDialog from "../../components/kalender/TerminDialog";
 import TerminFormular from "../../components/kalender/TerminFormular";
+import WochenmailSchalter from "../../components/kalender/WochenmailSchalter";
 import TabLeiste from "../../components/ui/TabLeiste";
 import { useKalenderEintraege, useKalenderZugang } from "../../hooks/useKalender";
 import {
@@ -67,6 +68,7 @@ export default function KalenderPage() {
       </div>
 
       <OffeneDienste />
+      <WochenmailSchalter />
 
       <TabLeiste
         tabs={tabs}

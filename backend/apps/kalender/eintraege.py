@@ -7,10 +7,20 @@ from .models import TerminEinladung, Wiederholung
 from .services import ist_verwaltung, sichtbare_termine, uebersetzungen_fuer, vorkommen
 
 # Welche Feed-Quellen in welcher Ansicht erscheinen.
+EIGENE = {"beitrag", "bestellung_zahlung"}
 FEED_QUELLEN = {
-    "verein": {"event", "spieltag", "umfrage", "abstimmung"},
-    "buero": {"event", "aufgabe"},
-    "meine": {"aufgabe", "dienst"},
+    "verein": {
+        "event",
+        "spieltag",
+        "umfrage",
+        "abstimmung",
+        "event_zahlung",
+        "kampagne",
+        "shop_reservierung",
+    }
+    | EIGENE,
+    "buero": {"event", "aufgabe", "projekt"},
+    "meine": {"aufgabe", "dienst", "projekt"} | EIGENE,
 }
 
 
@@ -34,6 +44,7 @@ def _termin_dict(t, start, ende, trans, antworten, schreiben):
         "evenement": str(t.evenement_id) if t.evenement_id else None,
         "wichtig": t.wichtig,
         "wiederholung": t.wiederholung,
+        "wiederholung_bis": t.wiederholung_bis,
         "status": t.status,
         "meine_antwort": antworten.get(t.pk),
         "editierbar": schreiben,

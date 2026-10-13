@@ -16,6 +16,7 @@ import {
 import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import type { KalenderEintrag, KalenderZugang, Termin } from "../../types/kalender";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { ladeIcsHerunter } from "../../utils/ics";
 import { formatZeit } from "../../utils/kalender";
 import { uebersetzt } from "../../utils/uebersetzung";
 import ConfirmDialog from "../ui/ConfirmDialog";
@@ -124,6 +125,30 @@ export default function TerminDialog({ eintrag, zugang, onSchliessen, onBearbeit
             </Link>
           </p>
         )}
+
+        <p className="mt-3">
+          <button
+            type="button"
+            onClick={() =>
+              ladeIcsHerunter({
+                ...eintrag,
+                // Bei Serienterminen den ersten Termin der Serie samt Regel übernehmen.
+                ...(termin && eintrag.wiederholung !== "keine"
+                  ? {
+                      beginn: termin.beginn,
+                      ende: termin.ende,
+                      wiederholung_bis: termin.wiederholung_bis,
+                    }
+                  : {}),
+                titel: uebersetzt(eintrag, "titel"),
+                beschreibung: uebersetzt(eintrag, "beschreibung"),
+              })
+            }
+            className={`${KNOPF} text-text-primary`}
+          >
+            📅 {t("ics_herunterladen")}
+          </button>
+        </p>
 
         {meineAntwort !== null && termin && (
           <div className="mt-4">
