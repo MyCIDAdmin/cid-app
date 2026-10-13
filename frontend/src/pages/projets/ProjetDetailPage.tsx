@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import ModaleContribution from "../../components/projets/ModaleContribution";
+import StellenListe from "../../components/projets/StellenListe";
 import RapportListe from "../../components/projets/RapportListe";
 import SichtbarkeitBadge from "../../components/projets/SichtbarkeitBadge";
 import StatutProjetBadge from "../../components/projets/StatutProjetBadge";
@@ -188,6 +189,8 @@ export default function ProjetDetailPage() {
               <PartnerLogos logos={projet.partner_logos} />
             </div>
           </div>
+
+          <StellenListe projetId={projet.id} />
 
           <div className="mt-6">
             <h2 className="mb-3 text-base font-bold text-text-primary">{t("rapport.titre")}</h2>

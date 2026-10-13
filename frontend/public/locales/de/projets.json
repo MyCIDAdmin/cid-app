@@ -114,7 +114,8 @@
       "aufgaben": "Aufgaben",
       "team": "Team",
       "kosten": "Kosten",
-      "aktivitaet": "Aktivität"
+      "aktivitaet": "Aktivität",
+      "stellen": "Stellen"
     },
     "sichtbarkeit": {
       "entwurf": "Entwurf",
@@ -274,8 +275,61 @@
         "plan_entfernt": "{{akteur}} hat die Plankosten für {{objekt}} entfernt.",
         "kosten_erfasst": "{{akteur}} hat Kosten erfasst: {{objekt}} ({{betrag}}).",
         "kosten_geloescht": "{{akteur}} hat die Kostenposition „{{objekt}}“ gelöscht.",
-        "planjahr": "{{akteur}} hat das Planjahr auf {{objekt}} gesetzt."
+        "planjahr": "{{akteur}} hat das Planjahr auf {{objekt}} gesetzt.",
+        "stelle_erstellt": "{{akteur}} hat die Stelle „{{objekt}}“ ausgeschrieben.",
+        "bewerbung_angenommen": "{{akteur}} hat {{detail}} für „{{objekt}}“ angenommen."
       }
+    }
+  },
+  "stellen": {
+    "titel": "Wir suchen Unterstützung",
+    "einleitung": "Für dieses Projekt werden Helferinnen und Helfer gesucht. Melde dich, wenn du dich angesprochen fühlst.",
+    "freie_plaetze_one": "{{count}} Platz frei",
+    "freie_plaetze_other": "{{count}} Plätze frei",
+    "gemeldet": "Du hast dich gemeldet – die Projektleitung entscheidet.",
+    "zurueckziehen": "Meldung zurückziehen",
+    "angenommen": "Du wurdest angenommen – willkommen im Team!",
+    "abgelehnt": "Deine Meldung wurde leider nicht berücksichtigt.",
+    "nachricht_label": "Nachricht an die Projektleitung (optional)",
+    "nachricht_platzhalter": "Was kannst du beitragen?",
+    "senden": "Meldung senden",
+    "abbrechen": "Abbrechen",
+    "helfen": "Ich möchte helfen",
+    "login": "Anmelden, um zu helfen",
+    "fehler": "Das hat leider nicht geklappt. Bitte versuche es erneut.",
+    "helfer_gesucht": "Helfer gesucht",
+    "tab_einleitung": "Schreibe offene Stellen aus, z. B. „Web-Designer“. Mitglieder können sich dafür melden.",
+    "nur_lesen": "Nur die Projektleitung kann Stellen verwalten.",
+    "neu": "Neue Stelle",
+    "titel_label": "Titel",
+    "titel_platzhalter": "z. B. Web-Designer",
+    "faehigkeit_label": "Gesuchte Fähigkeit",
+    "ohne_faehigkeit": "– keine bestimmte –",
+    "anzahl_label": "Anzahl Personen",
+    "beschreibung_label": "Beschreibung",
+    "beschreibung_platzhalter": "Aufgaben, Aufwand, Voraussetzungen …",
+    "anlegen": "Stelle anlegen",
+    "leer": "Noch keine Stellen.",
+    "besetzt_von": "{{angenommen}} von {{anzahl}} besetzt",
+    "schliessen": "Schließen",
+    "wieder_oeffnen": "Wieder öffnen",
+    "loeschen": "Löschen",
+    "loeschen_bestaetigen": "Stelle „{{titel}}“ wirklich löschen?",
+    "keine_meldungen": "Noch keine Meldungen.",
+    "annehmen": "Annehmen",
+    "ablehnen": "Ablehnen",
+    "passende": "Passende Mitglieder anzeigen",
+    "keine_passenden": "Keine passenden Mitglieder gefunden.",
+    "status_stelle": {
+      "offen": "Offen",
+      "besetzt": "Besetzt",
+      "geschlossen": "Geschlossen"
+    },
+    "status_bewerbung": {
+      "offen": "Offen",
+      "angenommen": "Angenommen",
+      "abgelehnt": "Abgelehnt",
+      "zurueckgezogen": "Zurückgezogen"
     }
   }
 }

@@ -103,6 +103,8 @@ class TypeNotification(models.TextChoices):
     PROJEKT_AUFGABE_ZUGEWIESEN = "projekt_aufgabe_zugewiesen", _("Tâche de projet assignée")
     PROJEKT_AUFGABE_KOMMENTAR = "projekt_aufgabe_kommentar", _("Nouveau commentaire de tâche")
     PROJEKT_AUFGABE_FAELLIG = "projekt_aufgabe_faellig", _("Tâche de projet bientôt due")
+    PROJEKT_BEWERBUNG = "projekt_bewerbung", _("Nouvelle candidature pour un projet")
+    PROJEKT_BEWERBUNG_ENTSCHIEDEN = "projekt_bewerbung_entschieden", _("Candidature traitée")
     PARTNER_VERTRAGSENDE = "partner_vertragsende", _("Fin de contrat d'un partenaire")
     PARTNER_BEWERTUNG = "partner_bewertung", _("Évaluation d'un partenaire à faire")
 

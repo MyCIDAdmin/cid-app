@@ -40,7 +40,7 @@ texte simple, pas HTML).
 import uuid
 from decimal import Decimal
 
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Sum
 from django.utils import timezone
@@ -445,6 +445,80 @@ class PlanKosten(models.Model):
         return f"{self.projet} — {self.categorie}: {self.betrag}"
 
 
+class StatutStelle(models.TextChoices):
+    OFFEN = "offen", _("Ouvert")
+    BESETZT = "besetzt", _("Pourvu")
+    GESCHLOSSEN = "geschlossen", _("Fermé")
+
+
+class StatutBewerbung(models.TextChoices):
+    OFFEN = "offen", _("En attente")
+    ANGENOMMEN = "angenommen", _("Acceptée")
+    ABGELEHNT = "abgelehnt", _("Refusée")
+    ZURUECKGEZOGEN = "zurueckgezogen", _("Retirée")
+
+
+class ProjetStelle(models.Model):
+    """Offene Stelle eines Projekts (Release 10): die Projektleitung sucht Unterstützung für einen
+    Bereich (z. B. Webdesign, Logistik) ; jedes aktive Mitglied kann sich melden. Optional an eine
+    Fähigkeit der Fähigkeiten-Datenbank gebunden, damit passende Mitglieder vorgeschlagen werden."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name="stellen")
+    titel = models.CharField(max_length=120)
+    beschreibung = models.TextField(blank=True, max_length=1000)
+    faehigkeit = models.ForeignKey(
+        "membres.Faehigkeit", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    anzahl = models.PositiveSmallIntegerField(
+        default=1, validators=[MinValueValidator(1), MaxValueValidator(50)]
+    )
+    status = models.CharField(
+        max_length=20, choices=StatutStelle.choices, default=StatutStelle.OFFEN
+    )
+    created_by = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "projets_stellen"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.projet} — {self.titel}"
+
+
+class ProjetBewerbung(models.Model):
+    """Meldung eines Mitglieds auf eine Stelle ; eine Zeile je (Stelle, Mitglied)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    stelle = models.ForeignKey(ProjetStelle, on_delete=models.CASCADE, related_name="bewerbungen")
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="projekt_bewerbungen"
+    )
+    nachricht = models.CharField(max_length=500, blank=True)
+    status = models.CharField(
+        max_length=20, choices=StatutBewerbung.choices, default=StatutBewerbung.OFFEN
+    )
+    entschieden_von = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "projets_bewerbungen"
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["stelle", "membre"], name="projets_bewerbung_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.membre} → {self.stelle} ({self.status})"
+
+
 class AktionAktivitaet(models.TextChoices):
     AUFGABE_ERSTELLT = "aufgabe_erstellt", _("Tâche créée")
     AUFGABE_VERSCHOBEN = "aufgabe_verschoben", _("Tâche déplacée")
@@ -460,6 +534,8 @@ class AktionAktivitaet(models.TextChoices):
     PLANJAHR = "planjahr", _("Année de planification modifiée")
     KOSTEN_ERFASST = "kosten_erfasst", _("Coût saisi")
     KOSTEN_GELOESCHT = "kosten_geloescht", _("Coût supprimé")
+    STELLE_ERSTELLT = "stelle_erstellt", _("Poste à pourvoir créé")
+    BEWERBUNG_ANGENOMMEN = "bewerbung_angenommen", _("Candidature acceptée")
 
 
 class ProjetAktivitaet(models.Model):

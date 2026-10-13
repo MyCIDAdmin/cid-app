@@ -259,7 +259,8 @@
     "schritte": [
       "Créez un projet avec titre, description, image et objectif de collecte.",
       "Publiez-le pour que membres et visiteurs le voient et puissent donner.",
-      "Suivez l'avancement dans la liste et clôturez le projet à la fin."
+      "Suivez l'avancement dans la liste et clôturez le projet à la fin.",
+      "Facultatif : publier des postes ouverts (espace de travail, onglet « Postes ») ; les membres se manifestent, la direction accepte ou refuse."
     ]
   },
   "albums": {

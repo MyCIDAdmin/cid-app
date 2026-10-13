@@ -161,6 +161,14 @@ export default function ProjetCard({
               <span className="pointer-events-auto flex gap-1 drop-shadow">
                 <StatutProjetBadge statut={projet.statut} />
                 <SichtbarkeitBadge sichtbarkeit={projet.sichtbarkeit} />
+                {(projet.stellen_offen ?? 0) > 0 && (
+                  <span
+                    data-testid="helfer-gesucht"
+                    className="rounded-full bg-status-warningBg px-2 py-0.5 text-[11px] font-semibold text-status-warningText"
+                  >
+                    🙋 {t("stellen.helfer_gesucht")}
+                  </span>
+                )}
               </span>
               <span className="pointer-events-auto rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
                 {annee}

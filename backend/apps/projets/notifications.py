@@ -51,3 +51,45 @@ def notifier_aufgabe_faellig(aufgabe, heute: bool) -> None:
         message=f"Projet « {aufgabe.projet.titre} »",
         lien=_lien(aufgabe),
     )
+
+
+def _stellen_lien(projet_id) -> str:
+    return f"/projets/{projet_id}/arbeitsbereich?reiter=stellen"
+
+
+def notifier_bewerbung(bewerbung) -> None:
+    """An die Projektleitung (und den/die Verantwortliche/n) : neue Meldung auf eine Stelle."""
+    from .models import ProjetMitglied, RolleProjet
+
+    stelle = bewerbung.stelle
+    ziele = {
+        m.membre_id: m.membre
+        for m in ProjetMitglied.objects.filter(
+            projet=stelle.projet, rolle=RolleProjet.LEITUNG
+        ).select_related("membre__user")
+        if m.membre_id != bewerbung.membre_id
+    }
+    for membre in ziele.values():
+        notifier(
+            getattr(membre, "user", None),
+            TypeNotification.PROJEKT_BEWERBUNG,
+            titre=f"Nouvelle candidature : {stelle.titel}",
+            message=f"{bewerbung.membre.prenom} {bewerbung.membre.nom} — « {stelle.projet.titre} »",
+            lien=_stellen_lien(stelle.projet_id),
+        )
+
+
+def notifier_bewerbung_entschieden(bewerbung) -> None:
+    """An das Mitglied : Meldung angenommen oder abgelehnt."""
+    from .models import StatutBewerbung
+
+    stelle = bewerbung.stelle
+    angenommen = bewerbung.status == StatutBewerbung.ANGENOMMEN
+    notifier(
+        getattr(bewerbung.membre, "user", None),
+        TypeNotification.PROJEKT_BEWERBUNG_ENTSCHIEDEN,
+        titre=("Candidature acceptée : " if angenommen else "Candidature refusée : ")
+        + stelle.titel,
+        message=f"Projet « {stelle.projet.titre} »",
+        lien=f"/projets/{stelle.projet_id}" + ("/arbeitsbereich" if angenommen else ""),
+    )

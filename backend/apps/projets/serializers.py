@@ -25,11 +25,15 @@ from .models import (
     PlanKosten,
     Projet,
     ProjetAktivitaet,
+    ProjetBewerbung,
     ProjetImage,
     ProjetMiseAJour,
     ProjetMiseAJourImage,
     ProjetMitglied,
+    ProjetStelle,
+    StatutBewerbung,
     StatutProjet,
+    StatutStelle,
 )
 from .permissions import (
     darf_arbeitsbereich,
@@ -152,6 +156,7 @@ class ProjetSerializer(serializers.ModelSerializer):
     meine_rolle = serializers.SerializerMethodField()
     darf_arbeitsbereich = serializers.SerializerMethodField()
     darf_team_verwalten = serializers.SerializerMethodField()
+    stellen_offen = serializers.SerializerMethodField()
 
     uebersetzungen = UebersetzungenField()
 
@@ -184,6 +189,7 @@ class ProjetSerializer(serializers.ModelSerializer):
             "meine_rolle",
             "darf_arbeitsbereich",
             "darf_team_verwalten",
+            "stellen_offen",
             "created_by",
             "created_at",
             "updated_at",
@@ -231,6 +237,10 @@ class ProjetSerializer(serializers.ModelSerializer):
 
     def get_darf_team_verwalten(self, obj) -> bool:
         return kann_team_verwalten(self._user(), obj)
+
+    def get_stellen_offen(self, obj) -> int:
+        # `stellen` ist in ProjetViewSet.get_queryset vorgeladen (keine Abfrage je Projekt).
+        return sum(1 for s in obj.stellen.all() if s.status == StatutStelle.OFFEN)
 
 
 class ContributeurSerializer(serializers.Serializer):
@@ -401,4 +411,91 @@ class ProjetAktivitaetSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjetAktivitaet
         fields = ["id", "projet", "zeitpunkt", "akteur_name", "aktion", "objekt", "detail"]
+        read_only_fields = fields
+
+
+class StelleSerializer(serializers.ModelSerializer):
+    """Offene Stelle eines Projekts. `meine_bewerbung` (Status der eigenen Meldung) und die
+    Bewerberzahl werden aus dem Request-Nutzer berechnet — nie vom Client geliefert."""
+
+    faehigkeit_name = serializers.CharField(source="faehigkeit.bezeichnung", read_only=True)
+    angenommen = serializers.SerializerMethodField()
+    freie_plaetze = serializers.SerializerMethodField()
+    meine_bewerbung = serializers.SerializerMethodField()
+    bewerbungen_offen = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjetStelle
+        fields = [
+            "id",
+            "projet",
+            "titel",
+            "beschreibung",
+            "faehigkeit",
+            "faehigkeit_name",
+            "anzahl",
+            "status",
+            "angenommen",
+            "freie_plaetze",
+            "meine_bewerbung",
+            "bewerbungen_offen",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+        extra_kwargs = {"beschreibung": {"max_length": 1000}}
+
+    def _membre(self):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return getattr(user, "membre", None) if user is not None and user.is_authenticated else None
+
+    def _bewerbungen(self, obj):
+        return list(obj.bewerbungen.all())
+
+    def get_angenommen(self, obj) -> int:
+        return sum(1 for b in self._bewerbungen(obj) if b.status == StatutBewerbung.ANGENOMMEN)
+
+    def get_freie_plaetze(self, obj) -> int:
+        return max(0, obj.anzahl - self.get_angenommen(obj))
+
+    def get_meine_bewerbung(self, obj):
+        membre = self._membre()
+        if membre is None:
+            return None
+        for b in self._bewerbungen(obj):
+            if b.membre_id == membre.id:
+                return b.status
+        return None
+
+    def get_bewerbungen_offen(self, obj):
+        kann_verwalten = self.context.get("kann_verwalten")
+        if kann_verwalten is None or not kann_verwalten(obj.projet_id):
+            return None
+        return sum(1 for b in self._bewerbungen(obj) if b.status == StatutBewerbung.OFFEN)
+
+    def update(self, instance, validated_data):
+        validated_data.pop("projet", None)  # nie auf ein anderes Projekt umhängen (IDOR)
+        return super().update(instance, validated_data)
+
+
+class BewerbungSerializer(serializers.ModelSerializer):
+    membre_detail = MembreResumeSerializer(source="membre", read_only=True)
+    stelle_titel = serializers.CharField(source="stelle.titel", read_only=True)
+    projet = serializers.UUIDField(source="stelle.projet_id", read_only=True)
+    projet_titre = serializers.CharField(source="stelle.projet.titre", read_only=True)
+
+    class Meta:
+        model = ProjetBewerbung
+        fields = [
+            "id",
+            "stelle",
+            "stelle_titel",
+            "projet",
+            "projet_titre",
+            "membre",
+            "membre_detail",
+            "nachricht",
+            "status",
+            "created_at",
+        ]
         read_only_fields = fields

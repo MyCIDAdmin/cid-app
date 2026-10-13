@@ -132,7 +132,7 @@ class ProjetViewSet(ModelViewSet):
         return (
             sichtbare_projekte(self.request.user)
             .select_related("responsable", "created_by")
-            .prefetch_related("images", "team", logo_prefetch())
+            .prefetch_related("images", "team", "stellen", logo_prefetch())
         )
 
     def perform_create(self, serializer):
