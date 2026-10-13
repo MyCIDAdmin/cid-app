@@ -7,7 +7,7 @@ import * as hooks from "../../hooks/useUmfragen";
 import * as download from "../../utils/telechargement";
 import UmfrageErgebnisse from "./UmfrageErgebnisse";
 
-vi.mock("../../api/umfragen", () => ({ umfrageBericht: vi.fn() }));
+vi.mock("../../api/umfragen", () => ({ umfrageBericht: vi.fn(), umfrageExcel: vi.fn() }));
 vi.mock("../../hooks/useUmfragen", () => ({ useUmfrageErgebnisse: vi.fn() }));
 vi.mock("../../utils/telechargement", () => ({ declencherTelechargement: vi.fn() }));
 
@@ -63,6 +63,18 @@ describe("UmfrageErgebnisse", () => {
     vi.mocked(api.umfrageBericht).mockRejectedValue(new Error("x"));
     zeige();
     fireEvent.click(screen.getByRole("button", { name: "ergebnisse.pdf" }));
-    expect(await screen.findByText("ergebnisse.pdf_fehler")).toBeInTheDocument();
+    expect(await screen.findByText("ergebnisse.export_fehler")).toBeInTheDocument();
+  });
+
+  it("lädt den Excel-Export herunter", async () => {
+    const blob = new Blob(["xlsx"]);
+    vi.mocked(api.umfrageExcel).mockResolvedValue(blob);
+    zeige();
+    fireEvent.click(screen.getByRole("button", { name: "ergebnisse.excel" }));
+    await waitFor(() => expect(download.declencherTelechargement).toHaveBeenCalledTimes(1));
+    expect(api.umfrageExcel).toHaveBeenCalledWith("u1");
+    expect(vi.mocked(download.declencherTelechargement).mock.calls[0][1]).toBe(
+      "umfrage-ergebnisse.xlsx",
+    );
   });
 });

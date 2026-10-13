@@ -28,6 +28,7 @@ from rest_framework.viewsets import ModelViewSet
 from apps.communaute.models import Publication
 from apps.communaute.tasks import notifier_publication_importante
 
+from .excel import erzeuge_bericht_excel
 from .models import (
     FrageTyp,
     Umfrage,
@@ -181,6 +182,21 @@ class UmfrageViewSet(ModelViewSet):
         antwort = HttpResponse(pdf, content_type="application/pdf")
         dateiname = slugify(umfrage.titel)[:60] or "umfrage"
         antwort["Content-Disposition"] = f'attachment; filename="bericht_{dateiname}.pdf"'
+        return antwort
+
+    @action(detail=True, methods=["get"])
+    def excel(self, request, pk=None):
+        """Excel-Export der Ergebnisse ; gleiche Sichtbarkeitsregeln wie `ergebnisse`."""
+        umfrage = self.get_object()
+        daten = self._ergebnis_daten(umfrage, request.user)
+        sprache = request.query_params.get("lang") or getattr(request.user, "langue_preferee", "")
+        inhalt = erzeuge_bericht_excel(umfrage=umfrage, daten=daten, sprache=sprache)
+        antwort = HttpResponse(
+            inhalt,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        dateiname = slugify(umfrage.titel)[:60] or "umfrage"
+        antwort["Content-Disposition"] = f'attachment; filename="ergebnisse_{dateiname}.xlsx"'
         return antwort
 
     def _ergebnis_daten(self, umfrage, user) -> dict:

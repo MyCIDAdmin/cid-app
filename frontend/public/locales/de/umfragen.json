@@ -60,8 +60,9 @@
     "nach_frist": "Die Ergebnisse siehst du nach Ablauf der Frist.",
     "kommentare": "Bemerkungen",
     "pdf": "PDF-Bericht herunterladen",
-    "pdf_laeuft": "Bericht wird erstellt …",
-    "pdf_fehler": "Der Bericht konnte nicht erstellt werden."
+    "excel": "Excel-Export herunterladen",
+    "export_laeuft": "Wird erstellt …",
+    "export_fehler": "Der Export konnte nicht erstellt werden."
   },
   "admin": {
     "neu": "Neue Umfrage",

@@ -66,3 +66,12 @@ export async function umfrageBericht(id: string): Promise<Blob> {
   });
   return data;
 }
+
+/** Excel-Export der Ergebnisse (Release 14) in der Oberflächensprache (de/fr, sonst Deutsch). */
+export async function umfrageExcel(id: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/umfragen/${id}/excel/`, {
+    params: { lang: i18n.language?.startsWith("fr") ? "fr" : "de" },
+    responseType: "blob",
+  });
+  return data;
+}
