@@ -58,7 +58,12 @@ function Contenu({ kachel, verlinkt }: { kachel: Kachel; verlinkt: boolean }) {
   const { t } = useTranslation("public");
   return (
     <>
-      <img src={kachel.media} alt={kachel.titre} className="w-full object-cover" loading="lazy" />
+      <img
+        src={kachel.media}
+        alt={kachel.titre}
+        className={`w-full object-cover ${kachel.pleine ? "h-32 sm:h-40 md:h-44" : "h-28 sm:h-32 md:h-36"}`}
+        loading="lazy"
+      />
       {(kachel.titre || kachel.texte || verlinkt) && (
         <div className="p-3 text-center">
           {kachel.titre && <h3 className="text-sm font-bold text-text-primary">{kachel.titre}</h3>}

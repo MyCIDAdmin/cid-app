@@ -333,3 +333,66 @@ class HistoriqueStatutMembre(models.Model):
 
     def __str__(self):
         return f"{self.membre.numero_membre} — {self.annee} : {self.get_statut_display()}"
+
+
+class FaehigkeitKategorie(models.TextChoices):
+    """Feste Oberkategorien der Fähigkeiten-Datenbank (Release 9) ; eigene Fähigkeiten landen
+    standardmäßig in „weitere“."""
+
+    IT_WEB = "it_web", _("IT & Web")
+    MEDIEN = "medien", _("Medien & Kommunikation")
+    ORGANISATION = "organisation", _("Organisation & Management")
+    FINANZEN_RECHT = "finanzen_recht", _("Finanzen, Recht & Verwaltung")
+    SPRACHEN = "sprachen", _("Sprachen & Übersetzung")
+    SPORT_EVENTS = "sport_events", _("Sport & Veranstaltungen")
+    HANDWERK_TECHNIK = "handwerk_technik", _("Handwerk & Technik")
+    SOZIALES = "soziales", _("Soziales & Bildung")
+    WEITERE = "weitere", _("Weitere")
+
+
+class Faehigkeit(models.Model):
+    """Eintrag im gemeinsamen Fähigkeiten-Katalog („Wo kann ich helfen?“). Standardeinträge
+    kommen aus der Datenmigration (`ist_standard`) ; jedes Mitglied kann weitere anlegen, die
+    danach allen zur Auswahl stehen. Eindeutig ohne Rücksicht auf Groß-/Kleinschreibung."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    bezeichnung = models.CharField(max_length=80)
+    kategorie = models.CharField(
+        max_length=20, choices=FaehigkeitKategorie.choices, default=FaehigkeitKategorie.WEITERE
+    )
+    ist_standard = models.BooleanField(default=False)
+    erstellt_von = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["kategorie", "bezeichnung"]
+        constraints = [
+            models.UniqueConstraint(
+                models.functions.Lower("bezeichnung"), name="uniq_faehigkeit_bezeichnung_ci"
+            )
+        ]
+
+    def __str__(self):
+        return self.bezeichnung
+
+
+class MembreFaehigkeit(models.Model):
+    """Eine Fähigkeit, bei der ein Mitglied helfen kann (optional mit kurzer Anmerkung)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="faehigkeiten"
+    )
+    faehigkeit = models.ForeignKey(Faehigkeit, on_delete=models.CASCADE, related_name="mitglieder")
+    kommentar = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["membre", "faehigkeit"], name="uniq_membre_faehigkeit")
+        ]
+
+    def __str__(self):
+        return f"{self.membre_id} – {self.faehigkeit_id}"

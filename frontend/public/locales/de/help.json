@@ -466,7 +466,8 @@
       "Ohne RH-Rolle siehst du nur deine eigene Mitgliederkarte, nicht die Liste aller Mitglieder.",
       "Status-Begriffe: „Mitglied (aktiv)“, „Nicht-Mitglied (neu)“ bei Neuregistrierung und „Nicht-Mitglied (ehemalig)“ für inaktive Personen.",
       "Mitglieder endgültig löschen darf nur die Bureau-/Admin-Ebene; die Aktion lässt sich nicht rückgängig machen.",
-      "Ausweisnummer (CIN) und Reisepass werden verschlüsselt gespeichert und in Listen nur eingeschränkt angezeigt."
+      "Ausweisnummer (CIN) und Reisepass werden verschlüsselt gespeichert und in Listen nur eingeschränkt angezeigt.",
+      "Unter „Mein Profil“ → „Fähigkeiten“ trägt jedes Mitglied ein, wo es helfen kann. Die Verwaltung (ab RH) sieht die Auswahl im Tab „Fähigkeiten“ des Moduls Mitglieder („Wer kann wo helfen?“), filtert sie und exportiert sie nach Excel."
     ]
   },
   "membres_import": {

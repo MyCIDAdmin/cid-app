@@ -466,7 +466,8 @@
       "Sans rôle RH, vous ne voyez que votre propre fiche, pas la liste de tous les membres.",
       "Les statuts : « Membre (actif) », « Non-membre (nouveau) » pour une inscription récente et « Non-membre (ancien) » pour les inactifs.",
       "Seul le niveau bureau/admin peut supprimer définitivement un membre ; l'action est irréversible.",
-      "CIN et passeport sont stockés chiffrés et n'apparaissent que de façon limitée dans les listes."
+      "CIN et passeport sont stockés chiffrés et n'apparaissent que de façon limitée dans les listes.",
+      "Sous « Mon profil » → « Compétences », chaque membre indique où il peut aider. Le bureau (à partir de RH) voit la sélection dans l'onglet « Compétences » du module Membres (« Qui peut aider où ? »), peut la filtrer et l'exporter en Excel."
     ]
   },
   "membres_import": {
