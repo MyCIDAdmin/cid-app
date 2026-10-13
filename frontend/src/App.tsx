@@ -36,6 +36,7 @@ import LiveMatchDetailPage from "./pages/communaute/LiveMatchDetailPage";
 import LiveMatchPage from "./pages/communaute/LiveMatchPage";
 import MessagerieConversationPage from "./pages/communaute/MessagerieConversationPage";
 import MessageriePage from "./pages/communaute/MessageriePage";
+import UmfrageDetailPage from "./pages/umfragen/UmfrageDetailPage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
 import ConfigurationRelancePage from "./pages/cotisations/ConfigurationRelancePage";
@@ -570,6 +571,9 @@ export default function App() {
               </RequireMenuModule>
             }
           />
+          {/* Umfragen (Release 11) : bewusst OHNE RequireMenuModule — „Nur mit Konto“, auch
+            Nicht-Mitglieder dürfen teilnehmen ; die Zielgruppe prüft das Backend je Umfrage. */}
+          <Route path="/umfragen/:id" element={<UmfrageDetailPage />} />
           {/* Gestion des quiz (mockup #pg-quiz, Bureau Admin+) — création de quiz/questions/choix,
             même niveau que GestionQuizPermission côté API. Corrige le bug remonté en test
             manuel Phase 4 ("beim Quiz ist es nicht möglich Quiz anzulegen") : jusqu'ici, cette

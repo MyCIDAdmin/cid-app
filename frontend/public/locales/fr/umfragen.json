@@ -1,0 +1,93 @@
+{
+  "laden": "Chargement …",
+  "fehler_laden": "Impossible de charger les sondages.",
+  "leer": "Aucun sondage pour l'instant.",
+  "nicht_verfuegbar": "Ce sondage n'est pas disponible – il est peut-être réservé aux membres.",
+  "zurueck": "Retour aux sondages",
+  "tab": {
+    "quiz": "Quiz",
+    "umfragen": "Sondages"
+  },
+  "status": {
+    "entwurf": "Brouillon",
+    "veroeffentlicht": "Publié",
+    "offen": "Ouvert",
+    "beendet": "Terminé",
+    "teilgenommen": "Participé"
+  },
+  "bis": "Jusqu'au {{datum}}",
+  "beendet_am": "Terminé le {{datum}}",
+  "anonym": "Anonyme",
+  "namentlich": "Nominatif",
+  "anonym_hinweis": "Anonyme – tes réponses ne sont pas liées à ton nom",
+  "namentlich_hinweis": "Nominatif – l'administration voit qui a répondu quoi",
+  "zielgruppe": {
+    "mitglieder": "Réservé aux membres",
+    "konten": "Pour tous les comptes"
+  },
+  "modus": {
+    "admin": "Seule l'administration voit les résultats",
+    "nach_frist": "Les participants voient les résultats après l'échéance",
+    "live": "Les participants voient les résultats immédiatement"
+  },
+  "typ": {
+    "einzel": "Une réponse",
+    "mehrfach": "Plusieurs réponses",
+    "freitext": "Texte libre"
+  },
+  "typ_hinweis": {
+    "einzel": "Choisis une réponse",
+    "mehrfach": "Plusieurs réponses possibles",
+    "freitext": "Réponse libre"
+  },
+  "fragebogen": {
+    "senden": "Envoyer mes réponses",
+    "pflicht": "Merci de répondre : {{frage}}",
+    "fehler": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "danke": "Merci de ta participation !",
+  "frist_abgelaufen": "L'échéance de ce sondage est dépassée.",
+  "ergebnisse": {
+    "titel": "Résultats",
+    "fehler": "Impossible de charger les résultats.",
+    "teilnehmende_one": "{{count}} participation",
+    "teilnehmende_other": "{{count}} participations",
+    "keine_freitexte": "Aucune réponse libre.",
+    "wer_was": "Qui a répondu quoi ?",
+    "keine_teilnahmen": "Aucune participation pour l'instant.",
+    "nur_verwaltung": "Seule l'administration voit les résultats.",
+    "nach_frist": "Tu verras les résultats après l'échéance."
+  },
+  "admin": {
+    "neu": "Nouveau sondage",
+    "bearbeiten": "Modifier",
+    "gesperrt": "Il y a déjà des participations – questions, public et anonymat sont verrouillés.",
+    "titel": "Titre",
+    "beschreibung": "Description",
+    "bild": "Image d'en-tête (facultatif)",
+    "bild_entfernen": "Retirer l'image",
+    "bild_wird_entfernt": "L'image sera retirée à l'enregistrement.",
+    "zielgruppe": "Public",
+    "ergebnis_modus": "Résultats visibles pour",
+    "frist": "Échéance",
+    "anonym": "Vote anonyme",
+    "fragen": "Questions",
+    "frage_text": "Question {{nr}}",
+    "frage_typ": "Type de question",
+    "option": "Réponse {{nr}}",
+    "option_entfernen": "Retirer la réponse",
+    "option_hinzu": "Ajouter une réponse",
+    "pflicht": "Question obligatoire",
+    "frage_entfernen": "Retirer la question",
+    "frage_hinzu": "Ajouter une question",
+    "speichern": "Enregistrer",
+    "abbrechen": "Annuler",
+    "veroeffentlichen": "Publier",
+    "zurueckziehen": "Retirer",
+    "ankuendigen": "Annoncer dans les actualités",
+    "angekuendigt": "Annoncé dans les actualités",
+    "loeschen": "Supprimer",
+    "loeschen_bestaetigen": "Supprimer vraiment le sondage « {{titel}} » ?",
+    "fehler": "Une erreur est survenue. Veuillez réessayer."
+  }
+}

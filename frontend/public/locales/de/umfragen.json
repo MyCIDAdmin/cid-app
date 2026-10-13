@@ -1,0 +1,93 @@
+{
+  "laden": "Lade …",
+  "fehler_laden": "Umfragen konnten nicht geladen werden.",
+  "leer": "Noch keine Umfragen.",
+  "nicht_verfuegbar": "Diese Umfrage ist nicht verfügbar – sie ist vielleicht nur für Mitglieder.",
+  "zurueck": "Zurück zu den Umfragen",
+  "tab": {
+    "quiz": "Quiz",
+    "umfragen": "Umfragen"
+  },
+  "status": {
+    "entwurf": "Entwurf",
+    "veroeffentlicht": "Veröffentlicht",
+    "offen": "Offen",
+    "beendet": "Beendet",
+    "teilgenommen": "Teilgenommen"
+  },
+  "bis": "Bis {{datum}}",
+  "beendet_am": "Beendet am {{datum}}",
+  "anonym": "Anonym",
+  "namentlich": "Namentlich",
+  "anonym_hinweis": "Anonym – deine Antworten sind nicht mit deinem Namen verknüpft",
+  "namentlich_hinweis": "Namentlich – die Verwaltung sieht, wer was geantwortet hat",
+  "zielgruppe": {
+    "mitglieder": "Nur für Mitglieder",
+    "konten": "Für alle mit Konto"
+  },
+  "modus": {
+    "admin": "Nur die Verwaltung sieht die Ergebnisse",
+    "nach_frist": "Teilnehmende sehen die Ergebnisse nach Ablauf der Frist",
+    "live": "Teilnehmende sehen die Ergebnisse sofort"
+  },
+  "typ": {
+    "einzel": "Eine Antwort",
+    "mehrfach": "Mehrere Antworten",
+    "freitext": "Freitext"
+  },
+  "typ_hinweis": {
+    "einzel": "Bitte eine Antwort wählen",
+    "mehrfach": "Mehrere Antworten möglich",
+    "freitext": "Freie Antwort"
+  },
+  "fragebogen": {
+    "senden": "Antworten abschicken",
+    "pflicht": "Bitte beantworte: {{frage}}",
+    "fehler": "Das hat leider nicht geklappt. Bitte versuche es erneut."
+  },
+  "danke": "Danke für deine Teilnahme!",
+  "frist_abgelaufen": "Die Frist dieser Umfrage ist abgelaufen.",
+  "ergebnisse": {
+    "titel": "Ergebnisse",
+    "fehler": "Ergebnisse konnten nicht geladen werden.",
+    "teilnehmende_one": "{{count}} Teilnahme",
+    "teilnehmende_other": "{{count}} Teilnahmen",
+    "keine_freitexte": "Keine Freitext-Antworten.",
+    "wer_was": "Wer hat was geantwortet?",
+    "keine_teilnahmen": "Noch keine Teilnahmen.",
+    "nur_verwaltung": "Die Ergebnisse sieht nur die Verwaltung.",
+    "nach_frist": "Die Ergebnisse siehst du nach Ablauf der Frist."
+  },
+  "admin": {
+    "neu": "Neue Umfrage",
+    "bearbeiten": "Bearbeiten",
+    "gesperrt": "Es gibt bereits Teilnahmen – Fragen, Zielgruppe und Anonymität sind gesperrt.",
+    "titel": "Titel",
+    "beschreibung": "Beschreibung",
+    "bild": "Titelbild (optional)",
+    "bild_entfernen": "Bild entfernen",
+    "bild_wird_entfernt": "Das Bild wird beim Speichern entfernt.",
+    "zielgruppe": "Zielgruppe",
+    "ergebnis_modus": "Ergebnisse sichtbar für",
+    "frist": "Frist",
+    "anonym": "Anonym abstimmen",
+    "fragen": "Fragen",
+    "frage_text": "Frage {{nr}}",
+    "frage_typ": "Fragetyp",
+    "option": "Antwort {{nr}}",
+    "option_entfernen": "Antwort entfernen",
+    "option_hinzu": "Antwort hinzufügen",
+    "pflicht": "Pflichtfrage",
+    "frage_entfernen": "Frage entfernen",
+    "frage_hinzu": "Frage hinzufügen",
+    "speichern": "Speichern",
+    "abbrechen": "Abbrechen",
+    "veroeffentlichen": "Veröffentlichen",
+    "zurueckziehen": "Zurückziehen",
+    "ankuendigen": "In Neuigkeiten ankündigen",
+    "angekuendigt": "In Neuigkeiten angekündigt",
+    "loeschen": "Löschen",
+    "loeschen_bestaetigen": "Umfrage „{{titel}}“ wirklich löschen?",
+    "fehler": "Das hat leider nicht geklappt. Bitte versuche es erneut."
+  }
+}

@@ -244,7 +244,7 @@
     "erreur_commentaire": "Der Kommentar konnte nicht gesendet werden."
   },
   "quiz": {
-    "titre": "Quiz",
+    "titre": "Quiz und Umfragen",
     "chargement": "Quiz werden geladen…",
     "erreur_chargement": "Die Quiz konnten nicht geladen werden.",
     "aucun_quiz": "Noch kein Quiz.",
@@ -266,7 +266,7 @@
     "chargement_classement": "Rangliste wird geladen…"
   },
   "admin_quiz": {
-    "titre": "Quiz-Verwaltung",
+    "titre": "Quiz- und Umfragen-Verwaltung",
     "nouveau_quiz": "Neues Quiz",
     "titre_placeholder": "Quiztitel",
     "description_placeholder": "Beschreibung (optional)…",

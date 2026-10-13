@@ -244,7 +244,7 @@
     "erreur_commentaire": "L'envoi du commentaire a échoué."
   },
   "quiz": {
-    "titre": "Quiz",
+    "titre": "Quiz et sondages",
     "chargement": "Chargement des quiz…",
     "erreur_chargement": "Impossible de charger les quiz.",
     "aucun_quiz": "Aucun quiz pour le moment.",
@@ -266,7 +266,7 @@
     "chargement_classement": "Chargement du classement…"
   },
   "admin_quiz": {
-    "titre": "Gestion des quiz",
+    "titre": "Gestion quiz et sondages",
     "nouveau_quiz": "Nouveau quiz",
     "titre_placeholder": "Titre du quiz",
     "description_placeholder": "Description (optionnel)…",

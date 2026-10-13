@@ -79,7 +79,7 @@ MENU_ITEMS = [
     ("groupes", "Gruppen", "communaute", "communaute", ()),
     ("live", "Fan-Club (Live, Tabelle, Tippspiel)", "communaute", "communaute", ()),
     ("albums", "Fotoalben", "contenu", "communaute", ("page_albums",)),
-    ("quiz", "Quiz", "contenu", "communaute", ("page_quiz",)),
+    ("quiz", "Quiz und Umfragen", "contenu", "communaute", ("page_quiz",)),
     ("vote", "Abstimmungen", "contenu", "vote", ()),
 ]
 MENU_KEYS = [cle for cle, *_ in MENU_ITEMS]

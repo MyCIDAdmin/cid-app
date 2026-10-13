@@ -16,6 +16,7 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
 import {
   useCreerChoixQuestion,
@@ -28,6 +29,8 @@ import {
   useSupprimerQuestionQuiz,
   useSupprimerQuiz,
 } from "../../hooks/useCommunaute";
+import AdminUmfragenTab from "../../components/umfragen/AdminUmfragenTab";
+import QuizUmfragenTabs, { type QuizBereich } from "../../components/umfragen/QuizUmfragenTabs";
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -77,7 +80,7 @@ function NouveauQuizForm({ modifiable }: { modifiable: boolean }) {
       <button
         type="submit"
         disabled={creerQuiz.isPending || !modifiable}
-        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+        title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
         className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
       >
         {t("admin_quiz.creer")}
@@ -96,10 +99,7 @@ function NouvelleQuestionForm({ quizId, modifiable }: { quizId: string; modifiab
   function soumettre(e: React.FormEvent) {
     e.preventDefault();
     if (!texte.trim()) return;
-    creerQuestion.mutate(
-      { quiz: quizId, texte, points },
-      { onSuccess: () => setTexte("") },
-    );
+    creerQuestion.mutate({ quiz: quizId, texte, points }, { onSuccess: () => setTexte("") });
   }
 
   return (
@@ -121,7 +121,7 @@ function NouvelleQuestionForm({ quizId, modifiable }: { quizId: string; modifiab
       <button
         type="submit"
         disabled={creerQuestion.isPending || !modifiable}
-        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+        title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
         className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
       >
         {t("admin_quiz.ajouter_question")}
@@ -178,7 +178,7 @@ function NouveauChoixForm({
       <button
         type="submit"
         disabled={creerChoix.isPending || !modifiable}
-        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+        title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
         className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-text-primary hover:bg-text-tertiary/20 disabled:opacity-50"
       >
         {t("admin_quiz.ajouter_choix")}
@@ -219,10 +219,8 @@ function DetailQuiz({ quizId, modifiable }: { quizId: string; modifiable: boolea
               <button
                 type="button"
                 disabled={!modifiable}
-                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
-                onClick={() =>
-                  supprimerQuestion.mutate({ id: question.id, quizId })
-                }
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                onClick={() => supprimerQuestion.mutate({ id: question.id, quizId })}
                 className="text-[10px] font-medium text-status-dangerText hover:underline disabled:opacity-40"
               >
                 {t("admin_quiz.supprimer")}
@@ -242,7 +240,7 @@ function DetailQuiz({ quizId, modifiable }: { quizId: string; modifiable: boolea
                   <button
                     type="button"
                     disabled={!modifiable}
-                    title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                    title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                     onClick={() => supprimerChoix.mutate({ id: choix.id, quizId })}
                     className="text-[10px] font-medium text-status-dangerText hover:underline disabled:opacity-40"
                   >
@@ -277,6 +275,8 @@ export default function AdminQuizPage() {
   const supprimerQuiz = useSupprimerQuiz();
   const [quizSelectionne, setQuizSelectionne] = useState<string | null>(null);
   const { accessible, modifiable } = usePageAccess("page_quiz");
+  const [params, setParams] = useSearchParams();
+  const bereich: QuizBereich = params.get("tab") === "umfragen" ? "umfragen" : "quiz";
 
   return (
     <div>
@@ -288,83 +288,97 @@ export default function AdminQuizPage() {
         </p>
       )}
 
-      <NouveauQuizForm modifiable={modifiable} />
+      <QuizUmfragenTabs
+        aktiv={bereich}
+        onWechsel={(b) => setParams(b === "umfragen" ? { tab: "umfragen" } : {})}
+      />
 
-      {quizListeQuery.isLoading && (
-        <p className="text-sm text-text-tertiary">{t("admin_quiz.chargement")}</p>
-      )}
-      {quizListeQuery.isError && (
-        <p className="text-sm text-status-dangerText">{t("admin_quiz.erreur_chargement")}</p>
-      )}
-      {quizListeQuery.data?.results.length === 0 && (
-        <p className="text-sm text-text-tertiary">{t("admin_quiz.aucun_quiz")}</p>
-      )}
+      {bereich === "umfragen" ? (
+        <AdminUmfragenTab modifiable={modifiable} />
+      ) : (
+        <>
+          <NouveauQuizForm modifiable={modifiable} />
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="space-y-2">
-          {quizListeQuery.data?.results.map((quiz) => (
-            <div
-              key={quiz.id}
-              className={`rounded-cid-lg bg-bg-primary p-3 shadow-sm ${
-                quizSelectionne === quiz.id ? "ring-2 ring-ca" : ""
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => setQuizSelectionne(quiz.id)}
-                className="block w-full text-left"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-text-primary">{quiz.titre}</span>
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                      quiz.est_actif ? "bg-cal text-cad" : "bg-bg-secondary text-text-tertiary"
-                    }`}
-                  >
-                    {t(quiz.est_actif ? "quiz.actif_badge" : "quiz.inactif_badge")}
-                  </span>
-                </div>
-                <div className="mt-1 text-[10px] text-text-tertiary">
-                  {t("quiz.nombre_questions", { count: quiz.nombre_questions })}
-                </div>
-              </button>
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
-                  onClick={() =>
-                    modifierQuiz.mutate({ id: quiz.id, payload: { est_actif: !quiz.est_actif } })
-                  }
-                  className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-text-primary hover:bg-text-tertiary/20 disabled:opacity-40"
-                >
-                  {t(quiz.est_actif ? "admin_quiz.desactiver" : "admin_quiz.activer")}
-                </button>
-                <button
-                  type="button"
-                  disabled={!modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
-                  onClick={() => {
-                    supprimerQuiz.mutate(quiz.id);
-                    if (quizSelectionne === quiz.id) setQuizSelectionne(null);
-                  }}
-                  className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-status-dangerText hover:bg-text-tertiary/20 disabled:opacity-40"
-                >
-                  {t("admin_quiz.supprimer")}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          {quizSelectionne ? (
-            <DetailQuiz quizId={quizSelectionne} modifiable={modifiable} />
-          ) : (
-            <p className="text-sm text-text-tertiary">{t("admin_quiz.selectionner_quiz")}</p>
+          {quizListeQuery.isLoading && (
+            <p className="text-sm text-text-tertiary">{t("admin_quiz.chargement")}</p>
           )}
-        </div>
-      </div>
+          {quizListeQuery.isError && (
+            <p className="text-sm text-status-dangerText">{t("admin_quiz.erreur_chargement")}</p>
+          )}
+          {quizListeQuery.data?.results.length === 0 && (
+            <p className="text-sm text-text-tertiary">{t("admin_quiz.aucun_quiz")}</p>
+          )}
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              {quizListeQuery.data?.results.map((quiz) => (
+                <div
+                  key={quiz.id}
+                  className={`rounded-cid-lg bg-bg-primary p-3 shadow-sm ${
+                    quizSelectionne === quiz.id ? "ring-2 ring-ca" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setQuizSelectionne(quiz.id)}
+                    className="block w-full text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-text-primary">{quiz.titre}</span>
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                          quiz.est_actif ? "bg-cal text-cad" : "bg-bg-secondary text-text-tertiary"
+                        }`}
+                      >
+                        {t(quiz.est_actif ? "quiz.actif_badge" : "quiz.inactif_badge")}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-[10px] text-text-tertiary">
+                      {t("quiz.nombre_questions", { count: quiz.nombre_questions })}
+                    </div>
+                  </button>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      disabled={!modifiable}
+                      title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                      onClick={() =>
+                        modifierQuiz.mutate({
+                          id: quiz.id,
+                          payload: { est_actif: !quiz.est_actif },
+                        })
+                      }
+                      className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-text-primary hover:bg-text-tertiary/20 disabled:opacity-40"
+                    >
+                      {t(quiz.est_actif ? "admin_quiz.desactiver" : "admin_quiz.activer")}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!modifiable}
+                      title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                      onClick={() => {
+                        supprimerQuiz.mutate(quiz.id);
+                        if (quizSelectionne === quiz.id) setQuizSelectionne(null);
+                      }}
+                      className="rounded-cid bg-bg-secondary px-2 py-1 text-[10px] font-medium text-status-dangerText hover:bg-text-tertiary/20 disabled:opacity-40"
+                    >
+                      {t("admin_quiz.supprimer")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+              {quizSelectionne ? (
+                <DetailQuiz quizId={quizSelectionne} modifiable={modifiable} />
+              ) : (
+                <p className="text-sm text-text-tertiary">{t("admin_quiz.selectionner_quiz")}</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

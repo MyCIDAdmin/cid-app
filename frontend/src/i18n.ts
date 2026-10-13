@@ -39,6 +39,7 @@ i18n
       "help",
       "finances",
       "partner",
+      "umfragen",
     ],
     defaultNS: "common",
     backend: {
