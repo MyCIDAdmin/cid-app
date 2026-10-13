@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="{{ langue }}">
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: A4;
+        margin: 2.2cm 2cm;
+        @bottom-center { content: "{{ t.footer|safe }}"; font-size: 8px; color: #8a8a8a; }
+    }
+    * { box-sizing: border-box; }
+    body { font-family: "DejaVu Sans", "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; font-size: 11px; line-height: 1.5; }
+    .header { display: flex; align-items: center; border-bottom: 2px solid #CC0000; padding-bottom: 14px; margin-bottom: 20px; }
+    .header img { width: 56px; height: 56px; object-fit: contain; margin-right: 14px; }
+    .assoc-name { font-size: 15px; font-weight: 700; color: #8B0000; }
+    .assoc-tagline { font-size: 10px; color: #555; margin-top: 2px; }
+    .kicker { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+    h1 { font-size: 20px; margin: 2px 0 6px 0; }
+    .beschreibung { color: #444; margin: 0 0 12px 0; white-space: pre-line; }
+    .kennzahlen { display: flex; gap: 10px; margin: 12px 0 8px 0; }
+    .kennzahl { flex: 1; border: 1px solid #e3e3e3; border-radius: 6px; padding: 8px 10px; }
+    .kennzahl .wert { font-size: 17px; font-weight: 700; color: #CC0000; }
+    .kennzahl .label { font-size: 9px; text-transform: uppercase; color: #888; letter-spacing: 0.04em; }
+    h2.thema { font-size: 13px; color: #8B0000; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin: 22px 0 10px 0; break-after: avoid; }
+    .frage { margin-bottom: 14px; break-inside: avoid; }
+    .frage h3 { font-size: 11.5px; margin: 0; }
+    .frage .meta { font-size: 9px; color: #888; margin-bottom: 5px; }
+    table.balken { width: 100%; border-collapse: collapse; }
+    table.balken td { padding: 3px 0; vertical-align: middle; }
+    td.opt { width: 34%; padding-right: 8px; font-size: 10px; }
+    td.spur { width: 46%; }
+    .spur-innen { height: 11px; background: #f0f0f0; border-radius: 6px; overflow: hidden; }
+    .fuellung { height: 11px; background: #CC0000; border-radius: 6px; }
+    td.zahl { width: 20%; text-align: right; padding-left: 8px; font-size: 10px; color: #444; white-space: nowrap; }
+    .freitexte-titel { font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; color: #888; margin: 8px 0 3px 0; }
+    ul.freitexte { margin: 0; padding: 0; list-style: none; }
+    ul.freitexte li { background: #f6f6f6; border-left: 3px solid #CC0000; padding: 3px 8px; margin-bottom: 3px; white-space: pre-line; }
+    .leer { color: #888; font-style: italic; }
+    table.namen { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    table.namen th { text-align: left; font-size: 9px; color: #888; text-transform: uppercase; border-bottom: 1px solid #ddd; padding: 4px 6px; }
+    table.namen td { padding: 4px 6px; border-bottom: 1px solid #eee; vertical-align: top; font-size: 10px; }
+    .seitenumbruch { break-before: page; }
+</style>
+</head>
+<body>
+<div class="header">
+    <img src="{{ logo_data_uri }}" alt="">
+    <div>
+        <div class="assoc-name">Clubistes in Deutschland</div>
+        <div class="assoc-tagline">{{ t.tagline }}</div>
+    </div>
+</div>
+
+<div class="kicker">{{ t.titel }}</div>
+<h1>{{ titel }}</h1>
+{% if beschreibung %}<p class="beschreibung">{{ beschreibung }}</p>{% endif %}
+
+<div class="kennzahlen">
+    <div class="kennzahl"><div class="wert">{{ teilnehmende }}</div><div class="label">{{ t.teilnahmen }}</div></div>
+    <div class="kennzahl"><div class="wert" style="font-size:12px;padding-top:4px">{{ frist }}</div><div class="label">{{ t.frist }}</div></div>
+    <div class="kennzahl"><div class="wert" style="font-size:12px;padding-top:4px">{% if anonym %}{{ t.anonym }}{% else %}{{ t.namentlich }}{% endif %}</div><div class="label">{{ t.erstellt }} {{ erstellt }}</div></div>
+</div>
+
+{% for gruppe in gruppen %}
+    <h2 class="thema">{% if gruppe.thema %}{{ gruppe.thema }}{% else %}{{ t.ohne_thema }}{% endif %}</h2>
+    {% for frage in gruppe.fragen %}
+        <div class="frage">
+            <h3>{{ frage.text }}</h3>
+            <div class="meta">{{ frage.typ }} · {{ frage.beantwortet }} {{ t.antworten }}</div>
+            {% if frage.optionen %}
+                <table class="balken">
+                    {% for o in frage.optionen %}
+                    <tr>
+                        <td class="opt">{{ o.text }}</td>
+                        <td class="spur"><div class="spur-innen"><div class="fuellung" style="width: {{ o.anteil }}%"></div></div></td>
+                        <td class="zahl">{{ o.anzahl }} · {{ o.anteil }} %</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+            {% if frage.freitexte %}
+                <div class="freitexte-titel">{% if frage.ist_freitext %}{{ t.freitext }}{% else %}{{ t.bemerkungen }}{% endif %}</div>
+                <ul class="freitexte">{% for text in frage.freitexte %}<li>{{ text }}</li>{% endfor %}</ul>
+            {% elif frage.ist_freitext %}
+                <div class="leer">{{ t.keine_antworten }}</div>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endfor %}
+
+{% if einreichungen %}
+    <h2 class="thema seitenumbruch">{{ t.wer_was }}</h2>
+    <table class="namen">
+        {% for e in einreichungen %}
+        <tr>
+            <td style="width:28%"><strong>{{ e.name }}</strong><br><span style="color:#888">{{ e.email }}</span></td>
+            <td>{% for a in e.antworten %}{{ a.frage }}: {{ a.werte|join:", " }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+</body>
+</html>

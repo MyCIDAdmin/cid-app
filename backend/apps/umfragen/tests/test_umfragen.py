@@ -380,3 +380,37 @@ def test_ergebnisse_und_oeffentlich_liefern_uebersetzungen(admin):
     assert res["uebersetzungen"]["titel"]["fr"] == "Fête d'été"
     daten = _client(admin).get(reverse("umfragen:umfrage-ergebnisse", args=[umfrage.id])).json()
     assert daten["fragen"][0]["uebersetzungen"]["text"]["fr"] == "Quel jour ?"
+
+
+# --- Release 13: PDF-Bericht ----------------------------------------------------------------
+def test_bericht_ist_pdf_und_folgt_den_ergebnisregeln(admin):
+    umfrage = _anlegen(admin, ergebnis_modus="nach_frist", fragen=_themen_daten()["fragen"])
+    user, _ = _user(email="b@example.de")
+    _teilnehmen(_client(user), umfrage)
+    url = reverse("umfragen:umfrage-bericht", args=[umfrage.id])
+    # Teilnehmende sehen vor Fristende nichts -> auch kein Bericht.
+    assert _client(user).get(url).status_code == 403
+    assert _client().get(url).status_code in (401, 403)
+    antwort = _client(admin).get(url, {"lang": "fr"})
+    assert antwort.status_code == 200
+    assert antwort["Content-Type"] == "application/pdf"
+    assert antwort.content.startswith(b"%PDF")
+    assert "bericht_sommerfest.pdf" in antwort["Content-Disposition"]
+
+
+def test_bericht_inhalt_in_berichtssprache(admin, monkeypatch):
+    from apps.uebersetzung.services import manuell_speichern
+    from apps.umfragen import pdf
+
+    umfrage = _anlegen(admin, ergebnis_modus="live", anonym=False, fragen=_themen_daten()["fragen"])
+    manuell_speichern(umfrage, "titel", "fr", "Fête d'été")
+    manuell_speichern(umfrage.fragen.first(), "thema", "fr", "Date")
+    _teilnehmen(_client(_user(email="c@example.de")[0]), umfrage)
+    gesehen = {}
+    original = pdf.render_to_string
+    monkeypatch.setattr(pdf, "render_to_string", lambda n, k: gesehen.update(k) or original(n, k))
+    res = _client(admin).get(reverse("umfragen:umfrage-bericht", args=[umfrage.id]), {"lang": "fr"})
+    assert res.status_code == 200
+    assert gesehen["titel"] == "Fête d'été"
+    assert [g["thema"] for g in gesehen["gruppen"]] == ["Date", "Essen"]
+    assert gesehen["einreichungen"] and gesehen["einreichungen"][0]["name"]

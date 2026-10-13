@@ -1,4 +1,5 @@
 import type { AntwortEingabe, Umfrage, UmfragePayload, UmfrageErgebnisse } from "../types/umfragen";
+import i18n from "../i18n";
 import { apiClient } from "./client";
 
 export async function listUmfragen(): Promise<Umfrage[]> {
@@ -54,5 +55,14 @@ export async function umfrageTeilnehmen(id: string, antworten: AntwortEingabe[])
 
 export async function umfrageErgebnisse(id: string): Promise<UmfrageErgebnisse> {
   const { data } = await apiClient.get<UmfrageErgebnisse>(`/umfragen/${id}/ergebnisse/`);
+  return data;
+}
+
+/** PDF-Bericht mit Diagrammen (Release 13) in der Oberflächensprache (de/fr, sonst Deutsch). */
+export async function umfrageBericht(id: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/umfragen/${id}/bericht/`, {
+    params: { lang: i18n.language?.startsWith("fr") ? "fr" : "de" },
+    responseType: "blob",
+  });
   return data;
 }
