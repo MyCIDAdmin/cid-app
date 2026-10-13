@@ -19,6 +19,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import { formatZeit } from "../../utils/kalender";
 import { uebersetzt } from "../../utils/uebersetzung";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import DiensteBereich from "./DiensteBereich";
 
 interface Props {
   eintrag: KalenderEintrag;
@@ -155,6 +156,13 @@ export default function TerminDialog({ eintrag, zugang, onSchliessen, onBearbeit
               ))}
             </ul>
           </div>
+        )}
+
+        {istTermin && termin && (
+          <DiensteBereich termin={termin.id} schreiben={Boolean(zugang?.schreiben)} />
+        )}
+        {eintrag.quelle === "event" && eintrag.objekt_id && (
+          <DiensteBereich evenement={eintrag.objekt_id} schreiben={Boolean(zugang?.schreiben)} />
         )}
 
         {fehler && <p className="mt-3 text-xs text-status-dangerText">{fehler}</p>}

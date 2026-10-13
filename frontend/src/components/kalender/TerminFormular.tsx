@@ -12,6 +12,7 @@ import {
   useTerminErstellen,
   useTerminVorschlagen,
 } from "../../hooks/useKalender";
+import { useEvenements } from "../../hooks/useEvenements";
 import { useProjets } from "../../hooks/useProjets";
 import {
   KATEGORIEN,
@@ -58,6 +59,7 @@ export default function TerminFormular({
   const vorschlagen = useTerminVorschlagen();
   const aendern = useTerminAendern();
   const projekte = useProjets({});
+  const events = useEvenements({});
 
   const [titel, setTitel] = useState(termin?.titel ?? "");
   const [beschreibung, setBeschreibung] = useState(termin?.beschreibung ?? "");
@@ -74,6 +76,7 @@ export default function TerminFormular({
   );
   const [kreis, setKreis] = useState<Kreis>(termin?.kreis || "bureau");
   const [projekt, setProjekt] = useState(termin?.projekt ?? "");
+  const [evenement, setEvenement] = useState(termin?.evenement ?? "");
   const [wichtig, setWichtig] = useState(termin?.wichtig ?? false);
   const [wiederholung, setWiederholung] = useState<Wiederholung>(termin?.wiederholung ?? "keine");
   const [wiederholungBis, setWiederholungBis] = useState(termin?.wiederholung_bis ?? "");
@@ -110,6 +113,7 @@ export default function TerminFormular({
       sichtbarkeit,
       kreis: sichtbarkeit === "kreis" ? kreis : "",
       projekt: sichtbarkeit === "kreis" && kreis === "projekt" ? projekt || null : null,
+      evenement: sichtbarkeit === "kreis" && kreis === "event_team" ? evenement || null : null,
       wichtig,
       wiederholung,
       wiederholung_bis: wiederholung === "keine" ? null : wiederholungBis || null,
@@ -255,6 +259,8 @@ export default function TerminFormular({
               >
                 <option value="bureau">{t("kreis.bureau")}</option>
                 <option value="projekt">{t("kreis.projekt")}</option>
+                <option value="event_team">{t("kreis.event_team")}</option>
+                <option value="privat">{t("kreis.privat")}</option>
               </select>
               {kreis === "projekt" && (
                 <select
@@ -272,7 +278,29 @@ export default function TerminFormular({
                   ))}
                 </select>
               )}
+              {kreis === "event_team" && (
+                <select
+                  aria-label={t("form.evenement")}
+                  className={FELD}
+                  value={evenement}
+                  required
+                  onChange={(e) => setEvenement(e.target.value)}
+                >
+                  <option value="">{t("form.evenement_waehlen")}</option>
+                  {(events.data?.results ?? []).map((ev) => (
+                    <option key={ev.id} value={ev.id}>
+                      {ev.titre}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
+          )}
+          {sichtbarkeit === "kreis" && kreis === "privat" && (
+            <p className="text-xs text-text-secondary">{t("form.privat_hinweis")}</p>
+          )}
+          {sichtbarkeit === "kreis" && kreis === "event_team" && (
+            <p className="text-xs text-text-secondary">{t("form.event_team_hinweis")}</p>
           )}
         </fieldset>
 

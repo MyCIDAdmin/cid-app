@@ -15,7 +15,16 @@ from apps.rbac.services import has_admin_page_access
 from apps.uebersetzung.models import Uebersetzung
 from apps.uebersetzung.services import felder_von, hash_von
 
-from .models import Kreis, Sichtbarkeit, Termin, TerminEinladung, TerminStatus, Wiederholung
+from .models import (
+    Dienst,
+    DienstEintragung,
+    Kreis,
+    Sichtbarkeit,
+    Termin,
+    TerminEinladung,
+    TerminStatus,
+    Wiederholung,
+)
 
 MAX_VORKOMMEN = 400
 
@@ -84,9 +93,31 @@ def zugang(user) -> dict:
     }
 
 
+PRIVAT = Q(sichtbarkeit=Sichtbarkeit.KREIS, kreis=Kreis.PRIVAT)
+
+
+def event_ids(user) -> set:
+    """Veranstaltungen, deren Event-Team `user` durch einen Dienst angehört."""
+    zeilen = DienstEintragung.objects.filter(user=user).values_list(
+        "dienst__evenement_id", "dienst__termin__evenement_id"
+    )
+    return {i for paar in zeilen for i in paar if i}
+
+
+def team_nutzer(termin) -> set:
+    """Event-Team eines Termins : alle mit einem Dienst an der Veranstaltung oder am Termin."""
+    from apps.accounts.models import User
+
+    q = Q(kalender_dienste__dienst__termin=termin)
+    if termin.evenement_id:
+        q |= Q(kalender_dienste__dienst__evenement_id=termin.evenement_id)
+        q |= Q(kalender_dienste__dienst__termin__evenement_id=termin.evenement_id)
+    return set(User.objects.filter(q, is_active=True).distinct())
+
+
 def sichtbare_termine(user, ansicht: str):
     """Queryset der für `user` sichtbaren Termine in der Ansicht `verein`, `buero` oder `meine`
-    (Entwürfe/Vorschläge nur für Verfasser und Verwaltung)."""
+    (Vorschläge nur für Verfasser und Verwaltung ; „Privat“ nur für Verfasser und Eingeladene)."""
     freigegeben = Q(status=TerminStatus.FREIGEGEBEN)
     if user is None or not getattr(user, "is_authenticated", False):
         return Termin.objects.filter(freigegeben, sichtbarkeit=Sichtbarkeit.OEFFENTLICH)
@@ -102,17 +133,37 @@ def sichtbare_termine(user, ansicht: str):
     projekt_kreis = Q(
         sichtbarkeit=Sichtbarkeit.KREIS, kreis=Kreis.PROJEKT, projekt_id__in=meine_projekte
     )
+    team_kreis = Q(sichtbarkeit=Sichtbarkeit.KREIS, kreis=Kreis.EVENT_TEAM) & (
+        Q(evenement_id__in=event_ids(user)) | Q(dienste__eintraege__user=user)
+    )
     if ansicht == "meine":
-        return Termin.objects.filter(eigene | (freigegeben & projekt_kreis)).distinct()
+        return Termin.objects.filter(
+            eigene | (freigegeben & (projekt_kreis | team_kreis))
+        ).distinct()
 
     # buero
     if verw or ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]:
-        alle = Q(status__in=[TerminStatus.FREIGEGEBEN, TerminStatus.VORGESCHLAGEN])
+        alle = Q(status__in=[TerminStatus.FREIGEGEBEN, TerminStatus.VORGESCHLAGEN]) & ~PRIVAT
         return Termin.objects.filter(alle | eigene).distinct()
     stufen = [Sichtbarkeit.OEFFENTLICH, Sichtbarkeit.MITGLIEDER, Sichtbarkeit.AUFGABENTRAEGER]
     return Termin.objects.filter(
-        (freigegeben & (Q(sichtbarkeit__in=stufen) | projekt_kreis)) | eigene
+        (freigegeben & (Q(sichtbarkeit__in=stufen) | projekt_kreis | team_kreis)) | eigene
     ).distinct()
+
+
+def sichtbare_dienste(user):
+    """Dienste an sichtbaren Terminen ; Dienste an Veranstaltungen sehen alle aktiven Mitglieder
+    (veröffentlichte Veranstaltungen) und die Verwaltung (alle)."""
+    from apps.evenements.models import StatutEvenement
+
+    ids = Q()
+    for ansicht in ("verein", "buero", "meine"):
+        ids |= Q(termin_id__in=sichtbare_termine(user, ansicht).values("pk"))
+    if ist_verwaltung(user):
+        ids |= Q(evenement__isnull=False)
+    elif ist_aktives_mitglied(user):
+        ids |= Q(evenement__statut=StatutEvenement.PUBLIE)
+    return Dienst.objects.filter(ids).select_related("termin", "evenement", "faehigkeit")
 
 
 def kann_termin_sehen(user, termin) -> bool:

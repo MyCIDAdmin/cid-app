@@ -11,6 +11,7 @@ from apps.projets.models import Aufgabe, StatutAufgabe
 from apps.umfragen.models import Umfrage
 from apps.vote.models import StatutSession, VoteSession
 
+from .models import DienstEintragung
 from .services import ist_aktives_mitglied, ist_verwaltung
 
 
@@ -37,6 +38,35 @@ def _eintrag(quelle, objekt_id, titel, beginn, **extra):
     }
     eintrag.update(extra)
     return eintrag
+
+
+def _dienst_eintraege(user, von, bis) -> list[dict]:
+    """Eigene Dienste (Release 16) als Einträge in „Meine Termine & Aufgaben“."""
+    zeilen = (
+        DienstEintragung.objects.filter(user=user, dienst__beginn__gte=von, dienst__beginn__lt=bis)
+        .select_related("dienst", "dienst__termin", "dienst__evenement")
+        .order_by("dienst__beginn")
+    )
+    ergebnis = []
+    for z in zeilen:
+        d = z.dienst
+        ort = d.termin.ort if d.termin_id else d.evenement.lieu
+        bezug = d.termin.titel if d.termin_id else d.evenement.titre
+        ergebnis.append(
+            _eintrag(
+                "dienst",
+                d.pk,
+                f"Dienst: {d.titel}",
+                d.beginn,
+                ende=d.ende,
+                ort=ort or "",
+                beschreibung=bezug,
+                kategorie="dienst",
+                sichtbarkeit="meine",
+                link="/kalender",
+            )
+        )
+    return ergebnis
 
 
 def feed_eintraege(user, von, bis, *, nur_oeffentlich=False) -> list[dict]:
@@ -114,6 +144,9 @@ def feed_eintraege(user, von, bis, *, nur_oeffentlich=False) -> list[dict]:
                     link="/votes",
                 )
             )
+
+    if user is not None and getattr(user, "is_authenticated", False):
+        eintraege.extend(_dienst_eintraege(user, von, bis))
 
     membre = getattr(user, "membre", None) if user is not None else None
     if membre is not None:

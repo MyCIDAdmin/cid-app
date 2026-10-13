@@ -12,6 +12,7 @@
 from datetime import datetime, time, timedelta
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
@@ -29,9 +30,24 @@ from apps.communaute.tasks import notifier_publication_importante
 from apps.membres.models import Membre, StatutMembre
 
 from .eintraege import baue_eintraege
-from .models import Sichtbarkeit, Termin, TerminEinladung, TerminStatus
-from .serializers import AntwortSerializer, TerminSerializer
-from .services import darf_vorschlagen, ist_verwaltung, sichtbare_termine, zugang
+from .models import (
+    Dienst,
+    DienstEintragung,
+    Kreis,
+    Sichtbarkeit,
+    Termin,
+    TerminEinladung,
+    TerminStatus,
+)
+from .serializers import AntwortSerializer, DienstSerializer, TerminSerializer
+from .services import (
+    darf_vorschlagen,
+    ist_aktives_mitglied,
+    ist_verwaltung,
+    sichtbare_dienste,
+    sichtbare_termine,
+    zugang,
+)
 
 MAX_TAGE = 100
 SCHREIB_AKTIONEN = {
@@ -128,11 +144,18 @@ class TerminViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if ist_verwaltung(user, schreiben=True):
-            return Termin.objects.select_related("projekt").all()
+            # „Privat“ bleibt auch der Verwaltung verborgen (nur Verfasser und Eingeladene).
+            privat = Q(sichtbarkeit=Sichtbarkeit.KREIS, kreis=Kreis.PRIVAT)
+            eigene = Q(erstellt_von=user) | Q(einladungen__user=user)
+            return (
+                Termin.objects.select_related("projekt", "evenement")
+                .filter(~privat | eigene)
+                .distinct()
+            )
         sichtbar = Q()
         for ansicht in ("verein", "buero", "meine"):
             sichtbar |= Q(pk__in=sichtbare_termine(user, ansicht).values("pk"))
-        return Termin.objects.select_related("projekt").filter(sichtbar)
+        return Termin.objects.select_related("projekt", "evenement").filter(sichtbar).distinct()
 
     def check_permissions(self, request):
         super().check_permissions(request)
@@ -253,3 +276,223 @@ class TerminViewSet(ModelViewSet):
         return Response(
             [{"user": str(m.user_id), "name": f"{m.prenom} {m.nom}".strip()} for m in treffer]
         )
+
+
+def _bureau_nutzer(ausser=None):
+    from apps.accounts.models import ROLE_LEVELS, Role, User
+
+    stufe = ROLE_LEVELS[Role.BUREAU_ADMIN]
+    rollen = [r for r, n in ROLE_LEVELS.items() if n >= stufe]
+    return User.objects.filter(role__in=rollen, is_active=True).exclude(pk=ausser)
+
+
+def _notify(user, titel, nachricht):
+    from apps.notifications.models import TypeNotification
+    from apps.notifications.services import notifier
+
+    notifier(
+        user,
+        TypeNotification.EVENEMENT_INVITATION,
+        titre=titel,
+        message=nachricht,
+        lien="/kalender",
+    )
+
+
+def _wann(dt) -> str:
+    return timezone.localtime(dt).strftime("%d.%m.%Y %H:%M")
+
+
+class DienstViewSet(ModelViewSet):
+    """Helfer-Slots (Release 16) : sehen = wer Termin/Veranstaltung sieht ; eintragen = aktive
+    Mitglieder ; anlegen, zuweisen, entfernen, Vorschläge = Seite „Kalender“ mit Schreibrecht."""
+
+    serializer_class = DienstSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+    schreib_aktionen = {
+        "create",
+        "update",
+        "partial_update",
+        "destroy",
+        "zuweisen",
+        "entfernen",
+        "vorschlaege",
+        "anschreiben",
+    }
+
+    def get_queryset(self):
+        qs = (
+            sichtbare_dienste(self.request.user)
+            .prefetch_related("eintraege__user__membre")
+            .distinct()
+        )
+        for feld in ("termin", "evenement"):
+            wert = self.request.query_params.get(feld)
+            if wert:
+                qs = qs.filter(**{f"{feld}_id": wert})
+        return qs
+
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        if self.action in self.schreib_aktionen and not ist_verwaltung(
+            request.user, schreiben=True
+        ):
+            raise PermissionDenied("Dafür fehlt die Berechtigung (Seite „Kalender“).")
+
+    def perform_create(self, serializer):
+        serializer.save(erstellt_von=self.request.user)
+
+    @action(detail=False, methods=["get"])
+    def offen(self, request):
+        """Kommende Dienste (60 Tage) mit freien Plätzen — „Hier wird noch geholfen“."""
+        jetzt = timezone.now()
+        liste = [
+            d
+            for d in self.get_queryset().filter(
+                beginn__gte=jetzt, beginn__lt=jetzt + timedelta(days=60)
+            )
+            if d.eintraege.count() < d.benoetigt
+        ]
+        return Response(self.get_serializer(liste[:50], many=True).data)
+
+    def _sperre(self, pk):
+        """Dienst mit Zeilensperre (gegen Überbuchung durch gleichzeitige Einträge)."""
+        dienst = self.get_object()
+        return Dienst.objects.select_for_update().get(pk=dienst.pk)
+
+    def _antwort(self, dienst):
+        frisch = self.get_queryset().get(pk=dienst.pk)
+        return Response(self.get_serializer(frisch).data)
+
+    @action(detail=True, methods=["post"])
+    def eintragen(self, request, pk=None):
+        if not ist_aktives_mitglied(request.user):
+            raise PermissionDenied("Nur aktive Mitglieder können sich eintragen.")
+        with transaction.atomic():
+            dienst = self._sperre(pk)
+            if (dienst.ende or dienst.beginn) < timezone.now():
+                raise ValidationError("Dieser Dienst liegt in der Vergangenheit.")
+            if dienst.eintraege.filter(user=request.user).exists():
+                raise ValidationError("Du bist bereits eingetragen.")
+            if dienst.eintraege.count() >= dienst.benoetigt:
+                raise ValidationError("Dieser Dienst ist bereits voll besetzt.")
+            DienstEintragung.objects.create(dienst=dienst, user=request.user)
+        return self._antwort(dienst)
+
+    @action(detail=True, methods=["post"])
+    def austragen(self, request, pk=None):
+        with transaction.atomic():
+            dienst = self._sperre(pk)
+            eintrag = dienst.eintraege.filter(user=request.user).first()
+            if eintrag is None:
+                raise ValidationError("Du bist nicht eingetragen.")
+            frist = dienst.austragen_bis or dienst.beginn
+            if timezone.now() > frist:
+                raise ValidationError(
+                    "Die Frist zum Austragen ist abgelaufen — bitte beim Bureau melden."
+                )
+            eintrag.delete()
+        self._melde_frei(dienst)
+        return self._antwort(dienst)
+
+    @action(detail=True, methods=["post"])
+    def zuweisen(self, request, pk=None):
+        user = self._person(request)
+        with transaction.atomic():
+            dienst = self._sperre(pk)
+            if dienst.eintraege.filter(user=user).exists():
+                raise ValidationError("Die Person ist bereits eingetragen.")
+            if dienst.eintraege.count() >= dienst.benoetigt:
+                raise ValidationError("Dieser Dienst ist bereits voll besetzt.")
+            DienstEintragung.objects.create(dienst=dienst, user=user, zugewiesen_von=request.user)
+        _notify(
+            user,
+            f"Dienst: {dienst.titel}",
+            f"Du wurdest für „{dienst.titel}“ am {_wann(dienst.beginn)} eingeteilt.",
+        )
+        return self._antwort(dienst)
+
+    @action(detail=True, methods=["post"])
+    def entfernen(self, request, pk=None):
+        user = self._person(request)
+        with transaction.atomic():
+            dienst = self._sperre(pk)
+            geloescht, _ = dienst.eintraege.filter(user=user).delete()
+        if not geloescht:
+            raise ValidationError("Die Person ist nicht eingetragen.")
+        _notify(
+            user,
+            f"Dienst: {dienst.titel}",
+            f"Du wurdest aus dem Dienst „{dienst.titel}“ ausgetragen.",
+        )
+        self._melde_frei(dienst)
+        return self._antwort(dienst)
+
+    @staticmethod
+    def _person(request):
+        from apps.accounts.models import User
+
+        wert = request.data.get("user")
+        user = User.objects.filter(pk=wert, is_active=True).first() if wert else None
+        if user is None or not ist_aktives_mitglied(user):
+            raise ValidationError({"user": "Bitte ein aktives Mitglied wählen."})
+        return user
+
+    @staticmethod
+    def _melde_frei(dienst):
+        """Wird ein Platz kurzfristig (≤ 72 h vor Beginn) frei, erfährt es das Bureau."""
+        if dienst.beginn - timezone.now() > timedelta(hours=72) or dienst.beginn < timezone.now():
+            return
+        if dienst.eintraege.count() >= dienst.benoetigt:
+            return
+        for user in _bureau_nutzer():
+            _notify(
+                user,
+                "Dienst nicht mehr besetzt",
+                f"„{dienst.titel}“ am {_wann(dienst.beginn)} hat wieder freie Plätze.",
+            )
+
+    @action(detail=True, methods=["get"])
+    def vorschlaege(self, request, pk=None):
+        """Aktive Mitglieder mit der benötigten Fähigkeit (Fähigkeiten-Datenbank), noch nicht
+        eingetragen."""
+        from apps.membres.models import MembreFaehigkeit
+
+        dienst = self.get_object()
+        if dienst.faehigkeit_id is None:
+            return Response([])
+        eingetragen = dienst.eintraege.values("user_id")
+        zeilen = (
+            MembreFaehigkeit.objects.filter(
+                faehigkeit_id=dienst.faehigkeit_id,
+                membre__statut=StatutMembre.ACTIF,
+                membre__user__isnull=False,
+            )
+            .exclude(membre__user_id__in=eingetragen)
+            .select_related("membre")
+            .order_by("membre__nom", "membre__prenom")
+        )
+        return Response(
+            [
+                {
+                    "user": str(z.membre.user_id),
+                    "name": f"{z.membre.prenom} {z.membre.nom}".strip(),
+                    "kommentar": z.kommentar,
+                }
+                for z in zeilen
+            ]
+        )
+
+    @action(detail=True, methods=["post"])
+    def anschreiben(self, request, pk=None):
+        """Benachrichtigt eine vorgeschlagene Person : „Wir suchen Helfer …“."""
+        dienst = self.get_object()
+        user = self._person(request)
+        _notify(
+            user,
+            f"Helfer gesucht: {dienst.titel}",
+            f"Das Bureau sucht Unterstützung für „{dienst.titel}“ am "
+            f"{_wann(dienst.beginn)}. Du kannst dich im Kalender eintragen.",
+        )
+        return Response({"ok": True})

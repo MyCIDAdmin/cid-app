@@ -44,7 +44,9 @@
   },
   "kreis": {
     "bureau": "Bureau",
-    "projekt": "Équipe de projet"
+    "projekt": "Équipe de projet",
+    "event_team": "Équipe de l'évènement",
+    "privat": "Privé (invités uniquement)"
   },
   "wiederholung": {
     "keine": "Une fois",
@@ -103,7 +105,11 @@
     "person_suchen": "Chercher un nom (2 lettres min.)",
     "entfernen": "Retirer {{name}}",
     "speichern": "Enregistrer",
-    "vorschlag_senden": "Envoyer la proposition"
+    "vorschlag_senden": "Envoyer la proposition",
+    "evenement": "Évènement",
+    "evenement_waehlen": "Choisir un évènement …",
+    "privat_hinweis": "Privé : seuls toi et les personnes invitées voient ce rendez-vous – pas même le bureau.",
+    "event_team_hinweis": "Équipe de l'évènement : visible par toutes les personnes inscrites à une permanence de cet évènement."
   },
   "widget": {
     "titel": "Prochains rendez-vous",
@@ -114,5 +120,33 @@
     "titel": "Rendez-vous",
     "anmelden": "Se connecter",
     "leer": "Aucun rendez-vous public n'est prévu pour le moment."
+  },
+  "dienste": {
+    "titel": "Permanences (aide recherchée)",
+    "hinzufuegen": "Ajouter une permanence",
+    "keine": "Aucune permanence pour le moment.",
+    "besetzung": "{{besetzt}} sur {{benoetigt}} pourvus",
+    "eintragen": "S'inscrire",
+    "austragen": "Se désinscrire",
+    "du_bist_eingetragen": "Tu es inscrit(e)",
+    "personen": "Personnes",
+    "loeschen": "Supprimer la permanence",
+    "entfernen": "Retirer {{name}}",
+    "person_zuweisen": "Affecter une personne (chercher un nom)",
+    "vorschlaege": "Suggestions : {{faehigkeit}}",
+    "keine_vorschlaege": "Aucun membre correspondant trouvé.",
+    "anschreiben": "Contacter",
+    "angeschrieben": "Contacté(e)",
+    "zuweisen": "Affecter",
+    "offen_titel": "Ici, de l'aide est encore recherchée",
+    "form": {
+      "titel": "Permanence, p. ex. montage",
+      "beginn": "Début",
+      "ende": "Fin",
+      "benoetigt": "Personnes nécessaires",
+      "austragen_bis": "Désinscription possible jusqu'au (facultatif)",
+      "faehigkeit": "Compétence requise",
+      "keine_faehigkeit": "Aucune compétence particulière"
+    }
   }
 }

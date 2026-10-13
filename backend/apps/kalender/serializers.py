@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.accounts.models import User
 from apps.uebersetzung.serializers import UebersetzungenField
 
-from .models import Kreis, Sichtbarkeit, Termin, TerminEinladung
+from .models import Dienst, Kreis, Sichtbarkeit, Termin, TerminEinladung
 from .services import ist_verwaltung
 
 
@@ -22,6 +22,7 @@ class TerminSerializer(serializers.ModelSerializer):
     einladungen = serializers.SerializerMethodField()
     meine_antwort = serializers.SerializerMethodField()
     projekt_titel = serializers.CharField(source="projekt.titre", read_only=True, default="")
+    evenement_titel = serializers.CharField(source="evenement.titre", read_only=True, default="")
     uebersetzungen = UebersetzungenField()
 
     class Meta:
@@ -40,6 +41,8 @@ class TerminSerializer(serializers.ModelSerializer):
             "kreis",
             "projekt",
             "projekt_titel",
+            "evenement",
+            "evenement_titel",
             "wichtig",
             "wiederholung",
             "wiederholung_bis",
@@ -76,15 +79,20 @@ class TerminSerializer(serializers.ModelSerializer):
         sicht = daten.get("sichtbarkeit", inst.sichtbarkeit if inst else Sichtbarkeit.KREIS)
         kreis = daten.get("kreis", inst.kreis if inst else "")
         projekt = daten.get("projekt", inst.projekt if inst else None)
+        evenement = daten.get("evenement", inst.evenement if inst else None)
         if sicht == Sichtbarkeit.KREIS:
-            if kreis not in (Kreis.BUREAU, Kreis.PROJEKT):
+            if kreis not in set(Kreis.values):
                 raise serializers.ValidationError({"kreis": "Bitte einen Kreis wählen."})
             if kreis == Kreis.PROJEKT and projekt is None:
                 raise serializers.ValidationError({"projekt": "Bitte ein Projekt wählen."})
+            if kreis == Kreis.EVENT_TEAM and evenement is None:
+                raise serializers.ValidationError({"evenement": "Bitte eine Veranstaltung wählen."})
         else:
             daten["kreis"] = ""
-        if kreis != Kreis.PROJEKT or sicht != Sichtbarkeit.KREIS:
+        if sicht != Sichtbarkeit.KREIS or kreis != Kreis.PROJEKT:
             daten["projekt"] = None
+        if sicht != Sichtbarkeit.KREIS or kreis != Kreis.EVENT_TEAM:
+            daten["evenement"] = None
         return daten
 
     @transaction.atomic
@@ -127,3 +135,85 @@ class TerminSerializer(serializers.ModelSerializer):
 
 class AntwortSerializer(serializers.Serializer):
     antwort = serializers.ChoiceField(choices=["zusage", "vielleicht", "absage"])
+
+
+class DienstSerializer(serializers.ModelSerializer):
+    besetzt = serializers.SerializerMethodField()
+    frei = serializers.SerializerMethodField()
+    ich_eingetragen = serializers.SerializerMethodField()
+    eingetragen = serializers.SerializerMethodField()
+    faehigkeit_name = serializers.CharField(
+        source="faehigkeit.bezeichnung", read_only=True, default=""
+    )
+    termin_titel = serializers.CharField(source="termin.titel", read_only=True, default="")
+    evenement_titel = serializers.CharField(source="evenement.titre", read_only=True, default="")
+
+    class Meta:
+        model = Dienst
+        fields = [
+            "id",
+            "termin",
+            "termin_titel",
+            "evenement",
+            "evenement_titel",
+            "titel",
+            "beschreibung",
+            "beginn",
+            "ende",
+            "benoetigt",
+            "faehigkeit",
+            "faehigkeit_name",
+            "austragen_bis",
+            "erinnerung_stunden",
+            "besetzt",
+            "frei",
+            "ich_eingetragen",
+            "eingetragen",
+        ]
+
+    def _eintraege(self, obj):
+        return list(obj.eintraege.all())
+
+    def get_besetzt(self, obj):
+        return len(self._eintraege(obj))
+
+    def get_frei(self, obj):
+        return max(obj.benoetigt - len(self._eintraege(obj)), 0)
+
+    def get_ich_eingetragen(self, obj):
+        user = self.context["request"].user
+        return any(e.user_id == user.id for e in self._eintraege(obj))
+
+    def get_eingetragen(self, obj):
+        """Namen sehen nur Schreibberechtigte ; alle anderen sehen die Zahl der Besetzten."""
+        from .services import ist_verwaltung
+
+        if not ist_verwaltung(self.context["request"].user, schreiben=True):
+            return []
+        return [{"user": str(e.user_id), "name": _name(e.user)} for e in self._eintraege(obj)]
+
+    def validate(self, daten):
+        inst = self.instance
+        termin = daten.get("termin", inst.termin if inst else None)
+        evenement = daten.get("evenement", inst.evenement if inst else None)
+        if (termin is None) == (evenement is None):
+            raise serializers.ValidationError(
+                "Entweder einen Termin oder eine Veranstaltung wählen."
+            )
+        beginn = daten.get("beginn", inst.beginn if inst else None)
+        ende = daten.get("ende", inst.ende if inst else None)
+        if ende and beginn and ende < beginn:
+            raise serializers.ValidationError({"ende": "Das Ende liegt vor dem Beginn."})
+        bis = daten.get("austragen_bis", inst.austragen_bis if inst else None)
+        if bis and beginn and bis > beginn:
+            raise serializers.ValidationError(
+                {"austragen_bis": "Die Frist muss vor Beginn des Dienstes liegen."}
+            )
+        benoetigt = daten.get("benoetigt", inst.benoetigt if inst else 1)
+        if benoetigt < 1 or benoetigt > 100:
+            raise serializers.ValidationError({"benoetigt": "Zwischen 1 und 100 Personen."})
+        if inst is not None and benoetigt < inst.eintraege.count():
+            raise serializers.ValidationError(
+                {"benoetigt": "Es sind bereits mehr Personen eingetragen."}
+            )
+        return daten
