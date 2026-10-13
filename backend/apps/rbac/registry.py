@@ -71,6 +71,7 @@ MENU_ITEMS = [
         ("page_events", "page_inscriptions"),
     ),
     ("covoiturage", "Fahrgemeinschaften", "general", "evenements", ("page_events",)),
+    ("kalender", "Kalender", "general", "evenements", ("page_kalender", "page_kalender_vorschlag")),
     ("projets", "Aktionen & Projekte", "general", "projets", ("page_projets",)),
     ("boutique", "Shop", "general", "boutique", ("page_boutique",)),
     ("fil", "Neuigkeiten (Fil)", "communaute", "communaute", ()),
@@ -127,6 +128,7 @@ API_PREFIXES_MENU = [
     ("/api/v1/evenements/covoiturages/", "covoiturage"),
     ("/api/v1/evenements/reservations-covoiturage/", "covoiturage"),
     ("/api/v1/evenements/", "evenements"),
+    ("/api/v1/kalender/", "kalender"),
     ("/api/v1/projets/", "projets"),
     ("/api/v1/boutique/", "boutique"),
     ("/api/v1/votes/", "vote"),
@@ -197,6 +199,11 @@ PAGES_ADMIN = [
     "page_fan_club_logos",
     # Release 3 (2026-10-12): Excel-Import von Zahlungen und Verwaltung offener Zahlungseingänge.
     "page_zahlungen_import",
+    # Release 15 (2026-10-13): Büro- und Vereinskalender. `page_kalender` = Büro-Kalender sehen /
+    # Termine pflegen ; `page_kalender_vorschlag` = Terminvorschläge einreichen (per Rolle an
+    # einzelne Personen vergeben).
+    "page_kalender",
+    "page_kalender_vorschlag",
 ]
 
 PAGE_ADMIN_LABELS = {
@@ -220,6 +227,8 @@ PAGE_ADMIN_LABELS = {
     "page_configuration_site": "Configuration du site (vidéo hero)",
     "page_fan_club_logos": "Logos des clubs (Fan-Club)",
     "page_zahlungen_import": "Import de paiements (Excel)",
+    "page_kalender": "Büro-Kalender (Termine pflegen)",
+    "page_kalender_vorschlag": "Terminvorschläge einreichen",
 }
 
 # Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour

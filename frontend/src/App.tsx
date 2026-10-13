@@ -36,6 +36,8 @@ import LiveMatchDetailPage from "./pages/communaute/LiveMatchDetailPage";
 import LiveMatchPage from "./pages/communaute/LiveMatchPage";
 import MessagerieConversationPage from "./pages/communaute/MessagerieConversationPage";
 import MessageriePage from "./pages/communaute/MessageriePage";
+import KalenderPage from "./pages/kalender/KalenderPage";
+import OeffentlicherKalenderPage from "./pages/kalender/OeffentlicherKalenderPage";
 import UmfrageDetailPage from "./pages/umfragen/UmfrageDetailPage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
@@ -93,6 +95,8 @@ export default function App() {
           mycid.org/{impressum,privacy,terms,refund-policy}, voir pages/public/legal/) —
           toujours publiques (jamais derrière RequireAuth), reliées depuis PublicFooter.tsx qui
           s'affiche aussi bien sur la Startseite publique que dans l'app connectée. */}
+        {/* Öffentlicher Kalender (Release 15) : ohne Anmeldung, nur öffentliche Termine. */}
+        <Route path="/kalender-oeffentlich" element={<OeffentlicherKalenderPage />} />
         <Route path="/impressum" element={<ImpressumPage />} />
         <Route path="/datenschutz" element={<DatenschutzPage />} />
         <Route path="/nutzungsbedingungen" element={<NutzungsbedingungenPage />} />
@@ -568,6 +572,16 @@ export default function App() {
             element={
               <RequireMenuModule cle="quiz">
                 <QuizDetailPage />
+              </RequireMenuModule>
+            }
+          />
+          {/* Kalender (Release 15) : Menüeintrag „kalender“ ; welche Ansichten/Aktionen erlaubt sind,
+            entscheidet das Backend (Seiten „Kalender“ und „Terminvorschläge einreichen“). */}
+          <Route
+            path="/kalender"
+            element={
+              <RequireMenuModule cle="kalender">
+                <KalenderPage />
               </RequireMenuModule>
             }
           />

@@ -42,6 +42,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import NaechsteTermine from "../components/kalender/NaechsteTermine";
 import { useCountUp } from "../hooks/useCountUp";
 import { useMesCotisations } from "../hooks/useCotisations";
 import { usePublications } from "../hooks/useCommunaute";
@@ -304,6 +305,8 @@ export default function DashboardPage() {
             </ul>
           )}
         </div>
+
+        <NaechsteTermine />
 
         <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
           <div className="mb-2 text-sm font-semibold text-text-primary">

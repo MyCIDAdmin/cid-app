@@ -25,6 +25,8 @@ urlpatterns = [
     path("api/v1/communaute/", include("apps.communaute.urls")),
     path("api/v1/projets/", include("apps.projets.urls")),
     path("api/v1/umfragen/", include("apps.umfragen.urls")),
+    path("api/v1/kalender/", include("apps.kalender.urls")),
+    path("api/v1/kalender-oeffentlich/", include("apps.kalender.urls_oeffentlich")),
     path("api/v1/rbac/", include("apps.rbac.urls")),
     path("api/v1/uebersetzungen/", include("apps.uebersetzung.urls")),
     path("api/v1/partenaires/", include("apps.partenaires.urls")),

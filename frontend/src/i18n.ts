@@ -40,6 +40,7 @@ i18n
       "finances",
       "partner",
       "umfragen",
+      "kalender",
     ],
     defaultNS: "common",
     backend: {

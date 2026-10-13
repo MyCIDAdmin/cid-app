@@ -51,6 +51,7 @@ import {
   IconBuildingStore,
   IconHeartHandshake,
   IconCalendarEvent,
+  IconCalendarMonth,
   IconCalendarPlus,
   IconCar,
   IconChartArea,
@@ -230,6 +231,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: IconCar,
     group: "general",
     module: "covoiturage",
+  },
+  // Kalender (Release 15) : Vereins- und Büro-Kalender ; Ansichten/Rechte prüft das Backend.
+  {
+    to: "/kalender",
+    labelKey: "nav.kalender",
+    icon: IconCalendarMonth,
+    group: "general",
+    module: "kalender",
   },
   // Projets & Actions (module ajouté le 2026-09-22 sur demande utilisateur) — ouvert à tout
   // authentifié, même principe que /evenements : le backend ne renvoie de toute façon pas les

@@ -36,7 +36,8 @@
     "startseite": "Accueil",
     "finances": "Finances",
     "admin_partner": "Business Partner",
-    "zahlungen_import": "Importer des paiements"
+    "zahlungen_import": "Importer des paiements",
+    "kalender": "Calendrier"
   },
   "nav_groupe": {
     "general": "Général",
