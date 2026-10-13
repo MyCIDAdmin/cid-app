@@ -55,4 +55,26 @@ describe("UmfrageFormular", () => {
     expect(screen.queryByText("admin.fragen")).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox")).toBeDisabled();
   });
+
+  it("übernimmt Thema und Kommentarfeld in den Payload und behält Optionen-IDs", () => {
+    const speichern = vi.fn();
+    render(
+      <UmfrageFormular
+        umfrage={umfrage()}
+        speichernLaeuft={false}
+        fehler=""
+        onSpeichern={speichern}
+        onAbbrechen={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getAllByLabelText("admin.thema")[0], { target: { value: "Termin" } });
+    fireEvent.click(screen.getAllByLabelText("admin.freitext_zusatz")[0]);
+    fireEvent.click(screen.getByRole("button", { name: "admin.speichern" }));
+
+    const [payload] = speichern.mock.calls[0];
+    expect(payload.fragen[0]).toMatchObject({ id: "f1", thema: "Termin", freitext_zusatz: true });
+    expect(payload.fragen[0].optionen[0]).toEqual({ id: "o1", text: "Samstag" });
+    // Freitextfragen haben kein zusätzliches Kommentarfeld.
+    expect(screen.getAllByLabelText("admin.freitext_zusatz")).toHaveLength(1);
+  });
 });

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { useUmfragen } from "../../hooks/useUmfragen";
+import { uebersetzt } from "../../utils/uebersetzung";
 import { formatiereFrist } from "../../utils/umfragen";
 
 export default function UmfragenListe() {
@@ -35,7 +36,9 @@ export default function UmfragenListe() {
             )}
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-sm font-bold text-text-primary">{umfrage.titel}</span>
+                <span className="text-sm font-bold text-text-primary">
+                  {uebersetzt(umfrage, "titel")}
+                </span>
                 <span className="flex gap-1 text-[10px] font-bold">
                   {!umfrage.veroeffentlicht && (
                     <span className="rounded bg-bg-secondary px-1.5 py-0.5 text-text-tertiary">

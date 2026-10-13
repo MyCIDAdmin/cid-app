@@ -1,6 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import i18n from "../../i18n";
 import * as hooks from "../../hooks/useUmfragen";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { umfrage } from "../../test/umfrageFixture";
@@ -96,5 +97,51 @@ describe("UmfrageDetailPage", () => {
   it("zeigt eine Meldung, wenn die Umfrage nicht verfügbar ist", () => {
     zeige(undefined, true);
     expect(screen.getByText("nicht_verfuegbar")).toBeInTheDocument();
+  });
+
+  it("gruppiert Fragen nach Thema, zeigt Übersetzungen und sendet den Kommentar", () => {
+    const sprache = i18n.language.slice(0, 2) as "de" | "fr";
+    const basis = umfrage();
+    zeige(
+      umfrage({
+        uebersetzungen: { titel: { [sprache]: "Titel übersetzt" } },
+        fragen: [
+          {
+            ...basis.fragen[0],
+            thema: "Termin",
+            freitext_zusatz: true,
+            uebersetzungen: {
+              text: { [sprache]: "Frage übersetzt" },
+              thema: { [sprache]: "Thema übersetzt" },
+            },
+            optionen: [
+              {
+                id: "o1",
+                text: "Samstag",
+                uebersetzungen: { text: { [sprache]: "Option übersetzt" } },
+              },
+              { id: "o2", text: "Sonntag" },
+            ],
+          },
+          { ...basis.fragen[1], thema: "Termin" },
+        ],
+      }),
+    );
+    expect(screen.getByRole("heading", { name: "Titel übersetzt" })).toBeInTheDocument();
+    expect(screen.getAllByTestId("umfrage-thema")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Thema übersetzt" })).toBeInTheDocument();
+    expect(screen.getByText("Frage übersetzt")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Option übersetzt"));
+    fireEvent.change(screen.getByPlaceholderText("fragebogen.kommentar"), {
+      target: { value: "Gern früher" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "fragebogen.senden" }));
+    expect(teilnehmen).toHaveBeenCalledTimes(1);
+    expect(teilnehmen.mock.calls[0][0].antworten[0]).toEqual({
+      frage: "f1",
+      optionen: ["o1"],
+      text: "Gern früher",
+    });
   });
 });

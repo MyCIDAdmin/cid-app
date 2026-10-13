@@ -84,8 +84,13 @@ class UmfrageFrage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     umfrage = models.ForeignKey(Umfrage, on_delete=models.CASCADE, related_name="fragen")
     text = models.CharField(max_length=500)
+    # Thema/Kategorie (Release 12): Fragen mit gleichem Thema werden unter einer Überschrift
+    # gruppiert (Fragebogen, Ergebnisse). Leer = ohne Thema.
+    thema = models.CharField(max_length=120, blank=True)
     typ = models.CharField(max_length=10, choices=FrageTyp.choices, default=FrageTyp.EINZEL)
     pflicht = models.BooleanField(default=True)
+    # Release 12: bei Auswahlfragen zusätzlich ein Freitextfeld (Kommentar) zur Antwort.
+    freitext_zusatz = models.BooleanField(default=False)
     ordre = models.PositiveSmallIntegerField(default=0)
 
     class Meta:

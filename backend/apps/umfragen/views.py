@@ -40,7 +40,13 @@ from .serializers import (
     UmfrageOeffentlichSerializer,
     UmfrageSerializer,
 )
-from .services import darf_teilnehmen, ist_aktives_mitglied, ist_verwaltung, kann_ergebnisse_sehen
+from .services import (
+    darf_teilnehmen,
+    ist_aktives_mitglied,
+    ist_verwaltung,
+    kann_ergebnisse_sehen,
+    uebersetzungen_fuer_umfrage,
+)
 
 SCHREIB_AKTIONEN = {
     "create",
@@ -128,13 +134,18 @@ class UmfrageViewSet(ModelViewSet):
             gueltig = {str(o.id): o for o in frage.optionen.all()}
             if not optionen <= gueltig.keys():
                 raise ValidationError({str(frage.id): "Ungültige Antwortmöglichkeit."})
+            kommentar = text if frage.freitext_zusatz else ""
             if not optionen:
                 if frage.pflicht:
                     raise ValidationError({str(frage.id): "Bitte beantworten."})
+                if kommentar:
+                    zeilen.append((frage, None, kommentar))
                 continue
             if frage.typ == FrageTyp.EINZEL and len(optionen) != 1:
                 raise ValidationError({str(frage.id): "Bitte genau eine Antwort wählen."})
             zeilen.extend((frage, gueltig[o], "") for o in optionen)
+            if kommentar:
+                zeilen.append((frage, None, kommentar))
         if not zeilen:
             raise ValidationError("Bitte mindestens eine Frage beantworten.")
 
@@ -167,26 +178,41 @@ class UmfrageViewSet(ModelViewSet):
             )
         )
         gesamt = umfrage.einreichungen.count()
+        uebersetzungen = uebersetzungen_fuer_umfrage(umfrage)
         fragen = []
         for frage in umfrage.fragen.all():
             zeilen = [a for a in antworten if a.frage_id == frage.id]
-            eintrag = {"id": str(frage.id), "text": frage.text, "typ": frage.typ}
+            eintrag = {
+                "id": str(frage.id),
+                "text": frage.text,
+                "thema": frage.thema,
+                "typ": frage.typ,
+                "uebersetzungen": uebersetzungen.get(str(frage.id), {}),
+            }
             if frage.typ == FrageTyp.FREITEXT:
                 eintrag["freitexte"] = [a.freitext for a in zeilen]
             else:
-                beantwortet = len({a.einreichung_id for a in zeilen})
+                mit_option = [a for a in zeilen if a.option_id]
+                beantwortet = len({a.einreichung_id for a in mit_option})
                 eintrag["beantwortet"] = beantwortet
+                if frage.freitext_zusatz:
+                    eintrag["freitexte"] = [a.freitext for a in zeilen if not a.option_id]
                 eintrag["optionen"] = [
                     {
                         "id": str(o.id),
                         "text": o.text,
-                        "anzahl": (n := sum(1 for a in zeilen if a.option_id == o.id)),
+                        "uebersetzungen": uebersetzungen.get(str(o.id), {}),
+                        "anzahl": (n := sum(1 for a in mit_option if a.option_id == o.id)),
                         "anteil": round(100 * n / beantwortet) if beantwortet else 0,
                     }
                     for o in frage.optionen.all()
                 ]
             fragen.append(eintrag)
-        daten = {"teilnehmende": gesamt, "anonym": umfrage.anonym, "fragen": fragen}
+        daten = {
+            "teilnehmende": gesamt,
+            "anonym": umfrage.anonym,
+            "fragen": fragen,
+        }
         if verwaltung and not umfrage.anonym:
             daten["einreichungen"] = self._einreichungen(umfrage, antworten)
         return Response(daten)

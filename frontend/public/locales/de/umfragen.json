@@ -43,7 +43,8 @@
   "fragebogen": {
     "senden": "Antworten abschicken",
     "pflicht": "Bitte beantworte: {{frage}}",
-    "fehler": "Das hat leider nicht geklappt. Bitte versuche es erneut."
+    "fehler": "Das hat leider nicht geklappt. Bitte versuche es erneut.",
+    "kommentar": "Bemerkung (optional)"
   },
   "danke": "Danke für deine Teilnahme!",
   "frist_abgelaufen": "Die Frist dieser Umfrage ist abgelaufen.",
@@ -56,7 +57,8 @@
     "wer_was": "Wer hat was geantwortet?",
     "keine_teilnahmen": "Noch keine Teilnahmen.",
     "nur_verwaltung": "Die Ergebnisse sieht nur die Verwaltung.",
-    "nach_frist": "Die Ergebnisse siehst du nach Ablauf der Frist."
+    "nach_frist": "Die Ergebnisse siehst du nach Ablauf der Frist.",
+    "kommentare": "Bemerkungen"
   },
   "admin": {
     "neu": "Neue Umfrage",
@@ -88,6 +90,8 @@
     "angekuendigt": "In Neuigkeiten angekündigt",
     "loeschen": "Löschen",
     "loeschen_bestaetigen": "Umfrage „{{titel}}“ wirklich löschen?",
-    "fehler": "Das hat leider nicht geklappt. Bitte versuche es erneut."
+    "fehler": "Das hat leider nicht geklappt. Bitte versuche es erneut.",
+    "thema": "Thema / Kategorie (optional)",
+    "freitext_zusatz": "Zusätzlich Freitextfeld"
   }
 }

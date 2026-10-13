@@ -5,6 +5,8 @@
 import { useTranslation } from "react-i18next";
 
 import { useUmfrageErgebnisse } from "../../hooks/useUmfragen";
+import { uebersetzt } from "../../utils/uebersetzung";
+import { gruppiereNachThema } from "../../utils/umfragen";
 
 export default function UmfrageErgebnisse({ umfrageId }: { umfrageId: string }) {
   const { t } = useTranslation("umfragen");
@@ -25,45 +27,61 @@ export default function UmfrageErgebnisse({ umfrageId }: { umfrageId: string }) 
         {t("ergebnisse.teilnehmende", { count: daten.teilnehmende })}
       </p>
 
-      {daten.fragen.map((frage) => (
-        <div key={frage.id} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <h3 className="mb-2 text-sm font-semibold text-text-primary">{frage.text}</h3>
-          {frage.optionen && (
-            <ul className="space-y-2">
-              {frage.optionen.map((option) => (
-                <li key={option.id}>
-                  <div className="mb-0.5 flex justify-between gap-2 text-xs text-text-secondary">
-                    <span>{option.text}</span>
-                    <span className="tabular-nums">
-                      {option.anzahl} · {option.anteil} %
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-bg-tertiary">
-                    <div
-                      className="h-full rounded-full bg-ca"
-                      style={{ width: `${option.anteil}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
+      {gruppiereNachThema(daten.fragen).map((gruppe) => (
+        <section key={gruppe.thema} className="space-y-3">
+          {gruppe.thema && (
+            <h3 className="border-b border-text-tertiary/20 pb-1 text-sm font-bold text-ca">
+              {uebersetzt(gruppe.fragen[0], "thema")}
+            </h3>
           )}
-          {frage.freitexte &&
-            (frage.freitexte.length === 0 ? (
-              <p className="text-xs text-text-tertiary">{t("ergebnisse.keine_freitexte")}</p>
-            ) : (
-              <ul className="space-y-1">
-                {frage.freitexte.map((text, index) => (
-                  <li
-                    key={index}
-                    className="whitespace-pre-line rounded-cid bg-bg-secondary px-2 py-1 text-sm text-text-primary"
-                  >
-                    {text}
-                  </li>
+          {gruppe.fragen.map((frage) => (
+            <div key={frage.id} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+              <h4 className="mb-2 text-sm font-semibold text-text-primary">
+                {uebersetzt(frage, "text")}
+              </h4>
+              {frage.optionen && (
+                <ul className="space-y-2">
+                  {frage.optionen.map((option) => (
+                    <li key={option.id}>
+                      <div className="mb-0.5 flex justify-between gap-2 text-xs text-text-secondary">
+                        <span>{uebersetzt(option, "text")}</span>
+                        <span className="tabular-nums">
+                          {option.anzahl} · {option.anteil} %
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-bg-tertiary">
+                        <div
+                          className="h-full rounded-full bg-ca"
+                          style={{ width: `${option.anteil}%` }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {frage.optionen && frage.freitexte && frage.freitexte.length > 0 && (
+                <p className="mb-1 mt-3 text-[11px] font-bold uppercase text-text-tertiary">
+                  {t("ergebnisse.kommentare")}
+                </p>
+              )}
+              {frage.freitexte &&
+                (frage.freitexte.length === 0 && !frage.optionen ? (
+                  <p className="text-xs text-text-tertiary">{t("ergebnisse.keine_freitexte")}</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {frage.freitexte.map((text, index) => (
+                      <li
+                        key={index}
+                        className="whitespace-pre-line rounded-cid bg-bg-secondary px-2 py-1 text-sm text-text-primary"
+                      >
+                        {text}
+                      </li>
+                    ))}
+                  </ul>
                 ))}
-              </ul>
-            ))}
-        </div>
+            </div>
+          ))}
+        </section>
       ))}
 
       {daten.einreichungen && (

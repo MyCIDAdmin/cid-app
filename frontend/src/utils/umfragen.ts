@@ -20,3 +20,20 @@ export function zuLokalInput(iso: string): string {
 export function vonLokalInput(wert: string): string {
   return new Date(wert).toISOString();
 }
+
+/**
+ * Gruppiert Fragen nach Thema (Release 12) in der Reihenfolge des ersten Auftretens ; Fragen ohne
+ * Thema bilden eine Gruppe mit leerem Thema (ohne Überschrift).
+ */
+export function gruppiereNachThema<T extends { thema?: string }>(
+  fragen: T[],
+): { thema: string; fragen: T[] }[] {
+  const gruppen: { thema: string; fragen: T[] }[] = [];
+  for (const frage of fragen) {
+    const thema = (frage.thema ?? "").trim();
+    const gruppe = gruppen.find((g) => g.thema === thema);
+    if (gruppe) gruppe.fragen.push(frage);
+    else gruppen.push({ thema, fragen: [frage] });
+  }
+  return gruppen;
+}

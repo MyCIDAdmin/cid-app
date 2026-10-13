@@ -3,32 +3,59 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.communaute.validators import valider_et_reencoder_photo
+from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import FrageTyp, Umfrage, UmfrageFrage, UmfrageOption
-from .services import ist_verwaltung, kann_ergebnisse_sehen
+from .services import ist_verwaltung, kann_ergebnisse_sehen, uebersetzungen_fuer_umfrage
+
+
+class _UebersetzungenAusKontext(serializers.Field):
+    """{feld: {sprache: text}} aus dem Cache, den `UmfrageSerializer` je Umfrage einmal füllt."""
+
+    def __init__(self, **kwargs):
+        kwargs.update(source="*", read_only=True)
+        super().__init__(**kwargs)
+
+    def to_representation(self, obj):
+        return self.context.get("_ueb", {}).get(str(obj.pk), {})
 
 
 class OptionSerializer(serializers.ModelSerializer):
+    # `id` bleibt beim Bearbeiten erhalten, damit Übersetzungen nicht verloren gehen.
+    id = serializers.UUIDField(required=False)
+    uebersetzungen = _UebersetzungenAusKontext()
+
     class Meta:
         model = UmfrageOption
-        fields = ["id", "text", "ordre"]
-        read_only_fields = ["id"]
+        fields = ["id", "text", "ordre", "uebersetzungen"]
         extra_kwargs = {"ordre": {"required": False}}
 
 
 class FrageSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(required=False)
     optionen = OptionSerializer(many=True, required=False)
+    uebersetzungen = _UebersetzungenAusKontext()
 
     class Meta:
         model = UmfrageFrage
-        fields = ["id", "text", "typ", "pflicht", "ordre", "optionen"]
-        read_only_fields = ["id"]
+        fields = [
+            "id",
+            "text",
+            "thema",
+            "typ",
+            "pflicht",
+            "freitext_zusatz",
+            "ordre",
+            "optionen",
+            "uebersetzungen",
+        ]
         extra_kwargs = {"ordre": {"required": False}}
 
     def validate(self, attrs):
         optionen = attrs.get("optionen", [])
         if attrs.get("typ") == FrageTyp.FREITEXT:
             attrs["optionen"] = []
+            attrs["freitext_zusatz"] = False
         elif len(optionen) < 2:
             raise serializers.ValidationError("Mindestens zwei Antwortmöglichkeiten angeben.")
         return attrs
@@ -42,6 +69,7 @@ class UmfrageSerializer(serializers.ModelSerializer):
     kann_ergebnisse_sehen = serializers.SerializerMethodField()
     anzahl_teilnahmen = serializers.SerializerMethodField()
     angekuendigt = serializers.SerializerMethodField()
+    uebersetzungen = _UebersetzungenAusKontext()
 
     class Meta:
         model = Umfrage
@@ -49,6 +77,7 @@ class UmfrageSerializer(serializers.ModelSerializer):
             "id",
             "titel",
             "beschreibung",
+            "uebersetzungen",
             "bild",
             "zielgruppe",
             "anonym",
@@ -64,6 +93,11 @@ class UmfrageSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "veroeffentlicht", "created_at"]
+
+    def to_representation(self, instance):
+        # Übersetzungen von Umfrage, Fragen und Optionen: eine Abfrage je Umfrage.
+        self.context.setdefault("_ueb", {}).update(uebersetzungen_fuer_umfrage(instance))
+        return super().to_representation(instance)
 
     # --- berechnete Felder -------------------------------------------------------------
     def _user(self):
@@ -114,19 +148,49 @@ class UmfrageSerializer(serializers.ModelSerializer):
 
     # --- Schreiben ----------------------------------------------------------------------
     @staticmethod
-    def _fragen_anlegen(umfrage, fragen):
-        for i, frage in enumerate(fragen):
-            optionen = frage.pop("optionen", [])
-            frage.pop("ordre", None)
-            f = UmfrageFrage.objects.create(umfrage=umfrage, ordre=i, **frage)
-            for j, option in enumerate(optionen):
-                UmfrageOption.objects.create(frage=f, text=option["text"], ordre=j)
+    def _optionen_schreiben(frage, optionen):
+        vorhandene = {o.id: o for o in frage.optionen.all()}
+        behalten = set()
+        for j, daten in enumerate(optionen):
+            option = vorhandene.get(daten.get("id"))
+            if option is None:
+                option = UmfrageOption.objects.create(frage=frage, text=daten["text"], ordre=j)
+            elif (option.text, option.ordre) != (daten["text"], j):
+                option.text, option.ordre = daten["text"], j
+                option.save()
+            behalten.add(option.id)
+        for oid, option in vorhandene.items():
+            if oid not in behalten:
+                option.delete()
+
+    @classmethod
+    def _fragen_schreiben(cls, umfrage, fragen):
+        """Legt Fragen an bzw. aktualisiert vorhandene anhand ihrer `id` (so bleiben die
+        Übersetzungen erhalten) ; nicht mehr genannte Fragen werden gelöscht."""
+        vorhandene = {f.id: f for f in umfrage.fragen.all()}
+        behalten = set()
+        for i, daten in enumerate(fragen):
+            optionen = daten.pop("optionen", [])
+            daten.pop("ordre", None)
+            frage = vorhandene.get(daten.pop("id", None))
+            if frage is None:
+                frage = UmfrageFrage.objects.create(umfrage=umfrage, ordre=i, **daten)
+            else:
+                for feld, wert in daten.items():
+                    setattr(frage, feld, wert)
+                frage.ordre = i
+                frage.save()
+            behalten.add(frage.id)
+            cls._optionen_schreiben(frage, optionen)
+        for fid, frage in vorhandene.items():
+            if fid not in behalten:
+                frage.delete()
 
     @transaction.atomic
     def create(self, validated_data):
         fragen = validated_data.pop("fragen", [])
         umfrage = Umfrage.objects.create(**validated_data)
-        self._fragen_anlegen(umfrage, fragen)
+        self._fragen_schreiben(umfrage, fragen)
         return umfrage
 
     @transaction.atomic
@@ -137,8 +201,7 @@ class UmfrageSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"fragen": "Fragen sind nach der ersten Teilnahme nicht mehr änderbar."}
                 )
-            instance.fragen.all().delete()
-            self._fragen_anlegen(instance, fragen)
+            self._fragen_schreiben(instance, fragen)
         # Zielgruppe/Anonymität dürfen nach der ersten Teilnahme nicht mehr wechseln.
         if instance.einreichungen.exists():
             for feld in ("anonym", "zielgruppe"):
@@ -171,6 +234,7 @@ class UmfrageOeffentlichSerializer(serializers.ModelSerializer):
 
     bild = serializers.ImageField(read_only=True)
     abgelaufen = serializers.BooleanField(read_only=True)
+    uebersetzungen = UebersetzungenField()
 
     class Meta:
         model = Umfrage
@@ -178,6 +242,7 @@ class UmfrageOeffentlichSerializer(serializers.ModelSerializer):
             "id",
             "titel",
             "beschreibung",
+            "uebersetzungen",
             "bild",
             "zielgruppe",
             "anonym",
