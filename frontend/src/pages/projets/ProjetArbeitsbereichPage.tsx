@@ -7,12 +7,13 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import AufgabeModal from "../../components/projets/arbeitsbereich/AufgabeModal";
 import AktivitaetTab from "../../components/projets/arbeitsbereich/AktivitaetTab";
 import KanbanBoard from "../../components/projets/arbeitsbereich/KanbanBoard";
 import KostenTab from "../../components/projets/arbeitsbereich/KostenTab";
+import StellenTab from "../../components/projets/arbeitsbereich/StellenTab";
 import TeamTab from "../../components/projets/arbeitsbereich/TeamTab";
 import UebersichtTab from "../../components/projets/arbeitsbereich/UebersichtTab";
 import SichtbarkeitBadge from "../../components/projets/SichtbarkeitBadge";
@@ -21,7 +22,7 @@ import { useAufgaben, useProjet, useSichtbarkeitAendern, useTeam } from "../../h
 import type { Aufgabe, StatutAufgabe } from "../../types/projets";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
-type Reiter = "uebersicht" | "aufgaben" | "kosten" | "team" | "aktivitaet";
+type Reiter = "uebersicht" | "aufgaben" | "kosten" | "team" | "stellen" | "aktivitaet";
 
 export default function ProjetArbeitsbereichPage() {
   const { t } = useTranslation("projets");
@@ -32,7 +33,10 @@ export default function ProjetArbeitsbereichPage() {
   const aufgabenQuery = useAufgaben(darf ? id : undefined);
   const teamQuery = useTeam(darf ? id : undefined);
   const sichtbarkeit = useSichtbarkeitAendern();
-  const [reiter, setReiter] = useState<Reiter>("aufgaben");
+  const [suchParams] = useSearchParams();
+  const [reiter, setReiter] = useState<Reiter>(
+    suchParams.get("reiter") === "stellen" ? "stellen" : "aufgaben",
+  );
   const [dialog, setDialog] = useState<{ aufgabe: Aufgabe | null; status: StatutAufgabe } | null>(
     null,
   );
@@ -111,22 +115,24 @@ export default function ProjetArbeitsbereichPage() {
         role="tablist"
         className="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/20"
       >
-        {(["uebersicht", "aufgaben", "kosten", "team", "aktivitaet"] as const).map((r) => (
-          <button
-            key={r}
-            type="button"
-            role="tab"
-            aria-selected={reiter === r}
-            onClick={() => setReiter(r)}
-            className={`px-3 py-2 text-sm ${
-              reiter === r
-                ? "border-b-2 border-ca font-medium text-ca"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            {t(`arbeitsbereich.tab.${r}`)}
-          </button>
-        ))}
+        {(["uebersicht", "aufgaben", "kosten", "team", "stellen", "aktivitaet"] as const).map(
+          (r) => (
+            <button
+              key={r}
+              type="button"
+              role="tab"
+              aria-selected={reiter === r}
+              onClick={() => setReiter(r)}
+              className={`px-3 py-2 text-sm ${
+                reiter === r
+                  ? "border-b-2 border-ca font-medium text-ca"
+                  : "text-text-secondary hover:text-text-primary"
+              }`}
+            >
+              {t(`arbeitsbereich.tab.${r}`)}
+            </button>
+          ),
+        )}
       </div>
 
       {reiter === "uebersicht" && (
@@ -145,6 +151,9 @@ export default function ProjetArbeitsbereichPage() {
         <KostenTab projetId={projet.id} aufgaben={aufgabenQuery.data ?? []} />
       )}
       {reiter === "aktivitaet" && <AktivitaetTab projetId={projet.id} />}
+      {reiter === "stellen" && (
+        <StellenTab projetId={projet.id} verwalten={projet.darf_team_verwalten} />
+      )}
       {reiter === "team" && <TeamTab projetId={projet.id} verwalten={projet.darf_team_verwalten} />}
 
       {dialog && (

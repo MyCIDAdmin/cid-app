@@ -114,7 +114,8 @@
       "aufgaben": "Tâches",
       "team": "Équipe",
       "kosten": "Coûts",
-      "aktivitaet": "Activité"
+      "aktivitaet": "Activité",
+      "stellen": "Postes"
     },
     "sichtbarkeit": {
       "entwurf": "Brouillon",
@@ -274,8 +275,61 @@
         "plan_entfernt": "{{akteur}} a retiré le coût prévu pour {{objekt}}.",
         "kosten_erfasst": "{{akteur}} a saisi un coût : {{objekt}} ({{betrag}}).",
         "kosten_geloescht": "{{akteur}} a supprimé la ligne de coût « {{objekt}} ».",
-        "planjahr": "{{akteur}} a fixé l'année de planification à {{objekt}}."
+        "planjahr": "{{akteur}} a fixé l'année de planification à {{objekt}}.",
+        "stelle_erstellt": "{{akteur}} a publié le poste « {{objekt}} ».",
+        "bewerbung_angenommen": "{{akteur}} a accepté {{detail}} pour « {{objekt}} »."
       }
+    }
+  },
+  "stellen": {
+    "titel": "Nous cherchons du renfort",
+    "einleitung": "Ce projet recherche des bénévoles. Manifestez-vous si vous vous sentez concerné(e).",
+    "freie_plaetze_one": "{{count}} place libre",
+    "freie_plaetze_other": "{{count}} places libres",
+    "gemeldet": "Vous vous êtes manifesté(e) – la direction du projet décidera.",
+    "zurueckziehen": "Retirer ma candidature",
+    "angenommen": "Vous avez été accepté(e) – bienvenue dans l'équipe !",
+    "abgelehnt": "Votre candidature n'a malheureusement pas été retenue.",
+    "nachricht_label": "Message à la direction du projet (facultatif)",
+    "nachricht_platzhalter": "Que pouvez-vous apporter ?",
+    "senden": "Envoyer",
+    "abbrechen": "Annuler",
+    "helfen": "Je veux aider",
+    "login": "Se connecter pour aider",
+    "fehler": "Une erreur est survenue. Veuillez réessayer.",
+    "helfer_gesucht": "Bénévoles recherchés",
+    "tab_einleitung": "Publiez des postes ouverts, p. ex. « Web designer ». Les membres peuvent s'y porter candidats.",
+    "nur_lesen": "Seule la direction du projet peut gérer les postes.",
+    "neu": "Nouveau poste",
+    "titel_label": "Titre",
+    "titel_platzhalter": "p. ex. Web designer",
+    "faehigkeit_label": "Compétence recherchée",
+    "ohne_faehigkeit": "– aucune en particulier –",
+    "anzahl_label": "Nombre de personnes",
+    "beschreibung_label": "Description",
+    "beschreibung_platzhalter": "Tâches, charge, prérequis …",
+    "anlegen": "Créer le poste",
+    "leer": "Aucun poste pour l'instant.",
+    "besetzt_von": "{{angenommen}} sur {{anzahl}} pourvu(s)",
+    "schliessen": "Clore",
+    "wieder_oeffnen": "Rouvrir",
+    "loeschen": "Supprimer",
+    "loeschen_bestaetigen": "Supprimer vraiment le poste « {{titel}} » ?",
+    "keine_meldungen": "Aucune candidature pour l'instant.",
+    "annehmen": "Accepter",
+    "ablehnen": "Refuser",
+    "passende": "Afficher les membres correspondants",
+    "keine_passenden": "Aucun membre correspondant.",
+    "status_stelle": {
+      "offen": "Ouvert",
+      "besetzt": "Pourvu",
+      "geschlossen": "Clos"
+    },
+    "status_bewerbung": {
+      "offen": "En attente",
+      "angenommen": "Accepté",
+      "abgelehnt": "Refusé",
+      "zurueckgezogen": "Retiré"
     }
   }
 }

@@ -37,6 +37,11 @@ export default function AktivitaetTab({ projetId }: { projetId: string }) {
           ...basis,
           rolle: t(`arbeitsbereich.rolle.${e.detail}`),
         });
+      case "bewerbung_angenommen":
+        return t("arbeitsbereich.aktivitaet.aktion.bewerbung_angenommen", {
+          ...basis,
+          detail: e.detail,
+        });
       case "sichtbarkeit":
         return t("arbeitsbereich.aktivitaet.aktion.sichtbarkeit", {
           ...basis,

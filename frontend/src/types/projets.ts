@@ -102,6 +102,8 @@ export interface Projet {
   darf_arbeitsbereich: boolean;
   /** Direction du projet ou gestionnaire — pilote publication et gestion d'équipe. */
   darf_team_verwalten: boolean;
+  /** Release 10 : Zahl der offenen Stellen („Helfer gesucht“). */
+  stellen_offen?: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -342,7 +344,9 @@ export type AktivitaetAktion =
   | "plan_entfernt"
   | "planjahr"
   | "kosten_erfasst"
-  | "kosten_geloescht";
+  | "kosten_geloescht"
+  | "stelle_erstellt"
+  | "bewerbung_angenommen";
 
 export interface AktivitaetEintrag {
   id: string;
@@ -352,4 +356,55 @@ export interface AktivitaetEintrag {
   aktion: AktivitaetAktion;
   objekt: string;
   detail: string;
+}
+
+// --- Projekt-Stellen (Release 10) --------------------------------------------------------------
+
+export type StatutStelle = "offen" | "besetzt" | "geschlossen";
+export type StatutBewerbung = "offen" | "angenommen" | "abgelehnt" | "zurueckgezogen";
+
+export interface ProjetStelle {
+  id: string;
+  projet: string;
+  titel: string;
+  beschreibung: string;
+  faehigkeit: string | null;
+  faehigkeit_name: string | null;
+  anzahl: number;
+  status: StatutStelle;
+  angenommen: number;
+  freie_plaetze: number;
+  /** Status der eigenen Meldung (null = noch nicht gemeldet / nicht angemeldet). */
+  meine_bewerbung: StatutBewerbung | null;
+  /** Nur für Leitung/Verwaltung (sonst null). */
+  bewerbungen_offen: number | null;
+  created_at: string;
+}
+
+export interface StellePayload {
+  projet: string;
+  titel: string;
+  beschreibung?: string;
+  faehigkeit?: string | null;
+  anzahl?: number;
+  status?: StatutStelle;
+}
+
+export interface ProjetBewerbung {
+  id: string;
+  stelle: string;
+  stelle_titel: string;
+  projet: string;
+  projet_titre: string;
+  membre: string;
+  membre_detail?: { id: string; prenom: string; nom: string } | null;
+  nachricht: string;
+  status: StatutBewerbung;
+  created_at: string;
+}
+
+export interface PassendesMitglied {
+  id: string;
+  nom_complet: string;
+  kommentar: string;
 }

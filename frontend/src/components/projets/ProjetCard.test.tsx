@@ -70,6 +70,20 @@ describe("ProjetCard", () => {
     );
   });
 
+  it("zeigt das Etikett „Helfer gesucht“ nur bei offenen Stellen (Release 10)", () => {
+    vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
+      data: undefined,
+      isPending: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useContributeursProjet>);
+
+    const { unmount } = renderWithProviders(<ProjetCard projet={projet({ stellen_offen: 2 })} />);
+    expect(screen.getByTestId("helfer-gesucht")).toBeInTheDocument();
+    unmount();
+
+    renderWithProviders(<ProjetCard projet={projet({ stellen_offen: 0 })} />);
+    expect(screen.queryByTestId("helfer-gesucht")).not.toBeInTheDocument();
+  });
+
   it("permet de partager le projet sans retourner la kachel (demande utilisateur 2026-09-25)", () => {
     vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
       data: undefined,

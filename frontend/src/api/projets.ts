@@ -14,9 +14,13 @@ import type {
   KostenPositionPayload,
   KostenUebersicht,
   PlanKostenEintrag,
+  PassendesMitglied,
+  ProjetBewerbung,
   ProjetMitglied,
+  ProjetStelle,
   RolleProjet,
   SichtbarkeitProjet,
+  StellePayload,
   StatutAufgabe,
   Projet,
   ProjetImage,
@@ -357,4 +361,67 @@ export async function listAktivitaeten(projetId: string): Promise<AktivitaetEint
     params: { projet: projetId },
   });
   return data.results;
+}
+
+// --- Projekt-Stellen (Release 10) ---
+
+export async function listStellen(projetId: string): Promise<ProjetStelle[]> {
+  const { data } = await apiClient.get<ProjetStelle[]>("/projets/stellen/", {
+    params: { projet: projetId },
+  });
+  return data;
+}
+
+export async function stelleErstellen(payload: StellePayload): Promise<ProjetStelle> {
+  const { data } = await apiClient.post<ProjetStelle>("/projets/stellen/", payload);
+  return data;
+}
+
+export async function stelleAendern(
+  id: string,
+  payload: Partial<Omit<StellePayload, "projet">>,
+): Promise<ProjetStelle> {
+  const { data } = await apiClient.patch<ProjetStelle>(`/projets/stellen/${id}/`, payload);
+  return data;
+}
+
+export async function stelleLoeschen(id: string): Promise<void> {
+  await apiClient.delete(`/projets/stellen/${id}/`);
+}
+
+export async function stelleBewerben(id: string, nachricht: string): Promise<ProjetStelle> {
+  const { data } = await apiClient.post<ProjetStelle>(`/projets/stellen/${id}/bewerben/`, {
+    nachricht,
+  });
+  return data;
+}
+
+export async function stelleZurueckziehen(id: string): Promise<ProjetStelle> {
+  const { data } = await apiClient.post<ProjetStelle>(`/projets/stellen/${id}/zurueckziehen/`);
+  return data;
+}
+
+export async function passendeMitglieder(id: string): Promise<PassendesMitglied[]> {
+  const { data } = await apiClient.get<PassendesMitglied[]>(
+    `/projets/stellen/${id}/passende-mitglieder/`,
+  );
+  return data;
+}
+
+export async function listBewerbungen(params: {
+  stelle?: string;
+  stelle__projet?: string;
+}): Promise<ProjetBewerbung[]> {
+  const { data } = await apiClient.get<ProjetBewerbung[]>("/projets/bewerbungen/", { params });
+  return data;
+}
+
+export async function bewerbungEntscheiden(
+  id: string,
+  entscheidung: "annehmen" | "ablehnen",
+): Promise<ProjetBewerbung> {
+  const { data } = await apiClient.post<ProjetBewerbung>(
+    `/projets/bewerbungen/${id}/${entscheidung}/`,
+  );
+  return data;
 }

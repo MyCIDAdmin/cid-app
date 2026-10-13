@@ -17,6 +17,7 @@ import type {
   ProjetMiseAJourImagePayload,
   ProjetMiseAJourPayload,
   ProjetPayload,
+  StellePayload,
 } from "../types/projets";
 
 const projetsKeys = {
@@ -33,6 +34,9 @@ const projetsKeys = {
   kosten: (id: string) => [...projetsKeys.all, "kosten", id] as const,
   aktivitaeten: (id: string) => [...projetsKeys.all, "aktivitaeten", id] as const,
   kommentare: (id: string) => [...projetsKeys.all, "kommentare", id] as const,
+  stellen: (id: string) => [...projetsKeys.all, "stellen", id] as const,
+  bewerbungen: (stelleId: string) => [...projetsKeys.all, "bewerbungen", stelleId] as const,
+  passende: (stelleId: string) => [...projetsKeys.all, "passende", stelleId] as const,
 };
 
 export function useProjets(filtres: projetsApi.ProjetsFiltres = {}) {
@@ -414,5 +418,87 @@ export function useAktivitaeten(projetId: string | undefined) {
     queryKey: projetsKeys.aktivitaeten(projetId ?? ""),
     queryFn: () => projetsApi.listAktivitaeten(projetId as string),
     enabled: Boolean(projetId),
+  });
+}
+
+// --- Projekt-Stellen (Release 10) ---
+
+export function useStellen(projetId: string | undefined) {
+  return useQuery({
+    queryKey: projetsKeys.stellen(projetId ?? ""),
+    queryFn: () => projetsApi.listStellen(projetId as string),
+    enabled: Boolean(projetId),
+  });
+}
+
+export function useStelleErstellen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: StellePayload) => projetsApi.stelleErstellen(payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useStelleAendern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<Omit<StellePayload, "projet">>;
+    }) => projetsApi.stelleAendern(id, payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useStelleLoeschen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.stelleLoeschen(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useStelleBewerben() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, nachricht }: { id: string; nachricht: string }) =>
+      projetsApi.stelleBewerben(id, nachricht),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useStelleZurueckziehen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.stelleZurueckziehen(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useBewerbungen(stelleId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: projetsKeys.bewerbungen(stelleId ?? ""),
+    queryFn: () => projetsApi.listBewerbungen({ stelle: stelleId }),
+    enabled: Boolean(stelleId) && enabled,
+  });
+}
+
+export function usePassendeMitglieder(stelleId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: projetsKeys.passende(stelleId ?? ""),
+    queryFn: () => projetsApi.passendeMitglieder(stelleId as string),
+    enabled: Boolean(stelleId) && enabled,
+  });
+}
+
+export function useBewerbungEntscheiden() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, entscheidung }: { id: string; entscheidung: "annehmen" | "ablehnen" }) =>
+      projetsApi.bewerbungEntscheiden(id, entscheidung),
+    onSuccess: () => invalidateProjets(queryClient),
   });
 }
