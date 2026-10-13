@@ -5,6 +5,7 @@ import { renderWithProviders } from "../test/renderWithProviders";
 import * as useCommunauteHooks from "../hooks/useCommunaute";
 import * as useCotisationsHooks from "../hooks/useCotisations";
 import * as useEvenementsHooks from "../hooks/useEvenements";
+import * as useProjetsHooks from "../hooks/useProjets";
 import * as useStatsHooks from "../hooks/useStats";
 import * as useVoteHooks from "../hooks/useVote";
 import i18n from "../i18n";
@@ -42,6 +43,10 @@ vi.mock("../hooks/useVote", async () => {
 vi.mock("../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../hooks/useCommunaute");
   return { ...actual, usePublications: vi.fn() };
+});
+vi.mock("../hooks/useProjets", async () => {
+  const actual = await vi.importActual<typeof useProjetsHooks>("../hooks/useProjets");
+  return { ...actual, useOffeneStellen: vi.fn() };
 });
 vi.mock("../hooks/useStats", async () => {
   const actual = await vi.importActual<typeof useStatsHooks>("../hooks/useStats");
@@ -189,6 +194,7 @@ function stubHooks({
   voteOuvert = false,
   statsMembres,
   statsFinancier,
+  stellen = [],
 }: {
   evenements?: Evenement[];
   cotisations?: Cotisation[];
@@ -197,7 +203,11 @@ function stubHooks({
   voteOuvert?: boolean;
   statsMembres?: { actifs: number };
   statsFinancier?: { taux_collecte: number; cotisations_en_attente: string };
+  stellen?: unknown[];
 }) {
+  vi.mocked(useProjetsHooks.useOffeneStellen).mockReturnValue({
+    data: stellen,
+  } as unknown as ReturnType<typeof useProjetsHooks.useOffeneStellen>);
   vi.mocked(useEvenementsHooks.useEvenements).mockReturnValue(
     queryResult(page(evenements)) as unknown as ReturnType<typeof useEvenementsHooks.useEvenements>,
   );
@@ -243,6 +253,30 @@ describe("DashboardPage", () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByRole("heading")).toBeInTheDocument();
     expect(screen.getByText("Bienvenue, Sami")).toBeInTheDocument();
+  });
+
+  it("zeigt offene Projekt-Stellen mit Link zum Projekt (2026-10-13)", () => {
+    stubHooks({
+      stellen: [
+        {
+          id: "s1",
+          projet: "p1",
+          projet_titre: "Neues Vereinsheim",
+          titel: "Web-Designer",
+          created_at: "2026-10-12T10:00:00Z",
+        },
+      ],
+    });
+    renderWithProviders(<DashboardPage />);
+    const karte = screen.getByTestId("dashboard-stellen");
+    expect(karte).toHaveTextContent("Web-Designer");
+    expect(karte).toHaveTextContent("Neues Vereinsheim");
+    expect(karte.querySelector("a[href='/projets/p1']")).not.toBeNull();
+  });
+
+  it("blendet den Stellen-Block ohne offene Stellen aus", () => {
+    renderWithProviders(<DashboardPage />);
+    expect(screen.queryByTestId("dashboard-stellen")).not.toBeInTheDocument();
   });
 
   it("retombe sur l'email si le compte n'a pas de fiche Membre liée", () => {

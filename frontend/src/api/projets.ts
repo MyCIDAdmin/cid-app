@@ -365,6 +365,14 @@ export async function listAktivitaeten(projetId: string): Promise<AktivitaetEint
 
 // --- Projekt-Stellen (Release 10) ---
 
+/** Alle offenen Stellen sichtbarer Projekte (Übersicht). */
+export async function listOffeneStellen(): Promise<ProjetStelle[]> {
+  const { data } = await apiClient.get<ProjetStelle[]>("/projets/stellen/", {
+    params: { status: "offen" },
+  });
+  return data;
+}
+
 export async function listStellen(projetId: string): Promise<ProjetStelle[]> {
   const { data } = await apiClient.get<ProjetStelle[]>("/projets/stellen/", {
     params: { projet: projetId },

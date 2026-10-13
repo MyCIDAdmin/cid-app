@@ -19,11 +19,13 @@ import {
   type FaehigkeitKategorie,
 } from "../../types/faehigkeiten";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { useFaehigkeitLabel } from "../../utils/faehigkeitLabel";
 
 const FELD = "rounded-cid border border-text-tertiary/30 bg-bg-primary px-2 py-1.5 text-sm";
 
 export default function FaehigkeitenTab() {
   const { t } = useTranslation("membres");
+  const faehigkeitLabel = useFaehigkeitLabel();
   const katalogQuery = useFaehigkeitenKatalog();
   const meineQuery = useMeineFaehigkeiten();
   const speichern = useSpeichereMeineFaehigkeiten();
@@ -132,7 +134,7 @@ export default function FaehigkeitenTab() {
                     }`}
                   >
                     {an ? "✓ " : ""}
-                    {f.bezeichnung}
+                    {faehigkeitLabel(f.bezeichnung)}
                   </button>
                 );
               })}
@@ -184,12 +186,16 @@ export default function FaehigkeitenTab() {
           <ul className="space-y-2">
             {gewaehlt.map((f) => (
               <li key={f.id} className="flex flex-wrap items-center gap-2">
-                <span className="w-48 text-sm font-medium text-text-primary">{f.bezeichnung}</span>
+                <span className="w-48 text-sm font-medium text-text-primary">
+                  {faehigkeitLabel(f.bezeichnung)}
+                </span>
                 <input
                   value={auswahl[f.id] ?? ""}
                   onChange={(e) => setAuswahl((alt) => ({ ...alt, [f.id]: e.target.value }))}
                   maxLength={200}
-                  aria-label={t("faehigkeiten.anmerkung_fuer", { name: f.bezeichnung })}
+                  aria-label={t("faehigkeiten.anmerkung_fuer", {
+                    name: faehigkeitLabel(f.bezeichnung),
+                  })}
                   placeholder={t("faehigkeiten.anmerkung_platzhalter")}
                   className={`${FELD} min-w-0 flex-1`}
                 />

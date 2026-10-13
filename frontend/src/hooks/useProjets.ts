@@ -423,6 +423,14 @@ export function useAktivitaeten(projetId: string | undefined) {
 
 // --- Projekt-Stellen (Release 10) ---
 
+export function useOffeneStellen(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: [...projetsKeys.all, "stellen", "offen"] as const,
+    queryFn: projetsApi.listOffeneStellen,
+    enabled: options.enabled ?? true,
+  });
+}
+
 export function useStellen(projetId: string | undefined) {
   return useQuery({
     queryKey: projetsKeys.stellen(projetId ?? ""),

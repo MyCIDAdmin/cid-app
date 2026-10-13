@@ -18,6 +18,7 @@ import { STATUTS_MEMBRE } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { declencherTelechargement } from "../../utils/telechargement";
 import StatutBadge from "../ui/StatutBadge";
+import { useFaehigkeitLabel } from "../../utils/faehigkeitLabel";
 
 const FELD = "rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -25,6 +26,7 @@ const START: FaehigkeitenFilter = { q: "", kategorie: "", faehigkeit: "", statut
 
 export default function FaehigkeitenReportingTab() {
   const { t } = useTranslation("membres");
+  const faehigkeitLabel = useFaehigkeitLabel();
   const [filter, setFilter] = useState<FaehigkeitenFilter>(START);
   const bericht = useFaehigkeitenBericht(filter);
   const katalog = useFaehigkeitenKatalog();
@@ -94,7 +96,7 @@ export default function FaehigkeitenReportingTab() {
             <option value="">{t("faehigkeiten.reporting.alle")}</option>
             {(katalog.data ?? []).map((f) => (
               <option key={f.id} value={f.id}>
-                {f.bezeichnung}
+                {faehigkeitLabel(f.bezeichnung)}
               </option>
             ))}
           </select>
@@ -168,7 +170,9 @@ export default function FaehigkeitenReportingTab() {
                   {zeilen.map((zeile) => (
                     <details key={zeile.id} className="rounded-cid border border-text-tertiary/15">
                       <summary className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm">
-                        <span className="font-medium text-text-primary">{zeile.bezeichnung}</span>
+                        <span className="font-medium text-text-primary">
+                          {faehigkeitLabel(zeile.bezeichnung)}
+                        </span>
                         <span className="rounded-full bg-ca/10 px-2 py-0.5 text-xs font-bold text-ca">
                           {t("faehigkeiten.reporting.anzahl", { count: zeile.anzahl })}
                         </span>
@@ -218,7 +222,7 @@ export default function FaehigkeitenReportingTab() {
                               if (
                                 window.confirm(
                                   t("faehigkeiten.reporting.loeschen_bestaetigen", {
-                                    name: zeile.bezeichnung,
+                                    name: faehigkeitLabel(zeile.bezeichnung),
                                   }),
                                 )
                               ) {

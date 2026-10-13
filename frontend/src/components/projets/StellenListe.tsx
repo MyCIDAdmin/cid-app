@@ -12,9 +12,11 @@ import { useStelleBewerben, useStelleZurueckziehen, useStellen } from "../../hoo
 import { useAuthStore } from "../../store/authStore";
 import type { ProjetStelle } from "../../types/projets";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { useFaehigkeitLabel } from "../../utils/faehigkeitLabel";
 
 function StelleKarte({ stelle }: { stelle: ProjetStelle }) {
   const { t } = useTranslation("projets");
+  const faehigkeitLabel = useFaehigkeitLabel();
   const angemeldet = useAuthStore((s) => s.isAuthenticated);
   const bewerben = useStelleBewerben();
   const zurueckziehen = useStelleZurueckziehen();
@@ -44,7 +46,7 @@ function StelleKarte({ stelle }: { stelle: ProjetStelle }) {
           <h3 className="text-sm font-semibold text-text-primary">{stelle.titel}</h3>
           {stelle.faehigkeit_name && (
             <span className="mt-1 inline-block rounded-full bg-ca/10 px-2 py-0.5 text-[11px] font-medium text-ca">
-              {stelle.faehigkeit_name}
+              {faehigkeitLabel(stelle.faehigkeit_name)}
             </span>
           )}
         </div>
