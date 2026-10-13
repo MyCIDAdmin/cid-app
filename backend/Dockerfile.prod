@@ -37,7 +37,6 @@ USER django
 # Railway injecte $PORT dynamiquement — collectstatic + migrate + configuration des buckets
 # MinIO (setup_minio_buckets, voir sa docstring) au démarrage.
 EXPOSE 8000
-CMD python manage.py collectstatic --noinput && \
-    python manage.py migrate --noinput && \
-    python manage.py setup_minio_buckets && \
-    daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application
+# Exec-Form (JSON) mit `exec daphne` : Daphne wird PID 1 und erhält SIGTERM direkt, damit Railway
+# bei Neustarts/Deploys sauber beenden kann ; ${PORT} wird weiterhin von der Shell aufgelöst.
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py setup_minio_buckets && exec daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application"]
