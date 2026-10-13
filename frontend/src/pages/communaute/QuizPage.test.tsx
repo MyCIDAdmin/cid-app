@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -6,6 +6,10 @@ import * as useCommunauteHooks from "../../hooks/useCommunaute";
 import { useAuthStore } from "../../store/authStore";
 import type { Quiz } from "../../types/communaute";
 import QuizPage from "./QuizPage";
+
+vi.mock("../../components/umfragen/UmfragenListe", () => ({
+  default: () => <div data-testid="umfragen-tab" />,
+}));
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
@@ -39,7 +43,12 @@ function quiz(overrides: Partial<Quiz> = {}): Quiz {
 
 describe("QuizPage", () => {
   beforeEach(() => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: membre, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: membre,
+      isAuthenticated: true,
+    });
   });
 
   it("affiche la liste des quiz avec leur badge actif/inactif", () => {
@@ -66,5 +75,19 @@ describe("QuizPage", () => {
     renderWithProviders(<QuizPage />);
 
     expect(screen.getByText("quiz.aucun_quiz")).toBeInTheDocument();
+  });
+
+  it("wechselt zum Tab „Umfragen“ (Release 11)", () => {
+    vi.mocked(useCommunauteHooks.useQuizListe).mockReturnValue({
+      data: page([quiz()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useQuizListe>);
+
+    renderWithProviders(<QuizPage />);
+    expect(screen.queryByTestId("umfragen-tab")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "tab.umfragen" }));
+    expect(screen.getByTestId("umfragen-tab")).toBeInTheDocument();
+    expect(screen.queryByText("Histoire du CA")).not.toBeInTheDocument();
   });
 });

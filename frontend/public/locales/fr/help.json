@@ -295,7 +295,8 @@
     "schritte": [
       "Créez un quiz ou une question avec ses réponses et marquez la bonne réponse.",
       "Publiez pour que les membres puissent participer.",
-      "Consultez les résultats et le classement dans l'aperçu."
+      "Consultez les résultats et le classement dans l'aperçu.",
+      "Onglet « Sondages » : créer des sondages (réponse unique/multiple, texte libre) avec échéance, public et visibilité des résultats, les publier et les annoncer dans les actualités."
     ]
   },
   "finances": {
