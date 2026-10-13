@@ -399,8 +399,8 @@ def test_bericht_ist_pdf_und_folgt_den_ergebnisregeln(admin):
 
 
 def test_bericht_inhalt_in_berichtssprache(admin, monkeypatch):
-    from apps.umfragen import pdf
     from apps.uebersetzung.services import manuell_speichern
+    from apps.umfragen import pdf
 
     umfrage = _anlegen(admin, ergebnis_modus="live", anonym=False, fragen=_themen_daten()["fragen"])
     manuell_speichern(umfrage, "titel", "fr", "Fête d'été")
