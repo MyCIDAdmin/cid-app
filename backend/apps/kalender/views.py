@@ -6,6 +6,7 @@
   POST  /kalender/termine/vorschlagen/          Vorschlag (Seite „page_kalender_vorschlag“)
   POST  /kalender/termine/{id}/freigeben|ablehnen|antworten|ankuendigen/
   GET   /kalender/termine/personen/?q=          Personensuche zum Einladen
+  POST  /kalender/ausblenden/                   Feed-Eintrag (z. B. Spiel) aus-/einblenden
   GET   /kalender-oeffentlich/?von&bis          Öffentliche Termine ohne Anmeldung
 """
 
@@ -29,8 +30,9 @@ from apps.communaute.models import Publication
 from apps.communaute.tasks import notifier_publication_importante
 from apps.membres.models import Membre, StatutMembre
 
-from .eintraege import baue_eintraege
+from .eintraege import AUSBLENDBAR, baue_eintraege
 from .models import (
+    Ausblendung,
     Dienst,
     DienstEintragung,
     Kreis,
@@ -81,6 +83,28 @@ def _zeitraum(request):
     if bis <= von or (bis - von).days > MAX_TAGE:
         raise ValidationError({"bis": f"Der Zeitraum darf höchstens {MAX_TAGE} Tage umfassen."})
     return von, bis
+
+
+class AusblendenView(APIView):
+    """POST {quelle, objekt_id, ausgeblendet} — Feed-Eintrag (z. B. ein Spiel) im Kalender aus- oder
+    einblenden. Nur mit Schreibrecht auf die Seite „Kalender“."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not ist_verwaltung(request.user, schreiben=True):
+            raise PermissionDenied("Keine Berechtigung.")
+        quelle = request.data.get("quelle")
+        objekt_id = str(request.data.get("objekt_id") or "")[:64]
+        if quelle not in AUSBLENDBAR or not objekt_id:
+            raise ValidationError({"quelle": "Dieser Eintrag kann nicht ausgeblendet werden."})
+        if request.data.get("ausgeblendet", True):
+            Ausblendung.objects.get_or_create(
+                quelle=quelle, objekt_id=objekt_id, defaults={"ausgeblendet_von": request.user}
+            )
+        else:
+            Ausblendung.objects.filter(quelle=quelle, objekt_id=objekt_id).delete()
+        return Response({"quelle": quelle, "objekt_id": objekt_id})
 
 
 class ZugangView(APIView):

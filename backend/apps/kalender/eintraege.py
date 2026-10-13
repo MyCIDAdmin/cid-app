@@ -3,7 +3,7 @@
 from django.db.models import Q
 
 from .feed import feed_eintraege
-from .models import TerminEinladung, Wiederholung
+from .models import Ausblendung, TerminEinladung, Wiederholung
 from .services import ist_verwaltung, sichtbare_termine, uebersetzungen_fuer, vorkommen
 
 # Welche Feed-Quellen in welcher Ansicht erscheinen.
@@ -21,6 +21,19 @@ FEED_QUELLEN = {
     | EIGENE,
     "buero": {"event", "aufgabe", "projekt"},
     "meine": {"aufgabe", "dienst", "projekt"} | EIGENE,
+}
+
+
+# Feed-Quellen, die das Bureau im Kalender aus- und wieder einblenden darf (Daten der GOAL API
+# stimmen nicht immer). Persönliche Einträge (Beiträge, Aufgaben, Dienste …) gehören nicht dazu.
+AUSBLENDBAR = {
+    "spieltag",
+    "event",
+    "umfrage",
+    "abstimmung",
+    "event_zahlung",
+    "kampagne",
+    "shop_reservierung",
 }
 
 
@@ -70,6 +83,7 @@ def baue_eintraege(user, ansicht, von, bis) -> list[dict]:
         for e in feed_eintraege(user, von, bis, nur_oeffentlich=user is None)
         if user is None or e["quelle"] in FEED_QUELLEN.get(ansicht, set())
     ]
+    feed = _ausblendungen_anwenden(feed, schreiben)
     trans = uebersetzungen_fuer(termine + [e["_objekt"] for e in feed if "_objekt" in e])
 
     ergebnis = []
@@ -86,4 +100,20 @@ def baue_eintraege(user, ansicht, von, bis) -> list[dict]:
             }
         ergebnis.append(e)
     ergebnis.sort(key=lambda x: x["beginn"])
+    return ergebnis
+
+
+def _ausblendungen_anwenden(feed: list[dict], schreiben: bool) -> list[dict]:
+    """Ausgeblendete Einträge entfernen ; wer schreiben darf, sieht sie markiert und kann sie
+    wieder einblenden."""
+    versteckt = set(Ausblendung.objects.values_list("quelle", "objekt_id"))
+    ergebnis = []
+    for e in feed:
+        ausblendbar = e["quelle"] in AUSBLENDBAR
+        ausgeblendet = ausblendbar and (e["quelle"], e.get("objekt_id")) in versteckt
+        if ausgeblendet and not schreiben:
+            continue
+        e["ausgeblendet"] = ausgeblendet
+        e["ausblendbar"] = ausblendbar and schreiben
+        ergebnis.append(e)
     return ergebnis

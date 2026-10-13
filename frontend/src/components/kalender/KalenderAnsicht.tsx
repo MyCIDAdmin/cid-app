@@ -31,9 +31,12 @@ function Chip({ eintrag, onWaehle }: { eintrag: KalenderEintrag; onWaehle: Props
       title={uebersetzt(eintrag, "titel")}
       className={`block w-full truncate rounded px-1 py-0.5 text-start text-[11px] font-medium ${
         KATEGORIE_STIL[eintrag.kategorie] ?? KATEGORIE_STIL.sonstiges
-      } ${vorschlag ? "border border-dashed border-text-tertiary" : ""}`}
+      } ${vorschlag ? "border border-dashed border-text-tertiary" : ""} ${
+        eintrag.ausgeblendet ? "line-through opacity-50" : ""
+      }`}
     >
       {eintrag.wichtig && "★ "}
+      {eintrag.ausgeblendet && `${t("ausgeblendet_kurz")} · `}
       {vorschlag && `${t("status.vorgeschlagen_kurz")} · `}
       {uebersetzt(eintrag, "titel")}
     </button>
@@ -70,7 +73,9 @@ export default function KalenderAnsicht({ eintraege, monat, modus, onWaehle }: P
                   <button
                     type="button"
                     onClick={() => onWaehle(e)}
-                    className="flex w-full items-center gap-3 rounded-cid-lg bg-bg-primary p-2 text-start shadow-sm hover:bg-bg-secondary"
+                    className={`flex w-full items-center gap-3 rounded-cid-lg bg-bg-primary p-2 text-start shadow-sm hover:bg-bg-secondary ${
+                      e.ausgeblendet ? "opacity-50" : ""
+                    }`}
                   >
                     <span
                       className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
@@ -82,6 +87,7 @@ export default function KalenderAnsicht({ eintraege, monat, modus, onWaehle }: P
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold text-text-primary">
                         {e.wichtig && "★ "}
+                        {e.ausgeblendet && `${t("ausgeblendet_kurz")} · `}
                         {uebersetzt(e, "titel")}
                       </span>
                       <span className="block truncate text-xs text-text-secondary">

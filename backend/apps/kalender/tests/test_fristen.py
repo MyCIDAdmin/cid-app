@@ -179,3 +179,66 @@ def test_praeferenz_wochenmail_ueber_profil_setzen():
     assert antwort.status_code == 200, antwort.data
     user.refresh_from_db()
     assert user.ui_praeferenzen["kalender_wochenmail"] is True
+
+
+AUSBLENDEN = "/api/v1/kalender/ausblenden/"
+
+
+def _ausblenden(user, spiel, ausgeblendet=True, quelle="spieltag"):
+    from rest_framework.test import APIClient
+
+    c = APIClient()
+    c.force_authenticate(user)
+    return c.post(
+        AUSBLENDEN,
+        {"quelle": quelle, "objekt_id": str(spiel.pk), "ausgeblendet": ausgeblendet},
+        format="json",
+    )
+
+
+def test_spiel_ausblenden_und_wieder_einblenden():
+    from apps.accounts.models import Role
+
+    bureau, _b = _user(Role.BUREAU_ADMIN, "bureau@example.de")
+    mitglied, _m = _user(email="mitglied@example.de")
+    spiel = _spiel(4)
+    titel = "Club Africain – ESS"
+
+    assert _ausblenden(bureau, spiel).status_code == 200
+    assert titel not in _titel(_eintraege(mitglied, "verein"))
+    # Das Bureau sieht den Eintrag markiert und kann ihn wieder einblenden.
+    eintrag = next(e for e in _eintraege(bureau, "verein").data if e["quelle"] == "spieltag")
+    assert eintrag["ausgeblendet"] is True and eintrag["ausblendbar"] is True
+    # Auch die öffentliche Seite zeigt ihn nicht.
+    from .test_kalender import OEFFENTLICH, _client, _zeitraum
+
+    assert titel not in {e["titel"] for e in _client().get(OEFFENTLICH, _zeitraum()).data}
+
+    assert _ausblenden(bureau, spiel, ausgeblendet=False).status_code == 200
+    assert titel in _titel(_eintraege(mitglied, "verein"))
+    eintrag = next(e for e in _eintraege(bureau, "verein").data if e["quelle"] == "spieltag")
+    assert eintrag["ausgeblendet"] is False
+
+
+def test_ausblenden_nur_mit_schreibrecht_und_nur_feed_quellen():
+    from apps.accounts.models import Role
+
+    mitglied, _m = _user(email="mitglied@example.de")
+    bureau, _b = _user(Role.BUREAU_ADMIN, "bureau@example.de")
+    spiel = _spiel(4)
+    assert _ausblenden(mitglied, spiel).status_code == 403
+    assert _ausblenden(bureau, spiel, quelle="beitrag").status_code == 400
+    antwort = _eintraege(mitglied, "verein")
+    assert not any(e.get("ausblendbar") for e in antwort.data)
+
+
+def test_ausgeblendetes_spiel_nicht_in_wochenmail(mailoutbox):
+    from apps.accounts.models import Role
+    from apps.kalender.tasks import wochenuebersicht
+
+    bureau, _b = _user(Role.BUREAU_ADMIN, "bureau@example.de")
+    bureau.ui_praeferenzen = {"kalender_wochenmail": True}
+    bureau.save()
+    spiel = _spiel(2)
+    _ausblenden(bureau, spiel)
+    assert wochenuebersicht() == 0

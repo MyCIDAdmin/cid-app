@@ -152,5 +152,9 @@
   "ics_herunterladen": "Ajouter à mon calendrier (.ics)",
   "wochenmail": "Récapitulatif hebdomadaire par e-mail (le lundi)",
   "wochenmail_hinweis": "Rendez-vous, tâches et services de la semaine. Désactivable à tout moment.",
-  "wochenmail_fehler": "Le paramètre n'a pas pu être enregistré."
+  "wochenmail_fehler": "Le paramètre n'a pas pu être enregistré.",
+  "ausblenden": "Masquer dans le calendrier",
+  "einblenden": "Réafficher dans le calendrier",
+  "ausgeblendet_kurz": "masqué",
+  "ausgeblendet_hinweis": "Cette entrée est masquée pour les membres – seul vous la voyez."
 }

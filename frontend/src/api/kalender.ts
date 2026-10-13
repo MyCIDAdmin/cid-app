@@ -55,6 +55,14 @@ export async function terminAendern(id: string, payload: Partial<TerminPayload>)
   return data;
 }
 
+export async function eintragAusblenden(payload: {
+  quelle: string;
+  objekt_id: string;
+  ausgeblendet: boolean;
+}): Promise<void> {
+  await apiClient.post("/kalender/ausblenden/", payload);
+}
+
 export async function terminLoeschen(id: string): Promise<void> {
   await apiClient.delete(`/kalender/termine/${id}/`);
 }

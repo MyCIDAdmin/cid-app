@@ -16,7 +16,7 @@ export default function NaechsteTermine() {
   }, []);
   const eintraege = useKalenderEintraege("verein", von, bis);
   if (eintraege.isError) return null;
-  const liste = (eintraege.data ?? []).slice(0, 5);
+  const liste = (eintraege.data ?? []).filter((e) => !e.ausgeblendet).slice(0, 5);
 
   return (
     <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm" data-testid="naechste-termine">

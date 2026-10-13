@@ -111,7 +111,7 @@ def _wochenmail_eintraege(user, von, bis) -> list[dict]:
     gesehen, ergebnis = set(), []
     for ansicht in ansichten:
         for e in baue_eintraege(user, ansicht, von, bis):
-            if e["id"] in gesehen or not von <= e["beginn"] < bis:
+            if e["id"] in gesehen or e.get("ausgeblendet") or not von <= e["beginn"] < bis:
                 continue
             gesehen.add(e["id"])
             ergebnis.append(e)

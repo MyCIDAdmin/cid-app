@@ -200,3 +200,27 @@ class DienstEintragung(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["dienst", "user"], name="uniq_kalender_dienst_user")
         ]
+
+
+class Ausblendung(models.Model):
+    """Ein Feed-Eintrag (z. B. ein Spiel aus der GOAL API), den das Bureau im Kalender
+    ausgeblendet hat — das Quellobjekt bleibt unverändert, nur der Kalender zeigt es nicht mehr."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    quelle = models.CharField(max_length=30)
+    objekt_id = models.CharField(max_length=64)
+    ausgeblendet_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    erstellt_am = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "kalender_ausblendungen"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["quelle", "objekt_id"], name="uniq_kalender_ausblendung"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.quelle}:{self.objekt_id}"
