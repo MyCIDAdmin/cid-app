@@ -1,5 +1,8 @@
 import type {
   Ansicht,
+  Dienst,
+  DienstPayload,
+  DienstVorschlag,
   KalenderEintrag,
   KalenderZugang,
   Person,
@@ -75,4 +78,52 @@ export async function terminAntworten(
 export async function suchePersonen(q: string): Promise<Person[]> {
   const { data } = await apiClient.get<Person[]>("/kalender/termine/personen/", { params: { q } });
   return data;
+}
+
+export async function listDienste(filter: {
+  termin?: string;
+  evenement?: string;
+}): Promise<Dienst[]> {
+  const { data } = await apiClient.get<Dienst[]>("/kalender/dienste/", { params: filter });
+  return data;
+}
+
+export async function listOffeneDienste(): Promise<Dienst[]> {
+  const { data } = await apiClient.get<Dienst[]>("/kalender/dienste/offen/");
+  return data;
+}
+
+export async function dienstErstellen(payload: DienstPayload): Promise<Dienst> {
+  const { data } = await apiClient.post<Dienst>("/kalender/dienste/", payload);
+  return data;
+}
+
+export async function dienstAendern(id: string, payload: Partial<DienstPayload>): Promise<Dienst> {
+  const { data } = await apiClient.patch<Dienst>(`/kalender/dienste/${id}/`, payload);
+  return data;
+}
+
+export async function dienstLoeschen(id: string): Promise<void> {
+  await apiClient.delete(`/kalender/dienste/${id}/`);
+}
+
+export async function dienstAktion(
+  id: string,
+  aktion: "eintragen" | "austragen" | "zuweisen" | "entfernen",
+  user?: string,
+): Promise<Dienst> {
+  const { data } = await apiClient.post<Dienst>(
+    `/kalender/dienste/${id}/${aktion}/`,
+    user ? { user } : undefined,
+  );
+  return data;
+}
+
+export async function dienstVorschlaege(id: string): Promise<DienstVorschlag[]> {
+  const { data } = await apiClient.get<DienstVorschlag[]>(`/kalender/dienste/${id}/vorschlaege/`);
+  return data;
+}
+
+export async function dienstAnschreiben(id: string, user: string): Promise<void> {
+  await apiClient.post(`/kalender/dienste/${id}/anschreiben/`, { user });
 }

@@ -29,18 +29,21 @@ export const SICHTBARKEITEN: Sichtbarkeit[] = [
   "mitglieder",
   "oeffentlich",
 ];
-export type Kreis = "bureau" | "projekt" | "";
+export type Kreis = "bureau" | "projekt" | "event_team" | "privat" | "";
 export type Wiederholung = "keine" | "woechentlich" | "zweiwoechentlich" | "monatlich";
 export type TerminStatus = "vorgeschlagen" | "freigegeben" | "abgelehnt";
 export type Antwort = "ausstehend" | "zusage" | "vielleicht" | "absage";
 export type Ansicht = "verein" | "buero" | "meine";
-export type Quelle = "termin" | "event" | "aufgabe" | "spieltag" | "umfrage" | "abstimmung";
+export type Quelle =
+  "termin" | "event" | "aufgabe" | "spieltag" | "umfrage" | "abstimmung" | "dienst";
 
 /** Ein Eintrag der Kalenderansicht (ein Vorkommen eines Termins oder ein Feed-Eintrag). */
 export interface KalenderEintrag {
   id: string;
   quelle: Quelle;
   termin_id?: string;
+  /** Id des Quellobjekts bei Einträgen aus anderen Modulen (z. B. der Veranstaltung). */
+  objekt_id?: string;
   titel: string;
   beschreibung: string;
   ort: string;
@@ -80,6 +83,8 @@ export interface Termin {
   kreis: Kreis;
   projekt: string | null;
   projekt_titel: string;
+  evenement: string | null;
+  evenement_titel: string;
   wichtig: boolean;
   wiederholung: Wiederholung;
   wiederholung_bis: string | null;
@@ -103,6 +108,7 @@ export interface TerminPayload {
   sichtbarkeit: Sichtbarkeit;
   kreis: Kreis;
   projekt: string | null;
+  evenement: string | null;
   wichtig: boolean;
   wiederholung: Wiederholung;
   wiederholung_bis: string | null;
@@ -121,4 +127,44 @@ export interface KalenderZugang {
 export interface Person {
   user: string;
   name: string;
+}
+
+/** Helfer-Slot an einem Termin oder einer Veranstaltung (Release 16). */
+export interface Dienst {
+  id: string;
+  termin: string | null;
+  termin_titel: string;
+  evenement: string | null;
+  evenement_titel: string;
+  titel: string;
+  beschreibung: string;
+  beginn: string;
+  ende: string | null;
+  benoetigt: number;
+  faehigkeit: string | null;
+  faehigkeit_name: string;
+  austragen_bis: string | null;
+  erinnerung_stunden: number | null;
+  besetzt: number;
+  frei: number;
+  ich_eingetragen: boolean;
+  /** Namen nur für Schreibberechtigte. */
+  eingetragen: Person[];
+}
+
+export interface DienstPayload {
+  termin?: string | null;
+  evenement?: string | null;
+  titel: string;
+  beschreibung: string;
+  beginn: string;
+  ende: string | null;
+  benoetigt: number;
+  faehigkeit: string | null;
+  austragen_bis: string | null;
+  erinnerung_stunden: number | null;
+}
+
+export interface DienstVorschlag extends Person {
+  kommentar: string;
 }

@@ -10,7 +10,7 @@ from .services import ist_verwaltung, sichtbare_termine, uebersetzungen_fuer, vo
 FEED_QUELLEN = {
     "verein": {"event", "spieltag", "umfrage", "abstimmung"},
     "buero": {"event", "aufgabe"},
-    "meine": {"aufgabe"},
+    "meine": {"aufgabe", "dienst"},
 }
 
 
@@ -31,6 +31,7 @@ def _termin_dict(t, start, ende, trans, antworten, schreiben):
         "kreis": t.kreis,
         "projekt": str(t.projekt_id) if t.projekt_id else None,
         "projekt_titel": t.projekt.titre if t.projekt_id else "",
+        "evenement": str(t.evenement_id) if t.evenement_id else None,
         "wichtig": t.wichtig,
         "wiederholung": t.wiederholung,
         "status": t.status,

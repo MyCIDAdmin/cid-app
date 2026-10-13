@@ -1,5 +1,5 @@
 /** Hilfsfunktionen des Kalenders : Monatsraster (Woche beginnt am Montag), Gruppierung, Formate. */
-import type { Kategorie, KalenderEintrag } from "../types/kalender";
+import type { Dienst, Kategorie, KalenderEintrag } from "../types/kalender";
 
 const TAG_MS = 24 * 60 * 60 * 1000;
 
@@ -92,3 +92,14 @@ export const KATEGORIE_STIL: Record<Kategorie, string> = {
   vereinsdatum: "bg-ca text-white",
   sonstiges: "bg-bg-secondary text-text-secondary",
 };
+
+export function formatDienstZeit(d: Pick<Dienst, "beginn" | "ende">, sprache: string): string {
+  const von = new Date(d.beginn);
+  const uhr = (x: Date) => x.toLocaleTimeString(sprache, { hour: "2-digit", minute: "2-digit" });
+  const tag = von.toLocaleDateString(sprache, {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  });
+  return `${tag}, ${uhr(von)}${d.ende ? ` – ${uhr(new Date(d.ende))}` : ""}`;
+}

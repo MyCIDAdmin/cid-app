@@ -36,6 +36,8 @@ class Sichtbarkeit(models.TextChoices):
 class Kreis(models.TextChoices):
     BUREAU = "bureau", "Bureau"
     PROJEKT = "projekt", "Projektteam"
+    EVENT_TEAM = "event_team", "Event-Team"
+    PRIVAT = "privat", "Privat (nur Eingeladene)"
 
 
 class Wiederholung(models.TextChoices):
@@ -76,6 +78,13 @@ class Termin(models.Model):
     kreis = models.CharField(max_length=10, choices=Kreis.choices, blank=True)
     projekt = models.ForeignKey(
         "projets.Projet", on_delete=models.CASCADE, null=True, blank=True, related_name="termine"
+    )
+    evenement = models.ForeignKey(
+        "evenements.Evenement",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="kalender_termine",
     )
     wichtig = models.BooleanField(default=False)
     wiederholung = models.CharField(
@@ -124,4 +133,70 @@ class TerminEinladung(models.Model):
         db_table = "kalender_einladungen"
         constraints = [
             models.UniqueConstraint(fields=["termin", "user"], name="uniq_kalender_einladung")
+        ]
+
+
+class Dienst(models.Model):
+    """Helfer-Slot (Release 16) an einem Termin ODER an einer Veranstaltung, z. B. „Aufbau
+    14–16 Uhr, 3 Personen“. Optional an eine Fähigkeit gebunden (Vorschläge aus der
+    Fähigkeiten-Datenbank). Wer sich einträgt, gehört zum Event-Team der Veranstaltung."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    termin = models.ForeignKey(
+        Termin, on_delete=models.CASCADE, null=True, blank=True, related_name="dienste"
+    )
+    evenement = models.ForeignKey(
+        "evenements.Evenement",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="kalender_dienste",
+    )
+    titel = models.CharField(max_length=120)
+    beschreibung = models.TextField(blank=True, max_length=1000)
+    beginn = models.DateTimeField()
+    ende = models.DateTimeField(null=True, blank=True)
+    benoetigt = models.PositiveSmallIntegerField(default=1)
+    faehigkeit = models.ForeignKey(
+        "membres.Faehigkeit", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    austragen_bis = models.DateTimeField(null=True, blank=True)
+    erinnerung_stunden = models.PositiveSmallIntegerField(null=True, blank=True, default=24)
+    letzte_erinnerung = models.DateTimeField(null=True, blank=True)
+    erstellt_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "kalender_dienste"
+        ordering = ["beginn", "titel"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(termin__isnull=False, evenement__isnull=True)
+                    | models.Q(termin__isnull=True, evenement__isnull=False)
+                ),
+                name="kalender_dienst_termin_xor_evenement",
+            )
+        ]
+
+    def __str__(self):
+        return self.titel
+
+
+class DienstEintragung(models.Model):
+    dienst = models.ForeignKey(Dienst, on_delete=models.CASCADE, related_name="eintraege")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="kalender_dienste"
+    )
+    zugewiesen_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "kalender_dienst_eintraege"
+        constraints = [
+            models.UniqueConstraint(fields=["dienst", "user"], name="uniq_kalender_dienst_user")
         ]

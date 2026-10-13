@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import KalenderAnsicht from "../../components/kalender/KalenderAnsicht";
+import OffeneDienste from "../../components/kalender/OffeneDienste";
 import TerminDialog from "../../components/kalender/TerminDialog";
 import TerminFormular from "../../components/kalender/TerminFormular";
 import TabLeiste from "../../components/ui/TabLeiste";
@@ -64,6 +65,8 @@ export default function KalenderPage() {
           </button>
         )}
       </div>
+
+      <OffeneDienste />
 
       <TabLeiste
         tabs={tabs}

@@ -44,7 +44,9 @@
   },
   "kreis": {
     "bureau": "Bureau",
-    "projekt": "Projektteam"
+    "projekt": "Projektteam",
+    "event_team": "Event-Team",
+    "privat": "Privat (nur Eingeladene)"
   },
   "wiederholung": {
     "keine": "Einmalig",
@@ -103,7 +105,11 @@
     "person_suchen": "Name suchen (mind. 2 Buchstaben)",
     "entfernen": "{{name}} entfernen",
     "speichern": "Speichern",
-    "vorschlag_senden": "Vorschlag senden"
+    "vorschlag_senden": "Vorschlag senden",
+    "evenement": "Veranstaltung",
+    "evenement_waehlen": "Veranstaltung wählen …",
+    "privat_hinweis": "Privat: nur du und die eingeladenen Personen sehen diesen Termin – auch das Bureau nicht.",
+    "event_team_hinweis": "Event-Team: sehen alle, die sich für einen Dienst dieser Veranstaltung eintragen."
   },
   "widget": {
     "titel": "Nächste Termine",
@@ -114,5 +120,33 @@
     "titel": "Termine",
     "anmelden": "Anmelden",
     "leer": "Zurzeit sind keine öffentlichen Termine geplant."
+  },
+  "dienste": {
+    "titel": "Dienste (Helfer gesucht)",
+    "hinzufuegen": "Dienst hinzufügen",
+    "keine": "Noch keine Dienste.",
+    "besetzung": "{{besetzt}} von {{benoetigt}} besetzt",
+    "eintragen": "Eintragen",
+    "austragen": "Austragen",
+    "du_bist_eingetragen": "Du bist eingetragen",
+    "personen": "Personen",
+    "loeschen": "Dienst löschen",
+    "entfernen": "{{name}} austragen",
+    "person_zuweisen": "Person zuweisen (Name suchen)",
+    "vorschlaege": "Vorschläge: {{faehigkeit}}",
+    "keine_vorschlaege": "Keine passenden Mitglieder gefunden.",
+    "anschreiben": "Anschreiben",
+    "angeschrieben": "Angeschrieben",
+    "zuweisen": "Einteilen",
+    "offen_titel": "Hier wird noch geholfen",
+    "form": {
+      "titel": "Dienst, z. B. Aufbau",
+      "beginn": "Beginn",
+      "ende": "Ende",
+      "benoetigt": "Personen benötigt",
+      "austragen_bis": "Austragen bis (optional)",
+      "faehigkeit": "Benötigte Fähigkeit",
+      "keine_faehigkeit": "Keine bestimmte Fähigkeit"
+    }
   }
 }

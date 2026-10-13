@@ -97,3 +97,72 @@ export function usePersonenSuche(q: string) {
     enabled: q.trim().length >= 2,
   });
 }
+
+export function useDienste(filter: { termin?: string; evenement?: string }, enabled = true) {
+  return useQuery({
+    queryKey: ["kalender", "dienste", filter] as const,
+    queryFn: () => api.listDienste(filter),
+    enabled: enabled && Boolean(filter.termin || filter.evenement),
+  });
+}
+
+export function useOffeneDienste() {
+  return useQuery({
+    queryKey: ["kalender", "dienste", "offen"] as const,
+    queryFn: api.listOffeneDienste,
+  });
+}
+
+export function useDienstVorschlaege(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["kalender", "dienste", "vorschlaege", id] as const,
+    queryFn: () => api.dienstVorschlaege(id),
+    enabled,
+  });
+}
+
+export function useDienstErstellen() {
+  const invalidieren = useInvalidieren();
+  return useMutation({ mutationFn: api.dienstErstellen, onSuccess: invalidieren });
+}
+
+export function useDienstAendern() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<import("../types/kalender").DienstPayload>;
+    }) => api.dienstAendern(id, payload),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useDienstLoeschen() {
+  const invalidieren = useInvalidieren();
+  return useMutation({ mutationFn: api.dienstLoeschen, onSuccess: invalidieren });
+}
+
+export function useDienstAktion() {
+  const invalidieren = useInvalidieren();
+  return useMutation({
+    mutationFn: ({
+      id,
+      aktion,
+      user,
+    }: {
+      id: string;
+      aktion: "eintragen" | "austragen" | "zuweisen" | "entfernen";
+      user?: string;
+    }) => api.dienstAktion(id, aktion, user),
+    onSuccess: invalidieren,
+  });
+}
+
+export function useDienstAnschreiben() {
+  return useMutation({
+    mutationFn: ({ id, user }: { id: string; user: string }) => api.dienstAnschreiben(id, user),
+  });
+}
