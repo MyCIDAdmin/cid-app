@@ -14,7 +14,9 @@ namentlichen Umfragen mit Namen): Seite „page_quiz“ mit Leserecht.
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.http import HttpResponse
 from django.utils.html import escape
+from django.utils.text import slugify
 from rest_framework import status
 from rest_framework.decorators import action, parser_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -34,6 +36,7 @@ from .models import (
     UmfrageTeilnahme,
     Zielgruppe,
 )
+from .pdf import erzeuge_bericht_pdf
 from .serializers import (
     BildSerializer,
     TeilnahmeEingabeSerializer,
@@ -165,8 +168,22 @@ class UmfrageViewSet(ModelViewSet):
 
     @action(detail=True, methods=["get"])
     def ergebnisse(self, request, pk=None):
+        return Response(self._ergebnis_daten(self.get_object(), request.user))
+
+    @action(detail=True, methods=["get"])
+    def bericht(self, request, pk=None):
+        """PDF-Bericht mit Diagrammen ; gleiche Sichtbarkeitsregeln wie `ergebnisse`.
+        `?lang=de|fr` (Standard: bevorzugte Sprache des Nutzers, sonst Deutsch)."""
         umfrage = self.get_object()
-        user = request.user
+        daten = self._ergebnis_daten(umfrage, request.user)
+        sprache = request.query_params.get("lang") or getattr(request.user, "langue_preferee", "")
+        pdf = erzeuge_bericht_pdf(umfrage=umfrage, daten=daten, sprache=sprache)
+        antwort = HttpResponse(pdf, content_type="application/pdf")
+        dateiname = slugify(umfrage.titel)[:60] or "umfrage"
+        antwort["Content-Disposition"] = f'attachment; filename="bericht_{dateiname}.pdf"'
+        return antwort
+
+    def _ergebnis_daten(self, umfrage, user) -> dict:
         teilgenommen = umfrage.teilnahmen.filter(user=user).exists()
         if not kann_ergebnisse_sehen(user, umfrage, teilgenommen):
             raise PermissionDenied("Die Ergebnisse sind für dich (noch) nicht freigegeben.")
@@ -215,7 +232,7 @@ class UmfrageViewSet(ModelViewSet):
         }
         if verwaltung and not umfrage.anonym:
             daten["einreichungen"] = self._einreichungen(umfrage, antworten)
-        return Response(daten)
+        return daten
 
     @staticmethod
     def _einreichungen(umfrage, antworten):

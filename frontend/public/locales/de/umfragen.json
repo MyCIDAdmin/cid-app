@@ -58,7 +58,10 @@
     "keine_teilnahmen": "Noch keine Teilnahmen.",
     "nur_verwaltung": "Die Ergebnisse sieht nur die Verwaltung.",
     "nach_frist": "Die Ergebnisse siehst du nach Ablauf der Frist.",
-    "kommentare": "Bemerkungen"
+    "kommentare": "Bemerkungen",
+    "pdf": "PDF-Bericht herunterladen",
+    "pdf_laeuft": "Bericht wird erstellt …",
+    "pdf_fehler": "Der Bericht konnte nicht erstellt werden."
   },
   "admin": {
     "neu": "Neue Umfrage",

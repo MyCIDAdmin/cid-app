@@ -58,7 +58,10 @@
     "keine_teilnahmen": "Aucune participation pour l'instant.",
     "nur_verwaltung": "Seule l'administration voit les résultats.",
     "nach_frist": "Tu verras les résultats après l'échéance.",
-    "kommentare": "Remarques"
+    "kommentare": "Remarques",
+    "pdf": "Télécharger le rapport PDF",
+    "pdf_laeuft": "Création du rapport …",
+    "pdf_fehler": "Le rapport n'a pas pu être créé."
   },
   "admin": {
     "neu": "Nouveau sondage",
