@@ -1,7 +1,8 @@
 """Kalender (Release 15).
 
   GET   /kalender/zugang/                       Was darf ich ? (verein/buero/schreiben/vorschlagen)
-  GET   /kalender/eintraege/?von&bis&ansicht=   verein | buero | meine (Termine + Feed)
+  GET   /kalender/eintraege/?von&bis&ansicht=   verein | buero | meine (Termine + Feed),
+                                                auch kombiniert : ansicht=verein,meine
   CRUD  /kalender/termine/                      Pflege : Seite „page_kalender“ (Schreiben)
   POST  /kalender/termine/vorschlagen/          Vorschlag (Seite „page_kalender_vorschlag“)
   POST  /kalender/termine/{id}/freigeben|ablehnen|antworten|ankuendigen/
@@ -30,7 +31,7 @@ from apps.communaute.models import Publication
 from apps.communaute.tasks import notifier_publication_importante
 from apps.membres.models import Membre, StatutMembre
 
-from .eintraege import AUSBLENDBAR, baue_eintraege
+from .eintraege import AUSBLENDBAR, baue_eintraege, baue_mehrere
 from .models import (
     Ausblendung,
     Dienst,
@@ -118,14 +119,16 @@ class EintraegeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        ansicht = request.query_params.get("ansicht", "verein")
-        if ansicht not in ("verein", "buero", "meine"):
+        ansichten = list(
+            dict.fromkeys(a for a in request.query_params.get("ansicht", "verein").split(",") if a)
+        )
+        if not ansichten or any(a not in ("verein", "buero", "meine") for a in ansichten):
             raise ValidationError({"ansicht": "Unbekannte Ansicht."})
         z = zugang(request.user)
-        if ansicht == "buero" and not z["buero"]:
+        if "buero" in ansichten and not z["buero"]:
             raise PermissionDenied("Kein Zugang zum Büro-Kalender.")
         von, bis = _zeitraum(request)
-        return Response(baue_eintraege(request.user, ansicht, von, bis))
+        return Response(baue_mehrere(request.user, ansichten, von, bis))
 
 
 class OeffentlichView(APIView):

@@ -77,6 +77,8 @@ export interface UiPraeferenzen {
   sidebar_collapsed?: boolean;
   /** Wochenübersicht des Kalenders montags per E-Mail (Release 17, Opt-in). */
   kalender_wochenmail?: boolean;
+  /** Im Kalender kombinierte Sichten (Release 17) : verein | buero | meine. */
+  kalender_ansichten?: ("verein" | "buero" | "meine")[];
 }
 
 export interface CidUser {

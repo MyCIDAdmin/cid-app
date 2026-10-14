@@ -156,5 +156,7 @@
   "ausblenden": "Im Kalender ausblenden",
   "einblenden": "Im Kalender wieder einblenden",
   "ausgeblendet_kurz": "ausgeblendet",
-  "ausgeblendet_hinweis": "Dieser Eintrag ist für Mitglieder ausgeblendet – nur du siehst ihn."
+  "ausgeblendet_hinweis": "Dieser Eintrag ist für Mitglieder ausgeblendet – nur du siehst ihn.",
+  "sichten": "Angezeigte Kalender",
+  "alle_sichten": "Alle anzeigen"
 }

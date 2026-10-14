@@ -6,12 +6,14 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import AnsichtWaehler from "../../components/kalender/AnsichtWaehler";
 import KalenderAnsicht from "../../components/kalender/KalenderAnsicht";
 import OffeneDienste from "../../components/kalender/OffeneDienste";
 import TerminDialog from "../../components/kalender/TerminDialog";
 import TerminFormular from "../../components/kalender/TerminFormular";
 import WochenmailSchalter from "../../components/kalender/WochenmailSchalter";
-import TabLeiste from "../../components/ui/TabLeiste";
+import { speicherePraeferenzen } from "../../api/auth";
+import { useAuthStore } from "../../store/authStore";
 import { useKalenderEintraege, useKalenderZugang } from "../../hooks/useKalender";
 import {
   KATEGORIEN,
@@ -27,7 +29,11 @@ type Modus = "monat" | "liste";
 export default function KalenderPage() {
   const { t, i18n } = useTranslation("kalender");
   const zugang = useKalenderZugang();
-  const [ansicht, setAnsicht] = useState<Ansicht>("verein");
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+  const [gewaehlt, setGewaehlt] = useState<Ansicht[]>(
+    () => user?.ui_praeferenzen?.kalender_ansichten ?? ["verein"],
+  );
   const [monat, setMonat] = useState(() => {
     const heute = new Date();
     return new Date(heute.getFullYear(), heute.getMonth(), 1);
@@ -38,15 +44,27 @@ export default function KalenderPage() {
   const [formular, setFormular] = useState<{ termin?: Termin; vorschlag: boolean } | null>(null);
 
   const { von, bis } = useMemo(() => monatsRaster(monat), [monat]);
-  const eintraege = useKalenderEintraege(ansicht, von, bis);
+  const z = zugang.data;
+  const verfuegbar = useMemo<Ansicht[]>(
+    () => ["verein", ...(z?.buero ? (["buero"] as const) : []), "meine"],
+    [z?.buero],
+  );
+  const ansichten = useMemo<Ansicht[]>(() => {
+    const erlaubt = gewaehlt.filter((a) => verfuegbar.includes(a));
+    return erlaubt.length > 0 ? erlaubt : ["verein"];
+  }, [gewaehlt, verfuegbar]);
+  const eintraege = useKalenderEintraege(ansichten, von, bis);
   const gefiltert = (eintraege.data ?? []).filter((e) => !kategorie || e.kategorie === kategorie);
 
-  const z = zugang.data;
-  const tabs = [
-    { id: "verein", label: t("tab.verein") },
-    ...(z?.buero ? [{ id: "buero", label: t("tab.buero") }] : []),
-    { id: "meine", label: t("tab.meine") },
-  ];
+  function waehleSichten(neu: Ansicht[]) {
+    setGewaehlt(neu);
+    if (user) {
+      // Auswahl merken (Einstellung des Kontos) ; schlägt das fehl, gilt sie nur für diese Sitzung.
+      speicherePraeferenzen({ ui_praeferenzen: { kalender_ansichten: neu } })
+        .then(setUser)
+        .catch(() => undefined);
+    }
+  }
 
   function verschiebe(delta: number) {
     setMonat((m) => new Date(m.getFullYear(), m.getMonth() + delta, 1));
@@ -70,12 +88,7 @@ export default function KalenderPage() {
       <OffeneDienste />
       <WochenmailSchalter />
 
-      <TabLeiste
-        tabs={tabs}
-        aktiv={ansicht}
-        onChange={(id) => setAnsicht(id as Ansicht)}
-        ariaLabel={t("titel")}
-      />
+      <AnsichtWaehler verfuegbar={verfuegbar} aktiv={ansichten} onChange={waehleSichten} />
 
       <div className="flex flex-wrap items-center gap-2">
         <button

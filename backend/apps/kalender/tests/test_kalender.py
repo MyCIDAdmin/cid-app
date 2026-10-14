@@ -319,3 +319,22 @@ def test_zeitraum_begrenzt(bureau):
         EINTRAEGE, {"von": "2026-01-01", "bis": "2027-01-01", "ansicht": "verein"}
     )
     assert antwort.status_code == 400
+
+
+def test_kombinierte_ansichten_ohne_doppelte(bureau):
+    _termin(bureau, titel="Fest", sichtbarkeit="mitglieder", kategorie="vereinsdatum")
+    einzeln = _eintraege(bureau, "verein")
+    kombi = _client(bureau).get(EINTRAEGE, {**_zeitraum(), "ansicht": "verein,meine,buero"})
+    assert kombi.status_code == 200
+    ids = [e["id"] for e in kombi.data]
+    assert len(ids) == len(set(ids))
+    assert _titel(einzeln) <= _titel(kombi)
+    assert [e["beginn"] for e in kombi.data] == sorted(e["beginn"] for e in kombi.data)
+
+
+def test_kombinierte_ansicht_buero_nur_mit_zugang_und_unbekannte_abgelehnt():
+    mitglied, _ = _user(email="m@example.de")
+    c = _client(mitglied)
+    assert c.get(EINTRAEGE, {**_zeitraum(), "ansicht": "verein,buero"}).status_code == 403
+    assert c.get(EINTRAEGE, {**_zeitraum(), "ansicht": "verein,quatsch"}).status_code == 400
+    assert c.get(EINTRAEGE, {**_zeitraum(), "ansicht": "verein,meine"}).status_code == 200

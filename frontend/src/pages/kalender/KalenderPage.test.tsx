@@ -1,7 +1,9 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as authApi from "../../api/auth";
 import * as hooks from "../../hooks/useKalender";
+import { useAuthStore, type CidUser } from "../../store/authStore";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { eintrag } from "../../test/kalenderFixture";
 import type { KalenderZugang } from "../../types/kalender";
@@ -17,6 +19,10 @@ vi.mock("../../hooks/useKalender", async () => {
     useEintragAusblenden: vi.fn(),
   };
 });
+vi.mock("../../api/auth", async (orig) => ({
+  ...(await orig<typeof import("../../api/auth")>()),
+  speicherePraeferenzen: vi.fn(),
+}));
 vi.mock("../../hooks/useProjets", () => ({ useProjets: () => ({ data: { results: [] } }) }));
 
 function zugang(extra: Partial<KalenderZugang> = {}) {
@@ -51,9 +57,9 @@ describe("KalenderPage", () => {
   it("zeigt Mitgliedern nur Vereinskalender und Meine Termine", () => {
     zugang();
     renderWithProviders(<KalenderPage />);
-    expect(screen.getByRole("tab", { name: "tab.verein" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "tab.meine" })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "tab.buero" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /tab\.verein/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /tab\.meine/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /tab\.buero/ })).not.toBeInTheDocument();
     expect(screen.queryByText("neuer_termin")).not.toBeInTheDocument();
     expect(screen.queryByText("termin_vorschlagen")).not.toBeInTheDocument();
   });
@@ -61,7 +67,7 @@ describe("KalenderPage", () => {
   it("zeigt den Büro-Reiter und „Neuer Termin“ mit Schreibrecht", () => {
     zugang({ buero: true, schreiben: true, verwaltung: true });
     renderWithProviders(<KalenderPage />);
-    expect(screen.getByRole("tab", { name: "tab.buero" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /tab\.buero/ })).toBeInTheDocument();
     expect(screen.getByText("neuer_termin")).toBeInTheDocument();
   });
 
@@ -147,5 +153,52 @@ describe("KalenderPage", () => {
     fireEvent.change(screen.getByLabelText("modus.label"), { target: { value: "liste" } });
     fireEvent.click(screen.getByText("Vorstandssitzung"));
     expect(screen.queryByText("ausblenden")).not.toBeInTheDocument();
+  });
+
+  it("kombiniert Sichten und fragt sie gemeinsam ab", () => {
+    zugang({ buero: true });
+    renderWithProviders(<KalenderPage />);
+    expect(hooks.useKalenderEintraege).toHaveBeenLastCalledWith(
+      ["verein"],
+      expect.any(Date),
+      expect.any(Date),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /tab\.meine/ }));
+    fireEvent.click(screen.getByRole("button", { name: /tab\.buero/ }));
+    expect(hooks.useKalenderEintraege).toHaveBeenLastCalledWith(
+      ["verein", "buero", "meine"],
+      expect.any(Date),
+      expect.any(Date),
+    );
+  });
+
+  it("lässt immer mindestens eine Sicht aktiv", () => {
+    zugang();
+    renderWithProviders(<KalenderPage />);
+    fireEvent.click(screen.getByRole("button", { name: /tab\.verein/ }));
+    expect(screen.getByRole("button", { name: /tab\.verein/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("merkt sich die Auswahl in den Einstellungen", async () => {
+    zugang();
+    useAuthStore.setState({
+      user: { id: "u", email: "a@b.de", role: "membre", langue_preferee: "de" } as CidUser,
+    });
+    vi.mocked(authApi.speicherePraeferenzen).mockResolvedValue({
+      id: "u",
+      email: "a@b.de",
+      role: "membre",
+      langue_preferee: "de",
+      ui_praeferenzen: { kalender_ansichten: ["verein", "meine"] },
+    } as CidUser);
+    renderWithProviders(<KalenderPage />);
+    fireEvent.click(screen.getByRole("button", { name: /tab\.meine/ }));
+    expect(authApi.speicherePraeferenzen).toHaveBeenCalledWith({
+      ui_praeferenzen: { kalender_ansichten: ["verein", "meine"] },
+    });
+    useAuthStore.setState({ user: null });
   });
 });
