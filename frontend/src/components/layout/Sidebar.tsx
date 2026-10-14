@@ -71,6 +71,7 @@ import {
   IconLayoutDashboard,
   IconMail,
   IconMailCog,
+  IconMapPin,
   IconMessageCircle2,
   IconNews,
   IconPhoto,
@@ -176,7 +177,13 @@ const ADMIN_SUBGROUPS: Record<SidebarSubgroupKey, string[]> = {
     "/stats",
   ],
   aktivitaeten: ["/admin/events", "/admin/projets", "/admin/boutique", "/admin/partner"],
-  community: ["/admin/quiz", "/admin/albums", "/admin/fan-club-logos", "/admin/configuration-site"],
+  community: [
+    "/admin/quiz",
+    "/admin/albums",
+    "/admin/regionen",
+    "/admin/fan-club-logos",
+    "/admin/configuration-site",
+  ],
   system: ["/admin/notifications"],
 };
 
@@ -239,6 +246,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: IconCalendarMonth,
     group: "general",
     module: "kalender",
+  },
+  // Regionen (Release 26) : offen für jedes Konto (auch Fans), Details prüft das Backend.
+  {
+    to: "/regionen",
+    labelKey: "nav.regionen",
+    icon: IconMapPin,
+    group: "general",
+    module: "regionen",
   },
   // Projets & Actions (module ajouté le 2026-09-22 sur demande utilisateur) — ouvert à tout
   // authentifié, même principe que /evenements : le backend ne renvoie de toute façon pas les
@@ -471,6 +486,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: IconShirtSport,
     group: "administration",
     pageSlug: "page_fan_club_logos", // Matrix der Rollenverwaltung (seit 2026-10-12)
+  },
+  // Regionen-Struktur (Release 26) : nur App Admin (Backend IsSuperAdmin).
+  {
+    to: "/admin/regionen",
+    labelKey: "nav.admin_regionen",
+    icon: IconMapPin,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.super_admin,
   },
 ];
 

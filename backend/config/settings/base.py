@@ -66,6 +66,7 @@ LOCAL_APPS = [
     "apps.rbac",
     "apps.uebersetzung",
     "apps.partenaires",
+    "apps.regionen",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

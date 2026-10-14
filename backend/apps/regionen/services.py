@@ -1,0 +1,63 @@
+"""Regionen — Zuordnung von Personen, Mitgliederzahlen und Bearbeitungsrechte."""
+
+from django.utils.text import slugify
+
+from apps.membres.models import Membre, StatutMembre
+from apps.rbac import services as rbac
+from apps.rbac.models import NiveauAcces
+
+from .models import RESERVIERTE_SLUGS, Region, RegionLand, Verantwortlicher
+
+SEITE = "page_regionen"
+_UMLAUTE = str.maketrans(
+    {"ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "ß": "ss"}
+)
+
+
+def region_von_land(land: str | None) -> Region | None:
+    if not land:
+        return None
+    zuordnung = RegionLand.objects.filter(land=land, region__aktiv=True).select_related("region")
+    treffer = zuordnung.first()
+    return treffer.region if treffer else None
+
+
+def meine_region(user) -> Region | None:
+    """Region aus dem Bundesland des Mitgliedsprofils ; Konten ohne Mitgliedsprofil haben keine."""
+    membre = getattr(user, "membre", None)
+    return region_von_land(membre.land_de) if membre is not None else None
+
+
+def mitglieder_zahl(region: Region) -> int:
+    laender = list(region.laender.values_list("land", flat=True))
+    if not laender:
+        return 0
+    return Membre.objects.filter(statut=StatutMembre.ACTIF, land_de__in=laender).count()
+
+
+def ist_personenverwalter(user) -> bool:
+    """Büro (Seite „Regionen“ mit Schreibrecht) und App Admin : Verantwortliche zuweisen und
+    jede Regionsseite bearbeiten."""
+    return rbac.has_admin_page_access(user, SEITE, NiveauAcces.LECTURE_ECRITURE)
+
+
+def darf_bearbeiten(user, region: Region) -> bool:
+    if ist_personenverwalter(user):
+        return True
+    return Verantwortlicher.objects.filter(region=region, user=user).exists()
+
+
+def eindeutiger_slug(name: str) -> str:
+    umgeschrieben = name.translate(_UMLAUTE)
+    basis = slugify(umgeschrieben)[:50] or "region"
+    if basis in RESERVIERTE_SLUGS:
+        basis = f"{basis}-region"
+    slug, n = basis, 2
+    while Region.objects.filter(slug=slug).exists():
+        slug, n = f"{basis}-{n}", n + 1
+    return slug
+
+
+def anzeigename_von(user) -> str:
+    membre = getattr(user, "membre", None)
+    return f"{membre.prenom} {membre.nom}".strip() if membre is not None else ""

@@ -72,6 +72,7 @@ MENU_ITEMS = [
     ),
     ("covoiturage", "Fahrgemeinschaften", "general", "evenements", ("page_events",)),
     ("kalender", "Kalender", "general", "evenements", ("page_kalender", "page_kalender_vorschlag")),
+    ("regionen", "Regionen", "general", "evenements", ("page_regionen",)),
     ("projets", "Aktionen & Projekte", "general", "projets", ("page_projets",)),
     ("boutique", "Shop", "general", "boutique", ("page_boutique",)),
     ("fil", "Neuigkeiten (Fil)", "communaute", "communaute", ()),
@@ -112,6 +113,7 @@ VISIBILITE_NON_MEMBRE_DEFAUT = {
     "adhesions",
     "evenements",
     "covoiturage",
+    "regionen",
     "projets",
     "boutique",
     "albums",
@@ -129,6 +131,7 @@ API_PREFIXES_MENU = [
     ("/api/v1/evenements/reservations-covoiturage/", "covoiturage"),
     ("/api/v1/evenements/", "evenements"),
     ("/api/v1/kalender/", "kalender"),
+    ("/api/v1/regionen/", "regionen"),
     ("/api/v1/projets/", "projets"),
     ("/api/v1/boutique/", "boutique"),
     ("/api/v1/votes/", "vote"),
@@ -204,6 +207,10 @@ PAGES_ADMIN = [
     # einzelne Personen vergeben).
     "page_kalender",
     "page_kalender_vorschlag",
+    # Release 26 (2026-10-14): Regionen. `page_regionen` = Verantwortliche zuweisen und jede
+    # Regionsseite bearbeiten (Büro) ; die Struktur (Regionen, Länder, Standorte) verwaltet nur
+    # der App Admin. Verantwortliche gestalten ihre eigene Region ohne diese Seite.
+    "page_regionen",
 ]
 
 PAGE_ADMIN_LABELS = {
@@ -229,6 +236,7 @@ PAGE_ADMIN_LABELS = {
     "page_zahlungen_import": "Import de paiements (Excel)",
     "page_kalender": "Büro-Kalender (Termine pflegen)",
     "page_kalender_vorschlag": "Terminvorschläge einreichen",
+    "page_regionen": "Regionen (Verantwortliche zuweisen, Seiten bearbeiten)",
 }
 
 # Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour

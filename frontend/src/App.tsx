@@ -8,6 +8,7 @@ import RequireMenuModule from "./components/RequireMenuModule";
 import RequireRole from "./components/RequireRole";
 import AdminConfigurationSitePage from "./pages/admin/AdminConfigurationSitePage";
 import AdminFanClubLogosPage from "./pages/admin/AdminFanClubLogosPage";
+import AdminRegionenPage from "./pages/admin/AdminRegionenPage";
 import ArticlesCatalogueCotisationPage from "./pages/admin/ArticlesCatalogueCotisationPage";
 import AdminPartnerPage from "./pages/admin/AdminPartnerPage";
 import AngebotsvergleichPage from "./pages/admin/AngebotsvergleichPage";
@@ -38,6 +39,8 @@ import MessagerieConversationPage from "./pages/communaute/MessagerieConversatio
 import MessageriePage from "./pages/communaute/MessageriePage";
 import KalenderPage from "./pages/kalender/KalenderPage";
 import OeffentlicherKalenderPage from "./pages/kalender/OeffentlicherKalenderPage";
+import RegionDetailPage from "./pages/regionen/RegionDetailPage";
+import RegionenPage from "./pages/regionen/RegionenPage";
 import UmfrageDetailPage from "./pages/umfragen/UmfrageDetailPage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
@@ -583,6 +586,34 @@ export default function App() {
               <RequireMenuModule cle="kalender">
                 <KalenderPage />
               </RequireMenuModule>
+            }
+          />
+          {/* Regionen (Release 26) : Menüeintrag „regionen“ ; auch für Konten ohne Mitgliedschaft
+            (Fans). Bearbeiten prüft das Backend je Region (Verantwortliche / Personenverwalter). */}
+          <Route
+            path="/regionen"
+            element={
+              <RequireMenuModule cle="regionen">
+                <RegionenPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/regionen/:slug"
+            element={
+              <RequireMenuModule cle="regionen">
+                <RegionDetailPage />
+              </RequireMenuModule>
+            }
+          />
+          {/* Regionen-Struktur : nur App Admin (Backend: IsSuperAdmin), hier bewusst hinter
+            minRoleLevel statt der Matrix, weil Regionen/Länder/Standorte Stammdaten sind. */}
+          <Route
+            path="/admin/regionen"
+            element={
+              <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
+                <AdminRegionenPage />
+              </RequireRole>
             }
           />
           {/* Umfragen (Release 11) : bewusst OHNE RequireMenuModule — „Nur mit Konto“, auch
