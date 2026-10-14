@@ -81,3 +81,32 @@ export interface RegionAenderung {
   reihenfolge?: number;
   aktiv?: boolean;
 }
+
+// --- Beiträge und Reaktionen (Release 27) ---------------------------------------------------
+
+export type ReaktionsArt = "daumen" | "herz" | "feier" | "applaus" | "staunen";
+
+export interface ReaktionsStand {
+  art: ReaktionsArt;
+  anzahl: number;
+  meine: boolean;
+}
+
+export interface Beitrag {
+  id: string;
+  titel: string;
+  text: string;
+  bild_url: string | null;
+  autor_name: string;
+  created_at: string;
+  ausgeblendet: boolean;
+  ausgeblendet_grund: string;
+  reaktionen: ReaktionsStand[];
+  darf_bearbeiten: boolean;
+  darf_ausblenden: boolean;
+}
+
+export interface BeitraegeListe {
+  gesamt: number;
+  ergebnisse: Beitrag[];
+}

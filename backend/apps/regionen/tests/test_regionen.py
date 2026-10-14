@@ -13,7 +13,7 @@ from apps.rbac import services as rbac
 from apps.rbac.registry import API_PREFIXES_MENU, VISIBILITE_NON_MEMBRE_DEFAUT
 from apps.rbac.tests.factories import UserFactory
 from apps.regionen import services
-from apps.regionen.models import Region, RegionLand, Standort, Verantwortlicher
+from apps.regionen.models import Beitrag, Region, RegionLand, Standort, Verantwortlicher
 
 pytestmark = pytest.mark.django_db
 
@@ -403,3 +403,150 @@ class TestVerwaltung:
         _client(admin).delete(f"{BASIS}verwaltung/standorte/{s.id}/")
         v.refresh_from_db()
         assert v.standort is None
+
+
+class TestBeitraege:
+    @pytest.fixture
+    def karte(self, nord):
+        user = _mitglied("HH")
+        _verantwortlicher(nord, user, anzeige_name="Alex")
+        return user
+
+    def _neu(self, user, nord, **kw):
+        daten = {"titel": "Treffen in Hamburg", "text": "Es war toll."}
+        daten.update(kw)
+        return _client(user).post(f"{BASIS}nord/beitraege/", daten, format="json")
+
+    def test_verantwortliche_schreiben_mit_kartenname(self, karte, nord):
+        r = self._neu(karte, nord)
+        assert r.status_code == 201
+        assert r.data["autor_name"] == "Alex" and r.data["darf_bearbeiten"] is True
+        assert [x["art"] for x in r.data["reaktionen"]] == [
+            "daumen",
+            "herz",
+            "feier",
+            "applaus",
+            "staunen",
+        ]
+
+    def test_andere_duerfen_nicht_schreiben(self, nord):
+        for user in (_mitglied("HH"), UserFactory()):
+            assert self._neu(user, nord).status_code == 403
+        assert self._neu(UserFactory(role=Role.BUREAU_ADMIN), nord).status_code == 201
+
+    def test_verantwortliche_anderer_region_duerfen_nicht(self):
+        user = _mitglied("NW")
+        _verantwortlicher(Region.objects.get(slug="nrw"), user)
+        r = _client(user).post(
+            f"{BASIS}nord/beitraege/", {"titel": "a", "text": "b"}, format="json"
+        )
+        assert r.status_code == 403
+
+    def test_pflichtfelder_und_laenge(self, karte, nord):
+        assert self._neu(karte, nord, titel=" ").status_code == 400
+        assert self._neu(karte, nord, text="").status_code == 400
+        assert self._neu(karte, nord, titel="x" * 151).status_code == 400
+
+    def test_lesen_fuer_alle_konten_auch_ohne_mitgliedschaft(self, karte, nord):
+        self._neu(karte, nord)
+        for user in (_mitglied("BY"), UserFactory()):
+            r = _client(user).get(f"{BASIS}nord/beitraege/")
+            assert r.status_code == 200 and r.data["gesamt"] == 1
+            assert r.data["ergebnisse"][0]["darf_bearbeiten"] is False
+        assert _client().get(f"{BASIS}nord/beitraege/").status_code in (401, 403)
+
+    def test_blaettern_und_neueste_zuerst(self, karte, nord):
+        for i in range(3):
+            self._neu(karte, nord, titel=f"B{i}")
+        r = _client(karte).get(f"{BASIS}nord/beitraege/?limit=2&offset=1")
+        assert r.data["gesamt"] == 3
+        assert [e["titel"] for e in r.data["ergebnisse"]] == ["B1", "B0"]
+        assert _client(karte).get(f"{BASIS}nord/beitraege/?limit=abc").status_code == 400
+
+    def test_aendern_und_loeschen(self, karte, nord):
+        pk = self._neu(karte, nord).data["id"]
+        url = f"{BASIS}nord/beitraege/{pk}/"
+        assert _client(karte).patch(url, {"titel": "Neu"}, format="json").data["titel"] == "Neu"
+        assert _client(_mitglied("HH")).patch(url, {"titel": "x"}, format="json").status_code == 403
+        assert _client(_mitglied("HH")).delete(url).status_code == 403
+        assert _client(karte).delete(url).status_code == 204
+        assert not Beitrag.objects.exists()
+
+    def test_bild_hoch_und_runter(self, karte, nord):
+        pk = self._neu(karte, nord).data["id"]
+        url = f"{BASIS}nord/beitraege/{pk}/bild/"
+        r = _client(karte).post(url, {"bild": _bild()}, format="multipart")
+        assert r.status_code == 200 and r.data["bild_url"]
+        assert _client(karte).post(url, {}, format="multipart").status_code == 400
+        assert _client(karte).delete(url).data["bild_url"] is None
+        assert (
+            _client(_mitglied("HH")).post(url, {"bild": _bild()}, format="multipart").status_code
+            == 403
+        )
+
+    def test_ausblenden_nur_buero_und_unsichtbar_fuer_andere(self, karte, nord, buero):
+        pk = self._neu(karte, nord).data["id"]
+        url = f"{BASIS}nord/beitraege/{pk}/ausblenden/"
+        assert _client(karte).post(url, {"grund": "x"}, format="json").status_code == 403
+        assert _client(buero).post(url, {}, format="json").status_code == 400  # Grund fehlt
+        r = _client(buero).post(url, {"grund": "Werbung"}, format="json")
+        assert r.status_code == 200 and r.data["ausgeblendet"] is True
+        leser = _client(_mitglied("HH"))
+        assert leser.get(f"{BASIS}nord/beitraege/").data["gesamt"] == 0
+        assert (
+            leser.put(
+                f"{BASIS}nord/beitraege/{pk}/reaktion/", {"art": "herz"}, format="json"
+            ).status_code
+            == 404
+        )
+        # Verantwortliche und Büro sehen ihn weiter, mit Grund nur für das Büro
+        assert _client(karte).get(f"{BASIS}nord/beitraege/").data["ergebnisse"][0]["ausgeblendet"]
+        assert (
+            _client(buero)
+            .get(f"{BASIS}nord/beitraege/")
+            .data["ergebnisse"][0]["ausgeblendet_grund"]
+            == "Werbung"
+        )
+        assert (
+            _client(karte)
+            .get(f"{BASIS}nord/beitraege/")
+            .data["ergebnisse"][0]["ausgeblendet_grund"]
+            == ""
+        )
+        r = _client(buero).post(url, {"ausgeblendet": False}, format="json")
+        assert r.data["ausgeblendet"] is False and r.data["ausgeblendet_grund"] == ""
+        assert leser.get(f"{BASIS}nord/beitraege/").data["gesamt"] == 1
+
+    def test_reaktionen_setzen_zaehlen_entfernen(self, karte, nord):
+        pk = self._neu(karte, nord).data["id"]
+        url = f"{BASIS}nord/beitraege/{pk}/reaktion/"
+        fan, mitglied = _client(UserFactory()), _client(_mitglied("BY"))
+        assert fan.put(url, {"art": "herz"}, format="json").status_code == 200
+        assert fan.put(url, {"art": "herz"}, format="json").status_code == 200  # idempotent
+        mitglied.put(url, {"art": "herz"}, format="json")
+        r = mitglied.put(url, {"art": "feier"}, format="json")
+        herz = next(x for x in r.data["reaktionen"] if x["art"] == "herz")
+        feier = next(x for x in r.data["reaktionen"] if x["art"] == "feier")
+        assert herz == {"art": "herz", "anzahl": 2, "meine": True}
+        assert feier["anzahl"] == 1 and feier["meine"] is True
+        r = mitglied.put(url, {"art": "herz", "aktiv": False}, format="json")
+        assert next(x for x in r.data["reaktionen"] if x["art"] == "herz")["anzahl"] == 1
+        fan_sicht = fan.get(f"{BASIS}nord/beitraege/").data["ergebnisse"][0]["reaktionen"]
+        assert next(x for x in fan_sicht if x["art"] == "herz")["meine"] is True
+
+    def test_reaktion_validierung_und_anmeldung(self, karte, nord):
+        pk = self._neu(karte, nord).data["id"]
+        url = f"{BASIS}nord/beitraege/{pk}/reaktion/"
+        assert _client(karte).put(url, {"art": "zorn"}, format="json").status_code == 400
+        assert (
+            _client(karte).put(url, {"art": "herz", "aktiv": "ja"}, format="json").status_code
+            == 400
+        )
+        assert _client().put(url, {"art": "herz"}, format="json").status_code in (401, 403)
+
+    def test_region_loeschen_entfernt_beitraege_nicht_bei_verantwortlichen_entzug(
+        self, karte, nord
+    ):
+        self._neu(karte, nord)
+        Verantwortlicher.objects.filter(region=nord).delete()
+        assert Beitrag.objects.count() == 1  # Beiträge bleiben, wenn die Zuweisung endet

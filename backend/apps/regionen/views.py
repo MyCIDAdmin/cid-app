@@ -7,6 +7,11 @@
   POST   /regionen/<slug>/verantwortliche/            Person zuweisen (Büro, App Admin)
   PATCH|DELETE /regionen/<slug>/verantwortliche/<id>/ eigene Karte ändern / Zuweisung entfernen
   POST|DELETE /regionen/<slug>/verantwortliche/<id>/foto/
+  GET|POST /regionen/<slug>/beitraege/                Beiträge lesen (?limit&offset) / schreiben
+  PATCH|DELETE /regionen/<slug>/beitraege/<id>/       Beitrag ändern / löschen
+  POST|DELETE /regionen/<slug>/beitraege/<id>/bild/   Beitragsbild
+  POST   /regionen/<slug>/beitraege/<id>/ausblenden/  ausblenden/einblenden (Büro)
+  PUT    /regionen/<slug>/beitraege/<id>/reaktion/    {art, aktiv} Emoji-Reaktion setzen/entfernen
   GET    /regionen/personen/?q=                       Personensuche für die Zuweisung
   GET|POST /regionen/verwaltung/                      alle Regionen / neue Region (App Admin)
   PATCH|DELETE /regionen/verwaltung/<id>/             Name, Farbe, Reihenfolge, aktiv / löschen
@@ -18,7 +23,8 @@
 import uuid
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -29,7 +35,16 @@ from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Bundesland
 
 from . import services
-from .models import FARBE_PRUEFUNG, Region, RegionLand, Standort, Verantwortlicher
+from .models import (
+    FARBE_PRUEFUNG,
+    REAKTIONEN,
+    Beitrag,
+    Reaktion,
+    Region,
+    RegionLand,
+    Standort,
+    Verantwortlicher,
+)
 from .permissions import IsAuthenticated, IsSuperAdmin
 
 BUNDESLAENDER = dict(Bundesland.choices)
@@ -478,3 +493,158 @@ class VerwaltungStandortView(APIView):
         standort = get_object_or_404(Standort, pk=pk)
         standort.delete()
         return Response(status=204)
+
+
+# --- Beiträge und Reaktionen (Release 27) ---------------------------------------------------
+
+MAX_BEITRAEGE = 50
+
+
+def _reaktionen(beitrag: Beitrag, user) -> list[dict]:
+    zaehler = dict(beitrag.reaktionen.values_list("art").annotate(n=Count("id")).order_by())
+    meine = set(beitrag.reaktionen.filter(user=user).values_list("art", flat=True))
+    return [{"art": a, "anzahl": zaehler.get(a, 0), "meine": a in meine} for a in REAKTIONEN]
+
+
+def beitrag_dict(b: Beitrag, user, verwalter: bool, bearbeiter: bool) -> dict:
+    return {
+        "id": str(b.id),
+        "titel": b.titel,
+        "text": b.text,
+        "bild_url": _url(b.bild),
+        "autor_name": b.autor_name,
+        "created_at": b.created_at.isoformat(),
+        "ausgeblendet": b.ausgeblendet,
+        "ausgeblendet_grund": b.ausgeblendet_grund if verwalter else "",
+        "reaktionen": _reaktionen(b, user),
+        "darf_bearbeiten": bearbeiter,
+        "darf_ausblenden": verwalter,
+    }
+
+
+def _beitrag(slug, pk, request, nur_bearbeiter=False):
+    region = _region(slug)
+    beitrag = get_object_or_404(Beitrag, pk=pk, region=region)
+    verwalter = services.ist_personenverwalter(request.user)
+    bearbeiter = verwalter or services.darf_bearbeiten(request.user, region)
+    if nur_bearbeiter and not bearbeiter:
+        raise PermissionDenied()
+    # Ausgeblendete Beiträge sind nur für Büro und Verantwortliche der Region erreichbar.
+    if beitrag.ausgeblendet and not bearbeiter:
+        raise Http404()
+    return region, beitrag, verwalter, bearbeiter
+
+
+class BeitraegeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        region = _region(slug)
+        verwalter = services.ist_personenverwalter(request.user)
+        bearbeiter = verwalter or services.darf_bearbeiten(request.user, region)
+        try:
+            limit = max(1, min(int(request.query_params.get("limit", 20)), MAX_BEITRAEGE))
+            offset = max(0, int(request.query_params.get("offset", 0)))
+        except ValueError:
+            raise ValidationError({"limit": "Zahl erwartet."})
+        liste = region.beitraege.all()
+        if not bearbeiter:
+            liste = liste.filter(ausgeblendet=False)
+        gesamt = liste.count()
+        seite = liste[offset : offset + limit]
+        return Response(
+            {
+                "gesamt": gesamt,
+                "ergebnisse": [beitrag_dict(b, request.user, verwalter, bearbeiter) for b in seite],
+            }
+        )
+
+    def post(self, request, slug):
+        region = _bearbeitbar(request, slug)
+        karte = region.verantwortliche.filter(user=request.user).first()
+        beitrag = Beitrag.objects.create(
+            region=region,
+            autor=request.user,
+            # Name der Vorstellungskarte, sonst Profilname (nie die E-Mail-Adresse).
+            autor_name=karte.anzeige_name if karte else services.anzeigename_von(request.user),
+            titel=_text(request.data, "titel", 150, pflicht=True),
+            text=_text(request.data, "text", 4000, pflicht=True),
+        )
+        verwalter = services.ist_personenverwalter(request.user)
+        return Response(beitrag_dict(beitrag, request.user, verwalter, True), status=201)
+
+
+class BeitragDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, slug, pk):
+        _, beitrag, verwalter, _ = _beitrag(slug, pk, request, nur_bearbeiter=True)
+        if "titel" in request.data:
+            beitrag.titel = _text(request.data, "titel", 150, pflicht=True)
+        if "text" in request.data:
+            beitrag.text = _text(request.data, "text", 4000, pflicht=True)
+        beitrag.save()
+        return Response(beitrag_dict(beitrag, request.user, verwalter, True))
+
+    def delete(self, request, slug, pk):
+        _, beitrag, _, _ = _beitrag(slug, pk, request, nur_bearbeiter=True)
+        if beitrag.bild:
+            beitrag.bild.delete(save=False)
+        beitrag.delete()
+        return Response(status=204)
+
+
+class BeitragBildView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, pk):
+        _, beitrag, verwalter, _ = _beitrag(slug, pk, request, nur_bearbeiter=True)
+        bild = _bild(request, "bild")
+        if beitrag.bild:
+            beitrag.bild.delete(save=False)
+        beitrag.bild = bild
+        beitrag.save()
+        return Response(beitrag_dict(beitrag, request.user, verwalter, True))
+
+    def delete(self, request, slug, pk):
+        _, beitrag, verwalter, _ = _beitrag(slug, pk, request, nur_bearbeiter=True)
+        if beitrag.bild:
+            beitrag.bild.delete(save=False)
+            beitrag.bild = None
+            beitrag.save()
+        return Response(beitrag_dict(beitrag, request.user, verwalter, True))
+
+
+class BeitragAusblendenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, pk):
+        _personenverwalter(request)
+        _, beitrag, _, _ = _beitrag(slug, pk, request)
+        ausblenden = request.data.get("ausgeblendet", True)
+        if not isinstance(ausblenden, bool):
+            raise ValidationError({"ausgeblendet": "Ja/Nein erwartet."})
+        beitrag.ausgeblendet = ausblenden
+        beitrag.ausgeblendet_grund = (
+            _text(request.data, "grund", 200, pflicht=True) if ausblenden else ""
+        )
+        beitrag.save()
+        return Response(beitrag_dict(beitrag, request.user, True, True))
+
+
+class BeitragReaktionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, slug, pk):
+        _, beitrag, _, _ = _beitrag(slug, pk, request)
+        art = request.data.get("art")
+        aktiv = request.data.get("aktiv", True)
+        if art not in REAKTIONEN:
+            raise ValidationError({"art": "Unbekannte Reaktion."})
+        if not isinstance(aktiv, bool):
+            raise ValidationError({"aktiv": "Ja/Nein erwartet."})
+        if aktiv:
+            Reaktion.objects.get_or_create(beitrag=beitrag, user=request.user, art=art)
+        else:
+            Reaktion.objects.filter(beitrag=beitrag, user=request.user, art=art).delete()
+        return Response({"id": str(beitrag.id), "reaktionen": _reaktionen(beitrag, request.user)})

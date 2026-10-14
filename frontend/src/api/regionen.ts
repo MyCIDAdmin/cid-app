@@ -1,7 +1,10 @@
 /** Client API — Regionen (Release 26), backend/apps/regionen/views.py. */
 import type {
+  Beitrag,
+  BeitraegeListe,
   KarteDaten,
   Person,
+  ReaktionsArt,
   RegionAenderung,
   RegionDetail,
   RegionenListe,
@@ -162,4 +165,89 @@ export async function legeStandortAn(arg: {
 
 export async function loescheStandort(id: string): Promise<void> {
   await apiClient.delete(`/regionen/verwaltung/standorte/${id}/`);
+}
+
+// --- Beiträge und Reaktionen (Release 27) ---------------------------------------------------
+
+export async function getBeitraege(arg: { slug: string; limit: number }): Promise<BeitraegeListe> {
+  const { data } = await apiClient.get<BeitraegeListe>(`/regionen/${arg.slug}/beitraege/`, {
+    params: { limit: arg.limit },
+  });
+  return data;
+}
+
+export async function legeBeitragAn(arg: {
+  slug: string;
+  titel: string;
+  text: string;
+  bild?: File | null;
+}): Promise<Beitrag> {
+  const { data } = await apiClient.post<Beitrag>(`/regionen/${arg.slug}/beitraege/`, {
+    titel: arg.titel,
+    text: arg.text,
+  });
+  if (!arg.bild) return data;
+  return ladeBeitragBildHoch({ slug: arg.slug, id: data.id, datei: arg.bild });
+}
+
+export async function aendereBeitrag(arg: {
+  slug: string;
+  id: string;
+  titel: string;
+  text: string;
+}): Promise<Beitrag> {
+  const { data } = await apiClient.patch<Beitrag>(`/regionen/${arg.slug}/beitraege/${arg.id}/`, {
+    titel: arg.titel,
+    text: arg.text,
+  });
+  return data;
+}
+
+export async function loescheBeitrag(arg: { slug: string; id: string }): Promise<void> {
+  await apiClient.delete(`/regionen/${arg.slug}/beitraege/${arg.id}/`);
+}
+
+export async function ladeBeitragBildHoch(arg: {
+  slug: string;
+  id: string;
+  datei: File;
+}): Promise<Beitrag> {
+  const formData = new FormData();
+  formData.append("bild", arg.datei);
+  const { data } = await apiClient.post<Beitrag>(
+    `/regionen/${arg.slug}/beitraege/${arg.id}/bild/`,
+    formData,
+  );
+  return data;
+}
+
+export async function entferneBeitragBild(arg: { slug: string; id: string }): Promise<Beitrag> {
+  const { data } = await apiClient.delete<Beitrag>(
+    `/regionen/${arg.slug}/beitraege/${arg.id}/bild/`,
+  );
+  return data;
+}
+
+export async function blendeBeitragAus(arg: {
+  slug: string;
+  id: string;
+  ausgeblendet: boolean;
+  grund?: string;
+}): Promise<Beitrag> {
+  const { slug, id, ...koerper } = arg;
+  const { data } = await apiClient.post<Beitrag>(
+    `/regionen/${slug}/beitraege/${id}/ausblenden/`,
+    koerper,
+  );
+  return data;
+}
+
+export async function setzeReaktion(arg: {
+  slug: string;
+  id: string;
+  art: ReaktionsArt;
+  aktiv: boolean;
+}): Promise<void> {
+  const { slug, id, ...koerper } = arg;
+  await apiClient.put(`/regionen/${slug}/beitraege/${id}/reaktion/`, koerper);
 }
