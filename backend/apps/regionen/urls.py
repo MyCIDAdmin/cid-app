@@ -1,5 +1,16 @@
 from django.urls import path
 
+from .veranstaltungen import (
+    AnmeldungView,
+    AnwesenheitView,
+    OeffentlichView,
+    TeilnehmerView,
+    VeranstaltungAktionView,
+    VeranstaltungBildView,
+    VeranstaltungDetailView,
+    VeranstaltungenView,
+    ZurFreigabeView,
+)
 from .views import (
     BannerView,
     BeitraegeView,
@@ -25,6 +36,8 @@ app_name = "regionen"
 urlpatterns = [
     path("", RegionListeView.as_view(), name="liste"),
     path("personen/", PersonenSucheView.as_view(), name="personen"),
+    path("veranstaltungen/zur-freigabe/", ZurFreigabeView.as_view(), name="zur-freigabe"),
+    path("public/veranstaltungen/<uuid:pk>/", OeffentlichView.as_view(), name="oeffentlich"),
     path("verwaltung/", VerwaltungListeView.as_view(), name="verwaltung"),
     path("verwaltung/standorte/<uuid:pk>/", VerwaltungStandortView.as_view(), name="standort"),
     path("verwaltung/<uuid:pk>/", VerwaltungDetailView.as_view(), name="verwaltung-detail"),
@@ -48,6 +61,37 @@ urlpatterns = [
         "<slug:slug>/beitraege/<uuid:pk>/reaktion/",
         BeitragReaktionView.as_view(),
         name="beitrag-reaktion",
+    ),
+    path("<slug:slug>/veranstaltungen/", VeranstaltungenView.as_view(), name="veranstaltungen"),
+    path(
+        "<slug:slug>/veranstaltungen/<uuid:pk>/",
+        VeranstaltungDetailView.as_view(),
+        name="veranstaltung",
+    ),
+    path(
+        "<slug:slug>/veranstaltungen/<uuid:pk>/bild/",
+        VeranstaltungBildView.as_view(),
+        name="veranstaltung-bild",
+    ),
+    path(
+        "<slug:slug>/veranstaltungen/<uuid:pk>/aktion/",
+        VeranstaltungAktionView.as_view(),
+        name="veranstaltung-aktion",
+    ),
+    path(
+        "<slug:slug>/veranstaltungen/<uuid:pk>/anmeldung/",
+        AnmeldungView.as_view(),
+        name="veranstaltung-anmeldung",
+    ),
+    path(
+        "<slug:slug>/veranstaltungen/<uuid:pk>/teilnehmer/",
+        TeilnehmerView.as_view(),
+        name="veranstaltung-teilnehmer",
+    ),
+    path(
+        "<slug:slug>/veranstaltungen/<uuid:pk>/teilnehmer/<uuid:user_id>/",
+        AnwesenheitView.as_view(),
+        name="veranstaltung-anwesenheit",
     ),
     path("<slug:slug>/verantwortliche/", VerantwortlicheView.as_view(), name="verantwortliche"),
     path(

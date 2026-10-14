@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ v.titel }} – CID {{ v.region.name }}</title>
+<meta name="robots" content="noindex">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Clubistes in Deutschland">
+<meta property="og:title" content="{{ v.titel }} – CID {{ v.region.name }}">
+<meta property="og:description" content="{{ v.datum|date:'d.m.Y' }}{% if v.uhrzeit %}, {{ v.uhrzeit|time:'H:i' }}{% endif %} · {{ v.ort }}">
+<meta property="og:url" content="{{ url }}">
+{% if bild_url %}<meta property="og:image" content="{{ bild_url }}">{% endif %}
+<meta name="twitter:card" content="{% if bild_url %}summary_large_image{% else %}summary{% endif %}">
+<style>
+  :root { --bg:#faf7f5; --fg:#2b1a1a; --muted:#6b5b5b; --card:#fff; --accent:#8b0000; --line:#e8dede; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1a1010; --fg:#f3e9e9; --muted:#b9a8a8; --card:#261717; --accent:#ff8a80; --line:#3b2626; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; }
+  main { max-width:40rem; margin:0 auto; padding:1.5rem 1rem 3rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .card img { display:block; width:100%; max-height:20rem; object-fit:cover; }
+  .body { padding:1.25rem; }
+  h1 { margin:0 0 .25rem; font-size:1.6rem; line-height:1.2; }
+  .region { color:var(--muted); margin:0 0 1rem; }
+  dl { display:grid; grid-template-columns:auto 1fr; gap:.25rem 1rem; margin:0 0 1rem; }
+  dt { color:var(--muted); }
+  dd { margin:0; }
+  .hinweis { padding:.5rem .75rem; border-radius:8px; background:var(--line); margin-bottom:1rem; }
+  .text { white-space:pre-line; }
+  h2 { font-size:1rem; margin:1.5rem 0 .5rem; }
+  .teilen { margin:0; padding:.75rem; border:1px solid var(--line); border-radius:8px; white-space:pre-wrap; word-break:break-word; }
+  a.knopf { display:inline-block; margin-top:1.25rem; padding:.6rem 1rem; border-radius:8px; background:var(--accent); color:#fff; text-decoration:none; font-weight:600; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    {% if bild_url %}<img src="{{ bild_url }}" alt="">{% endif %}
+    <div class="body">
+      <h1>{{ v.titel }}</h1>
+      <p class="region">Clubistes in Deutschland · {{ v.region.name }}</p>
+      {% if abgesagt %}<p class="hinweis"><strong>Abgesagt · Annulé</strong></p>{% elif beendet %}<p class="hinweis">Beendet · Terminé</p>{% endif %}
+      <dl>
+        <dt>Datum · Date</dt><dd>{{ v.datum|date:"d.m.Y" }}</dd>
+        {% if v.uhrzeit %}<dt>Uhrzeit · Heure</dt><dd>{{ v.uhrzeit|time:"H:i" }}</dd>{% endif %}
+        <dt>Ort · Lieu</dt><dd>{{ v.ort }}</dd>
+      </dl>
+      {% if v.beschreibung %}<p class="text">{{ v.beschreibung }}</p>{% endif %}
+      {% if not abgesagt and not beendet %}
+      <h2>Weitersagen · Partager</h2>
+      <p class="teilen">{{ teilen.de }}</p>
+      <p class="teilen" style="margin-top:.5rem">{{ teilen.fr }}</p>
+      {% endif %}
+      <a class="knopf" href="{{ app_url }}">Zur Regionsseite · Page de la région</a>
+    </div>
+  </div>
+</main>
+</body>
+</html>

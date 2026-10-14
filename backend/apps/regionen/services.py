@@ -61,3 +61,31 @@ def eindeutiger_slug(name: str) -> str:
 def anzeigename_von(user) -> str:
     membre = getattr(user, "membre", None)
     return f"{membre.prenom} {membre.nom}".strip() if membre is not None else ""
+
+
+def buero_nutzer(ausser=None):
+    """Aktive Konten, die Regionen verwalten dürfen (Empfänger für Freigaben)."""
+    from apps.accounts.models import ROLE_LEVELS, Role, User
+
+    stufe = ROLE_LEVELS[Role.BUREAU_ADMIN]
+    rollen = [r for r, n in ROLE_LEVELS.items() if n >= stufe]
+    kandidaten = User.objects.filter(role__in=rollen, is_active=True).exclude(pk=ausser)
+    return [u for u in kandidaten if ist_personenverwalter(u)]
+
+
+def naechste_veranstaltung(region: Region) -> dict | None:
+    """Nächstes veröffentlichtes Treffen der Region (für die Übersicht aller Regionen)."""
+    from django.utils import timezone
+
+    v = region.veranstaltungen.filter(
+        status="veroeffentlicht", datum__gte=timezone.localdate()
+    ).first()
+    if v is None:
+        return None
+    return {
+        "id": str(v.id),
+        "titel": v.titel,
+        "datum": v.datum.isoformat(),
+        "uhrzeit": v.uhrzeit.strftime("%H:%M") if v.uhrzeit else None,
+        "ort": v.ort,
+    }

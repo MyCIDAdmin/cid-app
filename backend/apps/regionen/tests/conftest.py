@@ -3,7 +3,7 @@
 import pytest
 from django.core.files.storage import FileSystemStorage
 
-from apps.regionen.models import Beitrag, Region, Verantwortlicher
+from apps.regionen.models import Beitrag, Region, Veranstaltung, Verantwortlicher
 
 
 @pytest.fixture(autouse=True)
@@ -12,6 +12,7 @@ def _regionen_storage_lokal(tmp_path):
         Region._meta.get_field("banner"),
         Verantwortlicher._meta.get_field("foto"),
         Beitrag._meta.get_field("bild"),
+        Veranstaltung._meta.get_field("bild"),
     ]
     originale = [feld.storage for feld in felder]
     for feld in felder:

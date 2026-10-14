@@ -5,9 +5,10 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import FreigabeListe from "../../components/regionen/FreigabeListe";
 import RegionBild from "../../components/regionen/RegionBild";
 import { useRegionen } from "../../hooks/useRegionen";
-import { beschreibungIn } from "../../utils/regionen";
+import { beschreibungIn, formatDatum } from "../../utils/regionen";
 
 export default function RegionenPage() {
   const { t, i18n } = useTranslation("regionen");
@@ -17,6 +18,8 @@ export default function RegionenPage() {
     <div>
       <h1 className="mb-1 text-xl font-bold text-text-primary">{t("titel")}</h1>
       <p className="mb-4 text-sm text-text-secondary">{t("einleitung")}</p>
+
+      {data?.darf_freigeben && <FreigabeListe />}
 
       {isLoading && <p className="text-sm text-text-tertiary">{t("laden")}</p>}
       {isError && <p className="text-sm text-status-dangerText">{t("fehler_laden")}</p>}
@@ -54,6 +57,14 @@ export default function RegionenPage() {
                     </div>
                     {text && (
                       <p className="mt-1 line-clamp-2 text-sm text-text-secondary">{text}</p>
+                    )}
+                    {region.naechste_veranstaltung && (
+                      <p className="mt-2 text-sm text-text-primary">
+                        {t("naechstes_treffen", {
+                          titel: region.naechste_veranstaltung.titel,
+                          datum: formatDatum(region.naechste_veranstaltung.datum, i18n.language),
+                        })}
+                      </p>
                     )}
                     <p className="mt-2 text-xs text-text-tertiary">
                       {t("mitglieder_zahl", { count: region.mitglieder })} ·{" "}

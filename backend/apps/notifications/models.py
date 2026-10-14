@@ -115,6 +115,8 @@ class TypeNotification(models.TextChoices):
     KALENDER_DIENST = "kalender_dienst", _("Permanence")
     KALENDER_UMFRAGE = "kalender_umfrage", _("Sondage de date")
     KALENDER_SITZUNG = "kalender_sitzung", _("Réunion : procès-verbal et tâches")
+    # Regionale Veranstaltungen (Release 28)
+    REGION_VERANSTALTUNG = "region_veranstaltung", _("Réunion régionale")
     AKTIVITAET_AUFFAELLIGKEIT = "aktivitaet_auffaelligkeit", _(
         "Anomalie dans le journal d'activité"
     )

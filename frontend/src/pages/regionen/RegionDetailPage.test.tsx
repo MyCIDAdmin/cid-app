@@ -6,6 +6,12 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import type { RegionDetail, Verantwortlicher } from "../../types/regionen";
 import RegionDetailPage from "./RegionDetailPage";
 
+vi.mock("../../components/regionen/VeranstaltungenBereich", () => ({
+  default: ({ darfAnlegen }: { darfAnlegen: boolean }) => (
+    <div data-testid="veranstaltungen" data-anlegen={String(darfAnlegen)} />
+  ),
+}));
+
 vi.mock("../../components/regionen/BeitraegeBereich", () => ({
   default: ({ darfSchreiben }: { darfSchreiben: boolean }) => (
     <div data-testid="beitraege" data-schreiben={String(darfSchreiben)} />
@@ -50,6 +56,7 @@ function detail(o: Partial<RegionDetail> = {}): RegionDetail {
     mitglieder: 3,
     verantwortliche: [person()],
     meine_region: false,
+    naechste_veranstaltung: null,
     standorte: [{ id: "s1", name: "Hamburg", land: "HH", aktiv: true }],
     laender: [{ code: "HH", name: "Hamburg" }],
     darf_bearbeiten: false,
@@ -105,6 +112,7 @@ describe("RegionDetailPage", () => {
     expect(screen.queryByText("karte_bearbeiten")).not.toBeInTheDocument();
     expect(screen.queryByText("zuweisen_titel")).not.toBeInTheDocument();
     expect(screen.getByTestId("beitraege")).toHaveAttribute("data-schreiben", "false");
+    expect(screen.getByTestId("veranstaltungen")).toHaveAttribute("data-anlegen", "false");
   });
 
   it("zeigt einen Fehler, wenn die Region fehlt", () => {
