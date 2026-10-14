@@ -11,6 +11,8 @@ export interface Kacheln {
   freigaben: number;
   rollenaenderungen: number;
   geraete_limit: number;
+  server_fehler: number;
+  auffaelligkeiten_offen: number;
   passwort: number;
   aktive_nutzer: number;
   aktiv_24h: number;
@@ -72,3 +74,29 @@ export interface AktionenListe {
   kategorien: { key: string; label: Sprachtext; aufbewahrung_tage: number }[];
   aktionen: { aktion: string; label: Sprachtext; kategorie: string; gewicht: Gewicht }[];
 }
+
+export interface Person {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface Auffaelligkeit {
+  id: string;
+  regel: string;
+  gewicht: Gewicht;
+  erkannt_am: string;
+  status: "offen" | "erledigt";
+  text: Sprachtext;
+  user: Person | null;
+  ip: string | null;
+  erledigt_von: Person | null;
+  erledigt_am: string | null;
+}
+
+export interface AuffaelligkeitenListe {
+  offen: number;
+  ergebnisse: Auffaelligkeit[];
+}
+
+export type AuffaelligkeitStatus = "offen" | "erledigt";

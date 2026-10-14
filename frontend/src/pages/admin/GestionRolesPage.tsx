@@ -13,8 +13,9 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 
-import AktivitaetTab from "../../components/aktivitaet/AktivitaetTab";
+import AktivitaetTab, { type Ansicht } from "../../components/aktivitaet/AktivitaetTab";
 import AttributionRolesTab from "../../components/rbac/AttributionRolesTab";
 import MatriceAccesTab from "../../components/rbac/MatriceAccesTab";
 import VisibiliteModulesTab from "../../components/rbac/VisibiliteModulesTab";
@@ -23,7 +24,13 @@ type Onglet = "attribution" | "acces" | "visibilite" | "aktivitaet";
 
 export default function GestionRolesPage() {
   const { t } = useTranslation("rbac");
-  const [onglet, setOnglet] = useState<Onglet>("attribution");
+  // `?tab=aktivitaet&ansicht=auffaelligkeiten` : Ziel der Alarm-Benachrichtigung (Release 22).
+  const [params] = useSearchParams();
+  const [onglet, setOnglet] = useState<Onglet>(
+    params.get("tab") === "aktivitaet" ? "aktivitaet" : "attribution",
+  );
+  const startAnsicht: Ansicht =
+    params.get("ansicht") === "auffaelligkeiten" ? "auffaelligkeiten" : "uebersicht";
 
   return (
     <div>
@@ -77,7 +84,7 @@ export default function GestionRolesPage() {
       {onglet === "attribution" && <AttributionRolesTab />}
       {onglet === "acces" && <MatriceAccesTab />}
       {onglet === "visibilite" && <VisibiliteModulesTab />}
-      {onglet === "aktivitaet" && <AktivitaetTab />}
+      {onglet === "aktivitaet" && <AktivitaetTab startAnsicht={startAnsicht} />}
     </div>
   );
 }

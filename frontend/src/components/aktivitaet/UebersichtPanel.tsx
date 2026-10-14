@@ -121,8 +121,10 @@ function Heatmap({ daten }: { daten: number[][] }) {
 
 export default function UebersichtPanel({
   imJournalOeffnen,
+  auffaelligkeitenOeffnen,
 }: {
   imJournalOeffnen: (filter: JournalFilter) => void;
+  auffaelligkeitenOeffnen: () => void;
 }) {
   const { t, i18n } = useTranslation("aktivitaet");
   const [tage, setTage] = useState<number>(30);
@@ -185,6 +187,19 @@ export default function UebersichtPanel({
         })}
         {kachel("rollenaenderungen", k.rollenaenderungen, { kategorie: "rollen" })}
         {kachel("geraete_limit", k.geraete_limit, { aktion: "device_limit_reached" })}
+        <button
+          type="button"
+          onClick={auffaelligkeitenOeffnen}
+          className="text-left"
+          aria-label={t("uebersicht.kacheln.auffaelligkeiten_offen")}
+        >
+          <AnimatedKpiTile
+            label={t("uebersicht.kacheln.auffaelligkeiten_offen")}
+            value={k.auffaelligkeiten_offen}
+            accent={k.auffaelligkeiten_offen > 0}
+          />
+        </button>
+        {kachel("server_fehler", k.server_fehler, { kategorie: "betrieb" })}
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">

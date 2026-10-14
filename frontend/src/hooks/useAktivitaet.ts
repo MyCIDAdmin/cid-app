@@ -1,14 +1,16 @@
 /** Hooks React Query — Aktivität (Release 20). */
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as aktivitaetApi from "../api/aktivitaet";
-import type { JournalFilter } from "../types/aktivitaet";
+import type { AuffaelligkeitStatus, JournalFilter } from "../types/aktivitaet";
 
 const keys = {
   all: ["aktivitaet"] as const,
   uebersicht: (tage: number) => [...keys.all, "uebersicht", tage] as const,
   journal: (filter: JournalFilter) => [...keys.all, "journal", filter] as const,
   aktionen: () => [...keys.all, "aktionen"] as const,
+  auffaelligkeiten: (status: AuffaelligkeitStatus) =>
+    [...keys.all, "auffaelligkeiten", status] as const,
 };
 
 export function useUebersicht(tage: number) {
@@ -32,5 +34,21 @@ export function useAktionen() {
     queryKey: keys.aktionen(),
     queryFn: aktivitaetApi.getAktionen,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useAuffaelligkeiten(status: AuffaelligkeitStatus) {
+  return useQuery({
+    queryKey: keys.auffaelligkeiten(status),
+    queryFn: () => aktivitaetApi.getAuffaelligkeiten(status),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAuffaelligkeitErledigen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: aktivitaetApi.erledigeAuffaelligkeit,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 }

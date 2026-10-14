@@ -1,6 +1,14 @@
 /** Client API — Aktivität (Release 20), backend/apps/aktivitaet/views.py. */
 import { apiClient } from "./client";
-import type { AktionenListe, Journal, JournalFilter, Uebersicht } from "../types/aktivitaet";
+import type {
+  AktionenListe,
+  Auffaelligkeit,
+  AuffaelligkeitenListe,
+  AuffaelligkeitStatus,
+  Journal,
+  JournalFilter,
+  Uebersicht,
+} from "../types/aktivitaet";
 
 function bereinigt(filter: JournalFilter) {
   return Object.fromEntries(
@@ -38,4 +46,20 @@ export async function exportJournal(
   });
   const treffer = /filename="?([^"]+)"?/.exec(String(headers["content-disposition"] ?? ""));
   return { blob: data, nomFichier: treffer?.[1] ?? "aktivitaet.csv" };
+}
+
+export async function getAuffaelligkeiten(
+  status: AuffaelligkeitStatus,
+): Promise<AuffaelligkeitenListe> {
+  const { data } = await apiClient.get<AuffaelligkeitenListe>("/aktivitaet/auffaelligkeiten/", {
+    params: { status },
+  });
+  return data;
+}
+
+export async function erledigeAuffaelligkeit(id: string): Promise<Auffaelligkeit> {
+  const { data } = await apiClient.post<Auffaelligkeit>(
+    `/aktivitaet/auffaelligkeiten/${id}/erledigen/`,
+  );
+  return data;
 }

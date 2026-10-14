@@ -4,6 +4,8 @@
   GET /aktivitaet/journal/?von&bis&aktion&kategorie&gewicht&user&ip&q&seite
   GET /aktivitaet/journal/export/            dasselbe als CSV (max. 20 000 Zeilen)
   GET /aktivitaet/aktionen/                  Aktionen und Kategorien für die Filter
+  GET /aktivitaet/auffaelligkeiten/?status=offen|erledigt|alle   erkannte Auffälligkeiten (R22)
+  POST /aktivitaet/auffaelligkeiten/<id>/erledigen/
 """
 
 import csv
@@ -12,6 +14,7 @@ from datetime import timedelta
 
 from django.core.paginator import Paginator
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,7 +24,9 @@ from apps.accounts.permissions import IsSuperAdmin
 from apps.accounts.services import log_audit_event
 
 from . import kategorien as kat
-from .services import ERLAUBTE_TAGE, eintrag_dict, journal_filtern, name_von
+from . import regeln
+from .models import Auffaelligkeit
+from .services import ERLAUBTE_TAGE, eintrag_dict, journal_filtern, name_von, person_dict
 
 PRO_SEITE = 50
 EXPORT_MAX = 20000
@@ -160,3 +165,53 @@ class AktionenView(APIView):
                 "aktionen": aktionen,
             }
         )
+
+
+def auffaelligkeit_dict(a: Auffaelligkeit) -> dict:
+    return {
+        "id": str(a.id),
+        "regel": a.regel,
+        "gewicht": a.gewicht,
+        "erkannt_am": a.erkannt_am,
+        "status": a.status,
+        "text": regeln.text_von(a.regel, a.details),
+        "user": person_dict(a.user),
+        "ip": a.ip_address,
+        "erledigt_von": person_dict(a.erledigt_von),
+        "erledigt_am": a.erledigt_am,
+    }
+
+
+class AuffaelligkeitenView(APIView):
+    """Liste der erkannten Auffälligkeiten (neueste zuerst, höchstens 200)."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        status = request.query_params.get("status", "offen")
+        qs = Auffaelligkeit.objects.select_related("user", "erledigt_von")
+        if status in (Auffaelligkeit.Status.OFFEN, Auffaelligkeit.Status.ERLEDIGT):
+            qs = qs.filter(status=status)
+        _zugriff_protokollieren(request)
+        return Response(
+            {
+                "offen": Auffaelligkeit.objects.filter(status=Auffaelligkeit.Status.OFFEN).count(),
+                "ergebnisse": [auffaelligkeit_dict(a) for a in qs[:200]],
+            }
+        )
+
+
+class ErledigenView(APIView):
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request, pk):
+        a = get_object_or_404(Auffaelligkeit, pk=pk)
+        if a.status != Auffaelligkeit.Status.ERLEDIGT:
+            a.status = Auffaelligkeit.Status.ERLEDIGT
+            a.erledigt_von = request.user
+            a.erledigt_am = timezone.now()
+            a.save(update_fields=["status", "erledigt_von", "erledigt_am"])
+            _zugriff_protokollieren(
+                request, "auffaelligkeit_erledigt", dedupe=False, regel=a.regel, objekt_id=str(a.id)
+            )
+        return Response(auffaelligkeit_dict(a))

@@ -105,4 +105,20 @@ def envoyer_email_cid(
         to=[destinataire],
     )
     message.attach_alternative(corps_html, "text/html")
-    return message.send(fail_silently=fail_silently)
+    try:
+        return message.send(fail_silently=False)
+    except Exception as exc:
+        _mail_fehler_protokollieren(exc)
+        if fail_silently:
+            return 0
+        raise
+
+
+def _mail_fehler_protokollieren(exc: Exception) -> None:
+    """Fehlgeschlagenen Versand im Aktivitäts-Protokoll vermerken (nur Fehlerart, keine Adresse)."""
+    try:
+        from apps.accounts.services import log_audit_event
+
+        log_audit_event("mail_fehler", fehler=type(exc).__name__)
+    except Exception:  # pragma: no cover — das Protokoll darf den Versandpfad nie stören
+        pass

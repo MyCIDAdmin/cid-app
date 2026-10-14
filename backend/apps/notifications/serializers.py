@@ -19,6 +19,7 @@ class ParametresNotificationSerializer(serializers.ModelSerializer):
             "email_vote",
             "email_communaute",
             "email_kalender",
+            "email_aktivitaet",
             "modifie_par",
             "updated_at",
         ]

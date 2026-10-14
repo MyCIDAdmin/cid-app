@@ -24,7 +24,8 @@
       "boutique": "Boutique",
       "vote": "Vote & Élections",
       "communaute": "Communauté",
-      "kalender": "Calendrier"
+      "kalender": "Calendrier",
+      "aktivitaet": "Journal d'activité (alarmes de sécurité)"
     },
     "module_description": {
       "membres": "Changement de statut associatif (actif/inactif).",
@@ -34,7 +35,8 @@
       "boutique": "Commandes confirmées, expédiées ou annulées.",
       "vote": "Ouverture de vote et résultats.",
       "communaute": "Réponses de forum, messages privés.",
-      "kalender": "Modifications, annulations et rappels de rendez-vous, permanences et sondages de date ; procès-verbaux ; récapitulatif hebdomadaire."
+      "kalender": "Modifications, annulations et rappels de rendez-vous, permanences et sondages de date ; procès-verbaux ; récapitulatif hebdomadaire.",
+      "aktivitaet": "Alarmes en cas d'anomalies dans le journal d'activité (administrateurs de l'application uniquement), p. ex. nombreux échecs de connexion, export massif ou erreurs serveur."
     }
   }
 }

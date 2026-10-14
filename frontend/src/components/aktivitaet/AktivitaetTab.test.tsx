@@ -4,13 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "../../api/aktivitaet";
 import * as hooks from "../../hooks/useAktivitaet";
 import { renderWithProviders } from "../../test/renderWithProviders";
-import type { Journal, JournalEintrag, Uebersicht } from "../../types/aktivitaet";
+import type { Auffaelligkeit, Journal, JournalEintrag, Uebersicht } from "../../types/aktivitaet";
 import AktivitaetTab from "./AktivitaetTab";
 
 vi.mock("../../hooks/useAktivitaet", () => ({
   useUebersicht: vi.fn(),
   useJournal: vi.fn(),
   useAktionen: vi.fn(),
+  useAuffaelligkeiten: vi.fn(),
+  useAuffaelligkeitErledigen: vi.fn(),
 }));
 vi.mock("../../api/aktivitaet", () => ({ exportJournal: vi.fn() }));
 vi.mock("../../utils/telechargement", () => ({ declencherTelechargement: vi.fn() }));
@@ -25,6 +27,8 @@ const uebersicht: Uebersicht = {
     freigaben: 1,
     rollenaenderungen: 4,
     geraete_limit: 0,
+    server_fehler: 2,
+    auffaelligkeiten_offen: 1,
     passwort: 1,
     aktive_nutzer: 7,
     aktiv_24h: 2,
@@ -68,7 +72,35 @@ const LABEL = /Anmeldung fehlgeschlagen|Échec de connexion/;
 
 const journal: Journal = { anzahl: 1, seite: 1, seiten: 1, ergebnisse: [eintrag] };
 
+const erledigen = vi.fn();
+
+const auffaelligkeit: Auffaelligkeit = {
+  id: "a1",
+  regel: "bruteforce",
+  gewicht: "warnung",
+  erkannt_am: "2026-10-14T09:00:00Z",
+  status: "offen",
+  text: {
+    de: "12 fehlgeschlagene Anmeldungen von 1.2.3.4",
+    fr: "12 échecs de connexion depuis 1.2.3.4",
+  },
+  user: null,
+  ip: "1.2.3.4",
+  erledigt_von: null,
+  erledigt_am: null,
+};
+const AUFFAELLIGKEIT_TEXT = /12 fehlgeschlagene Anmeldungen|12 échecs de connexion/;
+
 function mocks() {
+  vi.mocked(hooks.useAuffaelligkeiten).mockReturnValue({
+    data: { offen: 1, ergebnisse: [auffaelligkeit] },
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof hooks.useAuffaelligkeiten>);
+  vi.mocked(hooks.useAuffaelligkeitErledigen).mockReturnValue({
+    mutate: erledigen,
+    isPending: false,
+  } as unknown as ReturnType<typeof hooks.useAuffaelligkeitErledigen>);
   vi.mocked(hooks.useUebersicht).mockReturnValue({
     data: uebersicht,
     isLoading: false,
@@ -154,5 +186,34 @@ describe("AktivitaetTab", () => {
     fireEvent.change(screen.getByLabelText("journal.ip"), { target: { value: "9.9.9.9" } });
 
     expect(hooks.useJournal).toHaveBeenLastCalledWith({ ip: "9.9.9.9", seite: 1 });
+  });
+
+  it("öffnet die Auffälligkeiten über die Kachel und markiert eine als erledigt", () => {
+    renderWithProviders(<AktivitaetTab />);
+
+    fireEvent.click(screen.getByLabelText("uebersicht.kacheln.auffaelligkeiten_offen"));
+    expect(hooks.useAuffaelligkeiten).toHaveBeenLastCalledWith("offen");
+    expect(screen.getByText(AUFFAELLIGKEIT_TEXT)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("auffaelligkeiten.erledigen"));
+    expect(erledigen).toHaveBeenCalledWith("a1");
+  });
+
+  it("wechselt zu den erledigten Auffälligkeiten und springt mit der IP ins Journal", () => {
+    renderWithProviders(<AktivitaetTab startAnsicht="auffaelligkeiten" />);
+
+    fireEvent.click(screen.getByText("auffaelligkeiten.status.erledigt"));
+    expect(hooks.useAuffaelligkeiten).toHaveBeenLastCalledWith("erledigt");
+
+    fireEvent.click(screen.getByText("uebersicht.im_journal"));
+    expect(hooks.useJournal).toHaveBeenLastCalledWith({ ip: "1.2.3.4", seite: 1 });
+  });
+
+  it("öffnet das Journal der Betriebsfehler über die Kachel", () => {
+    renderWithProviders(<AktivitaetTab />);
+
+    fireEvent.click(screen.getByLabelText("uebersicht.kacheln.server_fehler"));
+
+    expect(hooks.useJournal).toHaveBeenLastCalledWith({ kategorie: "betrieb", seite: 1 });
   });
 });

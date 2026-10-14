@@ -12,7 +12,9 @@ vi.mock("../../components/rbac/MatriceAccesTab", () => ({
 }));
 
 vi.mock("../../components/aktivitaet/AktivitaetTab", () => ({
-  default: () => <div data-testid="tab-aktivitaet" />,
+  default: ({ startAnsicht }: { startAnsicht?: string }) => (
+    <div data-testid="tab-aktivitaet" data-ansicht={startAnsicht} />
+  ),
 }));
 
 describe("GestionRolesPage", () => {
@@ -48,5 +50,17 @@ describe("GestionRolesPage", () => {
 
     expect(screen.getByTestId("tab-aktivitaet")).toBeInTheDocument();
     expect(screen.queryByTestId("tab-attribution")).not.toBeInTheDocument();
+  });
+
+  it("öffnet über den Alarm-Link direkt die Auffälligkeiten", () => {
+    renderWithProviders(<GestionRolesPage />, {
+      route: "/admin/roles?tab=aktivitaet&ansicht=auffaelligkeiten",
+      path: "/admin/roles",
+    });
+
+    expect(screen.getByTestId("tab-aktivitaet")).toHaveAttribute(
+      "data-ansicht",
+      "auffaelligkeiten",
+    );
   });
 });

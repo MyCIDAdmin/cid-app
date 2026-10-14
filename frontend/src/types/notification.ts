@@ -48,7 +48,9 @@ export type TypeNotification =
   | "kalender_antwort"
   | "kalender_dienst"
   | "kalender_umfrage"
-  | "kalender_sitzung";
+  | "kalender_sitzung"
+  // Ajouté le 2026-10-14 (Release 22) — alarmes du journal d'activité (App Admin).
+  | "aktivitaet_auffaelligkeit";
 
 export interface Notification {
   id: string;
@@ -76,6 +78,7 @@ export const MODULES_NOTIFIABLES = [
   "vote",
   "communaute",
   "kalender",
+  "aktivitaet",
 ] as const;
 
 export type ModuleNotifiable = (typeof MODULES_NOTIFIABLES)[number];
