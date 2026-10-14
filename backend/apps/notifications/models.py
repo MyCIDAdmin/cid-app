@@ -107,6 +107,14 @@ class TypeNotification(models.TextChoices):
     PROJEKT_BEWERBUNG_ENTSCHIEDEN = "projekt_bewerbung_entschieden", _("Candidature traitée")
     PARTNER_VERTRAGSENDE = "partner_vertragsende", _("Fin de contrat d'un partenaire")
     PARTNER_BEWERTUNG = "partner_bewertung", _("Évaluation d'un partenaire à faire")
+    # Kalender (Release 19, 2026-10-14) — eigene Typen statt „Einladung“ für alles.
+    KALENDER_EINLADUNG = "kalender_einladung", _("Invitation à un rendez-vous")
+    KALENDER_VORSCHLAG = "kalender_vorschlag", _("Proposition de rendez-vous")
+    KALENDER_AENDERUNG = "kalender_aenderung", _("Rendez-vous modifié ou annulé")
+    KALENDER_ANTWORT = "kalender_antwort", _("Réponse à un rendez-vous")
+    KALENDER_DIENST = "kalender_dienst", _("Permanence")
+    KALENDER_UMFRAGE = "kalender_umfrage", _("Sondage de date")
+    KALENDER_SITZUNG = "kalender_sitzung", _("Réunion : procès-verbal et tâches")
 
 
 class Notification(models.Model):
@@ -159,6 +167,7 @@ MODULES_NOTIFIABLES = [
     "boutique",
     "vote",
     "communaute",
+    "kalender",
 ]
 
 
@@ -191,6 +200,7 @@ class ParametresNotification(models.Model):
     email_boutique = models.BooleanField(default=True, verbose_name=_("Boutique"))
     email_vote = models.BooleanField(default=True, verbose_name=_("Vote"))
     email_communaute = models.BooleanField(default=True, verbose_name=_("Communauté"))
+    email_kalender = models.BooleanField(default=True, verbose_name=_("Calendrier"))
 
     modifie_par = models.ForeignKey(
         "membres.Membre",

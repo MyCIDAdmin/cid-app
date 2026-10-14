@@ -23,7 +23,8 @@
       "evenements": "Évènements",
       "boutique": "Boutique",
       "vote": "Vote & Élections",
-      "communaute": "Communauté"
+      "communaute": "Communauté",
+      "kalender": "Calendrier"
     },
     "module_description": {
       "membres": "Changement de statut associatif (actif/inactif).",
@@ -32,7 +33,8 @@
       "evenements": "Invitations, rappels, annulations.",
       "boutique": "Commandes confirmées, expédiées ou annulées.",
       "vote": "Ouverture de vote et résultats.",
-      "communaute": "Réponses de forum, messages privés."
+      "communaute": "Réponses de forum, messages privés.",
+      "kalender": "Modifications, annulations et rappels de rendez-vous, permanences et sondages de date ; procès-verbaux ; récapitulatif hebdomadaire."
     }
   }
 }

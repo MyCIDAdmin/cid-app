@@ -32,6 +32,7 @@ function parametres(overrides: Partial<ParametresNotification> = {}): Parametres
     email_boutique: true,
     email_vote: true,
     email_communaute: true,
+    email_kalender: true,
     modifie_par: null,
     updated_at: "2026-09-19T10:00:00Z",
     ...overrides,
@@ -65,7 +66,7 @@ describe("ParametresNotificationPage", () => {
     renderWithProviders(<ParametresNotificationPage />);
 
     const interrupteurs = screen.getAllByRole("switch");
-    expect(interrupteurs).toHaveLength(7);
+    expect(interrupteurs).toHaveLength(8);
     interrupteurs.forEach((interrupteur) => {
       expect(interrupteur).toHaveAttribute("aria-checked", "true");
     });

@@ -5,7 +5,9 @@ from datetime import timedelta
 from celery import shared_task
 from django.utils import timezone
 
+from .benachrichtigung import T, datum, mail_aktiv, melden, wann
 from .models import Antwort, Dienst, Kreis, Termin, TerminStatus
+from .models_sitzung import Terminstimme, Terminumfrage, UmfrageStatus
 from .services import naechster_start, team_nutzer
 
 
@@ -13,9 +15,6 @@ from .services import naechster_start, team_nutzer
 def termin_erinnerungen() -> int:
     """Benachrichtigt Eingeladene (außer Absagen) und Ersteller `erinnerung_stunden` vor dem
     nächsten Beginn — je Vorkommen genau einmal. Gibt die Zahl der Termine zurück."""
-    from apps.notifications.models import TypeNotification
-    from apps.notifications.services import notifier
-
     jetzt = timezone.now()
     anzahl = 0
     kandidaten = Termin.objects.filter(
@@ -34,14 +33,13 @@ def termin_erinnerungen() -> int:
             empfaenger.add(e.user)
         if t.kreis == Kreis.EVENT_TEAM:
             empfaenger |= team_nutzer(t)
-        zeit = timezone.localtime(start).strftime("%d.%m.%Y %H:%M")
+        zeit = wann(start)
         for user in empfaenger:
-            notifier(
+            melden(
                 user,
-                TypeNotification.EVENEMENT_RAPPEL,
-                titre=f"Erinnerung: {t.titel}",
-                message=f"{t.titel} beginnt am {zeit}.",
-                lien="/kalender",
+                T.EVENEMENT_RAPPEL,
+                de=(f"Erinnerung: {t.titel}", f"{t.titel} beginnt am {zeit}."),
+                fr=(f"Rappel : {t.titel}", f"{t.titel} commence le {zeit}."),
             )
         t.letzte_erinnerung = jetzt
         t.save(update_fields=["letzte_erinnerung"])
@@ -51,23 +49,22 @@ def termin_erinnerungen() -> int:
 
 def _dienst_erinnerungen(jetzt) -> int:
     """Erinnerung an eingetragene Helfer `erinnerung_stunden` vor dem Dienst (einmalig)."""
-    from apps.notifications.models import TypeNotification
-    from apps.notifications.services import notifier
-
     anzahl = 0
     for d in Dienst.objects.filter(
         erinnerung_stunden__isnull=False, letzte_erinnerung__isnull=True, beginn__gt=jetzt
     ):
         if d.beginn - timedelta(hours=d.erinnerung_stunden) > jetzt:
             continue
-        zeit = timezone.localtime(d.beginn).strftime("%d.%m.%Y %H:%M")
+        zeit = wann(d.beginn)
         for e in d.eintraege.select_related("user"):
-            notifier(
+            melden(
                 e.user,
-                TypeNotification.EVENEMENT_RAPPEL,
-                titre=f"Dienst: {d.titel}",
-                message=f"Dein Dienst „{d.titel}“ beginnt am {zeit}.",
-                lien="/kalender",
+                T.EVENEMENT_RAPPEL,
+                de=(f"Dienst: {d.titel}", f"Dein Dienst „{d.titel}“ beginnt am {zeit}."),
+                fr=(
+                    f"Permanence : {d.titel}",
+                    f"Ta permanence « {d.titel} » commence le {zeit}.",
+                ),
             )
         d.letzte_erinnerung = jetzt
         d.save(update_fields=["letzte_erinnerung"])
@@ -140,6 +137,8 @@ def wochenuebersicht() -> int:
     from apps.accounts.models import User
     from apps.notifications.email_cid import Texte, envoyer_email_cid
 
+    if not mail_aktiv():  # Modulschalter „Kalender“ (App-Admin)
+        return 0
     heute = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
     von, bis = heute, heute + timedelta(days=7)
     gesendet = 0
@@ -173,3 +172,63 @@ def wochenuebersicht() -> int:
         )
         gesendet += 1
     return gesendet
+
+
+@shared_task
+def umfrage_erinnerungen() -> int:
+    """Täglich : (1) Wer in einer offenen Terminfindung noch nicht geantwortet hat, wird am Tag
+    vor und am Tag der Antwortfrist erinnert ; (2) nach Ablauf der Frist erfährt der Ersteller
+    einmalig, dass er entscheiden kann. Gibt die Zahl der Meldungen zurück."""
+    heute = timezone.localdate()
+    anzahl = 0
+    offene = Terminumfrage.objects.filter(
+        status=UmfrageStatus.OFFEN, antwort_bis__isnull=False
+    ).select_related("erstellt_von")
+    for u in offene:
+        stimmten = set(
+            Terminstimme.objects.filter(option__umfrage=u).values_list("user_id", flat=True)
+        )
+        if u.antwort_bis >= heute:
+            if u.antwort_bis - heute > timedelta(days=1) or u.erinnert_am == heute:
+                continue
+            for user in u.teilnehmer.filter(is_active=True).exclude(pk__in=stimmten):
+                wer = "heute" if u.antwort_bis == heute else "morgen"
+                wer_fr = "aujourd'hui" if u.antwort_bis == heute else "demain"
+                melden(
+                    user,
+                    T.KALENDER_UMFRAGE,
+                    de=(
+                        f"Bitte antworten: {u.titel}",
+                        f"Die Terminfindung endet {wer} ({datum(u.antwort_bis)}). Bitte gib an, "
+                        "wann du kannst.",
+                    ),
+                    fr=(
+                        f"Merci de répondre : {u.titel}",
+                        f"Le sondage de date se termine {wer_fr} ({datum(u.antwort_bis)}). "
+                        "Indique quand tu es disponible.",
+                    ),
+                    mail=True,
+                )
+                anzahl += 1
+            u.erinnert_am = heute
+            u.save(update_fields=["erinnert_am"])
+        elif not u.frist_gemeldet:
+            fehlen = u.teilnehmer.count() - len(stimmten)
+            melden(
+                u.erstellt_von,
+                T.KALENDER_UMFRAGE,
+                de=(
+                    f"Frist abgelaufen: {u.titel}",
+                    f"Die Antwortfrist ist vorbei ({len(stimmten)} Antworten, {fehlen} offen). "
+                    "Du kannst jetzt den Termin festlegen.",
+                ),
+                fr=(
+                    f"Délai écoulé : {u.titel}",
+                    f"Le délai de réponse est écoulé ({len(stimmten)} réponses, {fehlen} en "
+                    "attente). Tu peux maintenant fixer la date.",
+                ),
+            )
+            u.frist_gemeldet = True
+            u.save(update_fields=["frist_gemeldet"])
+            anzahl += 1
+    return anzahl

@@ -8,7 +8,6 @@
 
 from datetime import timedelta
 
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -22,6 +21,7 @@ from rest_framework.views import APIView
 from apps.accounts.models import User
 from apps.projets.models import Projet
 
+from .benachrichtigung import T, datum, melden, wann
 from .models import Kategorie, Sichtbarkeit, Termin, TerminEinladung, TerminStatus
 from .models_sitzung import Terminoption, Terminstimme, Terminumfrage, UmfrageStatus
 from .serializers import _name
@@ -162,40 +162,24 @@ class UmfrageListeView(APIView):
 
 
 def _einladen(umfrage, absender):
-    from apps.notifications.email_cid import Texte, envoyer_email_cid
-    from apps.notifications.models import TypeNotification
-    from apps.notifications.services import notifier
-
-    bis = f" Bitte antworte bis {umfrage.antwort_bis:%d.%m.%Y}." if umfrage.antwort_bis else ""
+    bis_de = f" Bitte antworte bis {datum(umfrage.antwort_bis)}." if umfrage.antwort_bis else ""
+    bis_fr = (
+        f" Merci de répondre avant le {datum(umfrage.antwort_bis)}." if umfrage.antwort_bis else ""
+    )
     for user in umfrage.teilnehmer.exclude(pk=absender.pk):
-        notifier(
+        melden(
             user,
-            TypeNotification.EVENEMENT_INVITATION,
-            titre=f"Wann passt es euch? {umfrage.titel}",
-            message=f"Bitte gib an, wann du kannst.{bis}",
-            lien="/kalender",
+            T.KALENDER_UMFRAGE,
+            de=(
+                f"Wann passt es euch? {umfrage.titel}",
+                f"Bitte gib im Kalender an, welche Termine für dich passen.{bis_de}",
+            ),
+            fr=(
+                f"Quand ça vous convient ? {umfrage.titel}",
+                f"Indique dans le calendrier quelles dates te conviennent.{bis_fr}",
+            ),
+            mail=True,
         )
-        if user.email:
-            envoyer_email_cid(
-                sujet=f"Wann passt es euch? {umfrage.titel}",
-                destinataire=user.email,
-                textes={
-                    "de": Texte(
-                        titre=umfrage.titel,
-                        paragraphes=[
-                            f"Bitte gib im Kalender an, welche Termine für dich passen.{bis}"
-                        ],
-                        cta="Zum Kalender",
-                    ),
-                    "fr": Texte(
-                        titre=umfrage.titel,
-                        paragraphes=["Indiquez dans le calendrier quelles dates vous conviennent."],
-                        cta="Ouvrir le calendrier",
-                    ),
-                },
-                lien=f"{settings.FRONTEND_URL}/kalender",
-                fail_silently=True,
-            )
 
 
 class UmfrageDetailView(APIView):
@@ -211,7 +195,28 @@ class UmfrageDetailView(APIView):
         if umfrage.status == UmfrageStatus.OFFEN:
             umfrage.status = UmfrageStatus.ABGEBROCHEN
             umfrage.save(update_fields=["status"])
+            for user in umfrage.teilnehmer.exclude(pk=request.user.pk):
+                melden(
+                    user,
+                    T.KALENDER_UMFRAGE,
+                    de=(
+                        f"Terminfindung abgebrochen: {umfrage.titel}",
+                        "Die Terminfindung wurde abgebrochen – du musst nichts mehr tun.",
+                    ),
+                    fr=(
+                        f"Sondage de date annulé : {umfrage.titel}",
+                        "Le sondage de date a été annulé – tu n'as plus rien à faire.",
+                    ),
+                )
         return Response(umfrage_dict(request.user, umfrage))
+
+
+def _ohne_antwort(umfrage) -> set:
+    """Teilnehmer (User-IDs), die noch bei keiner Option geantwortet haben."""
+    stimmten = set(
+        Terminstimme.objects.filter(option__umfrage=umfrage).values_list("user_id", flat=True)
+    )
+    return set(umfrage.teilnehmer.values_list("pk", flat=True)) - stimmten
 
 
 class AbstimmenView(APIView):
@@ -229,10 +234,25 @@ class AbstimmenView(APIView):
         for option_id, antwort in stimmen.items():
             if option_id not in optionen or antwort not in ANTWORTEN:
                 raise ValidationError({"stimmen": "Ungültige Antwort."})
+        offen_vorher = _ohne_antwort(umfrage)
         for option_id, antwort in stimmen.items():
             Terminstimme.objects.update_or_create(
                 option=optionen[option_id], user=request.user, defaults={"antwort": antwort}
             )
+        if request.user.pk in offen_vorher and not _ohne_antwort(umfrage):
+            if umfrage.erstellt_von_id != request.user.pk:
+                melden(
+                    umfrage.erstellt_von,
+                    T.KALENDER_UMFRAGE,
+                    de=(
+                        f"Alle haben geantwortet: {umfrage.titel}",
+                        "Du kannst jetzt den Termin festlegen.",
+                    ),
+                    fr=(
+                        f"Tout le monde a répondu : {umfrage.titel}",
+                        "Tu peux maintenant fixer la date.",
+                    ),
+                )
         return Response(umfrage_dict(request.user, _umfrage(request, pk)))
 
 
@@ -241,9 +261,6 @@ class EntscheidenView(APIView):
 
     @transaction.atomic
     def post(self, request, pk):
-        from apps.notifications.models import TypeNotification
-        from apps.notifications.services import notifier
-
         umfrage = _umfrage(request, pk)
         if not (_schreiben(request.user) or umfrage.erstellt_von_id == request.user.pk):
             raise PermissionDenied("Dafür fehlt die Berechtigung.")
@@ -263,16 +280,16 @@ class EntscheidenView(APIView):
             status=TerminStatus.FREIGEGEBEN,
             erstellt_von=request.user,
         )
-        wann = option.beginn.astimezone().strftime("%d.%m.%Y %H:%M")
+        zeit = wann(option.beginn)
         for user in umfrage.teilnehmer.all():
             TerminEinladung.objects.create(termin=termin, user=user)
             if user.pk != request.user.pk:
-                notifier(
+                melden(
                     user,
-                    TypeNotification.EVENEMENT_INVITATION,
-                    titre=f"Termin steht fest: {umfrage.titel}",
-                    message=f"Der Termin ist am {wann}.",
-                    lien="/kalender",
+                    T.KALENDER_UMFRAGE,
+                    de=(f"Termin steht fest: {umfrage.titel}", f"Der Termin ist am {zeit}."),
+                    fr=(f"Date fixée : {umfrage.titel}", f"Le rendez-vous a lieu le {zeit}."),
+                    mail=True,
                 )
         umfrage.status = UmfrageStatus.ENTSCHIEDEN
         umfrage.gewaehlt = option

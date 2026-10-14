@@ -185,7 +185,7 @@ def test_kurzfristig_frei_benachrichtigt_bureau(bureau):
     DienstEintragung.objects.create(dienst=d, user=a)
     assert _client(a).post(f"{DIENSTE}{d.pk}/austragen/").status_code == 200
     assert Notification.objects.filter(
-        destinataire=bureau, titre="Dienst nicht mehr besetzt"
+        destinataire=bureau, type_notification="kalender_dienst"
     ).exists()
 
 
@@ -197,7 +197,7 @@ def test_zuweisen_und_entfernen(bureau):
     assert (
         c.post(f"{DIENSTE}{d.pk}/zuweisen/", {"user": str(a.pk)}, format="json").status_code == 200
     )
-    assert Notification.objects.filter(destinataire=a, titre__startswith="Dienst:").exists()
+    assert Notification.objects.filter(destinataire=a, type_notification="kalender_dienst").exists()
     assert (
         c.post(f"{DIENSTE}{d.pk}/zuweisen/", {"user": str(a.pk)}, format="json").status_code == 400
     )
@@ -226,7 +226,7 @@ def test_vorschlaege_aus_faehigkeiten_und_anschreiben(bureau):
         == 200
     )
     assert Notification.objects.filter(
-        destinataire=passend, titre__startswith="Helfer gesucht"
+        destinataire=passend, type_notification="kalender_dienst"
     ).exists()
     DienstEintragung.objects.create(dienst=d, user=passend)
     assert c.get(f"{DIENSTE}{d.pk}/vorschlaege/").data == []
@@ -258,7 +258,10 @@ def test_dienst_erinnerung_einmalig(bureau):
     )
     DienstEintragung.objects.create(dienst=d, user=a)
     assert termin_erinnerungen() == 1
-    assert Notification.objects.filter(destinataire=a, titre="Dienst: Aufbau").count() == 1
+    assert (
+        Notification.objects.filter(destinataire=a, type_notification="evenement_rappel").count()
+        == 1
+    )
     assert termin_erinnerungen() == 0
     fern = _dienst(
         bureau,
