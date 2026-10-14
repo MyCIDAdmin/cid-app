@@ -9,6 +9,8 @@
   POST /aktivitaet/auffaelligkeiten/<id>/erledigen/
   GET /aktivitaet/berichte/, berichte/<jahr>/<monat>/[erzeugen|senden]/   Monatsbericht (R24)
   GET/POST /aktivitaet/review/, review/<id>/[positionen/<id>/|abschliessen/]   Rechteprüfung (R24)
+  GET/PUT /aktivitaet/pflege/                Datenpflege : Fristen, Vorschau, Schalter (R25)
+  POST /aktivitaet/pflege/ausfuehren/        Datenpflege jetzt ausführen (bestaetigt=true)
 """
 
 import csv
@@ -29,7 +31,7 @@ from apps.accounts.services import log_audit_event
 
 from . import bericht
 from . import kategorien as kat
-from . import nutzung, regeln, review
+from . import nutzung, pflege, regeln, review
 from .models import Auffaelligkeit, Monatsbericht, RechtePosition, RechteReview
 from .services import ERLAUBTE_TAGE, eintrag_dict, journal_filtern, name_von, person_dict
 
@@ -164,7 +166,11 @@ class AktionenView(APIView):
         return Response(
             {
                 "kategorien": [
-                    {"key": k, "label": {"de": v[0], "fr": v[1]}, "aufbewahrung_tage": v[2]}
+                    {
+                        "key": k,
+                        "label": {"de": v[0], "fr": v[1]},
+                        "aufbewahrung_tage": pflege.journal_frist(k),
+                    }
                     for k, v in kat.KATEGORIEN.items()
                 ],
                 "aktionen": aktionen,
@@ -403,3 +409,116 @@ class AbschliessenView(APIView):
             entzug_noch_offen=noch_aktiv,
         )
         return Response(review.review_dict(r, mit_positionen=True))
+
+
+# --- Datenpflege (Release 25) ----------------------------------------------------------------
+
+
+def _pflege_antwort() -> dict:
+    einst = pflege.einstellung()
+    return {
+        "automatisch": einst.automatisch,
+        "letzter_lauf": (
+            {
+                "zeit": einst.letzter_lauf_am,
+                "modus": einst.letzter_lauf_modus,
+                "von": name_von(einst.letzter_lauf_von) if einst.letzter_lauf_von_id else None,
+                "ergebnis": einst.letzter_lauf_ergebnis,
+            }
+            if einst.letzter_lauf_am
+            else None
+        ),
+        "arten": pflege.vorschau(),
+    }
+
+
+def _fristen_pruefen(roh) -> dict:
+    """Prüft `{Datenart: Tage | null}` ; `null` stellt den Standard wieder her."""
+    if not isinstance(roh, dict):
+        raise ValidationError({"fristen": "Erwartet wird ein Objekt."})
+    neu = {}
+    for key, wert in roh.items():
+        art = pflege.ARTEN.get(key)
+        if art is None or art.fest:
+            raise ValidationError({"fristen": f"Unbekannte oder feste Datenart: {key}"})
+        if wert is None:
+            neu[key] = None
+            continue
+        if isinstance(wert, bool) or not isinstance(wert, int):
+            raise ValidationError({"fristen": f"{key}: ganze Zahl erwartet."})
+        if not art.minimum <= wert <= pflege.MAXIMUM_TAGE:
+            raise ValidationError(
+                {"fristen": f"{key}: zwischen {art.minimum} und {pflege.MAXIMUM_TAGE} Tagen."}
+            )
+        neu[key] = wert
+    return neu
+
+
+class PflegeView(APIView):
+    """Datenpflege : Vorschau (was würde gelöscht ?), Fristen und Schalter „automatisch“."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        return Response(_pflege_antwort())
+
+    def put(self, request):
+        einst = pflege.einstellung()
+        geaendert = {}
+        if "automatisch" in request.data:
+            if not isinstance(request.data["automatisch"], bool):
+                raise ValidationError({"automatisch": "true oder false erwartet."})
+            if request.data["automatisch"] != einst.automatisch:
+                geaendert["automatisch"] = request.data["automatisch"]
+                einst.automatisch = request.data["automatisch"]
+        if "fristen" in request.data:
+            fristen = dict(einst.fristen)
+            for key, wert in _fristen_pruefen(request.data["fristen"]).items():
+                art = pflege.ARTEN[key]
+                if wert is None or wert == art.standard:
+                    if fristen.pop(key, None) is not None:
+                        geaendert[key] = art.standard
+                elif fristen.get(key) != wert:
+                    fristen[key] = wert
+                    geaendert[key] = wert
+            einst.fristen = fristen
+        if geaendert:
+            einst.save(update_fields=["automatisch", "fristen"])
+            log_audit_event(
+                "datenpflege_geaendert",
+                user=request.user,
+                ip_address=_ip(request),
+                user_agent=request.META.get("HTTP_USER_AGENT", "")[:255],
+                aenderungen=geaendert,
+            )
+        return Response(_pflege_antwort())
+
+
+class PflegeAusfuehrenView(APIView):
+    """Datenpflege jetzt ausführen — nur nach ausdrücklicher Bestätigung."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request):
+        if request.data.get("bestaetigt") is not True:
+            raise ValidationError({"bestaetigt": "Die Bestätigung fehlt."})
+        auswahl = request.data.get("arten")
+        if auswahl is not None:
+            if not isinstance(auswahl, list) or not auswahl:
+                raise ValidationError({"arten": "Liste von Datenarten erwartet."})
+            unbekannt = [a for a in auswahl if a not in pflege.ARTEN]
+            if unbekannt:
+                raise ValidationError({"arten": f"Unbekannte Datenart: {unbekannt[0]}"})
+        ergebnis = pflege.lauf("manuell", user=request.user, schluessel=auswahl)
+        log_audit_event(
+            "datenpflege_manuell",
+            user=request.user,
+            ip_address=_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:255],
+            summe=pflege.summe(ergebnis),
+            arten={k: v for k, v in ergebnis.items() if v},
+        )
+        antwort = _pflege_antwort()
+        antwort["ergebnis"] = ergebnis
+        antwort["summe"] = pflege.summe(ergebnis)
+        return Response(antwort)

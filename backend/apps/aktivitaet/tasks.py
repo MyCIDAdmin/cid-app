@@ -2,14 +2,17 @@ from celery import shared_task
 
 from apps.accounts.services import log_audit_event
 
-from . import bericht, review
+from . import bericht, pflege, review
 from .alarm import lauf
 from .services import bereinigen
 
 
 @shared_task
 def aktivitaet_bereinigen() -> dict:
-    """Täglich : Aufbewahrungsfristen des Aktivitäts-Protokolls anwenden."""
+    """Täglich : Datenpflege anwenden (Fristen des Protokolls und der Hilfsdaten), sofern die
+    automatische Pflege eingeschaltet ist."""
+    if not pflege.einstellung().automatisch:
+        return {"geloescht": 0, "ip_entfernt": 0}
     ergebnis = bereinigen()
     if ergebnis["geloescht"] or ergebnis["ip_entfernt"]:
         log_audit_event("aktivitaet_bereinigt", **ergebnis)

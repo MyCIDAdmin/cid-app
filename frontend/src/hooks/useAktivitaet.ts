@@ -12,6 +12,7 @@ const keys = {
   nutzung: (tage: number) => [...keys.all, "nutzung", tage] as const,
   berichte: () => [...keys.all, "berichte"] as const,
   bericht: (jahr: number, monat: number) => [...keys.all, "bericht", jahr, monat] as const,
+  pflege: () => [...keys.all, "pflege"] as const,
   reviews: () => [...keys.all, "reviews"] as const,
   review: (id: string) => [...keys.all, "review", id] as const,
   auffaelligkeiten: (status: AuffaelligkeitStatus) =>
@@ -122,6 +123,26 @@ export function useReviewAbschliessen() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: aktivitaetApi.schliesseReviewAb,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+}
+
+export function usePflege() {
+  return useQuery({ queryKey: keys.pflege(), queryFn: aktivitaetApi.getPflege });
+}
+
+export function usePflegeSpeichern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: aktivitaetApi.speicherePflege,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+}
+
+export function usePflegeAusfuehren() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: aktivitaetApi.fuehrePflegeAus,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 }

@@ -1,6 +1,6 @@
 /**
  * Reiter „Aktivität“ der Rollenverwaltung (Release 20–24) : Übersicht, Auffälligkeiten, Nutzung,
- * Berichte, Rechteprüfung und Journal.
+ * Berichte, Rechteprüfung, Journal und Datenpflege.
  * Kacheln und IP-Adressen der Übersicht öffnen das Journal mit passendem Filter.
  */
 import { useState } from "react";
@@ -11,6 +11,7 @@ import AuffaelligkeitenPanel from "./AuffaelligkeitenPanel";
 import BerichtePanel from "./BerichtePanel";
 import JournalPanel from "./JournalPanel";
 import NutzungPanel from "./NutzungPanel";
+import PflegePanel from "./PflegePanel";
 import ReviewPanel from "./ReviewPanel";
 import UebersichtPanel from "./UebersichtPanel";
 
@@ -54,6 +55,7 @@ export default function AktivitaetTab({ startAnsicht = "uebersicht" }: { startAn
       {ansicht === "nutzung" && <NutzungPanel />}
       {ansicht === "berichte" && <BerichtePanel />}
       {ansicht === "review" && <ReviewPanel />}
+      {ansicht === "pflege" && <PflegePanel />}
       {ansicht === "journal" && <JournalPanel filter={filter} setFilter={setFilter} />}
     </div>
   );

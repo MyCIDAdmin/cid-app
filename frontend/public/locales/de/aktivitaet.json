@@ -8,7 +8,8 @@
     "journal": "Journal",
     "nutzung": "Nutzung",
     "berichte": "Berichte",
-    "review": "Rechteprüfung"
+    "review": "Rechteprüfung",
+    "pflege": "Datenpflege"
   },
   "uebersicht": {
     "zeitraum": "Zeitraum",
@@ -217,5 +218,44 @@
     "noch_offen_one": "Noch {{count}} Konto ohne Entscheidung.",
     "noch_offen_other": "Noch {{count}} Konten ohne Entscheidung.",
     "abgeschlossen_von": "Abgeschlossen von {{name}} am {{zeit}}."
+  },
+  "pflege": {
+    "hinweis": "Hier werden alte technische Daten gelöscht: Protokoll, Auswertungen, gelesene Hinweise und abgelaufene Sitzungen. Mitglieder, Beiträge, Zahlungen, Inhalte und Rollen sind nie betroffen. Jede Datenart hat eine Mindestfrist, die sich nicht unterschreiten lässt.",
+    "automatisch": "Automatisch bereinigen (täglich)",
+    "automatisch_info": "Löscht jede Nacht alle Daten, die älter als ihre Frist sind.",
+    "automatisch_aus": "Die automatische Pflege ist ausgeschaltet: Alte Daten bleiben bestehen, bis Sie hier manuell bereinigen.",
+    "letzter_lauf": "Letzter Lauf: {{zeit}} ({{modus}}), {{anzahl}} Datensätze gelöscht.",
+    "noch_nie": "Es wurde noch keine Bereinigung ausgeführt.",
+    "modus": {
+      "automatisch": "automatisch",
+      "manuell": "manuell"
+    },
+    "gruppe": {
+      "journal": "Journal",
+      "auswertungen": "Auswertungen und Nachweise",
+      "hinweise": "Benachrichtigungen",
+      "technik": "Technische Protokolle"
+    },
+    "bestand": "Bestand: {{gesamt}}",
+    "aeltester": "ältester Eintrag",
+    "betroffen": "jetzt betroffen: {{anzahl}}",
+    "fest": "nur abgelaufene Daten",
+    "frist": "Frist in Tagen",
+    "tage": "Tage",
+    "minimum": "min. {{tage}}",
+    "standard": "Standard {{tage}}",
+    "speichern": "Fristen speichern",
+    "ungueltig": "Mindestens eine Frist liegt außerhalb des erlaubten Bereichs.",
+    "mit_treffern_waehlen": "Alle Datenarten mit Treffern auswählen",
+    "manuell": "Jetzt bereinigen",
+    "manuell_info": "Wählen Sie oben die Datenarten aus. Gelöscht werden nur Daten, die älter als die gespeicherte Frist sind.",
+    "erst_speichern": "Speichern Sie zuerst die geänderten Fristen; die Vorschau gilt für die gespeicherten Werte.",
+    "jetzt_one": "{{count}} Datenart jetzt bereinigen",
+    "jetzt_other": "{{count}} Datenarten jetzt bereinigen",
+    "rueckfrage_titel": "Löschen bestätigen",
+    "rueckfrage": "{{anzahl}} Datensätze aus {{arten}} Datenarten werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.",
+    "endgueltig": "Endgültig löschen",
+    "abbrechen": "Abbrechen",
+    "erledigt": "Fertig: {{anzahl}} Datensätze gelöscht."
   }
 }
