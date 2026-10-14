@@ -5,9 +5,16 @@ import type {
   Auffaelligkeit,
   AuffaelligkeitenListe,
   AuffaelligkeitStatus,
+  Bericht,
+  BerichteListe,
+  Entscheidung,
   Journal,
   JournalFilter,
   Nutzung,
+  Review,
+  ReviewKopf,
+  ReviewListe,
+  ReviewPosition,
   Uebersicht,
 } from "../types/aktivitaet";
 
@@ -67,5 +74,59 @@ export async function erledigeAuffaelligkeit(id: string): Promise<Auffaelligkeit
 
 export async function getNutzung(tage: number): Promise<Nutzung> {
   const { data } = await apiClient.get<Nutzung>("/aktivitaet/nutzung/", { params: { tage } });
+  return data;
+}
+
+export async function getBerichte(): Promise<BerichteListe> {
+  const { data } = await apiClient.get<BerichteListe>("/aktivitaet/berichte/");
+  return data;
+}
+
+export async function getBericht(jahr: number, monat: number): Promise<Bericht> {
+  const { data } = await apiClient.get<Bericht>(`/aktivitaet/berichte/${jahr}/${monat}/`);
+  return data;
+}
+
+export async function erzeugeBericht(arg: { jahr: number; monat: number }): Promise<Bericht> {
+  const { data } = await apiClient.post<Bericht>(
+    `/aktivitaet/berichte/${arg.jahr}/${arg.monat}/erzeugen/`,
+  );
+  return data;
+}
+
+export async function sendeBericht(arg: { jahr: number; monat: number }): Promise<void> {
+  await apiClient.post(`/aktivitaet/berichte/${arg.jahr}/${arg.monat}/senden/`);
+}
+
+export async function getReviews(): Promise<ReviewListe> {
+  const { data } = await apiClient.get<ReviewListe>("/aktivitaet/review/");
+  return data;
+}
+
+export async function getReview(id: string): Promise<Review> {
+  const { data } = await apiClient.get<Review>(`/aktivitaet/review/${id}/`);
+  return data;
+}
+
+export async function legeReviewAn(): Promise<ReviewKopf> {
+  const { data } = await apiClient.post<ReviewKopf>("/aktivitaet/review/");
+  return data;
+}
+
+export async function entscheideKonto(arg: {
+  reviewId: string;
+  positionId: string;
+  entscheidung: Entscheidung;
+  notiz: string;
+}): Promise<ReviewPosition> {
+  const { data } = await apiClient.post<ReviewPosition>(
+    `/aktivitaet/review/${arg.reviewId}/positionen/${arg.positionId}/`,
+    { entscheidung: arg.entscheidung, notiz: arg.notiz },
+  );
+  return data;
+}
+
+export async function schliesseReviewAb(id: string): Promise<Review> {
+  const { data } = await apiClient.post<Review>(`/aktivitaet/review/${id}/abschliessen/`);
   return data;
 }

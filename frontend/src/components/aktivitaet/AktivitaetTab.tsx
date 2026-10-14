@@ -1,18 +1,18 @@
 /**
- * Reiter „Aktivität“ der Rollenverwaltung (Release 20/22/23) : Übersicht, Auffälligkeiten, Nutzung, Journal.
+ * Reiter „Aktivität“ der Rollenverwaltung (Release 20–24) : Übersicht, Auffälligkeiten, Nutzung,
+ * Berichte, Rechteprüfung und Journal.
  * Kacheln und IP-Adressen der Übersicht öffnen das Journal mit passendem Filter.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { JournalFilter } from "../../types/aktivitaet";
+import { ANSICHTEN, type Ansicht, type JournalFilter } from "../../types/aktivitaet";
 import AuffaelligkeitenPanel from "./AuffaelligkeitenPanel";
+import BerichtePanel from "./BerichtePanel";
 import JournalPanel from "./JournalPanel";
 import NutzungPanel from "./NutzungPanel";
+import ReviewPanel from "./ReviewPanel";
 import UebersichtPanel from "./UebersichtPanel";
-
-export type Ansicht = "uebersicht" | "auffaelligkeiten" | "nutzung" | "journal";
-const ANSICHTEN: Ansicht[] = ["uebersicht", "auffaelligkeiten", "nutzung", "journal"];
 
 export default function AktivitaetTab({ startAnsicht = "uebersicht" }: { startAnsicht?: Ansicht }) {
   const { t } = useTranslation("aktivitaet");
@@ -27,7 +27,7 @@ export default function AktivitaetTab({ startAnsicht = "uebersicht" }: { startAn
   return (
     <div>
       <p className="mb-3 text-xs text-text-tertiary">{t("hinweis")}</p>
-      <div className="mb-3 flex gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {ANSICHTEN.map((a) => (
           <button
             key={a}
@@ -52,6 +52,8 @@ export default function AktivitaetTab({ startAnsicht = "uebersicht" }: { startAn
         <AuffaelligkeitenPanel imJournalOeffnen={imJournalOeffnen} />
       )}
       {ansicht === "nutzung" && <NutzungPanel />}
+      {ansicht === "berichte" && <BerichtePanel />}
+      {ansicht === "review" && <ReviewPanel />}
       {ansicht === "journal" && <JournalPanel filter={filter} setFilter={setFilter} />}
     </div>
   );

@@ -6,7 +6,9 @@
     "uebersicht": "Übersicht",
     "auffaelligkeiten": "Auffälligkeiten",
     "journal": "Journal",
-    "nutzung": "Nutzung"
+    "nutzung": "Nutzung",
+    "berichte": "Berichte",
+    "review": "Rechteprüfung"
   },
   "uebersicht": {
     "zeitraum": "Zeitraum",
@@ -117,5 +119,103 @@
     "fenster_one": "{{count}} Fenster",
     "fenster_other": "{{count}} Fenster",
     "ungenutzt": "Im Zeitraum nicht genutzte Module"
+  },
+  "module": {
+    "membres": "Mitglieder",
+    "adhesions": "Beitritt & Angebote",
+    "cotisations": "Beiträge & Zahlungen",
+    "evenements": "Veranstaltungen",
+    "boutique": "Shop",
+    "communaute": "Community",
+    "kalender": "Kalender",
+    "projets": "Projekte",
+    "umfragen": "Umfragen",
+    "votes": "Abstimmungen",
+    "partenaires": "Partner",
+    "finances": "Finanzen",
+    "stats": "Statistiken"
+  },
+  "berichte": {
+    "hinweis": "Am 1. jedes Monats wird der Bericht des Vormonats automatisch erstellt und per Glocke und E-Mail an alle App-Admins gesendet. Er enthält nur Summen, keine Personen. Konten-Zahlen zeigen den Stand bei der Erstellung.",
+    "leer": "Noch kein Monatsbericht vorhanden.",
+    "erzeugen": "Bericht {{monat}} erstellen",
+    "neu_berechnen": "Neu berechnen",
+    "an_mich": "An mich senden",
+    "gesendet": "Der Bericht wurde an Ihre Adresse gesendet.",
+    "stand": "Erstellt: {{erstellt}} · Versendet: {{versendet}}",
+    "nicht_versendet": "noch nicht",
+    "abschnitt": {
+      "sicherheit": "Sicherheit",
+      "aenderungen": "Änderungen in den Modulen",
+      "betrieb": "Betrieb",
+      "auffaelligkeiten": "Auffälligkeiten",
+      "nutzung": "Nutzung (aktive Personen)",
+      "konten": "Konten"
+    },
+    "felder": {
+      "sicherheit": {
+        "logins": "Anmeldungen",
+        "fehlversuche": "Fehlversuche",
+        "sperren": "Sperren",
+        "registrierungen": "Registrierungen",
+        "freigaben": "Freigaben/Ablehnungen",
+        "rollenaenderungen": "Rollen- und Rechteänderungen",
+        "passwort": "Passwort-Vorgänge"
+      },
+      "aenderungen": {
+        "mitglieder": "Mitglieder & Beitritt",
+        "zahlungen": "Beiträge & Zahlungen",
+        "finanzen": "Finanzen",
+        "shop": "Shop",
+        "kalender": "Kalender",
+        "inhalte": "Veranstaltungen, Projekte & Partner",
+        "einstellungen": "Einstellungen",
+        "loeschungen": "davon Löschungen",
+        "exporte": "Exporte",
+        "importe": "Importe"
+      },
+      "betrieb": {
+        "server_fehler": "Serverfehler",
+        "task_fehler": "Fehlgeschlagene Jobs",
+        "mail_fehler": "Nicht versendete E-Mails"
+      },
+      "auffaelligkeiten": {
+        "neu": "Neu erkannt",
+        "wichtig": "davon wichtig",
+        "offen": "Aktuell offen"
+      },
+      "nutzung": {
+        "aktive": "Aktive Personen gesamt"
+      },
+      "konten": {
+        "aktiv": "Aktive Konten",
+        "privilegiert": "Mit erweiterten Rechten",
+        "ohne_totp": "davon ohne Authenticator",
+        "inaktiv_90d": "Ohne Anmeldung seit 90 Tagen",
+        "review_offen": "Offene Rechteprüfungen"
+      }
+    }
+  },
+  "review": {
+    "hinweis": "Bestätigen Sie jedes Konto mit erweiterten Rechten oder markieren Sie „Rechte entziehen“. Die App ändert dabei keine Rollen: Der Entzug erfolgt im Reiter „Zuweisung“ der Rollenverwaltung; hier sehen Sie, ob er schon erfolgt ist.",
+    "leer": "Noch keine Rechteprüfung. Sie wird automatisch zu Beginn jedes Quartals angelegt.",
+    "anlegen": "Prüfung {{quartal}} jetzt anlegen",
+    "zuletzt": "Letzte Prüfung: {{quartal}}, angelegt {{zeit}}. Wählen Sie eine Prüfung aus.",
+    "status": {
+      "offen": "offen",
+      "abgeschlossen": "abgeschlossen"
+    },
+    "entscheidung": {
+      "offen": "Offen",
+      "bestaetigt": "Bestätigen",
+      "entziehen": "Rechte entziehen"
+    },
+    "notiz": "Notiz (optional)",
+    "entzug_offen": "Markiert – das Konto hat noch erweiterte Rechte (Entzug unter „Zuweisung“).",
+    "entzug_erfolgt": "Entzug bereits erfolgt.",
+    "abschliessen": "Prüfung abschließen",
+    "noch_offen_one": "Noch {{count}} Konto ohne Entscheidung.",
+    "noch_offen_other": "Noch {{count}} Konten ohne Entscheidung.",
+    "abgeschlossen_von": "Abgeschlossen von {{name}} am {{zeit}}."
   }
 }

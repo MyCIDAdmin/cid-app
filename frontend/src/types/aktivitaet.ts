@@ -115,3 +115,92 @@ export interface Nutzung {
   module: NutzungModul[];
   ungenutzt: string[];
 }
+
+export interface BerichtDaten {
+  zeitraum: { jahr: number; monat: number };
+  sicherheit: {
+    logins: number;
+    fehlversuche: number;
+    sperren: number;
+    registrierungen: number;
+    freigaben: number;
+    rollenaenderungen: number;
+    passwort: number;
+  };
+  aenderungen: Record<string, number>;
+  betrieb: { server_fehler: number; task_fehler: number; mail_fehler: number };
+  auffaelligkeiten: { neu: number; wichtig: number; offen: number };
+  nutzung: { aktive: number; module: { modul: string; nutzer: number }[]; ungenutzt: string[] };
+  konten: {
+    aktiv: number;
+    privilegiert: number;
+    ohne_totp: number;
+    inaktiv_90d: number;
+    review_offen: number;
+  };
+}
+
+export interface BerichtKopf {
+  jahr: number;
+  monat: number;
+  erstellt_am: string;
+  versendet_am: string | null;
+}
+
+export interface Bericht extends BerichtKopf {
+  daten: BerichtDaten;
+}
+
+export interface BerichteListe {
+  letzter_abgeschlossener_monat: { jahr: number; monat: number };
+  ergebnisse: BerichtKopf[];
+}
+
+export type Entscheidung = "offen" | "bestaetigt" | "entziehen";
+
+export interface ReviewPosition {
+  id: string;
+  name: string;
+  email: string;
+  rolle: string;
+  totp: boolean;
+  letzte_anmeldung: string | null;
+  entscheidung: Entscheidung;
+  notiz: string;
+  entschieden_von: string | null;
+  entschieden_am: string | null;
+  aktuell_erweitert: boolean;
+}
+
+export interface ReviewKopf {
+  id: string;
+  quartal: string;
+  status: "offen" | "abgeschlossen";
+  erstellt_am: string;
+  abgeschlossen_am: string | null;
+  abgeschlossen_von: string | null;
+  anzahl: number;
+  offen: number;
+  entziehen: number;
+}
+
+export interface Review extends ReviewKopf {
+  positionen: ReviewPosition[];
+}
+
+export interface ReviewListe {
+  aktuelles_quartal: string;
+  ergebnisse: ReviewKopf[];
+}
+
+export type Ansicht =
+  "uebersicht" | "auffaelligkeiten" | "nutzung" | "berichte" | "review" | "journal";
+
+export const ANSICHTEN: Ansicht[] = [
+  "uebersicht",
+  "auffaelligkeiten",
+  "nutzung",
+  "berichte",
+  "review",
+  "journal",
+];

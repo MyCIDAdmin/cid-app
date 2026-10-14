@@ -6,6 +6,8 @@ import * as hooks from "../../hooks/useAktivitaet";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import type {
   Auffaelligkeit,
+  Bericht,
+  Review,
   Journal,
   JournalEintrag,
   Nutzung,
@@ -20,6 +22,15 @@ vi.mock("../../hooks/useAktivitaet", () => ({
   useAuffaelligkeiten: vi.fn(),
   useAuffaelligkeitErledigen: vi.fn(),
   useNutzung: vi.fn(),
+  useBerichte: vi.fn(),
+  useBericht: vi.fn(),
+  useBerichtErzeugen: vi.fn(),
+  useBerichtSenden: vi.fn(),
+  useReviews: vi.fn(),
+  useReview: vi.fn(),
+  useReviewAnlegen: vi.fn(),
+  useKontoEntscheiden: vi.fn(),
+  useReviewAbschliessen: vi.fn(),
 }));
 vi.mock("../../api/aktivitaet", () => ({ exportJournal: vi.fn() }));
 vi.mock("../../utils/telechargement", () => ({ declencherTelechargement: vi.fn() }));
@@ -112,7 +123,100 @@ const nutzung: Nutzung = {
   ungenutzt: ["kalender"],
 };
 
+const bericht: Bericht = {
+  jahr: 2026,
+  monat: 9,
+  erstellt_am: "2026-10-01T05:45:00Z",
+  versendet_am: null,
+  daten: {
+    zeitraum: { jahr: 2026, monat: 9 },
+    sicherheit: {
+      logins: 120,
+      fehlversuche: 4,
+      sperren: 0,
+      registrierungen: 3,
+      freigaben: 3,
+      rollenaenderungen: 1,
+      passwort: 2,
+    },
+    aenderungen: { mitglieder: 14, zahlungen: 22 },
+    betrieb: { server_fehler: 1, task_fehler: 0, mail_fehler: 0 },
+    auffaelligkeiten: { neu: 2, wichtig: 0, offen: 1 },
+    nutzung: { aktive: 31, module: [{ modul: "membres", nutzer: 20 }], ungenutzt: [] },
+    konten: { aktiv: 40, privilegiert: 3, ohne_totp: 0, inaktiv_90d: 5, review_offen: 0 },
+  },
+};
+
+const review: Review = {
+  id: "r1",
+  quartal: "2026-Q4",
+  status: "offen",
+  erstellt_am: "2026-10-01T06:00:00Z",
+  abgeschlossen_am: null,
+  abgeschlossen_von: null,
+  anzahl: 1,
+  offen: 1,
+  entziehen: 0,
+  positionen: [
+    {
+      id: "p1",
+      name: "Alex Admin",
+      email: "admin@example.de",
+      rolle: "App Admin",
+      totp: true,
+      letzte_anmeldung: null,
+      entscheidung: "offen",
+      notiz: "",
+      entschieden_von: null,
+      entschieden_am: null,
+      aktuell_erweitert: true,
+    },
+  ],
+};
+
+const berichtErzeugen = vi.fn();
+const entscheiden = vi.fn();
+const abschliessen = vi.fn();
+
+function mutation<T>(fn: ReturnType<typeof vi.fn>) {
+  return { mutate: fn, isPending: false } as unknown as T;
+}
+
 function mocks() {
+  vi.mocked(hooks.useBerichte).mockReturnValue({
+    data: { letzter_abgeschlossener_monat: { jahr: 2026, monat: 9 }, ergebnisse: [] },
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof hooks.useBerichte>);
+  vi.mocked(hooks.useBericht).mockReturnValue({
+    data: bericht,
+    isLoading: false,
+  } as unknown as ReturnType<typeof hooks.useBericht>);
+  vi.mocked(hooks.useBerichtErzeugen).mockReturnValue(
+    mutation<ReturnType<typeof hooks.useBerichtErzeugen>>(berichtErzeugen),
+  );
+  vi.mocked(hooks.useBerichtSenden).mockReturnValue(
+    mutation<ReturnType<typeof hooks.useBerichtSenden>>(vi.fn()),
+  );
+  vi.mocked(hooks.useReviews).mockReturnValue({
+    data: { aktuelles_quartal: "2026-Q4", ergebnisse: [review] },
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof hooks.useReviews>);
+  vi.mocked(hooks.useReview).mockReturnValue({
+    data: review,
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof hooks.useReview>);
+  vi.mocked(hooks.useReviewAnlegen).mockReturnValue(
+    mutation<ReturnType<typeof hooks.useReviewAnlegen>>(vi.fn()),
+  );
+  vi.mocked(hooks.useKontoEntscheiden).mockReturnValue(
+    mutation<ReturnType<typeof hooks.useKontoEntscheiden>>(entscheiden),
+  );
+  vi.mocked(hooks.useReviewAbschliessen).mockReturnValue(
+    mutation<ReturnType<typeof hooks.useReviewAbschliessen>>(abschliessen),
+  );
   vi.mocked(hooks.useNutzung).mockReturnValue({
     data: nutzung,
     isLoading: false,
@@ -256,5 +360,48 @@ describe("AktivitaetTab", () => {
 
     fireEvent.click(screen.getAllByText("uebersicht.tage")[0]);
     expect(hooks.useNutzung).toHaveBeenLastCalledWith(7);
+  });
+
+  it("bietet den fehlenden Monatsbericht zum Erstellen an und zeigt Summen", () => {
+    renderWithProviders(<AktivitaetTab startAnsicht="berichte" />);
+
+    fireEvent.click(screen.getByText("berichte.erzeugen"));
+    expect(berichtErzeugen).toHaveBeenCalledWith({ jahr: 2026, monat: 9 }, expect.anything());
+  });
+
+  it("zeigt einen Monatsbericht mit Kennzahlen", () => {
+    vi.mocked(hooks.useBerichte).mockReturnValue({
+      data: {
+        letzter_abgeschlossener_monat: { jahr: 2026, monat: 9 },
+        ergebnisse: [
+          { jahr: 2026, monat: 9, erstellt_am: bericht.erstellt_am, versendet_am: null },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof hooks.useBerichte>);
+    renderWithProviders(<AktivitaetTab startAnsicht="berichte" />);
+
+    fireEvent.click(screen.getByText("09/2026"));
+
+    expect(hooks.useBericht).toHaveBeenLastCalledWith(2026, 9);
+    expect(screen.getByText("120")).toBeInTheDocument();
+    expect(screen.getByText("berichte.felder.sicherheit.logins")).toBeInTheDocument();
+  });
+
+  it("entscheidet in der Rechteprüfung und sperrt das Abschließen solange etwas offen ist", () => {
+    renderWithProviders(<AktivitaetTab startAnsicht="review" />);
+
+    fireEvent.click(screen.getByText(/2026-Q4/));
+    expect(screen.getByText("Alex Admin")).toBeInTheDocument();
+    expect(screen.getByText("review.abschliessen")).toBeDisabled();
+
+    fireEvent.click(screen.getByText("review.entscheidung.entziehen"));
+    expect(entscheiden).toHaveBeenCalledWith({
+      reviewId: "r1",
+      positionId: "p1",
+      entscheidung: "entziehen",
+      notiz: "",
+    });
   });
 });

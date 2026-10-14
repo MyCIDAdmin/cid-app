@@ -7,6 +7,8 @@
   GET /aktivitaet/aktionen/                  Aktionen und Kategorien für die Filter
   GET /aktivitaet/auffaelligkeiten/?status=offen|erledigt|alle   erkannte Auffälligkeiten (R22)
   POST /aktivitaet/auffaelligkeiten/<id>/erledigen/
+  GET /aktivitaet/berichte/, berichte/<jahr>/<monat>/[erzeugen|senden]/   Monatsbericht (R24)
+  GET/POST /aktivitaet/review/, review/<id>/[positionen/<id>/|abschliessen/]   Rechteprüfung (R24)
 """
 
 import csv
@@ -17,6 +19,7 @@ from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -24,9 +27,10 @@ from apps.accounts.models import AuditLogEntry
 from apps.accounts.permissions import IsSuperAdmin
 from apps.accounts.services import log_audit_event
 
+from . import bericht
 from . import kategorien as kat
-from . import nutzung, regeln
-from .models import Auffaelligkeit
+from . import nutzung, regeln, review
+from .models import Auffaelligkeit, Monatsbericht, RechtePosition, RechteReview
 from .services import ERLAUBTE_TAGE, eintrag_dict, journal_filtern, name_von, person_dict
 
 PRO_SEITE = 50
@@ -231,3 +235,171 @@ class NutzungView(APIView):
         tage = tage if tage in nutzung.ERLAUBTE_TAGE else 30
         _zugriff_protokollieren(request)
         return Response(nutzung.statistik(tage))
+
+
+def bericht_dict(b: Monatsbericht, mit_daten=False) -> dict:
+    d = {
+        "jahr": b.jahr,
+        "monat": b.monat,
+        "erstellt_am": b.erstellt_am,
+        "versendet_am": b.versendet_am,
+    }
+    if mit_daten:
+        d["daten"] = b.daten
+    return d
+
+
+def _bericht(jahr: int, monat: int) -> Monatsbericht:
+    b = Monatsbericht.objects.filter(jahr=jahr, monat=monat).first()
+    if b is None:
+        raise NotFound("Kein Bericht für diesen Monat.")
+    return b
+
+
+class BerichteView(APIView):
+    """Liste der vorhandenen Monatsberichte und der Monate, die sich erzeugen lassen."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        _zugriff_protokollieren(request)
+        letzter = bericht.vormonat()
+        return Response(
+            {
+                "letzter_abgeschlossener_monat": {"jahr": letzter[0], "monat": letzter[1]},
+                "ergebnisse": [bericht_dict(b) for b in Monatsbericht.objects.all()[:36]],
+            }
+        )
+
+
+class BerichtDetailView(APIView):
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request, jahr, monat):
+        _zugriff_protokollieren(request)
+        return Response(bericht_dict(_bericht(jahr, monat), mit_daten=True))
+
+
+class BerichtErzeugenView(APIView):
+    """Bericht eines abgeschlossenen Monats (neu) berechnen — wiederholbar."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request, jahr, monat):
+        if not 1 <= monat <= 12 or (jahr, monat) > bericht.vormonat() or jahr < 2020:
+            raise ValidationError("Nur abgeschlossene Monate können berichtet werden.")
+        b = bericht.erstellen(jahr, monat)
+        _zugriff_protokollieren(
+            request, "monatsbericht_erstellt", dedupe=False, jahr=jahr, monat=monat
+        )
+        return Response(bericht_dict(b, mit_daten=True))
+
+
+class BerichtSendenView(APIView):
+    """Bericht an die eigene Adresse senden (der reguläre Versand an alle läuft automatisch)."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request, jahr, monat):
+        b = _bericht(jahr, monat)
+        bericht.senden(b, empfaenger=[request.user])
+        _zugriff_protokollieren(
+            request, "monatsbericht_gesendet", dedupe=False, jahr=jahr, monat=monat, empfaenger=1
+        )
+        return Response(bericht_dict(b))
+
+
+def _review(pk) -> RechteReview:
+    return get_object_or_404(RechteReview, pk=pk)
+
+
+class ReviewListeView(APIView):
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        _zugriff_protokollieren(request)
+        return Response(
+            {
+                "aktuelles_quartal": review.quartal_von(),
+                "ergebnisse": [review.review_dict(r) for r in RechteReview.objects.all()[:12]],
+            }
+        )
+
+    def post(self, request):
+        """Prüfung des laufenden Quartals anlegen (falls noch nicht vorhanden)."""
+        r, neu = review.anlegen()
+        if neu:
+            _zugriff_protokollieren(
+                request,
+                "rechte_review_angelegt",
+                dedupe=False,
+                quartal=r.quartal,
+                konten=r.positionen.count(),
+            )
+        return Response(review.review_dict(r), status=201 if neu else 200)
+
+
+class ReviewDetailView(APIView):
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request, pk):
+        _zugriff_protokollieren(request)
+        return Response(review.review_dict(_review(pk), mit_positionen=True))
+
+
+class EntscheidenView(APIView):
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request, pk, position):
+        r = _review(pk)
+        if r.status != RechteReview.Status.OFFEN:
+            raise ValidationError("Die Prüfung ist bereits abgeschlossen.")
+        p = get_object_or_404(RechtePosition, pk=position, review=r)
+        entscheidung = request.data.get("entscheidung")
+        if entscheidung not in RechtePosition.Entscheidung.values:
+            raise ValidationError("Ungültige Entscheidung.")
+        p.entscheidung = entscheidung
+        p.notiz = str(request.data.get("notiz", ""))[:200]
+        offen = entscheidung == RechtePosition.Entscheidung.OFFEN
+        p.entschieden_von = None if offen else request.user
+        p.entschieden_am = None if offen else timezone.now()
+        p.save(update_fields=["entscheidung", "notiz", "entschieden_von", "entschieden_am"])
+        _zugriff_protokollieren(
+            request,
+            "rechte_review_entschieden",
+            dedupe=False,
+            quartal=r.quartal,
+            entscheidung=entscheidung,
+            objekt_id=str(p.id),
+        )
+        return Response(review.position_dict(p))
+
+
+class AbschliessenView(APIView):
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request, pk):
+        r = _review(pk)
+        if r.status == RechteReview.Status.ABGESCHLOSSEN:
+            return Response(review.review_dict(r, mit_positionen=True))
+        daten = review.review_dict(r, mit_positionen=True)
+        if daten["offen"]:
+            raise ValidationError("Es sind noch Konten ohne Entscheidung offen.")
+        noch_aktiv = sum(
+            p["entscheidung"] == RechtePosition.Entscheidung.ENTZIEHEN and p["aktuell_erweitert"]
+            for p in daten["positionen"]
+        )
+        r.status = RechteReview.Status.ABGESCHLOSSEN
+        r.abgeschlossen_von = request.user
+        r.abgeschlossen_am = timezone.now()
+        r.save(update_fields=["status", "abgeschlossen_von", "abgeschlossen_am"])
+        _zugriff_protokollieren(
+            request,
+            "rechte_review_abgeschlossen",
+            dedupe=False,
+            quartal=r.quartal,
+            konten=daten["anzahl"],
+            entziehen=daten["entziehen"],
+            entzug_noch_offen=noch_aktiv,
+        )
+        return Response(review.review_dict(r, mit_positionen=True))
