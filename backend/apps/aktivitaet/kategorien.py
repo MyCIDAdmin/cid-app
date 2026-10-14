@@ -11,6 +11,14 @@ KATEGORIEN = {
     "rollen": ("Rollen, Rechte & Freigaben", "Rôles, droits et validations", 730),
     "moderation": ("Moderation", "Modération", 730),
     "audit": ("Protokoll-Zugriffe", "Accès au journal", 730),
+    "mitglieder": ("Mitglieder & Beitritt", "Membres et adhésions", 730),
+    "zahlungen": ("Beiträge & Zahlungen", "Cotisations et paiements", 730),
+    "finanzen": ("Finanzen", "Finances", 730),
+    "shop": ("Shop", "Boutique", 730),
+    "kalender": ("Kalender", "Calendrier", 730),
+    "inhalte": ("Veranstaltungen, Projekte & Partner", "Événements, projets et partenaires", 730),
+    "einstellungen": ("Einstellungen", "Paramètres", 730),
+    "export": ("Exporte & Importe", "Exports et imports", 730),
     "sonstige": ("Sonstiges", "Autres", 730),
 }
 IP_AUFBEWAHRUNG_TAGE = 90
@@ -147,6 +155,72 @@ AKTIONEN = {
         "Durées de conservation appliquées",
     ),
 }
+
+# --- Release 21 : Datenänderungen (von der Middleware `AktivitaetMiddleware` erfasst) -----------
+# URL-Präfix unter /api/v1/ → (Kategorie, Bezeichnung DE, Bezeichnung FR). Module mit eigenen,
+# detaillierten Protokolleinträgen (auth, rbac, communaute, aktivitaet) stehen bewusst nicht hier.
+MODULE = {
+    "membres": ("mitglieder", "Mitglieder", "Membres"),
+    "adhesions": ("mitglieder", "Beitritt & Angebote", "Adhésions et offres"),
+    "cotisations": ("zahlungen", "Beiträge & Zahlungen", "Cotisations et paiements"),
+    "finances": ("finanzen", "Finanzen", "Finances"),
+    "boutique": ("shop", "Shop", "Boutique"),
+    "kalender": ("kalender", "Kalender", "Calendrier"),
+    "evenements": ("inhalte", "Veranstaltungen", "Événements"),
+    "projets": ("inhalte", "Projekte", "Projets"),
+    "umfragen": ("inhalte", "Umfragen", "Sondages"),
+    "votes": ("inhalte", "Abstimmungen", "Votes"),
+    "partenaires": ("inhalte", "Partner", "Partenaires"),
+    "uebersetzungen": ("einstellungen", "Übersetzungen", "Traductions"),
+    "notifications": ("einstellungen", "Benachrichtigungen", "Notifications"),
+    "stats": ("export", "Statistiken", "Statistiques"),
+}
+# Löschen in diesen Kategorien gilt als Warnung (Nachvollziehbarkeit von Daten mit Rechtswirkung).
+SENSIBLE_KATEGORIEN = ("mitglieder", "zahlungen", "finanzen")
+_VERBEN = {
+    "erstellt": ("info", "angelegt", "créé"),
+    "geaendert": ("info", "geändert", "modifié"),
+    "geloescht": ("info", "gelöscht", "supprimé"),
+    "aktion": ("info", "Aktion ausgeführt", "action exécutée"),
+}
+for _praefix, (_kat, _de, _fr) in MODULE.items():
+    for _verb, (_gewicht, _vde, _vfr) in _VERBEN.items():
+        _g = "warnung" if _verb == "geloescht" and _kat in SENSIBLE_KATEGORIEN else _gewicht
+        AKTIONEN[f"{_praefix}_{_verb}"] = (_kat, _g, f"{_de}: {_vde}", f"{_fr} : {_vfr}")
+    _g = "wichtig" if _praefix == "membres" else "warnung"
+    AKTIONEN[f"{_praefix}_export"] = ("export", _g, f"{_de}: Export", f"{_fr} : export")
+    if _praefix != "stats":
+        AKTIONEN[f"{_praefix}_import"] = ("export", _g, f"{_de}: Import", f"{_fr} : import")
+
+# Besondere Vorgänge (Teil des URL-Pfads → Aktion) : eigene Aktion mit höherem Gewicht.
+SONDERFAELLE = (
+    ("rapprochement/fusionner", "membres_zusammengefuehrt"),
+    ("abschluss/wiedereroeffnen", "finances_wiedereroeffnet"),
+    ("abschluss", "finances_abschluss"),
+)
+AKTIONEN.update(
+    {
+        "membres_zusammengefuehrt": (
+            "mitglieder",
+            "wichtig",
+            "Mitglieder: Duplikate zusammengeführt",
+            "Membres : doublons fusionnés",
+        ),
+        "finances_wiedereroeffnet": (
+            "finanzen",
+            "wichtig",
+            "Finanzen: Abschluss wieder geöffnet",
+            "Finances : clôture rouverte",
+        ),
+        "finances_abschluss": (
+            "finanzen",
+            "wichtig",
+            "Finanzen: Abschluss durchgeführt",
+            "Finances : clôture effectuée",
+        ),
+    }
+)
+
 
 LOGIN_ERFOLG = ("login_success", "login_2fa_success")
 LOGIN_FEHLER = ("login_failed", "login_2fa_failed")
