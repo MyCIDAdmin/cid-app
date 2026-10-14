@@ -53,6 +53,26 @@ def log_audit_event(action: str, user=None, ip_address=None, user_agent="", **me
     )
 
 
+def maskiere_email(email: str) -> str:
+    """„anna@example.de“ → „a***@example.de“ : im Protokoll nie die volle Adresse eines
+    unbekannten Kontos."""
+    lokal, _, domain = (email or "").partition("@")
+    return f"{lokal[:1]}***@{domain}" if domain else "***"
+
+
+def log_failed_login(email: str, ip_address=None, user_agent="") -> None:
+    """Fehlgeschlagene Anmeldung ; gehört das Konto zu einem bekannten Nutzer, wird es verknüpft,
+    sonst nur die maskierte Adresse gespeichert."""
+    user = User.objects.filter(email__iexact=(email or "").strip()).first()
+    log_audit_event(
+        "login_failed",
+        user=user,
+        ip_address=ip_address or None,
+        user_agent=user_agent,
+        email_masked=maskiere_email(email),
+    )
+
+
 def requires_2fa(user, request_ip: str, device_fingerprint_hash: str | None) -> bool:
     """
     Détermine si le 2FA doit être déclenché pour cette connexion

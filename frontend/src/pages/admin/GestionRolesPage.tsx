@@ -8,15 +8,18 @@
  *     utilisateur, remplace l'ancien sélecteur mono-rôle.
  *   - Zugriff (components/rbac/MatriceAccesTab.tsx) — matrice Rôle × Module et gestion des
  *     rôles personnalisés (création/suppression).
+ *   - Aktivität (components/aktivitaet/AktivitaetTab.tsx, Release 20) — Protokoll : Übersicht und
+ *     Journal (Sicherheit und Nachvollziehbarkeit).
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import AktivitaetTab from "../../components/aktivitaet/AktivitaetTab";
 import AttributionRolesTab from "../../components/rbac/AttributionRolesTab";
 import MatriceAccesTab from "../../components/rbac/MatriceAccesTab";
 import VisibiliteModulesTab from "../../components/rbac/VisibiliteModulesTab";
 
-type Onglet = "attribution" | "acces" | "visibilite";
+type Onglet = "attribution" | "acces" | "visibilite" | "aktivitaet";
 
 export default function GestionRolesPage() {
   const { t } = useTranslation("rbac");
@@ -58,11 +61,23 @@ export default function GestionRolesPage() {
         >
           {t("onglets.visibilite")}
         </button>
+        <button
+          type="button"
+          onClick={() => setOnglet("aktivitaet")}
+          className={`px-3 py-2 text-sm font-medium ${
+            onglet === "aktivitaet"
+              ? "border-b-2 border-ca text-ca"
+              : "text-text-tertiary hover:text-text-secondary"
+          }`}
+        >
+          {t("onglets.aktivitaet")}
+        </button>
       </div>
 
       {onglet === "attribution" && <AttributionRolesTab />}
       {onglet === "acces" && <MatriceAccesTab />}
       {onglet === "visibilite" && <VisibiliteModulesTab />}
+      {onglet === "aktivitaet" && <AktivitaetTab />}
     </div>
   );
 }

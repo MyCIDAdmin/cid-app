@@ -2,7 +2,8 @@
   "onglets": {
     "attribution": "Zuweisung",
     "acces": "Zugriff",
-    "visibilite": "Sichtbarkeit"
+    "visibilite": "Sichtbarkeit",
+    "aktivitaet": "Aktivität"
   },
   "modules": {
     "membres": "Mitglieder",

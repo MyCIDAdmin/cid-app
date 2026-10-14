@@ -1,0 +1,86 @@
+{
+  "hinweis": "Visible uniquement pour les administrateurs de l'app. Le journal sert à la sécurité et à la traçabilité des modifications, pas à la surveillance individuelle des membres. Les accès à cette page sont eux-mêmes journalisés.",
+  "chargement": "Chargement…",
+  "erreur_chargement": "Les données n'ont pas pu être chargées.",
+  "ansicht": {
+    "uebersicht": "Aperçu",
+    "journal": "Journal"
+  },
+  "uebersicht": {
+    "zeitraum": "Période",
+    "tage_one": "{{count}} jour",
+    "tage_other": "{{count}} jours",
+    "aktiv": "Actifs : {{h24}} en 24 h · {{d7}} en 7 jours · {{d30}} en 30 jours",
+    "verlauf": "Connexions par jour",
+    "logins": "Connexions",
+    "fehlversuche": "Échecs",
+    "heatmap": "Quand les utilisateurs se connectent-ils ? (jour × heure)",
+    "tage_kurz": {
+      "mo": "lun",
+      "di": "mar",
+      "mi": "mer",
+      "do": "jeu",
+      "fr": "ven",
+      "sa": "sam",
+      "so": "dim"
+    },
+    "kacheln": {
+      "logins": "Connexions",
+      "aktive_nutzer": "Utilisateurs actifs",
+      "fehlversuche": "Échecs de connexion",
+      "sperren": "Blocages",
+      "registrierungen": "Inscriptions",
+      "freigaben": "Validations/refus",
+      "rollenaenderungen": "Changements de rôles et de droits",
+      "geraete_limit": "Limite d'appareils atteinte"
+    },
+    "top_ips": "Adresses IP suspectes (échecs)",
+    "keine_fehlversuche": "Aucun échec sur la période.",
+    "versuche_one": "{{count}} tentative",
+    "versuche_other": "{{count}} tentatives",
+    "im_journal": "Dans le journal",
+    "konten": "Comptes à droits élevés (à partir de Bureau Admin)",
+    "konten_zahlen": "{{aktiv}} comptes actifs · {{inaktiv}} sans connexion depuis 90 jours · {{nie}} jamais connectés",
+    "spalten": {
+      "person": "Personne",
+      "rolle": "Rôle",
+      "letzte": "Dernière connexion",
+      "totp": "Authenticator"
+    },
+    "totp_ja": "actif",
+    "totp_nein": "non configuré"
+  },
+  "journal": {
+    "von": "Du",
+    "bis": "Au",
+    "kategorie": "Catégorie",
+    "aktion": "Action",
+    "gewicht": "Importance",
+    "person": "Personne",
+    "person_platzhalter": "Nom ou e-mail",
+    "ip": "Adresse IP",
+    "alle": "Toutes",
+    "gewichte": {
+      "warnung": "Avertissements",
+      "wichtig": "Modifications importantes"
+    },
+    "zuruecksetzen": "Réinitialiser",
+    "export": "Exporter en CSV",
+    "export_fehler": "L'export a échoué.",
+    "anzahl_one": "{{count}} entrée",
+    "anzahl_other": "{{count}} entrées",
+    "spalten": {
+      "zeit": "Heure",
+      "aktion": "Action",
+      "person": "Personne",
+      "ip": "IP"
+    },
+    "leer": "Aucune entrée pour ces filtres.",
+    "technisch": "Nom technique",
+    "geraet": "Appareil",
+    "zurueck": "Précédent",
+    "weiter": "Suivant",
+    "seite": "Page {{seite}} sur {{seiten}}",
+    "aufbewahrung": "Conservation : connexions et événements de compte {{kurz}} jours, autres entrées {{lang}} jours ; les adresses IP sont supprimées après 90 jours."
+  }
+}

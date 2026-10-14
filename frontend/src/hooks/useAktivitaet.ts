@@ -1,0 +1,36 @@
+/** Hooks React Query — Aktivität (Release 20). */
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+
+import * as aktivitaetApi from "../api/aktivitaet";
+import type { JournalFilter } from "../types/aktivitaet";
+
+const keys = {
+  all: ["aktivitaet"] as const,
+  uebersicht: (tage: number) => [...keys.all, "uebersicht", tage] as const,
+  journal: (filter: JournalFilter) => [...keys.all, "journal", filter] as const,
+  aktionen: () => [...keys.all, "aktionen"] as const,
+};
+
+export function useUebersicht(tage: number) {
+  return useQuery({
+    queryKey: keys.uebersicht(tage),
+    queryFn: () => aktivitaetApi.getUebersicht(tage),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useJournal(filter: JournalFilter) {
+  return useQuery({
+    queryKey: keys.journal(filter),
+    queryFn: () => aktivitaetApi.getJournal(filter),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAktionen() {
+  return useQuery({
+    queryKey: keys.aktionen(),
+    queryFn: aktivitaetApi.getAktionen,
+    staleTime: 5 * 60 * 1000,
+  });
+}

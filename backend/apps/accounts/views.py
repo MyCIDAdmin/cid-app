@@ -130,6 +130,9 @@ class LoginView(APIView):
 
         user = authenticate(request, username=data["email"], password=data["password"])
         if user is None:
+            services.log_failed_login(
+                data["email"], _client_ip(request), request.META.get("HTTP_USER_AGENT", "")
+            )
             raise AuthenticationFailed("Email ou mot de passe incorrect.")
 
         if not user.is_active:
