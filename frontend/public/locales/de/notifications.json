@@ -23,7 +23,8 @@
       "evenements": "Veranstaltungen",
       "boutique": "Shop",
       "vote": "Wahlen & Abstimmungen",
-      "communaute": "Community"
+      "communaute": "Community",
+      "kalender": "Kalender"
     },
     "module_description": {
       "membres": "Änderung des Mitgliedsstatus (aktiv/inaktiv).",
@@ -32,7 +33,8 @@
       "evenements": "Einladungen, Erinnerungen, Absagen.",
       "boutique": "Bestätigte, versandte oder stornierte Bestellungen.",
       "vote": "Eröffnung von Abstimmungen und Ergebnisse.",
-      "communaute": "Forumantworten, private Nachrichten."
+      "communaute": "Forumantworten, private Nachrichten.",
+      "kalender": "Änderungen, Absagen und Erinnerungen zu Terminen, Diensten und Terminfindungen; Protokolle; Wochenübersicht."
     }
   }
 }

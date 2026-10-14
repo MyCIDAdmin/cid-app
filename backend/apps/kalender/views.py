@@ -31,8 +31,10 @@ from apps.communaute.models import Publication
 from apps.communaute.tasks import notifier_publication_importante
 from apps.membres.models import Membre, StatutMembre
 
+from .benachrichtigung import T, melden, name_von, termin_empfaenger, wann
 from .eintraege import AUSBLENDBAR, baue_eintraege, baue_mehrere
 from .models import (
+    Antwort,
     Ausblendung,
     Dienst,
     DienstEintragung,
@@ -45,6 +47,7 @@ from .services import (
     darf_vorschlagen,
     ist_aktives_mitglied,
     ist_verwaltung,
+    naechster_start,
     sichtbare_dienste,
     termine_fuer,
     zugang,
@@ -189,27 +192,18 @@ class TerminViewSet(ModelViewSet):
 
     @staticmethod
     def _melde_vorschlag(termin):
-        from apps.accounts.models import ROLE_LEVELS, Role, User
-        from apps.notifications.models import TypeNotification
-        from apps.notifications.services import notifier
-
-        stufe = ROLE_LEVELS[Role.BUREAU_ADMIN]
-        rollen = [r for r, n in ROLE_LEVELS.items() if n >= stufe]
-        for user in User.objects.filter(role__in=rollen, is_active=True).exclude(
-            pk=termin.erstellt_von_id
-        ):
-            notifier(
+        for user in _bureau_nutzer(ausser=termin.erstellt_von_id):
+            melden(
                 user,
-                TypeNotification.EVENEMENT_INVITATION,
-                titre="Terminvorschlag",
-                message=f"Neuer Vorschlag zur Freigabe: {termin.titel}",
-                lien="/kalender",
+                T.KALENDER_VORSCHLAG,
+                de=("Terminvorschlag", f"Neuer Vorschlag zur Freigabe: {termin.titel}"),
+                fr=(
+                    "Proposition de rendez-vous",
+                    f"Nouvelle proposition à valider : {termin.titel}",
+                ),
             )
 
     def _entscheiden(self, request, neuer_status):
-        from apps.notifications.models import TypeNotification
-        from apps.notifications.services import notifier
-
         termin = self.get_object()
         if termin.status != TerminStatus.VORGESCHLAGEN:
             raise ValidationError("Nur Vorschläge können entschieden werden.")
@@ -217,12 +211,17 @@ class TerminViewSet(ModelViewSet):
         termin.freigegeben_von = request.user
         termin.save(update_fields=["status", "freigegeben_von", "updated_at"])
         freigegeben = neuer_status == TerminStatus.FREIGEGEBEN
-        notifier(
+        melden(
             termin.erstellt_von,
-            TypeNotification.EVENEMENT_INVITATION,
-            titre="Terminvorschlag " + ("freigegeben" if freigegeben else "abgelehnt"),
-            message=f"„{termin.titel}“ wurde {'freigegeben' if freigegeben else 'abgelehnt'}.",
-            lien="/kalender",
+            T.KALENDER_VORSCHLAG,
+            de=(
+                "Terminvorschlag " + ("freigegeben" if freigegeben else "abgelehnt"),
+                f"„{termin.titel}“ wurde {'freigegeben' if freigegeben else 'abgelehnt'}.",
+            ),
+            fr=(
+                "Proposition " + ("validée" if freigegeben else "refusée"),
+                f"« {termin.titel} » a été {'validé' if freigegeben else 'refusé'}.",
+            ),
         )
         return Response(self.get_serializer(termin).data)
 
@@ -242,9 +241,41 @@ class TerminViewSet(ModelViewSet):
         einladung = TerminEinladung.objects.filter(termin=termin, user=request.user).first()
         if einladung is None:
             raise ValidationError("Du bist zu diesem Termin nicht eingeladen.")
+        vorher = einladung.antwort
         einladung.antwort = eingabe.validated_data["antwort"]
         einladung.save(update_fields=["antwort"])
+        if (
+            einladung.antwort == Antwort.ABSAGE
+            and vorher != Antwort.ABSAGE
+            and termin.status == TerminStatus.FREIGEGEBEN
+            and termin.erstellt_von_id != request.user.pk
+        ):
+            wer = name_von(request.user)
+            melden(
+                termin.erstellt_von,
+                T.KALENDER_ANTWORT,
+                de=(f"Absage: {termin.titel}", f"{wer} hat für „{termin.titel}“ abgesagt."),
+                fr=(f"Refus : {termin.titel}", f"{wer} a décliné « {termin.titel} »."),
+            )
         return Response(self.get_serializer(termin).data)
+
+    def perform_destroy(self, instance):
+        """Löschen = Absage : Eingeladene und Helfer erfahren es (nur bei kommenden Terminen)."""
+        empfaenger = []
+        if instance.status == TerminStatus.FREIGEGEBEN and naechster_start(
+            instance, timezone.now()
+        ):
+            empfaenger = termin_empfaenger(instance, ausser=self.request.user)
+        titel, beginn = instance.titel, instance.beginn
+        super().perform_destroy(instance)
+        for user in empfaenger:
+            melden(
+                user,
+                T.KALENDER_AENDERUNG,
+                de=(f"Abgesagt: {titel}", f"„{titel}“ am {wann(beginn)} findet nicht statt."),
+                fr=(f"Annulé : {titel}", f"« {titel} » du {wann(beginn)} n'a pas lieu."),
+                mail=True,
+            )
 
     @action(detail=True, methods=["post"])
     def ankuendigen(self, request, pk=None):
@@ -298,23 +329,6 @@ def _bureau_nutzer(ausser=None):
     return User.objects.filter(role__in=rollen, is_active=True).exclude(pk=ausser)
 
 
-def _notify(user, titel, nachricht):
-    from apps.notifications.models import TypeNotification
-    from apps.notifications.services import notifier
-
-    notifier(
-        user,
-        TypeNotification.EVENEMENT_INVITATION,
-        titre=titel,
-        message=nachricht,
-        lien="/kalender",
-    )
-
-
-def _wann(dt) -> str:
-    return timezone.localtime(dt).strftime("%d.%m.%Y %H:%M")
-
-
 class DienstViewSet(ModelViewSet):
     """Helfer-Slots (Release 16) : sehen = wer Termin/Veranstaltung sieht ; eintragen = aktive
     Mitglieder ; anlegen, zuweisen, entfernen, Vorschläge = Seite „Kalender“ mit Schreibrecht."""
@@ -354,6 +368,56 @@ class DienstViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(erstellt_von=self.request.user)
+
+    def perform_update(self, serializer):
+        alt = (serializer.instance.beginn, serializer.instance.ende)
+        dienst = serializer.save()
+        if (dienst.beginn, dienst.ende) == alt:
+            return
+        if dienst.beginn != alt[0] and dienst.letzte_erinnerung:
+            dienst.letzte_erinnerung = None  # Erinnerung zur neuen Zeit
+            dienst.save(update_fields=["letzte_erinnerung"])
+        if dienst.beginn < timezone.now():
+            return
+        for e in dienst.eintraege.select_related("user"):
+            if e.user_id == self.request.user.pk:
+                continue
+            melden(
+                e.user,
+                T.KALENDER_AENDERUNG,
+                de=(
+                    f"Dienst verschoben: {dienst.titel}",
+                    f"„{dienst.titel}“ findet jetzt am {wann(dienst.beginn)} statt.",
+                ),
+                fr=(
+                    f"Permanence déplacée : {dienst.titel}",
+                    f"« {dienst.titel} » a maintenant lieu le {wann(dienst.beginn)}.",
+                ),
+                mail=True,
+            )
+
+    def perform_destroy(self, instance):
+        eingetragen = [e.user for e in instance.eintraege.select_related("user")]
+        titel, beginn = instance.titel, instance.beginn
+        super().perform_destroy(instance)
+        if beginn < timezone.now():
+            return
+        for user in eingetragen:
+            if user.pk == self.request.user.pk:
+                continue
+            melden(
+                user,
+                T.KALENDER_AENDERUNG,
+                de=(
+                    f"Dienst abgesagt: {titel}",
+                    f"Der Dienst „{titel}“ am {wann(beginn)} entfällt.",
+                ),
+                fr=(
+                    f"Permanence annulée : {titel}",
+                    f"La permanence « {titel} » du {wann(beginn)} est annulée.",
+                ),
+                mail=True,
+            )
 
     @action(detail=False, methods=["get"])
     def offen(self, request):
@@ -418,10 +482,17 @@ class DienstViewSet(ModelViewSet):
             if dienst.eintraege.count() >= dienst.benoetigt:
                 raise ValidationError("Dieser Dienst ist bereits voll besetzt.")
             DienstEintragung.objects.create(dienst=dienst, user=user, zugewiesen_von=request.user)
-        _notify(
+        melden(
             user,
-            f"Dienst: {dienst.titel}",
-            f"Du wurdest für „{dienst.titel}“ am {_wann(dienst.beginn)} eingeteilt.",
+            T.KALENDER_DIENST,
+            de=(
+                f"Dienst: {dienst.titel}",
+                f"Du wurdest für „{dienst.titel}“ am {wann(dienst.beginn)} eingeteilt.",
+            ),
+            fr=(
+                f"Permanence : {dienst.titel}",
+                f"Tu as été affecté(e) à « {dienst.titel} » le {wann(dienst.beginn)}.",
+            ),
         )
         return self._antwort(dienst)
 
@@ -433,10 +504,17 @@ class DienstViewSet(ModelViewSet):
             geloescht, _ = dienst.eintraege.filter(user=user).delete()
         if not geloescht:
             raise ValidationError("Die Person ist nicht eingetragen.")
-        _notify(
+        melden(
             user,
-            f"Dienst: {dienst.titel}",
-            f"Du wurdest aus dem Dienst „{dienst.titel}“ ausgetragen.",
+            T.KALENDER_DIENST,
+            de=(
+                f"Dienst: {dienst.titel}",
+                f"Du wurdest aus dem Dienst „{dienst.titel}“ ausgetragen.",
+            ),
+            fr=(
+                f"Permanence : {dienst.titel}",
+                f"Tu as été retiré(e) de la permanence « {dienst.titel} ».",
+            ),
         )
         self._melde_frei(dienst)
         return self._antwort(dienst)
@@ -459,10 +537,17 @@ class DienstViewSet(ModelViewSet):
         if dienst.eintraege.count() >= dienst.benoetigt:
             return
         for user in _bureau_nutzer():
-            _notify(
+            melden(
                 user,
-                "Dienst nicht mehr besetzt",
-                f"„{dienst.titel}“ am {_wann(dienst.beginn)} hat wieder freie Plätze.",
+                T.KALENDER_DIENST,
+                de=(
+                    "Dienst nicht mehr besetzt",
+                    f"„{dienst.titel}“ am {wann(dienst.beginn)} hat wieder freie Plätze.",
+                ),
+                fr=(
+                    "Permanence à nouveau incomplète",
+                    f"« {dienst.titel} » du {wann(dienst.beginn)} a de nouveau des places libres.",
+                ),
             )
 
     @action(detail=True, methods=["get"])
@@ -501,10 +586,18 @@ class DienstViewSet(ModelViewSet):
         """Benachrichtigt eine vorgeschlagene Person : „Wir suchen Helfer …“."""
         dienst = self.get_object()
         user = self._person(request)
-        _notify(
+        melden(
             user,
-            f"Helfer gesucht: {dienst.titel}",
-            f"Das Bureau sucht Unterstützung für „{dienst.titel}“ am "
-            f"{_wann(dienst.beginn)}. Du kannst dich im Kalender eintragen.",
+            T.KALENDER_DIENST,
+            de=(
+                f"Helfer gesucht: {dienst.titel}",
+                f"Das Bureau sucht Unterstützung für „{dienst.titel}“ am "
+                f"{wann(dienst.beginn)}. Du kannst dich im Kalender eintragen.",
+            ),
+            fr=(
+                f"Aide recherchée : {dienst.titel}",
+                f"Le bureau cherche de l'aide pour « {dienst.titel} » le "
+                f"{wann(dienst.beginn)}. Tu peux t'inscrire dans le calendrier.",
+            ),
         )
         return Response({"ok": True})

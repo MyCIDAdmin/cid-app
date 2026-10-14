@@ -280,11 +280,13 @@ def test_erinnerung_einmal_je_vorkommen(bureau):
     TerminEinladung.objects.create(termin=t, user=absager, antwort=Antwort.ABSAGE)
     assert termin_erinnerungen() == 1
     assert (
-        Notification.objects.filter(destinataire=eingeladen, titre__startswith="Erinnerung").count()
+        Notification.objects.filter(
+            destinataire=eingeladen, type_notification="evenement_rappel"
+        ).count()
         == 1
     )
     assert not Notification.objects.filter(
-        destinataire=absager, titre__startswith="Erinnerung"
+        destinataire=absager, type_notification="evenement_rappel"
     ).exists()
     assert termin_erinnerungen() == 0
     far = _termin(

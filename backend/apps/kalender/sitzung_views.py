@@ -24,6 +24,7 @@ from rest_framework.views import APIView
 from apps.accounts.models import User
 from apps.projets.models import Aufgabe, Projet, StatutAufgabe
 
+from .benachrichtigung import T, mail_aktiv, melden, sprache
 from .models import Beschluss, Protokoll, Tagesordnungspunkt
 from .serializers import _name
 from .services import ist_verwaltung, termine_fuer
@@ -186,8 +187,6 @@ class BeschlussAufgabeView(APIView):
 
     @transaction.atomic
     def post(self, request, termin_id, beschluss_id):
-        from apps.notifications.models import TypeNotification
-        from apps.notifications.services import notifier
 
         termin = _termin(request, termin_id)
         _bearbeiten_oder_403(request, termin)
@@ -216,11 +215,17 @@ class BeschlussAufgabeView(APIView):
         )
         beschluss.save()
         if verantwortlicher and verantwortlicher.pk != request.user.pk:
-            notifier(
+            melden(
                 verantwortlicher,
-                TypeNotification.EVENEMENT_INVITATION,
-                titre=f"Neue Aufgabe: {beschluss.aufgabe.titel}",
-                message=f"Aus der Sitzung „{termin.titel}“ ist dir eine Aufgabe zugeteilt worden.",
+                T.KALENDER_SITZUNG,
+                de=(
+                    f"Neue Aufgabe: {beschluss.aufgabe.titel}",
+                    f"Aus der Sitzung „{termin.titel}“ ist dir eine Aufgabe zugeteilt worden.",
+                ),
+                fr=(
+                    f"Nouvelle tâche : {beschluss.aufgabe.titel}",
+                    f"Une tâche t'a été confiée suite à la réunion « {termin.titel} ».",
+                ),
                 lien=f"/projets/{projekt.pk}",
             )
         return Response(_beschluss_dict(beschluss), status=status.HTTP_201_CREATED)
@@ -235,8 +240,6 @@ class ProtokollVersendenView(APIView):
         from django.conf import settings
 
         from apps.notifications.email_cid import Texte, envoyer_email_cid
-        from apps.notifications.models import TypeNotification
-        from apps.notifications.services import notifier
 
         termin = _termin(request, termin_id)
         _bearbeiten_oder_403(request, termin)
@@ -248,7 +251,7 @@ class ProtokollVersendenView(APIView):
             )
         empfaenger = {e.user for e in termin.einladungen.select_related("user")}
         empfaenger.add(termin.erstellt_von)
-        wann = timezone.localtime(termin.beginn).strftime("%d.%m.%Y")
+        wann_tag = timezone.localtime(termin.beginn).strftime("%d.%m.%Y")
         absaetze = [
             p.strip() for p in (protokoll.text if protokoll else "").split("\n\n") if p.strip()
         ]
@@ -260,33 +263,38 @@ class ProtokollVersendenView(APIView):
         texte = {
             "de": Texte(
                 titre=f"Protokoll: {termin.titel}",
-                paragraphes=[f"Sitzung vom {wann}."] + absaetze[:20],
+                paragraphes=[f"Sitzung vom {wann_tag}."] + absaetze[:20],
                 details=details,
                 cta="Im Kalender öffnen",
             ),
             "fr": Texte(
                 titre=f"Procès-verbal : {termin.titel}",
-                paragraphes=[f"Réunion du {wann}."] + absaetze[:20],
+                paragraphes=[f"Réunion du {wann_tag}."] + absaetze[:20],
                 details=details,
                 cta="Ouvrir dans le calendrier",
             ),
         }
         for user in empfaenger:
-            if user.email:
-                langue = user.langue_preferee if user.langue_preferee in texte else "de"
+            if user.email and mail_aktiv():
+                langue = sprache(user)
                 envoyer_email_cid(
-                    sujet=f"Protokoll: {termin.titel}",
+                    sujet=texte[langue].titre,
                     destinataire=user.email,
                     textes={k: v for k, v in texte.items() if k in ("de", langue)},
                     lien=f"{settings.FRONTEND_URL}/kalender",
                     fail_silently=True,
                 )
-            notifier(
+            melden(
                 user,
-                TypeNotification.EVENEMENT_INVITATION,
-                titre=f"Protokoll: {termin.titel}",
-                message=f"Das Protokoll der Sitzung vom {wann} wurde verschickt.",
-                lien="/kalender",
+                T.KALENDER_SITZUNG,
+                de=(
+                    f"Protokoll: {termin.titel}",
+                    f"Das Protokoll der Sitzung vom {wann_tag} wurde verschickt.",
+                ),
+                fr=(
+                    f"Procès-verbal : {termin.titel}",
+                    f"Le procès-verbal de la réunion du {wann_tag} a été envoyé.",
+                ),
             )
         protokoll, _ = Protokoll.objects.get_or_create(termin=termin)
         protokoll.versendet_am = timezone.now()

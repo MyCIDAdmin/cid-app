@@ -40,7 +40,15 @@ export type TypeNotification =
   // affiche telles quelles, sans mapping icône/libellé par type côté frontend (aucun des
   // types existants n'en a un).
   | "communaute_mention"
-  | "communaute_info_importante";
+  | "communaute_info_importante"
+  // Ajoutés le 2026-10-14 (Release 19, Kalender) — voir backend TypeNotification.KALENDER_*.
+  | "kalender_einladung"
+  | "kalender_vorschlag"
+  | "kalender_aenderung"
+  | "kalender_antwort"
+  | "kalender_dienst"
+  | "kalender_umfrage"
+  | "kalender_sitzung";
 
 export interface Notification {
   id: string;
@@ -67,6 +75,7 @@ export const MODULES_NOTIFIABLES = [
   "boutique",
   "vote",
   "communaute",
+  "kalender",
 ] as const;
 
 export type ModuleNotifiable = (typeof MODULES_NOTIFIABLES)[number];

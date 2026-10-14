@@ -85,6 +85,8 @@ class Terminumfrage(models.Model):
         settings.AUTH_USER_MODEL, related_name="terminumfragen", blank=True
     )
     antwort_bis = models.DateField(null=True, blank=True)
+    erinnert_am = models.DateField(null=True, blank=True)  # Release 19 : letzte Erinnerung
+    frist_gemeldet = models.BooleanField(default=False)  # Release 19 : Ersteller informiert
     status = models.CharField(
         max_length=12, choices=UmfrageStatus.choices, default=UmfrageStatus.OFFEN
     )
