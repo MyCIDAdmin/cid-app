@@ -193,8 +193,45 @@ export interface ReviewListe {
   ergebnisse: ReviewKopf[];
 }
 
+export type PflegeGruppe = "journal" | "auswertungen" | "hinweise" | "technik";
+
+export interface PflegeArt {
+  key: string;
+  gruppe: PflegeGruppe;
+  label: Sprachtext;
+  info: Sprachtext;
+  frist: number;
+  standard: number;
+  minimum: number;
+  maximum: number;
+  fest: boolean;
+  gesamt: number;
+  betroffen: number;
+  aeltester: string | null;
+}
+
+export interface PflegeLauf {
+  zeit: string;
+  modus: "automatisch" | "manuell";
+  von: string | null;
+  ergebnis: Record<string, number>;
+}
+
+export interface Pflege {
+  automatisch: boolean;
+  letzter_lauf: PflegeLauf | null;
+  arten: PflegeArt[];
+}
+
+export interface PflegeErgebnis extends Pflege {
+  ergebnis: Record<string, number>;
+  summe: number;
+}
+
+export const PFLEGE_GRUPPEN: PflegeGruppe[] = ["journal", "auswertungen", "hinweise", "technik"];
+
 export type Ansicht =
-  "uebersicht" | "auffaelligkeiten" | "nutzung" | "berichte" | "review" | "journal";
+  "uebersicht" | "auffaelligkeiten" | "nutzung" | "berichte" | "review" | "journal" | "pflege";
 
 export const ANSICHTEN: Ansicht[] = [
   "uebersicht",
@@ -203,4 +240,5 @@ export const ANSICHTEN: Ansicht[] = [
   "berichte",
   "review",
   "journal",
+  "pflege",
 ];

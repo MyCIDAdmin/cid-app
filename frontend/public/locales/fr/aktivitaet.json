@@ -8,7 +8,8 @@
     "journal": "Journal",
     "nutzung": "Utilisation",
     "berichte": "Rapports",
-    "review": "Revue des droits"
+    "review": "Revue des droits",
+    "pflege": "Entretien des données"
   },
   "uebersicht": {
     "zeitraum": "Période",
@@ -217,5 +218,44 @@
     "noch_offen_one": "Encore {{count}} compte sans décision.",
     "noch_offen_other": "Encore {{count}} comptes sans décision.",
     "abgeschlossen_von": "Terminée par {{name}} le {{zeit}}."
+  },
+  "pflege": {
+    "hinweis": "Ici sont supprimées les anciennes données techniques : journal, analyses, notifications lues et sessions expirées. Les membres, cotisations, paiements, contenus et rôles ne sont jamais concernés. Chaque type de données a un délai minimal qu'il est impossible de réduire.",
+    "automatisch": "Nettoyer automatiquement (chaque jour)",
+    "automatisch_info": "Supprime chaque nuit toutes les données plus anciennes que leur délai.",
+    "automatisch_aus": "Le nettoyage automatique est désactivé : les anciennes données restent jusqu'à un nettoyage manuel ici.",
+    "letzter_lauf": "Dernier passage : {{zeit}} ({{modus}}), {{anzahl}} enregistrements supprimés.",
+    "noch_nie": "Aucun nettoyage n'a encore été effectué.",
+    "modus": {
+      "automatisch": "automatique",
+      "manuell": "manuel"
+    },
+    "gruppe": {
+      "journal": "Journal",
+      "auswertungen": "Analyses et justificatifs",
+      "hinweise": "Notifications",
+      "technik": "Journaux techniques"
+    },
+    "bestand": "Total : {{gesamt}}",
+    "aeltester": "entrée la plus ancienne",
+    "betroffen": "concernés maintenant : {{anzahl}}",
+    "fest": "uniquement les données expirées",
+    "frist": "Délai en jours",
+    "tage": "jours",
+    "minimum": "min. {{tage}}",
+    "standard": "Standard {{tage}}",
+    "speichern": "Enregistrer les délais",
+    "ungueltig": "Au moins un délai est en dehors de la plage autorisée.",
+    "mit_treffern_waehlen": "Sélectionner tous les types avec des données concernées",
+    "manuell": "Nettoyer maintenant",
+    "manuell_info": "Sélectionnez les types de données ci-dessus. Seules les données plus anciennes que le délai enregistré sont supprimées.",
+    "erst_speichern": "Enregistrez d'abord les délais modifiés ; l'aperçu porte sur les valeurs enregistrées.",
+    "jetzt_one": "Nettoyer {{count}} type de données maintenant",
+    "jetzt_other": "Nettoyer {{count}} types de données maintenant",
+    "rueckfrage_titel": "Confirmer la suppression",
+    "rueckfrage": "{{anzahl}} enregistrements de {{arten}} types de données seront supprimés définitivement. Cette action est irréversible.",
+    "endgueltig": "Supprimer définitivement",
+    "abbrechen": "Annuler",
+    "erledigt": "Terminé : {{anzahl}} enregistrements supprimés."
   }
 }

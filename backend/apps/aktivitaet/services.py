@@ -14,7 +14,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 from apps.accounts.models import ROLE_LEVELS, AuditLogEntry, Role, User
 
 from . import kategorien as kat
-from .models import Auffaelligkeit, Nutzung
+from .models import Auffaelligkeit
 
 BERLIN = ZoneInfo("Europe/Berlin")
 ERLAUBTE_TAGE = (7, 30, 90)
@@ -237,33 +237,10 @@ def konten_sicht(jetzt) -> dict:
 
 
 def bereinigen(jetzt=None) -> dict:
-    """Aufbewahrungsfristen anwenden : alte Einträge je Kategorie löschen, IP-Adressen und
-    Browserkennung nach `IP_AUFBEWAHRUNG_TAGE` Tagen entfernen. Gibt die Zahlen zurück."""
-    jetzt = jetzt or timezone.now()
-    geloescht = 0
-    for schluessel in kat.KATEGORIEN:
-        grenze = jetzt - timedelta(days=kat.aufbewahrung_tage(schluessel))
-        qs = AuditLogEntry.objects.filter(created_at__lt=grenze)
-        if schluessel == "sonstige":
-            qs = qs.exclude(action__in=list(kat.AKTIONEN))
-        else:
-            qs = qs.filter(action__in=kat.aktionen_von(schluessel))
-        geloescht += qs.delete()[0]
-    geloescht += Auffaelligkeit.objects.filter(
-        status=Auffaelligkeit.Status.ERLEDIGT,
-        erkannt_am__lt=jetzt - timedelta(days=kat.KATEGORIEN["audit"][2]),
-    ).delete()[0]
-    Auffaelligkeit.objects.filter(
-        erkannt_am__lt=jetzt - timedelta(days=kat.IP_AUFBEWAHRUNG_TAGE), ip_address__isnull=False
-    ).update(ip_address=None)
-    geloescht += Nutzung.objects.filter(
-        tag__lt=timezone.localdate(jetzt, BERLIN) - timedelta(days=kat.NUTZUNG_AUFBEWAHRUNG_TAGE)
-    ).delete()[0]
-    gekuerzt = (
-        AuditLogEntry.objects.filter(
-            created_at__lt=jetzt - timedelta(days=kat.IP_AUFBEWAHRUNG_TAGE)
-        )
-        .filter(Q(ip_address__isnull=False) | ~Q(user_agent=""))
-        .update(ip_address=None, user_agent="")
-    )
-    return {"geloescht": geloescht, "ip_entfernt": gekuerzt}
+    """Automatische Datenpflege (Release 25) : Fristen aus `pflege` anwenden. Gibt die Zahl
+    der gelöschten Datensätze und der von IP-Adresse/Browserkennung befreiten Einträge zurück."""
+    from . import pflege
+
+    ergebnis = pflege.lauf("automatisch", jetzt=jetzt)
+    ip = ergebnis.get("ip", 0)
+    return {"geloescht": pflege.summe(ergebnis) - ip, "ip_entfernt": ip}

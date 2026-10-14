@@ -277,6 +277,18 @@ AKTIONEN.update(
             "Monatsbericht gesendet",
             "Rapport mensuel envoyé",
         ),
+        "datenpflege_manuell": (
+            "audit",
+            "wichtig",
+            "Daten manuell bereinigt",
+            "Données nettoyées manuellement",
+        ),
+        "datenpflege_geaendert": (
+            "audit",
+            "wichtig",
+            "Einstellungen der Datenpflege geändert",
+            "Paramètres de l'entretien des données modifiés",
+        ),
         "auffaelligkeit_erledigt": (
             "audit",
             "info",

@@ -7,6 +7,7 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import type {
   Auffaelligkeit,
   Bericht,
+  Pflege,
   Review,
   Journal,
   JournalEintrag,
@@ -31,6 +32,9 @@ vi.mock("../../hooks/useAktivitaet", () => ({
   useReviewAnlegen: vi.fn(),
   useKontoEntscheiden: vi.fn(),
   useReviewAbschliessen: vi.fn(),
+  usePflege: vi.fn(),
+  usePflegeSpeichern: vi.fn(),
+  usePflegeAusfuehren: vi.fn(),
 }));
 vi.mock("../../api/aktivitaet", () => ({ exportJournal: vi.fn() }));
 vi.mock("../../utils/telechargement", () => ({ declencherTelechargement: vi.fn() }));
@@ -174,6 +178,59 @@ const review: Review = {
   ],
 };
 
+const pflege: Pflege = {
+  automatisch: true,
+  letzter_lauf: null,
+  arten: [
+    {
+      key: "journal.anmeldung",
+      gruppe: "journal",
+      label: { de: "Anmeldung & Geräte", fr: "Connexion et appareils" },
+      info: { de: "Protokolleinträge.", fr: "Entrées du journal." },
+      frist: 180,
+      standard: 180,
+      minimum: 30,
+      maximum: 3650,
+      fest: false,
+      gesamt: 50,
+      betroffen: 7,
+      aeltester: "2026-01-02T08:00:00Z",
+    },
+    {
+      key: "nutzung",
+      gruppe: "auswertungen",
+      label: { de: "Nutzungsstatistik", fr: "Statistiques d'utilisation" },
+      info: { de: "Zähler.", fr: "Compteurs." },
+      frist: 400,
+      standard: 400,
+      minimum: 100,
+      maximum: 3650,
+      fest: false,
+      gesamt: 10,
+      betroffen: 0,
+      aeltester: null,
+    },
+    {
+      key: "sitzungen",
+      gruppe: "technik",
+      label: { de: "Abgelaufene Sitzungen", fr: "Sessions expirées" },
+      info: { de: "Sitzungen.", fr: "Sessions." },
+      frist: 0,
+      standard: 0,
+      minimum: 0,
+      maximum: 3650,
+      fest: true,
+      gesamt: 0,
+      betroffen: 0,
+      aeltester: null,
+    },
+  ],
+};
+const ANMELDUNG = /^(Anmeldung & Geräte|Connexion et appareils)$/;
+const NUTZUNGSSTATISTIK = /^(Nutzungsstatistik|Statistiques d'utilisation)$/;
+
+const pflegeSpeichern = vi.fn();
+const pflegeAusfuehren = vi.fn();
 const berichtErzeugen = vi.fn();
 const entscheiden = vi.fn();
 const abschliessen = vi.fn();
@@ -183,6 +240,17 @@ function mutation<T>(fn: ReturnType<typeof vi.fn>) {
 }
 
 function mocks() {
+  vi.mocked(hooks.usePflege).mockReturnValue({
+    data: pflege,
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof hooks.usePflege>);
+  vi.mocked(hooks.usePflegeSpeichern).mockReturnValue(
+    mutation<ReturnType<typeof hooks.usePflegeSpeichern>>(pflegeSpeichern),
+  );
+  vi.mocked(hooks.usePflegeAusfuehren).mockReturnValue(
+    mutation<ReturnType<typeof hooks.usePflegeAusfuehren>>(pflegeAusfuehren),
+  );
   vi.mocked(hooks.useBerichte).mockReturnValue({
     data: { letzter_abgeschlossener_monat: { jahr: 2026, monat: 9 }, ergebnisse: [] },
     isLoading: false,
@@ -403,5 +471,53 @@ describe("AktivitaetTab", () => {
       entscheidung: "entziehen",
       notiz: "",
     });
+  });
+
+  it("schaltet die automatische Pflege um", () => {
+    renderWithProviders(<AktivitaetTab startAnsicht="pflege" />);
+
+    fireEvent.click(screen.getByLabelText(/^pflege.automatisch/));
+
+    expect(pflegeSpeichern).toHaveBeenCalledWith({ automatisch: false });
+  });
+
+  it("speichert geänderte Fristen und lehnt Werte unter dem Minimum ab", () => {
+    renderWithProviders(<AktivitaetTab startAnsicht="pflege" />);
+    const eingabe = screen.getByLabelText(
+      /(Nutzungsstatistik|Statistiques d.utilisation) – pflege.frist/,
+    );
+    const speichern = screen.getByText("pflege.speichern");
+    expect(speichern).toBeDisabled();
+
+    fireEvent.change(eingabe, { target: { value: "50" } });
+    expect(speichern).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent("pflege.ungueltig");
+
+    fireEvent.change(eingabe, { target: { value: "200" } });
+    expect(speichern).toBeEnabled();
+    fireEvent.click(speichern);
+    expect(pflegeSpeichern).toHaveBeenCalledWith({ fristen: { nutzung: 200 } }, expect.anything());
+  });
+
+  it("löscht erst nach Rückfrage und nur die gewählten Datenarten", () => {
+    renderWithProviders(<AktivitaetTab startAnsicht="pflege" />);
+    expect(screen.getByText("pflege.jetzt")).toBeDisabled();
+
+    fireEvent.click(screen.getByLabelText(ANMELDUNG));
+    fireEvent.click(screen.getByText("pflege.jetzt"));
+    expect(pflegeAusfuehren).not.toHaveBeenCalled();
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("pflege.rueckfrage");
+
+    fireEvent.click(screen.getByText("pflege.endgueltig"));
+    expect(pflegeAusfuehren).toHaveBeenCalledWith(["journal.anmeldung"], expect.anything());
+  });
+
+  it("wählt alle Datenarten mit Treffern aus", () => {
+    renderWithProviders(<AktivitaetTab startAnsicht="pflege" />);
+
+    fireEvent.click(screen.getByText("pflege.mit_treffern_waehlen"));
+
+    expect(screen.getByLabelText(ANMELDUNG)).toBeChecked();
+    expect(screen.getByLabelText(NUTZUNGSSTATISTIK)).not.toBeChecked();
   });
 });

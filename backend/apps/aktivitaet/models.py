@@ -139,3 +139,21 @@ class RechtePosition(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["review", "user"], name="aktivitaet_review_konto")
         ]
+
+
+class Pflegeeinstellung(models.Model):
+    """Datenpflege (Release 25) : genau eine Zeile (pk=1) mit den Einstellungen für das
+    Löschen alter Protokoll- und Hilfsdaten. `fristen` enthält nur Abweichungen vom Standard
+    (Datenart → Tage) ; fehlt ein Eintrag, gilt der Standard aus `pflege.ARTEN`."""
+
+    automatisch = models.BooleanField(default=True)
+    fristen = models.JSONField(default=dict, blank=True)
+    letzter_lauf_am = models.DateTimeField(null=True, blank=True)
+    letzter_lauf_modus = models.CharField(max_length=12, blank=True)
+    letzter_lauf_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    letzter_lauf_ergebnis = models.JSONField(default=dict, blank=True)
+
+    def __str__(self):
+        return "Datenpflege"

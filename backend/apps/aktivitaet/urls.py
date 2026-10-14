@@ -13,6 +13,8 @@ from .views import (
     ExportView,
     JournalView,
     NutzungView,
+    PflegeAusfuehrenView,
+    PflegeView,
     ReviewDetailView,
     ReviewListeView,
     UebersichtView,
@@ -47,5 +49,7 @@ urlpatterns = [
         name="review-entscheiden",
     ),
     path("review/<uuid:pk>/abschliessen/", AbschliessenView.as_view(), name="review-abschliessen"),
+    path("pflege/", PflegeView.as_view(), name="pflege"),
+    path("pflege/ausfuehren/", PflegeAusfuehrenView.as_view(), name="pflege-ausfuehren"),
     path("aktionen/", AktionenView.as_view(), name="aktionen"),
 ]

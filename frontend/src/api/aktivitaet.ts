@@ -11,6 +11,8 @@ import type {
   Journal,
   JournalFilter,
   Nutzung,
+  Pflege,
+  PflegeErgebnis,
   Review,
   ReviewKopf,
   ReviewListe,
@@ -128,5 +130,26 @@ export async function entscheideKonto(arg: {
 
 export async function schliesseReviewAb(id: string): Promise<Review> {
   const { data } = await apiClient.post<Review>(`/aktivitaet/review/${id}/abschliessen/`);
+  return data;
+}
+
+export async function getPflege(): Promise<Pflege> {
+  const { data } = await apiClient.get<Pflege>("/aktivitaet/pflege/");
+  return data;
+}
+
+export async function speicherePflege(arg: {
+  automatisch?: boolean;
+  fristen?: Record<string, number | null>;
+}): Promise<Pflege> {
+  const { data } = await apiClient.put<Pflege>("/aktivitaet/pflege/", arg);
+  return data;
+}
+
+export async function fuehrePflegeAus(arten: string[]): Promise<PflegeErgebnis> {
+  const { data } = await apiClient.post<PflegeErgebnis>("/aktivitaet/pflege/ausfuehren/", {
+    bestaetigt: true,
+    arten,
+  });
   return data;
 }
