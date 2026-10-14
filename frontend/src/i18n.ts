@@ -41,6 +41,7 @@ i18n
       "partner",
       "umfragen",
       "kalender",
+      "aktivitaet",
     ],
     defaultNS: "common",
     backend: {

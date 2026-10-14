@@ -1,0 +1,74 @@
+/** Types — Aktivität (Release 20), Spiegel von backend/apps/aktivitaet. */
+
+export type Gewicht = "info" | "warnung" | "wichtig";
+export type Sprachtext = { de: string; fr: string };
+
+export interface Kacheln {
+  logins: number;
+  fehlversuche: number;
+  sperren: number;
+  registrierungen: number;
+  freigaben: number;
+  rollenaenderungen: number;
+  geraete_limit: number;
+  passwort: number;
+  aktive_nutzer: number;
+  aktiv_24h: number;
+  aktiv_7d: number;
+  aktiv_30d: number;
+}
+
+export interface PrivilegiertesKonto {
+  id: string;
+  name: string;
+  email: string;
+  rolle: string;
+  letzte_anmeldung: string | null;
+  totp: boolean;
+}
+
+export interface Uebersicht {
+  tage: number;
+  kacheln: Kacheln;
+  verlauf: { tag: string; logins: number; fehlversuche: number }[];
+  heatmap: number[][];
+  top_ips: { ip: string; anzahl: number; zuletzt: string }[];
+  privilegiert: PrivilegiertesKonto[];
+  konten: { aktiv: number; inaktiv_90d: number; nie_angemeldet: number };
+}
+
+export interface JournalEintrag {
+  id: string;
+  zeit: string;
+  aktion: string;
+  label: Sprachtext;
+  kategorie: string;
+  gewicht: Gewicht;
+  user: { id: string; name: string; email: string } | null;
+  ip: string | null;
+  geraet: string;
+  details: Record<string, unknown>;
+}
+
+export interface Journal {
+  anzahl: number;
+  seite: number;
+  seiten: number;
+  ergebnisse: JournalEintrag[];
+}
+
+export interface JournalFilter {
+  von?: string;
+  bis?: string;
+  kategorie?: string;
+  aktion?: string;
+  gewicht?: string;
+  q?: string;
+  ip?: string;
+  seite?: number;
+}
+
+export interface AktionenListe {
+  kategorien: { key: string; label: Sprachtext; aufbewahrung_tage: number }[];
+  aktionen: { aktion: string; label: Sprachtext; kategorie: string; gewicht: Gewicht }[];
+}

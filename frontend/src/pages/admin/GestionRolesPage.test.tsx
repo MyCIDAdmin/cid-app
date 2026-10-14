@@ -11,6 +11,10 @@ vi.mock("../../components/rbac/MatriceAccesTab", () => ({
   default: () => <div data-testid="tab-acces" />,
 }));
 
+vi.mock("../../components/aktivitaet/AktivitaetTab", () => ({
+  default: () => <div data-testid="tab-aktivitaet" />,
+}));
+
 describe("GestionRolesPage", () => {
   it("affiche l'onglet Zuweisung par défaut", () => {
     renderWithProviders(<GestionRolesPage />);
@@ -35,5 +39,14 @@ describe("GestionRolesPage", () => {
     fireEvent.click(screen.getByText("onglets.attribution"));
 
     expect(screen.getByTestId("tab-attribution")).toBeInTheDocument();
+  });
+
+  it("öffnet den Reiter Aktivität", () => {
+    renderWithProviders(<GestionRolesPage />);
+
+    fireEvent.click(screen.getByText("onglets.aktivitaet"));
+
+    expect(screen.getByTestId("tab-aktivitaet")).toBeInTheDocument();
+    expect(screen.queryByTestId("tab-attribution")).not.toBeInTheDocument();
   });
 });

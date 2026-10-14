@@ -1,0 +1,86 @@
+{
+  "hinweis": "Nur für App-Admins sichtbar. Das Protokoll dient der Sicherheit und der Nachvollziehbarkeit von Änderungen, nicht der Überwachung einzelner Mitglieder. Zugriffe auf diese Seite werden selbst protokolliert.",
+  "chargement": "Wird geladen…",
+  "erreur_chargement": "Die Daten konnten nicht geladen werden.",
+  "ansicht": {
+    "uebersicht": "Übersicht",
+    "journal": "Journal"
+  },
+  "uebersicht": {
+    "zeitraum": "Zeitraum",
+    "tage_one": "{{count}} Tag",
+    "tage_other": "{{count}} Tage",
+    "aktiv": "Aktiv: {{h24}} in 24 Std. · {{d7}} in 7 Tagen · {{d30}} in 30 Tagen",
+    "verlauf": "Anmeldungen pro Tag",
+    "logins": "Anmeldungen",
+    "fehlversuche": "Fehlversuche",
+    "heatmap": "Wann melden sich Nutzer an? (Wochentag × Uhrzeit)",
+    "tage_kurz": {
+      "mo": "Mo",
+      "di": "Di",
+      "mi": "Mi",
+      "do": "Do",
+      "fr": "Fr",
+      "sa": "Sa",
+      "so": "So"
+    },
+    "kacheln": {
+      "logins": "Anmeldungen",
+      "aktive_nutzer": "Aktive Nutzer",
+      "fehlversuche": "Fehlversuche",
+      "sperren": "Sperren",
+      "registrierungen": "Registrierungen",
+      "freigaben": "Freigaben/Ablehnungen",
+      "rollenaenderungen": "Rechte- und Rollenänderungen",
+      "geraete_limit": "Geräte-Limit erreicht"
+    },
+    "top_ips": "Auffällige IP-Adressen (Fehlversuche)",
+    "keine_fehlversuche": "Keine Fehlversuche im Zeitraum.",
+    "versuche_one": "{{count}} Versuch",
+    "versuche_other": "{{count}} Versuche",
+    "im_journal": "Im Journal",
+    "konten": "Konten mit erweiterten Rechten (ab Bureau Admin)",
+    "konten_zahlen": "{{aktiv}} aktive Konten · {{inaktiv}} ohne Anmeldung seit 90 Tagen · {{nie}} noch nie angemeldet",
+    "spalten": {
+      "person": "Person",
+      "rolle": "Rolle",
+      "letzte": "Letzte Anmeldung",
+      "totp": "Authenticator"
+    },
+    "totp_ja": "aktiv",
+    "totp_nein": "nicht eingerichtet"
+  },
+  "journal": {
+    "von": "Von",
+    "bis": "Bis",
+    "kategorie": "Kategorie",
+    "aktion": "Aktion",
+    "gewicht": "Gewicht",
+    "person": "Person",
+    "person_platzhalter": "Name oder E-Mail",
+    "ip": "IP-Adresse",
+    "alle": "Alle",
+    "gewichte": {
+      "warnung": "Warnungen",
+      "wichtig": "Wichtige Änderungen"
+    },
+    "zuruecksetzen": "Zurücksetzen",
+    "export": "Als CSV exportieren",
+    "export_fehler": "Der Export ist fehlgeschlagen.",
+    "anzahl_one": "{{count}} Eintrag",
+    "anzahl_other": "{{count}} Einträge",
+    "spalten": {
+      "zeit": "Zeit",
+      "aktion": "Aktion",
+      "person": "Person",
+      "ip": "IP"
+    },
+    "leer": "Keine Einträge für diese Filter.",
+    "technisch": "Technischer Name",
+    "geraet": "Gerät",
+    "zurueck": "Zurück",
+    "weiter": "Weiter",
+    "seite": "Seite {{seite}} von {{seiten}}",
+    "aufbewahrung": "Aufbewahrung: Anmeldungen und Konto-Ereignisse {{kurz}} Tage, übrige Einträge {{lang}} Tage; IP-Adressen werden nach 90 Tagen entfernt."
+  }
+}
