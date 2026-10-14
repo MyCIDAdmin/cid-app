@@ -56,6 +56,12 @@ REGELN = {
         "{n} Serverfehler in {minuten} Minuten",
         "{n} erreurs serveur en {minuten} minutes",
     ),
+    "review_offen": (
+        "warnung",
+        "Rechteprüfung {quartal} ist seit {tage} Tagen offen ({offen} Konten ohne Entscheidung)",
+        "La revue des droits {quartal} est ouverte depuis {tage} jours "
+        "({offen} comptes sans décision)",
+    ),
     "task_fehler": (
         "warnung",
         "Hintergrundjob fehlgeschlagen: {task}",
@@ -68,6 +74,7 @@ ANGRIFF_N, ANGRIFF_MIN = 5, 30
 EXPORT_N, EXPORT_MIN = 3, 60
 LOESCHEN_N, LOESCHEN_MIN = 10, 10
 FEHLER_N, FEHLER_MIN = 5, 15
+REVIEW_FRIST_TAGE = 14
 EREIGNIS_FENSTER_STD = 2  # ereignisbezogene Regeln schauen so weit zurück (dedupliziert)
 
 
@@ -200,6 +207,20 @@ def _task_fehler(jetzt):
             yield _fund("task_fehler", schluessel, task=task)
 
 
+def _review_offen(jetzt):
+    from .models import RechtePosition, RechteReview
+
+    grenze = jetzt - timedelta(days=REVIEW_FRIST_TAGE)
+    for r in RechteReview.objects.filter(status=RechteReview.Status.OFFEN, erstellt_am__lt=grenze):
+        yield _fund(
+            "review_offen",
+            r.pk,
+            quartal=r.quartal,
+            tage=(jetzt - r.erstellt_am).days,
+            offen=r.positionen.filter(entscheidung=RechtePosition.Entscheidung.OFFEN).count(),
+        )
+
+
 def pruefen(jetzt):
     """Alle Regeln auswerten ; liefert die Funde (noch nicht gespeichert)."""
     funde = []
@@ -213,6 +234,7 @@ def pruefen(jetzt):
         lambda j: _je_eintrag(j, "totp_disabled", "totp_deaktiviert"),
         _serverfehler,
         _task_fehler,
+        _review_offen,
     ):
         funde.extend(regel(jetzt))
     return funde

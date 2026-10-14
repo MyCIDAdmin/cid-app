@@ -247,6 +247,36 @@ AKTIONEN.update(
             "E-Mail-Versand fehlgeschlagen",
             "Échec d'envoi d'e-mail",
         ),
+        "rechte_review_angelegt": (
+            "rollen",
+            "info",
+            "Rechteprüfung angelegt",
+            "Revue des droits créée",
+        ),
+        "rechte_review_entschieden": (
+            "rollen",
+            "info",
+            "Rechteprüfung: Konto entschieden",
+            "Revue des droits : compte décidé",
+        ),
+        "rechte_review_abgeschlossen": (
+            "rollen",
+            "wichtig",
+            "Rechteprüfung abgeschlossen",
+            "Revue des droits terminée",
+        ),
+        "monatsbericht_erstellt": (
+            "audit",
+            "info",
+            "Monatsbericht erstellt",
+            "Rapport mensuel créé",
+        ),
+        "monatsbericht_gesendet": (
+            "audit",
+            "info",
+            "Monatsbericht gesendet",
+            "Rapport mensuel envoyé",
+        ),
         "auffaelligkeit_erledigt": (
             "audit",
             "info",

@@ -15,10 +15,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
-import AktivitaetTab, { type Ansicht } from "../../components/aktivitaet/AktivitaetTab";
+import AktivitaetTab from "../../components/aktivitaet/AktivitaetTab";
 import AttributionRolesTab from "../../components/rbac/AttributionRolesTab";
 import MatriceAccesTab from "../../components/rbac/MatriceAccesTab";
 import VisibiliteModulesTab from "../../components/rbac/VisibiliteModulesTab";
+import { ANSICHTEN, type Ansicht } from "../../types/aktivitaet";
 
 type Onglet = "attribution" | "acces" | "visibilite" | "aktivitaet";
 
@@ -29,8 +30,8 @@ export default function GestionRolesPage() {
   const [onglet, setOnglet] = useState<Onglet>(
     params.get("tab") === "aktivitaet" ? "aktivitaet" : "attribution",
   );
-  const startAnsicht: Ansicht =
-    params.get("ansicht") === "auffaelligkeiten" ? "auffaelligkeiten" : "uebersicht";
+  const gewuenscht = params.get("ansicht");
+  const startAnsicht: Ansicht = ANSICHTEN.find((a) => a === gewuenscht) ?? "uebersicht";
 
   return (
     <div>

@@ -6,7 +6,9 @@
     "uebersicht": "Vue d'ensemble",
     "auffaelligkeiten": "Anomalies",
     "journal": "Journal",
-    "nutzung": "Utilisation"
+    "nutzung": "Utilisation",
+    "berichte": "Rapports",
+    "review": "Revue des droits"
   },
   "uebersicht": {
     "zeitraum": "Période",
@@ -117,5 +119,103 @@
     "fenster_one": "{{count}} fenêtre",
     "fenster_other": "{{count}} fenêtres",
     "ungenutzt": "Modules non utilisés sur la période"
+  },
+  "module": {
+    "membres": "Membres",
+    "adhesions": "Adhésions et offres",
+    "cotisations": "Cotisations et paiements",
+    "evenements": "Événements",
+    "boutique": "Boutique",
+    "communaute": "Communauté",
+    "kalender": "Calendrier",
+    "projets": "Projets",
+    "umfragen": "Sondages",
+    "votes": "Votes",
+    "partenaires": "Partenaires",
+    "finances": "Finances",
+    "stats": "Statistiques"
+  },
+  "berichte": {
+    "hinweis": "Le 1er de chaque mois, le rapport du mois précédent est créé automatiquement et envoyé par la cloche et par e-mail à tous les administrateurs. Il ne contient que des totaux, aucune personne. Les chiffres des comptes reflètent l'état à la création.",
+    "leer": "Aucun rapport mensuel pour l'instant.",
+    "erzeugen": "Créer le rapport {{monat}}",
+    "neu_berechnen": "Recalculer",
+    "an_mich": "M'envoyer",
+    "gesendet": "Le rapport a été envoyé à votre adresse.",
+    "stand": "Créé : {{erstellt}} · Envoyé : {{versendet}}",
+    "nicht_versendet": "pas encore",
+    "abschnitt": {
+      "sicherheit": "Sécurité",
+      "aenderungen": "Modifications dans les modules",
+      "betrieb": "Exploitation",
+      "auffaelligkeiten": "Anomalies",
+      "nutzung": "Utilisation (personnes actives)",
+      "konten": "Comptes"
+    },
+    "felder": {
+      "sicherheit": {
+        "logins": "Connexions",
+        "fehlversuche": "Échecs de connexion",
+        "sperren": "Blocages",
+        "registrierungen": "Inscriptions",
+        "freigaben": "Validations/refus",
+        "rollenaenderungen": "Changements de rôles et de droits",
+        "passwort": "Opérations de mot de passe"
+      },
+      "aenderungen": {
+        "mitglieder": "Membres et adhésions",
+        "zahlungen": "Cotisations et paiements",
+        "finanzen": "Finances",
+        "shop": "Boutique",
+        "kalender": "Calendrier",
+        "inhalte": "Événements, projets et partenaires",
+        "einstellungen": "Paramètres",
+        "loeschungen": "dont suppressions",
+        "exporte": "Exports",
+        "importe": "Imports"
+      },
+      "betrieb": {
+        "server_fehler": "Erreurs serveur",
+        "task_fehler": "Tâches en échec",
+        "mail_fehler": "E-mails non envoyés"
+      },
+      "auffaelligkeiten": {
+        "neu": "Nouvelles détectées",
+        "wichtig": "dont importantes",
+        "offen": "Actuellement ouvertes"
+      },
+      "nutzung": {
+        "aktive": "Total des personnes actives"
+      },
+      "konten": {
+        "aktiv": "Comptes actifs",
+        "privilegiert": "Avec droits étendus",
+        "ohne_totp": "dont sans authentificateur",
+        "inaktiv_90d": "Sans connexion depuis 90 jours",
+        "review_offen": "Revues des droits ouvertes"
+      }
+    }
+  },
+  "review": {
+    "hinweis": "Confirmez chaque compte avec des droits étendus ou marquez « retirer les droits ». L'application ne modifie aucun rôle : le retrait se fait dans l'onglet « Attribution » de la gestion des rôles ; vous voyez ici s'il a déjà eu lieu.",
+    "leer": "Aucune revue pour l'instant. Elle est créée automatiquement au début de chaque trimestre.",
+    "anlegen": "Créer maintenant la revue {{quartal}}",
+    "zuletzt": "Dernière revue : {{quartal}}, créée {{zeit}}. Choisissez une revue.",
+    "status": {
+      "offen": "ouverte",
+      "abgeschlossen": "terminée"
+    },
+    "entscheidung": {
+      "offen": "Ouvert",
+      "bestaetigt": "Confirmer",
+      "entziehen": "Retirer les droits"
+    },
+    "notiz": "Note (facultatif)",
+    "entzug_offen": "Marqué – le compte a encore des droits étendus (retrait dans « Attribution »).",
+    "entzug_erfolgt": "Retrait déjà effectué.",
+    "abschliessen": "Terminer la revue",
+    "noch_offen_one": "Encore {{count}} compte sans décision.",
+    "noch_offen_other": "Encore {{count}} comptes sans décision.",
+    "abgeschlossen_von": "Terminée par {{name}} le {{zeit}}."
   }
 }

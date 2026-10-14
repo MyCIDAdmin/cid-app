@@ -2,6 +2,7 @@ from celery import shared_task
 
 from apps.accounts.services import log_audit_event
 
+from . import bericht, review
 from .alarm import lauf
 from .services import bereinigen
 
@@ -19,3 +20,24 @@ def aktivitaet_bereinigen() -> dict:
 def auffaelligkeiten_pruefen() -> dict:
     """Alle 10 Minuten : Auffälligkeitsregeln prüfen und App-Admins bei neuen Funden melden."""
     return lauf()
+
+
+@shared_task
+def monatsbericht_senden() -> dict:
+    """Am 1. jedes Monats : Bericht des Vormonats erstellen und an die App-Admins senden."""
+    jahr, monat = bericht.vormonat()
+    b = bericht.erstellen(jahr, monat)
+    log_audit_event("monatsbericht_erstellt", jahr=jahr, monat=monat)
+    empfaenger = bericht.senden(b)
+    log_audit_event("monatsbericht_gesendet", jahr=jahr, monat=monat, empfaenger=empfaenger)
+    return {"jahr": jahr, "monat": monat, "empfaenger": empfaenger}
+
+
+@shared_task
+def rechte_review_anlegen() -> dict:
+    """Am 1. jedes Quartals : Rechteprüfung anlegen und die App-Admins informieren."""
+    r, neu = review.anlegen()
+    if not neu:
+        return {"quartal": r.quartal, "neu": False}
+    log_audit_event("rechte_review_angelegt", quartal=r.quartal, konten=r.positionen.count())
+    return {"quartal": r.quartal, "neu": True, "empfaenger": review.melden(r)}

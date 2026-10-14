@@ -118,6 +118,8 @@ class TypeNotification(models.TextChoices):
     AKTIVITAET_AUFFAELLIGKEIT = "aktivitaet_auffaelligkeit", _(
         "Anomalie dans le journal d'activité"
     )
+    AKTIVITAET_BERICHT = "aktivitaet_bericht", _("Rapport mensuel d'activité")
+    AKTIVITAET_REVIEW = "aktivitaet_review", _("Revue trimestrielle des droits")
 
 
 class Notification(models.Model):
