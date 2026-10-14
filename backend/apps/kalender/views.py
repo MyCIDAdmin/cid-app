@@ -36,9 +36,7 @@ from .models import (
     Ausblendung,
     Dienst,
     DienstEintragung,
-    Kreis,
     Sichtbarkeit,
-    Termin,
     TerminEinladung,
     TerminStatus,
 )
@@ -48,7 +46,7 @@ from .services import (
     ist_aktives_mitglied,
     ist_verwaltung,
     sichtbare_dienste,
-    sichtbare_termine,
+    termine_fuer,
     zugang,
 )
 
@@ -169,20 +167,7 @@ class TerminViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-        if ist_verwaltung(user, schreiben=True):
-            # „Privat“ bleibt auch der Verwaltung verborgen (nur Verfasser und Eingeladene).
-            privat = Q(sichtbarkeit=Sichtbarkeit.KREIS, kreis=Kreis.PRIVAT)
-            eigene = Q(erstellt_von=user) | Q(einladungen__user=user)
-            return (
-                Termin.objects.select_related("projekt", "evenement")
-                .filter(~privat | eigene)
-                .distinct()
-            )
-        sichtbar = Q()
-        for ansicht in ("verein", "buero", "meine"):
-            sichtbar |= Q(pk__in=sichtbare_termine(user, ansicht).values("pk"))
-        return Termin.objects.select_related("projekt", "evenement").filter(sichtbar).distinct()
+        return termine_fuer(self.request.user)
 
     def check_permissions(self, request):
         super().check_permissions(request)

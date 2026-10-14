@@ -185,3 +185,77 @@ export interface DienstPayload {
 export interface DienstVorschlag extends Person {
   kommentar: string;
 }
+
+/** Sitzungsmodus (Release 18). */
+export interface Tagesordnungspunkt {
+  id?: string;
+  nr?: number;
+  titel: string;
+  beschreibung: string;
+}
+
+export interface Beschluss {
+  id: string;
+  top: string | null;
+  text: string;
+  verantwortlich: string | null;
+  verantwortlich_name: string;
+  frist: string | null;
+  aufgabe: string | null;
+  projekt: string | null;
+}
+
+export interface Sitzung {
+  darf_bearbeiten: boolean;
+  darf_protokoll_sehen: boolean;
+  tops: Tagesordnungspunkt[];
+  protokoll: string;
+  versendet_am: string | null;
+  beschluesse: Beschluss[];
+  projekt: string | null;
+}
+
+/** Terminfindung „Wann passt es euch?“ (Release 18). */
+export type StimmAntwort = "ja" | "vielleicht" | "nein";
+export const STIMM_ANTWORTEN: StimmAntwort[] = ["ja", "vielleicht", "nein"];
+
+export interface UmfrageOption {
+  id: string;
+  beginn: string;
+  ja: number;
+  vielleicht: number;
+  nein: number;
+  meine_antwort: StimmAntwort | null;
+  stimmen: { user: string; name: string; antwort: StimmAntwort }[];
+}
+
+export interface Terminumfrage {
+  id: string;
+  titel: string;
+  beschreibung: string;
+  ort: string;
+  dauer_minuten: number;
+  antwort_bis: string | null;
+  status: "offen" | "entschieden" | "abgebrochen";
+  erstellt_von_name: string;
+  teilnehmer: { user: string; name: string; geantwortet: boolean }[];
+  optionen: UmfrageOption[];
+  gewaehlt: string | null;
+  termin: string | null;
+  bin_teilnehmer: boolean;
+  darf_entscheiden: boolean;
+}
+
+export interface UmfragePayload {
+  titel: string;
+  beschreibung: string;
+  ort: string;
+  dauer_minuten: number;
+  kategorie: Kategorie;
+  sichtbarkeit: Sichtbarkeit;
+  kreis: "bureau" | "projekt" | "";
+  projekt: string | null;
+  antwort_bis: string | null;
+  optionen: { beginn: string }[];
+  teilnehmer: string[];
+}

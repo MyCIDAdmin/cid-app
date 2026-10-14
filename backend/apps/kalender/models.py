@@ -224,3 +224,14 @@ class Ausblendung(models.Model):
 
     def __str__(self):
         return f"{self.quelle}:{self.objekt_id}"
+
+
+from .models_sitzung import (  # noqa: E402,F401  (Modelle von Release 18, siehe models_sitzung.py)
+    Beschluss,
+    Protokoll,
+    Tagesordnungspunkt,
+    Terminoption,
+    Terminstimme,
+    Terminumfrage,
+    UmfrageStatus,
+)

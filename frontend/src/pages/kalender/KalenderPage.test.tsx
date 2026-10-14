@@ -17,6 +17,7 @@ vi.mock("../../hooks/useKalender", async () => {
     useKalenderEintraege: vi.fn(),
     useTermin: vi.fn(() => ({ data: undefined })),
     useEintragAusblenden: vi.fn(),
+    useUmfragen: vi.fn(() => ({ data: [] })),
   };
 });
 vi.mock("../../api/auth", async (orig) => ({

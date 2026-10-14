@@ -9,6 +9,8 @@ import { useTranslation } from "react-i18next";
 import AnsichtWaehler from "../../components/kalender/AnsichtWaehler";
 import KalenderAnsicht from "../../components/kalender/KalenderAnsicht";
 import OffeneDienste from "../../components/kalender/OffeneDienste";
+import TerminfindungFormular from "../../components/kalender/TerminfindungFormular";
+import TerminfindungListe from "../../components/kalender/TerminfindungListe";
 import TerminDialog from "../../components/kalender/TerminDialog";
 import TerminFormular from "../../components/kalender/TerminFormular";
 import WochenmailSchalter from "../../components/kalender/WochenmailSchalter";
@@ -41,6 +43,7 @@ export default function KalenderPage() {
   const [modus, setModus] = useState<Modus>("monat");
   const [kategorie, setKategorie] = useState<Kategorie | "">("");
   const [offen, setOffen] = useState<KalenderEintrag | null>(null);
+  const [findung, setFindung] = useState(false);
   const [formular, setFormular] = useState<{ termin?: Termin; vorschlag: boolean } | null>(null);
 
   const { von, bis } = useMemo(() => monatsRaster(monat), [monat]);
@@ -74,6 +77,15 @@ export default function KalenderPage() {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-bold text-text-primary">{t("titel")}</h1>
+        {z?.schreiben && (
+          <button
+            type="button"
+            onClick={() => setFindung(true)}
+            className="ms-auto rounded-cid border border-ca px-3 py-1.5 text-sm font-semibold text-ca"
+          >
+            {t("findung.button")}
+          </button>
+        )}
         {(z?.schreiben || z?.vorschlagen) && (
           <button
             type="button"
@@ -85,6 +97,7 @@ export default function KalenderPage() {
         )}
       </div>
 
+      <TerminfindungListe />
       <OffeneDienste />
       <WochenmailSchalter />
 
@@ -149,6 +162,8 @@ export default function KalenderPage() {
       {!eintraege.isLoading && !eintraege.isError && (
         <KalenderAnsicht eintraege={gefiltert} monat={monat} modus={modus} onWaehle={setOffen} />
       )}
+
+      {findung && <TerminfindungFormular onFertig={() => setFindung(false)} />}
 
       {offen && (
         <TerminDialog

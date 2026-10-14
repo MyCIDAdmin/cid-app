@@ -158,5 +158,52 @@
   "ausgeblendet_kurz": "ausgeblendet",
   "ausgeblendet_hinweis": "Dieser Eintrag ist für Mitglieder ausgeblendet – nur du siehst ihn.",
   "sichten": "Angezeigte Kalender",
-  "alle_sichten": "Alle anzeigen"
+  "alle_sichten": "Alle anzeigen",
+  "sitzung": {
+    "oeffnen": "Sitzung: Tagesordnung, Protokoll, Beschlüsse",
+    "schliessen": "Sitzungsbereich schließen",
+    "tagesordnung": "Tagesordnung",
+    "punkt": "Punkt {{nr}}",
+    "punkt_entfernen": "Punkt entfernen",
+    "punkt_hinzu": "Punkt hinzufügen",
+    "speichern": "Speichern",
+    "gespeichert": "Gespeichert.",
+    "protokoll": "Protokoll",
+    "kein_protokoll": "Noch kein Protokoll.",
+    "beschluesse": "Beschlüsse",
+    "beschluss_text": "Neuer Beschluss",
+    "beschluss_hinzu": "Beschluss",
+    "bis": "bis",
+    "ist_aufgabe": "Als Aufgabe angelegt",
+    "zur_aufgabe": "In Aufgabe umwandeln",
+    "loeschen": "Löschen",
+    "projekt": "Projekt",
+    "projekt_waehlen": "Projekt wählen …",
+    "verantwortlich": "Verantwortlich (Person suchen)",
+    "frist": "Frist",
+    "aufgabe_anlegen": "Aufgabe anlegen",
+    "versenden": "Protokoll an Eingeladene senden",
+    "versendet": "Protokoll wurde verschickt.",
+    "zuletzt_versendet": "Zuletzt versendet: {{datum}}"
+  },
+  "findung": {
+    "titel": "Wann passt es euch?",
+    "neu": "Neue Terminfindung",
+    "button": "Terminfindung",
+    "dauer": "Dauer in Minuten",
+    "vorschlaege": "Terminvorschläge",
+    "vorschlag": "Vorschlag {{nr}}",
+    "vorschlag_hinzu": "Weiterer Vorschlag",
+    "teilnehmer": "Teilnehmer",
+    "antwort_bis": "Antwort bis",
+    "senden": "Abfrage senden",
+    "antwort_senden": "Antwort senden",
+    "waehlen": "Diesen Termin wählen",
+    "abbrechen": "Abbrechen",
+    "antwort": {
+      "ja": "Ja",
+      "vielleicht": "Vielleicht",
+      "nein": "Nein"
+    }
+  }
 }
