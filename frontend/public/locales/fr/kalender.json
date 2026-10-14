@@ -156,5 +156,7 @@
   "ausblenden": "Masquer dans le calendrier",
   "einblenden": "Réafficher dans le calendrier",
   "ausgeblendet_kurz": "masqué",
-  "ausgeblendet_hinweis": "Cette entrée est masquée pour les membres – seul vous la voyez."
+  "ausgeblendet_hinweis": "Cette entrée est masquée pour les membres – seul vous la voyez.",
+  "sichten": "Calendriers affichés",
+  "alle_sichten": "Tout afficher"
 }

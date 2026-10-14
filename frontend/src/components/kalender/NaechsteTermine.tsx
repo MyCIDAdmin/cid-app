@@ -4,8 +4,11 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { useKalenderEintraege } from "../../hooks/useKalender";
+import type { Ansicht } from "../../types/kalender";
 import { formatZeit } from "../../utils/kalender";
 import { uebersetzt } from "../../utils/uebersetzung";
+
+const VEREIN: Ansicht[] = ["verein"];
 
 export default function NaechsteTermine() {
   const { t, i18n } = useTranslation("kalender");
@@ -14,7 +17,7 @@ export default function NaechsteTermine() {
     start.setMinutes(0, 0, 0);
     return { von: start, bis: new Date(start.getTime() + 45 * 24 * 3600 * 1000) };
   }, []);
-  const eintraege = useKalenderEintraege("verein", von, bis);
+  const eintraege = useKalenderEintraege(VEREIN, von, bis);
   if (eintraege.isError) return null;
   const liste = (eintraege.data ?? []).filter((e) => !e.ausgeblendet).slice(0, 5);
 

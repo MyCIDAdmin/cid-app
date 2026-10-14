@@ -117,3 +117,14 @@ def _ausblendungen_anwenden(feed: list[dict], schreiben: bool) -> list[dict]:
         e["ausblendbar"] = ausblendbar and schreiben
         ergebnis.append(e)
     return ergebnis
+
+
+def baue_mehrere(user, ansichten: list[str], von, bis) -> list[dict]:
+    """Mehrere Sichten kombiniert (z. B. Verein + Meine) : jeder Eintrag erscheint nur einmal."""
+    if len(ansichten) == 1:
+        return baue_eintraege(user, ansichten[0], von, bis)
+    einzigartig: dict[str, dict] = {}
+    for ansicht in ansichten:
+        for e in baue_eintraege(user, ansicht, von, bis):
+            einzigartig.setdefault(e["id"], e)
+    return sorted(einzigartig.values(), key=lambda x: x["beginn"])

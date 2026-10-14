@@ -16,6 +16,11 @@ UI_PRAEFERENZEN_SCHEMA = {
     "theme": lambda v: v in ("light", "dark"),
     "sidebar_collapsed": lambda v: isinstance(v, bool),
     "kalender_wochenmail": lambda v: isinstance(v, bool),
+    "kalender_ansichten": lambda v: (
+        isinstance(v, list)
+        and 0 < len(v) <= 3
+        and all(a in ("verein", "buero", "meine") for a in v)
+    ),
 }
 
 

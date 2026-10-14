@@ -15,10 +15,10 @@ export function useKalenderZugang() {
   return useQuery({ queryKey: keys.zugang, queryFn: api.getZugang });
 }
 
-export function useKalenderEintraege(ansicht: Ansicht, von: Date, bis: Date, enabled = true) {
+export function useKalenderEintraege(ansichten: Ansicht[], von: Date, bis: Date, enabled = true) {
   return useQuery({
-    queryKey: keys.eintraege(ansicht, von.getTime(), bis.getTime()),
-    queryFn: () => api.listEintraege(ansicht, von, bis),
+    queryKey: keys.eintraege([...ansichten].sort().join(","), von.getTime(), bis.getTime()),
+    queryFn: () => api.listEintraege(ansichten, von, bis),
     enabled,
   });
 }

@@ -16,13 +16,14 @@ export async function getZugang(): Promise<KalenderZugang> {
   return data;
 }
 
+/** Eine oder mehrere Sichten kombiniert (Backend : `ansicht=verein,meine`). */
 export async function listEintraege(
-  ansicht: Ansicht,
+  ansichten: Ansicht[],
   von: Date,
   bis: Date,
 ): Promise<KalenderEintrag[]> {
   const { data } = await apiClient.get<KalenderEintrag[]>("/kalender/eintraege/", {
-    params: { ansicht, von: von.toISOString(), bis: bis.toISOString() },
+    params: { ansicht: ansichten.join(","), von: von.toISOString(), bis: bis.toISOString() },
   });
   return data;
 }
