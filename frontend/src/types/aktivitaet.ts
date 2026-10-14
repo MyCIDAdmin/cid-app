@@ -100,3 +100,18 @@ export interface AuffaelligkeitenListe {
 }
 
 export type AuffaelligkeitStatus = "offen" | "erledigt";
+
+export interface NutzungModul {
+  modul: string;
+  label: Sprachtext;
+  nutzer: number;
+  fenster: number;
+}
+
+export interface Nutzung {
+  tage: number;
+  aktiv: { d1: number; d7: number; d30: number; konten: number };
+  verlauf: { tag: string; nutzer: number; fenster: number }[];
+  module: NutzungModul[];
+  ungenutzt: string[];
+}

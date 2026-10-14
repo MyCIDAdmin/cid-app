@@ -5,7 +5,8 @@
   "ansicht": {
     "uebersicht": "Vue d'ensemble",
     "auffaelligkeiten": "Anomalies",
-    "journal": "Journal"
+    "journal": "Journal",
+    "nutzung": "Utilisation"
   },
   "uebersicht": {
     "zeitraum": "Période",
@@ -100,5 +101,21 @@
     "leer_erledigt": "Aucune anomalie traitée pour l'instant.",
     "erledigen": "Marquer comme traitée",
     "erledigt_von": "traitée par {{name}} ({{zeit}})"
+  },
+  "nutzung": {
+    "hinweis": "Seules des totaux sont comptés : au maximum une « fenêtre d'utilisation » de 5 minutes par personne, jour et module. Aucune page consultée, aucun contenu et aucune personne individuelle n'est affiché.",
+    "kacheln": {
+      "d1": "Actifs aujourd'hui",
+      "d7": "Actifs sur 7 jours",
+      "d30": "Actifs sur 30 jours",
+      "anteil": "Part de comptes actifs (30 jours)"
+    },
+    "verlauf": "Personnes actives par jour",
+    "module": "Utilisation par module",
+    "personen_one": "{{count}} personne",
+    "personen_other": "{{count}} personnes",
+    "fenster_one": "{{count}} fenêtre",
+    "fenster_other": "{{count}} fenêtres",
+    "ungenutzt": "Modules non utilisés sur la période"
   }
 }

@@ -6,6 +6,7 @@ from .views import (
     ErledigenView,
     ExportView,
     JournalView,
+    NutzungView,
     UebersichtView,
 )
 
@@ -17,5 +18,6 @@ urlpatterns = [
     path("journal/export/", ExportView.as_view(), name="export"),
     path("auffaelligkeiten/", AuffaelligkeitenView.as_view(), name="auffaelligkeiten"),
     path("auffaelligkeiten/<uuid:pk>/erledigen/", ErledigenView.as_view(), name="erledigen"),
+    path("nutzung/", NutzungView.as_view(), name="nutzung"),
     path("aktionen/", AktionenView.as_view(), name="aktionen"),
 ]

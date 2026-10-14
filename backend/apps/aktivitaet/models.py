@@ -41,3 +41,24 @@ class Auffaelligkeit(models.Model):
 
     def __str__(self):
         return f"{self.regel} ({self.status})"
+
+
+class Nutzung(models.Model):
+    """Nutzungsstatistik (Release 23) : Anzahl der Nutzungsfenster (je 5 Minuten) pro Person, Tag
+    und Modul. Bewusst nur Summen — keine Seitenaufrufe, Pfade oder Inhalte. Wird mit dem Konto
+    gelöscht und nach `NUTZUNG_AUFBEWAHRUNG_TAGE` Tagen bereinigt."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    tag = models.DateField(db_index=True)
+    modul = models.CharField(max_length=30)
+    anzahl = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "tag", "modul"], name="aktivitaet_nutzung_eindeutig"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.tag} {self.modul} ({self.anzahl})"

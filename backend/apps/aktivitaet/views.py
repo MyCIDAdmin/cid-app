@@ -3,6 +3,7 @@
   GET /aktivitaet/uebersicht/?tage=7|30|90   Kacheln, Verlauf, Heatmap, Konten
   GET /aktivitaet/journal/?von&bis&aktion&kategorie&gewicht&user&ip&q&seite
   GET /aktivitaet/journal/export/            dasselbe als CSV (max. 20 000 Zeilen)
+  GET /aktivitaet/nutzung/?tage=7|30|90      Nutzungsstatistik je Modul (R23)
   GET /aktivitaet/aktionen/                  Aktionen und Kategorien für die Filter
   GET /aktivitaet/auffaelligkeiten/?status=offen|erledigt|alle   erkannte Auffälligkeiten (R22)
   POST /aktivitaet/auffaelligkeiten/<id>/erledigen/
@@ -24,7 +25,7 @@ from apps.accounts.permissions import IsSuperAdmin
 from apps.accounts.services import log_audit_event
 
 from . import kategorien as kat
-from . import regeln
+from . import nutzung, regeln
 from .models import Auffaelligkeit
 from .services import ERLAUBTE_TAGE, eintrag_dict, journal_filtern, name_von, person_dict
 
@@ -215,3 +216,18 @@ class ErledigenView(APIView):
                 request, "auffaelligkeit_erledigt", dedupe=False, regel=a.regel, objekt_id=str(a.id)
             )
         return Response(auffaelligkeit_dict(a))
+
+
+class NutzungView(APIView):
+    """Nutzungsstatistik : aktive Personen pro Tag und Modul — nur Summen, nie einzelne Personen."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        try:
+            tage = int(request.query_params.get("tage", 30))
+        except ValueError:
+            tage = 30
+        tage = tage if tage in nutzung.ERLAUBTE_TAGE else 30
+        _zugriff_protokollieren(request)
+        return Response(nutzung.statistik(tage))

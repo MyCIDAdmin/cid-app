@@ -1,5 +1,5 @@
 /**
- * Reiter „Aktivität“ der Rollenverwaltung (Release 20/22) : Übersicht, Journal und Auffälligkeiten.
+ * Reiter „Aktivität“ der Rollenverwaltung (Release 20/22/23) : Übersicht, Auffälligkeiten, Nutzung, Journal.
  * Kacheln und IP-Adressen der Übersicht öffnen das Journal mit passendem Filter.
  */
 import { useState } from "react";
@@ -8,10 +8,11 @@ import { useTranslation } from "react-i18next";
 import type { JournalFilter } from "../../types/aktivitaet";
 import AuffaelligkeitenPanel from "./AuffaelligkeitenPanel";
 import JournalPanel from "./JournalPanel";
+import NutzungPanel from "./NutzungPanel";
 import UebersichtPanel from "./UebersichtPanel";
 
-export type Ansicht = "uebersicht" | "journal" | "auffaelligkeiten";
-const ANSICHTEN: Ansicht[] = ["uebersicht", "auffaelligkeiten", "journal"];
+export type Ansicht = "uebersicht" | "auffaelligkeiten" | "nutzung" | "journal";
+const ANSICHTEN: Ansicht[] = ["uebersicht", "auffaelligkeiten", "nutzung", "journal"];
 
 export default function AktivitaetTab({ startAnsicht = "uebersicht" }: { startAnsicht?: Ansicht }) {
   const { t } = useTranslation("aktivitaet");
@@ -50,6 +51,7 @@ export default function AktivitaetTab({ startAnsicht = "uebersicht" }: { startAn
       {ansicht === "auffaelligkeiten" && (
         <AuffaelligkeitenPanel imJournalOeffnen={imJournalOeffnen} />
       )}
+      {ansicht === "nutzung" && <NutzungPanel />}
       {ansicht === "journal" && <JournalPanel filter={filter} setFilter={setFilter} />}
     </div>
   );

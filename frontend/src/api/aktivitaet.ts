@@ -7,6 +7,7 @@ import type {
   AuffaelligkeitStatus,
   Journal,
   JournalFilter,
+  Nutzung,
   Uebersicht,
 } from "../types/aktivitaet";
 
@@ -61,5 +62,10 @@ export async function erledigeAuffaelligkeit(id: string): Promise<Auffaelligkeit
   const { data } = await apiClient.post<Auffaelligkeit>(
     `/aktivitaet/auffaelligkeiten/${id}/erledigen/`,
   );
+  return data;
+}
+
+export async function getNutzung(tage: number): Promise<Nutzung> {
+  const { data } = await apiClient.get<Nutzung>("/aktivitaet/nutzung/", { params: { tage } });
   return data;
 }
