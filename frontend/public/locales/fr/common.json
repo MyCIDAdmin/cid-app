@@ -37,7 +37,9 @@
     "finances": "Finances",
     "admin_partner": "Business Partner",
     "zahlungen_import": "Importer des paiements",
-    "kalender": "Calendrier"
+    "kalender": "Calendrier",
+    "regionen": "Régions",
+    "admin_regionen": "Structure des régions"
   },
   "nav_groupe": {
     "general": "Général",

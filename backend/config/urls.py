@@ -31,6 +31,7 @@ urlpatterns = [
     path("api/v1/aktivitaet/", include("apps.aktivitaet.urls")),
     path("api/v1/uebersetzungen/", include("apps.uebersetzung.urls")),
     path("api/v1/partenaires/", include("apps.partenaires.urls")),
+    path("api/v1/regionen/", include("apps.regionen.urls")),
 ]
 
 if settings.DEBUG:

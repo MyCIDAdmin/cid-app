@@ -42,6 +42,7 @@ i18n
       "umfragen",
       "kalender",
       "aktivitaet",
+      "regionen",
     ],
     defaultNS: "common",
     backend: {
