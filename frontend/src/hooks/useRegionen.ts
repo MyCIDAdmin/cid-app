@@ -29,6 +29,14 @@ export function useVerwaltung() {
   return useQuery({ queryKey: [...KEY, "verwaltung"], queryFn: api.getVerwaltung });
 }
 
+export function useBeitraege(slug: string | undefined, limit: number) {
+  return useQuery({
+    queryKey: [...KEY, "beitraege", slug, limit],
+    queryFn: () => api.getBeitraege({ slug: slug as string, limit }),
+    enabled: Boolean(slug),
+  });
+}
+
 function useAenderung<A, R>(fn: (arg: A) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -51,3 +59,10 @@ export const useRegionLoeschen = () => useAenderung(api.loescheRegion);
 export const useLaenderSetzen = () => useAenderung(api.setzeLaender);
 export const useStandortAnlegen = () => useAenderung(api.legeStandortAn);
 export const useStandortLoeschen = () => useAenderung(api.loescheStandort);
+export const useBeitragAnlegen = () => useAenderung(api.legeBeitragAn);
+export const useBeitragAendern = () => useAenderung(api.aendereBeitrag);
+export const useBeitragLoeschen = () => useAenderung(api.loescheBeitrag);
+export const useBeitragBildHochladen = () => useAenderung(api.ladeBeitragBildHoch);
+export const useBeitragBildEntfernen = () => useAenderung(api.entferneBeitragBild);
+export const useBeitragAusblenden = () => useAenderung(api.blendeBeitragAus);
+export const useReaktionSetzen = () => useAenderung(api.setzeReaktion);

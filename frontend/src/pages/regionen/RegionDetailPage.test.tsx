@@ -6,6 +6,12 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import type { RegionDetail, Verantwortlicher } from "../../types/regionen";
 import RegionDetailPage from "./RegionDetailPage";
 
+vi.mock("../../components/regionen/BeitraegeBereich", () => ({
+  default: ({ darfSchreiben }: { darfSchreiben: boolean }) => (
+    <div data-testid="beitraege" data-schreiben={String(darfSchreiben)} />
+  ),
+}));
+
 vi.mock("../../hooks/useRegionen", () => ({
   useRegion: vi.fn(),
   useBeschreibungSpeichern: vi.fn(),
@@ -98,6 +104,7 @@ describe("RegionDetailPage", () => {
     expect(screen.queryByText("beschreibung_bearbeiten")).not.toBeInTheDocument();
     expect(screen.queryByText("karte_bearbeiten")).not.toBeInTheDocument();
     expect(screen.queryByText("zuweisen_titel")).not.toBeInTheDocument();
+    expect(screen.getByTestId("beitraege")).toHaveAttribute("data-schreiben", "false");
   });
 
   it("zeigt einen Fehler, wenn die Region fehlt", () => {
@@ -113,6 +120,7 @@ describe("RegionDetailPage", () => {
     fireEvent.click(screen.getByText("beschreibung_bearbeiten"));
     fireEvent.change(screen.getByLabelText("beschreibung_fr"), { target: { value: "Bonjour" } });
     fireEvent.click(screen.getByText("speichern"));
+    expect(screen.getByTestId("beitraege")).toHaveAttribute("data-schreiben", "true");
     expect(speichern).toHaveBeenCalledWith(
       { slug: "nord", de: "Moin aus dem Norden", fr: "Bonjour" },
       expect.any(Object),

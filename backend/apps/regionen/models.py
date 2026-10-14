@@ -27,6 +27,10 @@ def verantwortlicher_foto_path(instance, filename):
     return f"regionen/{instance.region_id}/personen/{uuid.uuid4()}_{filename}"
 
 
+def beitrag_bild_path(instance, filename):
+    return f"regionen/{instance.region_id}/beitraege/{uuid.uuid4()}_{filename}"
+
+
 class Region(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=60, unique=True)
@@ -113,3 +117,50 @@ class Verantwortlicher(models.Model):
 
     def __str__(self):
         return f"{self.anzeige_name} ({self.region_id})"
+
+
+# Feste Auswahl an Reaktionen ; gespeichert wird die Kennung, die Oberfläche zeigt das Emoji.
+REAKTIONEN = ("daumen", "herz", "feier", "applaus", "staunen")
+
+
+class Beitrag(models.Model):
+    """Neuigkeit oder Treffen-Rückblick auf der Regionsseite (Release 27). Keine Kommentare ;
+    das Büro kann einen Beitrag ausblenden (er bleibt für Büro und Verantwortliche sichtbar)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name="beitraege")
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    autor_name = models.CharField(max_length=100, blank=True)
+    titel = models.CharField(max_length=150)
+    text = models.TextField(max_length=4000)
+    bild = models.ImageField(
+        upload_to=beitrag_bild_path, storage=ProjetsStorage(), null=True, blank=True
+    )
+    ausgeblendet = models.BooleanField(default=False)
+    ausgeblendet_grund = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["region", "-created_at"], name="regionen_beitrag_region")]
+
+    def __str__(self):
+        return self.titel
+
+
+class Reaktion(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    beitrag = models.ForeignKey(Beitrag, on_delete=models.CASCADE, related_name="reaktionen")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    art = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["beitrag", "user", "art"], name="regionen_reaktion_eindeutig"
+            )
+        ]

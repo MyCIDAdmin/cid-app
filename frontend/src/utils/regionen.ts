@@ -12,3 +12,12 @@ export function anfangsbuchstaben(name: string): string {
     .map((teil) => teil[0]?.toUpperCase() ?? "")
     .join("");
 }
+
+/** Anzeige der festen Reaktionen (gespeichert wird nur die Kennung). */
+export const REAKTIONS_EMOJI = {
+  daumen: "👍",
+  herz: "❤️",
+  feier: "🎉",
+  applaus: "👏",
+  staunen: "😮",
+} as const;

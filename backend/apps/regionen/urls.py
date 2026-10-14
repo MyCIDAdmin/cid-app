@@ -2,6 +2,11 @@ from django.urls import path
 
 from .views import (
     BannerView,
+    BeitraegeView,
+    BeitragAusblendenView,
+    BeitragBildView,
+    BeitragDetailView,
+    BeitragReaktionView,
     PersonenSucheView,
     RegionDetailView,
     RegionListeView,
@@ -31,6 +36,19 @@ urlpatterns = [
     ),
     path("<slug:slug>/", RegionDetailView.as_view(), name="detail"),
     path("<slug:slug>/banner/", BannerView.as_view(), name="banner"),
+    path("<slug:slug>/beitraege/", BeitraegeView.as_view(), name="beitraege"),
+    path("<slug:slug>/beitraege/<uuid:pk>/", BeitragDetailView.as_view(), name="beitrag"),
+    path("<slug:slug>/beitraege/<uuid:pk>/bild/", BeitragBildView.as_view(), name="beitrag-bild"),
+    path(
+        "<slug:slug>/beitraege/<uuid:pk>/ausblenden/",
+        BeitragAusblendenView.as_view(),
+        name="beitrag-ausblenden",
+    ),
+    path(
+        "<slug:slug>/beitraege/<uuid:pk>/reaktion/",
+        BeitragReaktionView.as_view(),
+        name="beitrag-reaktion",
+    ),
     path("<slug:slug>/verantwortliche/", VerantwortlicheView.as_view(), name="verantwortliche"),
     path(
         "<slug:slug>/verantwortliche/<uuid:pk>/",
