@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import BeitraegeBereich from "../../components/regionen/BeitraegeBereich";
+import VeranstaltungenBereich from "../../components/regionen/VeranstaltungenBereich";
 import PersonZuweisen from "../../components/regionen/PersonZuweisen";
 import RegionBild from "../../components/regionen/RegionBild";
 import VerantwortlicheKarte from "../../components/regionen/VerantwortlicheKarte";
@@ -207,6 +208,12 @@ export default function RegionDetailPage() {
       </section>
 
       {region.darf_personen_verwalten && <PersonZuweisen slug={region.slug} />}
+
+      <VeranstaltungenBereich
+        slug={region.slug}
+        standorte={region.standorte}
+        darfAnlegen={region.darf_bearbeiten}
+      />
 
       <BeitraegeBereich slug={region.slug} darfSchreiben={region.darf_bearbeiten} />
     </div>

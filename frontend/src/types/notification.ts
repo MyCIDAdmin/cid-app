@@ -49,6 +49,7 @@ export type TypeNotification =
   | "kalender_dienst"
   | "kalender_umfrage"
   | "kalender_sitzung"
+  | "region_veranstaltung"
   // Ajouté le 2026-10-14 (Release 22) — alarmes du journal d'activité (App Admin).
   | "aktivitaet_auffaelligkeit";
 

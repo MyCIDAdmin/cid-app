@@ -9,6 +9,10 @@ import type {
   RegionDetail,
   RegionenListe,
   Standort,
+  Teilnehmer,
+  Veranstaltung,
+  VeranstaltungAktion,
+  VeranstaltungEingabe,
   Verantwortlicher,
   Verwaltung,
   VerwaltungRegion,
@@ -250,4 +254,109 @@ export async function setzeReaktion(arg: {
 }): Promise<void> {
   const { slug, id, ...koerper } = arg;
   await apiClient.put(`/regionen/${slug}/beitraege/${id}/reaktion/`, koerper);
+}
+
+// --- Regionale Veranstaltungen (Release 28) -------------------------------------------------
+
+export async function getVeranstaltungen(slug: string): Promise<Veranstaltung[]> {
+  const { data } = await apiClient.get<{ ergebnisse: Veranstaltung[] }>(
+    `/regionen/${slug}/veranstaltungen/`,
+  );
+  return data.ergebnisse;
+}
+
+export async function getZurFreigabe(): Promise<Veranstaltung[]> {
+  const { data } = await apiClient.get<{ ergebnisse: Veranstaltung[] }>(
+    "/regionen/veranstaltungen/zur-freigabe/",
+  );
+  return data.ergebnisse;
+}
+
+export async function legeVeranstaltungAn(arg: {
+  slug: string;
+  daten: VeranstaltungEingabe;
+  bild?: File | null;
+}): Promise<Veranstaltung> {
+  const { data } = await apiClient.post<Veranstaltung>(
+    `/regionen/${arg.slug}/veranstaltungen/`,
+    arg.daten,
+  );
+  if (!arg.bild) return data;
+  return ladeVeranstaltungBildHoch({ slug: arg.slug, id: data.id, datei: arg.bild });
+}
+
+export async function aendereVeranstaltung(arg: {
+  slug: string;
+  id: string;
+  daten: VeranstaltungEingabe;
+}): Promise<Veranstaltung> {
+  const { data } = await apiClient.patch<Veranstaltung>(
+    `/regionen/${arg.slug}/veranstaltungen/${arg.id}/`,
+    arg.daten,
+  );
+  return data;
+}
+
+export async function loescheVeranstaltung(arg: { slug: string; id: string }): Promise<void> {
+  await apiClient.delete(`/regionen/${arg.slug}/veranstaltungen/${arg.id}/`);
+}
+
+export async function ladeVeranstaltungBildHoch(arg: {
+  slug: string;
+  id: string;
+  datei: File;
+}): Promise<Veranstaltung> {
+  const formData = new FormData();
+  formData.append("bild", arg.datei);
+  const { data } = await apiClient.post<Veranstaltung>(
+    `/regionen/${arg.slug}/veranstaltungen/${arg.id}/bild/`,
+    formData,
+  );
+  return data;
+}
+
+export async function fuehreAktionAus(arg: {
+  slug: string;
+  id: string;
+  aktion: VeranstaltungAktion;
+  grund?: string;
+}): Promise<Veranstaltung> {
+  const { slug, id, ...koerper } = arg;
+  const { data } = await apiClient.post<Veranstaltung>(
+    `/regionen/${slug}/veranstaltungen/${id}/aktion/`,
+    koerper,
+  );
+  return data;
+}
+
+export async function setzeAnmeldung(arg: {
+  slug: string;
+  id: string;
+  aktiv: boolean;
+}): Promise<Veranstaltung> {
+  const { data } = await apiClient.put<Veranstaltung>(
+    `/regionen/${arg.slug}/veranstaltungen/${arg.id}/anmeldung/`,
+    { aktiv: arg.aktiv },
+  );
+  return data;
+}
+
+export async function getTeilnehmer(arg: { slug: string; id: string }): Promise<Teilnehmer[]> {
+  const { data } = await apiClient.get<{ ergebnisse: Teilnehmer[] }>(
+    `/regionen/${arg.slug}/veranstaltungen/${arg.id}/teilnehmer/`,
+  );
+  return data.ergebnisse;
+}
+
+export async function setzeAnwesenheit(arg: {
+  slug: string;
+  id: string;
+  user: string;
+  anwesend: boolean;
+}): Promise<Teilnehmer> {
+  const { data } = await apiClient.put<Teilnehmer>(
+    `/regionen/${arg.slug}/veranstaltungen/${arg.id}/teilnehmer/${arg.user}/`,
+    { anwesend: arg.anwesend },
+  );
+  return data;
 }

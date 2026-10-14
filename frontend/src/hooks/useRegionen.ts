@@ -37,6 +37,30 @@ export function useBeitraege(slug: string | undefined, limit: number) {
   });
 }
 
+export function useVeranstaltungen(slug: string | undefined) {
+  return useQuery({
+    queryKey: [...KEY, "veranstaltungen", slug],
+    queryFn: () => api.getVeranstaltungen(slug as string),
+    enabled: Boolean(slug),
+  });
+}
+
+export function useZurFreigabe(aktiv: boolean) {
+  return useQuery({
+    queryKey: [...KEY, "freigabe"],
+    queryFn: api.getZurFreigabe,
+    enabled: aktiv,
+  });
+}
+
+export function useTeilnehmer(slug: string, id: string, aktiv: boolean) {
+  return useQuery({
+    queryKey: [...KEY, "teilnehmer", slug, id],
+    queryFn: () => api.getTeilnehmer({ slug, id }),
+    enabled: aktiv,
+  });
+}
+
 function useAenderung<A, R>(fn: (arg: A) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -66,3 +90,10 @@ export const useBeitragBildHochladen = () => useAenderung(api.ladeBeitragBildHoc
 export const useBeitragBildEntfernen = () => useAenderung(api.entferneBeitragBild);
 export const useBeitragAusblenden = () => useAenderung(api.blendeBeitragAus);
 export const useReaktionSetzen = () => useAenderung(api.setzeReaktion);
+export const useVeranstaltungAnlegen = () => useAenderung(api.legeVeranstaltungAn);
+export const useVeranstaltungAendern = () => useAenderung(api.aendereVeranstaltung);
+export const useVeranstaltungLoeschen = () => useAenderung(api.loescheVeranstaltung);
+export const useVeranstaltungBild = () => useAenderung(api.ladeVeranstaltungBildHoch);
+export const useVeranstaltungAktion = () => useAenderung(api.fuehreAktionAus);
+export const useAnmeldungSetzen = () => useAenderung(api.setzeAnmeldung);
+export const useAnwesenheitSetzen = () => useAenderung(api.setzeAnwesenheit);

@@ -21,3 +21,13 @@ export const REAKTIONS_EMOJI = {
   applaus: "👏",
   staunen: "😮",
 } as const;
+
+export function formatDatum(iso: string, sprache: string): string {
+  const [j, m, t] = iso.split("-").map(Number);
+  return new Date(j, m - 1, t).toLocaleDateString(sprache, {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}

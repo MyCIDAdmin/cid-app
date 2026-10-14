@@ -114,6 +114,7 @@ def region_dict(region: Region, user, detail=False) -> dict:
             karte_dict(v, user) for v in region.verantwortliche.select_related("standort")
         ],
         "meine_region": (services.meine_region(user) or None) == region,
+        "naechste_veranstaltung": services.naechste_veranstaltung(region),
     }
     if detail:
         daten.update(
@@ -169,6 +170,7 @@ class RegionListeView(APIView):
             {
                 "ergebnisse": [region_dict(r, request.user) for r in regionen],
                 "ohne_region": services.meine_region(request.user) is None,
+                "darf_freigeben": services.ist_personenverwalter(request.user),
             }
         )
 

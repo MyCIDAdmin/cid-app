@@ -28,6 +28,15 @@ export interface Region {
   mitglieder: number;
   verantwortliche: Verantwortlicher[];
   meine_region: boolean;
+  naechste_veranstaltung: NaechsteVeranstaltung | null;
+}
+
+export interface NaechsteVeranstaltung {
+  id: string;
+  titel: string;
+  datum: string;
+  uhrzeit: string | null;
+  ort: string;
 }
 
 export interface RegionDetail extends Region {
@@ -40,6 +49,7 @@ export interface RegionDetail extends Region {
 export interface RegionenListe {
   ergebnisse: Region[];
   ohne_region: boolean;
+  darf_freigeben: boolean;
 }
 
 export interface Person {
@@ -109,4 +119,57 @@ export interface Beitrag {
 export interface BeitraegeListe {
   gesamt: number;
   ergebnisse: Beitrag[];
+}
+
+// --- Regionale Veranstaltungen (Release 28) -------------------------------------------------
+
+export type VeranstaltungStatus =
+  "entwurf" | "eingereicht" | "veroeffentlicht" | "zurueckgewiesen" | "abgeschlossen" | "abgesagt";
+
+export type VeranstaltungAktion =
+  "einreichen" | "freigeben" | "zurueckweisen" | "absagen" | "abschliessen";
+
+export interface Veranstaltung {
+  id: string;
+  region: { slug: string; name: string };
+  titel: string;
+  beschreibung: string;
+  datum: string;
+  uhrzeit: string | null;
+  ort: string;
+  standort: { id: string; name: string } | null;
+  bild_url: string | null;
+  max_teilnehmer: number | null;
+  status: VeranstaltungStatus;
+  ablehngrund: string;
+  ersteller_name: string;
+  teilnehmer_zahl: number;
+  angemeldet: boolean;
+  kann_anmelden: boolean;
+  darf_bearbeiten: boolean;
+  darf_einreichen: boolean;
+  darf_freigeben: boolean;
+  darf_absagen: boolean;
+  darf_anwesenheit: boolean;
+  darf_abschliessen: boolean;
+  darf_teilnehmer_sehen: boolean;
+  oeffentliche_url?: string;
+  teilen?: { de: string; fr: string };
+  anwesende_zahl?: number;
+}
+
+export interface VeranstaltungEingabe {
+  titel: string;
+  datum: string;
+  ort: string;
+  beschreibung?: string;
+  uhrzeit?: string | null;
+  max_teilnehmer?: number | null;
+  standort?: string | null;
+}
+
+export interface Teilnehmer {
+  user: string;
+  name: string;
+  anwesend: boolean;
 }

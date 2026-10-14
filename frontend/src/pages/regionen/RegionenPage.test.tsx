@@ -6,6 +6,9 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import type { Region } from "../../types/regionen";
 import RegionenPage from "./RegionenPage";
 
+vi.mock("../../components/regionen/FreigabeListe", () => ({
+  default: () => <div data-testid="freigabe" />,
+}));
 vi.mock("../../hooks/useRegionen", () => ({ useRegionen: vi.fn() }));
 
 function region(o: Partial<Region> = {}): Region {
@@ -19,6 +22,7 @@ function region(o: Partial<Region> = {}): Region {
     mitglieder: 12,
     verantwortliche: [],
     meine_region: false,
+    naechste_veranstaltung: null,
     ...o,
   };
 }
@@ -61,5 +65,31 @@ describe("RegionenPage", () => {
     renderWithProviders(<RegionenPage />);
     expect(screen.getByText("ohne_region_hinweis")).toBeInTheDocument();
     expect(screen.getByText("keine_regionen")).toBeInTheDocument();
+  });
+
+  it("zeigt das nächste Treffen und die Freigabeliste nur für das Büro", () => {
+    mock({
+      ergebnisse: [
+        region({
+          naechste_veranstaltung: {
+            id: "v1",
+            titel: "Derby-Abend",
+            datum: "2026-11-07",
+            uhrzeit: null,
+            ort: "Köln",
+          },
+        }),
+      ],
+      ohne_region: false,
+      darf_freigeben: true,
+    });
+    const { unmount } = renderWithProviders(<RegionenPage />);
+    expect(screen.getByText("naechstes_treffen")).toBeInTheDocument();
+    expect(screen.getByTestId("freigabe")).toBeInTheDocument();
+    unmount();
+    mock({ ergebnisse: [region()], ohne_region: false, darf_freigeben: false });
+    renderWithProviders(<RegionenPage />);
+    expect(screen.queryByTestId("freigabe")).not.toBeInTheDocument();
+    expect(screen.queryByText("naechstes_treffen")).not.toBeInTheDocument();
   });
 });
