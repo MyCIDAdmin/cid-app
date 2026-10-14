@@ -1,7 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as api from "../api/kalender";
-import type { Ansicht, TerminPayload } from "../types/kalender";
+import type { BeschlussPayload } from "../api/kalender";
+import type {
+  Ansicht,
+  StimmAntwort,
+  Tagesordnungspunkt,
+  TerminPayload,
+  UmfragePayload,
+} from "../types/kalender";
 
 const keys = {
   all: ["kalender"] as const,
@@ -170,4 +177,96 @@ export function useDienstAnschreiben() {
   return useMutation({
     mutationFn: ({ id, user }: { id: string; user: string }) => api.dienstAnschreiben(id, user),
   });
+}
+
+// --- Sitzungsmodus (Release 18) ---
+
+export function useSitzung(terminId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["kalender", "sitzung", terminId] as const,
+    queryFn: () => api.getSitzung(terminId),
+    enabled,
+  });
+}
+
+function useSitzungMutation<V>(fn: (terminId: string, v: V) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ terminId, v }: { terminId: string; v: V }) => fn(terminId, v),
+    onSuccess: (_d, { terminId }) =>
+      qc.invalidateQueries({ queryKey: ["kalender", "sitzung", terminId] }),
+  });
+}
+
+export function useSitzungSpeichern() {
+  return useSitzungMutation<{ tops?: Tagesordnungspunkt[]; protokoll?: string }>(
+    api.speichereSitzung,
+  );
+}
+
+export function useBeschlussErstellen() {
+  return useSitzungMutation<BeschlussPayload>(api.beschlussErstellen);
+}
+
+export function useBeschlussLoeschen() {
+  return useSitzungMutation<string>(api.beschlussLoeschen);
+}
+
+export function useBeschlussZuAufgabe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      terminId,
+      beschlussId,
+      ...payload
+    }: {
+      terminId: string;
+      beschlussId: string;
+      projekt?: string | null;
+      verantwortlich?: string | null;
+      frist?: string | null;
+    }) => api.beschlussZuAufgabe(terminId, beschlussId, payload),
+    onSuccess: (_d, { terminId }) =>
+      qc.invalidateQueries({ queryKey: ["kalender", "sitzung", terminId] }),
+  });
+}
+
+export function useProtokollVersenden() {
+  return useSitzungMutation<undefined>((terminId) => api.protokollVersenden(terminId));
+}
+
+// --- Terminfindung (Release 18) ---
+
+export function useUmfragen() {
+  return useQuery({ queryKey: ["kalender", "umfragen"] as const, queryFn: api.listUmfragen });
+}
+
+function useUmfrageMutation<V, R>(fn: (v: V) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    // Entscheiden legt einen Termin an, daher auch den Kalender neu laden.
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["kalender"] }),
+  });
+}
+
+export function useUmfrageErstellen() {
+  return useUmfrageMutation((payload: UmfragePayload) => api.umfrageErstellen(payload));
+}
+
+export function useUmfrageAbstimmen() {
+  return useUmfrageMutation(
+    ({ id, stimmen }: { id: string; stimmen: Record<string, StimmAntwort> }) =>
+      api.umfrageAbstimmen(id, stimmen),
+  );
+}
+
+export function useUmfrageEntscheiden() {
+  return useUmfrageMutation(({ id, option }: { id: string; option: string }) =>
+    api.umfrageEntscheiden(id, option),
+  );
+}
+
+export function useUmfrageAbbrechen() {
+  return useUmfrageMutation((id: string) => api.umfrageAbbrechen(id));
 }

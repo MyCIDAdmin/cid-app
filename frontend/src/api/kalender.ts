@@ -1,13 +1,19 @@
 import type {
   Ansicht,
+  Beschluss,
   Dienst,
   DienstPayload,
   DienstVorschlag,
   KalenderEintrag,
   KalenderZugang,
   Person,
+  Sitzung,
+  StimmAntwort,
+  Tagesordnungspunkt,
   Termin,
   TerminPayload,
+  Terminumfrage,
+  UmfragePayload,
 } from "../types/kalender";
 import { apiClient } from "./client";
 
@@ -135,4 +141,97 @@ export async function dienstVorschlaege(id: string): Promise<DienstVorschlag[]> 
 
 export async function dienstAnschreiben(id: string, user: string): Promise<void> {
   await apiClient.post(`/kalender/dienste/${id}/anschreiben/`, { user });
+}
+
+// --- Sitzungsmodus (Release 18) ---
+
+export async function getSitzung(terminId: string): Promise<Sitzung> {
+  const { data } = await apiClient.get<Sitzung>(`/kalender/termine/${terminId}/sitzung/`);
+  return data;
+}
+
+export async function speichereSitzung(
+  terminId: string,
+  payload: { tops?: Tagesordnungspunkt[]; protokoll?: string },
+): Promise<Sitzung> {
+  const { data } = await apiClient.put<Sitzung>(`/kalender/termine/${terminId}/sitzung/`, payload);
+  return data;
+}
+
+export interface BeschlussPayload {
+  text: string;
+  verantwortlich?: string | null;
+  frist?: string | null;
+}
+
+export async function beschlussErstellen(
+  terminId: string,
+  payload: BeschlussPayload,
+): Promise<Beschluss> {
+  const { data } = await apiClient.post<Beschluss>(
+    `/kalender/termine/${terminId}/sitzung/beschluesse/`,
+    payload,
+  );
+  return data;
+}
+
+export async function beschlussLoeschen(terminId: string, beschlussId: string): Promise<void> {
+  await apiClient.delete(`/kalender/termine/${terminId}/sitzung/beschluesse/${beschlussId}/`);
+}
+
+export async function beschlussZuAufgabe(
+  terminId: string,
+  beschlussId: string,
+  payload: { projekt?: string | null; verantwortlich?: string | null; frist?: string | null },
+): Promise<Beschluss> {
+  const { data } = await apiClient.post<Beschluss>(
+    `/kalender/termine/${terminId}/sitzung/beschluesse/${beschlussId}/aufgabe/`,
+    payload,
+  );
+  return data;
+}
+
+export async function protokollVersenden(terminId: string): Promise<{ versendet_an: number }> {
+  const { data } = await apiClient.post<{ versendet_an: number }>(
+    `/kalender/termine/${terminId}/sitzung/versenden/`,
+  );
+  return data;
+}
+
+// --- Terminfindung (Release 18) ---
+
+export async function listUmfragen(): Promise<Terminumfrage[]> {
+  const { data } = await apiClient.get<Terminumfrage[]>("/kalender/terminumfragen/");
+  return data;
+}
+
+export async function umfrageErstellen(payload: UmfragePayload): Promise<Terminumfrage> {
+  const { data } = await apiClient.post<Terminumfrage>("/kalender/terminumfragen/", payload);
+  return data;
+}
+
+export async function umfrageAbstimmen(
+  id: string,
+  stimmen: Record<string, StimmAntwort>,
+): Promise<Terminumfrage> {
+  const { data } = await apiClient.post<Terminumfrage>(
+    `/kalender/terminumfragen/${id}/abstimmen/`,
+    {
+      stimmen,
+    },
+  );
+  return data;
+}
+
+export async function umfrageEntscheiden(id: string, option: string): Promise<Terminumfrage> {
+  const { data } = await apiClient.post<Terminumfrage>(
+    `/kalender/terminumfragen/${id}/entscheiden/`,
+    { option },
+  );
+  return data;
+}
+
+export async function umfrageAbbrechen(id: string): Promise<Terminumfrage> {
+  const { data } = await apiClient.delete<Terminumfrage>(`/kalender/terminumfragen/${id}/`);
+  return data;
 }

@@ -238,3 +238,19 @@ def uebersetzungen_fuer(objekte) -> dict[str, dict]:
                     eintrag.setdefault(u.feld, {})[u.sprache] = u.text
         ergebnis[str(o.pk)] = eintrag
     return ergebnis
+
+
+def termine_fuer(user):
+    """Alle Termine, die `user` sehen darf (in irgendeiner Sicht) — Grundlage für Detailzugriffe."""
+    if ist_verwaltung(user, schreiben=True):
+        # „Privat“ bleibt auch der Verwaltung verborgen (nur Verfasser und Eingeladene).
+        eigene = Q(erstellt_von=user) | Q(einladungen__user=user)
+        return (
+            Termin.objects.select_related("projekt", "evenement")
+            .filter(~PRIVAT | eigene)
+            .distinct()
+        )
+    sichtbar = Q()
+    for ansicht in ("verein", "buero", "meine"):
+        sichtbar |= Q(pk__in=sichtbare_termine(user, ansicht).values("pk"))
+    return Termin.objects.select_related("projekt", "evenement").filter(sichtbar).distinct()

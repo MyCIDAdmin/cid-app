@@ -22,6 +22,7 @@ import { formatZeit } from "../../utils/kalender";
 import { uebersetzt } from "../../utils/uebersetzung";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import DiensteBereich from "./DiensteBereich";
+import SitzungsBereich from "./SitzungsBereich";
 
 interface Props {
   eintrag: KalenderEintrag;
@@ -44,6 +45,7 @@ export default function TerminDialog({ eintrag, zugang, onSchliessen, onBearbeit
   const ausblenden = useEintragAusblenden();
   const [fehler, setFehler] = useState("");
   const [loeschenFrage, setLoeschenFrage] = useState(false);
+  const [sitzungOffen, setSitzungOffen] = useState(false);
   const schreiben = Boolean(zugang?.schreiben) && istTermin;
 
   function ausfuehren(promise: Promise<unknown>, nachher?: () => void) {
@@ -151,6 +153,24 @@ export default function TerminDialog({ eintrag, zugang, onSchliessen, onBearbeit
             📅 {t("ics_herunterladen")}
           </button>
         </p>
+
+        {istTermin && eintrag.termin_id && (eintrag.kategorie === "sitzung" || schreiben) && (
+          <div className="mt-4">
+            <button
+              type="button"
+              aria-expanded={sitzungOffen}
+              onClick={() => setSitzungOffen((o) => !o)}
+              className={`${KNOPF} text-text-primary`}
+            >
+              {sitzungOffen ? t("sitzung.schliessen") : t("sitzung.oeffnen")}
+            </button>
+            {sitzungOffen && (
+              <div className="mt-3">
+                <SitzungsBereich terminId={eintrag.termin_id} />
+              </div>
+            )}
+          </div>
+        )}
 
         {eintrag.ausblendbar && eintrag.objekt_id && (
           <div className="mt-4">

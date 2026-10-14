@@ -158,5 +158,52 @@
   "ausgeblendet_kurz": "masqué",
   "ausgeblendet_hinweis": "Cette entrée est masquée pour les membres – seul vous la voyez.",
   "sichten": "Calendriers affichés",
-  "alle_sichten": "Tout afficher"
+  "alle_sichten": "Tout afficher",
+  "sitzung": {
+    "oeffnen": "Réunion : ordre du jour, procès-verbal, décisions",
+    "schliessen": "Fermer la réunion",
+    "tagesordnung": "Ordre du jour",
+    "punkt": "Point {{nr}}",
+    "punkt_entfernen": "Supprimer le point",
+    "punkt_hinzu": "Ajouter un point",
+    "speichern": "Enregistrer",
+    "gespeichert": "Enregistré.",
+    "protokoll": "Procès-verbal",
+    "kein_protokoll": "Pas encore de procès-verbal.",
+    "beschluesse": "Décisions",
+    "beschluss_text": "Nouvelle décision",
+    "beschluss_hinzu": "Décision",
+    "bis": "jusqu'au",
+    "ist_aufgabe": "Créée comme tâche",
+    "zur_aufgabe": "Transformer en tâche",
+    "loeschen": "Supprimer",
+    "projekt": "Projet",
+    "projekt_waehlen": "Choisir un projet …",
+    "verantwortlich": "Responsable (rechercher)",
+    "frist": "Échéance",
+    "aufgabe_anlegen": "Créer la tâche",
+    "versenden": "Envoyer le procès-verbal aux invités",
+    "versendet": "Le procès-verbal a été envoyé.",
+    "zuletzt_versendet": "Dernier envoi : {{datum}}"
+  },
+  "findung": {
+    "titel": "Quand ça vous convient ?",
+    "neu": "Nouveau sondage de date",
+    "button": "Sondage de date",
+    "dauer": "Durée en minutes",
+    "vorschlaege": "Dates proposées",
+    "vorschlag": "Proposition {{nr}}",
+    "vorschlag_hinzu": "Autre proposition",
+    "teilnehmer": "Participants",
+    "antwort_bis": "Réponse avant le",
+    "senden": "Envoyer le sondage",
+    "antwort_senden": "Envoyer la réponse",
+    "waehlen": "Choisir cette date",
+    "abbrechen": "Annuler",
+    "antwort": {
+      "ja": "Oui",
+      "vielleicht": "Peut-être",
+      "nein": "Non"
+    }
+  }
 }
