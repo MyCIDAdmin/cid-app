@@ -4,6 +4,7 @@
   "erreur_chargement": "Die Daten konnten nicht geladen werden.",
   "ansicht": {
     "uebersicht": "Übersicht",
+    "auffaelligkeiten": "Auffälligkeiten",
     "journal": "Journal"
   },
   "uebersicht": {
@@ -32,7 +33,9 @@
       "registrierungen": "Registrierungen",
       "freigaben": "Freigaben/Ablehnungen",
       "rollenaenderungen": "Rechte- und Rollenänderungen",
-      "geraete_limit": "Geräte-Limit erreicht"
+      "geraete_limit": "Geräte-Limit erreicht",
+      "auffaelligkeiten_offen": "Offene Auffälligkeiten",
+      "server_fehler": "Serverfehler"
     },
     "top_ips": "Auffällige IP-Adressen (Fehlversuche)",
     "keine_fehlversuche": "Keine Fehlversuche im Zeitraum.",
@@ -82,5 +85,20 @@
     "weiter": "Weiter",
     "seite": "Seite {{seite}} von {{seiten}}",
     "aufbewahrung": "Aufbewahrung: Anmeldungen und Konto-Ereignisse {{kurz}} Tage, übrige Einträge {{lang}} Tage; IP-Adressen werden nach 90 Tagen entfernt."
+  },
+  "auffaelligkeiten": {
+    "hinweis": "Die App prüft das Protokoll alle 10 Minuten auf Auffälligkeiten und meldet neue Funde per Glocke und E-Mail an alle App-Admins. Die E-Mail lässt sich unter „E-Mail-Benachrichtigungen“ abschalten.",
+    "status": {
+      "offen": "Offen",
+      "erledigt": "Erledigt"
+    },
+    "gewicht": {
+      "warnung": "Warnung",
+      "wichtig": "Wichtig"
+    },
+    "leer_offen": "Keine offenen Auffälligkeiten.",
+    "leer_erledigt": "Noch keine erledigten Auffälligkeiten.",
+    "erledigen": "Als erledigt markieren",
+    "erledigt_von": "erledigt von {{name}} ({{zeit}})"
   }
 }

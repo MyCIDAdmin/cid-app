@@ -11,6 +11,8 @@ Fehler beim Protokollieren dürfen nie eine Anfrage scheitern lassen.
 import logging
 import re
 
+from django.core.cache import cache
+
 from . import kategorien as kat
 
 logger = logging.getLogger("apps.aktivitaet")
@@ -29,6 +31,10 @@ _SCHREIBEND = {"POST": "erstellt", "PUT": "geaendert", "PATCH": "geaendert", "DE
 def _ip(request):
     xff = request.META.get("HTTP_X_FORWARDED_FOR", "")
     return (xff.split(",")[0].strip() if xff else request.META.get("REMOTE_ADDR")) or None
+
+
+def maskiere_pfad(pfad: str) -> str:
+    return "/" + "/".join("{id}" if _ID.match(t) else t for t in pfad.split("/") if t)
 
 
 def klassifizieren(methode: str, pfad: str, url_name: str = ""):
@@ -80,6 +86,8 @@ class AktivitaetMiddleware:
         return response
 
     def _protokollieren(self, request, response):
+        if response.status_code >= 500:
+            return self._serverfehler(request, response)
         if not 200 <= response.status_code < 300:
             return
         user = getattr(request, "user", None)
@@ -103,4 +111,24 @@ class AktivitaetMiddleware:
             ip_address=_ip(request),
             user_agent=request.META.get("HTTP_USER_AGENT", ""),
             **metadata,
+        )
+
+    def _serverfehler(self, request, response):
+        """5xx unter /api/ : höchstens ein Eintrag je Methode und Pfad-Schablone pro Minute."""
+        if not request.path.startswith("/api/"):
+            return
+        pfad = maskiere_pfad(request.path)
+        if not cache.add(f"akt5xx:{request.method}:{pfad}", 1, 60):
+            return
+        user = getattr(request, "user", None)
+        from apps.accounts.services import log_audit_event
+
+        log_audit_event(
+            "server_fehler",
+            user=user if getattr(user, "is_authenticated", False) else None,
+            ip_address=_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            methode=request.method,
+            pfad=pfad,
+            status=response.status_code,
         )

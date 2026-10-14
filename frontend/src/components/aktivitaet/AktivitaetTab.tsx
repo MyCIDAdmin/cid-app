@@ -1,19 +1,21 @@
 /**
- * Reiter „Aktivität“ der Rollenverwaltung (Release 20) : Übersicht und Journal des Protokolls.
+ * Reiter „Aktivität“ der Rollenverwaltung (Release 20/22) : Übersicht, Journal und Auffälligkeiten.
  * Kacheln und IP-Adressen der Übersicht öffnen das Journal mit passendem Filter.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { JournalFilter } from "../../types/aktivitaet";
+import AuffaelligkeitenPanel from "./AuffaelligkeitenPanel";
 import JournalPanel from "./JournalPanel";
 import UebersichtPanel from "./UebersichtPanel";
 
-type Ansicht = "uebersicht" | "journal";
+export type Ansicht = "uebersicht" | "journal" | "auffaelligkeiten";
+const ANSICHTEN: Ansicht[] = ["uebersicht", "auffaelligkeiten", "journal"];
 
-export default function AktivitaetTab() {
+export default function AktivitaetTab({ startAnsicht = "uebersicht" }: { startAnsicht?: Ansicht }) {
   const { t } = useTranslation("aktivitaet");
-  const [ansicht, setAnsicht] = useState<Ansicht>("uebersicht");
+  const [ansicht, setAnsicht] = useState<Ansicht>(startAnsicht);
   const [filter, setFilter] = useState<JournalFilter>({ seite: 1 });
 
   function imJournalOeffnen(neu: JournalFilter) {
@@ -25,7 +27,7 @@ export default function AktivitaetTab() {
     <div>
       <p className="mb-3 text-xs text-text-tertiary">{t("hinweis")}</p>
       <div className="mb-3 flex gap-2">
-        {(["uebersicht", "journal"] as const).map((a) => (
+        {ANSICHTEN.map((a) => (
           <button
             key={a}
             type="button"
@@ -39,11 +41,16 @@ export default function AktivitaetTab() {
           </button>
         ))}
       </div>
-      {ansicht === "uebersicht" ? (
-        <UebersichtPanel imJournalOeffnen={imJournalOeffnen} />
-      ) : (
-        <JournalPanel filter={filter} setFilter={setFilter} />
+      {ansicht === "uebersicht" && (
+        <UebersichtPanel
+          imJournalOeffnen={imJournalOeffnen}
+          auffaelligkeitenOeffnen={() => setAnsicht("auffaelligkeiten")}
+        />
       )}
+      {ansicht === "auffaelligkeiten" && (
+        <AuffaelligkeitenPanel imJournalOeffnen={imJournalOeffnen} />
+      )}
+      {ansicht === "journal" && <JournalPanel filter={filter} setFilter={setFilter} />}
     </div>
   );
 }

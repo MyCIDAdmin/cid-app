@@ -3,7 +3,8 @@
   "chargement": "Chargement…",
   "erreur_chargement": "Les données n'ont pas pu être chargées.",
   "ansicht": {
-    "uebersicht": "Aperçu",
+    "uebersicht": "Vue d'ensemble",
+    "auffaelligkeiten": "Anomalies",
     "journal": "Journal"
   },
   "uebersicht": {
@@ -32,7 +33,9 @@
       "registrierungen": "Inscriptions",
       "freigaben": "Validations/refus",
       "rollenaenderungen": "Changements de rôles et de droits",
-      "geraete_limit": "Limite d'appareils atteinte"
+      "geraete_limit": "Limite d'appareils atteinte",
+      "auffaelligkeiten_offen": "Anomalies ouvertes",
+      "server_fehler": "Erreurs serveur"
     },
     "top_ips": "Adresses IP suspectes (échecs)",
     "keine_fehlversuche": "Aucun échec sur la période.",
@@ -82,5 +85,20 @@
     "weiter": "Suivant",
     "seite": "Page {{seite}} sur {{seiten}}",
     "aufbewahrung": "Conservation : connexions et événements de compte {{kurz}} jours, autres entrées {{lang}} jours ; les adresses IP sont supprimées après 90 jours."
+  },
+  "auffaelligkeiten": {
+    "hinweis": "L'application analyse le journal toutes les 10 minutes et signale les nouvelles anomalies par la cloche et par e-mail à tous les administrateurs. L'e-mail peut être désactivé sous « Notifications e-mail ».",
+    "status": {
+      "offen": "Ouvertes",
+      "erledigt": "Traitées"
+    },
+    "gewicht": {
+      "warnung": "Avertissement",
+      "wichtig": "Important"
+    },
+    "leer_offen": "Aucune anomalie ouverte.",
+    "leer_erledigt": "Aucune anomalie traitée pour l'instant.",
+    "erledigen": "Marquer comme traitée",
+    "erledigt_von": "traitée par {{name}} ({{zeit}})"
   }
 }

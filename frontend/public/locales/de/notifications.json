@@ -24,7 +24,8 @@
       "boutique": "Shop",
       "vote": "Wahlen & Abstimmungen",
       "communaute": "Community",
-      "kalender": "Kalender"
+      "kalender": "Kalender",
+      "aktivitaet": "Aktivität (Sicherheitsalarme)"
     },
     "module_description": {
       "membres": "Änderung des Mitgliedsstatus (aktiv/inaktiv).",
@@ -34,7 +35,8 @@
       "boutique": "Bestätigte, versandte oder stornierte Bestellungen.",
       "vote": "Eröffnung von Abstimmungen und Ergebnisse.",
       "communaute": "Forumantworten, private Nachrichten.",
-      "kalender": "Änderungen, Absagen und Erinnerungen zu Terminen, Diensten und Terminfindungen; Protokolle; Wochenübersicht."
+      "kalender": "Änderungen, Absagen und Erinnerungen zu Terminen, Diensten und Terminfindungen; Protokolle; Wochenübersicht.",
+      "aktivitaet": "Alarme bei Auffälligkeiten im Aktivitätsprotokoll (nur App-Admins), z. B. viele Fehlversuche, Massen-Export oder Serverfehler."
     }
   }
 }

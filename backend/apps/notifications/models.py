@@ -115,6 +115,9 @@ class TypeNotification(models.TextChoices):
     KALENDER_DIENST = "kalender_dienst", _("Permanence")
     KALENDER_UMFRAGE = "kalender_umfrage", _("Sondage de date")
     KALENDER_SITZUNG = "kalender_sitzung", _("Réunion : procès-verbal et tâches")
+    AKTIVITAET_AUFFAELLIGKEIT = "aktivitaet_auffaelligkeit", _(
+        "Anomalie dans le journal d'activité"
+    )
 
 
 class Notification(models.Model):
@@ -168,6 +171,7 @@ MODULES_NOTIFIABLES = [
     "vote",
     "communaute",
     "kalender",
+    "aktivitaet",
 ]
 
 
@@ -201,6 +205,7 @@ class ParametresNotification(models.Model):
     email_vote = models.BooleanField(default=True, verbose_name=_("Vote"))
     email_communaute = models.BooleanField(default=True, verbose_name=_("Communauté"))
     email_kalender = models.BooleanField(default=True, verbose_name=_("Calendrier"))
+    email_aktivitaet = models.BooleanField(default=True, verbose_name=_("Journal d'activité"))
 
     modifie_par = models.ForeignKey(
         "membres.Membre",

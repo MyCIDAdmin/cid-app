@@ -15,7 +15,9 @@ vi.mock("../../hooks/useRbac", async () => {
 });
 
 vi.mock("../../hooks/useNotifications", async () => {
-  const actual = await vi.importActual<typeof useNotificationsHooks>("../../hooks/useNotifications");
+  const actual = await vi.importActual<typeof useNotificationsHooks>(
+    "../../hooks/useNotifications",
+  );
   return {
     ...actual,
     useParametresNotification: vi.fn(),
@@ -33,6 +35,7 @@ function parametres(overrides: Partial<ParametresNotification> = {}): Parametres
     email_vote: true,
     email_communaute: true,
     email_kalender: true,
+    email_aktivitaet: true,
     modifie_par: null,
     updated_at: "2026-09-19T10:00:00Z",
     ...overrides,
@@ -66,7 +69,7 @@ describe("ParametresNotificationPage", () => {
     renderWithProviders(<ParametresNotificationPage />);
 
     const interrupteurs = screen.getAllByRole("switch");
-    expect(interrupteurs).toHaveLength(8);
+    expect(interrupteurs).toHaveLength(9);
     interrupteurs.forEach((interrupteur) => {
       expect(interrupteur).toHaveAttribute("aria-checked", "true");
     });

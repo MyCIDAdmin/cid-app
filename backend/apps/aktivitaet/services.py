@@ -14,6 +14,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 from apps.accounts.models import ROLE_LEVELS, AuditLogEntry, Role, User
 
 from . import kategorien as kat
+from .models import Auffaelligkeit
 
 BERLIN = ZoneInfo("Europe/Berlin")
 ERLAUBTE_TAGE = (7, 30, 90)
@@ -39,6 +40,12 @@ def name_von(user) -> str:
     if membre is not None:
         return f"{membre.prenom} {membre.nom}".strip() or user.email
     return user.email
+
+
+def person_dict(user) -> dict | None:
+    if user is None:
+        return None
+    return {"id": str(user.pk), "name": name_von(user), "email": user.email}
 
 
 def eintrag_dict(e: AuditLogEntry) -> dict:
@@ -131,6 +138,10 @@ def uebersicht(tage: int) -> dict:
         "freigaben": summe("registration_approved", "registration_refused"),
         "rollenaenderungen": summe(*kat.ROLLEN_AENDERUNG),
         "geraete_limit": summe("device_limit_reached"),
+        "server_fehler": summe("server_fehler"),
+        "auffaelligkeiten_offen": Auffaelligkeit.objects.filter(
+            status=Auffaelligkeit.Status.OFFEN
+        ).count(),
         "passwort": summe("password_reset_requested", "password_changed"),
         "aktive_nutzer": (
             im_zeitraum.filter(action__in=kat.LOGIN_ERFOLG, user__isnull=False)
@@ -238,6 +249,13 @@ def bereinigen(jetzt=None) -> dict:
         else:
             qs = qs.filter(action__in=kat.aktionen_von(schluessel))
         geloescht += qs.delete()[0]
+    geloescht += Auffaelligkeit.objects.filter(
+        status=Auffaelligkeit.Status.ERLEDIGT,
+        erkannt_am__lt=jetzt - timedelta(days=kat.KATEGORIEN["audit"][2]),
+    ).delete()[0]
+    Auffaelligkeit.objects.filter(
+        erkannt_am__lt=jetzt - timedelta(days=kat.IP_AUFBEWAHRUNG_TAGE), ip_address__isnull=False
+    ).update(ip_address=None)
     gekuerzt = (
         AuditLogEntry.objects.filter(
             created_at__lt=jetzt - timedelta(days=kat.IP_AUFBEWAHRUNG_TAGE)

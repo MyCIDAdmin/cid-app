@@ -19,6 +19,7 @@ KATEGORIEN = {
     "inhalte": ("Veranstaltungen, Projekte & Partner", "Événements, projets et partenaires", 730),
     "einstellungen": ("Einstellungen", "Paramètres", 730),
     "export": ("Exporte & Importe", "Exports et imports", 730),
+    "betrieb": ("Betrieb & Fehler", "Exploitation et erreurs", 730),
     "sonstige": ("Sonstiges", "Autres", 730),
 }
 IP_AUFBEWAHRUNG_TAGE = 90
@@ -221,6 +222,36 @@ AKTIONEN.update(
     }
 )
 
+
+# --- Release 22 : Betrieb (Serverfehler, Hintergrundjobs, Mailversand) und Auffälligkeiten ------
+AKTIONEN.update(
+    {
+        "server_fehler": (
+            "betrieb",
+            "warnung",
+            "Serverfehler (5xx)",
+            "Erreur serveur (5xx)",
+        ),
+        "task_fehlgeschlagen": (
+            "betrieb",
+            "warnung",
+            "Hintergrundjob fehlgeschlagen",
+            "Tâche de fond en échec",
+        ),
+        "mail_fehler": (
+            "betrieb",
+            "warnung",
+            "E-Mail-Versand fehlgeschlagen",
+            "Échec d'envoi d'e-mail",
+        ),
+        "auffaelligkeit_erledigt": (
+            "audit",
+            "info",
+            "Auffälligkeit als erledigt markiert",
+            "Anomalie marquée comme traitée",
+        ),
+    }
+)
 
 LOGIN_ERFOLG = ("login_success", "login_2fa_success")
 LOGIN_FEHLER = ("login_failed", "login_2fa_failed")
