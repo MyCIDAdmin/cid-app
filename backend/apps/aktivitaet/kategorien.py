@@ -23,6 +23,9 @@ KATEGORIEN = {
     "sonstige": ("Sonstiges", "Autres", 730),
 }
 IP_AUFBEWAHRUNG_TAGE = 90
+NUTZUNG_AUFBEWAHRUNG_TAGE = (
+    400  # Nutzungsstatistik (Release 23) : gut ein Jahr für Vorjahresvergleiche
+)
 
 # Aktion → (Kategorie, Gewicht, DE, FR) ; Gewicht: info | warnung | wichtig
 AKTIONEN = {

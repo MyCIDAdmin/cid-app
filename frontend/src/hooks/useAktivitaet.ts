@@ -9,6 +9,7 @@ const keys = {
   uebersicht: (tage: number) => [...keys.all, "uebersicht", tage] as const,
   journal: (filter: JournalFilter) => [...keys.all, "journal", filter] as const,
   aktionen: () => [...keys.all, "aktionen"] as const,
+  nutzung: (tage: number) => [...keys.all, "nutzung", tage] as const,
   auffaelligkeiten: (status: AuffaelligkeitStatus) =>
     [...keys.all, "auffaelligkeiten", status] as const,
 };
@@ -50,5 +51,13 @@ export function useAuffaelligkeitErledigen() {
   return useMutation({
     mutationFn: aktivitaetApi.erledigeAuffaelligkeit,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+}
+
+export function useNutzung(tage: number) {
+  return useQuery({
+    queryKey: keys.nutzung(tage),
+    queryFn: () => aktivitaetApi.getNutzung(tage),
+    placeholderData: keepPreviousData,
   });
 }

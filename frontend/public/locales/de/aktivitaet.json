@@ -5,7 +5,8 @@
   "ansicht": {
     "uebersicht": "Übersicht",
     "auffaelligkeiten": "Auffälligkeiten",
-    "journal": "Journal"
+    "journal": "Journal",
+    "nutzung": "Nutzung"
   },
   "uebersicht": {
     "zeitraum": "Zeitraum",
@@ -100,5 +101,21 @@
     "leer_erledigt": "Noch keine erledigten Auffälligkeiten.",
     "erledigen": "Als erledigt markieren",
     "erledigt_von": "erledigt von {{name}} ({{zeit}})"
+  },
+  "nutzung": {
+    "hinweis": "Gezählt werden nur Summen: pro Person, Tag und Modul höchstens ein „Nutzungsfenster“ je 5 Minuten. Es werden keine Seitenaufrufe, Inhalte oder Einzelpersonen angezeigt.",
+    "kacheln": {
+      "d1": "Aktiv heute",
+      "d7": "Aktiv in 7 Tagen",
+      "d30": "Aktiv in 30 Tagen",
+      "anteil": "Anteil aktiver Konten (30 Tage)"
+    },
+    "verlauf": "Aktive Personen pro Tag",
+    "module": "Nutzung je Modul",
+    "personen_one": "{{count}} Person",
+    "personen_other": "{{count}} Personen",
+    "fenster_one": "{{count}} Fenster",
+    "fenster_other": "{{count}} Fenster",
+    "ungenutzt": "Im Zeitraum nicht genutzte Module"
   }
 }

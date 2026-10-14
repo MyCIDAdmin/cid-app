@@ -14,6 +14,7 @@ import re
 from django.core.cache import cache
 
 from . import kategorien as kat
+from . import nutzung
 
 logger = logging.getLogger("apps.aktivitaet")
 
@@ -93,6 +94,7 @@ class AktivitaetMiddleware:
         user = getattr(request, "user", None)
         if user is None or not getattr(user, "is_authenticated", False):
             return
+        self._nutzung(request, user)
         match = getattr(request, "resolver_match", None)
         ergebnis = klassifizieren(
             request.method, request.path, getattr(match, "url_name", "") or ""
@@ -112,6 +114,12 @@ class AktivitaetMiddleware:
             user_agent=request.META.get("HTTP_USER_AGENT", ""),
             **metadata,
         )
+
+    def _nutzung(self, request, user):
+        """Nutzungsstatistik : ein Fenster je Person, Modul und 5 Minuten (nur Summen)."""
+        modul = nutzung.modul_von(request.path)
+        if modul is not None:
+            nutzung.zaehlen(user, modul)
 
     def _serverfehler(self, request, response):
         """5xx unter /api/ : höchstens ein Eintrag je Methode und Pfad-Schablone pro Minute."""

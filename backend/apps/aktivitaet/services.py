@@ -14,7 +14,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 from apps.accounts.models import ROLE_LEVELS, AuditLogEntry, Role, User
 
 from . import kategorien as kat
-from .models import Auffaelligkeit
+from .models import Auffaelligkeit, Nutzung
 
 BERLIN = ZoneInfo("Europe/Berlin")
 ERLAUBTE_TAGE = (7, 30, 90)
@@ -256,6 +256,9 @@ def bereinigen(jetzt=None) -> dict:
     Auffaelligkeit.objects.filter(
         erkannt_am__lt=jetzt - timedelta(days=kat.IP_AUFBEWAHRUNG_TAGE), ip_address__isnull=False
     ).update(ip_address=None)
+    geloescht += Nutzung.objects.filter(
+        tag__lt=timezone.localdate(jetzt, BERLIN) - timedelta(days=kat.NUTZUNG_AUFBEWAHRUNG_TAGE)
+    ).delete()[0]
     gekuerzt = (
         AuditLogEntry.objects.filter(
             created_at__lt=jetzt - timedelta(days=kat.IP_AUFBEWAHRUNG_TAGE)

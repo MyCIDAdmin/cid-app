@@ -4,7 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "../../api/aktivitaet";
 import * as hooks from "../../hooks/useAktivitaet";
 import { renderWithProviders } from "../../test/renderWithProviders";
-import type { Auffaelligkeit, Journal, JournalEintrag, Uebersicht } from "../../types/aktivitaet";
+import type {
+  Auffaelligkeit,
+  Journal,
+  JournalEintrag,
+  Nutzung,
+  Uebersicht,
+} from "../../types/aktivitaet";
 import AktivitaetTab from "./AktivitaetTab";
 
 vi.mock("../../hooks/useAktivitaet", () => ({
@@ -13,6 +19,7 @@ vi.mock("../../hooks/useAktivitaet", () => ({
   useAktionen: vi.fn(),
   useAuffaelligkeiten: vi.fn(),
   useAuffaelligkeitErledigen: vi.fn(),
+  useNutzung: vi.fn(),
 }));
 vi.mock("../../api/aktivitaet", () => ({ exportJournal: vi.fn() }));
 vi.mock("../../utils/telechargement", () => ({ declencherTelechargement: vi.fn() }));
@@ -91,7 +98,26 @@ const auffaelligkeit: Auffaelligkeit = {
 };
 const AUFFAELLIGKEIT_TEXT = /12 fehlgeschlagene Anmeldungen|12 échecs de connexion/;
 
+const nutzung: Nutzung = {
+  tage: 30,
+  aktiv: { d1: 3, d7: 10, d30: 20, konten: 40 },
+  verlauf: [
+    { tag: "2026-10-13", nutzer: 4, fenster: 9 },
+    { tag: "2026-10-14", nutzer: 6, fenster: 12 },
+  ],
+  module: [
+    { modul: "membres", label: { de: "Mitglieder", fr: "Membres" }, nutzer: 8, fenster: 30 },
+    { modul: "kalender", label: { de: "Kalender", fr: "Calendrier" }, nutzer: 0, fenster: 0 },
+  ],
+  ungenutzt: ["kalender"],
+};
+
 function mocks() {
+  vi.mocked(hooks.useNutzung).mockReturnValue({
+    data: nutzung,
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof hooks.useNutzung>);
   vi.mocked(hooks.useAuffaelligkeiten).mockReturnValue({
     data: { offen: 1, ergebnisse: [auffaelligkeit] },
     isLoading: false,
@@ -215,5 +241,20 @@ describe("AktivitaetTab", () => {
     fireEvent.click(screen.getByLabelText("uebersicht.kacheln.server_fehler"));
 
     expect(hooks.useJournal).toHaveBeenLastCalledWith({ kategorie: "betrieb", seite: 1 });
+  });
+
+  it("zeigt die Nutzung je Modul und die ungenutzten Module", () => {
+    renderWithProviders(<AktivitaetTab />);
+
+    fireEvent.click(screen.getByText("ansicht.nutzung"));
+
+    expect(hooks.useNutzung).toHaveBeenLastCalledWith(30);
+    expect(screen.getByText("nutzung.kacheln.anteil")).toBeInTheDocument();
+    expect(screen.getByText("50 %")).toBeInTheDocument();
+    expect(screen.getByText(/Mitglieder|Membres/)).toBeInTheDocument();
+    expect(screen.getByText("nutzung.ungenutzt")).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText("uebersicht.tage")[0]);
+    expect(hooks.useNutzung).toHaveBeenLastCalledWith(7);
   });
 });
