@@ -238,3 +238,51 @@ class ParametresNotification(models.Model):
         supplémentaire."""
         obj, _created = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class TelegramVerknuepfung(models.Model):
+    """Verknüpfung eines Kontos mit einem privaten Telegram-Chat (Release 32). Gespeichert wird
+    nur die Chat-ID (kein Telegram-Name, keine Telefonnummer). Die Verknüpfung entsteht, wenn
+    die Person den einmaligen Link im Bot bestätigt (`/start <Code>`) ; vom Code wird nur der
+    Hash gespeichert. `kategorien` sind die Benachrichtigungsarten, die per Telegram kommen."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="telegram"
+    )
+    chat_id = models.BigIntegerField(null=True, blank=True, unique=True)
+    verknuepft_am = models.DateTimeField(null=True, blank=True)
+    code_hash = models.CharField(max_length=64, blank=True, db_index=True)
+    code_gueltig_bis = models.DateTimeField(null=True, blank=True)
+    kategorien = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "notifications_telegram"
+        verbose_name = _("Telegram-Verknüpfung")
+        verbose_name_plural = _("Telegram-Verknüpfungen")
+
+    def __str__(self):
+        return f"Telegram {self.user_id} ({'verbunden' if self.chat_id else 'offen'})"
+
+    @property
+    def verbunden(self) -> bool:
+        return self.chat_id is not None
+
+
+class Geburtstagsgruss(models.Model):
+    """Pro Konto und Jahr höchstens ein Geburtstagsgruß (Release 32) : macht den täglichen
+    Versand idempotent, auch wenn die Aufgabe erneut läuft."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="geburtstagsgruesse"
+    )
+    jahr = models.PositiveSmallIntegerField()
+    gesendet_am = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "notifications_geburtstagsgruss"
+        constraints = [
+            models.UniqueConstraint(fields=["user", "jahr"], name="uniq_geburtstagsgruss_jahr")
+        ]

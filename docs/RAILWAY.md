@@ -328,3 +328,29 @@ deployen (Railway „Redeploy“); Migrationen nur vorwärtskompatibel schreiben
 
 **Umgebungsabhängige Frontend-Build-Variablen (Railway → frontend → Variables):**
 `VITE_API_BASE_URL`, `VITE_WS_BASE_URL`, `VITE_SITE_URL` (z. B. `https://mycid.org`).
+
+## 12. Telegram-Bot (ab Release 32)
+
+Der Bot wird in Telegram bei `@BotFather` angelegt (`/newbot`). Pro Umgebung ein eigener Bot
+(DEV und PROD), damit Tests nie echte Mitglieder anschreiben.
+
+Variablen (Services `backend` **und** `celery_worker` — der Versand läuft im Worker; `celery_beat`
+braucht sie nicht):
+
+```
+TELEGRAM_BOT_TOKEN=<Token von BotFather>          # geheim, nie ins Repo oder in den Chat
+TELEGRAM_BOT_USERNAME=<Benutzername ohne @>
+TELEGRAM_WEBHOOK_SECRET=<zufällig, nur A-Z a-z 0-9 _ ->  # z. B. 40 Zeichen
+```
+
+Webhook einmal registrieren (nach dem Deploy, im Service `backend`, z. B. `railway ssh` oder Shell):
+
+```
+python manage.py telegram_webhook https://<API-Domain>/api/v1/notifications/telegram/webhook/
+```
+
+Ohne `TELEGRAM_BOT_TOKEN` ist die Funktion aus: das Profil blendet den Abschnitt aus und es wird
+nichts gesendet. Gesendet wird nur Titel und Link, nie der Inhalt einer Benachrichtigung.
+
+Der Geburtstagsgruß läuft täglich um 8:00 (Europe/Berlin) als Celery-Beat-Aufgabe
+`notifications.sende_geburtstagsgruesse` (per Migration angelegt) und braucht den E-Mail-Versand.

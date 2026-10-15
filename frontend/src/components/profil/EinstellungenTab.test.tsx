@@ -6,6 +6,10 @@ import { useUiStore } from "../../store/uiStore";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import EinstellungenTab from "./EinstellungenTab";
 
+vi.mock("./BenachrichtigungenAbschnitt", () => ({
+  default: () => <div data-testid="benachrichtigungen" />,
+}));
+
 vi.mock("../../api/auth", async () => {
   const actual = await vi.importActual<typeof import("../../api/auth")>("../../api/auth");
   return {

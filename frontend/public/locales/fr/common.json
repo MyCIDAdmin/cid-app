@@ -202,6 +202,38 @@
       "zuletzt": "Dernière activité : {{datum}}",
       "abmelden": "Déconnecter",
       "alle_anderen": "Déconnecter tous les autres appareils"
+    },
+    "benachrichtigungen": {
+      "titel": "Notifications"
+    },
+    "telegram": {
+      "titel": "Telegram",
+      "hinweis": "Recevoir en plus de l’application et des e-mails de courts messages (titre et lien) sur Telegram. Le contenu des notifications n’est pas transmis. Tu peux couper la connexion à tout moment ici ou avec /stop dans le chat.",
+      "verbinden": "Connecter Telegram",
+      "oeffnen": "Ouvrir dans Telegram",
+      "warten": "Appuie sur « Démarrer » là-bas. Le lien est valable 15 minutes et une seule fois. Cette page se met à jour toute seule.",
+      "verbunden": "Connecté. Tu reçois aussi les notifications choisies sur Telegram.",
+      "arten": "Types à recevoir sur Telegram",
+      "test": "Envoyer un message de test",
+      "test_gesendet": "Message de test envoyé.",
+      "trennen": "Déconnecter",
+      "fehler": "Échec. Merci de réessayer.",
+      "art": {
+        "regionen": "Régions et rencontres",
+        "veranstaltungen": "Événements",
+        "kalender": "Calendrier",
+        "nachrichten": "Messages et communauté",
+        "projekte": "Projets",
+        "mitgliedschaft": "Adhésion, cotisation, votes",
+        "shop": "Boutique",
+        "verwaltung": "Administration (selon ta fonction)",
+        "sonstiges": "Divers"
+      }
+    },
+    "geburtstag": {
+      "titel": "Vœux d’anniversaire par e-mail",
+      "hinweis": "Le jour de ton anniversaire, le club t’envoie un court e-mail de vœux. L’âge n’est pas mentionné.",
+      "fehler": "Échec de l’enregistrement."
     }
   },
   "nav_untergruppe": {

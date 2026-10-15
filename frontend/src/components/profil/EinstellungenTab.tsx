@@ -2,7 +2,8 @@
  * Tab "Einstellungen" unter "Mein Profil" (Wunsch vom 2026-10-07: die bisherigen
  * "Einstellungen" aus dem Benutzermenü ziehen nach "Mein Profil" um und werden erweitert).
  * Abschnitte: Darstellung (Sprache, Hell/Dunkel, Seitenleiste — werden am Konto gespeichert und
- * bei jeder Anmeldung angewendet, siehe usePraeferenzenSync), Sicherheit (Passwort, Zwei-Faktor)
+ * bei jeder Anmeldung angewendet, siehe usePraeferenzenSync), Benachrichtigungen (Telegram,
+ * Geburtstagsgruß, Release 32), Sicherheit (Passwort, Zwei-Faktor)
  * und Geräte & Sitzungen (höchstens 3 aktive Geräte, siehe apps.accounts.services).
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ import {
   startTotpSetup,
   type TotpSetup,
 } from "../../api/auth";
+import BenachrichtigungenAbschnitt from "./BenachrichtigungenAbschnitt";
 import { useUiStore } from "../../store/uiStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -383,6 +385,7 @@ export default function EinstellungenTab() {
   return (
     <div className="flex flex-col gap-4">
       <DarstellungAbschnitt />
+      <BenachrichtigungenAbschnitt />
       <PasswortAbschnitt />
       <ZweiFaktorAbschnitt />
       <GeraeteAbschnitt />
