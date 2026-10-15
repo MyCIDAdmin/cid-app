@@ -8,10 +8,27 @@ import logging
 
 from celery import shared_task
 from django.conf import settings
-from django.core.mail import send_mail
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+
+def _zweisprachig(user, de, fr, *, lien="", cta=("", "")):
+    """E-Mail im CID-Layout (Release 31) : Deutsch als Hauptsprache, darunter Französisch.
+    `de`/`fr` = (Betreff, Titel, [Absätze]) ; `cta` = (Beschriftung DE, FR) für den Knopf zu `lien`.
+    Fehler beim Versand werden wie bisher nicht verschluckt."""
+    from apps.notifications.email_cid import Texte, envoyer_email_cid
+
+    textes = {
+        "de": Texte(titre=de[1], paragraphes=de[2], cta=cta[0]),
+        "fr": Texte(titre=fr[1], paragraphes=fr[2], cta=cta[1]),
+    }
+    envoyer_email_cid(
+        sujet=f"{de[0]} · {fr[0]}",
+        destinataire=user.email,
+        textes=textes,
+        lien=lien,
+    )
 
 
 @shared_task
@@ -25,16 +42,27 @@ def send_otp_email(user_id, code):
     except User.DoesNotExist:
         return
 
-    send_mail(
-        subject="Votre code de connexion CID",
-        message=(
-            f"Votre code de vérification est : {code}\n\n"
-            f"Ce code expire dans {settings.OTP_EMAIL_TTL_MIN} minutes.\n"
-            "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email."
+    minuten = settings.OTP_EMAIL_TTL_MIN
+    _zweisprachig(
+        user,
+        (
+            "Dein Anmeldecode für CID",
+            "Dein Anmeldecode",
+            [
+                f"Dein Bestätigungscode lautet: {code}",
+                f"Der Code ist {minuten} Minuten gültig.",
+                "Wenn du das nicht angefordert hast, ignoriere diese E-Mail.",
+            ],
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
+        (
+            "Votre code de connexion CID",
+            "Votre code de connexion",
+            [
+                f"Votre code de vérification est : {code}",
+                f"Ce code expire dans {minuten} minutes.",
+                "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.",
+            ],
+        ),
     )
 
 
@@ -49,16 +77,27 @@ def send_email_verification_code(user_id, code):
     except User.DoesNotExist:
         return
 
-    send_mail(
-        subject="Confirmez votre email — CID",
-        message=(
-            f"Votre code de confirmation est : {code}\n\n"
-            f"Ce code expire dans {settings.OTP_EMAIL_TTL_MIN} minutes.\n"
-            "Saisissez-le sur la page d'inscription pour finaliser votre demande."
+    minuten = settings.OTP_EMAIL_TTL_MIN
+    _zweisprachig(
+        user,
+        (
+            "E-Mail-Adresse bestätigen — CID",
+            "Bitte bestätige deine E-Mail-Adresse",
+            [
+                f"Dein Bestätigungscode lautet: {code}",
+                f"Der Code ist {minuten} Minuten gültig.",
+                "Gib ihn auf der Registrierungsseite ein, um deine Anmeldung abzuschließen.",
+            ],
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
+        (
+            "Confirmez votre email — CID",
+            "Veuillez confirmer votre adresse e-mail",
+            [
+                f"Votre code de confirmation est : {code}",
+                f"Ce code expire dans {minuten} minutes.",
+                "Saisissez-le sur la page d'inscription pour finaliser votre demande.",
+            ],
+        ),
     )
 
 
@@ -72,16 +111,28 @@ def send_welcome_email(user_id):
     except User.DoesNotExist:
         return
 
-    send_mail(
-        subject="Bienvenue sur la plateforme CID",
-        message=(
-            "Votre inscription a bien été enregistrée et votre compte est actif : "
-            "vous pouvez vous connecter dès maintenant. Pour profiter de tous les "
-            "avantages membres, demandez votre adhésion dans « Mon adhésion »."
+    _zweisprachig(
+        user,
+        (
+            "Willkommen bei CID",
+            "Willkommen bei CID",
+            [
+                "Deine Registrierung ist eingegangen und dein Konto ist aktiv: Du kannst dich "
+                "sofort anmelden. Um alle Vorteile für Mitglieder zu nutzen, beantrage deine "
+                "Mitgliedschaft unter „Meine Mitgliedschaft“.",
+            ],
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
+        (
+            "Bienvenue sur la plateforme CID",
+            "Bienvenue sur la plateforme CID",
+            [
+                "Votre inscription a bien été enregistrée et votre compte est actif : vous "
+                "pouvez vous connecter dès maintenant. Pour profiter de tous les avantages "
+                "membres, demandez votre adhésion dans « Mon adhésion ».",
+            ],
+        ),
+        lien="/login",
+        cta=("Zur Anmeldung", "Se connecter"),
     )
 
 
@@ -130,19 +181,30 @@ def send_password_reset_email(user_id, token):
     except User.DoesNotExist:
         return
 
-    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-    send_mail(
-        subject="Réinitialisation de votre mot de passe CID",
-        message=(
-            "Vous avez demandé la réinitialisation de votre mot de passe.\n\n"
-            f"Cliquez sur ce lien pour choisir un nouveau mot de passe (valide 1 heure) "
-            f"et à usage unique :\n{reset_url}\n\n"
-            "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email — votre "
-            "mot de passe actuel reste inchangé."
+    _zweisprachig(
+        user,
+        (
+            "Passwort zurücksetzen — CID",
+            "Passwort zurücksetzen",
+            [
+                "Du hast das Zurücksetzen deines Passworts angefordert.",
+                "Der Link ist 1 Stunde gültig und nur einmal verwendbar.",
+                "Wenn du das nicht angefordert hast, ignoriere diese E-Mail ; dein aktuelles "
+                "Passwort bleibt unverändert.",
+            ],
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
+        (
+            "Réinitialisation de votre mot de passe CID",
+            "Réinitialisation du mot de passe",
+            [
+                "Vous avez demandé la réinitialisation de votre mot de passe.",
+                "Le lien est valable 1 heure et à usage unique.",
+                "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email — votre "
+                "mot de passe actuel reste inchangé.",
+            ],
+        ),
+        lien=f"/reset-password?token={token}",
+        cta=("Neues Passwort festlegen", "Choisir un nouveau mot de passe"),
     )
 
 
@@ -167,22 +229,36 @@ def send_registration_approved_email(user_id):
     except User.DoesNotExist:
         return
 
-    send_mail(
-        subject="Votre compte CID a été activé",
-        message=(
-            "Bonne nouvelle : votre inscription a été validée par un membre du "
-            "bureau ou des RH. Vous pouvez désormais vous connecter à la "
-            "plateforme CID."
+    _zweisprachig(
+        user,
+        (
+            "Dein CID-Konto wurde freigeschaltet",
+            "Konto freigeschaltet",
+            [
+                "Gute Nachrichten: Deine Registrierung wurde vom Büro bzw. der Personal"
+                "verwaltung bestätigt. Du kannst dich jetzt bei der CID-Plattform anmelden.",
+            ],
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
+        (
+            "Votre compte CID a été activé",
+            "Compte activé",
+            [
+                "Bonne nouvelle : votre inscription a été validée par un membre du bureau ou "
+                "des RH. Vous pouvez désormais vous connecter à la plateforme CID.",
+            ],
+        ),
+        lien="/login",
+        cta=("Zur Anmeldung", "Se connecter"),
     )
     notifier(
         user,
         TypeNotification.BIENVENUE,
-        titre="Bienvenue sur CID",
-        message="Votre compte a été activé, vous pouvez désormais vous connecter.",
+        titre="Bienvenue sur CID" if user.langue_preferee == "fr" else "Willkommen bei CID",
+        message=(
+            "Votre compte a été activé, vous pouvez désormais vous connecter."
+            if user.langue_preferee == "fr"
+            else "Dein Konto wurde freigeschaltet, du kannst dich jetzt anmelden."
+        ),
         lien="/dashboard",
     )
 
@@ -198,16 +274,26 @@ def send_registration_refused_email(user_id):
     except User.DoesNotExist:
         return
 
-    send_mail(
-        subject="Votre inscription CID n'a pas été validée",
-        message=(
-            "Votre demande d'inscription à la plateforme CID n'a pas été "
-            "validée par le bureau ou les RH. Si vous pensez qu'il s'agit "
-            "d'une erreur, contactez l'association."
+    _zweisprachig(
+        user,
+        (
+            "Deine CID-Registrierung wurde nicht bestätigt",
+            "Registrierung nicht bestätigt",
+            [
+                "Deine Registrierung bei der CID-Plattform wurde vom Büro bzw. der Personal"
+                "verwaltung nicht bestätigt. Wenn du glaubst, dass es sich um einen Irrtum "
+                "handelt, wende dich bitte an den Verein.",
+            ],
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
+        (
+            "Votre inscription CID n'a pas été validée",
+            "Inscription non validée",
+            [
+                "Votre demande d'inscription à la plateforme CID n'a pas été validée par le "
+                "bureau ou les RH. Si vous pensez qu'il s'agit d'une erreur, contactez "
+                "l'association.",
+            ],
+        ),
     )
 
 
@@ -222,16 +308,25 @@ def send_new_ip_alert_email(user_id, ip_address):
     except User.DoesNotExist:
         return
 
-    send_mail(
-        subject="Nouvelle connexion détectée sur votre compte CID",
-        message=(
-            f"Une connexion depuis une adresse IP inhabituelle ({ip_address}) a été "
-            "détectée sur votre compte. Si ce n'était pas vous, changez votre mot "
-            "de passe immédiatement."
+    _zweisprachig(
+        user,
+        (
+            "Neue Anmeldung auf deinem CID-Konto",
+            "Neue Anmeldung erkannt",
+            [
+                f"Es wurde eine Anmeldung von einer ungewöhnlichen IP-Adresse ({ip_address}) "
+                "festgestellt. Warst du das nicht, ändere sofort dein Passwort.",
+            ],
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
+        (
+            "Nouvelle connexion détectée sur votre compte CID",
+            "Nouvelle connexion détectée",
+            [
+                f"Une connexion depuis une adresse IP inhabituelle ({ip_address}) a été détectée "
+                "sur votre compte. Si ce n'était pas vous, changez votre mot de passe "
+                "immédiatement.",
+            ],
+        ),
     )
 
 

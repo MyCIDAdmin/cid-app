@@ -727,5 +727,84 @@
       "Les partenaires ne sont jamais supprimés, seulement archivés ; évaluations et liens restent traçables.",
       "Lecture : RH et plus ; modification et évaluation : Bureau Admin et plus."
     ]
+  },
+  "regionen": {
+    "titre": "Régions",
+    "intro": "Retrouve ici les régions du club avec leurs responsables, rencontres et publications. Tu peux t’inscrire aux rencontres, même sans adhésion.",
+    "schritte": [
+      "Ouvrir une région : description, lieux, responsables, rencontres et publications.",
+      "Pour une rencontre, cliquer sur « S’inscrire ». Tu reçois une confirmation par e-mail et un rappel la veille.",
+      "Sous les publications, tu peux réagir d’un clic.",
+      "Les responsables voient en plus leur liste de fans, créent des rencontres et les soumettent à validation."
+    ],
+    "workflows": [
+      {
+        "titre": "Créer et publier une rencontre",
+        "wann": "Tu es responsable d’une région.",
+        "schritte": [
+          "Sur la page de la région, choisir « Nouvelle rencontre » et saisir titre, date, lieu et, au besoin, le nombre de places.",
+          "Enregistrer comme brouillon puis cliquer sur « Soumettre ».",
+          "Le bureau vérifie, valide ou refuse en indiquant un motif. Tu reçois un message dans l’appli et par e-mail.",
+          "Après validation, membres et fans peuvent s’inscrire."
+        ],
+        "beispiel": "Soirée grillades Nord le 14 juin, 30 places.",
+        "danach": "Après la rencontre, cocher les présences et choisir « Clôturer » ; les points ne comptent qu’ensuite."
+      },
+      {
+        "titre": "Voir les fans de ma région",
+        "wann": "Tu es responsable et veux savoir qui participe.",
+        "schritte": [
+          "Sur la page de la région, aller à « Fans et activités ».",
+          "Rechercher un nom ou filtrer par membres ou fans.",
+          "Cliquer sur un nom : tu vois les rencontres auxquelles la personne a participé."
+        ],
+        "beispiel": "Une personne est inscrite trois fois et était présente deux fois.",
+        "danach": "Les coordonnées ne sont volontairement pas visibles. Pour contacter des fans, utilise les publications ou passe par le bureau."
+      }
+    ],
+    "tipps": [
+      "Les fans sont les comptes inscrits à une rencontre, avec ou sans adhésion.",
+      "Tous les e-mails des régions sont bilingues (allemand et français)."
+    ]
+  },
+  "regionen_wettbewerb": {
+    "titre": "Concours des régions",
+    "intro": "Les régions gagnent des points grâce aux rencontres, aux participations et aux nouveaux membres. Seules les régions sont classées, pas les personnes.",
+    "schritte": [
+      "Le classement affiche les points par membre et le total de la saison en cours.",
+      "Le sélecteur de saison permet de consulter les saisons précédentes.",
+      "Badges, évolution, vainqueurs du mois et récompense figurent plus bas ; le règlement explique l’attribution des points.",
+      "Le bureau voit en plus le journal et peut corriger des points ; l’administrateur gère saisons et règles."
+    ],
+    "workflows": [],
+    "tipps": [
+      "Les points par membre permettent de comparer équitablement petites et grandes régions."
+    ]
+  },
+  "regionen_bericht": {
+    "titre": "Rapport des régions",
+    "intro": "Chiffres de toutes les régions pour une période au choix, pour le bureau et les gestionnaires de personnes.",
+    "schritte": [
+      "Choisir la période « Du » et « Au » (par défaut : du 1er janvier à aujourd’hui).",
+      "Le tableau indique par région et au total : rencontres, inscriptions, taux de présence, publications, fans, nouveaux fans et fans actifs, fans devenus membres et points.",
+      "« Télécharger en CSV » fournit le tableau pour Excel."
+    ],
+    "workflows": [
+      {
+        "titre": "Établir le rapport annuel",
+        "wann": "Tu as besoin des chiffres pour le comité ou l’assemblée générale.",
+        "schritte": [
+          "Choisir Du = 1er janvier, Au = 31 décembre.",
+          "Vérifier le tableau et le télécharger en CSV.",
+          "L’ouvrir dans Excel pour le retravailler."
+        ],
+        "beispiel": "Rapport 2026 avec toutes les régions et la colonne Total.",
+        "danach": "La colonne « Total » ne compte chaque personne qu’une fois."
+      }
+    ],
+    "tipps": [
+      "Fans = comptes inscrits à une rencontre publiée.",
+      "Le fichier ne contient que des chiffres, aucun nom."
+    ]
   }
 }

@@ -44,6 +44,11 @@ def ist_personenverwalter(user) -> bool:
     return rbac.has_admin_page_access(user, SEITE, NiveauAcces.LECTURE_ECRITURE)
 
 
+def darf_berichte(user) -> bool:
+    """Büro (Seite „Regionen“ mindestens lesend) und App Admin : Berichte über Fans und Regionen."""
+    return rbac.has_admin_page_access(user, SEITE, NiveauAcces.LECTURE)
+
+
 def darf_bearbeiten(user, region: Region) -> bool:
     if ist_personenverwalter(user):
         return True

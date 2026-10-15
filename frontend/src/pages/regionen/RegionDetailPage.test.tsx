@@ -18,6 +18,10 @@ vi.mock("../../components/regionen/BeitraegeBereich", () => ({
   ),
 }));
 
+vi.mock("../../components/regionen/FansBereich", () => ({
+  default: ({ slug }: { slug: string }) => <div data-testid="fans" data-slug={slug} />,
+}));
+
 // TipTap lässt sich in jsdom nicht per fireEvent bedienen : <textarea> mit gleichem Vertrag.
 vi.mock("../../components/ui/RichTextEditor", () => ({
   default: ({
@@ -136,6 +140,13 @@ describe("RegionDetailPage", () => {
     expect(screen.queryByText("zuweisen_titel")).not.toBeInTheDocument();
     expect(screen.getByTestId("beitraege")).toHaveAttribute("data-schreiben", "false");
     expect(screen.getByTestId("veranstaltungen")).toHaveAttribute("data-anlegen", "false");
+    expect(screen.queryByTestId("fans")).not.toBeInTheDocument();
+  });
+
+  it("zeigt die Fans-Liste nur, wenn die Region bearbeitet werden darf", () => {
+    mock(detail({ darf_bearbeiten: true }));
+    zeige();
+    expect(screen.getByTestId("fans")).toHaveAttribute("data-slug", "nord");
   });
 
   it("zeigt einen Fehler, wenn die Region fehlt", () => {

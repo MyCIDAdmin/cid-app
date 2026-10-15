@@ -98,6 +98,20 @@ describe("RegionenPage", () => {
     expect(screen.queryByText("naechstes_treffen")).not.toBeInTheDocument();
   });
 
+  it("zeigt den Link zum Bericht nur mit Berichtsrecht", () => {
+    mock({ ergebnisse: [region()], ohne_region: false, darf_berichte: true });
+    const { unmount } = renderWithProviders(<RegionenPage />);
+    expect(
+      screen.getAllByRole("link").some((a) => a.getAttribute("href") === "/regionen/bericht"),
+    ).toBe(true);
+    unmount();
+    mock({ ergebnisse: [region()], ohne_region: false, darf_berichte: false });
+    renderWithProviders(<RegionenPage />);
+    expect(
+      screen.getAllByRole("link").some((a) => a.getAttribute("href") === "/regionen/bericht"),
+    ).toBe(false);
+  });
+
   it("zeigt die Fan-Karte nur für Fan-Konten", () => {
     mock({ ergebnisse: [region()], ohne_region: false, darf_freigeben: false });
     useAuthStore.setState({

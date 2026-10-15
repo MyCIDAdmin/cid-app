@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 import RichTextEditor from "../../components/ui/RichTextEditor";
+import FansBereich from "../../components/regionen/FansBereich";
 import BeitraegeBereich from "../../components/regionen/BeitraegeBereich";
 import VeranstaltungenBereich from "../../components/regionen/VeranstaltungenBereich";
 import PersonZuweisen from "../../components/regionen/PersonZuweisen";
@@ -217,6 +218,7 @@ export default function RegionDetailPage() {
       />
 
       <BeitraegeBereich slug={region.slug} darfSchreiben={region.darf_bearbeiten} />
+      {region.darf_bearbeiten && <FansBereich slug={region.slug} />}
     </div>
   );
 }

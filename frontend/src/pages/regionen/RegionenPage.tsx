@@ -33,6 +33,18 @@ export default function RegionenPage() {
         <span className="block text-sm text-text-secondary">{t("wettbewerb.karte_text")}</span>
       </Link>
 
+      {data?.darf_berichte && (
+        <Link
+          to="/regionen/bericht"
+          className="mb-4 block rounded-cid-lg bg-bg-primary p-4 shadow-sm hover:shadow-md"
+        >
+          <span className="block text-base font-semibold text-text-primary">
+            {t("bericht.karte_titel")}
+          </span>
+          <span className="block text-sm text-text-secondary">{t("bericht.karte_text")}</span>
+        </Link>
+      )}
+
       {istFan && <FanKarte />}
       {data?.darf_freigeben && <FreigabeListe />}
 
