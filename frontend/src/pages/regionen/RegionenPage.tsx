@@ -10,6 +10,7 @@ import FreigabeListe from "../../components/regionen/FreigabeListe";
 import RegionBild from "../../components/regionen/RegionBild";
 import { useRegionen } from "../../hooks/useRegionen";
 import { useAuthStore } from "../../store/authStore";
+import { klartext } from "../../utils/formattext";
 import { beschreibungIn, formatDatum } from "../../utils/regionen";
 
 export default function RegionenPage() {
@@ -21,6 +22,16 @@ export default function RegionenPage() {
     <div>
       <h1 className="mb-1 text-xl font-bold text-text-primary">{t("titel")}</h1>
       <p className="mb-4 text-sm text-text-secondary">{t("einleitung")}</p>
+
+      <Link
+        to="/regionen/wettbewerb"
+        className="mb-4 block rounded-cid-lg bg-bg-primary p-4 shadow-sm hover:shadow-md"
+      >
+        <span className="block text-base font-semibold text-text-primary">
+          {t("wettbewerb.karte_titel")}
+        </span>
+        <span className="block text-sm text-text-secondary">{t("wettbewerb.karte_text")}</span>
+      </Link>
 
       {istFan && <FanKarte />}
       {data?.darf_freigeben && <FreigabeListe />}
@@ -40,7 +51,7 @@ export default function RegionenPage() {
       {data && data.ergebnisse.length > 0 && (
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {data.ergebnisse.map((region) => {
-            const text = beschreibungIn(i18n.language, region.beschreibung);
+            const text = klartext(beschreibungIn(i18n.language, region.beschreibung));
             return (
               <li key={region.id}>
                 <Link

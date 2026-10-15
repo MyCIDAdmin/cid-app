@@ -44,6 +44,14 @@ export interface RegionDetail extends Region {
   laender: { code: string; name: string }[];
   darf_bearbeiten: boolean;
   darf_personen_verwalten: boolean;
+  wettbewerb: PlatzInWettbewerb | null;
+}
+
+export interface PlatzInWettbewerb {
+  saison: string;
+  rang: number;
+  punkte: number;
+  regionen: number;
 }
 
 export interface RegionenListe {
@@ -217,4 +225,107 @@ export interface MitgliedWerdenEingabe {
   adresse_de: string;
   code_postal_de?: string;
   ville_de: string;
+}
+
+/** Wettbewerb der Regionen (Release 30), backend/apps/regionen/wettbewerb*.py. */
+export interface WettbewerbSaison {
+  id: string;
+  name: string;
+  start: string;
+  ende: string;
+  preis: string;
+  eingefroren: boolean;
+  laufend: boolean;
+}
+
+export interface WettbewerbRegeln {
+  punkte_veranstaltung: number;
+  punkte_anwesend: number;
+  max_anwesende: number;
+  punkte_erstteilnehmer: number;
+  punkte_neumitglied: number;
+  max_treffen_monat: number;
+}
+
+export type AbzeichenKey = "erstes_treffen" | "zehn_treffen" | "fleissigste_region";
+
+export interface Abzeichen {
+  key: AbzeichenKey;
+  anzahl: number;
+}
+
+export interface RanglisteZeile {
+  rang: number;
+  region: { slug: string; name: string; farbe: string };
+  punkte: number;
+  mitglieder: number;
+  punkte_pro_mitglied: number;
+  treffen: number;
+  abzeichen: Abzeichen[];
+}
+
+export interface VerlaufSerie {
+  slug: string;
+  name: string;
+  farbe: string;
+  werte: number[];
+}
+
+export interface Monatssieger {
+  monat: string;
+  regionen: string[];
+}
+
+export interface EwigeZeile {
+  region: { slug: string; name: string; farbe: string };
+  punkte: number;
+  saisons: number;
+}
+
+export interface Wettbewerb {
+  saisons: WettbewerbSaison[];
+  saison: WettbewerbSaison | null;
+  regeln: WettbewerbRegeln;
+  ewige_tabelle: EwigeZeile[];
+  darf_verwalten: boolean;
+  ist_admin: boolean;
+  rangliste: RanglisteZeile[];
+  verlauf: { monate: string[]; serien: VerlaufSerie[] };
+  monatssieger: Monatssieger[];
+}
+
+export type PunkteGrund =
+  "veranstaltung" | "anwesenheit" | "erstteilnehmer" | "neumitglied" | "korrektur";
+
+export interface JournalEintrag {
+  id: string;
+  saison: string;
+  region: { slug: string; name: string };
+  grund: PunkteGrund;
+  punkte: number;
+  anzahl: number;
+  veranstaltung: { id: string; titel: string } | null;
+  datum: string;
+  begruendung: string;
+  von: string;
+  erstellt_am: string;
+}
+
+export interface Journal {
+  gesamt: number;
+  ergebnisse: JournalEintrag[];
+}
+
+export interface KorrekturEingabe {
+  region: string;
+  punkte: number;
+  begruendung: string;
+  saison?: string;
+}
+
+export interface SaisonEingabe {
+  name: string;
+  start: string;
+  ende: string;
+  preis?: string;
 }

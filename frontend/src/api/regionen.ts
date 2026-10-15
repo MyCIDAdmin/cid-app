@@ -7,13 +7,16 @@ import type {
   FanRegistrierung,
   MitgliedWerdenEingabe,
   BeitraegeListe,
+  Journal,
   KarteDaten,
+  KorrekturEingabe,
   Person,
   ReaktionsArt,
   RegionAenderung,
   RegionDetail,
   RegionenListe,
   Standort,
+  SaisonEingabe,
   Teilnehmer,
   Veranstaltung,
   VeranstaltungAktion,
@@ -21,6 +24,9 @@ import type {
   Verantwortlicher,
   Verwaltung,
   VerwaltungRegion,
+  Wettbewerb,
+  WettbewerbRegeln,
+  WettbewerbSaison,
 } from "../types/regionen";
 import { apiClient } from "./client";
 
@@ -390,5 +396,72 @@ export async function werdeMitglied(eingabe: MitgliedWerdenEingabe): Promise<{ w
     "/regionen/fan/mitglied-werden/",
     eingabe,
   );
+  return data;
+}
+
+export async function getWettbewerb(saison?: string): Promise<Wettbewerb> {
+  const { data } = await apiClient.get<Wettbewerb>("/regionen/wettbewerb/", {
+    params: saison ? { saison } : undefined,
+  });
+  return data;
+}
+
+export async function getJournal(arg: {
+  saison?: string;
+  region?: string;
+  offset: number;
+  limit: number;
+}): Promise<Journal> {
+  const { data } = await apiClient.get<Journal>("/regionen/wettbewerb/journal/", {
+    params: {
+      saison: arg.saison || undefined,
+      region: arg.region || undefined,
+      offset: arg.offset,
+      limit: arg.limit,
+    },
+  });
+  return data;
+}
+
+export async function bucheKorrektur(eingabe: KorrekturEingabe): Promise<void> {
+  await apiClient.post("/regionen/wettbewerb/korrekturen/", eingabe);
+}
+
+export async function legeSaisonAn(eingabe: SaisonEingabe): Promise<WettbewerbSaison> {
+  const { data } = await apiClient.post<WettbewerbSaison>("/regionen/wettbewerb/saisons/", eingabe);
+  return data;
+}
+
+export async function aendereSaison(arg: {
+  id: string;
+  daten: Partial<SaisonEingabe>;
+}): Promise<WettbewerbSaison> {
+  const { data } = await apiClient.patch<WettbewerbSaison>(
+    `/regionen/wettbewerb/saisons/${arg.id}/`,
+    arg.daten,
+  );
+  return data;
+}
+
+export async function loescheSaison(id: string): Promise<void> {
+  await apiClient.delete(`/regionen/wettbewerb/saisons/${id}/`);
+}
+
+export async function friereSaisonEin(id: string): Promise<WettbewerbSaison> {
+  const { data } = await apiClient.post<WettbewerbSaison>(
+    `/regionen/wettbewerb/saisons/${id}/einfrieren/`,
+  );
+  return data;
+}
+
+export async function buchePunkteNach(id: string): Promise<{ gebucht: number }> {
+  const { data } = await apiClient.post<{ gebucht: number }>(
+    `/regionen/wettbewerb/saisons/${id}/nachbuchen/`,
+  );
+  return data;
+}
+
+export async function speichereRegeln(regeln: WettbewerbRegeln): Promise<WettbewerbRegeln> {
+  const { data } = await apiClient.put<WettbewerbRegeln>("/regionen/wettbewerb/regeln/", regeln);
   return data;
 }

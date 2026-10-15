@@ -213,6 +213,7 @@ describe("RegisterPage", () => {
 
     expect(screen.getByText("register.datenschutz.titre")).toBeInTheDocument();
     expect(screen.getByText("register.datenschutz.intro")).toBeInTheDocument();
+    expect(screen.getByText("register.datenschutz.regionen_titre")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("register.datenschutz.fermer"));
 

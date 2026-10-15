@@ -8,6 +8,8 @@ import {
 } from "../../hooks/useRegionen";
 import type { Standort, Veranstaltung } from "../../types/regionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { klartext } from "../../utils/formattext";
+import RichTextEditor from "../ui/RichTextEditor";
 
 const FELD =
   "w-full rounded-cid border border-text-tertiary/20 bg-bg-secondary px-3 py-2 text-sm text-text-primary";
@@ -51,7 +53,7 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
       ort: ort.trim(),
       standort: standort || null,
       max_teilnehmer: maximum ? Number(maximum) : null,
-      beschreibung: beschreibung.trim(),
+      beschreibung: klartext(beschreibung) ? beschreibung.trim() : "",
     };
     const bei = (err: unknown) => setFehler(extractApiErrorMessage(err, t("fehler_speichern")));
     if (bestehend) {
@@ -143,16 +145,14 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
           />
         </label>
       </div>
-      <label className="text-xs font-semibold text-text-tertiary">
-        {t("v_beschreibung")}
-        <textarea
-          className={`${FELD} mt-1 font-normal`}
-          rows={4}
-          maxLength={4000}
+      <div className="text-xs font-semibold text-text-tertiary">
+        <span className="mb-1 block">{t("v_beschreibung")}</span>
+        <RichTextEditor
           value={beschreibung}
-          onChange={(e) => setBeschreibung(e.target.value)}
+          onChange={setBeschreibung}
+          ariaLabel={t("v_beschreibung")}
         />
-      </label>
+      </div>
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp"

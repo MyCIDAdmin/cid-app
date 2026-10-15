@@ -8,7 +8,9 @@ import {
 } from "../../hooks/useRegionen";
 import type { Standort, Veranstaltung, VeranstaltungAktion } from "../../types/regionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { klartext } from "../../utils/formattext";
 import { formatDatum } from "../../utils/regionen";
+import FormatierterText from "./FormatierterText";
 import TeilenPanel from "./TeilenPanel";
 import TeilnehmerPanel from "./TeilnehmerPanel";
 import VeranstaltungFormular from "./VeranstaltungFormular";
@@ -95,9 +97,7 @@ export default function VeranstaltungKarte({
         </span>
       </div>
 
-      {v.beschreibung && (
-        <p className="whitespace-pre-line text-sm text-text-secondary">{v.beschreibung}</p>
-      )}
+      {klartext(v.beschreibung) && <FormatierterText text={v.beschreibung} />}
       <p className="text-xs text-text-tertiary">{plaetze}</p>
 
       {v.status === "zurueckgewiesen" && v.ablehngrund && (
