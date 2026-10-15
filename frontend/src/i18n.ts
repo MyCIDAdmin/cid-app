@@ -43,6 +43,7 @@ i18n
       "kalender",
       "aktivitaet",
       "regionen",
+      "support",
     ],
     defaultNS: "common",
     backend: {

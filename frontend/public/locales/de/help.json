@@ -806,5 +806,33 @@
       "Fans = Konten mit Anmeldung zu einem veröffentlichten Treffen.",
       "Die Datei enthält nur Zahlen, keine Namen."
     ]
+  },
+  "support": {
+    "titre": "Support",
+    "intro": "Hier findest du Antworten auf häufige Fragen und kannst dem Büro eine Anfrage schicken.",
+    "schritte": [
+      "Im Reiter „Hilfe und Fragen“ in den häufigen Fragen suchen und die Anleitungen lesen.",
+      "Nichts gefunden? Unter „Meine Tickets“ ein neues Ticket eröffnen: Betreff, Kategorie und Beschreibung ausfüllen.",
+      "Die Antwort des Büros kommt als Benachrichtigung und per E-Mail. Den Verlauf siehst du im Ticket.",
+      "Ist dein Anliegen erledigt, schliesse das Ticket."
+    ],
+    "workflows": [
+      {
+        "titre": "Ticket eröffnen",
+        "wann": "Du hast ein Problem oder eine Frage, die in den häufigen Fragen fehlt.",
+        "schritte": [
+          "„Support“ öffnen und zuerst die Suche nutzen.",
+          "Unter „Meine Tickets“ auf „Neues Ticket“ tippen.",
+          "Betreff, Kategorie und Beschreibung ausfüllen und absenden."
+        ],
+        "beispiel": "Betreff „Beitrag bezahlt, Status offen“, Kategorie „Zahlung und Beitrag“, Datum und Betrag in der Beschreibung.",
+        "danach": "Das Büro antwortet im Ticket. Du wirst benachrichtigt."
+      }
+    ],
+    "tipps": [
+      "Schreib keine Passwörter oder Bankdaten in ein Ticket.",
+      "Ein Ticket pro Anliegen hält den Verlauf übersichtlich.",
+      "Mit Funktion im Büro: „Alle Tickets“ zeigt die Warteschlange, „Fragen pflegen“ die häufigen Fragen auf Deutsch und Französisch."
+    ]
   }
 }

@@ -43,6 +43,7 @@ import RegionDetailPage from "./pages/regionen/RegionDetailPage";
 import RegionenPage from "./pages/regionen/RegionenPage";
 import WettbewerbPage from "./pages/regionen/WettbewerbPage";
 import BerichtPage from "./pages/regionen/BerichtPage";
+import SupportPage from "./pages/support/SupportPage";
 import UmfrageDetailPage from "./pages/umfragen/UmfrageDetailPage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
@@ -624,6 +625,16 @@ export default function App() {
             element={
               <RequireMenuModule cle="regionen">
                 <RegionDetailPage />
+              </RequireMenuModule>
+            }
+          />
+          {/* Support (Release 33) : Menüeintrag „support“ ; auch für Fans. Büro-Funktionen
+            (alle Tickets, FAQ pflegen) prüft das Backend über die Seite „page_support“. */}
+          <Route
+            path="/support"
+            element={
+              <RequireMenuModule cle="support">
+                <SupportPage />
               </RequireMenuModule>
             }
           />

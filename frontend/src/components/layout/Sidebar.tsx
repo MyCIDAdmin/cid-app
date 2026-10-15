@@ -71,6 +71,7 @@ import {
   IconLayoutDashboard,
   IconMail,
   IconMailCog,
+  IconLifebuoy,
   IconMapPin,
   IconMessageCircle2,
   IconNews,
@@ -254,6 +255,14 @@ export const NAV_ITEMS: NavItem[] = [
     icon: IconMapPin,
     group: "general",
     module: "regionen",
+  },
+  // Support (Release 33) : offen für jedes Konto (auch Fans) ; Tickets und FAQ prüft das Backend.
+  {
+    to: "/support",
+    labelKey: "nav.support",
+    icon: IconLifebuoy,
+    group: "general",
+    module: "support",
   },
   // Projets & Actions (module ajouté le 2026-09-22 sur demande utilisateur) — ouvert à tout
   // authentifié, même principe que /evenements : le backend ne renvoie de toute façon pas les

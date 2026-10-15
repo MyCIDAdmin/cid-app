@@ -39,6 +39,7 @@
     "zahlungen_import": "Importer des paiements",
     "kalender": "Calendrier",
     "regionen": "Régions",
+    "support": "Support",
     "admin_regionen": "Structure des régions"
   },
   "nav_groupe": {
@@ -220,6 +221,7 @@
       "fehler": "Échec. Merci de réessayer.",
       "art": {
         "regionen": "Régions et rencontres",
+        "support": "Support (réponses aux tickets)",
         "veranstaltungen": "Événements",
         "kalender": "Calendrier",
         "nachrichten": "Messages et communauté",

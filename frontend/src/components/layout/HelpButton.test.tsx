@@ -26,6 +26,7 @@ describe("HelpButton", () => {
   });
 
   it("ordnet die Regionen-Seiten ihrer Hilfe zu", () => {
+    expect(cleHilfe("/support")).toBe("support");
     expect(cleHilfe("/regionen")).toBe("regionen");
     expect(cleHilfe("/regionen/nord")).toBe("regionen");
     expect(cleHilfe("/regionen/wettbewerb")).toBe("regionen_wettbewerb");
