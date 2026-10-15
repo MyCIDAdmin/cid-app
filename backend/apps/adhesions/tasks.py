@@ -138,3 +138,22 @@ def basculer_membres_non_renouveles() -> int:
         campagne.bascule_non_renouveles_le = timezone.now()
         campagne.save(update_fields=["bascule_non_renouveles_le"])
     return bascules
+
+
+@shared_task
+def loeschen_kinderdaten() -> int:
+    """Löscht die Daten von Kindern in Familienpaketen, sobald die Kampagne länger als
+    `FAMILIE_KINDER_AUFBEWAHRUNG_MONATE` beendet ist (Release 34). Verlängert die Hauptperson,
+    werden die Kinder in der neuen Kampagne neu eingetragen oder (Release 35) bestätigt
+    übernommen. Gibt die Zahl der gelöschten Einträge zurück."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from .models import FamilienKind
+
+    grenze = timezone.localdate() - timedelta(days=30 * settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE)
+    geloescht, _ = FamilienKind.objects.filter(souscription__campagne__date_fin__lt=grenze).delete()
+    if geloescht:
+        logger.info("Kinderdaten gelöscht: %s", geloescht)
+    return geloescht

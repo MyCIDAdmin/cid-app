@@ -187,7 +187,12 @@
     "kartenstil_diamant": "Diamant",
     "kartenstil_bronze": "Bronze",
     "kartenstil_onyx": "Onyx",
-    "kartenstil_rubin": "Rubin (CID-Rot)"
+    "kartenstil_rubin": "Rubin (CID-Rot)",
+    "familie_label": "Familienpaket",
+    "familie_preis_je_erwachsener": "Zuschlag je Erwachsener (€)",
+    "familie_preis_je_kind": "Zuschlag je Kind (€)",
+    "familie_max_erwachsene": "Max. Erwachsene",
+    "familie_max_kinder": "Max. Kinder"
   },
   "admin_rabais": {
     "titre": "Rabatte dieses Angebots",
@@ -235,5 +240,41 @@
     "bestaetigung": "Der Finanzverantwortliche bestätigt den Zahlungseingang manuell in der App, sobald er eingegangen ist. Die Angaben finden Sie jederzeit unter „Zahlungsinfos anzeigen“.",
     "schliessen": "Verstanden",
     "anzeigen": "Zahlungsinfos anzeigen"
+  },
+  "familie": {
+    "titel": "Mein Familienpaket",
+    "ab": "ab",
+    "zuschlaege": "+ {{erwachsener}} je weiterer Erwachsener · + {{kind}} je Kind",
+    "plaetze_erwachsene": "Weitere Erwachsene",
+    "plaetze_kinder": "Kinder",
+    "gesamtpreis": "Gesamtpreis: {{preis}}",
+    "plaetze_zusammenfassung": "Gebucht: {{erwachsene}} weitere Erwachsene und {{kinder}} Kinder.",
+    "erwachsene_hinweis": "Weitere Erwachsene können Sie in einer folgenden Version per E-Mail-Einladung hinzufügen.",
+    "kinder_titel": "Kinder ({{anzahl}} von {{max}})",
+    "keine_kinder": "Noch kein Kind eingetragen.",
+    "alter": "{{alter}} Jahre",
+    "vorname": "Vorname",
+    "nachname": "Nachname",
+    "geburtsjahr": "Geburtsjahr",
+    "einwilligung": "Ich bin sorgeberechtigt und willige ein, dass der Verein Vor- und Nachnamen sowie das Geburtsjahr meines Kindes zur Verwaltung des Familienpakets (Mitgliedskarte, Übersicht für das Vereinsbüro) speichert. Die Daten werden nur so lange gespeichert, wie das Familienpaket sie braucht, und danach gelöscht. Sie können Ihre Einwilligung widerrufen, indem Sie das Kind entfernen.",
+    "hinzufuegen": "Kind hinzufügen",
+    "alle_plaetze_belegt": "Alle gebuchten Kinderplätze sind belegt.",
+    "karten_nach_zahlung": "Die Junior-Karten erscheinen, sobald die Zahlung bestätigt ist.",
+    "junior_angebot": "Junior · {{angebot}}",
+    "entfernen": "Entfernen",
+    "entfernen_aria": "{{name}} entfernen",
+    "entfernen_titel": "Kind entfernen?",
+    "entfernen_message": "{{name}} wird aus dem Familienpaket entfernt und die Daten werden gelöscht.",
+    "erreur": "Die Änderung konnte nicht gespeichert werden."
+  },
+  "familie_buero": {
+    "titel": "Familienpakete",
+    "kampagne": "Kampagne",
+    "zusammenfassung": "{{pakete}} bezahlte Pakete · {{erwachsene}} weitere Erwachsene gebucht · {{kinder}} Kinder eingetragen",
+    "leer": "Noch keine Familienpakete in dieser Kampagne.",
+    "fehler": "Familienpakete konnten nicht geladen werden.",
+    "hauptperson": "Hauptperson",
+    "erwachsene": "Erwachsene",
+    "kinder": "Kinder"
   }
 }

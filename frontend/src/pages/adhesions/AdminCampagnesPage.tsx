@@ -26,6 +26,7 @@
 import { Fragment, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import FamilienpaketeBuero from "../../components/adhesions/FamilienpaketeBuero";
 import OffresManager from "../../components/adhesions/OffresManager";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import RichTextEditor from "../../components/ui/RichTextEditor";
@@ -342,6 +343,13 @@ export default function AdminCampagnesPage() {
           </tbody>
         </table>
       </div>
+
+      {(() => {
+        const mitFamilie = (campagnes.data?.results ?? []).filter((c) =>
+          c.offres.some((o) => o.ist_familienpaket),
+        );
+        return mitFamilie.length > 0 ? <FamilienpaketeBuero campagnen={mitFamilie} /> : null;
+      })()}
 
       {(publierMutation.isError || cloturerMutation.isError) && (
         <p className="mt-2 text-xs text-status-dangerText">

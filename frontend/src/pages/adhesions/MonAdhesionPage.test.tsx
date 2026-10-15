@@ -52,6 +52,11 @@ function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
     icone: null,
     couleur: "",
     populaire: false,
+    ist_familienpaket: false,
+    preis_je_erwachsener: "0.00",
+    preis_je_kind: "0.00",
+    max_erwachsene: 0,
+    max_kinder: 0,
     rabais: [
       {
         id: "r1",
@@ -104,6 +109,9 @@ function souscription(overrides: Partial<Souscription> = {}): Souscription {
     statut: "en_attente_paiement",
     cotisation: null,
     snapshot_avantages: [{ ordre: 1, texte_fr: "Accès complet" }],
+    plaetze_erwachsene: 0,
+    plaetze_kinder: 0,
+    kinder: [],
     justificatif: null,
     created_at: "2026-02-01T10:00:00Z",
     updated_at: "2026-02-01T10:00:00Z",
@@ -262,6 +270,54 @@ describe("MonAdhesionPage", () => {
 
     expect(mutate).toHaveBeenCalledTimes(1);
     expect(mutate.mock.calls[0][0]).toEqual({ offre: "o1", rabais: "r1" });
+  });
+
+  it("Familienpaket: sendet die gewählten Plätze mit der Anmeldung", () => {
+    const mutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne({
+        offres: [
+          offre({
+            ist_familienpaket: true,
+            prix_plein: "60.00",
+            preis_je_erwachsener: "30.00",
+            preis_je_kind: "10.00",
+            max_erwachsene: 2,
+            max_kinder: 4,
+            rabais: [],
+          }),
+        ],
+      }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate,
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.getByText("familie.ab")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("offres.rejoindre"));
+    fireEvent.change(screen.getByLabelText("familie.plaetze_erwachsene"), {
+      target: { value: "1" },
+    });
+    fireEvent.change(screen.getByLabelText("familie.plaetze_kinder"), { target: { value: "3" } });
+    fireEvent.click(screen.getByText("offres.souscrire"));
+
+    expect(mutate.mock.calls[0][0]).toEqual({
+      offre: "o1",
+      rabais: undefined,
+      plaetze_erwachsene: 1,
+      plaetze_kinder: 3,
+    });
   });
 
   it("ouvre le fenêtre d'infos de paiement via le bouton (virement/PayPal, comme le shop)", () => {

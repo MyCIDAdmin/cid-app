@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as adhesionsApi from "../api/adhesions";
 import type {
   CampagneCreatePayload,
+  KindPayload,
   OffreCreatePayload,
   RabaisCreatePayload,
   SouscrireEspecesPayload,
@@ -18,6 +19,8 @@ const adhesionsKeys = {
   campagneActive: () => [...adhesionsKeys.all, "campagne-active"] as const,
   campagnes: () => [...adhesionsKeys.all, "campagnes"] as const,
   mesSouscriptions: () => [...adhesionsKeys.all, "mes-souscriptions"] as const,
+  familienpakete: (campagne?: string) =>
+    [...adhesionsKeys.all, "familienpakete", campagne ?? "alle"] as const,
   justificatifsEnAttente: () => [...adhesionsKeys.all, "justificatifs-en-attente"] as const,
 };
 
@@ -230,5 +233,32 @@ export function useAnnulerSouscription() {
       queryClient.invalidateQueries({ queryKey: adhesionsKeys.mesSouscriptions() });
       queryClient.invalidateQueries({ queryKey: adhesionsKeys.justificatifsEnAttente() });
     },
+  });
+}
+
+/** Kind hinzufügen (R34) — aktualisiert „Meine Mitgliedschaften“ und die Büro-Übersicht. */
+export function useKindAnlegen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ souscriptionId, payload }: { souscriptionId: string; payload: KindPayload }) =>
+      adhesionsApi.kindAnlegen(souscriptionId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+export function useKindLoeschen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ souscriptionId, kindId }: { souscriptionId: string; kindId: string }) =>
+      adhesionsApi.kindLoeschen(souscriptionId, kindId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+/** Büro-Übersicht der Familienpakete (R34). */
+export function useFamilienpakete(campagne?: string) {
+  return useQuery({
+    queryKey: adhesionsKeys.familienpakete(campagne),
+    queryFn: () => adhesionsApi.listFamilienpakete(campagne),
   });
 }

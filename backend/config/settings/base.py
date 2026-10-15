@@ -161,6 +161,9 @@ CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", _redis_url)
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+# Familienpaket (Release 34) : Kinderdaten werden so viele Monate nach Ende der Kampagne gelöscht.
+# Vorläufiger Wert, vom Verein (Jurist/DSB) festzulegen.
+FAMILIE_KINDER_AUFBEWAHRUNG_MONATE = int(os.environ.get("FAMILIE_KINDER_AUFBEWAHRUNG_MONATE", "12"))
 CELERY_TIMEZONE = "Europe/Berlin"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 

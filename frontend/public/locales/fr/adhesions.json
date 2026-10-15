@@ -187,7 +187,12 @@
     "kartenstil_diamant": "Diamant",
     "kartenstil_bronze": "Bronze",
     "kartenstil_onyx": "Onyx",
-    "kartenstil_rubin": "Rubis (rouge CID)"
+    "kartenstil_rubin": "Rubis (rouge CID)",
+    "familie_label": "Forfait famille",
+    "familie_preis_je_erwachsener": "Supplément par adulte (€)",
+    "familie_preis_je_kind": "Supplément par enfant (€)",
+    "familie_max_erwachsene": "Adultes max.",
+    "familie_max_kinder": "Enfants max."
   },
   "admin_rabais": {
     "titre": "Rabais de cette offre",
@@ -235,5 +240,41 @@
     "bestaetigung": "Le responsable financier confirme manuellement la réception du paiement dans l'application. Ces informations restent disponibles via « Afficher les infos de paiement ».",
     "schliessen": "Compris",
     "anzeigen": "Afficher les infos de paiement"
+  },
+  "familie": {
+    "titel": "Mon forfait famille",
+    "ab": "dès",
+    "zuschlaege": "+ {{erwachsener}} par adulte supplémentaire · + {{kind}} par enfant",
+    "plaetze_erwachsene": "Adultes supplémentaires",
+    "plaetze_kinder": "Enfants",
+    "gesamtpreis": "Prix total : {{preis}}",
+    "plaetze_zusammenfassung": "Réservé : {{erwachsene}} adultes supplémentaires et {{kinder}} enfants.",
+    "erwachsene_hinweis": "Vous pourrez ajouter d'autres adultes par invitation e-mail dans une version ultérieure.",
+    "kinder_titel": "Enfants ({{anzahl}} sur {{max}})",
+    "keine_kinder": "Aucun enfant enregistré.",
+    "alter": "{{alter}} ans",
+    "vorname": "Prénom",
+    "nachname": "Nom",
+    "geburtsjahr": "Année de naissance",
+    "einwilligung": "Je suis titulaire de l'autorité parentale et j'accepte que l'association enregistre le prénom, le nom et l'année de naissance de mon enfant pour la gestion du forfait famille (carte de membre, aperçu pour le bureau). Les données ne sont conservées que le temps nécessaire au forfait famille, puis supprimées. Vous pouvez retirer votre consentement en retirant l'enfant.",
+    "hinzufuegen": "Ajouter l'enfant",
+    "alle_plaetze_belegt": "Toutes les places enfant réservées sont occupées.",
+    "karten_nach_zahlung": "Les cartes Junior apparaissent dès que le paiement est confirmé.",
+    "junior_angebot": "Junior · {{angebot}}",
+    "entfernen": "Retirer",
+    "entfernen_aria": "Retirer {{name}}",
+    "entfernen_titel": "Retirer l'enfant ?",
+    "entfernen_message": "{{name}} est retiré du forfait famille et les données sont supprimées.",
+    "erreur": "La modification n'a pas pu être enregistrée."
+  },
+  "familie_buero": {
+    "titel": "Forfaits famille",
+    "kampagne": "Campagne",
+    "zusammenfassung": "{{pakete}} forfaits payés · {{erwachsene}} adultes supplémentaires réservés · {{kinder}} enfants enregistrés",
+    "leer": "Aucun forfait famille dans cette campagne.",
+    "fehler": "Impossible de charger les forfaits famille.",
+    "hauptperson": "Titulaire",
+    "erwachsene": "Adultes",
+    "kinder": "Enfants"
   }
 }

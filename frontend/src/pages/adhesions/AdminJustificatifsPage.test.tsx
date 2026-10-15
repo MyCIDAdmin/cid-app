@@ -74,6 +74,11 @@ function campagne(): CampagneAdhesion {
         icone: null,
         couleur: "",
         populaire: false,
+        ist_familienpaket: false,
+        preis_je_erwachsener: "0.00",
+        preis_je_kind: "0.00",
+        max_erwachsene: 0,
+        max_kinder: 0,
         rabais: [
           {
             id: "r1",
@@ -107,6 +112,9 @@ function souscriptionAvecJustificatif(overrides: Partial<Souscription> = {}): So
     statut: "en_attente_justificatif",
     cotisation: null,
     snapshot_avantages: [],
+    plaetze_erwachsene: 0,
+    plaetze_kinder: 0,
+    kinder: [],
     justificatif: {
       id: "j1",
       souscription: "s1",
