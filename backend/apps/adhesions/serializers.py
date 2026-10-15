@@ -7,6 +7,7 @@ sont entièrement recalculés côté serveur dans SouscriptionViewSet.souscrire 
 """
 
 import uuid
+from types import SimpleNamespace
 
 import magic
 from rest_framework import serializers
@@ -15,7 +16,7 @@ from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 from apps.uebersetzung.serializers import UebersetzungenField
 
-from .familie import pruefe_plaetze
+from .familie import pruefe_konfiguration, pruefe_plaetze
 from .models import (
     CampagneAdhesion,
     JustificatifRabais,
@@ -93,13 +94,44 @@ class OffreAdhesionSerializer(serializers.ModelSerializer):
             "kartenstil",
             "populaire",
             "ist_familienpaket",
-            "preis_je_erwachsener",
-            "preis_je_kind",
+            "familie_rabatt_pct",
+            "familie_angebot_hauptperson",
+            "familie_angebot_erwachsene",
+            "familie_angebot_kinder",
             "max_erwachsene",
             "max_kinder",
             "rabais",
         ]
         read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        """Ein Familienpaket besteht aus zugewiesenen normalen Angeboten derselben Kampagne."""
+        werte = {
+            feld: attrs.get(feld, getattr(self.instance, feld, None))
+            for feld in (
+                "ist_familienpaket",
+                "campagne",
+                "max_erwachsene",
+                "max_kinder",
+                "familie_angebot_hauptperson",
+                "familie_angebot_erwachsene",
+                "familie_angebot_kinder",
+            )
+        }
+        if werte["ist_familienpaket"]:
+            kampagne = werte["campagne"]
+            pruefe_konfiguration(
+                SimpleNamespace(
+                    pk=getattr(self.instance, "pk", None),
+                    campagne_id=getattr(kampagne, "pk", kampagne),
+                    max_erwachsene=werte["max_erwachsene"] or 0,
+                    max_kinder=werte["max_kinder"] or 0,
+                    familie_angebot_hauptperson=werte["familie_angebot_hauptperson"],
+                    familie_angebot_erwachsene=werte["familie_angebot_erwachsene"],
+                    familie_angebot_kinder=werte["familie_angebot_kinder"],
+                )
+            )
+        return attrs
 
     def validate_icone(self, image):
         # Retour utilisateur du 2026-09-29 : "Icons für jede Angebotskachel hochladen" — même
@@ -124,6 +156,7 @@ class CampagneAdhesionSerializer(serializers.ModelSerializer):
             "date_fin",
             "description",
             "statut",
+            "familie_max_alter_kind",
             "date_limite_renouvellement",
             "bascule_non_renouveles_le",
             "created_by",
@@ -173,10 +206,10 @@ class SouscriptionSerializer(serializers.ModelSerializer):
     # None tant qu'aucun justificatif n'a été uploadé pour cette souscription.
     justificatif = JustificatifRabaisSerializer(read_only=True)
     kinder = serializers.SerializerMethodField()
+    erwachsene = serializers.SerializerMethodField()
+    familien_info = serializers.SerializerMethodField()
 
     def get_kinder(self, souscription):
-        if not souscription.offre.ist_familienpaket:
-            return []
         return [
             {
                 "id": str(k.id),
@@ -184,11 +217,59 @@ class SouscriptionSerializer(serializers.ModelSerializer):
                 "nachname": k.nachname,
                 "geburtsjahr": k.geburtsjahr,
                 "alter": k.alter,
+                "beziehung": k.beziehung,
                 "kartennummer": k.kartennummer,
+                "angebot": k.angebot.nom if k.angebot else "",
+                "kartenstil": k.angebot.kartenstil if k.angebot else "",
+                "preis_liste": str(k.preis_liste),
+                "preis_anteil": str(k.preis_anteil),
                 "einwilligung_am": k.einwilligung_am.isoformat(),
             }
             for k in souscription.kinder.all()
         ]
+
+    def get_erwachsene(self, souscription):
+        return [
+            {
+                "id": str(e.id),
+                "vorname": e.vorname,
+                "nachname": e.nachname,
+                "email": e.email,
+                "beziehung": e.beziehung,
+                "status": e.status,
+                "angebot": e.angebot.nom if e.angebot else "",
+                "preis_liste": str(e.preis_liste),
+                "preis_anteil": str(e.preis_anteil),
+            }
+            for e in souscription.erwachsene.all()
+        ]
+
+    def get_familien_info(self, souscription):
+        """Familienpaket : bei der Hauptperson der Rabatt, bei einem eingeladenen Mitglied wer
+        bezahlt hat und wie sich der Preis zusammensetzt."""
+        haupt = souscription.bezahlt_ueber
+        if haupt is not None:
+            return {
+                "rolle": "mitglied",
+                "hauptperson": f"{haupt.membre.prenom} {haupt.membre.nom}".strip(),
+                "listenpreis": str(souscription.offre.prix_plein),
+                "anteil": str(souscription.prix_paye),
+            }
+        if souscription.familien_gesamtpreis is None:
+            return None
+        return {
+            "rolle": "hauptperson",
+            "rabatt_pct": str(souscription.familienrabatt_pct),
+            "gesamtpreis": str(souscription.familien_gesamtpreis),
+            "angebot": (
+                souscription.hauptperson_angebot.nom if souscription.hauptperson_angebot else ""
+            ),
+            "kartenstil": (
+                souscription.hauptperson_angebot.kartenstil
+                if souscription.hauptperson_angebot
+                else ""
+            ),
+        }
 
     class Meta:
         model = Souscription
@@ -207,6 +288,8 @@ class SouscriptionSerializer(serializers.ModelSerializer):
             "plaetze_erwachsene",
             "plaetze_kinder",
             "kinder",
+            "erwachsene",
+            "familien_info",
             "created_at",
             "updated_at",
         ]
@@ -220,13 +303,22 @@ class SouscrireSerializer(serializers.Serializer):
     rabais = serializers.PrimaryKeyRelatedField(
         queryset=RabaisOffre.objects.all(), required=False, allow_null=True
     )
-    plaetze_erwachsene = serializers.IntegerField(min_value=0, max_value=20, default=0)
-    plaetze_kinder = serializers.IntegerField(min_value=0, max_value=20, default=0)
+    # Familienpaket : alle weiteren Personen kommen mit der Anmeldung (danach erst die Zahlung).
+    erwachsene = serializers.ListField(
+        child=serializers.DictField(), required=False, default=list, max_length=20
+    )
+    kinder = serializers.ListField(
+        child=serializers.DictField(), required=False, default=list, max_length=20
+    )
 
     def validate(self, attrs):
         offre = attrs["offre"]
         rabais = attrs.get("rabais")
-        pruefe_plaetze(offre, attrs["plaetze_erwachsene"], attrs["plaetze_kinder"])
+        pruefe_plaetze(offre, len(attrs["erwachsene"]), len(attrs["kinder"]))
+        if offre.ist_familienpaket and rabais is not None:
+            raise serializers.ValidationError(
+                {"rabais": "Für ein Familienpaket gibt es keinen weiteren Rabatt."}
+            )
 
         if not offre.visible:
             raise serializers.ValidationError({"offre": "Cette offre n'est plus disponible."})
@@ -263,13 +355,14 @@ class SouscrireEspecesSerializer(serializers.Serializer):
 
     membre = serializers.PrimaryKeyRelatedField(queryset=Membre.objects.all())
     offre = serializers.PrimaryKeyRelatedField(queryset=OffreAdhesion.objects.all())
-    plaetze_erwachsene = serializers.IntegerField(min_value=0, max_value=20, default=0)
-    plaetze_kinder = serializers.IntegerField(min_value=0, max_value=20, default=0)
 
     def validate(self, attrs):
         offre = attrs["offre"]
         membre = attrs["membre"]
-        pruefe_plaetze(offre, attrs["plaetze_erwachsene"], attrs["plaetze_kinder"])
+        if offre.ist_familienpaket:
+            raise serializers.ValidationError(
+                {"offre": "Familienpakete bucht die Hauptperson selbst in der App."}
+            )
 
         if not offre.visible:
             raise serializers.ValidationError({"offre": "Cette offre n'est plus disponible."})

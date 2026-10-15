@@ -53,7 +53,9 @@
     "col_quelle": "Quelle",
     "col_cotisations": "Beiträge",
     "col_dons": "Spenden",
-    "col_evenements": "Veranstaltungen"
+    "col_evenements": "Veranstaltungen",
+    "familienrabatt": "Gewährter Familienrabatt",
+    "familienrabatt_hinweis": "Information: bereits abgezogen, die Einnahmen sind der reduzierte Betrag."
   },
   "membres": {
     "total": "Mitglieder gesamt",

@@ -74,9 +74,16 @@
  */
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import FamilienBereich from "../../components/adhesions/FamilienBereich";
-import FamilienPlaetze from "../../components/adhesions/FamilienPlaetze";
+import FamilienErfassung from "../../components/adhesions/FamilienErfassung";
+import {
+  LEERE_FAMILIE,
+  berechnePaket,
+  familieVollstaendig,
+  type FamilienEingabe,
+} from "../../components/adhesions/familienpreis";
 import MitgliedsKarteAbschnitt from "../../components/adhesions/MitgliedsKarteAbschnitt";
 import PaiementStepper from "../../components/adhesions/PaiementStepper";
 import ZahlungsInfoDialog from "../../components/adhesions/ZahlungsInfoDialog";
@@ -86,11 +93,13 @@ import {
   useCampagneActive,
   useCampagnes,
   useMesSouscriptions,
+  useMeineEinladungen,
   useSouscrire,
   useUploaderJustificatif,
 } from "../../hooks/useAdhesions";
 import { useMonHistoriqueStatut } from "../../hooks/useMembres";
 import type {
+  Beziehung,
   CampagneAdhesion,
   OffreAdhesion,
   Souscription,
@@ -178,9 +187,9 @@ export default function MonAdhesionPage() {
   const [rabaisSelectionneId, setRabaisSelectionneId] = useState<string | null>(null);
   const [fichierJustificatif, setFichierJustificatif] = useState<File | null>(null);
   const [retraitOuvert, setRetraitOuvert] = useState(false);
-  // Familienpaket (R34): gewählte Plätze für das gerade aufgeklappte Angebot.
-  const [plaetzeErwachsene, setPlaetzeErwachsene] = useState(0);
-  const [plaetzeKinder, setPlaetzeKinder] = useState(0);
+  // Familienpaket (R35): alle Personen für das gerade aufgeklappte Angebot.
+  const [familie, setFamilie] = useState<FamilienEingabe>(LEERE_FAMILIE);
+  const meineEinladungen = useMeineEinladungen();
   const fichierInputRef = useRef<HTMLInputElement>(null);
 
   const campagne = campagneActive.data;
@@ -222,10 +231,28 @@ export default function MonAdhesionPage() {
   function choisirOffre(offreId: string) {
     setOffreSelectionneeId((cur) => (cur === offreId ? null : offreId));
     setRabaisSelectionneId(null);
-    // Bei erneuter Wahl desselben Angebots die bisher gebuchten Plätze vorbelegen.
+    // Bei erneuter Wahl desselben Angebots die bisher eingetragenen Personen vorbelegen (die
+    // Einwilligung muss neu bestätigt werden).
     const gleich = souscriptionActuelle?.offre === offreId;
-    setPlaetzeErwachsene(gleich ? (souscriptionActuelle?.plaetze_erwachsene ?? 0) : 0);
-    setPlaetzeKinder(gleich ? (souscriptionActuelle?.plaetze_kinder ?? 0) : 0);
+    setFamilie(
+      gleich && souscriptionActuelle
+        ? {
+            erwachsene: souscriptionActuelle.erwachsene.map((e) => ({
+              vorname: e.vorname,
+              nachname: e.nachname,
+              email: e.email,
+              beziehung: e.beziehung,
+            })),
+            kinder: souscriptionActuelle.kinder.map((k) => ({
+              vorname: k.vorname,
+              nachname: k.nachname,
+              geburtsjahr: String(k.geburtsjahr),
+              beziehung: k.beziehung,
+            })),
+            einwilligung: false,
+          }
+        : LEERE_FAMILIE,
+    );
   }
 
   function envoyerJustificatif() {
@@ -250,7 +277,21 @@ export default function MonAdhesionPage() {
         offre: offreSelectionnee.id,
         rabais: rabaisSelectionne?.id,
         ...(offreSelectionnee.ist_familienpaket
-          ? { plaetze_erwachsene: plaetzeErwachsene, plaetze_kinder: plaetzeKinder }
+          ? {
+              erwachsene: familie.erwachsene.map((e) => ({
+                vorname: e.vorname.trim(),
+                nachname: e.nachname.trim(),
+                email: e.email.trim(),
+                beziehung: e.beziehung as Beziehung,
+              })),
+              kinder: familie.kinder.map((k) => ({
+                vorname: k.vorname.trim(),
+                nachname: k.nachname.trim(),
+                geburtsjahr: Number(k.geburtsjahr),
+                beziehung: k.beziehung,
+                einwilligung: familie.einwilligung,
+              })),
+            }
           : {}),
       },
       {
@@ -276,12 +317,61 @@ export default function MonAdhesionPage() {
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("page.titre")}</h1>
 
+      {(meineEinladungen.data ?? []).length > 0 && (
+        <div className="mb-5 rounded-cid-lg border border-status-warningText/30 bg-status-warningBg p-4 text-sm">
+          <h2 className="mb-1 text-sm font-bold text-text-primary">
+            {t("einladung.banner_titel")}
+          </h2>
+          <ul className="space-y-1">
+            {(meineEinladungen.data ?? []).map((e) => (
+              <li key={e.token} className="flex flex-wrap items-center gap-2">
+                <span className="flex-1 text-text-secondary">
+                  {t("einladung.banner_zeile", {
+                    hauptperson: e.hauptperson,
+                    kampagne: e.kampagne,
+                  })}
+                </span>
+                <Link
+                  to={`/einladung/${e.token}`}
+                  className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad"
+                >
+                  {t("einladung.ansehen")}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {souscriptionActuelle?.familien_info?.rolle === "mitglied" && (
+        <div className="mb-5 rounded-cid-lg bg-bg-primary p-4 text-sm shadow-sm">
+          <h2 className="mb-1 text-xs font-bold text-text-primary">
+            {t("familie.mitglied_titel")}
+          </h2>
+          <p className="text-text-secondary">
+            {t("familie.mitglied_text", {
+              hauptperson: souscriptionActuelle.familien_info.hauptperson,
+              liste: formatMontant(souscriptionActuelle.familien_info.listenpreis),
+              anteil: formatMontant(souscriptionActuelle.familien_info.anteil),
+            })}
+          </p>
+        </div>
+      )}
+
       {/* Bezahlte Mitgliedschaft → digitale Mitgliedskarte im Stil des Angebots ; sonst (Antrag
           offen, Nachweis fehlt …) bleibt die bisherige Statuskachel. */}
       {souscriptionActuelle && dejaPayee && (
         <MitgliedsKarteAbschnitt
-          stil={offreActuelle?.kartenstil}
-          angebot={offreActuelle?.nom ?? "—"}
+          stil={
+            souscriptionActuelle.familien_info?.rolle === "hauptperson"
+              ? souscriptionActuelle.familien_info.kartenstil
+              : offreActuelle?.kartenstil
+          }
+          angebot={
+            souscriptionActuelle.familien_info?.rolle === "hauptperson"
+              ? souscriptionActuelle.familien_info.angebot
+              : (offreActuelle?.nom ?? "—")
+          }
           kampagne={campagne?.nom}
           gueltigBis={campagne ? formatDate(campagne.date_fin) : undefined}
           vorteile={souscriptionActuelle.snapshot_avantages
@@ -427,8 +517,6 @@ export default function MonAdhesionPage() {
         souscriptionActuelle.statut !== "expiree" && (
           <FamilienBereich
             souscription={souscriptionActuelle}
-            angebot={offreActuelle.nom}
-            stil={offreActuelle.kartenstil}
             kampagne={campagne?.nom}
             gueltigBis={campagne ? formatDate(campagne.date_fin) : undefined}
           />
@@ -510,13 +598,18 @@ export default function MonAdhesionPage() {
                         {t("familie.ab")}
                       </span>
                     )}
-                    {formatMontant(offre.prix_plein)}
+                    {formatMontant(
+                      offre.ist_familienpaket
+                        ? (berechnePaket(offre, campagne.offres, 0, 0)?.gesamt ?? offre.prix_plein)
+                        : offre.prix_plein,
+                    )}
                   </div>
                   {offre.ist_familienpaket && (
                     <p className="mt-1 text-center text-[11px] text-text-tertiary">
-                      {t("familie.zuschlaege", {
-                        erwachsener: formatMontant(offre.preis_je_erwachsener),
-                        kind: formatMontant(offre.preis_je_kind),
+                      {t("familie.kombination", {
+                        pct: Number(offre.familie_rabatt_pct),
+                        erwachsene: offre.max_erwachsene,
+                        kinder: offre.max_kinder,
                       })}
                     </p>
                   )}
@@ -560,14 +653,11 @@ export default function MonAdhesionPage() {
                   {selectionnee && (
                     <div className="mt-5 border-t border-text-tertiary/10 pt-4">
                       {offre.ist_familienpaket && (
-                        <FamilienPlaetze
+                        <FamilienErfassung
                           offre={offre}
-                          erwachsene={plaetzeErwachsene}
-                          kinder={plaetzeKinder}
-                          onChange={(e, k) => {
-                            setPlaetzeErwachsene(e);
-                            setPlaetzeKinder(k);
-                          }}
+                          campagne={campagne}
+                          wert={familie}
+                          onChange={setFamilie}
                         />
                       )}
                       {offre.rabais.length > 0 && (
@@ -607,10 +697,17 @@ export default function MonAdhesionPage() {
                         <button
                           type="button"
                           onClick={handleSouscrire}
-                          disabled={souscrireMutation.isPending}
+                          disabled={
+                            souscrireMutation.isPending ||
+                            (offre.ist_familienpaket && !familieVollstaendig(familie))
+                          }
                           className="flex-1 rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
                         >
-                          {souscriptionActuelle ? t("offres.changer") : t("offres.souscrire")}
+                          {offre.ist_familienpaket
+                            ? t("familie.weiter_zur_zahlung")
+                            : souscriptionActuelle
+                              ? t("offres.changer")
+                              : t("offres.souscrire")}
                         </button>
                         <button
                           type="button"

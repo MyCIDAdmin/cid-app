@@ -54,6 +54,12 @@ class CampagneAdhesion(models.Model):
     statut = models.CharField(
         max_length=20, choices=StatutCampagne.choices, default=StatutCampagne.BROUILLON
     )
+    # Familienpaket : „Kind“ ist, wer in diesem Kampagnenjahr höchstens so alt wird (Geburtsjahr).
+    familie_max_alter_kind = models.PositiveSmallIntegerField(
+        default=17,
+        validators=[MaxValueValidator(30)],
+        help_text=_("Höchstalter (Jahre) für Kinder in Familienpaketen dieser Kampagne."),
+    )
 
     created_by = models.ForeignKey(
         "membres.Membre",
@@ -184,16 +190,31 @@ class OffreAdhesion(models.Model):
         ),
     )
 
-    # Familienpaket (Release 34, 2026-10-15) : Preis = Grundpreis (`prix_plein`) plus Betrag je
-    # weiterer erwachsener Person und je Kind. Die Obergrenzen gelten je Angebot ; gebucht werden
-    # die Plätze bei der Souscription. Erwachsene sind eigene Mitglieder (Einladung folgt in
-    # Release 35), Kinder sind keine Mitglieder (siehe FamilienKind).
+    # Familienpaket (Release 34/35) : eine Kombination bestehender Angebote der Kampagne. Jede
+    # Person im Paket erhält das zugewiesene Angebot (Hauptperson, weitere Erwachsene, Kinder) ;
+    # der Gesamtpreis ist die Summe der Angebotspreise minus Familienrabatt in Prozent. Die
+    # Obergrenzen gelten je Angebot. Erwachsene werden per Einladung eigene Mitglieder
+    # (FamilienErwachsener), Kinder sind keine Mitglieder (FamilienKind).
     ist_familienpaket = models.BooleanField(default=False)
-    preis_je_erwachsener = models.DecimalField(
-        max_digits=8, decimal_places=2, default=Decimal("0.00"), validators=[MinValueValidator(0)]
+    familie_rabatt_pct = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
     )
-    preis_je_kind = models.DecimalField(
-        max_digits=8, decimal_places=2, default=Decimal("0.00"), validators=[MinValueValidator(0)]
+    familie_angebot_hauptperson = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text=_("Angebot der Hauptperson. Leer = Angebot der weiteren Erwachsenen."),
+    )
+    familie_angebot_erwachsene = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    familie_angebot_kinder = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     max_erwachsene = models.PositiveSmallIntegerField(default=0)
     max_kinder = models.PositiveSmallIntegerField(default=0)
@@ -207,15 +228,6 @@ class OffreAdhesion(models.Model):
 
     def __str__(self):
         return f"{self.nom} — {self.campagne.nom}"
-
-    def preis_fuer(self, erwachsene: int = 0, kinder: int = 0) -> Decimal:
-        """Gesamtpreis vor Rabatt : Grundpreis plus Zuschläge für die gebuchten Plätze (Server-
-        Berechnung, das Frontend zeigt nur eine Vorschau)."""
-        if not self.ist_familienpaket:
-            return self.prix_plein
-        return (
-            self.prix_plein + self.preis_je_erwachsener * erwachsene + self.preis_je_kind * kinder
-        ).quantize(Decimal("0.01"))
 
     def eligible_pour_age(self, age: int) -> bool:
         """Éligibilité dynamique à l'âge (FDD §6.1) — jamais stockée, voir Membre.age."""
@@ -340,9 +352,31 @@ class Souscription(models.Model):
         help_text=_("Écriture de paiement liée, une fois la souscription payée."),
     )
 
-    # Familienpaket (Release 34) : gebuchte Plätze, Grundlage des Preises.
+    # Familienpaket : gebuchte Plätze (= eingetragene Personen), Preis und Angebot der Hauptperson.
+    # `familien_gesamtpreis` ist der Betrag, den die Hauptperson zahlt (Cotisation) ; `prix_paye`
+    # ist ihr eigener Anteil plus der Anteil der Kinder und noch nicht angenommener Einladungen
+    # (siehe familie.verteilung_aktualisieren), damit die Einnahmen je Person stimmen.
     plaetze_erwachsene = models.PositiveSmallIntegerField(default=0)
     plaetze_kinder = models.PositiveSmallIntegerField(default=0)
+    familien_gesamtpreis = models.DecimalField(
+        max_digits=8, decimal_places=2, null=True, blank=True
+    )
+    familienrabatt_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("0.00")
+    )
+    hauptperson_angebot = models.ForeignKey(
+        OffreAdhesion, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    haupt_preis_liste = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    haupt_preis_anteil = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # Mitglied, das über das Familienpaket einer anderen Person (Hauptperson) bezahlt ist.
+    bezahlt_ueber = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="familien_souscriptions",
+    )
 
     snapshot_avantages = models.JSONField(
         default=list,
@@ -374,6 +408,23 @@ class Souscription(models.Model):
     def __str__(self):
         return f"{self.membre} — {self.offre.nom} ({self.get_statut_display()})"
 
+    @property
+    def betrag_zu_zahlen(self) -> Decimal:
+        """Betrag der Zahlung : bei einem Familienpaket der Gesamtpreis (die Hauptperson zahlt für
+        alle), sonst `prix_paye`."""
+        if self.familien_gesamtpreis is not None:
+            return self.familien_gesamtpreis
+        return self.prix_paye
+
+
+class Beziehung(models.TextChoices):
+    """Beziehung einer weiteren Person im Familienpaket zur Hauptperson."""
+
+    EHEPARTNER = "ehepartner", _("Ehepartner")
+    KIND = "kind", _("Kind")
+    GESCHWISTER = "geschwister", _("Geschwister")
+    ELTERNTEIL = "elternteil", _("Elternteil")
+
 
 class FamilienKind(models.Model):
     """Kind in einem Familienpaket (Release 34). Bewusst KEIN `Membre` : kein Konto, kein
@@ -387,6 +438,12 @@ class FamilienKind(models.Model):
     vorname = models.CharField(max_length=100)
     nachname = models.CharField(max_length=100)
     geburtsjahr = models.PositiveSmallIntegerField()
+    beziehung = models.CharField(max_length=20, choices=Beziehung.choices, default=Beziehung.KIND)
+    angebot = models.ForeignKey(
+        OffreAdhesion, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    preis_liste = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    preis_anteil = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
     kartennummer = models.CharField(max_length=40, blank=True)
     einwilligung_am = models.DateTimeField(default=timezone.now)
     einwilligung_von = models.ForeignKey(
@@ -405,6 +462,69 @@ class FamilienKind(models.Model):
     @property
     def alter(self) -> int:
         return timezone.localdate().year - self.geburtsjahr
+
+
+class EinladungStatus(models.TextChoices):
+    """Weg einer weiteren erwachsenen Person ins Familienpaket."""
+
+    OFFEN = "offen", _("Noch nicht eingeladen")
+    EINGELADEN = "eingeladen", _("Eingeladen (noch kein Konto)")
+    ZUSTIMMUNG_OFFEN = "zustimmung_offen", _("Wartet auf Zustimmung (Konto vorhanden)")
+    ANGENOMMEN = "angenommen", _("Angenommen")
+    ABGELEHNT = "abgelehnt", _("Abgelehnt")
+    KONFLIKT = "konflikt", _("Hat bereits eine eigene Mitgliedschaft")
+
+
+def neues_einladungs_token() -> str:
+    import secrets
+
+    return secrets.token_urlsafe(32)
+
+
+class FamilienErwachsener(models.Model):
+    """Weitere erwachsene Person im Familienpaket. Wird erst nach Annahme der Einladung ein
+    eigenes Mitglied (`membre`) mit dem zugewiesenen Angebot ; die Hauptperson zahlt für alle.
+    `preis_liste` ist der Preis des zugewiesenen Angebots, `preis_anteil` der Anteil nach
+    Familienrabatt (für die Finanzen)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    souscription = models.ForeignKey(
+        Souscription, on_delete=models.CASCADE, related_name="erwachsene"
+    )
+    vorname = models.CharField(max_length=100)
+    nachname = models.CharField(max_length=100)
+    email = models.EmailField()
+    beziehung = models.CharField(max_length=20, choices=Beziehung.choices)
+    angebot = models.ForeignKey(
+        OffreAdhesion, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    preis_liste = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    preis_anteil = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal("0.00"))
+    status = models.CharField(
+        max_length=20, choices=EinladungStatus.choices, default=EinladungStatus.OFFEN
+    )
+    token = models.CharField(max_length=64, unique=True, default=neues_einladungs_token)
+    membre = models.ForeignKey(
+        "membres.Membre", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    registrierung_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    eingeladen_am = models.DateTimeField(null=True, blank=True)
+    erinnerungen = models.PositiveSmallIntegerField(default=0)
+    letzte_erinnerung_am = models.DateTimeField(null=True, blank=True)
+    profil_erinnerungen = models.PositiveSmallIntegerField(default=0)
+    letzte_profil_erinnerung_am = models.DateTimeField(null=True, blank=True)
+    angenommen_am = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "adhesions_familien_erwachsene"
+        ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["email"]), models.Index(fields=["status"])]
+
+    def __str__(self):
+        return f"{self.vorname} {self.nachname} <{self.email}>"
 
 
 class StatutJustificatif(models.TextChoices):

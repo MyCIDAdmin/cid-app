@@ -10,3 +10,6 @@ class AdhesionsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.adhesions"
     verbose_name = "Adhésions"
+
+    def ready(self):
+        from . import signals  # noqa: F401

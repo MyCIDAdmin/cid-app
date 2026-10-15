@@ -9,11 +9,11 @@
  * reste inactif jusqu'à la validation d'un rôle RH/Admin (AHM-48), qui ne
  * voit la demande qu'une fois l'email confirmé.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
 import {
@@ -23,6 +23,7 @@ import {
 } from "../api/auth";
 import DatenschutzhinweisModal from "../components/auth/DatenschutzhinweisModal";
 import BrandLogo from "../components/ui/BrandLogo";
+import { useEinladung } from "../hooks/useAdhesions";
 import { BUNDESLANDER } from "../types/membre";
 import { extractApiErrorMessage } from "../utils/apiError";
 
@@ -95,6 +96,10 @@ export default function RegisterPage() {
   // un visiteur arrivé ici depuis /login (lui-même renvoyé depuis une page protégée) doit
   // retrouver cette même destination une fois son compte validé et connecté, pas /dashboard.
   const location = useLocation();
+  // Einladung ins Familienpaket (R35) : Link /register?einladung=<token> füllt Name und E-Mail vor ;
+  // die Adresse bleibt fest, weil die Einladung an sie gebunden ist.
+  const einladungToken = useSearchParams()[0].get("einladung") ?? "";
+  const einladung = useEinladung(einladungToken);
 
   const [step, setStep] = useState<Step>("form");
   const [emailInscrit, setEmailInscrit] = useState("");
@@ -109,6 +114,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(registerSchema),
@@ -136,6 +142,14 @@ export default function RegisterPage() {
       consentement_rgpd: false as unknown as true,
     },
   });
+
+  useEffect(() => {
+    const e = einladung.data;
+    if (!e) return;
+    setValue("email", e.email);
+    setValue("prenom", e.vorname);
+    setValue("nom", e.nachname);
+  }, [einladung.data, setValue]);
 
   const {
     register: registerCode,
@@ -165,6 +179,7 @@ export default function RegisterPage() {
         land_de: values.land_de || undefined,
         ville_origine_tn: values.ville_origine_tn || undefined,
         gouvernorat_tn: values.gouvernorat_tn || undefined,
+        einladung_token: einladungToken || undefined,
       });
       setEmailInscrit(values.email);
       setStep("confirm");
@@ -338,7 +353,13 @@ export default function RegisterPage() {
                   requis
                   erreur={errors.email && t("register.error_generique")}
                 >
-                  <input id="email" type="email" {...register("email")} className={champClasses} />
+                  <input
+                    id="email"
+                    type="email"
+                    readOnly={Boolean(einladung.data)}
+                    {...register("email")}
+                    className={champClasses}
+                  />
                 </Champ>
                 <Champ
                   label={t("register.telephone")}

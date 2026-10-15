@@ -53,7 +53,9 @@
     "col_quelle": "Source",
     "col_cotisations": "Cotisations",
     "col_dons": "Dons",
-    "col_evenements": "Évènements"
+    "col_evenements": "Évènements",
+    "familienrabatt": "Remise famille accordée",
+    "familienrabatt_hinweis": "Information : déjà déduite, les recettes correspondent au montant réduit."
   },
   "membres": {
     "total": "Total membres",

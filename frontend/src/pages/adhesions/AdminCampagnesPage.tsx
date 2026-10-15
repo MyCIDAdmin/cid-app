@@ -34,6 +34,7 @@ import {
   useCampagnes,
   useCloturerCampagne,
   useCreerCampagne,
+  useModifierAlterKind,
   useModifierFristCampagne,
   usePublierCampagne,
 } from "../../hooks/useAdhesions";
@@ -54,6 +55,7 @@ function formulaireInitial(): CampagneCreatePayload {
     date_debut: "",
     date_fin: "",
     date_limite_renouvellement: null,
+    familie_max_alter_kind: 17,
     description: "",
   };
 }
@@ -77,6 +79,7 @@ export default function AdminCampagnesPage() {
   const creerMutation = useCreerCampagne();
   const publierMutation = usePublierCampagne();
   const fristMutation = useModifierFristCampagne();
+  const alterMutation = useModifierAlterKind();
   const cloturerMutation = useCloturerCampagne();
 
   function handleCreer(e: FormEvent<HTMLFormElement>) {
@@ -186,6 +189,24 @@ export default function AdminCampagnesPage() {
             />
             <p className="mt-1 text-[11px] text-text-tertiary">{t("admin.frist_aide")}</p>
           </div>
+          <div>
+            <label
+              htmlFor="camp-alter-kind"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              {t("admin.alter_kind_label")}
+            </label>
+            <input
+              id="camp-alter-kind"
+              type="number"
+              min={0}
+              max={30}
+              value={form.familie_max_alter_kind ?? 17}
+              onChange={(e) => setForm({ ...form, familie_max_alter_kind: Number(e.target.value) })}
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+            />
+            <p className="mt-1 text-[11px] text-text-tertiary">{t("admin.alter_kind_aide")}</p>
+          </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium text-text-secondary">
               {t("admin.description_label")}
@@ -280,6 +301,24 @@ export default function AdminCampagnesPage() {
                         className="rounded-cid border border-text-tertiary/30 px-1 py-0.5"
                       />
                     </label>
+                    <label className="mt-1 flex items-center gap-1 text-[11px]">
+                      {t("admin.alter_kind_court")}
+                      <input
+                        type="number"
+                        min={0}
+                        max={30}
+                        aria-label={t("admin.alter_kind_label")}
+                        defaultValue={c.familie_max_alter_kind}
+                        disabled={!modifiable}
+                        onBlur={(e) => {
+                          const wert = Number(e.target.value);
+                          if (e.target.value !== "" && wert !== c.familie_max_alter_kind) {
+                            alterMutation.mutate({ id: c.id, alter: wert });
+                          }
+                        }}
+                        className="w-14 rounded-cid border border-text-tertiary/30 px-1 py-0.5"
+                      />
+                    </label>
                     {c.bascule_non_renouveles_le && (
                       <span className="text-[11px] text-text-tertiary">
                         {t("admin.frist_traitee", {
@@ -348,7 +387,9 @@ export default function AdminCampagnesPage() {
         const mitFamilie = (campagnes.data?.results ?? []).filter((c) =>
           c.offres.some((o) => o.ist_familienpaket),
         );
-        return mitFamilie.length > 0 ? <FamilienpaketeBuero campagnen={mitFamilie} /> : null;
+        return mitFamilie.length > 0 ? (
+          <FamilienpaketeBuero campagnen={mitFamilie} modifiable={modifiable} />
+        ) : null;
       })()}
 
       {(publierMutation.isError || cloturerMutation.isError) && (

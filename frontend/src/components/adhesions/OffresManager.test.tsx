@@ -36,8 +36,10 @@ function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
     couleur: "",
     populaire: false,
     ist_familienpaket: false,
-    preis_je_erwachsener: "0.00",
-    preis_je_kind: "0.00",
+    familie_rabatt_pct: "0.00",
+    familie_angebot_hauptperson: null,
+    familie_angebot_erwachsene: null,
+    familie_angebot_kinder: null,
     max_erwachsene: 0,
     max_kinder: 0,
     rabais: [],
@@ -56,6 +58,7 @@ function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
     statut: "brouillon",
 
     date_limite_renouvellement: null,
+    familie_max_alter_kind: 17,
 
     bascule_non_renouveles_le: null,
     created_by: "m-admin",
@@ -100,35 +103,52 @@ describe("OffresManager", () => {
     expect(screen.getByText("Basic")).toBeInTheDocument();
   });
 
-  it("Familienpaket: schaltet ein Angebot um und speichert Zuschläge und Obergrenzen", () => {
+  it("Familienpaket: speichert Zuweisungen, Rabatt und Obergrenzen in einem Schritt", () => {
     const modifierMutate = vi.fn();
     vi.mocked(useAdhesionsHooks.useModifierOffre).mockReturnValue({
       mutate: modifierMutate,
       isPending: false,
       isError: false,
     } as unknown as ReturnType<typeof useAdhesionsHooks.useModifierOffre>);
-    const { rerender } = renderWithProviders(<OffresManager campagne={campagne()} />);
+    const plus = offre({ id: "o2", nom: "PLUS", prix_plein: "50.00" });
+    const junior = offre({ id: "o3", nom: "JUNIOR", prix_plein: "10.00" });
+    renderWithProviders(<OffresManager campagne={campagne({ offres: [offre(), plus, junior] })} />);
 
-    fireEvent.click(screen.getAllByLabelText("admin_offres.familie_label")[0]);
+    fireEvent.click(screen.getAllByLabelText("admin_offres.familie_label — Basic")[0]);
+    fireEvent.change(screen.getByLabelText("admin_offres.familie_angebot_erwachsene — Basic"), {
+      target: { value: "o2" },
+    });
+    fireEvent.change(screen.getByLabelText("admin_offres.familie_angebot_kinder — Basic"), {
+      target: { value: "o3" },
+    });
+    fireEvent.change(screen.getByLabelText("admin_offres.familie_rabatt — Basic"), {
+      target: { value: "10" },
+    });
+    fireEvent.change(screen.getByLabelText("admin_offres.familie_max_kinder — Basic"), {
+      target: { value: "5" },
+    });
+    fireEvent.click(screen.getAllByText("admin_offres.familie_speichern")[0]);
+
     expect(modifierMutate).toHaveBeenCalledWith({
       id: "o1",
-      payload: { ist_familienpaket: true },
+      payload: {
+        ist_familienpaket: true,
+        familie_rabatt_pct: "10",
+        max_erwachsene: 0,
+        max_kinder: 5,
+        familie_angebot_hauptperson: null,
+        familie_angebot_erwachsene: "o2",
+        familie_angebot_kinder: "o3",
+      },
     });
+  });
 
-    rerender(
-      <OffresManager campagne={campagne({ offres: [offre({ ist_familienpaket: true })] })} />,
-    );
-    const kind = screen.getByLabelText("admin_offres.familie_preis_je_kind — Basic");
-    fireEvent.change(kind, { target: { value: "12.50" } });
-    fireEvent.blur(kind);
-    expect(modifierMutate).toHaveBeenLastCalledWith({
-      id: "o1",
-      payload: { preis_je_kind: "12.50" },
-    });
-    const maxKinder = screen.getByLabelText("admin_offres.familie_max_kinder — Basic");
-    fireEvent.change(maxKinder, { target: { value: "5" } });
-    fireEvent.blur(maxKinder);
-    expect(modifierMutate).toHaveBeenLastCalledWith({ id: "o1", payload: { max_kinder: 5 } });
+  it("Familienpaket: andere Familienpakete sind nicht zuweisbar", () => {
+    const paket = offre({ id: "o4", nom: "Familie", ist_familienpaket: true });
+    renderWithProviders(<OffresManager campagne={campagne({ offres: [offre(), paket] })} />);
+    const wahl = screen.getByLabelText("admin_offres.familie_angebot_erwachsene — Familie");
+    expect(wahl).toHaveTextContent("Basic");
+    expect(wahl).not.toHaveTextContent("Familie");
   });
 
   it("crée une nouvelle offre avec les avantages saisis ligne par ligne", () => {

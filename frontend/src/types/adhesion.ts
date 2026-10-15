@@ -74,10 +74,13 @@ export interface OffreAdhesion {
   couleur: CouleurOffre;
   kartenstil?: KartenStil | "";
   populaire: boolean;
-  // Familienpaket (R34) — Grundpreis = prix_plein, dazu Zuschlag je weiterer Person.
+  // Familienpaket (R35) — Kombination bestehender Angebote : Hauptperson, weitere Erwachsene und
+  // Kinder erhalten das zugewiesene Angebot ; Preis = Summe der Angebote minus Rabatt in %.
   ist_familienpaket: boolean;
-  preis_je_erwachsener: string;
-  preis_je_kind: string;
+  familie_rabatt_pct: string;
+  familie_angebot_hauptperson: string | null;
+  familie_angebot_erwachsene: string | null;
+  familie_angebot_kinder: string | null;
   max_erwachsene: number;
   max_kinder: number;
   rabais: RabaisOffre[];
@@ -96,6 +99,8 @@ export interface CampagneAdhesion {
   /** Frist für Bestandsmitglieder (point 3, 2026-10-06) — null = pas de bascule automatique. */
   date_limite_renouvellement: string | null;
   bascule_non_renouveles_le: string | null;
+  /** Höchstalter eines Kindes im Familienpaket, je Kampagne (Jahr der Kampagne − Geburtsjahr). */
+  familie_max_alter_kind: number;
   created_by: string;
   created_at: string;
   offres: OffreAdhesion[];
@@ -114,6 +119,7 @@ export interface CampagneCreatePayload {
   date_fin: string;
   description?: string;
   date_limite_renouvellement?: string | null;
+  familie_max_alter_kind?: number;
 }
 
 /**
@@ -137,8 +143,10 @@ export interface OffreCreatePayload {
   kartenstil?: KartenStil | "";
   populaire?: boolean;
   ist_familienpaket?: boolean;
-  preis_je_erwachsener?: string;
-  preis_je_kind?: string;
+  familie_rabatt_pct?: string;
+  familie_angebot_hauptperson?: string | null;
+  familie_angebot_erwachsene?: string | null;
+  familie_angebot_kinder?: string | null;
   max_erwachsene?: number;
   max_kinder?: number;
 }
@@ -182,45 +190,126 @@ export interface ValiderJustificatifPayload {
   motif_rejet?: string;
 }
 
-/** Kind in einem Familienpaket (R34) — kein Mitglied, nur Teil der Souscription. */
+export type Beziehung = "ehepartner" | "kind" | "geschwister" | "elternteil";
+
+export const BEZIEHUNGEN: Beziehung[] = ["ehepartner", "kind", "geschwister", "elternteil"];
+export const KIND_BEZIEHUNGEN: Beziehung[] = ["kind", "geschwister"];
+
+export type EinladungStatus =
+  "offen" | "eingeladen" | "zustimmung_offen" | "angenommen" | "abgelehnt" | "konflikt";
+
+/** Kind in einem Familienpaket — kein Mitglied, nur Teil der Souscription. */
 export interface FamilienKind {
   id: string;
   vorname: string;
   nachname: string;
   geburtsjahr: number;
   alter: number;
+  beziehung: Beziehung;
   kartennummer: string;
+  /** Name des zugewiesenen Angebots und dessen Kartenstil. */
+  angebot: string;
+  kartenstil: KartenStil | "";
+  preis_liste: string;
+  preis_anteil: string;
   einwilligung_am: string;
+}
+
+/** Weitere erwachsene Person im Paket (wird per Einladung eigenes Mitglied). */
+export interface FamilienErwachsener {
+  id: string;
+  vorname: string;
+  nachname: string;
+  email: string;
+  beziehung: Beziehung;
+  status: EinladungStatus;
+  angebot: string;
+  preis_liste: string;
+  preis_anteil: string;
+}
+
+/** Eingabe beim Buchen (wird mit der Souscription in einem Schritt gesendet). */
+export interface ErwachsenerPayload {
+  vorname: string;
+  nachname: string;
+  email: string;
+  beziehung: Beziehung;
 }
 
 export interface KindPayload {
   vorname: string;
   nachname: string;
   geburtsjahr: number;
+  beziehung: Beziehung;
   einwilligung: boolean;
 }
 
-/** Büro-Übersicht GET /adhesions/familienpakete/ (R34). */
+/** Rolle der Souscription im Paket — Hauptperson (zahlt) oder eingeladenes Mitglied. */
+export type FamilienInfo =
+  | {
+      rolle: "hauptperson";
+      rabatt_pct: string;
+      gesamtpreis: string;
+      angebot: string;
+      kartenstil: KartenStil | "";
+    }
+  | { rolle: "mitglied"; hauptperson: string; listenpreis: string; anteil: string };
+
+/** Büro-Übersicht GET /adhesions/familienpakete/. */
+export interface FamilienpaketPerson {
+  id: string;
+  name: string;
+  beziehung: Beziehung;
+  angebot: string | null;
+  angebot_id: string | null;
+  preis_liste: string;
+  preis_anteil: string;
+}
+
 export interface FamilienpaketBuero {
   id: string;
   hauptperson: string;
   numero_membre: string;
   angebot: string;
+  hauptperson_angebot: string | null;
   campagne: string;
   statut: StatutSouscription;
-  prix_paye: string;
-  plaetze_erwachsene: number;
-  plaetze_kinder: number;
-  kinder: { id: string; name: string; alter: number }[];
+  gesamtpreis: string;
+  listenpreis: string;
+  rabatt_pct: string;
+  haupt_preis_liste: string;
+  haupt_preis_anteil: string;
+  erwachsene: (FamilienpaketPerson & { email: string; status: EinladungStatus })[];
+  kinder: (FamilienpaketPerson & { alter: number })[];
 }
 
 export interface FamilienpaketeUebersicht {
   zusammenfassung: {
     pakete_bezahlt: number;
-    plaetze_erwachsene: number;
+    erwachsene_angenommen: number;
+    erwachsene_offen: number;
+    erwachsene_konflikt: number;
     kinder_eingetragen: number;
+    listenpreis_gesamt: string;
+    gezahlt_gesamt: string;
+    familienrabatt_gesamt: string;
   };
   pakete: FamilienpaketBuero[];
+}
+
+/** Einladung ins Familienpaket (öffentlich per Token, GET /adhesions/einladungen/<token>/). */
+export interface Einladung {
+  token: string;
+  hauptperson: string;
+  kampagne: string;
+  angebot: string | null;
+  vorname: string;
+  nachname: string;
+  email: string;
+  beziehung: Beziehung;
+  status: EinladungStatus;
+  bezahlt: boolean;
+  konto_vorhanden: boolean;
 }
 
 export interface Souscription {
@@ -234,10 +323,12 @@ export interface Souscription {
   statut: StatutSouscription;
   cotisation: string | null;
   snapshot_avantages: AvantageOffre[];
-  // Familienpaket (R34) — gebuchte Plätze und eingetragene Kinder (leer bei Einzelangeboten).
+  // Familienpaket — gebuchte Plätze, eingetragene Personen (leer bei Einzelangeboten).
   plaetze_erwachsene: number;
   plaetze_kinder: number;
   kinder: FamilienKind[];
+  erwachsene: FamilienErwachsener[];
+  familien_info: FamilienInfo | null;
   // Nichée en lecture seule par SouscriptionSerializer (AHM-20) — null tant qu'aucun
   // justificatif n'a été uploadé pour cette souscription.
   justificatif: JustificatifRabais | null;
@@ -253,8 +344,9 @@ export interface Souscription {
 export interface SouscrirePayload {
   offre: string;
   rabais?: string;
-  plaetze_erwachsene?: number;
-  plaetze_kinder?: number;
+  /** Nur bei Familienpaketen : alle weiteren Personen, in einem Schritt mit der Buchung. */
+  erwachsene?: ErwachsenerPayload[];
+  kinder?: KindPayload[];
 }
 
 /**

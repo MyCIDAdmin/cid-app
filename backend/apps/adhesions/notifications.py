@@ -68,7 +68,7 @@ def notifier_justificatif_valide(justificatif) -> None:
         message=(
             f"Votre justificatif de rabais{detail_rabais} pour {souscription.campagne.nom} "
             f"({souscription.offre.nom}) a été validé.\n\n"
-            f"Montant à payer : {souscription.prix_paye} €.\n\n"
+            f"Montant à payer : {souscription.betrag_zu_zahlen} €.\n\n"
             "Vous pouvez procéder au paiement."
         ),
     )
@@ -118,7 +118,7 @@ def notifier_souscription_annulee(souscription) -> None:
         subject="Souscription annulée",
         message=(
             f"Votre souscription à {souscription.campagne.nom} ({souscription.offre.nom}) a été "
-            f"annulée. Montant concerné : {souscription.prix_paye} €."
+            f"annulée. Montant concerné : {souscription.betrag_zu_zahlen} €."
         ),
     )
     notifier(

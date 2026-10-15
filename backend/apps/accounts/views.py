@@ -343,6 +343,11 @@ class RegisterConfirmView(APIView):
         membre_inscrit = Membre.objects.filter(user=user).first()
         if membre_inscrit is not None:
             lier_automatiquement(membre_inscrit)
+            # Familienpaket : wer sich über den Einladungslink registriert hat, ist Mitglied des
+            # Pakets, sobald die E-Mail bestätigt ist (Fehler dürfen die Bestätigung nie stören).
+            from apps.adhesions.familie import einladungen_nach_registrierung
+
+            einladungen_nach_registrierung(user, membre_inscrit)
         send_welcome_email.delay(str(user.id))
         # Notification staff conservée (information, plus aucune action requise). Un Fan-Konto
         # (Release 29) hat keine Mitgliedsfiche und gehört nicht in diese Meldung.

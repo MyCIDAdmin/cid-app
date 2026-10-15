@@ -157,3 +157,15 @@ def loeschen_kinderdaten() -> int:
     if geloescht:
         logger.info("Kinderdaten gelöscht: %s", geloescht)
     return geloescht
+
+
+@shared_task
+def sende_familien_erinnerungen() -> dict:
+    """Erinnert in großen Abständen (höchstens dreimal) an offene Einladungen im Familienpaket
+    und an fehlende Ausweisnummern angenommener Erwachsener."""
+    from .familie import sende_erinnerungen
+
+    ergebnis = sende_erinnerungen()
+    if ergebnis["einladungen"] or ergebnis["profile"]:
+        logger.info("Familienpaket-Erinnerungen: %s", ergebnis)
+    return ergebnis

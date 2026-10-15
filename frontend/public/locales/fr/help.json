@@ -112,7 +112,7 @@
     "schritte": [
       "Créez une campagne avec sa période et sa description.",
       "Avec « Gérer les offres », ajoutez les niveaux d'adhésion avec prix et avantages.",
-      "Au besoin, marquez une offre comme « forfait famille » : prix de base plus supplément par adulte et par enfant, avec plafonds. Le passage au forfait ne vaut qu'à partir de la prochaine campagne.",
+      "Au besoin, configurez une offre comme « forfait famille » : définissez quelles offres existantes reçoivent la personne principale, les adultes supplémentaires et les enfants, avec une remise famille en pourcentage et des plafonds. L'âge maximum d'un enfant se règle par campagne. Le passage au forfait ne vaut qu'à partir de la prochaine campagne.",
       "Publiez la campagne pour qu'elle apparaisse sur la page d'accueil et dans « Mon adhésion »."
     ]
   },

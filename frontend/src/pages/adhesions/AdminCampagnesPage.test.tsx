@@ -36,6 +36,7 @@ function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
     statut: "brouillon",
 
     date_limite_renouvellement: null,
+    familie_max_alter_kind: 17,
 
     bascule_non_renouveles_le: null,
     created_by: "m-admin",
