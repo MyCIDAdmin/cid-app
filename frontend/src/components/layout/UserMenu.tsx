@@ -12,12 +12,13 @@
  * Sidebar qui a lui besoin d'un portail (RailGroupButton) pour survivre à son ancêtre en
  * overflow.
  */
-import { IconLogout, IconSettings, IconUserCircle } from "@tabler/icons-react";
+import { IconLifebuoy, IconLogout, IconSettings, IconUserCircle } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import { abmelden } from "../../api/abmelden";
+import { useModuleOuvert } from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
 
 function initiales(user: { prenom?: string; nom?: string; email: string }): string {
@@ -32,6 +33,8 @@ export default function UserMenu() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [ouvert, setOuvert] = useState(false);
+  // Support (Release 33) : Menüpunkt „support“ der Rollenverwaltung (Sichtbarkeit), hier im Profilmenü.
+  const { ouvert: supportOffen } = useModuleOuvert("support");
   const panneauRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,6 +101,17 @@ export default function UserMenu() {
             <IconSettings size={16} className="shrink-0" />
             {t("menu_utilisateur.einstellungen")}
           </Link>
+          {supportOffen && (
+            <Link
+              to="/support"
+              onClick={() => setOuvert(false)}
+              role="menuitem"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-tertiary"
+            >
+              <IconLifebuoy size={16} className="shrink-0" />
+              {t("menu_utilisateur.support")}
+            </Link>
+          )}
           <button
             type="button"
             onClick={handleLogout}
