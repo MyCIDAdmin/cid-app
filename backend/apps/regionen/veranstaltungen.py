@@ -26,10 +26,9 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.kalender.benachrichtigung import melden
 from apps.notifications.models import TypeNotification
 
-from . import formattext, services, wettbewerb
+from . import formattext, mails, services, wettbewerb
 from .models import Teilnahme, Veranstaltung, VeranstaltungStatus
 from .permissions import IsAuthenticated
 from .views import _bearbeitbar, _bild, _html, _region, _standort, _text, _url
@@ -277,12 +276,13 @@ class VeranstaltungBildView(APIView):
 
 
 def _melde(user, de, fr, v):
-    melden(
+    mails.melde(
         user,
         TypeNotification.REGION_VERANSTALTUNG,
-        de=de,
-        fr=fr,
-        lien=f"/regionen/{v.region.slug}",
+        de,
+        fr,
+        lien=mails.region_link(v),
+        details=mails.veranstaltungs_details(v),
     )
 
 
@@ -424,9 +424,18 @@ class AnmeldungView(APIView):
                     and v.teilnahmen.count() >= v.max_teilnehmer
                 ):
                     raise ValidationError({"max_teilnehmer": "Das Treffen ist ausgebucht."})
-                Teilnahme.objects.get_or_create(veranstaltung=v, user=request.user)
+                _, neu = Teilnahme.objects.get_or_create(veranstaltung=v, user=request.user)
             else:
+                neu = False
                 v.teilnahmen.filter(user=request.user).delete()
+        if aktiv and neu:
+            mails.sende_mail(
+                request.user,
+                ("Anmeldung bestätigt", f"Du bist für „{v.titel}“ angemeldet."),
+                ("Inscription confirmée", f"Vous êtes inscrit(e) à « {v.titel} »."),
+                lien=mails.region_link(v),
+                details=mails.veranstaltungs_details(v),
+            )
         return Response(veranstaltung_dict(request, v, bearbeiter=bearbeiter, verwalter=verwalter))
 
 

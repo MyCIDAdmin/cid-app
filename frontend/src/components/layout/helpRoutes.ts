@@ -20,6 +20,10 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/membres/zuordnung", "membres_zuordnung"],
   ["/membres", "membres"],
   ["/inscriptions", "inscriptions"],
+  ["/kalender", "kalender"],
+  ["/regionen/wettbewerb", "regionen_wettbewerb"],
+  ["/regionen/bericht", "regionen_bericht"],
+  ["/regionen", "regionen"],
   ["/stats", "stats"],
   ["/admin/finances", "finances"],
 ];

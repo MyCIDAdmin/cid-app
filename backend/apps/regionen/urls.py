@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .berichte import BerichtExportView, BerichtView, FanDetailView, FansView
 from .fan import FanOptionenView, FanProfilView, FanRegistrierenView, MitgliedWerdenView
 from .veranstaltungen import (
     AnmeldungView,
@@ -47,6 +48,8 @@ app_name = "regionen"
 urlpatterns = [
     path("", RegionListeView.as_view(), name="liste"),
     path("personen/", PersonenSucheView.as_view(), name="personen"),
+    path("berichte/", BerichtView.as_view(), name="berichte"),
+    path("berichte/export/", BerichtExportView.as_view(), name="berichte-export"),
     path("wettbewerb/", WettbewerbView.as_view(), name="wettbewerb"),
     path("wettbewerb/journal/", JournalView.as_view(), name="wettbewerb-journal"),
     path("wettbewerb/korrekturen/", KorrekturView.as_view(), name="wettbewerb-korrektur"),
@@ -78,6 +81,8 @@ urlpatterns = [
         VerwaltungStandortListeView.as_view(),
         name="standort-neu",
     ),
+    path("<slug:slug>/fans/", FansView.as_view(), name="fans"),
+    path("<slug:slug>/fans/<uuid:user_id>/", FanDetailView.as_view(), name="fan-detail"),
     path("<slug:slug>/", RegionDetailView.as_view(), name="detail"),
     path("<slug:slug>/banner/", BannerView.as_view(), name="banner"),
     path("<slug:slug>/beitraege/", BeitraegeView.as_view(), name="beitraege"),

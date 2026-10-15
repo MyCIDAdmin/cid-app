@@ -189,6 +189,7 @@ class RegionListeView(APIView):
                 "ergebnisse": [region_dict(r, request.user) for r in regionen],
                 "ohne_region": services.meine_region(request.user) is None,
                 "darf_freigeben": services.ist_personenverwalter(request.user),
+                "darf_berichte": services.darf_berichte(request.user),
             }
         )
 

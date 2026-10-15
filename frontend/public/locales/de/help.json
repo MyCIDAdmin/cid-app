@@ -727,5 +727,84 @@
       "Partner werden nie gelöscht, nur archiviert; so bleiben Bewertungen und Verknüpfungen nachvollziehbar.",
       "Lesen dürfen RH und höher, Pflegen und Bewerten ab Bureau Admin."
     ]
+  },
+  "regionen": {
+    "titre": "Regionen",
+    "intro": "Hier findest du die Regionen des Vereins mit ihren Verantwortlichen, Treffen und Beiträgen. Du kannst dich für Treffen anmelden, auch ohne Mitgliedschaft.",
+    "schritte": [
+      "Eine Region öffnen: Beschreibung, Standorte, Verantwortliche, Treffen und Beiträge.",
+      "Bei einem Treffen auf „Anmelden“ klicken. Du bekommst eine Bestätigung per E-Mail und am Tag davor eine Erinnerung.",
+      "Unter den Beiträgen kannst du mit einem Klick reagieren.",
+      "Verantwortliche sehen zusätzlich ihre Fans-Liste, legen Treffen an und reichen sie zur Freigabe ein."
+    ],
+    "workflows": [
+      {
+        "titre": "Treffen anlegen und veröffentlichen",
+        "wann": "Du bist Verantwortliche/r einer Region.",
+        "schritte": [
+          "Auf der Regionsseite „Neues Treffen“ wählen und Titel, Datum, Ort sowie optional Plätze eintragen.",
+          "Als Entwurf speichern und „Einreichen“ klicken.",
+          "Das Büro prüft und gibt frei oder weist mit Begründung zurück. Du bekommst eine Nachricht in der App und per E-Mail.",
+          "Nach der Freigabe können sich Mitglieder und Fans anmelden."
+        ],
+        "beispiel": "Grillabend Nord am 14. Juni, 30 Plätze.",
+        "danach": "Nach dem Treffen die Anwesenheit abhaken und „Abschließen“ wählen; erst dann zählen die Punkte."
+      },
+      {
+        "titre": "Fans meiner Region ansehen",
+        "wann": "Du bist Verantwortliche/r und willst wissen, wer mitmacht.",
+        "schritte": [
+          "Auf der Regionsseite zu „Fans & Aktivitäten“ scrollen.",
+          "Nach Name suchen oder nach Mitgliedern bzw. Fans filtern.",
+          "Auf einen Namen klicken: Du siehst, an welchen Treffen die Person teilgenommen hat."
+        ],
+        "beispiel": "Eine Person ist dreimal angemeldet und war zweimal da.",
+        "danach": "Kontaktdaten siehst du bewusst nicht. Möchtest du Fans ansprechen, nutze Beiträge oder wende dich ans Büro."
+      }
+    ],
+    "tipps": [
+      "Fans sind Konten, die sich für ein Treffen angemeldet haben, mit oder ohne Mitgliedschaft.",
+      "Alle E-Mails der Regionen kommen zweisprachig (Deutsch und Französisch)."
+    ]
+  },
+  "regionen_wettbewerb": {
+    "titre": "Wettbewerb der Regionen",
+    "intro": "Regionen sammeln Punkte durch Treffen, Teilnahmen und neue Mitglieder. Gewertet werden nur Regionen, keine Einzelpersonen.",
+    "schritte": [
+      "Die Rangliste zeigt Punkte pro Mitglied und Gesamtpunkte der laufenden Saison.",
+      "Mit der Saison-Auswahl blätterst du durch frühere Saisons.",
+      "Abzeichen, Verlauf, Monatssieger und der Preis stehen weiter unten; die Regeln erklären die Punktevergabe.",
+      "Das Büro sieht zusätzlich das Journal und kann Punkte korrigieren; der App-Admin verwaltet Saisons und Regeln."
+    ],
+    "workflows": [],
+    "tipps": [
+      "Punkte pro Mitglied sorgen dafür, dass kleine und große Regionen fair verglichen werden."
+    ]
+  },
+  "regionen_bericht": {
+    "titre": "Regionen-Bericht",
+    "intro": "Kennzahlen aller Regionen für einen frei wählbaren Zeitraum, für Büro und Personenverwalter.",
+    "schritte": [
+      "Zeitraum „Von“ und „Bis“ wählen (Standard: 1. Januar bis heute).",
+      "Die Tabelle zeigt je Region und gesamt: Treffen, Anmeldungen, Anwesenheitsquote, Beiträge, Fans, neue und aktive Fans, Fans, die Mitglied wurden, und Punkte.",
+      "Mit „Als CSV herunterladen“ bekommst du die Tabelle für Excel."
+    ],
+    "workflows": [
+      {
+        "titre": "Jahresbericht erstellen",
+        "wann": "Du brauchst die Zahlen für Vorstand oder Mitgliederversammlung.",
+        "schritte": [
+          "Von = 1. Januar, Bis = 31. Dezember wählen.",
+          "Tabelle prüfen und als CSV herunterladen.",
+          "In Excel öffnen und weiterverarbeiten."
+        ],
+        "beispiel": "Bericht 2026 mit allen Regionen und Gesamtspalte.",
+        "danach": "Die Spalte „Gesamt“ zählt Personen nur einmal."
+      }
+    ],
+    "tipps": [
+      "Fans = Konten mit Anmeldung zu einem veröffentlichten Treffen.",
+      "Die Datei enthält nur Zahlen, keine Namen."
+    ]
   }
 }

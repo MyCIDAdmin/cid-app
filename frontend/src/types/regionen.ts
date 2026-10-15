@@ -58,6 +58,7 @@ export interface RegionenListe {
   ergebnisse: Region[];
   ohne_region: boolean;
   darf_freigeben: boolean;
+  darf_berichte: boolean;
 }
 
 export interface Person {
@@ -328,4 +329,61 @@ export interface SaisonEingabe {
   start: string;
   ende: string;
   preis?: string;
+}
+
+/** Fans und Berichte (Release 31), backend/apps/regionen/berichte.py. */
+export interface FanZeile {
+  user: string;
+  name: string;
+  art: "mitglied" | "fan";
+  anmeldungen: number;
+  teilnahmen: number;
+  reaktionen: number;
+  letzte_aktivitaet: string;
+}
+
+export interface FansListe {
+  gesamt: number;
+  mitglieder: number;
+  fans: number;
+  ergebnisse: FanZeile[];
+}
+
+export interface FanDetail {
+  name: string;
+  art: "mitglied" | "fan";
+  reaktionen: number;
+  veranstaltungen: {
+    id: string;
+    titel: string;
+    datum: string;
+    angemeldet_am: string;
+    anwesend: boolean;
+    abgeschlossen: boolean;
+  }[];
+}
+
+export interface Kennzahlen {
+  treffen: number;
+  geplant: number;
+  abgesagt: number;
+  anmeldungen: number;
+  anwesende: number;
+  anwesenheitsquote: number | null;
+  beitraege: number;
+  reaktionen: number;
+  fans_gesamt: number;
+  fans_mitglieder: number;
+  fans_ohne_mitgliedschaft: number;
+  fans_neu: number;
+  fans_aktiv: number;
+  fan_zu_mitglied: number;
+  punkte: number;
+}
+
+export interface Bericht {
+  von: string;
+  bis: string;
+  regionen: (Kennzahlen & { slug: string; name: string })[];
+  gesamt: Kennzahlen;
 }

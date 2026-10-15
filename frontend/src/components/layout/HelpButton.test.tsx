@@ -25,6 +25,13 @@ describe("HelpButton", () => {
     expect(cleHilfe("/membres/zuordnung")).toBe("membres_zuordnung");
   });
 
+  it("ordnet die Regionen-Seiten ihrer Hilfe zu", () => {
+    expect(cleHilfe("/regionen")).toBe("regionen");
+    expect(cleHilfe("/regionen/nord")).toBe("regionen");
+    expect(cleHilfe("/regionen/wettbewerb")).toBe("regionen_wettbewerb");
+    expect(cleHilfe("/regionen/bericht")).toBe("regionen_bericht");
+  });
+
   it("zeigt den Hilfe-Button auf der Import-Seite", () => {
     renderWithProviders(<HelpButton />, { route: "/membres/import", path: "/membres/import" });
     fireEvent.click(screen.getByLabelText("bouton"));

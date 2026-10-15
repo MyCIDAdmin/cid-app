@@ -95,6 +95,37 @@ export function useJournal(arg: {
   });
 }
 
+export function useFans(arg: {
+  slug: string;
+  q: string;
+  art: string;
+  limit: number;
+  aktiv: boolean;
+}) {
+  const { aktiv, ...rest } = arg;
+  return useQuery({
+    queryKey: [...KEY, "fans", rest],
+    queryFn: () => api.getFans({ ...rest, offset: 0 }),
+    enabled: aktiv,
+  });
+}
+
+export function useFanDetail(slug: string, userId: string | null) {
+  return useQuery({
+    queryKey: [...KEY, "fan", slug, userId],
+    queryFn: () => api.getFanDetail({ slug, userId: userId as string }),
+    enabled: Boolean(userId),
+  });
+}
+
+export function useBericht(von: string, bis: string) {
+  return useQuery({
+    queryKey: [...KEY, "bericht", von, bis],
+    queryFn: () => api.getBericht({ von, bis }),
+    enabled: Boolean(von && bis && von <= bis),
+  });
+}
+
 function useAenderung<A, R>(fn: (arg: A) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({

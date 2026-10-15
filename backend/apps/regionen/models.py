@@ -12,7 +12,15 @@ from apps.membres.models import Bundesland
 from apps.projets.storage import ProjetsStorage
 
 # Diese Kennungen sind Routen unterhalb von /regionen/ und dürfen nie als Slug einer Region dienen.
-RESERVIERTE_SLUGS = {"personen", "verwaltung", "veranstaltungen", "public", "fan", "wettbewerb"}
+RESERVIERTE_SLUGS = {
+    "personen",
+    "verwaltung",
+    "veranstaltungen",
+    "public",
+    "fan",
+    "wettbewerb",
+    "berichte",
+}
 
 FARBE_PRUEFUNG = RegexValidator(r"^#[0-9a-fA-F]{6}$", "Farbe im Format #RRGGBB erwartet.")
 
@@ -213,6 +221,7 @@ class Veranstaltung(models.Model):
     )
     veroeffentlicht_am = models.DateTimeField(null=True, blank=True)
     abgeschlossen_am = models.DateTimeField(null=True, blank=True)
+    erinnert_am = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

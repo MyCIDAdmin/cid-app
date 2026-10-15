@@ -1,6 +1,9 @@
 /** Client API — Regionen (Release 26), backend/apps/regionen/views.py. */
 import type {
+  Bericht,
   Beitrag,
+  FanDetail,
+  FansListe,
   FanAenderung,
   FanOptionen,
   FanProfil,
@@ -463,5 +466,37 @@ export async function buchePunkteNach(id: string): Promise<{ gebucht: number }> 
 
 export async function speichereRegeln(regeln: WettbewerbRegeln): Promise<WettbewerbRegeln> {
   const { data } = await apiClient.put<WettbewerbRegeln>("/regionen/wettbewerb/regeln/", regeln);
+  return data;
+}
+
+export async function getFans(arg: {
+  slug: string;
+  q?: string;
+  art?: string;
+  limit: number;
+  offset: number;
+}): Promise<FansListe> {
+  const { slug, ...params } = arg;
+  const { data } = await apiClient.get<FansListe>(`/regionen/${slug}/fans/`, {
+    params: { ...params, q: params.q || undefined, art: params.art || undefined },
+  });
+  return data;
+}
+
+export async function getFanDetail(arg: { slug: string; userId: string }): Promise<FanDetail> {
+  const { data } = await apiClient.get<FanDetail>(`/regionen/${arg.slug}/fans/${arg.userId}/`);
+  return data;
+}
+
+export async function getBericht(arg: { von: string; bis: string }): Promise<Bericht> {
+  const { data } = await apiClient.get<Bericht>("/regionen/berichte/", { params: arg });
+  return data;
+}
+
+export async function ladeBerichtCsv(arg: { von: string; bis: string }): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>("/regionen/berichte/export/", {
+    params: arg,
+    responseType: "blob",
+  });
   return data;
 }

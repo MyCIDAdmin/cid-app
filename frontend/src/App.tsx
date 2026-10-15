@@ -42,6 +42,7 @@ import OeffentlicherKalenderPage from "./pages/kalender/OeffentlicherKalenderPag
 import RegionDetailPage from "./pages/regionen/RegionDetailPage";
 import RegionenPage from "./pages/regionen/RegionenPage";
 import WettbewerbPage from "./pages/regionen/WettbewerbPage";
+import BerichtPage from "./pages/regionen/BerichtPage";
 import UmfrageDetailPage from "./pages/umfragen/UmfrageDetailPage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
@@ -607,6 +608,14 @@ export default function App() {
             element={
               <RequireMenuModule cle="regionen">
                 <WettbewerbPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/regionen/bericht"
+            element={
+              <RequireMenuModule cle="regionen">
+                <BerichtPage />
               </RequireMenuModule>
             }
           />
