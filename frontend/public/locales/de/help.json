@@ -112,6 +112,7 @@
     "schritte": [
       "Eine Kampagne mit Zeitraum und Beschreibung anlegen.",
       "Über „Angebote verwalten“ die Mitgliedschaftsstufen mit Preisen und Vorteilen hinzufügen.",
+      "Bei Bedarf ein Angebot als „Familienpaket“ markieren: Grundpreis plus Zuschlag je weiterer Erwachsener und je Kind, mit Obergrenzen. Ein Wechsel auf das Paket gilt erst ab der nächsten Kampagne.",
       "Kampagne veröffentlichen, damit Interessierte sie auf der Startseite und unter „Meine Mitgliedschaft“ sehen."
     ]
   },

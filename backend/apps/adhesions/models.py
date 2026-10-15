@@ -24,6 +24,7 @@ Périmètre de ce module (AHM-19) :
 import uuid
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -183,6 +184,20 @@ class OffreAdhesion(models.Model):
         ),
     )
 
+    # Familienpaket (Release 34, 2026-10-15) : Preis = Grundpreis (`prix_plein`) plus Betrag je
+    # weiterer erwachsener Person und je Kind. Die Obergrenzen gelten je Angebot ; gebucht werden
+    # die Plätze bei der Souscription. Erwachsene sind eigene Mitglieder (Einladung folgt in
+    # Release 35), Kinder sind keine Mitglieder (siehe FamilienKind).
+    ist_familienpaket = models.BooleanField(default=False)
+    preis_je_erwachsener = models.DecimalField(
+        max_digits=8, decimal_places=2, default=Decimal("0.00"), validators=[MinValueValidator(0)]
+    )
+    preis_je_kind = models.DecimalField(
+        max_digits=8, decimal_places=2, default=Decimal("0.00"), validators=[MinValueValidator(0)]
+    )
+    max_erwachsene = models.PositiveSmallIntegerField(default=0)
+    max_kinder = models.PositiveSmallIntegerField(default=0)
+
     class Meta:
         db_table = "adhesions_offres"
         verbose_name = _("Offre d'adhésion")
@@ -192,6 +207,15 @@ class OffreAdhesion(models.Model):
 
     def __str__(self):
         return f"{self.nom} — {self.campagne.nom}"
+
+    def preis_fuer(self, erwachsene: int = 0, kinder: int = 0) -> Decimal:
+        """Gesamtpreis vor Rabatt : Grundpreis plus Zuschläge für die gebuchten Plätze (Server-
+        Berechnung, das Frontend zeigt nur eine Vorschau)."""
+        if not self.ist_familienpaket:
+            return self.prix_plein
+        return (
+            self.prix_plein + self.preis_je_erwachsener * erwachsene + self.preis_je_kind * kinder
+        ).quantize(Decimal("0.01"))
 
     def eligible_pour_age(self, age: int) -> bool:
         """Éligibilité dynamique à l'âge (FDD §6.1) — jamais stockée, voir Membre.age."""
@@ -316,6 +340,10 @@ class Souscription(models.Model):
         help_text=_("Écriture de paiement liée, une fois la souscription payée."),
     )
 
+    # Familienpaket (Release 34) : gebuchte Plätze, Grundlage des Preises.
+    plaetze_erwachsene = models.PositiveSmallIntegerField(default=0)
+    plaetze_kinder = models.PositiveSmallIntegerField(default=0)
+
     snapshot_avantages = models.JSONField(
         default=list,
         blank=True,
@@ -345,6 +373,38 @@ class Souscription(models.Model):
 
     def __str__(self):
         return f"{self.membre} — {self.offre.nom} ({self.get_statut_display()})"
+
+
+class FamilienKind(models.Model):
+    """Kind in einem Familienpaket (Release 34). Bewusst KEIN `Membre` : kein Konto, kein
+    Stimmrecht, keine Mails, nicht in Mitglieder-, Fan- oder Regionenlisten. Gespeichert werden nur
+    Vorname, Nachname und Geburtsjahr sowie die Einwilligung der erziehungsberechtigten Person
+    (Zeitpunkt, Textversion, wer). Die Daten werden nach Ablauf der Aufbewahrungsfrist gelöscht
+    (settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE, tasks.loeschen_kinderdaten)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    souscription = models.ForeignKey(Souscription, on_delete=models.CASCADE, related_name="kinder")
+    vorname = models.CharField(max_length=100)
+    nachname = models.CharField(max_length=100)
+    geburtsjahr = models.PositiveSmallIntegerField()
+    kartennummer = models.CharField(max_length=40, blank=True)
+    einwilligung_am = models.DateTimeField(default=timezone.now)
+    einwilligung_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    einwilligung_version = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "adhesions_familien_kinder"
+        ordering = ["created_at", "id"]
+
+    def __str__(self):
+        return f"{self.vorname} {self.nachname} ({self.geburtsjahr})"
+
+    @property
+    def alter(self) -> int:
+        return timezone.localdate().year - self.geburtsjahr
 
 
 class StatutJustificatif(models.TextChoices):

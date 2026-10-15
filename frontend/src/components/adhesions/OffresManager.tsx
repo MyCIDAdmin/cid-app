@@ -41,6 +41,14 @@ const OPTIONS_COULEUR: CouleurOffre[] = ["", "cat_1", "cat_2", "cat_3"];
 // Look der digitalen Mitgliedskarte (2026-10-06) — leer = Rubin (CID-Rot).
 const OPTIONS_KARTENSTIL: KartenStil[] = [...KARTEN_STILE];
 
+// Felder des Familienpakets: Zuschläge (Betrag) und Obergrenzen (ganze Zahlen).
+const FAMILIEN_FELDER = [
+  { feld: "preis_je_erwachsener", schritt: "0.01" },
+  { feld: "preis_je_kind", schritt: "0.01" },
+  { feld: "max_erwachsene", schritt: "1" },
+  { feld: "max_kinder", schritt: "1" },
+] as const;
+
 function formulaireInitial(campagneId: string): OffreCreatePayload & { avantages_texte: string } {
   return {
     campagne: campagneId,
@@ -51,6 +59,11 @@ function formulaireInitial(campagneId: string): OffreCreatePayload & { avantages
     condition_age_max: null,
     visible: true,
     ordre: 0,
+    ist_familienpaket: false,
+    preis_je_erwachsener: "0.00",
+    preis_je_kind: "0.00",
+    max_erwachsene: 0,
+    max_kinder: 0,
     avantages_texte: "",
   };
 }
@@ -117,6 +130,12 @@ export default function OffresManager({
   function togglePopulaire(offreId: string, populaire: boolean) {
     if (!modifiable) return;
     modifierMutation.mutate({ id: offreId, payload: { populaire } });
+  }
+
+  // Familienpaket (R34) — Grundpreis bleibt prix_plein, dazu Zuschlag je Person und Obergrenzen.
+  function modifierFamilie(offreId: string, payload: Partial<OffreCreatePayload>) {
+    if (!modifiable) return;
+    modifierMutation.mutate({ id: offreId, payload });
   }
 
   function handleIconeChange(offreId: string, e: ChangeEvent<HTMLInputElement>) {
@@ -268,6 +287,44 @@ export default function OffresManager({
                 />
                 {t("admin_offres.populaire_label")}
               </label>
+              <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={offre.ist_familienpaket}
+                  onChange={(e) =>
+                    modifierFamilie(offre.id, { ist_familienpaket: e.target.checked })
+                  }
+                  disabled={!modifiable}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                />
+                {t("admin_offres.familie_label")}
+              </label>
+              {offre.ist_familienpaket && (
+                <div className="flex w-full flex-wrap items-center gap-2 rounded-cid bg-bg-tertiary/40 p-2">
+                  {FAMILIEN_FELDER.map(({ feld, schritt }) => (
+                    <label
+                      key={feld}
+                      className="flex items-center gap-1 text-[10px] text-text-secondary"
+                    >
+                      {t(`admin_offres.familie_${feld}`)}
+                      <input
+                        type="number"
+                        min="0"
+                        step={schritt}
+                        aria-label={`${t(`admin_offres.familie_${feld}`)} — ${offre.nom}`}
+                        defaultValue={offre[feld]}
+                        onBlur={(e) =>
+                          modifierFamilie(offre.id, {
+                            [feld]: schritt === "1" ? Number(e.target.value) : e.target.value,
+                          })
+                        }
+                        disabled={!modifiable}
+                        className="w-16 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
               {iconeMutation.isError && (
                 <p className="w-full text-[10px] text-status-dangerText">
                   {extractApiErrorMessage(iconeMutation.error, t("admin_offres.erreur_icone"))}
@@ -391,6 +448,42 @@ export default function OffresManager({
             className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
           />
         </div>
+
+        <div className="md:col-span-2">
+          <label className="flex items-center gap-1 text-[10px] text-text-secondary">
+            <input
+              type="checkbox"
+              checked={form.ist_familienpaket}
+              onChange={(e) => setForm({ ...form, ist_familienpaket: e.target.checked })}
+            />
+            {t("admin_offres.familie_label")}
+          </label>
+        </div>
+        {form.ist_familienpaket &&
+          FAMILIEN_FELDER.map(({ feld, schritt }) => (
+            <div key={feld}>
+              <label
+                htmlFor={`offre-${feld}-${campagne.id}`}
+                className="mb-1 block text-[10px] text-text-tertiary"
+              >
+                {t(`admin_offres.familie_${feld}`)}
+              </label>
+              <input
+                id={`offre-${feld}-${campagne.id}`}
+                type="number"
+                min="0"
+                step={schritt}
+                value={form[feld] ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    [feld]: schritt === "1" ? Number(e.target.value) : e.target.value,
+                  })
+                }
+                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+              />
+            </div>
+          ))}
 
         {creerMutation.isError && (
           <p className="text-xs text-status-dangerText md:col-span-2">

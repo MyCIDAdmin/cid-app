@@ -56,6 +56,7 @@ from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import is_elevated_for_module
 
+from .familie import pruefe_kinder_passen
 from .filters import (
     CampagneAdhesionFilter,
     JustificatifRabaisFilter,
@@ -263,9 +264,13 @@ class SouscriptionViewSet(ModelViewSet):
     filterset_class = SouscriptionFilter
 
     def get_queryset(self):
-        queryset = Souscription.objects.select_related(
-            "membre", "offre", "campagne", "rabais", "cotisation", "justificatif"
-        ).all()
+        queryset = (
+            Souscription.objects.select_related(
+                "membre", "offre", "campagne", "rabais", "cotisation", "justificatif"
+            )
+            .prefetch_related("kinder")
+            .all()
+        )
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
@@ -289,7 +294,13 @@ class SouscriptionViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         offre = serializer.validated_data["offre"]
         rabais = serializer.validated_data.get("rabais")
+        erwachsene = serializer.validated_data["plaetze_erwachsene"]
+        kinder = serializer.validated_data["plaetze_kinder"]
         campagne = offre.campagne
+        # Familienpaket : nicht weniger Plätze buchen als Kinder schon eingetragen sind.
+        pruefe_kinder_passen(
+            Souscription.objects.filter(membre=membre, campagne=campagne).first(), kinder
+        )
 
         souscription, _created = Souscription.objects.get_or_create(
             membre=membre,
@@ -313,7 +324,8 @@ class SouscriptionViewSet(ModelViewSet):
         if not _created and souscription.rabais_id != nouveau_rabais_id:
             JustificatifRabais.objects.filter(souscription=souscription).delete()
 
-        prix = rabais.calculer_prix(offre.prix_plein) if rabais else offre.prix_plein
+        gesamtpreis = offre.preis_fuer(erwachsene, kinder)
+        prix = rabais.calculer_prix(gesamtpreis) if rabais else gesamtpreis
         statut = (
             StatutSouscription.EN_ATTENTE_JUSTIFICATIF
             if rabais and rabais.justificatif_requis
@@ -322,6 +334,8 @@ class SouscriptionViewSet(ModelViewSet):
 
         souscription.offre = offre
         souscription.rabais = rabais
+        souscription.plaetze_erwachsene = erwachsene
+        souscription.plaetze_kinder = kinder
         souscription.prix_paye = prix
         souscription.statut = statut
         souscription.snapshot_avantages = offre.avantages
@@ -359,7 +373,12 @@ class SouscriptionViewSet(ModelViewSet):
         membre_cible = serializer.validated_data["membre"]
         _exiger_piece_identite(membre_cible)
         offre = serializer.validated_data["offre"]
+        erwachsene = serializer.validated_data["plaetze_erwachsene"]
+        kinder = serializer.validated_data["plaetze_kinder"]
         campagne = offre.campagne
+        pruefe_kinder_passen(
+            Souscription.objects.filter(membre=membre_cible, campagne=campagne).first(), kinder
+        )
 
         souscription, _created = Souscription.objects.get_or_create(
             membre=membre_cible,
@@ -371,7 +390,9 @@ class SouscriptionViewSet(ModelViewSet):
 
         souscription.offre = offre
         souscription.rabais = None
-        souscription.prix_paye = offre.prix_plein
+        souscription.plaetze_erwachsene = erwachsene
+        souscription.plaetze_kinder = kinder
+        souscription.prix_paye = offre.preis_fuer(erwachsene, kinder)
         souscription.statut = StatutSouscription.EN_ATTENTE_PAIEMENT
         souscription.snapshot_avantages = offre.avantages
         souscription.date_souscription = timezone.now()
@@ -407,7 +428,9 @@ class SouscriptionViewSet(ModelViewSet):
         queryset = (
             Souscription.objects.select_related(
                 "offre", "campagne", "rabais", "cotisation", "justificatif"
-            ).filter(membre=membre)
+            )
+            .prefetch_related("kinder")
+            .filter(membre=membre)
             if membre
             else Souscription.objects.none()
         )

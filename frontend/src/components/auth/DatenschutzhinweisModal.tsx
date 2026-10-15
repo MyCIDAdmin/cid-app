@@ -26,6 +26,7 @@ const SECTIONS = [
   ["daten_titre", "daten_text"],
   ["zweck_titre", "zweck_text"],
   ["regionen_titre", "regionen_text"],
+  ["familie_titre", "familie_text"],
   ["benachrichtigungen_titre", "benachrichtigungen_text"],
   ["speicherdauer_titre", "speicherdauer_text"],
   ["rechte_titre", "rechte_text"],

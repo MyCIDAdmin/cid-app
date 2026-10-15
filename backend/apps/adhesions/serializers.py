@@ -15,6 +15,7 @@ from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 from apps.uebersetzung.serializers import UebersetzungenField
 
+from .familie import pruefe_plaetze
 from .models import (
     CampagneAdhesion,
     JustificatifRabais,
@@ -91,6 +92,11 @@ class OffreAdhesionSerializer(serializers.ModelSerializer):
             "couleur",
             "kartenstil",
             "populaire",
+            "ist_familienpaket",
+            "preis_je_erwachsener",
+            "preis_je_kind",
+            "max_erwachsene",
+            "max_kinder",
             "rabais",
         ]
         read_only_fields = ["id"]
@@ -166,6 +172,23 @@ class SouscriptionSerializer(serializers.ModelSerializer):
     # justificatif directement depuis mes-souscriptions/, sans appel séparé (AHM-20).
     # None tant qu'aucun justificatif n'a été uploadé pour cette souscription.
     justificatif = JustificatifRabaisSerializer(read_only=True)
+    kinder = serializers.SerializerMethodField()
+
+    def get_kinder(self, souscription):
+        if not souscription.offre.ist_familienpaket:
+            return []
+        return [
+            {
+                "id": str(k.id),
+                "vorname": k.vorname,
+                "nachname": k.nachname,
+                "geburtsjahr": k.geburtsjahr,
+                "alter": k.alter,
+                "kartennummer": k.kartennummer,
+                "einwilligung_am": k.einwilligung_am.isoformat(),
+            }
+            for k in souscription.kinder.all()
+        ]
 
     class Meta:
         model = Souscription
@@ -181,6 +204,9 @@ class SouscriptionSerializer(serializers.ModelSerializer):
             "cotisation",
             "snapshot_avantages",
             "justificatif",
+            "plaetze_erwachsene",
+            "plaetze_kinder",
+            "kinder",
             "created_at",
             "updated_at",
         ]
@@ -194,10 +220,13 @@ class SouscrireSerializer(serializers.Serializer):
     rabais = serializers.PrimaryKeyRelatedField(
         queryset=RabaisOffre.objects.all(), required=False, allow_null=True
     )
+    plaetze_erwachsene = serializers.IntegerField(min_value=0, max_value=20, default=0)
+    plaetze_kinder = serializers.IntegerField(min_value=0, max_value=20, default=0)
 
     def validate(self, attrs):
         offre = attrs["offre"]
         rabais = attrs.get("rabais")
+        pruefe_plaetze(offre, attrs["plaetze_erwachsene"], attrs["plaetze_kinder"])
 
         if not offre.visible:
             raise serializers.ValidationError({"offre": "Cette offre n'est plus disponible."})
@@ -234,10 +263,13 @@ class SouscrireEspecesSerializer(serializers.Serializer):
 
     membre = serializers.PrimaryKeyRelatedField(queryset=Membre.objects.all())
     offre = serializers.PrimaryKeyRelatedField(queryset=OffreAdhesion.objects.all())
+    plaetze_erwachsene = serializers.IntegerField(min_value=0, max_value=20, default=0)
+    plaetze_kinder = serializers.IntegerField(min_value=0, max_value=20, default=0)
 
     def validate(self, attrs):
         offre = attrs["offre"]
         membre = attrs["membre"]
+        pruefe_plaetze(offre, attrs["plaetze_erwachsene"], attrs["plaetze_kinder"])
 
         if not offre.visible:
             raise serializers.ValidationError({"offre": "Cette offre n'est plus disponible."})

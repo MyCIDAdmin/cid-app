@@ -6,7 +6,10 @@ import type { CursorPage } from "../types/membre";
 import type {
   CampagneAdhesion,
   CampagneCreatePayload,
+  FamilienKind,
+  FamilienpaketeUebersicht,
   JustificatifRabais,
+  KindPayload,
   OffreAdhesion,
   OffreCreatePayload,
   RabaisCreatePayload,
@@ -213,6 +216,30 @@ export async function modifierFristCampagne(
 ): Promise<CampagneAdhesion> {
   const { data } = await apiClient.patch<CampagneAdhesion>(`/adhesions/campagnes/${id}/`, {
     date_limite_renouvellement,
+  });
+  return data;
+}
+
+/** Kind zu einem Familienpaket hinzufügen (R34) — nur der Inhaber, mit Einwilligung. */
+export async function kindAnlegen(
+  souscriptionId: string,
+  payload: KindPayload,
+): Promise<FamilienKind> {
+  const { data } = await apiClient.post<FamilienKind>(
+    `/adhesions/souscriptions/${souscriptionId}/kinder/`,
+    payload,
+  );
+  return data;
+}
+
+export async function kindLoeschen(souscriptionId: string, kindId: string): Promise<void> {
+  await apiClient.delete(`/adhesions/souscriptions/${souscriptionId}/kinder/${kindId}/`);
+}
+
+/** Büro-Übersicht der Familienpakete (R34), optional je Kampagne. */
+export async function listFamilienpakete(campagne?: string): Promise<FamilienpaketeUebersicht> {
+  const { data } = await apiClient.get<FamilienpaketeUebersicht>("/adhesions/familienpakete/", {
+    params: campagne ? { campagne } : undefined,
   });
   return data;
 }

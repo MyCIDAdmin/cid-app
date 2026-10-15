@@ -75,6 +75,8 @@
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import FamilienBereich from "../../components/adhesions/FamilienBereich";
+import FamilienPlaetze from "../../components/adhesions/FamilienPlaetze";
 import MitgliedsKarteAbschnitt from "../../components/adhesions/MitgliedsKarteAbschnitt";
 import PaiementStepper from "../../components/adhesions/PaiementStepper";
 import ZahlungsInfoDialog from "../../components/adhesions/ZahlungsInfoDialog";
@@ -176,6 +178,9 @@ export default function MonAdhesionPage() {
   const [rabaisSelectionneId, setRabaisSelectionneId] = useState<string | null>(null);
   const [fichierJustificatif, setFichierJustificatif] = useState<File | null>(null);
   const [retraitOuvert, setRetraitOuvert] = useState(false);
+  // Familienpaket (R34): gewählte Plätze für das gerade aufgeklappte Angebot.
+  const [plaetzeErwachsene, setPlaetzeErwachsene] = useState(0);
+  const [plaetzeKinder, setPlaetzeKinder] = useState(0);
   const fichierInputRef = useRef<HTMLInputElement>(null);
 
   const campagne = campagneActive.data;
@@ -217,6 +222,10 @@ export default function MonAdhesionPage() {
   function choisirOffre(offreId: string) {
     setOffreSelectionneeId((cur) => (cur === offreId ? null : offreId));
     setRabaisSelectionneId(null);
+    // Bei erneuter Wahl desselben Angebots die bisher gebuchten Plätze vorbelegen.
+    const gleich = souscriptionActuelle?.offre === offreId;
+    setPlaetzeErwachsene(gleich ? (souscriptionActuelle?.plaetze_erwachsene ?? 0) : 0);
+    setPlaetzeKinder(gleich ? (souscriptionActuelle?.plaetze_kinder ?? 0) : 0);
   }
 
   function envoyerJustificatif() {
@@ -237,7 +246,13 @@ export default function MonAdhesionPage() {
   function handleSouscrire() {
     if (!offreSelectionnee) return;
     souscrireMutation.mutate(
-      { offre: offreSelectionnee.id, rabais: rabaisSelectionne?.id },
+      {
+        offre: offreSelectionnee.id,
+        rabais: rabaisSelectionne?.id,
+        ...(offreSelectionnee.ist_familienpaket
+          ? { plaetze_erwachsene: plaetzeErwachsene, plaetze_kinder: plaetzeKinder }
+          : {}),
+      },
       {
         onSuccess: (souscription) => {
           setOffreSelectionneeId(null);
@@ -406,6 +421,19 @@ export default function MonAdhesionPage() {
         </div>
       )}
 
+      {souscriptionActuelle &&
+        offreActuelle?.ist_familienpaket &&
+        souscriptionActuelle.statut !== "annulee" &&
+        souscriptionActuelle.statut !== "expiree" && (
+          <FamilienBereich
+            souscription={souscriptionActuelle}
+            angebot={offreActuelle.nom}
+            stil={offreActuelle.kartenstil}
+            kampagne={campagne?.nom}
+            gueltigBis={campagne ? formatDate(campagne.date_fin) : undefined}
+          />
+        )}
+
       <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
         <h2 className="mb-1 text-xs font-bold text-text-primary">
           {campagne
@@ -477,8 +505,21 @@ export default function MonAdhesionPage() {
                     {uebersetzt(offre, "nom")}
                   </div>
                   <div className="mt-2 text-center font-display text-3xl font-bold text-text-primary">
+                    {offre.ist_familienpaket && (
+                      <span className="mr-1 text-sm font-medium text-text-tertiary">
+                        {t("familie.ab")}
+                      </span>
+                    )}
                     {formatMontant(offre.prix_plein)}
                   </div>
+                  {offre.ist_familienpaket && (
+                    <p className="mt-1 text-center text-[11px] text-text-tertiary">
+                      {t("familie.zuschlaege", {
+                        erwachsener: formatMontant(offre.preis_je_erwachsener),
+                        kind: formatMontant(offre.preis_je_kind),
+                      })}
+                    </p>
+                  )}
                   {offre.description && (
                     <p className="mt-2 text-center text-sm text-text-secondary">
                       {uebersetzt(offre, "description")}
@@ -518,6 +559,17 @@ export default function MonAdhesionPage() {
 
                   {selectionnee && (
                     <div className="mt-5 border-t border-text-tertiary/10 pt-4">
+                      {offre.ist_familienpaket && (
+                        <FamilienPlaetze
+                          offre={offre}
+                          erwachsene={plaetzeErwachsene}
+                          kinder={plaetzeKinder}
+                          onChange={(e, k) => {
+                            setPlaetzeErwachsene(e);
+                            setPlaetzeKinder(k);
+                          }}
+                        />
+                      )}
                       {offre.rabais.length > 0 && (
                         <div className="mb-2">
                           <label
