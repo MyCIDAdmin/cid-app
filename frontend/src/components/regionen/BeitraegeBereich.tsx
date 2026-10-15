@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { useBeitraege, useBeitragAnlegen } from "../../hooks/useRegionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { klartext } from "../../utils/formattext";
+import RichTextEditor from "../ui/RichTextEditor";
 import BeitragKarte from "./BeitragKarte";
 
 const SEITE = 10;
@@ -30,7 +32,7 @@ export default function BeitraegeBereich({
 
   function senden(e: FormEvent) {
     e.preventDefault();
-    if (!titel.trim() || !text.trim()) return;
+    if (!titel.trim() || !klartext(text)) return;
     setFehler(null);
     anlegen.mutate(
       { slug, titel: titel.trim(), text: text.trim(), bild },
@@ -63,14 +65,11 @@ export default function BeitraegeBereich({
             maxLength={150}
             onChange={(e) => setTitel(e.target.value)}
           />
-          <textarea
-            className={FELD}
-            aria-label={t("beitrag_text")}
-            placeholder={t("beitrag_text")}
-            rows={4}
-            maxLength={4000}
+          <RichTextEditor
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={setText}
+            ariaLabel={t("beitrag_text")}
+            placeholder={t("beitrag_text")}
           />
           <input
             ref={bildEingabe}
@@ -84,7 +83,7 @@ export default function BeitraegeBereich({
           <div>
             <button
               type="submit"
-              disabled={!titel.trim() || !text.trim() || anlegen.isPending}
+              disabled={!titel.trim() || !klartext(text) || anlegen.isPending}
               className="rounded-cid bg-ca px-4 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-50"
             >
               {t("beitrag_veroeffentlichen")}

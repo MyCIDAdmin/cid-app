@@ -29,10 +29,10 @@ from rest_framework.views import APIView
 from apps.kalender.benachrichtigung import melden
 from apps.notifications.models import TypeNotification
 
-from . import services
+from . import formattext, services, wettbewerb
 from .models import Teilnahme, Veranstaltung, VeranstaltungStatus
 from .permissions import IsAuthenticated
-from .views import _bearbeitbar, _bild, _region, _standort, _text, _url
+from .views import _bearbeitbar, _bild, _html, _region, _standort, _text, _url
 
 S = VeranstaltungStatus
 # Diese Zustände darf die Region selbst ändern ; veröffentlichte Treffen nur das Büro.
@@ -158,7 +158,7 @@ def _felder(daten, region, v=None) -> dict:
     if v is None or "ort" in daten:
         erg["ort"] = _text(daten, "ort", 200, pflicht=True)
     if "beschreibung" in daten:
-        erg["beschreibung"] = _text(daten, "beschreibung", 4000)
+        erg["beschreibung"] = _html(daten, "beschreibung", 4000)
     if "uhrzeit" in daten:
         erg["uhrzeit"] = _uhrzeit(daten.get("uhrzeit"))
     if "max_teilnehmer" in daten:
@@ -389,9 +389,11 @@ class VeranstaltungAktionView(APIView):
         )
         if v.datum > heute():
             raise ValidationError({"datum": "Das Treffen hat noch nicht stattgefunden."})
-        v.status = S.ABGESCHLOSSEN
-        v.abgeschlossen_am = timezone.now()
-        v.save()
+        with transaction.atomic():
+            v.status = S.ABGESCHLOSSEN
+            v.abgeschlossen_am = timezone.now()
+            v.save()
+            wettbewerb.buche_veranstaltung(v)
 
 
 class AnmeldungView(APIView):
@@ -519,6 +521,7 @@ class OeffentlichView(APIView):
             "abgesagt": v.status == S.ABGESAGT,
             "beendet": v.status == S.ABGESCHLOSSEN,
             "teilen": teilen_texte(v, url),
+            "beschreibung_html": formattext.anzeige(v.beschreibung),
         }
         antwort = render(request, "regionen/veranstaltung_oeffentlich.html", kontext)
         antwort["X-Robots-Tag"] = "noindex"

@@ -12,7 +12,7 @@ from apps.membres.models import Bundesland
 from apps.projets.storage import ProjetsStorage
 
 # Diese Kennungen sind Routen unterhalb von /regionen/ und dürfen nie als Slug einer Region dienen.
-RESERVIERTE_SLUGS = {"personen", "verwaltung", "veranstaltungen", "public", "fan"}
+RESERVIERTE_SLUGS = {"personen", "verwaltung", "veranstaltungen", "public", "fan", "wettbewerb"}
 
 FARBE_PRUEFUNG = RegexValidator(r"^#[0-9a-fA-F]{6}$", "Farbe im Format #RRGGBB erwartet.")
 
@@ -273,3 +273,84 @@ class FanProfil(models.Model):
 
     def __str__(self):
         return f"{self.prenom} {self.nom}".strip()
+
+
+class Saison(models.Model):
+    """Wettbewerbssaison (Release 30). Saisons überschneiden sich nicht. Nach dem Ende friert der
+    App Admin die Rangliste ein ; sie bleibt dann als Momentaufnahme erhalten („Ewige Tabelle“).
+    Der Preis ist Freitext und nicht technisch gekoppelt."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, unique=True)
+    start = models.DateField()
+    ende = models.DateField()
+    preis = models.TextField(max_length=500, blank=True)
+    eingefroren_am = models.DateTimeField(null=True, blank=True)
+    rangliste_eingefroren = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-start"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(ende__gte=models.F("start")), name="regionen_saison_zeitraum"
+            )
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class WettbewerbEinstellung(models.Model):
+    """Punkte-Regeln (genau eine Zeile) ; der App Admin stellt sie ein."""
+
+    id = models.SmallIntegerField(primary_key=True, default=1, editable=False)
+    punkte_veranstaltung = models.PositiveSmallIntegerField(default=50)
+    punkte_anwesend = models.PositiveSmallIntegerField(default=2)
+    max_anwesende = models.PositiveSmallIntegerField(default=25)
+    punkte_erstteilnehmer = models.PositiveSmallIntegerField(default=3)
+    punkte_neumitglied = models.PositiveSmallIntegerField(default=20)
+    max_treffen_monat = models.PositiveSmallIntegerField(default=8)
+
+    class Meta:
+        verbose_name = "Wettbewerb-Einstellung"
+        verbose_name_plural = "Wettbewerb-Einstellungen"
+
+    @classmethod
+    def holen(cls) -> "WettbewerbEinstellung":
+        return cls.objects.get_or_create(pk=1)[0]
+
+
+class PunkteGrund(models.TextChoices):
+    VERANSTALTUNG = "veranstaltung", "Treffen durchgeführt"
+    ANWESENHEIT = "anwesenheit", "Anwesende"
+    ERSTTEILNEHMER = "erstteilnehmer", "Erstteilnehmer"
+    NEUMITGLIED = "neumitglied", "Neumitglied aus Fan-Konto"
+    KORREKTUR = "korrektur", "Korrektur durch das Büro"
+
+
+class PunkteEintrag(models.Model):
+    """Eine Zeile im Punkte-Journal. Einträge werden nie geändert oder gelöscht ; Korrekturen sind
+    neue Einträge mit Begründung. `schluessel` macht die automatische Buchung wiederholbar.
+    Personen werden nicht gespeichert, nur ihre Anzahl."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    saison = models.ForeignKey(Saison, on_delete=models.PROTECT, related_name="eintraege")
+    region = models.ForeignKey(Region, on_delete=models.PROTECT, related_name="punkte")
+    grund = models.CharField(max_length=20, choices=PunkteGrund.choices)
+    punkte = models.IntegerField()
+    anzahl = models.PositiveSmallIntegerField(null=True, blank=True)
+    veranstaltung = models.ForeignKey(
+        Veranstaltung, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    datum = models.DateField()
+    schluessel = models.CharField(max_length=80, unique=True, null=True, blank=True)
+    begruendung = models.CharField(max_length=300, blank=True)
+    erstellt_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["saison", "region"], name="regionen_punkte_saison")]

@@ -34,7 +34,7 @@ from apps.accounts.models import User
 from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Bundesland
 
-from . import services
+from . import formattext, services, wettbewerb
 from .models import (
     FARBE_PRUEFUNG,
     REAKTIONEN,
@@ -48,6 +48,23 @@ from .models import (
 from .permissions import IsAuthenticated, IsSuperAdmin
 
 BUNDESLAENDER = dict(Bundesland.choices)
+
+
+def _html(daten, feld, maximum, pflicht=False) -> str:
+    """Formatierter Text aus dem Editor : bereinigt ; die Länge zählt nur den sichtbaren Text."""
+    wert = daten.get(feld, "")
+    if wert is None:
+        wert = ""
+    if not isinstance(wert, str):
+        raise ValidationError({feld: "Text erwartet."})
+    if len(wert) > maximum * 10:
+        raise ValidationError({feld: "Der Text ist zu lang."})
+    bereinigt = formattext.bereinige(wert)
+    if pflicht and not bereinigt:
+        raise ValidationError({feld: "Pflichtfeld."})
+    if len(formattext.klartext(bereinigt)) > maximum:
+        raise ValidationError({feld: f"Höchstens {maximum} Zeichen."})
+    return bereinigt
 
 
 def _text(daten, feld, maximum, pflicht=False) -> str:
@@ -125,6 +142,7 @@ def region_dict(region: Region, user, detail=False) -> dict:
                 ],
                 "darf_bearbeiten": services.darf_bearbeiten(user, region),
                 "darf_personen_verwalten": services.ist_personenverwalter(user),
+                "wettbewerb": wettbewerb.platz_von(region),
             }
         )
     return daten
@@ -186,7 +204,7 @@ class RegionDetailView(APIView):
         for sprache in ("de", "fr"):
             feld = f"beschreibung_{sprache}"
             if feld in request.data:
-                setattr(region, feld, _text(request.data, feld, 4000))
+                setattr(region, feld, _html(request.data, feld, 4000))
         region.save()
         return Response(region_dict(region, request.user, detail=True))
 
@@ -301,7 +319,7 @@ class VerantwortlicherDetailView(APIView):
         if "funktion" in daten:
             karte.funktion = _text(daten, "funktion", 100)
         if "vorstellung" in daten:
-            karte.vorstellung = _text(daten, "vorstellung", 1000)
+            karte.vorstellung = _html(daten, "vorstellung", 1000)
         if "kontakt_email" in daten:
             kontakt = _text(daten, "kontakt_email", 254)
             if kontakt and "@" not in kontakt:
@@ -425,6 +443,10 @@ class VerwaltungDetailView(APIView):
         if region.verantwortliche.exists():
             raise ValidationError(
                 {"detail": "Die Region hat noch Verantwortliche. Bitte zuerst entfernen."}
+            )
+        if region.punkte.exists():
+            raise ValidationError(
+                {"detail": "Die Region hat Wettbewerbspunkte. Bitte stattdessen deaktivieren."}
             )
         if region.banner:
             region.banner.delete(save=False)
@@ -570,7 +592,7 @@ class BeitraegeView(APIView):
             # Name der Vorstellungskarte, sonst Profilname (nie die E-Mail-Adresse).
             autor_name=karte.anzeige_name if karte else services.anzeigename_von(request.user),
             titel=_text(request.data, "titel", 150, pflicht=True),
-            text=_text(request.data, "text", 4000, pflicht=True),
+            text=_html(request.data, "text", 4000, pflicht=True),
         )
         verwalter = services.ist_personenverwalter(request.user)
         return Response(beitrag_dict(beitrag, request.user, verwalter, True), status=201)
@@ -584,7 +606,7 @@ class BeitragDetailView(APIView):
         if "titel" in request.data:
             beitrag.titel = _text(request.data, "titel", 150, pflicht=True)
         if "text" in request.data:
-            beitrag.text = _text(request.data, "text", 4000, pflicht=True)
+            beitrag.text = _html(request.data, "text", 4000, pflicht=True)
         beitrag.save()
         return Response(beitrag_dict(beitrag, request.user, verwalter, True))
 

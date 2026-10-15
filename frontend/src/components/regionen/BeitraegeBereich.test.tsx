@@ -6,6 +6,28 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import type { Beitrag } from "../../types/regionen";
 import BeitraegeBereich from "./BeitraegeBereich";
 
+// TipTap lässt sich in jsdom nicht per fireEvent bedienen : <textarea> mit gleichem Vertrag.
+vi.mock("../../components/ui/RichTextEditor", () => ({
+  default: ({
+    value,
+    onChange,
+    placeholder,
+    ariaLabel,
+  }: {
+    value: string;
+    onChange: (html: string) => void;
+    placeholder?: string;
+    ariaLabel?: string;
+  }) => (
+    <textarea
+      aria-label={ariaLabel}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+
 vi.mock("../../hooks/useRegionen", () => ({
   useBeitraege: vi.fn(),
   useBeitragAnlegen: vi.fn(),
@@ -106,6 +128,14 @@ describe("BeitraegeBereich", () => {
       { slug: "nord", titel: "Neu", text: "Hallo", bild: null },
       expect.any(Object),
     );
+  });
+
+  it("verlangt sichtbaren Text, nicht nur leeres Editor-HTML", () => {
+    mock([]);
+    renderWithProviders(<BeitraegeBereich slug="nord" darfSchreiben />);
+    fireEvent.change(screen.getByPlaceholderText("beitrag_titel"), { target: { value: "Neu" } });
+    fireEvent.change(screen.getByPlaceholderText("beitrag_text"), { target: { value: "<p></p>" } });
+    expect(screen.getByText("beitrag_veroeffentlichen")).toBeDisabled();
   });
 
   it("blendet nur mit Grund aus", () => {

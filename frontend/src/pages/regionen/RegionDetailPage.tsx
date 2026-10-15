@@ -7,9 +7,11 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
+import RichTextEditor from "../../components/ui/RichTextEditor";
 import BeitraegeBereich from "../../components/regionen/BeitraegeBereich";
 import VeranstaltungenBereich from "../../components/regionen/VeranstaltungenBereich";
 import PersonZuweisen from "../../components/regionen/PersonZuweisen";
+import FormatierterText from "../../components/regionen/FormatierterText";
 import RegionBild from "../../components/regionen/RegionBild";
 import VerantwortlicheKarte from "../../components/regionen/VerantwortlicheKarte";
 import {
@@ -19,10 +21,8 @@ import {
   useRegion,
 } from "../../hooks/useRegionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { klartext } from "../../utils/formattext";
 import { beschreibungIn } from "../../utils/regionen";
-
-const FELD =
-  "w-full rounded-cid border border-text-tertiary/20 bg-bg-secondary px-3 py-2 text-sm text-text-primary";
 
 export default function RegionDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -83,6 +83,18 @@ export default function RegionDetailPage() {
             {t("mitglieder_zahl", { count: region.mitglieder })}
             {region.laender.length > 0 && <> · {region.laender.map((l) => l.name).join(", ")}</>}
           </p>
+          {region.wettbewerb && (
+            <Link
+              to="/regionen/wettbewerb"
+              className="mt-2 inline-block rounded-full bg-bg-secondary px-3 py-1 text-xs font-semibold text-text-secondary hover:underline"
+            >
+              {t("wettbewerb.platz", {
+                rang: region.wettbewerb.rang,
+                von: region.wettbewerb.regionen,
+                punkte: region.wettbewerb.punkte,
+              })}
+            </Link>
+          )}
           {region.darf_bearbeiten && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <input
@@ -122,33 +134,22 @@ export default function RegionDetailPage() {
             </button>
           )}
         </div>
-        {!bearbeiten && (
-          <p className="whitespace-pre-line text-sm text-text-secondary">
-            {text || t("keine_beschreibung")}
-          </p>
-        )}
+        {!bearbeiten &&
+          (klartext(text) ? (
+            <FormatierterText text={text} />
+          ) : (
+            <p className="text-sm text-text-secondary">{t("keine_beschreibung")}</p>
+          ))}
         {bearbeiten && (
           <div className="flex flex-col gap-3">
-            <label className="text-xs font-semibold text-text-tertiary">
-              {t("beschreibung_de")}
-              <textarea
-                className={`${FELD} mt-1 font-normal`}
-                rows={5}
-                maxLength={4000}
-                value={de}
-                onChange={(e) => setDe(e.target.value)}
-              />
-            </label>
-            <label className="text-xs font-semibold text-text-tertiary">
-              {t("beschreibung_fr")}
-              <textarea
-                className={`${FELD} mt-1 font-normal`}
-                rows={5}
-                maxLength={4000}
-                value={fr}
-                onChange={(e) => setFr(e.target.value)}
-              />
-            </label>
+            <div className="text-xs font-semibold text-text-tertiary">
+              <span className="mb-1 block">{t("beschreibung_de")}</span>
+              <RichTextEditor value={de} onChange={setDe} ariaLabel={t("beschreibung_de")} />
+            </div>
+            <div className="text-xs font-semibold text-text-tertiary">
+              <span className="mb-1 block">{t("beschreibung_fr")}</span>
+              <RichTextEditor value={fr} onChange={setFr} ariaLabel={t("beschreibung_fr")} />
+            </div>
             <div className="flex gap-2">
               <button
                 type="button"

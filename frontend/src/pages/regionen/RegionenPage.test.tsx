@@ -59,7 +59,8 @@ describe("RegionenPage", () => {
       ohne_region: false,
     });
     renderWithProviders(<RegionenPage />);
-    expect(screen.getAllByRole("link")[0]).toHaveAttribute("href", "/regionen/nord");
+    expect(screen.getAllByRole("link")[0]).toHaveAttribute("href", "/regionen/wettbewerb");
+    expect(screen.getAllByRole("link")[1]).toHaveAttribute("href", "/regionen/nord");
     expect(screen.getByText("meine_region")).toBeInTheDocument();
     expect(screen.queryByText("ohne_region_hinweis")).not.toBeInTheDocument();
   });

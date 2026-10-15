@@ -18,6 +18,28 @@ vi.mock("../../components/regionen/BeitraegeBereich", () => ({
   ),
 }));
 
+// TipTap lässt sich in jsdom nicht per fireEvent bedienen : <textarea> mit gleichem Vertrag.
+vi.mock("../../components/ui/RichTextEditor", () => ({
+  default: ({
+    value,
+    onChange,
+    placeholder,
+    ariaLabel,
+  }: {
+    value: string;
+    onChange: (html: string) => void;
+    placeholder?: string;
+    ariaLabel?: string;
+  }) => (
+    <textarea
+      aria-label={ariaLabel}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+
 vi.mock("../../hooks/useRegionen", () => ({
   useRegion: vi.fn(),
   useBeschreibungSpeichern: vi.fn(),
@@ -61,6 +83,7 @@ function detail(o: Partial<RegionDetail> = {}): RegionDetail {
     laender: [{ code: "HH", name: "Hamburg" }],
     darf_bearbeiten: false,
     darf_personen_verwalten: false,
+    wettbewerb: null,
     ...o,
   };
 }
@@ -133,6 +156,16 @@ describe("RegionDetailPage", () => {
       { slug: "nord", de: "Moin aus dem Norden", fr: "Bonjour" },
       expect.any(Object),
     );
+  });
+
+  it("zeigt den Platz im Wettbewerb nur, wenn es einen gibt", () => {
+    mock(detail({ wettbewerb: { saison: "Saison 2026/27", rang: 2, punkte: 90, regionen: 5 } }));
+    const { unmount } = zeige();
+    expect(screen.getByText("wettbewerb.platz")).toHaveAttribute("href", "/regionen/wettbewerb");
+    unmount();
+    mock(detail());
+    zeige();
+    expect(screen.queryByText("wettbewerb.platz")).not.toBeInTheDocument();
   });
 
   it("zeigt Bearbeiten nur an der eigenen Karte", () => {

@@ -9,7 +9,10 @@ import {
 } from "../../hooks/useRegionen";
 import type { Standort, Verantwortlicher } from "../../types/regionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { klartext } from "../../utils/formattext";
 import { anfangsbuchstaben } from "../../utils/regionen";
+import RichTextEditor from "../ui/RichTextEditor";
+import FormatierterText from "./FormatierterText";
 
 interface Props {
   slug: string;
@@ -102,9 +105,7 @@ export default function VerantwortlicheKarte({
         </div>
       </div>
 
-      {person.vorstellung && (
-        <p className="whitespace-pre-line text-sm text-text-secondary">{person.vorstellung}</p>
-      )}
+      {klartext(person.vorstellung) && <FormatierterText text={person.vorstellung} />}
       {person.kontakt_email && (
         <p className="text-sm text-text-secondary">
           {t("kontakt")}: <span className="select-all">{person.kontakt_email}</span>
@@ -170,16 +171,14 @@ export default function VerantwortlicheKarte({
               ))}
             </select>
           </label>
-          <label className="text-xs font-semibold text-text-tertiary">
-            {t("feld_vorstellung")}
-            <textarea
-              className={`${FELD} mt-1 font-normal`}
-              rows={4}
-              maxLength={1000}
+          <div className="text-xs font-semibold text-text-tertiary">
+            <span className="mb-1 block">{t("feld_vorstellung")}</span>
+            <RichTextEditor
               value={vorstellung}
-              onChange={(e) => setVorstellung(e.target.value)}
+              onChange={setVorstellung}
+              ariaLabel={t("feld_vorstellung")}
             />
-          </label>
+          </div>
           <label className="text-xs font-semibold text-text-tertiary">
             {t("feld_kontakt")}
             <input

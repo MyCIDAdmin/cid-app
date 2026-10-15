@@ -73,6 +73,28 @@ export function useFanProfil(aktiv: boolean) {
   });
 }
 
+export function useWettbewerb(saison?: string) {
+  return useQuery({
+    queryKey: [...KEY, "wettbewerb", saison ?? "aktuell"],
+    queryFn: () => api.getWettbewerb(saison),
+  });
+}
+
+export function useJournal(arg: {
+  saison?: string;
+  region?: string;
+  offset: number;
+  limit: number;
+  aktiv: boolean;
+}) {
+  const { aktiv, ...rest } = arg;
+  return useQuery({
+    queryKey: [...KEY, "journal", rest],
+    queryFn: () => api.getJournal(rest),
+    enabled: aktiv,
+  });
+}
+
 function useAenderung<A, R>(fn: (arg: A) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -111,3 +133,10 @@ export const useAnmeldungSetzen = () => useAenderung(api.setzeAnmeldung);
 export const useAnwesenheitSetzen = () => useAenderung(api.setzeAnwesenheit);
 export const useFanProfilAendern = () => useAenderung(api.aendereFanProfil);
 export const useMitgliedWerden = () => useAenderung(api.werdeMitglied);
+export const useKorrekturBuchen = () => useAenderung(api.bucheKorrektur);
+export const useSaisonAnlegen = () => useAenderung(api.legeSaisonAn);
+export const useSaisonAendern = () => useAenderung(api.aendereSaison);
+export const useSaisonLoeschen = () => useAenderung(api.loescheSaison);
+export const useSaisonEinfrieren = () => useAenderung(api.friereSaisonEin);
+export const usePunkteNachbuchen = () => useAenderung(api.buchePunkteNach);
+export const useRegelnSpeichern = () => useAenderung(api.speichereRegeln);

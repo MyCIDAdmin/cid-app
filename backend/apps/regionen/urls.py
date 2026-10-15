@@ -31,12 +31,38 @@ from .views import (
     VerwaltungStandortListeView,
     VerwaltungStandortView,
 )
+from .wettbewerb_views import (
+    JournalView,
+    KorrekturView,
+    RegelnView,
+    SaisonDetailView,
+    SaisonEinfrierenView,
+    SaisonListeView,
+    SaisonNachbuchenView,
+    WettbewerbView,
+)
 
 app_name = "regionen"
 
 urlpatterns = [
     path("", RegionListeView.as_view(), name="liste"),
     path("personen/", PersonenSucheView.as_view(), name="personen"),
+    path("wettbewerb/", WettbewerbView.as_view(), name="wettbewerb"),
+    path("wettbewerb/journal/", JournalView.as_view(), name="wettbewerb-journal"),
+    path("wettbewerb/korrekturen/", KorrekturView.as_view(), name="wettbewerb-korrektur"),
+    path("wettbewerb/regeln/", RegelnView.as_view(), name="wettbewerb-regeln"),
+    path("wettbewerb/saisons/", SaisonListeView.as_view(), name="wettbewerb-saisons"),
+    path("wettbewerb/saisons/<uuid:pk>/", SaisonDetailView.as_view(), name="wettbewerb-saison"),
+    path(
+        "wettbewerb/saisons/<uuid:pk>/einfrieren/",
+        SaisonEinfrierenView.as_view(),
+        name="wettbewerb-einfrieren",
+    ),
+    path(
+        "wettbewerb/saisons/<uuid:pk>/nachbuchen/",
+        SaisonNachbuchenView.as_view(),
+        name="wettbewerb-nachbuchen",
+    ),
     path("fan/", FanProfilView.as_view(), name="fan"),
     path("fan/optionen/", FanOptionenView.as_view(), name="fan-optionen"),
     path("fan/registrieren/", FanRegistrierenView.as_view(), name="fan-registrieren"),

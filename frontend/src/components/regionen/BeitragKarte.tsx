@@ -11,7 +11,10 @@ import {
 } from "../../hooks/useRegionen";
 import type { Beitrag } from "../../types/regionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { klartext } from "../../utils/formattext";
 import { REAKTIONS_EMOJI } from "../../utils/regionen";
+import RichTextEditor from "../ui/RichTextEditor";
+import FormatierterText from "./FormatierterText";
 
 const FELD =
   "w-full rounded-cid border border-text-tertiary/20 bg-bg-secondary px-3 py-2 text-sm text-text-primary";
@@ -92,19 +95,12 @@ export default function BeitragKarte({ slug, beitrag }: { slug: string; beitrag:
             maxLength={150}
             onChange={(e) => setTitel(e.target.value)}
           />
-          <textarea
-            className={FELD}
-            aria-label={t("beitrag_text")}
-            rows={6}
-            maxLength={4000}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
+          <RichTextEditor value={text} onChange={setText} ariaLabel={t("beitrag_text")} />
           <div className="flex gap-2">
             <button
               type="button"
               onClick={sichern}
-              disabled={aendern.isPending || !titel.trim() || !text.trim()}
+              disabled={aendern.isPending || !titel.trim() || !klartext(text)}
               className="rounded-cid bg-ca px-4 py-2 text-sm font-medium text-white hover:bg-cad disabled:opacity-50"
             >
               {t("speichern")}
@@ -123,9 +119,7 @@ export default function BeitragKarte({ slug, beitrag }: { slug: string; beitrag:
       {beitrag.bild_url && (
         <img src={beitrag.bild_url} alt="" className="max-h-80 w-full rounded-cid object-cover" />
       )}
-      {!bearbeiten && (
-        <p className="whitespace-pre-line text-sm text-text-secondary">{beitrag.text}</p>
-      )}
+      {!bearbeiten && <FormatierterText text={beitrag.text} />}
 
       <div className="flex flex-wrap gap-2" role="group" aria-label={t("reaktionen")}>
         {beitrag.reaktionen.map((r) => (
