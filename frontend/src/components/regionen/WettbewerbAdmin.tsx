@@ -16,7 +16,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 const FELD =
   "w-full rounded-cid border border-text-tertiary/20 bg-bg-secondary px-3 py-2 text-sm text-text-primary";
 const KNOPF =
-  "rounded-cid px-3 py-1.5 text-xs font-semibold text-text-secondary hover:bg-bg-secondary disabled:opacity-50";
+  "rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs font-semibold text-text-primary hover:bg-bg-secondary disabled:opacity-50";
 
 const REGEL_FELDER: (keyof WettbewerbRegeln)[] = [
   "punkte_veranstaltung",
