@@ -5,20 +5,24 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import FanKarte from "../../components/regionen/FanKarte";
 import FreigabeListe from "../../components/regionen/FreigabeListe";
 import RegionBild from "../../components/regionen/RegionBild";
 import { useRegionen } from "../../hooks/useRegionen";
+import { useAuthStore } from "../../store/authStore";
 import { beschreibungIn, formatDatum } from "../../utils/regionen";
 
 export default function RegionenPage() {
   const { t, i18n } = useTranslation("regionen");
   const { data, isLoading, isError } = useRegionen();
+  const istFan = useAuthStore((s) => Boolean(s.user?.ist_fan));
 
   return (
     <div>
       <h1 className="mb-1 text-xl font-bold text-text-primary">{t("titel")}</h1>
       <p className="mb-4 text-sm text-text-secondary">{t("einleitung")}</p>
 
+      {istFan && <FanKarte />}
       {data?.darf_freigeben && <FreigabeListe />}
 
       {isLoading && <p className="text-sm text-text-tertiary">{t("laden")}</p>}

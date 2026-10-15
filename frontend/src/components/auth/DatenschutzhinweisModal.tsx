@@ -17,6 +17,8 @@ import { useTranslation } from "react-i18next";
 
 interface DatenschutzhinweisModalProps {
   onClose: () => void;
+  /** Fan-Konto (Release 29) : Daten, Zweck und Speicherdauer ohne Mitgliedschaft. */
+  fan?: boolean;
 }
 
 const SECTIONS = [
@@ -28,7 +30,10 @@ const SECTIONS = [
   ["kontakt_titre", "kontakt_text"],
 ] as const;
 
-export default function DatenschutzhinweisModal({ onClose }: DatenschutzhinweisModalProps) {
+/** Abschnitte mit eigener Fan-Fassung (Schlüssel `fan_<name>`). */
+const FAN_TEXTE = new Set(["daten_text", "zweck_text", "speicherdauer_text"]);
+
+export default function DatenschutzhinweisModal({ onClose, fan }: DatenschutzhinweisModalProps) {
   const { t } = useTranslation("auth");
 
   return (
@@ -56,14 +61,19 @@ export default function DatenschutzhinweisModal({ onClose }: DatenschutzhinweisM
 
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 text-sm text-text-secondary">
           <p>{t("register.datenschutz.intro")}</p>
-          {SECTIONS.map(([titreKey, texteKey]) => (
-            <section key={titreKey}>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-text-tertiary">
-                {t(`register.datenschutz.${titreKey}`)}
-              </h3>
-              <p className="whitespace-pre-line">{t(`register.datenschutz.${texteKey}`)}</p>
-            </section>
-          ))}
+          {SECTIONS.map(([titreKey, texteKey]) => {
+            const fanText = fan && FAN_TEXTE.has(texteKey);
+            return (
+              <section key={titreKey}>
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+                  {t(`register.datenschutz.${titreKey}`)}
+                </h3>
+                <p className="whitespace-pre-line">
+                  {t(`register.datenschutz.${fanText ? `fan_${texteKey}` : texteKey}`)}
+                </p>
+              </section>
+            );
+          })}
         </div>
 
         <div className="border-t border-text-tertiary/10 px-5 py-3 text-right">

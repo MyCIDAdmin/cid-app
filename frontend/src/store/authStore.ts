@@ -99,6 +99,9 @@ export interface CidUser {
   // ne jamais priver un compte de gestion de la sidebar) ou la page d'accueil publique (statut
   // non-actif, traité comme un visiteur).
   statut_membre?: StatutMembre | null;
+  // Fan-Konto (Release 29) : Konto ohne Mitgliedsfiche mit Fan-Profil. Nach dem Mitgliedsantrag
+  // `false` (UserSerializer.get_ist_fan).
+  ist_fan?: boolean;
 }
 
 interface AuthState {

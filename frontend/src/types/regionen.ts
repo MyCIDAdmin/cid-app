@@ -173,3 +173,48 @@ export interface Teilnehmer {
   name: string;
   anwesend: boolean;
 }
+
+/** Fan-Konto (Release 29) : Konto ohne Mitgliedschaft. */
+export interface FanOptionen {
+  laender: { code: string; name: string; region: { slug: string; name: string } | null }[];
+  standorte: { id: string; name: string; land: string; region: string }[];
+}
+
+export interface FanProfil {
+  prenom: string;
+  nom: string;
+  email: string;
+  land_de: string;
+  standort_id: string | null;
+  standort: string | null;
+  region: { slug: string; name: string } | null;
+  mitgliedsantrag_am: string | null;
+  ist_mitglied_in_erwartung: boolean;
+}
+
+export interface FanRegistrierung {
+  email: string;
+  password: string;
+  prenom: string;
+  nom: string;
+  langue_preferee: "fr" | "de" | "ar";
+  land_de?: string;
+  standort?: string | null;
+  consentement_rgpd: true;
+}
+
+export interface FanAenderung {
+  prenom: string;
+  nom: string;
+  land_de: string;
+  standort: string | null;
+}
+
+export interface MitgliedWerdenEingabe {
+  date_naissance: string;
+  sexe: "homme" | "femme" | "non_renseigne";
+  telephone: string;
+  adresse_de: string;
+  code_postal_de?: string;
+  ville_de: string;
+}

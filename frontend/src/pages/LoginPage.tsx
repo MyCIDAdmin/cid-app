@@ -160,6 +160,10 @@ export default function LoginPage() {
               >
                 {t("register.creer_compte")}
               </Link>
+              {" · "}
+              <Link to="/fan" className="font-medium text-ca hover:underline">
+                {t("fan.link_login")}
+              </Link>
             </p>
           </form>
         ) : (

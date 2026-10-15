@@ -2,12 +2,16 @@ import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as hooks from "../../hooks/useRegionen";
+import { useAuthStore } from "../../store/authStore";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import type { Region } from "../../types/regionen";
 import RegionenPage from "./RegionenPage";
 
 vi.mock("../../components/regionen/FreigabeListe", () => ({
   default: () => <div data-testid="freigabe" />,
+}));
+vi.mock("../../components/regionen/FanKarte", () => ({
+  default: () => <div data-testid="fankarte" />,
 }));
 vi.mock("../../hooks/useRegionen", () => ({ useRegionen: vi.fn() }));
 
@@ -91,5 +95,21 @@ describe("RegionenPage", () => {
     renderWithProviders(<RegionenPage />);
     expect(screen.queryByTestId("freigabe")).not.toBeInTheDocument();
     expect(screen.queryByText("naechstes_treffen")).not.toBeInTheDocument();
+  });
+
+  it("zeigt die Fan-Karte nur für Fan-Konten", () => {
+    mock({ ergebnisse: [region()], ohne_region: false, darf_freigeben: false });
+    useAuthStore.setState({
+      user: { id: "u", email: "a@b.de", role: "membre", langue_preferee: "de", ist_fan: true },
+    });
+    const { unmount } = renderWithProviders(<RegionenPage />);
+    expect(screen.getByTestId("fankarte")).toBeInTheDocument();
+    unmount();
+    useAuthStore.setState({
+      user: { id: "u", email: "a@b.de", role: "membre", langue_preferee: "de", ist_fan: false },
+    });
+    renderWithProviders(<RegionenPage />);
+    expect(screen.queryByTestId("fankarte")).not.toBeInTheDocument();
+    useAuthStore.setState({ user: null });
   });
 });
