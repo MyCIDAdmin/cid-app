@@ -71,6 +71,7 @@ import AdminProjetsPage from "./pages/projets/AdminProjetsPage";
 import ProjetArbeitsbereichPage from "./pages/projets/ProjetArbeitsbereichPage";
 import ProjetDetailPage from "./pages/projets/ProjetDetailPage";
 import ProjetsPage from "./pages/projets/ProjetsPage";
+import FanRegisterPage from "./pages/FanRegisterPage";
 import RegisterPage from "./pages/RegisterPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import FinancesPage from "./pages/finances/FinancesPage";
@@ -90,6 +91,8 @@ export default function App() {
           AHM-47) — compte créé inactif, activation décidée ensuite par
           RH/Admin (AHM-48). */}
         <Route path="/register" element={<RegisterPage />} />
+        {/* Fan-Konto ohne Mitgliedschaft (Release 29). */}
+        <Route path="/fan" element={<FanRegisterPage />} />
         {/* Réinitialisation de mot de passe (mockup #sc-login, FDD §3.1) —
           demande d'email puis confirmation via le lien reçu (?token=). */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

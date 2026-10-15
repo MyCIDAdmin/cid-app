@@ -344,8 +344,10 @@ class RegisterConfirmView(APIView):
         if membre_inscrit is not None:
             lier_automatiquement(membre_inscrit)
         send_welcome_email.delay(str(user.id))
-        # Notification staff conservée (information, plus aucune action requise).
-        notifier_nouvelle_inscription_rh.delay(str(user.id))
+        # Notification staff conservée (information, plus aucune action requise). Un Fan-Konto
+        # (Release 29) hat keine Mitgliedsfiche und gehört nicht in diese Meldung.
+        if not hasattr(user, "fan_profil"):
+            notifier_nouvelle_inscription_rh.delay(str(user.id))
         services.log_audit_event("email_verified", user=user, ip_address=_client_ip(request))
         return Response({"message": "Email confirmé. Vous pouvez maintenant vous connecter."})
 

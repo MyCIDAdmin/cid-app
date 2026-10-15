@@ -133,5 +133,28 @@
   "anwesenheit_hinweis": "Cochez les personnes présentes. Le bureau clôture ensuite la rencontre.",
   "zur_freigabe_one": "{{count}} rencontre attend sa validation",
   "zur_freigabe_other": "{{count}} rencontres attendent leur validation",
-  "naechstes_treffen": "Prochaine rencontre : {{titel}}, {{datum}}"
+  "naechstes_treffen": "Prochaine rencontre : {{titel}}, {{datum}}",
+  "fan": {
+    "titel": "Votre compte fan",
+    "begruessung": "Bonjour {{name}} !",
+    "deine_region": "Votre région : {{region}}",
+    "keine_region": "Vous n'avez pas encore de région.",
+    "aendern": "Changer de région",
+    "mitglied_werden": "Devenir membre",
+    "bundesland": "Land",
+    "standort": "Lieu",
+    "land_keine": "Non précisé",
+    "standort_keiner": "Aucun lieu",
+    "speichern": "Enregistrer",
+    "abbrechen": "Annuler",
+    "fehler_speichern": "La modification n'a pas pu être enregistrée.",
+    "mitglied_hinweis": "Pour l'adhésion, il nous faut quelques informations de plus. Vous demandez ensuite l'adhésion sous « Mon adhésion ». Votre région est conservée.",
+    "geburtsdatum": "Date de naissance",
+    "telefon": "Téléphone",
+    "adresse": "Rue et numéro",
+    "plz": "Code postal",
+    "ort": "Ville",
+    "mitglied_weiter": "Continuer vers l'adhésion",
+    "mitglied_fehler": "Les informations n'ont pas pu être enregistrées."
+  }
 }

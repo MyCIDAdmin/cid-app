@@ -42,6 +42,7 @@ class UserSerializer(serializers.ModelSerializer):
     prenom = serializers.SerializerMethodField()
     nom = serializers.SerializerMethodField()
     statut_membre = serializers.SerializerMethodField()
+    ist_fan = serializers.SerializerMethodField()
     ui_praeferenzen = serializers.JSONField(required=False)
 
     def validate_ui_praeferenzen(self, value):
@@ -78,6 +79,7 @@ class UserSerializer(serializers.ModelSerializer):
             "prenom",
             "nom",
             "statut_membre",
+            "ist_fan",
         ]
         # `email` ist schreibgeschützt (2026-10-07, Sicherheitsprüfung) : sonst genügt ein
         # gestohlenes Access-Token, um per PATCH /auth/me/ die Login-/Reset-Adresse umzubiegen.
@@ -94,13 +96,19 @@ class UserSerializer(serializers.ModelSerializer):
         ]
 
     def get_prenom(self, obj):
-        return obj.membre.prenom if hasattr(obj, "membre") else ""
+        person = getattr(obj, "membre", None) or getattr(obj, "fan_profil", None)
+        return person.prenom if person is not None else ""
 
     def get_nom(self, obj):
-        return obj.membre.nom if hasattr(obj, "membre") else ""
+        person = getattr(obj, "membre", None) or getattr(obj, "fan_profil", None)
+        return person.nom if person is not None else ""
 
     def get_statut_membre(self, obj):
         return obj.membre.statut if hasattr(obj, "membre") else None
+
+    def get_ist_fan(self, obj):
+        """Fan-Konto (Release 29) : Fan-Profil und noch keine Mitgliedsfiche."""
+        return hasattr(obj, "fan_profil") and not hasattr(obj, "membre")
 
 
 class RegisterSerializer(serializers.Serializer):

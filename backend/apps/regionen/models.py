@@ -12,7 +12,7 @@ from apps.membres.models import Bundesland
 from apps.projets.storage import ProjetsStorage
 
 # Diese Kennungen sind Routen unterhalb von /regionen/ und dürfen nie als Slug einer Region dienen.
-RESERVIERTE_SLUGS = {"personen", "verwaltung", "veranstaltungen", "public"}
+RESERVIERTE_SLUGS = {"personen", "verwaltung", "veranstaltungen", "public", "fan"}
 
 FARBE_PRUEFUNG = RegexValidator(r"^#[0-9a-fA-F]{6}$", "Farbe im Format #RRGGBB erwartet.")
 
@@ -245,3 +245,31 @@ class Teilnahme(models.Model):
                 fields=["veranstaltung", "user"], name="regionen_teilnahme_eindeutig"
             )
         ]
+
+
+class FanProfil(models.Model):
+    """Fan-Konto (Release 29) : Konto ohne Mitgliedschaft. Gespeichert wird nur, was für Region,
+    Anmeldung und Anrede nötig ist ; die Mitgliedsfiche (`Membre`) entsteht erst mit dem
+    Mitgliedsantrag. Das Profil bleibt danach erhalten, damit die Region den Neumitglied-Bonus
+    (Release 30) erhält."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="fan_profil"
+    )
+    prenom = models.CharField(max_length=100)
+    nom = models.CharField(max_length=100)
+    land_de = models.CharField(max_length=2, choices=Bundesland.choices, blank=True)
+    standort = models.ForeignKey(
+        Standort, null=True, blank=True, on_delete=models.SET_NULL, related_name="fans"
+    )
+    datenschutz_am = models.DateTimeField()
+    mitgliedsantrag_am = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Fan-Profil"
+        verbose_name_plural = "Fan-Profile"
+
+    def __str__(self):
+        return f"{self.prenom} {self.nom}".strip()

@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .fan import FanOptionenView, FanProfilView, FanRegistrierenView, MitgliedWerdenView
 from .veranstaltungen import (
     AnmeldungView,
     AnwesenheitView,
@@ -36,6 +37,10 @@ app_name = "regionen"
 urlpatterns = [
     path("", RegionListeView.as_view(), name="liste"),
     path("personen/", PersonenSucheView.as_view(), name="personen"),
+    path("fan/", FanProfilView.as_view(), name="fan"),
+    path("fan/optionen/", FanOptionenView.as_view(), name="fan-optionen"),
+    path("fan/registrieren/", FanRegistrierenView.as_view(), name="fan-registrieren"),
+    path("fan/mitglied-werden/", MitgliedWerdenView.as_view(), name="fan-mitglied-werden"),
     path("veranstaltungen/zur-freigabe/", ZurFreigabeView.as_view(), name="zur-freigabe"),
     path("public/veranstaltungen/<uuid:pk>/", OeffentlichView.as_view(), name="oeffentlich"),
     path("verwaltung/", VerwaltungListeView.as_view(), name="verwaltung"),

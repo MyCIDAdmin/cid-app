@@ -23,9 +23,12 @@ def region_von_land(land: str | None) -> Region | None:
 
 
 def meine_region(user) -> Region | None:
-    """Region aus dem Bundesland des Mitgliedsprofils ; Konten ohne Mitgliedsprofil haben keine."""
+    """Region aus dem Bundesland des Mitglieds- oder Fan-Profils ; andere Konten haben keine."""
     membre = getattr(user, "membre", None)
-    return region_von_land(membre.land_de) if membre is not None else None
+    if membre is not None:
+        return region_von_land(membre.land_de)
+    fan = getattr(user, "fan_profil", None)
+    return region_von_land(fan.land_de) if fan is not None else None
 
 
 def mitglieder_zahl(region: Region) -> int:
@@ -59,8 +62,8 @@ def eindeutiger_slug(name: str) -> str:
 
 
 def anzeigename_von(user) -> str:
-    membre = getattr(user, "membre", None)
-    return f"{membre.prenom} {membre.nom}".strip() if membre is not None else ""
+    person = getattr(user, "membre", None) or getattr(user, "fan_profil", None)
+    return f"{person.prenom} {person.nom}".strip() if person is not None else ""
 
 
 def buero_nutzer(ausser=None):

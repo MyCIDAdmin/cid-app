@@ -133,5 +133,28 @@
   "anwesenheit_hinweis": "Hake die Personen ab, die da waren. Das Büro schließt das Treffen danach ab.",
   "zur_freigabe_one": "{{count}} Treffen wartet auf Freigabe",
   "zur_freigabe_other": "{{count}} Treffen warten auf Freigabe",
-  "naechstes_treffen": "Nächstes Treffen: {{titel}}, {{datum}}"
+  "naechstes_treffen": "Nächstes Treffen: {{titel}}, {{datum}}",
+  "fan": {
+    "titel": "Dein Fan-Konto",
+    "begruessung": "Hallo {{name}}!",
+    "deine_region": "Deine Region: {{region}}",
+    "keine_region": "Du hast noch keine Region.",
+    "aendern": "Region ändern",
+    "mitglied_werden": "Mitglied werden",
+    "bundesland": "Bundesland",
+    "standort": "Standort",
+    "land_keine": "Keine Angabe",
+    "standort_keiner": "Kein Standort",
+    "speichern": "Speichern",
+    "abbrechen": "Abbrechen",
+    "fehler_speichern": "Die Änderung konnte nicht gespeichert werden.",
+    "mitglied_hinweis": "Für die Mitgliedschaft brauchen wir ein paar weitere Angaben. Danach beantragst du die Mitgliedschaft unter „Meine Mitgliedschaft“. Deine Region bleibt erhalten.",
+    "geburtsdatum": "Geburtsdatum",
+    "telefon": "Telefon",
+    "adresse": "Straße und Hausnummer",
+    "plz": "Postleitzahl",
+    "ort": "Ort",
+    "mitglied_weiter": "Weiter zur Mitgliedschaft",
+    "mitglied_fehler": "Die Angaben konnten nicht gespeichert werden."
+  }
 }

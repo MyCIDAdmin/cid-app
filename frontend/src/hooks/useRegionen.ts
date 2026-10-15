@@ -61,6 +61,18 @@ export function useTeilnehmer(slug: string, id: string, aktiv: boolean) {
   });
 }
 
+export function useFanOptionen() {
+  return useQuery({ queryKey: [...KEY, "fan-optionen"], queryFn: api.getFanOptionen });
+}
+
+export function useFanProfil(aktiv: boolean) {
+  return useQuery({
+    queryKey: [...KEY, "fan-profil"],
+    queryFn: api.getFanProfil,
+    enabled: aktiv,
+  });
+}
+
 function useAenderung<A, R>(fn: (arg: A) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -97,3 +109,5 @@ export const useVeranstaltungBild = () => useAenderung(api.ladeVeranstaltungBild
 export const useVeranstaltungAktion = () => useAenderung(api.fuehreAktionAus);
 export const useAnmeldungSetzen = () => useAenderung(api.setzeAnmeldung);
 export const useAnwesenheitSetzen = () => useAenderung(api.setzeAnwesenheit);
+export const useFanProfilAendern = () => useAenderung(api.aendereFanProfil);
+export const useMitgliedWerden = () => useAenderung(api.werdeMitglied);

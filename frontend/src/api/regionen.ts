@@ -1,6 +1,11 @@
 /** Client API — Regionen (Release 26), backend/apps/regionen/views.py. */
 import type {
   Beitrag,
+  FanAenderung,
+  FanOptionen,
+  FanProfil,
+  FanRegistrierung,
+  MitgliedWerdenEingabe,
   BeitraegeListe,
   KarteDaten,
   Person,
@@ -357,6 +362,33 @@ export async function setzeAnwesenheit(arg: {
   const { data } = await apiClient.put<Teilnehmer>(
     `/regionen/${arg.slug}/veranstaltungen/${arg.id}/teilnehmer/${arg.user}/`,
     { anwesend: arg.anwesend },
+  );
+  return data;
+}
+
+export async function getFanOptionen(): Promise<FanOptionen> {
+  const { data } = await apiClient.get<FanOptionen>("/regionen/fan/optionen/");
+  return data;
+}
+
+export async function registriereFan(eingabe: FanRegistrierung): Promise<void> {
+  await apiClient.post("/regionen/fan/registrieren/", eingabe);
+}
+
+export async function getFanProfil(): Promise<FanProfil> {
+  const { data } = await apiClient.get<FanProfil>("/regionen/fan/");
+  return data;
+}
+
+export async function aendereFanProfil(eingabe: FanAenderung): Promise<FanProfil> {
+  const { data } = await apiClient.patch<FanProfil>("/regionen/fan/", eingabe);
+  return data;
+}
+
+export async function werdeMitglied(eingabe: MitgliedWerdenEingabe): Promise<{ weiter: string }> {
+  const { data } = await apiClient.post<{ weiter: string }>(
+    "/regionen/fan/mitglied-werden/",
+    eingabe,
   );
   return data;
 }
