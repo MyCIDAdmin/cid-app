@@ -4,12 +4,15 @@
  * "vide le cache React Query" qui vivait auparavant dans Sidebar.test.tsx (AHM-51).
  */
 import { fireEvent, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as rbac from "../../hooks/useRbac";
 import { queryClient } from "../../queryClient";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { useAuthStore } from "../../store/authStore";
 import UserMenu from "./UserMenu";
+
+vi.mock("../../hooks/useRbac", () => ({ useModuleOuvert: vi.fn() }));
 
 const utilisateurAvecFiche = {
   id: "u1",
@@ -29,6 +32,7 @@ const utilisateurSansFiche = {
 
 describe("UserMenu", () => {
   beforeEach(() => {
+    vi.mocked(rbac.useModuleOuvert).mockReturnValue({ ouvert: true, chargement: false });
     useAuthStore.setState({
       accessToken: "access",
       refreshToken: "refresh",
@@ -68,6 +72,20 @@ describe("UserMenu", () => {
     const lienEinstellungen = screen.getByText("menu_utilisateur.einstellungen").closest("a");
     expect(lienEinstellungen).toHaveAttribute("href", "/mon-profil?onglet=einstellungen");
     expect(screen.getByText("action.deconnexion")).toBeInTheDocument();
+  });
+
+  it("zeigt „Support“ im Profilmenü nur, wenn der Menüpunkt für das Konto offen ist", () => {
+    renderWithProviders(<UserMenu />);
+    fireEvent.click(screen.getByLabelText("menu_utilisateur.aria_label"));
+    const lien = screen.getByText("menu_utilisateur.support").closest("a");
+    expect(lien).toHaveAttribute("href", "/support");
+  });
+
+  it("verbirgt „Support“, wenn der Menüpunkt für das Konto gesperrt ist", () => {
+    vi.mocked(rbac.useModuleOuvert).mockReturnValue({ ouvert: false, chargement: false });
+    renderWithProviders(<UserMenu />);
+    fireEvent.click(screen.getByLabelText("menu_utilisateur.aria_label"));
+    expect(screen.queryByText("menu_utilisateur.support")).not.toBeInTheDocument();
   });
 
   it("referme le menu au clic extérieur", () => {

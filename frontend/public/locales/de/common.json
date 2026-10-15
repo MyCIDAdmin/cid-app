@@ -39,7 +39,6 @@
     "zahlungen_import": "Zahlungen importieren",
     "kalender": "Kalender",
     "regionen": "Regionen",
-    "support": "Support",
     "admin_regionen": "Regionen-Struktur"
   },
   "nav_groupe": {
@@ -116,7 +115,8 @@
     "aria_label": "Benutzermenü",
     "mon_profil": "Mein Profil",
     "preferences_titre": "Einstellungen",
-    "einstellungen": "Einstellungen"
+    "einstellungen": "Einstellungen",
+    "support": "Support"
   },
   "bild_hinweis": {
     "shop": "Empfohlen: Querformat 16:10, mindestens 1200 × 750 px (JPG, PNG oder WebP, max. 10 MB). Das Bild füllt die Kachel vollständig aus – wichtige Motive bitte mittig platzieren, die Ränder können leicht beschnitten werden.",
