@@ -32,6 +32,7 @@ urlpatterns = [
     path("api/v1/uebersetzungen/", include("apps.uebersetzung.urls")),
     path("api/v1/partenaires/", include("apps.partenaires.urls")),
     path("api/v1/regionen/", include("apps.regionen.urls")),
+    path("api/v1/support/", include("apps.support.urls")),
 ]
 
 if settings.DEBUG:

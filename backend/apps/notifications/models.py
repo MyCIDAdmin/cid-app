@@ -122,6 +122,10 @@ class TypeNotification(models.TextChoices):
     )
     AKTIVITAET_BERICHT = "aktivitaet_bericht", _("Rapport mensuel d'activité")
     AKTIVITAET_REVIEW = "aktivitaet_review", _("Revue trimestrielle des droits")
+    # Support (Release 33)
+    SUPPORT_TICKET_NEU = "support_ticket_neu", _("Nouveau ticket de support")
+    SUPPORT_ANTWORT = "support_antwort", _("Réponse à un ticket")
+    SUPPORT_STATUS = "support_status", _("Ticket résolu ou clos")
 
 
 class Notification(models.Model):

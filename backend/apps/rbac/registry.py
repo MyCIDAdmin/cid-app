@@ -73,6 +73,7 @@ MENU_ITEMS = [
     ("covoiturage", "Fahrgemeinschaften", "general", "evenements", ("page_events",)),
     ("kalender", "Kalender", "general", "evenements", ("page_kalender", "page_kalender_vorschlag")),
     ("regionen", "Regionen", "general", "evenements", ("page_regionen",)),
+    ("support", "Support", "general", "membres", ("page_support",)),
     ("projets", "Aktionen & Projekte", "general", "projets", ("page_projets",)),
     ("boutique", "Shop", "general", "boutique", ("page_boutique",)),
     ("fil", "Neuigkeiten (Fil)", "communaute", "communaute", ()),
@@ -114,6 +115,7 @@ VISIBILITE_NON_MEMBRE_DEFAUT = {
     "evenements",
     "covoiturage",
     "regionen",
+    "support",
     "projets",
     "boutique",
     "albums",
@@ -132,6 +134,7 @@ API_PREFIXES_MENU = [
     ("/api/v1/evenements/", "evenements"),
     ("/api/v1/kalender/", "kalender"),
     ("/api/v1/regionen/", "regionen"),
+    ("/api/v1/support/", "support"),
     ("/api/v1/projets/", "projets"),
     ("/api/v1/boutique/", "boutique"),
     ("/api/v1/votes/", "vote"),
@@ -211,6 +214,9 @@ PAGES_ADMIN = [
     # Regionsseite bearbeiten (Büro) ; die Struktur (Regionen, Länder, Standorte) verwaltet nur
     # der App Admin. Verantwortliche gestalten ihre eigene Region ohne diese Seite.
     "page_regionen",
+    # Release 33 (2026-10-15): Support. `page_support` = Tickets bearbeiten und die häufigen Fragen
+    # (FAQ) pflegen. Tickets eröffnen kann jedes angemeldete Konto.
+    "page_support",
 ]
 
 PAGE_ADMIN_LABELS = {
@@ -237,6 +243,7 @@ PAGE_ADMIN_LABELS = {
     "page_kalender": "Büro-Kalender (Termine pflegen)",
     "page_kalender_vorschlag": "Terminvorschläge einreichen",
     "page_regionen": "Regionen (Verantwortliche zuweisen, Seiten bearbeiten)",
+    "page_support": "Support (Tickets bearbeiten, FAQ pflegen)",
 }
 
 # Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour

@@ -1,0 +1,102 @@
+{
+  "titel": "Support",
+  "einleitung": "Antworten auf häufige Fragen finden oder dem Büro eine Anfrage schicken.",
+  "laden": "Wird geladen …",
+  "fehler_laden": "Das konnte nicht geladen werden.",
+  "abbrechen": "Abbrechen",
+  "tab": {
+    "hilfe": "Hilfe und Fragen",
+    "tickets": "Meine Tickets",
+    "buero": "Alle Tickets",
+    "faq": "Fragen pflegen",
+    "faq_verwalten": "Häufige Fragen pflegen"
+  },
+  "faq": {
+    "titel": "Häufige Fragen",
+    "suche": "In den Fragen suchen",
+    "keine": "Keine passende Frage gefunden.",
+    "nichts_gefunden": "Nichts gefunden?",
+    "nichts_gefunden_text": "Schreib dem Büro. Du bekommst die Antwort in der App und per E-Mail."
+  },
+  "anleitungen": {
+    "titel": "Anleitungen"
+  },
+  "status": {
+    "offen": "Offen",
+    "in_bearbeitung": "In Bearbeitung",
+    "wartet_auf_antwort": "Wartet auf Antwort",
+    "geloest": "Gelöst",
+    "geschlossen": "Geschlossen"
+  },
+  "kategorie": {
+    "konto": "Konto und Anmeldung",
+    "mitgliedschaft": "Mitgliedschaft",
+    "zahlung": "Zahlung und Beitrag",
+    "veranstaltung": "Veranstaltungen und Regionen",
+    "technik": "Technik und Fehler",
+    "sonstiges": "Sonstiges"
+  },
+  "art": {
+    "mitglied": "Mitglied",
+    "fan": "Fan",
+    "konto": "Konto"
+  },
+  "ticket": {
+    "neu": "Neues Ticket",
+    "betreff": "Betreff",
+    "kategorie": "Kategorie",
+    "beschreibung": "Beschreibung",
+    "datenschutz": "Nenne nur, was für die Antwort nötig ist. Schreib hier keine Passwörter, Bank- oder Kartendaten.",
+    "absenden": "Ticket absenden",
+    "keine": "Du hast noch keine Tickets.",
+    "zurueck": "Zurück",
+    "verlauf": "Verlauf",
+    "du": "Du",
+    "buero": "Büro",
+    "antwort_von": "Antwort von {{name}}",
+    "notiz_von": "Interne Notiz von {{name}}",
+    "antworten": "Antwort schreiben",
+    "notiz": "Interne Notiz",
+    "senden": "Senden",
+    "notiz_speichern": "Notiz speichern",
+    "intern": "Interne Notiz (nur für das Büro)",
+    "danach": "Danach",
+    "schliessen": "Ticket schliessen",
+    "geschlossen_hinweis": "Dieses Ticket ist geschlossen. Für ein neues Anliegen eröffne bitte ein neues Ticket.",
+    "fehler": "Das hat nicht geklappt. Bitte erneut versuchen.",
+    "nicht_gefunden": "Dieses Ticket wurde nicht gefunden.",
+    "zu_viele_tickets": "Du hast in der letzten Stunde schon mehrere Tickets eröffnet. Bitte versuche es später noch einmal.",
+    "zu_viele_offene_tickets": "Du hast bereits viele offene Tickets. Bitte warte auf die Antworten oder schliesse erledigte Tickets."
+  },
+  "buero": {
+    "status": "Status",
+    "bearbeiter": "Bearbeitung",
+    "niemand": "niemand",
+    "mir_zuweisen": "Mir zuweisen",
+    "freigeben": "Zuweisung aufheben",
+    "filter_aktiv": "Aktive Tickets",
+    "filter_alle": "Alle Tickets",
+    "suche": "Nummer, Betreff oder Name",
+    "keine": "Keine Tickets gefunden.",
+    "von": "Von",
+    "aktualisiert": "Aktualisiert"
+  },
+  "faqv": {
+    "neu": "Neue Frage",
+    "frage_de": "Frage (Deutsch)",
+    "antwort_de": "Antwort (Deutsch)",
+    "frage_fr": "Frage (Französisch)",
+    "antwort_fr": "Antwort (Französisch)",
+    "fr_hinweis": "Ohne französischen Text sehen auch französisch eingestellte Konten die deutsche Frage.",
+    "reihenfolge": "Reihenfolge",
+    "aktiv": "Sichtbar",
+    "speichern": "Speichern",
+    "sichtbar": "sichtbar",
+    "ausgeblendet": "ausgeblendet",
+    "ausblenden": "Ausblenden",
+    "einblenden": "Einblenden",
+    "bearbeiten": "Bearbeiten",
+    "loeschen": "Löschen",
+    "wirklich": "Wirklich löschen"
+  }
+}

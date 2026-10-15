@@ -1,0 +1,102 @@
+{
+  "titel": "Support",
+  "einleitung": "Trouve des réponses aux questions fréquentes ou envoie une demande au bureau.",
+  "laden": "Chargement …",
+  "fehler_laden": "Impossible de charger les données.",
+  "abbrechen": "Annuler",
+  "tab": {
+    "hilfe": "Aide et questions",
+    "tickets": "Mes tickets",
+    "buero": "Tous les tickets",
+    "faq": "Gérer les questions",
+    "faq_verwalten": "Gérer les questions fréquentes"
+  },
+  "faq": {
+    "titel": "Questions fréquentes",
+    "suche": "Rechercher dans les questions",
+    "keine": "Aucune question correspondante.",
+    "nichts_gefunden": "Rien trouvé ?",
+    "nichts_gefunden_text": "Écris au bureau. Tu reçois la réponse dans l'application et par e-mail."
+  },
+  "anleitungen": {
+    "titel": "Guides"
+  },
+  "status": {
+    "offen": "Ouvert",
+    "in_bearbeitung": "En cours",
+    "wartet_auf_antwort": "En attente de réponse",
+    "geloest": "Résolu",
+    "geschlossen": "Clos"
+  },
+  "kategorie": {
+    "konto": "Compte et connexion",
+    "mitgliedschaft": "Adhésion",
+    "zahlung": "Paiement et cotisation",
+    "veranstaltung": "Événements et régions",
+    "technik": "Technique et erreurs",
+    "sonstiges": "Autre"
+  },
+  "art": {
+    "mitglied": "Membre",
+    "fan": "Fan",
+    "konto": "Compte"
+  },
+  "ticket": {
+    "neu": "Nouveau ticket",
+    "betreff": "Objet",
+    "kategorie": "Catégorie",
+    "beschreibung": "Description",
+    "datenschutz": "N'indique que ce qui est nécessaire pour la réponse. N'écris ici ni mot de passe, ni données bancaires ou de carte.",
+    "absenden": "Envoyer le ticket",
+    "keine": "Tu n'as pas encore de ticket.",
+    "zurueck": "Retour",
+    "verlauf": "Historique",
+    "du": "Toi",
+    "buero": "Bureau",
+    "antwort_von": "Réponse de {{name}}",
+    "notiz_von": "Note interne de {{name}}",
+    "antworten": "Écrire une réponse",
+    "notiz": "Note interne",
+    "senden": "Envoyer",
+    "notiz_speichern": "Enregistrer la note",
+    "intern": "Note interne (réservée au bureau)",
+    "danach": "Ensuite",
+    "schliessen": "Clore le ticket",
+    "geschlossen_hinweis": "Ce ticket est clos. Pour une nouvelle demande, ouvre un nouveau ticket.",
+    "fehler": "Cela n'a pas fonctionné. Merci de réessayer.",
+    "nicht_gefunden": "Ce ticket est introuvable.",
+    "zu_viele_tickets": "Tu as déjà ouvert plusieurs tickets durant la dernière heure. Merci de réessayer plus tard.",
+    "zu_viele_offene_tickets": "Tu as déjà beaucoup de tickets ouverts. Merci d'attendre les réponses ou de clore les tickets réglés."
+  },
+  "buero": {
+    "status": "Statut",
+    "bearbeiter": "Traitement",
+    "niemand": "personne",
+    "mir_zuweisen": "M'assigner",
+    "freigeben": "Retirer l'assignation",
+    "filter_aktiv": "Tickets actifs",
+    "filter_alle": "Tous les tickets",
+    "suche": "Numéro, objet ou nom",
+    "keine": "Aucun ticket trouvé.",
+    "von": "De",
+    "aktualisiert": "Mis à jour"
+  },
+  "faqv": {
+    "neu": "Nouvelle question",
+    "frage_de": "Question (allemand)",
+    "antwort_de": "Réponse (allemand)",
+    "frage_fr": "Question (français)",
+    "antwort_fr": "Réponse (français)",
+    "fr_hinweis": "Sans texte français, les comptes réglés en français voient la question allemande.",
+    "reihenfolge": "Ordre",
+    "aktiv": "Visible",
+    "speichern": "Enregistrer",
+    "sichtbar": "visible",
+    "ausgeblendet": "masquée",
+    "ausblenden": "Masquer",
+    "einblenden": "Afficher",
+    "bearbeiten": "Modifier",
+    "loeschen": "Supprimer",
+    "wirklich": "Vraiment supprimer"
+  }
+}

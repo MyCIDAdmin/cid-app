@@ -806,5 +806,33 @@
       "Fans = comptes inscrits à une rencontre publiée.",
       "Le fichier ne contient que des chiffres, aucun nom."
     ]
+  },
+  "support": {
+    "titre": "Support",
+    "intro": "Tu trouves ici des réponses aux questions fréquentes et tu peux envoyer une demande au bureau.",
+    "schritte": [
+      "Dans l'onglet « Aide et questions », cherche dans les questions fréquentes et lis les guides.",
+      "Rien trouvé ? Sous « Mes tickets », ouvre un nouveau ticket : objet, catégorie et description.",
+      "La réponse du bureau arrive par notification et par e-mail. Tu vois l'historique dans le ticket.",
+      "Quand ta demande est réglée, clos le ticket."
+    ],
+    "workflows": [
+      {
+        "titre": "Ouvrir un ticket",
+        "wann": "Tu as un problème ou une question absente des questions fréquentes.",
+        "schritte": [
+          "Ouvre « Support » et utilise d'abord la recherche.",
+          "Sous « Mes tickets », appuie sur « Nouveau ticket ».",
+          "Remplis l'objet, la catégorie et la description, puis envoie."
+        ],
+        "beispiel": "Objet « Cotisation payée, statut ouvert », catégorie « Paiement et cotisation », date et montant dans la description.",
+        "danach": "Le bureau répond dans le ticket. Tu es notifié·e."
+      }
+    ],
+    "tipps": [
+      "N'écris ni mot de passe ni données bancaires dans un ticket.",
+      "Un ticket par demande garde l'historique lisible.",
+      "Pour le bureau : « Tous les tickets » montre la file d'attente, « Gérer les questions » les questions fréquentes en allemand et en français."
+    ]
   }
 }

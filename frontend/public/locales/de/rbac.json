@@ -48,7 +48,9 @@
     "page_kalender": "Büro-Kalender (Termine pflegen)",
     "page_kalender_vorschlag": "Terminvorschläge einreichen",
     "regionen": "Regionen",
-    "page_regionen": "Regionen (Verantwortliche zuweisen, Seiten bearbeiten)"
+    "page_regionen": "Regionen (Verantwortliche zuweisen, Seiten bearbeiten)",
+    "support": "Support",
+    "page_support": "Support (Tickets bearbeiten, FAQ pflegen)"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",
