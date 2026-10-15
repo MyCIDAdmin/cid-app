@@ -202,6 +202,38 @@
       "zuletzt": "Zuletzt aktiv: {{datum}}",
       "abmelden": "Abmelden",
       "alle_anderen": "Alle anderen Geräte abmelden"
+    },
+    "benachrichtigungen": {
+      "titel": "Benachrichtigungen"
+    },
+    "telegram": {
+      "titel": "Telegram",
+      "hinweis": "Zusätzlich zur App und E-Mail kurze Hinweise (Titel und Link) in Telegram erhalten. Der Inhalt der Meldungen wird nicht übertragen. Sie können die Verbindung jederzeit hier oder mit /stop im Chat trennen.",
+      "verbinden": "Mit Telegram verbinden",
+      "oeffnen": "In Telegram öffnen",
+      "warten": "Dort „Start“ antippen. Der Link gilt 15 Minuten und nur einmal. Diese Seite aktualisiert sich selbst.",
+      "verbunden": "Verbunden. Sie erhalten die gewählten Benachrichtigungen auch in Telegram.",
+      "arten": "Diese Arten per Telegram erhalten",
+      "test": "Testnachricht senden",
+      "test_gesendet": "Testnachricht gesendet.",
+      "trennen": "Trennen",
+      "fehler": "Das hat nicht geklappt. Bitte erneut versuchen.",
+      "art": {
+        "regionen": "Regionen und Treffen",
+        "veranstaltungen": "Veranstaltungen",
+        "kalender": "Kalender",
+        "nachrichten": "Nachrichten und Community",
+        "projekte": "Projekte",
+        "mitgliedschaft": "Mitgliedschaft, Beitrag, Abstimmungen",
+        "shop": "Shop",
+        "verwaltung": "Verwaltung (nur mit Funktion)",
+        "sonstiges": "Sonstiges"
+      }
+    },
+    "geburtstag": {
+      "titel": "Geburtstagsgruß per E-Mail",
+      "hinweis": "Am Geburtstag schickt der Verein eine kurze Glückwunsch-Mail. Das Alter wird nicht genannt.",
+      "fehler": "Speichern fehlgeschlagen."
     }
   },
   "nav_untergruppe": {

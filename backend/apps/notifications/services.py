@@ -53,10 +53,39 @@ def notifier(destinataire, type_notification, *, titre, message, lien=""):
     notification in-app pour un destinataire non identifiable n'est jamais bloquante."""
     if destinataire is None:
         return None
-    return Notification.objects.create(
+    notification = Notification.objects.create(
         destinataire=destinataire,
         type_notification=type_notification,
         titre=titre,
         message=message,
         lien=lien,
     )
+    _telegram_nachreichen(notification)
+    return notification
+
+
+def _telegram_nachreichen(notification) -> None:
+    """Schickt die Benachrichtigung zusätzlich nach Telegram, falls das Konto verbunden ist und
+    die Art der Benachrichtigung gewählt hat (Release 32). Stört nie die eigentliche Aktion."""
+    from django.db import transaction
+
+    from . import telegram
+    from .models import TelegramVerknuepfung
+
+    try:
+        if not telegram.bot_konfiguriert():
+            return
+        verknuepfung = TelegramVerknuepfung.objects.filter(
+            user=notification.destinataire, chat_id__isnull=False
+        ).first()
+        if verknuepfung is None:
+            return
+        if telegram.kategorie_von(notification.type_notification) not in verknuepfung.kategorien:
+            return
+        from .tasks import sende_telegram
+
+        transaction.on_commit(lambda: sende_telegram.delay(str(notification.pk)))
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception("Telegram-Versand nicht eingeplant")

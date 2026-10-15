@@ -16,6 +16,8 @@ UI_PRAEFERENZEN_SCHEMA = {
     "theme": lambda v: v in ("light", "dark"),
     "sidebar_collapsed": lambda v: isinstance(v, bool),
     "kalender_wochenmail": lambda v: isinstance(v, bool),
+    # Geburtstagsgruß per E-Mail (Release 32) : an, solange nicht ausdrücklich abgeschaltet.
+    "geburtstagsgruss": lambda v: isinstance(v, bool),
     "kalender_ansichten": lambda v: (
         isinstance(v, list)
         and 0 < len(v) <= 3

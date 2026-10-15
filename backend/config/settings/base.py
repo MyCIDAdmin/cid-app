@@ -356,6 +356,13 @@ ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
+# Telegram (Release 32) : Bot aus @BotFather. Ohne TELEGRAM_BOT_TOKEN ist die Funktion
+# abgeschaltet (Profil blendet den Abschnitt aus, es wird nichts gesendet). Der Webhook-Schlüssel
+# (nur A-Z a-z 0-9 _ -) schützt den Eingang : Telegram sendet ihn in jedem Aufruf mit.
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "").lstrip("@")
+TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+
 # Ajouté le 2026-09-24 — module "Fan-Club" (voir apps.communaute.services) : synchronisation
 # périodique du classement/calendrier/statistiques joueurs de Club Africain depuis GOAL API
 # (goal-api.com, 1000 requêtes/jour sur le plan gratuit, compte gratuit sans carte bancaire
