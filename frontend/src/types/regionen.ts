@@ -146,6 +146,7 @@ export interface Veranstaltung {
   datum: string;
   uhrzeit: string | null;
   ort: string;
+  ort_maps_url: string;
   standort: { id: string; name: string } | null;
   bild_url: string | null;
   max_teilnehmer: number | null;
@@ -171,6 +172,7 @@ export interface VeranstaltungEingabe {
   titel: string;
   datum: string;
   ort: string;
+  ort_maps_url?: string;
   beschreibung?: string;
   uhrzeit?: string | null;
   max_teilnehmer?: number | null;

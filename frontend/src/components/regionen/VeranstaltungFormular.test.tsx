@@ -38,6 +38,9 @@ describe("VeranstaltungFormular", () => {
     fireEvent.change(screen.getByLabelText("v_titel"), { target: { value: " Derby " } });
     fireEvent.change(screen.getByLabelText("v_datum"), { target: { value: "2026-11-07" } });
     fireEvent.change(screen.getByLabelText("v_ort"), { target: { value: "Bremen, Pub" } });
+    fireEvent.change(screen.getByLabelText("v_ort_maps_url"), {
+      target: { value: " https://maps.app.goo.gl/x " },
+    });
     fireEvent.change(screen.getByLabelText("v_max"), { target: { value: "30" } });
     fireEvent.change(screen.getByLabelText("feld_standort"), { target: { value: "s1" } });
     fireEvent.click(knopf);
@@ -49,6 +52,7 @@ describe("VeranstaltungFormular", () => {
           datum: "2026-11-07",
           uhrzeit: null,
           ort: "Bremen, Pub",
+          ort_maps_url: "https://maps.app.goo.gl/x",
           standort: "s1",
           max_teilnehmer: 30,
           beschreibung: "",

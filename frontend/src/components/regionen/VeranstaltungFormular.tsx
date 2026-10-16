@@ -35,6 +35,7 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
   const [datum, setDatum] = useState(bestehend?.datum ?? "");
   const [uhrzeit, setUhrzeit] = useState(bestehend?.uhrzeit ?? "");
   const [ort, setOrt] = useState(bestehend?.ort ?? "");
+  const [ortMapsUrl, setOrtMapsUrl] = useState(bestehend?.ort_maps_url ?? "");
   const [standort, setStandort] = useState(bestehend?.standort?.id ?? "");
   const [maximum, setMaximum] = useState(
     bestehend?.max_teilnehmer ? String(bestehend.max_teilnehmer) : "",
@@ -72,6 +73,7 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
       datum,
       uhrzeit: uhrzeit || null,
       ort: ort.trim(),
+      ort_maps_url: ortMapsUrl.trim(),
       standort: standort || null,
       max_teilnehmer: maximum ? Number(maximum) : null,
       beschreibung: klartext(beschreibung) ? beschreibung.trim() : "",
@@ -137,6 +139,17 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
           value={ort}
           maxLength={200}
           onChange={(e) => setOrt(e.target.value)}
+        />
+      </label>
+      <label className="text-xs font-semibold text-text-tertiary">
+        {t("v_ort_maps_url")}
+        <input
+          type="url"
+          className={`${FELD} mt-1 font-normal`}
+          value={ortMapsUrl}
+          maxLength={500}
+          placeholder="https://maps.app.goo.gl/…"
+          onChange={(e) => setOrtMapsUrl(e.target.value)}
         />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">

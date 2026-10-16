@@ -203,6 +203,9 @@ class Veranstaltung(models.Model):
     datum = models.DateField()
     uhrzeit = models.TimeField(null=True, blank=True)
     ort = models.CharField(max_length=200)
+    # Optionaler Google-Maps-Link (wie Evenement.lieu_maps_url) : Ziel des Links „In Google Maps
+    # öffnen“ ; die Kartenvorschau entsteht im Frontend aus dem Text von `ort`.
+    ort_maps_url = models.URLField(max_length=500, blank=True)
     bild = models.ImageField(
         upload_to=veranstaltung_bild_path, storage=ProjetsStorage(), null=True, blank=True
     )

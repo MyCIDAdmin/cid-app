@@ -29,6 +29,7 @@ function v(o: Partial<Veranstaltung> = {}): Veranstaltung {
     datum: "2026-11-07",
     uhrzeit: "19:30",
     ort: "Hamburg, Kneipe X",
+    ort_maps_url: "",
     standort: null,
     bild_url: null,
     max_teilnehmer: null,
@@ -173,5 +174,18 @@ describe("VeranstaltungKarte", () => {
   it("zeigt die Zahl der Anwesenden bei abgeschlossenen Treffen", () => {
     zeige({ status: "abgeschlossen", anwesende_zahl: 3 });
     expect(screen.getByText("v_anwesende")).toBeInTheDocument();
+  });
+
+  it("zeigt die Karte erst auf Klick, mit Link zu Google Maps", () => {
+    zeige({ ort_maps_url: "https://maps.app.goo.gl/x" });
+    expect(document.querySelector("iframe")).toBeNull();
+    fireEvent.click(screen.getByText("v_karte_zeigen"));
+    expect(document.querySelector("iframe")).not.toBeNull();
+    expect(screen.getByText("maps.ouvrir").closest("a")).toHaveAttribute(
+      "href",
+      "https://maps.app.goo.gl/x",
+    );
+    fireEvent.click(screen.getByText("v_karte_verbergen"));
+    expect(document.querySelector("iframe")).toBeNull();
   });
 });
