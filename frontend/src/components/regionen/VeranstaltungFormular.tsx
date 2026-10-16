@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   useVeranstaltungAendern,
   useVeranstaltungAnlegen,
+  useStandortFuerRegionAnlegen,
   useVeranstaltungBild,
 } from "../../hooks/useRegionen";
 import type { Standort, Veranstaltung } from "../../types/regionen";
@@ -26,6 +27,9 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
   const anlegen = useVeranstaltungAnlegen();
   const aendern = useVeranstaltungAendern();
   const bildHoch = useVeranstaltungBild();
+  const standortAnlegen = useStandortFuerRegionAnlegen();
+  const [neuerStandort, setNeuerStandort] = useState("");
+  const [neuOffen, setNeuOffen] = useState(false);
 
   const [titel, setTitel] = useState(bestehend?.titel ?? "");
   const [datum, setDatum] = useState(bestehend?.datum ?? "");
@@ -41,6 +45,23 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
 
   const laeuft = anlegen.isPending || aendern.isPending || bildHoch.isPending;
   const gueltig = titel.trim() && datum && ort.trim();
+
+  function standortHinzufuegen() {
+    const name = neuerStandort.trim();
+    if (!name) return;
+    setFehler(null);
+    standortAnlegen.mutate(
+      { slug, name },
+      {
+        onSuccess: (neu) => {
+          setStandort(neu.id);
+          setNeuerStandort("");
+          setNeuOffen(false);
+        },
+        onError: (err) => setFehler(extractApiErrorMessage(err, t("fehler_speichern"))),
+      },
+    );
+  }
 
   function senden(e: FormEvent) {
     e.preventDefault();
@@ -119,21 +140,57 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
         />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-semibold text-text-tertiary">
-          {t("feld_standort")}
-          <select
-            className={`${FELD} mt-1 font-normal`}
-            value={standort}
-            onChange={(e) => setStandort(e.target.value)}
-          >
-            <option value="">{t("kein_standort")}</option>
-            {standorte.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div>
+          <label className="text-xs font-semibold text-text-tertiary">
+            {t("feld_standort")}
+            <select
+              className={`${FELD} mt-1 font-normal`}
+              value={standort}
+              onChange={(e) => setStandort(e.target.value)}
+            >
+              <option value="">{t("kein_standort")}</option>
+              {standorte.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {neuOffen ? (
+            <span className="mt-2 flex gap-2">
+              <input
+                className={`${FELD} font-normal`}
+                value={neuerStandort}
+                maxLength={100}
+                placeholder={t("standort_neu_name")}
+                aria-label={t("standort_neu_name")}
+                onChange={(e) => setNeuerStandort(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    standortHinzufuegen();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={standortHinzufuegen}
+                disabled={!neuerStandort.trim() || standortAnlegen.isPending}
+                className="rounded-cid px-3 py-2 text-sm font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-50"
+              >
+                {t("standort_neu_anlegen")}
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setNeuOffen(true)}
+              className="mt-1 block text-xs font-medium text-text-secondary underline hover:text-text-primary"
+            >
+              {t("standort_neu")}
+            </button>
+          )}
+        </div>
         <label className="text-xs font-semibold text-text-tertiary">
           {t("v_max")}
           <input

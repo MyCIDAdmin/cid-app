@@ -181,6 +181,16 @@ export async function legeStandortAn(arg: {
   return data;
 }
 
+export async function legeStandortFuerRegionAn(arg: {
+  slug: string;
+  name: string;
+}): Promise<Standort> {
+  const { data } = await apiClient.post<Standort>(`/regionen/${arg.slug}/standorte/`, {
+    name: arg.name,
+  });
+  return data;
+}
+
 export async function loescheStandort(id: string): Promise<void> {
   await apiClient.delete(`/regionen/verwaltung/standorte/${id}/`);
 }

@@ -23,6 +23,7 @@ from .views import (
     PersonenSucheView,
     RegionDetailView,
     RegionListeView,
+    RegionStandortView,
     VerantwortlicherDetailView,
     VerantwortlicherFotoView,
     VerantwortlicheView,
@@ -98,6 +99,7 @@ urlpatterns = [
         BeitragReaktionView.as_view(),
         name="beitrag-reaktion",
     ),
+    path("<slug:slug>/standorte/", RegionStandortView.as_view(), name="region-standort"),
     path("<slug:slug>/veranstaltungen/", VeranstaltungenView.as_view(), name="veranstaltungen"),
     path(
         "<slug:slug>/veranstaltungen/<uuid:pk>/",
