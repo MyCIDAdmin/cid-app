@@ -483,7 +483,7 @@ def sende_altershinweise(jetzt=None) -> int:
         altershinweis_am__isnull=True,
         anonymisiert_am__isnull=True,
         souscription__statut=StatutSouscription.PAYEE,
-        souscription__campagne__date_fin__gte=jetzt.date(),
+        souscription__campagne__date_fin__gte=timezone.localdate(jetzt),
     ).select_related("souscription__membre__user", "souscription__campagne")
     je_paket: dict = {}
     for k in kinder:
@@ -503,7 +503,9 @@ def anonymisiere_familiendaten(heute=None) -> dict:
     from datetime import timedelta
 
     jetzt = heute or timezone.now()
-    grenze = jetzt.date() - timedelta(days=30 * settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE)
+    grenze = timezone.localdate(jetzt) - timedelta(
+        days=30 * settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE
+    )
     kinder = FamilienKind.objects.filter(
         anonymisiert_am__isnull=True, souscription__campagne__date_fin__lt=grenze
     ).update(
