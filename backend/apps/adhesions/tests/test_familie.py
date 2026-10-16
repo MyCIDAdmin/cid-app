@@ -979,6 +979,19 @@ def test_altershinweis_nicht_nach_kampagnenende_und_nicht_fuer_unbezahlte(
     assert familie.sende_altershinweise() == 0
 
 
+def test_altershinweis_rechnet_mit_berliner_datum_nicht_utc(
+    django_capture_on_commit_callbacks, monkeypatch
+):
+    """Regression : zwischen 22 und 24 Uhr UTC ist es in Berlin schon der nächste Tag ; die
+    Kampagne vom Berliner Vortag darf dann keinen Hinweis mehr auslösen."""
+    _, s, k = _kind_ueber_grenze(django_capture_on_commit_callbacks)
+    fix = datetime.datetime(2026, 10, 16, 22, 30, tzinfo=datetime.timezone.utc)
+    monkeypatch.setattr(timezone, "now", lambda: fix)
+    s.campagne.date_fin = timezone.localdate() - datetime.timedelta(days=1)
+    s.campagne.save()
+    assert familie.sende_altershinweise() == 0
+
+
 # --- Bericht ---------------------------------------------------------------------------------
 
 
