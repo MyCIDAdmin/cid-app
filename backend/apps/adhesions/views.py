@@ -466,6 +466,23 @@ class SouscriptionViewSet(ModelViewSet):
             )
         souscription.statut = StatutSouscription.ANNULEE
         souscription.save(update_fields=["statut"])
+        # Familienpaket (R36) : die für die Buchung erfassten Personen werden nicht mehr gebraucht
+        # und gelöscht (Datensparsamkeit) ; die Anmeldung selbst bleibt als „annulee“ erhalten.
+        if souscription.offre.ist_familienpaket:
+            from .familie import leere_familie
+
+            leere_familie(souscription)
+            souscription.save(
+                update_fields=[
+                    "plaetze_erwachsene",
+                    "plaetze_kinder",
+                    "familien_gesamtpreis",
+                    "familienrabatt_pct",
+                    "hauptperson_angebot",
+                    "haupt_preis_liste",
+                    "haupt_preis_anteil",
+                ]
+            )
         # Annule la Cotisation liée si elle n'était pas encore payée (ajouté le 2026-09-19, voir
         # services.py) — jamais si elle l'était déjà : STATUTS_SOUSCRIPTION_ANNULABLES exclut déjà
         # "payee" ci-dessus, ce cas ne devrait donc jamais se présenter ici.

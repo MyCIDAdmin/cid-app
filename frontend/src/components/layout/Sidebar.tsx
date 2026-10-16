@@ -163,12 +163,7 @@ export const SUBGROUP_LABEL_KEYS: Record<SidebarSubgroupKey, string> = {
 
 // Zuordnung + Reihenfolge der Verwaltungs-Einträge innerhalb ihrer Untergruppe.
 const ADMIN_SUBGROUPS: Record<SidebarSubgroupKey, string[]> = {
-  mitglieder: [
-    "/inscriptions",
-    "/admin/campagnes-adhesion",
-    "/admin/justificatifs",
-    "/admin/roles",
-  ],
+  mitglieder: ["/inscriptions", "/admin/campagnes-adhesion", "/admin/justificatifs"],
   finanzen: [
     "/admin/finances",
     "/cotisations/en-attente",
@@ -184,7 +179,7 @@ const ADMIN_SUBGROUPS: Record<SidebarSubgroupKey, string[]> = {
     "/admin/fan-club-logos",
     "/admin/configuration-site",
   ],
-  system: ["/admin/notifications"],
+  system: ["/admin/roles", "/admin/notifications"],
 };
 
 // Icône représentative par groupe (mode rail replié uniquement, voir docstring de module) — un
@@ -717,7 +712,8 @@ function NavItemLink({
           />
         )}
       </span>
-      <span className="truncate">{t(item.labelKey)}</span>
+      {/* Lange Namen (z. B. „Mitgliedschaftskampagnen“) brechen um statt abgeschnitten zu werden. */}
+      <span className="min-w-0 break-words leading-snug [hyphens:auto]">{t(item.labelKey)}</span>
     </Link>
   );
 }
@@ -1012,7 +1008,7 @@ export default function Sidebar() {
     // sidebar persistante, qui prendrait une largeur disproportionnée sur un écran de téléphone.
     <aside
       className={`glass-sidebar hidden h-screen flex-col overflow-hidden bg-sb text-white/90 transition-[width] duration-200 lg:flex ${
-        collapsed ? "w-16" : "w-60"
+        collapsed ? "w-16" : "w-64"
       }`}
     >
       <div className="flex items-center gap-2 px-4 py-5">
