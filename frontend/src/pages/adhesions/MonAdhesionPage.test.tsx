@@ -15,6 +15,7 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useCampagnes: vi.fn(),
     useMesSouscriptions: vi.fn(),
     useMeineEinladungen: vi.fn(),
+    useVorjahrFamilie: vi.fn(),
     useSouscrire: vi.fn(),
     useUploaderJustificatif: vi.fn(),
     useAnnulerSouscription: vi.fn(),
@@ -127,6 +128,9 @@ function souscription(overrides: Partial<Souscription> = {}): Souscription {
 
 describe("MonAdhesionPage", () => {
   beforeEach(() => {
+    vi.mocked(useAdhesionsHooks.useVorjahrFamilie).mockReturnValue({
+      data: undefined,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useVorjahrFamilie>);
     vi.mocked(useAdhesionsHooks.useMeineEinladungen).mockReturnValue({
       data: [],
     } as unknown as ReturnType<typeof useAdhesionsHooks.useMeineEinladungen>);

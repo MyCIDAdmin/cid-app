@@ -1,5 +1,5 @@
 """Familienpaket (Release 34/35) : Kombination bestehender Angebote, Familienrabatt, Personen mit
-Beziehung, Einladung der Erwachsenen, Finanzen, Büro, Löschfrist."""
+Beziehung, Einladung der Erwachsenen, Finanzen, Büro, Anonymisierung, Übernahme, Bericht."""
 
 import datetime
 from decimal import Decimal
@@ -20,7 +20,7 @@ from apps.adhesions.models import (
     Souscription,
     StatutSouscription,
 )
-from apps.adhesions.tasks import loeschen_kinderdaten, sende_familien_erinnerungen
+from apps.adhesions.tasks import anonymisiere_familiendaten, sende_familien_erinnerungen
 from apps.adhesions.tests.factories import (
     CampagneAdhesionFactory,
     OffreAdhesionFactory,
@@ -628,7 +628,7 @@ def test_erinnerung_erst_nach_sieben_tagen_und_hoechstens_dreimal(
 ):
     _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
     e = FamilienErwachsener.objects.get()
-    assert sende_familien_erinnerungen() == {"einladungen": 0, "profile": 0}
+    assert sende_familien_erinnerungen() == {"einladungen": 0, "profile": 0, "altershinweise": 0}
     jetzt = timezone.now()
     for runde in range(1, 5):
         ergebnis = familie.sende_erinnerungen(heute=jetzt + datetime.timedelta(days=8 * runde))
@@ -645,7 +645,7 @@ def test_profil_erinnerung_fuer_angenommene_ohne_ausweis(django_capture_on_commi
     e = FamilienErwachsener.objects.get()
     _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
     frueh = familie.sende_erinnerungen(heute=timezone.now() + datetime.timedelta(days=3))
-    assert frueh == {"einladungen": 0, "profile": 0}
+    assert frueh == {"einladungen": 0, "profile": 0, "altershinweise": 0}
     spaet = familie.sende_erinnerungen(heute=timezone.now() + datetime.timedelta(days=15))
     assert spaet["profile"] == 1
 
@@ -677,6 +677,8 @@ def test_buero_uebersicht_zeigt_personen_status_und_rabatt(django_capture_on_com
         "id",
         "name",
         "alter",
+        "anonymisiert",
+        "ueber_hoechstalter",
         "beziehung",
         "angebot",
         "angebot_id",
@@ -734,23 +736,29 @@ def test_zuweisung_nur_mit_schreibrecht(django_capture_on_commit_callbacks):
     assert _client().patch(url, daten, format="json").status_code in (401, 403)
 
 
-# --- Löschfrist ------------------------------------------------------------------------------
+# --- Anonymisierung --------------------------------------------------------------------------
 
 
-def test_abgelaufene_kinderdaten_werden_geloescht(settings):
+def _alte_kampagne(tage=400):
+    heute = timezone.localdate()
+    return CampagneAdhesionFactory(
+        annee=heute.year - 2,
+        date_debut=datetime.date(heute.year - 2, 1, 1),
+        date_fin=heute - datetime.timedelta(days=tage),
+        familie_max_alter_kind=17,
+    )
+
+
+def test_abgelaufene_familiendaten_werden_anonymisiert_nicht_geloescht(settings):
     settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE = 12
     heute = timezone.localdate()
-    alt = CampagneAdhesionFactory(
-        annee=2020,
-        date_debut=datetime.date(2020, 1, 1),
-        date_fin=heute - datetime.timedelta(days=400),
-    )
+    alt = _alte_kampagne()
     neu = CampagneAdhesionFactory(
-        annee=2021,
-        date_debut=datetime.date(2021, 1, 1),
+        annee=heute.year,
+        date_debut=datetime.date(heute.year, 1, 1),
         date_fin=heute + datetime.timedelta(days=100),
     )
-    _, membre = _person()
+    user, membre = _person()
     for kampagne, name in ((alt, "Alt"), (neu, "Neu")):
         offre = OffreAdhesionFactory(campagne=kampagne)
         s = SouscriptionFactory(membre=membre, offre=offre, campagne=kampagne, plaetze_kinder=1)
@@ -759,15 +767,239 @@ def test_abgelaufene_kinderdaten_werden_geloescht(settings):
             vorname=name,
             nachname="X",
             geburtsjahr=heute.year - 5,
+            kartennummer=f"{membre.numero_membre}-J1",
+            einwilligung_von=user,
             einwilligung_version="v",
+            preis_anteil=Decimal("9.00"),
         )
-    assert loeschen_kinderdaten() == 1
-    assert list(FamilienKind.objects.values_list("vorname", flat=True)) == ["Neu"]
+        FamilienErwachsener.objects.create(
+            souscription=s,
+            vorname=name,
+            nachname="Y",
+            email=f"{name.lower()}@example.de",
+            beziehung="ehepartner",
+            membre=membre,
+            registrierung_user=user,
+        )
+    token_alt = FamilienErwachsener.objects.get(vorname="Alt").token
+    ergebnis = anonymisiere_familiendaten()
+    assert ergebnis == {"kinder": 1, "erwachsene": 1}
+    assert FamilienKind.objects.count() == 2  # nichts gelöscht
+    k = FamilienKind.objects.get(souscription__campagne=alt)
+    assert (k.vorname, k.nachname, k.kartennummer) == ("", "", "")
+    assert k.einwilligung_von is None and k.anonymisiert and k.anonymisiert_am
+    assert k.geburtsjahr == heute.year - 5 and k.preis_anteil == Decimal("9.00")  # Historie bleibt
+    e = FamilienErwachsener.objects.get(souscription__campagne=alt)
+    assert (e.vorname, e.nachname, e.email) == ("", "", "")
+    assert e.membre is None and e.registrierung_user is None and e.token != token_alt
+    # Die laufende Kampagne bleibt unberührt ; ein zweiter Lauf ändert nichts.
+    assert FamilienKind.objects.get(souscription__campagne=neu).vorname == "Neu"
+    assert FamilienErwachsener.objects.get(souscription__campagne=neu).email == "neu@example.de"
+    assert anonymisiere_familiendaten() == {"kinder": 0, "erwachsene": 0}
 
 
-def test_loeschjob_ist_eingeplant():
+def test_anonymisiertes_paket_erscheint_weiter_im_bericht(settings):
+    settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE = 12
+    kampagne = _alte_kampagne()
+    angebot = OffreAdhesionFactory(campagne=kampagne, ist_familienpaket=True)
+    _, membre = _person()
+    s = SouscriptionFactory(
+        membre=membre,
+        offre=angebot,
+        campagne=kampagne,
+        statut=StatutSouscription.PAYEE,
+        familien_gesamtpreis=Decimal("108.00"),
+        haupt_preis_liste=Decimal("50.00"),
+    )
+    FamilienKind.objects.create(
+        souscription=s,
+        vorname="Lina",
+        nachname="X",
+        geburtsjahr=kampagne.annee - 8,
+        einwilligung_version="v",
+        preis_liste=Decimal("10.00"),
+    )
+    vorher = familie.bericht()[0]
+    anonymisiere_familiendaten()
+    nachher = familie.bericht()[0]
+    assert nachher["kinder"] == 1 and nachher["kinder_anonymisiert"] == 1
+    assert {k: v for k, v in nachher.items() if k != "kinder_anonymisiert"} == {
+        k: v for k, v in vorher.items() if k != "kinder_anonymisiert"
+    }
+
+
+def test_anonymisierung_ist_eingeplant():
     from django_celery_beat.models import PeriodicTask
 
-    aufgabe = PeriodicTask.objects.get(name="adhesions.loeschen_kinderdaten")
-    assert aufgabe.task == "apps.adhesions.tasks.loeschen_kinderdaten"
+    assert not PeriodicTask.objects.filter(name="adhesions.loeschen_kinderdaten").exists()
+    aufgabe = PeriodicTask.objects.get(name="adhesions.anonymisiere_familiendaten")
+    assert aufgabe.task == "apps.adhesions.tasks.anonymisiere_familiendaten"
     assert aufgabe.enabled
+
+
+def test_anonymisierte_personen_sind_nicht_mehr_aenderbar(django_capture_on_commit_callbacks):
+    user, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    k, e = FamilienKind.objects.first(), FamilienErwachsener.objects.get()
+    FamilienKind.objects.update(anonymisiert_am=timezone.now())
+    FamilienErwachsener.objects.update(anonymisiert_am=timezone.now())
+    c = _client(user)
+    assert c.delete(reverse("adhesions:familie-kind", args=[s.id, k.id])).status_code == 404
+    url = reverse("adhesions:familie-erwachsener", args=[s.id, e.id])
+    assert c.patch(url, {"vorname": "Neu"}, format="json").status_code == 404
+    senden = reverse("adhesions:familie-einladung-senden", args=[s.id, e.id])
+    assert c.post(senden).status_code == 404
+
+
+# --- Familie aus dem Vorjahr übernehmen -------------------------------------------------------
+
+
+def _vorjahr_paket(membre, erwachsene=(), kinder=()):
+    alt = CampagneAdhesionFactory(annee=JAHR - 1, familie_max_alter_kind=17)
+    offre = OffreAdhesionFactory(campagne=alt, ist_familienpaket=True)
+    s = SouscriptionFactory(
+        membre=membre, offre=offre, campagne=alt, statut=StatutSouscription.PAYEE
+    )
+    for jahr, name in kinder:
+        FamilienKind.objects.create(
+            souscription=s,
+            vorname=name,
+            nachname="Muster",
+            geburtsjahr=jahr,
+            einwilligung_version="v",
+        )
+    for status, email in erwachsene:
+        FamilienErwachsener.objects.create(
+            souscription=s,
+            vorname="Nora",
+            nachname="Muster",
+            email=email,
+            beziehung="ehepartner",
+            status=status,
+        )
+    return s
+
+
+def test_vorjahr_schlaegt_personen_vor_und_trennt_zu_alte_kinder_ab():
+    a = Aufbau(annee=JAHR)
+    user, membre = _person()
+    _vorjahr_paket(
+        membre,
+        erwachsene=[
+            (EinladungStatus.ANGENOMMEN, "ja@example.de"),
+            (EinladungStatus.ABGELEHNT, "nein@example.de"),
+        ],
+        kinder=[(JAHR - 8, "Lina"), (JAHR - 18, "Max")],
+    )
+    url = reverse("adhesions:familien-vorjahr")
+    daten = _client(user).get(url, {"campagne": str(a.kampagne.id)}).data
+    assert [e["email"] for e in daten["erwachsene"]] == ["ja@example.de"]
+    assert [k["vorname"] for k in daten["kinder"]] == ["Lina"]
+    assert [k["vorname"] for k in daten["aelter_geworden"]] == ["Max"]
+    assert "einwilligung" not in daten["kinder"][0]  # neue Einwilligung nötig
+    assert daten["quelle"]
+
+
+def test_vorjahr_ohne_fruehere_buchung_und_ohne_anonymisierte_eintraege():
+    a = Aufbau(annee=JAHR)
+    user, membre = _person()
+    url = reverse("adhesions:familien-vorjahr")
+    leer = _client(user).get(url, {"campagne": str(a.kampagne.id)}).data
+    assert leer["quelle"] is None and leer["kinder"] == []
+    s = _vorjahr_paket(membre, kinder=[(JAHR - 8, "Lina")])
+    FamilienKind.objects.filter(souscription=s).update(
+        vorname="", nachname="", anonymisiert_am=timezone.now()
+    )
+    assert _client(user).get(url, {"campagne": str(a.kampagne.id)}).data["kinder"] == []
+
+
+def test_vorjahr_zeigt_nur_die_eigene_familie_und_prueft_die_eingabe():
+    a = Aufbau(annee=JAHR)
+    _, fremd = _person(email="fremd@example.de")
+    _vorjahr_paket(fremd, kinder=[(JAHR - 8, "Geheim")])
+    user, _ = _person()
+    url = reverse("adhesions:familien-vorjahr")
+    assert _client(user).get(url, {"campagne": str(a.kampagne.id)}).data["kinder"] == []
+    assert _client(user).get(url, {"campagne": "kein-uuid"}).status_code == 400
+    assert _client().get(url, {"campagne": str(a.kampagne.id)}).status_code in (401, 403)
+
+
+# --- Höchstalter-Hinweis ----------------------------------------------------------------------
+
+
+def _kind_ueber_grenze(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    user, membre, s = _paket_zahlen(a, django_capture_on_commit_callbacks, kinder=2)
+    k = FamilienKind.objects.order_by("created_at").first()
+    k.geburtsjahr = JAHR - 18
+    k.save()
+    return user, s, k
+
+
+def test_kind_ueber_hoechstalter_wird_markiert_und_einmal_gemeldet(
+    django_capture_on_commit_callbacks,
+):
+    user, s, k = _kind_ueber_grenze(django_capture_on_commit_callbacks)
+    liste = _client(user).get(reverse("adhesions:souscription-mes-souscriptions")).data
+    kinder = (liste["results"] if isinstance(liste, dict) else liste)[0]["kinder"]
+    assert sorted(x["ueber_hoechstalter"] for x in kinder) == [False, True]
+    mail.outbox.clear()
+    assert familie.sende_altershinweise() == 1
+    assert len(_an("haupt@example.de")) == 1 and k.vorname in _an("haupt@example.de")[0].body
+    k.refresh_from_db()
+    assert k.altershinweis_am is not None
+    assert familie.sende_altershinweise() == 0  # nur einmal je Kind
+    assert len(_an("haupt@example.de")) == 1
+
+
+def test_altershinweis_nicht_nach_kampagnenende_und_nicht_fuer_unbezahlte(
+    django_capture_on_commit_callbacks,
+):
+    _, s, k = _kind_ueber_grenze(django_capture_on_commit_callbacks)
+    s.campagne.date_fin = timezone.localdate() - datetime.timedelta(days=1)
+    s.campagne.save()
+    assert familie.sende_altershinweise() == 0
+    s.campagne.date_fin = timezone.localdate() + datetime.timedelta(days=30)
+    s.campagne.save()
+    Souscription.objects.filter(pk=s.pk).update(statut=StatutSouscription.EN_ATTENTE_PAIEMENT)
+    assert familie.sende_altershinweise() == 0
+
+
+# --- Bericht ---------------------------------------------------------------------------------
+
+
+def test_bericht_zaehlt_ohne_personenbezug(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    _paket_zahlen(a, django_capture_on_commit_callbacks, kinder=2)
+    k = FamilienKind.objects.order_by("created_at").first()
+    k.geburtsjahr = JAHR - 2
+    k.save()
+    rh, _ = _person(role=Role.RH, email="rh@example.de")
+    url = reverse("adhesions:familien-bericht")
+    antwort = _client(rh).get(url, {"campagne": str(a.kampagne.id)})
+    z = antwort.data["kampagnen"][0]
+    assert z["pakete"] == 1 and z["kinder"] == 2 and z["erwachsene_offen"] == 1
+    assert z["altersgruppen"] == {"0-5": 1, "6-11": 1, "12-17": 0, "18+": 0}
+    assert z["listenpreis"] == "120.00" and z["gezahlt"] == "108.00"
+    assert z["rabatt"] == "12.00" and z["rabatt_pct"] == "10.00"
+    text = str(antwort.data)
+    assert "haupt@example.de" not in text and "Muster" not in text
+
+
+def test_bericht_csv_export_und_berechtigung(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    _paket_zahlen(a, django_capture_on_commit_callbacks)
+    rh, _ = _person(role=Role.RH, email="rh@example.de")
+    url = reverse("adhesions:familien-bericht")
+    antwort = _client(rh).get(url, {"export": "csv"})
+    assert antwort.status_code == 200 and antwort["Content-Type"].startswith("text/csv")
+    text = antwort.content.decode("utf-8")
+    assert text.startswith("\ufeffKampagne;Jahr;Pakete") and "108,00" in text
+    mitglied, _ = _person(email="m@example.de")
+    assert _client(mitglied).get(url).status_code == 403
+    assert _client().get(url).status_code in (401, 403)
+
+
+def test_csv_schuetzt_vor_formeln():
+    from apps.adhesions.familie_views import _csv_text
+
+    assert _csv_text("=SUMME(A1)") == "'=SUMME(A1)" and _csv_text("CID 2026") == "CID 2026"

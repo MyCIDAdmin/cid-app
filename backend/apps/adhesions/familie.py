@@ -13,6 +13,7 @@ Zahlung der Hauptperson.
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import transaction
@@ -21,12 +22,14 @@ from rest_framework.exceptions import ValidationError
 
 from .models import (
     Beziehung,
+    CampagneAdhesion,
     EinladungStatus,
     FamilienErwachsener,
     FamilienKind,
     OffreAdhesion,
     Souscription,
     StatutSouscription,
+    neues_einladungs_token,
 )
 
 EINWILLIGUNG_VERSION = "2026-10-v1"
@@ -466,4 +469,191 @@ def sende_erinnerungen(heute=None) -> dict:
         e.letzte_profil_erinnerung_am = jetzt
         e.save(update_fields=["profil_erinnerungen", "letzte_profil_erinnerung_am"])
         profile += 1
-    return {"einladungen": einladungen, "profile": profile}
+    hinweise = sende_altershinweise(jetzt)
+    return {"einladungen": einladungen, "profile": profile, "altershinweise": hinweise}
+
+
+def sende_altershinweise(jetzt=None) -> int:
+    """Einmal je Kind : die Hauptperson erfährt, dass ein Kind in einer laufenden Kampagne das
+    Höchstalter überschritten hat (Geburtsjahr gegen das aktuelle Jahr)."""
+    from . import mails
+
+    jetzt = jetzt or timezone.now()
+    kinder = FamilienKind.objects.filter(
+        altershinweis_am__isnull=True,
+        anonymisiert_am__isnull=True,
+        souscription__statut=StatutSouscription.PAYEE,
+        souscription__campagne__date_fin__gte=jetzt.date(),
+    ).select_related("souscription__membre__user", "souscription__campagne")
+    je_paket: dict = {}
+    for k in kinder:
+        if k.ueber_hoechstalter:
+            je_paket.setdefault(k.souscription_id, []).append(k)
+    for liste in je_paket.values():
+        mails.altershinweis(liste[0].souscription, liste)
+        FamilienKind.objects.filter(pk__in=[k.pk for k in liste]).update(altershinweis_am=jetzt)
+    return sum(len(v) for v in je_paket.values())
+
+
+def anonymisiere_familiendaten(heute=None) -> dict:
+    """Anonymisiert (statt zu löschen) die Personendaten abgelaufener Familienpakete : Kinder und
+    weitere Erwachsene verlieren Namen, E-Mail, Kartennummer und alle Verweise auf Personen.
+    Geburtsjahr, Beziehung, Angebot, Status und Preise bleiben für Historie und Berichte. Läuft
+    `FAMILIE_KINDER_AUFBEWAHRUNG_MONATE` nach Ende der Kampagne ; wiederholbar ohne Wirkung."""
+    from datetime import timedelta
+
+    jetzt = heute or timezone.now()
+    grenze = jetzt.date() - timedelta(days=30 * settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE)
+    kinder = FamilienKind.objects.filter(
+        anonymisiert_am__isnull=True, souscription__campagne__date_fin__lt=grenze
+    ).update(
+        vorname="",
+        nachname="",
+        kartennummer="",
+        einwilligung_von=None,
+        anonymisiert_am=jetzt,
+    )
+    erwachsene = 0
+    for e in FamilienErwachsener.objects.filter(
+        anonymisiert_am__isnull=True, souscription__campagne__date_fin__lt=grenze
+    ):
+        e.vorname = e.nachname = e.email = ""
+        e.token = neues_einladungs_token()
+        e.membre = None
+        e.registrierung_user = None
+        e.anonymisiert_am = jetzt
+        e.save()
+        erwachsene += 1
+    return {"kinder": kinder, "erwachsene": erwachsene}
+
+
+def vorjahr_familie(membre, campagne: CampagneAdhesion) -> dict:
+    """Vorschlag zum Übernehmen : Personen aus dem letzten bezahlten Familienpaket der Person in
+    einer früheren Kampagne. Anonymisierte Einträge fehlen (keine Namen mehr). Kinder, die für
+    die neue Kampagne zu alt sind, kommen als Erwachsene ohne E-Mail zurück (`aelter_geworden`)."""
+    quelle = (
+        Souscription.objects.filter(
+            membre=membre,
+            statut=StatutSouscription.PAYEE,
+            offre__ist_familienpaket=True,
+            campagne__annee__lt=campagne.annee,
+        )
+        .select_related("campagne")
+        .order_by("-campagne__annee", "-date_souscription")
+        .first()
+    )
+    leer = {"quelle": None, "erwachsene": [], "kinder": [], "aelter_geworden": []}
+    if quelle is None:
+        return leer
+    kinder, aelter = [], []
+    for k in quelle.kinder.filter(anonymisiert_am__isnull=True).exclude(vorname=""):
+        eintrag = {
+            "vorname": k.vorname,
+            "nachname": k.nachname,
+            "geburtsjahr": k.geburtsjahr,
+            "beziehung": k.beziehung,
+        }
+        if campagne.annee - k.geburtsjahr <= campagne.familie_max_alter_kind:
+            kinder.append(eintrag)
+        else:
+            aelter.append(eintrag)
+    erwachsene = [
+        {
+            "vorname": e.vorname,
+            "nachname": e.nachname,
+            "email": e.email,
+            "beziehung": e.beziehung,
+        }
+        for e in quelle.erwachsene.filter(anonymisiert_am__isnull=True)
+        .exclude(status__in=(EinladungStatus.ABGELEHNT, EinladungStatus.KONFLIKT))
+        .exclude(email="")
+    ]
+    return {
+        "quelle": quelle.campagne.nom,
+        "erwachsene": erwachsene,
+        "kinder": kinder,
+        "aelter_geworden": aelter,
+    }
+
+
+_ALTERSGRUPPEN = ((0, 5, "0-5"), (6, 11, "6-11"), (12, 17, "12-17"))
+
+
+def _altersgruppe(alter: int) -> str:
+    for von, bis, name in _ALTERSGRUPPEN:
+        if von <= alter <= bis:
+            return name
+    return "18+"
+
+
+def bericht(campagne_id=None) -> list[dict]:
+    """Bericht über die Familienpakete je Kampagne, ohne Personenbezug (nur Zahlen) : Pakete,
+    Erwachsene nach Status, Kinder nach Altersgruppe (zum Kampagnenjahr), Preise und Rabatt.
+    Anonymisierte Pakete zählen unverändert mit."""
+    pakete = (
+        Souscription.objects.filter(offre__ist_familienpaket=True, statut=StatutSouscription.PAYEE)
+        .select_related("campagne")
+        .prefetch_related("kinder", "erwachsene")
+        .order_by("-campagne__annee", "campagne__nom")
+    )
+    if campagne_id:
+        pakete = pakete.filter(campagne_id=campagne_id)
+    zeilen: dict = {}
+    for s in pakete:
+        z = zeilen.setdefault(
+            s.campagne_id,
+            {
+                "campagne_id": str(s.campagne_id),
+                "campagne": s.campagne.nom,
+                "jahr": s.campagne.annee,
+                "pakete": 0,
+                "erwachsene_angenommen": 0,
+                "erwachsene_offen": 0,
+                "erwachsene_abgelehnt": 0,
+                "erwachsene_konflikt": 0,
+                "kinder": 0,
+                "kinder_anonymisiert": 0,
+                "kinder_ueber_hoechstalter": 0,
+                "altersgruppen": {name: 0 for _, _, name in _ALTERSGRUPPEN} | {"18+": 0},
+                "_liste": Decimal("0.00"),
+                "_gezahlt": Decimal("0.00"),
+            },
+        )
+        kinder, erwachsene = list(s.kinder.all()), list(s.erwachsene.all())
+        z["pakete"] += 1
+        z["_liste"] += (s.haupt_preis_liste or Decimal("0.00")) + sum(
+            (p.preis_liste for p in (*kinder, *erwachsene)), Decimal("0.00")
+        )
+        z["_gezahlt"] += s.familien_gesamtpreis or Decimal("0.00")
+        for e in erwachsene:
+            if e.status == EinladungStatus.ANGENOMMEN:
+                z["erwachsene_angenommen"] += 1
+            elif e.status == EinladungStatus.ABGELEHNT:
+                z["erwachsene_abgelehnt"] += 1
+            elif e.status == EinladungStatus.KONFLIKT:
+                z["erwachsene_konflikt"] += 1
+            else:
+                z["erwachsene_offen"] += 1
+        for k in kinder:
+            z["kinder"] += 1
+            z["kinder_anonymisiert"] += 1 if k.anonymisiert else 0
+            z["kinder_ueber_hoechstalter"] += 1 if k.ueber_hoechstalter else 0
+            z["altersgruppen"][_altersgruppe(s.campagne.annee - k.geburtsjahr)] += 1
+    ergebnis = []
+    for z in zeilen.values():
+        liste, gezahlt = z.pop("_liste"), z.pop("_gezahlt")
+        rabatt = liste - gezahlt
+        z.update(
+            {
+                "listenpreis": str(liste),
+                "gezahlt": str(gezahlt),
+                "rabatt": str(rabatt),
+                "rabatt_pct": str(
+                    (rabatt * 100 / liste).quantize(_CENT, ROUND_HALF_UP)
+                    if liste
+                    else Decimal("0.00")
+                ),
+            }
+        )
+        ergebnis.append(z)
+    return ergebnis

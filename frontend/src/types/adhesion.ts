@@ -213,6 +213,10 @@ export interface FamilienKind {
   preis_liste: string;
   preis_anteil: string;
   einwilligung_am: string;
+  /** Nach der Aufbewahrungsfrist anonymisiert (kein Name mehr). */
+  anonymisiert: boolean;
+  /** Älter als das Höchstalter der Kampagne. */
+  ueber_hoechstalter: boolean;
 }
 
 /** Weitere erwachsene Person im Paket (wird per Einladung eigenes Mitglied). */
@@ -226,6 +230,7 @@ export interface FamilienErwachsener {
   angebot: string;
   preis_liste: string;
   preis_anteil: string;
+  anonymisiert: boolean;
 }
 
 /** Eingabe beim Buchen (wird mit der Souscription in einem Schritt gesendet). */
@@ -279,8 +284,16 @@ export interface FamilienpaketBuero {
   rabatt_pct: string;
   haupt_preis_liste: string;
   haupt_preis_anteil: string;
-  erwachsene: (FamilienpaketPerson & { email: string; status: EinladungStatus })[];
-  kinder: (FamilienpaketPerson & { alter: number })[];
+  erwachsene: (FamilienpaketPerson & {
+    email: string;
+    status: EinladungStatus;
+    anonymisiert: boolean;
+  })[];
+  kinder: (FamilienpaketPerson & {
+    alter: number;
+    anonymisiert: boolean;
+    ueber_hoechstalter: boolean;
+  })[];
 }
 
 export interface FamilienpaketeUebersicht {
@@ -361,4 +374,39 @@ export interface SouscrirePayload {
 export interface SouscrireEspecesPayload {
   membre: string;
   offre: string;
+}
+
+/** Vorschlag zum Übernehmen aus dem letzten Familienpaket (GET /adhesions/familienpakete/vorjahr/). */
+export interface VorjahrPerson {
+  vorname: string;
+  nachname: string;
+  beziehung: Beziehung;
+}
+
+export interface VorjahrFamilie {
+  quelle: string | null;
+  erwachsene: (VorjahrPerson & { email: string })[];
+  kinder: (VorjahrPerson & { geburtsjahr: number })[];
+  /** Kinder, die für die neue Kampagne zu alt sind : als Erwachsene vorschlagen (E-Mail fehlt). */
+  aelter_geworden: (VorjahrPerson & { geburtsjahr: number })[];
+}
+
+/** Bericht ohne Personenbezug (GET /adhesions/familienpakete/bericht/). */
+export interface FamilienberichtZeile {
+  campagne_id: string;
+  campagne: string;
+  jahr: number;
+  pakete: number;
+  erwachsene_angenommen: number;
+  erwachsene_offen: number;
+  erwachsene_abgelehnt: number;
+  erwachsene_konflikt: number;
+  kinder: number;
+  kinder_anonymisiert: number;
+  kinder_ueber_hoechstalter: number;
+  altersgruppen: Record<"0-5" | "6-11" | "12-17" | "18+", number>;
+  listenpreis: string;
+  gezahlt: string;
+  rabatt: string;
+  rabatt_pct: string;
 }

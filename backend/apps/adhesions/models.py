@@ -430,8 +430,11 @@ class FamilienKind(models.Model):
     """Kind in einem Familienpaket (Release 34). Bewusst KEIN `Membre` : kein Konto, kein
     Stimmrecht, keine Mails, nicht in Mitglieder-, Fan- oder Regionenlisten. Gespeichert werden nur
     Vorname, Nachname und Geburtsjahr sowie die Einwilligung der erziehungsberechtigten Person
-    (Zeitpunkt, Textversion, wer). Die Daten werden nach Ablauf der Aufbewahrungsfrist gelöscht
-    (settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE, tasks.loeschen_kinderdaten)."""
+    (Zeitpunkt, Textversion, wer). Nach Ablauf der Aufbewahrungsfrist werden die Daten
+    ANONYMISIERT, nicht gelöscht (R36 ; settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE,
+    tasks.anonymisiere_familiendaten) : Name, Kartennummer und Verweis auf die einwilligende
+    Person entfallen, Geburtsjahr, Beziehung, Angebot und Preise bleiben für Historie und
+    Berichte."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     souscription = models.ForeignKey(Souscription, on_delete=models.CASCADE, related_name="kinder")
@@ -450,6 +453,8 @@ class FamilienKind(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
     einwilligung_version = models.CharField(max_length=20)
+    altershinweis_am = models.DateTimeField(null=True, blank=True)
+    anonymisiert_am = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -462,6 +467,15 @@ class FamilienKind(models.Model):
     @property
     def alter(self) -> int:
         return timezone.localdate().year - self.geburtsjahr
+
+    @property
+    def anonymisiert(self) -> bool:
+        return self.anonymisiert_am is not None
+
+    @property
+    def ueber_hoechstalter(self) -> bool:
+        """Älter als das Höchstalter der Kampagne (Jahr minus Geburtsjahr)."""
+        return self.alter > self.souscription.campagne.familie_max_alter_kind
 
 
 class EinladungStatus(models.TextChoices):
@@ -516,6 +530,7 @@ class FamilienErwachsener(models.Model):
     profil_erinnerungen = models.PositiveSmallIntegerField(default=0)
     letzte_profil_erinnerung_am = models.DateTimeField(null=True, blank=True)
     angenommen_am = models.DateTimeField(null=True, blank=True)
+    anonymisiert_am = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -525,6 +540,10 @@ class FamilienErwachsener(models.Model):
 
     def __str__(self):
         return f"{self.vorname} {self.nachname} <{self.email}>"
+
+    @property
+    def anonymisiert(self) -> bool:
+        return self.anonymisiert_am is not None
 
 
 class StatutJustificatif(models.TextChoices):

@@ -113,6 +113,7 @@
       "Créez une campagne avec sa période et sa description.",
       "Avec « Gérer les offres », ajoutez les niveaux d'adhésion avec prix et avantages.",
       "Au besoin, configurez une offre comme « forfait famille » : définissez quelles offres existantes reçoivent la personne principale, les adultes supplémentaires et les enfants, avec une remise famille en pourcentage et des plafonds. L'âge maximum d'un enfant se règle par campagne. Le passage au forfait ne vaut qu'à partir de la prochaine campagne.",
+      "Dans la section « Forfaits famille », tu vois les forfaits avec les personnes et l'état des invitations, puis un rapport chiffré par campagne (tranches d'âge, remise) exportable en CSV. Après le délai de conservation, les données personnelles sont anonymisées automatiquement – le rapport reste complet.",
       "Publiez la campagne pour qu'elle apparaisse sur la page d'accueil et dans « Mon adhésion »."
     ]
   },

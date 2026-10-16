@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useFamilienpakete, usePersonAngebot } from "../../hooks/useAdhesions";
 import type { CampagneAdhesion, FamilienpaketPerson } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import FamilienBericht from "./FamilienBericht";
 import { formatEuro } from "./familienpreis";
 
 function AngebotWahl({
@@ -144,9 +145,12 @@ export default function FamilienpaketeBuero({
                         <ul className="space-y-1">
                           {p.erwachsene.map((e) => (
                             <li key={e.id}>
-                              {e.name} · {t(`familie.beziehung_${e.beziehung}`)} ·{" "}
+                              {e.anonymisiert ? t("familie_buero.anonymisiert") : e.name} ·{" "}
+                              {t(`familie.beziehung_${e.beziehung}`)} ·{" "}
                               <strong>{t(`familie.status_${e.status}`)}</strong>
-                              <div className="text-text-tertiary">{e.email}</div>
+                              {!e.anonymisiert && (
+                                <div className="text-text-tertiary">{e.email}</div>
+                              )}
                               <AngebotWahl
                                 typ="erwachsener"
                                 person={e}
@@ -160,8 +164,14 @@ export default function FamilienpaketeBuero({
                           ))}
                           {p.kinder.map((k) => (
                             <li key={k.id}>
-                              {k.name} ({t("familie.alter", { alter: k.alter })}) ·{" "}
+                              {k.anonymisiert ? t("familie_buero.anonymisiert") : k.name} (
+                              {t("familie.alter", { alter: k.alter })}) ·{" "}
                               {t(`familie.beziehung_${k.beziehung}`)}
+                              {k.ueber_hoechstalter && (
+                                <div className="text-status-warningText">
+                                  {t("familie_buero.ueber_hoechstalter")}
+                                </div>
+                              )}
                               <div>
                                 <AngebotWahl
                                   typ="kind"
@@ -190,6 +200,7 @@ export default function FamilienpaketeBuero({
           )}
         </>
       )}
+      <FamilienBericht />
     </section>
   );
 }

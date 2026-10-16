@@ -1,8 +1,10 @@
 /** Erfassung aller Personen eines Familienpakets beim Buchen (R35): weitere Erwachsene mit Name,
  * E-Mail und Beziehung, Kinder mit Name, Geburtsjahr und Beziehung. Die Zahlung folgt erst, wenn
  * alles eingetragen ist. Der Preis ist eine Vorschau aus den zugewiesenen Angeboten. */
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useVorjahrFamilie } from "../../hooks/useAdhesions";
 import {
   BEZIEHUNGEN,
   KIND_BEZIEHUNGEN,
@@ -38,6 +40,32 @@ export default function FamilienErfassung({
   const { t } = useTranslation("adhesions");
   const paket = berechnePaket(offre, campagne.offres, wert.erwachsene.length, wert.kinder.length);
   const minJahr = campagne.annee - campagne.familie_max_alter_kind;
+  const vorjahr = useVorjahrFamilie(campagne.id).data;
+  const [uebernommen, setUebernommen] = useState(false);
+  const vorschlag =
+    vorjahr && vorjahr.quelle
+      ? vorjahr.erwachsene.length + vorjahr.kinder.length + vorjahr.aelter_geworden.length
+      : 0;
+  const leer = wert.erwachsene.length === 0 && wert.kinder.length === 0;
+
+  function uebernehmen() {
+    if (!vorjahr) return;
+    const erwachsene: ErwachsenerEingabe[] = [
+      ...vorjahr.erwachsene.map((e) => ({ ...e })),
+      // Kinder über dem Höchstalter : als Erwachsene vorschlagen, E-Mail muss ergänzt werden.
+      ...vorjahr.aelter_geworden.map((k) => ({
+        vorname: k.vorname,
+        nachname: k.nachname,
+        email: "",
+        beziehung: k.beziehung,
+      })),
+    ].slice(0, offre.max_erwachsene);
+    const kinder: KindEingabe[] = vorjahr.kinder
+      .map((k) => ({ ...k, geburtsjahr: String(k.geburtsjahr) }))
+      .slice(0, offre.max_kinder);
+    onChange({ erwachsene, kinder, einwilligung: false });
+    setUebernommen(true);
+  }
 
   function erwAendern(i: number, teil: Partial<ErwachsenerEingabe>) {
     onChange({
@@ -52,6 +80,28 @@ export default function FamilienErfassung({
   return (
     <div className="mb-3 space-y-3 rounded-cid bg-bg-tertiary/40 p-3">
       <p className="text-xs text-text-secondary">{t("familie.erfassung_hinweis")}</p>
+
+      {vorschlag > 0 && leer && !uebernommen && (
+        <div className="rounded-cid border border-ca/30 bg-bg-primary p-2">
+          <p className="text-xs text-text-secondary">
+            {t("familie.vorjahr_hinweis", { kampagne: vorjahr?.quelle, anzahl: vorschlag })}
+          </p>
+          <button
+            type="button"
+            onClick={uebernehmen}
+            className="mt-1 rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad"
+          >
+            {t("familie.vorjahr_uebernehmen")}
+          </button>
+        </div>
+      )}
+      {uebernommen && (
+        <p className="text-xs text-status-warningText">
+          {t("familie.vorjahr_geprueft", {
+            aelter: vorjahr?.aelter_geworden.length ?? 0,
+          })}
+        </p>
+      )}
 
       <section aria-label={t("familie.erwachsene_titel")}>
         <h3 className="text-xs font-semibold uppercase text-text-tertiary">

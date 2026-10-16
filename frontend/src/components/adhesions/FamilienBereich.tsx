@@ -44,9 +44,12 @@ function ErwachsenerZeile({
     nachname: person.nachname,
     email: person.email,
   });
-  const korrigierbar = person.status !== "angenommen" && person.status !== "konflikt";
+  const korrigierbar =
+    !person.anonymisiert && person.status !== "angenommen" && person.status !== "konflikt";
   const erneutMoeglich =
-    bezahlt && ["offen", "eingeladen", "zustimmung_offen"].includes(person.status);
+    !person.anonymisiert &&
+    bezahlt &&
+    ["offen", "eingeladen", "zustimmung_offen"].includes(person.status);
 
   function speichern(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,12 +63,12 @@ function ErwachsenerZeile({
     <li className="rounded-cid border border-text-tertiary/15 p-2 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <span className="flex-1 text-text-primary">
-          {person.vorname} {person.nachname}{" "}
+          {person.anonymisiert ? t("familie.anonymisiert") : `${person.vorname} ${person.nachname}`}{" "}
           <span className="text-text-tertiary">
             · {t(`familie.beziehung_${person.beziehung}`)} · {person.angebot || "—"} ·{" "}
             {formatEuro(person.preis_anteil)}
           </span>
-          <div className="text-xs text-text-tertiary">{person.email}</div>
+          {!person.anonymisiert && <div className="text-xs text-text-tertiary">{person.email}</div>}
         </span>
         <span
           className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STIL[person.status] ?? ""}`}
@@ -225,25 +228,32 @@ export default function FamilienBereich({
           <li key={kind.id}>
             <div className="flex items-center gap-2 text-sm text-text-primary">
               <span className="flex-1">
-                {kind.vorname} {kind.nachname}{" "}
+                {kind.anonymisiert ? t("familie.anonymisiert") : `${kind.vorname} ${kind.nachname}`}{" "}
                 <span className="text-text-tertiary">
                   · {t("familie.alter", { alter: kind.alter })} ·{" "}
                   {t(`familie.beziehung_${kind.beziehung}`)} · {kind.angebot || "—"} ·{" "}
                   {formatEuro(kind.preis_anteil)}
                 </span>
               </span>
-              <button
-                type="button"
-                onClick={() => setZuLoeschen(kind)}
-                aria-label={t("familie.entfernen_aria", {
-                  name: `${kind.vorname} ${kind.nachname}`,
-                })}
-                className="rounded-cid border border-text-tertiary/20 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
-              >
-                {t("familie.entfernen")}
-              </button>
+              {!kind.anonymisiert && (
+                <button
+                  type="button"
+                  onClick={() => setZuLoeschen(kind)}
+                  aria-label={t("familie.entfernen_aria", {
+                    name: `${kind.vorname} ${kind.nachname}`,
+                  })}
+                  className="rounded-cid border border-text-tertiary/20 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+                >
+                  {t("familie.entfernen")}
+                </button>
+              )}
             </div>
-            {bezahlt && (
+            {kind.ueber_hoechstalter && !kind.anonymisiert && (
+              <p className="mt-1 text-xs text-status-warningText">
+                {t("familie.ueber_hoechstalter", { name: kind.vorname })}
+              </p>
+            )}
+            {bezahlt && !kind.anonymisiert && (
               <div className="mt-2 max-w-sm">
                 <MitgliedsKarte
                   stil={kind.kartenstil}

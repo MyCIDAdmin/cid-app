@@ -326,3 +326,21 @@ export function useFamilienpakete(campagne?: string) {
     queryFn: () => adhesionsApi.listFamilienpakete(campagne),
   });
 }
+
+/** Personen aus dem letzten Familienpaket (Vorschlag zum Übernehmen). */
+export function useVorjahrFamilie(campagne: string | undefined) {
+  return useQuery({
+    queryKey: [...adhesionsKeys.all, "vorjahr-familie", campagne],
+    queryFn: () => adhesionsApi.getVorjahrFamilie(campagne as string),
+    enabled: !!campagne,
+    retry: false,
+  });
+}
+
+/** Büro : Familienpaket-Bericht ohne Personenbezug. */
+export function useFamilienbericht(campagne?: string) {
+  return useQuery({
+    queryKey: [...adhesionsKeys.all, "familienbericht", campagne],
+    queryFn: () => adhesionsApi.getFamilienbericht(campagne),
+  });
+}

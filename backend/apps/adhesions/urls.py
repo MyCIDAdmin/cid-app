@@ -7,10 +7,12 @@ from .familie_views import (
     EinladungView,
     ErwachsenerEinladungView,
     ErwachsenerView,
+    FamilienberichtView,
     FamilienpaketeView,
     KindDetailView,
     MeineEinladungenView,
     PersonAngebotView,
+    VorjahrFamilieView,
 )
 from .views import (
     CampagneAdhesionViewSet,
@@ -46,6 +48,8 @@ urlpatterns = [
         name="familie-einladung-senden",
     ),
     path("familienpakete/", FamilienpaketeView.as_view(), name="familienpakete"),
+    path("familienpakete/bericht/", FamilienberichtView.as_view(), name="familien-bericht"),
+    path("familienpakete/vorjahr/", VorjahrFamilieView.as_view(), name="familien-vorjahr"),
     path(
         "familienpakete/personen/<str:typ>/<uuid:pk>/",
         PersonAngebotView.as_view(),

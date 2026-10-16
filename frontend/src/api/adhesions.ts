@@ -8,6 +8,7 @@ import type {
   CampagneCreatePayload,
   Einladung,
   ErwachsenerPayload,
+  FamilienberichtZeile,
   FamilienpaketeUebersicht,
   JustificatifRabais,
   OffreAdhesion,
@@ -17,6 +18,7 @@ import type {
   Souscription,
   SouscrireEspecesPayload,
   SouscrirePayload,
+  VorjahrFamilie,
   ValiderJustificatifPayload,
 } from "../types/adhesion";
 
@@ -286,6 +288,32 @@ export async function listMeineEinladungen(): Promise<Einladung[]> {
 export async function listFamilienpakete(campagne?: string): Promise<FamilienpaketeUebersicht> {
   const { data } = await apiClient.get<FamilienpaketeUebersicht>("/adhesions/familienpakete/", {
     params: campagne ? { campagne } : undefined,
+  });
+  return data;
+}
+
+/** Personen aus dem letzten Familienpaket zum Übernehmen (nur Vorschlag). */
+export async function getVorjahrFamilie(campagne: string): Promise<VorjahrFamilie> {
+  const { data } = await apiClient.get<VorjahrFamilie>("/adhesions/familienpakete/vorjahr/", {
+    params: { campagne },
+  });
+  return data;
+}
+
+/** Büro : Bericht über Familienpakete je Kampagne, ohne Personenbezug. */
+export async function getFamilienbericht(campagne?: string): Promise<FamilienberichtZeile[]> {
+  const { data } = await apiClient.get<{ kampagnen: FamilienberichtZeile[] }>(
+    "/adhesions/familienpakete/bericht/",
+    { params: campagne ? { campagne } : undefined },
+  );
+  return data.kampagnen;
+}
+
+/** Büro : Bericht als CSV-Datei (Excel) herunterladen. */
+export async function downloadFamilienberichtCsv(campagne?: string): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>("/adhesions/familienpakete/bericht/", {
+    params: { export: "csv", ...(campagne ? { campagne } : {}) },
+    responseType: "blob",
   });
   return data;
 }
