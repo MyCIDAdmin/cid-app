@@ -581,14 +581,18 @@ export default function MonAdhesionPage() {
                     </span>
                   )}
 
-                  {offre.icone && (
-                    <img
-                      src={offre.icone}
-                      alt=""
-                      aria-hidden="true"
-                      className="mx-auto mb-2 h-10 w-10 rounded-cid object-cover"
-                    />
-                  )}
+                  {/* Kopf : feste Höhe für das Symbol, damit Name und Preis in allen Kacheln einer
+                      Reihe auf gleicher Höhe stehen (auch ohne Symbol). */}
+                  <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center">
+                    {offre.icone && (
+                      <img
+                        src={offre.icone}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-10 w-10 rounded-cid object-cover"
+                      />
+                    )}
+                  </div>
                   <div className="text-center text-sm font-semibold uppercase tracking-wide text-text-tertiary">
                     {uebersetzt(offre, "nom")}
                   </div>
@@ -604,47 +608,55 @@ export default function MonAdhesionPage() {
                         : offre.prix_plein,
                     )}
                   </div>
-                  {offre.ist_familienpaket && (
-                    <p className="mt-1 text-center text-[11px] text-text-tertiary">
-                      {t("familie.kombination", {
-                        pct: Number(offre.familie_rabatt_pct),
-                        erwachsene: offre.max_erwachsene,
-                        kinder: offre.max_kinder,
-                      })}
-                    </p>
-                  )}
-                  {offre.description && (
-                    <p className="mt-2 text-center text-sm text-text-secondary">
-                      {uebersetzt(offre, "description")}
-                    </p>
-                  )}
-                  {texteConditionAge && (
-                    <p className="mt-1 text-center text-[11px] text-text-tertiary">
-                      {texteConditionAge}
-                    </p>
-                  )}
 
-                  {avantagesOffre.length > 0 && (
-                    <ul className="mt-4 flex-1 space-y-1.5">
-                      {avantagesOffre.map((av) => (
-                        <li
-                          key={av.ordre}
-                          className="flex items-start gap-1.5 text-sm text-text-secondary"
-                        >
-                          <span className={`shrink-0 font-bold ${accent.puce}`} aria-hidden="true">
-                            ✓
-                          </span>
-                          {av.texte_fr}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  {/* Mitte : füllt den freien Platz ; Hinweise zentriert unter dem Preis, die
+                      Vorteile linksbündig. So sitzt der Button in jeder Kachel unten. */}
+                  <div className="flex flex-1 flex-col">
+                    {offre.ist_familienpaket && (
+                      <p className="mt-1 text-center text-[11px] text-text-tertiary">
+                        {t("familie.kombination", {
+                          pct: Number(offre.familie_rabatt_pct),
+                          erwachsene: offre.max_erwachsene,
+                          kinder: offre.max_kinder,
+                        })}
+                      </p>
+                    )}
+                    {offre.description && (
+                      <p className="mt-2 text-center text-sm text-text-secondary">
+                        {uebersetzt(offre, "description")}
+                      </p>
+                    )}
+                    {texteConditionAge && (
+                      <p className="mt-1 text-center text-[11px] text-text-tertiary">
+                        {texteConditionAge}
+                      </p>
+                    )}
+
+                    {avantagesOffre.length > 0 && (
+                      <ul className="mt-4 space-y-1.5">
+                        {avantagesOffre.map((av) => (
+                          <li
+                            key={av.ordre}
+                            className="flex items-start gap-1.5 text-sm text-text-secondary"
+                          >
+                            <span
+                              className={`shrink-0 font-bold ${accent.puce}`}
+                              aria-hidden="true"
+                            >
+                              ✓
+                            </span>
+                            {av.texte_fr}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
 
                   {!selectionnee && (
                     <button
                       type="button"
                       onClick={() => choisirOffre(offre.id)}
-                      className="mt-5 rounded-cid bg-ca px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-cad"
+                      className="mt-5 w-full rounded-cid bg-ca px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-cad"
                     >
                       {t("offres.rejoindre")}
                     </button>
