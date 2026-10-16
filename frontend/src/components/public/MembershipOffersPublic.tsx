@@ -75,31 +75,34 @@ export default function MembershipOffersPublic({ campagne }: MembershipOffersPub
               <div className="mt-2 text-center font-display text-3xl font-bold text-text-primary">
                 {formatMontant(offre.prix_plein)}
               </div>
-              {offre.description && (
-                <p className="mt-2 text-center text-sm text-text-secondary">
-                  {uebersetzt(offre, "description")}
-                </p>
-              )}
+              {/* Mitte füllt den freien Platz, damit der Button in jeder Kachel unten sitzt. */}
+              <div className="flex flex-1 flex-col">
+                {offre.description && (
+                  <p className="mt-2 text-center text-sm text-text-secondary">
+                    {uebersetzt(offre, "description")}
+                  </p>
+                )}
 
-              {avantages.length > 0 && (
-                <ul className="mt-4 flex-1 space-y-1.5">
-                  {avantages.map((av) => (
-                    <li
-                      key={av.ordre}
-                      className="flex items-start gap-1.5 text-sm text-text-secondary"
-                    >
-                      <span className="shrink-0 font-bold text-ca" aria-hidden="true">
-                        ✓
-                      </span>
-                      {av.texte_fr}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                {avantages.length > 0 && (
+                  <ul className="mt-4 space-y-1.5">
+                    {avantages.map((av) => (
+                      <li
+                        key={av.ordre}
+                        className="flex items-start gap-1.5 text-sm text-text-secondary"
+                      >
+                        <span className="shrink-0 font-bold text-ca" aria-hidden="true">
+                          ✓
+                        </span>
+                        {av.texte_fr}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               <Link
                 to="/mon-adhesion"
-                className="mt-5 rounded-cid bg-ca px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-cad"
+                className="mt-5 w-full rounded-cid bg-ca px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-cad"
               >
                 {t("membership.choisir")}
               </Link>
