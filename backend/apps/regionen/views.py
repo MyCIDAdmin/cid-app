@@ -210,6 +210,28 @@ class RegionDetailView(APIView):
         return Response(region_dict(region, request.user, detail=True))
 
 
+class RegionStandortView(APIView):
+    """Verantwortliche der Region legen Standorte selbst an (z. B. fürs Treffen-Formular)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug):
+        region = _bearbeitbar(request, slug)
+        name = _text(request.data, "name", 100, pflicht=True)
+        land = request.data.get("land", "") or ""
+        if land and land not in BUNDESLAENDER:
+            raise ValidationError({"land": "Ungültiges Bundesland."})
+        vorhanden = Standort.objects.filter(region=region, name__iexact=name).first()
+        if vorhanden and vorhanden.aktiv:
+            raise ValidationError({"name": "Diesen Standort gibt es in der Region schon."})
+        if vorhanden:
+            vorhanden.aktiv = True
+            vorhanden.save(update_fields=["aktiv"])
+            return Response(standort_dict(vorhanden), status=201)
+        standort = Standort.objects.create(region=region, name=name, land=land)
+        return Response(standort_dict(standort), status=201)
+
+
 class BannerView(APIView):
     permission_classes = [IsAuthenticated]
 

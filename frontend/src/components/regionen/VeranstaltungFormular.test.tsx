@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as hooks from "../../hooks/useRegionen";
@@ -9,9 +9,11 @@ vi.mock("../../hooks/useRegionen", () => ({
   useVeranstaltungAnlegen: vi.fn(),
   useVeranstaltungAendern: vi.fn(),
   useVeranstaltungBild: vi.fn(),
+  useStandortFuerRegionAnlegen: vi.fn(),
 }));
 
 const anlegen = vi.fn();
+const standortAnlegen = vi.fn();
 
 describe("VeranstaltungFormular", () => {
   beforeEach(() => {
@@ -20,6 +22,7 @@ describe("VeranstaltungFormular", () => {
     vi.mocked(hooks.useVeranstaltungAnlegen).mockReturnValue(mut(anlegen));
     vi.mocked(hooks.useVeranstaltungAendern).mockReturnValue(mut(vi.fn()));
     vi.mocked(hooks.useVeranstaltungBild).mockReturnValue(mut(vi.fn()));
+    vi.mocked(hooks.useStandortFuerRegionAnlegen).mockReturnValue(mut(standortAnlegen));
   });
 
   it("verlangt Titel, Datum und Ort und legt einen Entwurf an", () => {
@@ -54,5 +57,16 @@ describe("VeranstaltungFormular", () => {
       },
       expect.any(Object),
     );
+  });
+  it("legt einen neuen Standort an und wählt ihn aus", () => {
+    renderWithProviders(<VeranstaltungFormular slug="nord" standorte={[]} onFertig={vi.fn()} />);
+    fireEvent.click(screen.getByText("standort_neu"));
+    const feld = screen.getByLabelText("standort_neu_name");
+    fireEvent.change(feld, { target: { value: " Kiel " } });
+    fireEvent.click(screen.getByText("standort_neu_anlegen"));
+    expect(standortAnlegen).toHaveBeenCalledWith({ slug: "nord", name: "Kiel" }, expect.anything());
+    const optionen = standortAnlegen.mock.calls[0][1] as { onSuccess: (s: { id: string }) => void };
+    act(() => optionen.onSuccess({ id: "neu1" }));
+    expect(screen.queryByLabelText("standort_neu_name")).toBeNull();
   });
 });

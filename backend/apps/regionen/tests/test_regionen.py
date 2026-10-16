@@ -181,6 +181,48 @@ class TestBearbeiten:
         assert r.status_code == 403
 
 
+class TestRegionStandort:
+    def test_verantwortlicher_legt_standort_an(self, nord):
+        v = _verantwortlicher(nord)
+        r = _client(v.user).post(
+            f"{BASIS}nord/standorte/", {"name": " Hamburg ", "land": "HH"}, format="json"
+        )
+        assert r.status_code == 201 and r.data["name"] == "Hamburg"
+        assert Standort.objects.filter(region=nord, name="Hamburg", land="HH").exists()
+        detail = _client(v.user).get(f"{BASIS}nord/").data
+        assert [x["name"] for x in detail["standorte"]] == ["Hamburg"]
+
+    def test_doppelt_ungueltig_und_fremde_region(self, nord):
+        v = _verantwortlicher(nord)
+        Standort.objects.create(region=nord, name="Hamburg")
+        c = _client(v.user)
+        assert (
+            c.post(f"{BASIS}nord/standorte/", {"name": "hamburg"}, format="json").status_code == 400
+        )
+        assert c.post(f"{BASIS}nord/standorte/", {"name": ""}, format="json").status_code == 400
+        assert (
+            c.post(
+                f"{BASIS}nord/standorte/", {"name": "X", "land": "ZZ"}, format="json"
+            ).status_code
+            == 400
+        )
+        assert c.post(f"{BASIS}nrw/standorte/", {"name": "Köln"}, format="json").status_code == 403
+        assert (
+            _client(_mitglied())
+            .post(f"{BASIS}nord/standorte/", {"name": "Y"}, format="json")
+            .status_code
+            == 403
+        )
+
+    def test_inaktiver_standort_wird_reaktiviert(self, nord):
+        v = _verantwortlicher(nord)
+        alt = Standort.objects.create(region=nord, name="Kiel", aktiv=False)
+        r = _client(v.user).post(f"{BASIS}nord/standorte/", {"name": "Kiel"}, format="json")
+        assert r.status_code == 201
+        alt.refresh_from_db()
+        assert alt.aktiv is True
+
+
 class TestVerantwortliche:
     def test_buero_weist_person_zu(self, buero, nord):
         ziel = _mitglied("HH")
