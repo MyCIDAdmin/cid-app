@@ -141,22 +141,16 @@ def basculer_membres_non_renouveles() -> int:
 
 
 @shared_task
-def loeschen_kinderdaten() -> int:
-    """Löscht die Daten von Kindern in Familienpaketen, sobald die Kampagne länger als
-    `FAMILIE_KINDER_AUFBEWAHRUNG_MONATE` beendet ist (Release 34). Verlängert die Hauptperson,
-    werden die Kinder in der neuen Kampagne neu eingetragen oder (Release 35) bestätigt
-    übernommen. Gibt die Zahl der gelöschten Einträge zurück."""
-    from datetime import timedelta
+def anonymisiere_familiendaten() -> dict:
+    """Anonymisiert die Personendaten von Kindern und weiteren Erwachsenen in Familienpaketen,
+    sobald die Kampagne länger als `FAMILIE_KINDER_AUFBEWAHRUNG_MONATE` beendet ist (R36, ersetzt
+    das Löschen aus Release 34). Historie und Berichte bleiben, der Personenbezug entfällt."""
+    from .familie import anonymisiere_familiendaten as lauf
 
-    from django.utils import timezone
-
-    from .models import FamilienKind
-
-    grenze = timezone.localdate() - timedelta(days=30 * settings.FAMILIE_KINDER_AUFBEWAHRUNG_MONATE)
-    geloescht, _ = FamilienKind.objects.filter(souscription__campagne__date_fin__lt=grenze).delete()
-    if geloescht:
-        logger.info("Kinderdaten gelöscht: %s", geloescht)
-    return geloescht
+    ergebnis = lauf()
+    if ergebnis["kinder"] or ergebnis["erwachsene"]:
+        logger.info("Familiendaten anonymisiert: %s", ergebnis)
+    return ergebnis
 
 
 @shared_task
@@ -166,6 +160,6 @@ def sende_familien_erinnerungen() -> dict:
     from .familie import sende_erinnerungen
 
     ergebnis = sende_erinnerungen()
-    if ergebnis["einladungen"] or ergebnis["profile"]:
+    if ergebnis["einladungen"] or ergebnis["profile"] or ergebnis["altershinweise"]:
         logger.info("Familienpaket-Erinnerungen: %s", ergebnis)
     return ergebnis

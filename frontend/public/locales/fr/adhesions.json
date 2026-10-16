@@ -303,7 +303,12 @@
     "erneut_gesendet": "L'invitation a été renvoyée.",
     "speichern": "Enregistrer",
     "mitglied_titel": "Payé via un forfait famille",
-    "mitglied_text": "Ton adhésion est payée via le forfait famille de {{hauptperson}}. Offre {{liste}}, ta part après remise famille {{anteil}}."
+    "mitglied_text": "Ton adhésion est payée via le forfait famille de {{hauptperson}}. Offre {{liste}}, ta part après remise famille {{anteil}}.",
+    "anonymisiert": "Personne (anonymisée)",
+    "ueber_hoechstalter": "{{name}} dépasse l'âge maximum de cette campagne. Jusqu'à la fin de la campagne, rien ne change. À la prochaine campagne, vous pourrez inscrire la personne comme adulte supplémentaire.",
+    "vorjahr_hinweis": "« {{kampagne}} » contient {{anzahl}} personnes. Vous pouvez les reprendre, puis les vérifier ou les modifier.",
+    "vorjahr_uebernehmen": "Reprendre la famille de l'an dernier",
+    "vorjahr_geprueft": "Merci de vérifier toutes les informations. Pour les enfants, le consentement doit être donné à nouveau. Les enfants au-dessus de l'âge maximum ({{aelter}}) figurent maintenant comme adultes et ont encore besoin d'une adresse e-mail."
   },
   "familie_buero": {
     "titel": "Forfaits famille",
@@ -317,7 +322,9 @@
     "personen": "Personnes",
     "liste_rabatt": "Catalogue {{liste}} · −{{pct}} %",
     "angebot_zuweisen": "Offre de {{name}}",
-    "zuweisung_hinweis": "Une autre offre change la carte et les avantages. Le prix payé reste inchangé."
+    "zuweisung_hinweis": "Une autre offre change la carte et les avantages. Le prix payé reste inchangé.",
+    "anonymisiert": "Personne (anonymisée)",
+    "ueber_hoechstalter": "Au-dessus de l'âge maximum de la campagne"
   },
   "einladung": {
     "titel": "Invitation au forfait famille",
@@ -338,5 +345,19 @@
     "banner_titel": "Invitation à un forfait famille",
     "banner_zeile": "{{hauptperson}} t'a invité dans le forfait famille ({{kampagne}}).",
     "ansehen": "Voir"
+  },
+  "familie_bericht": {
+    "titel": "Rapport sur les forfaits famille",
+    "hinweis": "Uniquement des chiffres, sans noms ni adresses e-mail. Les forfaits anonymisés restent comptés.",
+    "export": "Exporter en CSV",
+    "fehler": "Le rapport n'a pas pu être chargé.",
+    "leer": "Aucun forfait famille payé pour l'instant.",
+    "kampagne": "Campagne",
+    "pakete": "Forfaits",
+    "erwachsene": "Adultes",
+    "kinder": "Enfants",
+    "preise": "Payé",
+    "erwachsene_zeile": "{{angenommen}} acceptés · {{offen}} en attente · {{abgelehnt}} refusés · {{konflikt}} conflit",
+    "ueber_hoechstalter": "{{anzahl}} au-dessus de l'âge maximum"
   }
 }

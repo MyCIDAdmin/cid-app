@@ -10,6 +10,7 @@ import type {
   Souscription,
 } from "../../types/adhesion";
 import FamilienBereich from "./FamilienBereich";
+import FamilienBericht from "./FamilienBericht";
 import FamilienErfassung from "./FamilienErfassung";
 import FamilienpaketeBuero from "./FamilienpaketeBuero";
 import { LEERE_FAMILIE, berechnePaket, familieVollstaendig } from "./familienpreis";
@@ -23,6 +24,8 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useEinladungErneutSenden: vi.fn(),
     usePersonAngebot: vi.fn(),
     useFamilienpakete: vi.fn(),
+    useFamilienbericht: vi.fn(),
+    useVorjahrFamilie: vi.fn(),
   };
 });
 
@@ -61,6 +64,7 @@ function erwachsener(overrides: Partial<FamilienErwachsener> = {}): FamilienErwa
     angebot: "CID-PLUS",
     preis_liste: "50.00",
     preis_anteil: "45.00",
+    anonymisiert: false,
     ...overrides,
   };
 }
@@ -93,6 +97,8 @@ function souscription(overrides: Partial<Souscription> = {}): Souscription {
         preis_liste: "10.00",
         preis_anteil: "9.00",
         einwilligung_am: "2026-02-02T10:00:00Z",
+        anonymisiert: false,
+        ueber_hoechstalter: false,
       },
     ],
     erwachsene: [erwachsener()],
@@ -167,7 +173,83 @@ describe("familieVollstaendig", () => {
   });
 });
 
+function vorjahr(data: unknown) {
+  vi.mocked(useAdhesionsHooks.useVorjahrFamilie).mockReturnValue({
+    data,
+  } as unknown as ReturnType<typeof useAdhesionsHooks.useVorjahrFamilie>);
+}
+
 describe("FamilienErfassung", () => {
+  beforeEach(() => vorjahr(undefined));
+
+  it("bietet an, die Familie aus dem Vorjahr zu übernehmen (Einwilligung bleibt offen)", () => {
+    vorjahr({
+      quelle: "Kampagne 2025",
+      erwachsene: [
+        { vorname: "Nora", nachname: "Muster", email: "nora@example.de", beziehung: "ehepartner" },
+      ],
+      kinder: [{ vorname: "Lina", nachname: "Muster", geburtsjahr: 2018, beziehung: "kind" }],
+      aelter_geworden: [
+        { vorname: "Max", nachname: "Muster", geburtsjahr: 2007, beziehung: "kind" },
+      ],
+    });
+    const onChange = vi.fn();
+    renderWithProviders(
+      <FamilienErfassung
+        offre={PAKET}
+        campagne={KAMPAGNE}
+        wert={LEERE_FAMILIE}
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByText("familie.vorjahr_uebernehmen"));
+    const neu = onChange.mock.calls[0][0];
+    expect(neu.einwilligung).toBe(false);
+    expect(neu.kinder).toEqual([
+      { vorname: "Lina", nachname: "Muster", geburtsjahr: "2018", beziehung: "kind" },
+    ]);
+    // Max ist zu alt für die Kampagne : Erwachsener ohne E-Mail, wird ergänzt.
+    expect(neu.erwachsene.map((e: { vorname: string }) => e.vorname)).toEqual(["Nora", "Max"]);
+    expect(neu.erwachsene[1].email).toBe("");
+    expect(familieVollstaendig(neu)).toBe(false);
+  });
+
+  it("zeigt kein Angebot zum Übernehmen ohne Vorschlag oder bei bereits erfassten Personen", () => {
+    vorjahr({ quelle: null, erwachsene: [], kinder: [], aelter_geworden: [] });
+    renderWithProviders(
+      <FamilienErfassung
+        offre={PAKET}
+        campagne={KAMPAGNE}
+        wert={LEERE_FAMILIE}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("familie.vorjahr_uebernehmen")).not.toBeInTheDocument();
+  });
+
+  it("begrenzt die Übernahme auf die Obergrenzen des Angebots", () => {
+    vorjahr({
+      quelle: "Kampagne 2025",
+      erwachsene: [],
+      kinder: [
+        { vorname: "A", nachname: "M", geburtsjahr: 2018, beziehung: "kind" },
+        { vorname: "B", nachname: "M", geburtsjahr: 2019, beziehung: "kind" },
+      ],
+      aelter_geworden: [],
+    });
+    const onChange = vi.fn();
+    renderWithProviders(
+      <FamilienErfassung
+        offre={{ ...PAKET, max_kinder: 1 }}
+        campagne={KAMPAGNE}
+        wert={LEERE_FAMILIE}
+        onChange={onChange}
+      />,
+    );
+    fireEvent.click(screen.getByText("familie.vorjahr_uebernehmen"));
+    expect(onChange.mock.calls[0][0].kinder).toHaveLength(1);
+  });
+
   it("begrenzt die Personen auf die Obergrenzen und meldet Änderungen", () => {
     const onChange = vi.fn();
     renderWithProviders(
@@ -277,6 +359,39 @@ describe("FamilienBereich", () => {
     expect(screen.getByText("familie.konflikt_hinweis")).toBeInTheDocument();
   });
 
+  it("weist auf ein Kind über dem Höchstalter hin", () => {
+    const s = souscription();
+    s.kinder[0].ueber_hoechstalter = true;
+    bereich(s);
+    expect(screen.getByText("familie.ueber_hoechstalter")).toBeInTheDocument();
+  });
+
+  it("zeigt anonymisierte Personen ohne Namen, Karte und Bearbeitung", () => {
+    const s = souscription({
+      erwachsene: [
+        erwachsener({
+          anonymisiert: true,
+          vorname: "",
+          nachname: "",
+          email: "",
+          status: "eingeladen",
+        }),
+      ],
+    });
+    s.kinder[0] = {
+      ...s.kinder[0],
+      anonymisiert: true,
+      vorname: "",
+      nachname: "",
+      kartennummer: "",
+    };
+    bereich(s);
+    expect(screen.getAllByText("familie.anonymisiert")).toHaveLength(2);
+    expect(screen.queryByLabelText("familie.entfernen_aria")).not.toBeInTheDocument();
+    expect(screen.queryByText("familie.korrigieren")).not.toBeInTheDocument();
+    expect(screen.queryByText("familie.erneut_senden")).not.toBeInTheDocument();
+  });
+
   it("entfernt ein Kind erst nach Bestätigung", () => {
     bereich(souscription());
     fireEvent.click(screen.getByLabelText("familie.entfernen_aria"));
@@ -327,6 +442,7 @@ describe("FamilienpaketeBuero", () => {
                 angebot_id: "o2",
                 preis_liste: "50.00",
                 preis_anteil: "45.00",
+                anonymisiert: false,
               },
             ],
             kinder: [
@@ -334,6 +450,8 @@ describe("FamilienpaketeBuero", () => {
                 id: "k1",
                 name: "Lina Muster",
                 alter: 8,
+                anonymisiert: false,
+                ueber_hoechstalter: false,
                 beziehung: "kind",
                 angebot: "CID-JUNIOR",
                 angebot_id: "o3",
@@ -357,6 +475,11 @@ describe("FamilienpaketeBuero", () => {
   beforeEach(() => {
     zuweisen.mockReset();
     uebersicht();
+    vi.mocked(useAdhesionsHooks.useFamilienbericht).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useFamilienbericht>);
   });
 
   it("listet Pakete mit Personen, Status und Familienrabatt", () => {
@@ -369,6 +492,16 @@ describe("FamilienpaketeBuero", () => {
     expect(screen.getByText("nora@example.de")).toBeInTheDocument();
   });
 
+  it("zeigt anonymisierte Personen ohne Namen und E-Mail", () => {
+    const q = vi.mocked(useAdhesionsHooks.useFamilienpakete)();
+    const p = q.data!.pakete[0];
+    p.erwachsene[0] = { ...p.erwachsene[0], anonymisiert: true, name: " ", email: "" };
+    p.kinder[0] = { ...p.kinder[0], anonymisiert: true, name: " " };
+    renderWithProviders(<FamilienpaketeBuero campagnen={[KAMPAGNE]} />);
+    expect(screen.getAllByText(/familie_buero.anonymisiert/)).toHaveLength(2);
+    expect(screen.queryByText("nora@example.de")).not.toBeInTheDocument();
+  });
+
   it("ohne Schreibrecht gibt es keine Angebotsauswahl", () => {
     renderWithProviders(<FamilienpaketeBuero campagnen={[KAMPAGNE]} />);
     expect(screen.queryByRole("combobox", { name: /Lina Muster/ })).not.toBeInTheDocument();
@@ -377,5 +510,51 @@ describe("FamilienpaketeBuero", () => {
   it("mit Schreibrecht weist das Büro einer Person ein anderes Angebot zu", () => {
     renderWithProviders(<FamilienpaketeBuero campagnen={[KAMPAGNE]} modifiable />);
     expect(screen.getAllByLabelText("familie_buero.angebot_zuweisen").length).toBeGreaterThan(0);
+  });
+});
+
+describe("FamilienBericht", () => {
+  it("zeigt Zahlen je Kampagne und bietet den CSV-Export an", () => {
+    vi.mocked(useAdhesionsHooks.useFamilienbericht).mockReturnValue({
+      data: [
+        {
+          campagne_id: "c1",
+          campagne: "Test 2026",
+          jahr: 2026,
+          pakete: 3,
+          erwachsene_angenommen: 2,
+          erwachsene_offen: 1,
+          erwachsene_abgelehnt: 0,
+          erwachsene_konflikt: 0,
+          kinder: 5,
+          kinder_anonymisiert: 0,
+          kinder_ueber_hoechstalter: 1,
+          altersgruppen: { "0-5": 1, "6-11": 3, "12-17": 1, "18+": 0 },
+          listenpreis: "360.00",
+          gezahlt: "324.00",
+          rabatt: "36.00",
+          rabatt_pct: "10.00",
+        },
+      ],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useFamilienbericht>);
+    renderWithProviders(<FamilienBericht />);
+    expect(screen.getByText("Test 2026")).toBeInTheDocument();
+    expect(screen.getByText("0-5: 1 · 6-11: 3 · 12-17: 1 · 18+: 0")).toBeInTheDocument();
+    expect(screen.getByText("324,00 €")).toBeInTheDocument();
+    expect(screen.getByText("familie_bericht.ueber_hoechstalter")).toBeInTheDocument();
+    expect(screen.getByText("familie_bericht.export")).toBeEnabled();
+  });
+
+  it("zeigt einen leeren Zustand und sperrt den Export", () => {
+    vi.mocked(useAdhesionsHooks.useFamilienbericht).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useFamilienbericht>);
+    renderWithProviders(<FamilienBericht />);
+    expect(screen.getByText("familie_bericht.leer")).toBeInTheDocument();
+    expect(screen.getByText("familie_bericht.export")).toBeDisabled();
   });
 });

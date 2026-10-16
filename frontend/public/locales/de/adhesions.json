@@ -303,7 +303,12 @@
     "erneut_gesendet": "Einladung wurde erneut gesendet.",
     "speichern": "Speichern",
     "mitglied_titel": "Über ein Familienpaket bezahlt",
-    "mitglied_text": "Ihre Mitgliedschaft ist über das Familienpaket von {{hauptperson}} bezahlt. Angebot {{liste}}, Ihr Anteil nach Familienrabatt {{anteil}}."
+    "mitglied_text": "Ihre Mitgliedschaft ist über das Familienpaket von {{hauptperson}} bezahlt. Angebot {{liste}}, Ihr Anteil nach Familienrabatt {{anteil}}.",
+    "anonymisiert": "Person (anonymisiert)",
+    "ueber_hoechstalter": "{{name}} ist älter als das Höchstalter dieser Kampagne. Bis zum Kampagnenende bleibt alles unverändert. Zur nächsten Kampagne kannst du die Person als weitere erwachsene Person anmelden.",
+    "vorjahr_hinweis": "Aus „{{kampagne}}“ liegen {{anzahl}} Personen vor. Du kannst sie übernehmen und danach prüfen oder ändern.",
+    "vorjahr_uebernehmen": "Familie aus dem Vorjahr übernehmen",
+    "vorjahr_geprueft": "Bitte prüfe alle Angaben. Für Kinder musst du die Einwilligung neu erteilen. Kinder über dem Höchstalter ({{aelter}}) stehen jetzt als Erwachsene da und brauchen noch eine E-Mail-Adresse."
   },
   "familie_buero": {
     "titel": "Familienpakete",
@@ -317,7 +322,9 @@
     "personen": "Personen",
     "liste_rabatt": "Liste {{liste}} · −{{pct}} %",
     "angebot_zuweisen": "Angebot für {{name}}",
-    "zuweisung_hinweis": "Ein anderes Angebot ändert Karte und Vorteile. Der bezahlte Preis bleibt unverändert."
+    "zuweisung_hinweis": "Ein anderes Angebot ändert Karte und Vorteile. Der bezahlte Preis bleibt unverändert.",
+    "anonymisiert": "Person (anonymisiert)",
+    "ueber_hoechstalter": "Über dem Höchstalter der Kampagne"
   },
   "einladung": {
     "titel": "Einladung ins Familienpaket",
@@ -338,5 +345,19 @@
     "banner_titel": "Einladung zu einem Familienpaket",
     "banner_zeile": "{{hauptperson}} hat Sie in das Familienpaket ({{kampagne}}) eingeladen.",
     "ansehen": "Ansehen"
+  },
+  "familie_bericht": {
+    "titel": "Bericht über Familienpakete",
+    "hinweis": "Nur Zahlen, ohne Namen oder E-Mail-Adressen. Anonymisierte Pakete zählen weiter mit.",
+    "export": "Als CSV exportieren",
+    "fehler": "Der Bericht konnte nicht geladen werden.",
+    "leer": "Noch keine bezahlten Familienpakete.",
+    "kampagne": "Kampagne",
+    "pakete": "Pakete",
+    "erwachsene": "Erwachsene",
+    "kinder": "Kinder",
+    "preise": "Gezahlt",
+    "erwachsene_zeile": "{{angenommen}} angenommen · {{offen}} offen · {{abgelehnt}} abgelehnt · {{konflikt}} Konflikt",
+    "ueber_hoechstalter": "{{anzahl}} über dem Höchstalter"
   }
 }

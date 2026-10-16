@@ -9,6 +9,11 @@ Büro :
   GET   /adhesions/familienpakete/?campagne=<id>                   Übersicht (RH+)
   PATCH /adhesions/familienpakete/personen/<kind|erwachsener>/<id>/   Angebot zuweisen
 
+  GET   /adhesions/familienpakete/bericht/?campagne=<id>[&export=csv]   Bericht ohne Personenbezug
+
+Hauptperson, weiter :
+  GET   /adhesions/familienpakete/vorjahr/?campagne=<id>           Personen aus dem letzten Paket
+
 Eingeladene Person :
   GET   /adhesions/einladungen/<token>/                            Einladung ansehen (öffentlich)
   POST  /adhesions/einladungen/<token>/annehmen/                   Annehmen (angemeldet)
@@ -16,12 +21,14 @@ Eingeladene Person :
   GET   /adhesions/meine-einladungen/                              Offene Einladungen des Kontos
 """
 
+import csv
 from datetime import timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -36,6 +43,7 @@ from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
 from . import familie
 from .models import (
+    CampagneAdhesion,
     EinladungStatus,
     FamilienErwachsener,
     FamilienKind,
@@ -72,7 +80,9 @@ class KindDetailView(APIView):
 
     def delete(self, request, pk, kind_pk):
         souscription = _eigene_souscription(request, pk)
-        get_object_or_404(FamilienKind, pk=kind_pk, souscription=souscription).delete()
+        get_object_or_404(
+            FamilienKind, pk=kind_pk, souscription=souscription, anonymisiert_am__isnull=True
+        ).delete()
         return Response(status=204)
 
 
@@ -81,7 +91,12 @@ class ErwachsenerView(APIView):
 
     def patch(self, request, pk, erw_pk):
         souscription = _eigene_souscription(request, pk)
-        e = get_object_or_404(FamilienErwachsener, pk=erw_pk, souscription=souscription)
+        e = get_object_or_404(
+            FamilienErwachsener,
+            pk=erw_pk,
+            souscription=souscription,
+            anonymisiert_am__isnull=True,
+        )
         if e.status in (EinladungStatus.ANGENOMMEN, EinladungStatus.KONFLIKT):
             raise ValidationError({"detail": "einladung_nicht_aenderbar"})
         daten = request.data
@@ -130,7 +145,12 @@ class ErwachsenerEinladungView(APIView):
 
     def post(self, request, pk, erw_pk):
         souscription = _eigene_souscription(request, pk)
-        e = get_object_or_404(FamilienErwachsener, pk=erw_pk, souscription=souscription)
+        e = get_object_or_404(
+            FamilienErwachsener,
+            pk=erw_pk,
+            souscription=souscription,
+            anonymisiert_am__isnull=True,
+        )
         if souscription.statut != StatutSouscription.PAYEE:
             raise ValidationError({"detail": "paket_nicht_bezahlt"})
         if e.status not in (EinladungStatus.OFFEN, *_OFFEN):
@@ -229,6 +249,7 @@ class FamilienpaketeView(APIView):
                             "email": e.email,
                             "beziehung": e.beziehung,
                             "status": e.status,
+                            "anonymisiert": e.anonymisiert,
                             "angebot": e.angebot.nom if e.angebot else None,
                             "angebot_id": str(e.angebot_id) if e.angebot_id else None,
                             "preis_liste": str(e.preis_liste),
@@ -241,6 +262,8 @@ class FamilienpaketeView(APIView):
                             "id": str(k.id),
                             "name": f"{k.vorname} {k.nachname}",
                             "alter": k.alter,
+                            "anonymisiert": k.anonymisiert,
+                            "ueber_hoechstalter": k.ueber_hoechstalter,
                             "beziehung": k.beziehung,
                             "angebot": k.angebot.nom if k.angebot else None,
                             "angebot_id": str(k.angebot_id) if k.angebot_id else None,
@@ -260,6 +283,92 @@ class FamilienpaketeView(APIView):
                 "pakete": daten,
             }
         )
+
+
+class FamilienberichtView(APIView):
+    """Büro : Zahlen zu den Familienpaketen je Kampagne, ohne Personenbezug (bleibt auch nach
+    der Anonymisierung vollständig). `?export=csv` liefert eine CSV-Datei für Excel."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not _darf_buero_lesen(request.user):
+            raise PermissionDenied()
+        zeilen = familie.bericht(request.query_params.get("campagne") or None)
+        if request.query_params.get("export") != "csv":
+            return Response({"kampagnen": zeilen})
+        antwort = HttpResponse(content_type="text/csv; charset=utf-8")
+        antwort["Content-Disposition"] = 'attachment; filename="familienpakete-bericht.csv"'
+        antwort.write("\ufeff")
+        w = csv.writer(antwort, delimiter=";")
+        gruppen = ["0-5", "6-11", "12-17", "18+"]
+        w.writerow(
+            [
+                "Kampagne",
+                "Jahr",
+                "Pakete",
+                "Erwachsene angenommen",
+                "Erwachsene offen",
+                "Erwachsene abgelehnt",
+                "Erwachsene Konflikt",
+                "Kinder",
+                *[f"Kinder {g}" for g in gruppen],
+                "Kinder anonymisiert",
+                "Listenpreis",
+                "Gezahlt",
+                "Rabatt",
+                "Rabatt %",
+            ]
+        )
+        for z in zeilen:
+            w.writerow(
+                [
+                    _csv_text(z["campagne"]),
+                    z["jahr"],
+                    z["pakete"],
+                    z["erwachsene_angenommen"],
+                    z["erwachsene_offen"],
+                    z["erwachsene_abgelehnt"],
+                    z["erwachsene_konflikt"],
+                    z["kinder"],
+                    *[z["altersgruppen"][g] for g in gruppen],
+                    z["kinder_anonymisiert"],
+                    z["listenpreis"].replace(".", ","),
+                    z["gezahlt"].replace(".", ","),
+                    z["rabatt"].replace(".", ","),
+                    z["rabatt_pct"].replace(".", ","),
+                ]
+            )
+        return antwort
+
+
+def _csv_text(wert: str) -> str:
+    """Schützt vor Formel-Einschleusung in Excel (Zellen, die mit = + - @ beginnen)."""
+    return "'" + wert if wert[:1] in ("=", "+", "-", "@") else wert
+
+
+class VorjahrFamilieView(APIView):
+    """Hauptperson : Personen aus dem letzten bezahlten Familienpaket in einer früheren Kampagne
+    zum Übernehmen. Es wird nur vorgeschlagen ; gebucht wird erst mit der normalen Buchung (mit
+    neuer Einwilligung für Kinder)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            raise PermissionDenied()
+        campagne = get_object_or_404(CampagneAdhesion, pk=_uuid_oder_400(request, "campagne"))
+        return Response(familie.vorjahr_familie(membre, campagne))
+
+
+def _uuid_oder_400(request, name: str):
+    import uuid
+
+    try:
+        return uuid.UUID(str(request.query_params.get(name, "")))
+    except ValueError:
+        raise ValidationError({name: "Ungültige Kampagne."})
 
 
 class PersonAngebotView(APIView):

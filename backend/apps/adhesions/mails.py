@@ -130,3 +130,29 @@ def profil_erinnerung(e) -> None:
         "adhésion au forfait famille. Tu peux l'ajouter dans ton profil.",
     )
     _mail(user.email, de, fr, lien="/mon-profil", cta=("Profil öffnen", "Ouvrir le profil"))
+
+
+def altershinweis(souscription, kinder) -> None:
+    """Hinweis an die Hauptperson : Kinder haben das Höchstalter der Kampagne überschritten.
+    Sie können in der nächsten Kampagne als Erwachsene angemeldet werden. Nur Vornamen."""
+    user = souscription.membre.user
+    if user is None or not user.is_active:
+        return
+    namen = ", ".join(k.vorname for k in kinder)
+    grenze = souscription.campagne.familie_max_alter_kind
+    de = (
+        "Hinweis zum Familienpaket",
+        f"Folgende Kinder sind älter als das Höchstalter von {grenze} Jahren: {namen}. "
+        "Bis zum Ende der laufenden Kampagne bleibt alles unverändert. In der nächsten "
+        "Kampagne können sie als weitere Erwachsene angemeldet werden.",
+    )
+    fr = (
+        "Information sur le forfait famille",
+        f"Les enfants suivants dépassent l'âge maximum de {grenze} ans : {namen}. Jusqu'à la "
+        "fin de la campagne en cours, rien ne change. À la prochaine campagne, ils pourront "
+        "être inscrits comme adultes supplémentaires.",
+    )
+    lien = "/mon-adhesion"
+    titel, text = fr if sprache(user) == "fr" else de
+    notifier(user, TypeNotification.FAMILIE_ALTER, titre=titel, message=text, lien=lien)
+    _mail(user.email, de, fr, lien=lien, cta=("Zur Mitgliedschaft", "Vers l'adhésion"))

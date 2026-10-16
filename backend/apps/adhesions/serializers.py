@@ -224,6 +224,8 @@ class SouscriptionSerializer(serializers.ModelSerializer):
                 "preis_liste": str(k.preis_liste),
                 "preis_anteil": str(k.preis_anteil),
                 "einwilligung_am": k.einwilligung_am.isoformat(),
+                "anonymisiert": k.anonymisiert,
+                "ueber_hoechstalter": k.ueber_hoechstalter,
             }
             for k in souscription.kinder.all()
         ]
@@ -240,6 +242,7 @@ class SouscriptionSerializer(serializers.ModelSerializer):
                 "angebot": e.angebot.nom if e.angebot else "",
                 "preis_liste": str(e.preis_liste),
                 "preis_anteil": str(e.preis_anteil),
+                "anonymisiert": e.anonymisiert,
             }
             for e in souscription.erwachsene.all()
         ]

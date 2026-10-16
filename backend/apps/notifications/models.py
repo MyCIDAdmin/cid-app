@@ -128,6 +128,7 @@ class TypeNotification(models.TextChoices):
     SUPPORT_STATUS = "support_status", _("Ticket résolu ou clos")
     FAMILIE_EINLADUNG = "familie_einladung", _("Invitation à un forfait famille")
     FAMILIE_ANTWORT = "familie_antwort", _("Réponse à une invitation de forfait famille")
+    FAMILIE_ALTER = "familie_alter", _("Enfant au-dessus de l'âge maximum du forfait famille")
 
 
 class Notification(models.Model):

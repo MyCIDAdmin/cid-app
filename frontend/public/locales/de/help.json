@@ -113,6 +113,7 @@
       "Eine Kampagne mit Zeitraum und Beschreibung anlegen.",
       "Über „Angebote verwalten“ die Mitgliedschaftsstufen mit Preisen und Vorteilen hinzufügen.",
       "Bei Bedarf ein Angebot als „Familienpaket“ einrichten: festlegen, welche bestehenden Angebote Hauptperson, weitere Erwachsene und Kinder erhalten, dazu Familienrabatt in Prozent und Obergrenzen. Das Höchstalter eines Kindes stellst du je Kampagne ein. Ein Wechsel auf das Paket gilt erst ab der nächsten Kampagne.",
+      "Im Abschnitt „Familienpakete“ siehst du Pakete mit Personen und Einladungsstatus und darunter einen Bericht mit Zahlen je Kampagne (Altersgruppen, Rabatt), der sich als CSV exportieren lässt. Nach Ablauf der Aufbewahrungsfrist werden Personendaten automatisch anonymisiert – der Bericht bleibt vollständig.",
       "Kampagne veröffentlichen, damit Interessierte sie auf der Startseite und unter „Meine Mitgliedschaft“ sehen."
     ]
   },
