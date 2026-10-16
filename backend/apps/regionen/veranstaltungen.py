@@ -16,6 +16,8 @@ Ablauf: Entwurf → eingereicht → veröffentlicht (oder zurückgewiesen) → a
 
 import datetime
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import URLValidator
 from django.db import transaction
 from django.db.models import Count
 from django.http import Http404
@@ -100,6 +102,7 @@ def veranstaltung_dict(request, v: Veranstaltung, *, bearbeiter: bool, verwalter
         "datum": v.datum.isoformat(),
         "uhrzeit": v.uhrzeit.strftime("%H:%M") if v.uhrzeit else None,
         "ort": v.ort,
+        "ort_maps_url": v.ort_maps_url,
         "standort": {"id": str(v.standort_id), "name": v.standort.name} if v.standort_id else None,
         "bild_url": _url(v.bild),
         "max_teilnehmer": v.max_teilnehmer,
@@ -148,6 +151,18 @@ def _sichtbar(request, v, bearbeiter):
         raise Http404()
 
 
+def _maps_url(daten) -> str:
+    """Optionaler Link : leer oder absoluter http(s)-Link (kein javascript:/data:)."""
+    wert = _text(daten, "ort_maps_url", 500)
+    if not wert:
+        return ""
+    try:
+        URLValidator(schemes=["http", "https"])(wert)
+    except DjangoValidationError:
+        raise ValidationError({"ort_maps_url": "Ungültiger Link (https://… erwartet)."})
+    return wert
+
+
 def _felder(daten, region, v=None) -> dict:
     erg = {}
     if v is None or "titel" in daten:
@@ -156,6 +171,8 @@ def _felder(daten, region, v=None) -> dict:
         erg["datum"] = _datum(daten.get("datum"))
     if v is None or "ort" in daten:
         erg["ort"] = _text(daten, "ort", 200, pflicht=True)
+    if "ort_maps_url" in daten:
+        erg["ort_maps_url"] = _maps_url(daten)
     if "beschreibung" in daten:
         erg["beschreibung"] = _html(daten, "beschreibung", 4000)
     if "uhrzeit" in daten:

@@ -44,7 +44,7 @@
       <dl>
         <dt>Datum · Date</dt><dd>{{ v.datum|date:"d.m.Y" }}</dd>
         {% if v.uhrzeit %}<dt>Uhrzeit · Heure</dt><dd>{{ v.uhrzeit|time:"H:i" }}</dd>{% endif %}
-        <dt>Ort · Lieu</dt><dd>{{ v.ort }}</dd>
+        <dt>Ort · Lieu</dt><dd>{{ v.ort }}{% if v.ort_maps_url %} · <a href="{{ v.ort_maps_url }}" target="_blank" rel="noopener noreferrer">Google Maps</a>{% endif %}</dd>
       </dl>
       {% if v.beschreibung %}<div class="text">{{ beschreibung_html }}</div>{% endif %}
       {% if not abgesagt and not beendet %}

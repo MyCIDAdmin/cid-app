@@ -355,3 +355,38 @@ class TestOeffentlich:
         assert "Derby – CID Nord" in t["de"] and "20:00 Uhr" in t["de"] and "Köln" in t["de"]
         assert "le " in t["fr"] and "à 20:00" in t["fr"]
         assert t["de"].endswith(f"/public/veranstaltungen/{pk}/")
+
+
+class TestOrtMapsUrl:
+    def _neu(self, nord, **extra):
+        v = _verantwortlicher(nord)
+        daten = {"titel": "Stammtisch", "datum": "2099-01-01", "ort": "Pub, Hamburg", **extra}
+        return v, _client(v.user).post(f"{BASIS}nord/veranstaltungen/", daten, format="json")
+
+    def test_maps_link_wird_gespeichert_und_ausgeliefert(self):
+        nord = Region.objects.get(slug="nord")
+        url = "https://maps.app.goo.gl/abc123"
+        _, r = self._neu(nord, ort_maps_url=f" {url} ")
+        assert r.status_code == 201 and r.data["ort_maps_url"] == url
+        assert Veranstaltung.objects.get(pk=r.data["id"]).ort_maps_url == url
+
+    def test_ohne_link_bleibt_feld_leer_und_kann_geleert_werden(self):
+        nord = Region.objects.get(slug="nord")
+        v, r = self._neu(nord)
+        assert r.status_code == 201 and r.data["ort_maps_url"] == ""
+        c = _client(v.user)
+        pfad = f"{BASIS}nord/veranstaltungen/{r.data['id']}/"
+        assert (
+            c.patch(pfad, {"ort_maps_url": "https://maps.google.com/?q=x"}, format="json")
+            .data["ort_maps_url"]
+            .startswith("https://")
+        )
+        assert c.patch(pfad, {"ort_maps_url": ""}, format="json").data["ort_maps_url"] == ""
+
+    @pytest.mark.parametrize(
+        "wert", ["javascript:alert(1)", "data:text/html,x", "ftp://x.de/a", "kein link", 5]
+    )
+    def test_ungueltiger_link_wird_abgelehnt(self, wert):
+        nord = Region.objects.get(slug="nord")
+        _, r = self._neu(nord, ort_maps_url=wert)
+        assert r.status_code == 400 and "ort_maps_url" in r.data["details"]

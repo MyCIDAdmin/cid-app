@@ -10,6 +10,7 @@ import type { Standort, Veranstaltung, VeranstaltungAktion } from "../../types/r
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { klartext } from "../../utils/formattext";
 import { formatDatum } from "../../utils/regionen";
+import MapsApercu from "../ui/MapsApercu";
 import FormatierterText from "./FormatierterText";
 import TeilenPanel from "./TeilenPanel";
 import TeilnehmerPanel from "./TeilnehmerPanel";
@@ -37,6 +38,7 @@ export default function VeranstaltungKarte({
   const [bearbeiten, setBearbeiten] = useState(false);
   const [teilenOffen, setTeilenOffen] = useState(false);
   const [listeOffen, setListeOffen] = useState(false);
+  const [karteOffen, setKarteOffen] = useState(false);
   const [grundOffen, setGrundOffen] = useState(false);
   const [absageFrage, setAbsageFrage] = useState(false);
   const [grund, setGrund] = useState("");
@@ -96,6 +98,17 @@ export default function VeranstaltungKarte({
           {t(`status_${v.status}`)}
         </span>
       </div>
+
+      {v.ort.trim() && (
+        <button
+          type="button"
+          onClick={() => setKarteOffen((o) => !o)}
+          className="self-start text-xs font-medium text-ca hover:underline"
+        >
+          {karteOffen ? t("v_karte_verbergen") : t("v_karte_zeigen")}
+        </button>
+      )}
+      {karteOffen && <MapsApercu adresse={v.ort} mapsUrl={v.ort_maps_url} />}
 
       {klartext(v.beschreibung) && <FormatierterText text={v.beschreibung} />}
       <p className="text-xs text-text-tertiary">{plaetze}</p>
