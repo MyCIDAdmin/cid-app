@@ -76,6 +76,7 @@ import ProjetDetailPage from "./pages/projets/ProjetDetailPage";
 import ProjetsPage from "./pages/projets/ProjetsPage";
 import FanRegisterPage from "./pages/FanRegisterPage";
 import RegisterPage from "./pages/RegisterPage";
+import EinladungPage from "./pages/adhesions/EinladungPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import FinancesPage from "./pages/finances/FinancesPage";
 import StatsPage from "./pages/stats/StatsPage";
@@ -94,6 +95,8 @@ export default function App() {
           AHM-47) — compte créé inactif, activation décidée ensuite par
           RH/Admin (AHM-48). */}
         <Route path="/register" element={<RegisterPage />} />
+        {/* Einladung ins Familienpaket (R35) : öffentlich, der Token im Link ist das Geheimnis. */}
+        <Route path="/einladung/:token" element={<EinladungPage />} />
         {/* Fan-Konto ohne Mitgliedschaft (Release 29). */}
         <Route path="/fan" element={<FanRegisterPage />} />
         {/* Réinitialisation de mot de passe (mockup #sc-login, FDD §3.1) —

@@ -14,6 +14,7 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useCampagneActive: vi.fn(),
     useCampagnes: vi.fn(),
     useMesSouscriptions: vi.fn(),
+    useMeineEinladungen: vi.fn(),
     useSouscrire: vi.fn(),
     useUploaderJustificatif: vi.fn(),
     useAnnulerSouscription: vi.fn(),
@@ -53,8 +54,10 @@ function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
     couleur: "",
     populaire: false,
     ist_familienpaket: false,
-    preis_je_erwachsener: "0.00",
-    preis_je_kind: "0.00",
+    familie_rabatt_pct: "0.00",
+    familie_angebot_hauptperson: null,
+    familie_angebot_erwachsene: null,
+    familie_angebot_kinder: null,
     max_erwachsene: 0,
     max_kinder: 0,
     rabais: [
@@ -88,6 +91,7 @@ function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
     statut: "publiee",
 
     date_limite_renouvellement: null,
+    familie_max_alter_kind: 17,
 
     bascule_non_renouveles_le: null,
     created_by: "m-admin",
@@ -112,6 +116,8 @@ function souscription(overrides: Partial<Souscription> = {}): Souscription {
     plaetze_erwachsene: 0,
     plaetze_kinder: 0,
     kinder: [],
+    erwachsene: [],
+    familien_info: null,
     justificatif: null,
     created_at: "2026-02-01T10:00:00Z",
     updated_at: "2026-02-01T10:00:00Z",
@@ -121,6 +127,9 @@ function souscription(overrides: Partial<Souscription> = {}): Souscription {
 
 describe("MonAdhesionPage", () => {
   beforeEach(() => {
+    vi.mocked(useAdhesionsHooks.useMeineEinladungen).mockReturnValue({
+      data: [],
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMeineEinladungen>);
     vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
       data: { next: null, previous: null, results: [campagne()] },
     } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
@@ -272,7 +281,7 @@ describe("MonAdhesionPage", () => {
     expect(mutate.mock.calls[0][0]).toEqual({ offre: "o1", rabais: "r1" });
   });
 
-  it("Familienpaket: sendet die gewählten Plätze mit der Anmeldung", () => {
+  it("Familienpaket: sendet alle Personen in einem Schritt mit der Anmeldung", () => {
     const mutate = vi.fn();
     vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
       data: campagne({
@@ -280,12 +289,16 @@ describe("MonAdhesionPage", () => {
           offre({
             ist_familienpaket: true,
             prix_plein: "60.00",
-            preis_je_erwachsener: "30.00",
-            preis_je_kind: "10.00",
+            familie_rabatt_pct: "10.00",
+            familie_angebot_hauptperson: "o2",
+            familie_angebot_erwachsene: "o2",
+            familie_angebot_kinder: "o3",
             max_erwachsene: 2,
             max_kinder: 4,
             rabais: [],
           }),
+          offre({ id: "o2", nom: "PLUS", prix_plein: "50.00", rabais: [] }),
+          offre({ id: "o3", nom: "JUNIOR", prix_plein: "10.00", rabais: [] }),
         ],
       }),
       isLoading: false,
@@ -305,19 +318,93 @@ describe("MonAdhesionPage", () => {
     renderWithProviders(<MonAdhesionPage />);
 
     expect(screen.getByText("familie.ab")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("offres.rejoindre"));
-    fireEvent.change(screen.getByLabelText("familie.plaetze_erwachsene"), {
-      target: { value: "1" },
+    fireEvent.click(screen.getAllByText("offres.rejoindre")[0]);
+    const weiter = screen.getByText("familie.weiter_zur_zahlung");
+    // Ohne weitere Person gibt es keine Zahlung.
+    expect(weiter).toBeDisabled();
+
+    fireEvent.click(screen.getByText("familie.erwachsenen_hinzufuegen"));
+    fireEvent.click(screen.getByText("familie.kind_hinzufuegen"));
+    expect(weiter).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("familie.email"), {
+      target: { value: "nora@example.de" },
     });
-    fireEvent.change(screen.getByLabelText("familie.plaetze_kinder"), { target: { value: "3" } });
-    fireEvent.click(screen.getByText("offres.souscrire"));
+    const vornamen = screen.getAllByLabelText("familie.vorname");
+    const nachnamen = screen.getAllByLabelText("familie.nachname");
+    fireEvent.change(vornamen[0], { target: { value: "Nora" } });
+    fireEvent.change(nachnamen[0], { target: { value: "Muster" } });
+    fireEvent.change(screen.getAllByLabelText("familie.beziehung")[0], {
+      target: { value: "ehepartner" },
+    });
+    fireEvent.change(vornamen[1], { target: { value: "Lina" } });
+    fireEvent.change(nachnamen[1], { target: { value: "Muster" } });
+    fireEvent.change(screen.getByLabelText("familie.geburtsjahr"), { target: { value: "2018" } });
+    // Die Einwilligung für Kinder ist Pflicht.
+    expect(weiter).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(weiter).toBeEnabled();
+    fireEvent.click(weiter);
 
     expect(mutate.mock.calls[0][0]).toEqual({
       offre: "o1",
       rabais: undefined,
-      plaetze_erwachsene: 1,
-      plaetze_kinder: 3,
+      erwachsene: [
+        { vorname: "Nora", nachname: "Muster", email: "nora@example.de", beziehung: "ehepartner" },
+      ],
+      kinder: [
+        {
+          vorname: "Lina",
+          nachname: "Muster",
+          geburtsjahr: 2018,
+          beziehung: "kind",
+          einwilligung: true,
+        },
+      ],
     });
+  });
+
+  it("zeigt offene Einladungen an die eigene Adresse als Hinweis", () => {
+    vi.mocked(useAdhesionsHooks.useMeineEinladungen).mockReturnValue({
+      data: [
+        {
+          token: "tok",
+          hauptperson: "Sami Ben Salah",
+          kampagne: "Test 2026",
+          angebot: "PLUS",
+          vorname: "Nora",
+          nachname: "Muster",
+          email: "nora@example.de",
+          beziehung: "ehepartner",
+          status: "eingeladen",
+          bezahlt: true,
+          konto_vorhanden: true,
+        },
+      ],
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMeineEinladungen>);
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.getByText("einladung.banner_titel")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "einladung.ansehen" })).toHaveAttribute(
+      "href",
+      "/einladung/tok",
+    );
   });
 
   it("ouvre le fenêtre d'infos de paiement via le bouton (virement/PayPal, comme le shop)", () => {

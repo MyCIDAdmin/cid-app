@@ -124,6 +124,20 @@ export default function OngletFinancier({
         </div>
       </div>
 
+      {Number(data.familienrabatt ?? 0) > 0 && (
+        <div className="mb-4 rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+          <div className="text-[10px] uppercase text-text-tertiary">
+            {t("financier.familienrabatt")}
+          </div>
+          <div className="text-lg font-bold text-text-primary">
+            {formatMontant(data.familienrabatt ?? 0)}
+          </div>
+          <div className="text-[11px] text-text-tertiary">
+            {t("financier.familienrabatt_hinweis")}
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
           <h2 className="mb-3 text-xs font-bold text-text-primary">

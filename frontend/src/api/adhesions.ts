@@ -6,10 +6,10 @@ import type { CursorPage } from "../types/membre";
 import type {
   CampagneAdhesion,
   CampagneCreatePayload,
-  FamilienKind,
+  Einladung,
+  ErwachsenerPayload,
   FamilienpaketeUebersicht,
   JustificatifRabais,
-  KindPayload,
   OffreAdhesion,
   OffreCreatePayload,
   RabaisCreatePayload,
@@ -220,20 +220,66 @@ export async function modifierFristCampagne(
   return data;
 }
 
-/** Kind zu einem Familienpaket hinzufügen (R34) — nur der Inhaber, mit Einwilligung. */
-export async function kindAnlegen(
-  souscriptionId: string,
-  payload: KindPayload,
-): Promise<FamilienKind> {
-  const { data } = await apiClient.post<FamilienKind>(
-    `/adhesions/souscriptions/${souscriptionId}/kinder/`,
-    payload,
-  );
+/** PATCH /adhesions/campagnes/{id}/ — Höchstalter eines Kindes im Familienpaket (je Kampagne). */
+export async function modifierAlterKind(id: string, alter: number): Promise<CampagneAdhesion> {
+  const { data } = await apiClient.patch<CampagneAdhesion>(`/adhesions/campagnes/${id}/`, {
+    familie_max_alter_kind: alter,
+  });
   return data;
 }
 
 export async function kindLoeschen(souscriptionId: string, kindId: string): Promise<void> {
   await apiClient.delete(`/adhesions/souscriptions/${souscriptionId}/kinder/${kindId}/`);
+}
+
+/** Name/E-Mail einer weiteren erwachsenen Person korrigieren (nur bis zur Annahme). */
+export async function erwachsenerAendern(
+  souscriptionId: string,
+  erwachsenerId: string,
+  payload: Partial<Pick<ErwachsenerPayload, "vorname" | "nachname" | "email">>,
+): Promise<void> {
+  await apiClient.patch(
+    `/adhesions/souscriptions/${souscriptionId}/erwachsene/${erwachsenerId}/`,
+    payload,
+  );
+}
+
+export async function einladungErneutSenden(
+  souscriptionId: string,
+  erwachsenerId: string,
+): Promise<void> {
+  await apiClient.post(
+    `/adhesions/souscriptions/${souscriptionId}/erwachsene/${erwachsenerId}/einladung/`,
+  );
+}
+
+/** Büro : einer Person ein anderes Angebot zuweisen (Preise bleiben wie bezahlt). */
+export async function personAngebotZuweisen(
+  typ: "kind" | "erwachsener",
+  id: string,
+  angebot: string,
+): Promise<void> {
+  await apiClient.patch(`/adhesions/familienpakete/personen/${typ}/${id}/`, { angebot });
+}
+
+export async function getEinladung(token: string): Promise<Einladung> {
+  const { data } = await apiClient.get<Einladung>(`/adhesions/einladungen/${token}/`);
+  return data;
+}
+
+export async function einladungAnnehmen(token: string): Promise<Einladung> {
+  const { data } = await apiClient.post<Einladung>(`/adhesions/einladungen/${token}/annehmen/`);
+  return data;
+}
+
+export async function einladungAblehnen(token: string): Promise<Einladung> {
+  const { data } = await apiClient.post<Einladung>(`/adhesions/einladungen/${token}/ablehnen/`);
+  return data;
+}
+
+export async function listMeineEinladungen(): Promise<Einladung[]> {
+  const { data } = await apiClient.get<Einladung[]>("/adhesions/meine-einladungen/");
+  return data;
 }
 
 /** Büro-Übersicht der Familienpakete (R34), optional je Kampagne. */

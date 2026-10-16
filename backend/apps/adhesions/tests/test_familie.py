@@ -1,313 +1,737 @@
-"""Familienpaket (Release 34) : Preis, Plätze, Kinder (Einwilligung, Datensparsamkeit), Büro."""
+"""Familienpaket (Release 34/35) : Kombination bestehender Angebote, Familienrabatt, Personen mit
+Beziehung, Einladung der Erwachsenen, Finanzen, Büro, Löschfrist."""
 
 import datetime
 from decimal import Decimal
 
 import pytest
+from django.core import mail
 from django.urls import reverse
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.adhesions.models import FamilienKind, StatutSouscription
-from apps.adhesions.tasks import loeschen_kinderdaten
+from apps.adhesions import familie
+from apps.adhesions.models import (
+    EinladungStatus,
+    FamilienErwachsener,
+    FamilienKind,
+    Souscription,
+    StatutSouscription,
+)
+from apps.adhesions.tasks import loeschen_kinderdaten, sende_familien_erinnerungen
 from apps.adhesions.tests.factories import (
     CampagneAdhesionFactory,
     OffreAdhesionFactory,
     RabaisOffreFactory,
     SouscriptionFactory,
 )
+from apps.membres.models import StatutMembre
 from apps.membres.tests.factories import MembreFactory
 
 pytestmark = pytest.mark.django_db
 
 SOUSCRIRE = "adhesions:souscription-souscrire"
+JAHR = timezone.localdate().year
 
 
-def _client(user):
+def _client(user=None):
     c = APIClient()
-    c.force_authenticate(user)
+    if user is not None:
+        c.force_authenticate(user)
     return c
 
 
-def _person(role=Role.MEMBRE, email="haupt@example.de"):
+def _person(role=Role.MEMBRE, email="haupt@example.de", statut=StatutMembre.ACTIF):
     user = User.objects.create_user(email=email, password="Password123!", is_active=True, role=role)
-    membre = MembreFactory(user=user, cin="12345678")
+    membre = MembreFactory(user=user, email=email, cin="12345678", statut=statut)
     return user, membre
 
 
-def _paket(**kw):
-    werte = dict(
-        nom="Familie",
-        prix_plein=Decimal("60.00"),
-        ist_familienpaket=True,
-        preis_je_erwachsener=Decimal("20.00"),
-        preis_je_kind=Decimal("5.00"),
-        max_erwachsene=2,
-        max_kinder=4,
-    )
-    werte.update(kw)
-    return OffreAdhesionFactory(**werte)
+class Aufbau:
+    """Kampagne mit CID-PLUS (50), CID-JUNIOR (10) und einem Familienpaket (Rabatt 10 %)."""
+
+    def __init__(self, rabatt="10", max_alter=17, annee=JAHR, **kw):
+        self.kampagne = CampagneAdhesionFactory(annee=annee, familie_max_alter_kind=max_alter)
+        self.plus = OffreAdhesionFactory(
+            campagne=self.kampagne, nom="CID-PLUS", prix_plein=Decimal("50.00")
+        )
+        self.junior = OffreAdhesionFactory(
+            campagne=self.kampagne, nom="CID-JUNIOR", prix_plein=Decimal("10.00")
+        )
+        werte = dict(
+            campagne=self.kampagne,
+            nom="Familie",
+            prix_plein=Decimal("50.00"),
+            ist_familienpaket=True,
+            familie_rabatt_pct=Decimal(rabatt),
+            familie_angebot_hauptperson=self.plus,
+            familie_angebot_erwachsene=self.plus,
+            familie_angebot_kinder=self.junior,
+            max_erwachsene=2,
+            max_kinder=4,
+        )
+        werte.update(kw)
+        self.paket = OffreAdhesionFactory(**werte)
 
 
-def _souscrire(user, offre, **plaetze):
-    return _client(user).post(
-        reverse(SOUSCRIRE), {"offre": str(offre.id), **plaetze}, format="json"
-    )
+def _erw(email="partner@example.de", **kw):
+    return {
+        "vorname": "Nora",
+        "nachname": "Muster",
+        "email": email,
+        "beziehung": "ehepartner",
+        **kw,
+    }
 
 
-def _kind(souscription_id, user, **kw):
-    daten = {
+def _kind(jahr=None, **kw):
+    return {
         "vorname": "Lina",
         "nachname": "Muster",
-        "geburtsjahr": timezone.localdate().year - 8,
+        "geburtsjahr": JAHR - 8 if jahr is None else jahr,
+        "beziehung": "kind",
         "einwilligung": True,
         **kw,
     }
+
+
+def _buchen(user, offre, erwachsene=(), kinder=(), **extra):
     return _client(user).post(
-        reverse("adhesions:familie-kinder", args=[souscription_id]), daten, format="json"
-    )
-
-
-# --- Preis und Plätze ------------------------------------------------------------------------
-
-
-def test_preis_ist_grundpreis_plus_zuschlaege():
-    offre = _paket()
-    assert offre.preis_fuer(1, 2) == Decimal("90.00")
-    assert offre.preis_fuer(0, 0) == Decimal("60.00")
-
-
-def test_normales_angebot_ignoriert_zuschlaege():
-    offre = OffreAdhesionFactory(prix_plein=Decimal("50.00"), preis_je_kind=Decimal("5.00"))
-    assert offre.preis_fuer(0, 3) == Decimal("50.00")
-
-
-def test_souscrire_berechnet_paketpreis_auf_dem_server():
-    offre = _paket()
-    user, _ = _person()
-    antwort = _souscrire(user, offre, plaetze_erwachsene=1, plaetze_kinder=2)
-    assert antwort.status_code == 200, antwort.data
-    assert antwort.data["prix_paye"] == "90.00"
-    assert antwort.data["plaetze_erwachsene"] == 1
-    assert antwort.data["plaetze_kinder"] == 2
-    assert antwort.data["kinder"] == []
-
-
-def test_rabatt_wirkt_auf_den_gesamtpreis():
-    offre = _paket()
-    rabais = RabaisOffreFactory(
-        offre=offre, montant_reduction=None, pct_reduction=Decimal("10"), justificatif_requis=False
-    )
-    user, _ = _person()
-    antwort = _client(user).post(
         reverse(SOUSCRIRE),
-        {
-            "offre": str(offre.id),
-            "rabais": str(rabais.id),
-            "plaetze_erwachsene": 1,
-            "plaetze_kinder": 2,
-        },
+        {"offre": str(offre.id), "erwachsene": list(erwachsene), "kinder": list(kinder), **extra},
         format="json",
     )
+
+
+def _bezahlen(souscription_id, capture):
+    s = Souscription.objects.get(pk=souscription_id)
+    with capture(execute=True):
+        s.statut = StatutSouscription.PAYEE
+        s.save()
+    return s
+
+
+def _paket_zahlen(a, capture, erwachsene=None, kinder=2, email="haupt@example.de"):
+    user, membre = _person(email=email)
+    erw = [_erw()] if erwachsene is None else list(erwachsene)
+    antwort = _buchen(user, a.paket, erw, [_kind(vorname=f"K{i}") for i in range(kinder)])
     assert antwort.status_code == 200, antwort.data
-    assert antwort.data["prix_paye"] == "81.00"
+    s = _bezahlen(antwort.data["id"], capture)
+    return user, membre, s
 
 
-def test_mehr_plaetze_als_erlaubt_wird_abgelehnt():
-    offre = _paket(max_erwachsene=1, max_kinder=2)
-    user, _ = _person()
-    assert _souscrire(user, offre, plaetze_erwachsene=2).status_code == 400
-    assert _souscrire(user, offre, plaetze_kinder=3).status_code == 400
-    assert _souscrire(user, offre, plaetze_kinder=-1).status_code == 400
+def _an(adresse):
+    return [m for m in mail.outbox if adresse in m.to]
 
 
-def test_plaetze_bei_normalem_angebot_werden_abgelehnt():
-    offre = OffreAdhesionFactory()
-    user, _ = _person()
-    assert _souscrire(user, offre, plaetze_kinder=1).status_code == 400
-    assert _souscrire(user, offre).status_code == 200
+# --- Konfiguration ---------------------------------------------------------------------------
 
 
-def test_bezahlte_souscription_bleibt_unveraendert():
-    offre = _paket()
-    user, membre = _person()
-    SouscriptionFactory(
-        membre=membre, offre=offre, campagne=offre.campagne, statut=StatutSouscription.PAYEE
+def test_konfiguration_braucht_zugewiesene_angebote():
+    a = Aufbau(familie_angebot_hauptperson=None, familie_angebot_erwachsene=None)
+    with pytest.raises(ValidationError):
+        familie.pruefe_konfiguration(a.paket)
+
+
+def test_konfiguration_kinderangebot_pflicht_wenn_kinder_erlaubt():
+    a = Aufbau(familie_angebot_kinder=None)
+    with pytest.raises(ValidationError):
+        familie.pruefe_konfiguration(a.paket)
+    a.paket.max_kinder = 0
+    familie.pruefe_konfiguration(a.paket)
+
+
+def test_konfiguration_nur_normale_angebote_derselben_kampagne():
+    a = Aufbau()
+    a.paket.familie_angebot_kinder = OffreAdhesionFactory(prix_plein=Decimal("5.00"))
+    with pytest.raises(ValidationError):
+        familie.pruefe_konfiguration(a.paket)
+    a.paket.familie_angebot_kinder = a.paket
+    with pytest.raises(ValidationError):
+        familie.pruefe_konfiguration(a.paket)
+
+
+def test_api_lehnt_unvollstaendiges_familienpaket_ab():
+    a = Aufbau()
+    admin = User.objects.create_user(
+        email="admin@example.de", password="x", is_active=True, role=Role.SUPER_ADMIN
     )
-    assert _souscrire(user, offre, plaetze_kinder=1).status_code == 403
+    url = reverse("adhesions:offre-detail", args=[a.junior.id])
+    assert _client(admin).patch(url, {"ist_familienpaket": True}, format="json").status_code == 400
 
 
-def test_weniger_plaetze_als_eingetragene_kinder_wird_abgelehnt():
-    offre = _paket()
+# --- Preis aus Angeboten minus Familienrabatt -------------------------------------------------
+
+
+def test_preis_ist_summe_der_angebote_minus_rabatt_prozent():
+    paket = familie.berechne_paket(Aufbau().paket, 1, 2)
+    assert paket.liste_gesamt == Decimal("120.00")  # 50 + 50 + 10 + 10
+    assert paket.gesamt == Decimal("108.00")
+    assert [p.anteil for p in paket.positionen] == [
+        Decimal("45.00"),
+        Decimal("45.00"),
+        Decimal("9.00"),
+        Decimal("9.00"),
+    ]
+
+
+def test_hauptperson_ohne_eigene_zuweisung_erhaelt_das_erwachsenenangebot():
+    a = Aufbau(familie_angebot_hauptperson=None)
+    assert familie.berechne_paket(a.paket, 0, 0).positionen[0].angebot == a.plus
+
+
+def test_buchen_berechnet_preis_auf_dem_server_und_legt_personen_an():
+    a = Aufbau()
     user, _ = _person()
-    s = _souscrire(user, offre, plaetze_kinder=2).data
-    assert _kind(s["id"], user).status_code == 201
-    assert _kind(s["id"], user, vorname="Ben").status_code == 201
-    assert _souscrire(user, offre, plaetze_kinder=1).status_code == 400
-    assert _souscrire(user, offre, plaetze_kinder=3).status_code == 200
+    antwort = _buchen(user, a.paket, [_erw()], [_kind(), _kind(vorname="Ben")])
+    assert antwort.status_code == 200, antwort.data
+    assert antwort.data["prix_paye"] == "108.00"
+    assert antwort.data["plaetze_erwachsene"] == 1 and antwort.data["plaetze_kinder"] == 2
+    assert [k["kartennummer"][-2:] for k in antwort.data["kinder"]] == ["J1", "J2"]
+    assert {k["angebot"] for k in antwort.data["kinder"]} == {"CID-JUNIOR"}
+    erw = antwort.data["erwachsene"][0]
+    assert erw["status"] == EinladungStatus.OFFEN  # vor der Zahlung keine Einladung
+    assert erw["preis_anteil"] == "45.00"
+    assert antwort.data["familien_info"]["gesamtpreis"] == "108.00"
+    assert not _an("partner@example.de")
+    kind = FamilienKind.objects.first()
+    assert kind.einwilligung_von == user and kind.einwilligung_version
 
 
-# --- Kinder ----------------------------------------------------------------------------------
-
-
-def test_kind_eintragen_speichert_nur_notwendiges_und_die_einwilligung():
-    offre = _paket()
-    user, membre = _person()
-    s = _souscrire(user, offre, plaetze_kinder=2).data
-    antwort = _kind(s["id"], user)
-    assert antwort.status_code == 201, antwort.data
-    kind = FamilienKind.objects.get()
-    assert (kind.vorname, kind.nachname) == ("Lina", "Muster")
-    assert kind.kartennummer == f"{membre.numero_membre}-J1"
-    assert kind.einwilligung_von == user
-    assert kind.einwilligung_version
-    assert kind.alter == 8
-    eintrag = antwort.data["kinder"][0]
-    assert set(eintrag) == {
-        "id",
-        "vorname",
-        "nachname",
-        "geburtsjahr",
-        "alter",
-        "kartennummer",
-        "einwilligung_am",
-    }
-    zweites = _kind(s["id"], user, vorname="Ben").data["kinder"]
-    assert [k["kartennummer"][-2:] for k in zweites] == ["J1", "J2"]
-
-
-def test_kind_ohne_einwilligung_wird_abgelehnt():
-    offre = _paket()
+def test_erneutes_buchen_ersetzt_die_personen():
+    a = Aufbau()
     user, _ = _person()
-    s = _souscrire(user, offre, plaetze_kinder=1).data
-    assert _kind(s["id"], user, einwilligung=False).status_code == 400
-    assert _kind(s["id"], user, einwilligung="ja").status_code == 400
-    assert FamilienKind.objects.count() == 0
+    _buchen(user, a.paket, [_erw()], [_kind()])
+    antwort = _buchen(user, a.paket, [], [_kind(), _kind(vorname="Ben")])
+    assert antwort.status_code == 200
+    assert antwort.data["prix_paye"] == "63.00"  # (50 + 10 + 10) − 10 %
+    assert FamilienErwachsener.objects.count() == 0
+    assert FamilienKind.objects.count() == 2
 
 
-def test_kind_muss_unter_18_sein():
-    offre = _paket()
+def test_familienpaket_ohne_weitere_person_wird_abgelehnt():
     user, _ = _person()
-    s = _souscrire(user, offre, plaetze_kinder=3).data
-    jahr = timezone.localdate().year
-    assert _kind(s["id"], user, geburtsjahr=jahr - 18).status_code == 400
-    assert _kind(s["id"], user, geburtsjahr=jahr + 1).status_code == 400
-    assert _kind(s["id"], user, geburtsjahr="abc").status_code == 400
-    assert _kind(s["id"], user, geburtsjahr=jahr - 17).status_code == 201
+    assert _buchen(user, Aufbau().paket).status_code == 400
+    assert Souscription.objects.count() == 0
 
 
-def test_kind_namen_pflicht_und_laenge():
-    offre = _paket()
+def test_ungueltige_person_bricht_die_ganze_buchung_ab():
     user, _ = _person()
-    s = _souscrire(user, offre, plaetze_kinder=2).data
-    assert _kind(s["id"], user, vorname=" ").status_code == 400
-    assert _kind(s["id"], user, nachname="x" * 101).status_code == 400
-
-
-def test_nicht_mehr_kinder_als_gebuchte_plaetze():
-    offre = _paket()
-    user, _ = _person()
-    s = _souscrire(user, offre, plaetze_kinder=1).data
-    assert _kind(s["id"], user).status_code == 201
-    antwort = _kind(s["id"], user, vorname="Ben")
+    antwort = _buchen(user, Aufbau().paket, [_erw(email="keine-mail")], [_kind()])
     assert antwort.status_code == 400
-    assert FamilienKind.objects.count() == 1
+    assert Souscription.objects.count() == 0 and FamilienKind.objects.count() == 0
 
 
-def test_kind_nur_bei_familienpaket():
-    offre = OffreAdhesionFactory()
+def test_mehr_personen_als_erlaubt_wird_abgelehnt():
+    a = Aufbau(max_erwachsene=1, max_kinder=1)
     user, _ = _person()
-    s = _souscrire(user, offre).data
-    assert _kind(s["id"], user).status_code == 400
+    assert _buchen(user, a.paket, [_erw(), _erw("b@example.de")]).status_code == 400
+    assert _buchen(user, a.paket, [], [_kind(), _kind()]).status_code == 400
 
 
-def test_fremde_koennen_kinder_weder_sehen_noch_aendern():
-    offre = _paket()
+def test_rabais_auf_familienpaket_wird_abgelehnt():
+    a = Aufbau()
+    rabais = RabaisOffreFactory(
+        offre=a.paket,
+        montant_reduction=None,
+        pct_reduction=Decimal("10"),
+        justificatif_requis=False,
+    )
     user, _ = _person()
-    fremd, _ = _person(email="fremd@example.de")
-    s = _souscrire(user, offre, plaetze_kinder=2).data
-    kind_id = _kind(s["id"], user).data["kinder"][0]["id"]
-    assert _kind(s["id"], fremd).status_code == 404
-    loeschen = _client(fremd).delete(reverse("adhesions:familie-kind", args=[s["id"], kind_id]))
-    assert loeschen.status_code == 404
-    # Auch das Büro trägt nichts für andere ein oder löscht.
-    buero, _ = _person(role=Role.BUREAU_ADMIN, email="buero@example.de")
-    assert _kind(s["id"], buero).status_code == 404
-    assert FamilienKind.objects.count() == 1
+    assert _buchen(user, a.paket, [_erw()], rabais=str(rabais.id)).status_code == 400
 
 
-def test_kind_entfernen():
-    offre = _paket()
+def test_bezahltes_paket_bleibt_unveraendert(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    user, _, _ = _paket_zahlen(a, django_capture_on_commit_callbacks)
+    assert _buchen(user, a.paket, [_erw("x@example.de")]).status_code == 403
+
+
+def test_doppelte_oder_eigene_email_wird_abgelehnt():
+    a = Aufbau()
     user, _ = _person()
-    s = _souscrire(user, offre, plaetze_kinder=2).data
-    kind_id = _kind(s["id"], user).data["kinder"][0]["id"]
-    antwort = _client(user).delete(reverse("adhesions:familie-kind", args=[s["id"], kind_id]))
-    assert antwort.status_code == 204
+    assert _buchen(user, a.paket, [_erw(), _erw()]).status_code == 400
+    assert _buchen(user, a.paket, [_erw("haupt@example.de")]).status_code == 400
+
+
+def test_beziehung_pflicht_und_nur_erlaubte_werte():
+    a = Aufbau()
+    user, _ = _person()
+    assert _buchen(user, a.paket, [_erw(beziehung="")]).status_code == 400
+    assert _buchen(user, a.paket, [_erw(beziehung="freund")]).status_code == 400
+    assert _buchen(user, a.paket, [], [_kind(beziehung="elternteil")]).status_code == 400
+    for beziehung in ("ehepartner", "kind", "geschwister", "elternteil"):
+        assert _buchen(user, a.paket, [_erw(beziehung=beziehung)]).status_code == 200
+    assert _buchen(user, a.paket, [], [_kind(beziehung="geschwister")]).status_code == 200
+
+
+def test_kindernamen_pflicht_einwilligung_und_laenge():
+    a = Aufbau()
+    user, _ = _person()
+    assert _buchen(user, a.paket, [], [_kind(vorname=" ")]).status_code == 400
+    assert _buchen(user, a.paket, [], [_kind(nachname="x" * 101)]).status_code == 400
+    assert _buchen(user, a.paket, [], [_kind(einwilligung=False)]).status_code == 400
+    assert _buchen(user, a.paket, [], [_kind(einwilligung="ja")]).status_code == 400
     assert FamilienKind.objects.count() == 0
 
 
-def test_mes_souscriptions_zeigt_kinder_der_hauptperson():
-    offre = _paket()
+def test_hoechstalter_gilt_je_kampagne():
+    a = Aufbau(max_alter=12)
     user, _ = _person()
-    s = _souscrire(user, offre, plaetze_kinder=1).data
-    _kind(s["id"], user)
-    liste = _client(user).get(reverse("adhesions:souscription-mes-souscriptions")).data
-    ergebnisse = liste["results"] if isinstance(liste, dict) else liste
-    assert ergebnisse[0]["kinder"][0]["vorname"] == "Lina"
+    jahr = a.kampagne.annee
+    assert _buchen(user, a.paket, [], [_kind(jahr - 13)]).status_code == 400
+    assert _buchen(user, a.paket, [], [_kind(jahr + 1)]).status_code == 400
+    assert _buchen(user, a.paket, [], [_kind("abc")]).status_code == 400
+    assert _buchen(user, a.paket, [], [_kind(jahr - 12)]).status_code == 200
+    b = Aufbau(max_alter=17, annee=JAHR + 1)
+    assert _buchen(user, b.paket, [], [_kind(b.kampagne.annee - 17)]).status_code == 200
 
 
 def test_kinder_sind_keine_mitglieder():
     from apps.membres.models import Membre
 
-    offre = _paket()
     user, _ = _person()
-    s = _souscrire(user, offre, plaetze_kinder=1).data
+    a = Aufbau()
     vorher = Membre.objects.count()
-    _kind(s["id"], user)
+    _buchen(user, a.paket, [], [_kind()])
     assert Membre.objects.count() == vorher
+
+
+# --- Einladung --------------------------------------------------------------------------------
+
+
+def test_einladung_geht_erst_nach_der_zahlung_raus(django_capture_on_commit_callbacks):
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    assert e.status == EinladungStatus.EINGELADEN and e.eingeladen_am
+    gesendet = _an("partner@example.de")
+    assert len(gesendet) == 1
+    assert e.token in gesendet[0].body or e.token in str(gesendet[0].alternatives)
+
+
+def test_einladung_ist_idempotent(django_capture_on_commit_callbacks):
+    _, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    familie.versende_einladungen(s.id)
+    assert len(_an("partner@example.de")) == 1
+
+
+def test_vorhandenes_konto_wartet_auf_zustimmung(django_capture_on_commit_callbacks):
+    _person(email="partner@example.de")
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    assert e.status == EinladungStatus.ZUSTIMMUNG_OFFEN
+    assert e.membre is None  # nichts wird still verknüpft
+
+
+def test_oeffentliche_einladungsseite_zeigt_nur_das_noetige(django_capture_on_commit_callbacks):
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    antwort = _client().get(reverse("adhesions:einladung", args=[e.token]))
+    assert antwort.status_code == 200
+    assert antwort.data["angebot"] == "CID-PLUS" and antwort.data["bezahlt"] is True
+    assert antwort.data["konto_vorhanden"] is False
+    assert "preis_anteil" not in antwort.data
+    assert _client().get(reverse("adhesions:einladung", args=["falsch"])).status_code == 404
+
+
+def test_annehmen_macht_die_person_zum_mitglied_mit_zugewiesenem_angebot(
+    django_capture_on_commit_callbacks,
+):
+    a = Aufbau()
+    partner, pm = _person(email="partner@example.de", statut=StatutMembre.EN_ATTENTE)
+    _, _, s = _paket_zahlen(a, django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    antwort = _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
+    assert antwort.status_code == 200, antwort.data
+    e.refresh_from_db()
+    assert e.status == EinladungStatus.ANGENOMMEN and e.membre == pm
+    pm.refresh_from_db()
+    assert pm.statut == StatutMembre.ACTIF
+    sub = Souscription.objects.get(membre=pm, campagne=a.kampagne)
+    assert sub.statut == StatutSouscription.PAYEE
+    assert sub.offre == a.plus and sub.bezahlt_ueber_id == s.id
+    assert sub.prix_paye == Decimal("45.00")
+    assert _an("haupt@example.de")  # Antwort an die Hauptperson
+
+
+def test_finanzen_summe_der_souscriptions_ist_der_bezahlte_betrag(
+    django_capture_on_commit_callbacks,
+):
+    from apps.stats.services import kpis_financier
+
+    a = Aufbau()
+    partner, _ = _person(email="partner@example.de")
+    _, _, s = _paket_zahlen(a, django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    vor = kpis_financier(annee=a.kampagne.annee)
+    _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
+    s.refresh_from_db()
+    assert s.familien_gesamtpreis == Decimal("108.00")
+    assert s.prix_paye == Decimal("63.00")  # eigener Anteil 45 + zwei Kinder à 9
+    summe = sum(
+        x.prix_paye
+        for x in Souscription.objects.filter(campagne=a.kampagne, statut=StatutSouscription.PAYEE)
+    )
+    assert summe == Decimal("108.00")
+    nach = kpis_financier(annee=a.kampagne.annee)
+    assert nach["revenus_adhesions"] == vor["revenus_adhesions"]
+    assert nach["familienrabatt"] == Decimal("12.00")  # 120 Liste − 108 gezahlt
+
+
+def test_annehmen_mit_fremder_email_oder_ohne_login_scheitert(django_capture_on_commit_callbacks):
+    fremd, _ = _person(email="fremd@example.de")
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    url = reverse("adhesions:einladung-annehmen", args=[e.token])
+    assert _client(fremd).post(url).status_code == 403
+    assert _client().post(url).status_code in (401, 403)
+    e.refresh_from_db()
+    assert e.status == EinladungStatus.EINGELADEN
+
+
+def test_hauptperson_kann_die_eigene_einladung_nicht_annehmen(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    user, _ = _person(email="haupt@example.de")
+    antwort = _buchen(user, a.paket, [_erw()])
+    _bezahlen(antwort.data["id"], django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    e.email = "haupt@example.de"
+    e.save()
+    url = reverse("adhesions:einladung-annehmen", args=[e.token])
+    assert _client(user).post(url).status_code == 400
+
+
+def test_ablehnen_ist_oeffentlich_und_informiert_die_hauptperson(
+    django_capture_on_commit_callbacks,
+):
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    antwort = _client().post(reverse("adhesions:einladung-ablehnen", args=[e.token]))
+    assert antwort.status_code == 200
+    e.refresh_from_db()
+    assert e.status == EinladungStatus.ABGELEHNT
+    assert _an("haupt@example.de")
+    partner, _ = _person(email="partner@example.de")
+    url = reverse("adhesions:einladung-annehmen", args=[e.token])
+    assert _client(partner).post(url).status_code == 400
+
+
+def test_bereits_bezahlte_eigene_mitgliedschaft_ergibt_konflikt(
+    django_capture_on_commit_callbacks,
+):
+    a = Aufbau()
+    partner, pm = _person(email="partner@example.de")
+    SouscriptionFactory(
+        membre=pm, offre=a.plus, campagne=a.kampagne, statut=StatutSouscription.PAYEE
+    )
+    _, _, s = _paket_zahlen(a, django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
+    e.refresh_from_db()
+    assert e.status == EinladungStatus.KONFLIKT
+    assert Souscription.objects.get(membre=pm, campagne=a.kampagne).bezahlt_ueber_id is None
+    s.refresh_from_db()
+    assert s.prix_paye == Decimal("108.00")  # die Hauptperson zahlt weiter alles
+
+
+def test_unbezahlte_eigene_anmeldung_wird_ersetzt(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    partner, pm = _person(email="partner@example.de")
+    SouscriptionFactory(
+        membre=pm,
+        offre=a.junior,
+        campagne=a.kampagne,
+        statut=StatutSouscription.EN_ATTENTE_PAIEMENT,
+        prix_paye=Decimal("10.00"),
+    )
+    _paket_zahlen(a, django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
+    sub = Souscription.objects.get(membre=pm, campagne=a.kampagne)
+    assert sub.statut == StatutSouscription.PAYEE and sub.offre == a.plus
+
+
+def test_meine_einladungen_zeigt_nur_offene_fuer_die_eigene_adresse(
+    django_capture_on_commit_callbacks,
+):
+    partner, _ = _person(email="partner@example.de")
+    fremd, _ = _person(email="fremd@example.de")
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    url = reverse("adhesions:meine-einladungen")
+    liste = _client(partner).get(url).data
+    assert len(liste) == 1 and liste[0]["hauptperson"]
+    assert _client(fremd).get(url).data == []
+
+
+# --- Registrierung über den Einladungslink ----------------------------------------------------
+
+
+def _registrierung(email, token=""):
+    return {
+        "email": email,
+        "password": "Password123!",
+        "langue_preferee": "de",
+        "consentement_rgpd": True,
+        "prenom": "Nora",
+        "nom": "Muster",
+        "date_naissance": "1990-05-12",
+        "cin": "98765432",
+        "telephone": "+49123456789",
+        "adresse_de": "Friedrichstr. 42",
+        "ville_de": "Berlin",
+        "einladung_token": token,
+    }
+
+
+def test_registrierung_mit_einladung_macht_nach_email_bestaetigung_zum_mitglied(
+    django_capture_on_commit_callbacks,
+):
+    from apps.accounts import services
+
+    a = Aufbau()
+    _paket_zahlen(a, django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    client = _client()
+    antwort = client.post(
+        reverse("accounts:register"), _registrierung("partner@example.de", e.token), format="json"
+    )
+    assert antwort.status_code == 201, antwort.data
+    user = User.objects.get(email="partner@example.de")
+    code = services.generate_email_otp(user, purpose="email_verification")
+    bestaetigung = client.post(
+        reverse("accounts:register-confirm"), {"email": user.email, "code": code}, format="json"
+    )
+    assert bestaetigung.status_code == 200
+    e.refresh_from_db()
+    assert e.status == EinladungStatus.ANGENOMMEN and e.membre == user.membre
+    sub = Souscription.objects.get(membre=user.membre, campagne=a.kampagne)
+    assert sub.statut == StatutSouscription.PAYEE and sub.offre == a.plus
+
+
+def test_registrierung_mit_falscher_adresse_oder_token_scheitert(
+    django_capture_on_commit_callbacks,
+):
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    url = reverse("accounts:register")
+    falsche_adresse = _registrierung("andere@example.de", e.token)
+    falscher_token = _registrierung("partner@example.de", "falsch")
+    assert _client().post(url, falsche_adresse, format="json").status_code == 400
+    assert _client().post(url, falscher_token, format="json").status_code == 400
+    assert User.objects.filter(email="andere@example.de").count() == 0
+
+
+def test_registrierung_ohne_einladung_bleibt_unveraendert():
+    url = reverse("accounts:register")
+    assert _client().post(url, _registrierung("neu@example.de"), format="json").status_code == 201
+
+
+# --- Hauptperson verwaltet --------------------------------------------------------------------
+
+
+def test_name_und_email_korrigieren_vor_annahme(django_capture_on_commit_callbacks):
+    user, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    alter_token = e.token
+    url = reverse("adhesions:familie-erwachsener", args=[s.id, e.id])
+    daten = {"email": "richtig@example.de", "vorname": "Nina"}
+    antwort = _client(user).patch(url, daten, format="json")
+    assert antwort.status_code == 200, antwort.data
+    e.refresh_from_db()
+    assert e.email == "richtig@example.de" and e.vorname == "Nina"
+    assert e.token != alter_token  # der alte Link ist ungültig
+    assert e.status == EinladungStatus.EINGELADEN
+    assert _an("richtig@example.de")
+    assert _client().get(reverse("adhesions:einladung", args=[alter_token])).status_code == 404
+
+
+def test_email_korrektur_darf_keine_doublette_erzeugen(django_capture_on_commit_callbacks):
+    user, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    url = reverse("adhesions:familie-erwachsener", args=[s.id, e.id])
+    assert _client(user).patch(url, {"email": "haupt@example.de"}, format="json").status_code == 400
+    assert _client(user).patch(url, {"email": "kaputt"}, format="json").status_code == 400
+
+
+def test_angenommene_einladung_ist_nicht_mehr_aenderbar(django_capture_on_commit_callbacks):
+    partner, _ = _person(email="partner@example.de")
+    user, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
+    url = reverse("adhesions:familie-erwachsener", args=[s.id, e.id])
+    assert _client(user).patch(url, {"vorname": "X"}, format="json").status_code == 400
+
+
+def test_einladung_erneut_senden_mit_mindestabstand(django_capture_on_commit_callbacks):
+    user, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    url = reverse("adhesions:familie-einladung-senden", args=[s.id, e.id])
+    assert _client(user).post(url).status_code == 429
+    FamilienErwachsener.objects.filter(pk=e.pk).update(
+        eingeladen_am=timezone.now() - datetime.timedelta(hours=2)
+    )
+    assert _client(user).post(url).status_code == 200
+    assert len(_an("partner@example.de")) == 2
+
+
+def test_fremde_erreichen_personen_anderer_nicht(django_capture_on_commit_callbacks):
+    fremd, _ = _person(email="fremd@example.de")
+    _, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    k = FamilienKind.objects.first()
+    c = _client(fremd)
+    patch = c.patch(
+        reverse("adhesions:familie-erwachsener", args=[s.id, e.id]), {"vorname": "X"}, format="json"
+    )
+    assert patch.status_code == 404
+    senden = c.post(reverse("adhesions:familie-einladung-senden", args=[s.id, e.id]))
+    assert senden.status_code == 404
+    assert c.delete(reverse("adhesions:familie-kind", args=[s.id, k.id])).status_code == 404
+    assert FamilienKind.objects.count() == 2
+
+
+def test_kind_entfernen(django_capture_on_commit_callbacks):
+    user, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    k = FamilienKind.objects.first()
+    antwort = _client(user).delete(reverse("adhesions:familie-kind", args=[s.id, k.id]))
+    assert antwort.status_code == 204 and FamilienKind.objects.count() == 1
+
+
+def test_mes_souscriptions_zeigt_personen_und_den_anteil_der_eingeladenen(
+    django_capture_on_commit_callbacks,
+):
+    partner, _ = _person(email="partner@example.de")
+    user, _, _ = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
+    url = reverse("adhesions:souscription-mes-souscriptions")
+
+    def liste(u):
+        daten = _client(u).get(url).data
+        return daten["results"] if isinstance(daten, dict) else daten
+
+    haupt = liste(user)[0]
+    assert haupt["erwachsene"][0]["status"] == EinladungStatus.ANGENOMMEN
+    assert haupt["familien_info"]["rolle"] == "hauptperson"
+    info = liste(partner)[0]["familien_info"]
+    assert info["rolle"] == "mitglied" and info["listenpreis"] == "50.00"
+    assert info["anteil"] == "45.00"
+
+
+# --- Erinnerungen -----------------------------------------------------------------------------
+
+
+def test_erinnerung_erst_nach_sieben_tagen_und_hoechstens_dreimal(
+    django_capture_on_commit_callbacks,
+):
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    assert sende_familien_erinnerungen() == {"einladungen": 0, "profile": 0}
+    jetzt = timezone.now()
+    for runde in range(1, 5):
+        ergebnis = familie.sende_erinnerungen(heute=jetzt + datetime.timedelta(days=8 * runde))
+        assert ergebnis["einladungen"] == (1 if runde <= 3 else 0)
+    e.refresh_from_db()
+    assert e.erinnerungen == 3
+
+
+def test_profil_erinnerung_fuer_angenommene_ohne_ausweis(django_capture_on_commit_callbacks):
+    partner, pm = _person(email="partner@example.de")
+    pm.cin = ""
+    pm.save()
+    _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
+    frueh = familie.sende_erinnerungen(heute=timezone.now() + datetime.timedelta(days=3))
+    assert frueh == {"einladungen": 0, "profile": 0}
+    spaet = familie.sende_erinnerungen(heute=timezone.now() + datetime.timedelta(days=15))
+    assert spaet["profile"] == 1
+
+
+def test_erinnerungs_job_ist_eingeplant():
+    from django_celery_beat.models import PeriodicTask
+
+    aufgabe = PeriodicTask.objects.get(name="adhesions.sende_familien_erinnerungen")
+    assert aufgabe.task == "apps.adhesions.tasks.sende_familien_erinnerungen"
+    assert aufgabe.enabled
 
 
 # --- Büro ------------------------------------------------------------------------------------
 
 
-def test_buero_uebersicht_zeigt_pakete_und_nur_name_und_alter():
-    offre = _paket()
-    user, membre = _person()
-    s = _souscrire(user, offre, plaetze_erwachsene=1, plaetze_kinder=2).data
-    _kind(s["id"], user)
+def test_buero_uebersicht_zeigt_personen_status_und_rabatt(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    _, membre, _ = _paket_zahlen(a, django_capture_on_commit_callbacks)
     rh, _ = _person(role=Role.RH, email="rh@example.de")
-    url = reverse("adhesions:familienpakete")
-    daten = _client(rh).get(url, {"campagne": str(offre.campagne_id)}).data
-    assert len(daten["pakete"]) == 1
+    daten = (
+        _client(rh).get(reverse("adhesions:familienpakete"), {"campagne": str(a.kampagne.id)}).data
+    )
     paket = daten["pakete"][0]
     assert paket["numero_membre"] == membre.numero_membre
-    assert paket["plaetze_kinder"] == 2 and len(paket["kinder"]) == 1
-    assert set(paket["kinder"][0]) == {"id", "name", "alter"}
-    assert daten["zusammenfassung"]["pakete_bezahlt"] == 0  # noch nicht bezahlt
-
-
-def test_buero_uebersicht_zaehlt_bezahlte_pakete():
-    offre = _paket()
-    user, membre = _person()
-    s = _souscrire(user, offre, plaetze_erwachsene=1, plaetze_kinder=2).data
-    _kind(s["id"], user)
-    from apps.adhesions.models import Souscription
-
-    Souscription.objects.filter(pk=s["id"]).update(statut=StatutSouscription.PAYEE)
-    rh, _ = _person(role=Role.RH, email="rh@example.de")
-    zusammenfassung = _client(rh).get(reverse("adhesions:familienpakete")).data["zusammenfassung"]
-    assert zusammenfassung == {
-        "pakete_bezahlt": 1,
-        "plaetze_erwachsene": 1,
-        "kinder_eingetragen": 1,
+    assert paket["gesamtpreis"] == "108.00" and paket["listenpreis"] == "120.00"
+    assert paket["erwachsene"][0]["status"] == EinladungStatus.EINGELADEN
+    assert paket["erwachsene"][0]["beziehung"] == "ehepartner"
+    assert set(paket["kinder"][0]) == {
+        "id",
+        "name",
+        "alter",
+        "beziehung",
+        "angebot",
+        "angebot_id",
+        "preis_liste",
+        "preis_anteil",
     }
+    z = daten["zusammenfassung"]
+    assert z["pakete_bezahlt"] == 1 and z["erwachsene_offen"] == 1
+    assert z["kinder_eingetragen"] == 2
+    assert z["familienrabatt_gesamt"] == "12.00"
 
 
 def test_buero_uebersicht_nicht_fuer_mitglieder():
     user, _ = _person()
     assert _client(user).get(reverse("adhesions:familienpakete")).status_code == 403
-    assert APIClient().get(reverse("adhesions:familienpakete")).status_code in (401, 403)
+    assert _client().get(reverse("adhesions:familienpakete")).status_code in (401, 403)
+
+
+def test_buero_kann_einer_person_ein_anderes_angebot_zuweisen(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    partner, pm = _person(email="partner@example.de")
+    _paket_zahlen(a, django_capture_on_commit_callbacks)
+    e = FamilienErwachsener.objects.get()
+    _client(partner).post(reverse("adhesions:einladung-annehmen", args=[e.token]))
+    k = FamilienKind.objects.first()
+    admin = User.objects.create_user(
+        email="admin@example.de", password="x", is_active=True, role=Role.SUPER_ADMIN
+    )
+    c = _client(admin)
+    url_k = reverse("adhesions:familie-person-angebot", args=["kind", k.id])
+    assert c.patch(url_k, {"angebot": str(a.plus.id)}, format="json").status_code == 200
+    k.refresh_from_db()
+    assert k.angebot == a.plus and k.preis_anteil == Decimal("9.00")  # Preis bleibt
+    url_e = reverse("adhesions:familie-person-angebot", args=["erwachsener", e.id])
+    assert c.patch(url_e, {"angebot": str(a.junior.id)}, format="json").status_code == 200
+    assert Souscription.objects.get(membre=pm, campagne=a.kampagne).offre == a.junior
+    # Familienpaket, Angebote anderer Kampagnen und Unsinn sind nicht erlaubt.
+    assert c.patch(url_k, {"angebot": str(a.paket.id)}, format="json").status_code == 400
+    fremd = OffreAdhesionFactory()
+    assert c.patch(url_k, {"angebot": str(fremd.id)}, format="json").status_code == 404
+    assert c.patch(url_k, {"angebot": "kein-uuid"}, format="json").status_code == 400
+    unbekannt = reverse("adhesions:familie-person-angebot", args=["xyz", k.id])
+    assert c.patch(unbekannt, {}, format="json").status_code == 404
+
+
+def test_zuweisung_nur_mit_schreibrecht(django_capture_on_commit_callbacks):
+    a = Aufbau()
+    _paket_zahlen(a, django_capture_on_commit_callbacks)
+    k = FamilienKind.objects.first()
+    rh, _ = _person(role=Role.RH, email="rh@example.de")
+    mitglied, _ = _person(email="m@example.de")
+    url = reverse("adhesions:familie-person-angebot", args=["kind", k.id])
+    daten = {"angebot": str(a.plus.id)}
+    assert _client(mitglied).patch(url, daten, format="json").status_code == 403
+    assert _client().patch(url, daten, format="json").status_code in (401, 403)
 
 
 # --- Löschfrist ------------------------------------------------------------------------------
@@ -326,9 +750,9 @@ def test_abgelaufene_kinderdaten_werden_geloescht(settings):
         date_debut=datetime.date(2021, 1, 1),
         date_fin=heute + datetime.timedelta(days=100),
     )
-    user, membre = _person()
+    _, membre = _person()
     for kampagne, name in ((alt, "Alt"), (neu, "Neu")):
-        offre = _paket(campagne=kampagne)
+        offre = OffreAdhesionFactory(campagne=kampagne)
         s = SouscriptionFactory(membre=membre, offre=offre, campagne=kampagne, plaetze_kinder=1)
         FamilienKind.objects.create(
             souscription=s,

@@ -1,16 +1,66 @@
-/** Büro-Übersicht der Familienpakete (R34): Hauptperson, gebuchte Plätze, eingetragene Kinder. */
+/** Büro-Übersicht der Familienpakete (R35): Hauptperson, Gesamtpreis und Rabatt, jede Person mit
+ * Beziehung, Einladungsstatus und zugewiesenem Angebot (mit Schreibrecht änderbar). */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useFamilienpakete } from "../../hooks/useAdhesions";
-import type { CampagneAdhesion } from "../../types/adhesion";
+import { useFamilienpakete, usePersonAngebot } from "../../hooks/useAdhesions";
+import type { CampagneAdhesion, FamilienpaketPerson } from "../../types/adhesion";
+import { extractApiErrorMessage } from "../../utils/apiError";
 import { formatEuro } from "./familienpreis";
 
-export default function FamilienpaketeBuero({ campagnen }: { campagnen: CampagneAdhesion[] }) {
+function AngebotWahl({
+  typ,
+  person,
+  angebote,
+  modifiable,
+}: {
+  typ: "kind" | "erwachsener";
+  person: FamilienpaketPerson;
+  angebote: CampagneAdhesion["offres"];
+  modifiable: boolean;
+}) {
+  const { t } = useTranslation("adhesions");
+  const zuweisen = usePersonAngebot();
+  if (!modifiable) return <span>{person.angebot ?? "—"}</span>;
+  return (
+    <>
+      <select
+        aria-label={t("familie_buero.angebot_zuweisen", { name: person.name })}
+        value={person.angebot_id ?? ""}
+        disabled={zuweisen.isPending}
+        onChange={(e) => zuweisen.mutate({ typ, id: person.id, angebot: e.target.value })}
+        className="rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs"
+      >
+        {!person.angebot_id && <option value="">—</option>}
+        {angebote.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.nom}
+          </option>
+        ))}
+      </select>
+      {zuweisen.isError && (
+        <div className="text-status-dangerText">
+          {extractApiErrorMessage(zuweisen.error, t("familie.erreur"))}
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function FamilienpaketeBuero({
+  campagnen,
+  modifiable = false,
+}: {
+  campagnen: CampagneAdhesion[];
+  modifiable?: boolean;
+}) {
   const { t } = useTranslation("adhesions");
   const [campagneId, setCampagneId] = useState(campagnen[0]?.id ?? "");
   const query = useFamilienpakete(campagneId || undefined);
   const daten = query.data;
+  const angebote = (campagnen.find((c) => c.id === campagneId)?.offres ?? []).filter(
+    (o) => !o.ist_familienpaket,
+  );
 
   return (
     <section className="mt-5 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
@@ -41,8 +91,17 @@ export default function FamilienpaketeBuero({ campagnen }: { campagnen: Campagne
           <p className="mt-2 text-sm text-text-secondary">
             {t("familie_buero.zusammenfassung", {
               pakete: daten.zusammenfassung.pakete_bezahlt,
-              erwachsene: daten.zusammenfassung.plaetze_erwachsene,
+              angenommen: daten.zusammenfassung.erwachsene_angenommen,
+              offen: daten.zusammenfassung.erwachsene_offen,
+              konflikt: daten.zusammenfassung.erwachsene_konflikt,
               kinder: daten.zusammenfassung.kinder_eingetragen,
+            })}
+          </p>
+          <p className="mt-1 text-sm text-text-secondary">
+            {t("familie_buero.rabatt_zusammenfassung", {
+              liste: formatEuro(daten.zusammenfassung.listenpreis_gesamt),
+              gezahlt: formatEuro(daten.zusammenfassung.gezahlt_gesamt),
+              rabatt: formatEuro(daten.zusammenfassung.familienrabatt_gesamt),
             })}
           </p>
           {daten.pakete.length === 0 ? (
@@ -53,11 +112,9 @@ export default function FamilienpaketeBuero({ campagnen }: { campagnen: Campagne
                 <thead>
                   <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
                     <th className="py-1">{t("familie_buero.hauptperson")}</th>
-                    <th className="py-1">{t("historique.col_offre")}</th>
                     <th className="py-1">{t("historique.col_statut")}</th>
-                    <th className="py-1">{t("historique.col_prix")}</th>
-                    <th className="py-1">{t("familie_buero.erwachsene")}</th>
-                    <th className="py-1">{t("familie_buero.kinder")}</th>
+                    <th className="py-1">{t("familie_buero.preis")}</th>
+                    <th className="py-1">{t("familie_buero.personen")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -69,24 +126,67 @@ export default function FamilienpaketeBuero({ campagnen }: { campagnen: Campagne
                       <td className="py-1">
                         {p.hauptperson}
                         <div className="text-text-tertiary">{p.numero_membre}</div>
+                        <div className="text-text-tertiary">
+                          {p.hauptperson_angebot ?? p.angebot}
+                        </div>
                       </td>
-                      <td className="py-1">{p.angebot}</td>
                       <td className="py-1">{t(`statut.${p.statut}`)}</td>
-                      <td className="py-1">{formatEuro(p.prix_paye)}</td>
-                      <td className="py-1">{p.plaetze_erwachsene}</td>
                       <td className="py-1">
-                        {p.kinder.length}/{p.plaetze_kinder}
-                        {p.kinder.map((k) => (
-                          <div key={k.id} className="text-text-tertiary">
-                            {k.name} ({t("familie.alter", { alter: k.alter })})
-                          </div>
-                        ))}
+                        {formatEuro(p.gesamtpreis)}
+                        <div className="text-text-tertiary">
+                          {t("familie_buero.liste_rabatt", {
+                            liste: formatEuro(p.listenpreis),
+                            pct: Number(p.rabatt_pct),
+                          })}
+                        </div>
+                      </td>
+                      <td className="py-1">
+                        <ul className="space-y-1">
+                          {p.erwachsene.map((e) => (
+                            <li key={e.id}>
+                              {e.name} · {t(`familie.beziehung_${e.beziehung}`)} ·{" "}
+                              <strong>{t(`familie.status_${e.status}`)}</strong>
+                              <div className="text-text-tertiary">{e.email}</div>
+                              <AngebotWahl
+                                typ="erwachsener"
+                                person={e}
+                                angebote={angebote}
+                                modifiable={modifiable}
+                              />{" "}
+                              <span className="text-text-tertiary">
+                                {formatEuro(e.preis_anteil)}
+                              </span>
+                            </li>
+                          ))}
+                          {p.kinder.map((k) => (
+                            <li key={k.id}>
+                              {k.name} ({t("familie.alter", { alter: k.alter })}) ·{" "}
+                              {t(`familie.beziehung_${k.beziehung}`)}
+                              <div>
+                                <AngebotWahl
+                                  typ="kind"
+                                  person={k}
+                                  angebote={angebote}
+                                  modifiable={modifiable}
+                                />{" "}
+                                <span className="text-text-tertiary">
+                                  {formatEuro(k.preis_anteil)}
+                                </span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          )}
+          {modifiable && (
+            <p className="mt-2 text-[11px] text-text-tertiary">
+              {t("familie_buero.zuweisung_hinweis")}
+            </p>
           )}
         </>
       )}

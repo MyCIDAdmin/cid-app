@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as adhesionsApi from "../api/adhesions";
 import type {
   CampagneCreatePayload,
-  KindPayload,
+  ErwachsenerPayload,
   OffreCreatePayload,
   RabaisCreatePayload,
   SouscrireEspecesPayload,
@@ -68,6 +68,15 @@ export function useModifierFristCampagne() {
   return useMutation({
     mutationFn: ({ id, date }: { id: string; date: string | null }) =>
       adhesionsApi.modifierFristCampagne(id, date),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+export function useModifierAlterKind() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, alter }: { id: string; alter: number }) =>
+      adhesionsApi.modifierAlterKind(id, alter),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
   });
 }
@@ -236,22 +245,77 @@ export function useAnnulerSouscription() {
   });
 }
 
-/** Kind hinzufügen (R34) — aktualisiert „Meine Mitgliedschaften“ und die Büro-Übersicht. */
-export function useKindAnlegen() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ souscriptionId, payload }: { souscriptionId: string; payload: KindPayload }) =>
-      adhesionsApi.kindAnlegen(souscriptionId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
-  });
-}
-
 export function useKindLoeschen() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ souscriptionId, kindId }: { souscriptionId: string; kindId: string }) =>
       adhesionsApi.kindLoeschen(souscriptionId, kindId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+export function useErwachsenerAendern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (v: {
+      souscriptionId: string;
+      erwachsenerId: string;
+      payload: Partial<Pick<ErwachsenerPayload, "vorname" | "nachname" | "email">>;
+    }) => adhesionsApi.erwachsenerAendern(v.souscriptionId, v.erwachsenerId, v.payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+export function useEinladungErneutSenden() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { souscriptionId: string; erwachsenerId: string }) =>
+      adhesionsApi.einladungErneutSenden(v.souscriptionId, v.erwachsenerId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+/** Büro : Angebot einer Person im Paket ändern. */
+export function usePersonAngebot() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { typ: "kind" | "erwachsener"; id: string; angebot: string }) =>
+      adhesionsApi.personAngebotZuweisen(v.typ, v.id, v.angebot),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+/** Öffentliche Einladungsseite — der Token ist das Geheimnis. */
+export function useEinladung(token: string) {
+  return useQuery({
+    queryKey: [...adhesionsKeys.all, "einladung", token],
+    queryFn: () => adhesionsApi.getEinladung(token),
+    retry: false,
+  });
+}
+
+export function useEinladungAnnehmen(token: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => adhesionsApi.einladungAnnehmen(token),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+export function useEinladungAblehnen(token: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => adhesionsApi.einladungAblehnen(token),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adhesionsKeys.all }),
+  });
+}
+
+/** Offene Einladungen an die Adresse des angemeldeten Kontos (Hinweis in der App). */
+export function useMeineEinladungen() {
+  return useQuery({
+    queryKey: [...adhesionsKeys.all, "meine-einladungen"],
+    queryFn: () => adhesionsApi.listMeineEinladungen(),
+    retry: false,
   });
 }
 

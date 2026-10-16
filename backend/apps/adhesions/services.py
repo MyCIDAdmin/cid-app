@@ -57,7 +57,7 @@ def synchroniser_cotisation(souscription: Souscription) -> None:
             # Ré-souscription avant paiement (offre/rabais changé, voir souscrire()) : on met à
             # jour cette même écriture plutôt que d'en créer une seconde en attente pour la même
             # souscription.
-            cotisation.montant = souscription.prix_paye
+            cotisation.montant = souscription.betrag_zu_zahlen
             cotisation.libelle = libelle
             cotisation.save(update_fields=["montant", "libelle", "updated_at"])
             return
@@ -65,7 +65,7 @@ def synchroniser_cotisation(souscription: Souscription) -> None:
             membre=souscription.membre,
             type_article=TypeArticle.ADHESION,
             libelle=libelle,
-            montant=souscription.prix_paye,
+            montant=souscription.betrag_zu_zahlen,
             statut=StatutCotisation.EN_ATTENTE,
         )
         souscription.cotisation = nouvelle_cotisation

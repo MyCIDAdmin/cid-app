@@ -38,6 +38,8 @@ export interface KpisFinancier {
   cotisations_en_attente: string;
   revenus_boutique: string;
   revenus_adhesions: string;
+  /** Gewährter Familienrabatt (Listenpreise minus gezahlter Gesamtpreis), nur zur Information. */
+  familienrabatt?: string;
   revenus_evenements: string;
   revenus_projets: string;
   top_contributeurs: TopContributeur[];

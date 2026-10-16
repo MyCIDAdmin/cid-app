@@ -164,6 +164,9 @@ class RegisterSerializer(serializers.Serializer):
     ville_origine_tn = serializers.CharField(max_length=100, required=False, allow_blank=True)
     gouvernorat_tn = serializers.CharField(max_length=100, required=False, allow_blank=True)
 
+    # --- Einladung ins Familienpaket (optional) : die Adresse muss zur Einladung passen ---
+    einladung_token = serializers.CharField(required=False, allow_blank=True, write_only=True)
+
     _membre_fields = (
         "prenom",
         "nom",
@@ -193,12 +196,23 @@ class RegisterSerializer(serializers.Serializer):
             )
         return value
 
+    def validate(self, attrs):
+        token = (attrs.get("einladung_token") or "").strip()
+        attrs["einladung_token"] = token
+        if token:
+            from apps.adhesions.familie import einladung_fuer_registrierung
+
+            if einladung_fuer_registrierung(token, attrs.get("email", "")) is None:
+                raise serializers.ValidationError({"einladung_token": "Einladung ungültig."})
+        return attrs
+
     # Demande utilisateur du 2026-10-06 (point 1.1) : CIN/passeport facultatifs à
     # l'inscription — exigés uniquement au moment de l'adhésion (voir
     # apps.adhesions.views._exiger_piece_identite).
 
     def create(self, validated_data):
         validated_data.pop("consentement_rgpd")
+        einladung_token = validated_data.pop("einladung_token", "")
         password = validated_data.pop("password")
         # .pop(field, "") : les champs optionnels absents du payload
         # (passeport, code_postal_de, land_de, ville_origine_tn,
@@ -221,6 +235,13 @@ class RegisterSerializer(serializers.Serializer):
             statut=StatutMembre.EN_ATTENTE,
             **membre_data,
         )
+        if einladung_token:
+            from apps.adhesions.familie import einladung_fuer_registrierung
+
+            e = einladung_fuer_registrierung(einladung_token, user.email)
+            if e is not None:
+                e.registrierung_user = user
+                e.save(update_fields=["registrierung_user"])
         return user
 
 

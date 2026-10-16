@@ -104,6 +104,21 @@ def _filtrer_par_membre(
     return queryset
 
 
+def _familienrabatt(souscriptions_payees) -> Decimal:
+    """Gewährter Familienrabatt : Listenpreise aller Personen der bezahlten Familienpakete minus
+    der gezahlte Gesamtpreis. Nur Information — die Einnahmen sind bereits der reduzierte Betrag."""
+    gesamt = Decimal("0.00")
+    pakete = souscriptions_payees.filter(familien_gesamtpreis__isnull=False).prefetch_related(
+        "kinder", "erwachsene"
+    )
+    for s in pakete:
+        liste = (s.haupt_preis_liste or Decimal("0.00")) + sum(
+            (p.preis_liste for p in (*s.kinder.all(), *s.erwachsene.all())), Decimal("0.00")
+        )
+        gesamt += liste - s.familien_gesamtpreis
+    return gesamt
+
+
 def kpis_financier(
     *,
     annee=None,
@@ -149,6 +164,7 @@ def kpis_financier(
         **filtres_membre,
     )
     revenus_adhesions = souscriptions_payees.aggregate(t=Sum("prix_paye"))["t"] or Decimal("0.00")
+    familienrabatt = _familienrabatt(souscriptions_payees)
 
     commandes = _filtrer_par_membre(
         Commande.objects.filter(created_at__year=annee).exclude(
@@ -224,6 +240,7 @@ def kpis_financier(
         "cotisations_en_attente": cotisations_en_attente,
         "revenus_boutique": revenus_boutique,
         "revenus_adhesions": revenus_adhesions,
+        "familienrabatt": familienrabatt,
         "revenus_evenements": revenus_evenements,
         "revenus_projets": revenus_projets,
         "top_contributeurs": _top_contributeurs(annee, ville, statut, **filtres_membre),

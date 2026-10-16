@@ -70,6 +70,8 @@ export interface RegisterPayload {
   land_de?: string;
   ville_origine_tn?: string;
   gouvernorat_tn?: string;
+  /** Einladung ins Familienpaket (R35) : die E-Mail-Adresse muss zur Einladung passen. */
+  einladung_token?: string;
 }
 
 /**

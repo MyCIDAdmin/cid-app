@@ -126,6 +126,8 @@ class TypeNotification(models.TextChoices):
     SUPPORT_TICKET_NEU = "support_ticket_neu", _("Nouveau ticket de support")
     SUPPORT_ANTWORT = "support_antwort", _("Réponse à un ticket")
     SUPPORT_STATUS = "support_status", _("Ticket résolu ou clos")
+    FAMILIE_EINLADUNG = "familie_einladung", _("Invitation à un forfait famille")
+    FAMILIE_ANTWORT = "familie_antwort", _("Réponse à une invitation de forfait famille")
 
 
 class Notification(models.Model):

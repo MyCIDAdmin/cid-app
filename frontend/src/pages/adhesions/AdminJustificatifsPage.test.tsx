@@ -55,6 +55,7 @@ function campagne(): CampagneAdhesion {
     statut: "publiee",
 
     date_limite_renouvellement: null,
+    familie_max_alter_kind: 17,
 
     bascule_non_renouveles_le: null,
     created_by: "m-admin",
@@ -75,8 +76,10 @@ function campagne(): CampagneAdhesion {
         couleur: "",
         populaire: false,
         ist_familienpaket: false,
-        preis_je_erwachsener: "0.00",
-        preis_je_kind: "0.00",
+        familie_rabatt_pct: "0.00",
+        familie_angebot_hauptperson: null,
+        familie_angebot_erwachsene: null,
+        familie_angebot_kinder: null,
         max_erwachsene: 0,
         max_kinder: 0,
         rabais: [
@@ -115,6 +118,8 @@ function souscriptionAvecJustificatif(overrides: Partial<Souscription> = {}): So
     plaetze_erwachsene: 0,
     plaetze_kinder: 0,
     kinder: [],
+    erwachsene: [],
+    familien_info: null,
     justificatif: {
       id: "j1",
       souscription: "s1",
