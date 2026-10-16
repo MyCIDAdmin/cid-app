@@ -31,6 +31,9 @@ def _can_view_pii(user, membre) -> bool:
     return membre.user_id == user.id
 
 
+_OHNE_ANGEBOT = {"annulee", "expiree", "rabais_refuse"}
+
+
 class MembreListSerializer(serializers.ModelSerializer):
     """Vue liste — champs allégés (pas d'adresse complète), CIN toujours masqué
     (jamais nécessaire pour un simple listing, réduit la surface d'exposition)."""
@@ -64,8 +67,10 @@ class MembreListSerializer(serializers.ModelSerializer):
         souscriptions = getattr(obj, "souscriptions_recentes", None)
         if souscriptions is None:
             return None
-        payees = [s for s in souscriptions if s.statut == "payee"]
-        choisie = (payees or souscriptions or [None])[0]
+        # Storniert, abgelaufen oder Rabatt abgelehnt : keine aktuelle Mitgliedschaft mehr.
+        gueltig = [s for s in souscriptions if s.statut not in _OHNE_ANGEBOT]
+        payees = [s for s in gueltig if s.statut == "payee"]
+        choisie = (payees or gueltig or [None])[0]
         if choisie is None:
             return None
         return {"nom": choisie.offre.nom, "annee": choisie.campagne.annee, "statut": choisie.statut}

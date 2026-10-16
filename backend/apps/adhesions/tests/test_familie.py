@@ -837,6 +837,21 @@ def test_anonymisierung_ist_eingeplant():
     assert aufgabe.enabled
 
 
+def test_stornieren_eines_unbezahlten_familienpakets_raeumt_die_personen_auf():
+    user, _ = _person()
+    a = Aufbau()
+    antwort = _buchen(user, a.paket, [_erw()], [_kind()])
+    assert antwort.status_code == 200, antwort.data
+    sid = antwort.data["id"]
+    assert FamilienKind.objects.count() == 1 and FamilienErwachsener.objects.count() == 1
+    stornieren = _client(user).post(reverse("adhesions:souscription-annuler", args=[sid]))
+    assert stornieren.status_code == 200, stornieren.data
+    s = Souscription.objects.get(pk=sid)
+    assert s.statut == StatutSouscription.ANNULEE
+    assert s.familien_gesamtpreis is None and s.plaetze_kinder == 0
+    assert FamilienKind.objects.count() == 0 and FamilienErwachsener.objects.count() == 0
+
+
 def test_anonymisierte_personen_sind_nicht_mehr_aenderbar(django_capture_on_commit_callbacks):
     user, _, s = _paket_zahlen(Aufbau(), django_capture_on_commit_callbacks)
     k, e = FamilienKind.objects.first(), FamilienErwachsener.objects.get()

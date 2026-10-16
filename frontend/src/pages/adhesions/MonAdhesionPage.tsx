@@ -543,7 +543,7 @@ export default function MonAdhesionPage() {
         )}
 
         {campagne && !dejaPayee && offresVisibles.length > 0 && (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-5 flex flex-wrap justify-center gap-4">
             {offresVisibles.map((offre, index) => {
               const accent = accentOffre(offre, index);
               const avantagesOffre = offre.avantages.slice().sort((a, b) => a.ordre - b.ordre);
@@ -571,7 +571,7 @@ export default function MonAdhesionPage() {
               return (
                 <div
                   key={offre.id}
-                  className={`relative flex flex-col rounded-cid-lg border-t-4 bg-bg-primary p-5 shadow-sm ${
+                  className={`relative flex flex-col rounded-cid-lg border-t-4 bg-bg-primary p-5 shadow-sm w-full sm:w-[calc(50%_-_0.5rem)] lg:w-[calc(33.333%_-_0.667rem)] ${
                     accent.liseret_haut
                   } ${selectionnee ? "ring-2 ring-ca" : ""}`}
                 >

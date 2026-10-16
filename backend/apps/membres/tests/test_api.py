@@ -661,3 +661,54 @@ def test_liste_membres_expose_l_offre_actuelle(api_client, rh_user):
     resp = api_client.get(reverse("membres:membre-list"))
     ligne = next(m for m in resp.data["results"] if m["id"] == str(membre.id))
     assert ligne["offre_actuelle"] == {"nom": "Familie", "annee": 2040, "statut": "payee"}
+
+
+@pytest.mark.parametrize("statut", ["annulee", "expiree", "rabais_refuse"])
+def test_liste_membres_zeigt_keine_stornierte_anmeldung_als_angebot(api_client, rh_user, statut):
+    """Eine stornierte, abgelaufene oder abgelehnte Anmeldung ist kein aktuelles Angebot."""
+    from apps.adhesions.tests.factories import (
+        CampagneAdhesionFactory,
+        OffreAdhesionFactory,
+        SouscriptionFactory,
+    )
+
+    membre = MembreFactory()
+    campagne = CampagneAdhesionFactory(annee=2041)
+    SouscriptionFactory(
+        membre=membre,
+        campagne=campagne,
+        offre=OffreAdhesionFactory(campagne=campagne, nom="Familie"),
+        statut=statut,
+    )
+    api_client.force_authenticate(rh_user)
+    resp = api_client.get(reverse("membres:membre-list"))
+    ligne = next(m for m in resp.data["results"] if m["id"] == str(membre.id))
+    assert ligne["offre_actuelle"] is None
+
+
+def test_liste_membres_bevorzugt_bezahlt_vor_storniert(api_client, rh_user):
+    from apps.adhesions.tests.factories import (
+        CampagneAdhesionFactory,
+        OffreAdhesionFactory,
+        SouscriptionFactory,
+    )
+
+    membre = MembreFactory()
+    alt = CampagneAdhesionFactory(annee=2041)
+    neu = CampagneAdhesionFactory(annee=2042)
+    SouscriptionFactory(
+        membre=membre,
+        campagne=alt,
+        offre=OffreAdhesionFactory(campagne=alt, nom="CID PLUS"),
+        statut="payee",
+    )
+    SouscriptionFactory(
+        membre=membre,
+        campagne=neu,
+        offre=OffreAdhesionFactory(campagne=neu, nom="Familie"),
+        statut="annulee",
+    )
+    api_client.force_authenticate(rh_user)
+    resp = api_client.get(reverse("membres:membre-list"))
+    ligne = next(m for m in resp.data["results"] if m["id"] == str(membre.id))
+    assert ligne["offre_actuelle"]["nom"] == "CID PLUS"
