@@ -164,6 +164,9 @@ CELERY_RESULT_SERIALIZER = "json"
 # Familienpaket (Release 34) : Kinderdaten werden so viele Monate nach Ende der Kampagne gelöscht.
 # Vorläufiger Wert, vom Verein (Jurist/DSB) festzulegen.
 FAMILIE_KINDER_AUFBEWAHRUNG_MONATE = int(os.environ.get("FAMILIE_KINDER_AUFBEWAHRUNG_MONATE", "12"))
+# Demo-Daten/Testkonten (manage.py demo_daten): nur auf DEV mit DEMO_DATEN_ERLAUBT=1 setzen.
+DEMO_DATEN_ERLAUBT = os.environ.get("DEMO_DATEN_ERLAUBT") == "1"
+DEMO_PASSWORT = os.environ.get("DEMO_PASSWORT", "")
 CELERY_TIMEZONE = "Europe/Berlin"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 

@@ -1,0 +1,48 @@
+"""Tests für den Demo-Daten-Befehl (nur DEV)."""
+
+import pytest
+from django.core.management import call_command
+from django.core.management.base import CommandError
+
+from apps.accounts.models import Role, User
+from apps.finances.models import Depense, StatutDepense
+from apps.membres.models import Membre
+
+pytestmark = pytest.mark.django_db
+
+
+def test_ohne_freigabe_verweigert(settings):
+    settings.DEMO_DATEN_ERLAUBT = False
+    with pytest.raises(CommandError):
+        call_command("demo_daten")
+    assert not User.objects.filter(email__endswith="@cid-demo.test").exists()
+
+
+def test_legt_konten_je_rolle_und_daten_an(settings):
+    settings.DEMO_DATEN_ERLAUBT = True
+    settings.DEMO_PASSWORT = "Test-Passwort-123"
+    call_command("demo_daten")
+    rollen = set(
+        User.objects.filter(email__endswith="@cid-demo.test").values_list("role", flat=True)
+    )
+    assert rollen == {r.value for r in Role}
+    user = User.objects.get(email="demo-finanz@cid-demo.test")
+    assert user.check_password("Test-Passwort-123") and user.is_active
+    assert Membre.objects.filter(user=user).exists()
+    offen = Depense.objects.filter(
+        fournisseur__startswith="[DEMO]", statut=StatutDepense.EN_ATTENTE
+    )
+    assert offen.count() == 1
+
+
+def test_reset_ist_idempotent(settings):
+    settings.DEMO_DATEN_ERLAUBT = True
+    settings.DEMO_PASSWORT = "x" * 12
+    call_command("demo_daten")
+    call_command("demo_daten")
+    assert Depense.objects.filter(fournisseur__startswith="[DEMO]").count() == 3
+    offen = Depense.objects.get(fournisseur="[DEMO] Flyer-Druck")
+    offen.delete()
+    call_command("demo_daten", "--reset")
+    assert Depense.objects.filter(fournisseur__startswith="[DEMO]").count() == 3
+    assert User.objects.filter(email__endswith="@cid-demo.test").count() == 5
