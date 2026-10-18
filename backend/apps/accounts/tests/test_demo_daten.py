@@ -5,6 +5,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from apps.accounts.models import Role, User
+from apps.cotisations.models import Cotisation
 from apps.finances.models import Depense, StatutDepense
 from apps.membres.models import Membre
 
@@ -33,6 +34,7 @@ def test_legt_konten_je_rolle_und_daten_an(settings):
         fournisseur__startswith="[DEMO]", statut=StatutDepense.EN_ATTENTE
     )
     assert offen.count() == 1
+    assert Cotisation.objects.filter(membre__email__endswith="@cid-demo.test").count() == 3
 
 
 def test_reset_ist_idempotent(settings):

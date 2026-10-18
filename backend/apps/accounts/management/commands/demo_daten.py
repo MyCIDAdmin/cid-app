@@ -19,6 +19,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from apps.accounts.models import RegistrationDecision, Role, User
+from apps.cotisations.models import Cotisation, ModePaiement, StatutCotisation, TypeArticle
 from apps.evenements.models import Evenement, StatutEvenement, TypeEvenement
 from apps.finances.models import CategorieDepense, Depense, StatutDepense
 from apps.membres.models import Bundesland, Membre, StatutMembre
@@ -63,6 +64,7 @@ class Command(BaseCommand):
         konten = self._konten(passwort)
         self._mitglieder_ohne_konto()
         self._ausgaben(konten)
+        self._zahlungen(konten)
         self._veranstaltungen(konten)
         self._projekte(konten)
         if not settings.DEMO_PASSWORT:
@@ -73,6 +75,7 @@ class Command(BaseCommand):
 
     # -- Löschen ---------------------------------------------------------------------------
     def _loeschen(self):
+        Cotisation.objects.filter(membre__email__endswith=f"@{DOMAIN}").delete()
         Depense.objects.filter(fournisseur__startswith=PRAEFIX).delete()
         Evenement.objects.filter(titre__startswith=PRAEFIX).delete()
         Projet.objects.filter(titre__startswith=PRAEFIX).delete()
@@ -153,6 +156,27 @@ class Command(BaseCommand):
                 decide_par=decide,
                 date_decision=timezone.now() if decide else None,
                 motif_rejet="Beleg fehlt" if statut == StatutDepense.REJETEE else "",
+            )
+
+    def _zahlungen(self, konten):
+        """Beiträge per SEPA: zwei offen (bestätigen), einer bezahlt (zum Korrigieren)."""
+        zeilen = [
+            ("mitglied", StatutCotisation.EN_ATTENTE),
+            ("bureau", StatutCotisation.EN_ATTENTE),
+            ("rh", StatutCotisation.PAYEE),
+        ]
+        for kuerzel, statut in zeilen:
+            membre = konten[kuerzel][1]
+            if Cotisation.objects.filter(membre=membre).exists():
+                continue
+            Cotisation.objects.create(
+                membre=membre,
+                type_article=TypeArticle.COTISATION,
+                libelle="Mitgliedsbeitrag 2026 (Demo)",
+                montant=Decimal("45.00"),
+                mode_paiement=ModePaiement.VIREMENT_SEPA,
+                statut=statut,
+                annee=date.today().year,
             )
 
     def _veranstaltungen(self, konten):
