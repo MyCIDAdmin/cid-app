@@ -7,7 +7,23 @@
 export type StatutMembre = "actif" | "en_attente" | "inactif";
 export type Sexe = "homme" | "femme" | "non_renseigne";
 // Doit rester synchronisé avec apps.membres.models.Pays.
-export type Pays = "DE" | "TN" | "FR" | "AT" | "CH" | "BE" | "NL" | "IT" | "ES" | "GB" | "XX";
+export type Pays =
+  | "DE"
+  | "TN"
+  | "FR"
+  | "AT"
+  | "CH"
+  | "BE"
+  | "NL"
+  | "IT"
+  | "ES"
+  | "GB"
+  | "DK"
+  | "LU"
+  | "SE"
+  | "NO"
+  | "PL"
+  | "XX";
 
 export interface MembreListItem {
   id: string;
@@ -190,6 +206,11 @@ export const PAYS_MEMBRE: { value: Pays; labelKey: string }[] = [
   { value: "IT", labelKey: "pays.IT" },
   { value: "ES", labelKey: "pays.ES" },
   { value: "GB", labelKey: "pays.GB" },
+  { value: "DK", labelKey: "pays.DK" },
+  { value: "LU", labelKey: "pays.LU" },
+  { value: "SE", labelKey: "pays.SE" },
+  { value: "NO", labelKey: "pays.NO" },
+  { value: "PL", labelKey: "pays.PL" },
   { value: "XX", labelKey: "pays.XX" },
 ];
 
