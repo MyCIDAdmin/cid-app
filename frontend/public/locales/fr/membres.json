@@ -20,6 +20,11 @@
     "IT": "Italie",
     "ES": "Espagne",
     "GB": "Royaume-Uni",
+    "DK": "Danemark",
+    "LU": "Luxembourg",
+    "SE": "Suède",
+    "NO": "Norvège",
+    "PL": "Pologne",
     "XX": "Autre"
   },
   "champ": {
