@@ -81,6 +81,11 @@ class Pays(models.TextChoices):
     ITALIE = "IT", _("Italie")
     ESPAGNE = "ES", _("Espagne")
     ROYAUME_UNI = "GB", _("Royaume-Uni")
+    DANEMARK = "DK", _("Danemark")
+    LUXEMBOURG = "LU", _("Luxembourg")
+    SUEDE = "SE", _("Suède")
+    NORVEGE = "NO", _("Norvège")
+    POLOGNE = "PL", _("Pologne")
     AUTRE = "XX", _("Autre")
 
 

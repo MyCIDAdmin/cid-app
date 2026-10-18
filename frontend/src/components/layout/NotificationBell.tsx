@@ -15,6 +15,7 @@ import {
   useToutMarquerLu,
 } from "../../hooks/useNotifications";
 import type { Notification } from "../../types/notification";
+import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 
 function formatRelatif(
   iso: string,
@@ -39,6 +40,8 @@ export default function NotificationBell() {
   const notificationsQuery = useNotifications();
   const marquerLueMutation = useMarquerLue();
   const toutMarquerLuMutation = useToutMarquerLu();
+
+  useEscapeSchliessen(() => setOuvert(false), ouvert);
 
   useEffect(() => {
     function handleClickExterieur(e: MouseEvent) {

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { useUmfrageErstellen } from "../../hooks/useKalender";
 import type { Person } from "../../types/kalender";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -54,6 +54,7 @@ export default function TerminfindungFormular({ onFertig }: { onFertig: () => vo
       aria-modal="true"
       aria-labelledby="findung-titel"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      {...hintergrundKlick(onFertig)}
     >
       <form
         onSubmit={speichern}

@@ -18,6 +18,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Photo } from "../../types/communaute";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 
 interface PhotoLightboxProps {
   photos: Photo[];
@@ -31,11 +32,11 @@ export default function PhotoLightbox({ photos, index, onClose, onNavigate }: Ph
   const photo = photos[index];
   const plusieursPhotos = photos.length > 1;
 
+  useEscapeSchliessen(onClose);
+
   useEffect(() => {
     function surTouche(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        onClose();
-      } else if (plusieursPhotos && e.key === "ArrowLeft") {
+      if (plusieursPhotos && e.key === "ArrowLeft") {
         onNavigate((index - 1 + photos.length) % photos.length);
       } else if (plusieursPhotos && e.key === "ArrowRight") {
         onNavigate((index + 1) % photos.length);
@@ -53,7 +54,7 @@ export default function PhotoLightbox({ photos, index, onClose, onNavigate }: Ph
       aria-modal="true"
       aria-label={photo.legende || t("visionneuse.ouvrir") || ""}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      {...hintergrundKlick(onClose)}
     >
       <button
         type="button"

@@ -17,6 +17,8 @@ import type {
 } from "../../../types/projets";
 import { extractApiErrorMessage } from "../../../utils/apiError";
 import { STATUS_REIHENFOLGE } from "./konstanten";
+import { hintergrundKlick } from "../../../hooks/useEscapeSchliessen";
+import { EscapeSchliessen } from "../../../components/ui/EscapeSchliessen";
 
 const CHAMP = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -165,7 +167,9 @@ export default function AufgabeModal({
           : t("arbeitsbereich.modal.neue_aufgabe")
       }
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      {...hintergrundKlick(onClose)}
     >
+      <EscapeSchliessen onClose={onClose} />
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-cid-lg bg-bg-primary p-5 shadow-xl">
         <form onSubmit={speichern}>
           <h2 className="mb-4 text-base font-semibold text-text-primary">

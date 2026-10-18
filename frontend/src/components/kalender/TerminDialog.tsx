@@ -14,7 +14,7 @@ import {
   useTerminAntworten,
   useTerminLoeschen,
 } from "../../hooks/useKalender";
-import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import type { KalenderEintrag, KalenderZugang, Termin } from "../../types/kalender";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { ladeIcsHerunter } from "../../utils/ics";
@@ -68,6 +68,7 @@ export default function TerminDialog({ eintrag, zugang, onSchliessen, onBearbeit
       aria-modal="true"
       aria-labelledby="termin-dialog-titel"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      {...hintergrundKlick(onSchliessen)}
     >
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-cid-lg bg-bg-primary p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3">

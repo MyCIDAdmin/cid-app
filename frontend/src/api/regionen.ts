@@ -169,6 +169,17 @@ export async function setzeLaender(arg: {
   return data;
 }
 
+export async function setzeStaaten(arg: {
+  id: string;
+  staaten: string[];
+}): Promise<VerwaltungRegion> {
+  const { data } = await apiClient.put<VerwaltungRegion>(
+    `/regionen/verwaltung/${arg.id}/staaten/`,
+    { staaten: arg.staaten },
+  );
+  return data;
+}
+
 export async function legeStandortAn(arg: {
   regionId: string;
   name: string;

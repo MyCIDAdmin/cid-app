@@ -24,7 +24,7 @@ import {
   useRejoindreTrajet,
   useReservationsCovoiturage,
 } from "../../hooks/useEvenements";
-import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Covoiturage } from "../../types/evenements";
 
@@ -98,7 +98,7 @@ function ModaleRejoindre({ trajet, onClose }: { trajet: Covoiturage; onClose: ()
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      {...hintergrundKlick(onClose)}
     >
       <div
         role="dialog"

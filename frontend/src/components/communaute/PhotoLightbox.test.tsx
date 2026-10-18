@@ -59,6 +59,7 @@ describe("PhotoLightbox", () => {
       <PhotoLightbox photos={[photo()]} index={0} onClose={onClose} onNavigate={vi.fn()} />,
     );
 
+    fireEvent.mouseDown(screen.getByRole("dialog"));
     fireEvent.click(screen.getByRole("dialog"));
 
     expect(onClose).toHaveBeenCalled();

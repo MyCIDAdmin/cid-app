@@ -166,7 +166,7 @@ class TestBericht:
         assert r.status_code == 200 and r["Content-Type"].startswith("text/csv")
         text = r.content.decode("utf-8-sig")
         zeilen = text.splitlines()
-        assert zeilen[1].startswith("Region;Treffen abgeschlossen")
+        assert zeilen[1].startswith("Sektor;Treffen abgeschlossen")
         assert any(z.startswith("Nord;1;") for z in zeilen)
         assert zeilen[-1].startswith("Gesamt;")
         assert _client(lage["fan"]).get(f"{BERICHT}export/").status_code == 403

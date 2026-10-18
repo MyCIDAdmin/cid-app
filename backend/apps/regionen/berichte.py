@@ -185,8 +185,8 @@ def kennzahlen(von: datetime.date, bis: datetime.date, region: Region | None = N
         beitraege = beitraege.filter(region=region)
         reaktionen = reaktionen.filter(beitrag__region=region)
         punkte = punkte.filter(region=region)
-        laender = list(region.laender.values_list("land", flat=True))
-        fans_land = fans_land.filter(land_de__in=laender)
+        gebiet = services.gebiets_filter(region)
+        fans_land = fans_land.filter(gebiet) if gebiet is not None else fans_land.none()
     im_zeitraum = _teilnahmen(region).filter(**zeitraum)
     abgeschlossen = im_zeitraum.filter(veranstaltung__status=S.ABGESCHLOSSEN)
     bis_heute = _teilnahmen(region).filter(veranstaltung__datum__lte=bis)
@@ -270,7 +270,7 @@ class BerichtView(APIView):
 
 
 SPALTEN = [
-    ("Region", None),
+    ("Sektor", None),
     ("Treffen abgeschlossen", "treffen"),
     ("Treffen geplant", "geplant"),
     ("Treffen abgesagt", "abgesagt"),
@@ -300,7 +300,7 @@ class BerichtExportView(APIView):
         antwort["Content-Disposition"] = f'attachment; filename="regionen-bericht-{von}-{bis}.csv"'
         antwort.write("﻿")  # Excel erkennt so UTF-8
         schreiber = csv.writer(antwort, delimiter=";")
-        schreiber.writerow([f"Regionen-Bericht {von} bis {bis}"])
+        schreiber.writerow([f"Sektoren-Bericht {von} bis {bis}"])
         schreiber.writerow([name for name, _ in SPALTEN])
         for zeile in [*daten["regionen"], {"name": "Gesamt", **daten["gesamt"]}]:
             schreiber.writerow(

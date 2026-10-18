@@ -8,7 +8,7 @@ class TicketKategorie(models.TextChoices):
     KONTO = "konto", "Konto und Anmeldung"
     MITGLIEDSCHAFT = "mitgliedschaft", "Mitgliedschaft"
     ZAHLUNG = "zahlung", "Zahlung und Beitrag"
-    VERANSTALTUNG = "veranstaltung", "Veranstaltungen und Regionen"
+    VERANSTALTUNG = "veranstaltung", "Veranstaltungen und Sektoren"
     TECHNIK = "technik", "Technik und Fehler"
     SONSTIGES = "sonstiges", "Sonstiges"
 

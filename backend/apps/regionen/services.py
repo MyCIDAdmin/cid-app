@@ -1,14 +1,17 @@
 """Regionen — Zuordnung von Personen, Mitgliederzahlen und Bearbeitungsrechte."""
 
+from django.db.models import Q
 from django.utils.text import slugify
 
-from apps.membres.models import Membre, StatutMembre
+from apps.membres.models import Membre, Pays, StatutMembre
 from apps.rbac import services as rbac
 from apps.rbac.models import NiveauAcces
 
-from .models import RESERVIERTE_SLUGS, Region, RegionLand, Verantwortlicher
+from .models import RESERVIERTE_SLUGS, Region, RegionLand, RegionPays, Verantwortlicher
 
 SEITE = "page_regionen"
+# Länder außerhalb Deutschlands, die einem Sektor zugeordnet werden können (ohne „Autre“).
+STAATEN = {code: str(name) for code, name in Pays.choices if code not in ("DE", "XX")}
 _UMLAUTE = str.maketrans(
     {"ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "ß": "ss"}
 )
@@ -22,20 +25,50 @@ def region_von_land(land: str | None) -> Region | None:
     return treffer.region if treffer else None
 
 
+def region_von_pays(pays: str | None) -> Region | None:
+    """Sektor für ein Land außerhalb Deutschlands (Deutschland selbst läuft über das Bundesland)."""
+    if not pays or pays == Pays.ALLEMAGNE:
+        return None
+    treffer = RegionPays.objects.filter(pays=pays, region__aktiv=True).select_related("region")
+    treffer = treffer.first()
+    return treffer.region if treffer else None
+
+
+def region_von_gebiet(pays: str | None, land: str | None) -> Region | None:
+    """Wohnland und Bundesland → Sektor : in Deutschland zählt das Bundesland, sonst das Land."""
+    if pays and pays != Pays.ALLEMAGNE:
+        return region_von_pays(pays)
+    return region_von_land(land)
+
+
 def meine_region(user) -> Region | None:
-    """Region aus dem Bundesland des Mitglieds- oder Fan-Profils ; andere Konten haben keine."""
+    """Sektor aus Wohnland/Bundesland des Mitglieds- oder Fan-Profils ; sonst keiner."""
     membre = getattr(user, "membre", None)
     if membre is not None:
-        return region_von_land(membre.land_de)
+        return region_von_gebiet(membre.pays, membre.land_de)
     fan = getattr(user, "fan_profil", None)
-    return region_von_land(fan.land_de) if fan is not None else None
+    return region_von_gebiet(fan.pays, fan.land_de) if fan is not None else None
+
+
+def gebiets_filter(region: Region, praefix: str = "") -> Q | None:
+    """Q-Filter auf Membre/FanProfil (oder über `praefix`, z. B. „membre__“): Personen im Gebiet des
+    Sektors – Bundesländer innerhalb Deutschlands oder Länder außerhalb.
+    None = Sektor ohne Gebiet."""
+    laender = list(region.laender.values_list("land", flat=True))
+    staaten = list(region.staaten.values_list("pays", flat=True))
+    bedingung = Q()
+    if laender:
+        bedingung |= Q(**{f"{praefix}pays": Pays.ALLEMAGNE, f"{praefix}land_de__in": laender})
+    if staaten:
+        bedingung |= Q(**{f"{praefix}pays__in": staaten})
+    return bedingung if (laender or staaten) else None
 
 
 def mitglieder_zahl(region: Region) -> int:
-    laender = list(region.laender.values_list("land", flat=True))
-    if not laender:
+    bedingung = gebiets_filter(region)
+    if bedingung is None:
         return 0
-    return Membre.objects.filter(statut=StatutMembre.ACTIF, land_de__in=laender).count()
+    return Membre.objects.filter(bedingung, statut=StatutMembre.ACTIF).count()
 
 
 def ist_personenverwalter(user) -> bool:

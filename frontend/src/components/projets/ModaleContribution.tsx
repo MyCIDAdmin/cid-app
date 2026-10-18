@@ -10,7 +10,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useContribuerProjet } from "../../hooks/useCotisations";
-import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { ModePaiement } from "../../types/cotisation";
 import type { Projet } from "../../types/projets";
@@ -52,7 +52,7 @@ export default function ModaleContribution({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      {...hintergrundKlick(onClose)}
     >
       <div
         role="dialog"

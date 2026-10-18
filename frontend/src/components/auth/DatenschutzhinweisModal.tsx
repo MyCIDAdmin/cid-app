@@ -14,6 +14,8 @@
  * adapté pour un contenu long et défilant (max-h-[85vh] + overflow-y-auto).
  */
 import { useTranslation } from "react-i18next";
+import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
+import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
 
 interface DatenschutzhinweisModalProps {
   onClose: () => void;
@@ -45,8 +47,9 @@ export default function DatenschutzhinweisModal({ onClose, fan }: Datenschutzhin
       aria-modal="true"
       aria-labelledby="datenschutz-modal-titre"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      {...hintergrundKlick(onClose)}
     >
+      <EscapeSchliessen onClose={onClose} />
       <div className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-cid-lg bg-bg-primary shadow-xl">
         <div className="flex items-center justify-between border-b border-text-tertiary/10 px-5 py-3">
           <h2 id="datenschutz-modal-titre" className="text-base font-bold text-text-primary">

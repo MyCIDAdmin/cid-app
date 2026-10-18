@@ -87,6 +87,7 @@ describe("MobileNavDrawer", () => {
 
     const backdrop = container.querySelector('[aria-hidden="true"]');
     expect(backdrop).not.toBeNull();
+    fireEvent.mouseDown(backdrop as Element);
     fireEvent.click(backdrop as Element);
 
     expect(onClose).toHaveBeenCalledTimes(1);

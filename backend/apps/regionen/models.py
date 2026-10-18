@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
 
-from apps.membres.models import Bundesland
+from apps.membres.models import Bundesland, Pays
 from apps.projets.storage import ProjetsStorage
 
 # Diese Kennungen sind Routen unterhalb von /regionen/ und dürfen nie als Slug einer Region dienen.
@@ -60,11 +60,25 @@ class Region(models.Model):
 
     class Meta:
         ordering = ["reihenfolge", "name"]
-        verbose_name = "Region"
-        verbose_name_plural = "Regionen"
+        verbose_name = "Sektor"
+        verbose_name_plural = "Sektoren"
 
     def __str__(self):
         return self.name
+
+
+class RegionPays(models.Model):
+    """Ordnet ein Land außerhalb Deutschlands (z. B. Dänemark, Frankreich) genau einem Sektor zu.
+    Innerhalb Deutschlands entscheidet das Bundesland (RegionLand), außerhalb das Wohnland."""
+
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name="staaten")
+    pays = models.CharField(max_length=2, choices=Pays.choices, unique=True)
+
+    class Meta:
+        ordering = ["pays"]
+
+    def __str__(self):
+        return f"{self.pays} → {self.region_id}"
 
 
 class RegionLand(models.Model):
@@ -271,6 +285,7 @@ class FanProfil(models.Model):
     )
     prenom = models.CharField(max_length=100)
     nom = models.CharField(max_length=100)
+    pays = models.CharField(max_length=2, choices=Pays.choices, default=Pays.ALLEMAGNE)
     land_de = models.CharField(max_length=2, choices=Bundesland.choices, blank=True)
     standort = models.ForeignKey(
         Standort, null=True, blank=True, on_delete=models.SET_NULL, related_name="fans"

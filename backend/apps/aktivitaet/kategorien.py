@@ -175,7 +175,7 @@ MODULE = {
     "umfragen": ("inhalte", "Umfragen", "Sondages"),
     "votes": ("inhalte", "Abstimmungen", "Votes"),
     "partenaires": ("inhalte", "Partner", "Partenaires"),
-    "regionen": ("inhalte", "Regionen", "Régions"),
+    "regionen": ("inhalte", "Sektoren", "Secteurs"),
     "support": ("inhalte", "Support", "Support"),
     "uebersetzungen": ("einstellungen", "Übersetzungen", "Traductions"),
     "notifications": ("einstellungen", "Benachrichtigungen", "Notifications"),

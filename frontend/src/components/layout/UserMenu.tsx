@@ -20,6 +20,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { abmelden } from "../../api/abmelden";
 import { useModuleOuvert } from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
+import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 
 function initiales(user: { prenom?: string; nom?: string; email: string }): string {
   if (user.prenom && user.nom) {
@@ -36,6 +37,8 @@ export default function UserMenu() {
   // Support (Release 33) : Menüpunkt „support“ der Rollenverwaltung (Sichtbarkeit), hier im Profilmenü.
   const { ouvert: supportOffen } = useModuleOuvert("support");
   const panneauRef = useRef<HTMLDivElement>(null);
+
+  useEscapeSchliessen(() => setOuvert(false), ouvert);
 
   useEffect(() => {
     function handleClickExterieur(e: MouseEvent) {

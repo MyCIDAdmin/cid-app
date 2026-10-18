@@ -17,6 +17,7 @@ import DatenschutzhinweisModal from "../components/auth/DatenschutzhinweisModal"
 import BrandLogo from "../components/ui/BrandLogo";
 import { useFanOptionen } from "../hooks/useRegionen";
 import { extractApiErrorMessage } from "../utils/apiError";
+import { laenderName } from "../utils/laendernamen";
 
 const schema = z
   .object({
@@ -26,6 +27,7 @@ const schema = z
     password: z.string().min(8),
     confirmPassword: z.string().min(1),
     langue_preferee: z.enum(["fr", "de", "ar"]),
+    pays: z.string().min(2),
     land_de: z.string().optional(),
     standort: z.string().optional(),
     consentement_rgpd: z.literal(true),
@@ -67,7 +69,7 @@ function Champ({
 type Schritt = "form" | "confirm" | "success";
 
 export default function FanRegisterPage() {
-  const { t } = useTranslation("auth");
+  const { t, i18n } = useTranslation("auth");
   const { data: optionen } = useFanOptionen();
   const [schritt, setSchritt] = useState<Schritt>("form");
   const [emailInscrit, setEmailInscrit] = useState("");
@@ -90,6 +92,7 @@ export default function FanRegisterPage() {
       password: "",
       confirmPassword: "",
       langue_preferee: "de",
+      pays: "DE",
       land_de: "",
       standort: "",
       consentement_rgpd: false as unknown as true,
@@ -101,8 +104,12 @@ export default function FanRegisterPage() {
     formState: { errors: codeFehler },
   } = useForm<CodeValues>({ resolver: zodResolver(codeSchema), defaultValues: { code: "" } });
 
-  const land = watch("land_de");
-  const regionName = optionen?.laender.find((l) => l.code === land)?.region?.name ?? null;
+  const pays = watch("pays");
+  const imInland = pays === "DE";
+  const land = imInland ? watch("land_de") : "";
+  const regionName = imInland
+    ? (optionen?.laender.find((l) => l.code === land)?.region?.name ?? null)
+    : (optionen?.staaten.find((s) => s.code === pays)?.region?.name ?? null);
   const standorte = useMemo(
     () => (optionen?.standorte ?? []).filter((s) => !land || !s.land || s.land === land),
     [optionen, land],
@@ -118,7 +125,8 @@ export default function FanRegisterPage() {
         prenom: v.prenom,
         nom: v.nom,
         langue_preferee: v.langue_preferee,
-        land_de: v.land_de || undefined,
+        pays: v.pays,
+        land_de: imInland ? v.land_de || undefined : undefined,
         standort: v.standort || null,
         consentement_rgpd: true,
       });
@@ -263,16 +271,28 @@ export default function FanRegisterPage() {
               </Champ>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Champ label={t("register.land_de")} id="land_de">
-                <select id="land_de" {...register("land_de")} className={feld}>
-                  <option value="">{t("fan.land_keine")}</option>
-                  {optionen?.laender.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.name}
+              <Champ label={t("fan.pays")} id="pays">
+                <select id="pays" {...register("pays")} className={feld}>
+                  <option value="DE">{laenderName("DE", i18n.language, "Deutschland")}</option>
+                  {optionen?.staaten.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {laenderName(s.code, i18n.language, s.name)}
                     </option>
                   ))}
                 </select>
               </Champ>
+              {imInland && (
+                <Champ label={t("register.land_de")} id="land_de">
+                  <select id="land_de" {...register("land_de")} className={feld}>
+                    <option value="">{t("fan.land_keine")}</option>
+                    {optionen?.laender.map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.name}
+                      </option>
+                    ))}
+                  </select>
+                </Champ>
+              )}
               <Champ label={t("fan.standort")} id="standort">
                 <select id="standort" {...register("standort")} className={feld}>
                   <option value="">{t("fan.standort_keiner")}</option>
@@ -284,11 +304,11 @@ export default function FanRegisterPage() {
                 </select>
               </Champ>
             </div>
-            {land && (
+            {(land || !imInland) && (
               <p className="text-xs text-text-tertiary">
                 {regionName
                   ? t("fan.region_hinweis", { region: regionName })
-                  : t("fan.ohne_region")}
+                  : t(imInland ? "fan.ohne_region" : "fan.ohne_region_land")}
               </p>
             )}
             <Champ label={t("register.langue_preferee")} id="langue_preferee">

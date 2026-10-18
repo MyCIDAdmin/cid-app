@@ -42,12 +42,14 @@ from .models import (
     Reaktion,
     Region,
     RegionLand,
+    RegionPays,
     Standort,
     Verantwortlicher,
 )
 from .permissions import IsAuthenticated, IsSuperAdmin
 
 BUNDESLAENDER = dict(Bundesland.choices)
+STAATEN = services.STAATEN
 
 
 def _html(daten, feld, maximum, pflicht=False) -> str:
@@ -140,6 +142,10 @@ def region_dict(region: Region, user, detail=False) -> dict:
                 "laender": [
                     {"code": z.land, "name": BUNDESLAENDER[z.land]} for z in region.laender.all()
                 ],
+                "staaten": [
+                    {"code": z.pays, "name": STAATEN.get(z.pays, z.pays)}
+                    for z in region.staaten.all()
+                ],
                 "darf_bearbeiten": services.darf_bearbeiten(user, region),
                 "darf_personen_verwalten": services.ist_personenverwalter(user),
                 "wettbewerb": wettbewerb.platz_von(region),
@@ -159,6 +165,7 @@ def verwaltung_dict(region: Region) -> dict:
         "mitglieder": services.mitglieder_zahl(region),
         "verantwortliche": region.verantwortliche.count(),
         "laender": [z.land for z in region.laender.all()],
+        "staaten": [z.pays for z in region.staaten.all()],
         "standorte": [standort_dict(s) for s in region.standorte.all()],
     }
 
@@ -223,7 +230,7 @@ class RegionStandortView(APIView):
             raise ValidationError({"land": "Ungültiges Bundesland."})
         vorhanden = Standort.objects.filter(region=region, name__iexact=name).first()
         if vorhanden and vorhanden.aktiv:
-            raise ValidationError({"name": "Diesen Standort gibt es in der Region schon."})
+            raise ValidationError({"name": "Diesen Standort gibt es im Sektor schon."})
         if vorhanden:
             vorhanden.aktiv = True
             vorhanden.save(update_fields=["aktiv"])
@@ -315,7 +322,7 @@ def _standort(region: Region, wert) -> Standort | None:
         pk=_uuid(wert, "standort"), region=region, aktiv=True
     ).first()
     if standort is None:
-        raise ValidationError({"standort": "Standort gehört nicht zu dieser Region."})
+        raise ValidationError({"standort": "Standort gehört nicht zu diesem Sektor."})
     return standort
 
 
@@ -411,20 +418,23 @@ def _name_pruefen(name: str, ausser: Region | None = None):
     if ausser is not None:
         treffer = treffer.exclude(pk=ausser.pk)
     if treffer.exists():
-        raise ValidationError({"name": "Eine Region mit diesem Namen existiert bereits."})
+        raise ValidationError({"name": "Ein Sektor mit diesem Namen existiert bereits."})
 
 
 class VerwaltungListeView(APIView):
     permission_classes = [IsSuperAdmin]
 
     def get(self, request):
-        regionen = Region.objects.prefetch_related("laender", "standorte")
+        regionen = Region.objects.prefetch_related("laender", "staaten", "standorte")
         vergeben = set(RegionLand.objects.values_list("land", flat=True))
+        staaten_vergeben = set(RegionPays.objects.values_list("pays", flat=True))
         return Response(
             {
                 "ergebnisse": [verwaltung_dict(r) for r in regionen],
                 "laender": [{"code": c, "name": n} for c, n in Bundesland.choices],
                 "ohne_region": [c for c, _ in Bundesland.choices if c not in vergeben],
+                "staaten": [{"code": c, "name": n} for c, n in STAATEN.items()],
+                "staaten_ohne_region": [c for c in STAATEN if c not in staaten_vergeben],
             }
         )
 
@@ -465,11 +475,11 @@ class VerwaltungDetailView(APIView):
         region = get_object_or_404(Region, pk=pk)
         if region.verantwortliche.exists():
             raise ValidationError(
-                {"detail": "Die Region hat noch Verantwortliche. Bitte zuerst entfernen."}
+                {"detail": "Der Sektor hat noch Verantwortliche. Bitte zuerst entfernen."}
             )
         if region.punkte.exists():
             raise ValidationError(
-                {"detail": "Die Region hat Wettbewerbspunkte. Bitte stattdessen deaktivieren."}
+                {"detail": "Der Sektor hat Wettbewerbspunkte. Bitte stattdessen deaktivieren."}
             )
         if region.banner:
             region.banner.delete(save=False)
@@ -494,6 +504,25 @@ class VerwaltungLaenderView(APIView):
         return Response(verwaltung_dict(region))
 
 
+class VerwaltungStaatenView(APIView):
+    """Ordnet Länder außerhalb Deutschlands (Dänemark, Frankreich …) einem Sektor zu."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def put(self, request, pk):
+        region = get_object_or_404(Region, pk=pk)
+        staaten = request.data.get("staaten")
+        if not isinstance(staaten, list) or any(s not in STAATEN for s in staaten):
+            raise ValidationError({"staaten": "Liste gültiger Ländercodes erwartet."})
+        with transaction.atomic():
+            RegionPays.objects.filter(region=region).exclude(pays__in=staaten).delete()
+            # Ein Land gehört zu höchstens einem Sektor : es wird hierher verschoben.
+            RegionPays.objects.filter(pays__in=staaten).exclude(region=region).delete()
+            for pays in set(staaten):
+                RegionPays.objects.get_or_create(region=region, pays=pays)
+        return Response(verwaltung_dict(region))
+
+
 class VerwaltungStandortListeView(APIView):
     permission_classes = [IsSuperAdmin]
 
@@ -504,7 +533,7 @@ class VerwaltungStandortListeView(APIView):
         if land and land not in BUNDESLAENDER:
             raise ValidationError({"land": "Ungültiges Bundesland."})
         if Standort.objects.filter(region=region, name__iexact=name).exists():
-            raise ValidationError({"name": "Diesen Standort gibt es in der Region schon."})
+            raise ValidationError({"name": "Diesen Standort gibt es im Sektor schon."})
         standort = Standort.objects.create(region=region, name=name, land=land)
         return Response(standort_dict(standort), status=201)
 
@@ -522,7 +551,7 @@ class VerwaltungStandortView(APIView):
                 .exists()
             )
             if doppelt:
-                raise ValidationError({"name": "Diesen Standort gibt es in der Region schon."})
+                raise ValidationError({"name": "Diesen Standort gibt es im Sektor schon."})
             standort.name = name
         if "land" in request.data:
             land = request.data["land"] or ""

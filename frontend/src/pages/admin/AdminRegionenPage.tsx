@@ -12,12 +12,14 @@ import {
   useRegionAendern,
   useRegionAnlegen,
   useRegionLoeschen,
+  useStaatenSetzen,
   useStandortAnlegen,
   useStandortLoeschen,
   useVerwaltung,
 } from "../../hooks/useRegionen";
 import type { Verwaltung, VerwaltungRegion } from "../../types/regionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { laenderName } from "../../utils/laendernamen";
 
 const FELD =
   "rounded-cid border border-text-tertiary/20 bg-bg-secondary px-3 py-2 text-sm text-text-primary";
@@ -25,16 +27,19 @@ const FELD =
 function RegionKarte({
   region,
   laender,
+  staaten,
   onFehler,
 }: {
   region: VerwaltungRegion;
   laender: Verwaltung["laender"];
+  staaten: Verwaltung["staaten"];
   onFehler: (text: string | null) => void;
 }) {
-  const { t } = useTranslation("regionen");
+  const { t, i18n } = useTranslation("regionen");
   const aendern = useRegionAendern();
   const loeschen = useRegionLoeschen();
   const laenderSetzen = useLaenderSetzen();
+  const staatenSetzen = useStaatenSetzen();
   const standortAnlegen = useStandortAnlegen();
   const standortLoeschen = useStandortLoeschen();
   const [name, setName] = useState(region.name);
@@ -54,6 +59,14 @@ function RegionKarte({
       ? region.laender.filter((c) => c !== code)
       : [...region.laender, code];
     laenderSetzen.mutate({ id: region.id, laender: neu }, { onError: bei });
+  }
+
+  function staatUmschalten(code: string) {
+    onFehler(null);
+    const neu = region.staaten.includes(code)
+      ? region.staaten.filter((c) => c !== code)
+      : [...region.staaten, code];
+    staatenSetzen.mutate({ id: region.id, staaten: neu }, { onError: bei });
   }
 
   function standortHinzufuegen(e: FormEvent) {
@@ -135,6 +148,25 @@ function RegionKarte({
                 disabled={laenderSetzen.isPending}
               />
               {land.name}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="mb-1 text-xs font-semibold text-text-tertiary">
+          {t("admin_staaten")}
+        </legend>
+        <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
+          {staaten.map((staat) => (
+            <label key={staat.code} className="flex items-center gap-2 text-sm text-text-secondary">
+              <input
+                type="checkbox"
+                checked={region.staaten.includes(staat.code)}
+                onChange={() => staatUmschalten(staat.code)}
+                disabled={staatenSetzen.isPending}
+              />
+              {laenderName(staat.code, i18n.language, staat.name)}
             </label>
           ))}
         </div>
@@ -259,7 +291,13 @@ export default function AdminRegionenPage() {
       {data && (
         <ul className="flex flex-col gap-4">
           {data.ergebnisse.map((r) => (
-            <RegionKarte key={r.id} region={r} laender={data.laender} onFehler={setFehler} />
+            <RegionKarte
+              key={r.id}
+              region={r}
+              laender={data.laender}
+              staaten={data.staaten}
+              onFehler={setFehler}
+            />
           ))}
         </ul>
       )}

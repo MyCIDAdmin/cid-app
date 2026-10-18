@@ -205,4 +205,4 @@ def test_summe_ohne_betrag_hat_typisiertes_null():
 
     for typ in ("projektmitarbeit", "statuswechsel"):
         sql = str(_quelle(typ).query).upper()
-        assert "CAST(NULL AS" in sql.replace("  ", " ") or "NULL::" in sql, sql
+        assert "CAST(NULL AS" in sql.replace("  ", " ") or "NULL::" in sql or "(NULL)::" in sql, sql

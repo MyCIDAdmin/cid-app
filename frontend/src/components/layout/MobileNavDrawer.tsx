@@ -14,13 +14,13 @@
  * un tiroir mobile doit toujours redémarrer fermé au chargement d'une page.
  */
 import { IconX } from "@tabler/icons-react";
-import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Link } from "react-router-dom";
 
 import BrandLogo from "../ui/BrandLogo";
 import { NavAccordionList, useSidebarNav } from "./Sidebar";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 
 interface MobileNavDrawerProps {
   open: boolean;
@@ -33,14 +33,7 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
 
   // Ferme sur Échap — même geste que le flyout desktop (RailGroupButton), pour une navigation
   // clavier cohérente entre les deux formats.
-  useEffect(() => {
-    if (!open) return undefined;
-    function surTouche(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", surTouche);
-    return () => document.removeEventListener("keydown", surTouche);
-  }, [open, onClose]);
+  useEscapeSchliessen(onClose, open);
 
   if (!open) return null;
 
@@ -54,7 +47,11 @@ export default function MobileNavDrawer({ open, onClose }: MobileNavDrawerProps)
       {/* Arrière-plan — clic pour fermer, même geste que les autres modales de l'app
           (ex. RapportModal) : clic uniquement sur la zone assombrie elle-même, jamais un clic
           qui a "traversé" depuis le panneau du tiroir. */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
+      <div
+        className="absolute inset-0 bg-black/40"
+        {...hintergrundKlick(onClose)}
+        aria-hidden="true"
+      />
       <div
         role="dialog"
         aria-modal="true"

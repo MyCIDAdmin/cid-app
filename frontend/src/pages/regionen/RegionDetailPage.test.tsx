@@ -85,6 +85,7 @@ function detail(o: Partial<RegionDetail> = {}): RegionDetail {
     naechste_veranstaltung: null,
     standorte: [{ id: "s1", name: "Hamburg", land: "HH", aktiv: true }],
     laender: [{ code: "HH", name: "Hamburg" }],
+    staaten: [],
     darf_bearbeiten: false,
     darf_personen_verwalten: false,
     wettbewerb: null,

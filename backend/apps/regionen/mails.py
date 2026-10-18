@@ -9,7 +9,7 @@ from apps.kalender.benachrichtigung import sprache
 from apps.notifications.email_cid import Texte, envoyer_email_cid
 from apps.notifications.services import notifier
 
-CTA = ("Zur Region", "Vers la région")
+CTA = ("Zum Sektor", "Vers le secteur")
 
 
 def sende_mail(user, de, fr, *, lien: str, details=None, cta=CTA) -> bool:

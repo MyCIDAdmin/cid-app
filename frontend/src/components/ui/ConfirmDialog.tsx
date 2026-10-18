@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -26,6 +28,8 @@ export default function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { t } = useTranslation("common");
 
+  useEscapeSchliessen(onCancel, open);
+
   if (!open) return null;
 
   return (
@@ -34,6 +38,7 @@ export default function ConfirmDialog({
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      {...hintergrundKlick(onCancel)}
     >
       <div className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-5 shadow-xl">
         <h2 id="confirm-dialog-title" className="text-base font-semibold text-text-primary">

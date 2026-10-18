@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 
 import { CHAMPS_EXPORT } from "../../types/membre";
 import type { ChampExport } from "../../types/membre";
+import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
+import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
 
 interface ExportChampsDialogProps {
   open: boolean;
@@ -40,7 +42,9 @@ export default function ExportChampsDialog({
       aria-modal="true"
       aria-labelledby="export-champs-dialog-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      {...hintergrundKlick(onCancel)}
     >
+      <EscapeSchliessen onClose={onCancel} />
       <div className="w-full max-w-md rounded-cid-lg bg-bg-primary p-5 shadow-xl">
         <h2 id="export-champs-dialog-title" className="text-base font-semibold text-text-primary">
           {t("liste.export_champs_titre")}
@@ -58,10 +62,7 @@ export default function ExportChampsDialog({
 
         <div className="mt-3 grid max-h-72 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto">
           {CHAMPS_EXPORT.map((champ) => (
-            <label
-              key={champ.value}
-              className="flex items-center gap-2 text-sm text-text-primary"
-            >
+            <label key={champ.value} className="flex items-center gap-2 text-sm text-text-primary">
               <input
                 type="checkbox"
                 checked={selection.includes(champ.value)}

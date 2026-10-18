@@ -145,7 +145,9 @@ def buche_neumitglied(user) -> PunkteEintrag | None:
     membre = getattr(user, "membre", None)
     if fan is None or membre is None or fan.mitgliedsantrag_am is None:
         return None
-    region = services.region_von_land(membre.land_de or fan.land_de)
+    region = services.region_von_gebiet(membre.pays, membre.land_de) or services.region_von_gebiet(
+        fan.pays, fan.land_de
+    )
     saison = _buchbar(heute())
     regeln = WettbewerbEinstellung.holen()
     if region is None or saison is None or not regeln.punkte_neumitglied:
