@@ -38,8 +38,8 @@
     "admin_partner": "Business Partner",
     "zahlungen_import": "Importer des paiements",
     "kalender": "Calendrier",
-    "regionen": "Régions",
-    "admin_regionen": "Structure des régions"
+    "regionen": "Secteurs",
+    "admin_regionen": "Structure des secteurs"
   },
   "nav_groupe": {
     "general": "Général",
@@ -220,7 +220,7 @@
       "trennen": "Déconnecter",
       "fehler": "Échec. Merci de réessayer.",
       "art": {
-        "regionen": "Régions et rencontres",
+        "regionen": "Secteurs et rencontres",
         "support": "Support (réponses aux tickets)",
         "veranstaltungen": "Événements",
         "kalender": "Calendrier",

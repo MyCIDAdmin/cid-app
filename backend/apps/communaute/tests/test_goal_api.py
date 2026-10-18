@@ -154,7 +154,7 @@ _FIXTURE_A_VENIR = {
     "homeTeam": {"name": "TP Mazembe"},
     "awayTeam": {"name": "Club Africain"},
     "league": {"name": "CAF Champions League"},
-    "matchDate": "2026-10-17",
+    "matchDate": "2030-10-17",
     "matchTime": None,
     "kickoffUtc": None,
     "homeTeamScore": None,
@@ -432,7 +432,7 @@ def test_synchroniser_calendrier_parcourt_toutes_les_pages(settings, monkeypatch
     # Pas de kickoffUtc/matchTime : repli sur matchDate + midi heure locale (voir
     # _parser_kickoff) — pas d'assertion sur l'heure UTC stockée, qui dépend du décalage
     # DST Europe/Berlin au moment considéré (même convention que l'ancien test_serpapi.py).
-    assert a_venir.date_heure.year == 2026
+    assert a_venir.date_heure.year == 2030
     assert a_venir.date_heure.month == 10
     assert a_venir.date_heure.day == 17
 

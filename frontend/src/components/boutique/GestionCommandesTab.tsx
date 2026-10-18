@@ -53,6 +53,8 @@ import {
   type StatutCommande,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
+import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
 
 /** Déclenche le téléchargement d'un blob côté navigateur — même pattern que
  * CotisationStepperPage.telechargerRecu/MembresListPage.exporter. */
@@ -631,7 +633,9 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
           aria-modal="true"
           aria-labelledby="expedition-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          {...hintergrundKlick(() => setExpeditionModal(null))}
         >
+          <EscapeSchliessen onClose={() => setExpeditionModal(null)} />
           <div className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-5 shadow-xl">
             <h2 id="expedition-modal-title" className="text-base font-semibold text-text-primary">
               {expeditionModal.nacherfassement ? t("nacherfassung.titre") : t("expedition.titre")}
@@ -726,7 +730,9 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
           aria-modal="true"
           aria-labelledby="retour-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          {...hintergrundKlick(() => setRetourModal(null))}
         >
+          <EscapeSchliessen onClose={() => setRetourModal(null)} />
           <div className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-5 shadow-xl">
             <h2 id="retour-modal-title" className="text-base font-semibold text-text-primary">
               {t("retour.titre")}

@@ -1,9 +1,9 @@
 """Fan-Konto (Release 29) — API unter /api/v1/regionen/fan/.
 
-  GET   fan/optionen/          Bundesländer mit Region und Standorte für die Anmeldung (öffentlich)
+  GET   fan/optionen/          Bundesländer, Länder mit Sektor, Standorte (öffentlich)
   POST  fan/registrieren/      Fan-Konto anlegen (öffentlich) ; Code: /auth/register/confirm/
   GET   fan/                   eigenes Fan-Profil (404 ohne Fan-Profil)
-  PATCH fan/                   Name, Bundesland, Standort ändern
+  PATCH fan/                   Name, Wohnland, Bundesland, Standort ändern
   POST  fan/mitglied-werden/   Mitgliedsfiche anlegen (Status „in Erwartung“) ; danach Antrag unter
                                „Meine Mitgliedschaft“
 
@@ -28,7 +28,7 @@ from apps.membres.models import Bundesland, Membre, Pays, Sexe, StatutMembre
 from apps.membres.rapprochement import lier_automatiquement
 
 from . import services
-from .models import FanProfil, Region, RegionLand, Standort
+from .models import FanProfil, Region, RegionLand, RegionPays, Standort
 from .permissions import IsAuthenticated
 
 SPRACHEN = [("fr", "Français"), ("de", "Deutsch"), ("ar", "العربية")]
@@ -49,10 +49,11 @@ def fan_dict(profil: FanProfil) -> dict:
         "prenom": profil.prenom,
         "nom": profil.nom,
         "email": profil.user.email,
+        "pays": profil.pays,
         "land_de": profil.land_de,
         "standort_id": str(standort.pk) if standort else None,
         "standort": standort.name if standort else None,
-        "region": _region_dict(services.region_von_land(profil.land_de)),
+        "region": _region_dict(services.region_von_gebiet(profil.pays, profil.land_de)),
         "mitgliedsantrag_am": profil.mitgliedsantrag_am,
         "ist_mitglied_in_erwartung": hasattr(profil.user, "membre"),
     }
@@ -70,12 +71,20 @@ def _standort_pruefen(standort: Standort | None, land: str):
         )
 
 
+def _gebiet_pruefen(attrs):
+    """Außerhalb Deutschlands gibt es kein Bundesland ; innerhalb bleibt es wie bisher optional."""
+    if attrs.get("pays", Pays.ALLEMAGNE) != Pays.ALLEMAGNE:
+        attrs["land_de"] = ""
+    return attrs
+
+
 class FanRegistrierenSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
     prenom = serializers.CharField(max_length=100)
     nom = serializers.CharField(max_length=100)
     langue_preferee = serializers.ChoiceField(choices=SPRACHEN, default="fr")
+    pays = serializers.ChoiceField(choices=Pays.choices, default=Pays.ALLEMAGNE)
     land_de = serializers.ChoiceField(choices=Bundesland.choices, required=False, allow_blank=True)
     standort = serializers.PrimaryKeyRelatedField(
         queryset=Standort.objects.filter(aktiv=True), required=False, allow_null=True
@@ -103,6 +112,7 @@ class FanRegistrierenSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
+        attrs = _gebiet_pruefen(attrs)
         _standort_pruefen(attrs.get("standort"), attrs.get("land_de", ""))
         return attrs
 
@@ -115,6 +125,10 @@ class FanOptionenView(APIView):
             z.land: z.region
             for z in RegionLand.objects.filter(region__aktiv=True).select_related("region")
         }
+        staaten_regionen = {
+            z.pays: z.region
+            for z in RegionPays.objects.filter(region__aktiv=True).select_related("region")
+        }
         laender = [
             {"code": code, "name": name, "region": _region_dict(regionen.get(code))}
             for code, name in Bundesland.choices
@@ -125,7 +139,11 @@ class FanOptionenView(APIView):
                 "region"
             )
         ]
-        return Response({"laender": laender, "standorte": standorte})
+        staaten = [
+            {"code": code, "name": name, "region": _region_dict(staaten_regionen.get(code))}
+            for code, name in services.STAATEN.items()
+        ]
+        return Response({"laender": laender, "staaten": staaten, "standorte": standorte})
 
 
 class FanRegistrierenView(APIView):
@@ -146,6 +164,7 @@ class FanRegistrierenView(APIView):
                 user=user,
                 prenom=d["prenom"].strip(),
                 nom=d["nom"].strip(),
+                pays=d["pays"],
                 land_de=d.get("land_de", ""),
                 standort=d.get("standort"),
                 datenschutz_am=timezone.now(),
@@ -182,16 +201,24 @@ class FanProfilView(APIView):
         serializer = FanAendernSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
+        pays = d.get("pays", profil.pays)
         land = d.get("land_de", profil.land_de)
+        if pays != Pays.ALLEMAGNE:
+            land = ""
         standort = d.get("standort", profil.standort)
         # Wechselt das Bundesland, passt ein bisheriger Standort ggf. nicht mehr dazu.
-        if "land_de" in d and "standort" not in d and standort and standort.land not in ("", land):
+        if (
+            ("land_de" in d or "pays" in d)
+            and "standort" not in d
+            and standort
+            and standort.land not in ("", land)
+        ):
             standort = None
         _standort_pruefen(standort, land)
         for feld in ("prenom", "nom"):
             if feld in d:
                 setattr(profil, feld, d[feld].strip())
-        profil.land_de, profil.standort = land, standort
+        profil.pays, profil.land_de, profil.standort = pays, land, standort
         profil.save()
         return Response(fan_dict(profil))
 
@@ -199,6 +226,7 @@ class FanProfilView(APIView):
 class FanAendernSerializer(serializers.Serializer):
     prenom = serializers.CharField(max_length=100)
     nom = serializers.CharField(max_length=100)
+    pays = serializers.ChoiceField(choices=Pays.choices)
     land_de = serializers.ChoiceField(choices=Bundesland.choices, allow_blank=True)
     standort = serializers.PrimaryKeyRelatedField(
         queryset=Standort.objects.filter(aktiv=True), allow_null=True
@@ -229,14 +257,15 @@ class MitgliedWerdenView(APIView):
         serializer = MitgliedWerdenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
-        land = d.get("land_de") or profil.land_de
+        pays = profil.pays
+        land = (d.get("land_de") or profil.land_de) if pays == Pays.ALLEMAGNE else ""
         with transaction.atomic():
             membre = Membre.objects.create(
                 user=request.user,
                 email=request.user.email,
                 prenom=profil.prenom,
                 nom=profil.nom,
-                pays=Pays.ALLEMAGNE,
+                pays=pays,
                 statut=StatutMembre.EN_ATTENTE,
                 land_de=land,
                 date_naissance=d["date_naissance"],

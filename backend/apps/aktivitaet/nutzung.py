@@ -34,7 +34,7 @@ NUTZUNG_MODULE = {
     "umfragen": ("Umfragen", "Sondages"),
     "votes": ("Abstimmungen", "Votes"),
     "partenaires": ("Partner", "Partenaires"),
-    "regionen": ("Regionen", "Régions"),
+    "regionen": ("Sektoren", "Secteurs"),
     "support": ("Support", "Support"),
     "finances": ("Finanzen", "Finances"),
     "stats": ("Statistiken", "Statistiques"),

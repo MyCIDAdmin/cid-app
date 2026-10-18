@@ -13,7 +13,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { useInscrire } from "../../hooks/useEvenements";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import MapsApercu from "../ui/MapsApercu";
@@ -111,7 +111,7 @@ export default function ModaleInscription({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      {...hintergrundKlick(onClose)}
     >
       <div
         role="dialog"

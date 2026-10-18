@@ -23,6 +23,7 @@ import {
 } from "../../hooks/useRegionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { klartext } from "../../utils/formattext";
+import { laenderName } from "../../utils/laendernamen";
 import { beschreibungIn } from "../../utils/regionen";
 
 export default function RegionDetailPage() {
@@ -82,7 +83,15 @@ export default function RegionDetailPage() {
           <h1 className="text-xl font-bold text-text-primary">{region.name}</h1>
           <p className="text-xs text-text-tertiary">
             {t("mitglieder_zahl", { count: region.mitglieder })}
-            {region.laender.length > 0 && <> · {region.laender.map((l) => l.name).join(", ")}</>}
+            {(region.laender.length > 0 || (region.staaten ?? []).length > 0) && (
+              <>
+                {" · "}
+                {[
+                  ...region.laender.map((l) => l.name),
+                  ...(region.staaten ?? []).map((s) => laenderName(s.code, i18n.language, s.name)),
+                ].join(", ")}
+              </>
+            )}
           </p>
           {region.wettbewerb && (
             <Link

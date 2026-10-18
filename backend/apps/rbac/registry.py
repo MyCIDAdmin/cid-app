@@ -72,7 +72,7 @@ MENU_ITEMS = [
     ),
     ("covoiturage", "Fahrgemeinschaften", "general", "evenements", ("page_events",)),
     ("kalender", "Kalender", "general", "evenements", ("page_kalender", "page_kalender_vorschlag")),
-    ("regionen", "Regionen", "general", "evenements", ("page_regionen",)),
+    ("regionen", "Sektoren", "general", "evenements", ("page_regionen",)),
     ("support", "Support", "general", "membres", ("page_support",)),
     ("projets", "Aktionen & Projekte", "general", "projets", ("page_projets",)),
     ("boutique", "Shop", "general", "boutique", ("page_boutique",)),
@@ -242,7 +242,7 @@ PAGE_ADMIN_LABELS = {
     "page_zahlungen_import": "Import de paiements (Excel)",
     "page_kalender": "Büro-Kalender (Termine pflegen)",
     "page_kalender_vorschlag": "Terminvorschläge einreichen",
-    "page_regionen": "Regionen (Verantwortliche zuweisen, Seiten bearbeiten)",
+    "page_regionen": "Sektoren (Verantwortliche zuweisen, Seiten bearbeiten)",
     "page_support": "Support (Tickets bearbeiten, FAQ pflegen)",
 }
 

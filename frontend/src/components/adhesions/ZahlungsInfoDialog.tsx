@@ -8,6 +8,8 @@
 import { useTranslation } from "react-i18next";
 
 import PaymentInstructions from "../ui/PaymentInstructions";
+import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
+import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
 
 interface ZahlungsInfoDialogProps {
   angebot: string;
@@ -38,7 +40,9 @@ export default function ZahlungsInfoDialog({
       aria-modal="true"
       aria-labelledby="zahlung-dialog-titel"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      {...hintergrundKlick(onClose)}
     >
+      <EscapeSchliessen onClose={onClose} />
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-cid-lg bg-bg-primary p-5 shadow-xl">
         <h2 id="zahlung-dialog-titel" className="text-base font-semibold text-text-primary">
           {t("zahlung.titel")}

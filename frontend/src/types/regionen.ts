@@ -42,6 +42,7 @@ export interface NaechsteVeranstaltung {
 export interface RegionDetail extends Region {
   standorte: Standort[];
   laender: { code: string; name: string }[];
+  staaten: { code: string; name: string }[];
   darf_bearbeiten: boolean;
   darf_personen_verwalten: boolean;
   wettbewerb: PlatzInWettbewerb | null;
@@ -85,13 +86,16 @@ export interface VerwaltungRegion {
   mitglieder: number;
   verantwortliche: number;
   laender: string[];
+  staaten: string[];
   standorte: Standort[];
 }
 
 export interface Verwaltung {
   ergebnisse: VerwaltungRegion[];
   laender: { code: string; name: string }[];
+  staaten: { code: string; name: string }[];
   ohne_region: string[];
+  staaten_ohne_region: string[];
 }
 
 export interface RegionAenderung {
@@ -188,6 +192,7 @@ export interface Teilnehmer {
 /** Fan-Konto (Release 29) : Konto ohne Mitgliedschaft. */
 export interface FanOptionen {
   laender: { code: string; name: string; region: { slug: string; name: string } | null }[];
+  staaten: { code: string; name: string; region: { slug: string; name: string } | null }[];
   standorte: { id: string; name: string; land: string; region: string }[];
 }
 
@@ -195,6 +200,7 @@ export interface FanProfil {
   prenom: string;
   nom: string;
   email: string;
+  pays: string;
   land_de: string;
   standort_id: string | null;
   standort: string | null;
@@ -209,6 +215,7 @@ export interface FanRegistrierung {
   prenom: string;
   nom: string;
   langue_preferee: "fr" | "de" | "ar";
+  pays?: string;
   land_de?: string;
   standort?: string | null;
   consentement_rgpd: true;
@@ -217,6 +224,7 @@ export interface FanRegistrierung {
 export interface FanAenderung {
   prenom: string;
   nom: string;
+  pays: string;
   land_de: string;
   standort: string | null;
 }

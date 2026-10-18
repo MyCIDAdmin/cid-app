@@ -28,6 +28,8 @@ import {
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { vonLokalInput, zuLokalInput } from "../../utils/kalender";
 import UebersetzungenButton from "../ui/UebersetzungenButton";
+import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
+import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
 
 const FELD = "w-full rounded-cid border border-text-tertiary/30 bg-bg-primary px-2 py-1.5 text-sm";
 const ERINNERUNGEN = [1, 2, 24, 48];
@@ -138,7 +140,9 @@ export default function TerminFormular({
       aria-modal="true"
       aria-labelledby="termin-form-titel"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      {...hintergrundKlick(onAbbrechen)}
     >
+      <EscapeSchliessen onClose={onAbbrechen} />
       <form
         onSubmit={speichern}
         className="max-h-[92vh] w-full max-w-xl space-y-3 overflow-y-auto rounded-cid-lg bg-bg-primary p-5 shadow-xl"

@@ -146,6 +146,7 @@ export const useRegionAnlegen = () => useAenderung(api.legeRegionAn);
 export const useRegionAendern = () => useAenderung(api.aendereRegion);
 export const useRegionLoeschen = () => useAenderung(api.loescheRegion);
 export const useLaenderSetzen = () => useAenderung(api.setzeLaender);
+export const useStaatenSetzen = () => useAenderung(api.setzeStaaten);
 export const useStandortAnlegen = () => useAenderung(api.legeStandortAn);
 export const useStandortFuerRegionAnlegen = () => useAenderung(api.legeStandortFuerRegionAn);
 export const useStandortLoeschen = () => useAenderung(api.loescheStandort);

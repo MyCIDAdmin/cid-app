@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom";
 
 import MembershipOffersPublic from "./MembershipOffersPublic";
 import { useCampagneActive } from "../../hooks/useAdhesions";
+import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
+import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
 
 export default function MitgliedWerdenVorschau({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("public");
@@ -21,8 +23,9 @@ export default function MitgliedWerdenVorschau({ onClose }: { onClose: () => voi
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
+      {...hintergrundKlick(onClose)}
     >
+      <EscapeSchliessen onClose={onClose} />
       <div
         role="dialog"
         aria-modal="true"

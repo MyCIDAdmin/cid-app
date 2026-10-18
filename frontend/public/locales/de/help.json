@@ -647,7 +647,7 @@
   },
   "ueberblick": "Überblick",
   "workflows": "Abläufe Schritt für Schritt",
-  "workflow_hinweis": "Öffne einen Ablauf und hake die Schritte ab, während du sie erledigst.",
+  "workflow_hinweis": "Wähle einen Ablauf. Die Hilfe bleibt neben der App offen, du siehst immer genau den nächsten Schritt.",
   "beispiel": "Beispiel",
   "danach": "Und danach?",
   "tipps": "Gut zu wissen",
@@ -731,10 +731,10 @@
     ]
   },
   "regionen": {
-    "titre": "Regionen",
-    "intro": "Hier findest du die Regionen des Vereins mit ihren Verantwortlichen, Treffen und Beiträgen. Du kannst dich für Treffen anmelden, auch ohne Mitgliedschaft.",
+    "titre": "Sektoren",
+    "intro": "Hier findest du die Sektoren des Vereins mit ihren Verantwortlichen, Treffen und Beiträgen. Du kannst dich für Treffen anmelden, auch ohne Mitgliedschaft.",
     "schritte": [
-      "Eine Region öffnen: Beschreibung, Standorte, Verantwortliche, Treffen und Beiträge.",
+      "Einen Sektor öffnen: Beschreibung, Standorte, Verantwortliche, Treffen und Beiträge.",
       "Bei einem Treffen auf „Anmelden“ klicken. Du bekommst eine Bestätigung per E-Mail und am Tag davor eine Erinnerung.",
       "Unter den Beiträgen kannst du mit einem Klick reagieren.",
       "Verantwortliche sehen zusätzlich ihre Fans-Liste, legen Treffen an und reichen sie zur Freigabe ein."
@@ -742,9 +742,9 @@
     "workflows": [
       {
         "titre": "Treffen anlegen und veröffentlichen",
-        "wann": "Du bist Verantwortliche/r einer Region.",
+        "wann": "Du bist Verantwortliche/r eines Sektors.",
         "schritte": [
-          "Auf der Regionsseite „Neues Treffen“ wählen und Titel, Datum, Ort sowie optional Plätze eintragen.",
+          "Auf der Sektorseite „Neues Treffen“ wählen und Titel, Datum, Ort sowie optional Plätze eintragen.",
           "Als Entwurf speichern und „Einreichen“ klicken.",
           "Das Büro prüft und gibt frei oder weist mit Begründung zurück. Du bekommst eine Nachricht in der App und per E-Mail.",
           "Nach der Freigabe können sich Mitglieder und Fans anmelden."
@@ -753,10 +753,10 @@
         "danach": "Nach dem Treffen die Anwesenheit abhaken und „Abschließen“ wählen; erst dann zählen die Punkte."
       },
       {
-        "titre": "Fans meiner Region ansehen",
+        "titre": "Fans meines Sektors ansehen",
         "wann": "Du bist Verantwortliche/r und willst wissen, wer mitmacht.",
         "schritte": [
-          "Auf der Regionsseite zu „Fans & Aktivitäten“ scrollen.",
+          "Auf der Sektorseite zu „Fans & Aktivitäten“ scrollen.",
           "Nach Name suchen oder nach Mitgliedern bzw. Fans filtern.",
           "Auf einen Namen klicken: Du siehst, an welchen Treffen die Person teilgenommen hat."
         ],
@@ -766,12 +766,12 @@
     ],
     "tipps": [
       "Fans sind Konten, die sich für ein Treffen angemeldet haben, mit oder ohne Mitgliedschaft.",
-      "Alle E-Mails der Regionen kommen zweisprachig (Deutsch und Französisch)."
+      "Alle E-Mails der Sektoren kommen zweisprachig (Deutsch und Französisch)."
     ]
   },
   "regionen_wettbewerb": {
-    "titre": "Wettbewerb der Regionen",
-    "intro": "Regionen sammeln Punkte durch Treffen, Teilnahmen und neue Mitglieder. Gewertet werden nur Regionen, keine Einzelpersonen.",
+    "titre": "Wettbewerb der Sektoren",
+    "intro": "Sektoren sammeln Punkte durch Treffen, Teilnahmen und neue Mitglieder. Gewertet werden nur Sektoren, keine Einzelpersonen.",
     "schritte": [
       "Die Rangliste zeigt Punkte pro Mitglied und Gesamtpunkte der laufenden Saison.",
       "Mit der Saison-Auswahl blätterst du durch frühere Saisons.",
@@ -780,15 +780,15 @@
     ],
     "workflows": [],
     "tipps": [
-      "Punkte pro Mitglied sorgen dafür, dass kleine und große Regionen fair verglichen werden."
+      "Punkte pro Mitglied sorgen dafür, dass kleine und große Sektoren fair verglichen werden."
     ]
   },
   "regionen_bericht": {
-    "titre": "Regionen-Bericht",
-    "intro": "Kennzahlen aller Regionen für einen frei wählbaren Zeitraum, für Büro und Personenverwalter.",
+    "titre": "Sektoren-Bericht",
+    "intro": "Kennzahlen aller Sektoren für einen frei wählbaren Zeitraum, für Büro und Personenverwalter.",
     "schritte": [
       "Zeitraum „Von“ und „Bis“ wählen (Standard: 1. Januar bis heute).",
-      "Die Tabelle zeigt je Region und gesamt: Treffen, Anmeldungen, Anwesenheitsquote, Beiträge, Fans, neue und aktive Fans, Fans, die Mitglied wurden, und Punkte.",
+      "Die Tabelle zeigt je Sektor und gesamt: Treffen, Anmeldungen, Anwesenheitsquote, Beiträge, Fans, neue und aktive Fans, Fans, die Mitglied wurden, und Punkte.",
       "Mit „Als CSV herunterladen“ bekommst du die Tabelle für Excel."
     ],
     "workflows": [
@@ -800,7 +800,7 @@
           "Tabelle prüfen und als CSV herunterladen.",
           "In Excel öffnen und weiterverarbeiten."
         ],
-        "beispiel": "Bericht 2026 mit allen Regionen und Gesamtspalte.",
+        "beispiel": "Bericht 2026 mit allen Sektoren und Gesamtspalte.",
         "danach": "Die Spalte „Gesamt“ zählt Personen nur einmal."
       }
     ],
@@ -836,5 +836,20 @@
       "Ein Ticket pro Anliegen hält den Verlauf übersichtlich.",
       "Mit Funktion im Büro: „Alle Tickets“ zeigt die Warteschlange, „Fragen pflegen“ die häufigen Fragen auf Deutsch und Französisch."
     ]
-  }
+  },
+  "begleiter_hinweis": "Die Hilfe bleibt offen, während du in der App arbeitest. Dein Stand in jedem Ablauf wird gemerkt.",
+  "ablauf_start": "Starten · {{gesamt}} Schritte",
+  "ablauf_weiter": "Weiter mit Schritt {{n}} von {{gesamt}}",
+  "alle_ablaeufe": "Alle Abläufe",
+  "schritt_von": "Schritt {{aktuell}} von {{gesamt}}",
+  "zurueck": "Zurück",
+  "erledigt_weiter": "Erledigt – weiter",
+  "fertig": "Fertig",
+  "alle_schritte": "Alle Schritte anzeigen",
+  "ablauf_fertig": "Geschafft – alle Schritte sind erledigt.",
+  "von_vorn": "Von vorn beginnen",
+  "minimieren": "Verkleinern",
+  "vergroessern": "Hilfe wieder öffnen",
+  "andere_seite": "Diese Hilfe gehört zu einer anderen Seite.",
+  "zu_dieser_seite": "Hilfe zu dieser Seite"
 }

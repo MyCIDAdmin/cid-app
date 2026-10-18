@@ -30,6 +30,7 @@ from .views import (
     VerwaltungDetailView,
     VerwaltungLaenderView,
     VerwaltungListeView,
+    VerwaltungStaatenView,
     VerwaltungStandortListeView,
     VerwaltungStandortView,
 )
@@ -77,6 +78,7 @@ urlpatterns = [
     path("verwaltung/standorte/<uuid:pk>/", VerwaltungStandortView.as_view(), name="standort"),
     path("verwaltung/<uuid:pk>/", VerwaltungDetailView.as_view(), name="verwaltung-detail"),
     path("verwaltung/<uuid:pk>/laender/", VerwaltungLaenderView.as_view(), name="laender"),
+    path("verwaltung/<uuid:pk>/staaten/", VerwaltungStaatenView.as_view(), name="staaten"),
     path(
         "verwaltung/<uuid:pk>/standorte/",
         VerwaltungStandortListeView.as_view(),

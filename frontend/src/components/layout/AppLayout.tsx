@@ -1,5 +1,6 @@
 import { IconMenu2 } from "@tabler/icons-react";
 import HelpButton from "./HelpButton";
+import HelpPanel from "./HelpPanel";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
@@ -93,6 +94,7 @@ export default function AppLayout() {
             ajoutée) : voir docstring PublicFooter.tsx. */}
         {afficherFooter && <PublicFooter compact />}
       </div>
+      <HelpPanel />
     </div>
   );
 }

@@ -20,6 +20,7 @@ const PROFIL: FanProfil = {
   prenom: "Sami",
   nom: "Ben Ali",
   email: "s@x.de",
+  pays: "DE",
   land_de: "HE",
   standort_id: null,
   standort: null,
@@ -38,6 +39,7 @@ describe("FanKarte", () => {
           { code: "HE", name: "Hessen", region: null },
           { code: "HH", name: "Hamburg", region: { slug: "nord", name: "Nord" } },
         ],
+        staaten: [{ code: "DK", name: "Dänemark", region: { slug: "nord", name: "Nord" } }],
         standorte: [{ id: "s1", name: "Hamburg", land: "HH", region: "Nord" }],
       });
     vi.mocked(api.aendereFanProfil)
@@ -61,8 +63,22 @@ describe("FanKarte", () => {
     expect(vi.mocked(api.aendereFanProfil).mock.calls[0][0]).toEqual({
       prenom: "Sami",
       nom: "Ben Ali",
+      pays: "DE",
       land_de: "HH",
       standort: "s1",
+    });
+  });
+
+  it("wechselt in ein Land außerhalb Deutschlands ohne Bundesland", async () => {
+    renderWithProviders(<FanKarte />);
+    fireEvent.click(await screen.findByText("fan.aendern"));
+    fireEvent.change(screen.getByLabelText("fan.pays"), { target: { value: "DK" } });
+    expect(screen.queryByLabelText("fan.bundesland")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("fan.speichern"));
+    await waitFor(() => expect(api.aendereFanProfil).toHaveBeenCalled());
+    expect(vi.mocked(api.aendereFanProfil).mock.calls[0][0]).toMatchObject({
+      pays: "DK",
+      land_de: "",
     });
   });
 

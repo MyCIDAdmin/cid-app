@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { IconMoodSmile } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
+import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 
 const EMOJIS = [
   "😀",
@@ -64,6 +65,8 @@ export default function EmojiPicker({ onSelect, className = "" }: EmojiPickerPro
   const [position, setPosition] = useState<{ bottom: number; right: number } | null>(null);
   const boutonRef = useRef<HTMLButtonElement>(null);
   const grilleRef = useRef<HTMLDivElement>(null);
+
+  useEscapeSchliessen(() => setOuvert(false), ouvert);
 
   useEffect(() => {
     if (!ouvert) return undefined;

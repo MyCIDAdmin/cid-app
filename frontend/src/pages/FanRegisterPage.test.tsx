@@ -20,6 +20,10 @@ const OPTIONEN = {
     { code: "HH", name: "Hamburg", region: { slug: "nord", name: "Nord" } },
     { code: "HE", name: "Hessen", region: null },
   ],
+  staaten: [
+    { code: "DK", name: "Dänemark", region: { slug: "nord", name: "Nord" } },
+    { code: "FR", name: "Frankreich", region: null },
+  ],
   standorte: [
     { id: "s1", name: "Hamburg", land: "HH", region: "Nord" },
     { id: "s2", name: "Köln", land: "NW", region: "NRW" },
@@ -64,6 +68,24 @@ describe("FanRegisterPage", () => {
     expect(screen.queryByRole("option", { name: "Köln" })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("register.land_de"), { target: { value: "HE" } });
     expect(await screen.findByText("fan.ohne_region")).toBeInTheDocument();
+  });
+
+  it("blendet das Bundesland im Ausland aus und meldet das Land", async () => {
+    renderWithProviders(<FanRegisterPage />);
+    await screen.findByRole("option", { name: "Köln" });
+    fireEvent.change(screen.getByLabelText("fan.pays"), { target: { value: "DK" } });
+    expect(await screen.findByText("fan.region_hinweis")).toBeInTheDocument();
+    expect(screen.queryByLabelText("register.land_de")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("fan.pays"), { target: { value: "FR" } });
+    expect(await screen.findByText("fan.ohne_region_land")).toBeInTheDocument();
+    fuelleFormular();
+    fireEvent.click(screen.getByLabelText("fan.consentement"));
+    fireEvent.click(screen.getByText("fan.submit"));
+    await waitFor(() =>
+      expect(regionenApi.registriereFan).toHaveBeenCalledWith(
+        expect.objectContaining({ pays: "FR", land_de: undefined }),
+      ),
+    );
   });
 
   it("meldet an, bestätigt den Code und endet auf der Erfolgsseite", async () => {

@@ -15,6 +15,8 @@ import {
 } from "../../api/uebersetzung";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { texteBrutDepuisHtml } from "../../utils/html";
+import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
+import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
 
 const SPRACHEN: UebersetzungSprache[] = ["de", "fr", "ar"];
 
@@ -104,7 +106,9 @@ export default function UebersetzungenButton({ modell, objektId, className }: Pr
           aria-modal="true"
           aria-label={t("uebersetzung.titel")}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          {...hintergrundKlick(() => setOffen(false))}
         >
+          <EscapeSchliessen onClose={() => setOffen(false)} />
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-cid-lg bg-bg-primary p-5 shadow-xl">
             <h2 className="text-base font-semibold text-text-primary">{t("uebersetzung.titel")}</h2>
             <p className="mt-1 text-xs text-text-tertiary">{t("uebersetzung.erklaerung")}</p>

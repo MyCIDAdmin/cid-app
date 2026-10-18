@@ -47,8 +47,8 @@
     "kalender": "Calendrier",
     "page_kalender": "Calendrier du bureau (gérer les rendez-vous)",
     "page_kalender_vorschlag": "Proposer des rendez-vous",
-    "regionen": "Régions",
-    "page_regionen": "Régions (attribuer les responsables, modifier les pages)",
+    "regionen": "Secteurs",
+    "page_regionen": "Secteurs (attribuer les responsables, modifier les pages)",
     "support": "Support",
     "page_support": "Support (traiter les tickets, gérer la FAQ)"
   },

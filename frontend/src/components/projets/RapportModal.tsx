@@ -34,7 +34,7 @@ import {
   useCreerMiseAJourProjet,
   useMisesAJourProjet,
 } from "../../hooks/useProjets";
-import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Projet } from "../../types/projets";
 import RichTextEditor from "../ui/RichTextEditor";
@@ -91,7 +91,7 @@ export default function RapportModal({ projet, onClose, autoriserAjout }: Rappor
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      {...hintergrundKlick(onClose)}
     >
       <div
         role="dialog"

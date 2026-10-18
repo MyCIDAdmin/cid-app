@@ -32,6 +32,7 @@ import {
   IconShare3,
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
+import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 
 export interface ShareButtonProps {
   /** Chemin relatif de l'app, ex. "/evenements?evenement=abc-123". */
@@ -57,6 +58,8 @@ export default function ShareButton({
   const [ouvert, setOuvert] = useState(false);
   const [lienCopie, setLienCopie] = useState(false);
   const conteneurRef = useRef<HTMLDivElement>(null);
+
+  useEscapeSchliessen(() => setOuvert(false), ouvert);
 
   useEffect(() => {
     function handleClicExterieur(e: MouseEvent) {
