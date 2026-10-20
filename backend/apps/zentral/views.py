@@ -18,9 +18,7 @@ class ZentraleEinstellungenView(APIView):
 
     def patch(self, request):
         einstellungen = ZentraleEinstellungen.get_solo()
-        serializer = ZentraleEinstellungenSerializer(
-            einstellungen, data=request.data, partial=True
-        )
+        serializer = ZentraleEinstellungenSerializer(einstellungen, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save(modifie_par=request.user)
         log_audit_event(

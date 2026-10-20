@@ -27,6 +27,7 @@ transactionnel (même principe que le stock atomique boutique, appliqué ici à 
 
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -69,8 +70,12 @@ from .serializers import (
     RejoindreTrajetSerializer,
     ReservationCovoiturageSerializer,
 )
-from .services import synchroniser_cotisation
-from .tasks import envoyer_annulation_evenement, envoyer_invitations_evenement
+from .services import (
+    synchroniser_cotisation,
+    warteliste_nachruecken,
+    zahlungsfrist_ende,
+)
+from .tasks import benachrichtige, envoyer_annulation_evenement, envoyer_invitations_evenement
 
 # Statuts Cotisation considérés "pas encore payés" — voir inscrire_especes ci-dessous, même
 # constante que apps.cotisations.views.STATUTS_CONFIRMABLES_EN_PAYEE (dupliquée plutôt
@@ -121,6 +126,11 @@ class EvenementViewSet(ModelViewSet):
             created_by=membre, organisateur=serializer.validated_data.get("organisateur", membre)
         )
 
+    def perform_update(self, serializer):
+        evenement = serializer.save()
+        # Höhere Kapazität => Warteliste sofort nachrücken lassen (sonst erst beim nächsten Lauf).
+        warteliste_nachruecken(evenement.pk)
+
     @action(detail=True, methods=["post"])
     def publier(self, request, pk=None):
         evenement = self.get_object()
@@ -143,11 +153,18 @@ class EvenementViewSet(ModelViewSet):
         envoyer_annulation_evenement.delay(str(evenement.id))
         return Response(self.get_serializer(evenement).data)
 
-    def _inscrire_avec_capacite_verifiee(self, membre, validated_data):
+    def _inscrire_avec_capacite_verifiee(self, membre, validated_data, warteliste_erlaubt=True):
         """Cœur partagé de `inscrire` (libre-service) et `inscrire_especes` (Directeur
         Financier/Admin, saisie pour un autre membre, ajoutée le 2026-09-21) — extrait sans
         changement de comportement pour `inscrire` (voir docstring de classe pour le
-        verrouillage transactionnel)."""
+        verrouillage transactionnel).
+
+        2026-10-20 : bei voller Veranstaltung (oder wenn bereits jemand wartet — FIFO) landet eine
+        NEUE Anmeldung auf der Warteliste (`liste_attente`) statt eine Fehlermeldung zu bekommen ;
+        wer bereits einen Platz hat und nur aufstocken will, bekommt weiterhin den Fehler. Bei
+        `warteliste_erlaubt=False` (Bar-Erfassung durch den Finanzdirektor) bleibt es immer beim
+        Fehler. Bezahlpflichtige Anmeldungen bei begrenzten Veranstaltungen erhalten die
+        Zahlungsfrist (zentral einstellbar)."""
         places_demandees = validated_data["places"]
         # Begleitpersonen (module "Veranstaltungsverwaltung", 2026-09-25) : décomptes adulte/
         # enfant, jamais fait confiance au frontend au-delà du simple nombre — le tarif est
@@ -187,7 +204,12 @@ class EvenementViewSet(ModelViewSet):
                 membre=membre,
                 defaults={"places": 0, "statut": StatutInscription.CONFIRMEE},
             )
-            if inscription.statut != StatutInscription.ANNULEE:
+            vorheriger_status = None if created else inscription.statut
+            hatte_platz = vorheriger_status in (
+                StatutInscription.CONFIRMEE,
+                StatutInscription.EN_ATTENTE_PAIEMENT,
+            )
+            if hatte_platz:
                 places_existantes = (
                     inscription.places
                     + inscription.nombre_accompagnants_adultes
@@ -196,18 +218,31 @@ class EvenementViewSet(ModelViewSet):
             else:
                 places_existantes = 0
 
+            auf_warteliste = False
             if evenement.places_max is not None:
                 places_autres = evenement.places_reservees - places_existantes
-                if places_autres + total_places_demandees > evenement.places_max:
-                    raise ValidationError(
-                        {
-                            "places": (
-                                "Capacité insuffisante : "
-                                f"{max(evenement.places_max - places_autres, 0)} place(s) "
-                                "disponible(s)."
-                            )
-                        }
+                passt = places_autres + total_places_demandees <= evenement.places_max
+                # FIFO: Wer neu dazukommt, stellt sich hinter bereits Wartende an.
+                jemand_wartet = (
+                    not hatte_platz
+                    and Inscription.objects.filter(
+                        evenement=evenement, statut=StatutInscription.LISTE_ATTENTE
                     )
+                    .exclude(pk=inscription.pk)
+                    .exists()
+                )
+                if not passt or jemand_wartet:
+                    if hatte_platz or not warteliste_erlaubt:
+                        raise ValidationError(
+                            {
+                                "places": (
+                                    "Capacité insuffisante : "
+                                    f"{max(evenement.places_max - places_autres, 0)} place(s) "
+                                    "disponible(s)."
+                                )
+                            }
+                        )
+                    auf_warteliste = True
 
             inscription.places = places_demandees
             inscription.nombre_accompagnants_adultes = nb_accompagnants_adultes
@@ -226,11 +261,28 @@ class EvenementViewSet(ModelViewSet):
             # seulement de evenement.gratuit/cout : un événement gratuit pour le membre peut
             # tout de même facturer ses accompagnants (accompagnants_payants indépendant de
             # gratuit/cout, voir Evenement — module "Veranstaltungsverwaltung" 2026-09-25).
-            inscription.statut = (
-                StatutInscription.CONFIRMEE
-                if inscription.montant_paye <= 0
-                else StatutInscription.EN_ATTENTE_PAIEMENT
-            )
+            if auf_warteliste:
+                inscription.statut = StatutInscription.LISTE_ATTENTE
+                inscription.zahlungsfrist_bis = None
+                if vorheriger_status != StatutInscription.LISTE_ATTENTE:
+                    inscription.warteliste_seit = timezone.now()
+            else:
+                inscription.statut = (
+                    StatutInscription.CONFIRMEE
+                    if inscription.montant_paye <= 0
+                    else StatutInscription.EN_ATTENTE_PAIEMENT
+                )
+                inscription.warteliste_seit = None
+                if inscription.statut == StatutInscription.EN_ATTENTE_PAIEMENT:
+                    # Bestehende Frist bleibt bei erneutem Absenden unverändert (kein Verlängern).
+                    if (
+                        vorheriger_status != StatutInscription.EN_ATTENTE_PAIEMENT
+                        or inscription.zahlungsfrist_bis is None
+                    ):
+                        inscription.zahlungsfrist_bis = zahlungsfrist_ende(evenement)
+                        inscription.frist_erinnerung_gesendet_am = None
+                else:
+                    inscription.zahlungsfrist_bis = None
             inscription.save()
             # Crée/actualise la Cotisation liée si un paiement est désormais dû dans l'immédiat
             # (ajouté le 2026-09-20, voir services.py — sans quoi une inscription payante ne
@@ -239,6 +291,8 @@ class EvenementViewSet(ModelViewSet):
             # cohérente avec la capacité/le montant vérifiés atomiquement.
             synchroniser_cotisation(inscription)
 
+        if auf_warteliste and vorheriger_status != StatutInscription.LISTE_ATTENTE:
+            benachrichtige.delay("warteliste", str(inscription.pk))
         return inscription
 
     @action(detail=False, methods=["post"])
@@ -288,7 +342,9 @@ class EvenementViewSet(ModelViewSet):
         serializer = InscrireEspecesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         membre_cible = serializer.validated_data["membre"]
-        inscription = self._inscrire_avec_capacite_verifiee(membre_cible, serializer.validated_data)
+        inscription = self._inscrire_avec_capacite_verifiee(
+            membre_cible, serializer.validated_data, warteliste_erlaubt=False
+        )
 
         cotisation = inscription.cotisation
         if cotisation is not None and cotisation.statut in _STATUTS_COTISATION_NON_PAYEE:
@@ -345,12 +401,16 @@ class InscriptionViewSet(ModelViewSet):
         if inscription.statut == StatutInscription.ANNULEE:
             raise ValidationError({"statut": "Cette inscription est déjà annulée."})
         inscription.statut = StatutInscription.ANNULEE
-        inscription.save(update_fields=["statut"])
+        inscription.zahlungsfrist_bis = None
+        inscription.warteliste_seit = None
+        inscription.save(update_fields=["statut", "zahlungsfrist_bis", "warteliste_seit"])
         # Annule la Cotisation liée si elle n'était pas encore payée (ajouté le 2026-09-20, voir
         # services.py) — ne touche jamais une Cotisation déjà payee (synchroniser_cotisation ne
         # touche que en_attente/echouee), même philosophie que l'annulation d'une Souscription
         # adhésion (apps.adhesions.views.SouscriptionViewSet.annuler).
         synchroniser_cotisation(inscription)
+        # Der freigewordene Platz geht an die Warteliste (2026-10-20).
+        warteliste_nachruecken(inscription.evenement_id)
         return Response(self.get_serializer(inscription).data)
 
 

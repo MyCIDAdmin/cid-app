@@ -14,7 +14,15 @@ from apps.rbac.models import NiveauAcces
 from apps.rbac.services import est_membre_actif, has_admin_page_access
 from apps.uebersetzung.serializers import UebersetzungenField
 
-from .models import Covoiturage, Evenement, Inscription, ReservationCovoiturage, StatutEvenement
+from .models import (
+    Covoiturage,
+    Evenement,
+    Inscription,
+    ReservationCovoiturage,
+    StatutEvenement,
+    StatutInscription,
+)
+from .services import warteliste_position
 
 
 class MembreResumeSerializer(serializers.ModelSerializer):
@@ -41,6 +49,8 @@ class EvenementResumeSerializer(serializers.ModelSerializer):
 class EvenementSerializer(serializers.ModelSerializer):
     places_reservees = serializers.IntegerField(read_only=True)
     places_restantes = serializers.IntegerField(read_only=True, allow_null=True)
+    # 2026-10-20 : Anzahl Wartender (nur Anzeige "ausgebucht — Warteliste").
+    warteliste_laenge = serializers.SerializerMethodField()
     organisateur_detail = MembreResumeSerializer(source="organisateur", read_only=True)
     # Point 1.1/3 (2026-10-05) : affichage seul pour les non-membres/anonymes.
     reserve_membres = serializers.SerializerMethodField()
@@ -83,11 +93,17 @@ class EvenementSerializer(serializers.ModelSerializer):
             "visible_public",
             "places_reservees",
             "places_restantes",
+            "warteliste_laenge",
             "created_by",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "statut", "created_by", "created_at", "updated_at"]
+
+    def get_warteliste_laenge(self, obj) -> int:
+        if obj.places_max is None:
+            return 0
+        return obj.inscriptions.filter(statut=StatutInscription.LISTE_ATTENTE).count()
 
     def _est_membre(self) -> bool:
         request = self.context.get("request")
@@ -165,6 +181,10 @@ class EvenementSerializer(serializers.ModelSerializer):
 
 class InscriptionSerializer(serializers.ModelSerializer):
     evenement_detail = EvenementResumeSerializer(source="evenement", read_only=True)
+    warteliste_position = serializers.SerializerMethodField()
+
+    def get_warteliste_position(self, obj) -> int | None:
+        return warteliste_position(obj)
 
     class Meta:
         model = Inscription
@@ -180,6 +200,8 @@ class InscriptionSerializer(serializers.ModelSerializer):
             "remarques",
             "montant_paye",
             "statut",
+            "zahlungsfrist_bis",
+            "warteliste_position",
             "cotisation",
             "created_at",
             "updated_at",
@@ -188,6 +210,7 @@ class InscriptionSerializer(serializers.ModelSerializer):
             "id",
             "evenement",
             "membre",
+            "zahlungsfrist_bis",
             "places",
             "nombre_accompagnants_adultes",
             "nombre_accompagnants_enfants",

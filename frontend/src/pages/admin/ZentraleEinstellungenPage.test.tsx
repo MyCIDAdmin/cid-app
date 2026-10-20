@@ -18,6 +18,7 @@ describe("ZentraleEinstellungenPage", () => {
     vi.mocked(useZentralHooks.useZentraleEinstellungen).mockReturnValue({
       data: {
         warenkorb_reservierung_minuten: 20,
+        event_zahlungsfrist_tage: 2,
         modifie_par: null,
         updated_at: "x",
       },
@@ -37,7 +38,10 @@ describe("ZentraleEinstellungenPage", () => {
     expect(feld).toHaveValue(20);
     fireEvent.change(feld, { target: { value: "30" } });
     fireEvent.click(screen.getByText("speichern"));
-    expect(mutate).toHaveBeenCalledWith({ warenkorb_reservierung_minuten: 30 }, expect.any(Object));
+    expect(mutate).toHaveBeenCalledWith(
+      { warenkorb_reservierung_minuten: 30, event_zahlungsfrist_tage: 2 },
+      expect.any(Object),
+    );
   });
 
   it("sperrt Speichern bei ungültigem Wert (0 oder zu groß)", () => {
@@ -50,5 +54,19 @@ describe("ZentraleEinstellungenPage", () => {
     expect(knopf).toBeDisabled();
     fireEvent.change(feld, { target: { value: "1440" } });
     expect(knopf).toBeEnabled();
+  });
+
+  it("bietet die Zahlungsfrist für Veranstaltungen (1–30 Tage) an", () => {
+    renderWithProviders(<ZentraleEinstellungenPage />);
+    const feld = screen.getByLabelText("feld.event_zahlungsfrist_tage.label");
+    expect(feld).toHaveValue(2);
+    fireEvent.change(feld, { target: { value: "31" } });
+    expect(screen.getByText("speichern")).toBeDisabled();
+    fireEvent.change(feld, { target: { value: "3" } });
+    fireEvent.click(screen.getByText("speichern"));
+    expect(mutate).toHaveBeenCalledWith(
+      { warenkorb_reservierung_minuten: 20, event_zahlungsfrist_tage: 3 },
+      expect.any(Object),
+    );
   });
 });

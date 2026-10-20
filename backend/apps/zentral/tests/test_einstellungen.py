@@ -46,3 +46,16 @@ def test_ungueltige_dauer_wird_abgelehnt(wert):
     client, _ = _client(Role.SUPER_ADMIN)
     resp = client.patch(reverse(URL), {"warenkorb_reservierung_minuten": wert}, format="json")
     assert resp.status_code == 400
+
+
+def test_zahlungsfrist_standard_zwei_tage_und_grenzen():
+    assert ZentraleEinstellungen.get_solo().event_zahlungsfrist_tage == 2
+    client, _ = _client(Role.SUPER_ADMIN)
+    assert (
+        client.patch(reverse(URL), {"event_zahlungsfrist_tage": 7}, format="json").status_code
+        == 200
+    )
+    assert ZentraleEinstellungen.get_solo().event_zahlungsfrist_tage == 7
+    for wert in (0, 31):
+        resp = client.patch(reverse(URL), {"event_zahlungsfrist_tage": wert}, format="json")
+        assert resp.status_code == 400

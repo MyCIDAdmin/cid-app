@@ -8,5 +8,10 @@ class ZentraleEinstellungenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ZentraleEinstellungen
-        fields = ["warenkorb_reservierung_minuten", "modifie_par", "updated_at"]
+        fields = [
+            "warenkorb_reservierung_minuten",
+            "event_zahlungsfrist_tage",
+            "modifie_par",
+            "updated_at",
+        ]
         read_only_fields = ["modifie_par", "updated_at"]

@@ -10,7 +10,7 @@ import type { PartnerLogoEintrag } from "./partner";
 export type TypeEvenement = "deplacement" | "fete" | "conference" | "tournoi" | "ag";
 export type StatutEvenement = "brouillon" | "publie" | "annule";
 export type RegimeAlimentaire = "aucun" | "halal" | "vegetarien";
-export type StatutInscription = "en_attente_paiement" | "confirmee" | "annulee";
+export type StatutInscription = "en_attente_paiement" | "confirmee" | "annulee" | "liste_attente";
 export type StatutReservationCovoiturage = "confirmee" | "annulee";
 
 /** Identité minimale d'un membre (voir MembreResumeSerializer côté backend) — même principe
@@ -76,6 +76,8 @@ export interface Evenement {
   /** Toujours recalculées côté serveur (CLAUDE.md §8) — jamais déduites côté client. */
   places_reservees: number;
   places_restantes: number | null;
+  /** Anzahl Wartender (nur Anzeige) — 0 bei unbegrenzten Veranstaltungen. */
+  warteliste_laenge: number;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -135,6 +137,10 @@ export interface Inscription {
    * fait confiance au frontend (CLAUDE.md §8). */
   montant_paye: string;
   statut: StatutInscription;
+  /** Zahlungsfrist (ISO) bei begrenzten Veranstaltungen, sonst null (2026-10-20). */
+  zahlungsfrist_bis: string | null;
+  /** Rang auf der Warteliste (1 = als Nächstes), null wenn nicht auf der Warteliste. */
+  warteliste_position: number | null;
   cotisation: string | null;
   created_at: string;
   updated_at: string;

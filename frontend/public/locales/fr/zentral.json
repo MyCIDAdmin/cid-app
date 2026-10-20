@@ -7,13 +7,19 @@
   "gespeichert": "Enregistré.",
   "speichern": "Enregistrer",
   "gruppe": {
-    "shop": "Boutique"
+    "shop": "Boutique",
+    "events": "Événements"
   },
   "feld": {
     "warenkorb_reservierung_minuten": {
       "label": "Réservation du panier",
       "einheit": "minutes",
       "hilfe": "Durée de réservation des articles du panier. Chaque ajout ou modification relance le compte à rebours (autorisé : {{min}}–{{max}})."
+    },
+    "event_zahlungsfrist_tage": {
+      "label": "Délai de paiement des événements à places limitées",
+      "einheit": "jours",
+      "hilfe": "Sans paiement dans ce délai, l'inscription est annulée et la place passe à la liste d'attente. Rappel 24 h avant (autorisé : {{min}}–{{max}})."
     }
   }
 }

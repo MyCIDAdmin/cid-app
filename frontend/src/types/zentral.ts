@@ -1,6 +1,7 @@
 /** Zentrale Einstellungen (apps.zentral) — Werte, die der App-Administrator ohne Release ändert. */
 export interface ZentraleEinstellungen {
   warenkorb_reservierung_minuten: number;
+  event_zahlungsfrist_tage: number;
   modifie_par: string | null;
   updated_at: string;
 }

@@ -7,13 +7,19 @@
   "gespeichert": "Gespeichert.",
   "speichern": "Speichern",
   "gruppe": {
-    "shop": "Shop"
+    "shop": "Shop",
+    "events": "Veranstaltungen"
   },
   "feld": {
     "warenkorb_reservierung_minuten": {
       "label": "Warenkorb-Reservierung",
       "einheit": "Minuten",
       "hilfe": "So lange sind Artikel im Warenkorb reserviert. Jedes Hinzufügen oder Ändern setzt den Countdown zurück (erlaubt: {{min}}–{{max}})."
+    },
+    "event_zahlungsfrist_tage": {
+      "label": "Zahlungsfrist bei begrenzten Veranstaltungen",
+      "einheit": "Tage",
+      "hilfe": "Wer nicht innerhalb dieser Frist bezahlt, wird storniert; der Platz geht an die Warteliste. 24 Stunden vorher gibt es eine Erinnerung (erlaubt: {{min}}–{{max}})."
     }
   }
 }

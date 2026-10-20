@@ -20,6 +20,17 @@ class ZentraleEinstellungen(models.Model):
         ),
     )
 
+    event_zahlungsfrist_tage = models.PositiveSmallIntegerField(
+        default=2,
+        validators=[MinValueValidator(1), MaxValueValidator(30)],
+        verbose_name=_("Zahlungsfrist Veranstaltungen (Tage)"),
+        help_text=_(
+            "Bei Veranstaltungen mit begrenzter Teilnehmerzahl muss die Teilnahme innerhalb "
+            "dieser Frist bezahlt werden, sonst wird die Anmeldung storniert und die Warteliste "
+            "rückt nach."
+        ),
+    )
+
     modifie_par = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

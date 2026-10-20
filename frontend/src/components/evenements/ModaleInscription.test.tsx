@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -42,6 +42,7 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     visible_public: true,
     places_reservees: 5,
     places_restantes: 15,
+    warteliste_laenge: 0,
     created_by: "m1",
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
@@ -82,5 +83,81 @@ describe("ModaleInscription", () => {
     );
 
     expect(screen.queryByText("maps.ouvrir")).not.toBeInTheDocument();
+  });
+
+  describe("Warteliste / Zahlungsfrist (2026-10-20)", () => {
+    function mockInscrire(mutate = vi.fn()) {
+      vi.mocked(useEvenementsHooks.useInscrire).mockReturnValue({
+        mutate,
+        isPending: false,
+      } as unknown as ReturnType<typeof useEvenementsHooks.useInscrire>);
+      return mutate;
+    }
+
+    it("zeigt bei ausgebuchter Veranstaltung den Wartelisten-Hinweis und -Button", () => {
+      mockInscrire();
+      renderWithProviders(
+        <ModaleInscription
+          evenement={evenement({ places_max: 10, places_restantes: 0 })}
+          onClose={vi.fn()}
+          onPayer={vi.fn()}
+        />,
+      );
+      expect(screen.getByText("warteliste_modal_hinweis")).toBeInTheDocument();
+      expect(screen.getByText("warteliste_beitreten")).toBeInTheDocument();
+    });
+
+    it("zeigt auch bei freien Plätzen den Wartelisten-Weg, wenn bereits Leute warten", () => {
+      mockInscrire();
+      renderWithProviders(
+        <ModaleInscription
+          evenement={evenement({ places_max: 10, places_restantes: 2, warteliste_laenge: 3 })}
+          onClose={vi.fn()}
+          onPayer={vi.fn()}
+        />,
+      );
+      expect(screen.getByText("warteliste_modal_hinweis")).toBeInTheDocument();
+    });
+
+    it("weist bei bezahlpflichtiger, begrenzter Veranstaltung auf die Zahlungsfrist hin", () => {
+      mockInscrire();
+      renderWithProviders(
+        <ModaleInscription
+          evenement={evenement({
+            places_max: 10,
+            places_restantes: 5,
+            gratuit: false,
+            cout: "35.00",
+            cout_applicable: "35.00",
+          })}
+          onClose={vi.fn()}
+          onPayer={vi.fn()}
+        />,
+      );
+      expect(screen.getByText("zahlungsfrist_modal_hinweis")).toBeInTheDocument();
+    });
+
+    it("bleibt nach der Anmeldung auf der Warteliste geöffnet und zeigt den Rang", async () => {
+      const onClose = vi.fn();
+      const mutate = mockInscrire(
+        vi.fn((_payload, opts) =>
+          opts.onSuccess({ statut: "liste_attente", warteliste_position: 2, cotisation: null }),
+        ),
+      );
+      renderWithProviders(
+        <ModaleInscription
+          evenement={evenement({ places_max: 10, places_restantes: 0 })}
+          onClose={onClose}
+          onPayer={vi.fn()}
+        />,
+      );
+      await act(async () => {
+        fireEvent.click(screen.getByText("warteliste_beitreten"));
+      });
+      expect(mutate).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+      expect(screen.getByText("warteliste_bestaetigt_titel")).toBeInTheDocument();
+      expect(screen.getByText("warteliste_bestaetigt_text")).toBeInTheDocument();
+    });
   });
 });

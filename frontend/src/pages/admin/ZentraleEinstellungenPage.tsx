@@ -10,7 +10,7 @@ import { useAendereZentraleEinstellungen, useZentraleEinstellungen } from "../..
 import type { ZentraleEinstellungen } from "../../types/zentral";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
-type FeldSchluessel = "warenkorb_reservierung_minuten";
+type FeldSchluessel = "warenkorb_reservierung_minuten" | "event_zahlungsfrist_tage";
 
 interface FeldDefinition {
   schluessel: FeldSchluessel;
@@ -29,6 +29,10 @@ const GRUPPEN: Gruppe[] = [
     schluessel: "shop",
     felder: [{ schluessel: "warenkorb_reservierung_minuten", min: 1, max: 1440 }],
   },
+  {
+    schluessel: "events",
+    felder: [{ schluessel: "event_zahlungsfrist_tage", min: 1, max: 30 }],
+  },
 ];
 
 type Entwurf = Record<FeldSchluessel, string>;
@@ -36,6 +40,7 @@ type Entwurf = Record<FeldSchluessel, string>;
 function zuEntwurf(daten: ZentraleEinstellungen): Entwurf {
   return {
     warenkorb_reservierung_minuten: String(daten.warenkorb_reservierung_minuten),
+    event_zahlungsfrist_tage: String(daten.event_zahlungsfrist_tage),
   };
 }
 

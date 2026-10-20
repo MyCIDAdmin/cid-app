@@ -39,7 +39,13 @@ from apps.notifications.email_cid import Texte, envoyer_email_cid
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import email_module_actif, notifier
 
-from .models import Evenement, Inscription, StatutEvenement, StatutInscription
+from .models import (
+    STATUTS_SANS_PLACE,
+    Evenement,
+    Inscription,
+    StatutEvenement,
+    StatutInscription,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -334,7 +340,7 @@ def envoyer_rappels_evenements(today=None) -> int:
         )
         for evenement in evenements:
             inscriptions = evenement.inscriptions.exclude(
-                statut=StatutInscription.ANNULEE
+                statut__in=STATUTS_SANS_PLACE
             ).select_related("membre__user")
             lien = f"/evenements?evenement={evenement.id}"  # voir envoyer_invitations_evenement
             for inscription in inscriptions:
@@ -424,3 +430,251 @@ def envoyer_rappels_paiement_evenements(today=None) -> int:
             lien=lien,
         )
     return envoyes
+
+
+# --- Zahlungsfrist + Warteliste (2026-10-20) ---------------------------------------------------
+
+_MODELE_NACHGERUECKT_ZAHLEN = {
+    "de": (
+        "Platz frei: {titre}",
+        [
+            "Gute Nachrichten: Für dich ist ein Platz frei geworden. Bitte zahle {montant} € bis {frist}, sonst wird der Platz an die nächste Person vergeben."  # noqa: E501
+        ],
+        "Jetzt bezahlen",
+    ),
+    "fr": (
+        "Place disponible : {titre}",
+        [
+            "Bonne nouvelle : une place s'est libérée pour vous. Merci de régler {montant} € avant le {frist}, sinon elle sera attribuée à la personne suivante."  # noqa: E501
+        ],
+        "Payer maintenant",
+    ),
+    "ar": (
+        "مكان متاح: {titre}",
+        [
+            "أخبار سارة: توفر مكان لك. يرجى دفع {montant} € قبل {frist}، وإلا سيُمنح المكان للشخص التالي."  # noqa: E501
+        ],
+        "ادفع الآن",
+    ),
+}
+_MODELE_NACHGERUECKT_FREI = {
+    "de": (
+        "Du bist dabei: {titre}",
+        ["Gute Nachrichten: Ein Platz ist frei geworden, deine Teilnahme ist jetzt bestätigt."],
+        "Zur Veranstaltung",
+    ),
+    "fr": (
+        "Vous êtes inscrit(e) : {titre}",
+        ["Bonne nouvelle : une place s'est libérée, votre participation est confirmée."],
+        "Voir l'événement",
+    ),
+    "ar": (
+        "تم تأكيد مشاركتك: {titre}",
+        ["أخبار سارة: توفر مكان وتم تأكيد مشاركتك."],
+        "عرض الفعالية",
+    ),
+}
+_MODELE_FRIST_ERINNERUNG = {
+    "de": (
+        "Zahlungsfrist endet bald: {titre}",
+        [
+            "Deine Zahlungsfrist endet am {frist}. Bitte zahle {montant} €, damit dein Platz nicht an die Warteliste geht."  # noqa: E501
+        ],
+        "Jetzt bezahlen",
+    ),
+    "fr": (
+        "Fin du délai de paiement : {titre}",
+        [
+            "Votre délai de paiement se termine le {frist}. Merci de régler {montant} € pour conserver votre place."  # noqa: E501
+        ],
+        "Payer maintenant",
+    ),
+    "ar": (
+        "اقتراب نهاية مهلة الدفع: {titre}",
+        ["تنتهي مهلة الدفع في {frist}. يرجى دفع {montant} € للحفاظ على مكانك."],
+        "ادفع الآن",
+    ),
+}
+_MODELE_FRIST_ABGELAUFEN = {
+    "de": (
+        "Anmeldung storniert: {titre}",
+        [
+            "Die Zahlungsfrist ist abgelaufen, deine Anmeldung wurde storniert und der Platz freigegeben. Du kannst dich erneut anmelden, falls noch Plätze frei sind."  # noqa: E501
+        ],
+        "Zu den Veranstaltungen",
+    ),
+    "fr": (
+        "Inscription annulée : {titre}",
+        [
+            "Le délai de paiement est dépassé : votre inscription a été annulée et la place libérée. Vous pouvez vous réinscrire s'il reste des places."  # noqa: E501
+        ],
+        "Voir les événements",
+    ),
+    "ar": (
+        "تم إلغاء التسجيل: {titre}",
+        ["انتهت مهلة الدفع، فتم إلغاء تسجيلك وإتاحة المكان. يمكنك التسجيل مجددًا إن وُجدت أماكن."],
+        "عرض الفعاليات",
+    ),
+}
+_MODELE_WARTELISTE = {
+    "de": (
+        "Warteliste: {titre}",
+        [
+            "Die Veranstaltung ist ausgebucht, du stehst auf der Warteliste (Platz {position}). Sobald ein Platz frei wird, rückst du automatisch nach und wirst benachrichtigt."  # noqa: E501
+        ],
+        "Zur Veranstaltung",
+    ),
+    "fr": (
+        "Liste d'attente : {titre}",
+        [
+            "L'événement est complet, vous êtes sur la liste d'attente (rang {position}). Dès qu'une place se libère, vous avancez automatiquement et êtes prévenu(e)."  # noqa: E501
+        ],
+        "Voir l'événement",
+    ),
+    "ar": (
+        "قائمة الانتظار: {titre}",
+        [
+            "الفعالية مكتملة، أنت في قائمة الانتظار (الترتيب {position}). عند توفر مكان ستنتقل تلقائيًا وسيتم إشعارك."  # noqa: E501
+        ],
+        "عرض الفعالية",
+    ),
+}
+
+
+def _fmt_datetime(wert, langue: str) -> str:
+    lokal = timezone.localtime(wert)
+    return lokal.strftime("%d.%m.%Y %H:%M" if langue == "de" else "%d/%m/%Y %H:%M")
+
+
+def _sende(inscription: Inscription, modell: dict, titel_de: str, nachricht: str, **kw) -> None:
+    """Mail (3 Sprachen) + In-App-Benachrichtigung — Fehler beim Versand brechen nie ab."""
+    user = inscription.membre.user
+    if not user:
+        return
+    evenement = inscription.evenement
+    lien = f"/evenements?evenement={evenement.id}"
+    if user.email and email_module_actif("evenements"):
+        try:
+            textes = {}
+            for langue, einzel in modell.items():
+                kw_lang = {
+                    k: (_fmt_datetime(v, langue) if hasattr(v, "tzinfo") else v)
+                    for k, v in kw.items()
+                }
+                textes.update(_textes_evenement(evenement, {langue: einzel}, **kw_lang))
+            envoyer_email_cid(
+                sujet=f"{titel_de} · {evenement.titre}",
+                destinataire=user.email,
+                textes=textes,
+                lien=lien,
+            )
+        except Exception:  # noqa: BLE001 — voir docstring de module
+            logger.warning(
+                "evenements: échec d'envoi email user=%s evenement=%s", user.id, evenement.id
+            )
+    notifier(
+        user,
+        TypeNotification.EVENEMENT_RAPPEL,
+        titre=f"{titel_de} — {evenement.titre}",
+        message=nachricht,
+        lien=lien,
+    )
+
+
+def benachrichtige_warteliste(inscription: Inscription, position: int) -> None:
+    _sende(
+        inscription,
+        _MODELE_WARTELISTE,
+        "Warteliste",
+        f"Warteliste, Platz {position} — du rückst automatisch nach.",
+        position=position,
+    )
+
+
+def benachrichtige_nachgerueckt(inscription: Inscription) -> None:
+    if inscription.statut == StatutInscription.EN_ATTENTE_PAIEMENT:
+        _sende(
+            inscription,
+            _MODELE_NACHGERUECKT_ZAHLEN,
+            "Platz frei geworden",
+            "Ein Platz ist frei geworden — bitte innerhalb der Frist bezahlen.",
+            montant=inscription.montant_paye,
+            frist=inscription.zahlungsfrist_bis,
+        )
+    else:
+        _sende(
+            inscription,
+            _MODELE_NACHGERUECKT_FREI,
+            "Du bist dabei",
+            "Ein Platz ist frei geworden — deine Teilnahme ist bestätigt.",
+        )
+
+
+def benachrichtige_frist_abgelaufen(inscription: Inscription) -> None:
+    _sende(
+        inscription,
+        _MODELE_FRIST_ABGELAUFEN,
+        "Anmeldung storniert",
+        "Zahlungsfrist abgelaufen — Anmeldung storniert, Platz freigegeben.",
+    )
+
+
+@shared_task
+def fristen_verarbeiten(jetzt=None) -> dict:
+    """Alle 15 Min.: (1) Erinnerung 24 h vor Fristende, (2) abgelaufene Anmeldungen stornieren,
+    (3) Warteliste nachrücken lassen (auch wenn ein Admin `places_max` erhöht hat)."""
+    from . import services
+
+    jetzt = jetzt or timezone.now()
+    erinnert = 0
+    for inscription in Inscription.objects.filter(
+        statut=StatutInscription.EN_ATTENTE_PAIEMENT,
+        frist_erinnerung_gesendet_am__isnull=True,
+        zahlungsfrist_bis__isnull=False,
+        zahlungsfrist_bis__gt=jetzt,
+        zahlungsfrist_bis__lte=jetzt + timedelta(hours=24),
+        evenement__statut=StatutEvenement.PUBLIE,
+    ).select_related("evenement", "membre__user"):
+        _sende(
+            inscription,
+            _MODELE_FRIST_ERINNERUNG,
+            "Zahlungsfrist endet bald",
+            "Deine Zahlungsfrist endet in weniger als 24 Stunden.",
+            montant=inscription.montant_paye,
+            frist=inscription.zahlungsfrist_bis,
+        )
+        inscription.frist_erinnerung_gesendet_am = jetzt
+        inscription.save(update_fields=["frist_erinnerung_gesendet_am", "updated_at"])
+        erinnert += 1
+
+    storniert = services.unbezahlte_stornieren(jetzt)
+
+    nachgerueckt = 0
+    for evenement_id in (
+        Inscription.objects.filter(statut=StatutInscription.LISTE_ATTENTE)
+        .values_list("evenement_id", flat=True)
+        .distinct()
+    ):
+        nachgerueckt += len(services.warteliste_nachruecken(evenement_id))
+    return {"erinnert": erinnert, "storniert": storniert, "nachgerueckt": nachgerueckt}
+
+
+@shared_task
+def benachrichtige(art: str, inscription_id: str) -> None:
+    """Asynchroner Versand (Mail + In-App) zu Warteliste/Nachrücken/Fristablauf — damit weder die
+    Anmelde-/Storno-Anfrage noch der Frist-Lauf an SMTP hängt."""
+    from . import services
+
+    inscription = (
+        Inscription.objects.select_related("evenement", "membre__user")
+        .filter(pk=inscription_id)
+        .first()
+    )
+    if inscription is None:
+        return
+    if art == "warteliste":
+        benachrichtige_warteliste(inscription, services.warteliste_position(inscription) or 1)
+    elif art == "nachgerueckt":
+        benachrichtige_nachgerueckt(inscription)
+    elif art == "frist_abgelaufen":
+        benachrichtige_frist_abgelaufen(inscription)

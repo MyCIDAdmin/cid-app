@@ -27,6 +27,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import AnimatedProgress from "../ui/AnimatedProgress";
 import EvenementPreise from "../evenements/EvenementPreise";
+import InscriptionFristHinweis from "../evenements/InscriptionFristHinweis";
 import MapsApercu from "../ui/MapsApercu";
 import ModaleInscription, {
   formatDate,
@@ -148,14 +149,14 @@ function EvenementKachel({
           <button
             type="button"
             onClick={() => onInscrire(evenement)}
-            disabled={complet || bloqueNonMembre}
+            disabled={bloqueNonMembre}
             title={bloqueNonMembre ? t("reserve_membres_info") : undefined}
             className="w-full rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
           >
-            {complet
-              ? t("complet")
-              : bloqueNonMembre
-                ? t("nur_fuer_mitglieder")
+            {bloqueNonMembre
+              ? t("nur_fuer_mitglieder")
+              : complet
+                ? t("warteliste_beitreten")
                 : evenement.gratuit
                   ? t("sinscrire_gratuit")
                   : t("sinscrire_payer")}
@@ -237,11 +238,14 @@ function MesAnmeldungenSection() {
                     ? "bg-status-successBg text-status-successText"
                     : inscription.statut === "en_attente_paiement"
                       ? "bg-status-warningBg text-status-warningText"
-                      : "bg-bg-tertiary text-text-tertiary"
+                      : inscription.statut === "liste_attente"
+                        ? "bg-status-infoBg text-status-infoText"
+                        : "bg-bg-tertiary text-text-tertiary"
                 }`}
               >
                 {t(`inscription_statut_${inscription.statut}`)}
               </span>
+              <InscriptionFristHinweis inscription={inscription} />
             </div>
           </div>
           <div className="flex shrink-0 gap-2">

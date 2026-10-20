@@ -146,5 +146,15 @@
   "nur_fuer_mitglieder": "Nur für Mitglieder",
   "reserve_membres_info": "Diese Veranstaltung ist nur für aktive Mitglieder.",
   "point_rdv": "Treffpunkt",
-  "paiement_avant": "Zahlung bis {{date}}"
+  "paiement_avant": "Zahlung bis {{date}}",
+  "warteliste_beitreten": "Auf die Warteliste",
+  "warteliste_laenge_one": "{{count}} Person auf der Warteliste",
+  "warteliste_laenge_other": "{{count}} Personen auf der Warteliste",
+  "warteliste_position": "Warteliste – Platz {{position}}: Du rückst automatisch nach, sobald ein Platz frei wird.",
+  "zahlungsfrist_hinweis": "Bitte bis {{datum}} bezahlen, sonst wird die Anmeldung storniert und der Platz weitergegeben.",
+  "zahlungsfrist_modal_hinweis": "Bitte bezahle nach der Anmeldung innerhalb der Frist – sonst wird die Anmeldung storniert und der Platz geht an die Warteliste.",
+  "warteliste_modal_hinweis": "Die Veranstaltung ist ausgebucht. Du kommst auf die Warteliste und rückst automatisch nach, sobald ein Platz frei wird – dann hast du Zeit zu bezahlen.",
+  "warteliste_bestaetigt_titel": "Du stehst auf der Warteliste",
+  "warteliste_bestaetigt_text": "Du bist auf Platz {{position}}. Sobald ein Platz frei wird, rückst du automatisch nach und wirst benachrichtigt.",
+  "inscription_statut_liste_attente": "Warteliste"
 }

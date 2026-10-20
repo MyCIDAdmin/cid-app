@@ -17,7 +17,7 @@ import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchl
 import { useInscrire } from "../../hooks/useEvenements";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import MapsApercu from "../ui/MapsApercu";
-import type { Evenement, RegimeAlimentaire } from "../../types/evenements";
+import type { Evenement, Inscription, RegimeAlimentaire } from "../../types/evenements";
 
 // Fonctions utilitaires co-localisées avec le composant (réutilisées par EvenementsPage et
 // PublicEvenementsTab) plutôt que déplacées dans un fichier séparé — react-refresh/only-export-
@@ -66,11 +66,21 @@ export default function ModaleInscription({
   const [regime, setRegime] = useState<RegimeAlimentaire>("aucun");
   const [remarques, setRemarques] = useState("");
   const [erreur, setErreur] = useState("");
+  // 2026-10-20 : Ergebnis „Warteliste“ bleibt im Dialog sichtbar (statt stumm zu schließen).
+  const [wartend, setWartend] = useState<Inscription | null>(null);
 
+  // Ausgebucht oder es warten bereits Leute => die Anmeldung läuft über die Warteliste.
+  const ueberWarteliste =
+    (evenement.places_restantes !== null && evenement.places_restantes <= 0) ||
+    evenement.warteliste_laenge > 0;
   const maxPlaces =
-    evenement.places_restantes !== null ? Math.min(4, Math.max(evenement.places_restantes, 1)) : 4;
+    evenement.places_restantes !== null && !ueberWarteliste
+      ? Math.min(4, Math.max(evenement.places_restantes, 1))
+      : 4;
   const maxAccompagnants =
-    evenement.places_restantes !== null ? Math.max(evenement.places_restantes - places, 0) : 8;
+    evenement.places_restantes !== null && !ueberWarteliste
+      ? Math.max(evenement.places_restantes - places, 0)
+      : 8;
 
   // Estimation affichée à titre purement indicatif — le montant réel est toujours recalculé et
   // vérifié côté serveur, jamais fait confiance au frontend (CLAUDE.md §8).
@@ -93,6 +103,10 @@ export default function ModaleInscription({
       },
       {
         onSuccess: (inscription) => {
+          if (inscription.statut === "liste_attente") {
+            setWartend(inscription);
+            return;
+          }
           onClose();
           // Ajouté le 2026-09-20 (retour utilisateur : "Wenn ich auf 'Confirmer et payer'
           // clicke, ich soll direkt zur Zahlung springen") — une inscription gratuite ou déjà
@@ -105,6 +119,38 @@ export default function ModaleInscription({
         },
         onError: (err) => setErreur(extractApiErrorMessage(err, t("erreur_inscription"))),
       },
+    );
+  }
+
+  if (wartend) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        {...hintergrundKlick(onClose)}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titreId}
+          className="w-full max-w-sm rounded-cid-lg bg-bg-primary p-4 shadow-lg"
+        >
+          <h2 id={titreId} className="mb-2 text-base font-bold text-text-primary">
+            {t("warteliste_bestaetigt_titel")}
+          </h2>
+          <p className="mb-4 text-sm text-text-secondary">
+            {t("warteliste_bestaetigt_text", { position: wartend.warteliste_position ?? 1 })}
+          </p>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad"
+            >
+              {tc("action.fermer")}
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -147,6 +193,17 @@ export default function ModaleInscription({
             <div className="text-[10px] text-text-tertiary">{t("modal_montant_estime")}</div>
           </div>
         </div>
+
+        {ueberWarteliste && (
+          <p className="mb-3 rounded-cid bg-status-infoBg px-3 py-2 text-xs text-status-infoText">
+            {t("warteliste_modal_hinweis")}
+          </p>
+        )}
+        {!ueberWarteliste && montantEstime > 0 && evenement.places_max !== null && (
+          <p className="mb-3 rounded-cid bg-status-warningBg px-3 py-2 text-xs text-status-warningText">
+            {t("zahlungsfrist_modal_hinweis")}
+          </p>
+        )}
 
         {/* Aperçu Maps (demande utilisateur du 2026-09-27, point 11.2 "Maps-Link für den Ort +
             Vorschau + Adresse anzeigen") — ne rend rien si `lieu` est vide, voir MapsApercu. */}
@@ -278,7 +335,11 @@ export default function ModaleInscription({
             disabled={inscrire.isPending}
             className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
           >
-            {montantEstime > 0 ? t("modal_confirmer_payer") : t("modal_confirmer")}
+            {ueberWarteliste
+              ? t("warteliste_beitreten")
+              : montantEstime > 0
+                ? t("modal_confirmer_payer")
+                : t("modal_confirmer")}
           </button>
         </div>
       </div>

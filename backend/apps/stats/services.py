@@ -41,7 +41,12 @@ from django.utils import timezone
 from apps.adhesions.models import Souscription, StatutSouscription
 from apps.boutique.models import Commande, StatutCommande
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle, montant_catalogue
-from apps.evenements.models import Evenement, Inscription, StatutEvenement, StatutInscription
+from apps.evenements.models import (
+    STATUTS_SANS_PLACE,
+    Evenement,
+    Inscription,
+    StatutEvenement,
+)
 from apps.finances.models import Depense, StatutDepense
 from apps.membres.models import Membre, StatutMembre
 from apps.projets.models import Aufgabe, PlanKosten, Projet, ProjetMitglied, StatutAufgabe
@@ -179,7 +184,7 @@ def kpis_financier(
 
     inscriptions_payantes = _filtrer_par_membre(
         Inscription.objects.filter(evenement__date_evenement__year=annee).exclude(
-            statut=StatutInscription.ANNULEE
+            statut__in=STATUTS_SANS_PLACE
         ),
         "membre",
         ville,
@@ -291,7 +296,7 @@ def _top_contributeurs(
 
     inscriptions = _filtrer_par_membre(
         Inscription.objects.filter(evenement__date_evenement__year=annee)
-        .exclude(statut=StatutInscription.ANNULEE)
+        .exclude(statut__in=STATUTS_SANS_PLACE)
         .select_related("membre"),
         "membre",
         ville,
@@ -407,9 +412,7 @@ def kpis_evenements(
     nombre_evenements = evenements.count()
 
     inscriptions = _filtrer_par_membre(
-        Inscription.objects.filter(evenement__in=evenements).exclude(
-            statut=StatutInscription.ANNULEE
-        ),
+        Inscription.objects.filter(evenement__in=evenements).exclude(statut__in=STATUTS_SANS_PLACE),
         "membre",
         ville,
         statut,
@@ -574,7 +577,7 @@ def finances_liste(
     if type_transaction is None or type_transaction == TYPE_TRANSACTION_EVENEMENT:
         inscriptions = _filtrer_par_membre(
             Inscription.objects.filter(evenement__date_evenement__year=annee, montant_paye__gt=0)
-            .exclude(statut=StatutInscription.ANNULEE)
+            .exclude(statut__in=STATUTS_SANS_PLACE)
             .select_related("membre", "evenement"),
             "membre",
             ville,

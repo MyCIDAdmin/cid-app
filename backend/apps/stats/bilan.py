@@ -18,7 +18,7 @@ from django.db.models.functions import TruncMonth
 from apps.adhesions.models import Souscription, StatutSouscription
 from apps.boutique.models import Commande, StatutCommande
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle
-from apps.evenements.models import Evenement, Inscription, StatutInscription
+from apps.evenements.models import STATUTS_SANS_PLACE, Evenement, Inscription
 from apps.finances.models import (
     BudgetAnnuel,
     CategorieDepense,
@@ -68,7 +68,7 @@ def recettes_mensuelles(annee: int) -> dict:
         ),
         "evenements": _par_mois(
             Inscription.objects.filter(evenement__date_evenement__year=annee).exclude(
-                statut=StatutInscription.ANNULEE
+                statut__in=STATUTS_SANS_PLACE
             ),
             "evenement__date_evenement",
             "montant_paye",
@@ -180,7 +180,7 @@ def resultats_evenements(annee: int) -> list:
     recettes = {
         ligne["evenement_id"]: ligne["t"]
         for ligne in Inscription.objects.filter(evenement__date_evenement__year=annee)
-        .exclude(statut=StatutInscription.ANNULEE)
+        .exclude(statut__in=STATUTS_SANS_PLACE)
         .values("evenement_id")
         .annotate(t=Sum("montant_paye"))
     }
@@ -326,7 +326,7 @@ def ecritures_comptables(annee: int, langue: str = "de") -> list:
         )
     for i in (
         Inscription.objects.filter(evenement__date_evenement__year=annee)
-        .exclude(statut=StatutInscription.ANNULEE)
+        .exclude(statut__in=STATUTS_SANS_PLACE)
         .select_related("membre", "evenement")
     ):
         if i.montant_paye:
