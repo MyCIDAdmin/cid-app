@@ -9,7 +9,9 @@ from django.utils import timezone as django_timezone
 from rest_framework import serializers
 
 from apps.accounts.models import ROLE_LEVELS
+from apps.evenements.models import Evenement
 from apps.membres.models import Membre, StatutMembre
+from apps.projets.models import Projet
 from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import (
@@ -916,6 +918,24 @@ class AlbumSerializer(serializers.ModelSerializer):
     # renvoie {id, titre} plutôt que l'UUID brut — seul moyen d'afficher un nom lisible.
     # Reste modifiable via l'admin Django tant qu'aucune UI de liaison n'existe.
     evenement = serializers.SerializerMethodField()
+    projet = serializers.SerializerMethodField()
+    # Schreibfelder für die Albumverwaltung (Wunsch 2026-10-21): Verknüpfung mit Veranstaltung
+    # bzw. Projekt/Aktion. Echte UUID-Prüfung (PrimaryKeyRelatedField) statt Rohtext, siehe
+    # oben; nur wer Alben verwalten darf, kann schreiben (AlbumPermission).
+    evenement_id = serializers.PrimaryKeyRelatedField(
+        source="evenement",
+        queryset=Evenement.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    projet_id = serializers.PrimaryKeyRelatedField(
+        source="projet",
+        queryset=Projet.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
     # Vignette de prévisualisation (demande utilisateur 2026-09-25) — voir
     # Album.photo_couverture ; SerializerMethodField plutôt qu'un ImageField `source=` direct
     # car la source est la photo la plus RÉCENTE de l'album, pas un champ du modèle Album
@@ -934,6 +954,10 @@ class AlbumSerializer(serializers.ModelSerializer):
             "date",
             "lieu",
             "evenement",
+            "evenement_id",
+            "projet",
+            "projet_id",
+            "oeffentlich",
             "createur",
             "created_at",
             "nombre_photos",
@@ -945,6 +969,11 @@ class AlbumSerializer(serializers.ModelSerializer):
         if not obj.evenement_id:
             return None
         return {"id": str(obj.evenement_id), "titre": obj.evenement.titre}
+
+    def get_projet(self, obj):
+        if not obj.projet_id:
+            return None
+        return {"id": str(obj.projet_id), "titre": obj.projet.titre}
 
     def get_photo_couverture(self, obj):
         photo = obj.photo_couverture
@@ -1016,6 +1045,14 @@ class PhotoSerializer(serializers.ModelSerializer):
     def get_est_proprietaire(self, obj) -> bool:
         membre = self._membre_courant()
         return membre is not None and obj.membre_id == membre.id
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        if request is not None and not request.user.is_authenticated:
+            # Öffentliche Startseite: Kommentare von Mitgliedern (mit Namen) nie ohne Anmeldung.
+            data["commentaires"] = []
+        return data
 
     def validate_image(self, image):
         # Validation MIME réelle + ré-encodage Pillow (bombe de décompression, EXIF) — voir

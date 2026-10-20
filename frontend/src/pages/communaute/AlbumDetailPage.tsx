@@ -34,6 +34,7 @@ import { usePageAccess } from "../../hooks/useRbac";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Photo } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { albumPfad } from "../../utils/albumPfad";
 import { uebersetzt } from "../../utils/uebersetzung";
 
 function formatDate(iso: string): string {
@@ -45,8 +46,12 @@ function PhotoCarte({
   peutModerer,
   moderationModifiable,
   onOuvrir,
+  publicModus,
 }: {
   photo: Photo;
+  /** Startseite ohne Anmeldung : photo en lecture seule (ni likes, ni commentaires, ni
+   * suppression/masquage) — le backend n'expose de toute façon aucun commentaire aux visiteurs. */
+  publicModus: boolean;
   peutModerer: boolean;
   /** page_albums en lecture_ecriture (task #216) — `masquer` (PhotoPermission côté backend)
    * exige ce niveau depuis le 2026-09-24, en plus de `peutModerer` (Bureau Admin+) déjà requis
@@ -94,46 +99,50 @@ function PhotoCarte({
       </button>
       <div className="p-2">
         {photo.legende && <p className="mb-1 text-xs text-text-secondary">{photo.legende}</p>}
-        <div className="flex items-center gap-3 text-xs text-text-tertiary">
-          <button
-            type="button"
-            onClick={() => liker.mutate(photo.id)}
-            className={`flex items-center gap-1 hover:text-ca ${photo.jaime ? "font-bold text-ca" : ""}`}
-          >
-            ♥ {photo.nombre_likes}
-          </button>
-          <button
-            type="button"
-            onClick={() => setAfficherCommentaires((v) => !v)}
-            className="flex items-center gap-1 hover:text-ca"
-          >
-            💬 {photo.commentaires.length}
-          </button>
-          <div className="ml-auto flex gap-2">
-            {photo.est_proprietaire && (
-              <button
-                type="button"
-                onClick={() => supprimer.mutate(photo.id)}
-                className="hover:underline"
-              >
-                {t("albums.supprimer")}
-              </button>
-            )}
-            {peutModerer && !photo.est_proprietaire && (
-              <button
-                type="button"
-                disabled={!moderationModifiable}
-                title={!moderationModifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
-                onClick={() => masquer.mutate(photo.id)}
-                className="hover:underline disabled:opacity-40"
-              >
-                {t("albums.masquer")}
-              </button>
-            )}
+        {!publicModus && (
+          <div className="flex items-center gap-3 text-xs text-text-tertiary">
+            <button
+              type="button"
+              onClick={() => liker.mutate(photo.id)}
+              className={`flex items-center gap-1 hover:text-ca ${photo.jaime ? "font-bold text-ca" : ""}`}
+            >
+              ♥ {photo.nombre_likes}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAfficherCommentaires((v) => !v)}
+              className="flex items-center gap-1 hover:text-ca"
+            >
+              💬 {photo.commentaires.length}
+            </button>
+            <div className="ml-auto flex gap-2">
+              {photo.est_proprietaire && (
+                <button
+                  type="button"
+                  onClick={() => supprimer.mutate(photo.id)}
+                  className="hover:underline"
+                >
+                  {t("albums.supprimer")}
+                </button>
+              )}
+              {peutModerer && !photo.est_proprietaire && (
+                <button
+                  type="button"
+                  disabled={!moderationModifiable}
+                  title={
+                    !moderationModifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""
+                  }
+                  onClick={() => masquer.mutate(photo.id)}
+                  className="hover:underline disabled:opacity-40"
+                >
+                  {t("albums.masquer")}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {afficherCommentaires && (
+        {!publicModus && afficherCommentaires && (
           <div className="mt-2 space-y-1.5 border-t border-text-tertiary/10 pt-2">
             {photo.commentaires.map((commentaire) => (
               <div key={commentaire.id} className="text-xs">
@@ -166,11 +175,22 @@ function PhotoCarte({
   );
 }
 
-export default function AlbumDetailPage() {
+/** `albumId` + `publicModus` : utilisés par la Startseite publique (`/?onglet=galerie&album=<id>`)
+ * qui embarque cette page sans route dédiée — sinon l'id vient de `/albums/:id`. */
+export default function AlbumDetailPage({
+  albumId,
+  publicModus = false,
+}: {
+  albumId?: string;
+  publicModus?: boolean;
+} = {}) {
   const { t } = useTranslation("communaute");
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id: string }>();
+  const id = albumId ?? params.id;
   const user = useAuthStore((s) => s.user);
   const peutModerer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  // Teilen : réservé Bureau Admin+ (demande utilisateur du 2026-10-20), jamais sur la Startseite.
+  const darfTeilen = !publicModus && peutModerer;
   // `masquer` exige page_albums en lecture_ecriture côté backend (PhotoPermission) depuis le
   // 2026-09-24 — voir docstring de PhotoCarte.moderationModifiable ci-dessus.
   const { modifiable: moderationModifiable } = usePageAccess("page_albums");
@@ -183,7 +203,10 @@ export default function AlbumDetailPage() {
 
   return (
     <div>
-      <Link to="/albums" className="mb-3 inline-block text-xs text-ca hover:underline">
+      <Link
+        to={publicModus ? "/?onglet=galerie" : "/albums"}
+        className="mb-3 inline-block text-xs text-ca hover:underline"
+      >
         {t("albums.retour_liste")}
       </Link>
 
@@ -204,13 +227,16 @@ export default function AlbumDetailPage() {
               </p>
             )}
           </div>
-          <ShareButton
-            path={`/albums/${albumQuery.data.id}`}
-            titre={albumQuery.data.nom}
-            texte={
-              [albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ") || undefined
-            }
-          />
+          {darfTeilen && (
+            <ShareButton
+              path={albumPfad(albumQuery.data, albumQuery.data.oeffentlich)}
+              titre={albumQuery.data.nom}
+              texte={
+                [albumQuery.data.date, albumQuery.data.lieu].filter(Boolean).join(" · ") ||
+                undefined
+              }
+            />
+          )}
         </div>
       )}
 
@@ -226,6 +252,7 @@ export default function AlbumDetailPage() {
           <PhotoCarte
             key={photo.id}
             photo={photo}
+            publicModus={publicModus}
             peutModerer={peutModerer}
             moderationModifiable={moderationModifiable}
             onOuvrir={() => setIndexOuvert(i)}

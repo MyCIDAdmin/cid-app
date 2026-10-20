@@ -22,6 +22,11 @@ vi.mock("../../hooks/useCommunaute", async () => {
   };
 });
 
+vi.mock("../../hooks/useAlbumVerknuepfungen", () => ({
+  useAlleEvenements: vi.fn(() => ({ data: [{ id: "e1", titre: "Derby Berlin" }] })),
+  useAlleProjets: vi.fn(() => ({ data: [{ id: "p1", titre: "Sportplatz Akademie" }] })),
+}));
+
 // page_albums en lecture_ecriture par défaut (task #216) — describe dédié plus bas pour le
 // gating lecture seule lui-même. Même convention que AdminBoutiquePage.test.tsx.
 vi.mock("../../hooks/useRbac", async () => {
@@ -52,6 +57,8 @@ function album(overrides: Partial<Album> = {}): Album {
     date: null,
     lieu: "",
     evenement: null,
+    projet: null,
+    oeffentlich: false,
     createur: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
     created_at: "2026-01-01T10:00:00Z",
     nombre_photos: 3,
@@ -132,6 +139,65 @@ describe("AdminAlbumsPage", () => {
     await waitFor(() => {
       expect(creer.mutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({ nom: "Voyage à Berlin", lieu: "Berlin" }),
+      );
+    });
+  });
+
+  it("affiche si un album est öffentlich ou nur für Mitglieder und passt ihn per Schalter an", () => {
+    mockHooksParDefaut();
+    vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+      data: page([album({ oeffentlich: false })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+    const modifier = mutationMock<ReturnType<typeof useCommunauteHooks.useModifierAlbum>>();
+    vi.mocked(useCommunauteHooks.useModifierAlbum).mockReturnValue(modifier);
+
+    renderWithProviders(<AdminAlbumsPage />);
+
+    expect(screen.getByText("admin_albums.badge_intern")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("admin_albums.freischalten"));
+
+    expect(modifier.mutate).toHaveBeenCalledWith({
+      id: "a1",
+      payload: { nom: "Derby CA - ST 2026", oeffentlich: true },
+    });
+  });
+
+  it("verknüpft ein neues Album mit Veranstaltung und Projekt und schaltet es öffentlich frei", async () => {
+    mockHooksParDefaut();
+    vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+    const creer = mutationMock<ReturnType<typeof useCommunauteHooks.useCreerAlbum>>();
+    creer.mutateAsync = vi.fn().mockResolvedValue(album({ id: "a-neu" }));
+    vi.mocked(useCommunauteHooks.useCreerAlbum).mockReturnValue(creer);
+
+    renderWithProviders(<AdminAlbumsPage />);
+
+    fireEvent.click(screen.getByText("admin_albums.nouvel_album"));
+    fireEvent.change(screen.getByLabelText(/admin_albums.champ_nom/), {
+      target: { value: "Einweihung" },
+    });
+    fireEvent.change(screen.getByLabelText("admin_albums.champ_evenement"), {
+      target: { value: "e1" },
+    });
+    fireEvent.change(screen.getByLabelText("admin_albums.champ_projet"), {
+      target: { value: "p1" },
+    });
+    fireEvent.click(screen.getByLabelText(/admin_albums.champ_oeffentlich/));
+    fireEvent.click(screen.getAllByText("admin_albums.nouvel_album")[1]);
+
+    await waitFor(() => {
+      expect(creer.mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nom: "Einweihung",
+          evenement_id: "e1",
+          projet_id: "p1",
+          oeffentlich: true,
+        }),
       );
     });
   });

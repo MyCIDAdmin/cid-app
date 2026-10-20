@@ -29,6 +29,7 @@ import {
   useUploaderPhoto,
 } from "../../hooks/useCommunaute";
 import BildHinweis from "../../components/ui/BildHinweis";
+import { useAlleEvenements, useAlleProjets } from "../../hooks/useAlbumVerknuepfungen";
 import { usePageAccess } from "../../hooks/useRbac";
 import type { Album, AlbumPayload } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -39,6 +40,10 @@ const FORMULAIRE_VIDE: AlbumPayload = {
   description: "",
   date: null,
   lieu: "",
+  // Neue Alben sind zunächst nur für Mitglieder sichtbar (Entscheidung 2026-10-20).
+  oeffentlich: false,
+  evenement_id: null,
+  projet_id: null,
 };
 
 function FormulaireAlbum({
@@ -58,10 +63,20 @@ function FormulaireAlbum({
   // N'interroge les photos existantes qu'en édition (usePhotos ne se déclenche de toute façon pas
   // sans `album`, voir son `enabled` — inutile ici lors d'une création, l'album n'a pas encore d'id).
   const photosQuery = usePhotos({ album: album?.id });
+  const evenementsQuery = useAlleEvenements();
+  const projetsQuery = useAlleProjets();
 
   const [valeurs, setValeurs] = useState<AlbumPayload>(
     album
-      ? { nom: album.nom, description: album.description, date: album.date, lieu: album.lieu }
+      ? {
+          nom: album.nom,
+          description: album.description,
+          date: album.date,
+          lieu: album.lieu,
+          oeffentlich: album.oeffentlich,
+          evenement_id: album.evenement?.id ?? null,
+          projet_id: album.projet?.id ?? null,
+        }
       : FORMULAIRE_VIDE,
   );
   const [nouvellesImages, setNouvellesImages] = useState<File[]>([]);
@@ -164,6 +179,69 @@ function FormulaireAlbum({
         </div>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label
+            htmlFor="admin-album-evenement"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin_albums.champ_evenement")}
+          </label>
+          <select
+            id="admin-album-evenement"
+            value={valeurs.evenement_id ?? ""}
+            onChange={(e) => champ("evenement_id", e.target.value || null)}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          >
+            <option value="">{t("admin_albums.aucune_liaison")}</option>
+            {(evenementsQuery.data ?? []).map((ev) => (
+              <option key={ev.id} value={ev.id}>
+                {ev.titre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="admin-album-projet"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin_albums.champ_projet")}
+          </label>
+          <select
+            id="admin-album-projet"
+            value={valeurs.projet_id ?? ""}
+            onChange={(e) => champ("projet_id", e.target.value || null)}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          >
+            <option value="">{t("admin_albums.aucune_liaison")}</option>
+            {(projetsQuery.data ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.titre}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="flex items-start gap-2 text-sm text-text-primary">
+          <input
+            id="admin-album-oeffentlich"
+            type="checkbox"
+            checked={valeurs.oeffentlich ?? false}
+            onChange={(e) => champ("oeffentlich", e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            {t("admin_albums.champ_oeffentlich")}
+            <span className="block text-xs text-text-tertiary">
+              {t("admin_albums.aide_oeffentlich")}
+            </span>
+          </span>
+        </label>
+      </div>
+
       <div>
         <label className="mb-1 block text-xs font-medium text-text-secondary">
           {t("admin_albums.images_titre")}
@@ -227,6 +305,7 @@ export default function AdminAlbumsPage() {
   const { t } = useTranslation(["communaute", "common"]);
   const albumsQuery = useAlbums();
   const supprimer = useSupprimerAlbum();
+  const modifierAlbum = useModifierAlbum();
   const { accessible, modifiable } = usePageAccess("page_albums");
 
   const [afficherFormulaire, setAfficherFormulaire] = useState(false);
@@ -305,12 +384,33 @@ export default function AdminAlbumsPage() {
           <div key={album.id} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="truncate text-sm font-bold text-text-primary">{album.nom}</div>
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-bold text-text-primary">{album.nom}</span>
+                  <span
+                    className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                      album.oeffentlich
+                        ? "bg-status-successBg text-status-successText"
+                        : "bg-bg-secondary text-text-tertiary"
+                    }`}
+                  >
+                    {album.oeffentlich
+                      ? t("admin_albums.badge_oeffentlich")
+                      : t("admin_albums.badge_intern")}
+                  </span>
+                </div>
                 <div className="text-xs text-text-tertiary">
                   {[album.date, album.lieu].filter(Boolean).join(" · ")}
                   {(album.date || album.lieu) && " · "}
                   {t("albums.nombre_photos", { count: album.nombre_photos })}
                 </div>
+                {(album.projet || album.evenement) && (
+                  <div className="text-xs text-text-tertiary">
+                    {album.evenement &&
+                      `${t("admin_albums.lien_evenement")}: ${album.evenement.titre}`}
+                    {album.evenement && album.projet && " · "}
+                    {album.projet && `${t("admin_albums.lien_projet")}: ${album.projet.titre}`}
+                  </div>
+                )}
               </div>
               <div className="flex shrink-0 gap-2">
                 <Link
@@ -319,6 +419,22 @@ export default function AdminAlbumsPage() {
                 >
                   {t("admin_albums.voir")}
                 </Link>
+                <button
+                  type="button"
+                  disabled={!modifiable || modifierAlbum.isPending}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                  onClick={() =>
+                    modifierAlbum.mutate({
+                      id: album.id,
+                      payload: { nom: album.nom, oeffentlich: !album.oeffentlich },
+                    })
+                  }
+                  className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
+                >
+                  {album.oeffentlich
+                    ? t("admin_albums.ausblenden")
+                    : t("admin_albums.freischalten")}
+                </button>
                 {modifiable && (
                   <UebersetzungenButton modell="communaute.album" objektId={album.id} />
                 )}

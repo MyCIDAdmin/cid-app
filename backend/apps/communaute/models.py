@@ -1354,6 +1354,21 @@ class Album(models.Model):
         related_name="albums",
         help_text=_("Optionnel — un album peut ne pas être rattaché à un événement précis."),
     )
+    # Verknüpfung mit einem Projekt/einer Aktion (Wunsch 2026-10-21, neben `evenement`).
+    projet = models.ForeignKey(
+        "projets.Projet",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="albums",
+        help_text=_("Optional — Album gehört zu einem Projekt bzw. einer Aktion."),
+    )
+    # Öffentliche Startseite (Wunsch 2026-10-21): nur freigeschaltete Alben sehen Besucher
+    # ohne Anmeldung. Standard „versteckt“ — Alben werden bewusst freigegeben.
+    oeffentlich = models.BooleanField(
+        default=False,
+        verbose_name=_("Auf der öffentlichen Startseite zeigen"),
+    )
     createur = models.ForeignKey(
         "membres.Membre", on_delete=models.CASCADE, related_name="albums_crees"
     )

@@ -327,7 +327,18 @@
     "supprimer": "Supprimer",
     "voir": "Voir",
     "confirmer_suppression": "Supprimer cet album et toutes ses photos ?",
-    "erreur_enregistrement": "Impossible d'enregistrer l'album."
+    "erreur_enregistrement": "Impossible d'enregistrer l'album.",
+    "champ_evenement": "Événement lié",
+    "champ_projet": "Projet lié",
+    "aucune_liaison": "– aucun lien –",
+    "champ_oeffentlich": "Afficher sur la page d'accueil publique",
+    "aide_oeffentlich": "Sans cette case, l'album n'est visible que par les membres connectés. Les visiteurs voient uniquement les photos, pas les commentaires.",
+    "badge_oeffentlich": "Public",
+    "badge_intern": "Membres uniquement",
+    "freischalten": "Publier",
+    "ausblenden": "Masquer",
+    "lien_evenement": "Événement",
+    "lien_projet": "Projet"
   },
   "admin_fan_club_logos": {
     "titre": "Logos des clubs",

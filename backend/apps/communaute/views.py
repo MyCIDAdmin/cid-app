@@ -1452,8 +1452,16 @@ class AlbumViewSet(viewsets.ModelViewSet):
     serializer_class = AlbumSerializer
     permission_classes = [AlbumPermission]
     pagination_class = AlbumCursorPagination
-    queryset = Album.objects.select_related("createur", "evenement")
+    queryset = Album.objects.select_related("createur", "evenement", "projet")
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # Besucher ohne Anmeldung sehen nur freigeschaltete Alben (Wunsch 2026-10-21); Mitglieder
+        # sehen alle (die Verwaltung entscheidet nur über die öffentliche Startseite).
+        if not self.request.user.is_authenticated:
+            return qs.filter(oeffentlich=True)
+        return qs
 
 
 class PhotoViewSet(viewsets.ModelViewSet):
@@ -1469,6 +1477,9 @@ class PhotoViewSet(viewsets.ModelViewSet):
             "likes", "commentaires__auteur"
         )
         user = self.request.user
+        if not user.is_authenticated:
+            # Ohne Anmeldung nur Fotos freigeschalteter Alben (Wunsch 2026-10-21).
+            return qs.filter(album__oeffentlich=True, est_masquee=False)
         # Anonyme depuis le 2026-09-26 (onglet Galerie de la page d'accueil publique) : même
         # branche "non-modérateur" qu'un membre normal — `user.role` n'existe pas sur
         # AnonymousUser, d'où le garde-fou `user.is_authenticated` explicite.

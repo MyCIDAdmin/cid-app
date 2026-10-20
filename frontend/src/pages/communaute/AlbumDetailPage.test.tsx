@@ -69,7 +69,12 @@ function renderDetail() {
 
 describe("AlbumDetailPage", () => {
   beforeEach(() => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: membre, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: membre,
+      isAuthenticated: true,
+    });
     vi.mocked(useCommunauteHooks.useAlbum).mockReturnValue({
       data: {
         id: "a1",
@@ -78,6 +83,8 @@ describe("AlbumDetailPage", () => {
         date: null,
         lieu: "",
         evenement: null,
+        projet: null,
+        oeffentlich: false,
         createur: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
         created_at: "2026-01-01T10:00:00Z",
         nombre_photos: 1,
@@ -125,6 +132,8 @@ describe("AlbumDetailPage", () => {
         date: "2026-10-03",
         lieu: "Berlin",
         evenement: null,
+        projet: null,
+        oeffentlich: false,
         createur: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
         created_at: "2026-01-01T10:00:00Z",
         nombre_photos: 1,
@@ -160,7 +169,12 @@ describe("AlbumDetailPage", () => {
   });
 
   it("propose 'masquer' à un Bureau Admin+ sur la photo d'autrui", () => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: admin, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: admin,
+      isAuthenticated: true,
+    });
     const masquer = mutationMock<ReturnType<typeof useCommunauteHooks.useMasquerPhoto>>();
     vi.mocked(useCommunauteHooks.useMasquerPhoto).mockReturnValue(masquer);
 
@@ -172,7 +186,12 @@ describe("AlbumDetailPage", () => {
   });
 
   it("désactive 'masquer' pour un Bureau Admin+ en lecture seule sur page_albums (task #216)", () => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: admin, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: admin,
+      isAuthenticated: true,
+    });
     vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
       accessible: true,
       modifiable: false,
@@ -217,7 +236,10 @@ describe("AlbumDetailPage", () => {
 
     it("navigue vers la photo suivante avec les flèches, sans revenir à la grille", () => {
       vi.mocked(useCommunauteHooks.usePhotos).mockReturnValue({
-        data: page([photo({ id: "p1", legende: "Premier but" }), photo({ id: "p2", legende: "Deuxième but" })]),
+        data: page([
+          photo({ id: "p1", legende: "Premier but" }),
+          photo({ id: "p2", legende: "Deuxième but" }),
+        ]),
         isLoading: false,
         isError: false,
       } as unknown as ReturnType<typeof useCommunauteHooks.usePhotos>);
@@ -245,7 +267,8 @@ describe("AlbumDetailPage", () => {
     });
   });
 
-  it("propose le partage externe de l'album, avec le lien de sa page de détail", async () => {
+  it("propose le partage externe de l'album à un Bureau Admin, avec le lien de sa page de détail", async () => {
+    useAuthStore.setState({ user: admin });
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
@@ -257,5 +280,27 @@ describe("AlbumDetailPage", () => {
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(writeText.mock.calls[0][0]).toContain("/albums/a1");
+  });
+
+  it("n'affiche pas le bouton de partage à un simple membre", () => {
+    renderDetail();
+
+    expect(screen.queryByLabelText("partage.bouton_aria")).not.toBeInTheDocument();
+  });
+
+  it("en mode public : lecture seule (ni partage, ni likes, ni commentaires) et retour vers la galerie publique", () => {
+    useAuthStore.setState({
+      accessToken: null,
+      refreshToken: null,
+      user: null,
+      isAuthenticated: false,
+    });
+
+    const { container } = renderWithProviders(<AlbumDetailPage albumId="a1" publicModus />);
+
+    expect(screen.queryByLabelText("partage.bouton_aria")).not.toBeInTheDocument();
+    expect(screen.queryByText(/♥/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/💬/)).not.toBeInTheDocument();
+    expect(container.querySelector("a")).toHaveAttribute("href", "/?onglet=galerie");
   });
 });
