@@ -294,7 +294,7 @@ describe("CalendrierTab", () => {
       };
     }
 
-    function anmelden(user: typeof membre | null) {
+    function anmelden(user: typeof membre | typeof admin | null) {
       useAuthStore.setState({
         accessToken: user ? "t" : null,
         refreshToken: user ? "r" : null,
