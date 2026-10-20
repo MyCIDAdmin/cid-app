@@ -43,5 +43,37 @@
     "titre": "Bénévoles recherchés",
     "voir_tout": "Tous les projets",
     "mehr": "Vers le projet →"
+  },
+  "hinweise": {
+    "titel": "Bon à savoir",
+    "wann_heute": "aujourd'hui",
+    "wann_morgen": "demain",
+    "wann_tagen_one": "dans {{count}} jour",
+    "wann_tagen_other": "dans {{count}} jours",
+    "aktion_evenement": "Réserver ma place →",
+    "aktion_veranstaltung": "Participer →",
+    "aktion_projekt": "Participer →",
+    "aktion_artikel": "Voir l'article →",
+    "evenement": {
+      "plaetze_termin": "Plus que {{frei}} places sur {{gesamt}} – « {{titel}} » a lieu {{wann}}. Réservez votre place dès maintenant !",
+      "plaetze_one": "Plus qu'{{frei}} place pour « {{titel}} » – réservez la vôtre !",
+      "plaetze_other": "Plus que {{frei}} places pour « {{titel}} » – réservez la vôtre !",
+      "termin": "« {{titel}} » a lieu {{wann}} – inscrivez-vous maintenant !"
+    },
+    "veranstaltung": {
+      "plaetze_termin": "Plus que {{frei}} places sur {{gesamt}} – la rencontre « {{titel}} » a lieu {{wann}}. Soyez de la partie !",
+      "plaetze_one": "Plus qu'{{frei}} place à la rencontre « {{titel}} » – soyez de la partie !",
+      "plaetze_other": "Plus que {{frei}} places à la rencontre « {{titel}} » – soyez de la partie !",
+      "termin": "La rencontre « {{titel}} » a lieu {{wann}} – inscrivez-vous !"
+    },
+    "projekt": {
+      "projekt_frist": "« {{titel}} » : l'échéance est {{wann}} – participez et soutenez maintenant !"
+    },
+    "artikel": {
+      "artikel_bestand_one": "Plus qu'{{bestand}} exemplaire de « {{titel}} » – dépêchez-vous !",
+      "artikel_bestand_other": "Plus que {{bestand}} exemplaires de « {{titel}} » – dépêchez-vous !",
+      "artikel_frist": "« {{titel}} » n'est commandable que {{wann}} encore – assurez-vous le vôtre !",
+      "artikel_bestand_frist": "« {{titel}} » : plus que {{bestand}} exemplaires, commandable seulement jusqu'à {{wann}} – foncez !"
+    }
   }
 }

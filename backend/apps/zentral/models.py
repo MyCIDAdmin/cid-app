@@ -31,6 +31,34 @@ class ZentraleEinstellungen(models.Model):
         ),
     )
 
+    # --- Hinweise im Modul „Übersicht“ (2026-10-20) — Schwellen, ab denen automatisch ein
+    # motivierender Hinweis erscheint (Veranstaltung/Aktion bald, Plätze knapp, Artikel knapp).
+    hinweis_tage_vorher = models.PositiveSmallIntegerField(
+        default=7,
+        validators=[MinValueValidator(1), MaxValueValidator(60)],
+        verbose_name=_("Hinweis: Tage vor Termin/Frist"),
+    )
+    hinweis_plaetze_absolut = models.PositiveSmallIntegerField(
+        default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        verbose_name=_("Hinweis: höchstens so viele freie Plätze"),
+    )
+    hinweis_plaetze_prozent = models.PositiveSmallIntegerField(
+        default=20,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        verbose_name=_("Hinweis: höchstens so viel Prozent freie Plätze"),
+    )
+    hinweis_lager_menge = models.PositiveSmallIntegerField(
+        default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        verbose_name=_("Hinweis: Artikel mit höchstens so vielen Stück"),
+    )
+    hinweis_max_anzahl = models.PositiveSmallIntegerField(
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        verbose_name=_("Hinweis: maximale Anzahl gleichzeitig"),
+    )
+
     modifie_par = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

@@ -10,7 +10,14 @@ import { useAendereZentraleEinstellungen, useZentraleEinstellungen } from "../..
 import type { ZentraleEinstellungen } from "../../types/zentral";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
-type FeldSchluessel = "warenkorb_reservierung_minuten" | "event_zahlungsfrist_tage";
+type FeldSchluessel =
+  | "warenkorb_reservierung_minuten"
+  | "event_zahlungsfrist_tage"
+  | "hinweis_tage_vorher"
+  | "hinweis_plaetze_absolut"
+  | "hinweis_plaetze_prozent"
+  | "hinweis_lager_menge"
+  | "hinweis_max_anzahl";
 
 interface FeldDefinition {
   schluessel: FeldSchluessel;
@@ -33,6 +40,16 @@ const GRUPPEN: Gruppe[] = [
     schluessel: "events",
     felder: [{ schluessel: "event_zahlungsfrist_tage", min: 1, max: 30 }],
   },
+  {
+    schluessel: "hinweise",
+    felder: [
+      { schluessel: "hinweis_tage_vorher", min: 1, max: 60 },
+      { schluessel: "hinweis_plaetze_absolut", min: 1, max: 100 },
+      { schluessel: "hinweis_plaetze_prozent", min: 1, max: 100 },
+      { schluessel: "hinweis_lager_menge", min: 1, max: 100 },
+      { schluessel: "hinweis_max_anzahl", min: 1, max: 10 },
+    ],
+  },
 ];
 
 type Entwurf = Record<FeldSchluessel, string>;
@@ -41,6 +58,11 @@ function zuEntwurf(daten: ZentraleEinstellungen): Entwurf {
   return {
     warenkorb_reservierung_minuten: String(daten.warenkorb_reservierung_minuten),
     event_zahlungsfrist_tage: String(daten.event_zahlungsfrist_tage),
+    hinweis_tage_vorher: String(daten.hinweis_tage_vorher),
+    hinweis_plaetze_absolut: String(daten.hinweis_plaetze_absolut),
+    hinweis_plaetze_prozent: String(daten.hinweis_plaetze_prozent),
+    hinweis_lager_menge: String(daten.hinweis_lager_menge),
+    hinweis_max_anzahl: String(daten.hinweis_max_anzahl),
   };
 }
 

@@ -10,6 +10,16 @@ vi.mock("../../hooks/useZentral", () => ({
   useAendereZentraleEinstellungen: vi.fn(),
 }));
 
+const STANDARD = {
+  warenkorb_reservierung_minuten: 20,
+  event_zahlungsfrist_tage: 2,
+  hinweis_tage_vorher: 7,
+  hinweis_plaetze_absolut: 5,
+  hinweis_plaetze_prozent: 20,
+  hinweis_lager_menge: 5,
+  hinweis_max_anzahl: 3,
+};
+
 describe("ZentraleEinstellungenPage", () => {
   let mutate: ReturnType<typeof vi.fn>;
 
@@ -19,6 +29,11 @@ describe("ZentraleEinstellungenPage", () => {
       data: {
         warenkorb_reservierung_minuten: 20,
         event_zahlungsfrist_tage: 2,
+        hinweis_tage_vorher: 7,
+        hinweis_plaetze_absolut: 5,
+        hinweis_plaetze_prozent: 20,
+        hinweis_lager_menge: 5,
+        hinweis_max_anzahl: 3,
         modifie_par: null,
         updated_at: "x",
       },
@@ -39,7 +54,7 @@ describe("ZentraleEinstellungenPage", () => {
     fireEvent.change(feld, { target: { value: "30" } });
     fireEvent.click(screen.getByText("speichern"));
     expect(mutate).toHaveBeenCalledWith(
-      { warenkorb_reservierung_minuten: 30, event_zahlungsfrist_tage: 2 },
+      { ...STANDARD, warenkorb_reservierung_minuten: 30 },
       expect.any(Object),
     );
   });
@@ -65,7 +80,26 @@ describe("ZentraleEinstellungenPage", () => {
     fireEvent.change(feld, { target: { value: "3" } });
     fireEvent.click(screen.getByText("speichern"));
     expect(mutate).toHaveBeenCalledWith(
-      { warenkorb_reservierung_minuten: 20, event_zahlungsfrist_tage: 3 },
+      { ...STANDARD, event_zahlungsfrist_tage: 3 },
+      expect.any(Object),
+    );
+  });
+
+  it("bietet alle Schwellen für die Hinweise und speichert sie", () => {
+    renderWithProviders(<ZentraleEinstellungenPage />);
+    const tage = screen.getByLabelText("feld.hinweis_tage_vorher.label");
+    expect(tage).toHaveValue(7);
+    expect(screen.getByLabelText("feld.hinweis_plaetze_absolut.label")).toHaveValue(5);
+    expect(screen.getByLabelText("feld.hinweis_plaetze_prozent.label")).toHaveValue(20);
+    expect(screen.getByLabelText("feld.hinweis_lager_menge.label")).toHaveValue(5);
+    const maximum = screen.getByLabelText("feld.hinweis_max_anzahl.label");
+    fireEvent.change(maximum, { target: { value: "11" } });
+    expect(screen.getByText("speichern")).toBeDisabled();
+    fireEvent.change(maximum, { target: { value: "4" } });
+    fireEvent.change(tage, { target: { value: "10" } });
+    fireEvent.click(screen.getByText("speichern"));
+    expect(mutate).toHaveBeenCalledWith(
+      { ...STANDARD, hinweis_max_anzahl: 4, hinweis_tage_vorher: 10 },
       expect.any(Object),
     );
   });

@@ -6,7 +6,17 @@ import type { ZentraleEinstellungenEingabe } from "../types/zentral";
 
 const zentralKeys = {
   einstellungen: () => ["zentral", "einstellungen"] as const,
+  hinweise: () => ["zentral", "hinweise"] as const,
 };
+
+/** Hinweise für „Übersicht“ — ändern sich langsam, daher 5 Minuten Frische. */
+export function useHinweise() {
+  return useQuery({
+    queryKey: zentralKeys.hinweise(),
+    queryFn: () => zentralApi.getHinweise(),
+    staleTime: 5 * 60_000,
+  });
+}
 
 export function useZentraleEinstellungen() {
   return useQuery({
@@ -19,6 +29,9 @@ export function useAendereZentraleEinstellungen() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: ZentraleEinstellungenEingabe) => zentralApi.aendereEinstellungen(payload),
-    onSuccess: (daten) => queryClient.setQueryData(zentralKeys.einstellungen(), daten),
+    onSuccess: (daten) => {
+      queryClient.setQueryData(zentralKeys.einstellungen(), daten);
+      queryClient.invalidateQueries({ queryKey: zentralKeys.hinweise() });
+    },
   });
 }

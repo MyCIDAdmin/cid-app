@@ -8,7 +8,8 @@
   "speichern": "Enregistrer",
   "gruppe": {
     "shop": "Boutique",
-    "events": "Événements"
+    "events": "Événements",
+    "hinweise": "Conseils dans l'aperçu"
   },
   "feld": {
     "warenkorb_reservierung_minuten": {
@@ -20,6 +21,31 @@
       "label": "Délai de paiement des événements à places limitées",
       "einheit": "jours",
       "hilfe": "Sans paiement dans ce délai, l'inscription est annulée et la place passe à la liste d'attente. Rappel 24 h avant (autorisé : {{min}}–{{max}})."
+    },
+    "hinweis_tage_vorher": {
+      "label": "Date ou échéance proche",
+      "einheit": "jours avant",
+      "hilfe": "Les événements, actions et articles à échéance sont mis en avant autant de jours avant (autorisé : {{min}}–{{max}})."
+    },
+    "hinweis_plaetze_absolut": {
+      "label": "Places limitées (nombre)",
+      "einheit": "places",
+      "hilfe": "Alerte dès qu'il reste au plus ce nombre de places (autorisé : {{min}}–{{max}})."
+    },
+    "hinweis_plaetze_prozent": {
+      "label": "Places limitées (part)",
+      "einheit": "% libres",
+      "hilfe": "Ou dès qu'il reste au plus cette part de places (autorisé : {{min}}–{{max}})."
+    },
+    "hinweis_lager_menge": {
+      "label": "Article bientôt épuisé",
+      "einheit": "pièces",
+      "hilfe": "Alerte dès qu'il reste au plus ce nombre de pièces (autorisé : {{min}}–{{max}})."
+    },
+    "hinweis_max_anzahl": {
+      "label": "Conseils simultanés",
+      "einheit": "conseils",
+      "hilfe": "Au plus ce nombre sont affichés, les plus importants d'abord (autorisé : {{min}}–{{max}})."
     }
   }
 }

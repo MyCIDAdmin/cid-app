@@ -43,5 +43,37 @@
     "titre": "Gesucht: Helferinnen und Helfer",
     "voir_tout": "Alle Projekte",
     "mehr": "Zum Projekt →"
+  },
+  "hinweise": {
+    "titel": "Gut zu wissen",
+    "wann_heute": "heute",
+    "wann_morgen": "morgen",
+    "wann_tagen_one": "in {{count}} Tag",
+    "wann_tagen_other": "in {{count}} Tagen",
+    "aktion_evenement": "Platz sichern →",
+    "aktion_veranstaltung": "Dabei sein →",
+    "aktion_projekt": "Mitmachen →",
+    "aktion_artikel": "Zum Artikel →",
+    "evenement": {
+      "plaetze_termin": "Nur noch {{frei}} von {{gesamt}} Plätzen – „{{titel}}“ findet {{wann}} statt. Sichere dir jetzt deinen Platz!",
+      "plaetze_one": "Nur noch {{frei}} Platz frei bei „{{titel}}“ – sichere dir deinen Platz!",
+      "plaetze_other": "Nur noch {{frei}} Plätze frei bei „{{titel}}“ – sichere dir deinen Platz!",
+      "termin": "„{{titel}}“ findet {{wann}} statt – melde dich jetzt an!"
+    },
+    "veranstaltung": {
+      "plaetze_termin": "Nur noch {{frei}} von {{gesamt}} Plätzen – das Treffen „{{titel}}“ ist {{wann}}. Sei dabei!",
+      "plaetze_one": "Nur noch {{frei}} Platz frei beim Treffen „{{titel}}“ – sei dabei!",
+      "plaetze_other": "Nur noch {{frei}} Plätze frei beim Treffen „{{titel}}“ – sei dabei!",
+      "termin": "Das Treffen „{{titel}}“ ist {{wann}} – melde dich an!"
+    },
+    "projekt": {
+      "projekt_frist": "„{{titel}}“: Die Frist endet {{wann}} – jetzt mitmachen und unterstützen!"
+    },
+    "artikel": {
+      "artikel_bestand_one": "Nur noch {{bestand}} Stück von „{{titel}}“ – schnell zugreifen!",
+      "artikel_bestand_other": "Nur noch {{bestand}} Stück von „{{titel}}“ – schnell zugreifen!",
+      "artikel_frist": "„{{titel}}“ ist nur noch {{wann}} bestellbar – jetzt sichern!",
+      "artikel_bestand_frist": "„{{titel}}“: nur noch {{bestand}} Stück, bestellbar nur noch bis {{wann}} – jetzt zugreifen!"
+    }
   }
 }
