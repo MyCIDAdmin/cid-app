@@ -751,7 +751,9 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
 
 
 class RencontreCalendrierSerializer(serializers.ModelSerializer):
-    """Lecture seule — toujours synchronisé depuis GOAL API, voir services.py."""
+    """Lecture — Daten stammen aus GOAL API (services.py) oder wurden manuell korrigiert/
+    hinzugefügt (`modifie_manuellement`/`ajout_manuel`, Schreiben: siehe
+    RencontreCalendrierEcritureSerializer)."""
 
     est_a_venir = serializers.BooleanField(read_only=True)
 
@@ -767,9 +769,50 @@ class RencontreCalendrierSerializer(serializers.ModelSerializer):
             "score_exterieur",
             "statut",
             "est_a_venir",
+            "modifie_manuellement",
+            "ajout_manuel",
             "maj_le",
         ]
         read_only_fields = fields
+
+
+class RencontreCalendrierEcritureSerializer(serializers.ModelSerializer):
+    """Manuelle Korrektur (PATCH) bzw. neues Spiel (POST) im Spielplan, ab Vorstand. Bei von
+    der API gelieferten Spielen werden nur Datum/Uhrzeit, Ergebnis und Status übernommen
+    (siehe services.corriger_rencontre)."""
+
+    class Meta:
+        model = RencontreCalendrier
+        fields = [
+            "competition",
+            "equipe_domicile",
+            "equipe_exterieur",
+            "date_heure",
+            "score_domicile",
+            "score_exterieur",
+            "statut",
+        ]
+        extra_kwargs = {
+            "equipe_domicile": {"required": True},
+            "equipe_exterieur": {"required": True},
+            "date_heure": {"required": True},
+        }
+
+    def validate(self, attrs):
+        instance = self.instance
+        domicile = attrs.get("score_domicile", getattr(instance, "score_domicile", None))
+        exterieur = attrs.get("score_exterieur", getattr(instance, "score_exterieur", None))
+        if (domicile is None) != (exterieur is None):
+            raise serializers.ValidationError(
+                {"score_domicile": "Le score doit être renseigné pour les deux équipes."}
+            )
+        domicile_equipe = attrs.get("equipe_domicile", getattr(instance, "equipe_domicile", ""))
+        exterieur_equipe = attrs.get("equipe_exterieur", getattr(instance, "equipe_exterieur", ""))
+        if domicile_equipe.strip().lower() == exterieur_equipe.strip().lower():
+            raise serializers.ValidationError(
+                {"equipe_exterieur": "Les deux équipes doivent être différentes."}
+            )
+        return attrs
 
 
 class StatistiqueJoueurSerializer(serializers.ModelSerializer):

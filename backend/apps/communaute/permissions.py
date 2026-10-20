@@ -207,6 +207,21 @@ class MatchPermission(BasePermission):
         return True
 
 
+class SpielplanPermission(BasePermission):
+    """Spielplan (`RencontreCalendrier`) : Lesen für alle (auch anonym, Widget der
+    öffentlichen Startseite). Korrigieren/Hinzufügen/Zurücksetzen/Löschen ab Vorstand
+    (Bureau Admin+) — gleicher flacher Schwellenwert `MODERATION_MIN_LEVEL` wie das
+    Live-Ticker-Modul (`MatchPermission`), bewusst außerhalb der RBAC-Seitenmatrix."""
+
+    def has_permission(self, request, view):
+        if view.action in ("list", "retrieve"):
+            return True
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+
+
 class MatchEvenementPermission(BasePermission):
     """Journal d'événements du Live-Ticker (module Fan-Club, 2026-09-24) — lecture (list)
     ouverte à tout authentifié, comme `MatchCommentairePermission`. Création (`create`)

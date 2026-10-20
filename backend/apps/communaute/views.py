@@ -124,6 +124,7 @@ from .permissions import (
     PhotoPermission,
     PublicationPermission,
     QuizPermission,
+    SpielplanPermission,
     TippspielPermission,
     TippspielTeilnahmePermission,
     TippspielTipPermission,
@@ -151,6 +152,7 @@ from .serializers import (
     PublicationSerializer,
     QuestionQuizSerializer,
     QuizSerializer,
+    RencontreCalendrierEcritureSerializer,
     RencontreCalendrierSerializer,
     ReponseForumSerializer,
     ReponseQuizSerializer,
@@ -957,8 +959,19 @@ class ClassementLigueViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return qs.filter(saison=saison or services._saison_actuelle())
 
 
-class RencontreCalendrierViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Lecture seule — jamais éditable manuellement, voir docstring de tête models.py.
+class RencontreCalendrierViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Spielplan. Lecture ouverte à tous ; depuis le 2026-10-20 (retour utilisateur) le
+    Bureau Admin+ peut corriger à la main date/heure, résultat et statut (PATCH), ajouter
+    une rencontre (POST), la supprimer (DELETE, rencontres manuelles sans pronostics
+    uniquement) et revenir à l'état de l'API (POST {id}/zuruecksetzen/). Une correction
+    manuelle reste en place jusqu'à ce que GOAL API livre un état différent du dernier état
+    livré (`api_stand`) — voir services._appliquer_etat_api.
 
     `AllowAny` depuis le 2026-09-26 — même raisonnement que ClassementLigueViewSet
     ci-dessus (données sportives tierces, aucune information sensible).
@@ -974,15 +987,72 @@ class RencontreCalendrierViewSet(mixins.ListModelMixin, viewsets.GenericViewSet)
     historique complet), même principe que `?saison=toutes`."""
 
     serializer_class = RencontreCalendrierSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [SpielplanPermission]
     pagination_class = CalendrierCursorPagination
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
         qs = RencontreCalendrier.objects.all()
-        if self.request.query_params.get("periode") == "toutes":
+        # Le filtre de période ne vaut que pour la liste : une rencontre ciblée par son id
+        # (correction, suppression, remise à zéro) doit rester atteignable.
+        if self.action != "list" or self.request.query_params.get("periode") == "toutes":
             return qs
         annee_actuelle = timezone.localdate().year
         return qs.filter(date_heure__year__in=[annee_actuelle, annee_actuelle + 1])
+
+    def get_serializer_class(self):
+        if self.action in ("create", "partial_update", "update"):
+            return RencontreCalendrierEcritureSerializer
+        return RencontreCalendrierSerializer
+
+    def _reponse(self, rencontre, code=status.HTTP_200_OK):
+        return Response(RencontreCalendrierSerializer(rencontre).data, status=code)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        rencontre = services.ajouter_rencontre_manuelle(serializer.validated_data, request.user)
+        self._journaliser(request, "rencontre_ajoutee", rencontre)
+        return self._reponse(rencontre, status.HTTP_201_CREATED)
+
+    def partial_update(self, request, *args, **kwargs):
+        rencontre = self.get_object()
+        serializer = self.get_serializer(rencontre, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        rencontre = services.corriger_rencontre(rencontre, serializer.validated_data, request.user)
+        self._journaliser(request, "rencontre_corrigee", rencontre)
+        return self._reponse(rencontre)
+
+    def destroy(self, request, *args, **kwargs):
+        rencontre = self.get_object()
+        if not rencontre.ajout_manuel:
+            raise ValidationError(
+                {"detail": "Seules les rencontres saisies manuellement peuvent être supprimées."}
+            )
+        if rencontre.tippspiel_tipps.exists():
+            raise ValidationError(
+                {"detail": "Des pronostics existent pour cette rencontre — suppression impossible."}
+            )
+        self._journaliser(request, "rencontre_supprimee", rencontre)
+        rencontre.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post"], url_path="zuruecksetzen")
+    def zuruecksetzen(self, request, pk=None):
+        rencontre = self.get_object()
+        if not services.reinitialiser_rencontre(rencontre):
+            raise ValidationError({"detail": "Aucun état de l'API connu pour cette rencontre."})
+        self._journaliser(request, "rencontre_reinitialisee", rencontre)
+        return self._reponse(rencontre)
+
+    @staticmethod
+    def _journaliser(request, action_nom, rencontre):
+        log_audit_event(
+            action_nom,
+            user=request.user,
+            ip_address=_client_ip(request),
+            rencontre_id=str(rencontre.id),
+        )
 
 
 class ConfigurationSitePublicView(APIView):

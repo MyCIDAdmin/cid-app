@@ -90,6 +90,8 @@ function rencontre(overrides: Partial<RencontreCalendrier> = {}): RencontreCalen
     score_exterieur: 0,
     statut: "FINISHED",
     est_a_venir: false,
+    modifie_manuellement: false,
+    ajout_manuel: false,
     maj_le: "2026-01-01T20:00:00Z",
     ...overrides,
   };
