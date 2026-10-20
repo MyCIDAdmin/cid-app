@@ -140,7 +140,9 @@ describe("panierStore", () => {
     const a = {
       ...article({ prixUnitaire: "10.00" }),
       quantite: 10,
-      reglesReduction: [regle({ id: "r2", seuil_quantite: 10, type_reduction: "pourcentage", pourcentage: 10 })],
+      reglesReduction: [
+        regle({ id: "r2", seuil_quantite: 10, type_reduction: "pourcentage", pourcentage: 10 }),
+      ],
     };
     expect(calculerReductionArticle(a).pourcentageApplique).toBe(10);
   });
@@ -167,7 +169,11 @@ describe("panierStore", () => {
 
   it("totalPanierNet agrège le sous-total net de plusieurs articles", () => {
     const articles = [
-      { ...article({ varianteId: "v1", prixUnitaire: "20.00" }), quantite: 5, reglesReduction: [regle()] },
+      {
+        ...article({ varianteId: "v1", prixUnitaire: "20.00" }),
+        quantite: 5,
+        reglesReduction: [regle()],
+      },
       { ...article({ varianteId: "v2", prixUnitaire: "22.50" }), quantite: 1 },
     ];
     // 80€ (net, article offert) + 22.50€ (sans règle) = 102.50€
@@ -220,8 +226,12 @@ describe("panierStore", () => {
     const [ligne25, ligne50] = usePanierStore.getState().articles;
 
     usePanierStore.getState().changerQuantite(ligne25.ligneId as string, 3);
-    expect(usePanierStore.getState().articles.find((a) => a.ligneId === ligne25.ligneId)?.quantite).toBe(3);
-    expect(usePanierStore.getState().articles.find((a) => a.ligneId === ligne50.ligneId)?.quantite).toBe(1);
+    expect(
+      usePanierStore.getState().articles.find((a) => a.ligneId === ligne25.ligneId)?.quantite,
+    ).toBe(3);
+    expect(
+      usePanierStore.getState().articles.find((a) => a.ligneId === ligne50.ligneId)?.quantite,
+    ).toBe(1);
 
     usePanierStore.getState().retirer(ligne25.ligneId as string);
     const restants = usePanierStore.getState().articles;
@@ -239,5 +249,26 @@ describe("panierStore", () => {
     };
     expect(calculerReductionArticle(a)).toEqual({ quantiteOfferte: 0, pourcentageApplique: null });
     expect(sousTotalNetArticle(a)).toBeCloseTo(250);
+  });
+
+  describe("Reservierung (Countdown)", () => {
+    it("speichert und löscht das Reservierungsende; vider setzt es zurück", () => {
+      usePanierStore.getState().setReservierungEnde(123456);
+      expect(usePanierStore.getState().reservierungEndeMs).toBe(123456);
+      usePanierStore.getState().vider();
+      expect(usePanierStore.getState().reservierungEndeMs).toBeNull();
+    });
+
+    it("reservierungAnwenden begrenzt Menge und Bestand auf das Reservierbare", () => {
+      usePanierStore.getState().ajouter(article({ varianteId: "v1" }), 4);
+      usePanierStore.getState().ajouter(article({ varianteId: "v2", produitId: "p2" }), 2);
+      usePanierStore.getState().reservierungAnwenden([
+        { variante: "v1", reserviert: 2, verfuegbar: 2 },
+        { variante: "v2", reserviert: 2, verfuegbar: 7 },
+      ]);
+      const [a1, a2] = usePanierStore.getState().articles;
+      expect(a1).toMatchObject({ quantite: 2, stockDisponible: 2 });
+      expect(a2).toMatchObject({ quantite: 2, stockDisponible: 7 });
+    });
   });
 });

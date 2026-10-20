@@ -379,5 +379,11 @@
       "abgeholt": "Abgeholt",
       "storniert": "Storniert"
     }
+  },
+  "panier": {
+    "reservierung_hinweis": "Ihr Warenkorb ist reserviert – noch",
+    "reservierung_countdown_label": "Verbleibende Reservierungszeit",
+    "reservierung_abgelaufen": "Die Reservierung ist abgelaufen. Die Artikel sind wieder für andere verfügbar.",
+    "erneut_reservieren": "Erneut reservieren"
   }
 }

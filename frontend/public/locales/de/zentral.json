@@ -1,0 +1,51 @@
+{
+  "titel": "Zentrale Einstellungen",
+  "beschreibung": "Werte, die ohne neues Release angepasst werden können. Änderungen gelten sofort für alle.",
+  "laedt": "Lädt …",
+  "fehler_laden": "Einstellungen konnten nicht geladen werden.",
+  "fehler_speichern": "Speichern fehlgeschlagen.",
+  "gespeichert": "Gespeichert.",
+  "speichern": "Speichern",
+  "gruppe": {
+    "shop": "Shop",
+    "events": "Veranstaltungen",
+    "hinweise": "Hinweise in der Übersicht"
+  },
+  "feld": {
+    "warenkorb_reservierung_minuten": {
+      "label": "Warenkorb-Reservierung",
+      "einheit": "Minuten",
+      "hilfe": "So lange sind Artikel im Warenkorb reserviert. Jedes Hinzufügen oder Ändern setzt den Countdown zurück (erlaubt: {{min}}–{{max}})."
+    },
+    "event_zahlungsfrist_tage": {
+      "label": "Zahlungsfrist bei begrenzten Veranstaltungen",
+      "einheit": "Tage",
+      "hilfe": "Wer nicht innerhalb dieser Frist bezahlt, wird storniert; der Platz geht an die Warteliste. 24 Stunden vorher gibt es eine Erinnerung (erlaubt: {{min}}–{{max}})."
+    },
+    "hinweis_tage_vorher": {
+      "label": "Termin oder Frist bald",
+      "einheit": "Tage vorher",
+      "hilfe": "Veranstaltungen, Aktionen und Artikel mit Frist werden so viele Tage vorher hervorgehoben (erlaubt: {{min}}–{{max}})."
+    },
+    "hinweis_plaetze_absolut": {
+      "label": "Plätze knapp (Anzahl)",
+      "einheit": "Plätze",
+      "hilfe": "Hinweis, sobald höchstens so viele Plätze frei sind (erlaubt: {{min}}–{{max}})."
+    },
+    "hinweis_plaetze_prozent": {
+      "label": "Plätze knapp (Anteil)",
+      "einheit": "% frei",
+      "hilfe": "Oder sobald höchstens dieser Anteil der Plätze frei ist (erlaubt: {{min}}–{{max}})."
+    },
+    "hinweis_lager_menge": {
+      "label": "Artikel fast ausverkauft",
+      "einheit": "Stück",
+      "hilfe": "Hinweis, sobald höchstens so viele Stück verfügbar sind (erlaubt: {{min}}–{{max}})."
+    },
+    "hinweis_max_anzahl": {
+      "label": "Hinweise gleichzeitig",
+      "einheit": "Hinweise",
+      "hilfe": "Es werden höchstens so viele angezeigt, die wichtigsten zuerst (erlaubt: {{min}}–{{max}})."
+    }
+  }
+}

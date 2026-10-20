@@ -21,6 +21,7 @@ import type {
   RegleReductionPayload,
   Reservierung,
   ReservierungPayload,
+  PanierReservierungAntwort,
   Retour,
   RetourLotPayload,
   RetourPayload,
@@ -454,4 +455,25 @@ export async function reservierungAktion(
 ): Promise<Reservierung> {
   const { data } = await apiClient.post<Reservierung>(`/boutique/reservierungen/${id}/${aktion}/`);
   return data;
+}
+
+// --- Warenkorb-Reservierung (2026-10-20) — siehe backend apps.boutique.panier ---
+
+export async function getPanierReservierung(): Promise<PanierReservierungAntwort> {
+  const { data } = await apiClient.get<PanierReservierungAntwort>("/boutique/panier/reservierung/");
+  return data;
+}
+
+export async function reservierePanier(
+  lignes: { variante: string; quantite: number }[],
+): Promise<PanierReservierungAntwort> {
+  const { data } = await apiClient.put<PanierReservierungAntwort>(
+    "/boutique/panier/reservierung/",
+    { lignes },
+  );
+  return data;
+}
+
+export async function gibPanierFrei(): Promise<void> {
+  await apiClient.delete("/boutique/panier/reservierung/");
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Produit, VarianteProduit } from "../types/boutique";
-import { bestandInfo, preisInfo } from "./produit";
+import { bestandInfo, preisInfo, stockVerfuegbar } from "./produit";
 
 const variante = (teil: Partial<VarianteProduit>): VarianteProduit => ({
   id: "v1",
@@ -57,8 +57,28 @@ describe("bestandInfo", () => {
     expect(bestandInfo(p, b)).toEqual({ stock: 0, faible: false, rupture: true });
   });
 
-  it("zeigt bei nur einer Variante den Gesamtbestand", () => {
+  it("zeigt bei nur einer Variante deren verfügbaren Bestand", () => {
     const a = variante({ stock: 3 });
-    expect(bestandInfo(produit([a]), a).stock).toBe(20);
+    expect(bestandInfo(produit([a]), a).stock).toBe(3);
+  });
+
+  it("zieht Reservierungen anderer ab (stock_verfuegbar)", () => {
+    const a = variante({ id: "a", stock: 10, stock_verfuegbar: 2 });
+    const b = variante({ id: "b", stock: 4, stock_verfuegbar: 0 });
+    const p = produit([a, b]);
+    expect(bestandInfo(p, a)).toEqual({ stock: 2, faible: true, rupture: false });
+    expect(bestandInfo(p, b)).toEqual({ stock: 0, faible: false, rupture: true });
+    expect(bestandInfo(p, null)).toEqual({ stock: 2, faible: true, rupture: false });
+  });
+
+  it("ohne Varianten gilt der Produktbestand", () => {
+    expect(bestandInfo(produit([]), null).stock).toBe(20);
+  });
+});
+
+describe("stockVerfuegbar", () => {
+  it("fällt auf den physischen Bestand zurück", () => {
+    expect(stockVerfuegbar(variante({ stock: 7 }))).toBe(7);
+    expect(stockVerfuegbar(variante({ stock: 7, stock_verfuegbar: 0 }))).toBe(0);
   });
 });

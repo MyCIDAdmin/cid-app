@@ -242,7 +242,7 @@ class Evenement(models.Model):
         même titre que le membre inscrit (décision d'interprétation, module
         "Veranstaltungsverwaltung" du 2026-09-25 — le champ places_max représente la capacité
         physique du lieu)."""
-        total = self.inscriptions.exclude(statut=StatutInscription.ANNULEE).aggregate(
+        total = self.inscriptions.exclude(statut__in=STATUTS_SANS_PLACE).aggregate(
             total=models.Sum(
                 models.F("places")
                 + models.F("nombre_accompagnants_adultes")
@@ -262,6 +262,13 @@ class StatutInscription(models.TextChoices):
     EN_ATTENTE_PAIEMENT = "en_attente_paiement", _("En attente de paiement")
     CONFIRMEE = "confirmee", _("Confirmée")
     ANNULEE = "annulee", _("Annulée")
+    # 2026-10-20 : Warteliste — Veranstaltung voll; die Person rückt automatisch nach, sobald ein
+    # Platz frei wird (siehe services.warteliste_nachruecken). Belegt KEINEN Platz.
+    LISTE_ATTENTE = "liste_attente", _("Liste d'attente")
+
+
+#: Statuts qui ne comptent pas dans la capacité (places_reservees) ni dans les statistiques.
+STATUTS_SANS_PLACE = (StatutInscription.ANNULEE, StatutInscription.LISTE_ATTENTE)
 
 
 class Inscription(models.Model):
@@ -295,6 +302,17 @@ class Inscription(models.Model):
         null=True,
         blank=True,
         help_text=_("Idempotence du rappel de paiement (un seul rappel par inscription)."),
+    )
+
+    # 2026-10-20 : Zahlungsfrist (Standard 2 Tage, zentral einstellbar) bei begrenzten
+    # Veranstaltungen — ohne Zahlung bis dahin wird die Anmeldung storniert, der Platz frei und die
+    # Warteliste rückt nach (services.unbezahlte_stornieren / warteliste_nachruecken).
+    zahlungsfrist_bis = models.DateTimeField(null=True, blank=True)
+    frist_erinnerung_gesendet_am = models.DateTimeField(
+        null=True, blank=True, help_text=_("Idempotence de la relance 24 h avant l'échéance.")
+    )
+    warteliste_seit = models.DateTimeField(
+        null=True, blank=True, help_text=_("Ordre d'arrivée sur la liste d'attente (FIFO).")
     )
 
     montant_paye = models.DecimalField(

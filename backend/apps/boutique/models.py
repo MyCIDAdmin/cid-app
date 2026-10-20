@@ -1078,3 +1078,37 @@ class Reservierung(models.Model):
 
     def __str__(self):
         return f"{self.produit} × {self.quantite} ({self.membre})"
+
+
+class PanierReservierung(models.Model):
+    """Warenkorb-Reservierung (2026-10-20): Artikel im Warenkorb sind für die Dauer von
+    `ZentraleEinstellungen.warenkorb_reservierung_minuten` für dieses Mitglied zurückgelegt und
+    zählen im Lagerstand der anderen nicht mehr als verfügbar (siehe `panier.verfuegbarer_
+    bestand`). Jede Änderung am Warenkorb verlängert alle Zeilen des Mitglieds auf dieselbe neue
+    Frist. Abgelaufene Zeilen zählen sofort nicht mehr (Filter auf `expire_le`) ; die Celery-
+    Aufgabe `boutique.panier_reservierungen_freigeben` räumt sie nur auf."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="panier_reservierungen"
+    )
+    variante = models.ForeignKey(
+        VarianteProduit, on_delete=models.CASCADE, related_name="panier_reservierungen"
+    )
+    quantite = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    expire_le = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "boutique_panier_reservierungen"
+        verbose_name = _("Warenkorb-Reservierung")
+        verbose_name_plural = _("Warenkorb-Reservierungen")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["membre", "variante"], name="eine_panierreservierung_je_variante"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.variante} × {self.quantite} ({self.membre})"

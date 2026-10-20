@@ -35,7 +35,7 @@ import {
   labelRegleReduction,
   labelVariante,
 } from "./CataloguePage";
-import { bestandInfo, preisInfo } from "../../utils/produit";
+import { bestandInfo, preisInfo, stockVerfuegbar } from "../../utils/produit";
 import { reservierungGeschlossen } from "../../utils/reservierung";
 import { uebersetzt } from "../../utils/uebersetzung";
 
@@ -46,7 +46,7 @@ export default function ProduitDetailPage() {
   const produit = produitQuery.data;
   const ajouter = usePanierStore((s) => s.ajouter);
 
-  const variantesEnStock = produit?.variantes.filter((v) => v.stock > 0) ?? [];
+  const variantesEnStock = produit?.variantes.filter((v) => stockVerfuegbar(v) > 0) ?? [];
   const [varianteId, setVarianteId] = useState<string>("");
   const [quantite, setQuantite] = useState(1);
 
@@ -74,7 +74,8 @@ export default function ProduitDetailPage() {
   const nurReservieren = produit?.reservierung_modus === "nur_reservieren";
   const geschlossen = produit ? reservierungGeschlossen(produit) : false;
   const epuise =
-    !nurReservieren && (!varianteSelectionnee || varianteSelectionnee.stock <= 0 || geschlossen);
+    !nurReservieren &&
+    (!varianteSelectionnee || stockVerfuegbar(varianteSelectionnee) <= 0 || geschlossen);
 
   function handleChangerVariante(nouvelId: string) {
     setVarianteId(nouvelId);
@@ -93,7 +94,7 @@ export default function ProduitDetailPage() {
         // prix_affiche (jamais prix/prix_final seuls) : déjà résolu côté serveur, voir docstring
         // ci-dessus — même principe que ProduitCarte (CataloguePage).
         prixUnitaire: preisInfo(produit, varianteSelectionnee).affiche,
-        stockDisponible: varianteSelectionnee.stock,
+        stockDisponible: stockVerfuegbar(varianteSelectionnee),
         typeProduit: "physique",
         abholung: produit.reservierung_modus === "reservieren_und_bezahlen",
         zahlungsfristTage: produit.reservierung_zahlungsfrist_tage ?? null,
@@ -266,9 +267,11 @@ export default function ProduitDetailPage() {
                         className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
                       >
                         {produit.variantes.map((v) => (
-                          <option key={v.id} value={v.id} disabled={v.stock <= 0}>
+                          <option key={v.id} value={v.id} disabled={stockVerfuegbar(v) <= 0}>
                             {labelVariante(v)}{" "}
-                            {v.stock <= 0 ? `— ${t("catalogue.rupture")}` : `(${v.stock})`}
+                            {stockVerfuegbar(v) <= 0
+                              ? `— ${t("catalogue.rupture")}`
+                              : `(${stockVerfuegbar(v)})`}
                             {produit.preise_unterschiedlich && v.prix_affiche
                               ? ` · ${formatMontant(v.prix_affiche)}`
                               : ""}
@@ -284,7 +287,7 @@ export default function ProduitDetailPage() {
                         </span>
                         <StepperQuantite
                           quantite={quantite}
-                          max={varianteSelectionnee?.stock ?? 1}
+                          max={varianteSelectionnee ? stockVerfuegbar(varianteSelectionnee) : 1}
                           onChange={setQuantite}
                           labelDiminuer={t("commande.diminuer")}
                           labelAugmenter={t("commande.augmenter")}

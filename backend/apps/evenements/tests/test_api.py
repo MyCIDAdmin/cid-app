@@ -290,7 +290,7 @@ def test_inscrire_gratuit_confirme_directement(api_client):
     assert resp.data["statut"] == StatutInscription.CONFIRMEE
 
 
-def test_inscrire_refuse_si_capacite_insuffisante(api_client):
+def test_inscrire_met_sur_la_liste_d_attente_si_capacite_insuffisante(api_client):
     user1, _ = _user_avec_membre(Role.MEMBRE, "m5@example.de")
     user2, _ = _user_avec_membre(Role.MEMBRE, "m6@example.de")
     evenement = EvenementFactory(places_max=3)
@@ -303,8 +303,11 @@ def test_inscrire_refuse_si_capacite_insuffisante(api_client):
     resp2 = _auth(api_client, user2).post(
         reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}
     )
-    assert resp2.status_code == 400
-    assert "places" in resp2.data["details"]
+    # 2026-10-20 : Veranstaltung voll => Warteliste statt Fehler.
+    assert resp2.status_code == 200
+    assert resp2.data["statut"] == StatutInscription.LISTE_ATTENTE
+    assert resp2.data["warteliste_position"] == 1
+    assert resp2.data["zahlungsfrist_bis"] is None
 
 
 def test_annuler_inscription_libere_la_capacite(api_client):
@@ -320,13 +323,18 @@ def test_annuler_inscription_libere_la_capacite(api_client):
     resp2 = _auth(api_client, user2).post(
         reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}
     )
-    assert resp2.status_code == 400
+    assert resp2.data["statut"] == StatutInscription.LISTE_ATTENTE
 
     from apps.evenements.models import Inscription
 
     inscription = Inscription.objects.get(pk=inscription_id)
     resp_annuler = _auth(api_client, user1).post(_inscription_annuler_url(inscription))
     assert resp_annuler.status_code == 200
+
+    # Der freigewordene Platz geht automatisch an die Wartenden (user2).
+    nachgerueckt = Inscription.objects.get(pk=resp2.data["id"])
+    assert nachgerueckt.statut == StatutInscription.EN_ATTENTE_PAIEMENT
+    assert nachgerueckt.zahlungsfrist_bis is not None
 
     resp3 = _auth(api_client, user2).post(
         reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}
@@ -407,8 +415,8 @@ def test_inscrire_accompagnants_comptent_dans_la_capacite(api_client):
     resp2 = _auth(api_client, user2).post(
         reverse(INSCRIRE_URL), {"evenement": str(evenement.id), "places": 1}
     )
-    assert resp2.status_code == 400
-    assert "places" in resp2.data["details"]
+    assert resp2.status_code == 200
+    assert resp2.data["statut"] == StatutInscription.LISTE_ATTENTE
 
 
 def test_evenement_expose_les_champs_accompagnants(api_client):

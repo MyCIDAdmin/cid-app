@@ -44,6 +44,7 @@ i18n
       "aktivitaet",
       "regionen",
       "support",
+      "zentral",
     ],
     defaultNS: "common",
     backend: {

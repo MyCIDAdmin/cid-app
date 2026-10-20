@@ -46,6 +46,7 @@
  * préférence de l'utilisateur passe toujours avant.
  */
 import {
+  IconAdjustments,
   IconBellRinging,
   IconBroadcast,
   IconBuildingStore,
@@ -179,7 +180,7 @@ const ADMIN_SUBGROUPS: Record<SidebarSubgroupKey, string[]> = {
     "/admin/fan-club-logos",
     "/admin/configuration-site",
   ],
-  system: ["/admin/roles", "/admin/notifications"],
+  system: ["/admin/roles", "/admin/einstellungen", "/admin/notifications"],
 };
 
 // Icône représentative par groupe (mode rail replié uniquement, voir docstring de module) — un
@@ -419,6 +420,14 @@ export const NAV_ITEMS: NavItem[] = [
     to: "/admin/roles",
     labelKey: "nav.gestion_roles",
     icon: IconUserCog,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.super_admin,
+  },
+  // Zentrale Einstellungen (2026-10-20) — App-Administrator, wie /admin/roles hors matrice.
+  {
+    to: "/admin/einstellungen",
+    labelKey: "nav.zentrale_einstellungen",
+    icon: IconAdjustments,
     group: "administration",
     minRoleLevel: ROLE_LEVELS.super_admin,
   },

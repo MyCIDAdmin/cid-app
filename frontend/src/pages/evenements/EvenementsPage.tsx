@@ -32,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import AnimatedProgress from "../../components/ui/AnimatedProgress";
 import MapsApercu from "../../components/ui/MapsApercu";
 import ShareButton from "../../components/ui/ShareButton";
+import InscriptionFristHinweis from "../../components/evenements/InscriptionFristHinweis";
 import ModaleInscription, {
   formatDate,
   formatPeriode,
@@ -158,6 +159,9 @@ function EvenementCarte({
                 })
               : t("places_illimitees")}
           </span>
+          {complet && evenement.warteliste_laenge > 0 && (
+            <span>{t("warteliste_laenge", { count: evenement.warteliste_laenge })}</span>
+          )}
           <EvenementPreise evenement={evenement} />
         </div>
 
@@ -189,14 +193,14 @@ function EvenementCarte({
           <button
             type="button"
             onClick={() => onInscrire(evenement)}
-            disabled={complet || bloqueNonMembre}
+            disabled={bloqueNonMembre}
             title={bloqueNonMembre ? t("reserve_membres_info") : undefined}
             className="w-full rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
           >
-            {complet
-              ? t("complet")
-              : bloqueNonMembre
-                ? t("nur_fuer_mitglieder")
+            {bloqueNonMembre
+              ? t("nur_fuer_mitglieder")
+              : complet
+                ? t("warteliste_beitreten")
                 : evenement.gratuit
                   ? t("sinscrire_gratuit")
                   : t("sinscrire_payer")}
@@ -326,11 +330,14 @@ export default function EvenementsPage() {
                         ? "bg-status-successBg text-status-successText"
                         : inscription.statut === "en_attente_paiement"
                           ? "bg-status-warningBg text-status-warningText"
-                          : "bg-bg-tertiary text-text-tertiary"
+                          : inscription.statut === "liste_attente"
+                            ? "bg-status-infoBg text-status-infoText"
+                            : "bg-bg-tertiary text-text-tertiary"
                     }`}
                   >
                     {t(`inscription_statut_${inscription.statut}`)}
                   </span>
+                  <InscriptionFristHinweis inscription={inscription} />
                 </div>
               </div>
               <div className="flex shrink-0 gap-2">

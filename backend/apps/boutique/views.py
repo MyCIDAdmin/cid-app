@@ -104,7 +104,9 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
 from rest_framework.pagination import CursorPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
@@ -115,7 +117,7 @@ from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
-from . import reservierungen
+from . import panier, reservierungen
 from .exports import construire_classeur_commandes
 from .filters import CommandeFilter, ProduitFilter, RetourFilter
 from .models import (
@@ -168,6 +170,7 @@ from .serializers import (
     ConfirmerPaiementCommandeSerializer,
     ExpedierCommandeSerializer,
     InitierPaiementEnLigneCommandeSerializer,
+    PanierReservierungSerializer,
     PasserCommandeSerializer,
     ProduitImageSerializer,
     ProduitSerializer,
@@ -537,12 +540,15 @@ class CommandeViewSet(ModelViewSet):
                 # jamais vérifiée ni décrémentée.
                 if variante.produit.type_produit == TypeProduit.BON_ACHAT:
                     continue
-                if variante.stock < ligne["quantite"]:
+                # Lagerstand abzüglich der Warenkörbe ANDERER (Warenkorb-Reservierung,
+                # 2026-10-20) ; die eigene Reservierung steht dem Besteller zu.
+                verfuegbar = panier.verfuegbarer_bestand(variante, membre)
+                if verfuegbar < ligne["quantite"]:
                     raise ValidationError(
                         {
                             "lignes": (
                                 f"Stock insuffisant pour « {variante} » "
-                                f"({variante.stock} disponible(s))."
+                                f"({verfuegbar} disponible(s))."
                             )
                         }
                     )
@@ -601,6 +607,8 @@ class CommandeViewSet(ModelViewSet):
                 montant_total += sous_total_net
 
             commande.montant_total = montant_total
+            # Die Bestellung verbraucht die Warenkorb-Reservierung (Lagerstand ist abgezogen).
+            panier.gebe_frei(membre, variante_ids)
 
             # Bon d'achat optionnel (demande utilisateur du 2026-09-23) — verrouillé et validé
             # ici, jamais avant (CLAUDE.md §8 : un code peut être épuisé par une commande
@@ -695,12 +703,16 @@ class CommandeViewSet(ModelViewSet):
                 .get(id=data["variante"].id)
             )
             reservierungen.pruefe_zugang([variante.produit], membre_cible, "variante")
-            if not est_bon_achat and variante.stock < quantite:
+            verfuegbar = (
+                variante.stock
+                if est_bon_achat
+                else panier.verfuegbarer_bestand(variante, membre_cible)
+            )
+            if not est_bon_achat and verfuegbar < quantite:
                 raise ValidationError(
                     {
                         "variante": (
-                            f"Stock insuffisant pour « {variante} » "
-                            f"({variante.stock} disponible(s))."
+                            f"Stock insuffisant pour « {variante} » ({verfuegbar} disponible(s))."
                         )
                     }
                 )
@@ -731,6 +743,7 @@ class CommandeViewSet(ModelViewSet):
             if not est_bon_achat:
                 variante.stock -= quantite
                 variante.save(update_fields=["stock"])
+                panier.gebe_frei(membre_cible, [variante.id])
             commande.montant_total = sous_total_net
             commande.save(update_fields=["montant_total"])
 
@@ -1260,3 +1273,38 @@ class ReservierungViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin, 
     @action(detail=True, methods=["post"])
     def abholen(self, request, pk=None):
         return self._wechseln(self.get_object(), StatutReservierung.ABGEHOLT)
+
+
+class PanierReservierungView(APIView):
+    """Warenkorb-Reservierung (2026-10-20), nur für Personen mit Mitgliedsakte.
+
+    GET    /boutique/panier/reservierung/  — eigener Stand (Ablaufzeit, Restsekunden)
+    PUT    /boutique/panier/reservierung/  — {lignes: [{variante, quantite}]}: reserviert den
+                                             kompletten Warenkorb und startet den Countdown
+                                             neu ; Antwort nennt je Zeile reserviert/verfügbar
+    DELETE /boutique/panier/reservierung/  — gibt alles frei (Warenkorb geleert)
+    """
+
+    permission_classes = [IsAuthenticated, module_access_permission("boutique")]
+
+    @staticmethod
+    def _membre(request):
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            raise ValidationError(
+                {"membre": "Aucune fiche membre associée à ce compte utilisateur."}
+            )
+        return membre
+
+    def get(self, request):
+        return Response(panier.status(self._membre(request)))
+
+    def put(self, request):
+        membre = self._membre(request)
+        serializer = PanierReservierungSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(panier.reserviere_warenkorb(membre, serializer.validated_data["lignes"]))
+
+    def delete(self, request):
+        panier.gebe_frei(self._membre(request))
+        return Response(status=status.HTTP_204_NO_CONTENT)

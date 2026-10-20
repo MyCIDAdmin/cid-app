@@ -69,6 +69,16 @@ export function estArticleBonAchat(article: ArticlePanier): boolean {
 
 interface PanierState {
   articles: ArticlePanier[];
+  /** Ende der Warenkorb-Reservierung als Zeitstempel (ms, lokale Uhr = Serverrestzeit +
+   * Empfangszeit, damit eine falsch gehende Geräteuhr den Countdown nicht verfälscht). `null`
+   * = nichts reserviert. Siehe hooks/usePanierReservierung. */
+  reservierungEndeMs: number | null;
+  setReservierungEnde: (endeMs: number | null) => void;
+  /** Übernimmt die Antwort des Servers: Menge/Bestand je Zeile auf das tatsächlich Reservierbare
+   * begrenzen (Teilreservierung). */
+  reservierungAnwenden: (
+    zeilen: { variante: string; reserviert: number; verfuegbar: number }[],
+  ) => void;
   ajouter: (article: Omit<ArticlePanier, "quantite" | "ligneId">, quantite?: number) => void;
   changerQuantite: (ligneId: string, quantite: number) => void;
   retirer: (ligneId: string) => void;
@@ -89,6 +99,24 @@ export const usePanierStore = create<PanierState>()(
   persist(
     (set) => ({
       articles: [],
+      reservierungEndeMs: null,
+      setReservierungEnde: (endeMs) => set({ reservierungEndeMs: endeMs }),
+      reservierungAnwenden: (zeilen) =>
+        set((state) => {
+          const nachVariante = new Map(zeilen.map((z) => [z.variante, z]));
+          return {
+            articles: state.articles.map((a) => {
+              const zeile =
+                a.typeProduit === "bon_achat" ? undefined : nachVariante.get(a.varianteId);
+              if (!zeile) return a;
+              return {
+                ...a,
+                stockDisponible: Math.max(zeile.verfuegbar, 0),
+                quantite: Math.min(a.quantite, zeile.reserviert),
+              };
+            }),
+          };
+        }),
       ajouter: (article, quantite = 1) =>
         set((state) => {
           // Un "bon_achat" n'est jamais fusionné avec une ligne existante (même variante
@@ -145,7 +173,7 @@ export const usePanierStore = create<PanierState>()(
         set((state) => ({
           articles: state.articles.filter((a) => (a.ligneId ?? a.varianteId) !== ligneId),
         })),
-      vider: () => set({ articles: [] }),
+      vider: () => set({ articles: [], reservierungEndeMs: null }),
       synchroniserStocks: (stocksParVarianteId) =>
         set((state) => ({
           articles: state.articles.map((a) => {

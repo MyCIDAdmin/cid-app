@@ -32,9 +32,15 @@ reste `en_attente` jusqu'à confirmation manuelle par le Directeur Financier/Adm
     self-service /cotisations/) ne fait jamais confiance à un montant client.
 """
 
-from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle
+from datetime import timedelta
 
-from .models import Inscription, StatutInscription
+from django.db import transaction
+from django.utils import timezone
+
+from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle
+from apps.zentral.models import ZentraleEinstellungen
+
+from .models import Evenement, Inscription, StatutEvenement, StatutInscription
 
 #: Statuts Cotisation considérés "pas encore payés" — voir apps.adhesions.services (même
 #: constante, même raison).
@@ -78,3 +84,123 @@ def synchroniser_cotisation(inscription: Inscription) -> None:
     if cotisation is not None and cotisation.statut in _STATUTS_COTISATION_NON_PAYEE:
         cotisation.statut = StatutCotisation.ANNULEE
         cotisation.save(update_fields=["statut", "updated_at"])
+
+
+# ---------------------------------------------------------------------------------------------
+# Zahlungsfrist + Warteliste (2026-10-20)
+#
+# Nur bei Veranstaltungen mit begrenzter Teilnehmerzahl (`places_max`) und nur, wenn die
+# Teilnahme bezahlt werden muss (Status `en_attente_paiement`): die Anmeldung bekommt eine Frist
+# (zentral einstellbar, Standard 2 Tage). Läuft sie ab, wird die Anmeldung storniert, der Platz
+# wird frei und die Warteliste rückt in der Reihenfolge der Anmeldung nach — die nachrückende
+# Person erhält ihrerseits eine neue Frist. Reine Regionen-Veranstaltungen (apps.regionen) haben
+# keine Zahlung und sind davon nicht betroffen.
+# ---------------------------------------------------------------------------------------------
+
+
+def zahlungsfrist_ende(evenement: Evenement, ab=None):
+    """Ende der Zahlungsfrist für eine neue/nachrückende Anmeldung — `None` bei unbegrenzten
+    Veranstaltungen (dort gilt weiterhin nur `date_limite_paiement`)."""
+    if evenement.places_max is None:
+        return None
+    tage = ZentraleEinstellungen.get_solo().event_zahlungsfrist_tage
+    return (ab or timezone.now()) + timedelta(days=tage)
+
+
+def _benoetigte_plaetze(inscription: Inscription) -> int:
+    return (
+        inscription.places
+        + inscription.nombre_accompagnants_adultes
+        + inscription.nombre_accompagnants_enfants
+    )
+
+
+def warteliste_position(inscription: Inscription) -> int | None:
+    """1 = als Nächstes dran; `None`, wenn nicht auf der Warteliste."""
+    if inscription.statut != StatutInscription.LISTE_ATTENTE or inscription.warteliste_seit is None:
+        return None
+    return (
+        Inscription.objects.filter(
+            evenement=inscription.evenement,
+            statut=StatutInscription.LISTE_ATTENTE,
+            warteliste_seit__lt=inscription.warteliste_seit,
+        ).count()
+        + 1
+    )
+
+
+def warteliste_nachruecken(evenement_id) -> list[Inscription]:
+    """Lässt Wartende in der Reihenfolge ihrer Anmeldung nachrücken, solange Platz frei ist.
+    Wer nicht mehr hineinpasst (große Gruppe), wird übersprungen — kleinere dahinter dürfen
+    nachrücken. Gibt die nachgerückten Anmeldungen zurück (für die Benachrichtigung)."""
+    from . import tasks  # lokal: tasks nutzt services nicht, vermeidet Importreihenfolge-Probleme
+
+    nachgerueckt: list[Inscription] = []
+    with transaction.atomic():
+        evenement = Evenement.objects.select_for_update().get(pk=evenement_id)
+        if evenement.statut != StatutEvenement.PUBLIE:
+            return []
+        wartende = (
+            Inscription.objects.filter(evenement=evenement, statut=StatutInscription.LISTE_ATTENTE)
+            .select_related("membre", "evenement")
+            .order_by("warteliste_seit", "created_at")
+        )
+        for inscription in wartende:
+            if evenement.places_max is not None:
+                frei = evenement.places_max - evenement.places_reservees
+                if _benoetigte_plaetze(inscription) > frei:
+                    continue
+            if inscription.montant_paye > 0:
+                inscription.statut = StatutInscription.EN_ATTENTE_PAIEMENT
+                inscription.zahlungsfrist_bis = zahlungsfrist_ende(evenement)
+            else:
+                inscription.statut = StatutInscription.CONFIRMEE
+                inscription.zahlungsfrist_bis = None
+            inscription.frist_erinnerung_gesendet_am = None
+            inscription.warteliste_seit = None
+            inscription.save()
+            synchroniser_cotisation(inscription)
+            nachgerueckt.append(inscription)
+
+    for inscription in nachgerueckt:
+        tasks.benachrichtige.delay("nachgerueckt", str(inscription.pk))
+    return nachgerueckt
+
+
+def unbezahlte_stornieren(jetzt=None) -> int:
+    """Storniert Anmeldungen, deren Zahlungsfrist abgelaufen ist, gibt die Plätze frei und lässt
+    die Warteliste nachrücken. Gibt die Zahl stornierter Anmeldungen zurück."""
+    from . import tasks
+
+    jetzt = jetzt or timezone.now()
+    abgelaufen = list(
+        Inscription.objects.filter(
+            statut=StatutInscription.EN_ATTENTE_PAIEMENT,
+            zahlungsfrist_bis__isnull=False,
+            zahlungsfrist_bis__lt=jetzt,
+        ).select_related("evenement", "membre", "cotisation")
+    )
+    storniert = 0
+    betroffene_events = set()
+    for inscription in abgelaufen:
+        with transaction.atomic():
+            aktuell = Inscription.objects.select_for_update().get(pk=inscription.pk)
+            if aktuell.statut != StatutInscription.EN_ATTENTE_PAIEMENT:
+                continue
+            cotisation = aktuell.cotisation
+            if cotisation is not None and cotisation.statut == StatutCotisation.PAYEE:
+                # Zahlung ist eingegangen, Status nur noch nicht übernommen — nicht stornieren.
+                aktuell.statut = StatutInscription.CONFIRMEE
+                aktuell.zahlungsfrist_bis = None
+                aktuell.save(update_fields=["statut", "zahlungsfrist_bis", "updated_at"])
+                continue
+            aktuell.statut = StatutInscription.ANNULEE
+            aktuell.zahlungsfrist_bis = None
+            aktuell.save(update_fields=["statut", "zahlungsfrist_bis", "updated_at"])
+            synchroniser_cotisation(aktuell)
+        storniert += 1
+        betroffene_events.add(aktuell.evenement_id)
+        tasks.benachrichtige.delay("frist_abgelaufen", str(aktuell.pk))
+    for evenement_id in betroffene_events:
+        warteliste_nachruecken(evenement_id)
+    return storniert

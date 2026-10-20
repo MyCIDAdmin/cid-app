@@ -100,6 +100,7 @@ function evenement(overrides: Partial<Evenement> = {}): Evenement {
     visible_public: false,
     places_reservees: 0,
     places_restantes: 45,
+    warteliste_laenge: 0,
     created_by: "m1",
     created_at: "2026-01-01T10:00:00Z",
     updated_at: "2026-01-01T10:00:00Z",

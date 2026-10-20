@@ -146,5 +146,15 @@
   "nur_fuer_mitglieder": "Réservé aux membres",
   "reserve_membres_info": "Cet événement est réservé aux membres actifs.",
   "point_rdv": "Point de rendez-vous",
-  "paiement_avant": "Paiement avant le {{date}}"
+  "paiement_avant": "Paiement avant le {{date}}",
+  "warteliste_beitreten": "Rejoindre la liste d'attente",
+  "warteliste_laenge_one": "{{count}} personne en liste d'attente",
+  "warteliste_laenge_other": "{{count}} personnes en liste d'attente",
+  "warteliste_position": "Liste d'attente – rang {{position}} : vous avancez automatiquement dès qu'une place se libère.",
+  "zahlungsfrist_hinweis": "Merci de payer avant le {{datum}}, sinon l'inscription sera annulée et la place attribuée à un autre.",
+  "zahlungsfrist_modal_hinweis": "Après l'inscription, payez dans le délai imparti – sinon l'inscription est annulée et la place passe à la liste d'attente.",
+  "warteliste_modal_hinweis": "L'événement est complet. Vous serez sur la liste d'attente et avancerez automatiquement dès qu'une place se libère – vous aurez alors du temps pour payer.",
+  "warteliste_bestaetigt_titel": "Vous êtes sur la liste d'attente",
+  "warteliste_bestaetigt_text": "Vous êtes au rang {{position}}. Dès qu'une place se libère, vous avancez automatiquement et êtes prévenu(e).",
+  "inscription_statut_liste_attente": "Liste d'attente"
 }
