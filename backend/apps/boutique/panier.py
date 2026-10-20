@@ -77,7 +77,8 @@ def reserviere_warenkorb(membre, zeilen: list[dict]) -> dict:
     "quantite": int}]) und startet den Countdown neu. Reserviert pro Zeile höchstens, was für
     das Mitglied verfügbar ist (Teilreservierung statt Fehler) ; die Antwort nennt je Zeile
     `reserviert` und `verfuegbar`, damit die Oberfläche die Menge anpassen kann. Zeilen, die nicht
-    mehr im Warenkorb stehen, werden freigegeben. Gutscheine (kein Lagerbestand) werden ignoriert."""
+    mehr im Warenkorb stehen, werden freigegeben. Gutscheine (kein Lagerbestand) werden ignoriert.
+    """
     gewuenscht: dict = {}
     for zeile in zeilen:
         variante = zeile["variante"]
@@ -119,7 +120,9 @@ def reserviere_warenkorb(membre, zeilen: list[dict]) -> dict:
     hat_reservierung = any(z["reserviert"] for z in ergebnis)
     return {
         "expire_le": ende if hat_reservierung else None,
-        "restzeit_sekunden": int((ende - timezone.now()).total_seconds()) if hat_reservierung else 0,
+        "restzeit_sekunden": (
+            int((ende - timezone.now()).total_seconds()) if hat_reservierung else 0
+        ),
         "zeilen": ergebnis,
     }
 

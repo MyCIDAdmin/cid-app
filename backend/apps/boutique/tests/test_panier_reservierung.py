@@ -12,10 +12,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import Role, User
 from apps.boutique import panier
 from apps.boutique.models import PanierReservierung
-from apps.boutique.tests.factories import (
-    ProduitBonAchatFactory,
-    VarianteProduitFactory,
-)
+from apps.boutique.tests.factories import ProduitBonAchatFactory, VarianteProduitFactory
 from apps.membres.tests.factories import MembreFactory
 from apps.zentral.models import ZentraleEinstellungen
 
@@ -58,9 +55,7 @@ def test_reservierung_startet_countdown_und_zaehlt_im_lagerstand():
     resp = _client(user_a).put(reverse(URL), _lignes((variante, 3)), format="json")
 
     assert resp.status_code == 200
-    assert resp.data["zeilen"] == [
-        {"variante": str(variante.id), "reserviert": 3, "verfuegbar": 5}
-    ]
+    assert resp.data["zeilen"] == [{"variante": str(variante.id), "reserviert": 3, "verfuegbar": 5}]
     assert 1190 <= resp.data["restzeit_sekunden"] <= 1200  # 20 Minuten
     # Physischer Bestand bleibt, verfügbar für andere nur noch 2
     variante.refresh_from_db()
@@ -193,9 +188,7 @@ def test_bestellung_verbraucht_eigene_reservierung():
     client = _client(user_a)
     client.put(reverse(URL), _lignes((variante, 3)), format="json")
 
-    resp = client.post(
-        reverse(PASSER_URL), {**_lignes((variante, 3)), **_adresse()}, format="json"
-    )
+    resp = client.post(reverse(PASSER_URL), {**_lignes((variante, 3)), **_adresse()}, format="json")
 
     assert resp.status_code == 201
     variante.refresh_from_db()

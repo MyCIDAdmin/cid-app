@@ -14,12 +14,7 @@ from datetime import timedelta
 from django.db.models import Count, Sum
 from django.utils import timezone
 
-from apps.evenements.models import (
-    Evenement,
-    Inscription,
-    StatutEvenement,
-    StatutInscription,
-)
+from apps.evenements.models import Evenement, Inscription, StatutEvenement, StatutInscription
 from apps.rbac.services import acces_cle_menu, est_membre_actif, visibilite_effective
 
 from .models import ZentraleEinstellungen

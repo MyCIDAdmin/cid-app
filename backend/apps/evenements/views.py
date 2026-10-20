@@ -70,11 +70,7 @@ from .serializers import (
     RejoindreTrajetSerializer,
     ReservationCovoiturageSerializer,
 )
-from .services import (
-    synchroniser_cotisation,
-    warteliste_nachruecken,
-    zahlungsfrist_ende,
-)
+from .services import synchroniser_cotisation, warteliste_nachruecken, zahlungsfrist_ende
 from .tasks import benachrichtige, envoyer_annulation_evenement, envoyer_invitations_evenement
 
 # Statuts Cotisation considérés "pas encore payés" — voir inscrire_especes ci-dessous, même

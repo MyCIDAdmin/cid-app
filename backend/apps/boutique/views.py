@@ -164,13 +164,13 @@ from .permissions import (
 )
 from .serializers import (
     BonAchatSerializer,
-    PanierReservierungSerializer,
     BonAchatVerificationSerializer,
     ChangerStatutCommandeSerializer,
     CommandeSerializer,
     ConfirmerPaiementCommandeSerializer,
     ExpedierCommandeSerializer,
     InitierPaiementEnLigneCommandeSerializer,
+    PanierReservierungSerializer,
     PasserCommandeSerializer,
     ProduitImageSerializer,
     ProduitSerializer,
@@ -704,7 +704,9 @@ class CommandeViewSet(ModelViewSet):
             )
             reservierungen.pruefe_zugang([variante.produit], membre_cible, "variante")
             verfuegbar = (
-                variante.stock if est_bon_achat else panier.verfuegbarer_bestand(variante, membre_cible)
+                variante.stock
+                if est_bon_achat
+                else panier.verfuegbarer_bestand(variante, membre_cible)
             )
             if not est_bon_achat and verfuegbar < quantite:
                 raise ValidationError(
@@ -1276,11 +1278,11 @@ class ReservierungViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin, 
 class PanierReservierungView(APIView):
     """Warenkorb-Reservierung (2026-10-20), nur für Personen mit Mitgliedsakte.
 
-      GET    /boutique/panier/reservierung/  — eigener Stand (Ablaufzeit, Restsekunden)
-      PUT    /boutique/panier/reservierung/  — {lignes: [{variante, quantite}]}: reserviert den
-                                               kompletten Warenkorb und startet den Countdown
-                                               neu ; Antwort nennt je Zeile reserviert/verfügbar
-      DELETE /boutique/panier/reservierung/  — gibt alles frei (Warenkorb geleert)
+    GET    /boutique/panier/reservierung/  — eigener Stand (Ablaufzeit, Restsekunden)
+    PUT    /boutique/panier/reservierung/  — {lignes: [{variante, quantite}]}: reserviert den
+                                             kompletten Warenkorb und startet den Countdown
+                                             neu ; Antwort nennt je Zeile reserviert/verfügbar
+    DELETE /boutique/panier/reservierung/  — gibt alles frei (Warenkorb geleert)
     """
 
     permission_classes = [IsAuthenticated, module_access_permission("boutique")]

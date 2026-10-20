@@ -41,12 +41,7 @@ from django.utils import timezone
 from apps.adhesions.models import Souscription, StatutSouscription
 from apps.boutique.models import Commande, StatutCommande
 from apps.cotisations.models import Cotisation, StatutCotisation, TypeArticle, montant_catalogue
-from apps.evenements.models import (
-    STATUTS_SANS_PLACE,
-    Evenement,
-    Inscription,
-    StatutEvenement,
-)
+from apps.evenements.models import STATUTS_SANS_PLACE, Evenement, Inscription, StatutEvenement
 from apps.finances.models import Depense, StatutDepense
 from apps.membres.models import Membre, StatutMembre
 from apps.projets.models import Aufgabe, PlanKosten, Projet, ProjetMitglied, StatutAufgabe

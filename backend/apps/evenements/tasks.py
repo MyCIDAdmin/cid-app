@@ -39,13 +39,7 @@ from apps.notifications.email_cid import Texte, envoyer_email_cid
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import email_module_actif, notifier
 
-from .models import (
-    STATUTS_SANS_PLACE,
-    Evenement,
-    Inscription,
-    StatutEvenement,
-    StatutInscription,
-)
+from .models import STATUTS_SANS_PLACE, Evenement, Inscription, StatutEvenement, StatutInscription
 
 logger = logging.getLogger(__name__)
 
