@@ -69,6 +69,7 @@ et que l'ancienne implémentation SerpApi de ce fichier.
 
 import logging
 from datetime import datetime
+from datetime import timezone as dt_timezone
 
 import requests
 from django.conf import settings
@@ -344,6 +345,129 @@ def _synchroniser_classement_depuis(lignes: list) -> int:
     return synchronisees
 
 
+CHAMPS_ETAT_API = (
+    "competition",
+    "equipe_domicile",
+    "equipe_exterieur",
+    "date_heure",
+    "score_domicile",
+    "score_exterieur",
+    "statut",
+)
+
+
+def etat_rencontre(valeurs) -> dict:
+    """État comparable (JSON-sérialisable) d'une rencontre — `valeurs` = dict ou instance de
+    `RencontreCalendrier`. La date est normalisée en UTC ISO pour une comparaison fiable."""
+    etat = {}
+    for champ in CHAMPS_ETAT_API:
+        valeur = valeurs[champ] if isinstance(valeurs, dict) else getattr(valeurs, champ)
+        if champ == "date_heure" and valeur is not None:
+            valeur = valeur.astimezone(dt_timezone.utc).isoformat()
+        etat[champ] = valeur
+    return etat
+
+
+def _appliquer_etat_api(event_id: str, valeurs: dict) -> None:
+    """Upsert d'une rencontre livrée par GOAL API en respectant les corrections manuelles
+    (Spielplan, 2026-10-20) : une rencontre corrigée à la main (`modifie_manuellement`) reste
+    inchangée tant que l'API livre le MÊME état que la dernière fois (`api_stand`) ; dès que
+    l'API livre un état différent, la correction manuelle est écrasée."""
+    etat = etat_rencontre(valeurs)
+    rencontre = RencontreCalendrier.objects.filter(evenement_externe_id=event_id).first()
+    if rencontre is None:
+        RencontreCalendrier.objects.create(evenement_externe_id=event_id, api_stand=etat, **valeurs)
+        return
+
+    if rencontre.modifie_manuellement and rencontre.api_stand == etat:
+        return  # API inchangée → la correction manuelle reste en place
+
+    for champ, valeur in valeurs.items():
+        setattr(rencontre, champ, valeur)
+    rencontre.api_stand = etat
+    rencontre.modifie_manuellement = False
+    rencontre.save()
+
+
+# Champs que le Spielplan permet de corriger sur une rencontre livrée par l'API ; les
+# rencontres saisies à la main (`ajout_manuel`) sont entièrement modifiables.
+CHAMPS_CORRIGEABLES_API = ("date_heure", "score_domicile", "score_exterieur", "statut")
+
+
+def ajouter_rencontre_manuelle(donnees: dict, user):
+    """Crée une rencontre saisie à la main — jamais touchée ni supprimée par la
+    synchronisation (identifiant `manuel-<uuid>`, absent des données de l'API)."""
+    import uuid
+
+    donnees = dict(donnees)
+    donnees["statut"] = _statut_coherent(donnees, donnees.get("statut"))
+    rencontre = RencontreCalendrier.objects.create(
+        evenement_externe_id=f"manuel-{uuid.uuid4().hex}",
+        ajout_manuel=True,
+        modifie_par=user,
+        modifie_manuellement_le=django_timezone.now(),
+        **donnees,
+    )
+    recalculer_points_tippspiel()
+    return rencontre
+
+
+def _statut_coherent(valeurs, statut_demande):
+    """Ergebnis eingetragen ⇒ Spiel gilt als beendet ; Ergebnis gelöscht ⇒ wieder angesetzt
+    (sofern der Statut nicht ausdrücklich gesetzt wurde)."""
+    statut = statut_demande or StatutRencontre.PROGRAMMEE
+    a_score = (
+        valeurs.get("score_domicile") is not None and valeurs.get("score_exterieur") is not None
+    )
+    if a_score and statut == StatutRencontre.PROGRAMMEE:
+        return StatutRencontre.TERMINEE
+    if not a_score and statut_demande is None:
+        return StatutRencontre.PROGRAMMEE
+    return statut
+
+
+def corriger_rencontre(rencontre, donnees: dict, user):
+    """Correction manuelle (Datum/Uhrzeit, Ergebnis, Statut). Rencontre issue de l'API : seuls
+    `CHAMPS_CORRIGEABLES_API` sont pris en compte. `modifie_manuellement` reflète ensuite si
+    l'état diffère du dernier état livré par l'API (revenir à cet état annule la correction)."""
+    if not rencontre.ajout_manuel:
+        donnees = {k: v for k, v in donnees.items() if k in CHAMPS_CORRIGEABLES_API}
+
+    statut_explicite = "statut" in donnees
+    for champ, valeur in donnees.items():
+        setattr(rencontre, champ, valeur)
+    a_score = rencontre.score_domicile is not None and rencontre.score_exterieur is not None
+    if a_score and rencontre.statut == StatutRencontre.PROGRAMMEE:
+        rencontre.statut = StatutRencontre.TERMINEE  # Ergebnis eingetragen ⇒ beendet
+    elif not a_score and not statut_explicite and rencontre.statut == StatutRencontre.TERMINEE:
+        rencontre.statut = StatutRencontre.PROGRAMMEE  # Ergebnis gelöscht ⇒ wieder angesetzt
+
+    if not rencontre.ajout_manuel:
+        rencontre.modifie_manuellement = etat_rencontre(rencontre) != rencontre.api_stand
+    rencontre.modifie_par = user
+    rencontre.modifie_manuellement_le = django_timezone.now()
+    rencontre.save()
+    recalculer_points_tippspiel()
+    return rencontre
+
+
+def reinitialiser_rencontre(rencontre):
+    """Remet une rencontre corrigée à la main sur le dernier état livré par l'API. Retourne
+    False si aucun état API n'est connu (rencontre saisie à la main / jamais synchronisée)."""
+    if rencontre.ajout_manuel or not rencontre.api_stand:
+        return False
+    etat = rencontre.api_stand
+    for champ in CHAMPS_ETAT_API:
+        valeur = etat[champ]
+        if champ == "date_heure":
+            valeur = datetime.fromisoformat(valeur)
+        setattr(rencontre, champ, valeur)
+    rencontre.modifie_manuellement = False
+    rencontre.save()
+    recalculer_points_tippspiel()
+    return True
+
+
 def _synchroniser_calendrier_depuis(fixtures) -> int:
     synchronisees = 0
     for fixture in fixtures:
@@ -367,9 +491,9 @@ def _synchroniser_calendrier_depuis(fixtures) -> int:
                 statut_brut if statut_brut in StatutRencontre.values else StatutRencontre.PROGRAMMEE
             )
 
-            RencontreCalendrier.objects.update_or_create(
-                evenement_externe_id=event_id,
-                defaults={
+            _appliquer_etat_api(
+                event_id,
+                {
                     "competition": competition,
                     "equipe_domicile": equipe_domicile,
                     "equipe_exterieur": equipe_exterieur,

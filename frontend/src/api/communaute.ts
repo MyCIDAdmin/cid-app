@@ -41,6 +41,7 @@ import type {
   QuizMiseAJourPayload,
   QuizPayload,
   RencontreCalendrier,
+  RencontreCalendrierPayload,
   ReponseForum,
   ReponseQuiz,
   StatistiqueJoueur,
@@ -397,6 +398,35 @@ export async function listClassementLigue(): Promise<CursorPage<ClassementLigue>
 
 export async function listCalendrierRencontres(): Promise<CursorPage<RencontreCalendrier>> {
   return listerToutesLesPages<RencontreCalendrier>("/communaute/calendrier/");
+}
+
+export async function creerRencontre(
+  payload: RencontreCalendrierPayload,
+): Promise<RencontreCalendrier> {
+  const { data } = await apiClient.post<RencontreCalendrier>("/communaute/calendrier/", payload);
+  return data;
+}
+
+export async function modifierRencontre(
+  id: string,
+  payload: RencontreCalendrierPayload,
+): Promise<RencontreCalendrier> {
+  const { data } = await apiClient.patch<RencontreCalendrier>(
+    `/communaute/calendrier/${id}/`,
+    payload,
+  );
+  return data;
+}
+
+export async function reinitialiserRencontre(id: string): Promise<RencontreCalendrier> {
+  const { data } = await apiClient.post<RencontreCalendrier>(
+    `/communaute/calendrier/${id}/zuruecksetzen/`,
+  );
+  return data;
+}
+
+export async function supprimerRencontre(id: string): Promise<void> {
+  await apiClient.delete(`/communaute/calendrier/${id}/`);
 }
 
 export async function listStatistiquesJoueurs(): Promise<CursorPage<StatistiqueJoueur>> {

@@ -327,7 +327,23 @@ export interface RencontreCalendrier {
   score_exterieur: number | null;
   statut: StatutRencontre;
   est_a_venir: boolean;
+  /** Vorstand hat Datum/Ergebnis/Status von Hand korrigiert (bis die API einen neuen Stand liefert). */
+  modifie_manuellement: boolean;
+  /** Spiel wurde von Hand hinzugefügt (kommt nicht aus der API). */
+  ajout_manuel: boolean;
   maj_le: string;
+}
+
+/** Schreib-Payload für manuelle Korrekturen/neue Spiele im Spielplan (Bureau Admin+). Bei von
+ * der API gelieferten Spielen zählen nur date_heure, Ergebnis und statut. */
+export interface RencontreCalendrierPayload {
+  competition?: string;
+  equipe_domicile?: string;
+  equipe_exterieur?: string;
+  date_heure?: string;
+  score_domicile?: number | null;
+  score_exterieur?: number | null;
+  statut?: StatutRencontre;
 }
 
 /** Statistiques individuelles d'un joueur (saison en cours), synchronisées depuis GOAL API

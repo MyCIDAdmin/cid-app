@@ -16,6 +16,7 @@ import type {
   QuestionQuizPayload,
   QuizMiseAJourPayload,
   QuizPayload,
+  RencontreCalendrierPayload,
   SujetPayload,
   TippspielPayload,
   TippspielTipPayload,
@@ -472,6 +473,46 @@ export function useCalendrierRencontres() {
   return useQuery({
     queryKey: communauteKeys.calendrier(),
     queryFn: () => communauteApi.listCalendrierRencontres(),
+  });
+}
+
+// Manuelle Korrekturen im Spielplan (Bureau Admin+). Die Liste, die NextMatchTile, Tippspiel
+// und Statistik mitnutzen, wird nach jeder Änderung neu geladen.
+function useInvaliderCalendrier() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: communauteKeys.calendrier() });
+}
+
+export function useCreerRencontre() {
+  const invalider = useInvaliderCalendrier();
+  return useMutation({
+    mutationFn: (payload: RencontreCalendrierPayload) => communauteApi.creerRencontre(payload),
+    onSuccess: invalider,
+  });
+}
+
+export function useModifierRencontre() {
+  const invalider = useInvaliderCalendrier();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: RencontreCalendrierPayload }) =>
+      communauteApi.modifierRencontre(id, payload),
+    onSuccess: invalider,
+  });
+}
+
+export function useReinitialiserRencontre() {
+  const invalider = useInvaliderCalendrier();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.reinitialiserRencontre(id),
+    onSuccess: invalider,
+  });
+}
+
+export function useSupprimerRencontre() {
+  const invalider = useInvaliderCalendrier();
+  return useMutation({
+    mutationFn: (id: string) => communauteApi.supprimerRencontre(id),
+    onSuccess: invalider,
   });
 }
 

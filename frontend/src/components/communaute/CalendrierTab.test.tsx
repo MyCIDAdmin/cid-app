@@ -1,14 +1,23 @@
-import { screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
+import { useAuthStore } from "../../store/authStore";
 import type { RencontreCalendrier } from "../../types/communaute";
 import CalendrierTab from "./CalendrierTab";
 
 vi.mock("../../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../../hooks/useCommunaute");
-  return { ...actual, useCalendrierRencontres: vi.fn(), useEquipesLogos: vi.fn() };
+  return {
+    ...actual,
+    useCalendrierRencontres: vi.fn(),
+    useEquipesLogos: vi.fn(),
+    useCreerRencontre: vi.fn(),
+    useModifierRencontre: vi.fn(),
+    useReinitialiserRencontre: vi.fn(),
+    useSupprimerRencontre: vi.fn(),
+  };
 });
 
 // EquipeLogoImage (voir docstring de tête CalendrierTab.tsx, retour utilisateur du
@@ -36,6 +45,8 @@ function rencontre(overrides: Partial<RencontreCalendrier> = {}): RencontreCalen
     score_exterieur: null,
     statut: "SCHEDULED",
     est_a_venir: true,
+    modifie_manuellement: false,
+    ajout_manuel: false,
     maj_le: "2026-03-01T10:00:00Z",
     ...overrides,
   };
@@ -264,5 +275,155 @@ describe("CalendrierTab", () => {
     renderWithProviders(<CalendrierTab />);
 
     expect(screen.getByText("live.calendrier_statut_annulee")).toBeInTheDocument();
+  });
+
+  describe("manuelle Korrekturen (Bureau Admin+)", () => {
+    const membre = {
+      id: "u1",
+      email: "membre@example.com",
+      role: "membre" as const,
+      langue_preferee: "fr" as const,
+    };
+    const admin = { ...membre, id: "u2", role: "bureau_admin" as const };
+
+    function mutationMock() {
+      const mutateAsync = vi.fn().mockResolvedValue({});
+      return {
+        mock: { mutate: vi.fn(), mutateAsync, isPending: false } as never,
+        mutateAsync,
+      };
+    }
+
+    function anmelden(user: typeof membre | typeof admin | null) {
+      useAuthStore.setState({
+        accessToken: user ? "t" : null,
+        refreshToken: user ? "r" : null,
+        user,
+        isAuthenticated: !!user,
+      });
+    }
+
+    function liste(...rencontres: RencontreCalendrier[]) {
+      vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+        data: page(rencontres),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+    }
+
+    afterEach(() => {
+      cleanup();
+      anmelden(null);
+    });
+
+    it("zeigt Besuchern und Mitgliedern keine Bearbeiten-Knöpfe", () => {
+      liste(rencontre());
+      anmelden(membre);
+      renderWithProviders(<CalendrierTab />);
+      expect(screen.queryByText("live.calendrier_bearbeiten")).not.toBeInTheDocument();
+      expect(screen.queryByText("live.calendrier_hinzufuegen")).not.toBeInTheDocument();
+    });
+
+    it("zeigt dem Vorstand Bearbeiten und Spiel hinzufügen, plus Badges", () => {
+      liste(
+        rencontre({ id: "r1", modifie_manuellement: true }),
+        rencontre({ id: "r2", ajout_manuel: true, equipe_exterieur: "FC Köln" }),
+      );
+      anmelden(admin);
+      renderWithProviders(<CalendrierTab />);
+      expect(screen.getAllByText("live.calendrier_bearbeiten")).toHaveLength(2);
+      expect(screen.getByText("live.calendrier_hinzufuegen")).toBeInTheDocument();
+      expect(screen.getByText("live.calendrier_badge_korrigiert")).toBeInTheDocument();
+      expect(screen.getByText("live.calendrier_badge_manuel")).toBeInTheDocument();
+    });
+
+    it("speichert Datum und Ergebnis einer API-Rencontre über PATCH", async () => {
+      const { mock, mutateAsync } = mutationMock();
+      vi.mocked(useCommunauteHooks.useModifierRencontre).mockReturnValue(mock);
+      vi.mocked(useCommunauteHooks.useCreerRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useReinitialiserRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useSupprimerRencontre).mockReturnValue(mutationMock().mock);
+      liste(rencontre({ id: "r1" }));
+      anmelden(admin);
+      renderWithProviders(<CalendrierTab />);
+
+      fireEvent.click(screen.getByText("live.calendrier_bearbeiten"));
+      // API-Spiel: Mannschaften nicht editierbar
+      expect(screen.queryByLabelText("live.calendrier_form_heim")).not.toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText("live.calendrier_form_datum"), {
+        target: { value: "2026-04-02T19:30" },
+      });
+      fireEvent.change(screen.getByLabelText("live.calendrier_form_tore_heim"), {
+        target: { value: "2" },
+      });
+      fireEvent.change(screen.getByLabelText("live.calendrier_form_tore_gast"), {
+        target: { value: "1" },
+      });
+      fireEvent.click(screen.getByText("live.calendrier_form_speichern"));
+
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+      const { id, payload } = mutateAsync.mock.calls[0][0];
+      expect(id).toBe("r1");
+      expect(payload.score_domicile).toBe(2);
+      expect(payload.score_exterieur).toBe(1);
+      expect(new Date(payload.date_heure).getTime()).toBe(new Date("2026-04-02T19:30").getTime());
+      expect(payload.equipe_exterieur).toBeUndefined();
+    });
+
+    it("verlangt beide Tore oder keins", () => {
+      vi.mocked(useCommunauteHooks.useModifierRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useCreerRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useReinitialiserRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useSupprimerRencontre).mockReturnValue(mutationMock().mock);
+      liste(rencontre());
+      anmelden(admin);
+      renderWithProviders(<CalendrierTab />);
+      fireEvent.click(screen.getByText("live.calendrier_bearbeiten"));
+      fireEvent.change(screen.getByLabelText("live.calendrier_form_tore_heim"), {
+        target: { value: "2" },
+      });
+      fireEvent.click(screen.getByText("live.calendrier_form_speichern"));
+      expect(screen.getByRole("alert")).toHaveTextContent("live.calendrier_form_ergebnis_komplett");
+    });
+
+    it("legt ein neues Spiel mit allen Feldern an", async () => {
+      const { mock, mutateAsync } = mutationMock();
+      vi.mocked(useCommunauteHooks.useCreerRencontre).mockReturnValue(mock);
+      vi.mocked(useCommunauteHooks.useModifierRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useReinitialiserRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useSupprimerRencontre).mockReturnValue(mutationMock().mock);
+      liste(rencontre());
+      anmelden(admin);
+      renderWithProviders(<CalendrierTab />);
+
+      fireEvent.click(screen.getByText("live.calendrier_hinzufuegen"));
+      fireEvent.change(screen.getByLabelText("live.calendrier_form_gast"), {
+        target: { value: "FC Köln" },
+      });
+      fireEvent.change(screen.getByLabelText("live.calendrier_form_datum"), {
+        target: { value: "2026-11-01T18:00" },
+      });
+      fireEvent.click(screen.getByText("live.calendrier_form_speichern"));
+
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+      const payload = mutateAsync.mock.calls[0][0];
+      expect(payload.equipe_exterieur).toBe("FC Köln");
+      expect(payload.equipe_domicile).toBe("Club Africain");
+      expect(payload.score_domicile).toBeNull();
+    });
+
+    it("bietet Zurücksetzen nur bei manuell korrigierten API-Spielen", () => {
+      vi.mocked(useCommunauteHooks.useModifierRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useCreerRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useReinitialiserRencontre).mockReturnValue(mutationMock().mock);
+      vi.mocked(useCommunauteHooks.useSupprimerRencontre).mockReturnValue(mutationMock().mock);
+      liste(rencontre({ id: "r1", modifie_manuellement: true }));
+      anmelden(admin);
+      renderWithProviders(<CalendrierTab />);
+      fireEvent.click(screen.getByText("live.calendrier_bearbeiten"));
+      expect(screen.getByText("live.calendrier_form_zuruecksetzen")).toBeInTheDocument();
+      expect(screen.queryByText("live.calendrier_form_loeschen")).not.toBeInTheDocument();
+    });
   });
 });

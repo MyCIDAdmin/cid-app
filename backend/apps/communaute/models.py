@@ -876,6 +876,24 @@ class RencontreCalendrier(models.Model):
         max_length=20, choices=StatutRencontre.choices, default=StatutRencontre.PROGRAMMEE
     )
 
+    # Corrections manuelles du Spielplan (2026-10-20, voir services._appliquer_etat_api).
+    # `api_stand` = dernier état livré par GOAL API (compétition, équipes, date, scores,
+    # statut, voir services._etat_api) ; la synchronisation ne remplace une correction
+    # manuelle que lorsque l'API livre un état DIFFÉRENT de celui-ci.
+    # `ajout_manuel` = rencontre saisie à la main (jamais livrée par l'API → jamais touchée
+    # ni supprimée par la synchronisation ; `evenement_externe_id` = "manuel-<uuid>").
+    api_stand = models.JSONField(default=dict, blank=True)
+    modifie_manuellement = models.BooleanField(default=False)
+    ajout_manuel = models.BooleanField(default=False)
+    modifie_par = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rencontres_modifiees",
+    )
+    modifie_manuellement_le = models.DateTimeField(null=True, blank=True)
+
     maj_le = models.DateTimeField(auto_now=True)
 
     class Meta:

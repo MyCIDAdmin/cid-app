@@ -24,13 +24,22 @@
  * PAGE_SIZE=20) ; s'arrêter à la première page décroissante ne montrait que les
  * rencontres les PLUS lointaines dans le temps (ex. un match amical daté loin dans le
  * futur), jamais celles, pourtant plus proches, de la seconde moitié de saison en cours.
+ *
+ * Manuelle Korrekturen (2026-10-20, retour utilisateur) : Bureau Admin+ sieht pro Spiel
+ * "Bearbeiten" (Datum/Uhrzeit, Ergebnis, Status) und oben "Spiel hinzufügen" — siehe
+ * SpielplanEditForm. Gilt bis GOAL API einen abweichenden Stand liefert (dann überschreibt
+ * die API die Korrektur, Backend services._appliquer_etat_api). Besucher und Mitglieder
+ * sehen weiterhin nur die Daten (dieser Tab wird auch in der öffentlichen FanClubPreview
+ * gerendert).
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useCalendrierRencontres } from "../../hooks/useCommunaute";
+import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { RencontreCalendrier } from "../../types/communaute";
 import EquipeLogoImage from "./EquipeLogoImage";
+import SpielplanEditForm from "./SpielplanEditForm";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
@@ -73,8 +82,15 @@ function resultatClubAfricain(rencontre: RencontreCalendrier): Resultat | null {
   return "unentschieden";
 }
 
-function RencontreLigne({ rencontre }: { rencontre: RencontreCalendrier }) {
+function RencontreLigne({
+  rencontre,
+  peutEditer,
+}: {
+  rencontre: RencontreCalendrier;
+  peutEditer: boolean;
+}) {
   const { t } = useTranslation("communaute");
+  const [edition, setEdition] = useState(false);
   const aScore = rencontre.score_domicile !== null && rencontre.score_exterieur !== null;
   const labelStatut = CLE_LABEL_STATUT[rencontre.statut];
   const resultat = labelStatut ? null : resultatClubAfricain(rencontre);
@@ -109,9 +125,31 @@ function RencontreLigne({ rencontre }: { rencontre: RencontreCalendrier }) {
           )}
         </div>
       </div>
-      <div className="mt-0.5 text-xs text-text-tertiary">
-        {[rencontre.competition, formatDate(rencontre.date_heure)].filter(Boolean).join(" · ")}
+      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-text-tertiary">
+        <span>
+          {[rencontre.competition, formatDate(rencontre.date_heure)].filter(Boolean).join(" · ")}
+        </span>
+        {peutEditer && rencontre.ajout_manuel && (
+          <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase">
+            {t("live.calendrier_badge_manuel")}
+          </span>
+        )}
+        {peutEditer && !rencontre.ajout_manuel && rencontre.modifie_manuellement && (
+          <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase">
+            {t("live.calendrier_badge_korrigiert")}
+          </span>
+        )}
+        {peutEditer && !edition && (
+          <button
+            type="button"
+            onClick={() => setEdition(true)}
+            className="ml-auto rounded-cid px-2 py-0.5 text-[11px] font-medium text-ca hover:bg-cal"
+          >
+            {t("live.calendrier_bearbeiten")}
+          </button>
+        )}
       </div>
+      {edition && <SpielplanEditForm rencontre={rencontre} onClose={() => setEdition(false)} />}
     </div>
   );
 }
@@ -119,13 +157,19 @@ function RencontreLigne({ rencontre }: { rencontre: RencontreCalendrier }) {
 export default function CalendrierTab() {
   const { t } = useTranslation("communaute");
   const { data, isLoading, isError } = useCalendrierRencontres();
+  const user = useAuthStore((state) => state.user);
+  const peutEditer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const [ajoutOuvert, setAjoutOuvert] = useState(false);
   const rencontres = useMemo(() => data?.results ?? [], [data]);
 
   const { aVenir, resultats } = useMemo(() => {
     // La page vient triée décroissant (voir docstring de tête) : les rencontres à venir
     // en sortent classées de la plus lointaine à la plus proche — inversé ici pour un
     // affichage chronologique naturel (prochain match en premier).
-    const aVenirListe = rencontres.filter((r) => r.est_a_venir).slice().reverse();
+    const aVenirListe = rencontres
+      .filter((r) => r.est_a_venir)
+      .slice()
+      .reverse();
     const resultatsListe = rencontres.filter((r) => !r.est_a_venir);
     return { aVenir: aVenirListe, resultats: resultatsListe };
   }, [rencontres]);
@@ -136,19 +180,41 @@ export default function CalendrierTab() {
   if (isError) {
     return <p className="text-sm text-status-dangerText">{t("live.calendrier_erreur")}</p>;
   }
+  const ajout = peutEditer && (
+    <div>
+      {ajoutOuvert ? (
+        <SpielplanEditForm rencontre={null} onClose={() => setAjoutOuvert(false)} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAjoutOuvert(true)}
+          className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad"
+        >
+          {t("live.calendrier_hinzufuegen")}
+        </button>
+      )}
+    </div>
+  );
+
   if (rencontres.length === 0) {
-    return <p className="text-sm text-text-tertiary">{t("live.calendrier_vide")}</p>;
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-text-tertiary">{t("live.calendrier_vide")}</p>
+        {ajout}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-5">
+      {ajout}
       <div>
         <h2 className="mb-2 text-xs font-bold uppercase text-text-tertiary">
           {t("live.calendrier_a_venir")}
         </h2>
         <div className="space-y-2">
           {aVenir.map((rencontre) => (
-            <RencontreLigne key={rencontre.id} rencontre={rencontre} />
+            <RencontreLigne key={rencontre.id} rencontre={rencontre} peutEditer={peutEditer} />
           ))}
         </div>
       </div>
@@ -158,7 +224,7 @@ export default function CalendrierTab() {
         </h2>
         <div className="space-y-2">
           {resultats.map((rencontre) => (
-            <RencontreLigne key={rencontre.id} rencontre={rencontre} />
+            <RencontreLigne key={rencontre.id} rencontre={rencontre} peutEditer={peutEditer} />
           ))}
         </div>
       </div>
