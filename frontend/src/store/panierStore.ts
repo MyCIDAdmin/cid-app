@@ -74,6 +74,19 @@ interface PanierState {
    * = nichts reserviert. Siehe hooks/usePanierReservierung. */
   reservierungEndeMs: number | null;
   setReservierungEnde: (endeMs: number | null) => void;
+  /** Wie oft in dieser Sitzung eine abgelaufene Reservierung erneuert wurde. Läuft sie nach
+   * `maxErneuerungen` Erneuerungen noch einmal ab, wird der Warenkorb geleert
+   * (Wunsch 2026-10-20). Zurück auf 0, sobald der Warenkorb leer ist. */
+  erneuerungen: number;
+  /** Zentral einstellbar (ZentraleEinstellungen.warenkorb_max_erneuerungen), Standard 2. */
+  maxErneuerungen: number;
+  /** Der Warenkorb wurde wegen mehrfach abgelaufener Reservierung geleert (Hinweis zeigen). */
+  geleertWegenAblauf: boolean;
+  setMaxErneuerungen: (max: number) => void;
+  zaehleErneuerung: () => void;
+  /** Leert die reservierten Artikel (Gutscheine haben keinen Lagerbestand und bleiben). */
+  leereWegenAblauf: () => void;
+  quittiereGeleert: () => void;
   /** Übernimmt die Antwort des Servers: Menge/Bestand je Zeile auf das tatsächlich Reservierbare
    * begrenzen (Teilreservierung). */
   reservierungAnwenden: (
@@ -100,7 +113,20 @@ export const usePanierStore = create<PanierState>()(
     (set) => ({
       articles: [],
       reservierungEndeMs: null,
+      erneuerungen: 0,
+      maxErneuerungen: 2,
+      geleertWegenAblauf: false,
       setReservierungEnde: (endeMs) => set({ reservierungEndeMs: endeMs }),
+      setMaxErneuerungen: (max) => set({ maxErneuerungen: Math.max(0, Math.floor(max)) }),
+      zaehleErneuerung: () => set((state) => ({ erneuerungen: state.erneuerungen + 1 })),
+      leereWegenAblauf: () =>
+        set((state) => ({
+          articles: state.articles.filter((a) => a.typeProduit === "bon_achat"),
+          reservierungEndeMs: null,
+          erneuerungen: 0,
+          geleertWegenAblauf: true,
+        })),
+      quittiereGeleert: () => set({ geleertWegenAblauf: false }),
       reservierungAnwenden: (zeilen) =>
         set((state) => {
           const nachVariante = new Map(zeilen.map((z) => [z.variante, z]));
@@ -126,6 +152,7 @@ export const usePanierStore = create<PanierState>()(
           if (article.typeProduit === "bon_achat") {
             return {
               articles: [...state.articles, { ...article, quantite, ligneId: genererLigneId() }],
+              geleertWegenAblauf: false,
             };
           }
           // Pas de `ligneId` explicite pour un article "physique" — `varianteId` reste sa clé
@@ -145,6 +172,7 @@ export const usePanierStore = create<PanierState>()(
                   ? { ...a, quantite: nouvelleQuantite }
                   : a,
               ),
+              geleertWegenAblauf: false,
             };
           }
           return {
@@ -152,14 +180,14 @@ export const usePanierStore = create<PanierState>()(
               ...state.articles,
               { ...article, quantite: Math.min(quantite, article.stockDisponible) },
             ],
+            geleertWegenAblauf: false,
           };
         }),
       changerQuantite: (ligneId, quantite) =>
         set((state) => {
           if (quantite <= 0) {
-            return {
-              articles: state.articles.filter((a) => (a.ligneId ?? a.varianteId) !== ligneId),
-            };
+            const rest = state.articles.filter((a) => (a.ligneId ?? a.varianteId) !== ligneId);
+            return rest.length === 0 ? { articles: rest, erneuerungen: 0 } : { articles: rest };
           }
           return {
             articles: state.articles.map((a) =>
@@ -170,10 +198,11 @@ export const usePanierStore = create<PanierState>()(
           };
         }),
       retirer: (ligneId) =>
-        set((state) => ({
-          articles: state.articles.filter((a) => (a.ligneId ?? a.varianteId) !== ligneId),
-        })),
-      vider: () => set({ articles: [], reservierungEndeMs: null }),
+        set((state) => {
+          const rest = state.articles.filter((a) => (a.ligneId ?? a.varianteId) !== ligneId);
+          return rest.length === 0 ? { articles: rest, erneuerungen: 0 } : { articles: rest };
+        }),
+      vider: () => set({ articles: [], reservierungEndeMs: null, erneuerungen: 0 }),
       synchroniserStocks: (stocksParVarianteId) =>
         set((state) => ({
           articles: state.articles.map((a) => {

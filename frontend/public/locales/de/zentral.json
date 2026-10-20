@@ -46,6 +46,11 @@
       "label": "Hinweise gleichzeitig",
       "einheit": "Hinweise",
       "hilfe": "Es werden höchstens so viele angezeigt, die wichtigsten zuerst (erlaubt: {{min}}–{{max}})."
+    },
+    "warenkorb_max_erneuerungen": {
+      "label": "Erneute Reservierungen im Warenkorb",
+      "einheit": "mal",
+      "hilfe": "So oft darf eine abgelaufene Reservierung per „Erneut reservieren“ verlängert werden. Läuft sie danach noch einmal ab, wird der Warenkorb geleert; 0 = sofort (erlaubt: {{min}}–{{max}})."
     }
   }
 }

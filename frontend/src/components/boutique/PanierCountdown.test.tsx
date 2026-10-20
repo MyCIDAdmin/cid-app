@@ -23,7 +23,13 @@ describe("PanierCountdown", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     sessionStorage.clear();
-    usePanierStore.setState({ articles: [], reservierungEndeMs: null });
+    usePanierStore.setState({
+      articles: [],
+      reservierungEndeMs: null,
+      erneuerungen: 0,
+      maxErneuerungen: 2,
+      geleertWegenAblauf: false,
+    });
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -60,12 +66,21 @@ describe("PanierCountdown", () => {
     act(() => {
       vi.advanceTimersByTime(3_000);
     });
-    expect(screen.getByText("panier.reservierung_abgelaufen")).toBeInTheDocument();
+    expect(screen.getByText(/panier\.reservierung_abgelaufen/)).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText("panier.erneut_reservieren"));
     });
     expect(boutiqueApi.reservierePanier).toHaveBeenCalledWith([{ variante: "v1", quantite: 1 }]);
     expect(screen.getByRole("timer")).toHaveTextContent("20:00");
+    expect(usePanierStore.getState().erneuerungen).toBe(1);
+  });
+
+  it("zeigt nach Leeren wegen Ablauf einen Hinweis, der sich schließen lässt", () => {
+    usePanierStore.setState({ geleertWegenAblauf: true });
+    render(<PanierCountdown />);
+    expect(screen.getByText("panier.geleert_hinweis")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("panier.hinweis_schliessen"));
+    expect(screen.queryByText("panier.geleert_hinweis")).not.toBeInTheDocument();
   });
 });

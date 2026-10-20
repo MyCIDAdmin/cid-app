@@ -10,6 +10,7 @@ class ZentraleEinstellungenSerializer(serializers.ModelSerializer):
         model = ZentraleEinstellungen
         fields = [
             "warenkorb_reservierung_minuten",
+            "warenkorb_max_erneuerungen",
             "event_zahlungsfrist_tage",
             "hinweis_tage_vorher",
             "hinweis_plaetze_absolut",

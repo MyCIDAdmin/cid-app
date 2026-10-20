@@ -46,6 +46,11 @@
       "label": "Conseils simultanés",
       "einheit": "conseils",
       "hilfe": "Au plus ce nombre sont affichés, les plus importants d'abord (autorisé : {{min}}–{{max}})."
+    },
+    "warenkorb_max_erneuerungen": {
+      "label": "Nouvelles réservations du panier",
+      "einheit": "fois",
+      "hilfe": "Nombre de fois qu'une réservation expirée peut être prolongée via « Réserver à nouveau ». Si elle expire encore ensuite, le panier est vidé ; 0 = immédiatement (autorisé : {{min}}–{{max}})."
     }
   }
 }

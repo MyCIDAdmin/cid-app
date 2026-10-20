@@ -384,6 +384,9 @@
     "reservierung_hinweis": "Ihr Warenkorb ist reserviert – noch",
     "reservierung_countdown_label": "Verbleibende Reservierungszeit",
     "reservierung_abgelaufen": "Die Reservierung ist abgelaufen. Die Artikel sind wieder für andere verfügbar.",
-    "erneut_reservieren": "Erneut reservieren"
+    "erneut_reservieren": "Erneut reservieren",
+    "erneuerungen_rest": "Erneute Reservierungen noch möglich: {{n}}.",
+    "geleert_hinweis": "Dein Warenkorb wurde geleert, weil die Reservierung mehrfach abgelaufen ist. Bitte lege die Artikel erneut hinein.",
+    "hinweis_schliessen": "OK"
   }
 }

@@ -2,7 +2,9 @@
  * Countdown der Warenkorb-Reservierung (2026-10-20): „Dein Warenkorb ist noch mm:ss reserviert“.
  * Die Dauer legt der App-Administrator zentral fest (Standard 20 Minuten) ; der Server liefert nur
  * die Restzeit, hier wird sie heruntergezählt. Läuft sie ab, sind die Artikel serverseitig wieder
- * frei — „Erneut reservieren“ legt sie (soweit noch verfügbar) wieder zurück.
+ * frei — „Erneut reservieren“ legt sie (soweit noch verfügbar) wieder zurück. Das geht nur
+ * `maxErneuerungen`-mal (zentral, Standard 2); läuft sie danach noch einmal ab, wird der
+ * Warenkorb geleert (siehe hooks/usePanierReservierung) und hier ein Hinweis gezeigt.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,6 +22,9 @@ export default function PanierCountdown() {
   const { t } = useTranslation("boutique");
   const endeMs = usePanierStore((s) => s.reservierungEndeMs);
   const hatArtikel = usePanierStore((s) => s.articles.some((a) => a.typeProduit !== "bon_achat"));
+  const erneuerungen = usePanierStore((s) => s.erneuerungen);
+  const maxErneuerungen = usePanierStore((s) => s.maxErneuerungen);
+  const geleert = usePanierStore((s) => s.geleertWegenAblauf);
   const [jetzt, setJetzt] = useState(() => Date.now());
 
   useEffect(() => {
@@ -28,7 +33,24 @@ export default function PanierCountdown() {
     return () => window.clearInterval(timer);
   }, [endeMs]);
 
-  if (!hatArtikel) return null;
+  if (!hatArtikel) {
+    if (!geleert) return null;
+    return (
+      <div
+        role="status"
+        className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-cid-lg bg-status-warningBg px-4 py-3 text-sm text-status-warningText"
+      >
+        <span>{t("panier.geleert_hinweis")}</span>
+        <button
+          type="button"
+          onClick={() => usePanierStore.getState().quittiereGeleert()}
+          className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad"
+        >
+          {t("panier.hinweis_schliessen")}
+        </button>
+      </div>
+    );
+  }
 
   const rest = endeMs === null ? 0 : Math.max(Math.ceil((endeMs - jetzt) / 1000), 0);
 
@@ -38,11 +60,16 @@ export default function PanierCountdown() {
         role="status"
         className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-cid-lg bg-status-warningBg px-4 py-3 text-sm text-status-warningText"
       >
-        <span>{t("panier.reservierung_abgelaufen")}</span>
+        <span>
+          {t("panier.reservierung_abgelaufen")}{" "}
+          {t("panier.erneuerungen_rest", { n: Math.max(maxErneuerungen - erneuerungen, 0) })}
+        </span>
         <button
           type="button"
           onClick={() => {
             const store = usePanierStore.getState();
+            // Nur eine wirklich abgelaufene Reservierung zählt als Erneuerung.
+            if (store.reservierungEndeMs !== null) store.zaehleErneuerung();
             const lignes = store.articles
               .filter((a) => a.typeProduit !== "bon_achat" && a.quantite > 0)
               .map((a) => ({ variante: a.varianteId, quantite: a.quantite }));
@@ -50,6 +77,9 @@ export default function PanierCountdown() {
               .reservierePanier(lignes)
               .then((antwort) => {
                 const state = usePanierStore.getState();
+                if (typeof antwort.max_erneuerungen === "number") {
+                  state.setMaxErneuerungen(antwort.max_erneuerungen);
+                }
                 state.setReservierungEnde(
                   antwort.expire_le ? Date.now() + antwort.restzeit_sekunden * 1000 : null,
                 );

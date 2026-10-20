@@ -554,5 +554,7 @@ export interface PanierReservierungZeile {
 export interface PanierReservierungAntwort {
   expire_le: string | null;
   restzeit_sekunden: number;
+  /** Wie oft die abgelaufene Reservierung erneuert werden darf (zentral einstellbar). */
+  max_erneuerungen: number;
   zeilen: PanierReservierungZeile[];
 }

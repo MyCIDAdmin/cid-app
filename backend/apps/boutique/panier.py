@@ -56,15 +56,27 @@ def dauer() -> timedelta:
     return timedelta(minutes=ZentraleEinstellungen.get_solo().warenkorb_reservierung_minuten)
 
 
+def max_erneuerungen() -> int:
+    """Wie oft eine abgelaufene Reservierung erneuert werden darf, bevor der Warenkorb geleert
+    wird (zentral einstellbar). Die Zählung selbst macht die Oberfläche je Sitzung."""
+    return ZentraleEinstellungen.get_solo().warenkorb_max_erneuerungen
+
+
 def status(membre) -> dict:
     """Aktueller Stand der eigenen Reservierung (für die Anzeige des Countdowns)."""
     zeilen = list(_aktive().filter(membre=membre).select_related("variante"))
     if not zeilen:
-        return {"expire_le": None, "restzeit_sekunden": 0, "zeilen": []}
+        return {
+            "expire_le": None,
+            "restzeit_sekunden": 0,
+            "max_erneuerungen": max_erneuerungen(),
+            "zeilen": [],
+        }
     ende = max(z.expire_le for z in zeilen)
     return {
         "expire_le": ende,
         "restzeit_sekunden": max(int((ende - timezone.now()).total_seconds()), 0),
+        "max_erneuerungen": max_erneuerungen(),
         "zeilen": [
             {"variante": str(z.variante_id), "reserviert": z.quantite, "verfuegbar": z.quantite}
             for z in zeilen
@@ -123,6 +135,7 @@ def reserviere_warenkorb(membre, zeilen: list[dict]) -> dict:
         "restzeit_sekunden": (
             int((ende - timezone.now()).total_seconds()) if hat_reservierung else 0
         ),
+        "max_erneuerungen": max_erneuerungen(),
         "zeilen": ergebnis,
     }
 

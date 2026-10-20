@@ -59,3 +59,15 @@ def test_zahlungsfrist_standard_zwei_tage_und_grenzen():
     for wert in (0, 31):
         resp = client.patch(reverse(URL), {"event_zahlungsfrist_tage": wert}, format="json")
         assert resp.status_code == 400
+
+
+def test_max_erneuerungen_standard_zwei_und_grenzen():
+    assert ZentraleEinstellungen.get_solo().warenkorb_max_erneuerungen == 2
+    client, _ = _client(Role.SUPER_ADMIN)
+    for wert in (0, 5, 10):
+        resp = client.patch(reverse(URL), {"warenkorb_max_erneuerungen": wert}, format="json")
+        assert resp.status_code == 200
+        assert ZentraleEinstellungen.get_solo().warenkorb_max_erneuerungen == wert
+    for wert in (-1, 11):
+        resp = client.patch(reverse(URL), {"warenkorb_max_erneuerungen": wert}, format="json")
+        assert resp.status_code == 400

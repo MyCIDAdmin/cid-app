@@ -314,3 +314,33 @@ def test_meine_parameter_beschraenkt_auch_die_verwaltung_auf_eigene(api_client):
 
     assert len(api_client.get(reverse(LISTE)).data["results"]) == 1
     assert api_client.get(reverse(LISTE), {"meine": "1"}).data["results"] == []
+
+
+def test_reservierungsartikel_verschwindet_nach_frist_aus_dem_shop(api_client):
+    offen, _ = _produkt(reservierung_frist=timezone.now() + timedelta(days=1))
+    abgelaufen, _ = _produkt(reservierung_frist=timezone.now() - timedelta(hours=1))
+    ohne_frist, _ = _produkt()
+    normal = ProduitFactory()
+    VarianteProduitFactory(produit=normal, stock=5, taille="", couleur="")
+    # Normales Produkt mit alter Frist-Angabe bleibt: nur Reservierungsartikel verschwinden.
+    normal.reservierung_frist = timezone.now() - timedelta(days=3)
+    normal.save(update_fields=["reservierung_frist"])
+    mitglied, _ = _user(Role.MEMBRE, "m@example.de")
+    api_client.force_authenticate(mitglied)
+
+    ids = {r["id"] for r in api_client.get(reverse("boutique:produit-list")).data["results"]}
+
+    assert str(abgelaufen.id) not in ids
+    assert {str(offen.id), str(ohne_frist.id), str(normal.id)} <= ids
+    detail = api_client.get(reverse("boutique:produit-detail", args=[abgelaufen.id]))
+    assert detail.status_code == 404
+
+
+def test_verwaltung_sieht_abgelaufene_reservierungsartikel_weiterhin(api_client):
+    abgelaufen, _ = _produkt(reservierung_frist=timezone.now() - timedelta(hours=1))
+    admin, _ = _user(Role.SUPER_ADMIN, "admin@example.de")
+    api_client.force_authenticate(admin)
+
+    ids = {r["id"] for r in api_client.get(reverse("boutique:produit-list")).data["results"]}
+
+    assert str(abgelaufen.id) in ids

@@ -205,3 +205,15 @@ def test_nur_mit_anmeldung_und_mitgliedsakte():
         400,
         403,
     )
+
+
+def test_antwort_nennt_max_erneuerungen_zentral():
+    variante = VarianteProduitFactory(stock=5)
+    user, _ = _user("erneut@example.de")
+    client = _client(user)
+
+    assert client.get(reverse(URL)).data["max_erneuerungen"] == 2
+    ZentraleEinstellungen.objects.filter(pk=1).update(warenkorb_max_erneuerungen=4)
+    assert client.get(reverse(URL)).data["max_erneuerungen"] == 4
+    resp = client.put(reverse(URL), _lignes((variante, 1)), format="json")
+    assert resp.data["max_erneuerungen"] == 4

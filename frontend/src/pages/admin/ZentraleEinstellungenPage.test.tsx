@@ -12,6 +12,7 @@ vi.mock("../../hooks/useZentral", () => ({
 
 const STANDARD = {
   warenkorb_reservierung_minuten: 20,
+  warenkorb_max_erneuerungen: 2,
   event_zahlungsfrist_tage: 2,
   hinweis_tage_vorher: 7,
   hinweis_plaetze_absolut: 5,
@@ -28,6 +29,7 @@ describe("ZentraleEinstellungenPage", () => {
     vi.mocked(useZentralHooks.useZentraleEinstellungen).mockReturnValue({
       data: {
         warenkorb_reservierung_minuten: 20,
+        warenkorb_max_erneuerungen: 2,
         event_zahlungsfrist_tage: 2,
         hinweis_tage_vorher: 7,
         hinweis_plaetze_absolut: 5,

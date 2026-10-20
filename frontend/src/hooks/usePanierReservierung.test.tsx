@@ -35,7 +35,13 @@ describe("usePanierReservierung", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     sessionStorage.clear();
-    usePanierStore.setState({ articles: [], reservierungEndeMs: null });
+    usePanierStore.setState({
+      articles: [],
+      reservierungEndeMs: null,
+      erneuerungen: 0,
+      maxErneuerungen: 2,
+      geleertWegenAblauf: false,
+    });
     useAuthStore.setState({
       isAuthenticated: true,
       user: { id: "u1" } as never,
@@ -103,5 +109,84 @@ describe("usePanierReservierung", () => {
     });
     expect(boutiqueApi.getPanierReservierung).not.toHaveBeenCalled();
     expect(boutiqueApi.reservierePanier).not.toHaveBeenCalled();
+  });
+
+  it("leert den Warenkorb, wenn die Reservierung nach allen Erneuerungen noch einmal abläuft", async () => {
+    renderHook(() => usePanierReservierung());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    act(() => artikel());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    act(() => usePanierStore.setState({ erneuerungen: 2 }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_201_000);
+    });
+
+    const s = usePanierStore.getState();
+    expect(s.articles).toEqual([]);
+    expect(s.geleertWegenAblauf).toBe(true);
+    expect(s.erneuerungen).toBe(0);
+  });
+
+  it("lässt den Warenkorb stehen, solange noch Erneuerungen übrig sind", async () => {
+    renderHook(() => usePanierReservierung());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    act(() => artikel());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    act(() => usePanierStore.setState({ erneuerungen: 1 }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_201_000);
+    });
+
+    expect(usePanierStore.getState().articles).toHaveLength(1);
+    expect(usePanierStore.getState().geleertWegenAblauf).toBe(false);
+  });
+
+  it("zählt eine Änderung nach abgelaufener Reservierung als Erneuerung", async () => {
+    renderHook(() => usePanierReservierung());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    act(() => artikel());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    expect(usePanierStore.getState().erneuerungen).toBe(0);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_201_000);
+    });
+    act(() => usePanierStore.getState().changerQuantite("v1", 2));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(usePanierStore.getState().erneuerungen).toBe(1);
+  });
+
+  it("leert beim Start, wenn die Reservierung schon abgelaufen war und nichts mehr übrig ist", async () => {
+    artikel();
+    usePanierStore.setState({ reservierungEndeMs: Date.now() - 60_000, erneuerungen: 2 });
+    vi.mocked(boutiqueApi.getPanierReservierung).mockResolvedValue({
+      ...antwort(0),
+      max_erneuerungen: 2,
+    } as never);
+
+    renderHook(() => usePanierReservierung());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(usePanierStore.getState().articles).toEqual([]);
+    expect(usePanierStore.getState().geleertWegenAblauf).toBe(true);
   });
 });
