@@ -1,0 +1,19 @@
+{
+  "titel": "Zentrale Einstellungen",
+  "beschreibung": "Werte, die ohne neues Release angepasst werden können. Änderungen gelten sofort für alle.",
+  "laedt": "Lädt …",
+  "fehler_laden": "Einstellungen konnten nicht geladen werden.",
+  "fehler_speichern": "Speichern fehlgeschlagen.",
+  "gespeichert": "Gespeichert.",
+  "speichern": "Speichern",
+  "gruppe": {
+    "shop": "Shop"
+  },
+  "feld": {
+    "warenkorb_reservierung_minuten": {
+      "label": "Warenkorb-Reservierung",
+      "einheit": "Minuten",
+      "hilfe": "So lange sind Artikel im Warenkorb reserviert. Jedes Hinzufügen oder Ändern setzt den Countdown zurück (erlaubt: {{min}}–{{max}})."
+    }
+  }
+}

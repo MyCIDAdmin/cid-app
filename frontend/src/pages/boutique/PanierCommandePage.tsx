@@ -31,6 +31,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import PanierCountdown from "../../components/boutique/PanierCountdown";
 import PaymentInstructions from "../../components/ui/PaymentInstructions";
 import {
   useInitierPaiementEnLigneCommande,
@@ -53,6 +54,7 @@ import type {
   PasserelleCommande,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { stockVerfuegbar } from "../../utils/produit";
 import { leiteZuZahlungWeiter } from "../../utils/sicherUrl";
 
 const PAIEMENT_EN_LIGNE_ACTIF = false;
@@ -168,7 +170,7 @@ export default function PanierCommandePage() {
     if (!stocksQuery.data) return;
     const stocksParId: Record<string, number> = {};
     for (const variante of stocksQuery.data) {
-      stocksParId[variante.id] = variante.stock;
+      stocksParId[variante.id] = stockVerfuegbar(variante);
     }
     synchroniserStocks(stocksParId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -331,6 +333,8 @@ export default function PanierCommandePage() {
   return (
     <div>
       <h1 className="mb-4 text-xl font-bold text-text-primary">{t("commande.titre")}</h1>
+
+      <PanierCountdown />
 
       <div className="mb-5 flex items-center gap-4">
         <EtapeIndicateur

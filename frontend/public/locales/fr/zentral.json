@@ -1,0 +1,19 @@
+{
+  "titel": "Paramètres centraux",
+  "beschreibung": "Valeurs modifiables sans nouvelle version. Les changements s'appliquent immédiatement à tous.",
+  "laedt": "Chargement…",
+  "fehler_laden": "Impossible de charger les paramètres.",
+  "fehler_speichern": "Échec de l'enregistrement.",
+  "gespeichert": "Enregistré.",
+  "speichern": "Enregistrer",
+  "gruppe": {
+    "shop": "Boutique"
+  },
+  "feld": {
+    "warenkorb_reservierung_minuten": {
+      "label": "Réservation du panier",
+      "einheit": "minutes",
+      "hilfe": "Durée de réservation des articles du panier. Chaque ajout ou modification relance le compte à rebours (autorisé : {{min}}–{{max}})."
+    }
+  }
+}

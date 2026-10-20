@@ -28,6 +28,7 @@
     "quiz": "Quiz und Umfragen",
     "admin_quiz": "Quiz- und Umfragen-Verwaltung",
     "gestion_roles": "Rollenverwaltung",
+    "zentrale_einstellungen": "Zentrale Einstellungen",
     "articles_cotisation": "Beitragsartikel",
     "parametres_notification": "E-Mail-Benachrichtigungen",
     "point_activite": "Neuigkeiten bei {{module}}",

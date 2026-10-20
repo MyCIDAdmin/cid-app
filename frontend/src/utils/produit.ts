@@ -33,6 +33,13 @@ export function preisInfo(produit: Produit, variante?: VarianteProduit | null): 
   };
 }
 
+/** Lagerstand, den Kunden tatsächlich bekommen können: Bestand abzüglich der Warenkörbe anderer
+ * (Warenkorb-Reservierung). Fällt auf den physischen Bestand zurück, wenn der Server das Feld
+ * nicht liefert. */
+export function stockVerfuegbar(variante: VarianteProduit): number {
+  return variante.stock_verfuegbar ?? variante.stock;
+}
+
 export interface BestandInfo {
   stock: number;
   faible: boolean;
@@ -42,10 +49,19 @@ export interface BestandInfo {
 /** Bestand der gewählten Variante, wenn das Produkt mehrere Varianten hat; sonst Gesamtbestand. */
 export function bestandInfo(produit: Produit, variante?: VarianteProduit | null): BestandInfo {
   if (variante && produit.variantes.length > 1) {
+    const frei = stockVerfuegbar(variante);
     return {
-      stock: variante.stock,
-      faible: variante.stock > 0 && variante.stock < produit.seuil_alerte_stock,
-      rupture: variante.stock <= 0,
+      stock: frei,
+      faible: frei > 0 && frei < produit.seuil_alerte_stock,
+      rupture: frei <= 0,
+    };
+  }
+  if (produit.variantes.length > 0) {
+    const frei = produit.variantes.reduce((summe, v) => summe + stockVerfuegbar(v), 0);
+    return {
+      stock: frei,
+      faible: frei > 0 && frei < produit.seuil_alerte_stock,
+      rupture: frei <= 0,
     };
   }
   return { stock: produit.stock_total, faible: produit.stock_faible, rupture: produit.en_rupture };

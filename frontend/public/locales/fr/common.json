@@ -28,6 +28,7 @@
     "quiz": "Quiz et sondages",
     "admin_quiz": "Gestion quiz et sondages",
     "gestion_roles": "Gestion des rôles",
+    "zentrale_einstellungen": "Paramètres centraux",
     "articles_cotisation": "Articles de cotisation",
     "parametres_notification": "Notifications par email",
     "point_activite": "Nouveautés dans {{module}}",

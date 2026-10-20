@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
 
+import { usePanierReservierung } from "../../hooks/usePanierReservierung";
 import PublicFooter from "../public/PublicFooter";
 import LanguageSwitcher from "./LanguageSwitcher";
 import MobileNavDrawer from "./MobileNavDrawer";
@@ -22,6 +23,8 @@ const GROUPES_AVEC_FOOTER = new Set(["general", "communaute", "contenu"]);
 export default function AppLayout() {
   const { t } = useTranslation("common");
   const location = useLocation();
+  // Warenkorb-Reservierung (2026-10-20) serverseitig synchron halten, auf jeder Seite.
+  usePanierReservierung();
   // État purement local (jamais dans uiStore, voir docstring MobileNavDrawer) : un tiroir doit
   // toujours redémarrer fermé, contrairement au repli de la sidebar desktop qui est une vraie
   // préférence persistée.

@@ -244,3 +244,13 @@ def verfallene_zahlungen_stornieren(jetzt=None) -> int:
             )
         anzahl += 1
     return anzahl
+
+
+@shared_task
+def panier_reservierungen_freigeben() -> int:
+    """Räumt abgelaufene Warenkorb-Reservierungen auf (2026-10-20). Die Verfügbarkeit hängt
+    nicht von dieser Aufgabe ab (abgelaufene Zeilen zählen schon vorher nicht mehr), sie hält
+    nur die Tabelle klein. Gibt die Anzahl gelöschter Zeilen zurück."""
+    from . import panier
+
+    return panier.bereinige_abgelaufene()

@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     BonAchatViewSet,
     CommandeViewSet,
+    PanierReservierungView,
     ProduitImageViewSet,
     ProduitViewSet,
     RegleReductionViewSet,
@@ -26,6 +27,7 @@ router.register("reservierungen", ReservierungViewSet, basename="reservierung")
 router.register("bons-achat", BonAchatViewSet, basename="bon-achat")
 
 urlpatterns = [
+    path("panier/reservierung/", PanierReservierungView.as_view(), name="panier-reservierung"),
     # Webhooks PSP (ajoutés le 2026-09-17, même principe que apps.cotisations.urls) : vues
     # Django brutes, pas DRF — voir docstring de webhooks.py.
     path("webhooks/stripe/", StripeWebhookView.as_view(), name="webhook-stripe"),

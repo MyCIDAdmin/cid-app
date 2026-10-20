@@ -83,6 +83,9 @@ export interface VarianteProduit {
   taille: string;
   couleur: string;
   stock: number;
+  /** Lagerstand abzüglich der Warenkörbe anderer (Warenkorb-Reservierung, 2026-10-20) ;
+   * optional, damit ältere Antworten/Tests weiter gültig sind — siehe utils/produit.stockVerfuegbar. */
+  stock_verfuegbar?: number;
   /** Release 6: eigener Preis / Mitgliederpreis der Variante (Rohwerte, null = Produktpreis). */
   prix?: string | null;
   prix_membre?: string | null;
@@ -539,4 +542,17 @@ export interface BonAchatVerification {
   statut: StatutBonAchat;
   date_expiration: string | null;
   utilisable: boolean;
+}
+
+/** Antwort von PUT/GET /boutique/panier/reservierung/ (Warenkorb-Reservierung, 2026-10-20). */
+export interface PanierReservierungZeile {
+  variante: string;
+  reserviert: number;
+  verfuegbar: number;
+}
+
+export interface PanierReservierungAntwort {
+  expire_le: string | null;
+  restzeit_sekunden: number;
+  zeilen: PanierReservierungZeile[];
 }

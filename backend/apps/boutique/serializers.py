@@ -14,7 +14,7 @@ from apps.communaute.validators import valider_et_reencoder_photo
 from apps.membres.models import Membre
 from apps.uebersetzung.serializers import UebersetzungenField
 
-from . import reservierungen
+from . import panier, reservierungen
 from .models import (
     STATUTS_RETOURNABLES,
     BonAchat,
@@ -29,6 +29,7 @@ from .models import (
     ReservierungsModus,
     Retour,
     StatutCommande,
+    StatutProduit,
     TypeProduit,
     TypeReduction,
     VarianteProduit,
@@ -45,6 +46,7 @@ class VarianteProduitSerializer(serializers.ModelSerializer):
     prix_final = serializers.SerializerMethodField()
     prix_affiche = serializers.SerializerMethodField()
     est_prix_membre = serializers.SerializerMethodField()
+    stock_verfuegbar = serializers.SerializerMethodField()
 
     class Meta:
         model = VarianteProduit
@@ -54,6 +56,7 @@ class VarianteProduitSerializer(serializers.ModelSerializer):
             "taille",
             "couleur",
             "stock",
+            "stock_verfuegbar",
             "prix",
             "prix_membre",
             "prix_final",
@@ -66,6 +69,17 @@ class VarianteProduitSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = getattr(request, "user", None)
         return getattr(user, "membre", None) if user is not None else None
+
+    def get_stock_verfuegbar(self, variante):
+        """Lagerstand abzüglich der Warenkörbe ANDERER (Warenkorb-Reservierung, 2026-10-20) —
+        die Fremdmengen werden pro Request nur einmal geladen (Kontext-Cache)."""
+        if variante.produit.type_produit == TypeProduit.BON_ACHAT:
+            return variante.stock
+        karte = self.context.get("_panier_fremdmengen")
+        if karte is None:
+            karte = panier.bestandskarte(self._membre_courant())
+            self.context["_panier_fremdmengen"] = karte
+        return max(variante.stock - karte.get(variante.id, 0), 0)
 
     def get_prix_final(self, variante):
         return str(variante.produit.prix_final_pour(variante))
@@ -805,3 +819,19 @@ class ReservierungSerializer(serializers.ModelSerializer):
         if attrs["quantite"] < 1:
             raise serializers.ValidationError({"quantite": "Mindestens 1."})
         return attrs
+
+
+class PanierReservierungZeileSerializer(serializers.Serializer):
+    variante = serializers.PrimaryKeyRelatedField(
+        queryset=VarianteProduit.objects.select_related("produit").filter(
+            produit__statut=StatutProduit.PUBLIE
+        )
+    )
+    quantite = serializers.IntegerField(min_value=1, max_value=999)
+
+
+class PanierReservierungSerializer(serializers.Serializer):
+    """Eingabe der Warenkorb-Reservierung: der komplette aktuelle Warenkorb (leere Liste =
+    alles freigeben)."""
+
+    lignes = PanierReservierungZeileSerializer(many=True, allow_empty=True, max_length=100)

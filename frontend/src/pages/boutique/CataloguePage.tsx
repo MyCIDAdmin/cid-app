@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import { ExklusivBadge, ExklusivHinweis } from "../../components/boutique/ExklusivHinweis";
+import PanierCountdown from "../../components/boutique/PanierCountdown";
 import ReservierungsBox from "../../components/boutique/ReservierungsBox";
 import ShareButton from "../../components/ui/ShareButton";
 import { useProduits } from "../../hooks/useBoutique";
@@ -37,7 +38,7 @@ import type {
   RegleReduction,
   VarianteProduit,
 } from "../../types/boutique";
-import { bestandInfo, preisInfo } from "../../utils/produit";
+import { bestandInfo, preisInfo, stockVerfuegbar } from "../../utils/produit";
 import { reservierungGeschlossen } from "../../utils/reservierung";
 import { uebersetzt } from "../../utils/uebersetzung";
 
@@ -173,7 +174,7 @@ function ProduitCarteBonAchat({
       prixUnitaire: Number(montant).toFixed(2),
       // Sentinelle très largement au-dessus de tout panier réaliste (voir
       // STOCK_SENTINELLE_BON_ACHAT côté backend) — jamais vérifiée pour ce type.
-      stockDisponible: varianteSentinelle.stock,
+      stockDisponible: stockVerfuegbar(varianteSentinelle),
       typeProduit: "bon_achat",
       reglesReduction: [],
     });
@@ -267,7 +268,7 @@ function ProduitCarte({
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const ajouter = usePanierStore((s) => s.ajouter);
-  const variantesEnStock = produit.variantes.filter((v) => v.stock > 0);
+  const variantesEnStock = produit.variantes.filter((v) => stockVerfuegbar(v) > 0);
   const [varianteId, setVarianteId] = useState<string>(variantesEnStock[0]?.id ?? "");
   const [quantite, setQuantite] = useState(1);
 
@@ -281,7 +282,9 @@ function ProduitCarte({
   const gesperrt = produit.zugang_gesperrt === true;
   const epuise =
     !nurReservieren &&
-    (!varianteSelectionnee || varianteSelectionnee.stock <= 0 || reservierungGeschlossen(produit));
+    (!varianteSelectionnee ||
+      stockVerfuegbar(varianteSelectionnee) <= 0 ||
+      reservierungGeschlossen(produit));
 
   function handleChangerVariante(id: string) {
     setVarianteId(id);
@@ -306,7 +309,7 @@ function ProduitCarte({
         // si applicable (produit.est_prix_membre), sinon prix soldé/catalogue (CLAUDE.md §8 —
         // simple indicatif ici, le montant réel est de toute façon recalculé côté serveur).
         prixUnitaire: preis.affiche,
-        stockDisponible: varianteSelectionnee.stock,
+        stockDisponible: stockVerfuegbar(varianteSelectionnee),
         typeProduit: "physique",
         abholung: produit.reservierung_modus === "reservieren_und_bezahlen",
         zahlungsfristTage: produit.reservierung_zahlungsfrist_tage ?? null,
@@ -388,8 +391,11 @@ function ProduitCarte({
             className="mb-2 w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
           >
             {produit.variantes.map((v) => (
-              <option key={v.id} value={v.id} disabled={v.stock <= 0}>
-                {labelVariante(v)} {v.stock <= 0 ? `— ${t("catalogue.rupture")}` : `(${v.stock})`}
+              <option key={v.id} value={v.id} disabled={stockVerfuegbar(v) <= 0}>
+                {labelVariante(v)}{" "}
+                {stockVerfuegbar(v) <= 0
+                  ? `— ${t("catalogue.rupture")}`
+                  : `(${stockVerfuegbar(v)})`}
                 {produit.preise_unterschiedlich && v.prix_affiche
                   ? ` · ${formatMontant(v.prix_affiche)}`
                   : ""}
@@ -426,7 +432,7 @@ function ProduitCarte({
           {!epuise && !nurReservieren && !gesperrt && (
             <StepperQuantite
               quantite={quantite}
-              max={varianteSelectionnee?.stock ?? 1}
+              max={varianteSelectionnee ? stockVerfuegbar(varianteSelectionnee) : 1}
               onChange={setQuantite}
               labelDiminuer={t("commande.diminuer")}
               labelAugmenter={t("commande.augmenter")}
@@ -505,6 +511,8 @@ export default function CataloguePage() {
         <h1 className="text-xl font-bold text-text-primary">{t("catalogue.titre")}</h1>
         <p className="mt-1 text-sm text-text-secondary">{t("catalogue.sous_titre")}</p>
       </div>
+
+      <PanierCountdown />
 
       <div className="mb-4 flex flex-wrap gap-2">
         <button

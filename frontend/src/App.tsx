@@ -16,6 +16,7 @@ import GestionRolesPage from "./pages/admin/GestionRolesPage";
 import PartnerDetailPage from "./pages/admin/PartnerDetailPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
 import ParametresNotificationPage from "./pages/admin/ParametresNotificationPage";
+import ZentraleEinstellungenPage from "./pages/admin/ZentraleEinstellungenPage";
 import AdminCampagnesPage from "./pages/adhesions/AdminCampagnesPage";
 import AdminJustificatifsPage from "./pages/adhesions/AdminJustificatifsPage";
 import MonAdhesionPage from "./pages/adhesions/MonAdhesionPage";
@@ -259,6 +260,16 @@ export default function App() {
             element={
               <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
                 <GestionRolesPage />
+              </RequireRole>
+            }
+          />
+          {/* Zentrale Einstellungen (2026-10-20) — App-Administrator, wie /admin/roles bewusst ohne
+            Matrix (minRoleLevel), gleiche Schwelle wie ZentraleEinstellungenPermission. */}
+          <Route
+            path="/admin/einstellungen"
+            element={
+              <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
+                <ZentraleEinstellungenPage />
               </RequireRole>
             }
           />
