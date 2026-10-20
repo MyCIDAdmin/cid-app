@@ -246,4 +246,31 @@ describe("ProjetCard", () => {
       "/projets/proj-1/arbeitsbereich",
     );
   });
+
+  it("zeigt den Dach-Chip mit Anzahl der Teilprojekte", () => {
+    vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
+      data: undefined,
+      isPending: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useContributeursProjet>);
+
+    renderWithProviders(<ProjetCard projet={projet({ nb_teilprojekte: 3 })} />);
+
+    expect(screen.getByTestId("dach-chip")).toHaveTextContent("dach.chip_teilprojekte");
+  });
+
+  it("nennt bei einem Teilprojekt sein Dachprojekt und zeigt keinen Dach-Chip", () => {
+    vi.mocked(useProjetsHooks.useContributeursProjet).mockReturnValue({
+      data: undefined,
+      isPending: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useContributeursProjet>);
+
+    renderWithProviders(
+      <ProjetCard
+        projet={projet({ parent: "dach-1", parent_detail: { id: "dach-1", titre: "Sportplätze" } })}
+      />,
+    );
+
+    expect(screen.getByText("dach.teil_von")).toBeInTheDocument();
+    expect(screen.queryByTestId("dach-chip")).not.toBeInTheDocument();
+  });
 });

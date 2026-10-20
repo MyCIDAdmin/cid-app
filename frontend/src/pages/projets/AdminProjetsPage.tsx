@@ -35,6 +35,7 @@ import {
   useSupprimerImageProjet,
   useSupprimerProjet,
 } from "../../hooks/useProjets";
+import { useAlleProjets } from "../../hooks/useAlbumVerknuepfungen";
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { MembreListItem } from "../../types/membre";
@@ -59,6 +60,8 @@ const FORMULAIRE_VIDE: ProjetPayload = {
   cagnote_active: false,
   objectif_montant: null,
   date_limite: null,
+  date_debut: null,
+  parent: null,
   ordre: 0,
 };
 
@@ -82,6 +85,13 @@ function FormulaireProjet({
   const modifier = useModifierProjet();
   const ajouterImage = useAjouterImageProjet();
   const supprimerImage = useSupprimerImageProjet();
+  const alleProjetsQuery = useAlleProjets();
+  // Dachprojekt-Auswahl : nur Projekte der obersten Ebene, nie das Projekt selbst. Ein Projekt,
+  // das selbst Teilprojekte hat, kann keinem Dach zugeordnet werden (Backend prüft dasselbe).
+  const dachKandidaten = (alleProjetsQuery.data ?? []).filter(
+    (p) => p.id !== projet?.id && !p.parent,
+  );
+  const hatTeilprojekte = (projet?.nb_teilprojekte ?? 0) > 0;
 
   const [valeurs, setValeurs] = useState<ProjetPayload>(
     projet
@@ -94,6 +104,8 @@ function FormulaireProjet({
           cagnote_active: projet.cagnote_active,
           objectif_montant: projet.objectif_montant,
           date_limite: projet.date_limite,
+          date_debut: projet.date_debut ?? null,
+          parent: projet.parent ?? null,
           historisch_betrag: projet.historisch_betrag ?? "0.00",
           historisch_beitragende: projet.historisch_beitragende ?? 0,
           historisch_jahr: projet.historisch_jahr ?? null,
@@ -267,16 +279,63 @@ function FormulaireProjet({
         </div>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label
+            htmlFor="admin-projet-date-debut"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin.champ_date_debut")}
+          </label>
+          <input
+            id="admin-projet-date-debut"
+            type="date"
+            value={valeurs.date_debut ?? ""}
+            onChange={(e) => champ("date_debut", e.target.value || null)}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="admin-projet-date-limite"
+            className="mb-1 block text-xs font-medium text-text-secondary"
+          >
+            {t("admin.champ_date_limite")}
+          </label>
+          <input
+            id="admin-projet-date-limite"
+            type="date"
+            value={valeurs.date_limite ?? ""}
+            onChange={(e) => champ("date_limite", e.target.value || null)}
+            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+          />
+        </div>
+      </div>
+
       <div>
-        <label className="mb-1 block text-xs font-medium text-text-secondary">
-          {t("admin.champ_date_limite")}
+        <label
+          htmlFor="admin-projet-parent"
+          className="mb-1 block text-xs font-medium text-text-secondary"
+        >
+          {t("admin.champ_parent")}
         </label>
-        <input
-          type="date"
-          value={valeurs.date_limite ?? ""}
-          onChange={(e) => champ("date_limite", e.target.value || null)}
-          className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-        />
+        <select
+          id="admin-projet-parent"
+          value={valeurs.parent ?? ""}
+          disabled={hatTeilprojekte}
+          onChange={(e) => champ("parent", e.target.value || null)}
+          className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-50"
+        >
+          <option value="">{t("admin.aucun_parent")}</option>
+          {dachKandidaten.map((kandidat) => (
+            <option key={kandidat.id} value={kandidat.id}>
+              {kandidat.titre}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-text-tertiary">
+          {hatTeilprojekte ? t("admin.parent_hinweis_dach") : t("admin.parent_hinweis")}
+        </p>
       </div>
 
       {valeurs.statut === "termine" && (
@@ -486,7 +545,17 @@ export default function AdminProjetsPage() {
                   </span>
                   <StatutProjetBadge statut={projet.statut} />
                   <SichtbarkeitBadge sichtbarkeit={projet.sichtbarkeit} afficherPublie />
+                  {(projet.nb_teilprojekte ?? 0) > 0 && (
+                    <span className="rounded-full bg-ca/10 px-2 py-0.5 text-[11px] font-semibold text-ca">
+                      {t("dach.chip_teilprojekte", { count: projet.nb_teilprojekte })}
+                    </span>
+                  )}
                 </div>
+                {projet.parent_detail && (
+                  <div className="text-xs text-text-tertiary">
+                    {t("dach.teil_von", { titel: projet.parent_detail.titre })}
+                  </div>
+                )}
                 <div className="text-xs text-text-tertiary">
                   {projet.responsable_detail
                     ? `${projet.responsable_detail.prenom} ${projet.responsable_detail.nom}`

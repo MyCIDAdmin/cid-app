@@ -22,6 +22,8 @@ import type {
   SichtbarkeitProjet,
   StellePayload,
   StatutAufgabe,
+  Meilenstein,
+  MeilensteinPayload,
   Projet,
   ProjetImage,
   ProjetImagePayload,
@@ -31,6 +33,7 @@ import type {
   ProjetMiseAJourPayload,
   ProjetPayload,
   ProjetsKennzahlen,
+  ProjetUebersicht,
   StatutProjet,
 } from "../types/projets";
 
@@ -54,6 +57,38 @@ export async function listProjets(filtres: ProjetsFiltres = {}): Promise<CursorP
 export async function getProjet(id: string): Promise<Projet> {
   const { data } = await apiClient.get<Projet>(`/projets/projets/${id}/`);
   return data;
+}
+
+/** Übersicht eines Dachprojekts: Teilprojekte, Meilensteine, Summen (Lesen für alle, die das
+ * Projekt sehen dürfen). */
+export async function getProjetUebersicht(id: string): Promise<ProjetUebersicht> {
+  const { data } = await apiClient.get<ProjetUebersicht>(`/projets/projets/${id}/uebersicht/`);
+  return data;
+}
+
+export async function listMeilensteine(projetId: string): Promise<Meilenstein[]> {
+  const { data } = await apiClient.get<Meilenstein[]>("/projets/meilensteine/", {
+    params: { projet: projetId },
+  });
+  return data;
+}
+
+/** Projektleitung oder Verwaltung (serverseitig geprüft). */
+export async function creerMeilenstein(payload: MeilensteinPayload): Promise<Meilenstein> {
+  const { data } = await apiClient.post<Meilenstein>("/projets/meilensteine/", payload);
+  return data;
+}
+
+export async function modifierMeilenstein(
+  id: string,
+  payload: Partial<Omit<MeilensteinPayload, "projet">>,
+): Promise<Meilenstein> {
+  const { data } = await apiClient.patch<Meilenstein>(`/projets/meilensteine/${id}/`, payload);
+  return data;
+}
+
+export async function supprimerMeilenstein(id: string): Promise<void> {
+  await apiClient.delete(`/projets/meilensteine/${id}/`);
 }
 
 /** Réservé au Bureau Admin+ côté backend (ProjetPermission). */

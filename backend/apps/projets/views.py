@@ -41,7 +41,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
@@ -60,12 +60,14 @@ from .models import (
     PlanKosten,
     ProjetAktivitaet,
     ProjetImage,
+    ProjetMeilenstein,
     ProjetMiseAJour,
     ProjetMiseAJourImage,
     ProjetMitglied,
     RolleProjet,
     SichtbarkeitProjet,
     StatutAufgabe,
+    StatutProjet,
 )
 from .notifications import notifier_aufgabe_zugewiesen, notifier_kommentar
 from .permissions import (
@@ -82,6 +84,7 @@ from .serializers import (
     AufgabeKommentarSerializer,
     AufgabeSerializer,
     ContributeurSerializer,
+    MeilensteinSerializer,
     PlanKostenSerializer,
     ProjetAktivitaetSerializer,
     ProjetImageSerializer,
@@ -131,13 +134,85 @@ class ProjetViewSet(ModelViewSet):
         # statut "en_preparation".
         return (
             sichtbare_projekte(self.request.user)
-            .select_related("responsable", "created_by")
-            .prefetch_related("images", "team", "stellen", logo_prefetch())
+            .select_related("responsable", "created_by", "parent")
+            .prefetch_related(
+                "images", "team", "stellen", "teilprojekte", "meilensteine", logo_prefetch()
+            )
         )
 
     def perform_create(self, serializer):
         membre = getattr(self.request.user, "membre", None)
         serializer.save(created_by=membre)
+
+    @action(detail=True, methods=["get"])
+    def uebersicht(self, request, pk=None):
+        """Projektübersicht eines Dachprojekts (Nutzerwunsch 2026-10-20) : Teilprojekte,
+        Meilensteine und Summen über das ganze Projekt. Spenden bleiben beim jeweiligen
+        (Teil-)Projekt gebucht ; hier wird nur summiert, nichts dupliziert. Sichtbar ist, was der
+        Aufrufer auch einzeln sehen darf (Entwürfe nur für Team/Verwaltung)."""
+        projet = self.get_object()
+        kinder = list(
+            sichtbare_projekte(request.user)
+            .filter(parent=projet)
+            .select_related("responsable", "created_by", "parent")
+            .prefetch_related(
+                "images", "team", "stellen", "teilprojekte", "meilensteine", logo_prefetch()
+            )
+            .order_by("date_debut", "ordre", "created_at")
+        )
+        familie = [projet, *kinder]
+        familien_ids = [p.pk for p in familie]
+        zero = Decimal("0.00")
+        gezahlt = Cotisation.objects.filter(
+            projet_id__in=familien_ids, statut=StatutCotisation.PAYEE
+        ).aggregate(summe=Sum("montant"), spender=Count("membre_id", distinct=True))
+        historie = sum((p.historisch_betrag for p in familie), zero)
+        historie_anzahl = sum(p.historisch_beitragende for p in familie)
+        ziele = [p.objectif_montant for p in familie if p.objectif_montant]
+        meilensteine = list(
+            ProjetMeilenstein.objects.filter(projet_id__in=familien_ids).select_related("projet")
+        )
+        gesamt_m = len(meilensteine)
+        erledigt_m = sum(1 for m in meilensteine if m.erledigt_am is not None)
+        termine = sum(1 for k in kinder if k.statut == StatutProjet.TERMINE)
+        if gesamt_m:
+            fortschritt = round(100 * erledigt_m / gesamt_m)
+        elif kinder:
+            fortschritt = round(100 * termine / len(kinder))
+        else:
+            fortschritt = 0
+        anfaenge = [p.date_debut for p in familie if p.date_debut]
+        enden = [p.date_limite for p in familie if p.date_limite]
+        kontext = self.get_serializer_context()
+        return Response(
+            {
+                "projet": self.get_serializer(projet).data,
+                "teilprojekte": ProjetSerializer(kinder, many=True, context=kontext).data,
+                "meilensteine": MeilensteinSerializer(
+                    sorted(
+                        meilensteine,
+                        key=lambda m: (m.faellig_am is None, m.faellig_am, m.ordre, m.created_at),
+                    ),
+                    many=True,
+                    context=kontext,
+                ).data,
+                "summen": {
+                    "montant_collecte": (gezahlt["summe"] or zero) + historie,
+                    "objectif_montant": sum(ziele, zero) if ziele else None,
+                    "nb_contributeurs": (gezahlt["spender"] or 0) + historie_anzahl,
+                    "teilprojekte_gesamt": len(kinder),
+                    "teilprojekte_termine": termine,
+                    "teilprojekte_aktiv": sum(
+                        1 for k in kinder if k.statut == StatutProjet.EN_COURS
+                    ),
+                    "meilensteine_gesamt": gesamt_m,
+                    "meilensteine_erledigt": erledigt_m,
+                    "fortschritt_prozent": fortschritt,
+                    "beginn": min(anfaenge) if anfaenge else None,
+                    "ende": max(enden) if enden else None,
+                },
+            }
+        )
 
     @action(detail=True, methods=["post"])
     def sichtbarkeit(self, request, pk=None):
@@ -856,3 +931,39 @@ class ProjetAktivitaetViewSet(ReadOnlyModelViewSet):
         return ProjetAktivitaet.objects.filter(
             projet__in=arbeitsbereich_projekte(self.request.user)
         )
+
+
+class MeilensteinViewSet(ModelViewSet):
+    """Meilensteine (Nutzerwunsch 2026-10-20) — Lesen für alle, die das Projekt sehen dürfen
+    (auch anonym, wie das Projekt selbst) ; Schreiben nur Projektleitung oder Verwaltung
+    (`kann_team_verwalten`), geprüft am betroffenen Projekt."""
+
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    serializer_class = MeilensteinSerializer
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["projet"]
+
+    def get_queryset(self):
+        return ProjetMeilenstein.objects.filter(
+            projet__in=sichtbare_projekte(self.request.user)
+        ).select_related("projet")
+
+    def perform_create(self, serializer):
+        projet = serializer.validated_data["projet"]
+        if not sichtbare_projekte(self.request.user).filter(pk=projet.pk).exists():
+            raise PermissionDenied("Kein Zugriff auf dieses Projekt.")
+        if not kann_team_verwalten(self.request.user, projet):
+            raise PermissionDenied("Nur Projektleitung oder Verwaltung darf Meilensteine anlegen.")
+        serializer.save()
+
+    def perform_update(self, serializer):
+        if not kann_team_verwalten(self.request.user, serializer.instance.projet):
+            raise PermissionDenied("Nur Projektleitung oder Verwaltung darf Meilensteine ändern.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not kann_team_verwalten(self.request.user, instance.projet):
+            raise PermissionDenied("Nur Projektleitung oder Verwaltung darf Meilensteine löschen.")
+        instance.delete()

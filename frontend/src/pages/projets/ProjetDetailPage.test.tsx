@@ -14,6 +14,7 @@ vi.mock("../../hooks/useProjets", async () => {
     ...actual,
     useProjet: vi.fn(),
     useMisesAJourProjet: vi.fn(),
+    useProjetUebersicht: vi.fn(),
   };
 });
 
@@ -77,6 +78,28 @@ describe("ProjetDetailPage", () => {
       data: page([]),
       isLoading: false,
     } as unknown as ReturnType<typeof useProjetsHooks.useMisesAJourProjet>);
+    vi.mocked(useProjetsHooks.useProjetUebersicht).mockReturnValue({
+      data: {
+        projet: projet(),
+        teilprojekte: [],
+        meilensteine: [],
+        summen: {
+          montant_collecte: "0.00",
+          objectif_montant: null,
+          nb_contributeurs: 0,
+          teilprojekte_gesamt: 0,
+          teilprojekte_termine: 0,
+          teilprojekte_aktiv: 0,
+          meilensteine_gesamt: 0,
+          meilensteine_erledigt: 0,
+          fortschritt_prozent: 0,
+          beginn: null,
+          ende: null,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjetUebersicht>);
   }
 
   it("affiche le titre et la description intégrale (jamais tronquée, contrairement à la kachel)", () => {
@@ -152,5 +175,61 @@ describe("ProjetDetailPage", () => {
     renderPage();
 
     expect(screen.queryByText("cagnote.contribuer")).not.toBeInTheDocument();
+  });
+
+  it("verlinkt ein Teilprojekt auf sein Dachprojekt", () => {
+    mockHooksParDefaut();
+    vi.mocked(useProjetsHooks.useProjet).mockReturnValue({
+      data: projet({ parent: "dach-1", parent_detail: { id: "dach-1", titre: "Sportplätze" } }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjet>);
+
+    renderPage();
+
+    expect(screen.getByText("dach.teil_von").closest("a")).toHaveAttribute(
+      "href",
+      "/projets/dach-1",
+    );
+  });
+
+  it("zeigt für ein Dachprojekt die Projektübersicht mit Teilprojekten", () => {
+    mockHooksParDefaut();
+    const dach = projet({ nb_teilprojekte: 1 });
+    vi.mocked(useProjetsHooks.useProjet).mockReturnValue({
+      data: dach,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjet>);
+    vi.mocked(useProjetsHooks.useProjetUebersicht).mockReturnValue({
+      data: {
+        projet: dach,
+        teilprojekte: [projet({ id: "kind-1", titre: "Umkleidekabinen", parent: "proj-1" })],
+        meilensteine: [],
+        summen: {
+          montant_collecte: "250.00",
+          objectif_montant: null,
+          nb_contributeurs: 2,
+          teilprojekte_gesamt: 1,
+          teilprojekte_termine: 0,
+          teilprojekte_aktiv: 1,
+          meilensteine_gesamt: 0,
+          meilensteine_erledigt: 0,
+          fortschritt_prozent: 0,
+          beginn: null,
+          ende: null,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjetUebersicht>);
+
+    renderPage();
+
+    expect(screen.getByText("dach.titel")).toBeInTheDocument();
+    expect(screen.getByText("Umkleidekabinen").closest("a")).toHaveAttribute(
+      "href",
+      "/projets/kind-1",
+    );
   });
 });

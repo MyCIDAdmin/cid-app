@@ -10,6 +10,7 @@ import * as projetsApi from "../api/projets";
 import type {
   AufgabePayload,
   KostenPositionPayload,
+  MeilensteinPayload,
   ProjetImagePayload,
   RolleProjet,
   SichtbarkeitProjet,
@@ -25,6 +26,7 @@ const projetsKeys = {
   liste: (filtres: projetsApi.ProjetsFiltres = {}) =>
     [...projetsKeys.all, "liste", filtres] as const,
   detail: (id: string) => [...projetsKeys.all, "detail", id] as const,
+  uebersicht: (id: string) => [...projetsKeys.all, "uebersicht", id] as const,
   contributeurs: (id: string) => [...projetsKeys.all, "contributeurs", id] as const,
   misesAJour: (projetId: string) => [...projetsKeys.all, "mises-a-jour", projetId] as const,
   kennzahlen: () => [...projetsKeys.all, "kennzahlen"] as const,
@@ -67,6 +69,46 @@ export function useProjet(id: string | undefined) {
 
 function invalidateProjets(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: projetsKeys.all });
+}
+
+export function useProjetUebersicht(id: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: projetsKeys.uebersicht(id ?? ""),
+    queryFn: () => projetsApi.getProjetUebersicht(id as string),
+    enabled: Boolean(id) && enabled,
+  });
+}
+
+// Meilensteine verändern Übersicht UND Projektliste (Zähler an den Kacheln) — daher die
+// Wurzel-Invalidierung wie bei den übrigen Projekt-Mutationen.
+export function useCreerMeilenstein() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: MeilensteinPayload) => projetsApi.creerMeilenstein(payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useModifierMeilenstein() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<Omit<MeilensteinPayload, "projet">>;
+    }) => projetsApi.modifierMeilenstein(id, payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useSupprimerMeilenstein() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.supprimerMeilenstein(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
 }
 
 export function useCreerProjet() {

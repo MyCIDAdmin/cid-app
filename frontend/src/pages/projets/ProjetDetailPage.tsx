@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import ModaleContribution from "../../components/projets/ModaleContribution";
+import ProjetUebersicht from "../../components/projets/ProjetUebersicht";
 import StellenListe from "../../components/projets/StellenListe";
 import RapportListe from "../../components/projets/RapportListe";
 import SichtbarkeitBadge from "../../components/projets/SichtbarkeitBadge";
@@ -54,8 +55,11 @@ export default function ProjetDetailPage() {
   const objectifAtteint = progression !== null && progression >= 100;
   const proposeContribution = Boolean(projet && projet.cagnote_active && !projet.echeance_depassee);
 
+  // Ein Dachprojekt braucht mehr Platz für Zeitachse und Teilprojekt-Karten.
+  const breit = (projet?.nb_teilprojekte ?? 0) > 0;
+
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className={`mx-auto ${breit ? "max-w-4xl" : "max-w-2xl"}`}>
       <Link to="/projets" className="mb-3 inline-block text-xs text-ca hover:underline">
         {t("detail.retour_liste")}
       </Link>
@@ -100,6 +104,17 @@ export default function ProjetDetailPage() {
                   />
                 </div>
               </div>
+
+              {projet.parent_detail && (
+                <p className="text-xs text-text-tertiary">
+                  <Link
+                    to={`/projets/${projet.parent_detail.id}`}
+                    className="font-medium text-ca hover:underline"
+                  >
+                    {t("dach.teil_von", { titel: projet.parent_detail.titre })}
+                  </Link>
+                </p>
+              )}
 
               {projet.responsable_detail && (
                 <p className="text-xs text-text-tertiary">
@@ -189,6 +204,8 @@ export default function ProjetDetailPage() {
               <PartnerLogos logos={projet.partner_logos} />
             </div>
           </div>
+
+          <ProjetUebersicht projet={projet} />
 
           <StellenListe projetId={projet.id} />
 

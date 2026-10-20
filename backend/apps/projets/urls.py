@@ -4,6 +4,7 @@ from .stellen_views import BewerbungViewSet, StelleViewSet
 from .views import (
     AufgabeKommentarViewSet,
     AufgabeViewSet,
+    MeilensteinViewSet,
     PlanKostenViewSet,
     ProjetAktivitaetViewSet,
     ProjetImageViewSet,
@@ -18,6 +19,7 @@ app_name = "projets"
 
 router = DefaultRouter()
 router.register("projets", ProjetViewSet, basename="projet")
+router.register("meilensteine", MeilensteinViewSet, basename="projet-meilenstein")
 router.register("team", ProjetTeamViewSet, basename="projet-team")
 router.register("aufgaben", AufgabeViewSet, basename="projet-aufgabe")
 router.register("aufgaben-kommentare", AufgabeKommentarViewSet, basename="projet-aufgabe-kommentar")
