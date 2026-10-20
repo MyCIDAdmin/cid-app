@@ -39,7 +39,7 @@ import type {
   VarianteProduit,
 } from "../../types/boutique";
 import { bestandInfo, preisInfo, stockVerfuegbar } from "../../utils/produit";
-import { reservierungGeschlossen } from "../../utils/reservierung";
+import { reservierungFristAbgelaufen, reservierungGeschlossen } from "../../utils/reservierung";
 import { uebersetzt } from "../../utils/uebersetzung";
 
 // "bon_achat" en dernier (demande utilisateur du 2026-09-23, "Gutschein soll als Kategorie im
@@ -501,6 +501,11 @@ export default function CataloguePage() {
   const articles = usePanierStore((s) => s.articles);
   const nombreArticles = useMemo(() => nombreArticlesPanier(articles), [articles]);
   const total = useMemo(() => totalPanier(articles), [articles]);
+  // Reservierungsartikel mit abgelaufener Frist verschwinden aus dem Shop.
+  const sichtbareProdukte = useMemo(
+    () => (produitsQuery.data?.results ?? []).filter((p) => !reservierungFristAbgelaufen(p)),
+    [produitsQuery.data],
+  );
 
   return (
     <div>
@@ -544,13 +549,13 @@ export default function CataloguePage() {
       {produitsQuery.isError && (
         <p className="text-sm text-status-dangerText">{t("catalogue.erreur")}</p>
       )}
-      {produitsQuery.data && produitsQuery.data.results.length === 0 && (
+      {produitsQuery.data && sichtbareProdukte.length === 0 && (
         <p className="text-sm text-text-tertiary">{t("catalogue.aucun_produit")}</p>
       )}
 
-      {produitsQuery.data && produitsQuery.data.results.length > 0 && (
+      {produitsQuery.data && sichtbareProdukte.length > 0 && (
         <div className="grid gap-4 stagger-children md:grid-cols-2 2xl:grid-cols-3">
-          {produitsQuery.data.results.map((produit) =>
+          {sichtbareProdukte.map((produit) =>
             produit.type_produit === "bon_achat" ? (
               <ProduitCarteBonAchat
                 key={produit.id}

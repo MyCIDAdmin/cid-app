@@ -95,7 +95,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import ProtectedError
+from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -230,7 +230,11 @@ class ProduitViewSet(ModelViewSet):
             and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
         ):
             return queryset
-        return queryset.filter(statut=StatutProduit.PUBLIE)
+        # Reservierungsartikel verschwinden nach Ablauf ihrer Frist automatisch aus dem Shop
+        # (Wunsch 2026-10-20); Verwalter sehen sie weiter (Verwaltung, Auswertung).
+        return queryset.filter(statut=StatutProduit.PUBLIE).exclude(
+            ~Q(reservierung_modus=ReservierungsModus.AUS), reservierung_frist__lt=timezone.now()
+        )
 
     def destroy(self, request, *args, **kwargs):
         # Demande utilisateur du 2026-10-06 (point 3.1) : Artikel löschen. Un produit déjà commandé

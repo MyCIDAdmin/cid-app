@@ -12,6 +12,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 
 type FeldSchluessel =
   | "warenkorb_reservierung_minuten"
+  | "warenkorb_max_erneuerungen"
   | "event_zahlungsfrist_tage"
   | "hinweis_tage_vorher"
   | "hinweis_plaetze_absolut"
@@ -34,7 +35,10 @@ interface Gruppe {
 const GRUPPEN: Gruppe[] = [
   {
     schluessel: "shop",
-    felder: [{ schluessel: "warenkorb_reservierung_minuten", min: 1, max: 1440 }],
+    felder: [
+      { schluessel: "warenkorb_reservierung_minuten", min: 1, max: 1440 },
+      { schluessel: "warenkorb_max_erneuerungen", min: 0, max: 10 },
+    ],
   },
   {
     schluessel: "events",
@@ -57,6 +61,7 @@ type Entwurf = Record<FeldSchluessel, string>;
 function zuEntwurf(daten: ZentraleEinstellungen): Entwurf {
   return {
     warenkorb_reservierung_minuten: String(daten.warenkorb_reservierung_minuten),
+    warenkorb_max_erneuerungen: String(daten.warenkorb_max_erneuerungen),
     event_zahlungsfrist_tage: String(daten.event_zahlungsfrist_tage),
     hinweis_tage_vorher: String(daten.hinweis_tage_vorher),
     hinweis_plaetze_absolut: String(daten.hinweis_plaetze_absolut),

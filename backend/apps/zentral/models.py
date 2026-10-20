@@ -20,6 +20,16 @@ class ZentraleEinstellungen(models.Model):
         ),
     )
 
+    warenkorb_max_erneuerungen = models.PositiveSmallIntegerField(
+        default=2,
+        validators=[MaxValueValidator(10)],
+        verbose_name=_("Warenkorb: erneute Reservierungen"),
+        help_text=_(
+            "Wie oft eine abgelaufene Reservierung per „Erneut reservieren“ verlängert werden "
+            "darf. Läuft sie danach noch einmal ab, wird der Warenkorb geleert (0 = sofort)."
+        ),
+    )
+
     event_zahlungsfrist_tage = models.PositiveSmallIntegerField(
         default=2,
         validators=[MinValueValidator(1), MaxValueValidator(30)],

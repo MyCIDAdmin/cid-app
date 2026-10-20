@@ -384,6 +384,9 @@
     "reservierung_hinweis": "Votre panier est réservé encore",
     "reservierung_countdown_label": "Temps de réservation restant",
     "reservierung_abgelaufen": "La réservation a expiré. Les articles sont de nouveau disponibles pour les autres.",
-    "erneut_reservieren": "Réserver à nouveau"
+    "erneut_reservieren": "Réserver à nouveau",
+    "erneuerungen_rest": "Nouvelles réservations encore possibles : {{n}}.",
+    "geleert_hinweis": "Votre panier a été vidé car la réservation a expiré plusieurs fois. Veuillez remettre les articles dans le panier.",
+    "hinweis_schliessen": "OK"
   }
 }

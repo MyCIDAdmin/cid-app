@@ -259,6 +259,29 @@ describe("panierStore", () => {
       expect(usePanierStore.getState().reservierungEndeMs).toBeNull();
     });
 
+    it("zählt Erneuerungen, leert bei Ablauf (Gutscheine bleiben) und setzt zurück", () => {
+      usePanierStore.getState().ajouter(article({ varianteId: "v1" }), 1);
+      usePanierStore.getState().zaehleErneuerung();
+      usePanierStore.getState().zaehleErneuerung();
+      expect(usePanierStore.getState().erneuerungen).toBe(2);
+
+      usePanierStore.getState().leereWegenAblauf();
+      const s = usePanierStore.getState();
+      expect(s.articles).toEqual([]);
+      expect(s.erneuerungen).toBe(0);
+      expect(s.geleertWegenAblauf).toBe(true);
+
+      usePanierStore.getState().ajouter(article({ varianteId: "v2", produitId: "p2" }), 1);
+      expect(usePanierStore.getState().geleertWegenAblauf).toBe(false);
+    });
+
+    it("Erneuerungszähler geht auf 0, sobald der Warenkorb leer wird", () => {
+      usePanierStore.getState().ajouter(article({ varianteId: "v1" }), 1);
+      usePanierStore.getState().zaehleErneuerung();
+      usePanierStore.getState().retirer("v1");
+      expect(usePanierStore.getState().erneuerungen).toBe(0);
+    });
+
     it("reservierungAnwenden begrenzt Menge und Bestand auf das Reservierbare", () => {
       usePanierStore.getState().ajouter(article({ varianteId: "v1" }), 4);
       usePanierStore.getState().ajouter(article({ varianteId: "v2", produitId: "p2" }), 2);
