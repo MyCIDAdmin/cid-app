@@ -31,6 +31,8 @@ import AlbumsPage from "../communaute/AlbumsPage";
 import CataloguePage from "../boutique/CataloguePage";
 import ProjetsPage from "../projets/ProjetsPage";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function ongletDepuisParam(valeur: string | null): OngletPublic {
   return valeur === "evenements" ||
     valeur === "projets" ||
@@ -53,9 +55,9 @@ export default function PublicHomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const onglet = ongletDepuisParam(searchParams.get("onglet"));
   // Album ouvert depuis la galerie publique : `?onglet=galerie&album=<id>` (pas de route dédiée,
-  // voir docstring) — seuls des chiffres sont acceptés.
+  // voir docstring) — les ids d'album sont des UUID, tout autre format est ignoré.
   const albumParam = searchParams.get("album");
-  const albumId = albumParam && /^\d+$/.test(albumParam) ? albumParam : undefined;
+  const albumId = albumParam && UUID_RE.test(albumParam) ? albumParam : undefined;
 
   function changerOnglet(cible: OngletPublic) {
     const next = new URLSearchParams(searchParams);
