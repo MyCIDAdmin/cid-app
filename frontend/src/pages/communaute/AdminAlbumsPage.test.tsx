@@ -19,6 +19,8 @@ vi.mock("../../hooks/useCommunaute", async () => {
     usePhotos: vi.fn(),
     useUploaderPhoto: vi.fn(),
     useSupprimerPhoto: vi.fn(),
+    useSetzePhotoOeffentlich: vi.fn(),
+    useSetzeAlbumFotosOeffentlich: vi.fn(),
   };
 });
 
@@ -95,6 +97,12 @@ describe("AdminAlbumsPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.usePhotos>);
+    vi.mocked(useCommunauteHooks.useSetzePhotoOeffentlich).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useSetzePhotoOeffentlich>>(),
+    );
+    vi.mocked(useCommunauteHooks.useSetzeAlbumFotosOeffentlich).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useSetzeAlbumFotosOeffentlich>>(),
+    );
     vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
       accessible: true,
       modifiable: true,
@@ -199,6 +207,75 @@ describe("AdminAlbumsPage", () => {
           oeffentlich: true,
         }),
       );
+    });
+  });
+
+  describe("Einzelfreigabe der Fotos für die öffentliche Startseite", () => {
+    function photo(id: string, oeffentlich: boolean) {
+      return {
+        id,
+        album: "a1",
+        membre: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
+        image: `https://cdn.example.de/${id}.jpg`,
+        legende: id,
+        est_masquee: false,
+        oeffentlich,
+        created_at: "2026-01-01T10:00:00Z",
+        nombre_likes: 0,
+        jaime: false,
+        est_proprietaire: false,
+        commentaires: [],
+      };
+    }
+
+    function oeffneFormular() {
+      mockHooksParDefaut();
+      vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+        data: page([album({ oeffentlich: true })]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+      vi.mocked(useCommunauteHooks.usePhotos).mockReturnValue({
+        data: page([photo("p-frei", true), photo("p-intern", false)]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.usePhotos>);
+      const einzeln =
+        mutationMock<ReturnType<typeof useCommunauteHooks.useSetzePhotoOeffentlich>>();
+      const alle =
+        mutationMock<ReturnType<typeof useCommunauteHooks.useSetzeAlbumFotosOeffentlich>>();
+      vi.mocked(useCommunauteHooks.useSetzePhotoOeffentlich).mockReturnValue(einzeln);
+      vi.mocked(useCommunauteHooks.useSetzeAlbumFotosOeffentlich).mockReturnValue(alle);
+      renderWithProviders(<AdminAlbumsPage />);
+      fireEvent.click(screen.getByText("admin_albums.modifier"));
+      return { einzeln, alle };
+    }
+
+    it("zeigt je Foto, ob es öffentlich oder nur intern ist", () => {
+      oeffneFormular();
+
+      const haken = screen.getAllByLabelText("admin_albums.foto_oeffentlich_aria");
+      expect(haken).toHaveLength(2);
+      expect(haken[0]).toBeChecked();
+      expect(haken[1]).not.toBeChecked();
+    });
+
+    it("nimmt ein einzelnes Foto heraus", () => {
+      const { einzeln } = oeffneFormular();
+
+      fireEvent.click(screen.getAllByLabelText("admin_albums.foto_oeffentlich_aria")[0]);
+
+      expect(einzeln.mutate).toHaveBeenCalledWith({ id: "p-frei", oeffentlich: false });
+    });
+
+    it("gibt alle Fotos auf einmal frei oder nimmt sie heraus", () => {
+      const { alle } = oeffneFormular();
+
+      fireEvent.click(screen.getByText("admin_albums.alle_freigeben"));
+      fireEvent.click(screen.getByText("admin_albums.alle_intern"));
+
+      expect(alle.mutate).toHaveBeenNthCalledWith(1, { albumId: "a1", oeffentlich: true });
+      expect(alle.mutate).toHaveBeenNthCalledWith(2, { albumId: "a1", oeffentlich: false });
     });
   });
 

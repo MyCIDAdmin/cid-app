@@ -24,6 +24,8 @@ import {
   useCreerAlbum,
   useModifierAlbum,
   usePhotos,
+  useSetzeAlbumFotosOeffentlich,
+  useSetzePhotoOeffentlich,
   useSupprimerAlbum,
   useSupprimerPhoto,
   useUploaderPhoto,
@@ -60,6 +62,8 @@ function FormulaireAlbum({
   const modifier = useModifierAlbum();
   const uploader = useUploaderPhoto();
   const supprimerPhoto = useSupprimerPhoto();
+  const photoFreigabe = useSetzePhotoOeffentlich();
+  const alleFreigabe = useSetzeAlbumFotosOeffentlich();
   // N'interroge les photos existantes qu'en édition (usePhotos ne se déclenche de toute façon pas
   // sans `album`, voir son `enabled` — inutile ici lors d'une création, l'album n'a pas encore d'id).
   const photosQuery = usePhotos({ album: album?.id });
@@ -247,22 +251,63 @@ function FormulaireAlbum({
           {t("admin_albums.images_titre")}
         </label>
         {album && (photosQuery.data?.results.length ?? 0) > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
-            {photosQuery.data?.results.map((photo) => (
-              <div key={photo.id} className="relative h-16 w-16 overflow-hidden rounded-cid">
-                <img src={photo.image} alt={photo.legende} className="h-full w-full object-cover" />
-                <button
-                  type="button"
-                  disabled={!modifiable}
-                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
-                  onClick={() => supprimerPhoto.mutate(photo.id)}
-                  aria-label={t("admin_albums.supprimer") ?? ""}
-                  className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl bg-black/60 text-[10px] text-white disabled:opacity-40"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+          <div className="mb-2">
+            <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs text-text-tertiary">
+              <span>{t("admin_albums.fotos_freigabe_hinweis")}</span>
+              <button
+                type="button"
+                disabled={!modifiable || alleFreigabe.isPending}
+                onClick={() => alleFreigabe.mutate({ albumId: album.id, oeffentlich: true })}
+                className="rounded-cid px-2 py-0.5 font-medium text-ca hover:bg-bg-secondary disabled:opacity-40"
+              >
+                {t("admin_albums.alle_freigeben")}
+              </button>
+              <button
+                type="button"
+                disabled={!modifiable || alleFreigabe.isPending}
+                onClick={() => alleFreigabe.mutate({ albumId: album.id, oeffentlich: false })}
+                className="rounded-cid px-2 py-0.5 font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-40"
+              >
+                {t("admin_albums.alle_intern")}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {photosQuery.data?.results.map((photo) => (
+                <div key={photo.id} className="w-24">
+                  <div className="relative h-24 w-24 overflow-hidden rounded-cid">
+                    <img
+                      src={photo.image}
+                      alt={photo.legende}
+                      className={`h-full w-full object-cover ${photo.oeffentlich ? "" : "opacity-60"}`}
+                    />
+                    <button
+                      type="button"
+                      disabled={!modifiable}
+                      title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+                      onClick={() => supprimerPhoto.mutate(photo.id)}
+                      aria-label={t("admin_albums.supprimer") ?? ""}
+                      className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-bl bg-black/60 text-[10px] text-white disabled:opacity-40"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <label className="mt-1 flex cursor-pointer items-center gap-1 text-[11px] text-text-secondary">
+                    <input
+                      type="checkbox"
+                      checked={photo.oeffentlich}
+                      disabled={!modifiable || photoFreigabe.isPending}
+                      onChange={(e) =>
+                        photoFreigabe.mutate({ id: photo.id, oeffentlich: e.target.checked })
+                      }
+                      aria-label={t("admin_albums.foto_oeffentlich_aria") ?? ""}
+                    />
+                    {photo.oeffentlich
+                      ? t("admin_albums.foto_oeffentlich")
+                      : t("admin_albums.foto_intern")}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         <input

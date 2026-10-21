@@ -638,6 +638,26 @@ export async function masquerPhoto(id: string): Promise<Photo> {
   return data;
 }
 
+/** Foto für die öffentliche Startseite freigeben/herausnehmen (Verwaltung, page_albums). */
+export async function setzePhotoOeffentlich(id: string, oeffentlich: boolean): Promise<Photo> {
+  const { data } = await apiClient.post<Photo>(`/communaute/photos/${id}/oeffentlich/`, {
+    oeffentlich,
+  });
+  return data;
+}
+
+/** Alle Fotos eines Albums auf einmal freigeben/herausnehmen. */
+export async function setzeAlbumFotosOeffentlich(
+  albumId: string,
+  oeffentlich: boolean,
+): Promise<{ geaendert: number; oeffentlich: boolean }> {
+  const { data } = await apiClient.post<{ geaendert: number; oeffentlich: boolean }>(
+    `/communaute/albums/${albumId}/fotos-freigabe/`,
+    { oeffentlich },
+  );
+  return data;
+}
+
 export async function commenterPhoto(photoId: string, contenu: string): Promise<PhotoCommentaire> {
   const { data } = await apiClient.post<PhotoCommentaire>("/communaute/photo-commentaires/", {
     photo: photoId,

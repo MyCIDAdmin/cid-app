@@ -1388,6 +1388,11 @@ class Album(models.Model):
     def nombre_photos(self) -> int:
         return self.photos.filter(est_masquee=False).count()
 
+    def photos_oeffentlich(self):
+        """Fotos, die Besucher ohne Anmeldung sehen dürfen (nicht ausgeblendet UND einzeln
+        freigegeben). Ob das Album selbst freigeschaltet ist, prüfen die Views."""
+        return self.photos.filter(est_masquee=False, oeffentlich=True)
+
     @property
     def photo_couverture(self):
         """Photo la plus récente non masquée — utilisée comme vignette de prévisualisation
@@ -1420,6 +1425,11 @@ class Photo(models.Model):
         blank=True,
         related_name="photos_masquees",
     )
+
+    # Einzelne Freigabe für die öffentliche Startseite (Wunsch 2026-10-21) : Besucher sehen ein
+    # Foto nur, wenn das Album freigeschaltet UND das Foto selbst freigegeben ist. Standard True —
+    # ein freigeschaltetes Album zeigt zunächst alles, die Verwaltung nimmt einzelne Fotos heraus.
+    oeffentlich = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

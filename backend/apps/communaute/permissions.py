@@ -300,13 +300,13 @@ class AlbumPermission(BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        if view.action == "create":
+        if view.action in ("create", "fotos_freigabe"):
             return has_admin_page_access(user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if view.action in ("update", "partial_update", "destroy"):
+        if view.action in ("update", "partial_update", "destroy", "fotos_freigabe"):
             return has_admin_page_access(user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE)
         return True
 
@@ -330,13 +330,13 @@ class PhotoPermission(BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        if view.action in ("create", "masquer"):
+        if view.action in ("create", "masquer", "oeffentlich"):
             return has_admin_page_access(user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if view.action == "masquer":
+        if view.action in ("masquer", "oeffentlich"):
             return has_admin_page_access(user, "page_albums", required=NiveauAcces.LECTURE_ECRITURE)
         if view.action in ("update", "partial_update", "destroy"):
             membre = _membre_de(user)

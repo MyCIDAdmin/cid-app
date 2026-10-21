@@ -595,6 +595,8 @@ export interface Photo {
   image: string;
   legende: string;
   est_masquee: boolean;
+  /** Einzelfreigabe für die öffentliche Startseite (nur wirksam bei freigeschaltetem Album). */
+  oeffentlich: boolean;
   created_at: string;
   nombre_likes: number;
   jaime: boolean;
