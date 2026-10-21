@@ -556,6 +556,10 @@ export interface Album {
   date: string | null;
   lieu: string;
   evenement: { id: string; titre: string } | null;
+  /** Verknüpftes Projekt/verknüpfte Aktion (Wunsch 2026-10-21). */
+  projet: { id: string; titre: string } | null;
+  /** Auf der öffentlichen Startseite (ohne Anmeldung) sichtbar. */
+  oeffentlich: boolean;
   createur: Auteur;
   created_at: string;
   nombre_photos: number;
@@ -570,6 +574,10 @@ export interface AlbumPayload {
   description?: string;
   date?: string | null;
   lieu?: string;
+  oeffentlich?: boolean;
+  /** Verknüpfung mit Veranstaltung/Projekt (null = Verknüpfung entfernen). */
+  evenement_id?: string | null;
+  projet_id?: string | null;
 }
 
 export interface PhotoCommentaire {

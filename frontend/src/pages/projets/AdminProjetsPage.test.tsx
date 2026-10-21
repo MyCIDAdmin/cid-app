@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as useAlbumVerknuepfungen from "../../hooks/useAlbumVerknuepfungen";
 import * as useProjetsHooks from "../../hooks/useProjets";
 import * as useRbacHooks from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
@@ -16,6 +17,11 @@ vi.mock("../../hooks/useRbac", async () => {
   const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
   return { ...actual, usePageAccess: vi.fn() };
 });
+
+vi.mock("../../hooks/useAlbumVerknuepfungen", () => ({
+  useAlleProjets: vi.fn(),
+  useAlleEvenements: vi.fn(),
+}));
 
 vi.mock("../../hooks/useProjets", async () => {
   const actual = await vi.importActual<typeof useProjetsHooks>("../../hooks/useProjets");
@@ -109,6 +115,9 @@ describe("AdminProjetsPage", () => {
     vi.mocked(useProjetsHooks.useAjouterImageMiseAJourProjet).mockReturnValue(
       mutationMock<ReturnType<typeof useProjetsHooks.useAjouterImageMiseAJourProjet>>(),
     );
+    vi.mocked(useAlbumVerknuepfungen.useAlleProjets).mockReturnValue({
+      data: [],
+    } as unknown as ReturnType<typeof useAlbumVerknuepfungen.useAlleProjets>);
     vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
       accessible: true,
       modifiable: true,
@@ -127,6 +136,61 @@ describe("AdminProjetsPage", () => {
 
     expect(screen.getByText("Rénovation du local associatif")).toBeInTheDocument();
     expect(screen.getByText("statut.en_preparation")).toBeInTheDocument();
+  });
+
+  it("ordnet ein Projekt einem Dachprojekt zu (nur Projekte der obersten Ebene zur Auswahl)", async () => {
+    mockHooksParDefaut();
+    const dach = projet({ id: "dach-1", titre: "Sportplätze Akademie" });
+    const kind = projet({ id: "kind-1", titre: "Umkleidekabinen" });
+    const enkel = projet({ id: "enkel-1", titre: "Bereits Teilprojekt", parent: "dach-1" });
+    vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
+      data: page([dach, kind, enkel]),
+      isLoading: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
+    vi.mocked(useAlbumVerknuepfungen.useAlleProjets).mockReturnValue({
+      data: [dach, kind, enkel],
+    } as unknown as ReturnType<typeof useAlbumVerknuepfungen.useAlleProjets>);
+    const modifier = mutationMock<ReturnType<typeof useProjetsHooks.useModifierProjet>>();
+    modifier.mutateAsync = vi.fn().mockResolvedValue(kind);
+    vi.mocked(useProjetsHooks.useModifierProjet).mockReturnValue(modifier);
+
+    renderWithProviders(<AdminProjetsPage />);
+
+    fireEvent.click(screen.getAllByText("admin.modifier")[1]);
+    const auswahl = screen.getByLabelText("admin.champ_parent") as HTMLSelectElement;
+    const optionen = Array.from(auswahl.options).map((o) => o.textContent);
+    expect(optionen).toContain("Sportplätze Akademie");
+    expect(optionen).not.toContain("Umkleidekabinen"); // nicht das Projekt selbst
+    expect(optionen).not.toContain("Bereits Teilprojekt"); // Teilprojekte sind kein Dach
+
+    fireEvent.change(auswahl, { target: { value: "dach-1" } });
+    fireEvent.change(screen.getByLabelText("admin.champ_date_debut"), {
+      target: { value: "2026-09-01" },
+    });
+    fireEvent.click(screen.getByText("admin.enregistrer"));
+
+    await waitFor(() => {
+      expect(modifier.mutateAsync).toHaveBeenCalledWith({
+        id: "kind-1",
+        payload: expect.objectContaining({ parent: "dach-1", date_debut: "2026-09-01" }),
+      });
+    });
+  });
+
+  it("sperrt die Dach-Auswahl bei einem Projekt, das selbst Teilprojekte hat", () => {
+    mockHooksParDefaut();
+    const dach = projet({ id: "dach-1", titre: "Sportplätze Akademie", nb_teilprojekte: 2 });
+    vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
+      data: page([dach]),
+      isLoading: false,
+    } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
+
+    renderWithProviders(<AdminProjetsPage />);
+
+    fireEvent.click(screen.getByText("admin.modifier"));
+
+    expect(screen.getByLabelText("admin.champ_parent")).toBeDisabled();
+    expect(screen.getByText("admin.parent_hinweis_dach")).toBeInTheDocument();
   });
 
   it("crée un nouveau projet (titre requis) via le formulaire", async () => {

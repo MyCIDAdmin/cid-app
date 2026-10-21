@@ -155,6 +155,21 @@ class Projet(models.Model):
     )
     # Demande utilisateur point 4.
     date_limite = models.DateField(null=True, blank=True, verbose_name=_("Date limite"))
+    # Dach-Projekt (Nutzerwunsch 2026-10-20, z. B. „Wiederaufbau der Sportplätze“, 5 Jahre) :
+    # ein langfristiges Projekt bündelt mehrere bestehende Projekte/Aktionen als Teilprojekte.
+    # Genau EINE Ebene (ein Teilprojekt kann kein eigenes Dach sein — Prüfung im Serializer).
+    # SET_NULL : wird ein Dach gelöscht, bleiben die Teilprojekte als eigenständige Projekte
+    # erhalten (nie CASCADE — Spenden/Berichte dürfen nicht mit verschwinden).
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="teilprojekte",
+        verbose_name=_("Projet parent"),
+    )
+    # Beginn — zusammen mit `date_limite` die Zeitachse der Projektübersicht.
+    date_debut = models.DateField(null=True, blank=True, verbose_name=_("Date de début"))
 
     # Planjahr für die Budgetprüfung (Projekttopf der Finanzen). Leer = Jahr der Frist, sonst
     # Erstellungsjahr — siehe `budget_jahr`. Änderbar nur über die Aktion `planjahr`, die den
@@ -262,6 +277,42 @@ class Projet(models.Model):
         bloque une nouvelle contribution, voir apps.cotisations.serializers.
         CotisationSerializer.validate (TypeArticle.PROJET)."""
         return bool(self.date_limite and self.date_limite < timezone.localdate())
+
+
+class ProjetMeilenstein(models.Model):
+    """Meilenstein eines (Dach-)Projekts (Nutzerwunsch 2026-10-20) — z. B. „Umkleidekabinen
+    eröffnet“. `erledigt_am` gesetzt = erreicht ; `faellig_am` optional (Zieldatum auf der
+    Zeitachse)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name="meilensteine")
+    titel = models.CharField(max_length=200)
+    beschreibung = models.TextField(blank=True)
+    faellig_am = models.DateField(null=True, blank=True)
+    erledigt_am = models.DateField(null=True, blank=True)
+    ordre = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "projets_meilensteine"
+        verbose_name = _("Jalon de projet")
+        verbose_name_plural = _("Jalons de projet")
+        ordering = ["faellig_am", "ordre", "created_at"]
+        indexes = [models.Index(fields=["projet"], name="projets_meil_projet_idx")]
+
+    def __str__(self):
+        return self.titel
+
+    @property
+    def erledigt(self) -> bool:
+        return self.erledigt_am is not None
+
+    @property
+    def ueberfaellig(self) -> bool:
+        return bool(
+            self.faellig_am and not self.erledigt and self.faellig_am < timezone.localdate()
+        )
 
 
 class ProjetImage(models.Model):

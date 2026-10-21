@@ -99,7 +99,12 @@
     "historie_hinweis": "Für die Übernahme vergangener Projekte: den gesammelten Beitrag manuell erfassen. Er zählt zum gesammelten Betrag und zur Anzahl der Beitragenden. Das Datum bei „Frist“ sollte in der Vergangenheit liegen.",
     "historie_betrag": "Gesammelter Beitrag (€)",
     "historie_beitragende": "Anzahl Beitragende",
-    "historie_jahr": "Jahr des Beitrags"
+    "historie_jahr": "Jahr des Beitrags",
+    "champ_date_debut": "Beginn",
+    "champ_parent": "Übergeordnetes Projekt (Dachprojekt)",
+    "aucun_parent": "– eigenständiges Projekt –",
+    "parent_hinweis": "Ordne dieses Projekt einem langfristigen Dachprojekt als Teilprojekt zu. Es bleibt ein eigenes Projekt mit eigenen Spenden.",
+    "parent_hinweis_dach": "Dieses Projekt hat selbst Teilprojekte und kann deshalb keinem anderen Projekt zugeordnet werden."
   },
   "arbeitsbereich": {
     "titel": "Arbeitsbereich",
@@ -331,5 +336,36 @@
       "abgelehnt": "Abgelehnt",
       "zurueckgezogen": "Zurückgezogen"
     }
+  },
+  "dach": {
+    "titel": "Projektübersicht",
+    "titel_meilensteine": "Meilensteine",
+    "fortschritt": "Gesamtfortschritt",
+    "fortschritt_meilensteine": "Berechnet aus den erreichten Meilensteinen des Dachprojekts und seiner Teilprojekte.",
+    "fortschritt_teilprojekte": "Berechnet aus den abgeschlossenen Teilprojekten (noch keine Meilensteine angelegt).",
+    "teilprojekte_titel": "Teilprojekte",
+    "teilprojekte_zaehler": "{{termine}} von {{gesamt}} abgeschlossen",
+    "meilensteine_titel": "Meilensteine",
+    "meilensteine_zaehler": "erreicht (alle Teilprojekte)",
+    "gesammelt": "Gesammelt (gesamt)",
+    "ziel": "Ziel: {{betrag}}",
+    "beitragende": "{{count}} Beitragende",
+    "zeitachse": "Zeitachse",
+    "heute": "Heute",
+    "teil_von": "Teilprojekt von „{{titel}}“",
+    "chip_teilprojekte": "Teilprojekte: {{count}}",
+    "kind_meilensteine": "Meilensteine: {{erledigt}} von {{gesamt}} erreicht",
+    "keine_meilensteine": "Noch keine Meilensteine.",
+    "meilenstein_titel": "Neuer Meilenstein",
+    "meilenstein_datum": "Fällig am",
+    "hinzufuegen": "Hinzufügen",
+    "als_erledigt_markieren": "„{{titel}}“ als erreicht markieren",
+    "als_offen_markieren": "„{{titel}}“ wieder auf offen setzen",
+    "ueberfaellig": "überfällig",
+    "erreicht_am": "erreicht am {{datum}}",
+    "loeschen_aria": "„{{titel}}“ löschen",
+    "loeschen_titel": "Meilenstein löschen",
+    "loeschen_frage": "Meilenstein „{{titel}}“ wirklich löschen?",
+    "fehler": "Der Meilenstein konnte nicht gespeichert werden."
   }
 }

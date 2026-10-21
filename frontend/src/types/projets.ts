@@ -82,6 +82,15 @@ export interface Projet {
   /** Idem — jamais déduit du tableau `images`/`contributeurs` côté client. */
   nb_contributeurs: number;
   date_limite: string | null;
+  /** Beginn des Projekts (Zeitachse der Projektübersicht). Optional wegen älterer Fixtures. */
+  date_debut?: string | null;
+  /** Dachprojekt, dem dieses Projekt als Teilprojekt zugeordnet ist (eine Ebene, 2026-10-20). */
+  parent?: string | null;
+  parent_detail?: { id: string; titre: string } | null;
+  /** Anzahl sichtbarer Teilprojekte — > 0 bedeutet: dieses Projekt ist ein Dachprojekt. */
+  nb_teilprojekte?: number;
+  meilensteine_gesamt?: number;
+  meilensteine_erledigt?: number;
   /** Calculé côté serveur à partir de `date_limite` — bloque une nouvelle contribution (voir
    * hooks/useCotisations.useContribuerProjet). */
   echeance_depassee: boolean;
@@ -120,6 +129,9 @@ export interface ProjetPayload {
   cagnote_active?: boolean;
   objectif_montant?: string | null;
   date_limite?: string | null;
+  date_debut?: string | null;
+  /** Dachprojekt (null = eigenständiges Projekt / selbst ein Dach). */
+  parent?: string | null;
   historisch_betrag?: string;
   historisch_beitragende?: number;
   historisch_jahr?: number | null;
@@ -408,4 +420,47 @@ export interface PassendesMitglied {
   id: string;
   nom_complet: string;
   kommentar: string;
+}
+
+/** Meilenstein eines (Dach-)Projekts. `erledigt_am` wird serverseitig aus `erledigt` gesetzt. */
+export interface Meilenstein {
+  id: string;
+  projet: string;
+  projet_titel: string;
+  titel: string;
+  beschreibung: string;
+  faellig_am: string | null;
+  erledigt: boolean;
+  erledigt_am: string | null;
+  ueberfaellig: boolean;
+  ordre: number;
+  created_at: string;
+}
+
+export interface MeilensteinPayload {
+  projet: string;
+  titel: string;
+  beschreibung?: string;
+  faellig_am?: string | null;
+  erledigt?: boolean;
+}
+
+/** Antwort von GET /projets/projets/{id}/uebersicht/ — Teilprojekte, Meilensteine, Summen. */
+export interface ProjetUebersicht {
+  projet: Projet;
+  teilprojekte: Projet[];
+  meilensteine: Meilenstein[];
+  summen: {
+    montant_collecte: string;
+    objectif_montant: string | null;
+    nb_contributeurs: number;
+    teilprojekte_gesamt: number;
+    teilprojekte_termine: number;
+    teilprojekte_aktiv: number;
+    meilensteine_gesamt: number;
+    meilensteine_erledigt: number;
+    fortschritt_prozent: number;
+    beginn: string | null;
+    ende: string | null;
+  };
 }

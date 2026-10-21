@@ -26,6 +26,7 @@ import PublicEvenementsTab from "../../components/public/PublicEvenementsTab";
 import PublicFooter from "../../components/public/PublicFooter";
 import PublicTopNav, { type OngletPublic } from "../../components/public/PublicTopNav";
 import UeberUnsTab from "../../components/public/UeberUnsTab";
+import AlbumDetailPage from "../communaute/AlbumDetailPage";
 import AlbumsPage from "../communaute/AlbumsPage";
 import CataloguePage from "../boutique/CataloguePage";
 import ProjetsPage from "../projets/ProjetsPage";
@@ -51,9 +52,14 @@ export default function PublicHomePage() {
   const { t } = useTranslation("common");
   const [searchParams, setSearchParams] = useSearchParams();
   const onglet = ongletDepuisParam(searchParams.get("onglet"));
+  // Album ouvert depuis la galerie publique : `?onglet=galerie&album=<id>` (pas de route dédiée,
+  // voir docstring) — seuls des chiffres sont acceptés.
+  const albumParam = searchParams.get("album");
+  const albumId = albumParam && /^\d+$/.test(albumParam) ? albumParam : undefined;
 
   function changerOnglet(cible: OngletPublic) {
     const next = new URLSearchParams(searchParams);
+    next.delete("album");
     if (cible === "accueil") {
       next.delete("onglet");
     } else {
@@ -87,7 +93,11 @@ export default function PublicHomePage() {
         )}
         {onglet === "galerie" && (
           <PageEmbarquee>
-            <AlbumsPage />
+            {albumId ? (
+              <AlbumDetailPage albumId={albumId} publicModus />
+            ) : (
+              <AlbumsPage publicModus />
+            )}
           </PageEmbarquee>
         )}
         {onglet === "apropos" && <UeberUnsTab />}

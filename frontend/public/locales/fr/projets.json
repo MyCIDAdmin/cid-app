@@ -99,7 +99,12 @@
     "historie_hinweis": "Pour reprendre d'anciens projets : saisissez manuellement le montant collecté. Il compte dans le montant collecté et le nombre de contributeurs. La date limite devrait se situer dans le passé.",
     "historie_betrag": "Montant collecté (€)",
     "historie_beitragende": "Nombre de contributeurs",
-    "historie_jahr": "Année de la collecte"
+    "historie_jahr": "Année de la collecte",
+    "champ_date_debut": "Début",
+    "champ_parent": "Projet parent (projet-cadre)",
+    "aucun_parent": "– projet autonome –",
+    "parent_hinweis": "Rattachez ce projet à un projet-cadre de long terme comme sous-projet. Il reste un projet à part entière avec ses propres dons.",
+    "parent_hinweis_dach": "Ce projet a lui-même des sous-projets et ne peut donc pas être rattaché à un autre projet."
   },
   "arbeitsbereich": {
     "titel": "Espace de travail",
@@ -331,5 +336,36 @@
       "abgelehnt": "Refusé",
       "zurueckgezogen": "Retiré"
     }
+  },
+  "dach": {
+    "titel": "Vue d'ensemble du projet",
+    "titel_meilensteine": "Jalons",
+    "fortschritt": "Avancement global",
+    "fortschritt_meilensteine": "Calculé d'après les jalons atteints du projet-cadre et de ses sous-projets.",
+    "fortschritt_teilprojekte": "Calculé d'après les sous-projets terminés (aucun jalon créé pour l'instant).",
+    "teilprojekte_titel": "Sous-projets",
+    "teilprojekte_zaehler": "{{termine}} sur {{gesamt}} terminé(s)",
+    "meilensteine_titel": "Jalons",
+    "meilensteine_zaehler": "atteints (tous sous-projets)",
+    "gesammelt": "Collecté (total)",
+    "ziel": "Objectif : {{betrag}}",
+    "beitragende": "{{count}} contributeur(s)",
+    "zeitachse": "Frise chronologique",
+    "heute": "Aujourd'hui",
+    "teil_von": "Sous-projet de « {{titel}} »",
+    "chip_teilprojekte": "Sous-projets : {{count}}",
+    "kind_meilensteine": "Jalons : {{erledigt}} sur {{gesamt}} atteints",
+    "keine_meilensteine": "Aucun jalon pour l'instant.",
+    "meilenstein_titel": "Nouveau jalon",
+    "meilenstein_datum": "Échéance",
+    "hinzufuegen": "Ajouter",
+    "als_erledigt_markieren": "Marquer « {{titel}} » comme atteint",
+    "als_offen_markieren": "Remettre « {{titel}} » en cours",
+    "ueberfaellig": "en retard",
+    "erreicht_am": "atteint le {{datum}}",
+    "loeschen_aria": "Supprimer « {{titel}} »",
+    "loeschen_titel": "Supprimer le jalon",
+    "loeschen_frage": "Supprimer vraiment le jalon « {{titel}} » ?",
+    "fehler": "Impossible d'enregistrer le jalon."
   }
 }

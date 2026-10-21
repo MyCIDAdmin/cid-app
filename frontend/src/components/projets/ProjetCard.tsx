@@ -177,9 +177,24 @@ export default function ProjetCard({
           </div>
           <div className="flex flex-col gap-2 p-4">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="text-base font-semibold leading-snug text-text-primary">
-                {uebersetzt(projet, "titre")}
-              </h3>
+              <div className="min-w-0">
+                <h3 className="text-base font-semibold leading-snug text-text-primary">
+                  {uebersetzt(projet, "titre")}
+                </h3>
+                {projet.parent_detail && (
+                  <p className="text-xs text-text-tertiary">
+                    {t("dach.teil_von", { titel: projet.parent_detail.titre })}
+                  </p>
+                )}
+                {(projet.nb_teilprojekte ?? 0) > 0 && (
+                  <span
+                    data-testid="dach-chip"
+                    className="mt-1 inline-block rounded-full bg-ca/10 px-2 py-0.5 text-[11px] font-semibold text-ca"
+                  >
+                    {t("dach.chip_teilprojekte", { count: projet.nb_teilprojekte })}
+                  </span>
+                )}
+              </div>
               {/* Partage social (demande utilisateur 2026-09-25, "Es soll möglich sein Elemente
                   in Social Media zu Teilen") — ShareButton stoppe déjà lui-même la propagation
                   du clic (voir son implémentation), donc le retournement de la kachel (au clic

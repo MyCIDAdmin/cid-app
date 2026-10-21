@@ -327,7 +327,18 @@
     "supprimer": "Löschen",
     "voir": "Ansehen",
     "confirmer_suppression": "Dieses Album und alle seine Fotos löschen?",
-    "erreur_enregistrement": "Das Album konnte nicht gespeichert werden."
+    "erreur_enregistrement": "Das Album konnte nicht gespeichert werden.",
+    "champ_evenement": "Verknüpfte Veranstaltung",
+    "champ_projet": "Verknüpftes Projekt",
+    "aucune_liaison": "– keine Verknüpfung –",
+    "champ_oeffentlich": "Auf der öffentlichen Startseite anzeigen",
+    "aide_oeffentlich": "Ohne Haken ist das Album nur für angemeldete Mitglieder sichtbar. Besucher sehen nur Fotos, keine Kommentare.",
+    "badge_oeffentlich": "Öffentlich",
+    "badge_intern": "Nur Mitglieder",
+    "freischalten": "Freischalten",
+    "ausblenden": "Ausblenden",
+    "lien_evenement": "Veranstaltung",
+    "lien_projet": "Projekt"
   },
   "admin_fan_club_logos": {
     "titre": "Vereinslogos",

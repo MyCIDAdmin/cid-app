@@ -31,6 +31,8 @@ function album(overrides: Partial<Album> = {}): Album {
     date: null,
     lieu: "",
     evenement: null,
+    projet: null,
+    oeffentlich: false,
     createur: { id: "m1", prenom: "Sana", nom: "Werfelli", photo: null },
     created_at: "2026-01-01T10:00:00Z",
     nombre_photos: 3,
@@ -126,8 +128,14 @@ describe("AlbumsPage", () => {
     expect(screen.queryByText("albums.nouvel_album")).not.toBeInTheDocument();
   });
 
-  describe("partage d'un album (demande utilisateur du 2026-09-23)", () => {
+  describe("partage d'un album (réservé Bureau Admin+, demande utilisateur du 2026-10-20)", () => {
     beforeEach(() => {
+      useAuthStore.setState({
+        accessToken: "t",
+        refreshToken: "r",
+        user: { ...membre, id: "u2", role: "bureau_admin" as const },
+        isAuthenticated: true,
+      });
       vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
         data: page([album()]),
         isLoading: false,
@@ -164,6 +172,56 @@ describe("AlbumsPage", () => {
       // déclencher de navigation vers /albums/a1 : la liste reste affichée.
       expect(screen.queryByTestId("route-fallback")).not.toBeInTheDocument();
       expect(screen.getByText("Derby CA - ST 2026")).toBeInTheDocument();
+    });
+  });
+
+  it("n'affiche pas le bouton de partage à un simple membre", () => {
+    vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+      data: page([album()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+
+    renderWithProviders(<AlbumsPage />);
+
+    expect(screen.queryByLabelText("partage.bouton_aria")).not.toBeInTheDocument();
+  });
+
+  describe("mode public (Startseite sans connexion)", () => {
+    beforeEach(() => {
+      useAuthStore.setState({
+        accessToken: null,
+        refreshToken: null,
+        user: null,
+        isAuthenticated: false,
+      });
+      vi.mocked(useCommunauteHooks.useAlbums).mockReturnValue({
+        data: page([album({ oeffentlich: true })]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useAlbums>);
+    });
+
+    it("ouvre l'album sur la Startseite (pas sur /albums/:id qui exige une connexion)", () => {
+      renderWithProviders(<AlbumsPage publicModus />);
+
+      expect(screen.getByText("Derby CA - ST 2026").closest("a")).toHaveAttribute(
+        "href",
+        "/?onglet=galerie&album=a1",
+      );
+    });
+
+    it("n'affiche aucun bouton de partage, même pour un Bureau Admin connecté", () => {
+      useAuthStore.setState({
+        accessToken: "t",
+        refreshToken: "r",
+        user: { ...membre, id: "u2", role: "bureau_admin" as const },
+        isAuthenticated: true,
+      });
+
+      renderWithProviders(<AlbumsPage publicModus />);
+
+      expect(screen.queryByLabelText("partage.bouton_aria")).not.toBeInTheDocument();
     });
   });
 });

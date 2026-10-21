@@ -27,6 +27,7 @@ from .models import (
     ProjetAktivitaet,
     ProjetBewerbung,
     ProjetImage,
+    ProjetMeilenstein,
     ProjetMiseAJour,
     ProjetMiseAJourImage,
     ProjetMitglied,
@@ -41,6 +42,7 @@ from .permissions import (
     kann_team_verwalten,
     liest_alle_arbeitsbereiche,
     rolle_im_projekt,
+    sieht_alle_projekte,
 )
 
 
@@ -157,6 +159,10 @@ class ProjetSerializer(serializers.ModelSerializer):
     darf_arbeitsbereich = serializers.SerializerMethodField()
     darf_team_verwalten = serializers.SerializerMethodField()
     stellen_offen = serializers.SerializerMethodField()
+    parent_detail = serializers.SerializerMethodField()
+    nb_teilprojekte = serializers.SerializerMethodField()
+    meilensteine_gesamt = serializers.SerializerMethodField()
+    meilensteine_erledigt = serializers.SerializerMethodField()
 
     uebersetzungen = UebersetzungenField()
 
@@ -179,6 +185,12 @@ class ProjetSerializer(serializers.ModelSerializer):
             "historisch_beitragende",
             "historisch_jahr",
             "date_limite",
+            "date_debut",
+            "parent",
+            "parent_detail",
+            "nb_teilprojekte",
+            "meilensteine_gesamt",
+            "meilensteine_erledigt",
             "plan_jahr",
             "budget_jahr",
             "echeance_depassee",
@@ -198,6 +210,32 @@ class ProjetSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_by", "created_at", "updated_at", "plan_jahr"]
 
     def validate(self, attrs):
+        # Dach-Projekt : genau eine Ebene (Nutzerwunsch 2026-10-20).
+        parent = attrs.get("parent")
+        if parent is not None:
+            if self.instance is not None and parent.pk == self.instance.pk:
+                raise serializers.ValidationError(
+                    {"parent": "Ein Projekt kann nicht sein eigenes Dachprojekt sein."}
+                )
+            if parent.parent_id is not None:
+                raise serializers.ValidationError(
+                    {"parent": "Ein Teilprojekt kann nicht selbst Dachprojekt sein."}
+                )
+            if self.instance is not None and self.instance.teilprojekte.exists():
+                raise serializers.ValidationError(
+                    {
+                        "parent": (
+                            "Dieses Projekt hat selbst Teilprojekte und kann keinem "
+                            "anderen zugeordnet werden."
+                        )
+                    }
+                )
+        debut = attrs.get("date_debut", getattr(self.instance, "date_debut", None))
+        limite = attrs.get("date_limite", getattr(self.instance, "date_limite", None))
+        if debut and limite and debut > limite:
+            raise serializers.ValidationError(
+                {"date_debut": "Der Beginn darf nicht nach der Frist liegen."}
+            )
         betrag = attrs.get("historisch_betrag", getattr(self.instance, "historisch_betrag", 0))
         anzahl = attrs.get(
             "historisch_beitragende", getattr(self.instance, "historisch_beitragende", 0)
@@ -237,6 +275,31 @@ class ProjetSerializer(serializers.ModelSerializer):
 
     def get_darf_team_verwalten(self, obj) -> bool:
         return kann_team_verwalten(self._user(), obj)
+
+    def get_parent_detail(self, obj) -> dict | None:
+        if obj.parent_id is None:
+            return None
+        # Ein unveröffentlichtes Dachprojekt verrät sich nicht über seine sichtbaren Teilprojekte.
+        if obj.parent.sichtbarkeit != "veroeffentlicht" and not sieht_alle_projekte(self._user()):
+            return None
+        return {"id": str(obj.parent_id), "titre": obj.parent.titre}
+
+    def get_nb_teilprojekte(self, obj) -> int:
+        # `teilprojekte` ist in ProjetViewSet.get_queryset vorgeladen. Entwürfe zählen nur für
+        # Verwaltung — sonst würde die Zahl unveröffentlichte Teilprojekte verraten.
+        if "_alle" not in self.context:
+            self.context["_alle"] = sieht_alle_projekte(self._user())
+        return sum(
+            1
+            for kind in obj.teilprojekte.all()
+            if self.context["_alle"] or kind.sichtbarkeit == "veroeffentlicht"
+        )
+
+    def get_meilensteine_gesamt(self, obj) -> int:
+        return len(obj.meilensteine.all())
+
+    def get_meilensteine_erledigt(self, obj) -> int:
+        return sum(1 for m in obj.meilensteine.all() if m.erledigt_am is not None)
 
     def get_stellen_offen(self, obj) -> int:
         # `stellen` ist in ProjetViewSet.get_queryset vorgeladen (keine Abfrage je Projekt).
@@ -501,3 +564,57 @@ class BewerbungSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+
+class MeilensteinSerializer(serializers.ModelSerializer):
+    """Meilenstein eines Projekts. `erledigt` ist abgeleitet aus `erledigt_am` ; das Schreiben
+    läuft über das Boolean `erledigt` (setzt/löscht `erledigt_am` serverseitig, nie vom Client
+    vorgegeben)."""
+
+    erledigt = serializers.BooleanField(required=False)
+    ueberfaellig = serializers.BooleanField(read_only=True)
+    projet_titel = serializers.CharField(source="projet.titre", read_only=True)
+
+    class Meta:
+        model = ProjetMeilenstein
+        fields = [
+            "id",
+            "projet",
+            "projet_titel",
+            "titel",
+            "beschreibung",
+            "faellig_am",
+            "erledigt",
+            "erledigt_am",
+            "ueberfaellig",
+            "ordre",
+            "created_at",
+        ]
+        read_only_fields = ["id", "erledigt_am", "created_at"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["erledigt"] = instance.erledigt_am is not None
+        return data
+
+    def validate_projet(self, projet):
+        # Das Projekt ist nach dem Anlegen unveränderlich.
+        if self.instance is not None and projet.pk != self.instance.projet_id:
+            raise serializers.ValidationError("Das Projekt eines Meilensteins ist unveränderlich.")
+        return projet
+
+    def _anwenden(self, validated: dict):
+        from django.utils import timezone
+
+        erledigt = validated.pop("erledigt", None)
+        if erledigt is True and (self.instance is None or self.instance.erledigt_am is None):
+            validated["erledigt_am"] = timezone.localdate()
+        elif erledigt is False:
+            validated["erledigt_am"] = None
+        return validated
+
+    def create(self, validated_data):
+        return super().create(self._anwenden(validated_data))
+
+    def update(self, instance, validated_data):
+        return super().update(instance, self._anwenden(validated_data))
