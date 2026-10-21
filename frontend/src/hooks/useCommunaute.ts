@@ -640,6 +640,24 @@ export function useMasquerPhoto() {
   });
 }
 
+export function useSetzePhotoOeffentlich() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, oeffentlich }: { id: string; oeffentlich: boolean }) =>
+      communauteApi.setzePhotoOeffentlich(id, oeffentlich),
+    onSuccess: () => invalidatePhotos(queryClient),
+  });
+}
+
+export function useSetzeAlbumFotosOeffentlich() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ albumId, oeffentlich }: { albumId: string; oeffentlich: boolean }) =>
+      communauteApi.setzeAlbumFotosOeffentlich(albumId, oeffentlich),
+    onSuccess: () => invalidatePhotos(queryClient),
+  });
+}
+
 export function useCommenterPhoto() {
   const queryClient = useQueryClient();
   return useMutation({

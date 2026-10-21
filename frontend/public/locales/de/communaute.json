@@ -338,7 +338,13 @@
     "freischalten": "Freischalten",
     "ausblenden": "Ausblenden",
     "lien_evenement": "Veranstaltung",
-    "lien_projet": "Projekt"
+    "lien_projet": "Projekt",
+    "fotos_freigabe_hinweis": "Fotos für die öffentliche Startseite:",
+    "alle_freigeben": "Alle öffentlich",
+    "alle_intern": "Alle nur intern",
+    "foto_oeffentlich": "Öffentlich",
+    "foto_intern": "Nur intern",
+    "foto_oeffentlich_aria": "Foto auf der öffentlichen Startseite zeigen"
   },
   "admin_fan_club_logos": {
     "titre": "Vereinslogos",

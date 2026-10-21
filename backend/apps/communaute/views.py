@@ -1463,6 +1463,17 @@ class AlbumViewSet(viewsets.ModelViewSet):
             return qs.filter(oeffentlich=True)
         return qs
 
+    @action(detail=True, methods=["post"], url_path="fotos-freigabe")
+    def fotos_freigabe(self, request, pk=None):
+        """Gibt ALLE Fotos des Albums für die öffentliche Startseite frei bzw. nimmt sie heraus
+        (`{"oeffentlich": true|false}`). Einzelne Fotos: Aktion `oeffentlich` am Foto."""
+        album = self.get_object()
+        wert = request.data.get("oeffentlich")
+        if not isinstance(wert, bool):
+            raise ValidationError({"oeffentlich": "Erwartet true oder false."})
+        geaendert = album.photos.exclude(oeffentlich=wert).update(oeffentlich=wert)
+        return Response({"geaendert": geaendert, "oeffentlich": wert})
+
 
 class PhotoViewSet(viewsets.ModelViewSet):
     serializer_class = PhotoSerializer
@@ -1479,7 +1490,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             # Ohne Anmeldung nur Fotos freigeschalteter Alben (Wunsch 2026-10-21).
-            return qs.filter(album__oeffentlich=True, est_masquee=False)
+            return qs.filter(album__oeffentlich=True, est_masquee=False, oeffentlich=True)
         # Anonyme depuis le 2026-09-26 (onglet Galerie de la page d'accueil publique) : même
         # branche "non-modérateur" qu'un membre normal — `user.role` n'existe pas sur
         # AnonymousUser, d'où le garde-fou `user.is_authenticated` explicite.
@@ -1511,6 +1522,18 @@ class PhotoViewSet(viewsets.ModelViewSet):
             ip_address=_client_ip(request),
             photo_id=str(photo.id),
         )
+        return Response(self.get_serializer(photo).data)
+
+    @action(detail=True, methods=["post"])
+    def oeffentlich(self, request, pk=None):
+        """Gibt ein einzelnes Foto für die öffentliche Startseite frei bzw. nimmt es heraus
+        (`{"oeffentlich": true|false}`; ohne Angabe wird umgeschaltet)."""
+        photo = self.get_object()
+        wert = request.data.get("oeffentlich", not photo.oeffentlich)
+        if not isinstance(wert, bool):
+            raise ValidationError({"oeffentlich": "Erwartet true oder false."})
+        photo.oeffentlich = wert
+        photo.save(update_fields=["oeffentlich"])
         return Response(self.get_serializer(photo).data)
 
 

@@ -338,7 +338,13 @@
     "freischalten": "Publier",
     "ausblenden": "Masquer",
     "lien_evenement": "Événement",
-    "lien_projet": "Projet"
+    "lien_projet": "Projet",
+    "fotos_freigabe_hinweis": "Photos pour la page d'accueil publique :",
+    "alle_freigeben": "Toutes publiques",
+    "alle_intern": "Toutes internes",
+    "foto_oeffentlich": "Public",
+    "foto_intern": "Interne",
+    "foto_oeffentlich_aria": "Afficher la photo sur la page d'accueil publique"
   },
   "admin_fan_club_logos": {
     "titre": "Logos des clubs",

@@ -908,7 +908,7 @@ class MatchEvenementSerializer(serializers.ModelSerializer):
 
 class AlbumSerializer(serializers.ModelSerializer):
     createur = AuteurSerializer(read_only=True)
-    nombre_photos = serializers.IntegerField(read_only=True)
+    nombre_photos = serializers.SerializerMethodField()
     # SerializerMethodField (donc en LECTURE SEULE, jamais généré comme PrimaryKeyRelatedField
     # writable) : aucun écran ne permet encore de choisir un événement à la création d'un
     # album (le mockup #m-photo ne propose qu'un sélecteur d'ALBUM existant, pas de lien vers
@@ -975,8 +975,21 @@ class AlbumSerializer(serializers.ModelSerializer):
             return None
         return {"id": str(obj.projet_id), "titre": obj.projet.titre}
 
+    def _ist_besucher(self) -> bool:
+        request = self.context.get("request")
+        return request is not None and not request.user.is_authenticated
+
+    def get_nombre_photos(self, obj) -> int:
+        # Besucher zählen nur einzeln freigegebene Fotos.
+        if self._ist_besucher():
+            return obj.photos_oeffentlich().count()
+        return obj.nombre_photos
+
     def get_photo_couverture(self, obj):
-        photo = obj.photo_couverture
+        if self._ist_besucher():
+            photo = obj.photos_oeffentlich().order_by("-created_at").first()
+        else:
+            photo = obj.photo_couverture
         if photo is None or not photo.image:
             return None
         request = self.context.get("request")
@@ -1024,13 +1037,15 @@ class PhotoSerializer(serializers.ModelSerializer):
             "image",
             "legende",
             "est_masquee",
+            "oeffentlich",
             "created_at",
             "nombre_likes",
             "jaime",
             "est_proprietaire",
             "commentaires",
         ]
-        read_only_fields = ["id", "membre", "est_masquee", "created_at"]
+        # `oeffentlich` nur über die Aktion `oeffentlich` (Verwaltung), nie per Foto-PATCH.
+        read_only_fields = ["id", "membre", "est_masquee", "oeffentlich", "created_at"]
 
     def _membre_courant(self):
         request = self.context.get("request")

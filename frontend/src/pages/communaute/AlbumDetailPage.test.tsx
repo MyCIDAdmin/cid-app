@@ -54,6 +54,7 @@ function photo(overrides: Partial<Photo> = {}): Photo {
     image: "https://cid-media.example.com/photos/p1.jpg",
     legende: "But de la victoire !",
     est_masquee: false,
+    oeffentlich: true,
     created_at: "2026-01-01T10:00:00Z",
     nombre_likes: 4,
     jaime: false,
