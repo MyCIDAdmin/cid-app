@@ -37,6 +37,11 @@ vi.mock("../../components/public/UeberUnsTab", () => ({
 vi.mock("../projets/ProjetsPage", () => ({ default: () => <div data-testid="projets-stub" /> }));
 vi.mock("../boutique/CataloguePage", () => ({ default: () => <div data-testid="shop-stub" /> }));
 vi.mock("../communaute/AlbumsPage", () => ({ default: () => <div data-testid="galerie-stub" /> }));
+vi.mock("../communaute/AlbumDetailPage", () => ({
+  default: ({ albumId, publicModus }: { albumId: string; publicModus: boolean }) => (
+    <div data-testid="album-detail-stub">{`${albumId}|${publicModus}`}</div>
+  ),
+}));
 
 function videQuery() {
   return { data: undefined, isLoading: false, isError: true } as never;
@@ -101,5 +106,20 @@ describe("PublicHomePage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "nav.apropos" }));
     expect(screen.getByTestId("apropos-stub")).toBeInTheDocument();
+  });
+
+  // Album-IDs sind UUIDs (Regression: eine reine Ziffern-Prüfung ließ die Liste stehen).
+  it("öffnet ein Album der Galerie anhand der UUID in ?album=", () => {
+    const id = "3f2b8c1e-5a4d-4c6e-9b7a-1d2e3f4a5b6c";
+    renderWithProviders(<PublicHomePage />, { route: `/?onglet=galerie&album=${id}` });
+
+    expect(screen.getByTestId("album-detail-stub")).toHaveTextContent(`${id}|true`);
+    expect(screen.queryByTestId("galerie-stub")).not.toBeInTheDocument();
+  });
+
+  it("ignoriert ein ungültiges ?album= und zeigt die Galerie", () => {
+    renderWithProviders(<PublicHomePage />, { route: "/?onglet=galerie&album=abc" });
+
+    expect(screen.getByTestId("galerie-stub")).toBeInTheDocument();
   });
 });
