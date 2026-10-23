@@ -130,6 +130,7 @@
     "aide_accompagnants": "Altersgrenze nur zur Orientierung: Das Anmeldeformular fragt lediglich nach der Anzahl erwachsener und kindlicher Begleitpersonen, nicht nach dem genauen Alter.",
     "champ_visible_public": "Für Nicht-Mitglieder sichtbar",
     "champ_ticket_aktiv": "Eintrittsticket (QR-Code) ausstellen",
+    "einlass": "Einlass",
     "aide_ticket_aktiv": "Bestätigte Anmeldungen erhalten ein Ticket mit QR-Code per E-Mail (und Telegram, falls verbunden) sowie in der App.",
     "aide_visible_public": "Zeigt diese Veranstaltung (nach Veröffentlichung) auch auf der öffentlichen Startseite für nicht angemeldete Besucher.",
     "annuler_formulaire": "Abbrechen",

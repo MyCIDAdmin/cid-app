@@ -8,6 +8,7 @@ umfasst, steht nicht im Ticket, sondern wird bei jedem Zugriff aus der Anmeldung
 import secrets
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
@@ -56,3 +57,79 @@ class Eintrittsticket(models.Model):
 
     def __str__(self):
         return f"Ticket {self.pk}"
+
+
+class Einlass(models.Model):
+    """Ein Eintrag am Einlass : so viele Personen eines Tickets sind jetzt hereingekommen.
+
+    Eingelassene Personen eines Tickets = Summe der nicht zurückgenommenen Einträge. Ein Ticket
+    kann also in mehreren Schritten eingelassen werden (Teil-Einlass mit demselben Code).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    ticket = models.ForeignKey(Eintrittsticket, on_delete=models.CASCADE, related_name="einlaesse")
+    geprueft_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    erwachsene = models.PositiveSmallIntegerField(default=0)
+    kinder = models.PositiveSmallIntegerField(default=0)
+    zeit = models.DateTimeField(auto_now_add=True)
+    zurueckgenommen = models.BooleanField(default=False)
+    zurueckgenommen_am = models.DateTimeField(null=True, blank=True)
+    zurueckgenommen_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        db_table = "eintritt_einlaesse"
+        ordering = ["zeit"]
+
+
+class EinlassHelfer(models.Model):
+    """Vom Büro bzw. von den Verantwortlichen für genau eine Veranstaltung benannte Person, die
+    am Einlass scannen darf (nur am Veranstaltungstag, sieht nur Name, Personenzahl und Status)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    evenement = models.ForeignKey(
+        "evenements.Evenement",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="einlass_helfer",
+    )
+    veranstaltung = models.ForeignKey(
+        "regionen.Veranstaltung",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="einlass_helfer",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="einlass_helfer"
+    )
+    benannt_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "eintritt_einlass_helfer"
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(evenement__isnull=False, veranstaltung__isnull=True)
+                    | Q(evenement__isnull=True, veranstaltung__isnull=False)
+                ),
+                name="eintritt_helfer_genau_ein_ziel",
+            ),
+            models.UniqueConstraint(
+                fields=["evenement", "user"],
+                condition=Q(evenement__isnull=False),
+                name="eintritt_helfer_ev_eindeutig",
+            ),
+            models.UniqueConstraint(
+                fields=["veranstaltung", "user"],
+                condition=Q(veranstaltung__isnull=False),
+                name="eintritt_helfer_ver_eindeutig",
+            ),
+        ]

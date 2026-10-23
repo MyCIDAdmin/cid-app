@@ -9,6 +9,7 @@
  */
 import { useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import RichTextEditor from "../../components/ui/RichTextEditor";
 import {
@@ -728,6 +729,14 @@ export default function AdminEventsPage() {
                 >
                   {t("admin.modifier")}
                 </button>
+                {evenement.ticket_aktiv && evenement.statut !== "annule" && (
+                  <Link
+                    to={`/einlass/veranstaltung/${evenement.id}`}
+                    className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
+                  >
+                    {t("admin.einlass")}
+                  </Link>
+                )}
                 {evenement.statut === "brouillon" && (
                   <button
                     type="button"

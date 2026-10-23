@@ -1,7 +1,7 @@
 /** Eintrittstickets (Backend: apps.eintritt). Der Rohcode verlässt den Server nie, nur das QR-Bild. */
 export interface Ticket {
   id: string;
-  art: "evenement" | "treffen";
+  art: "veranstaltung" | "treffen";
   titel: string;
   datum: string;
   uhrzeit: string | null;

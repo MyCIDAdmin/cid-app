@@ -1,10 +1,15 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as einlassApi from "../../api/einlass";
 import * as eintrittApi from "../../api/eintritt";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import type { MeineTicketsAntwort, Ticket } from "../../types/tickets";
 import TicketsPage from "./TicketsPage";
+
+vi.mock("../../api/einlass", () => ({
+  getMeinEinlass: vi.fn(),
+}));
 
 vi.mock("../../api/eintritt", () => ({
   getMeineTickets: vi.fn(),
@@ -14,7 +19,7 @@ vi.mock("../../api/eintritt", () => ({
 
 const ticket: Ticket = {
   id: "t1",
-  art: "evenement",
+  art: "veranstaltung",
   titel: "Sommerfest",
   datum: "2099-06-20",
   uhrzeit: "15:00:00",
@@ -33,6 +38,27 @@ function antwort(tickets: Ticket[], telegram = false): MeineTicketsAntwort {
 describe("TicketsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(einlassApi.getMeinEinlass).mockResolvedValue([]);
+  });
+
+  it("zeigt Einlass-Veranstaltungen für Prüfer und Helfer", async () => {
+    vi.mocked(eintrittApi.getMeineTickets).mockResolvedValue(antwort([]));
+    vi.mocked(einlassApi.getMeinEinlass).mockResolvedValue([
+      {
+        typ: "veranstaltung",
+        id: "e1",
+        titel: "Sommerfest",
+        datum: "2099-06-20",
+        datum_bis: "2099-06-20",
+        uhrzeit: null,
+        ort: "Stuttgart",
+        rolle: "helfer",
+        heute: true,
+      },
+    ]);
+    renderWithProviders(<TicketsPage />, { route: "/tickets", path: "/tickets" });
+    const link = await screen.findByRole("link", { name: "einlass_oeffnen" });
+    expect(link).toHaveAttribute("href", "/einlass/veranstaltung/e1");
   });
 
   it("zeigt das Ticket mit QR-Bild und Titel", async () => {

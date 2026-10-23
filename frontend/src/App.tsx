@@ -45,6 +45,7 @@ import RegionenPage from "./pages/regionen/RegionenPage";
 import WettbewerbPage from "./pages/regionen/WettbewerbPage";
 import BerichtPage from "./pages/regionen/BerichtPage";
 import SupportPage from "./pages/support/SupportPage";
+import EinlassPage from "./pages/tickets/EinlassPage";
 import TicketsPage from "./pages/tickets/TicketsPage";
 import UmfrageDetailPage from "./pages/umfragen/UmfrageDetailPage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
@@ -152,6 +153,8 @@ export default function App() {
           <Route path="/mon-profil" element={<MonProfilPage />} />
           {/* Eintrittstickets (QR) : jedes angemeldete Mitglied sieht nur die eigenen Tickets. */}
           <Route path="/tickets" element={<TicketsPage />} />
+          {/* Einlass : Rechte (Büro, Verantwortliche, Helfer) prüft der Server je Veranstaltung. */}
+          <Route path="/einlass/:typ/:id" element={<EinlassPage />} />
           {/* Import Excel (RICEFW W-008/F-019) — même gate RH+ que
             MembreImportView côté API. */}
           <Route

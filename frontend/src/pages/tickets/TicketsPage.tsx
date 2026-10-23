@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 
+import { useMeinEinlass } from "../../hooks/useEinlass";
 import { useMeineTickets, useTicketErneuern, useTicketSenden } from "../../hooks/useTickets";
 import type { Ticket } from "../../types/tickets";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -107,10 +108,11 @@ function TicketKarte({ ticket, markiert }: { ticket: Ticket; markiert: boolean }
 }
 
 export default function TicketsPage() {
-  const { t } = useTranslation("tickets");
+  const { t, i18n } = useTranslation("tickets");
   const [params] = useSearchParams();
   const markiert = params.get("ticket");
   const { data, isLoading, isError } = useMeineTickets();
+  const einlass = useMeinEinlass();
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -126,6 +128,33 @@ export default function TicketsPage() {
             {t("zu_einstellungen")}
           </Link>
         </p>
+      )}
+      {einlass.data && einlass.data.length > 0 && (
+        <section className="space-y-2 rounded-lg border border-text-tertiary/20 bg-bg-secondary p-4">
+          <h2 className="text-sm font-semibold text-text-primary">{t("einlass_meine_titel")}</h2>
+          <ul className="space-y-2">
+            {einlass.data.map((ziel) => (
+              <li
+                key={`${ziel.typ}-${ziel.id}`}
+                className="flex items-center justify-between gap-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-text-primary">{ziel.titel}</p>
+                  <p className="text-xs text-text-tertiary">
+                    {new Date(ziel.datum).toLocaleDateString(i18n.language)}
+                    {ziel.rolle === "helfer" ? ` · ${t("einlass_rolle_helfer")}` : ""}
+                  </p>
+                </div>
+                <Link
+                  to={`/einlass/${ziel.typ}/${ziel.id}`}
+                  className="shrink-0 rounded border border-text-tertiary/30 px-3 py-1.5 text-sm text-text-primary hover:bg-bg-tertiary"
+                >
+                  {t("einlass_oeffnen")}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       {isLoading && <p className="text-sm text-text-secondary">{t("laedt")}</p>}
       {isError && (
