@@ -152,6 +152,14 @@ export default function VeranstaltungKarte({
             {t("v_mein_ticket")}
           </Link>
         )}
+        {v.status === "veroeffentlicht" && v.ticket_aktiv && v.darf_teilnehmer_sehen && (
+          <Link
+            to={`/einlass/treffen/${v.id}`}
+            className="rounded-cid border border-text-tertiary/20 px-3 py-2 text-sm text-text-secondary hover:bg-bg-tertiary"
+          >
+            {t("v_einlass")}
+          </Link>
+        )}
         {v.status === "veroeffentlicht" && !v.kann_anmelden && !v.angemeldet && (
           <span className="text-xs text-text-tertiary">{t("v_nicht_anmeldbar")}</span>
         )}

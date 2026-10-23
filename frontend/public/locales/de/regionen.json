@@ -113,6 +113,7 @@
   "v_anwesende_other": "{{count}} Personen waren anwesend",
   "v_anmelden": "Ich komme",
   "v_ticket_aktiv": "Eintrittsticket (QR-Code) ausstellen",
+  "v_einlass": "Einlass",
   "v_ticket_aide": "Angemeldete Teilnehmer erhalten ein Ticket mit QR-Code per E-Mail (und Telegram, falls verbunden) sowie in der App.",
   "v_mein_ticket": "Mein Ticket",
   "v_abmelden": "Abmelden",
