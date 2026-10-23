@@ -113,7 +113,7 @@
   "v_anwesende_other": "{{count}} personnes présentes",
   "v_anmelden": "Je viens",
   "v_ticket_aktiv": "Émettre un billet d'entrée (QR code)",
-  "v_einlass": "Entrée",
+  "v_anwesenheit": "Présence",
   "v_ticket_aide": "Les participants inscrits reçoivent un billet avec QR code par e-mail (et Telegram si connecté) ainsi que dans l'application.",
   "v_mein_ticket": "Mon billet",
   "v_abmelden": "Se désinscrire",

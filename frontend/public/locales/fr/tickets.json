@@ -17,10 +17,9 @@
   "erneuern": "Renouveler le billet",
   "gesendet": "Le billet a été renvoyé.",
   "erneuert": "Nouveau billet émis. L'ancien QR code n'est plus valable, merci d'utiliser le nouveau.",
-  "einlass_titel": "Contrôle d'entrée",
+  "einlass_titel": "Entrée et présence",
   "einlass_zurueck": "Retour à Mes billets",
   "einlass_kein_zugriff": "Tu n'as pas accès à ce contrôle d'entrée.",
-  "einlass_nicht_aktiv": "Les billets ne sont pas activés pour cet événement.",
   "einlass_zaehler": "Personnes entrées",
   "einlass_erwachsene": "Adultes",
   "einlass_kinder": "Enfants",
@@ -46,7 +45,7 @@
   "scan_kamera_verweigert": "L'accès à la caméra n'a pas été autorisé. Autorise-le dans les paramètres du navigateur ou utilise la liste ci-dessous.",
   "scan_code_manuell": "Saisir le code à la main",
   "scan_pruefen": "Vérifier",
-  "liste_titel": "Inscrits",
+  "liste_titel": "Inscrits et présence",
   "liste_suche": "Rechercher un nom",
   "liste_leer": "Aucun inscrit trouvé.",
   "liste_status_offen": "en attente",
@@ -58,7 +57,10 @@
   "helfer_hinzufuegen": "Nommer",
   "helfer_entfernen": "Retirer",
   "helfer_keine": "Aucune aide nommée.",
-  "einlass_meine_titel": "Contrôle d'entrée",
+  "einlass_meine_titel": "Entrée et présence",
   "einlass_rolle_helfer": "aide",
-  "einlass_oeffnen": "Ouvrir le contrôle"
+  "einlass_oeffnen": "Ouvrir",
+  "einlass_ohne_tickets": "Cet événement n'a pas de billets. Enregistre les personnes présentes dans la liste.",
+  "liste_eintragen": "Marquer présent",
+  "liste_export": "Exporter en Excel"
 }

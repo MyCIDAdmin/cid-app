@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.membres.utils_http import xlsx_response
+
 from . import einlass
 
 
@@ -26,7 +28,9 @@ class EinlassUebersichtView(APIView):
         ziel = einlass.ziel_holen(typ, pk)
         einlass.darf_scannen(request.user, ziel)
         daten = einlass.uebersicht(ziel)
-        daten["darf_helfer_verwalten"] = einlass.ist_verantwortlich(request.user, ziel)
+        verantwortlich = einlass.ist_verantwortlich(request.user, ziel)
+        daten["darf_helfer_verwalten"] = verantwortlich
+        daten["darf_exportieren"] = verantwortlich
         return Response(daten)
 
 
@@ -52,20 +56,34 @@ class EinlassBuchenView(APIView):
     def post(self, request, typ, pk):
         ziel = einlass.ziel_holen(typ, pk)
         einlass.darf_scannen(request.user, ziel)
-        ticket = request.data.get("ticket")
+        person = request.data.get("person")
         try:
-            ticket = str(uuid.UUID(ticket))
+            person = str(uuid.UUID(person))
         except (ValueError, TypeError, AttributeError):
-            raise ValidationError({"ticket": "Ungültiges Ticket."})
+            raise ValidationError({"person": "Ungültige Person."})
         stand = einlass.einlassen(
             ziel,
             request.user,
-            ticket,
+            person,
             request.data.get("erwachsene", 0),
             request.data.get("kinder", 0),
         )
-        letzter = einlass.letzter_eintrag(request.user, ticket)
+        letzter = einlass.letzter_eintrag(request.user, person)
         return Response({"stand": stand, "einlass": str(letzter.pk) if letzter else None})
+
+
+class EinlassExportView(APIView):
+    """Excel-Liste der Anwesenheit (nur Büro/Verantwortliche, nicht für Helfer). Der Abruf
+    erscheint automatisch im Aktivitätsprotokoll (Pfad enthält „export“)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, typ, pk):
+        ziel = einlass.ziel_holen(typ, pk)
+        if not einlass.ist_verantwortlich(request.user, ziel):
+            raise PermissionDenied()
+        classeur, dateiname = einlass.export_xlsx(ziel)
+        return xlsx_response(classeur, dateiname)
 
 
 class EinlassRuecknahmeView(APIView):

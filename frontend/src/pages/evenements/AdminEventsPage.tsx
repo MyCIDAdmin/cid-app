@@ -729,12 +729,12 @@ export default function AdminEventsPage() {
                 >
                   {t("admin.modifier")}
                 </button>
-                {evenement.ticket_aktiv && evenement.statut !== "annule" && (
+                {evenement.statut !== "annule" && (
                   <Link
                     to={`/einlass/veranstaltung/${evenement.id}`}
                     className="rounded-cid px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
                   >
-                    {t("admin.einlass")}
+                    {t("admin.anwesenheit")}
                   </Link>
                 )}
                 {evenement.statut === "brouillon" && (

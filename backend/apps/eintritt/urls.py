@@ -8,6 +8,7 @@ urlpatterns = [
     path("einlass/<str:typ>/<uuid:pk>/", einlass_views.EinlassUebersichtView.as_view()),
     path("einlass/<str:typ>/<uuid:pk>/pruefen/", einlass_views.EinlassPruefenView.as_view()),
     path("einlass/<str:typ>/<uuid:pk>/einlassen/", einlass_views.EinlassBuchenView.as_view()),
+    path("einlass/<str:typ>/<uuid:pk>/export/", einlass_views.EinlassExportView.as_view()),
     path("einlass/<str:typ>/<uuid:pk>/helfer/", einlass_views.EinlassHelferView.as_view()),
     path(
         "einlass/<str:typ>/<uuid:pk>/helfer/<uuid:helfer_id>/",

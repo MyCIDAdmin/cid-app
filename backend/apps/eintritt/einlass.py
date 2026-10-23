@@ -1,4 +1,8 @@
-"""Einlass : Code prüfen, Personen einlassen, Eintrag zurücknehmen, Helfer verwalten.
+"""Anwesenheit und Einlass : Code prüfen, Personen eintragen, Eintrag zurücknehmen, Liste,
+Excel-Export, Helfer verwalten.
+
+Die Liste gilt für jede Veranstaltung und jedes Treffen, auch ohne Tickets : Grundlage sind die
+bestätigten Anmeldungen bzw. Teilnahmen. Ein Scan trägt genauso ein wie der Knopf in der Liste.
 
 Wer scannen darf : Büro (Seite „Veranstaltungsverwaltung“ mit Schreibrecht) bei Veranstaltungen,
 Büro und Verantwortliche der Region bei Treffen, außerdem pro Veranstaltung benannte Helfer
@@ -8,6 +12,7 @@ mit mehr Personen als gebucht.
 
 from __future__ import annotations
 
+import datetime
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -15,15 +20,16 @@ from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.text import slugify
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
-from apps.evenements.models import Evenement, StatutEvenement
+from apps.evenements.models import Evenement, Inscription, StatutEvenement, StatutInscription
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import notifier
 from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access
 from apps.regionen import services as regionen_services
-from apps.regionen.models import Veranstaltung, VeranstaltungStatus, Verantwortlicher
+from apps.regionen.models import Teilnahme, Veranstaltung, VeranstaltungStatus, Verantwortlicher
 
 from . import services
 from .models import Einlass, EinlassHelfer, Eintrittsticket
@@ -88,70 +94,91 @@ def darf_scannen(user, ziel) -> bool:
     return True
 
 
-def _quelle_ist(ticket: Eintrittsticket, ziel) -> bool:
+def quellen_von(ziel):
+    """Alle Anmeldungen (bestätigt) bzw. Teilnahmen des Ziels, mit allem, was `stand` braucht."""
     if isinstance(ziel, Evenement):
-        return bool(ticket.inscription_id and ticket.inscription.evenement_id == ziel.pk)
-    return bool(ticket.teilnahme_id and ticket.teilnahme.veranstaltung_id == ziel.pk)
-
-
-def tickets_von(ziel):
-    basis = Eintrittsticket.objects.filter(gueltig=True)
-    if isinstance(ziel, Evenement):
-        return basis.filter(inscription__evenement=ziel).select_related(
-            "inscription__evenement", "inscription__membre"
-        )
-    return basis.filter(teilnahme__veranstaltung=ziel).select_related(
-        "teilnahme__veranstaltung", "teilnahme__user"
+        return Inscription.objects.filter(
+            evenement=ziel, statut=StatutInscription.CONFIRMEE
+        ).select_related("membre", "ticket")
+    return Teilnahme.objects.filter(veranstaltung=ziel).select_related(
+        "user", "user__membre", "ticket"
     )
 
 
+def _gehoert_zu(quelle, ziel) -> bool:
+    if isinstance(ziel, Evenement):
+        return isinstance(quelle, Inscription) and quelle.evenement_id == ziel.pk
+    return isinstance(quelle, Teilnahme) and quelle.veranstaltung_id == ziel.pk
+
+
+def _daten(quelle) -> tuple[int, int, str]:
+    """(Erwachsene, Kinder, Name) einer Anmeldung bzw. Teilnahme."""
+    if isinstance(quelle, Inscription):
+        name = f"{quelle.membre.prenom} {quelle.membre.nom}".strip()
+        erw = quelle.places + quelle.nombre_accompagnants_adultes
+        return erw, quelle.nombre_accompagnants_enfants, name
+    return 1, 0, services._name_von_user(quelle.user)
+
+
+def _ticket_von(quelle):
+    return getattr(quelle, "ticket", None)
+
+
 # ---------------------------------------------------------------------------------------------
-# Stand eines Tickets
+# Stand einer Person
 # ---------------------------------------------------------------------------------------------
 
 
-def eingelassen(ticket: Eintrittsticket) -> tuple[int, int]:
-    erw = kin = 0
-    for e in ticket.einlaesse.all():
-        if not e.zurueckgenommen:
-            erw += e.erwachsene
-            kin += e.kinder
-    return erw, kin
-
-
-def stand(ticket: Eintrittsticket) -> dict:
-    daten = services.anzeige(ticket)
-    drin_e, drin_k = eingelassen(ticket)
-    offen_e = max(daten["erwachsene"] - drin_e, 0)
-    offen_k = max(daten["kinder"] - drin_k, 0)
+def stand(quelle) -> dict:
+    gebucht_e, gebucht_k, name = _daten(quelle)
+    drin_e = drin_k = 0
+    erste = None
+    for e in quelle.einlaesse.all():
+        if e.zurueckgenommen:
+            continue
+        drin_e += e.erwachsene
+        drin_k += e.kinder
+        if erste is None or e.zeit < erste:
+            erste = e.zeit
+    if isinstance(quelle, Teilnahme) and quelle.anwesend and drin_e + drin_k == 0:
+        drin_e = 1  # von Hand abgehakt (Häkchen bei regionalen Treffen)
+    offen_e = max(gebucht_e - drin_e, 0)
+    offen_k = max(gebucht_k - drin_k, 0)
     if offen_e + offen_k == 0:
         status = "vollstaendig"
     elif drin_e + drin_k > 0:
         status = "teilweise"
     else:
         status = "offen"
+    ticket = _ticket_von(quelle)
     return {
-        "ticket": str(ticket.pk),
-        "name": daten["name"],
-        "gebucht_erwachsene": daten["erwachsene"],
-        "gebucht_kinder": daten["kinder"],
+        "person": str(quelle.pk),
+        "name": name,
+        "gebucht_erwachsene": gebucht_e,
+        "gebucht_kinder": gebucht_k,
         "drin_erwachsene": drin_e,
         "drin_kinder": drin_k,
         "offen_erwachsene": offen_e,
         "offen_kinder": offen_k,
         "status": status,
+        "ticket": bool(ticket and ticket.gueltig),
+        "anwesend_seit": timezone.localtime(erste).isoformat() if erste else None,
     }
 
 
+def _titel(ziel) -> str:
+    return ziel.titre if isinstance(ziel, Evenement) else ziel.titel
+
+
 def uebersicht(ziel) -> dict:
-    tickets = list(tickets_von(ziel).prefetch_related("einlaesse"))
-    personen = sorted((stand(t) for t in tickets), key=lambda p: p["name"].lower())
+    quellen = quellen_von(ziel).prefetch_related("einlaesse")
+    personen = sorted((stand(q) for q in quellen), key=lambda p: p["name"].lower())
     summe = lambda feld: sum(p[feld] for p in personen)  # noqa: E731
     von, bis = _tage(ziel)
     return {
         "typ": typ_von(ziel),
         "id": str(ziel.pk),
-        "titel": ziel.titre if isinstance(ziel, Evenement) else ziel.titel,
+        "titel": _titel(ziel),
         "datum": von.isoformat(),
         "datum_bis": bis.isoformat(),
         "ticket_aktiv": ziel.ticket_aktiv,
@@ -166,7 +193,7 @@ def uebersicht(ziel) -> dict:
 
 
 # ---------------------------------------------------------------------------------------------
-# Prüfen, einlassen, zurücknehmen
+# Prüfen, eintragen, zurücknehmen
 # ---------------------------------------------------------------------------------------------
 
 
@@ -187,7 +214,6 @@ def pruefen(ziel, text: str) -> dict:
             "teilnahme__veranstaltung",
             "teilnahme__user",
         )
-        .prefetch_related("einlaesse")
         .filter(code=code)
         .first()
         if code
@@ -195,11 +221,12 @@ def pruefen(ziel, text: str) -> dict:
     )
     if ticket is None:
         return {"ergebnis": "unbekannt"}
-    if not _quelle_ist(ticket, ziel):
+    quelle = ticket.inscription or ticket.teilnahme
+    if not _gehoert_zu(quelle, ziel):
         return {"ergebnis": "anderes_ereignis"}
     if not ticket.gueltig:
         return {"ergebnis": "ungueltig"}
-    daten = stand(ticket)
+    daten = stand(quelle)
     ergebnis = {"vollstaendig": "vollstaendig", "teilweise": "teilweise"}.get(
         daten["status"], "gueltig"
     )
@@ -212,36 +239,55 @@ def _zahl(wert, feld: str) -> int:
     return wert
 
 
+def _quelle_holen(ziel, person_id, *, sperren=False):
+    qs = quellen_von(ziel).filter(pk=person_id)
+    if sperren:
+        qs = qs.select_for_update(of=("self",))
+    quelle = qs.first()
+    if quelle is None:
+        raise ValidationError(
+            {"person": "Diese Person ist für die Veranstaltung nicht angemeldet."}
+        )
+    return quelle
+
+
 @transaction.atomic
-def einlassen(ziel, user, ticket_id, erwachsene, kinder) -> dict:
+def einlassen(ziel, user, person_id, erwachsene, kinder) -> dict:
     erwachsene = _zahl(erwachsene, "erwachsene")
     kinder = _zahl(kinder, "kinder")
     if erwachsene + kinder == 0:
-        raise ValidationError({"erwachsene": "Mindestens eine Person einlassen."})
-    ticket = get_object_or_404(Eintrittsticket.objects.select_for_update(), pk=ticket_id)
-    if not _quelle_ist(ticket, ziel):
-        raise ValidationError({"ticket": "Das Ticket gehört zu einer anderen Veranstaltung."})
-    if not ticket.gueltig:
-        raise ValidationError({"ticket": "Das Ticket ist nicht mehr gültig."})
-    aktuell = stand(ticket)
+        raise ValidationError({"erwachsene": "Mindestens eine Person eintragen."})
+    quelle = _quelle_holen(ziel, person_id, sperren=True)
+    aktuell = stand(quelle)
     if erwachsene > aktuell["offen_erwachsene"] or kinder > aktuell["offen_kinder"]:
         raise ValidationError(
             {"erwachsene": "Mehr Personen als gebucht. Bitte beim Büro nachmelden."}
         )
-    Einlass.objects.create(ticket=ticket, geprueft_von=user, erwachsene=erwachsene, kinder=kinder)
-    if ticket.teilnahme_id:
-        ticket.teilnahme.anwesend = True
-        ticket.teilnahme.save(update_fields=["anwesend"])
-    return stand(Eintrittsticket.objects.prefetch_related("einlaesse").get(pk=ticket.pk))
+    ticket = _ticket_von(quelle)
+    Einlass.objects.create(
+        ticket=ticket if ticket and ticket.gueltig else None,
+        inscription=quelle if isinstance(quelle, Inscription) else None,
+        teilnahme=quelle if isinstance(quelle, Teilnahme) else None,
+        geprueft_von=user,
+        erwachsene=erwachsene,
+        kinder=kinder,
+    )
+    if isinstance(quelle, Teilnahme):
+        quelle.anwesend = True
+        quelle.save(update_fields=["anwesend"])
+    return stand(quellen_von(ziel).prefetch_related("einlaesse").get(pk=quelle.pk))
 
 
 @transaction.atomic
 def ruecknahme(user, einlass_id) -> dict:
     eintrag = get_object_or_404(
-        Einlass.objects.select_for_update().select_related("ticket"), pk=einlass_id
+        Einlass.objects.select_for_update(of=("self",)).select_related(
+            "inscription__evenement", "teilnahme__veranstaltung"
+        ),
+        pk=einlass_id,
     )
-    ticket = eintrag.ticket
-    ziel = ticket.inscription.evenement if ticket.inscription_id else ticket.teilnahme.veranstaltung
+    quelle = eintrag.inscription or eintrag.teilnahme
+    ziel = quelle.evenement if isinstance(quelle, Inscription) else quelle.veranstaltung
     darf_scannen(user, ziel)
     if eintrag.zurueckgenommen:
         raise ValidationError({"einlass": "Dieser Eintrag wurde schon zurückgenommen."})
@@ -251,19 +297,99 @@ def ruecknahme(user, einlass_id) -> dict:
     eintrag.zurueckgenommen_am = timezone.now()
     eintrag.zurueckgenommen_von = user
     eintrag.save(update_fields=["zurueckgenommen", "zurueckgenommen_am", "zurueckgenommen_von"])
-    if ticket.teilnahme_id and not ticket.einlaesse.filter(zurueckgenommen=False).exists():
-        ticket.teilnahme.anwesend = False
-        ticket.teilnahme.save(update_fields=["anwesend"])
-    return stand(Eintrittsticket.objects.prefetch_related("einlaesse").get(pk=ticket.pk))
+    if (
+        isinstance(quelle, Teilnahme)
+        and not quelle.einlaesse.filter(zurueckgenommen=False).exists()
+    ):
+        quelle.anwesend = False
+        quelle.save(update_fields=["anwesend"])
+    return stand(quellen_von(ziel).prefetch_related("einlaesse").get(pk=quelle.pk))
 
 
-def letzter_eintrag(user, ticket_id) -> Einlass | None:
+def letzter_eintrag(user, person_id) -> Einlass | None:
     """Der jüngste, noch nicht zurückgenommene Eintrag dieses Prüfers (für „Rückgängig“)."""
     return (
-        Einlass.objects.filter(ticket_id=ticket_id, geprueft_von=user, zurueckgenommen=False)
+        Einlass.objects.filter(geprueft_von=user, zurueckgenommen=False)
+        .filter(Q(inscription_id=person_id) | Q(teilnahme_id=person_id))
         .order_by("-zeit")
         .first()
     )
+
+
+# ---------------------------------------------------------------------------------------------
+# Export
+# ---------------------------------------------------------------------------------------------
+
+_STATUS_TEXT = {"offen": "Offen", "teilweise": "Teilweise anwesend", "vollstaendig": "Anwesend"}
+
+
+def export_xlsx(ziel):
+    """Excel-Liste (Name, Status, gebuchte und anwesende Personen, Ticket, erster Eintrag)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+
+    from apps.membres.utils_http import safe_zeile
+
+    daten = uebersicht(ziel)
+    blatt_titel = _titel(ziel)
+    classeur = Workbook()
+    blatt = classeur.active
+    blatt.title = "Anwesenheit"
+    blatt.append(safe_zeile([blatt_titel]))
+    blatt.append([f"{daten['datum']}  ·  Stand {timezone.localtime():%d.%m.%Y %H:%M}"])
+    blatt.append([])
+    kopf = [
+        "Name",
+        "Status",
+        "Erwachsene gebucht",
+        "Kinder gebucht",
+        "Erwachsene anwesend",
+        "Kinder anwesend",
+        "Ticket",
+        "Erster Eintrag",
+    ]
+    blatt.append(kopf)
+    for zelle in blatt[4]:
+        zelle.font = Font(bold=True)
+    blatt["A1"].font = Font(bold=True, size=14)
+    for p in daten["personen"]:
+        seit = p["anwesend_seit"]
+        blatt.append(
+            safe_zeile(
+                [
+                    p["name"],
+                    _STATUS_TEXT[p["status"]],
+                    p["gebucht_erwachsene"],
+                    p["gebucht_kinder"],
+                    p["drin_erwachsene"],
+                    p["drin_kinder"],
+                    "ja" if p["ticket"] else "nein",
+                    (
+                        datetime.datetime.fromisoformat(seit).strftime("%d.%m.%Y %H:%M")
+                        if seit
+                        else ""
+                    ),
+                ]
+            )
+        )
+    z = daten["zaehler"]
+    summe = [
+        "Summe",
+        "",
+        z["gebucht_erwachsene"],
+        z["gebucht_kinder"],
+        z["drin_erwachsene"],
+        z["drin_kinder"],
+        "",
+        "",
+    ]
+    blatt.append(summe)
+    for zelle in blatt[blatt.max_row]:
+        zelle.font = Font(bold=True)
+    for spalte, breite in zip("ABCDEFGH", (32, 22, 18, 14, 20, 16, 8, 18)):
+        blatt.column_dimensions[spalte].width = breite
+    name = slugify(blatt_titel)[:40] or "veranstaltung"
+    return classeur, f"anwesenheit_{name}_{timezone.localdate():%Y%m%d}.xlsx"
 
 
 # ---------------------------------------------------------------------------------------------
@@ -323,10 +449,10 @@ def meine_ziele(user) -> list[dict]:
     bis = heute + timedelta(days=VORLAUF_TAGE)
     eintraege: list[dict] = []
 
-    ev_filter = Q(ticket_aktiv=True, date_evenement__lte=bis) & (
+    ev_filter = Q(date_evenement__lte=bis) & (
         Q(date_fin__gte=heute) | Q(date_fin__isnull=True, date_evenement__gte=heute)
     )
-    evs = Evenement.objects.filter(ev_filter).exclude(statut=StatutEvenement.ANNULE)
+    evs = Evenement.objects.filter(ev_filter, statut=StatutEvenement.PUBLIE)
     ev_verantwortlich = has_admin_page_access(
         user, "page_events", required=NiveauAcces.LECTURE_ECRITURE
     )
@@ -351,7 +477,6 @@ def meine_ziele(user) -> list[dict]:
         )
     )
     vers = Veranstaltung.objects.filter(
-        ticket_aktiv=True,
         status=VeranstaltungStatus.VEROEFFENTLICHT,
         datum__gte=heute,
         datum__lte=bis,
@@ -374,6 +499,7 @@ def _eintrag(typ, ziel, titel, ort, uhrzeit, verantwortlich) -> dict:
         "datum_bis": bis.isoformat(),
         "uhrzeit": uhrzeit.strftime("%H:%M") if uhrzeit else None,
         "ort": ort,
+        "ticket_aktiv": ziel.ticket_aktiv,
         "rolle": "verantwortlich" if verantwortlich else "helfer",
         "heute": von <= timezone.localdate() <= bis,
     }

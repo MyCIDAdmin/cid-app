@@ -17,10 +17,9 @@
   "erneuern": "Ticket erneuern",
   "gesendet": "Das Ticket wurde erneut gesendet.",
   "erneuert": "Neues Ticket ausgestellt. Der alte QR-Code ist ungültig, bitte das neue Ticket verwenden.",
-  "einlass_titel": "Einlass",
+  "einlass_titel": "Einlass und Anwesenheit",
   "einlass_zurueck": "Zurück zu Meine Tickets",
   "einlass_kein_zugriff": "Du hast für diesen Einlass keinen Zugriff.",
-  "einlass_nicht_aktiv": "Für diese Veranstaltung sind keine Tickets aktiviert.",
   "einlass_zaehler": "Eingelassene Personen",
   "einlass_erwachsene": "Erwachsene",
   "einlass_kinder": "Kinder",
@@ -46,7 +45,7 @@
   "scan_kamera_verweigert": "Kamerazugriff wurde nicht erlaubt. Erlaube ihn in den Browsereinstellungen oder nutze die Liste unten.",
   "scan_code_manuell": "Code von Hand eingeben",
   "scan_pruefen": "Prüfen",
-  "liste_titel": "Angemeldete",
+  "liste_titel": "Angemeldete und Anwesenheit",
   "liste_suche": "Name suchen",
   "liste_leer": "Keine Angemeldeten gefunden.",
   "liste_status_offen": "offen",
@@ -58,7 +57,10 @@
   "helfer_hinzufuegen": "Benennen",
   "helfer_entfernen": "Entfernen",
   "helfer_keine": "Noch keine Helfer benannt.",
-  "einlass_meine_titel": "Einlass",
+  "einlass_meine_titel": "Einlass und Anwesenheit",
   "einlass_rolle_helfer": "Helfer",
-  "einlass_oeffnen": "Einlass öffnen"
+  "einlass_oeffnen": "Öffnen",
+  "einlass_ohne_tickets": "Für diese Veranstaltung gibt es keine Tickets. Trage Anwesende in der Liste ein.",
+  "liste_eintragen": "Anwesend eintragen",
+  "liste_export": "Als Excel exportieren"
 }

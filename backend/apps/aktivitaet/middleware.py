@@ -25,7 +25,16 @@ _ID = re.compile(
 _IMPORT = re.compile(r"^import(-historique|-ausgaben)?$")
 # Persönliche Einstellungen, Stimmabgaben, Trockenläufe : nicht protokollieren
 # (Wahlgeheimnis, Rauschen).
-_IGNORIERT = {"ausblenden", "pruefen", "teilnehmen", "abstimmen", "voter", "stimme"}
+_IGNORIERT = {
+    "ausblenden",
+    "pruefen",
+    "teilnehmen",
+    "abstimmen",
+    "voter",
+    "stimme",
+    "einlassen",
+    "ruecknahme",
+}
 _SCHREIBEND = {"POST": "erstellt", "PUT": "geaendert", "PATCH": "geaendert", "DELETE": "geloescht"}
 
 
