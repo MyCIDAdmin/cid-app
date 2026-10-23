@@ -12,7 +12,13 @@
  * Sidebar qui a lui besoin d'un portail (RailGroupButton) pour survivre à son ancêtre en
  * overflow.
  */
-import { IconLifebuoy, IconLogout, IconSettings, IconUserCircle } from "@tabler/icons-react";
+import {
+  IconLifebuoy,
+  IconLogout,
+  IconSettings,
+  IconTicket,
+  IconUserCircle,
+} from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
@@ -103,6 +109,15 @@ export default function UserMenu() {
           >
             <IconSettings size={16} className="shrink-0" />
             {t("menu_utilisateur.einstellungen")}
+          </Link>
+          <Link
+            to="/tickets"
+            onClick={() => setOuvert(false)}
+            role="menuitem"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-tertiary"
+          >
+            <IconTicket size={16} className="shrink-0" />
+            {t("menu_utilisateur.tickets")}
           </Link>
           {supportOffen && (
             <Link

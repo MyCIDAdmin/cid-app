@@ -45,6 +45,7 @@ import RegionenPage from "./pages/regionen/RegionenPage";
 import WettbewerbPage from "./pages/regionen/WettbewerbPage";
 import BerichtPage from "./pages/regionen/BerichtPage";
 import SupportPage from "./pages/support/SupportPage";
+import TicketsPage from "./pages/tickets/TicketsPage";
 import UmfrageDetailPage from "./pages/umfragen/UmfrageDetailPage";
 import QuizDetailPage from "./pages/communaute/QuizDetailPage";
 import QuizPage from "./pages/communaute/QuizPage";
@@ -149,6 +150,8 @@ export default function App() {
             Un compte sans fiche Membre liée (superuser, RH créé hors auto-inscription) voit un
             message explicite plutôt qu'un formulaire cassé (404 de /membres/moi/). */}
           <Route path="/mon-profil" element={<MonProfilPage />} />
+          {/* Eintrittstickets (QR) : jedes angemeldete Mitglied sieht nur die eigenen Tickets. */}
+          <Route path="/tickets" element={<TicketsPage />} />
           {/* Import Excel (RICEFW W-008/F-019) — même gate RH+ que
             MembreImportView côté API. */}
           <Route

@@ -117,6 +117,9 @@ class TypeNotification(models.TextChoices):
     KALENDER_SITZUNG = "kalender_sitzung", _("Réunion : procès-verbal et tâches")
     # Regionale Veranstaltungen (Release 28)
     REGION_VERANSTALTUNG = "region_veranstaltung", _("Réunion régionale")
+    # Eintrittsticket (2026-10-23) : Ticket mit QR-Code ist bereit ; das PDF geht zusätzlich per
+    # Mail und Telegram (apps.eintritt), daher keine zweite Telegram-Kurznachricht (siehe notifier).
+    TICKET_BEREIT = "ticket_bereit", _("Billet d'entrée prêt")
     AKTIVITAET_AUFFAELLIGKEIT = "aktivitaet_auffaelligkeit", _(
         "Anomalie dans le journal d'activité"
     )

@@ -1,0 +1,20 @@
+{
+  "titel": "Meine Tickets",
+  "hinweis_offline": "Dein Ticket kommt zusätzlich als PDF per E-Mail (und per Telegram, wenn verbunden). So hast du es am Einlass auch ohne Netz dabei. Das Ticket gilt für alle Personen deiner Anmeldung.",
+  "hinweis_telegram": "Für das Ticket direkt aufs Handy: Telegram in den Einstellungen verbinden.",
+  "zu_einstellungen": "Zu den Einstellungen",
+  "laedt": "Tickets werden geladen …",
+  "fehler": "Das hat leider nicht geklappt. Bitte versuche es später noch einmal.",
+  "leer": "Du hast aktuell keine Tickets. Sobald deine Anmeldung bestätigt ist und die Veranstaltung Tickets nutzt, erscheint es hier.",
+  "art_evenement": "Veranstaltung",
+  "art_treffen": "Treffen",
+  "qr_alt": "QR-Code für {{titel}}",
+  "personen_erwachsene_one": "{{count}} Erwachsener",
+  "personen_erwachsene_other": "{{count}} Erwachsene",
+  "personen_kinder_one": "{{count}} Kind",
+  "personen_kinder_other": "{{count}} Kinder",
+  "erneut_senden": "Erneut senden",
+  "erneuern": "Ticket erneuern",
+  "gesendet": "Das Ticket wurde erneut gesendet.",
+  "erneuert": "Neues Ticket ausgestellt. Der alte QR-Code ist ungültig, bitte das neue Ticket verwenden."
+}

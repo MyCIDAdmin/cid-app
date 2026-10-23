@@ -23,6 +23,7 @@ vi.mock("../../hooks/useRegionen", () => ({
 function v(o: Partial<Veranstaltung> = {}): Veranstaltung {
   return {
     id: "v1",
+    ticket_aktiv: false,
     region: { slug: "nord", name: "Nord" },
     titel: "Derby-Abend",
     beschreibung: "Wir schauen zusammen.",

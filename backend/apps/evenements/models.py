@@ -181,6 +181,13 @@ class Evenement(models.Model):
         blank=True,
         related_name="evenements_organises",
     )
+    # 2026-10-23 : Eintrittsticket mit QR-Code (apps.eintritt). Optional je Veranstaltung ; bei
+    # bestätigter Anmeldung entsteht das Ticket und geht per Mail (PDF) und, falls verbunden,
+    # per Telegram an die Person — so ist es auch ohne Netz am Einlass verfügbar.
+    ticket_aktiv = models.BooleanField(
+        default=False,
+        help_text=_("Bestätigte Anmeldungen erhalten ein Eintrittsticket mit QR-Code."),
+    )
     statut = models.CharField(
         max_length=20, choices=StatutEvenement.choices, default=StatutEvenement.BROUILLON
     )

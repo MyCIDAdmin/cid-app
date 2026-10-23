@@ -68,6 +68,7 @@ LOCAL_APPS = [
     "apps.partenaires",
     "apps.regionen",
     "apps.support",
+    "apps.eintritt",
     "apps.zentral",
 ]
 

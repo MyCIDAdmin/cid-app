@@ -29,7 +29,12 @@ T = TypeNotification
 KATEGORIEN: dict[str, set[str]] = {
     "regionen": {T.REGION_VERANSTALTUNG},
     "support": {T.SUPPORT_TICKET_NEU, T.SUPPORT_ANTWORT, T.SUPPORT_STATUS},
-    "veranstaltungen": {T.EVENEMENT_INVITATION, T.EVENEMENT_RAPPEL, T.EVENEMENT_ANNULE},
+    "veranstaltungen": {
+        T.EVENEMENT_INVITATION,
+        T.EVENEMENT_RAPPEL,
+        T.EVENEMENT_ANNULE,
+        T.TICKET_BEREIT,
+    },
     "kalender": {
         T.KALENDER_EINLADUNG,
         T.KALENDER_VORSCHLAG,
@@ -119,6 +124,19 @@ def _aufruf(methode: str, **daten) -> dict:
 
 def sende_text(chat_id: int, text: str) -> None:
     _aufruf("sendMessage", chat_id=chat_id, text=text, disable_web_page_preview=True)
+
+
+def sende_dokument(chat_id: int, inhalt: bytes, dateiname: str, beschriftung: str = "") -> None:
+    """Schickt eine Datei (z. B. das Eintrittsticket als PDF) in den Chat."""
+    antwort = requests.post(
+        f"{API}/bot{settings.TELEGRAM_BOT_TOKEN}/sendDocument",
+        data={"chat_id": chat_id, "caption": beschriftung[:1000]},
+        files={"document": (dateiname, inhalt, "application/pdf")},
+        timeout=20,
+    )
+    if antwort.status_code == 403:
+        raise TelegramGesperrt()
+    antwort.raise_for_status()
 
 
 def setze_webhook(url: str) -> dict:

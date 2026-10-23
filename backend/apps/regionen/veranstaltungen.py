@@ -106,6 +106,7 @@ def veranstaltung_dict(request, v: Veranstaltung, *, bearbeiter: bool, verwalter
         "standort": {"id": str(v.standort_id), "name": v.standort.name} if v.standort_id else None,
         "bild_url": _url(v.bild),
         "max_teilnehmer": v.max_teilnehmer,
+        "ticket_aktiv": v.ticket_aktiv,
         "status": v.status,
         "ablehngrund": v.ablehngrund if bearbeiter else "",
         "ersteller_name": v.ersteller_name,
@@ -179,6 +180,10 @@ def _felder(daten, region, v=None) -> dict:
         erg["uhrzeit"] = _uhrzeit(daten.get("uhrzeit"))
     if "max_teilnehmer" in daten:
         erg["max_teilnehmer"] = _max(daten.get("max_teilnehmer"))
+    if "ticket_aktiv" in daten:
+        if not isinstance(daten.get("ticket_aktiv"), bool):
+            raise ValidationError({"ticket_aktiv": "Ja oder Nein erwartet."})
+        erg["ticket_aktiv"] = daten["ticket_aktiv"]
     if "standort" in daten:
         erg["standort"] = _standort(region, daten.get("standort"))
     return erg

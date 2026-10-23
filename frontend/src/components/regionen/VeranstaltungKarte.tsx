@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import {
   useAnmeldungSetzen,
@@ -142,6 +143,14 @@ export default function VeranstaltungKarte({
           >
             {v.angemeldet ? t("v_abmelden") : t("v_anmelden")}
           </button>
+        )}
+        {v.status === "veroeffentlicht" && v.angemeldet && v.ticket_aktiv && (
+          <Link
+            to="/tickets"
+            className="rounded-cid border border-text-tertiary/20 px-3 py-2 text-sm text-text-secondary hover:bg-bg-tertiary"
+          >
+            {t("v_mein_ticket")}
+          </Link>
         )}
         {v.status === "veroeffentlicht" && !v.kann_anmelden && !v.angemeldet && (
           <span className="text-xs text-text-tertiary">{t("v_nicht_anmeldbar")}</span>

@@ -23,7 +23,7 @@ apps.accounts.tasks : évite tout risque de dépendance circulaire ou d'ordre de
 apps au démarrage de Django.
 """
 
-from .models import Notification, ParametresNotification
+from .models import Notification, ParametresNotification, TypeNotification
 
 
 def email_module_actif(module: str) -> bool:
@@ -60,7 +60,8 @@ def notifier(destinataire, type_notification, *, titre, message, lien=""):
         message=message,
         lien=lien,
     )
-    _telegram_nachreichen(notification)
+    if type_notification != TypeNotification.TICKET_BEREIT:
+        _telegram_nachreichen(notification)
     return notification
 
 

@@ -55,6 +55,7 @@ const FORMULAIRE_VIDE: EvenementPayload = {
   prix_accompagnant_enfant: "0.00",
   age_limite_accompagnant_enfant: 12,
   visible_public: false,
+  ticket_aktiv: false,
 };
 
 function FormulaireEvenement({
@@ -92,6 +93,7 @@ function FormulaireEvenement({
           prix_accompagnant_enfant: evenement.prix_accompagnant_enfant,
           age_limite_accompagnant_enfant: evenement.age_limite_accompagnant_enfant,
           visible_public: evenement.visible_public,
+          ticket_aktiv: evenement.ticket_aktiv,
         }
       : FORMULAIRE_VIDE,
   );
@@ -471,6 +473,21 @@ function FormulaireEvenement({
         {t("admin.champ_visible_public")}
       </label>
       <p className="-mt-2 text-[11px] text-text-tertiary">{t("admin.aide_visible_public")}</p>
+
+      <label
+        htmlFor="admin-event-ticket-aktiv"
+        className="flex items-center gap-2 text-xs font-medium text-text-secondary"
+      >
+        <input
+          id="admin-event-ticket-aktiv"
+          type="checkbox"
+          checked={valeurs.ticket_aktiv ?? false}
+          onChange={(e) => champ("ticket_aktiv", e.target.checked)}
+          className="h-3.5 w-3.5 rounded border-text-tertiary/40"
+        />
+        {t("admin.champ_ticket_aktiv")}
+      </label>
+      <p className="-mt-2 text-[11px] text-text-tertiary">{t("admin.aide_ticket_aktiv")}</p>
 
       {erreur && <p className="text-xs text-status-dangerText">{erreur}</p>}
 

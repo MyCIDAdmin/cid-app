@@ -40,6 +40,7 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
   const [maximum, setMaximum] = useState(
     bestehend?.max_teilnehmer ? String(bestehend.max_teilnehmer) : "",
   );
+  const [ticketAktiv, setTicketAktiv] = useState(bestehend?.ticket_aktiv ?? false);
   const [beschreibung, setBeschreibung] = useState(bestehend?.beschreibung ?? "");
   const [bild, setBild] = useState<File | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -76,6 +77,7 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
       ort_maps_url: ortMapsUrl.trim(),
       standort: standort || null,
       max_teilnehmer: maximum ? Number(maximum) : null,
+      ticket_aktiv: ticketAktiv,
       beschreibung: klartext(beschreibung) ? beschreibung.trim() : "",
     };
     const bei = (err: unknown) => setFehler(extractApiErrorMessage(err, t("fehler_speichern")));
@@ -215,6 +217,16 @@ export default function VeranstaltungFormular({ slug, standorte, bestehend, onFe
           />
         </label>
       </div>
+      <label className="flex items-center gap-2 text-xs font-medium text-text-secondary">
+        <input
+          type="checkbox"
+          checked={ticketAktiv}
+          onChange={(e) => setTicketAktiv(e.target.checked)}
+          className="h-3.5 w-3.5 rounded border-text-tertiary/40"
+        />
+        {t("v_ticket_aktiv")}
+      </label>
+      <p className="-mt-2 text-[11px] text-text-tertiary">{t("v_ticket_aide")}</p>
       <div className="text-xs font-semibold text-text-tertiary">
         <span className="mb-1 block">{t("v_beschreibung")}</span>
         <RichTextEditor
