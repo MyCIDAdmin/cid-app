@@ -73,6 +73,8 @@ export interface Evenement {
    * cet événement (une fois publié) aux visiteurs non connectés/non-membres. Ne remplace
    * jamais `statut` — un brouillon reste toujours invisible, voir EvenementViewSet.get_queryset. */
   visible_public: boolean;
+  /** Eintrittsticket (QR) für bestätigte Anmeldungen (backend/apps/eintritt). */
+  ticket_aktiv: boolean;
   /** Toujours recalculées côté serveur (CLAUDE.md §8) — jamais déduites côté client. */
   places_reservees: number;
   places_restantes: number | null;
@@ -106,6 +108,7 @@ export interface EvenementPayload {
   age_limite_accompagnant_enfant?: number;
   organisateur?: string | null;
   visible_public?: boolean;
+  ticket_aktiv?: boolean;
 }
 
 /** Résumé minimal d'un événement, imbriqué en lecture dans Inscription (voir
@@ -119,6 +122,7 @@ export interface EvenementResume {
   cout: string;
   gratuit: boolean;
   statut: StatutEvenement;
+  ticket_aktiv: boolean;
 }
 
 export interface Inscription {

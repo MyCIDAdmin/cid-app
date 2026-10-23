@@ -154,6 +154,7 @@ export interface Veranstaltung {
   standort: { id: string; name: string } | null;
   bild_url: string | null;
   max_teilnehmer: number | null;
+  ticket_aktiv: boolean;
   status: VeranstaltungStatus;
   ablehngrund: string;
   ersteller_name: string;
@@ -181,6 +182,7 @@ export interface VeranstaltungEingabe {
   uhrzeit?: string | null;
   max_teilnehmer?: number | null;
   standort?: string | null;
+  ticket_aktiv?: boolean;
 }
 
 export interface Teilnehmer {

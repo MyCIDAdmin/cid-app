@@ -43,7 +43,17 @@ class EvenementResumeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Evenement
-        fields = ["id", "titre", "date_evenement", "heure", "lieu", "cout", "gratuit", "statut"]
+        fields = [
+            "id",
+            "titre",
+            "date_evenement",
+            "heure",
+            "lieu",
+            "cout",
+            "gratuit",
+            "statut",
+            "ticket_aktiv",
+        ]
 
 
 class EvenementSerializer(serializers.ModelSerializer):
@@ -83,6 +93,7 @@ class EvenementSerializer(serializers.ModelSerializer):
             "cout_applicable",
             "partner_logos",
             "reserve_membres",
+            "ticket_aktiv",
             "accompagnants_payants",
             "prix_accompagnant_adulte",
             "prix_accompagnant_enfant",

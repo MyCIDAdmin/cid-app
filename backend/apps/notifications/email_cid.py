@@ -96,6 +96,7 @@ def envoyer_email_cid(
     textes: dict[str, Texte],
     lien: str = "",
     fail_silently: bool = False,
+    anhaenge: list[tuple[str, bytes, str]] | None = None,
 ) -> int:
     corps_texte, corps_html = construire_email_cid(sujet=sujet, textes=textes, lien=lien)
     message = EmailMultiAlternatives(
@@ -105,6 +106,8 @@ def envoyer_email_cid(
         to=[destinataire],
     )
     message.attach_alternative(corps_html, "text/html")
+    for dateiname, inhalt, mimetyp in anhaenge or []:
+        message.attach(dateiname, inhalt, mimetyp)
     try:
         return message.send(fail_silently=False)
     except Exception as exc:

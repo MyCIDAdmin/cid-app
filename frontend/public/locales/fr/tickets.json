@@ -1,0 +1,20 @@
+{
+  "titel": "Mes billets",
+  "hinweis_offline": "Ton billet t'est aussi envoyé en PDF par e-mail (et par Telegram si connecté), pour l'avoir à l'entrée même sans réseau. Le billet vaut pour toutes les personnes de ton inscription.",
+  "hinweis_telegram": "Pour recevoir le billet directement sur ton téléphone : connecte Telegram dans les paramètres.",
+  "zu_einstellungen": "Aux paramètres",
+  "laedt": "Chargement des billets …",
+  "fehler": "L'opération a échoué. Merci de réessayer plus tard.",
+  "leer": "Tu n'as pas de billet pour le moment. Il apparaîtra ici dès que ton inscription sera confirmée et que l'événement utilise des billets.",
+  "art_evenement": "Événement",
+  "art_treffen": "Rencontre",
+  "qr_alt": "QR code pour {{titel}}",
+  "personen_erwachsene_one": "{{count}} adulte",
+  "personen_erwachsene_other": "{{count}} adultes",
+  "personen_kinder_one": "{{count}} enfant",
+  "personen_kinder_other": "{{count}} enfants",
+  "erneut_senden": "Renvoyer",
+  "erneuern": "Renouveler le billet",
+  "gesendet": "Le billet a été renvoyé.",
+  "erneuert": "Nouveau billet émis. L'ancien QR code n'est plus valable, merci d'utiliser le nouveau."
+}

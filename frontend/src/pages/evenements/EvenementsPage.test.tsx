@@ -45,6 +45,7 @@ function mutationMock<T>(): T {
 function evenement(overrides: Partial<Evenement> = {}): Evenement {
   return {
     id: "e1",
+    ticket_aktiv: false,
     titre: "Déplacement Stuttgart",
     type_evenement: "deplacement",
     description: "Bus au départ de Berlin.",
@@ -87,6 +88,7 @@ function inscription(overrides: Partial<Inscription> = {}): Inscription {
     evenement: "e1",
     evenement_detail: {
       id: "e1",
+      ticket_aktiv: false,
       titre: "Déplacement Stuttgart",
       date_evenement: "2099-05-31",
       heure: "06:00",

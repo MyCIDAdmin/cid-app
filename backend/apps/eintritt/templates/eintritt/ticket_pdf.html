@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A5 portrait; margin: 14mm; }
+  body { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 11pt; }
+  .kopf { border-bottom: 3px solid #cc0000; padding-bottom: 6mm; margin-bottom: 8mm; }
+  .verein { font-size: 9pt; color: #555; letter-spacing: 0.06em; text-transform: uppercase; }
+  .art { font-size: 18pt; font-weight: bold; margin-top: 2mm; }
+  .titel { font-size: 15pt; font-weight: bold; margin: 0 0 4mm 0; }
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: 1.6mm 0; vertical-align: top; }
+  td.l { width: 32%; color: #666; font-size: 9pt; }
+  .qr { text-align: center; margin: 9mm 0 3mm 0; }
+  .qr img { width: 62mm; height: 62mm; }
+  .code { text-align: center; font-family: "DejaVu Sans Mono", monospace; font-size: 9pt; color: #444; }
+  .hinweis { margin-top: 8mm; font-size: 8.5pt; color: #555; line-height: 1.45; }
+</style>
+</head>
+<body>
+  <div class="kopf">
+    <div class="verein">Clubistes in Deutschland</div>
+    <div class="art">Eintrittsticket · Billet d’entrée</div>
+  </div>
+  <p class="titel">{{ titel }}</p>
+  <table>
+    <tr><td class="l">Termin · Date</td><td>{{ termin }}</td></tr>
+    <tr><td class="l">Ort · Lieu</td><td>{{ ort }}</td></tr>
+    <tr><td class="l">Personen · Personnes</td><td>{{ personen_de }}<br>{{ personen_fr }}</td></tr>
+    {% if name %}<tr><td class="l">Name · Nom</td><td>{{ name }}</td></tr>{% endif %}
+  </table>
+  <div class="qr"><img src="{{ qr }}" alt="QR"></div>
+  <div class="code">{{ code }}</div>
+  <p class="hinweis">
+    Bitte am Einlass vorzeigen, ausgedruckt oder auf dem Handy (auch als Screenshot). Das Ticket
+    gilt für die oben genannte Personenzahl. Kommt nur ein Teil der Gruppe, kann der Rest später
+    mit demselben Ticket eintreten.<br>
+    À présenter à l’entrée, imprimé ou sur téléphone (capture d’écran possible). Le billet est
+    valable pour le nombre de personnes indiqué. Si une partie du groupe arrive plus tard, elle
+    entre avec le même billet.
+  </p>
+</body>
+</html>

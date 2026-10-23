@@ -44,6 +44,7 @@ i18n
       "aktivitaet",
       "regionen",
       "support",
+      "tickets",
       "zentral",
     ],
     defaultNS: "common",

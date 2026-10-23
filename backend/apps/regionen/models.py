@@ -223,6 +223,8 @@ class Veranstaltung(models.Model):
     bild = models.ImageField(
         upload_to=veranstaltung_bild_path, storage=ProjetsStorage(), null=True, blank=True
     )
+    # 2026-10-23 : Eintrittsticket mit QR-Code (apps.eintritt), wie bei Evenement.ticket_aktiv.
+    ticket_aktiv = models.BooleanField(default=False)
     max_teilnehmer = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(
         max_length=20, choices=VeranstaltungStatus.choices, default=VeranstaltungStatus.ENTWURF

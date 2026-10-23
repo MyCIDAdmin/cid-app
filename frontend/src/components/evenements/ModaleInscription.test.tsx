@@ -14,6 +14,7 @@ vi.mock("../../hooks/useEvenements", async () => {
 function evenement(overrides: Partial<Evenement> = {}): Evenement {
   return {
     id: "ev1",
+    ticket_aktiv: false,
     titre: "Sortie supporters",
     type_evenement: "deplacement",
     description: "Déplacement collectif.",

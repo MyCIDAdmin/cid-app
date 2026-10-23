@@ -43,6 +43,7 @@ describe("VeranstaltungFormular", () => {
     });
     fireEvent.change(screen.getByLabelText("v_max"), { target: { value: "30" } });
     fireEvent.change(screen.getByLabelText("feld_standort"), { target: { value: "s1" } });
+    fireEvent.click(screen.getByLabelText("v_ticket_aktiv"));
     fireEvent.click(knopf);
     expect(anlegen).toHaveBeenCalledWith(
       {
@@ -55,6 +56,7 @@ describe("VeranstaltungFormular", () => {
           ort_maps_url: "https://maps.app.goo.gl/x",
           standort: "s1",
           max_teilnehmer: 30,
+          ticket_aktiv: true,
           beschreibung: "",
         },
         bild: null,

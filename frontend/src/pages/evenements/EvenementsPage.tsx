@@ -356,6 +356,16 @@ export default function EvenementsPage() {
                     {t("payer_maintenant")}
                   </button>
                 )}
+                {inscription.statut === "confirmee" &&
+                  inscription.evenement_detail?.ticket_aktiv && (
+                    <button
+                      type="button"
+                      onClick={() => navigate("/tickets")}
+                      className="rounded-cid border border-text-tertiary/20 px-3 py-1 text-xs font-medium text-text-secondary hover:bg-bg-secondary"
+                    >
+                      {t("inscriptions_mein_ticket")}
+                    </button>
+                  )}
                 {inscription.statut !== "annulee" && (
                   <button
                     type="button"

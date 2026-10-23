@@ -77,6 +77,7 @@ function queryResult<T>(data: T): { data: T; isLoading: false } {
 function evenement(overrides: Partial<Evenement> = {}): Evenement {
   return {
     id: "e1",
+    ticket_aktiv: false,
     titre: "Déplacement Stuttgart",
     type_evenement: "deplacement",
     description: "",
@@ -140,6 +141,7 @@ function inscription(overrides: Partial<Inscription> = {}): Inscription {
     evenement: "e1",
     evenement_detail: {
       id: "e1",
+      ticket_aktiv: false,
       titre: "Déplacement Stuttgart",
       date_evenement: "2099-05-31",
       heure: "06:00",
