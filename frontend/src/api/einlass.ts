@@ -8,7 +8,7 @@ import type {
   EinlassUebersicht,
   EinlassZiel,
   PruefErgebnis,
-  TicketStand,
+  PersonStand,
 } from "../types/einlass";
 
 const BASIS = "/eintritt/einlass";
@@ -44,8 +44,8 @@ export async function einlassBuchen(
   return data;
 }
 
-export async function einlassRuecknahme(einlassId: string): Promise<TicketStand> {
-  const { data } = await apiClient.post<{ stand: TicketStand }>(
+export async function einlassRuecknahme(einlassId: string): Promise<PersonStand> {
+  const { data } = await apiClient.post<{ stand: PersonStand }>(
     `${BASIS}/ruecknahme/${einlassId}/`,
   );
   return data.stand;
@@ -79,4 +79,15 @@ export async function helferEntfernen(
     `${BASIS}/${typ}/${id}/helfer/${helferId}/`,
   );
   return data.ergebnisse;
+}
+
+export async function exportAnwesenheit(
+  typ: EinlassTyp,
+  id: string,
+): Promise<{ blob: Blob; nomFichier: string }> {
+  const { data, headers } = await apiClient.get(`${BASIS}/${typ}/${id}/export/`, {
+    responseType: "blob",
+  });
+  const passt = /filename="?([^";]+)"?/.exec(String(headers["content-disposition"] ?? ""));
+  return { blob: data, nomFichier: passt?.[1] ?? "anwesenheit.xlsx" };
 }

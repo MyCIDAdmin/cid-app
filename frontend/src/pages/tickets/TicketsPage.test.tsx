@@ -52,6 +52,7 @@ describe("TicketsPage", () => {
         datum_bis: "2099-06-20",
         uhrzeit: null,
         ort: "Stuttgart",
+        ticket_aktiv: true,
         rolle: "helfer",
         heute: true,
       },

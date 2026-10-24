@@ -2,8 +2,9 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as einlassApi from "../../api/einlass";
+import * as telechargement from "../../utils/telechargement";
 import { renderWithProviders } from "../../test/renderWithProviders";
-import type { EinlassUebersicht, TicketStand } from "../../types/einlass";
+import type { EinlassUebersicht, PersonStand } from "../../types/einlass";
 import EinlassPage from "./EinlassPage";
 
 vi.mock("../../api/einlass", () => ({
@@ -11,11 +12,14 @@ vi.mock("../../api/einlass", () => ({
   einlassPruefen: vi.fn(),
   einlassBuchen: vi.fn(),
   einlassRuecknahme: vi.fn(),
+  exportAnwesenheit: vi.fn(),
   getHelfer: vi.fn(),
   helferBenennen: vi.fn(),
   helferEntfernen: vi.fn(),
   getMeinEinlass: vi.fn(),
 }));
+
+vi.mock("../../utils/telechargement", () => ({ declencherTelechargement: vi.fn() }));
 
 // Die Kamera gibt es in jsdom nicht : der Scanner wird durch einen Knopf ersetzt, der einen Code meldet.
 vi.mock("../../components/einlass/QrScanner", () => ({
@@ -26,9 +30,11 @@ vi.mock("../../components/einlass/QrScanner", () => ({
   ),
 }));
 
-function stand(teil: Partial<TicketStand> = {}): TicketStand {
+function stand(teil: Partial<PersonStand> = {}): PersonStand {
   return {
-    ticket: "t1",
+    person: "t1",
+    ticket: true,
+    anwesend_seit: null,
     name: "Sami Ben Ali",
     gebucht_erwachsene: 2,
     gebucht_kinder: 1,
@@ -50,8 +56,9 @@ function uebersicht(teil: Partial<EinlassUebersicht> = {}): EinlassUebersicht {
     datum_bis: "2099-06-20",
     ticket_aktiv: true,
     zaehler: { gebucht_erwachsene: 2, gebucht_kinder: 1, drin_erwachsene: 0, drin_kinder: 0 },
-    personen: [stand(), stand({ ticket: "t2", name: "Aya Zed", status: "vollstaendig" })],
+    personen: [stand(), stand({ person: "t2", name: "Aya Zed", status: "vollstaendig" })],
     darf_helfer_verwalten: false,
+    darf_exportieren: false,
     ...teil,
   };
 }
@@ -82,10 +89,68 @@ describe("EinlassPage", () => {
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
 
-  it("weist darauf hin, wenn Tickets nicht aktiviert sind", async () => {
+  it("zeigt ohne Tickets nur die Liste zum Eintragen, keinen Kamera-Scan", async () => {
     vi.mocked(einlassApi.getEinlass).mockResolvedValue(uebersicht({ ticket_aktiv: false }));
+    vi.mocked(einlassApi.einlassBuchen).mockResolvedValue({
+      stand: stand({ status: "teilweise", offen_erwachsene: 1, drin_erwachsene: 1 }),
+      einlass: "x1",
+    });
     rendern();
-    expect(await screen.findByText("einlass_nicht_aktiv")).toBeInTheDocument();
+    expect(await screen.findByText("einlass_ohne_tickets")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "scan_starten" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "liste_eintragen" }));
+    await screen.findByRole("button", { name: "einlass_erwachsene +" });
+    fireEvent.click(screen.getAllByRole("button", { name: "einlass_einlassen" })[0]);
+    await waitFor(() =>
+      expect(einlassApi.einlassBuchen).toHaveBeenCalledWith("veranstaltung", "e1", {
+        person: "t1",
+        erwachsene: 2,
+        kinder: 1,
+      }),
+    );
+  });
+
+  it("zeigt Status und Ankunftszeit je Person", async () => {
+    vi.mocked(einlassApi.getEinlass).mockResolvedValue(
+      uebersicht({
+        personen: [
+          stand({
+            status: "teilweise",
+            drin_erwachsene: 1,
+            offen_erwachsene: 1,
+            anwesend_seit: "2099-06-20T18:30:00+02:00",
+          }),
+        ],
+      }),
+    );
+    rendern();
+    expect(await screen.findByText("liste_status_teilweise")).toBeInTheDocument();
+    expect(screen.getByText(/1 \/ 3/)).toBeInTheDocument();
+  });
+
+  it("bietet den Excel-Export nur Verantwortlichen an und lädt die Datei herunter", async () => {
+    vi.mocked(einlassApi.getEinlass).mockResolvedValue(uebersicht({ darf_exportieren: true }));
+    vi.mocked(einlassApi.exportAnwesenheit).mockResolvedValue({
+      blob: new Blob(["x"]),
+      nomFichier: "anwesenheit_sommerfest.xlsx",
+    });
+    rendern();
+    fireEvent.click(await screen.findByRole("button", { name: "liste_export" }));
+    await waitFor(() =>
+      expect(einlassApi.exportAnwesenheit).toHaveBeenCalledWith("veranstaltung", "e1"),
+    );
+    await waitFor(() =>
+      expect(telechargement.declencherTelechargement).toHaveBeenCalledWith(
+        expect.any(Blob),
+        "anwesenheit_sommerfest.xlsx",
+      ),
+    );
+  });
+
+  it("versteckt den Export für Helfer", async () => {
+    rendern();
+    await screen.findByText("Sommerfest");
+    expect(screen.queryByRole("button", { name: "liste_export" })).not.toBeInTheDocument();
   });
 
   it("lässt nach dem Scan alle offenen Personen ein", async () => {
@@ -113,7 +178,7 @@ describe("EinlassPage", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "einlass_einlassen" })[0]);
     await waitFor(() =>
       expect(einlassApi.einlassBuchen).toHaveBeenCalledWith("veranstaltung", "e1", {
-        ticket: "t1",
+        person: "t1",
         erwachsene: 2,
         kinder: 1,
       }),
@@ -139,7 +204,7 @@ describe("EinlassPage", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "einlass_einlassen" })[0]);
     await waitFor(() =>
       expect(einlassApi.einlassBuchen).toHaveBeenCalledWith("veranstaltung", "e1", {
-        ticket: "t1",
+        person: "t1",
         erwachsene: 1,
         kinder: 0,
       }),
@@ -183,7 +248,7 @@ describe("EinlassPage", () => {
     expect(screen.queryByText("Sami Ben Ali")).not.toBeInTheDocument();
     expect(screen.getByText("Aya Zed")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("liste_suche"), { target: { value: "" } });
-    fireEvent.click(screen.getAllByRole("button", { name: "einlass_einlassen" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "liste_eintragen" })[0]);
     expect(await screen.findByRole("button", { name: "einlass_erwachsene +" })).toBeInTheDocument();
   });
 

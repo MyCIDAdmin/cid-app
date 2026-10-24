@@ -7,6 +7,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
+import { exportAnwesenheit } from "../../api/einlass";
 import HelferVerwaltung from "../../components/einlass/HelferVerwaltung";
 import QrScanner from "../../components/einlass/QrScanner";
 import Schrittfeld from "../../components/einlass/Schrittfeld";
@@ -17,11 +18,12 @@ import {
   useEinlassPruefen,
   useEinlassRuecknahme,
 } from "../../hooks/useEinlass";
-import type { EinlassTyp, PruefErgebnis, TicketStand } from "../../types/einlass";
+import type { EinlassTyp, PruefErgebnis, PersonStand } from "../../types/einlass";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { declencherTelechargement } from "../../utils/telechargement";
 
 interface Auswahl {
-  stand: TicketStand;
+  stand: PersonStand;
   erwachsene: number;
   kinder: number;
 }
@@ -33,11 +35,17 @@ interface Bestaetigung {
   offen: number;
 }
 
+const STATUS_KLASSE = {
+  offen: "bg-bg-tertiary text-text-secondary",
+  teilweise: "bg-status-warningBg text-status-warningText",
+  vollstaendig: "bg-status-successBg text-status-successText",
+} as const;
+
 const FEHLER_ERGEBNISSE = ["vollstaendig", "ungueltig", "unbekannt", "anderes_ereignis"] as const;
 type FehlerErgebnis = (typeof FEHLER_ERGEBNISSE)[number];
 
 export default function EinlassPage() {
-  const { t } = useTranslation("tickets");
+  const { t, i18n } = useTranslation("tickets");
   const { typ, id } = useParams<{ typ: string; id: string }>();
   const gueltigerTyp: EinlassTyp = typ === "treffen" ? "treffen" : "veranstaltung";
   const zielId = id ?? "";
@@ -53,7 +61,17 @@ export default function EinlassPage() {
   const [meldung, setMeldung] = useState<{ art: FehlerErgebnis; name?: string } | null>(null);
   const [bestaetigung, setBestaetigung] = useState<Bestaetigung | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
+  const [exportLaeuft, setExportLaeuft] = useState(false);
   const belegt = useRef(false);
+
+  const exportieren = () => {
+    setExportLaeuft(true);
+    setFehler(null);
+    exportAnwesenheit(gueltigerTyp, zielId)
+      .then(({ blob, nomFichier }) => declencherTelechargement(blob, nomFichier))
+      .catch((e) => setFehler(extractApiErrorMessage(e, t("fehler"))))
+      .finally(() => setExportLaeuft(false));
+  };
 
   const weiter = () => {
     setAuswahl(null);
@@ -62,7 +80,7 @@ export default function EinlassPage() {
     belegt.current = false;
   };
 
-  const auswahlAus = (stand: TicketStand) =>
+  const auswahlAus = (stand: PersonStand) =>
     setAuswahl({ stand, erwachsene: stand.offen_erwachsene, kinder: stand.offen_kinder });
 
   const verarbeiten = (text: string) => {
@@ -97,7 +115,7 @@ export default function EinlassPage() {
     if (!auswahl) return;
     const { stand, erwachsene, kinder } = auswahl;
     buchen.mutate(
-      { ticket: stand.ticket, erwachsene, kinder },
+      { person: stand.person, erwachsene, kinder },
       {
         onSuccess: (antwort) => {
           setBestaetigung({
@@ -149,12 +167,6 @@ export default function EinlassPage() {
         <h1 className="text-xl font-semibold text-text-primary">{data.titel}</h1>
         <p className="text-sm text-text-secondary">{t("einlass_titel")}</p>
       </div>
-
-      {!data.ticket_aktiv && (
-        <p className="rounded-cid bg-status-warningBg p-3 text-sm text-status-warningText">
-          {t("einlass_nicht_aktiv")}
-        </p>
-      )}
 
       <Zaehler zaehler={data.zaehler} />
 
@@ -262,46 +274,62 @@ export default function EinlassPage() {
         </div>
       )}
 
-      <section className="space-y-2">
-        {kamera ? (
-          <>
-            <QrScanner onCode={verarbeiten} />
+      {data.ticket_aktiv ? (
+        <section className="space-y-2">
+          {kamera ? (
+            <>
+              <QrScanner onCode={verarbeiten} />
+              <button
+                type="button"
+                onClick={() => setKamera(false)}
+                className="text-sm text-text-secondary underline"
+              >
+                {t("scan_stoppen")}
+              </button>
+            </>
+          ) : (
             <button
               type="button"
-              onClick={() => setKamera(false)}
-              className="text-sm text-text-secondary underline"
+              onClick={() => setKamera(true)}
+              className="w-full rounded-cid bg-ca px-4 py-3 text-base font-medium text-white hover:bg-cad"
             >
-              {t("scan_stoppen")}
+              {t("scan_starten")}
             </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setKamera(true)}
-            className="w-full rounded-cid bg-ca px-4 py-3 text-base font-medium text-white hover:bg-cad"
-          >
-            {t("scan_starten")}
-          </button>
-        )}
-        <form onSubmit={manuellAbsenden} className="flex gap-2">
-          <input
-            value={manuell}
-            onChange={(e) => setManuell(e.target.value)}
-            aria-label={t("scan_code_manuell")}
-            placeholder={t("scan_code_manuell")}
-            className="min-w-0 flex-1 rounded-cid border border-text-tertiary/30 bg-bg-primary px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="rounded-cid border border-text-tertiary/30 px-3 py-2 text-sm text-text-primary hover:bg-bg-tertiary"
-          >
-            {t("scan_pruefen")}
-          </button>
-        </form>
-      </section>
+          )}
+          <form onSubmit={manuellAbsenden} className="flex gap-2">
+            <input
+              value={manuell}
+              onChange={(e) => setManuell(e.target.value)}
+              aria-label={t("scan_code_manuell")}
+              placeholder={t("scan_code_manuell")}
+              className="min-w-0 flex-1 rounded-cid border border-text-tertiary/30 bg-bg-primary px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="rounded-cid border border-text-tertiary/30 px-3 py-2 text-sm text-text-primary hover:bg-bg-tertiary"
+            >
+              {t("scan_pruefen")}
+            </button>
+          </form>
+        </section>
+      ) : (
+        <p className="text-sm text-text-tertiary">{t("einlass_ohne_tickets")}</p>
+      )}
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-text-primary">{t("liste_titel")}</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-text-primary">{t("liste_titel")}</h2>
+          {data.darf_exportieren && (
+            <button
+              type="button"
+              onClick={exportieren}
+              disabled={exportLaeuft}
+              className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs text-text-primary hover:bg-bg-tertiary disabled:opacity-50"
+            >
+              {t("liste_export")}
+            </button>
+          )}
+        </div>
         <input
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
@@ -311,15 +339,22 @@ export default function EinlassPage() {
         />
         <ul className="divide-y divide-text-tertiary/10 rounded-cid border border-text-tertiary/20">
           {personen.map((p) => (
-            <li key={p.ticket} className="flex items-center justify-between gap-2 p-3">
+            <li key={p.person} className="flex items-center justify-between gap-2 p-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-text-primary">{p.name}</p>
                 <p className="text-xs text-text-tertiary">
-                  {t(`liste_status_${p.status}`)} ·{" "}
-                  {t("einlass_gebucht", {
-                    erwachsene: p.gebucht_erwachsene,
-                    kinder: p.gebucht_kinder,
-                  })}
+                  <span
+                    className={`rounded-full px-2 py-0.5 font-medium ${STATUS_KLASSE[p.status]}`}
+                  >
+                    {t(`liste_status_${p.status}`)}
+                  </span>{" "}
+                  {p.drin_erwachsene + p.drin_kinder} / {p.gebucht_erwachsene + p.gebucht_kinder}
+                  {p.anwesend_seit
+                    ? ` · ${new Date(p.anwesend_seit).toLocaleTimeString(i18n.language, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}`
+                    : ""}
                 </p>
               </div>
               {p.status !== "vollstaendig" && (
@@ -333,7 +368,7 @@ export default function EinlassPage() {
                   }}
                   className="shrink-0 rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs text-text-primary hover:bg-bg-tertiary"
                 >
-                  {t("einlass_einlassen")}
+                  {t("liste_eintragen")}
                 </button>
               )}
             </li>

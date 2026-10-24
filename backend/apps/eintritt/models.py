@@ -60,14 +60,32 @@ class Eintrittsticket(models.Model):
 
 
 class Einlass(models.Model):
-    """Ein Eintrag am Einlass : so viele Personen eines Tickets sind jetzt hereingekommen.
+    """Ein Eintrag der Anwesenheit : so viele Personen einer Anmeldung bzw. Teilnahme sind jetzt
+    da. Entsteht beim Scan eines Tickets (dann ist `ticket` gesetzt) oder von Hand aus der Liste
+    (auch bei Veranstaltungen ohne Tickets).
 
-    Eingelassene Personen eines Tickets = Summe der nicht zurückgenommenen Einträge. Ein Ticket
-    kann also in mehreren Schritten eingelassen werden (Teil-Einlass mit demselben Code).
+    Anwesende Personen = Summe der nicht zurückgenommenen Einträge. Eine Gruppe kann also in
+    mehreren Schritten eintreffen (Teil-Einlass mit demselben Code).
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    ticket = models.ForeignKey(Eintrittsticket, on_delete=models.CASCADE, related_name="einlaesse")
+    ticket = models.ForeignKey(
+        Eintrittsticket, null=True, blank=True, on_delete=models.SET_NULL, related_name="einlaesse"
+    )
+    inscription = models.ForeignKey(
+        "evenements.Inscription",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="einlaesse",
+    )
+    teilnahme = models.ForeignKey(
+        "regionen.Teilnahme",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="einlaesse",
+    )
     geprueft_von = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -83,6 +101,15 @@ class Einlass(models.Model):
     class Meta:
         db_table = "eintritt_einlaesse"
         ordering = ["zeit"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(inscription__isnull=False, teilnahme__isnull=True)
+                    | Q(inscription__isnull=True, teilnahme__isnull=False)
+                ),
+                name="eintritt_einlass_genau_eine_quelle",
+            )
+        ]
 
 
 class EinlassHelfer(models.Model):

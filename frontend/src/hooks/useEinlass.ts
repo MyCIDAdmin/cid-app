@@ -10,12 +10,12 @@ export function useMeinEinlass() {
   return useQuery({ queryKey: ["einlass", "meine"], queryFn: einlassApi.getMeinEinlass });
 }
 
-/** Die Übersicht wird alle 15 s neu geladen, damit mehrere Prüfer denselben Stand sehen. */
+/** Die Übersicht wird alle 10 s neu geladen, damit mehrere Prüfer denselben Stand sehen. */
 export function useEinlass(typ: EinlassTyp, id: string) {
   return useQuery({
     queryKey: key(typ, id),
     queryFn: () => einlassApi.getEinlass(typ, id),
-    refetchInterval: 15000,
+    refetchInterval: 10000,
   });
 }
 

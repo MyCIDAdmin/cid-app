@@ -125,7 +125,7 @@ class TestEinlassen:
     def _buchen(self, client, ev, t, erw, kin):
         return client.post(
             _url(ev, "einlassen/"),
-            {"ticket": str(t.pk), "erwachsene": erw, "kinder": kin},
+            {"person": str(t.inscription_id), "erwachsene": erw, "kinder": kin},
             format="json",
         )
 
@@ -167,16 +167,29 @@ class TestEinlassen:
         assert r.status_code == 400
         assert not Einlass.objects.exists()
 
-    def test_ungueltiges_ticket_wird_abgelehnt(self):
+    def test_ungueltiges_ticket_blockiert_nur_den_scan_nicht_den_eintrag_von_hand(self):
         ev, t = _ticket()
         t.gueltig = False
         t.save()
+        c = _client(_buero())
+        assert c.post(_url(ev, "pruefen/"), {"code": t.code}, format="json").data["ergebnis"] == (
+            "ungueltig"
+        )
+        assert self._buchen(c, ev, t, 1, 0).status_code == 200
+
+    def test_person_ohne_bestaetigte_anmeldung_wird_abgelehnt(self):
+        from apps.evenements.models import StatutInscription
+
+        ev, t = _ticket()
+        ins = t.inscription
+        ins.statut = StatutInscription.LISTE_ATTENTE
+        ins.save()
         assert self._buchen(_client(_buero()), ev, t, 1, 0).status_code == 400
 
-    def test_ungueltige_ticket_id(self):
+    def test_ungueltige_personen_id(self):
         ev, _ = _ticket()
         r = _client(_buero()).post(
-            _url(ev, "einlassen/"), {"ticket": "kein-uuid", "erwachsene": 1}, format="json"
+            _url(ev, "einlassen/"), {"person": "kein-uuid", "erwachsene": 1}, format="json"
         )
         assert r.status_code == 400
 
@@ -194,7 +207,7 @@ class TestEinlassen:
         t = Eintrittsticket.objects.get(teilnahme=tn)
         r = _client(_buero()).post(
             _url(v, "einlassen/"),
-            {"ticket": str(t.pk), "erwachsene": 1, "kinder": 0},
+            {"person": str(t.teilnahme_id), "erwachsene": 1, "kinder": 0},
             format="json",
         )
         assert r.status_code == 200
@@ -208,7 +221,7 @@ class TestRuecknahme:
         c = _client(_buero())
         r = c.post(
             _url(ev, "einlassen/"),
-            {"ticket": str(t.pk), "erwachsene": 1, "kinder": 0},
+            {"person": str(t.inscription_id), "erwachsene": 1, "kinder": 0},
             format="json",
         )
         eintrag = r.data["einlass"]
@@ -222,7 +235,7 @@ class TestRuecknahme:
         c = _client(_buero())
         r = c.post(
             _url(ev, "einlassen/"),
-            {"ticket": str(t.pk), "erwachsene": 1, "kinder": 0},
+            {"person": str(t.inscription_id), "erwachsene": 1, "kinder": 0},
             format="json",
         )
         Einlass.objects.update(zeit=timezone.now() - einlass.RUECKNAHME_FRIST * 2)
@@ -232,7 +245,7 @@ class TestRuecknahme:
         ev, t = _ticket(places=1, adults=0, kids=0)
         r = _client(_buero()).post(
             _url(ev, "einlassen/"),
-            {"ticket": str(t.pk), "erwachsene": 1, "kinder": 0},
+            {"person": str(t.inscription_id), "erwachsene": 1, "kinder": 0},
             format="json",
         )
         zufaellig, _ = _user("zufall@example.de")
@@ -253,7 +266,7 @@ class TestRuecknahme:
         c = _client(_buero())
         r = c.post(
             _url(v, "einlassen/"),
-            {"ticket": str(t.pk), "erwachsene": 1, "kinder": 0},
+            {"person": str(t.teilnahme_id), "erwachsene": 1, "kinder": 0},
             format="json",
         )
         c.post(f"{API}ruecknahme/{r.data['einlass']}/")
@@ -335,7 +348,7 @@ class TestUebersicht:
         c = _client(_buero())
         c.post(
             _url(ev, "einlassen/"),
-            {"ticket": str(t.pk), "erwachsene": 1, "kinder": 0},
+            {"person": str(t.inscription_id), "erwachsene": 1, "kinder": 0},
             format="json",
         )
         r = c.get(_url(ev))
@@ -407,15 +420,19 @@ class TestHelferVerwaltung:
 
 
 class TestMeine:
-    def test_buero_und_helfer_sehen_ihre_veranstaltungen(self):
+    def test_buero_sieht_alle_veranstaltungen_helfer_nur_ihre(self):
         ev, _ = _ticket()
-        ohne_ticket = EvenementFactory(ticket_aktiv=False)
+        ohne_ticket = EvenementFactory(
+            ticket_aktiv=False, date_evenement=timezone.localdate() + datetime.timedelta(days=1)
+        )
         helfer, _ = _user("helfer@example.de")
         EinlassHelfer.objects.create(evenement=ev, user=helfer)
         buero = _client(_buero()).get(f"{API}meine/")
-        assert [e["id"] for e in buero.data["ergebnisse"]] == [str(ev.pk)]
-        assert buero.data["ergebnisse"][0]["rolle"] == "verantwortlich"
-        assert str(ohne_ticket.pk) not in str(buero.data)
+        assert {e["id"]: e["ticket_aktiv"] for e in buero.data["ergebnisse"]} == {
+            str(ev.pk): True,
+            str(ohne_ticket.pk): False,
+        }
+        assert {e["rolle"] for e in buero.data["ergebnisse"]} == {"verantwortlich"}
         r = _client(helfer).get(f"{API}meine/")
         assert [e["id"] for e in r.data["ergebnisse"]] == [str(ev.pk)]
         assert r.data["ergebnisse"][0]["rolle"] == "helfer"
@@ -425,3 +442,145 @@ class TestMeine:
         _ticket()
         user, _ = _user("normal@example.de")
         assert _client(user).get(f"{API}meine/").data["ergebnisse"] == []
+
+
+class TestAnwesenheitOhneTickets:
+    """Die Liste gilt für jede Veranstaltung, auch wenn keine Tickets ausgestellt werden."""
+
+    def _ohne_ticket(self):
+        _, membre = _user("gast@example.de")
+        ev = EvenementFactory(ticket_aktiv=False)
+        ins = InscriptionFactory(evenement=ev, membre=membre, places=2)
+        return ev, ins
+
+    def test_liste_zeigt_bestaetigte_anmeldungen_ohne_ticket(self):
+        ev, ins = self._ohne_ticket()
+        r = _client(_buero()).get(_url(ev))
+        assert r.status_code == 200
+        assert r.data["ticket_aktiv"] is False
+        assert [(p["person"], p["ticket"], p["status"]) for p in r.data["personen"]] == [
+            (str(ins.pk), False, "offen")
+        ]
+
+    def test_von_hand_eintragen_und_zaehler(self):
+        ev, ins = self._ohne_ticket()
+        c = _client(_buero())
+        r = c.post(
+            _url(ev, "einlassen/"),
+            {"person": str(ins.pk), "erwachsene": 1, "kinder": 0},
+            format="json",
+        )
+        assert r.status_code == 200
+        liste = c.get(_url(ev)).data
+        assert liste["personen"][0]["status"] == "teilweise"
+        assert liste["personen"][0]["anwesend_seit"] is not None
+        assert liste["zaehler"]["drin_erwachsene"] == 1
+        assert Einlass.objects.get().ticket is None
+
+    def test_scan_und_liste_zeigen_denselben_stand(self):
+        ev, t = _ticket(places=1, adults=0, kids=0)
+        c = _client(_buero())
+        c.post(
+            _url(ev, "einlassen/"),
+            {"person": str(t.inscription_id), "erwachsene": 1, "kinder": 0},
+            format="json",
+        )
+        person = c.get(_url(ev)).data["personen"][0]
+        assert person["status"] == "vollstaendig"
+        assert person["ticket"] is True
+        assert Einlass.objects.get().ticket_id == t.pk
+
+    def test_treffen_haekchen_von_hand_zaehlt_als_anwesend(self):
+        v = Veranstaltung.objects.create(
+            region=Region.objects.get(slug="nord"),
+            titel="Public Viewing",
+            datum=timezone.localdate(),
+            ort="Hamburg",
+            status=VeranstaltungStatus.VEROEFFENTLICHT,
+            ticket_aktiv=False,
+        )
+        user, _ = _user("tn@example.de")
+        Teilnahme.objects.create(veranstaltung=v, user=user, anwesend=True)
+        liste = _client(_buero()).get(_url(v)).data
+        assert liste["personen"][0]["status"] == "vollstaendig"
+        assert liste["zaehler"]["drin_erwachsene"] == 1
+
+    def test_unbestaetigte_anmeldung_steht_nicht_in_der_liste(self):
+        from apps.evenements.models import StatutInscription
+
+        ev, ins = self._ohne_ticket()
+        ins.statut = StatutInscription.EN_ATTENTE_PAIEMENT
+        ins.save()
+        assert _client(_buero()).get(_url(ev)).data["personen"] == []
+
+
+class TestExport:
+    def test_excel_mit_namen_status_und_summe(self):
+        import io
+
+        from openpyxl import load_workbook
+
+        ev, t = _ticket(places=2, adults=0, kids=1)
+        c = _client(_buero())
+        c.post(
+            _url(ev, "einlassen/"),
+            {"person": str(t.inscription_id), "erwachsene": 1, "kinder": 0},
+            format="json",
+        )
+        r = c.get(_url(ev, "export/"))
+        assert r.status_code == 200
+        assert "spreadsheetml" in r["Content-Type"]
+        assert "anwesenheit_" in r["Content-Disposition"]
+        blatt = load_workbook(io.BytesIO(r.content)).active
+        zeilen = [[z.value for z in zeile] for zeile in blatt.iter_rows()]
+        assert zeilen[3][:2] == ["Name", "Status"]
+        assert zeilen[4][:6] == ["Sami Ben Ali", "Teilweise anwesend", 2, 1, 1, 0]
+        assert zeilen[4][6] == "ja"
+        assert zeilen[-1][:6] == ["Summe", None, 2, 1, 1, 0]
+
+    def test_excel_fuer_treffen(self):
+        import io
+
+        from openpyxl import load_workbook
+
+        v = Veranstaltung.objects.create(
+            region=Region.objects.get(slug="nord"),
+            titel="Public Viewing",
+            datum=timezone.localdate(),
+            ort="Hamburg",
+            status=VeranstaltungStatus.VEROEFFENTLICHT,
+        )
+        user, _ = _user("tn@example.de")
+        Teilnahme.objects.create(veranstaltung=v, user=user)
+        r = _client(_buero()).get(_url(v, "export/"))
+        assert r.status_code == 200
+        blatt = load_workbook(io.BytesIO(r.content)).active
+        assert blatt["A5"].value == "Sami Ben Ali"
+
+    def test_formel_im_namen_wird_neutralisiert(self):
+        import io
+
+        from openpyxl import load_workbook
+
+        _, membre = _user("evil@example.de", prenom="=HYPERLINK(1)", nom="X")
+        ev = EvenementFactory(ticket_aktiv=False)
+        InscriptionFactory(evenement=ev, membre=membre)
+        r = _client(_buero()).get(_url(ev, "export/"))
+        blatt = load_workbook(io.BytesIO(r.content)).active
+        assert blatt["A5"].value.startswith("'=")
+
+    def test_helfer_und_fremde_duerfen_nicht_exportieren(self):
+        helfer, _ = _user("helfer@example.de")
+        ev, _ = _ticket()
+        EinlassHelfer.objects.create(evenement=ev, user=helfer)
+        assert _client(helfer).get(_url(ev, "export/")).status_code == 403
+        zufaellig, _ = _user("zufall@example.de")
+        assert _client(zufaellig).get(_url(ev, "export/")).status_code == 403
+        assert APIClient().get(_url(ev, "export/")).status_code == 401
+
+    def test_export_steht_im_aktivitaetsprotokoll(self):
+        from apps.accounts.models import AuditLogEntry
+
+        ev, _ = _ticket()
+        _client(_buero()).get(_url(ev, "export/"))
+        assert AuditLogEntry.objects.filter(action="eintritt_export").exists()
