@@ -692,6 +692,41 @@
         ],
         "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Storniere die Übungszahlung aus ZAHL-01 mit dem Grund „[ÜBUNG] Test“ und öffne danach den Verlauf.",
         "rollen": ["dir_financier", "super_admin"]
+      },
+      {
+        "id": "ZAHL-07",
+        "rollen": ["dir_financier", "super_admin"],
+        "titre": "Teilnahmegebühr fürs Tippspiel bestätigen",
+        "wann": "Ein Mitglied hat sich für ein kostenpflichtiges Tippspiel angemeldet und den Beitrag bezahlt.",
+        "schritte": [
+          "Im Menü „Zahlungen“ öffnen und zum Abschnitt „Tippspiel-Teilnahmegebühren“ gehen.",
+          "In der Tabelle Mitglied, Tippspiel, Betrag und „Angemeldet am“ prüfen.",
+          "Auf dem Vereinskonto bzw. in der Kasse prüfen, ob der Betrag eingegangen ist.",
+          "In der Zeile auf „Bestätigen“ klicken."
+        ],
+        "danach": "Das Mitglied kann sofort Tipps abgeben und erscheint in der Rangliste. Tippspiel-Zahlungen sind ein eigenes, einfaches System: Sie erscheinen nicht in der Liste der Mitgliedsbeiträge.",
+        "vorher": "Du bist Finanzdirektor oder App Admin. Der Betrag ist auf dem Konto oder in der Kasse eingegangen.",
+        "erwartet": [
+          "Die Seite „Zahlungen“ ist offen. Der Abschnitt „Tippspiel-Teilnahmegebühren“ nennt: „Ausstehende Zahlungen für alle Tippspiele.“",
+          "Du erkennst die Person und das Tippspiel. Gibt es nichts zu tun, steht dort „Keine offenen Zahlungen.“",
+          "Du hast den Eingang selbst gesehen. Die App prüft das nicht.",
+          "Die Zeile verschwindet aus der Liste."
+        ],
+        "fehler": [
+          {
+            "problem": "Der Abschnitt „Tippspiel-Teilnahmegebühren“ fehlt.",
+            "loesung": "Ihn sehen nur Finanzdirektor und App Admin. Prüfe deine Rolle."
+          },
+          {
+            "problem": "„Die Bestätigung ist fehlgeschlagen.“",
+            "loesung": "Lade die Seite neu. Vielleicht hat schon jemand anderes bestätigt. Bei kostenlosen Tippspielen gibt es nichts zu bestätigen."
+          },
+          {
+            "problem": "Ein Mitglied meldet, es könne nicht tippen.",
+            "loesung": "Bei einem kostenpflichtigen Tippspiel sind Tipps erst nach deiner Bestätigung möglich. Prüfe, ob die Zeile noch offen ist."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Bestätige nur die Teilnahme deines eigenen Testkontos am Test-Tippspiel aus TIPP-01. Bestätige keine Zahlungen echter Mitglieder."
       }
     ],
     "tipps": [
@@ -3224,11 +3259,446 @@
           }
         ],
         "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege das Spiel „[ÜBUNG] Testverein A – [ÜBUNG] Testverein B“ mit dem Wettbewerb „[ÜBUNG]“ (nicht „Ligue 1“) an und lösche es danach mit „Spiel löschen“. So zählt es nicht im Tippspiel."
+      },
+      {
+        "id": "TIPP-01",
+        "rollen": ["super_admin"],
+        "titre": "Tippspiel anlegen und veröffentlichen",
+        "wann": "Eine neue Tippspiel-Saison soll starten.",
+        "schritte": [
+          "Im Fan-Club den Reiter „Ticker“ öffnen und im Abschnitt Tippspiel auf „Neues Tippspiel erstellen“ klicken.",
+          "„Titel“, „Saison (z. B. 2026-2027)“ und die Regeln eintragen. Die Regeln sehen die Mitglieder.",
+          "Optional den „Teilnahmebeitrag (€, optional)“ eintragen, z. B. 10.00. Leer lassen heißt kostenlos.",
+          "Mit „Gewinn hinzufügen“ für jeden Platz die Art wählen: „Fester Betrag“, „Prozentsatz der Kasse“ oder „Artikel aus der Boutique“, und den Wert eintragen.",
+          "Auf „Tippspiel erstellen“ klicken. Das Tippspiel ist jetzt ein Entwurf.",
+          "Alles prüfen, bei Bedarf „Bearbeiten“, und dann „Veröffentlichen“ klicken."
+        ],
+        "danach": "Mitglieder sehen das Tippspiel und können mit „Teilnehmen“ mitspielen. Getippt wird nur auf Spiele der Ligue 1, bis einen Tag vor dem Anpfiff. Punkte: 4 für das exakte Ergebnis, 2 für Sieger und Tordifferenz, 1 für die Tendenz.",
+        "vorher": "Du bist App Admin. Das letzte Tippspiel ist beendet oder es gibt noch keines. Du kennst Saison, Beitrag und Gewinne.",
+        "erwartet": [
+          "Das Formular mit Titel, Saison, Regeln, Teilnahmebeitrag und Gewinnen ist offen.",
+          "Titel und Saison sind Pflicht. Ohne beides passiert beim Absenden nichts.",
+          "Der Beitrag steht als Zahl im Feld. Ohne Beitrag zeigt das Tippspiel später „Kostenlos“.",
+          "Pro Gewinn erscheint eine Zeile mit „Platz“, „Art“ und dem passenden Feld („Betrag (€)“, „Prozentsatz (%)“ oder „Artikel“).",
+          "Das Tippspiel erscheint mit dem Zeichen „Entwurf“. Nur du als App Admin siehst es.",
+          "Das Zeichen wechselt auf „Veröffentlicht“ und die Mitglieder sehen das Tippspiel."
+        ],
+        "fehler": [
+          {
+            "problem": "„Das Tippspiel konnte nicht erstellt werden.“",
+            "loesung": "Prüfe, ob Beitrag und Gewinne vollständig und als Zahl eingetragen sind. Bei „Artikel aus der Boutique“ muss ein Artikel gewählt sein."
+          },
+          {
+            "problem": "Du willst nach der Veröffentlichung Gewinne ändern.",
+            "loesung": "Das ist nicht vorgesehen. Lege Gewinne und Beitrag daher fest, solange das Tippspiel ein Entwurf ist."
+          },
+          {
+            "problem": "Die Schaltfläche „Neues Tippspiel erstellen“ fehlt.",
+            "loesung": "Sie erscheint nur, wenn es noch kein Tippspiel gibt oder das letzte beendet ist (TIPP-02)."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege nur dann „[ÜBUNG] Testtippspiel“ kostenlos an, wenn kein Tippspiel läuft, das für Testfälle gebraucht wird. Veröffentliche es, nimm mit deinem Testkonto teil und beende es danach mit TIPP-02. Die App hat keine Schaltfläche, um ein Tippspiel zu löschen oder wieder zu öffnen."
+      },
+      {
+        "id": "TIPP-02",
+        "rollen": ["super_admin"],
+        "titre": "Tippspiel beenden und neues starten",
+        "wann": "Die Saison ist vorbei oder das Tippspiel soll enden.",
+        "schritte": [
+          "Im Fan-Club den Reiter „Ticker“ öffnen und im Abschnitt Tippspiel die „Rangliste“ prüfen.",
+          "Auf „Spiel schließen“ klicken.",
+          "Für die nächste Runde auf „Neues Tippspiel erstellen“ klicken und weiter wie in TIPP-01."
+        ],
+        "danach": "Das Tippspiel zeigt „Beendet“. Neue Teilnahmen und Tipps sind nicht mehr möglich, die Rangliste bleibt sichtbar. Die App hat keine Schaltfläche, um es wieder zu öffnen.",
+        "vorher": "Die letzten Spiele sind gewertet und die Rangliste stimmt. Fehlende Ergebnisse trägst du vorher im Spielplan nach (SPIEL-01).",
+        "erwartet": [
+          "Die Rangliste zeigt Platz, Mitglied und Punkte der bestätigten Teilnehmer.",
+          "Das Zeichen wechselt auf „Beendet“. Der Knopf „Teilnehmen“ ist gesperrt.",
+          "Das Formular für ein neues Tippspiel ist offen."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Rangliste ist leer.",
+            "loesung": "Es erscheinen nur Teilnehmer mit bestätigter Zahlung. Prüfe offene Zahlungen mit ZAHL-07."
+          },
+          {
+            "problem": "Du hast zu früh geschlossen.",
+            "loesung": "Wiedereröffnen ist in der App nicht möglich. Lege ein neues Tippspiel an."
+          },
+          {
+            "problem": "Die Gewinne der Platzierten müssen ausgezahlt werden.",
+            "loesung": "Die Rangliste und die Gewinne stehen in der App. Die Auszahlung organisiert ihr selbst."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Schließe nur das Test-Tippspiel aus TIPP-01. Schließe niemals ein laufendes Tippspiel zur Probe."
+      },
+      {
+        "id": "TIPP-03",
+        "titre": "Beim Tippspiel mitmachen und tippen",
+        "wann": "Du möchtest beim Tippspiel des Fan-Clubs mitspielen.",
+        "schritte": [
+          "Im Fan-Club den Reiter „Ticker“ öffnen und im Abschnitt Tippspiel Regeln und Gewinne lesen.",
+          "Auf „Teilnehmen“ klicken.",
+          "Bei einem Beitrag zahlen und warten, bis der Finanzdirektor die Zahlung bestätigt hat.",
+          "Unter „Meine Tipps“ bei jedem Spiel die Tore beider Mannschaften eintragen und auf „Speichern“ klicken.",
+          "In der „Rangliste“ deinen Platz ansehen. „Meine bisherigen Tipps“ zeigt Ergebnis, deinen Tipp und die Punkte."
+        ],
+        "danach": "Du kannst deinen Tipp bis einen Tag vor dem Anpfiff ändern. Punkte: 4 für das exakte Ergebnis, 2 für den richtigen Sieger mit richtiger Tordifferenz, 1 für die richtige Tendenz.",
+        "vorher": "Du hast ein Mitgliedskonto. Das Tippspiel ist veröffentlicht.",
+        "erwartet": [
+          "Du siehst Saison, Teilnahmebeitrag (oder „Kostenlos“), Spielregeln und Gewinne.",
+          "Ohne Beitrag steht dort „Ihre Teilnahme ist bestätigt.“ Mit Beitrag steht dort „Ihre Zahlung wird noch bestätigt.“",
+          "Nach der Bestätigung steht „Ihre Teilnahme ist bestätigt.“ Vorher gilt: „Ihre Tipps werden verfügbar, sobald Ihre Zahlung vom Finanzdirektor bestätigt wurde.“",
+          "Nach dem Speichern erscheint „Gespeichert.“",
+          "Du stehst in der Rangliste, sobald deine Teilnahme bestätigt ist."
+        ],
+        "fehler": [
+          {
+            "problem": "Du siehst keine Tippfelder.",
+            "loesung": "Getippt wird nur auf angesetzte Spiele der Ligue 1, und bei einem Beitrag erst nach der Bestätigung. Sonst steht dort „Aktuell stehen keine Spiele zur Abgabe eines Tipps zur Verfügung.“"
+          },
+          {
+            "problem": "„Der Tipp konnte nicht gespeichert werden.“",
+            "loesung": "Die Frist ist vorbei (einen Tag vor dem Anpfiff) oder das Spiel ist nicht mehr angesetzt."
+          },
+          {
+            "problem": "Du fehlst in der Rangliste.",
+            "loesung": "Es erscheinen nur bestätigte Teilnehmer. Frag beim Finanzdirektor nach."
+          }
+        ]
       }
     ],
     "tipps": [
       "Besucher und Mitglieder sehen nur die Daten; die Zeichen „manuell korrigiert“ und „manuell hinzugefügt“ sieht nur das Büro.",
       "Vereinslogos pflegst du unter „Vereinslogos“ (Karte LOGO-01)."
     ]
+  },
+  "zentral": {
+    "titre": "Zentrale Einstellungen",
+    "intro": "Hier legt der App Admin Werte fest, die sonst im Programm fest eingebaut wären: Dauer der Warenkorb-Reservierung, Zahlungsfrist bei Veranstaltungen und Schwellen für die Hinweise in der Übersicht.",
+    "schritte": [
+      "Eine Gruppe wählen: „Shop“, „Veranstaltungen“ oder „Hinweise in der Übersicht“.",
+      "Den Wert im Feld ändern. Unter dem Feld steht, was erlaubt ist.",
+      "Auf „Speichern“ klicken. Die Änderung gilt sofort für alle."
+    ],
+    "workflows": [
+      {
+        "id": "ZENT-01",
+        "rollen": ["super_admin"],
+        "titre": "Zentrale Einstellungen ändern",
+        "wann": "Eine Frist oder Schwelle soll anders sein, z. B. eine längere Warenkorb-Reservierung.",
+        "schritte": [
+          "Im Menü unter „Administration“ den Eintrag „Zentrale Einstellungen“ öffnen.",
+          "Aktuelle Werte notieren, bevor du etwas änderst.",
+          "In der passenden Gruppe das Feld ändern und die Hilfe unter dem Feld lesen.",
+          "Auf „Speichern“ klicken."
+        ],
+        "danach": "Die Werte wirken sofort für alle, ohne neues Release. Standardwerte: Reservierung 20 Minuten, 2 erneute Reservierungen, Zahlungsfrist 2 Tage, Hinweis 7 Tage vorher, Plätze knapp ab 5 Plätzen oder 20 %, Artikel knapp ab 5 Stück, höchstens 3 Hinweise.",
+        "vorher": "Du bist App Admin und weißt, welcher Wert sich ändern soll und warum.",
+        "erwartet": [
+          "Die Seite „Zentrale Einstellungen“ ist offen. Sie sagt: „Änderungen gelten sofort für alle.“",
+          "Du hast die Werte aufgeschrieben, damit du sie zurückstellen kannst.",
+          "Jedes Feld zeigt Einheit und erlaubten Bereich, z. B. „Minuten“ oder „Tage vorher“.",
+          "Unter der Schaltfläche steht „Gespeichert.“"
+        ],
+        "fehler": [
+          {
+            "problem": "„Speichern“ ist ausgegraut.",
+            "loesung": "Mindestens ein Feld ist leer, keine ganze Zahl oder außerhalb des erlaubten Bereichs. Die Grenzen stehen unter jedem Feld."
+          },
+          {
+            "problem": "„Speichern fehlgeschlagen.“",
+            "loesung": "Lade die Seite neu und versuche es noch einmal. Ändern darf nur der App Admin."
+          },
+          {
+            "problem": "Die Seite fehlt im Menü.",
+            "loesung": "Sie ist nur für den App Admin sichtbar."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Ändere die Warenkorb-Reservierung von z. B. 20 auf 21 Minuten und stelle sie danach auf den notierten Wert zurück. Die Änderung wirkt sofort für alle, auch auf laufende Testfälle mit Warenkorb."
+      }
+    ],
+    "tipps": [
+      "Die Zahlungsfrist bei Veranstaltungen wird bei der Anmeldung gespeichert.",
+      "Eine Reservierung im Warenkorb beginnt bei jeder Änderung des Warenkorbs neu.",
+      "Bei „Erneute Reservierungen im Warenkorb“ bedeutet 0: Nach Ablauf wird der Warenkorb sofort geleert."
+    ]
+  },
+  "regionen_struktur": {
+    "titre": "Sektoren-Struktur",
+    "intro": "Hier legt der App Admin fest, welche Sektoren es gibt und welche Bundesländer und Länder zu welchem Sektor gehören. Jedes Bundesland und jedes Land gehört genau einem Sektor.",
+    "schritte": [
+      "Oben einen neuen Sektor anlegen.",
+      "In der Karte des Sektors Name, Farbe, Bundesländer, weitere Länder und Standorte pflegen.",
+      "Verantwortliche und Seiteninhalte pflegt man auf der Sektorseite selbst („Sektorseite öffnen“)."
+    ],
+    "workflows": [
+      {
+        "id": "SEKT-07",
+        "rollen": ["super_admin"],
+        "titre": "Sektor anlegen und Bundesländer zuordnen",
+        "wann": "Ein neuer Sektor entsteht oder ein Bundesland wechselt den Sektor.",
+        "schritte": [
+          "Im Menü unter „Administration“ „Sektoren-Struktur“ öffnen.",
+          "Unter „Neuer Sektor“ den Namen eintragen und auf „Anlegen“ klicken.",
+          "In der neuen Karte „Farbe“ wählen und auf „Speichern“ klicken.",
+          "Unter „Bundesländer“ die Häkchen setzen. Länder außerhalb Deutschlands stehen unter „Weitere Länder“.",
+          "Unter „Standorte“ den Ort bei „Neuer Standort“ eintragen und auf „Hinzufügen“ klicken.",
+          "Prüfen, dass oben kein Hinweis „Ohne Sektor: …“ mehr steht."
+        ],
+        "danach": "Mitglieder werden nach ihrem Bundesland bzw. Land dem Sektor zugeordnet. Verantwortliche ernennst du auf der Sektorseite („Sektorseite öffnen“).",
+        "vorher": "Du bist App Admin und kennst die Bundesländer des Sektors. Ein Häkchen bei einem Bundesland nimmt es dem bisherigen Sektor weg.",
+        "erwartet": [
+          "Die Seite „Sektoren-Struktur“ zeigt oben ein Feld „Neuer Sektor“ und darunter eine Karte je Sektor.",
+          "Die Karte des neuen Sektors erscheint mit „Aktiv“ angehakt und der Zahl der Mitglieder.",
+          "Die Farbe ist gespeichert.",
+          "Das Bundesland ist beim neuen Sektor angehakt und beim bisherigen Sektor nicht mehr.",
+          "Der Standort erscheint als Eintrag in der Karte.",
+          "Der Hinweis „Ohne Sektor: …“ ist weg. Sonst steht dort, welche Länder keinem Sektor gehören."
+        ],
+        "fehler": [
+          {
+            "problem": "„Ein Sektor mit diesem Namen existiert bereits.“",
+            "loesung": "Wähle einen anderen Namen. Groß- und Kleinschreibung zählt nicht."
+          },
+          {
+            "problem": "Ein Bundesland verschwindet aus einem anderen Sektor.",
+            "loesung": "Das ist gewollt: Ein Land gehört immer genau einem Sektor, ein Häkchen verschiebt es."
+          },
+          {
+            "problem": "Mitglieder haben keinen Sektor.",
+            "loesung": "Ihr Bundesland oder Land ist keinem aktiven Sektor zugeordnet. Hake es bei einem Sektor an."
+          },
+          {
+            "problem": "„Das Speichern ist fehlgeschlagen.“",
+            "loesung": "Prüfe Namen und Farbe und lade die Seite neu."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege nur „[ÜBUNG] Testsektor“ mit Farbe und einem Standort an und ordne keine Bundesländer zu, denn das würde echte Mitglieder verschieben. Lösche den Sektor danach mit SEKT-08."
+      },
+      {
+        "id": "SEKT-08",
+        "rollen": ["super_admin"],
+        "titre": "Sektor deaktivieren oder löschen",
+        "wann": "Ein Sektor wird nicht mehr gebraucht.",
+        "schritte": [
+          "„Sektoren-Struktur“ öffnen und die Karte des Sektors suchen.",
+          "Zum Deaktivieren das Häkchen bei „Aktiv“ entfernen.",
+          "Zum Löschen auf „Sektor löschen“ klicken. Es gibt keine Rückfrage.",
+          "Bei einer Fehlermeldung zuerst Verantwortliche entfernen (auf der Sektorseite) oder den Sektor nur deaktivieren."
+        ],
+        "danach": "Ein deaktivierter Sektor ist für Mitglieder nicht mehr sichtbar. Länder, die nur ihm zugeordnet waren, gehören dann keinem aktiven Sektor. Löschen entfernt auch seine Standorte, Beiträge und Treffen.",
+        "vorher": "Du hast geklärt, was mit den Mitgliedern, Treffen und Beiträgen des Sektors geschieht. Im Zweifel deaktivierst du nur.",
+        "erwartet": [
+          "Die Karten aller Sektoren sind sichtbar, auch inaktive.",
+          "Der Sektor erscheint nicht mehr in der Sektorenliste der Mitglieder. Die Karte hier bleibt.",
+          "Die Karte verschwindet. Oben steht eventuell „Ohne Sektor: …“.",
+          "Die Meldung nennt den Grund. Danach klappt Löschen oder Deaktivieren."
+        ],
+        "fehler": [
+          {
+            "problem": "„Der Sektor hat noch Verantwortliche. Bitte zuerst entfernen.“",
+            "loesung": "Öffne die Sektorseite, entferne die Verantwortlichen und lösche dann."
+          },
+          {
+            "problem": "„Der Sektor hat Wettbewerbspunkte. Bitte stattdessen deaktivieren.“",
+            "loesung": "Der Sektor ist Teil der Wertung. Deaktiviere ihn, statt ihn zu löschen."
+          },
+          {
+            "problem": "Du hast einen Sektor versehentlich gelöscht.",
+            "loesung": "Das lässt sich in der App nicht rückgängig machen. Lege ihn neu an. Standorte, Beiträge und Treffen sind verloren."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lösche nur „[ÜBUNG] Testsektor“ aus SEKT-07, der keine Verantwortlichen und keine Punkte hat. Probiere „Löschen“ nie an einem echten Sektor aus."
+      }
+    ],
+    "tipps": [
+      "Im Zweifel deaktivieren statt löschen: So bleiben Treffen, Beiträge und Wettbewerbspunkte erhalten."
+    ]
+  },
+  "fil": {
+    "titre": "Neuigkeiten",
+    "intro": "Hier teilen das Büro und der App Admin Neuigkeiten mit der Gemeinschaft. Alle Mitglieder lesen, reagieren und kommentieren.",
+    "schritte": [
+      "Die Neuigkeiten lesen und mit einem Klick reagieren.",
+      "Unter einem Beitrag einen Kommentar schreiben oder auf einen Kommentar antworten.",
+      "Mit einem Hashtag lässt sich die Liste filtern."
+    ],
+    "workflows": [
+      {
+        "id": "FIL-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Neuigkeit veröffentlichen",
+        "wann": "Du möchtest alle Mitglieder über etwas informieren.",
+        "schritte": [
+          "Das Menü „Neuigkeiten“ öffnen.",
+          "In das Textfeld „Teilen Sie eine Neuigkeit mit der Community…“ schreiben.",
+          "Optional über „Foto oder Dokument anhängen“ ein Bild oder PDF wählen (JPG, PNG, WEBP oder PDF, höchstens 10 MB).",
+          "Nur bei wichtigen Themen „Als wichtig markieren (Mitglieder benachrichtigen)“ ankreuzen.",
+          "Auf „Veröffentlichen“ klicken."
+        ],
+        "danach": "Der Beitrag steht oben in der Liste. Bei „Wichtig“ bekommen die Mitglieder eine Benachrichtigung.",
+        "vorher": "Du bist Büro oder App Admin. Text, Bild oder PDF liegen bereit.",
+        "erwartet": [
+          "Die Seite zeigt oben das Eingabefeld und darunter die Neuigkeiten.",
+          "Der Text steht im Feld. Hashtags (#…) machen den Beitrag später filterbar.",
+          "Der Dateiname erscheint unter dem Feld. Eine ungeeignete Datei weist die App ab.",
+          "Der Haken ist gesetzt. Nur dann ist der Beitrag mit „Wichtig“ markiert.",
+          "Der Beitrag erscheint oben, bei Wichtigkeit mit dem Zeichen „Wichtig“."
+        ],
+        "fehler": [
+          {
+            "problem": "Du siehst kein Eingabefeld.",
+            "loesung": "Neuigkeiten veröffentlichen dürfen nur Büro und App Admin. Mitglieder können lesen, reagieren und kommentieren."
+          },
+          {
+            "problem": "„Die Veröffentlichung ist fehlgeschlagen.“",
+            "loesung": "Prüfe Dateityp und Größe (JPG, PNG, WEBP oder PDF, höchstens 10 MB) und versuche es erneut."
+          },
+          {
+            "problem": "Ein Beitrag war versehentlich „Wichtig“.",
+            "loesung": "Die Benachrichtigung ist schon raus. Blende den Beitrag aus oder lösche ihn (FIL-02) und veröffentliche ihn neu."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Veröffentliche „[ÜBUNG] Testbeitrag“ ohne Foto und ohne „Wichtig“ und lösche ihn danach mit FIL-02. Mit „Wichtig“ würden alle Mitglieder der Testumgebung benachrichtigt."
+      },
+      {
+        "id": "FIL-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Beitrag oder Kommentar ausblenden oder löschen",
+        "wann": "Ein Beitrag oder Kommentar verletzt die Regeln oder ist falsch.",
+        "schritte": [
+          "Das Menü „Neuigkeiten“ öffnen und den Beitrag oder Kommentar suchen.",
+          "Zum Ausblenden unter dem Beitrag auf „Ausblenden“ klicken.",
+          "Zum endgültigen Entfernen eines Beitrags auf „Löschen“ klicken (bei Kommentaren gibt es nur „Ausblenden“).",
+          "Zum Zurückholen eines ausgeblendeten Beitrags auf „Wieder einblenden“ klicken."
+        ],
+        "danach": "Ein ausgeblendeter Beitrag verschwindet für Mitglieder. Ihr seht ihn weiter mit dem Zeichen „Ausgeblendet“. Die Aktion wird im Aktivitätsprotokoll festgehalten.",
+        "vorher": "Du bist Büro oder App Admin und weißt, warum der Beitrag weg soll. Die Beiträge anderer kannst du moderieren; eigene Beiträge löschst du über „Löschen“.",
+        "erwartet": [
+          "Der Beitrag ist gefunden. Unter fremden Beiträgen siehst du „Löschen“ und „Ausblenden“, unter fremden Kommentaren nur „Ausblenden“.",
+          "Der Beitrag trägt das Zeichen „Ausgeblendet“. Mitglieder sehen ihn nicht mehr.",
+          "Der Beitrag ist aus der Liste verschwunden.",
+          "Das Zeichen „Ausgeblendet“ ist weg und der Beitrag ist wieder für alle sichtbar."
+        ],
+        "fehler": [
+          {
+            "problem": "Du siehst keine Knöpfe unter dem Beitrag.",
+            "loesung": "Moderieren dürfen nur Büro und App Admin. Eigene Beiträge löschst du selbst."
+          },
+          {
+            "problem": "Du kannst eigene Beiträge nicht ausblenden.",
+            "loesung": "„Ausblenden“ gibt es nur bei fremden Beiträgen. Lösche den eigenen Beitrag."
+          },
+          {
+            "problem": "Du hast einen Beitrag gelöscht und brauchst ihn wieder.",
+            "loesung": "Löschen ist endgültig. Blende Beiträge im Zweifel nur aus."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Blende nur „[ÜBUNG] Testbeitrag“ aus FIL-01 aus und wieder ein. Lösche ihn danach. Fasse keine echten Beiträge an."
+      }
+    ],
+    "tipps": [
+      "Im Zweifel ausblenden statt löschen: Ausblenden lässt sich zurücknehmen.",
+      "Das Aktivitätsprotokoll (Rollenverwaltung, Reiter „Aktivität“) zeigt, wer wann moderiert hat."
+    ]
+  },
+  "forum": {
+    "titre": "Forum",
+    "intro": "Im Forum sprechen Mitglieder in Themen nach Kategorien (Fußball CA, Leben in Deutschland, Job & Business, Allgemein). Büro und App Admin moderieren.",
+    "schritte": [
+      "Eine Kategorie wählen oder „Alle Kategorien“ ansehen.",
+      "Mit „Neues Thema“ ein Thema starten: Kategorie, Titel und Inhalt, dann „Thema veröffentlichen“.",
+      "Ein Thema öffnen und antworten."
+    ],
+    "workflows": [
+      {
+        "id": "FORUM-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Forum moderieren: anheften, sperren, ausblenden",
+        "wann": "Ein Thema ist wichtig, ausgeufert oder verletzt die Regeln.",
+        "schritte": [
+          "Das Menü „Forum“ öffnen und das Thema öffnen.",
+          "Ein wichtiges Thema mit „Anheften“ nach oben setzen.",
+          "Bei einem Streit „Sperren“ wählen, damit niemand mehr antwortet.",
+          "Ein regelwidriges Thema mit „Ausblenden“ aus dem Forum nehmen. Eine einzelne Antwort blendest du bei der Antwort mit „Ausblenden“ aus."
+        ],
+        "danach": "Angeheftete Themen tragen „Angeheftet“, gesperrte „Gesperrt“, ausgeblendete „Ausgeblendet“. Jede Aktion kannst du mit „Nicht mehr anheften“, „Entsperren“ oder „Wieder einblenden“ zurücknehmen. Die Aktionen stehen im Aktivitätsprotokoll.",
+        "vorher": "Du bist Büro oder App Admin. Du weißt, welches Thema oder welche Antwort betroffen ist.",
+        "erwartet": [
+          "Das Thema ist offen. Unter dem Thema stehen „Anheften“, „Sperren“ und „Ausblenden“.",
+          "Das Thema trägt das Zeichen „Angeheftet“ und steht oben in der Liste.",
+          "Statt des Antwortfelds steht dort „Dieses Thema ist gesperrt — neue Antworten werden nicht mehr angenommen.“",
+          "Das Thema bzw. die Antwort trägt das Zeichen „Ausgeblendet“ und ist für Mitglieder verschwunden."
+        ],
+        "fehler": [
+          {
+            "problem": "Du siehst die Knöpfe nicht.",
+            "loesung": "Moderieren dürfen nur Büro und App Admin."
+          },
+          {
+            "problem": "Du kannst eine eigene Antwort nicht ausblenden.",
+            "loesung": "„Ausblenden“ gibt es nur bei fremden Antworten. Eigene löschst du mit „Löschen“."
+          },
+          {
+            "problem": "Mitglieder beschweren sich über ein gesperrtes Thema.",
+            "loesung": "Mit „Entsperren“ nimmst du die Sperre zurück."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Starte das Thema „[ÜBUNG] Testthema“ in der Kategorie „Allgemein“, hefte es an, sperre es, blende es aus und stelle alles wieder zurück. Fasse keine echten Themen an."
+      }
+    ],
+    "tipps": [
+      "Nur Büro und App Admin sehen ausgeblendete Themen und Antworten.",
+      "Im Zweifel ausblenden statt löschen: Ausblenden lässt sich zurücknehmen."
+    ]
+  },
+  "groupes": {
+    "titre": "Chatgruppen",
+    "intro": "Chatgruppen sind öffentlich oder privat. Öffentlichen Gruppen kann jedes Mitglied beitreten, in private Gruppen wird man eingeladen.",
+    "schritte": [
+      "In der Liste eine öffentliche Gruppe mit „Beitreten“ betreten oder eine eigene mit „Öffnen“.",
+      "Im Chat Nachrichten schreiben und mit „Senden“ abschicken.",
+      "Mit „Gruppe verlassen“ trittst du wieder aus."
+    ],
+    "workflows": [
+      {
+        "id": "GRUP-01",
+        "titre": "Chatgruppe anlegen und Mitglieder einladen",
+        "wann": "Du möchtest mit anderen Mitgliedern in einer eigenen Gruppe chatten, z. B. für ein Treffen.",
+        "schritte": [
+          "Das Menü „Chatgruppen“ öffnen und auf „Neue Gruppe“ klicken.",
+          "„Gruppenname“ und optional die Beschreibung eintragen.",
+          "„Öffentlich“ oder „Privat“ wählen.",
+          "Bei „Mitglieder einladen…“ Namen eintippen und die Personen auswählen.",
+          "Auf „Gruppe erstellen“ klicken."
+        ],
+        "danach": "Die Gruppe erscheint in der Liste. Öffentliche Gruppen sehen alle Mitglieder, private nur die Eingeladenen. Als Ersteller kannst du die Gruppe mit „Gruppe löschen“ wieder entfernen.",
+        "vorher": "Du hast ein Mitgliedskonto und weißt, wen du einladen willst. Wähle „Privat“, wenn nicht jeder beitreten soll.",
+        "erwartet": [
+          "Das Formular „Neue Gruppe“ ist offen.",
+          "Name und Beschreibung stehen im Formular.",
+          "Die Auswahl zeigt „Öffentlich“ oder „Privat“.",
+          "Beim Tippen schlägt die App passende Mitglieder vor. Die gewählten stehen als Liste da.",
+          "Die Gruppe steht in der Liste mit der Zahl der Mitglieder."
+        ],
+        "fehler": [
+          {
+            "problem": "„Die Gruppe konnte nicht erstellt werden.“",
+            "loesung": "Trage einen Gruppennamen ein und versuche es erneut."
+          },
+          {
+            "problem": "Eine Person fehlt in der Gruppe.",
+            "loesung": "Private Gruppen sieht nur, wer eingeladen wurde. Prüfe, ob du die Person ausgewählt hast."
+          },
+          {
+            "problem": "Du findest die Schaltfläche „Gruppe löschen“ nicht.",
+            "loesung": "Sie erscheint im Chat nur für den Ersteller der Gruppe."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege „[ÜBUNG] Testgruppe“ als „Privat“ mit nur deinem Testkonto an und lösche sie danach mit „Gruppe löschen“. Lade keine echten Mitglieder ein."
+      }
+    ],
+    "tipps": ["Eine Nachricht kannst du nur selbst mit „Löschen“ entfernen."]
   }
 }

@@ -107,6 +107,6 @@ describe("AufgabenkartenPage", () => {
     });
     fireEvent.click(screen.getByText("karten_alle_drucken"));
     const druck = document.getElementById("druckbereich") as HTMLElement;
-    expect(druck.querySelectorAll("article")).toHaveLength(3);
+    expect(druck.querySelectorAll("article")).toHaveLength(helpDe.paiements.workflows.length);
   });
 });
