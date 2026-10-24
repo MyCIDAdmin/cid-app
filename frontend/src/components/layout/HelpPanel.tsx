@@ -12,20 +12,15 @@
 import { IconChevronLeft, IconHelp, IconMinus, IconX } from "@tabler/icons-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 import { useHilfeStore } from "../../store/hilfeStore";
 import { ablaufSchluessel, fortschrittLesen, fortschrittSchreiben } from "./hilfeFortschritt";
 import { cleHilfe } from "./helpRoutes";
+import { liste, type Workflow } from "./hilfeKarten";
 
-export interface Workflow {
-  titre: string;
-  wann?: string;
-  schritte: string[];
-  beispiel?: string;
-  danach?: string;
-}
+export type { Workflow };
 
 /** Ein geführter Ablauf : aktueller Schritt groß, Fortschrittsbalken, Zurück/Weiter. */
 export function AblaufBegleiter({
@@ -107,6 +102,12 @@ export function AblaufBegleiter({
           >
             <span className="mr-1 font-bold text-ca">{schritt + 1}.</span>
             {workflow.schritte[schritt]}
+            {workflow.erwartet?.[schritt] && (
+              <p className="mt-2 rounded-cid bg-bg-tertiary/60 p-2 text-xs text-text-secondary">
+                <span className="font-semibold text-text-primary">{t("karte_erwartet")}: </span>
+                {workflow.erwartet[schritt]}
+              </p>
+            )}
           </div>
           {schritt === 0 && workflow.beispiel && (
             <div className="rounded-cid bg-bg-tertiary/60 p-2.5 text-xs text-text-secondary">
@@ -133,6 +134,26 @@ export function AblaufBegleiter({
           </div>
         </div>
       )}
+
+      {workflow.fehler && workflow.fehler.length > 0 && (
+        <div className="space-y-1.5 text-xs">
+          <h4 className="font-bold uppercase text-text-tertiary">{t("karte_fehler")}</h4>
+          <ul className="space-y-1.5">
+            {workflow.fehler.map((f) => (
+              <li key={f.problem} className="rounded-cid bg-bg-tertiary/60 p-2 text-text-secondary">
+                <span className="font-semibold text-text-primary">{f.problem}</span> — {f.loesung}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <Link
+        to={`/hilfe/karten?bereich=${encodeURIComponent(cle)}`}
+        className="block text-xs font-medium text-text-secondary underline"
+      >
+        {t("karte_oeffnen")}
+      </Link>
 
       <div>
         <button
@@ -169,10 +190,6 @@ export function AblaufBegleiter({
       </div>
     </div>
   );
-}
-
-function liste<T>(wert: unknown): T[] {
-  return Array.isArray(wert) ? (wert as T[]) : [];
 }
 
 export default function HelpPanel() {

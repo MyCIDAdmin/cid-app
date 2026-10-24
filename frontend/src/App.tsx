@@ -44,6 +44,7 @@ import RegionDetailPage from "./pages/regionen/RegionDetailPage";
 import RegionenPage from "./pages/regionen/RegionenPage";
 import WettbewerbPage from "./pages/regionen/WettbewerbPage";
 import BerichtPage from "./pages/regionen/BerichtPage";
+import AufgabenkartenPage from "./pages/hilfe/AufgabenkartenPage";
 import SupportPage from "./pages/support/SupportPage";
 import EinlassPage from "./pages/tickets/EinlassPage";
 import TicketsPage from "./pages/tickets/TicketsPage";
@@ -153,6 +154,8 @@ export default function App() {
           <Route path="/mon-profil" element={<MonProfilPage />} />
           {/* Eintrittstickets (QR) : jedes angemeldete Mitglied sieht nur die eigenen Tickets. */}
           <Route path="/tickets" element={<TicketsPage />} />
+          {/* Aufgabenkarten : Anleitungen aus help.json, für alle angemeldeten Konten lesbar. */}
+          <Route path="/hilfe/karten" element={<AufgabenkartenPage />} />
           {/* Einlass : Rechte (Büro, Verantwortliche, Helfer) prüft der Server je Veranstaltung. */}
           <Route path="/einlass/:typ/:id" element={<EinlassPage />} />
           {/* Import Excel (RICEFW W-008/F-019) — même gate RH+ que
