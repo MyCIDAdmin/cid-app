@@ -128,6 +128,8 @@ describe("AufgabenkartenPage", () => {
   it("zeigt Glossar und Jahresrhythmus und filtert das Glossar mit der Suche", () => {
     renderWithProviders(<AufgabenkartenPage />, { route: "/hilfe/karten", path: "/hilfe/karten" });
     expect(screen.getByText("Was ist wann zu tun?")).toBeInTheDocument();
+    expect(screen.getByText("Jede Woche")).toBeInTheDocument();
+    expect(screen.getByText("Jeden Monat")).toBeInTheDocument();
     expect(screen.getByText("Glossar der Vereinssprache")).toBeInTheDocument();
     expect(screen.getByText("Warteliste")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("karten_suche"), { target: { value: "Hero-Video" } });
