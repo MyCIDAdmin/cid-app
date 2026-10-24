@@ -740,3 +740,49 @@ summary:focus-visible,
   outline: 2px solid var(--color-ca);
   outline-offset: 2px;
 }
+
+/* Aufgabenkarten (Konzept_Aufgabenkarten.md) : Beim Drucken / „Als PDF speichern“ erscheint nur
+   der Druckbereich, immer hell und mit einer Karte je Seite. */
+#druckbereich {
+  display: none;
+}
+
+@media print {
+  body.karten-druck > #root {
+    display: none !important;
+  }
+
+  body.karten-druck #druckbereich {
+    display: block;
+  }
+
+  #druckbereich,
+  #druckbereich * {
+    color: #000 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #druckbereich .karte {
+    border: 1px solid #999;
+    border-radius: 0;
+    padding: 12pt;
+    font-size: 11pt;
+    break-inside: avoid;
+    break-after: page;
+  }
+
+  #druckbereich .karte:last-child {
+    break-after: auto;
+  }
+
+  #druckbereich img {
+    max-width: 100%;
+    max-height: 9cm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

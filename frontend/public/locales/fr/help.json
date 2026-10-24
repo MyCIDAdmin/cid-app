@@ -137,7 +137,32 @@
           "Cliquer sur « Marquer comme payé »."
         ],
         "beispiel": "Amira vire 45 € le 28/09 pour « Adhésion Gold 2026 ». Le 30/09 vous voyez le virement : cherchez « Amira », indiquez le 28/09 comme date de transaction et confirmez.",
-        "danach": "Le statut passe à « Payé », l'adhésion devient active, le membre est notifié et peut télécharger son reçu (PDF). Le bouton « Reçu » apparaît dans la liste."
+        "danach": "Le statut passe à « Payé », l'adhésion devient active, le membre est notifié et peut télécharger son reçu (PDF). Le bouton « Reçu » apparaît dans la liste.",
+        "id": "ZAHL-01",
+        "vorher": "L'argent est visible sur le compte de l'association. Le paiement du membre est « En attente ».",
+        "erwartet": [
+          "Vous connaissez le montant, la date et le motif du virement reçu.",
+          "La liste n'affiche que les paiements en attente ; la recherche trouve la ligne du membre.",
+          "Le montant et le motif de la ligne correspondent au relevé. Si quelque chose ne va pas, ne confirmez pas.",
+          "Le champ « Date de transaction » contient la date du virement.",
+          "Le statut passe à « Payé » et le bouton « Reçu » apparaît dans la ligne."
+        ],
+        "fehler": [
+          {
+            "problem": "La ligne manque sous « En attente ».",
+            "loesung": "Choisissez le filtre « Tous » et cherchez par référence plutôt que par nom. Le paiement est peut-être déjà payé."
+          },
+          {
+            "problem": "Le montant diffère du relevé.",
+            "loesung": "Ne confirmez pas. Demandez au membre et clarifiez l'écart d'abord."
+          },
+          {
+            "problem": "Vous avez confirmé par erreur.",
+            "loesung": "Corrigez le statut avec la fiche « Corriger un paiement erroné ou en double » (ZAHL-03)."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez avec un compte de test « [ÜBUNG] Test Membre » une inscription avec virement et confirmez uniquement ce paiement. Ne touchez à aucun paiement [DEMO]. Le paiement alimente les indicateurs ; annulez-le ensuite avec la fiche ZAHL-03.",
+        "rollen": ["dir_financier", "super_admin"]
       },
       {
         "titre": "Marquer une commande boutique comme payée",
@@ -149,7 +174,31 @@
           "Au besoin, ouvrir la facture (PDF)."
         ],
         "beispiel": "Commande CID-2026-0042 (maillot, 59 €) : encaissement trouvé, confirmé. Le statut passe à « Payée ».",
-        "danach": "Les paiements boutique confirmés comptent immédiatement dans les KPI financiers et le bilan annuel."
+        "danach": "Les paiements boutique confirmés comptent immédiatement dans les KPI financiers et le bilan annuel.",
+        "id": "ZAHL-02",
+        "vorher": "La commande figure dans « Paiements de la boutique » et l'argent est arrivé sur le compte.",
+        "erwartet": [
+          "La commande apparaît avec son numéro, son nom et son montant.",
+          "Le montant et le motif du virement correspondent à la commande.",
+          "Le statut de la commande passe à « Payée » ; elle peut être préparée et expédiée.",
+          "Le PDF de la facture s'ouvre."
+        ],
+        "fehler": [
+          {
+            "problem": "La commande est introuvable.",
+            "loesung": "Cherchez par numéro de commande (CID-…) plutôt que par nom et vérifiez le filtre."
+          },
+          {
+            "problem": "Le montant ne correspond pas.",
+            "loesung": "Ne confirmez pas, demandez à la personne qui a commandé."
+          },
+          {
+            "problem": "Vous avez confirmé alors que rien n'est arrivé.",
+            "loesung": "Corrigez le statut avec la fiche ZAHL-03 et prévenez l'entrepôt de ne pas expédier la commande."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez dans la boutique un article « [ÜBUNG] Article test », commandez-le avec un compte de test et confirmez uniquement cette commande. Les paiements boutique comptent dans les indicateurs ; annulez-le ensuite avec la fiche ZAHL-03.",
+        "rollen": ["dir_financier", "super_admin"]
       },
       {
         "titre": "Corriger un paiement erroné ou en double",
@@ -161,7 +210,27 @@
           "Enregistrer."
         ],
         "beispiel": "Karim apparaît deux fois comme « Payé » : annulez la seconde ligne avec le motif « Saisi en double ».",
-        "danach": "Chaque modification est tracée (personne, heure, motif) ; les KPI se recalculent."
+        "danach": "Chaque modification est tracée (personne, heure, motif) ; les KPI se recalculent.",
+        "id": "ZAHL-03",
+        "vorher": "Vous savez quel paiement est erroné (nom, montant, date) et pourquoi.",
+        "erwartet": [
+          "La ligne de la cotisation est visible, même si elle est déjà payée.",
+          "L'historique montre qui a changé le statut et quand.",
+          "Le nouveau statut et le motif sont renseignés.",
+          "Le statut de la ligne est modifié ; l'historique contient une nouvelle entrée avec votre motif."
+        ],
+        "fehler": [
+          {
+            "problem": "L'enregistrement est impossible.",
+            "loesung": "Vérifiez que vous avez le droit d'écriture (directeur financier, administrateur de l'app) et qu'un nouveau statut est choisi."
+          },
+          {
+            "problem": "Vous avez modifié la mauvaise ligne.",
+            "loesung": "Remettez le statut précédent, également avec un motif. L'historique montre les deux modifications."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : annulez le paiement d'exercice de ZAHL-01 avec le motif « [ÜBUNG] Test » puis ouvrez l'historique.",
+        "rollen": ["dir_financier", "super_admin"]
       }
     ],
     "tipps": [
@@ -191,7 +260,31 @@
           "Cliquez sur « Import bestätigen » et téléchargez le rapport."
         ],
         "beispiel": "Vous saisissez 40 virements de septembre ; pour 31, l’e-mail du membre est indiqué, pour 9 seulement le motif.",
-        "danach": "Les 31 lignes complètes sont immédiatement enregistrées comme payées (sans e-mail aux membres). Les 9 autres apparaissent dans la liste « Ouvert »."
+        "danach": "Les 31 lignes complètes sont immédiatement enregistrées comme payées (sans e-mail aux membres). Les 9 autres apparaissent dans la liste « Ouvert ».",
+        "id": "ZAHL-04",
+        "vorher": "Une liste Excel des paiements (relevé bancaire ou liste maison). Le modèle se télécharge dans l'app.",
+        "erwartet": [
+          "Le modèle est téléchargé ; les colonnes sont date, montant, mode de paiement, référence et motif (e-mail/CIN, article et année sont facultatifs).",
+          "Le nom du fichier apparaît dans le formulaire. Rien n'est encore enregistré.",
+          "La liste de contrôle sépare les nouvelles lignes, les doublons (même référence) et les erreurs.",
+          "Les lignes complètes sont enregistrées comme payées, le rapport Excel est téléchargé."
+        ],
+        "fehler": [
+          {
+            "problem": "La liste de contrôle affiche des erreurs.",
+            "loesung": "Corrigez les lignes concernées dans le fichier Excel et vérifiez à nouveau. « Prüfen » n'enregistre rien, vous pouvez le faire autant de fois que nécessaire."
+          },
+          {
+            "problem": "Beaucoup de lignes restent « Ouvertes ».",
+            "loesung": "Sans e-mail ni CIN, l'app ne reconnaît pas le membre. Attribuez les lignes avec la fiche ZAHL-05."
+          },
+          {
+            "problem": "Vous avez chargé le fichier deux fois.",
+            "loesung": "Les références déjà importées sont ignorées. Rien n'est enregistré en double."
+          }
+        ],
+        "uebung": "Jusqu'à la fin de la phase de tests, seulement « Prüfen », pas « Import bestätigen » : créez un fichier de trois lignes avec les références « ÜBUNG-001 » à « ÜBUNG-003 » et regardez la liste de contrôle. « Prüfen » n'enregistre rien.",
+        "rollen": ["dir_financier", "super_admin"]
       },
       {
         "titre": "Attribuer et valider un paiement ouvert",
@@ -203,7 +296,27 @@
           "Cliquez sur « Valider »."
         ],
         "beispiel": "Référence « Beitrag Amira 2026 » sans e-mail : vous cherchez « Amira », la sélectionnez, article « Cotisation », année 2026, Valider.",
-        "danach": "L’entrée passe à « Validé », le paiement apparaît chez le membre et dans la liste des paiements ; le statut annuel du membre est mis à jour."
+        "danach": "L’entrée passe à « Validé », le paiement apparaît chez le membre et dans la liste des paiements ; le statut annuel du membre est mis à jour.",
+        "id": "ZAHL-05",
+        "vorher": "Une entrée importée figure dans la liste « Ouvert » (membre ou article manquant).",
+        "erwartet": [
+          "La liste n'affiche que les entrées pas encore enregistrées.",
+          "Le membre choisi apparaît avec son nom dans le champ.",
+          "L'article et l'année sont renseignés et correspondent au paiement.",
+          "L'entrée est « Enregistrée » ; le paiement apparaît chez le membre et dans la liste des paiements, son statut annuel est mis à jour."
+        ],
+        "fehler": [
+          {
+            "problem": "Le membre est introuvable.",
+            "loesung": "Cherchez avec l'adresse e-mail ou vérifiez l'orthographe. Si le membre n'existe pas encore, créez-le d'abord."
+          },
+          {
+            "problem": "Vous avez enregistré à tort.",
+            "loesung": "Les paiements enregistrés ne se modifient plus ici. Corrigez via la liste des paiements (fiche ZAHL-03)."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : utilisez seulement les entrées « ÜBUNG-… » de ZAHL-04 et un membre « [ÜBUNG] … ». L'enregistrement modifie les indicateurs ; corrigez ensuite avec ZAHL-03.",
+        "rollen": ["dir_financier", "super_admin"]
       },
       {
         "titre": "Écarter une entrée erronée ou en double",
@@ -213,7 +326,25 @@
           "Pour annuler, choisissez le filtre « Écarté » et cliquez sur « Rétablir »."
         ],
         "beispiel": "Un remboursement figure sur le relevé : vous l’écartez.",
-        "danach": "L’entrée est masquée, mais jamais supprimée."
+        "danach": "L’entrée est masquée, mais jamais supprimée.",
+        "id": "ZAHL-06",
+        "vorher": "Une entrée de la liste « Ouvert » n'a rien à faire dans le système (p. ex. un virement privé).",
+        "erwartet": [
+          "L'entrée disparaît de la liste « Ouvert ».",
+          "L'entrée figure sous le filtre « Écarté » ; après « Rétablir » elle est de nouveau dans « Ouvert »."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous avez écarté par erreur.",
+            "loesung": "Choisissez le filtre « Écarté » et cliquez sur « Rétablir »."
+          },
+          {
+            "problem": "Vous voulez supprimer définitivement l'entrée.",
+            "loesung": "Ce n'est pas prévu. Les entrées écartées restent masquées mais conservées."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : écartez une entrée « ÜBUNG-… » et rétablissez-la. Cela ne modifie aucun indicateur.",
+        "rollen": ["dir_financier", "super_admin"]
       }
     ],
     "tipps": [
@@ -851,5 +982,32 @@
   "minimieren": "Réduire",
   "vergroessern": "Rouvrir l'aide",
   "andere_seite": "Cette aide concerne une autre page.",
-  "zu_dieser_seite": "Aide de cette page"
+  "zu_dieser_seite": "Aide de cette page",
+  "karten_titel": "Fiches pratiques",
+  "karten_intro": "Chaque fiche guide pas à pas une tâche d'administration : quand en avez-vous besoin, que voyez-vous après chaque étape, que faire en cas d'erreur. Avec « Imprimer / PDF », vous enregistrez une fiche ou toutes les fiches affichées en PDF.",
+  "karten_suche": "Rechercher",
+  "karten_rolle": "Rôle",
+  "karten_alle_rollen": "Tous les rôles",
+  "karten_bereich": "Domaine",
+  "karten_alle_bereiche": "Tous les domaines",
+  "karten_drucken": "Imprimer / PDF",
+  "karten_alle_drucken": "Imprimer / PDF les fiches affichées",
+  "karten_anzahl_one": "{{count}} fiche",
+  "karten_anzahl_other": "{{count}} fiches",
+  "karten_keine": "Aucune fiche trouvée. Modifiez la recherche ou le filtre.",
+  "karten_rollen_label": "Pour",
+  "karte_vorher": "À prévoir avant",
+  "karte_erwartet": "Vous voyez maintenant",
+  "karte_fehler": "Si quelque chose ne fonctionne pas",
+  "karte_uebung": "Exercice",
+  "karte_uebung_hinweis": "S'exercer uniquement sur l'environnement de test, jamais en production. Ne créez que vos propres entrées dont le nom commence par « [ÜBUNG] » et ne modifiez aucune entrée « [DEMO] ».",
+  "karte_oeffnen": "Ouvrir comme fiche (impression/PDF)",
+  "rollen": {
+    "rh": "Ressources humaines",
+    "bureau_admin": "Bureau / comité",
+    "dir_financier": "Directeur financier",
+    "super_admin": "Administrateur de l'app",
+    "region": "Responsables de région",
+    "einlass": "Aides à l'entrée"
+  }
 }

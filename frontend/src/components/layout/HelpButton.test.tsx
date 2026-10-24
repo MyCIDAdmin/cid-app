@@ -159,6 +159,24 @@ describe("AblaufBegleiter", () => {
     expect(screen.queryByText("ablauf_fertig")).not.toBeInTheDocument();
   });
 
+  it("zeigt je Schritt das erwartete Ergebnis, am Ende die Fehlerfälle und den Link zur Karte", () => {
+    const karte = {
+      ...workflow,
+      erwartet: ["Die Zeile ist sichtbar.", "Status „Bezahlt“."],
+      fehler: [{ problem: "Zeile fehlt", loesung: "Filter „Alle“ wählen" }],
+    };
+    renderWithProviders(<AblaufBegleiter cle="paiements" workflow={karte} onZurueck={vi.fn()} />);
+    expect(screen.getByText("Die Zeile ist sichtbar.")).toBeInTheDocument();
+    expect(screen.queryByText("Status „Bezahlt“.")).not.toBeInTheDocument();
+    expect(screen.getByText("Zeile fehlt")).toBeInTheDocument();
+    expect(screen.getByText("karte_oeffnen").closest("a")).toHaveAttribute(
+      "href",
+      "/hilfe/karten?bereich=paiements",
+    );
+    fireEvent.click(screen.getByText("erledigt_weiter"));
+    expect(screen.getByText("Status „Bezahlt“.")).toBeInTheDocument();
+  });
+
   it("ruft onZurueck für die Ablaufliste auf", () => {
     const zurueck = vi.fn();
     renderWithProviders(

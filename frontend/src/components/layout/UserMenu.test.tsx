@@ -74,6 +74,13 @@ describe("UserMenu", () => {
     expect(screen.getByText("action.deconnexion")).toBeInTheDocument();
   });
 
+  it("verlinkt die Aufgabenkarten im Profilmenü", () => {
+    renderWithProviders(<UserMenu />);
+    fireEvent.click(screen.getByLabelText("menu_utilisateur.aria_label"));
+    const lien = screen.getByText("menu_utilisateur.aufgabenkarten").closest("a");
+    expect(lien).toHaveAttribute("href", "/hilfe/karten");
+  });
+
   it("zeigt „Support“ im Profilmenü nur, wenn der Menüpunkt für das Konto offen ist", () => {
     renderWithProviders(<UserMenu />);
     fireEvent.click(screen.getByLabelText("menu_utilisateur.aria_label"));

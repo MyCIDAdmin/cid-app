@@ -13,6 +13,7 @@
  * overflow.
  */
 import {
+  IconChecklist,
   IconLifebuoy,
   IconLogout,
   IconSettings,
@@ -118,6 +119,15 @@ export default function UserMenu() {
           >
             <IconTicket size={16} className="shrink-0" />
             {t("menu_utilisateur.tickets")}
+          </Link>
+          <Link
+            to="/hilfe/karten"
+            onClick={() => setOuvert(false)}
+            role="menuitem"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-tertiary"
+          >
+            <IconChecklist size={16} className="shrink-0" />
+            {t("menu_utilisateur.aufgabenkarten")}
           </Link>
           {supportOffen && (
             <Link

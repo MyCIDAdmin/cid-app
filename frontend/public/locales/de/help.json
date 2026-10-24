@@ -137,7 +137,32 @@
           "Auf „Als bezahlt markieren“ klicken."
         ],
         "beispiel": "Amira überweist am 28.09. 45 € für „Mitgliedschaft Gold 2026“. Am 30.09. siehst du den Eingang. Du suchst „Amira“, trägst als Transaktionsdatum 28.09. ein und bestätigst.",
-        "danach": "Der Status wechselt auf „Bezahlt“, die Mitgliedschaft wird aktiv, das Mitglied wird benachrichtigt und kann den Beleg (PDF) herunterladen. In der Liste erscheint die Schaltfläche „Beleg“."
+        "danach": "Der Status wechselt auf „Bezahlt“, die Mitgliedschaft wird aktiv, das Mitglied wird benachrichtigt und kann den Beleg (PDF) herunterladen. In der Liste erscheint die Schaltfläche „Beleg“.",
+        "id": "ZAHL-01",
+        "vorher": "Der Geldeingang ist auf dem Vereinskonto sichtbar. Die Zahlung des Mitglieds steht auf „Ausstehend“.",
+        "erwartet": [
+          "Du kennst Betrag, Datum und Verwendungszweck des Eingangs.",
+          "Die Liste zeigt nur ausstehende Zahlungen; die Suche findet die Zeile des Mitglieds.",
+          "Betrag und Verwendungszweck der Zeile stimmen mit dem Kontoauszug überein. Stimmt etwas nicht, bestätige nicht.",
+          "Im Feld „Transaktionsdatum“ steht das Datum der Überweisung.",
+          "Der Status wechselt auf „Bezahlt“, in der Zeile erscheint die Schaltfläche „Beleg“."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Zeile fehlt unter „Ausstehend“.",
+            "loesung": "Wähle den Filter „Alle“ und suche nach der Referenz statt nach dem Namen. Vielleicht ist die Zahlung schon bezahlt."
+          },
+          {
+            "problem": "Der Betrag weicht vom Kontoauszug ab.",
+            "loesung": "Nicht bestätigen. Frage beim Mitglied nach und kläre den Unterschied zuerst."
+          },
+          {
+            "problem": "Du hast versehentlich bestätigt.",
+            "loesung": "Korrigiere den Status mit der Karte „Falsche oder doppelte Zahlung korrigieren“ (ZAHL-03)."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege mit einem eigenen Testkonto „[ÜBUNG] Test Mitglied“ eine Anmeldung mit Überweisung an und bestätige nur diese Zahlung. Berühre keine [DEMO]-Zahlungen. Die Zahlung fließt in die Kennzahlen ein; storniere sie danach mit der Karte ZAHL-03.",
+        "rollen": ["dir_financier", "super_admin"]
       },
       {
         "titre": "Shop-Bestellung bezahlt melden",
@@ -149,7 +174,31 @@
           "Bei Bedarf über „Rechnung“ das PDF öffnen."
         ],
         "beispiel": "Bestellung CID-2026-0042 (Trikot, 59 €): Eingang am Kontoauszug gefunden, bestätigt. Der Status der Bestellung geht auf „Bezahlt“, das Lager sieht sie als nächste zu packende Bestellung.",
-        "danach": "Bestätigte Shop-Zahlungen zählen sofort in den Finanz-KPIs und der Jahresbilanz."
+        "danach": "Bestätigte Shop-Zahlungen zählen sofort in den Finanz-KPIs und der Jahresbilanz.",
+        "id": "ZAHL-02",
+        "vorher": "Die Bestellung steht in „Zahlungen aus dem Shop“ und das Geld ist auf dem Konto eingegangen.",
+        "erwartet": [
+          "Die Bestellung erscheint mit Nummer, Name und Betrag.",
+          "Betrag und Verwendungszweck des Eingangs passen zur Bestellung.",
+          "Der Status der Bestellung wechselt auf „Bezahlt“; sie kann jetzt gepackt und versendet werden.",
+          "Das PDF der Rechnung öffnet sich."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Bestellung wird nicht gefunden.",
+            "loesung": "Suche nach der Bestellnummer (CID-…) statt nach dem Namen und prüfe den Filter."
+          },
+          {
+            "problem": "Der Betrag stimmt nicht.",
+            "loesung": "Nicht bestätigen, beim Besteller nachfragen."
+          },
+          {
+            "problem": "Du hast bestätigt, obwohl nichts eingegangen ist.",
+            "loesung": "Korrigiere den Status mit der Karte ZAHL-03 und sage dem Lager, dass die Bestellung nicht versendet werden darf."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege im Shop einen Artikel „[ÜBUNG] Testartikel“ an, bestelle ihn mit einem eigenen Testkonto und bestätige nur diese Bestellung. Shop-Zahlungen zählen in die Kennzahlen; storniere sie danach mit der Karte ZAHL-03.",
+        "rollen": ["dir_financier", "super_admin"]
       },
       {
         "titre": "Falsche oder doppelte Zahlung korrigieren",
@@ -161,7 +210,27 @@
           "Speichern."
         ],
         "beispiel": "Karim wurde zweimal als „Bezahlt“ erfasst. Du stornierst die zweite Zeile mit dem Grund „Doppelt erfasst“.",
-        "danach": "Jede Änderung steht mit Person, Zeit und Grund im Verlauf; die KPIs rechnen sich automatisch neu."
+        "danach": "Jede Änderung steht mit Person, Zeit und Grund im Verlauf; die KPIs rechnen sich automatisch neu.",
+        "id": "ZAHL-03",
+        "vorher": "Du weißt, welche Zahlung falsch ist (Name, Betrag, Datum) und warum.",
+        "erwartet": [
+          "Die Zeile des Beitrags ist sichtbar, auch wenn sie schon bezahlt ist.",
+          "Der Verlauf zeigt, wer wann welchen Status gesetzt hat.",
+          "Der neue Status und der Grund sind ausgefüllt.",
+          "Der Status der Zeile ist geändert; im Verlauf steht ein neuer Eintrag mit deinem Grund."
+        ],
+        "fehler": [
+          {
+            "problem": "Speichern ist nicht möglich.",
+            "loesung": "Prüfe, ob du Schreibrecht hast (Finanzdirektor, App Admin) und ob ein neuer Status gewählt ist."
+          },
+          {
+            "problem": "Du hast die falsche Zeile geändert.",
+            "loesung": "Setze den Status auf den vorherigen Wert zurück, ebenfalls mit Grund. Der Verlauf zeigt beide Änderungen."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Storniere die Übungszahlung aus ZAHL-01 mit dem Grund „[ÜBUNG] Test“ und öffne danach den Verlauf.",
+        "rollen": ["dir_financier", "super_admin"]
       }
     ],
     "tipps": [
@@ -191,7 +260,31 @@
           "„Import bestätigen“ klicken und den Bericht herunterladen."
         ],
         "beispiel": "Du trägst 40 Überweisungen aus dem September ein; bei 31 steht die E-Mail des Mitglieds, bei 9 nur der Verwendungszweck.",
-        "danach": "Die 31 vollständigen Zeilen sind sofort als bezahlt gebucht (ohne E-Mail an die Mitglieder). Die 9 übrigen erscheinen in der Liste „Offen“."
+        "danach": "Die 31 vollständigen Zeilen sind sofort als bezahlt gebucht (ohne E-Mail an die Mitglieder). Die 9 übrigen erscheinen in der Liste „Offen“.",
+        "id": "ZAHL-04",
+        "vorher": "Eine Excel-Liste der Zahlungen (Kontoauszug oder eigene Liste). Die Vorlage holst du in der App.",
+        "erwartet": [
+          "Die Vorlage wird heruntergeladen; die Spalten sind Datum, Betrag, Zahlungsart, Referenz und Verwendungszweck (E-Mail/CIN, Artikel und Jahr sind freiwillig).",
+          "Der Dateiname steht im Formular. Es ist noch nichts gespeichert.",
+          "Die Prüfliste zeigt neue Zeilen, Dubletten (gleiche Referenz) und Fehler getrennt.",
+          "Die vollständigen Zeilen sind als bezahlt gebucht, der Excel-Bericht ist heruntergeladen."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Prüfliste zeigt Fehler.",
+            "loesung": "Korrigiere die betroffenen Zeilen in der Excel-Datei und prüfe erneut. „Prüfen“ speichert nichts, du kannst es beliebig oft tun."
+          },
+          {
+            "problem": "Viele Zeilen bleiben „Offen“.",
+            "loesung": "Ohne E-Mail oder CIN erkennt die App das Mitglied nicht. Ordne die Zeilen mit der Karte ZAHL-05 zu."
+          },
+          {
+            "problem": "Du hast die Datei zweimal geladen.",
+            "loesung": "Bereits importierte Referenzen werden übersprungen. Es wird nichts doppelt gebucht."
+          }
+        ],
+        "uebung": "Bis zum Ende der Testrunde nur „Prüfen“, nicht „Import bestätigen“: Lege eine Datei mit drei Zeilen und den Referenzen „ÜBUNG-001“ bis „ÜBUNG-003“ an und sieh dir die Prüfliste an. Prüfen speichert nichts.",
+        "rollen": ["dir_financier", "super_admin"]
       },
       {
         "titre": "Offene Zahlung zuordnen und buchen",
@@ -203,7 +296,27 @@
           "„Buchen“ klicken."
         ],
         "beispiel": "Referenz „Beitrag Amira 2026“ ohne E-Mail: Du suchst „Amira“, wählst sie aus, Artikel „Mitgliedsbeitrag“, Jahr 2026, Buchen.",
-        "danach": "Der Eintrag wird „Gebucht“, die Zahlung erscheint beim Mitglied und in der Zahlungsliste; der Jahresstatus des Mitglieds wird aktualisiert."
+        "danach": "Der Eintrag wird „Gebucht“, die Zahlung erscheint beim Mitglied und in der Zahlungsliste; der Jahresstatus des Mitglieds wird aktualisiert.",
+        "id": "ZAHL-05",
+        "vorher": "Ein importierter Eintrag steht in der Liste „Offen“ (Mitglied oder Artikel fehlt).",
+        "erwartet": [
+          "Die Liste zeigt nur Einträge, die noch nicht gebucht sind.",
+          "Das gewählte Mitglied steht mit Namen im Feld.",
+          "Artikel und Jahr sind gesetzt und passen zur Zahlung.",
+          "Der Eintrag ist „Gebucht“; die Zahlung erscheint beim Mitglied und in der Zahlungsliste, sein Jahresstatus ist aktualisiert."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Mitglied wird nicht gefunden.",
+            "loesung": "Suche mit der E-Mail-Adresse oder prüfe die Schreibweise. Gibt es das Mitglied noch nicht, lege es zuerst an."
+          },
+          {
+            "problem": "Du hast falsch gebucht.",
+            "loesung": "Gebuchte Zahlungen lassen sich hier nicht mehr ändern. Korrigiere über die Zahlungsliste (Karte ZAHL-03)."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Nutze nur Einträge „ÜBUNG-…“ aus ZAHL-04 und ein Mitglied „[ÜBUNG] …“. Das Buchen verändert Kennzahlen; korrigiere danach mit ZAHL-03.",
+        "rollen": ["dir_financier", "super_admin"]
       },
       {
         "titre": "Falschen oder doppelten Eintrag ausblenden",
@@ -213,7 +326,25 @@
           "Zum Rückgängigmachen den Filter „Verworfen“ wählen und „Wiederherstellen“ klicken."
         ],
         "beispiel": "Eine Rückerstattung steht im Kontoauszug: Du verwirfst sie.",
-        "danach": "Der Eintrag wird ausgeblendet, aber nie gelöscht."
+        "danach": "Der Eintrag wird ausgeblendet, aber nie gelöscht.",
+        "id": "ZAHL-06",
+        "vorher": "Ein Eintrag in „Offen“ gehört nicht ins System (z. B. eine private Überweisung).",
+        "erwartet": [
+          "Der Eintrag verschwindet aus der Liste „Offen“.",
+          "Unter dem Filter „Verworfen“ steht der Eintrag; nach „Wiederherstellen“ ist er wieder in „Offen“."
+        ],
+        "fehler": [
+          {
+            "problem": "Du hast aus Versehen verworfen.",
+            "loesung": "Wähle den Filter „Verworfen“ und klicke „Wiederherstellen“."
+          },
+          {
+            "problem": "Du willst den Eintrag endgültig löschen.",
+            "loesung": "Das ist nicht vorgesehen. Verworfene Einträge bleiben ausgeblendet erhalten."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Verwirf einen Eintrag „ÜBUNG-…“ und stelle ihn wieder her. Das ändert keine Kennzahlen.",
+        "rollen": ["dir_financier", "super_admin"]
       }
     ],
     "tipps": [
@@ -851,5 +982,32 @@
   "minimieren": "Verkleinern",
   "vergroessern": "Hilfe wieder öffnen",
   "andere_seite": "Diese Hilfe gehört zu einer anderen Seite.",
-  "zu_dieser_seite": "Hilfe zu dieser Seite"
+  "zu_dieser_seite": "Hilfe zu dieser Seite",
+  "karten_titel": "Aufgabenkarten",
+  "karten_intro": "Jede Karte führt Schritt für Schritt durch eine Verwaltungsaufgabe: Wann brauche ich sie, was sehe ich nach jedem Schritt, was tue ich bei Fehlern. Mit „Drucken / PDF“ speicherst du eine Karte oder alle angezeigten Karten als PDF.",
+  "karten_suche": "Suchen",
+  "karten_rolle": "Rolle",
+  "karten_alle_rollen": "Alle Rollen",
+  "karten_bereich": "Bereich",
+  "karten_alle_bereiche": "Alle Bereiche",
+  "karten_drucken": "Drucken / PDF",
+  "karten_alle_drucken": "Alle angezeigten drucken / PDF",
+  "karten_anzahl_one": "{{count}} Karte",
+  "karten_anzahl_other": "{{count}} Karten",
+  "karten_keine": "Keine Karte gefunden. Ändere die Suche oder den Filter.",
+  "karten_rollen_label": "Für",
+  "karte_vorher": "Vorher nötig",
+  "karte_erwartet": "Du siehst jetzt",
+  "karte_fehler": "Wenn etwas nicht klappt",
+  "karte_uebung": "Übung",
+  "karte_uebung_hinweis": "Nur auf der Testumgebung üben, nie im echten Betrieb. Lege nur eigene Einträge mit dem Namensanfang „[ÜBUNG]“ an und ändere keine Einträge mit „[DEMO]“.",
+  "karte_oeffnen": "Als Karte öffnen (mit Druck/PDF)",
+  "rollen": {
+    "rh": "Personalabteilung",
+    "bureau_admin": "Vorstand / Büro",
+    "dir_financier": "Finanzdirektor",
+    "super_admin": "App Admin",
+    "region": "Verantwortliche der Region",
+    "einlass": "Einlass-Helfer"
+  }
 }
