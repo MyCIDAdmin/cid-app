@@ -692,6 +692,41 @@
         ],
         "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : annulez le paiement d'exercice de ZAHL-01 avec le motif « [ÜBUNG] Test » puis ouvrez l'historique.",
         "rollen": ["dir_financier", "super_admin"]
+      },
+      {
+        "id": "ZAHL-07",
+        "rollen": ["dir_financier", "super_admin"],
+        "titre": "Confirmer les frais de participation au Tippspiel",
+        "wann": "Un membre s'est inscrit à un jeu de pronostics payant et a payé la participation.",
+        "schritte": [
+          "Ouvrir « Paiements » dans le menu et aller à la section « Frais de participation Tippspiel ».",
+          "Vérifier dans le tableau le membre, le Tippspiel, le montant et « Inscrit le ».",
+          "Vérifier sur le compte de l'association ou en caisse que le montant est bien arrivé.",
+          "Cliquer sur « Confirmer » dans la ligne."
+        ],
+        "danach": "Le membre peut aussitôt saisir ses pronostics et apparaît dans le classement. Les paiements du Tippspiel forment un système simple à part : ils n'apparaissent pas dans la liste des cotisations.",
+        "vorher": "Vous êtes directeur financier ou administrateur de l'application. Le montant est arrivé sur le compte ou en caisse.",
+        "erwartet": [
+          "La page « Paiements » est ouverte. La section « Frais de participation Tippspiel » indique : « Paiements en attente pour tous les jeux de pronostics. »",
+          "Vous reconnaissez la personne et le jeu. S'il n'y a rien à faire, il est écrit « Aucun paiement en attente. »",
+          "Vous avez vu vous-même l'encaissement. L'application ne le vérifie pas.",
+          "La ligne disparaît de la liste."
+        ],
+        "fehler": [
+          {
+            "problem": "La section « Frais de participation Tippspiel » manque.",
+            "loesung": "Seuls le directeur financier et l'administrateur de l'application la voient. Vérifiez votre rôle."
+          },
+          {
+            "problem": "« La confirmation a échoué. »",
+            "loesung": "Rechargez la page. Quelqu'un d'autre a peut-être déjà confirmé. Pour un jeu gratuit, il n'y a rien à confirmer."
+          },
+          {
+            "problem": "Un membre dit ne pas pouvoir pronostiquer.",
+            "loesung": "Pour un jeu payant, les pronostics ne sont possibles qu'après votre confirmation. Vérifiez si la ligne est encore en attente."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Confirmez uniquement la participation de votre propre compte de test au Tippspiel de test de TIPP-01. Ne confirmez aucun paiement de vrais membres."
       }
     ],
     "tipps": [
@@ -3224,11 +3259,446 @@
           }
         ],
         "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez le match « [ÜBUNG] Club test A – [ÜBUNG] Club test B » avec la compétition « [ÜBUNG] » (pas « Ligue 1 ») puis supprimez-le avec « Supprimer le match ». Ainsi il ne compte pas dans le jeu de pronostics."
+      },
+      {
+        "id": "TIPP-01",
+        "rollen": ["super_admin"],
+        "titre": "Créer et publier un jeu de pronostics (Tippspiel)",
+        "wann": "Une nouvelle saison de pronostics doit démarrer.",
+        "schritte": [
+          "Dans le Fan-Club, ouvrir l'onglet « Ticker » et cliquer, dans la section pronostics, sur « Créer un nouveau jeu de pronostics ».",
+          "Saisir « Titre », « Saison (ex. 2026-2027) » et les règles. Les membres voient les règles.",
+          "Saisir éventuellement la « Participation (€, optionnel) », par exemple 10.00. Laisser vide signifie gratuit.",
+          "Avec « Ajouter un lot », choisir pour chaque place le type : « Montant fixe », « Pourcentage de la cagnotte » ou « Article de la boutique », et saisir la valeur.",
+          "Cliquer sur « Créer le jeu ». Le jeu est maintenant un brouillon.",
+          "Tout vérifier, si besoin « Modifier », puis cliquer sur « Publier »."
+        ],
+        "danach": "Les membres voient le jeu et peuvent y participer avec « Participer ». On ne pronostique que les matchs de Ligue 1, jusqu'à un jour avant le coup d'envoi. Points : 4 pour le résultat exact, 2 pour le vainqueur avec la bonne différence de buts, 1 pour la tendance.",
+        "vorher": "Vous êtes administrateur de l'application. Le dernier jeu est clôturé ou il n'y en a pas encore. Vous connaissez la saison, la participation et les lots.",
+        "erwartet": [
+          "Le formulaire avec titre, saison, règles, participation et lots est ouvert.",
+          "Titre et saison sont obligatoires. Sans les deux, rien ne se passe à l'envoi.",
+          "La participation est un nombre dans le champ. Sans participation, le jeu affichera plus tard « Gratuit ».",
+          "Chaque lot ajoute une ligne avec « Place », « Type » et le champ correspondant (« Montant (€) », « Pourcentage (%) » ou « Article »).",
+          "Le jeu apparaît avec le badge « Brouillon ». Vous seul, administrateur de l'application, le voyez.",
+          "Le badge passe à « Publié » et les membres voient le jeu."
+        ],
+        "fehler": [
+          {
+            "problem": "« Le jeu de pronostics n'a pas pu être créé. »",
+            "loesung": "Vérifiez que la participation et les lots sont complets et saisis sous forme de nombre. Pour « Article de la boutique », un article doit être choisi."
+          },
+          {
+            "problem": "Vous voulez modifier les lots après la publication.",
+            "loesung": "Ce n'est pas prévu. Fixez donc lots et participation tant que le jeu est un brouillon."
+          },
+          {
+            "problem": "Le bouton « Créer un nouveau jeu de pronostics » manque.",
+            "loesung": "Il n'apparaît que s'il n'y a pas encore de jeu ou si le dernier est clôturé (TIPP-02)."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez « [ÜBUNG] Tippspiel test » gratuit uniquement si aucun jeu nécessaire aux cas de test n'est en cours. Publiez-le, participez avec votre compte de test, puis clôturez-le avec TIPP-02. L'application n'a pas de bouton pour supprimer un jeu ou le rouvrir."
+      },
+      {
+        "id": "TIPP-02",
+        "rollen": ["super_admin"],
+        "titre": "Clôturer le jeu de pronostics et en lancer un nouveau",
+        "wann": "La saison est terminée ou le jeu doit s'arrêter.",
+        "schritte": [
+          "Dans le Fan-Club, ouvrir l'onglet « Ticker » et vérifier le « Classement » dans la section pronostics.",
+          "Cliquer sur « Clôturer le jeu ».",
+          "Pour la manche suivante, cliquer sur « Créer un nouveau jeu de pronostics » et continuer comme dans TIPP-01."
+        ],
+        "danach": "Le jeu affiche « Clôturé ». Plus de nouvelle participation ni de pronostic, le classement reste visible. L'application n'a pas de bouton pour le rouvrir.",
+        "vorher": "Les derniers matchs sont comptés et le classement est correct. Vous corrigez avant les résultats manquants dans le calendrier (SPIEL-01).",
+        "erwartet": [
+          "Le classement montre place, membre et points des participants confirmés.",
+          "Le badge passe à « Clôturé ». Le bouton « Participer » est bloqué.",
+          "Le formulaire d'un nouveau jeu est ouvert."
+        ],
+        "fehler": [
+          {
+            "problem": "Le classement est vide.",
+            "loesung": "Seuls les participants dont le paiement est confirmé y figurent. Vérifiez les paiements en attente avec ZAHL-07."
+          },
+          {
+            "problem": "Vous avez clôturé trop tôt.",
+            "loesung": "Rouvrir n'est pas possible dans l'application. Créez un nouveau jeu."
+          },
+          {
+            "problem": "Les lots des gagnants doivent être versés.",
+            "loesung": "Le classement et les lots figurent dans l'application. Le versement, vous l'organisez vous-mêmes."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Clôturez uniquement le jeu de test de TIPP-01. Ne clôturez jamais un jeu en cours pour essayer."
+      },
+      {
+        "id": "TIPP-03",
+        "titre": "Participer au jeu de pronostics et pronostiquer",
+        "wann": "Vous voulez participer au jeu de pronostics du Fan-Club.",
+        "schritte": [
+          "Dans le Fan-Club, ouvrir l'onglet « Ticker » et lire les règles et les lots dans la section pronostics.",
+          "Cliquer sur « Participer ».",
+          "Si une participation est demandée, la payer et attendre la confirmation du directeur financier.",
+          "Sous « Mes pronostics », saisir pour chaque match les buts des deux équipes et cliquer sur « Enregistrer ».",
+          "Consulter votre place dans le « Classement ». « Mes pronostics passés » montre le résultat, votre pronostic et les points."
+        ],
+        "danach": "Vous pouvez modifier votre pronostic jusqu'à un jour avant le coup d'envoi. Points : 4 pour le résultat exact, 2 pour le bon vainqueur avec la bonne différence de buts, 1 pour la bonne tendance.",
+        "vorher": "Vous avez un compte de membre. Le jeu de pronostics est publié.",
+        "erwartet": [
+          "Vous voyez la saison, la participation (ou « Gratuit »), les règles du jeu et les lots.",
+          "Sans participation, il est écrit « Votre participation est confirmée. » Avec participation, il est écrit « Votre paiement est en attente de confirmation. »",
+          "Après la confirmation, il est écrit « Votre participation est confirmée. » Avant : « Vos pronostics seront disponibles dès que votre paiement aura été confirmé par le Directeur Financier. »",
+          "Après l'enregistrement, « Enregistré. » apparaît.",
+          "Vous figurez dans le classement dès que votre participation est confirmée."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne voyez aucun champ de pronostic.",
+            "loesung": "On ne pronostique que les matchs programmés de Ligue 1 et, avec participation, seulement après la confirmation. Sinon il est écrit « Aucun match n'est actuellement ouvert aux pronostics. »"
+          },
+          {
+            "problem": "« Le pronostic n'a pas pu être enregistré. »",
+            "loesung": "Le délai est dépassé (un jour avant le coup d'envoi) ou le match n'est plus programmé."
+          },
+          {
+            "problem": "Vous ne figurez pas dans le classement.",
+            "loesung": "Seuls les participants confirmés y figurent. Demandez au directeur financier."
+          }
+        ]
       }
     ],
     "tipps": [
       "Visiteurs et membres ne voient que les données ; les mentions « corrigé manuellement » et « ajouté manuellement » ne sont visibles que pour le bureau.",
       "Les logos des clubs se gèrent sous « Logos des clubs » (carte LOGO-01)."
     ]
+  },
+  "zentral": {
+    "titre": "Paramètres centraux",
+    "intro": "L'administrateur de l'application fixe ici des valeurs qui seraient sinon intégrées au programme : durée de réservation du panier, délai de paiement des événements et seuils des conseils de l'aperçu.",
+    "schritte": [
+      "Choisir un groupe : « Boutique », « Événements » ou « Conseils dans l'aperçu ».",
+      "Modifier la valeur dans le champ. L'aide sous le champ indique ce qui est autorisé.",
+      "Cliquer sur « Enregistrer ». Le changement s'applique immédiatement à tous."
+    ],
+    "workflows": [
+      {
+        "id": "ZENT-01",
+        "rollen": ["super_admin"],
+        "titre": "Modifier les paramètres centraux",
+        "wann": "Un délai ou un seuil doit changer, par exemple une réservation du panier plus longue.",
+        "schritte": [
+          "Dans le menu, sous « Administration », ouvrir « Paramètres centraux ».",
+          "Noter les valeurs actuelles avant de rien modifier.",
+          "Dans le bon groupe, modifier le champ et lire l'aide sous le champ.",
+          "Cliquer sur « Enregistrer »."
+        ],
+        "danach": "Les valeurs agissent immédiatement pour tous, sans nouvelle version. Valeurs par défaut : réservation 20 minutes, 2 nouvelles réservations, délai de paiement 2 jours, alerte 7 jours avant, places limitées dès 5 places ou 20 %, article bientôt épuisé dès 5 pièces, au plus 3 conseils.",
+        "vorher": "Vous êtes administrateur de l'application et savez quelle valeur changer et pourquoi.",
+        "erwartet": [
+          "La page « Paramètres centraux » est ouverte. Elle dit : « Les changements s'appliquent immédiatement à tous. »",
+          "Vous avez noté les valeurs pour pouvoir les rétablir.",
+          "Chaque champ montre l'unité et la plage autorisée, par exemple « minutes » ou « jours avant ».",
+          "Sous le bouton, « Enregistré. » apparaît."
+        ],
+        "fehler": [
+          {
+            "problem": "« Enregistrer » est grisé.",
+            "loesung": "Au moins un champ est vide, n'est pas un nombre entier ou sort de la plage autorisée. Les limites figurent sous chaque champ."
+          },
+          {
+            "problem": "« Échec de l'enregistrement. »",
+            "loesung": "Rechargez la page et réessayez. Seul l'administrateur de l'application peut modifier."
+          },
+          {
+            "problem": "La page manque dans le menu.",
+            "loesung": "Elle n'est visible que pour l'administrateur de l'application."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Changez la réservation du panier, par exemple de 20 à 21 minutes, puis rétablissez la valeur notée. Le changement agit immédiatement pour tous, y compris sur les cas de test en cours avec panier."
+      }
+    ],
+    "tipps": [
+      "Le délai de paiement des événements est enregistré lors de l'inscription.",
+      "Une réservation du panier recommence à chaque modification du panier.",
+      "Pour « Nouvelles réservations du panier », 0 signifie : à l'expiration, le panier est vidé aussitôt."
+    ]
+  },
+  "regionen_struktur": {
+    "titre": "Structure des secteurs",
+    "intro": "L'administrateur de l'application définit ici quels secteurs existent et quels Länder et pays appartiennent à quel secteur. Chaque Land et chaque pays appartient à un seul secteur.",
+    "schritte": [
+      "Créer un nouveau secteur en haut.",
+      "Dans la carte du secteur, gérer nom, couleur, Länder, autres pays et lieux.",
+      "Les responsables et le contenu de la page se gèrent sur la page du secteur (« Ouvrir la page du secteur »)."
+    ],
+    "workflows": [
+      {
+        "id": "SEKT-07",
+        "rollen": ["super_admin"],
+        "titre": "Créer un secteur et lui attribuer des Länder",
+        "wann": "Un nouveau secteur est créé ou un Land change de secteur.",
+        "schritte": [
+          "Dans le menu, sous « Administration », ouvrir « Structure des secteurs ».",
+          "Sous « Nouveau secteur », saisir le nom et cliquer sur « Créer ».",
+          "Dans la nouvelle carte, choisir la « Couleur » et cliquer sur « Enregistrer ».",
+          "Sous « Länder », cocher les cases. Les pays hors d'Allemagne sont sous « Autres pays ».",
+          "Sous « Lieux », saisir le lieu dans « Nouveau lieu » et cliquer sur « Ajouter ».",
+          "Vérifier qu'il n'y a plus en haut d'avis « Sans secteur : … »."
+        ],
+        "danach": "Les membres sont rattachés au secteur selon leur Land ou leur pays. Vous nommez les responsables sur la page du secteur (« Ouvrir la page du secteur »).",
+        "vorher": "Vous êtes administrateur de l'application et connaissez les Länder du secteur. Cocher un Land le retire de son secteur actuel.",
+        "erwartet": [
+          "La page « Structure des secteurs » montre en haut un champ « Nouveau secteur » et dessous une carte par secteur.",
+          "La carte du nouveau secteur apparaît avec « Active » cochée et le nombre de membres.",
+          "La couleur est enregistrée.",
+          "Le Land est coché pour le nouveau secteur et ne l'est plus pour l'ancien.",
+          "Le lieu apparaît comme entrée dans la carte.",
+          "L'avis « Sans secteur : … » a disparu. Sinon il indique quels Länder n'ont pas de secteur."
+        ],
+        "fehler": [
+          {
+            "problem": "« Un secteur portant ce nom existe déjà. »",
+            "loesung": "Choisissez un autre nom. La casse ne compte pas."
+          },
+          {
+            "problem": "Un Land disparaît d'un autre secteur.",
+            "loesung": "C'est voulu : un Land appartient toujours à un seul secteur, cocher le déplace."
+          },
+          {
+            "problem": "Des membres n'ont pas de secteur.",
+            "loesung": "Leur Land ou pays n'est rattaché à aucun secteur actif. Cochez-le pour un secteur."
+          },
+          {
+            "problem": "« L'enregistrement a échoué. »",
+            "loesung": "Vérifiez nom et couleur et rechargez la page."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez uniquement « [ÜBUNG] Secteur test » avec une couleur et un lieu, sans attribuer de Land, car cela déplacerait de vrais membres. Supprimez ensuite le secteur avec SEKT-08."
+      },
+      {
+        "id": "SEKT-08",
+        "rollen": ["super_admin"],
+        "titre": "Désactiver ou supprimer un secteur",
+        "wann": "Un secteur n'est plus nécessaire.",
+        "schritte": [
+          "Ouvrir « Structure des secteurs » et trouver la carte du secteur.",
+          "Pour désactiver, décocher « Active ».",
+          "Pour supprimer, cliquer sur « Supprimer le secteur ». Il n'y a pas de question de confirmation.",
+          "En cas de message d'erreur, retirer d'abord les responsables (sur la page du secteur) ou seulement désactiver le secteur."
+        ],
+        "danach": "Un secteur désactivé n'est plus visible pour les membres. Les Länder qui ne lui étaient attribués qu'à lui n'appartiennent alors à aucun secteur actif. Supprimer enlève aussi ses lieux, publications et rencontres.",
+        "vorher": "Vous avez clarifié ce qu'il advient des membres, rencontres et publications du secteur. En cas de doute, vous désactivez seulement.",
+        "erwartet": [
+          "Les cartes de tous les secteurs sont visibles, y compris les inactifs.",
+          "Le secteur n'apparaît plus dans la liste des secteurs des membres. La carte reste ici.",
+          "La carte disparaît. En haut figure éventuellement « Sans secteur : … ».",
+          "Le message en donne la raison. Ensuite, supprimer ou désactiver fonctionne."
+        ],
+        "fehler": [
+          {
+            "problem": "« Le secteur a encore des responsables. Veuillez d'abord les retirer. »",
+            "loesung": "Ouvrez la page du secteur, retirez les responsables, puis supprimez."
+          },
+          {
+            "problem": "« Le secteur a des points de compétition. Désactivez-le plutôt. »",
+            "loesung": "Le secteur fait partie du classement. Désactivez-le au lieu de le supprimer."
+          },
+          {
+            "problem": "Vous avez supprimé un secteur par erreur.",
+            "loesung": "Dans l'application, on ne peut pas annuler. Recréez-le. Lieux, publications et rencontres sont perdus."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Supprimez uniquement « [ÜBUNG] Secteur test » de SEKT-07, sans responsable ni points. N'essayez jamais « Supprimer » sur un vrai secteur."
+      }
+    ],
+    "tipps": [
+      "En cas de doute, désactivez au lieu de supprimer : rencontres, publications et points de compétition sont conservés."
+    ]
+  },
+  "fil": {
+    "titre": "Fil d'actualité",
+    "intro": "Le bureau et l'administrateur de l'application partagent ici des actualités avec la communauté. Tous les membres lisent, réagissent et commentent.",
+    "schritte": [
+      "Lire les actualités et réagir d'un clic.",
+      "Sous une publication, écrire un commentaire ou répondre à un commentaire.",
+      "Un hashtag permet de filtrer la liste."
+    ],
+    "workflows": [
+      {
+        "id": "FIL-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Publier une actualité",
+        "wann": "Vous voulez informer tous les membres de quelque chose.",
+        "schritte": [
+          "Ouvrir le menu « Fil d'actualité ».",
+          "Écrire dans le champ « Partagez une actualité avec la communauté… ».",
+          "Éventuellement, via « Joindre une photo ou un document », choisir une image ou un PDF (JPG, PNG, WEBP ou PDF, 10 Mo au plus).",
+          "Pour les sujets importants seulement, cocher « Marquer comme important (notifier les membres) ».",
+          "Cliquer sur « Publier »."
+        ],
+        "danach": "La publication apparaît en haut de la liste. Avec « Important », les membres reçoivent une notification.",
+        "vorher": "Vous êtes bureau ou administrateur de l'application. Le texte, l'image ou le PDF sont prêts.",
+        "erwartet": [
+          "La page montre en haut le champ de saisie et dessous les actualités.",
+          "Le texte est dans le champ. Les hashtags (#…) permettront plus tard de filtrer la publication.",
+          "Le nom du fichier apparaît sous le champ. Un fichier inadapté est refusé par l'application.",
+          "La case est cochée. Seulement alors la publication est marquée « Important ».",
+          "La publication apparaît en haut, avec le badge « Important » si coché."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne voyez aucun champ de saisie.",
+            "loesung": "Seuls le bureau et l'administrateur de l'application publient des actualités. Les membres lisent, réagissent et commentent."
+          },
+          {
+            "problem": "« La publication a échoué. »",
+            "loesung": "Vérifiez le type et la taille du fichier (JPG, PNG, WEBP ou PDF, 10 Mo au plus) et réessayez."
+          },
+          {
+            "problem": "Une publication a été marquée « Important » par erreur.",
+            "loesung": "La notification est déjà partie. Masquez ou supprimez la publication (FIL-02) et republiez-la."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Publiez « [ÜBUNG] Publication test » sans photo et sans « Important », puis supprimez-la avec FIL-02. Avec « Important », tous les membres de l'environnement de test seraient notifiés."
+      },
+      {
+        "id": "FIL-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Masquer ou supprimer une publication ou un commentaire",
+        "wann": "Une publication ou un commentaire enfreint les règles ou est erroné.",
+        "schritte": [
+          "Ouvrir le menu « Fil d'actualité » et trouver la publication ou le commentaire.",
+          "Pour masquer, cliquer sous la publication sur « Masquer ».",
+          "Pour retirer définitivement une publication, cliquer sur « Supprimer » (pour les commentaires, il n'y a que « Masquer »).",
+          "Pour remettre une publication masquée, cliquer sur « Démasquer »."
+        ],
+        "danach": "Une publication masquée disparaît pour les membres. Vous la voyez toujours avec le badge « Masquée ». L'action est consignée dans le journal d'activité.",
+        "vorher": "Vous êtes bureau ou administrateur de l'application et savez pourquoi la publication doit disparaître. Vous modérez les publications des autres ; les vôtres, vous les supprimez avec « Supprimer ».",
+        "erwartet": [
+          "La publication est trouvée. Sous celles des autres, vous voyez « Supprimer » et « Masquer », sous les commentaires des autres seulement « Masquer ».",
+          "La publication porte le badge « Masquée ». Les membres ne la voient plus.",
+          "La publication a disparu de la liste.",
+          "Le badge « Masquée » a disparu et la publication est de nouveau visible pour tous."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne voyez aucun bouton sous la publication.",
+            "loesung": "Seuls le bureau et l'administrateur de l'application modèrent. Vos propres publications, vous les supprimez vous-même."
+          },
+          {
+            "problem": "Vous ne pouvez pas masquer vos propres publications.",
+            "loesung": "« Masquer » n'existe que pour celles des autres. Supprimez la vôtre."
+          },
+          {
+            "problem": "Vous avez supprimé une publication et la voulez de nouveau.",
+            "loesung": "Supprimer est définitif. En cas de doute, masquez seulement."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Masquez puis démasquez uniquement « [ÜBUNG] Publication test » de FIL-01. Supprimez-la ensuite. Ne touchez à aucune vraie publication."
+      }
+    ],
+    "tipps": [
+      "En cas de doute, masquez au lieu de supprimer : masquer peut s'annuler.",
+      "Le journal d'activité (gestion des rôles, onglet « Activité ») montre qui a modéré et quand."
+    ]
+  },
+  "forum": {
+    "titre": "Forum",
+    "intro": "Dans le forum, les membres discutent par sujets, classés en catégories (Football CA, Vie en Allemagne, Emploi & Business, Général). Le bureau et l'administrateur de l'application modèrent.",
+    "schritte": [
+      "Choisir une catégorie ou voir « Toutes catégories ».",
+      "Avec « Nouveau sujet », lancer un sujet : catégorie, titre et contenu, puis « Publier le sujet ».",
+      "Ouvrir un sujet et répondre."
+    ],
+    "workflows": [
+      {
+        "id": "FORUM-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Modérer le forum : épingler, verrouiller, masquer",
+        "wann": "Un sujet est important, a dérapé ou enfreint les règles.",
+        "schritte": [
+          "Ouvrir le menu « Forum » puis le sujet.",
+          "Mettre un sujet important en haut avec « Épingler ».",
+          "En cas de dispute, choisir « Verrouiller » pour que plus personne ne réponde.",
+          "Retirer du forum un sujet contraire aux règles avec « Masquer ». Une réponse isolée se masque avec « Masquer » à côté de la réponse."
+        ],
+        "danach": "Les sujets épinglés portent « Épinglé », les verrouillés « Verrouillé », les masqués « Masqué ». Vous pouvez annuler chaque action avec « Désépingler », « Déverrouiller » ou « Démasquer ». Les actions figurent dans le journal d'activité.",
+        "vorher": "Vous êtes bureau ou administrateur de l'application. Vous savez quel sujet ou quelle réponse est concerné.",
+        "erwartet": [
+          "Le sujet est ouvert. Sous le sujet figurent « Épingler », « Verrouiller » et « Masquer ».",
+          "Le sujet porte le badge « Épinglé » et se trouve en haut de la liste.",
+          "À la place du champ de réponse, il est écrit « Ce sujet est verrouillé — les nouvelles réponses ne sont plus acceptées. »",
+          "Le sujet ou la réponse porte le badge « Masqué » et a disparu pour les membres."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne voyez pas les boutons.",
+            "loesung": "Seuls le bureau et l'administrateur de l'application modèrent."
+          },
+          {
+            "problem": "Vous ne pouvez pas masquer votre propre réponse.",
+            "loesung": "« Masquer » n'existe que pour les réponses des autres. Supprimez la vôtre avec « Supprimer »."
+          },
+          {
+            "problem": "Des membres se plaignent d'un sujet verrouillé.",
+            "loesung": "Avec « Déverrouiller », vous retirez le verrou."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Lancez le sujet « [ÜBUNG] Sujet test » dans la catégorie « Général », épinglez-le, verrouillez-le, masquez-le et remettez tout en l'état. Ne touchez à aucun vrai sujet."
+      }
+    ],
+    "tipps": [
+      "Seuls le bureau et l'administrateur de l'application voient les sujets et réponses masqués.",
+      "En cas de doute, masquez au lieu de supprimer : masquer peut s'annuler."
+    ]
+  },
+  "groupes": {
+    "titre": "Groupes de chat",
+    "intro": "Les groupes de chat sont publics ou privés. Tout membre peut rejoindre un groupe public, on est invité dans un groupe privé.",
+    "schritte": [
+      "Dans la liste, rejoindre un groupe public avec « Rejoindre » ou ouvrir le sien avec « Ouvrir ».",
+      "Dans le chat, écrire des messages et les envoyer avec « Envoyer ».",
+      "Avec « Quitter le groupe », vous sortez du groupe."
+    ],
+    "workflows": [
+      {
+        "id": "GRUP-01",
+        "titre": "Créer un groupe de chat et inviter des membres",
+        "wann": "Vous voulez discuter avec d'autres membres dans votre propre groupe, par exemple pour une rencontre.",
+        "schritte": [
+          "Ouvrir le menu « Groupes de chat » et cliquer sur « Nouveau groupe ».",
+          "Saisir le « Nom du groupe » et éventuellement la description.",
+          "Choisir « Public » ou « Privé ».",
+          "Sous « Inviter des membres… », taper des noms et choisir les personnes.",
+          "Cliquer sur « Créer le groupe »."
+        ],
+        "danach": "Le groupe apparaît dans la liste. Tous les membres voient les groupes publics, seuls les invités voient les groupes privés. En tant que créateur, vous pouvez supprimer le groupe avec « Supprimer le groupe ».",
+        "vorher": "Vous avez un compte de membre et savez qui inviter. Choisissez « Privé » si tout le monde ne doit pas pouvoir rejoindre.",
+        "erwartet": [
+          "Le formulaire « Nouveau groupe » est ouvert.",
+          "Le nom et la description figurent dans le formulaire.",
+          "Le choix affiche « Public » ou « Privé ».",
+          "En tapant, l'application propose des membres. Les personnes choisies figurent dans la liste.",
+          "Le groupe est dans la liste avec le nombre de membres."
+        ],
+        "fehler": [
+          {
+            "problem": "« La création du groupe a échoué. »",
+            "loesung": "Saisissez un nom de groupe et réessayez."
+          },
+          {
+            "problem": "Une personne manque dans le groupe.",
+            "loesung": "Seuls les invités voient un groupe privé. Vérifiez que vous avez bien choisi la personne."
+          },
+          {
+            "problem": "Vous ne trouvez pas le bouton « Supprimer le groupe ».",
+            "loesung": "Il n'apparaît dans le chat que pour le créateur du groupe."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez « [ÜBUNG] Groupe test » en « Privé » avec uniquement votre compte de test, puis supprimez-le avec « Supprimer le groupe ». N'invitez aucun vrai membre."
+      }
+    ],
+    "tipps": ["Vous seul pouvez supprimer un message, avec « Supprimer »."]
   }
 }

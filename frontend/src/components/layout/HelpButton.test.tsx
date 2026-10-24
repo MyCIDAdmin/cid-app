@@ -37,6 +37,11 @@ describe("HelpButton", () => {
     expect(cleHilfe("/mon-adhesion")).toBe("mitgliedschaft");
     expect(cleHilfe("/votes/creer")).toBe("vote");
     expect(cleHilfe("/live")).toBe("fanclub");
+    expect(cleHilfe("/fil")).toBe("fil");
+    expect(cleHilfe("/forum/12")).toBe("forum");
+    expect(cleHilfe("/groupes/3")).toBe("groupes");
+    expect(cleHilfe("/admin/einstellungen")).toBe("zentral");
+    expect(cleHilfe("/admin/regionen")).toBe("regionen_struktur");
     expect(cleHilfe("/regionen")).toBe("regionen");
     expect(cleHilfe("/regionen/nord")).toBe("regionen");
     expect(cleHilfe("/regionen/wettbewerb")).toBe("regionen_wettbewerb");

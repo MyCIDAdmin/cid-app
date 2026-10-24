@@ -1,6 +1,8 @@
 /** Pfad-Präfix → Schlüssel in help.json. Längere Präfixe zuerst. */
 export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/admin/campagnes-adhesion", "campagnes"],
+  ["/admin/einstellungen", "zentral"],
+  ["/admin/regionen", "regionen_struktur"],
   ["/admin/justificatifs", "justificatifs"],
   ["/admin/articles-cotisation", "articles"],
   ["/admin/configuration-site", "hero"],
@@ -26,6 +28,9 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/mon-adhesion", "mitgliedschaft"],
   ["/votes", "vote"],
   ["/live", "fanclub"],
+  ["/fil", "fil"],
+  ["/forum", "forum"],
+  ["/groupes", "groupes"],
   ["/regionen/wettbewerb", "regionen_wettbewerb"],
   ["/regionen/bericht", "regionen_bericht"],
   ["/regionen", "regionen"],
