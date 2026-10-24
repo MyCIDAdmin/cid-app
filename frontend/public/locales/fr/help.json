@@ -2570,6 +2570,78 @@
           }
         ],
         "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Enregistrez +1 point avec le motif « [ÜBUNG] » puis −1 point pour le même secteur. Le classement est ensuite inchangé."
+      },
+      {
+        "id": "SEKT-09",
+        "rollen": ["super_admin"],
+        "titre": "Créer une saison du concours et vérifier les règles",
+        "wann": "Une nouvelle saison du concours des secteurs commence. Sans saison, aucun point n'est attribué.",
+        "schritte": [
+          "Ouvrir la page « Concours des secteurs » et descendre jusqu'à la zone « Admin de l'app : saisons et règles ».",
+          "Sous « Nouvelle saison », saisir le nom (p. ex. Saison 2026/27), « Début » et « Fin », éventuellement le « Prix (texte libre) ».",
+          "Cliquer sur « Créer la saison ».",
+          "Vérifier les six valeurs des règles, p. ex. « Points par rencontre » et « Points par personne présente », puis cliquer sur « Enregistrer »."
+        ],
+        "danach": "Les rencontres que le bureau clôture à partir de maintenant donnent des points. Les changements de règles valent pour les écritures futures, les points déjà attribués restent. Les périodes des saisons ne doivent pas se chevaucher.",
+        "vorher": "Vous êtes administrateur de l'application. Vous connaissez le nom, la période et éventuellement le prix de la saison.",
+        "erwartet": [
+          "La zone montre les saisons existantes avec leur statut (« Prévue », « En cours », « Terminée » ou « Clôturée ») et dessous le formulaire « Nouvelle saison ».",
+          "Le formulaire contient nom, début, fin et prix. « Créer la saison » reste grisé tant que nom, début et fin ne sont pas remplis.",
+          "La saison figure dans la liste, avec le statut « Prévue » ou « En cours ».",
+          "Sous les règles, « Enregistré. » apparaît."
+        ],
+        "fehler": [
+          {
+            "problem": "La saison est refusée.",
+            "loesung": "Vérifiez la période. Elle ne doit pas chevaucher une autre saison."
+          },
+          {
+            "problem": "Une rencontre passée n'a pas de points.",
+            "loesung": "La rencontre a été clôturée avant la saison. Rattrapez avec « Rattraper les points » (SEKT-10)."
+          },
+          {
+            "problem": "Vous pensez qu'une règle était fausse.",
+            "loesung": "Un changement ne vaut que pour les écritures futures. Le bureau corrige un par un les points déjà attribués (SEKT-05)."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez uniquement « [ÜBUNG] Saison test » sur une période qui ne chevauche aucune vraie saison, puis supprimez-la avec « Supprimer ». Ne changez aucune règle de la vraie saison."
+      },
+      {
+        "id": "SEKT-10",
+        "rollen": ["super_admin"],
+        "titre": "Rattraper les points et clôturer une saison",
+        "wann": "Une saison a été créée après coup ou elle est terminée et doit être figée.",
+        "schritte": [
+          "Ouvrir la zone « Admin de l'app : saisons et règles » et trouver la saison.",
+          "S'il manque des points pour des rencontres déjà clôturées de la saison, cliquer sur « Rattraper les points ».",
+          "Vérifier le classement. Le bureau corrige d'abord un par un les points faux (SEKT-05).",
+          "Après la fin de la saison (statut « Terminée »), cliquer sur « Clôturer ».",
+          "Répondre à la question « Le classement sera figé définitivement. Continuer ? » par « Confirmer »."
+        ],
+        "danach": "Classement, évolution et vainqueurs du mois de la saison sont figés. La saison ne change plus : plus d'écritures ni de corrections. Les saisons clôturées forment le « Classement de tous les temps ».",
+        "vorher": "Pour « Clôturer » : la fin de la saison est passée, toutes les rencontres sont clôturées et toutes les corrections sont saisies.",
+        "erwartet": [
+          "La saison affiche les boutons « Modifier », « Rattraper les points », « Clôturer » (seulement après la fin) et « Supprimer ».",
+          "Un message indique le nombre, p. ex. « 3 écritures ajoutées. » Rien n'est compté deux fois.",
+          "Classement et journal correspondent aux rencontres clôturées.",
+          "Une question de confirmation apparaît.",
+          "La saison porte le statut « Clôturée ». Les boutons ont disparu."
+        ],
+        "fehler": [
+          {
+            "problem": "« Clôturer » manque.",
+            "loesung": "La saison n'est pas encore terminée. Le bouton n'apparaît qu'après la fin."
+          },
+          {
+            "problem": "Une correction n'est plus possible : « Cette saison est clôturée ; les corrections ne sont plus possibles. »",
+            "loesung": "Les saisons clôturées ne se modifient plus. Corrigez toujours avant de clôturer."
+          },
+          {
+            "problem": "Vous ne pouvez pas supprimer une saison.",
+            "loesung": "Seules les saisons sans écritures et non clôturées peuvent être supprimées."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Cliquez sur « Rattraper les points » uniquement pour une saison sans rencontre clôturée (p. ex. la saison test de SEKT-09). Ne clôturez jamais une vraie saison pour essayer : c'est définitif."
       }
     ],
     "tipps": [
@@ -3700,5 +3772,283 @@
       }
     ],
     "tipps": ["Vous seul pouvez supprimer un message, avec « Supprimer »."]
+  },
+  "orientierung": {
+    "glossar": {
+      "titre": "Glossaire du vocabulaire du club",
+      "intro": "Ces mots reviennent dans l'application et dans les cartes. Le champ de recherche en haut trouve aussi des termes des cartes.",
+      "begriffe": [
+        {
+          "begriff": "Membre",
+          "text": "Personne avec une adhésion active. Le statut indique « Membre (actif) ». « Non-membre (nouveau) » s'est inscrit mais n'est pas encore actif, « Non-membre (ancien) » est inactif."
+        },
+        {
+          "begriff": "Fan",
+          "text": "Personne avec un compte fan. Les fans voient les secteurs, publications, rencontres et le concours, mais pas les données des membres. Ils peuvent devenir membres plus tard."
+        },
+        {
+          "begriff": "Secteur",
+          "text": "Zone du club. Chaque Land et chaque autre pays appartient à un seul secteur."
+        },
+        {
+          "begriff": "Responsables d'un secteur",
+          "text": "Personnes qui créent les rencontres de leur secteur et voient la liste des fans."
+        },
+        {
+          "begriff": "Rencontre",
+          "text": "Événement d'un secteur. Les responsables la soumettent pour validation, le bureau la valide et la clôture après la rencontre. Les points ne viennent qu'ensuite."
+        },
+        {
+          "begriff": "Événement",
+          "text": "Rendez-vous de la gestion des événements, avec inscription, souvent des places limitées et un prix."
+        },
+        {
+          "begriff": "Liste d'attente",
+          "text": "Si un événement est complet, une nouvelle inscription va sur la liste d'attente. Quand une place se libère, la première personne qui convient avance automatiquement."
+        },
+        {
+          "begriff": "Délai de paiement",
+          "text": "Pour les événements payants à places limitées, il faut payer dans ce délai (2 jours par défaut). Sinon l'inscription est annulée."
+        },
+        {
+          "begriff": "Campagne",
+          "text": "Campagne d'adhésion pour une année de cotisation, avec ses offres. Une seule campagne peut être publiée par année."
+        },
+        {
+          "begriff": "Offre",
+          "text": "Une formule d'adhésion d'une campagne avec son prix, p. ex. pour adultes ou juniors."
+        },
+        {
+          "begriff": "Réduction et justificatif",
+          "text": "Certaines offres ont une réduction. Qui l'utilise envoie un justificatif, que les ressources humaines ou le bureau vérifient."
+        },
+        {
+          "begriff": "Forfait famille",
+          "text": "Offre pour une famille. Une personne principale paie ; s'y ajoutent des adultes avec leur propre compte et des enfants de moins de 18 ans sans compte. Les enfants reçoivent une carte junior."
+        },
+        {
+          "begriff": "Article de cotisation",
+          "text": "Articles que l'on peut choisir pour les cotisations et les paiements."
+        },
+        {
+          "begriff": "Échéance",
+          "text": "Date à partir de laquelle une cotisation impayée est en retard. Les relances partent 30 et 7 jours avant et 1 jour après. Sans entrée, c'est le 1er janvier."
+        },
+        {
+          "begriff": "Paiement en attente",
+          "text": "Paiement qui attend une confirmation, p. ex. un virement ou un paiement en espèces."
+        },
+        {
+          "begriff": "Import du relevé de compte",
+          "text": "Lire les paiements d'un fichier de la banque et les rattacher aux paiements ouverts."
+        },
+        {
+          "begriff": "Rattachement",
+          "text": "Une fiche de membre importée sans identifiant est réunie au compte que la personne a créé elle-même, pour que personne ne soit géré deux fois."
+        },
+        {
+          "begriff": "Inscription (compte)",
+          "text": "Un nouveau compte ou une demande d'adhésion. Les ressources humaines la vérifient et l'acceptent ou la refusent."
+        },
+        {
+          "begriff": "Billet (événement)",
+          "text": "Confirmation d'inscription avec code, scannée à l'entrée. Elle arrive aussi en PDF par e-mail."
+        },
+        {
+          "begriff": "Entrée",
+          "text": "Contrôle des billets le jour de l'événement. Les aides à l'entrée scannent les billets ou notent la présence dans la liste."
+        },
+        {
+          "begriff": "Ticket (support)",
+          "text": "Une demande au bureau via la page « Support ». Elle a un numéro et un historique."
+        },
+        {
+          "begriff": "Vidéo hero",
+          "text": "La vidéo en haut de la page d'accueil publique."
+        },
+        {
+          "begriff": "Jeu de pronostics (Tippspiel)",
+          "text": "Jeu du Fan-Club : les membres pronostiquent des résultats de Ligue 1. Résultat exact 4 points, bon vainqueur avec la bonne différence de buts 2, bonne tendance 1."
+        },
+        {
+          "begriff": "Concours des secteurs",
+          "text": "Les secteurs gagnent des points avec des rencontres, des participations et de nouveaux membres. Seuls les secteurs sont classés, pas les personnes."
+        },
+        {
+          "begriff": "Saison",
+          "text": "Période du concours. Après la fin, l'administrateur de l'application fige le classement, ensuite plus rien ne change."
+        },
+        {
+          "begriff": "Vote",
+          "text": "Séance de vote pour des décisions et des élections. Dans les votes anonymes, aucun lien n'existe entre la personne et sa voix."
+        },
+        {
+          "begriff": "Brouillon, Publié, Terminé",
+          "text": "Les trois états de nombreux contenus. Un brouillon n'est visible que de l'administration, un contenu publié est visible de tous, un contenu terminé est clos."
+        },
+        {
+          "begriff": "Masquer et supprimer",
+          "text": "Un contenu masqué est invisible pour les membres et peut être démasqué. Supprimer est définitif."
+        },
+        {
+          "begriff": "Principe des quatre yeux",
+          "text": "Une dépense saisie par quelqu'un est en général validée par une autre personne."
+        },
+        {
+          "begriff": "Journal d'activité",
+          "text": "Le journal de l'application avec les actions importantes. Dans l'onglet « Activité » de la gestion des rôles, l'administrateur de l'application contrôle les anomalies."
+        },
+        {
+          "begriff": "Rôles",
+          "text": "Les ressources humaines (RH) gèrent les membres et vérifient les inscriptions. Le bureau / comité gère contenus et événements. Le directeur financier s'occupe des paiements et des finances. L'administrateur de l'application s'occupe de l'application. S'y ajoutent les responsables de région et les aides à l'entrée."
+        },
+        {
+          "begriff": "Environnement de test",
+          "text": "La version d'entraînement de l'application. Les exercices n'ont lieu que là, avec des objets dont le nom commence par « [ÜBUNG] »."
+        },
+        {
+          "begriff": "Carte et identifiant",
+          "text": "Une carte de tâche décrit une tâche en quelques étapes. L'identifiant (p. ex. ZAHL-01) reste le même même si le titre change."
+        }
+      ]
+    },
+    "einstieg": {
+      "titre": "Pour bien démarrer",
+      "karten_label": "Ces cartes d'abord",
+      "rollen": {
+        "rh": {
+          "text": "Vous vous occupez des membres : vérifier les nouvelles inscriptions et justificatifs, trouver et gérer les membres, reprendre des données.",
+          "start": ["REG-01", "NACH-01", "MITG-01", "MITG-02", "MITG-07"]
+        },
+        "bureau_admin": {
+          "text": "Vous dirigez le club au comité ou au bureau : vous créez campagnes, événements, contenus et votes, validez les rencontres des secteurs et modérez la communauté.",
+          "start": ["KAMP-01", "VERA-01", "SEKT-03", "FIL-01", "SUPP-02", "VOTE-01"]
+        },
+        "dir_financier": {
+          "text": "Vous vous occupez de l'argent : confirmer les paiements, importer les relevés, valider les dépenses, budget et clôture annuelle.",
+          "start": ["ZAHL-01", "ZAHL-04", "ZAHL-05", "FRIST-01", "FIN-01", "FIN-03"]
+        },
+        "super_admin": {
+          "text": "Vous gérez l'application : attribuer les rôles, paramètres, structure des secteurs, jeu de pronostics, notifications et journal d'activité. Vous êtes autorisé dans presque toutes les cartes.",
+          "start": ["ROLL-01", "ZENT-01", "AKT-01", "SEKT-07", "TIPP-01", "BENA-01"]
+        },
+        "region": {
+          "text": "Vous êtes responsable d'un secteur : créer et clôturer les rencontres, voir les fans, désigner les aides à l'entrée.",
+          "start": ["SEKT-01", "SEKT-02", "SEKT-04", "EINL-03", "EINL-01"]
+        },
+        "einlass": {
+          "text": "Vous faites entrer les invités le jour de l'événement : scanner les billets et noter la présence.",
+          "start": ["EINL-01", "EINL-02"]
+        }
+      }
+    },
+    "rhythmus": {
+      "titre": "Que faire quand ?",
+      "intro": "Une proposition pour le déroulement d'une année de club. Les campagnes vont le plus souvent du 1er janvier au 31 décembre. Les délais des statuts priment.",
+      "zeitraeume": [
+        {
+          "wann": "Avant l'année de cotisation",
+          "aufgaben": [
+            {
+              "text": "Créer la campagne de la nouvelle année, ajouter offres et réductions, puis la publier. Une seule campagne peut être publiée par année.",
+              "karten": ["KAMP-01", "KAMP-02"]
+            },
+            {
+              "text": "Pour les offres famille, fixer la réduction et l'âge maximal.",
+              "karten": ["FAM-01"]
+            },
+            {
+              "text": "Fixer l'échéance de l'année de cotisation. Sans entrée, c'est le 1er janvier.",
+              "karten": ["FRIST-01"]
+            },
+            {
+              "text": "Vérifier les articles de cotisation.",
+              "karten": ["BEIT-01"]
+            }
+          ]
+        },
+        {
+          "wann": "En continu pendant la campagne",
+          "aufgaben": [
+            {
+              "text": "Vérifier les nouvelles inscriptions et les justificatifs.",
+              "karten": ["REG-01", "NACH-01"]
+            },
+            {
+              "text": "Confirmer les paiements reçus ou importer le relevé de compte.",
+              "karten": ["ZAHL-01", "ZAHL-04"]
+            },
+            {
+              "text": "Vérifier les forfaits famille.",
+              "karten": ["FAM-02"]
+            },
+            {
+              "text": "Répondre aux tickets du support et modérer la communauté.",
+              "karten": ["SUPP-02", "FORUM-01"]
+            }
+          ]
+        },
+        {
+          "wann": "Avant un événement",
+          "aufgaben": [
+            {
+              "text": "Créer et publier l'événement ou la rencontre.",
+              "karten": ["VERA-01", "SEKT-01"]
+            },
+            {
+              "text": "Désigner les aides à l'entrée.",
+              "karten": ["EINL-03"]
+            }
+          ]
+        },
+        {
+          "wann": "Le jour de l'événement et après",
+          "aufgaben": [
+            {
+              "text": "Scanner les billets et noter la présence.",
+              "karten": ["EINL-01", "EINL-02"]
+            },
+            {
+              "text": "Clôturer la rencontre. Les points du concours ne viennent qu'ensuite.",
+              "karten": ["SEKT-04"]
+            }
+          ]
+        },
+        {
+          "wann": "Au début et à la fin d'une saison de football et de concours",
+          "aufgaben": [
+            {
+              "text": "Créer et publier le jeu de pronostics, le clôturer à la fin.",
+              "karten": ["TIPP-01", "TIPP-02"]
+            },
+            {
+              "text": "Créer la saison du concours, à la fin rattraper les points et la clôturer.",
+              "karten": ["SEKT-09", "SEKT-10"]
+            },
+            {
+              "text": "Vérifier le calendrier des matchs et le corriger si besoin.",
+              "karten": ["SPIEL-01"]
+            }
+          ]
+        },
+        {
+          "wann": "En fin d'année",
+          "aufgaben": [
+            {
+              "text": "Planifier le budget de la nouvelle année et clôturer l'ancienne.",
+              "karten": ["FIN-02", "FIN-03"]
+            },
+            {
+              "text": "Établir le rapport annuel des secteurs et les indicateurs.",
+              "karten": ["SEKT-06", "STAT-01"]
+            },
+            {
+              "text": "Contrôler les droits et les anciennes données techniques.",
+              "karten": ["AKT-02", "AKT-03"]
+            }
+          ]
+        }
+      ]
+    }
   }
 }

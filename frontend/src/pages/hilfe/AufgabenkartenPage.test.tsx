@@ -25,6 +25,7 @@ vi.mock("react-i18next", () => ({
 describe("AufgabenkartenPage", () => {
   beforeEach(() => {
     window.print = vi.fn();
+    window.scrollTo = vi.fn();
   });
   afterEach(() => {
     document.body.classList.remove("karten-druck");
@@ -108,5 +109,29 @@ describe("AufgabenkartenPage", () => {
     fireEvent.click(screen.getByText("karten_alle_drucken"));
     const druck = document.getElementById("druckbereich") as HTMLElement;
     expect(druck.querySelectorAll("article")).toHaveLength(helpDe.paiements.workflows.length);
+  });
+
+  it("zeigt bei gewählter Rolle den Einstieg und springt zur Karte", () => {
+    renderWithProviders(<AufgabenkartenPage />, { route: "/hilfe/karten", path: "/hilfe/karten" });
+    expect(screen.queryByRole("region", { name: "orientierung.einstieg.titre" })).toBeNull();
+    fireEvent.change(screen.getByLabelText("karten_rolle"), { target: { value: "dir_financier" } });
+    const einstieg = screen.getByRole("region", { name: /Du|So startest du/ });
+    expect(within(einstieg).getByText(/Du kümmerst dich um das Geld/)).toBeInTheDocument();
+    fireEvent.click(within(einstieg).getByRole("button", { name: "ZAHL-04" }));
+    expect((screen.getByLabelText("karten_suche") as HTMLInputElement).value).toBe("ZAHL-04");
+    expect(screen.getByRole("heading", { name: "Kontoauszug importieren" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Überweisung bestätigen (SEPA)" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("zeigt Glossar und Jahresrhythmus und filtert das Glossar mit der Suche", () => {
+    renderWithProviders(<AufgabenkartenPage />, { route: "/hilfe/karten", path: "/hilfe/karten" });
+    expect(screen.getByText("Was ist wann zu tun?")).toBeInTheDocument();
+    expect(screen.getByText("Glossar der Vereinssprache")).toBeInTheDocument();
+    expect(screen.getByText("Warteliste")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("karten_suche"), { target: { value: "Hero-Video" } });
+    expect(screen.queryByText("Warteliste")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Hero-Video").length).toBeGreaterThan(0);
   });
 });
