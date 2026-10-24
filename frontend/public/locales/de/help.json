@@ -298,6 +298,43 @@
       "Zwischen den Reitern wechseln, um verschiedene Bereiche zu sehen.",
       "Zeitraum und Filter oben anpassen, die Diagramme aktualisieren sich automatisch.",
       "Mit dem Mauszeiger über ein Diagramm fahren, um Einzelwerte zu sehen."
+    ],
+    "workflows": [
+      {
+        "id": "STAT-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Kennzahlen filtern und exportieren",
+        "wann": "Du brauchst Zahlen zu Mitgliedern, Finanzen, Veranstaltungen oder Projekten, z. B. für den Vorstand.",
+        "schritte": [
+          "„Statistiken & KPIs“ öffnen.",
+          "Oben Jahr und Filter einstellen: Stadt (DE), Mitgliedsstatus, Bundesland, Land sowie „Beitritt nach dem“ und „Beitritt vor dem“.",
+          "Zwischen den Reitern „Finanzen“, „Mitglieder“, „Veranstaltungen“, „Finanzdaten“, „Jahresbilanz“, „Projekte“ und „Pivot“ wechseln.",
+          "Mit „PDF exportieren“ oder „Excel exportieren“ die Ansicht herunterladen."
+        ],
+        "danach": "Die Zahlen sind Auswertungen der gebuchten Daten. Offene oder abgelehnte Ausgaben zählen nicht (Karte FIN-01). Der Export enthält die Zahlen der gewählten Filter.",
+        "vorher": "Du weißt, welche Frage die Zahlen beantworten sollen.",
+        "erwartet": [
+          "Die Seite zeigt Filter und Reiter.",
+          "Die Diagramme und Tabellen aktualisieren sich nach der Auswahl.",
+          "Jeder Reiter zeigt seine Kennzahlen, mit dem Mauszeiger siehst du Einzelwerte.",
+          "Die Datei wird heruntergeladen. Während des Exports steht „Export läuft…“."
+        ],
+        "fehler": [
+          {
+            "problem": "„Der Export ist fehlgeschlagen.“",
+            "loesung": "Versuche es erneut mit weniger Filtern. Bleibt der Fehler, melde ihn über den Support."
+          },
+          {
+            "problem": "Die Zahlen passen nicht zu deiner Erwartung.",
+            "loesung": "Prüfe Jahr und Filter, zum Beispiel einen gesetzten Mitgliedsstatus oder ein Stadtfilter."
+          },
+          {
+            "problem": "Das Bundesland fehlt.",
+            "loesung": "Die Auswahl „Bundesland“ gilt nur für Mitglieder in Deutschland."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Wähle das Vorjahr, wechsle durch alle Reiter und exportiere die Ansicht als Excel. Lösche die Datei danach. Das ändert nichts."
+      }
     ]
   },
   "inscriptions": {
@@ -466,6 +503,78 @@
           }
         ],
         "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege in der Entwurfskampagne „[ÜBUNG] Kampagne“ das Angebot „[ÜBUNG] Angebot“ mit 10 € an und füge den Rabatt „Student“ mit Nachweis hinzu. Ändere keine bestehenden Angebote."
+      },
+      {
+        "id": "FAM-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Familienpaket in einer Kampagne einrichten",
+        "wann": "Eine Familie soll in einer Kampagne ein gemeinsames Angebot bekommen.",
+        "schritte": [
+          "In der Kampagnenverwaltung bei der Kampagne „Höchstalter Kind (Familienpaket)“ festlegen (Kampagnenjahr minus Geburtsjahr).",
+          "Im Angebot das Häkchen „Familienpaket“ setzen.",
+          "„Familienrabatt (%)“, „Max. Erwachsene“ und „Max. Kinder“ eintragen.",
+          "Für „Angebot Hauptperson“, „Angebot weitere Erwachsene“ und „Angebot Kinder“ je ein vorhandenes Angebot der Kampagne wählen.",
+          "Auf „Familienpaket speichern“ klicken."
+        ],
+        "danach": "Jede Person erhält das zugewiesene Angebot, der Preis ist die Summe minus Familienrabatt. Bereits bezahlte Pakete bleiben unverändert. Ein Wechsel mitten in der Kampagne ist nicht möglich.",
+        "vorher": "Die Kampagne und die Angebote für Hauptperson, Erwachsene und Kinder existieren (Karten KAMP-01 und KAMP-02).",
+        "erwartet": [
+          "Die Kampagne zeigt „Max. Alter Kind: …“.",
+          "Die Eingabefelder für das Familienpaket erscheinen.",
+          "Rabatt und Obergrenzen stehen im Formular.",
+          "Die drei Angebote stehen in den Auswahlfeldern; „— Angebot wählen —“ ist ersetzt.",
+          "Das Paket ist gespeichert. Mitglieder sehen im Angebot „ab …“ und den Hinweis auf den Rabatt."
+        ],
+        "fehler": [
+          {
+            "problem": "„Dieses Familienpaket ist noch nicht vollständig eingerichtet.“",
+            "loesung": "Weise allen drei Rollen ein Angebot zu und speichere erneut."
+          },
+          {
+            "problem": "Der Preis weicht ab.",
+            "loesung": "Preis = Summe der drei Angebote minus Rabatt. Prüfe die Angebote und den Rabatt."
+          },
+          {
+            "problem": "Ein Kind ist zu alt.",
+            "loesung": "Das Höchstalter gilt je Kampagne. Ältere Personen melden sich als Erwachsene an."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Richte das Familienpaket nur in einer Testkampagne „[ÜBUNG] Testkampagne“ (KAMP-01) ein und veröffentliche sie nicht. Familienpakete verändern Preise und Kennzahlen der Kampagne."
+      },
+      {
+        "id": "FAM-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Familienpakete prüfen und Bericht erstellen",
+        "wann": "Du willst wissen, welche Familien angemeldet sind und wie die Einladungen stehen.",
+        "schritte": [
+          "In der Kampagnenverwaltung den Abschnitt „Familienpakete“ öffnen und die Kampagne wählen.",
+          "Pakete, Personen und Einladungsstatus ansehen („Eingeladen“, „Wartet auf Zustimmung“, „Mitglied“, „Abgelehnt“, „Hat schon eine eigene Mitgliedschaft“).",
+          "Bei Bedarf bei einer Person das Angebot ändern („Angebot für …“).",
+          "Für Zahlen ohne Namen den „Bericht über Familienpakete“ ansehen und „Als CSV exportieren“."
+        ],
+        "danach": "Ein anderes Angebot ändert Karte und Vorteile, der bezahlte Preis bleibt. Bei „Hat schon eine eigene Mitgliedschaft“ klärt das Büro die Verrechnung. Nach der Aufbewahrungsfrist werden Daten von Kindern und weiteren Erwachsenen anonymisiert („Person (anonymisiert)“).",
+        "vorher": "Du hast Schreibrecht auf die Seite Kampagnen, um Angebote zu ändern; zum Lesen reicht Leserecht.",
+        "erwartet": [
+          "Die Zusammenfassung nennt bezahlte Pakete und Einladungsstände. Ohne Pakete steht dort „Noch keine Familienpakete in dieser Kampagne.“",
+          "Jedes Paket zeigt Hauptperson, Personen, Preis und Rabatt („Liste … · −… %“).",
+          "Der Hinweis „Ein anderes Angebot ändert Karte und Vorteile. Der bezahlte Preis bleibt unverändert.“ erscheint.",
+          "Der Bericht zeigt je Kampagne Pakete, Erwachsene, Kinder und Preise – ohne Namen und E-Mail-Adressen."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Liste ist leer.",
+            "loesung": "Es gibt noch keine bezahlten Pakete in dieser Kampagne. Wähle eine andere Kampagne."
+          },
+          {
+            "problem": "Ein Kind ist über dem Höchstalter.",
+            "loesung": "Das zeigt die App („Über dem Höchstalter der Kampagne“). Bis zum Kampagnenende ändert sich nichts; zur nächsten Kampagne meldet sich die Person als Erwachsener an."
+          },
+          {
+            "problem": "Ein Name fehlt.",
+            "loesung": "Die Person ist anonymisiert. Das ist dauerhaft und gewollt."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne die Ansicht „Familienpakete“ einer Kampagne und lies Zusammenfassung und Bericht. Ändere kein Angebot und exportiere nichts."
       }
     ]
   },
@@ -851,6 +960,103 @@
           }
         ],
         "uebung": "Übung („ÜBUNG“): Öffne den Tab „Sichtbarkeit“ und beschreibe in eigenen Worten, welche Einträge ein Nicht-Mitglied sieht. Ändere nichts."
+      },
+      {
+        "id": "AKT-01",
+        "rollen": ["super_admin"],
+        "titre": "Auffälligkeiten im Aktivitätsprotokoll prüfen",
+        "wann": "Die App meldet per Glocke und E-Mail eine Auffälligkeit, zum Beispiel viele Fehlversuche beim Anmelden.",
+        "schritte": [
+          "Die Meldung öffnen. Sie führt in der „Rollenverwaltung“ zum Reiter „Aktivität“ und zur Ansicht „Auffälligkeiten“.",
+          "In der Liste „Offen“ den Eintrag lesen (Gewicht „Warnung“ oder „Wichtig“) und in der Ansicht „Journal“ die zugehörigen Einträge nachsehen (Filter „Person“, „IP-Adresse“ und Zeitraum).",
+          "Entscheiden, ob Handlungsbedarf besteht (z. B. Konto sperren oder Rechte prüfen).",
+          "Danach den Eintrag mit „Als erledigt markieren“ abschließen."
+        ],
+        "danach": "Die App prüft das Protokoll alle 10 Minuten und meldet neue Funde. Erledigte Einträge stehen unter „Erledigt“ mit Name und Zeit.",
+        "vorher": "Du bist App-Administrator. Das Protokoll ist nur für App-Admins sichtbar.",
+        "erwartet": [
+          "Die Ansicht „Auffälligkeiten“ ist offen. Ohne Funde steht dort „Keine offenen Auffälligkeiten.“",
+          "Das Journal zeigt die gefilterten Einträge mit Zeit, Aktion, Person und IP.",
+          "Du weißt, ob etwas zu tun ist.",
+          "Der Eintrag steht unter „Erledigt“ mit „erledigt von …“."
+        ],
+        "fehler": [
+          {
+            "problem": "Du verstehst eine Aktion nicht.",
+            "loesung": "Das Journal zeigt unter „Technischer Name“ den genauen Namen. Frage die Technik, wenn du unsicher bist."
+          },
+          {
+            "problem": "Der Alarm kommt immer wieder.",
+            "loesung": "Prüfe die Ursache, z. B. eine Person mit vielen falschen Passwörtern. Markiere erst dann als erledigt."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne den Reiter „Aktivität“, wechsle in die Ansicht „Auffälligkeiten“ und lies die Einträge. Markiere nichts als erledigt."
+      },
+      {
+        "id": "AKT-02",
+        "rollen": ["super_admin"],
+        "titre": "Rechteprüfung durchführen",
+        "wann": "Zu Beginn jedes Quartals prüfst du, wer erweiterte Rechte hat.",
+        "schritte": [
+          "In der „Rollenverwaltung“ den Reiter „Aktivität“ öffnen und die Ansicht „Rechteprüfung“ wählen.",
+          "Gibt es noch keine Prüfung, mit „Prüfung … jetzt anlegen“ eine anlegen. Sonst die aktuelle Prüfung auswählen.",
+          "Bei jedem Konto „Bestätigen“ wählen oder „Rechte entziehen“ markieren. Optional eine „Notiz (optional)“ ergänzen.",
+          "Die Entzüge im Reiter „Zuweisung“ wirklich durchführen (Karte ROLL-01).",
+          "Wenn alle Konten entschieden sind, „Prüfung abschließen“ klicken."
+        ],
+        "danach": "Das Markieren allein ändert keine Rechte. Es zeigt „Markiert – das Konto hat noch erweiterte Rechte“, bis der Entzug erfolgt ist. Die Prüfung wird automatisch zu Beginn jedes Quartals angelegt.",
+        "vorher": "Du kennst die Aufgaben der Personen mit erweiterten Rechten (ab Bureau Admin).",
+        "erwartet": [
+          "Die Ansicht zeigt die letzte Prüfung mit Quartal. Ohne Prüfung steht dort „Noch keine Rechteprüfung.“",
+          "Die Prüfung listet Konten mit Rolle und Entscheidung „Offen“.",
+          "Die Entscheidung steht bei jedem Konto, ggf. mit Notiz.",
+          "Bei markierten Konten steht „Entzug bereits erfolgt.“",
+          "Es steht „Abgeschlossen von … am …“. Vorher zeigt die App „Noch … Konten ohne Entscheidung.“"
+        ],
+        "fehler": [
+          {
+            "problem": "Die Prüfung lässt sich nicht abschließen.",
+            "loesung": "Es fehlen Entscheidungen. Die App zeigt „Noch … Konten ohne Entscheidung.“"
+          },
+          {
+            "problem": "„Rechte entziehen“ hat nichts geändert.",
+            "loesung": "Das Markieren entzieht keine Rechte. Entzieh sie im Reiter „Zuweisung“."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne die Ansicht „Rechteprüfung“ und lies die letzte Prüfung. Triff keine Entscheidung und schließe nichts ab."
+      },
+      {
+        "id": "AKT-03",
+        "rollen": ["super_admin"],
+        "titre": "Alte technische Daten bereinigen (Datenpflege)",
+        "wann": "Protokoll, Auswertungen und gelesene Hinweise sollen nach Ablauf der Fristen entfernt werden.",
+        "schritte": [
+          "In der „Rollenverwaltung“ den Reiter „Aktivität“ öffnen und die Ansicht „Datenpflege“ wählen.",
+          "Für jede Datenart die „Frist in Tagen“ prüfen und bei Änderungen „Fristen speichern“ klicken.",
+          "Entscheiden, ob „Automatisch bereinigen (täglich)“ eingeschaltet sein soll.",
+          "Für eine einmalige Bereinigung die Datenarten mit Treffern ankreuzen (oder „Alle Datenarten mit Treffern auswählen“).",
+          "Auf „… Datenarten jetzt bereinigen“ klicken und die Rückfrage mit „Endgültig löschen“ bestätigen."
+        ],
+        "danach": "Gelöscht werden nur Daten, die älter als die gespeicherte Frist sind. Das lässt sich nicht rückgängig machen. Die letzte Ausführung steht unter „Letzter Lauf“.",
+        "vorher": "Du hast die Aufbewahrungsfristen mit dem Verein abgestimmt.",
+        "erwartet": [
+          "Die Ansicht zeigt Gruppen mit Bestand, ältestem Eintrag und „jetzt betroffen“.",
+          "Bei geänderten Fristen werden sie gespeichert. Ungültige Werte zeigen „Mindestens eine Frist liegt außerhalb des erlaubten Bereichs.“",
+          "Der Hinweis zur automatischen Pflege zeigt, ob sie an oder aus ist.",
+          "Die gewählten Datenarten sind markiert. Vorher gilt: „Speichern Sie zuerst die geänderten Fristen; die Vorschau gilt für die gespeicherten Werte.“",
+          "„Fertig: … Datensätze gelöscht.“ erscheint."
+        ],
+        "fehler": [
+          {
+            "problem": "Du möchtest die Löschung zurücknehmen.",
+            "loesung": "Das geht nicht. Gelöschte Datensätze sind endgültig weg. Lies die Rückfrage deshalb genau."
+          },
+          {
+            "problem": "„Jetzt bereinigen“ ist nicht möglich.",
+            "loesung": "Es ist keine Datenart ausgewählt oder es gibt keine betroffenen Daten."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne die Ansicht „Datenpflege“ und lies Bestand, ältesten Eintrag und „jetzt betroffen“. Bereinige nichts und speichere keine Fristen."
       }
     ]
   },
@@ -905,6 +1111,77 @@
     "schritte": [
       "Für jedes Modul (z. B. Veranstaltungen, Shop) festlegen, ob E-Mails verschickt werden.",
       "Die Benachrichtigungen in der App (Glocke) bleiben davon unberührt."
+    ],
+    "workflows": [
+      {
+        "id": "BENA-01",
+        "rollen": ["super_admin"],
+        "titre": "E-Mail-Benachrichtigungen je Modul ein- oder ausschalten",
+        "wann": "Ein Bereich verschickt zu viele oder zu wenige E-Mails an die Mitglieder.",
+        "schritte": [
+          "„E-Mail-Benachrichtigungen“ öffnen.",
+          "Beim Modul (Mitglieder, Mitgliedsbeiträge, Mitgliedschaften, Veranstaltungen, Shop, Wahlen & Abstimmungen, Community, Kalender, Aktivität) den Schalter umlegen.",
+          "Prüfen, dass die Änderung übernommen wurde."
+        ],
+        "danach": "Das gilt für alle Mitglieder. Die Meldungen in der App (Glocke) bleiben unberührt. Der Geburtstagsgruß hängt am Modul „Mitglieder“; Sicherheitsalarme an „Aktivität (Sicherheitsalarme)“.",
+        "vorher": "Du weißt, welches Modul betroffen ist und was dort versendet wird (siehe Beschreibung unter dem Modul).",
+        "erwartet": [
+          "Die Seite listet jedes Modul mit Kurzbeschreibung und Schalter.",
+          "Der Schalter steht in der neuen Stellung.",
+          "Bei einem Fehler erscheint „Die Änderung ist fehlgeschlagen.“ Sonst bleibt die Stellung."
+        ],
+        "fehler": [
+          {
+            "problem": "„Die Änderung ist fehlgeschlagen.“",
+            "loesung": "Lade die Seite neu und versuche es erneut."
+          },
+          {
+            "problem": "Mitglieder bekommen trotz ausgeschaltetem Modul Hinweise.",
+            "loesung": "Die Glocke in der App und Telegram bleiben aktiv; nur die E-Mails sind abgeschaltet."
+          },
+          {
+            "problem": "Sicherheitsalarme kommen nicht mehr an.",
+            "loesung": "Prüfe, ob das Modul „Aktivität (Sicherheitsalarme)“ eingeschaltet ist."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Schalte das Modul „Kalender“ aus und sofort wieder ein. Merke dir vorher die Stellung. Währenddessen verschickt die Testumgebung keine Kalender-E-Mails."
+      },
+      {
+        "id": "BENA-02",
+        "titre": "Benachrichtigungen per Telegram erhalten",
+        "wann": "Du möchtest zusätzlich zur App und E-Mail kurze Hinweise in Telegram bekommen.",
+        "schritte": [
+          "Deine Einstellungen öffnen und zum Abschnitt „Telegram“ gehen.",
+          "Auf „Mit Telegram verbinden“ klicken und dann „In Telegram öffnen“ wählen.",
+          "In Telegram im Chat mit dem Bot „Start“ antippen. Der Link gilt 15 Minuten und nur einmal.",
+          "Zurück in der App unter „Diese Arten per Telegram erhalten“ die Arten ankreuzen oder abwählen.",
+          "Mit „Testnachricht senden“ prüfen, ob die Verbindung steht."
+        ],
+        "danach": "Telegram bekommt nur den Titel mit Link in die App, nie den Inhalt. Mit „Trennen“ oder dem Befehl /stop im Chat löst du die Verbindung wieder.",
+        "vorher": "Du hast Telegram auf dem Handy oder Rechner. Diese Funktion läuft nur, wenn der Verein Telegram eingerichtet hat.",
+        "erwartet": [
+          "Der Abschnitt „Telegram“ erklärt, dass du Titel und Link erhältst und nicht den Inhalt.",
+          "Telegram öffnet sich mit dem Bot. Die Seite weist darauf hin, in Telegram „Start“ anzutippen, und dass der Link 15 Minuten und nur einmal gilt. Die Seite aktualisiert sich selbst.",
+          "Der Bot bestätigt die Verbindung.",
+          "Die Seite zeigt „Verbunden. Sie erhalten die gewählten Benachrichtigungen auch in Telegram.“ und die Arten zur Auswahl.",
+          "„Testnachricht gesendet.“ erscheint und die Nachricht kommt in Telegram an."
+        ],
+        "fehler": [
+          {
+            "problem": "Der Link funktioniert nicht mehr.",
+            "loesung": "Er gilt nur 15 Minuten und einmal. Klicke erneut auf „Mit Telegram verbinden“."
+          },
+          {
+            "problem": "Du erhältst keine Nachrichten mehr.",
+            "loesung": "Prüfe, ob du den Bot blockiert hast (dann wird die Verbindung gelöst) und verbinde neu."
+          },
+          {
+            "problem": "Eine Art soll nicht mehr kommen.",
+            "loesung": "Entferne den Haken bei der Art, z. B. „Shop“. Jede Art ist einzeln abschaltbar."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Verbinde dein eigenes Testkonto mit deinem Telegram, sende die Testnachricht und trenne die Verbindung danach mit „Trennen“. Die Testnachricht geht nur an dich."
+      }
     ]
   },
   "projets": {
@@ -961,8 +1238,74 @@
     "intro": "Fotoalben für die Galerie anlegen.",
     "schritte": [
       "Neues Album mit Titel erstellen und Fotos hochladen.",
-      "Veröffentlichen, damit das Album in der Galerie erscheint.",
-      "Fotos oder ganze Alben bei Bedarf wieder entfernen."
+      "Mit „Freischalten“ (oder dem Häkchen „Auf der öffentlichen Startseite anzeigen“) erscheint das Album auch für Besucher. Ohne Haken sehen es nur angemeldete Mitglieder.",
+      "Einzelne Fotos mit dem Kreuz entfernen oder das ganze Album mit „Löschen“ entfernen."
+    ],
+    "workflows": [
+      {
+        "id": "ALB-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Album anlegen und Fotos hochladen",
+        "wann": "Nach einer Veranstaltung oder einem Projekt sollen Fotos in der Galerie erscheinen.",
+        "schritte": [
+          "„Fotoalben-Verwaltung“ öffnen und „Neues Album“ wählen.",
+          "Name, Beschreibung, Datum und Ort eintragen. Optional eine Veranstaltung oder ein Projekt verknüpfen.",
+          "Unter „Fotos des Albums“ die Bilder auswählen (JPG, PNG oder WebP, mehrere sind möglich).",
+          "Auf „Neues Album“ klicken, um das Album mit den Fotos zu speichern."
+        ],
+        "danach": "Mitglieder sehen das Album in der Galerie „Fotoalben“ und können Fotos kommentieren. Für Besucher der öffentlichen Startseite braucht es zusätzlich die Freigabe (Karte ALB-02).",
+        "vorher": "Du hast die Fotos (ohne Personen, die nicht abgebildet werden möchten) und kennst Name, Datum und Ort.",
+        "erwartet": [
+          "Das Formular „Neues Album“ ist offen.",
+          "Alle Felder sind ausgefüllt. Bei einer Verknüpfung steht die Veranstaltung bzw. das Projekt im Feld; ohne steht dort „– keine Verknüpfung –“.",
+          "Die gewählten Dateien stehen im Auswahlfeld.",
+          "Das Album steht in der Liste, mit dem Zeichen „Nur Mitglieder“. Die Fotos erscheinen im Album."
+        ],
+        "fehler": [
+          {
+            "problem": "„Das Album konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe den Namen und dass nur JPG-, PNG- oder WebP-Dateien gewählt sind."
+          },
+          {
+            "problem": "Ein Foto soll nicht erscheinen.",
+            "loesung": "Entferne es mit dem Kreuz oben rechts am Foto."
+          },
+          {
+            "problem": "Du siehst keine Schaltflächen zum Ändern.",
+            "loesung": "Du hast nur Leserechte auf die Seite Fotoalben. Frage die App-Administration."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege das Album „[ÜBUNG] Testalbum“ mit einem erfundenen Foto ohne Personen an und lösche es danach mit „Löschen“. Lass es nicht öffentlich."
+      },
+      {
+        "id": "ALB-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Album und Fotos für die öffentliche Startseite freigeben",
+        "wann": "Besucher ohne Konto sollen einzelne Fotos auf der Startseite sehen.",
+        "schritte": [
+          "In der Albumliste beim Album auf „Freischalten“ klicken, oder im Album „Bearbeiten“ wählen und „Auf der öffentlichen Startseite anzeigen“ ankreuzen.",
+          "Im Album unter „Fotos des Albums“ bei jedem Foto prüfen, ob „Öffentlich“ angekreuzt ist. Mit „Alle öffentlich“ oder „Alle nur intern“ setzt du alle Fotos auf einmal.",
+          "Mit „Speichern“ bestätigen."
+        ],
+        "danach": "Besucher sehen nur Fotos, keine Kommentare. Mit „Ausblenden“ nimmst du das Album wieder von der öffentlichen Startseite.",
+        "vorher": "Alle abgebildeten Personen haben der Veröffentlichung zugestimmt.",
+        "erwartet": [
+          "Das Album trägt das Zeichen „Öffentlich“ statt „Nur Mitglieder“. Die Schaltfläche heißt jetzt „Ausblenden“.",
+          "Fotos mit Haken „Öffentlich“ sind kräftig dargestellt, Fotos „Nur intern“ blasser.",
+          "Die Änderung ist gespeichert und die Liste zeigt das Album als „Öffentlich“."
+        ],
+        "fehler": [
+          {
+            "problem": "Ein Foto fehlt auf der Startseite.",
+            "loesung": "Es braucht beides: das Album ist „Öffentlich“ und das Foto hat den Haken „Öffentlich“."
+          },
+          {
+            "problem": "Ein Foto muss sofort weg.",
+            "loesung": "Entferne den Haken „Öffentlich“ beim Foto oder entferne das Foto mit dem Kreuz."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Gib das Album „[ÜBUNG] Testalbum“ (ALB-01) frei, prüfe die Startseite der Testumgebung und nimm das Album danach mit „Ausblenden“ zurück. Die Fotos sind in der Zwischenzeit öffentlich sichtbar."
+      }
     ]
   },
   "hero": {
@@ -971,6 +1314,66 @@
     "schritte": [
       "Ein neues Video hochladen oder das aktuelle ersetzen.",
       "Nach dem Speichern erscheint es auf der Startseite."
+    ],
+    "workflows": [
+      {
+        "id": "HERO-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Hero-Video der Startseite austauschen",
+        "wann": "Das Video im Kopfbereich der öffentlichen Startseite soll gewechselt werden.",
+        "schritte": [
+          "Den Menüpunkt „Hero-Video“ öffnen. Oben steht der Bereich „Hero-Video der Startseite“.",
+          "Mit „Video hochladen“ die neue Videodatei auswählen.",
+          "Warten, bis „Wird hochgeladen…“ verschwindet, und die Startseite prüfen."
+        ],
+        "danach": "Das Video läuft auf der Startseite automatisch und stumm. Ohne Video zeigt der Kopfbereich den Standard-Hintergrund.",
+        "vorher": "Du hast eine geeignete Videodatei, an der der Verein die Rechte hat.",
+        "erwartet": [
+          "Die Seite zeigt das aktuelle Video oder den Hinweis „Noch kein Video hinterlegt — der Hero-Bereich zeigt den Standard-Hintergrund.“",
+          "Die Schaltfläche zeigt „Wird hochgeladen…“.",
+          "Auf der öffentlichen Startseite läuft das neue Video."
+        ],
+        "fehler": [
+          {
+            "problem": "„Fehler beim Hochladen des Videos.“",
+            "loesung": "Prüfe das Format und die Größe der Datei und versuche es erneut. Bleibt der Fehler, verkleinere das Video."
+          },
+          {
+            "problem": "Das alte Video erscheint noch.",
+            "loesung": "Lade die Startseite neu (Strg+F5), der Browser hat das alte Video zwischengespeichert."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lade ein kurzes, selbst erstelltes Testvideo hoch und stelle danach das ursprüngliche Video wieder ein. Das Video ist auf der Startseite der Testumgebung öffentlich sichtbar."
+      },
+      {
+        "id": "HERO-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Hintergrundbild eines Moduls ersetzen oder entfernen",
+        "wann": "Die Seiten eines Moduls (z. B. Shop oder Veranstaltungen) sollen ein anderes Hintergrundbild bekommen.",
+        "schritte": [
+          "Den Menüpunkt „Hero-Video“ öffnen und weiter unten den Bereich „Hintergrundbilder pro Modul“ suchen.",
+          "Beim gewünschten Modul „Bild hochladen“ (oder „Bild ersetzen“) wählen und die Bilddatei auswählen.",
+          "Mit „Entfernen“ lässt sich das Bild wieder löschen."
+        ],
+        "danach": "Das Bild gilt für die Seiten des Moduls, nicht für die Verwaltung. Ohne Bild zeigt die Seite den Standard-Hintergrund.",
+        "vorher": "Du hast ein skalierbares Bild (nur Bilddateien).",
+        "erwartet": [
+          "Die Liste zeigt je Modul das Bild oder „Kein Hintergrundbild hinterlegt — die Seite zeigt den Standard-Hintergrund.“",
+          "Das Bild erscheint in der Zeile des Moduls, die Schaltfläche heißt jetzt „Bild ersetzen“.",
+          "Das Modul zeigt wieder den Standard-Hintergrund."
+        ],
+        "fehler": [
+          {
+            "problem": "„Fehler beim Hochladen des Bildes.“",
+            "loesung": "Prüfe, dass es eine Bilddatei ist, und verkleinere sie bei Bedarf."
+          },
+          {
+            "problem": "Das Bild ist nur schlecht lesbar hinter dem Text.",
+            "loesung": "Wähle ein ruhigeres, helleres Bild."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lade für ein Modul ein neutrales Testbild hoch und entferne es wieder mit „Entfernen“. Merke dir vorher, ob schon ein Bild hinterlegt war."
+      }
     ]
   },
   "logos": {
@@ -980,6 +1383,39 @@
       "Den Verein in der Liste auswählen.",
       "Ein Logo hochladen oder austauschen.",
       "Die Logos erscheinen danach in Tabelle und Spielplan."
+    ],
+    "workflows": [
+      {
+        "id": "LOGO-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Logo eines Vereins hochladen oder entfernen",
+        "wann": "Ein Verein soll in Tabelle, Spielplan und auf der Kachel „Nächstes Spiel“ mit Logo erscheinen.",
+        "schritte": [
+          "„Vereinslogos“ öffnen.",
+          "Bei „Vereinsname“ den Namen genau so eintragen, wie er in Tabelle und Spielplan geschrieben steht.",
+          "Bei „Logo-Datei“ die Bilddatei auswählen und „Hochladen“ klicken.",
+          "Mit „Entfernen“ lässt sich ein Logo wieder entfernen."
+        ],
+        "danach": "Das Logo erscheint neben dem Vereinsnamen in Tabelle, Spielplan und auf der Kachel „Nächstes Spiel“.",
+        "vorher": "Du hast die Logo-Datei und kennst die Schreibweise des Vereins in der Tabelle.",
+        "erwartet": [
+          "Die Seite zeigt die vorhandenen Logos oder „Noch kein Logo hochgeladen.“",
+          "Der Vereinsname steht im Feld, ohne Tippfehler.",
+          "Das Logo steht in der Liste. In Tabelle und Spielplan erscheint es neben dem Namen.",
+          "Das Logo ist aus der Liste verschwunden."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Logo erscheint nicht in der Tabelle.",
+            "loesung": "Der Vereinsname weicht von der Schreibweise in Tabelle und Spielplan ab. Trage ihn genau gleich ein."
+          },
+          {
+            "problem": "„Das Logo konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe das Dateiformat und die Größe und lade es erneut hoch."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lade für einen erfundenen Verein „[ÜBUNG] Testverein“ ein neutrales Logo hoch und entferne es danach mit „Entfernen“. Ändere keine bestehenden Logos."
+      }
     ]
   },
   "quiz": {
@@ -987,9 +1423,87 @@
     "intro": "Quizfragen für die Community anlegen.",
     "schritte": [
       "Neues Quiz oder neue Frage mit Antwortmöglichkeiten erstellen und die richtige Antwort markieren.",
-      "Veröffentlichen, damit Mitglieder teilnehmen können.",
+      "Mit „Aktivieren“ können Mitglieder teilnehmen. Aktiviere nur ein Quiz zur selben Zeit.",
       "Ergebnisse und Rangliste in der Übersicht ansehen.",
       "Im Tab „Umfragen“: Umfragen mit Fragen (eine/mehrere Antworten, Freitext), Frist, Zielgruppe und Ergebnis-Sichtbarkeit anlegen, veröffentlichen und in den Neuigkeiten ankündigen."
+    ],
+    "workflows": [
+      {
+        "id": "QUIZ-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Quiz anlegen und aktivieren",
+        "wann": "Mitglieder sollen ein neues Quiz spielen.",
+        "schritte": [
+          "Die „Quiz- und Umfragen-Verwaltung“ öffnen und im Reiter „Quiz“ einen Titel (und optional eine Beschreibung) eintragen.",
+          "Auf „Quiz erstellen“ klicken und das Quiz links in der Liste auswählen.",
+          "Mit „Frage hinzufügen“ eine Frage eintragen.",
+          "Bei der Frage Antwortmöglichkeiten eintragen und mit „Hinzufügen“ ergänzen. Die richtige Antwort mit „Richtige Antwort“ markieren.",
+          "Auf „Aktivieren“ klicken, damit Mitglieder das Quiz sehen."
+        ],
+        "danach": "Mitglieder starten das Quiz unter „Quiz und Umfragen“ und sehen ihr Ergebnis und die Rangliste. Mit „Deaktivieren“ ist das Quiz wieder weg.",
+        "vorher": "Du hast Fragen, Antworten und die richtigen Antworten vorbereitet.",
+        "erwartet": [
+          "Die Seite zeigt links die vorhandenen Quiz oder „Noch kein Quiz.“",
+          "Das Quiz steht in der Liste mit dem Zeichen „Inaktiv“. Rechts steht „Noch keine Frage.“",
+          "Die Frage steht als „Frage 1“ mit „Noch keine Antwortmöglichkeit.“",
+          "Die Antworten stehen unter der Frage, die richtige ist markiert.",
+          "Das Zeichen wechselt auf „Aktiv“ und die Schaltfläche auf „Deaktivieren“."
+        ],
+        "fehler": [
+          {
+            "problem": "Mitglieder sehen das Quiz nicht.",
+            "loesung": "Es ist noch „Inaktiv“. Klicke auf „Aktivieren“."
+          },
+          {
+            "problem": "„Das Quiz konnte nicht erstellt werden.“",
+            "loesung": "Der Titel fehlt. Trage einen Titel ein."
+          },
+          {
+            "problem": "Zwei Quiz sind gleichzeitig aktiv.",
+            "loesung": "Üblich ist ein aktives Quiz. Deaktiviere das alte mit „Deaktivieren“."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege das Quiz „[ÜBUNG] Testquiz“ mit zwei Fragen an, aktiviere es nicht und lösche es danach mit „Löschen“. Ein aktiviertes Quiz sehen alle Mitglieder."
+      },
+      {
+        "id": "QUIZ-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Umfrage anlegen, veröffentlichen und auswerten",
+        "wann": "Mitglieder sollen zu einem Thema befragt werden.",
+        "schritte": [
+          "In der „Quiz- und Umfragen-Verwaltung“ den Reiter „Umfragen“ öffnen und „Neue Umfrage“ wählen.",
+          "Titel, Beschreibung, Zielgruppe, „Ergebnisse sichtbar für“ und Frist festlegen. Bei Bedarf „Anonym abstimmen“ ankreuzen.",
+          "Mit „Frage hinzufügen“ Fragen anlegen: Fragetyp „Eine Antwort“, „Mehrere Antworten“ oder „Freitext“ wählen, Antworten ergänzen, bei Bedarf „Pflichtfrage“ ankreuzen.",
+          "Auf „Speichern“ klicken und die Umfrage prüfen.",
+          "„Veröffentlichen“ klicken und mit „In Neuigkeiten ankündigen“ die Mitglieder darauf hinweisen.",
+          "Nach der Frist die Ergebnisse unter „Ergebnisse“ ansehen."
+        ],
+        "danach": "Sobald es Teilnahmen gibt, sind Fragen, Zielgruppe und Anonymität gesperrt. Mit „Zurückziehen“ nimmst du die Umfrage vom Netz.",
+        "vorher": "Du kennst Zielgruppe, Fragen und Frist.",
+        "erwartet": [
+          "Das Formular „Neue Umfrage“ ist offen.",
+          "Zielgruppe („Nur für Mitglieder“ oder „Für alle mit Konto“), Ergebnis-Sichtbarkeit und Frist stehen im Formular.",
+          "Jede Frage steht mit ihrem Typ im Formular.",
+          "Die Umfrage steht in der Liste mit dem Status „Entwurf“.",
+          "Der Status ist „Veröffentlicht“ und es steht „In Neuigkeiten angekündigt“.",
+          "Die Ergebnisse zeigen die Antworten. Bei „Nur die Verwaltung sieht die Ergebnisse“ sehen nur Verantwortliche sie."
+        ],
+        "fehler": [
+          {
+            "problem": "Fragen lassen sich nicht mehr ändern.",
+            "loesung": "Es gibt schon Teilnahmen – Fragen, Zielgruppe und Anonymität sind gesperrt. Lege bei Bedarf eine neue Umfrage an."
+          },
+          {
+            "problem": "Die Umfrage ist doppelt angekündigt.",
+            "loesung": "Die Ankündigung erscheint einmal („In Neuigkeiten angekündigt“). Klicke nicht erneut."
+          },
+          {
+            "problem": "Du willst eine Umfrage löschen.",
+            "loesung": "„Löschen“ fragt vorher nach und entfernt die Umfrage endgültig."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege die Umfrage „[ÜBUNG] Testumfrage“ mit einer Frage für „Nur für Mitglieder“ an, lass sie im Entwurf und lösche sie danach. Veröffentliche und kündige nicht an, sonst erhalten Mitglieder einen Hinweis."
+      }
     ]
   },
   "finances": {
@@ -2091,7 +2605,103 @@
           "Betreff, Kategorie und Beschreibung ausfüllen und absenden."
         ],
         "beispiel": "Betreff „Beitrag bezahlt, Status offen“, Kategorie „Zahlung und Beitrag“, Datum und Betrag in der Beschreibung.",
-        "danach": "Das Büro antwortet im Ticket. Du wirst benachrichtigt."
+        "danach": "Das Büro antwortet im Ticket. Du wirst benachrichtigt.",
+        "id": "SUPP-01",
+        "vorher": "Du bist angemeldet (Mitglied oder Fan) und hast in den häufigen Fragen nichts gefunden.",
+        "erwartet": [
+          "Die Seite „Support“ zeigt die Reiter „Hilfe und Fragen“ und „Meine Tickets“. Die Suche filtert die häufigen Fragen.",
+          "Das Formular „Neues Ticket“ ist offen.",
+          "Nach „Ticket absenden“ steht das Ticket mit Nummer unter „Meine Tickets“. Im Verlauf siehst du deine Nachricht."
+        ],
+        "fehler": [
+          {
+            "problem": "„Du hast in der letzten Stunde schon mehrere Tickets eröffnet.“",
+            "loesung": "Es gibt höchstens 5 neue Tickets pro Stunde. Warte etwas oder ergänze ein bestehendes Ticket."
+          },
+          {
+            "problem": "„Du hast bereits viele offene Tickets.“",
+            "loesung": "Höchstens 10 Tickets dürfen gleichzeitig aktiv sein. Schließe erledigte Tickets mit „Ticket schliessen“."
+          },
+          {
+            "problem": "Du kannst nicht mehr antworten.",
+            "loesung": "Das Ticket ist geschlossen. Eröffne für ein neues Anliegen ein neues Ticket."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Eröffne das Ticket „[ÜBUNG] Testticket“ mit der Kategorie „Sonstiges“ und schließe es danach mit „Ticket schliessen“. Das Büro erhält dazu eine Benachrichtigung und eine E-Mail."
+      },
+      {
+        "id": "SUPP-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Ticket bearbeiten und beantworten",
+        "wann": "Ein Mitglied hat ein Support-Ticket geschrieben.",
+        "schritte": [
+          "„Support“ öffnen und den Reiter „Alle Tickets“ wählen.",
+          "Mit „Aktive Tickets“ oder „Alle Tickets“ filtern, bei Bedarf nach Nummer, Betreff oder Name suchen. Ticket öffnen.",
+          "Mit „Mir zuweisen“ die Bearbeitung übernehmen.",
+          "Unter „Antwort schreiben“ die Antwort eintragen, bei „Danach“ den neuen Status wählen („Wartet auf Antwort“, „In Bearbeitung“ oder „Gelöst“) und „Senden“ klicken.",
+          "Für Notizen im Team „Interne Notiz“ nutzen und „Notiz speichern“ klicken."
+        ],
+        "danach": "Die Person erhält Hinweis und E-Mail mit Ticketnummer und Betreff, nicht den Text. Eine interne Notiz ist für die Person nie sichtbar. Mit „Zuweisung aufheben“ gibst du das Ticket wieder frei.",
+        "vorher": "Du hast Schreibrecht auf die Seite Support.",
+        "erwartet": [
+          "Die Liste zeigt Nummer, Betreff, Person, Status und „Aktualisiert“. Ohne Treffer steht dort „Keine Tickets gefunden.“",
+          "Das Ticket zeigt den Verlauf mit „Antwort von …“ und „Bearbeitung: niemand“.",
+          "Bei „Bearbeitung“ steht dein Name.",
+          "Die Antwort steht im Verlauf als „Antwort von …“. Der Status ist wie gewählt.",
+          "Die Notiz steht als „Interne Notiz von …“ im Verlauf."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Person sieht deine Notiz.",
+            "loesung": "Interne Notizen sind nie sichtbar. Antworten dagegen schon: nutze „Antwort schreiben“ nur für die Person."
+          },
+          {
+            "problem": "Du kannst nicht antworten.",
+            "loesung": "Das Ticket ist geschlossen. Die Person muss ein neues Ticket eröffnen."
+          },
+          {
+            "problem": "Das Ticket liegt bei der falschen Person.",
+            "loesung": "Hebe die Zuweisung mit „Zuweisung aufheben“ auf und weise es neu zu."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Beantworte das Ticket „[ÜBUNG] Testticket“ (SUPP-01) mit „Gelöst“ und schreibe eine interne Notiz „[ÜBUNG]“. Die Person erhält eine Benachrichtigung und E-Mail."
+      },
+      {
+        "id": "SUPP-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Häufige Fragen pflegen",
+        "wann": "Eine Frage kommt oft vor oder eine Antwort ist veraltet.",
+        "schritte": [
+          "„Support“ öffnen und den Reiter „Fragen pflegen“ wählen.",
+          "Auf „Neue Frage“ klicken und „Frage (Deutsch)“ und „Antwort (Deutsch)“ eintragen.",
+          "Optional „Frage (Französisch)“ und „Antwort (Französisch)“ ergänzen und „Reihenfolge“ festlegen.",
+          "„Sichtbar“ ankreuzen und mit „Speichern“ bestätigen.",
+          "Vorhandene Fragen mit „Bearbeiten“, „Ausblenden“ oder „Einblenden“ pflegen."
+        ],
+        "danach": "Ohne französischen Text sehen auch französisch eingestellte Konten die deutsche Frage. „Wirklich löschen“ entfernt eine Frage endgültig; zum Verbergen nutze „Ausblenden“.",
+        "vorher": "Du hast Schreibrecht auf die Seite Support und kennst die Antwort.",
+        "erwartet": [
+          "Der Reiter zeigt die vorhandenen Fragen, sichtbare und ausgeblendete.",
+          "Das Formular zeigt die Felder für Deutsch und Französisch.",
+          "Die Felder für Französisch sind ausgefüllt oder leer, wie gewünscht.",
+          "Die Frage steht in der Liste als „sichtbar“. Mitglieder finden sie im Reiter „Hilfe und Fragen“.",
+          "Die Frage steht als „ausgeblendet“ bzw. wieder „sichtbar“."
+        ],
+        "fehler": [
+          {
+            "problem": "Mitglieder sehen die Frage nicht.",
+            "loesung": "Sie ist „ausgeblendet“ oder „Sichtbar“ ist nicht angekreuzt. Blende sie mit „Einblenden“ ein."
+          },
+          {
+            "problem": "Eine Antwort enthält falsche Angaben.",
+            "loesung": "Korrigiere sie mit „Bearbeiten“. Veraltete Fragen blendest du aus."
+          },
+          {
+            "problem": "Eine Frage zu Telegram ist sichtbar, obwohl Telegram noch nicht läuft.",
+            "loesung": "Blende sie mit „Ausblenden“ aus, bis Telegram eingerichtet ist."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege die Frage „[ÜBUNG] Testfrage“ an, blende sie aus und lösche sie danach mit „Wirklich löschen“. Ändere keine bestehende Frage."
       }
     ],
     "tipps": [
@@ -2392,6 +3002,233 @@
       "„Privat“ heißt wirklich privat: Nur du und die Eingeladenen sehen den Termin, auch das Bureau nicht.",
       "Mit „Zum Kalender hinzufügen (.ics)“ übernimmst du Termine in deinen eigenen Kalender.",
       "Die Wochenübersicht montags per E-Mail lässt sich jederzeit abschalten."
+    ]
+  },
+  "vote": {
+    "titre": "Abstimmungen & Wahlen",
+    "intro": "Hier finden Live-Abstimmungen und Wahlen statt. Das Büro erstellt Sitzungen, die Wahlberechtigten stimmen ab, danach gibt es das offizielle Ergebnis.",
+    "schritte": [
+      "Im Reiter „Laufende Abstimmung“ siehst du eine offene Sitzung mit verbleibender Zeit und Teilnehmern.",
+      "Unter „Vergangene Abstimmungen“ findest du abgeschlossene Sitzungen mit Ergebnissen.",
+      "Das Büro erstellt eine neue Sitzung mit „Abstimmungssitzung erstellen“."
+    ],
+    "workflows": [
+      {
+        "id": "VOTE-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Abstimmungssitzung erstellen und starten",
+        "wann": "Die Mitglieder sollen über etwas abstimmen oder jemanden wählen.",
+        "schritte": [
+          "„Abstimmungen & Wahlen“ öffnen und „Abstimmungssitzung erstellen“ wählen.",
+          "Schritt „Einstellungen“: Titel, Beschreibung, Abstimmungstyp, Dauer, „Anonym“ oder „Namentlich“ und die Wahlberechtigten festlegen. Bei Bedarf „Erforderliches Quote“ eintragen. Dann „Weiter“.",
+          "Schritt „Abstimmungsoptionen“: mindestens zwei Optionen oder Kandidaten eintragen (bei Ja/Nein sind sie vorgegeben). Dann „Weiter“.",
+          "Schritt „Bestätigen“: die Zusammenfassung prüfen und „Abstimmung starten“ klicken."
+        ],
+        "danach": "Die Wahlberechtigten werden beim Start per App und E-Mail benachrichtigt. Nach dem Start lässt sich die Sitzung nicht mehr ändern; du kannst sie nur vor Ablauf schließen (Karte VOTE-02).",
+        "vorher": "Du kennst Fragestellung, Optionen, Wahlberechtigte und ob anonym oder namentlich abgestimmt wird. Die Satzung regelt, ob eine Quote nötig ist.",
+        "erwartet": [
+          "Die Seite „Abstimmungssitzung erstellen“ zeigt drei Schritte: „Einstellungen“, „Abstimmungsoptionen“, „Bestätigen“.",
+          "Titel und Beschreibung sind Pflicht; sonst steht dort „Titel und Beschreibung sind erforderlich.“ Bei manueller Auswahl brauchst du mindestens ein Mitglied.",
+          "Die Optionen stehen mit Namen und optionaler Kurzbeschreibung. Weniger als zwei Optionen zeigen „Eine Abstimmung muss mindestens 2 Optionen enthalten.“",
+          "Die Sitzung läuft. Sie zeigt „Sitzung geöffnet“, „Verbleibende Zeit“ und die Zahl der Teilnehmer."
+        ],
+        "fehler": [
+          {
+            "problem": "Du hast beim Start einen Fehler bemerkt.",
+            "loesung": "Nach dem Start lässt sich nichts mehr ändern. Schließe die Sitzung mit „Abstimmung schließen“ und starte eine neue."
+          },
+          {
+            "problem": "„Die Sitzung konnte nicht erstellt werden.“",
+            "loesung": "Prüfe Titel, Optionen und Wahlberechtigte und versuche es erneut."
+          },
+          {
+            "problem": "Ein Mitglied kann nicht abstimmen.",
+            "loesung": "Es gehört nicht zu den Wahlberechtigten. Prüfe die Auswahl „Wahlberechtigte Mitglieder“."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Erstelle die Sitzung „[ÜBUNG] Testabstimmung“ mit „Manuelle Auswahl“ und nur einem Testkonto, zwei Optionen und der kürzesten Dauer. Der Start benachrichtigt die gewählten Konten per E-Mail. Wähle nie „Alle aktiven Mitglieder“."
+      },
+      {
+        "id": "VOTE-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Abstimmung schließen und Ergebnis lesen",
+        "wann": "Die Zeit ist abgelaufen oder die Sitzung soll früher beendet werden.",
+        "schritte": [
+          "Im Reiter „Laufende Abstimmung“ die Sitzung ansehen: „Verbleibende Zeit“ und „Teilnehmer“.",
+          "Soll die Sitzung vor Ablauf enden, auf „Abstimmung schließen“ klicken.",
+          "Die „Offiziellen Ergebnisse“ lesen: Beteiligung, Quote, Stimmenzahl und Gewählte.",
+          "Spätere Ergebnisse stehen unter „Vergangene Abstimmungen“."
+        ],
+        "danach": "Bei Gleichstand oder nicht erreichter Quote steht das ausdrücklich im Ergebnis. Anonyme Abstimmungen zeigen nur Summen; bei namentlichen sieht die Verwaltung, wer abgestimmt hat, nicht die Wahl.",
+        "vorher": "Es gibt eine laufende Sitzung.",
+        "erwartet": [
+          "Die Sitzung zeigt „Sitzung geöffnet“ und „… / … Mitglieder haben abgestimmt“.",
+          "Die Sitzung wechselt auf „Sitzung geschlossen“. Währenddessen steht „Wird geschlossen…“.",
+          "Die Ergebnisse zeigen „… % Beteiligung“ und „Erforderliche Quote von …% erreicht“ bzw. „nicht erreicht“, dazu „Gewählt“.",
+          "Die Sitzung steht in der Liste mit ihrem Ergebnis."
+        ],
+        "fehler": [
+          {
+            "problem": "„Diese Sitzung konnte nicht geschlossen werden.“",
+            "loesung": "Lade die Seite neu und versuche es erneut. Bleibt der Fehler, melde ihn über den Support."
+          },
+          {
+            "problem": "„Wahl nicht entschieden: keine Option hat die erforderliche Quote erreicht.“",
+            "loesung": "Das ist ein gültiges Ergebnis. Eine neue Abstimmung ist ein neues Verfahren (Satzung beachten)."
+          },
+          {
+            "problem": "Gleichstand.",
+            "loesung": "Die App zeigt die Optionen mit gleicher Stimmenzahl. Das weitere Vorgehen regelt die Satzung."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Schließe die Sitzung „[ÜBUNG] Testabstimmung“ (VOTE-01) mit „Abstimmung schließen“ und lies das Ergebnis. Berühre keine andere Sitzung."
+      }
+    ],
+    "tipps": [
+      "Für Wahlen den Typ „Mehrfachauswahl“ oder Kandidatenlisten nutzen; für Beschlüsse „Ja / Nein“.",
+      "Anonym heißt: keine Verbindung zwischen Person und Wahl – auch nicht für die Verwaltung."
+    ]
+  },
+  "mitgliedschaft": {
+    "titre": "Meine Mitgliedschaft",
+    "intro": "Hier siehst du dein Angebot, zahlst deinen Beitrag und verwaltest deine Karte. Familien melden sich gemeinsam mit einem Familienpaket an.",
+    "schritte": [
+      "Wähle das passende Angebot der laufenden Kampagne.",
+      "Zahle den Beitrag. Die Zahlung bestätigt das Büro oder das System.",
+      "Nach der Zahlung erscheint deine Mitgliedskarte."
+    ],
+    "workflows": [
+      {
+        "id": "FAM-03",
+        "titre": "Mit einem Familienpaket anmelden",
+        "wann": "Du möchtest dich mit Partnerin oder Partner und Kindern gemeinsam anmelden.",
+        "schritte": [
+          "„Meine Mitgliedschaft“ öffnen und das Angebot „Familienpaket“ wählen („ab …“).",
+          "Falls vorhanden, mit „Familie aus dem Vorjahr übernehmen“ die bekannten Personen vorfüllen und prüfen.",
+          "Mit „Weiteren Erwachsenen hinzufügen“ Vorname, Nachname, E-Mail und Beziehung eintragen.",
+          "Mit „Kind hinzufügen“ Vorname, Nachname und Geburtsjahr eintragen und die Einwilligung ankreuzen.",
+          "Den Gesamtpreis prüfen und auf „Weiter zur Zahlung“ klicken.",
+          "Den Beitrag zahlen."
+        ],
+        "danach": "Nach bestätigter Zahlung gehen die Einladungen an die Erwachsenen und die Junior-Karten der Kinder erscheinen. Unter „Mein Familienpaket“ siehst du den Stand.",
+        "vorher": "Du kennst die Namen der Personen und die E-Mail-Adressen der weiteren Erwachsenen. Als sorgeberechtigte Person darfst du für Kinder einwilligen.",
+        "erwartet": [
+          "Die Kachel „Familienpaket“ zeigt „ab …“ und den Hinweis auf Rabatt und Obergrenzen.",
+          "Die Personen sind vorgefüllt. Es steht: „Bitte prüfe alle Angaben. Für Kinder musst du die Einwilligung neu erteilen.“",
+          "Die Person steht unter „Weitere Erwachsene“. Die Einladung folgt nach der Zahlung („Einladung folgt nach Zahlung“).",
+          "Das Kind steht unter „Kinder“ mit Alter. Das Höchstalter nennt die App („Kinder dürfen in diesem Jahr höchstens … Jahre alt sein.“).",
+          "Der Gesamtpreis zeigt „Listenpreis …, abzüglich … % Familienrabatt“. Du zahlst einmal für alle.",
+          "Die Zahlung ist erfolgt und das Paket erscheint unter „Mein Familienpaket“."
+        ],
+        "fehler": [
+          {
+            "problem": "„Weiter zur Zahlung“ ist nicht möglich.",
+            "loesung": "Es fehlen Angaben. Erwachsene brauchen Vorname, Nachname und E-Mail, Kinder Vorname, Nachname, Geburtsjahr und die Einwilligung."
+          },
+          {
+            "problem": "Ein Kind ist zu alt.",
+            "loesung": "Personen über dem Höchstalter der Kampagne meldest du als Erwachsene an."
+          },
+          {
+            "problem": "Eine eingeladene Person hat schon eine eigene Mitgliedschaft.",
+            "loesung": "Die App zeigt „Hat schon eine eigene Mitgliedschaft“. Das Büro klärt die Verrechnung."
+          },
+          {
+            "problem": "Du hast ein Kind falsch eingetragen.",
+            "loesung": "Entferne es mit „Entfernen“ und bestätige die Rückfrage. Die Daten werden gelöscht."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Melde dich mit einem Testkonto und erfundenen Personen („[ÜBUNG] …“) an einer Testkampagne an. Die Zahlung verändert Beitragsquote und Kennzahlen; zahle nur die kleinste Variante und erfasse keine echten Kinder."
+      }
+    ],
+    "tipps": [
+      "Kinder bekommen kein Konto. Es werden nur Name, Geburtsjahr und die Einwilligung gespeichert.",
+      "Erwachsene im Paket sind vollwertige Mitglieder und werden nach der Zahlung per E-Mail eingeladen."
+    ]
+  },
+  "fanclub": {
+    "titre": "Fan-Club: Spielplan",
+    "intro": "Im Fan-Club zeigt der Spielplan Spiele, Ergebnisse und Tabelle. Die Daten kommen aus einer Schnittstelle (API); das Büro kann sie korrigieren und eigene Spiele ergänzen.",
+    "schritte": [
+      "Wechsle zwischen den Reitern „Tabelle“ und „Spielplan“.",
+      "Der Spielplan zeigt „Bevorstehende Spiele“ und „Ergebnisse“.",
+      "Das Büro sieht bei jedem Spiel „Bearbeiten“ und oben „Spiel hinzufügen“."
+    ],
+    "workflows": [
+      {
+        "id": "SPIEL-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Spiel im Spielplan korrigieren",
+        "wann": "Datum, Uhrzeit, Ergebnis oder Status eines Spiels stimmen nicht.",
+        "schritte": [
+          "Im Fan-Club den Reiter „Spielplan“ öffnen und beim Spiel auf „Bearbeiten“ klicken.",
+          "„Datum und Uhrzeit“, das Ergebnis („Tore Heimmannschaft“, „Tore Gastmannschaft“) und den „Status“ korrigieren.",
+          "Auf „Speichern“ klicken.",
+          "Falls die Korrektur falsch war, im Spiel „Auf API-Stand zurücksetzen“ wählen."
+        ],
+        "danach": "Die Korrektur gilt, bis die Schnittstelle einen geänderten Stand liefert (alle 3 Stunden). Dann überschreibt sie die Korrektur. Nach jeder Änderung werden die Punkte im Tippspiel neu berechnet.",
+        "vorher": "Du kennst das richtige Datum bzw. Ergebnis aus einer verlässlichen Quelle.",
+        "erwartet": [
+          "Das Fenster „Spiel bearbeiten“ ist offen. Es nennt: „Die Korrektur gilt, bis die API einen geänderten Stand liefert – dann wird sie automatisch überschrieben.“",
+          "Datum, Tore und Status sind eingetragen. Das Ergebnis ist entweder vollständig oder leer.",
+          "Das Spiel trägt das Zeichen „manuell korrigiert“.",
+          "Das Zeichen ist verschwunden, das Spiel zeigt wieder den API-Stand."
+        ],
+        "fehler": [
+          {
+            "problem": "„Bitte Datum und Uhrzeit angeben.“",
+            "loesung": "Trage beides ein."
+          },
+          {
+            "problem": "„Bitte das Ergebnis für beide Mannschaften eintragen (oder beide Felder leer lassen).“",
+            "loesung": "Ein Ergebnis braucht beide Tore. Ohne Ergebnis lass beide Felder leer."
+          },
+          {
+            "problem": "Deine Korrektur ist verschwunden.",
+            "loesung": "Die Schnittstelle hat einen neuen Stand geliefert und die Korrektur überschrieben. Prüfe die Quelle."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Korrigiere ein Spiel nicht in der echten Liga, sondern nur das selbst angelegte Spiel „[ÜBUNG] Testspiel“ (SPIEL-02). Korrekturen an Spielen der Liga ändern Tippspiel-Punkte."
+      },
+      {
+        "id": "SPIEL-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Eigenes Spiel hinzufügen oder löschen",
+        "wann": "Ein Spiel fehlt in den Schnittstellen-Daten, z. B. ein Freundschaftsspiel.",
+        "schritte": [
+          "Im Reiter „Spielplan“ auf „Spiel hinzufügen“ klicken.",
+          "„Wettbewerb“, „Heimmannschaft“, „Gastmannschaft“ und „Datum und Uhrzeit“ eintragen. Bei Ligue 1 den Wettbewerb genau als „Ligue 1“ wählen.",
+          "Optional Ergebnis und Status eintragen und „Speichern“ klicken.",
+          "Ein selbst angelegtes Spiel ohne Tipps lässt sich mit „Spiel löschen“ wieder entfernen."
+        ],
+        "danach": "Eigene Spiele tragen das Zeichen „manuell hinzugefügt“ und werden von der Synchronisierung nie verändert oder gelöscht. Liefert die Schnittstelle das Spiel später selbst, entsteht ein Duplikat: lösche dann dein manuelles Spiel.",
+        "vorher": "Du kennst Wettbewerb, Mannschaften und Termin. Bei Ligue 1 zählt das Spiel fürs Tippspiel.",
+        "erwartet": [
+          "Das Fenster „Spiel hinzufügen“ ist offen.",
+          "Die Felder sind ausgefüllt. Bei „Ligue 1“ ist der Wettbewerb vorbelegt.",
+          "Das Spiel steht mit „manuell hinzugefügt“ im Spielplan.",
+          "Das Spiel ist aus dem Spielplan verschwunden."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Spiel zählt nicht im Tippspiel.",
+            "loesung": "Der Wettbewerb muss genau „Ligue 1“ heißen und das Spiel den Status „Beendet“ mit Ergebnis haben."
+          },
+          {
+            "problem": "„Das Spiel konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe Mannschaften, Datum und Uhrzeit."
+          },
+          {
+            "problem": "Du kannst ein Spiel nicht löschen.",
+            "loesung": "Gelöscht werden nur manuelle Spiele ohne Tipps. Spiele der Schnittstelle bleiben bestehen."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege das Spiel „[ÜBUNG] Testverein A – [ÜBUNG] Testverein B“ mit dem Wettbewerb „[ÜBUNG]“ (nicht „Ligue 1“) an und lösche es danach mit „Spiel löschen“. So zählt es nicht im Tippspiel."
+      }
+    ],
+    "tipps": [
+      "Besucher und Mitglieder sehen nur die Daten; die Zeichen „manuell korrigiert“ und „manuell hinzugefügt“ sieht nur das Büro.",
+      "Vereinslogos pflegst du unter „Vereinslogos“ (Karte LOGO-01)."
     ]
   }
 }
