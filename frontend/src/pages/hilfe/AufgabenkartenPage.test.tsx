@@ -59,8 +59,13 @@ describe("AufgabenkartenPage", () => {
     expect(
       screen.queryByRole("heading", { name: "Überweisung bestätigen (SEPA)" }),
     ).not.toBeInTheDocument();
+    // MITG-01 gilt nur für RH, Büro und App Admin; die Einlass-Karte passt zur Rolle.
+    expect(screen.queryByRole("heading", { name: "Mitglied finden" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tickets am Einlass scannen" })).toBeInTheDocument();
     // Karten ohne Rollenangabe (noch nicht ergänzt) bleiben sichtbar.
-    expect(screen.getByRole("heading", { name: "Mitglied finden" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "2. Spalten und Formate der Mitglieder-Datei" }),
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("karten_rolle"), { target: { value: "dir_financier" } });
     expect(
       screen.getByRole("heading", { name: "Überweisung bestätigen (SEPA)" }),

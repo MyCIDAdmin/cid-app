@@ -15,6 +15,7 @@ describe("HelpButton", () => {
   it("ordnet Verwaltungsrouten einem Hilfetext zu", () => {
     expect(cleHilfe("/admin/boutique")).toBe("boutique");
     expect(cleHilfe("/admin/boutique/x")).toBe("boutique");
+    expect(cleHilfe("/einlass/veranstaltung/12")).toBe("einlass");
     expect(cleHilfe("/cotisations/en-attente")).toBe("paiements");
     expect(cleHilfe("/cotisations/en-attente", "?tab=import")).toBe("zahlungen_import");
     expect(cleHilfe("/admin/partner")).toBe("partner");
