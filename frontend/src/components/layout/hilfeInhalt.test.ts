@@ -7,7 +7,14 @@ import { describe, expect, it } from "vitest";
 
 import helpDe from "../../../public/locales/de/help.json";
 import helpFr from "../../../public/locales/fr/help.json";
-import { KARTEN_ROLLEN, type Workflow } from "./hilfeKarten";
+import {
+  KARTEN_ROLLEN,
+  passtZurRolle,
+  type Glossarbegriff,
+  type RhythmusZeitraum,
+  type RollenEinstieg,
+  type Workflow,
+} from "./hilfeKarten";
 
 // Vorhandene Bildnamen (nur die Schlüssel, die Dateien selbst werden nicht geladen).
 const BILDER = Object.keys(import.meta.glob("../../../public/hilfe/bilder/*")).map((p) =>
@@ -83,6 +90,57 @@ describe("Aufgabenkarten: Inhalt", () => {
         expect(karte.uebung, kennung).toMatch(
           /Berühre keine \[DEMO\]|Ne touchez à aucun paiement \[DEMO\]/,
         );
+    });
+  });
+
+  describe("Orientierung (Einstieg, Rhythmus, Glossar)", () => {
+    interface Orientierung {
+      glossar: { begriffe: Glossarbegriff[] };
+      einstieg: { rollen: Record<string, RollenEinstieg> };
+      rhythmus: { zeitraeume: RhythmusZeitraum[] };
+    }
+    const lade = (lang: "de" | "fr") =>
+      (lang === "de" ? helpDe : helpFr).orientierung as unknown as Orientierung;
+    const kartenDe = new Map(de.filter((k) => k.karte.id).map((k) => [k.karte.id, k.karte]));
+
+    it("Deutsch und Französisch haben dieselbe Struktur", () => {
+      const d = lade("de");
+      const f = lade("fr");
+      expect(f.glossar.begriffe.length).toBe(d.glossar.begriffe.length);
+      expect(Object.keys(f.einstieg.rollen)).toEqual(Object.keys(d.einstieg.rollen));
+      Object.keys(d.einstieg.rollen).forEach((r) =>
+        expect(f.einstieg.rollen[r].start, r).toEqual(d.einstieg.rollen[r].start),
+      );
+      expect(f.rhythmus.zeitraeume.length).toBe(d.rhythmus.zeitraeume.length);
+      d.rhythmus.zeitraeume.forEach((z, n) => {
+        expect(f.rhythmus.zeitraeume[n].aufgaben.map((a) => a.karten)).toEqual(
+          z.aufgaben.map((a) => a.karten),
+        );
+      });
+    });
+
+    it("Verweise zeigen auf vorhandene Karten, Startkarten passen zur Rolle", () => {
+      const o = lade("de");
+      Object.entries(o.einstieg.rollen).forEach(([rolle, e]) => {
+        expect(KARTEN_ROLLEN as readonly string[]).toContain(rolle);
+        e.start.forEach((id) => {
+          const karte = kartenDe.get(id);
+          expect(karte, `${rolle}: ${id}`).toBeDefined();
+          expect(passtZurRolle(karte as Workflow, rolle), `${rolle}: ${id}`).toBe(true);
+        });
+      });
+      o.rhythmus.zeitraeume.forEach((z) =>
+        z.aufgaben.forEach((a) =>
+          a.karten.forEach((id) => expect(kartenDe.has(id), id).toBe(true)),
+        ),
+      );
+    });
+
+    it("Alle sechs Rollen haben einen Einstieg, Glossarbegriffe sind eindeutig", () => {
+      const o = lade("de");
+      expect(Object.keys(o.einstieg.rollen).sort()).toEqual([...KARTEN_ROLLEN].sort());
+      const namen = o.glossar.begriffe.map((b) => b.begriff);
+      expect(new Set(namen).size).toBe(namen.length);
     });
   });
 });

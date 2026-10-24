@@ -47,6 +47,28 @@ export interface Workflow {
   bilder?: KartenBild[];
 }
 
+/** Eintrag des Glossars (help.json → orientierung.glossar.begriffe). */
+export interface Glossarbegriff {
+  begriff: string;
+  text: string;
+}
+
+/** Aufgabe im Jahresrhythmus ; `karten` verweist auf Kennungen von Karten. */
+export interface RhythmusAufgabe {
+  text: string;
+  karten: string[];
+}
+
+export interface RhythmusZeitraum {
+  wann: string;
+  aufgaben: RhythmusAufgabe[];
+}
+
+export interface RollenEinstieg {
+  text: string;
+  start: string[];
+}
+
 export interface KartenBereich {
   cle: string;
   titel: string;
@@ -69,11 +91,11 @@ export function passtZurRolle(karte: Workflow, rolle: string): boolean {
   return rollen.length === 0 || rollen.includes(rolle);
 }
 
-/** Karte passt zum Suchtext (Titel, Anlass, Schritte, Beispiel). */
+/** Karte passt zum Suchtext (Kennung, Titel, Anlass, Schritte, Beispiel). */
 export function passtZurSuche(karte: Workflow, suche: string): boolean {
   const s = suche.trim().toLowerCase();
   if (!s) return true;
-  const text = [karte.titre, karte.wann, karte.beispiel, ...karte.schritte]
+  const text = [karte.id, karte.titre, karte.wann, karte.beispiel, ...karte.schritte]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -82,4 +104,11 @@ export function passtZurSuche(karte: Workflow, suche: string): boolean {
 
 export function kartenSchluessel(cle: string, karte: Workflow): string {
   return karte.id ?? `${cle}/${karte.titre}`;
+}
+
+/** Glossarbegriff passt zum Suchtext (Begriff oder Erklärung). */
+export function passtZumGlossar(eintrag: Glossarbegriff, suche: string): boolean {
+  const s = suche.trim().toLowerCase();
+  if (!s) return true;
+  return `${eintrag.begriff} ${eintrag.text}`.toLowerCase().includes(s);
 }

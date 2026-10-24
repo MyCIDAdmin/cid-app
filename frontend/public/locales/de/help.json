@@ -2570,6 +2570,78 @@
           }
         ],
         "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Buche +1 Punkt mit der Begründung „[ÜBUNG]“ und danach −1 Punkt für denselben Sektor. Die Rangliste ist danach unverändert."
+      },
+      {
+        "id": "SEKT-09",
+        "rollen": ["super_admin"],
+        "titre": "Wettbewerbssaison anlegen und Regeln prüfen",
+        "wann": "Eine neue Saison des Sektoren-Wettbewerbs beginnt. Ohne Saison werden keine Punkte gebucht.",
+        "schritte": [
+          "Die Seite „Wettbewerb der Sektoren“ öffnen und nach unten zum Bereich „App Admin : Saisons und Regeln“ gehen.",
+          "Unter „Neue Saison“ den Namen (z. B. Saison 2026/27), „Start“ und „Ende“ eintragen, optional den „Preis (Freitext)“.",
+          "Auf „Saison anlegen“ klicken.",
+          "Bei den Regeln die sechs Werte prüfen, z. B. „Punkte je Treffen“ und „Punkte je anwesende Person“, und auf „Speichern“ klicken."
+        ],
+        "danach": "Treffen, die ab jetzt vom Büro abgeschlossen werden, geben Punkte. Regeländerungen gelten nur für künftige Buchungen, bereits gebuchte Punkte bleiben. Die Zeiträume der Saisons dürfen sich nicht überschneiden.",
+        "vorher": "Du bist App Admin. Du kennst Name, Zeitraum und eventuell den Preis der Saison.",
+        "erwartet": [
+          "Der Bereich zeigt die vorhandenen Saisons mit Status („Geplant“, „Läuft“, „Beendet“ oder „Abgeschlossen“) und darunter das Formular „Neue Saison“.",
+          "Das Formular enthält Name, Start, Ende und Preis. „Saison anlegen“ bleibt grau, bis Name, Start und Ende ausgefüllt sind.",
+          "Die Saison steht in der Liste, mit dem Status „Geplant“ oder „Läuft“.",
+          "Unter den Regeln steht „Gespeichert.“"
+        ],
+        "fehler": [
+          {
+            "problem": "Die Saison wird abgelehnt.",
+            "loesung": "Prüfe den Zeitraum. Er darf sich nicht mit einer anderen Saison überschneiden."
+          },
+          {
+            "problem": "Ein früheres Treffen hat keine Punkte.",
+            "loesung": "Das Treffen wurde vor der Saison abgeschlossen. Buche mit „Punkte nachbuchen“ nach (SEKT-10)."
+          },
+          {
+            "problem": "Du ahnst, dass eine Regel falsch war.",
+            "loesung": "Eine Änderung wirkt nur für künftige Buchungen. Bereits vergebene Punkte korrigiert das Büro einzeln (SEKT-05)."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege nur „[ÜBUNG] Testsaison“ in einem Zeitraum an, der keine echte Saison überschneidet, und lösche sie danach mit „Löschen“. Ändere keine Regeln der echten Saison."
+      },
+      {
+        "id": "SEKT-10",
+        "rollen": ["super_admin"],
+        "titre": "Punkte nachbuchen und Saison einfrieren",
+        "wann": "Eine Saison wurde nachträglich angelegt oder ist zu Ende und soll festgehalten werden.",
+        "schritte": [
+          "Den Bereich „App Admin : Saisons und Regeln“ öffnen und die Saison suchen.",
+          "Fehlen Punkte für bereits abgeschlossene Treffen der Saison, auf „Punkte nachbuchen“ klicken.",
+          "Die Rangliste prüfen. Falsche Punkte korrigiert das Büro vorher einzeln (SEKT-05).",
+          "Nach dem Saisonende (Status „Beendet“) auf „Einfrieren“ klicken.",
+          "Die Frage „Die Rangliste wird endgültig festgehalten. Fortfahren?“ mit „Bestätigen“ beantworten."
+        ],
+        "danach": "Rangliste, Verlauf und Monatssieger der Saison sind festgehalten. Die Saison bleibt unverändert: keine Buchungen und keine Korrekturen mehr. Eingefrorene Saisons bilden die „Ewige Tabelle“.",
+        "vorher": "Bei „Einfrieren“: Das Saisonende ist erreicht, alle Treffen sind abgeschlossen und alle Korrekturen sind gebucht.",
+        "erwartet": [
+          "Die Saison zeigt die Schaltflächen „Bearbeiten“, „Punkte nachbuchen“, „Einfrieren“ (erst nach dem Ende) und „Löschen“.",
+          "Eine Meldung nennt die Zahl, z. B. „3 Buchungen ergänzt.“ Nichts wird doppelt gebucht.",
+          "Rangliste und Journal passen zu den abgeschlossenen Treffen.",
+          "Eine Rückfrage erscheint.",
+          "Die Saison trägt den Status „Abgeschlossen“. Die Schaltflächen sind verschwunden."
+        ],
+        "fehler": [
+          {
+            "problem": "„Einfrieren“ fehlt.",
+            "loesung": "Die Saison ist noch nicht beendet. Die Schaltfläche erscheint erst nach dem Ende."
+          },
+          {
+            "problem": "Eine Korrektur ist nicht mehr möglich: „Diese Saison ist abgeschlossen ; Korrekturen sind nicht mehr möglich.“",
+            "loesung": "Eingefrorene Saisons lassen sich nicht ändern. Korrigiere immer vor dem Einfrieren."
+          },
+          {
+            "problem": "Du kannst eine Saison nicht löschen.",
+            "loesung": "Nur Saisons ohne Buchungen, die nicht eingefroren sind, lassen sich löschen."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Klicke „Punkte nachbuchen“ nur bei einer Saison ohne abgeschlossene Treffen (z. B. der Testsaison aus SEKT-09). Friere nie eine echte Saison zur Probe ein: Das ist endgültig."
       }
     ],
     "tipps": [
@@ -3700,5 +3772,283 @@
       }
     ],
     "tipps": ["Eine Nachricht kannst du nur selbst mit „Löschen“ entfernen."]
+  },
+  "orientierung": {
+    "glossar": {
+      "titre": "Glossar der Vereinssprache",
+      "intro": "Diese Wörter begegnen dir in der App und in den Karten. Mit dem Suchfeld oben findest du auch Begriffe aus den Karten.",
+      "begriffe": [
+        {
+          "begriff": "Mitglied",
+          "text": "Person mit aktiver Mitgliedschaft. Im Status steht „Mitglied (aktiv)“. „Nicht-Mitglied (neu)“ hat sich registriert, ist aber noch nicht aktiv, „Nicht-Mitglied (ehemalig)“ ist inaktiv."
+        },
+        {
+          "begriff": "Fan",
+          "text": "Person mit einem Fan-Konto. Fans sehen Sektoren, Beiträge, Treffen und den Wettbewerb, aber keine Mitgliederdaten. Sie können später Mitglied werden."
+        },
+        {
+          "begriff": "Sektor",
+          "text": "Gebiet des Vereins. Jedes Bundesland und jedes weitere Land gehört genau einem Sektor."
+        },
+        {
+          "begriff": "Verantwortliche eines Sektors",
+          "text": "Personen, die für ihren Sektor Treffen anlegen und die Liste der Fans sehen."
+        },
+        {
+          "begriff": "Treffen",
+          "text": "Veranstaltung eines Sektors. Verantwortliche reichen sie zur Freigabe ein, das Büro gibt sie frei und schließt sie nach dem Treffen ab. Erst dann gibt es Punkte."
+        },
+        {
+          "begriff": "Veranstaltung",
+          "text": "Anlass der Veranstaltungsverwaltung mit Anmeldung, oft mit begrenzten Plätzen und einem Preis."
+        },
+        {
+          "begriff": "Warteliste",
+          "text": "Ist eine Veranstaltung voll, kommt eine neue Anmeldung auf die Warteliste. Wird ein Platz frei, rückt die erste passende Person automatisch nach."
+        },
+        {
+          "begriff": "Zahlungsfrist",
+          "text": "Bei begrenzten, kostenpflichtigen Veranstaltungen muss man innerhalb dieser Frist zahlen (Standard 2 Tage). Sonst wird die Anmeldung storniert."
+        },
+        {
+          "begriff": "Kampagne",
+          "text": "Mitgliedschaftskampagne für ein Beitragsjahr mit ihren Angeboten. Pro Jahr kann nur eine Kampagne veröffentlicht sein."
+        },
+        {
+          "begriff": "Angebot",
+          "text": "Eine Mitgliedschaftsvariante einer Kampagne mit Preis, z. B. für Erwachsene oder Junioren."
+        },
+        {
+          "begriff": "Ermäßigung und Nachweis",
+          "text": "Manche Angebote haben einen Rabatt. Wer ihn nutzt, reicht einen Nachweis ein, den die Personalabteilung oder das Büro prüft."
+        },
+        {
+          "begriff": "Familienpaket",
+          "text": "Angebot für eine Familie. Eine Hauptperson zahlt, dazu gehören Erwachsene mit eigenem Konto und Kinder unter 18 ohne Konto. Kinder bekommen eine Junior-Karte."
+        },
+        {
+          "begriff": "Beitragsartikel",
+          "text": "Artikel, die bei Beiträgen und Zahlungen ausgewählt werden können."
+        },
+        {
+          "begriff": "Fälligkeitstermin",
+          "text": "Datum, ab dem ein unbezahlter Beitrag als überfällig gilt. Erinnerungen kommen 30 und 7 Tage vorher und 1 Tag danach. Ohne Eintrag gilt der 1. Januar."
+        },
+        {
+          "begriff": "Ausstehende Zahlung",
+          "text": "Eine Zahlung, die auf Bestätigung wartet, z. B. eine Überweisung oder eine Barzahlung."
+        },
+        {
+          "begriff": "Kontoauszug-Import",
+          "text": "Zahlungen aus einer Datei der Bank einlesen und den offenen Zahlungen zuordnen."
+        },
+        {
+          "begriff": "Zuordnung",
+          "text": "Eine importierte Mitgliederkarte ohne Login wird mit dem Konto zusammengeführt, das die Person selbst angelegt hat, damit niemand doppelt geführt wird."
+        },
+        {
+          "begriff": "Registrierung",
+          "text": "Ein neues Konto oder ein Mitgliedschaftsantrag. Die Personalabteilung prüft ihn und nimmt ihn an oder lehnt ihn ab."
+        },
+        {
+          "begriff": "Ticket (Veranstaltung)",
+          "text": "Bestätigung der Anmeldung mit Code, die am Einlass gescannt wird. Sie kommt auch als PDF per E-Mail."
+        },
+        {
+          "begriff": "Einlass",
+          "text": "Kontrolle der Tickets am Veranstaltungstag. Einlass-Helfer scannen Tickets oder tragen die Anwesenheit in der Liste ein."
+        },
+        {
+          "begriff": "Ticket (Support)",
+          "text": "Eine Anfrage an das Büro über die Seite „Support“. Sie hat eine Nummer und einen Verlauf."
+        },
+        {
+          "begriff": "Hero-Video",
+          "text": "Das Video oben auf der öffentlichen Startseite."
+        },
+        {
+          "begriff": "Tippspiel",
+          "text": "Spiel des Fan-Clubs: Mitglieder tippen Ergebnisse der Ligue 1. Exaktes Ergebnis 4 Punkte, richtiger Sieger mit Tordifferenz 2, richtige Tendenz 1."
+        },
+        {
+          "begriff": "Wettbewerb der Sektoren",
+          "text": "Sektoren sammeln Punkte durch Treffen, Teilnahmen und neue Mitglieder. Gewertet werden nur Sektoren, keine Einzelpersonen."
+        },
+        {
+          "begriff": "Saison",
+          "text": "Zeitraum des Wettbewerbs. Nach dem Ende friert der App Admin die Rangliste ein, danach ändert sich nichts mehr."
+        },
+        {
+          "begriff": "Vote",
+          "text": "Abstimmungssitzung für Beschlüsse und Wahlen. Bei anonymen Abstimmungen gibt es keine Verbindung zwischen Person und Stimme."
+        },
+        {
+          "begriff": "Entwurf, Veröffentlicht, Beendet",
+          "text": "Die drei Stände vieler Inhalte. Ein Entwurf ist nur für die Verwaltung sichtbar, veröffentlicht ist für alle sichtbar, beendet ist abgeschlossen."
+        },
+        {
+          "begriff": "Ausblenden und Löschen",
+          "text": "Ausgeblendete Inhalte sind für Mitglieder unsichtbar und lassen sich wieder einblenden. Löschen ist endgültig."
+        },
+        {
+          "begriff": "Vier-Augen-Prinzip",
+          "text": "Eine Ausgabe, die jemand selbst erfasst hat, gibt in der Regel eine andere Person frei."
+        },
+        {
+          "begriff": "Aktivitätsprotokoll",
+          "text": "Das Journal der App mit wichtigen Aktionen. Im Reiter „Aktivität“ der Rollenverwaltung prüft der App Admin Auffälligkeiten."
+        },
+        {
+          "begriff": "Rollen",
+          "text": "Personalabteilung (RH) pflegt Mitglieder und prüft Registrierungen. Vorstand/Büro verwaltet Inhalte und Veranstaltungen. Der Finanzdirektor kümmert sich um Zahlungen und Finanzen. Der App Admin betreut die App. Dazu kommen Verantwortliche der Region und Einlass-Helfer."
+        },
+        {
+          "begriff": "Testumgebung",
+          "text": "Die Übungsversion der App. Übungen dürfen nur dort stattfinden, mit Objekten, deren Name mit „[ÜBUNG]“ beginnt."
+        },
+        {
+          "begriff": "Karte und Kennung",
+          "text": "Eine Aufgabenkarte beschreibt eine Aufgabe in wenigen Schritten. Die Kennung (z. B. ZAHL-01) bleibt gleich, auch wenn sich der Titel ändert."
+        }
+      ]
+    },
+    "einstieg": {
+      "titre": "So startest du",
+      "karten_label": "Diese Karten zuerst",
+      "rollen": {
+        "rh": {
+          "text": "Du kümmerst dich um die Mitglieder: Neue Registrierungen und Nachweise prüfen, Mitglieder finden und pflegen, Daten übernehmen.",
+          "start": ["REG-01", "NACH-01", "MITG-01", "MITG-02", "MITG-07"]
+        },
+        "bureau_admin": {
+          "text": "Du leitest den Verein im Vorstand oder Büro: Du legst Kampagnen, Veranstaltungen, Inhalte und Abstimmungen an, gibst Treffen der Sektoren frei und moderierst die Community.",
+          "start": ["KAMP-01", "VERA-01", "SEKT-03", "FIL-01", "SUPP-02", "VOTE-01"]
+        },
+        "dir_financier": {
+          "text": "Du kümmerst dich um das Geld: Zahlungen bestätigen, Kontoauszüge importieren, Ausgaben freigeben, Budget und Jahresabschluss.",
+          "start": ["ZAHL-01", "ZAHL-04", "ZAHL-05", "FRIST-01", "FIN-01", "FIN-03"]
+        },
+        "super_admin": {
+          "text": "Du betreust die App: Rollen vergeben, Einstellungen, Sektoren-Struktur, Tippspiel, Benachrichtigungen und Aktivitätsprotokoll. In fast allen Karten bist du zugelassen.",
+          "start": ["ROLL-01", "ZENT-01", "AKT-01", "SEKT-07", "TIPP-01", "BENA-01"]
+        },
+        "region": {
+          "text": "Du bist Verantwortliche oder Verantwortlicher eines Sektors: Treffen anlegen und abschließen, Fans ansehen, Einlass-Helfer benennen.",
+          "start": ["SEKT-01", "SEKT-02", "SEKT-04", "EINL-03", "EINL-01"]
+        },
+        "einlass": {
+          "text": "Du lässt Gäste am Veranstaltungstag ein: Tickets scannen und die Anwesenheit eintragen.",
+          "start": ["EINL-01", "EINL-02"]
+        }
+      }
+    },
+    "rhythmus": {
+      "titre": "Was ist wann zu tun?",
+      "intro": "Ein Vorschlag für den Ablauf eines Vereinsjahres. Kampagnen laufen meist vom 1. Januar bis zum 31. Dezember. Fristen der Satzung gehen vor.",
+      "zeitraeume": [
+        {
+          "wann": "Vor dem Beitragsjahr",
+          "aufgaben": [
+            {
+              "text": "Kampagne für das neue Jahr anlegen, Angebote und Rabatte ergänzen und veröffentlichen. Pro Jahr kann nur eine Kampagne veröffentlicht sein.",
+              "karten": ["KAMP-01", "KAMP-02"]
+            },
+            {
+              "text": "Bei Familienangeboten Rabatt und Höchstalter festlegen.",
+              "karten": ["FAM-01"]
+            },
+            {
+              "text": "Fälligkeitstermin für das Beitragsjahr festlegen. Ohne Eintrag gilt der 1. Januar.",
+              "karten": ["FRIST-01"]
+            },
+            {
+              "text": "Beitragsartikel prüfen.",
+              "karten": ["BEIT-01"]
+            }
+          ]
+        },
+        {
+          "wann": "Laufend während der Kampagne",
+          "aufgaben": [
+            {
+              "text": "Neue Registrierungen und Nachweise prüfen.",
+              "karten": ["REG-01", "NACH-01"]
+            },
+            {
+              "text": "Zahlungseingänge bestätigen oder den Kontoauszug importieren.",
+              "karten": ["ZAHL-01", "ZAHL-04"]
+            },
+            {
+              "text": "Familienpakete prüfen.",
+              "karten": ["FAM-02"]
+            },
+            {
+              "text": "Tickets des Supports beantworten und Community moderieren.",
+              "karten": ["SUPP-02", "FORUM-01"]
+            }
+          ]
+        },
+        {
+          "wann": "Vor einer Veranstaltung",
+          "aufgaben": [
+            {
+              "text": "Veranstaltung oder Treffen anlegen und veröffentlichen.",
+              "karten": ["VERA-01", "SEKT-01"]
+            },
+            {
+              "text": "Einlass-Helfer benennen.",
+              "karten": ["EINL-03"]
+            }
+          ]
+        },
+        {
+          "wann": "Am Veranstaltungstag und danach",
+          "aufgaben": [
+            {
+              "text": "Tickets scannen und Anwesenheit eintragen.",
+              "karten": ["EINL-01", "EINL-02"]
+            },
+            {
+              "text": "Treffen abschließen. Punkte im Wettbewerb gibt es erst danach.",
+              "karten": ["SEKT-04"]
+            }
+          ]
+        },
+        {
+          "wann": "Zu Beginn und am Ende einer Fußball- und Wettbewerbssaison",
+          "aufgaben": [
+            {
+              "text": "Tippspiel anlegen und veröffentlichen, am Ende beenden.",
+              "karten": ["TIPP-01", "TIPP-02"]
+            },
+            {
+              "text": "Wettbewerbssaison anlegen, am Ende Punkte nachbuchen und einfrieren.",
+              "karten": ["SEKT-09", "SEKT-10"]
+            },
+            {
+              "text": "Spielplan prüfen und bei Bedarf korrigieren.",
+              "karten": ["SPIEL-01"]
+            }
+          ]
+        },
+        {
+          "wann": "Zum Jahresende",
+          "aufgaben": [
+            {
+              "text": "Jahresbudget für das neue Jahr planen und das alte Jahr abschließen.",
+              "karten": ["FIN-02", "FIN-03"]
+            },
+            {
+              "text": "Jahresbericht der Sektoren und Kennzahlen erstellen.",
+              "karten": ["SEKT-06", "STAT-01"]
+            },
+            {
+              "text": "Rechte und alte technische Daten prüfen.",
+              "karten": ["AKT-02", "AKT-03"]
+            }
+          ]
+        }
+      ]
+    }
   }
 }

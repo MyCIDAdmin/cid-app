@@ -20,6 +20,7 @@ import {
   type KartenBereich,
   type Workflow,
 } from "../../components/layout/hilfeKarten";
+import OrientierungBereich from "./OrientierungBereich";
 
 function KartenAnsicht({
   bereich,
@@ -180,6 +181,22 @@ export default function AufgabenkartenPage() {
     };
   }, [druck]);
 
+  // Kennung → Titel aller Karten (für die Verweise der Orientierung).
+  const titelNachKennung = Object.fromEntries(
+    bereiche.flatMap((b) => b.karten.filter((k) => k.id).map((k) => [k.id as string, k.titre])),
+  );
+
+  // Verweis auf eine Karte : Suche auf die Kennung setzen und den Bereichsfilter lösen.
+  function zeigeKarte(id: string) {
+    setSuche(id);
+    if (params.has("bereich")) {
+      const neu = new URLSearchParams(params);
+      neu.delete("bereich");
+      setParams(neu, { replace: true });
+    }
+    if (typeof window.scrollTo === "function") window.scrollTo({ top: 0 });
+  }
+
   const alleKarten = sichtbar.flatMap((b) => b.karten.map((karte) => ({ bereich: b.cle, karte })));
 
   return (
@@ -244,6 +261,13 @@ export default function AufgabenkartenPage() {
           {t("karten_alle_drucken")}
         </button>
       </div>
+
+      <OrientierungBereich
+        rolle={rolle}
+        suche={suche}
+        titel={titelNachKennung}
+        onZeigeKarte={zeigeKarte}
+      />
 
       <p className="no-print text-xs text-text-tertiary" aria-live="polite">
         {t("karten_anzahl", { count: anzahl })}
