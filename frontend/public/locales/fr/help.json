@@ -3989,6 +3989,56 @@
           ]
         },
         {
+          "wann": "Chaque semaine",
+          "aufgaben": [
+            {
+              "text": "Vérifier les nouvelles inscriptions et les justificatifs, pour que personne n'attende longtemps l'activation.",
+              "karten": ["REG-01", "NACH-01"]
+            },
+            {
+              "text": "Répondre aux tickets du support.",
+              "karten": ["SUPP-02"]
+            },
+            {
+              "text": "Valider ou refuser les propositions de rendez-vous des membres.",
+              "karten": ["KAL-03"]
+            },
+            {
+              "text": "Parcourir les publications et commentaires du forum et des actualités.",
+              "karten": ["FORUM-01", "FIL-02"]
+            }
+          ]
+        },
+        {
+          "wann": "Chaque mois",
+          "aufgaben": [
+            {
+              "text": "Importer le relevé de compte et affecter les paiements ouverts. Masquer les entrées erronées ou en double.",
+              "karten": ["ZAHL-04", "ZAHL-05", "ZAHL-06"]
+            },
+            {
+              "text": "Traiter les commandes et réservations ouvertes de la boutique.",
+              "karten": ["SHOP-06", "SHOP-03"]
+            },
+            {
+              "text": "Saisir et valider les dépenses.",
+              "karten": ["FIN-01"]
+            },
+            {
+              "text": "Vérifier les forfaits famille.",
+              "karten": ["FAM-02"]
+            },
+            {
+              "text": "Consulter les indicateurs, p. ex. nouveaux membres et paiements.",
+              "karten": ["STAT-01"]
+            },
+            {
+              "text": "Parcourir le journal d'activité à la recherche d'anomalies.",
+              "karten": ["AKT-01"]
+            }
+          ]
+        },
+        {
           "wann": "Avant un événement",
           "aufgaben": [
             {

@@ -3989,6 +3989,56 @@
           ]
         },
         {
+          "wann": "Jede Woche",
+          "aufgaben": [
+            {
+              "text": "Neue Registrierungen und Nachweise prüfen, damit niemand lange auf die Freischaltung wartet.",
+              "karten": ["REG-01", "NACH-01"]
+            },
+            {
+              "text": "Tickets des Supports beantworten.",
+              "karten": ["SUPP-02"]
+            },
+            {
+              "text": "Terminvorschläge von Mitgliedern freigeben oder ablehnen.",
+              "karten": ["KAL-03"]
+            },
+            {
+              "text": "Beiträge und Kommentare in Forum und Neuigkeiten durchsehen.",
+              "karten": ["FORUM-01", "FIL-02"]
+            }
+          ]
+        },
+        {
+          "wann": "Jeden Monat",
+          "aufgaben": [
+            {
+              "text": "Kontoauszug importieren und offene Zahlungen zuordnen. Falsche oder doppelte Einträge ausblenden.",
+              "karten": ["ZAHL-04", "ZAHL-05", "ZAHL-06"]
+            },
+            {
+              "text": "Offene Shop-Bestellungen und Reservierungen abarbeiten.",
+              "karten": ["SHOP-06", "SHOP-03"]
+            },
+            {
+              "text": "Ausgaben erfassen und freigeben.",
+              "karten": ["FIN-01"]
+            },
+            {
+              "text": "Familienpakete prüfen.",
+              "karten": ["FAM-02"]
+            },
+            {
+              "text": "Kennzahlen ansehen, z. B. neue Mitglieder und Zahlungen.",
+              "karten": ["STAT-01"]
+            },
+            {
+              "text": "Das Aktivitätsprotokoll auf Auffälligkeiten durchsehen.",
+              "karten": ["AKT-01"]
+            }
+          ]
+        },
+        {
           "wann": "Vor einer Veranstaltung",
           "aufgaben": [
             {
