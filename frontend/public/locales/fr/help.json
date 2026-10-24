@@ -100,7 +100,27 @@
           "Cliquez sur « Enregistrer » et vérifiez que l’article est « publié »."
         ],
         "beispiel": "40 billets pour le match à l’extérieur, 4 au maximum par membre, date limite le 20/10 à 18h00.",
-        "danach": "Dans la boutique, l’article affiche « Réserver » au lieu du panier, avec quantité restante et date limite. Après la date limite ou quand tout est pris, il est bloqué."
+        "danach": "Dans la boutique, l’article affiche « Réserver » au lieu du panier, avec quantité restante et date limite. Après la date limite ou quand tout est pris, il est bloqué.",
+        "id": "SHOP-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "L'article est créé. Vous connaissez la date limite et les quantités.",
+        "erwartet": [
+          "La fenêtre « Réservation » est ouverte et affiche le mode.",
+          "Le mode « Réserver uniquement (sans paiement) » est choisi.",
+          "Date limite, quantité totale maximale et maximum par membre sont saisis. Vide = illimité.",
+          "« Enregistré. » apparaît et l'article est « Publié »."
+        ],
+        "fehler": [
+          {
+            "problem": "La boutique affiche toujours le panier.",
+            "loesung": "Vérifiez que le mode est enregistré et que l'article est « Publié »."
+          },
+          {
+            "problem": "Vous voulez réserver un bon d'achat.",
+            "loesung": "Les bons d'achat ne peuvent pas être réservés."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez l'article « [ÜBUNG] Article test » (SHOP-05), activez « Réserver uniquement » puis remettez « Pas de réservation ». Ne publiez l'article que pour le test."
       },
       {
         "titre": "Réserver et payer en ligne",
@@ -111,7 +131,26 @@
           "Saisissez la date limite et les limites de quantité, puis « Enregistrer »."
         ],
         "beispiel": "Écharpes : 100 pièces au total, 2 par membre, commande jusqu’à la fin du mois.",
-        "danach": "Les membres commandent comme d’habitude. La date limite et les limites sont vérifiées à la commande ; une commande annulée libère la quantité."
+        "danach": "Les membres commandent comme d’habitude. La date limite et les limites sont vérifiées à la commande ; une commande annulée libère la quantité.",
+        "id": "SHOP-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "L'article est créé. Vous connaissez la date limite et les limites de quantité.",
+        "erwartet": [
+          "La fenêtre « Réservation » est ouverte.",
+          "Le mode « Réserver et payer en ligne » est choisi.",
+          "« Enregistré. » apparaît. Dans la boutique, l'article affiche date limite, quantité restante et limite par membre."
+        ],
+        "fehler": [
+          {
+            "problem": "La quantité n'est pas libérée.",
+            "loesung": "Les commandes annulées libèrent la quantité. Vérifiez que la commande est bien annulée."
+          },
+          {
+            "problem": "Une commande est refusée.",
+            "loesung": "Date limite et limites sont vérifiées à la commande. Si la date est passée ou la quantité épuisée, l'article est bloqué."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Passez « [ÜBUNG] Article test » sur « Réserver et payer en ligne » avec une quantité de 2, puis remettez « Pas de réservation »."
       },
       {
         "titre": "Traiter les réservations",
@@ -122,7 +161,26 @@
           "Libérez les réservations inutiles avec « Annuler »."
         ],
         "beispiel": "Lors du match, vous remettez les billets et cochez chaque réservation comme retirée.",
-        "danach": "Le statut change ; les quantités annulées sont à nouveau libres. Rien n’est supprimé."
+        "danach": "Le statut change ; les quantités annulées sont à nouveau libres. Rien n’est supprimé.",
+        "id": "SHOP-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "La date limite est passée ou les articles sont remis.",
+        "erwartet": [
+          "L'onglet « Réservations » affiche produit, membre, quantité, statut et date. Sous la liste : « Total : … pièce(s) ».",
+          "La réservation a le statut « Retiré ».",
+          "La réservation a le statut « Annulé » et la quantité est de nouveau libre."
+        ],
+        "fehler": [
+          {
+            "problem": "« Aucune réservation trouvée. »",
+            "loesung": "Choisissez les filtres « Tous les produits » et « Tous les statuts » et cherchez à nouveau."
+          },
+          {
+            "problem": "Vous avez retiré ou annulé par erreur.",
+            "loesung": "Rien n'est supprimé. Adressez-vous si besoin à l'administration de l'application."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Réservez « [ÜBUNG] Article test » avec un compte de test, marquez la réservation « Retiré / terminé » et annulez une seconde réservation de test."
       },
       {
         "titre": "Réservation avec paiement (billets, maillots)",
@@ -134,7 +192,95 @@
           "En cas de virement, confirmer le paiement sous « Commandes »."
         ],
         "beispiel": "40 billets en deux catégories à prix différents pour le match ; qui ne paie pas sous 7 jours perd sa réservation.",
-        "danach": "Les commandes impayées sont annulées automatiquement après le délai et la quantité est libérée."
+        "danach": "Les commandes impayées sont annulées automatiquement après le délai et la quantité est libérée.",
+        "id": "SHOP-04",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Les membres doivent réserver de façon ferme et ne garder l'article qu'avec paiement.",
+        "erwartet": [
+          "Le mode « Réserver et payer en ligne » est choisi dans la fenêtre « Réservation ».",
+          "Le délai de paiement (jours) est saisi ; date limite, quantité totale et quantité par membre sont facultatifs.",
+          "La commande apparaît dans l'onglet « Commandes » avec le statut « En attente ». Il n'y a pas d'adresse de livraison (retrait).",
+          "Après « Confirmer le paiement », la commande est « Confirmée »."
+        ],
+        "fehler": [
+          {
+            "problem": "La commande a été annulée après le délai.",
+            "loesung": "C'est voulu : les commandes impayées sont annulées automatiquement après le délai de paiement. La quantité est de nouveau libre."
+          },
+          {
+            "problem": "Un virement est arrivé, mais la commande reste « En attente ».",
+            "loesung": "Confirmez le paiement sur la commande ou sous « Paiements » (carte ZAHL-02)."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Commandez « [ÜBUNG] Article test » avec un compte de test et confirmez uniquement cette commande. Les paiements de la boutique comptent dans les indicateurs ; annulez-la ensuite avec la carte SHOP-06."
+      },
+      {
+        "id": "SHOP-05",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Créer et publier un article",
+        "wann": "Un nouvel article doit être vendu dans la boutique de l'association.",
+        "schritte": [
+          "Dans l'onglet « Catalogue », cliquer sur « Nouveau produit » et saisir nom, catégorie, prix (€), description, type de produit et stock initial. Éventuellement saisir le prix membre et cliquer sur « Créer le produit ».",
+          "Sur l'article, ouvrir « Gérer les variantes » et saisir taille, couleur et stock.",
+          "Ajouter d'autres photos avec « Gérer la galerie ».",
+          "Passer l'article sur « Publié » avec « Changer le statut »."
+        ],
+        "danach": "Seuls les articles publiés sont visibles pour les clients. Les articles avec commandes ne peuvent pas être supprimés ; mettez-les sur « Archivé ».",
+        "vorher": "Vous avez le nom, le prix et une photo de l'article.",
+        "erwartet": [
+          "L'article figure dans le catalogue avec le statut « Brouillon ».",
+          "Les variantes figurent avec leur stock dans la liste. Sans variante : « Aucune variante — le produit n'a pas encore de stock. »",
+          "Les photos supplémentaires figurent dans la galerie.",
+          "Le statut est « Publié ». L'article est visible dans la boutique."
+        ],
+        "fehler": [
+          {
+            "problem": "L'article ne peut pas être acheté.",
+            "loesung": "Il n'a pas encore de stock. Créez une variante avec du stock."
+          },
+          {
+            "problem": "L'article ne peut pas être supprimé.",
+            "loesung": "Les articles avec des commandes existantes ne peuvent pas être supprimés. Mettez-les sur « Archivé »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez « [ÜBUNG] Article test » à 1,00 € avec une variante en stock de 5. Ne le publiez que pour l'exercice puis mettez-le sur « Archivé », ou supprimez-le s'il n'y a pas de commande."
+      },
+      {
+        "id": "SHOP-06",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Traiter et expédier une commande",
+        "wann": "Une commande est arrivée et doit être payée, préparée et expédiée.",
+        "schritte": [
+          "Dans l'onglet « Commandes », chercher la commande par destinataire, date ou article.",
+          "Si elle est « En attente » et que l'argent est arrivé, choisir le mode de paiement et la date de la transaction, puis cliquer sur « Confirmer le paiement ».",
+          "Éventuellement passer sur « En préparation » avec « Changer le statut » dès que la préparation commence.",
+          "Cliquer sur « Expédier », saisir le numéro de suivi (et éventuellement le transporteur) puis cliquer sur « Confirmer l'expédition ».",
+          "Après la livraison, passer sur « Livrée » avec « Changer le statut »."
+        ],
+        "danach": "En cas d'annulation, le stock est reversé. Les retours se saisissent avec « Enregistrer un retour » ; les colis déjà expédiés avec « Saisie rétroactive ».",
+        "vorher": "La commande est arrivée et l'argent est sur le compte (en cas de virement).",
+        "erwartet": [
+          "La liste affiche numéro, destinataire, montant, statut et date.",
+          "Le statut passe à « Confirmée ». Dans la colonne « Facture » figure un lien PDF.",
+          "Le statut est « En préparation ».",
+          "Le statut est « Expédiée » ; le numéro de suivi figure sur la commande.",
+          "Le statut est « Livrée »."
+        ],
+        "fehler": [
+          {
+            "problem": "« Expédier » est absent.",
+            "loesung": "Le bouton apparaît pour « Confirmée » ou « En préparation ». Confirmez d'abord le paiement."
+          },
+          {
+            "problem": "La commande doit être annulée.",
+            "loesung": "Avec « Annuler » (pour « En attente » ou « Confirmée ») et confirmer avec « Annuler la commande ». Le stock est reversé."
+          },
+          {
+            "problem": "Un client renvoie la marchandise.",
+            "loesung": "Utilisez « Enregistrer un retour » avec article, quantité et motif."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Commandez « [ÜBUNG] Article test » avec un compte de test, confirmez le paiement, expédiez avec un numéro de suivi fictif puis annulez les commandes d'exercice non expédiées. La commande compte dans les indicateurs."
       }
     ],
     "tipps": [
@@ -769,6 +915,45 @@
       "Publiez-le pour que membres et visiteurs le voient et puissent donner.",
       "Suivez l'avancement dans la liste et clôturez le projet à la fin.",
       "Facultatif : publier des postes ouverts (espace de travail, onglet « Postes ») ; les membres se manifestent, la direction accepte ou refuse."
+    ],
+    "workflows": [
+      {
+        "id": "PROJ-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Créer, publier et clôturer un projet",
+        "wann": "Une collecte ou un projet doit être présenté aux membres et suivi.",
+        "schritte": [
+          "Ouvrir « Gestion projets & actions » et choisir « Nouveau projet ».",
+          "Saisir titre, description, statut, responsable, début et date limite. Pour des dons, activer « Activer les contributions libres » et fixer l'objectif de la cagnote (€).",
+          "Sous « Images de la kachel », ajouter des images avec « Ajouter une image » et cliquer sur « Enregistrer ».",
+          "Régler la visibilité sur « Publié ».",
+          "À la fin, mettre le statut sur « Terminé »."
+        ],
+        "danach": "Un nouveau projet est d'abord un brouillon. Tâches et équipe restent toujours internes ; seule la tuile devient visible pour les membres avec « Publier ».",
+        "vorher": "Vous connaissez titre, description, période et, le cas échéant, l'objectif de la cagnote.",
+        "erwartet": [
+          "Le formulaire « Nouveau projet » est ouvert.",
+          "Toutes les informations sont remplies. Avec « Activer les contributions libres », membres et visiteurs peuvent donner.",
+          "La tuile a des images et le projet figure dans la liste, d'abord en brouillon.",
+          "La visibilité affiche « Publié ». La tuile est visible pour tous les membres.",
+          "Le statut affiche « Terminé »."
+        ],
+        "fehler": [
+          {
+            "problem": "« Impossible d'enregistrer le projet. »",
+            "loesung": "Vérifiez titre, description et les champs numériques."
+          },
+          {
+            "problem": "Les membres ne voient pas le projet.",
+            "loesung": "C'est encore un brouillon. Réglez la visibilité sur « Publié »."
+          },
+          {
+            "problem": "Vous voulez supprimer un projet avec des contributions.",
+            "loesung": "« Supprimer » retire définitivement le projet et toutes ses images, après confirmation. Mettez-le plutôt sur « Terminé » ou « Annulé »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez le projet « [ÜBUNG] Projet test » et laissez-le en brouillon. Ne le publiez pas. Supprimez-le après l'exercice avec « Supprimer »."
+      }
     ]
   },
   "albums": {
@@ -832,7 +1017,36 @@
           "Une seconde personne autorisée vérifie justificatif et montant puis valide ou refuse avec un motif."
         ],
         "beispiel": "Location de salle pour la fête d'été : 320 € le 14/07, catégorie « Événements », fournisseur « Stadthalle », justificatif PDF, rattachée à l'événement « Fête d'été 2026 ».",
-        "danach": "Seules les dépenses validées comptent dans le bilan, les KPI, le budget réel et le plan/réel du projet rattaché."
+        "danach": "Seules les dépenses validées comptent dans le bilan, les KPI, le budget réel et le plan/réel du projet rattaché.",
+        "id": "FIN-01",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "vorher": "Vous avez le justificatif (photo ou PDF) et vous connaissez la date, le montant, la catégorie et le fournisseur.",
+        "erwartet": [
+          "La liste de l'onglet « Dépenses » affiche date, fournisseur / bénéficiaire, catégorie, montant, rattachement et statut.",
+          "Le formulaire affiche les champs Date, Montant (€), Catégorie et Fournisseur / bénéficiaire ; Évènement et Projet sont facultatifs.",
+          "Le justificatif (PDF, JPG ou PNG, 5 Mo maximum) est joint à la dépense.",
+          "La dépense figure dans la liste avec le statut « À approuver ». Pour votre propre dépense, on lit : « Saisie par vous – une autre personne doit l'approuver. »",
+          "Après « Approuver », la dépense est « Approuvée » et verrouillée. Après « Rejeter » avec un motif, elle est « Rejetée »."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne pouvez pas approuver votre propre dépense.",
+            "loesung": "C'est voulu (principe des quatre yeux). Une seconde personne avec droit d'écriture approuve."
+          },
+          {
+            "problem": "La dépense a été rejetée.",
+            "loesung": "Lisez le motif, corrigez la dépense avec « Modifier ». Elle repart ensuite en approbation."
+          },
+          {
+            "problem": "Le justificatif n'est pas accepté.",
+            "loesung": "Formats admis : PDF, JPG et PNG jusqu'à 5 Mo. Réduisez la photo."
+          },
+          {
+            "problem": "Une dépense approuvée est fausse.",
+            "loesung": "Les dépenses approuvées sont verrouillées. Demandez à l'administration de l'application comment la corriger."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Saisissez la dépense « [ÜBUNG] Dépense test » de 1,00 €, rejetez-la avec un second compte de test et le motif « [ÜBUNG] », puis supprimez-la avec « Supprimer ». Ne l'approuvez pas, sinon elle compte dans le bilan et les indicateurs."
       },
       {
         "titre": "Planifier le budget annuel",
@@ -844,7 +1058,27 @@
           "Enregistrer ; le réel et le feu tricolore apparaissent dans le bilan annuel."
         ],
         "beispiel": "Catégorie « Événements » : 5 000 € pour 2026. Avec 4 100 € de réel, le voyant passe à « Attention » (dès 80 % du budget).",
-        "danach": "Dans Statistiques & KPI → Bilan annuel, budget et réel sont comparés par catégorie."
+        "danach": "Dans Statistiques & KPI → Bilan annuel, budget et réel sont comparés par catégorie.",
+        "id": "FIN-02",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "vorher": "Vous connaissez le budget global de l'année et les montants par catégorie.",
+        "erwartet": [
+          "L'onglet « Budget » affiche l'année choisie et les catégories.",
+          "Le budget global figure dans le champ. Après « Enregistrer », « Budget global enregistré. » apparaît.",
+          "Les montants figurent par catégorie. Vide ou 0 signifie : pas de budget. « Réparti par catégorie » et « Disponible » montrent le reste.",
+          "« Budget enregistré. » apparaît. Si les catégories dépassent le budget global, l'application avertit : « Le budget global est dépassé de … – veuillez réduire les budgets par catégorie. »"
+        ],
+        "fehler": [
+          {
+            "problem": "L'application demande d'abord le budget global.",
+            "loesung": "Saisissez et enregistrez le budget global de l'année avant de le répartir par catégorie."
+          },
+          {
+            "problem": "Le réel est plus bas que prévu.",
+            "loesung": "Seules les dépenses approuvées comptent (carte FIN-01)."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Budget » de l'année en cours et lisez « Réparti par catégorie » et « Disponible ». Ne modifiez rien."
       },
       {
         "titre": "Clôturer l'exercice",
@@ -852,11 +1086,60 @@
         "schritte": [
           "Onglet « Dépenses » : plus aucune dépense en attente de validation.",
           "Onglet « Contrôle » : dépenses sans justificatif et montants élevés.",
-          "Onglet « Clôture » → verrouiller l'année.",
+          "Onglet « Clôture annuelle » → « Clôturer l'année » et confirmer la question.",
           "Éventuellement exporter le bilan (PDF/Excel) et la liste d'écritures (CSV) pour le comptable."
         ],
         "beispiel": "Début janvier, vous verrouillez 2025. Plus aucune modification n'est possible ; seul l'administrateur de l'application peut rouvrir l'année.",
-        "danach": "Le journal enregistre le verrouillage avec la personne et l'heure."
+        "danach": "Le journal enregistre le verrouillage avec la personne et l'heure.",
+        "id": "FIN-03",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "vorher": "Toutes les dépenses de l'année sont tranchées.",
+        "erwartet": [
+          "Dans l'onglet « Dépenses », plus aucune dépense n'est « À approuver ». Sinon l'onglet « Clôture annuelle » indique : « … dépense(s) attendent encore une décision. Décidez d'abord, puis clôturez. »",
+          "L'onglet « Contrôle » affiche les chiffres clés, les dépenses approuvées sans justificatif et les montants élevés – ou « Aucune anomalie. »",
+          "Après « Clôturer l'année » et la question « Clôturer l'exercice ? », on lit « Clôturée le … par … ». Recettes, dépenses et résultat sont figés.",
+          "Les fichiers sont téléchargés (bilan Excel, rapport annuel PDF, écritures CSV)."
+        ],
+        "fehler": [
+          {
+            "problem": "L'année ne peut pas être clôturée.",
+            "loesung": "Tranchez d'abord toutes les dépenses encore « À approuver »."
+          },
+          {
+            "problem": "Vous voulez rouvrir une année clôturée.",
+            "loesung": "Seul l'administrateur de l'application peut la rouvrir, avec un motif (obligatoire)."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Contrôle » et lisez les chiffres clés et les anomalies. Ne clôturez aucune année."
+      },
+      {
+        "id": "FIN-04",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "titre": "Créer ou désactiver une catégorie de dépenses",
+        "wann": "Un nouveau type de dépenses a besoin de sa propre catégorie, ou une catégorie n'est plus utilisée.",
+        "schritte": [
+          "Ouvrir l'onglet « Catégories ».",
+          "Sous « Nouvelle catégorie », saisir les noms en français, allemand et arabe et cliquer sur « Ajouter ».",
+          "Masquer les catégories devenues inutiles avec « Désactiver ». Avec « Activer », elles reviennent."
+        ],
+        "danach": "Les catégories utilisées se désactivent au lieu d'être supprimées. Pour un budget, vous fixez ensuite la catégorie dans l'onglet « Budget » (carte FIN-02).",
+        "vorher": "Vous connaissez les noms de la catégorie dans les trois langues.",
+        "erwartet": [
+          "La liste affiche toutes les catégories avec leur statut (« Active »).",
+          "La catégorie figure dans la liste et est active.",
+          "La catégorie figure dans la liste comme non active. Elle n'est pas supprimée."
+        ],
+        "fehler": [
+          {
+            "problem": "Une catégorie ne peut pas être supprimée.",
+            "loesung": "Les catégories utilisées se désactivent au lieu d'être supprimées."
+          },
+          {
+            "problem": "Un nom est mal écrit.",
+            "loesung": "Corrigez-le avec « Modifier les noms »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez « [ÜBUNG] Catégorie test » puis désactivez-la. Ne modifiez aucune catégorie existante."
       }
     ],
     "tipps": [
@@ -885,7 +1168,30 @@
           "Clarifier les questions dans les commentaires."
         ],
         "beispiel": "Tâche « Imprimer l'affiche », responsable Sami, échéance 15/10. Sami reçoit une notification, puis un rappel peu avant le 15/10.",
-        "danach": "L'avancement apparaît sur la page du projet et dans Statistiques & KPI → Projets."
+        "danach": "L'avancement apparaît sur la page du projet et dans Statistiques & KPI → Projets.",
+        "id": "PROJ-02",
+        "vorher": "Vous faites partie de l'équipe du projet et avez accès à l'onglet « Tâches ».",
+        "erwartet": [
+          "La fenêtre « Nouvelle tâche » est ouverte et le titre est saisi.",
+          "Le responsable et l'échéance sont définis. La tâche affiche l'échéance (« Échéance … »).",
+          "La tâche se trouve dans la bonne colonne (Ouvert, En cours, Revue, Terminé).",
+          "Le commentaire figure sous « Commentaires ». La tâche affiche le nombre de commentaires."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne voyez pas l'espace de travail.",
+            "loesung": "« L'espace de travail n'est visible que de l'équipe du projet. » Demandez à la direction du projet de vous ajouter dans l'onglet « Équipe »."
+          },
+          {
+            "problem": "Le glisser-déposer ne fonctionne pas.",
+            "loesung": "Utilisez le champ de statut « Changer le statut de … » sur la tâche."
+          },
+          {
+            "problem": "Une tâche est marquée en rouge.",
+            "loesung": "Elle est en retard. Terminez-la ou fixez une nouvelle échéance."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Dans le projet « [ÜBUNG] Projet test » (PROJ-01), créez la tâche « [ÜBUNG] Tâche test », attribuez-la à vous-même, déplacez-la jusqu'à « Terminé » puis supprimez-la. Les tâches apparaissent dans les indicateurs du projet."
       },
       {
         "titre": "Constituer l'équipe",
@@ -896,7 +1202,25 @@
           "Choisir le rôle : collaborateur (peut modifier les tâches) ou observateur (lecture seule)."
         ],
         "beispiel": "Lina doit seulement suivre : rôle « Observateur ». Tarek participe : rôle « Collaborateur ».",
-        "danach": "Les personnes ajoutées voient l'espace de travail et sont notifiées lors des affectations."
+        "danach": "Les personnes ajoutées voient l'espace de travail et sont notifiées lors des affectations.",
+        "id": "PROJ-03",
+        "vorher": "Vous êtes direction du projet ou membre de la gestion. Vous savez qui collabore et qui doit seulement lire.",
+        "erwartet": [
+          "L'onglet « Équipe » affiche les membres de l'équipe avec leur rôle. Sans autorisation, on lit : « Seules la Direction du projet et la gestion peuvent modifier l'équipe. »",
+          "Le membre recherché apparaît dans la sélection « Rechercher un membre… ».",
+          "La personne figure dans l'équipe avec son rôle (direction du projet, collaboration ou observateur) et voit l'espace de travail."
+        ],
+        "fehler": [
+          {
+            "problem": "« Ajouter un membre » est absent.",
+            "loesung": "Seules la direction du projet et la gestion peuvent modifier l'équipe."
+          },
+          {
+            "problem": "Vous avez choisi le mauvais rôle.",
+            "loesung": "Modifiez le rôle dans la ligne de la personne (« Rôle de … ») ou retirez-la avec « Retirer »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Ajoutez au projet « [ÜBUNG] Projet test » le compte de test « [ÜBUNG] Compte test » comme observateur, changez le rôle en collaboration puis retirez la personne."
       },
       {
         "titre": "Planifier les coûts et saisir les dépenses",
@@ -908,7 +1232,60 @@
           "Consulter prévu / réel / ouvert."
         ],
         "beispiel": "Plan « Impression » 150 €, facture réelle 168 € avec justificatif. Après validation, le réel est à 168 € ; l'écart plan/réel est de +18 €.",
-        "danach": "Les coûts validés alimentent le bilan annuel (« Résultat par projet ») et les KPI."
+        "danach": "Les coûts validés alimentent le bilan annuel (« Résultat par projet ») et les KPI.",
+        "id": "PROJ-04",
+        "vorher": "Vous êtes direction du projet (prévu) ou dans l'équipe (coûts réels). Pour les dépenses, vous avez le justificatif.",
+        "erwartet": [
+          "Le tableau « Prévu / réel par catégorie » affiche le prévu dans la ligne de la catégorie.",
+          "La dépense figure sous « Coûts réels » avec le statut « En attente d'approbation ». Elle demande date, montant, fournisseur / objet, catégorie et justificatif.",
+          "La ligne est « Approuvé » ou « Refusé » avec un motif.",
+          "Les tuiles « Coûts prévus », « Réel (approuvé) », « En attente d'approbation » et « Budget restant » correspondent aux lignes."
+        ],
+        "fehler": [
+          {
+            "problem": "La ligne a été refusée.",
+            "loesung": "Lisez le motif (« Refusé : … »), corrigez-la avec « Modifier » et renvoyez-la."
+          },
+          {
+            "problem": "Vous voulez supprimer une ligne.",
+            "loesung": "Seules les lignes non encore approuvées peuvent être supprimées."
+          },
+          {
+            "problem": "Le réel est plus bas que prévu.",
+            "loesung": "Seuls les coûts approuvés comptent. L'équipe financière approuve."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Dans le projet « [ÜBUNG] Projet test », prévoyez 10 € pour une catégorie, saisissez un coût de 1,00 € puis supprimez la ligne tant qu'elle n'est pas approuvée. Ne l'approuvez pas."
+      },
+      {
+        "id": "PROJ-05",
+        "titre": "Publier des postes ouverts",
+        "wann": "Le projet a besoin d'autres bénévoles avec des compétences précises.",
+        "schritte": [
+          "Dans l'espace de travail, ouvrir l'onglet « Postes » (direction du projet uniquement).",
+          "« Nouveau poste » : saisir titre, compétence recherchée, nombre de personnes et description, puis cliquer sur « Créer le poste ».",
+          "Consulter les candidatures et décider avec « Accepter » ou « Refuser ». « Afficher les membres correspondants » propose des personnes.",
+          "Quand le poste est pourvu ou inutile, cliquer sur « Clore »."
+        ],
+        "danach": "Les membres voient le poste avec « Je veux aider » et peuvent se manifester avec un message. Avec « Rouvrir », le poste est de nouveau ouvert.",
+        "vorher": "Vous êtes direction du projet. Vous savez quelle compétence et combien de personnes vous cherchez.",
+        "erwartet": [
+          "L'onglet affiche les postes ou « Aucun poste pour l'instant. » Sans autorisation : « Seule la direction du projet peut gérer les postes. »",
+          "Le poste figure dans la liste avec le statut « Ouvert » et « 0 sur … pourvu(s) ».",
+          "La candidature est « Accepté » ou « Refusé ». La personne reçoit le message qu'elle a été acceptée ou non retenue.",
+          "Le poste est « Clos »."
+        ],
+        "fehler": [
+          {
+            "problem": "Personne ne se manifeste.",
+            "loesung": "Choisissez une compétence adaptée et utilisez « Afficher les membres correspondants »."
+          },
+          {
+            "problem": "Vous avez supprimé le poste par erreur.",
+            "loesung": "Créez-le à nouveau. La suppression demande une confirmation."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Dans le projet « [ÜBUNG] Projet test », publiez le poste « [ÜBUNG] Rôle test » pour une personne, clôturez-le puis supprimez-le."
       }
     ],
     "tipps": [
@@ -1339,7 +1716,31 @@
           "Éventuellement charger le logo."
         ],
         "beispiel": "Catering Schmidt : contrat jusqu'au 31/12/2027. Le 01/11/2027 et le 17/12/2027, le créateur et les Bureau Admins reçoivent un rappel.",
-        "danach": "Le partenaire est sélectionnable dans les dépenses et retrouvable par nom, catégorie et contact."
+        "danach": "Le partenaire est sélectionnable dans les dépenses et retrouvable par nom, catégorie et contact.",
+        "id": "PART-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Vous connaissez le nom, la catégorie, la personne de contact et la fin du contrat du prestataire.",
+        "erwartet": [
+          "Le partenaire figure dans la liste avec le type « Fournisseur ».",
+          "Dans la fiche, la personne figure sous « Personnes de contact » avec la mention « Contact principal » et apparaît aussi dans la liste.",
+          "Le contrat figure sous « Contrats & documents » avec « valable jusqu'au … » ou « encore … jours ».",
+          "Le logo figure dans la fiche du partenaire."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous voulez supprimer un partenaire.",
+            "loesung": "Les partenaires ne sont jamais supprimés, seulement archivés (« Archiver »). Avec « Réactiver », il revient."
+          },
+          {
+            "problem": "Aucun rappel n'arrive pour la fin du contrat.",
+            "loesung": "Saisissez la fin du contrat. Le rappel est envoyé 60 et 14 jours avant."
+          },
+          {
+            "problem": "Le logo ne doit pas apparaître publiquement.",
+            "loesung": "Les logos n'apparaissent qu'avec « Afficher le logo » ou dans la bannière de la page d'accueil. Ne cochez qu'avec l'accord du partenaire."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez le partenaire « [ÜBUNG] Entreprise test » avec une personne de contact fictive puis archivez-le. Ne touchez à aucun partenaire existant."
       },
       {
         "titre": "Comparer des offres pour un projet",
@@ -1351,7 +1752,27 @@
           "Sur l'offre retenue, cliquer sur « Attribuer » ; les autres sont marquées refusées."
         ],
         "beispiel": "Trois imprimeurs proposent 480 €, 520 € et 610 € pour la brochure. Le marché va au deuxième, mieux noté.",
-        "danach": "Le gagnant est lié au projet comme fournisseur. Aucune écriture ni ligne de coûts n'est créée automatiquement. « Réinitialiser » annule l'attribution."
+        "danach": "Le gagnant est lié au projet comme fournisseur. Aucune écriture ni ligne de coûts n'est créée automatiquement. « Réinitialiser » annule l'attribution.",
+        "id": "PART-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Pour un projet, plusieurs offres existent et le partenaire est créé.",
+        "erwartet": [
+          "La page « Comparaison d'offres » affiche le projet choisi.",
+          "Chaque offre figure dans le tableau avec son montant et le statut « Ouverte ».",
+          "Les montants sont classés par ordre croissant. L'offre la moins chère est marquée « le moins cher », à côté figure « Écart au moins cher ».",
+          "L'offre retenue a le statut « Attribuée », les autres « Refusée ». Le partenaire est lié au projet comme fournisseur."
+        ],
+        "fehler": [
+          {
+            "problem": "L'attribution était fausse.",
+            "loesung": "Cliquez sur « Réinitialiser » et attribuez à nouveau."
+          },
+          {
+            "problem": "Après l'attribution, il n'y a pas d'écriture.",
+            "loesung": "Aucune écriture ni ligne de coûts n'est créée automatiquement. Saisissez-la vous-même (carte FIN-01 ou PROJ-04)."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Dans le projet « [ÜBUNG] Projet test », saisissez deux offres de « [ÜBUNG] Entreprise test » (10 € et 12 €) et attribuez à la moins chère. Annulez ensuite avec « Réinitialiser »."
       },
       {
         "titre": "Reprendre les fournisseurs des dépenses existantes",
@@ -1362,7 +1783,26 @@
           "Confirmer – les nouveaux partenaires sont créés et les dépenses rattachées."
         ],
         "beispiel": "« Druckerei Meier » et « druckerei meier » deviennent un seul partenaire avec toutes ses dépenses.",
-        "danach": "Les dépenses par partenaire et le tableau croisé « Partenaire » fonctionnent pour les écritures importées."
+        "danach": "Les dépenses par partenaire et le tableau croisé « Partenaire » fonctionnent pour les écritures importées.",
+        "id": "PART-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Il existe des dépenses avec un nom de fournisseur qui n'est encore lié à aucun partenaire.",
+        "erwartet": [
+          "La fenêtre « Importer les fournisseurs depuis les dépenses » est ouverte.",
+          "L'aperçu montre par fournisseur dépenses et total, et s'il « sera créé » ou si le « partenaire existant ». Si tout est rattaché : « Toutes les dépenses avec fournisseur sont déjà rattachées à un partenaire. »",
+          "« Terminé : … partenaires créés, … dépenses rattachées. » apparaît."
+        ],
+        "fehler": [
+          {
+            "problem": "Deux noms proches n'ont pas été regroupés.",
+            "loesung": "Seuls les noms qui ne diffèrent que par la casse ou les espaces sont regroupés. Vérifiez l'aperçu avant d'importer."
+          },
+          {
+            "problem": "L'import ne doit pas avoir lieu.",
+            "loesung": "Fermez la fenêtre après l'aperçu. Rien n'est écrit avant « Importer maintenant »."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez « Importer depuis les dépenses » et lisez seulement l'aperçu. N'importez pas."
       },
       {
         "titre": "Afficher un sponsor sur la page d’accueil",
@@ -1373,7 +1813,26 @@
           "Saisir le montant du sponsoring sous « Recettes »."
         ],
         "beispiel": "Sponsor AG verse 500 € : logo dans la bannière, 500 € de recettes dans le reporting.",
-        "danach": "Le logo apparaît immédiatement. Pour le retirer, décocher la case ou archiver le partenaire."
+        "danach": "Le logo apparaît immédiatement. Pour le retirer, décocher la case ou archiver le partenaire.",
+        "id": "PART-04",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Le sponsor a accepté le logo sur la page d'accueil.",
+        "erwartet": [
+          "Logo et site web figurent dans la fiche du partenaire.",
+          "La case « Afficher dans la bannière de la page d’accueil » est cochée. Le logo apparaît dans la bannière « Nos sponsors et partenaires » de la page d'accueil.",
+          "Le montant figure sous « Recettes » et dans le reporting comme chiffre d'affaires du partenaire."
+        ],
+        "fehler": [
+          {
+            "problem": "Le logo manque dans la bannière.",
+            "loesung": "Il n'apparaît que pour un partenaire actif avec la case cochée. Les partenaires archivés ne s'affichent pas."
+          },
+          {
+            "problem": "Le logo doit disparaître.",
+            "loesung": "Décochez la case ou archivez le partenaire."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Cochez « Afficher dans la bannière de la page d’accueil » pour « [ÜBUNG] Entreprise test » uniquement avec un logo fictif, vérifiez la page d'accueil de l'environnement de test puis décochez. Le logo y est visible publiquement."
       }
     ],
     "tipps": [
@@ -1396,13 +1855,37 @@
         "titre": "Créer et publier une rencontre",
         "wann": "Tu es responsable d’un secteur.",
         "schritte": [
-          "Sur la page du secteur, choisir « Nouvelle rencontre » et saisir titre, date, lieu et, au besoin, le nombre de places.",
-          "Enregistrer comme brouillon puis cliquer sur « Soumettre ».",
+          "Sur la page du secteur, choisir « Proposer une rencontre » et saisir titre, date, lieu et, au besoin, le nombre de places.",
+          "Enregistrer avec « Enregistrer comme brouillon », puis cliquer sur « Soumettre pour validation ».",
           "Le bureau vérifie, valide ou refuse en indiquant un motif. Tu reçois un message dans l’appli et par e-mail.",
           "Après validation, membres et fans peuvent s’inscrire."
         ],
         "beispiel": "Soirée grillades Nord le 14 juin, 30 places.",
-        "danach": "Après la rencontre, cocher les présences et choisir « Clôturer » ; les points ne comptent qu’ensuite."
+        "danach": "Après la rencontre, cocher les présences. Le bureau clôture ensuite la rencontre avec « Clôturer la rencontre » (selon l'application) ; les points ne comptent qu'ensuite.",
+        "id": "SEKT-01",
+        "rollen": ["region", "bureau_admin", "super_admin"],
+        "vorher": "Vous êtes responsable du secteur. Vous connaissez titre, date, lieu et places.",
+        "erwartet": [
+          "Le formulaire « Proposer une rencontre » affiche titre, date, heure, lieu de rendez-vous, nombre maximal de participants et description.",
+          "La rencontre est « Brouillon », puis après « Soumettre pour validation » « En attente de validation ».",
+          "Après la validation, elle est « Publié ». En cas de refus, on lit « Refusé : … » avec le motif.",
+          "Membres et fans voient le bouton « Je viens ». Le nombre d'inscriptions augmente."
+        ],
+        "fehler": [
+          {
+            "problem": "La rencontre a été refusée.",
+            "loesung": "Lisez le motif (« Refusé : … »), modifiez la rencontre et soumettez-la à nouveau."
+          },
+          {
+            "problem": "La rencontre n'est pas visible.",
+            "loesung": "Seul le bureau voit brouillons et rencontres soumises. Seul « Publié » est visible pour tous."
+          },
+          {
+            "problem": "La rencontre n'a pas lieu.",
+            "loesung": "Choisissez « Annuler » et confirmez avec « Oui, annuler ». Tous les inscrits sont prévenus."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Proposez dans un secteur la rencontre « [ÜBUNG] Rencontre test » et laissez-la en brouillon. Ne la soumettez pas, sinon le bureau reçoit une notification."
       },
       {
         "titre": "Voir les fans de mon secteur",
@@ -1413,7 +1896,84 @@
           "Cliquer sur un nom : tu vois les rencontres auxquelles la personne a participé."
         ],
         "beispiel": "Une personne est inscrite trois fois et était présente deux fois.",
-        "danach": "Les coordonnées ne sont volontairement pas visibles. Pour contacter des fans, utilise les publications ou passe par le bureau."
+        "danach": "Les coordonnées ne sont volontairement pas visibles. Pour contacter des fans, utilise les publications ou passe par le bureau.",
+        "id": "SEKT-02",
+        "rollen": ["region", "bureau_admin", "super_admin"],
+        "vorher": "Vous êtes responsable du secteur ou membre du bureau.",
+        "erwartet": [
+          "La section « Fans et activités » affiche en haut le résumé : « … personnes : … membres, … fans sans adhésion ».",
+          "La liste n'affiche que le nom cherché ou le type choisi (Tous, Membres, Fans) avec inscriptions, présences, réactions et dernière activité.",
+          "En cliquant sur un nom, vous voyez les rencontres avec « inscrit(e) », « présent(e) » ou « absent(e) »."
+        ],
+        "fehler": [
+          {
+            "problem": "La liste est vide.",
+            "loesung": "Personne ne s'est encore inscrit à une rencontre. Les fans apparaissent avec l'inscription à une rencontre publiée."
+          },
+          {
+            "problem": "Vous avez besoin des coordonnées.",
+            "loesung": "Elles ne sont volontairement pas visibles. Utilisez les publications ou passez par le bureau."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez un secteur, cherchez un nom dans la section « Fans et activités » et cliquez dessus. Cela ne modifie rien."
+      },
+      {
+        "id": "SEKT-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Vérifier, valider ou refuser une rencontre",
+        "wann": "Les responsables d'un secteur ont soumis une rencontre pour validation.",
+        "schritte": [
+          "Chercher chez le secteur l'indication « … rencontres attendent leur validation » et ouvrir la rencontre.",
+          "Vérifier titre, date, lieu et places.",
+          "Cliquer sur « Valider », ou sur « Refuser », saisir le motif et confirmer avec « Refuser »."
+        ],
+        "danach": "Les responsables reçoivent un message dans l'appli et par e-mail. Après la validation, membres et fans peuvent s'inscrire.",
+        "vorher": "Une rencontre a le statut « En attente de validation ».",
+        "erwartet": [
+          "L'indication donne le nombre de rencontres en attente de validation.",
+          "La rencontre affiche le statut « En attente de validation ».",
+          "Après « Valider », on lit « Publié ». Après « Refuser », on lit « Refusé : … » avec votre motif."
+        ],
+        "fehler": [
+          {
+            "problem": "« Refuser » n'est pas possible.",
+            "loesung": "Le motif du refus est obligatoire. Saisissez-le."
+          },
+          {
+            "problem": "Vous avez validé trop tôt.",
+            "loesung": "Modifiez la rencontre. Si elle est déjà publiée, vous pouvez l'annuler ; les inscrits sont prévenus."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Soumettez avec un compte de test la rencontre « [ÜBUNG] Rencontre test » et refusez-la avec le motif « [ÜBUNG] ». Ne la validez pas."
+      },
+      {
+        "id": "SEKT-04",
+        "rollen": ["region", "bureau_admin", "super_admin"],
+        "titre": "Tenir et clôturer une rencontre",
+        "wann": "La rencontre a eu lieu et les points doivent être attribués.",
+        "schritte": [
+          "Ouvrir la liste des participants (« Participants ») de la rencontre.",
+          "Cocher les personnes présentes.",
+          "Le bureau choisit « Clôturer la rencontre »."
+        ],
+        "danach": "Les points ne comptent dans le concours qu'après la clôture (carte SEKT-05). Si la rencontre a des billets, l'accueil enregistre la présence (EINL-01).",
+        "vorher": "La rencontre est passée et a le statut « Publié ».",
+        "erwartet": [
+          "La liste affiche tous les inscrits. Sans inscription : « Pas encore d'inscriptions. »",
+          "Les personnes présentes sont cochées « présent(e) ».",
+          "La rencontre a le statut « Terminé » et indique combien de personnes étaient présentes."
+        ],
+        "fehler": [
+          {
+            "problem": "La rencontre n'a pas eu lieu.",
+            "loesung": "Choisissez « Annuler » et confirmez avec « Oui, annuler ». Tous les inscrits sont prévenus."
+          },
+          {
+            "problem": "Vous ne pouvez pas clôturer la rencontre.",
+            "loesung": "Le bureau clôture les rencontres. Demandez-lui de le faire quand vous avez coché les présences."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Cochez comme présent uniquement le compte de test à la rencontre « [ÜBUNG] Rencontre test » et faites-la clôturer par le bureau. La clôture attribue des points ; corrigez-les ensuite avec SEKT-05."
       }
     ],
     "tipps": [
@@ -1430,7 +1990,39 @@
       "Badges, évolution, vainqueurs du mois et récompense figurent plus bas ; le règlement explique l’attribution des points.",
       "Le bureau voit en plus le journal et peut corriger des points ; l’administrateur gère saisons et règles."
     ],
-    "workflows": [],
+    "workflows": [
+      {
+        "id": "SEKT-05",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Corriger les points du concours",
+        "wann": "Un secteur a trop ou trop peu de points parce qu'une rencontre a été mal comptée ou oubliée.",
+        "schritte": [
+          "Dans le concours, ouvrir la zone « Bureau : correction et journal ».",
+          "Choisir le secteur, saisir les points (+/−) et le motif.",
+          "Cliquer sur « Enregistrer la correction ».",
+          "Vérifier dans le « Journal des points » que l'écriture figure."
+        ],
+        "danach": "Les corrections sont des écritures distinctes avec motif dans le journal. Si la saison est clôturée, plus aucune correction n'est possible.",
+        "vorher": "Vous connaissez le secteur, la différence de points et la raison.",
+        "erwartet": [
+          "La zone indique qu'une correction est une écriture distincte, avec motif, visible dans le journal.",
+          "Secteur, points et motif sont remplis.",
+          "Le message « La correction a été enregistrée. » apparaît.",
+          "Le journal affiche l'écriture avec le motif « Correction », les points et votre motif."
+        ],
+        "fehler": [
+          {
+            "problem": "« Cette saison est clôturée ; les corrections ne sont plus possibles. »",
+            "loesung": "Les saisons figées ne peuvent pas être modifiées."
+          },
+          {
+            "problem": "La correction était fausse.",
+            "loesung": "Passez une contre-écriture de signe inverse avec un motif. Les écritures restent dans le journal."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Enregistrez +1 point avec le motif « [ÜBUNG] » puis −1 point pour le même secteur. Le classement est ensuite inchangé."
+      }
+    ],
     "tipps": [
       "Les points par membre permettent de comparer équitablement petits et grands secteurs."
     ]
@@ -1453,7 +2045,26 @@
           "L’ouvrir dans Excel pour le retravailler."
         ],
         "beispiel": "Rapport 2026 avec tous les secteurs et la colonne Total.",
-        "danach": "La colonne « Total » ne compte chaque personne qu’une fois."
+        "danach": "La colonne « Total » ne compte chaque personne qu’une fois.",
+        "id": "SEKT-06",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Vous avez besoin des chiffres pour le comité ou l'assemblée générale.",
+        "erwartet": [
+          "« Du » et « Au » affichent la période. Si elle est invalide : « Veuillez choisir une période valide (début avant la fin). »",
+          "Le tableau affiche par secteur et au total p. ex. rencontres terminées, inscriptions, taux de présence, fans et points du concours.",
+          "Le fichier CSV est téléchargé. Il ne contient que des chiffres, aucun nom."
+        ],
+        "fehler": [
+          {
+            "problem": "La colonne « Total » est plus petite que la somme des secteurs.",
+            "loesung": "C'est voulu : le « Total » ne compte chaque personne qu'une fois."
+          },
+          {
+            "problem": "Le fichier affiche de mauvais chiffres.",
+            "loesung": "Vérifiez la période (Du = 1er janvier, Au = 31 décembre)."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : choisissez l'année précédente, regardez le tableau et téléchargez le fichier CSV. Supprimez ensuite le fichier. Cela ne modifie rien."
       }
     ],
     "tipps": [
@@ -1647,6 +2258,140 @@
       "Le jour de l'événement, la caméra ne fonctionne que si le navigateur autorise l'accès. Sinon, la liste ou la saisie du code aident.",
       "Le billet des invités leur est aussi envoyé en PDF par e-mail, pour pouvoir le montrer à l'entrée même sans réseau.",
       "Les accès sont vérifiés par le serveur pour chaque événement : bureau, responsables de la région et aides nommées."
+    ]
+  },
+  "kalender": {
+    "titre": "Calendrier",
+    "intro": "Le calendrier affiche les rendez-vous de l'association, du bureau ainsi que vos propres rendez-vous et tâches. Le bureau gère les rendez-vous et examine les propositions des membres.",
+    "schritte": [
+      "Choisissez en haut le calendrier : « Calendrier de l'association », « Calendrier du bureau » ou « Mes rendez-vous & tâches ». Changez l'affichage entre « Mois » et « Liste ».",
+      "Avec « Filtrer par catégorie », n'affichez qu'un type de rendez-vous (réunion, évènement, échéance, projet, jour de match, absence, permanence, date importante, autre).",
+      "Au bureau, « Nouveau rendez-vous » crée un rendez-vous. Les membres proposent des rendez-vous avec « Proposer un rendez-vous ».",
+      "Pour les rendez-vous avec bénévoles, il y a des « Permanences » : les membres s'inscrivent, le bureau affecte des personnes."
+    ],
+    "workflows": [
+      {
+        "id": "KAL-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Créer un rendez-vous",
+        "wann": "Un rendez-vous (p. ex. réunion, échéance, date de l'association) doit apparaître dans le calendrier.",
+        "schritte": [
+          "Dans le calendrier, cliquer sur « Nouveau rendez-vous ».",
+          "Saisir titre, catégorie, début (et éventuellement fin), lieu et description. Cocher « Toute la journée » si aucune heure n'est nécessaire.",
+          "Sous « Qui voit ce rendez-vous ? », définir s'il s'agit d'un cercle seulement, de tous les responsables de tâches, de tous les membres ou de public.",
+          "Éventuellement régler répétition, rappel et « Inviter des personnes », puis cliquer sur « Enregistrer »."
+        ],
+        "danach": "Avec « Annoncer dans l'actualité », vous signalez le rendez-vous aux membres. Avec « Modifier » ou « Supprimer », vous le changez plus tard (supprimer le retire pour tout le monde).",
+        "vorher": "Vous connaissez le titre, l'heure et qui doit voir le rendez-vous.",
+        "erwartet": [
+          "Le formulaire « Nouveau rendez-vous » est ouvert.",
+          "Titre, catégorie, début et lieu sont remplis.",
+          "La sélection affiche « Un cercle seulement », « Tous les responsables de tâches », « Tous les membres » ou « Public (sans connexion) ». Avec « Privé », seuls vous et les invités voient le rendez-vous – pas même le bureau.",
+          "Le rendez-vous figure dans le calendrier, en cas de répétition à tous les jours concernés."
+        ],
+        "fehler": [
+          {
+            "problem": "« Le rendez-vous n'a pas pu être enregistré. »",
+            "loesung": "Vérifiez titre et début. La fin doit être après le début."
+          },
+          {
+            "problem": "Les membres ne voient pas le rendez-vous.",
+            "loesung": "Vérifiez « Qui voit ce rendez-vous ? ». Un rendez-vous pour un cercle n'est visible que pour ce cercle."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez le rendez-vous « [ÜBUNG] Rendez-vous test » dans 30 jours, visible uniquement pour le Bureau, puis supprimez-le."
+      },
+      {
+        "id": "KAL-02",
+        "titre": "Proposer un rendez-vous",
+        "wann": "Vous souhaitez qu'un rendez-vous figure dans le calendrier de l'association, mais vous ne pouvez pas le créer vous-même.",
+        "schritte": [
+          "Dans le calendrier, cliquer sur « Proposer un rendez-vous ».",
+          "Saisir titre, catégorie, début, lieu et description.",
+          "Cliquer sur « Envoyer la proposition »."
+        ],
+        "danach": "Votre proposition n'apparaît qu'après validation par le bureau (carte KAL-03).",
+        "vorher": "Vous connaissez le titre, l'heure et le lieu du rendez-vous.",
+        "erwartet": [
+          "Le formulaire « Proposer un rendez-vous » affiche l'indication « Ta proposition n'apparaît qu'après validation par le bureau. »",
+          "Toutes les informations obligatoires sont remplies.",
+          "La proposition figure dans le calendrier avec l'indication « Proposition – en attente de validation par le bureau. »"
+        ],
+        "fehler": [
+          {
+            "problem": "La proposition n'apparaît pas pour les autres.",
+            "loesung": "C'est voulu. Elle ne devient visible qu'après validation par le bureau."
+          },
+          {
+            "problem": "« Le rendez-vous n'a pas pu être enregistré. »",
+            "loesung": "Vérifiez titre et début."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Proposez le rendez-vous « [ÜBUNG] Proposition test ». Le bureau le refuse ensuite avec KAL-03."
+      },
+      {
+        "id": "KAL-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Valider ou refuser une proposition de rendez-vous",
+        "wann": "Un membre a proposé un rendez-vous.",
+        "schritte": [
+          "Ouvrir la proposition dans le calendrier (elle porte l'indication « Proposition »).",
+          "Vérifier titre, heure, lieu et visibilité.",
+          "Cliquer sur « Valider », ou sur « Refuser »."
+        ],
+        "danach": "Les rendez-vous validés apparaissent dans le calendrier. Avec « Annoncer dans l'actualité », vous les signalez aux membres.",
+        "vorher": "Une proposition est en attente.",
+        "erwartet": [
+          "La proposition porte l'indication « Proposition – en attente de validation par le bureau. »",
+          "Les informations sont complètes et cohérentes.",
+          "Après « Valider », le rendez-vous est visible dans le calendrier. Après « Refuser », il n'apparaît pas."
+        ],
+        "fehler": [
+          {
+            "problem": "L'action a échoué.",
+            "loesung": "Rechargez la page et réessayez. Si l'erreur persiste, signalez-la via le support."
+          },
+          {
+            "problem": "Le rendez-vous doit être modifié avant la validation.",
+            "loesung": "Ouvrez-le avec « Modifier », changez les informations puis validez."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Refusez la proposition « [ÜBUNG] Proposition test » (KAL-02). Ne touchez à aucune autre proposition."
+      },
+      {
+        "id": "KAL-04",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Organiser des permanences pour bénévoles",
+        "wann": "Un rendez-vous nécessite des bénévoles (p. ex. montage).",
+        "schritte": [
+          "Ouvrir le rendez-vous et, dans la zone « Permanences (aide recherchée) », cliquer sur « Ajouter une permanence ».",
+          "Saisir la permanence (p. ex. montage), début, fin et « Personnes nécessaires ». Éventuellement choisir une compétence requise.",
+          "Les membres s'inscrivent eux-mêmes avec « S'inscrire ». S'il manque des personnes, contactez avec « Contacter » les membres correspondants sous « Suggestions » ou affectez-les avec « Affecter »."
+        ],
+        "danach": "La permanence indique combien de personnes sont inscrites (p. ex. « 2 sur 4 pourvus »). Chaque personne peut se retirer avec « Se désinscrire » (jusqu'à la date fixée).",
+        "vorher": "Vous connaissez la permanence, l'heure et le nombre de personnes.",
+        "erwartet": [
+          "Le rendez-vous affiche la zone « Permanences (aide recherchée) » ou « Aucune permanence pour le moment. »",
+          "La permanence figure avec l'heure et « 0 sur … pourvus » dans le rendez-vous.",
+          "L'effectif augmente. Les membres contactés apparaissent comme « Contacté(e) »."
+        ],
+        "fehler": [
+          {
+            "problem": "Personne ne s'inscrit.",
+            "loesung": "Choisissez une compétence adaptée pour que l'application fasse des suggestions, et utilisez « Contacter »."
+          },
+          {
+            "problem": "Une permanence est mal créée.",
+            "loesung": "Supprimez-la avec « Supprimer la permanence » et créez-la à nouveau."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez au rendez-vous « [ÜBUNG] Rendez-vous test » la permanence « [ÜBUNG] Montage » pour 2 personnes, inscrivez-vous puis supprimez la permanence."
+      }
+    ],
+    "tipps": [
+      "« Privé » signifie vraiment privé : seuls vous et les invités voient le rendez-vous, pas même le bureau.",
+      "Avec « Ajouter à mon calendrier (.ics) », vous reprenez les rendez-vous dans votre propre calendrier.",
+      "Le récapitulatif hebdomadaire par e-mail le lundi peut être désactivé à tout moment."
     ]
   }
 }

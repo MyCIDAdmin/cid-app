@@ -100,7 +100,27 @@
           "„Speichern“ klicken und prüfen, dass der Artikel „veröffentlicht“ ist."
         ],
         "beispiel": "40 Tickets fürs Auswärtsspiel, höchstens 4 pro Mitglied, Frist 20.10. um 18:00 Uhr.",
-        "danach": "Im Shop steht beim Artikel „Reservieren“ statt „In den Warenkorb“, dazu Restmenge und Frist. Nach Fristende oder wenn alles vergeben ist, ist der Artikel gesperrt."
+        "danach": "Im Shop steht beim Artikel „Reservieren“ statt „In den Warenkorb“, dazu Restmenge und Frist. Nach Fristende oder wenn alles vergeben ist, ist der Artikel gesperrt.",
+        "id": "SHOP-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Der Artikel ist angelegt. Du kennst Frist und Mengen.",
+        "erwartet": [
+          "Das Fenster „Reservierung“ ist offen und zeigt den Modus.",
+          "Der Modus „Nur reservieren (ohne Zahlung)“ ist gewählt.",
+          "Frist, Maximale Gesamtmenge und Maximal pro Mitglied sind eingetragen. Leer heißt unbegrenzt.",
+          "„Gespeichert.“ erscheint und der Artikel hat den Status „Veröffentlicht“."
+        ],
+        "fehler": [
+          {
+            "problem": "Im Shop steht weiter „In den Warenkorb“.",
+            "loesung": "Prüfe, ob der Modus gespeichert und der Artikel „Veröffentlicht“ ist."
+          },
+          {
+            "problem": "Du willst einen Gutschein reservieren.",
+            "loesung": "Gutscheine können nicht reserviert werden."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege den Artikel „[ÜBUNG] Testartikel“ an (SHOP-05), schalte „Nur reservieren“ ein und schalte danach „Keine Reservierung“ wieder ein. Veröffentliche den Artikel nur für den Test."
       },
       {
         "titre": "Reservieren und online bezahlen",
@@ -111,7 +131,26 @@
           "Frist und Mengenlimits eintragen und „Speichern“ klicken."
         ],
         "beispiel": "Fan-Schals: höchstens 100 Stück insgesamt, 2 pro Mitglied, Bestellung bis Monatsende.",
-        "danach": "Mitglieder bestellen wie gewohnt. Frist und Limits werden bei der Bestellung geprüft; stornierte Bestellungen geben die Menge wieder frei."
+        "danach": "Mitglieder bestellen wie gewohnt. Frist und Limits werden bei der Bestellung geprüft; stornierte Bestellungen geben die Menge wieder frei.",
+        "id": "SHOP-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Der Artikel ist angelegt. Du kennst Frist und Mengenlimits.",
+        "erwartet": [
+          "Das Fenster „Reservierung“ ist offen.",
+          "Der Modus „Reservieren und online bezahlen“ ist gewählt.",
+          "„Gespeichert.“ erscheint. Im Shop zeigt der Artikel Frist, Restmenge und Limit pro Mitglied."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Menge wird nicht wieder frei.",
+            "loesung": "Stornierte Bestellungen geben die Menge frei. Prüfe, ob die Bestellung wirklich storniert ist."
+          },
+          {
+            "problem": "Eine Bestellung wird abgelehnt.",
+            "loesung": "Frist und Limits werden bei der Bestellung geprüft. Ist die Frist vorbei oder die Menge vergeben, ist der Artikel gesperrt."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Stelle „[ÜBUNG] Testartikel“ auf „Reservieren und online bezahlen“ mit einer Menge von 2 und stelle danach wieder auf „Keine Reservierung“ zurück."
       },
       {
         "titre": "Reservierungen abarbeiten",
@@ -122,7 +161,26 @@
           "Nicht benötigte Reservierungen mit „Stornieren“ freigeben."
         ],
         "beispiel": "Beim Spiel gibst du die Tickets aus und hakst jede Reservierung als abgeholt ab.",
-        "danach": "Der Status wechselt; stornierte Mengen werden wieder frei. Es wird nichts gelöscht."
+        "danach": "Der Status wechselt; stornierte Mengen werden wieder frei. Es wird nichts gelöscht.",
+        "id": "SHOP-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Die Frist ist vorbei oder die Ware wird ausgegeben.",
+        "erwartet": [
+          "Der Tab „Reservierungen“ zeigt Produkt, Mitglied, Menge, Status und Datum. Unter der Liste steht „Summe: … Stück“.",
+          "Die Reservierung hat den Status „Abgeholt“.",
+          "Die Reservierung hat den Status „Storniert“ und die Menge ist wieder frei."
+        ],
+        "fehler": [
+          {
+            "problem": "„Keine Reservierungen gefunden.“",
+            "loesung": "Setze die Filter „Alle Produkte“ und „Alle Status“ und suche erneut."
+          },
+          {
+            "problem": "Du hast aus Versehen abgeholt oder storniert.",
+            "loesung": "Es wird nichts gelöscht. Wende dich bei Bedarf an die App-Administration."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Reserviere „[ÜBUNG] Testartikel“ mit einem Testkonto, markiere die Reservierung als „Abgeholt / erledigt“ und storniere eine zweite Test-Reservierung."
       },
       {
         "titre": "Reservierung mit Zahlung (Tickets, Trikots)",
@@ -134,7 +192,95 @@
           "Bei Überweisung die Zahlung unter „Bestellungen“ bestätigen."
         ],
         "beispiel": "Für das Spiel gibt es 40 Tickets in zwei Kategorien mit verschiedenen Preisen; wer nicht in 7 Tagen zahlt, verliert die Reservierung.",
-        "danach": "Unbezahlte Bestellungen werden nach der Frist automatisch storniert und die Menge wird wieder frei."
+        "danach": "Unbezahlte Bestellungen werden nach der Frist automatisch storniert und die Menge wird wieder frei.",
+        "id": "SHOP-04",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Mitglieder sollen verbindlich reservieren und nur mit Zahlung behalten dürfen.",
+        "erwartet": [
+          "Der Modus „Reservieren und online bezahlen“ ist im Fenster „Reservierung“ gewählt.",
+          "Die Zahlungsfrist (Tage) ist eingetragen; optional stehen Frist, Gesamtmenge und Menge pro Mitglied.",
+          "Die Bestellung erscheint im Tab „Bestellungen“ mit dem Status „Ausstehend“. Eine Lieferadresse gibt es nicht (Abholung).",
+          "Nach „Zahlung bestätigen“ steht die Bestellung auf „Bestätigt“."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Bestellung wurde nach der Frist storniert.",
+            "loesung": "Das ist gewollt: Unbezahlte Bestellungen werden nach der Zahlungsfrist automatisch storniert. Die Menge wird wieder frei."
+          },
+          {
+            "problem": "Eine Überweisung ist eingegangen, aber die Bestellung steht auf „Ausstehend“.",
+            "loesung": "Bestätige die Zahlung bei der Bestellung oder unter „Zahlungen“ (Karte ZAHL-02)."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Bestelle „[ÜBUNG] Testartikel“ mit einem Testkonto und bestätige nur diese Bestellung. Shop-Zahlungen zählen in die Kennzahlen; storniere sie danach mit der Karte SHOP-06."
+      },
+      {
+        "id": "SHOP-05",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Artikel anlegen und veröffentlichen",
+        "wann": "Ein neuer Artikel soll im Vereinsshop verkauft werden.",
+        "schritte": [
+          "Im Tab „Katalog“ auf „Neues Produkt“ klicken und Name, Kategorie, Preis (€), Beschreibung, Produkttyp und Anfangsbestand eintragen. Optional Mitgliederpreis eintragen und „Produkt erstellen“ klicken.",
+          "Beim Artikel „Varianten verwalten“ öffnen und Größe, Farbe und Bestand eintragen.",
+          "Über „Galerie verwalten“ weitere Fotos hinzufügen.",
+          "Über „Status ändern“ auf „Veröffentlicht“ stellen."
+        ],
+        "danach": "Nur veröffentlichte Artikel sehen Kundinnen und Kunden. Artikel mit Bestellungen lassen sich nicht löschen; setze sie auf „Archiviert“.",
+        "vorher": "Du hast Name, Preis und ein Foto des Artikels.",
+        "erwartet": [
+          "Der Artikel steht im Katalog mit dem Status „Entwurf“.",
+          "Die Varianten stehen mit Bestand in der Liste. Ohne Variante steht dort: „Keine Variante — das Produkt hat noch keinen Bestand.“",
+          "Die zusätzlichen Fotos stehen in der Galerie.",
+          "Der Status ist „Veröffentlicht“. Der Artikel ist im Shop sichtbar."
+        ],
+        "fehler": [
+          {
+            "problem": "Der Artikel lässt sich nicht kaufen.",
+            "loesung": "Er hat noch keinen Bestand. Lege eine Variante mit Bestand an."
+          },
+          {
+            "problem": "Der Artikel lässt sich nicht löschen.",
+            "loesung": "Artikel mit bestehenden Bestellungen können nicht gelöscht werden. Setze sie auf „Archiviert“."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege „[ÜBUNG] Testartikel“ mit 1,00 € und einer Variante mit Bestand 5 an. Veröffentliche ihn nur für die Übung und setze ihn danach auf „Archiviert“ oder lösche ihn, wenn es keine Bestellung gibt."
+      },
+      {
+        "id": "SHOP-06",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Bestellung bearbeiten und versenden",
+        "wann": "Eine Bestellung ist eingegangen und muss bezahlt, gepackt und versendet werden.",
+        "schritte": [
+          "Im Tab „Bestellungen“ die Bestellung über Empfänger, Datum oder Artikel suchen.",
+          "Bei „Ausstehend“ und eingegangenem Geld Zahlungsart und Transaktionsdatum wählen und „Zahlung bestätigen“ klicken.",
+          "Optional über „Status ändern“ auf „In Vorbereitung“ stellen, sobald gepackt wird.",
+          "„Versenden“ klicken, die Sendungsnummer (und optional das Transportunternehmen) eintragen und „Versand bestätigen“ klicken.",
+          "Nach der Zustellung über „Status ändern“ auf „Geliefert“ stellen."
+        ],
+        "danach": "Bei Stornierungen wird der Bestand zurückgebucht. Rücksendungen erfasst du mit „Retoure erfassen“; bereits versendete Pakete mit „Nacherfassung“.",
+        "vorher": "Die Bestellung ist eingegangen und das Geld ist auf dem Konto (bei Überweisung).",
+        "erwartet": [
+          "Die Liste zeigt Nummer, Empfänger, Betrag, Status und Datum.",
+          "Der Status wechselt auf „Bestätigt“. In der Spalte „Rechnung“ steht ein PDF-Link.",
+          "Der Status ist „In Vorbereitung“.",
+          "Der Status ist „Versandt“; die Sendungsnummer steht bei der Bestellung.",
+          "Der Status ist „Geliefert“."
+        ],
+        "fehler": [
+          {
+            "problem": "„Versenden“ fehlt.",
+            "loesung": "Die Schaltfläche erscheint bei „Bestätigt“ oder „In Vorbereitung“. Bestätige zuerst die Zahlung."
+          },
+          {
+            "problem": "Die Bestellung muss storniert werden.",
+            "loesung": "Mit „Stornieren“ (bei „Ausstehend“ oder „Bestätigt“) und „Bestellung stornieren“ bestätigen. Der Bestand wird zurückgebucht."
+          },
+          {
+            "problem": "Ein Kunde schickt Ware zurück.",
+            "loesung": "Nutze „Retoure erfassen“ mit Artikel, Menge und Grund."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Bestelle „[ÜBUNG] Testartikel“ mit einem Testkonto, bestätige die Zahlung, versende mit einer erfundenen Sendungsnummer und storniere danach nicht versendete Übungsbestellungen. Die Bestellung zählt in die Kennzahlen."
       }
     ],
     "tipps": [
@@ -769,6 +915,45 @@
       "Veröffentlichen, damit Mitglieder und Besucher es sehen und spenden können.",
       "Den Fortschritt in der Liste verfolgen und das Projekt am Ende abschließen.",
       "Optional offene Stellen ausschreiben (Arbeitsbereich, Tab „Stellen“): Mitglieder melden sich, die Projektleitung nimmt an oder lehnt ab."
+    ],
+    "workflows": [
+      {
+        "id": "PROJ-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Projekt anlegen, veröffentlichen und abschließen",
+        "wann": "Eine Spendenaktion oder ein Projekt soll Mitgliedern gezeigt und betreut werden.",
+        "schritte": [
+          "„Projekt- & Aktionsverwaltung“ öffnen und „Neues Projekt“ wählen.",
+          "Titel, Beschreibung, Status, Verantwortliche(r), Beginn und Frist eintragen. Für Spenden „Freie Beiträge aktivieren“ und das Spendenziel (€) setzen.",
+          "Bei „Bilder der Kachel“ mit „Bild hinzufügen“ Bilder ergänzen und „Speichern“ klicken.",
+          "Die Sichtbarkeit auf „Veröffentlicht“ stellen.",
+          "Am Ende den Status auf „Abgeschlossen“ setzen."
+        ],
+        "danach": "Ein neues Projekt ist zuerst ein Entwurf. Aufgaben und Team bleiben immer intern; nur die Kachel wird mit „Veröffentlichen“ für Mitglieder sichtbar.",
+        "vorher": "Du kennst Titel, Beschreibung, Zeitraum und ggf. das Spendenziel.",
+        "erwartet": [
+          "Das Formular „Neues Projekt“ ist offen.",
+          "Alle Angaben sind ausgefüllt. Mit „Freie Beiträge aktivieren“ können Mitglieder und Besucher spenden.",
+          "Die Kachel hat Bilder und das Projekt steht in der Liste, zunächst als Entwurf.",
+          "Die Sichtbarkeit zeigt „Veröffentlicht“. Die Kachel ist für alle Mitglieder sichtbar.",
+          "Der Status zeigt „Abgeschlossen“."
+        ],
+        "fehler": [
+          {
+            "problem": "„Das Projekt konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe Titel, Beschreibung und die Zahlenfelder."
+          },
+          {
+            "problem": "Mitglieder sehen das Projekt nicht.",
+            "loesung": "Es ist noch ein Entwurf. Stelle die Sichtbarkeit auf „Veröffentlicht“."
+          },
+          {
+            "problem": "Du willst ein Projekt mit Beiträgen löschen.",
+            "loesung": "„Löschen“ entfernt das Projekt mit allen Bildern endgültig und fragt vorher nach. Setze es stattdessen auf „Abgeschlossen“ oder „Abgesagt“."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege das Projekt „[ÜBUNG] Testprojekt“ an und lass es im Entwurf. Veröffentliche es nicht. Lösche es nach der Übung über „Löschen“."
+      }
     ]
   },
   "albums": {
@@ -832,7 +1017,36 @@
           "Eine zweite Person mit Schreibrecht öffnet die Ausgabe, prüft Beleg und Betrag und gibt frei oder lehnt mit Begründung ab."
         ],
         "beispiel": "Saalmiete für das Sommerfest: 320 € am 14.07., Kategorie „Veranstaltungen“, Lieferant „Stadthalle“, Beleg als PDF, zugeordnet zum Event „Sommerfest 2026“. Die Schatzmeisterin prüft und gibt frei.",
-        "danach": "Erst freigegebene Ausgaben zählen in Bilanz, KPIs, Budget-Ist und im Plan/Ist des zugeordneten Projekts."
+        "danach": "Erst freigegebene Ausgaben zählen in Bilanz, KPIs, Budget-Ist und im Plan/Ist des zugeordneten Projekts.",
+        "id": "FIN-01",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "vorher": "Du hast den Beleg (Foto oder PDF) und kennst Datum, Betrag, Kategorie und Lieferant.",
+        "erwartet": [
+          "Die Liste im Reiter „Ausgaben“ zeigt Datum, Lieferant / Empfänger, Kategorie, Betrag, Bezug und Status.",
+          "Das Formular zeigt die Felder Datum, Betrag (€), Kategorie und Lieferant / Empfänger; Veranstaltung und Projekt sind optional.",
+          "Der Beleg (PDF, JPG oder PNG, höchstens 5 MB) hängt an der Ausgabe.",
+          "Die Ausgabe steht mit dem Status „Zur Freigabe“ in der Liste. Bei deiner eigenen Ausgabe steht dort: „Von Ihnen erfasst – eine andere Person muss freigeben.“",
+          "Nach „Freigeben“ steht die Ausgabe auf „Freigegeben“ und ist gesperrt. Nach „Ablehnen“ mit Grund steht sie auf „Abgelehnt“."
+        ],
+        "fehler": [
+          {
+            "problem": "Du kannst deine eigene Ausgabe nicht freigeben.",
+            "loesung": "Das ist gewollt (Vier-Augen-Prinzip). Eine zweite Person mit Schreibrecht gibt frei."
+          },
+          {
+            "problem": "Die Ausgabe wurde abgelehnt.",
+            "loesung": "Lies den Grund, korrigiere die Ausgabe mit „Bearbeiten“. Sie geht danach erneut zur Freigabe."
+          },
+          {
+            "problem": "Der Beleg wird nicht angenommen.",
+            "loesung": "Erlaubt sind PDF, JPG und PNG bis 5 MB. Verkleinere das Foto."
+          },
+          {
+            "problem": "Eine freigegebene Ausgabe ist falsch.",
+            "loesung": "Freigegebene Ausgaben sind gesperrt. Frage die App-Administration, wie du sie korrigieren kannst."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Erfasse die Ausgabe „[ÜBUNG] Testausgabe“ über 1,00 €, lehne sie mit einem zweiten Testkonto und dem Grund „[ÜBUNG]“ ab und lösche sie danach mit „Löschen“. Gib sie nicht frei, sonst zählt sie in Bilanz und Kennzahlen."
       },
       {
         "titre": "Jahresbudget planen",
@@ -844,7 +1058,27 @@
           "Speichern; Ist-Werte und Ampel erscheinen automatisch in der Jahresbilanz."
         ],
         "beispiel": "Kategorie „Veranstaltungen“: 5.000 € für 2026. Bei 4.100 € Ist steht die Ampel auf „Achtung“ (ab 80 % des Budgets).",
-        "danach": "Unter Statistiken & KPIs → Jahresbilanz siehst du Budget gegen Ist je Kategorie."
+        "danach": "Unter Statistiken & KPIs → Jahresbilanz siehst du Budget gegen Ist je Kategorie.",
+        "id": "FIN-02",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "vorher": "Du kennst das Gesamtbudget des Jahres und die Beträge je Kategorie.",
+        "erwartet": [
+          "Der Reiter „Budget“ zeigt das gewählte Jahr und die Kategorien.",
+          "Das Gesamtbudget steht im Feld. Nach „Speichern“ erscheint „Gesamtbudget gespeichert.“",
+          "Die Beträge stehen je Kategorie. Leer oder 0 heißt: kein Budget. „Auf Kategorien verteilt“ und „Verfügbar“ zeigen den Rest.",
+          "„Budget gespeichert.“ erscheint. Übersteigen die Kategorien das Gesamtbudget, warnt die App: „Das Gesamtbudget ist um … überschritten – bitte Kategorie-Budgets senken.“"
+        ],
+        "fehler": [
+          {
+            "problem": "Die App verlangt zuerst das Gesamtbudget.",
+            "loesung": "Trage das Gesamtbudget des Jahres ein und speichere es, bevor du auf Kategorien verteilst."
+          },
+          {
+            "problem": "Das Ist ist niedriger als erwartet.",
+            "loesung": "Nur freigegebene Ausgaben zählen (Karte FIN-01)."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne den Reiter „Budget“ für das laufende Jahr und lies „Auf Kategorien verteilt“ und „Verfügbar“. Ändere nichts."
       },
       {
         "titre": "Jahresabschluss durchführen",
@@ -852,11 +1086,60 @@
         "schritte": [
           "Reiter „Ausgaben“: Es dürfen keine Ausgaben mehr auf Freigabe warten.",
           "Reiter „Prüfung“: Ausgaben ohne Beleg und große Beträge ansehen.",
-          "Reiter „Jahresabschluss“ → Jahr sperren.",
+          "Reiter „Jahresabschluss“ → „Jahr abschließen“ und die Rückfrage bestätigen.",
           "Optional in Statistiken & KPIs die Jahresbilanz (PDF/Excel) und die Buchungsliste (CSV) für den Steuerberater exportieren."
         ],
         "beispiel": "Anfang Januar sperrst du 2025. Danach sind Änderungen an Ausgaben von 2025 nicht mehr möglich; nur der Administrator App kann das Jahr wieder öffnen.",
-        "danach": "Das Protokoll hält die Sperrung mit Person und Zeitpunkt fest."
+        "danach": "Das Protokoll hält die Sperrung mit Person und Zeitpunkt fest.",
+        "id": "FIN-03",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "vorher": "Alle Ausgaben des Jahres sind entschieden.",
+        "erwartet": [
+          "Im Reiter „Ausgaben“ steht keine Ausgabe mehr auf „Zur Freigabe“. Andernfalls meldet der Reiter „Jahresabschluss“: „… Ausgabe(n) warten noch auf Freigabe. Erst entscheiden, dann abschließen.“",
+          "Der Reiter „Prüfung“ zeigt Eckzahlen, freigegebene Ausgaben ohne Beleg und große Beträge – oder „Keine Auffälligkeiten.“",
+          "Nach „Jahr abschließen“ und der Rückfrage „Geschäftsjahr abschließen?“ steht dort „Abgeschlossen am … von …“. Einnahmen, Ausgaben und Ergebnis sind festgehalten.",
+          "Die Dateien sind heruntergeladen (Bilanz als Excel, Jahresbericht als PDF, Buchungen als CSV)."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Jahr lässt sich nicht abschließen.",
+            "loesung": "Entscheide zuerst alle Ausgaben, die noch „Zur Freigabe“ stehen."
+          },
+          {
+            "problem": "Du willst ein abgeschlossenes Jahr wieder öffnen.",
+            "loesung": "Das darf nur der Administrator App und nur mit einer Begründung (Pflicht)."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne den Reiter „Prüfung“ und lies Eckzahlen und Auffälligkeiten. Schließe kein Jahr ab."
+      },
+      {
+        "id": "FIN-04",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "titre": "Ausgabenkategorie anlegen oder deaktivieren",
+        "wann": "Eine neue Art von Ausgaben braucht eine eigene Kategorie, oder eine Kategorie wird nicht mehr genutzt.",
+        "schritte": [
+          "Reiter „Kategorien“ öffnen.",
+          "Unter „Neue Kategorie“ die Namen in Französisch, Deutsch und Arabisch eintragen und „Hinzufügen“ klicken.",
+          "Nicht mehr benötigte Kategorien mit „Deaktivieren“ ausblenden. Mit „Aktivieren“ kommen sie zurück."
+        ],
+        "danach": "Genutzte Kategorien werden deaktiviert statt gelöscht. Für ein Budget legst du die Kategorie danach im Reiter „Budget“ fest (Karte FIN-02).",
+        "vorher": "Du kennst die Namen der Kategorie in den drei Sprachen.",
+        "erwartet": [
+          "Die Liste zeigt alle Kategorien mit ihrem Status („Aktiv“).",
+          "Die Kategorie steht in der Liste und ist aktiv.",
+          "Die Kategorie steht in der Liste als nicht aktiv. Sie wird nicht gelöscht."
+        ],
+        "fehler": [
+          {
+            "problem": "Eine Kategorie lässt sich nicht löschen.",
+            "loesung": "Genutzte Kategorien werden deaktiviert statt gelöscht."
+          },
+          {
+            "problem": "Ein Name ist falsch geschrieben.",
+            "loesung": "Korrigiere ihn mit „Namen bearbeiten“."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege „[ÜBUNG] Testkategorie“ an und deaktiviere sie wieder. Ändere keine bestehenden Kategorien."
       }
     ],
     "tipps": [
@@ -885,7 +1168,30 @@
           "Im Kommentarfeld Rückfragen klären."
         ],
         "beispiel": "Aufgabe „Plakat drucken“, verantwortlich Sami, Frist 15.10. Sami bekommt eine Benachrichtigung und kurz vor dem 15.10. eine Erinnerung.",
-        "danach": "Der Aufgabenfortschritt (erledigt/gesamt) erscheint auf der Projektseite und in Statistiken & KPIs → Projekte."
+        "danach": "Der Aufgabenfortschritt (erledigt/gesamt) erscheint auf der Projektseite und in Statistiken & KPIs → Projekte.",
+        "id": "PROJ-02",
+        "vorher": "Du gehörst zum Projektteam und hast im Reiter „Aufgaben“ Zugriff.",
+        "erwartet": [
+          "Das Fenster „Neue Aufgabe“ ist offen und der Titel ist eingetragen.",
+          "Verantwortliche Person und Frist sind gesetzt. Die Aufgabe zeigt die Frist („Frist …“).",
+          "Die Aufgabe liegt in der richtigen Spalte (Offen, In Arbeit, Review, Erledigt).",
+          "Der Kommentar steht unter „Kommentare“. Die Aufgabe zeigt die Zahl der Kommentare."
+        ],
+        "fehler": [
+          {
+            "problem": "Du siehst den Arbeitsbereich nicht.",
+            "loesung": "„Der Arbeitsbereich ist nur für das Projektteam sichtbar.“ Bitte die Projektleitung, dich im Reiter „Team“ aufzunehmen."
+          },
+          {
+            "problem": "Ziehen funktioniert nicht.",
+            "loesung": "Nutze das Statusfeld „Status von … ändern“ an der Aufgabe."
+          },
+          {
+            "problem": "Eine Aufgabe ist rot markiert.",
+            "loesung": "Sie ist überfällig. Erledige sie oder setze eine neue Frist."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege im Projekt „[ÜBUNG] Testprojekt“ (PROJ-01) die Aufgabe „[ÜBUNG] Testaufgabe“ an, weise sie dir selbst zu, verschiebe sie bis „Erledigt“ und lösche sie danach. Die Aufgaben erscheinen in den Projekt-Kennzahlen."
       },
       {
         "titre": "Team zusammenstellen",
@@ -896,7 +1202,25 @@
           "Rolle wählen: Mitarbeit (darf Aufgaben bearbeiten) oder Beobachter (nur lesen)."
         ],
         "beispiel": "Lina soll nur mitlesen: Rolle „Beobachter“. Tarek arbeitet mit: Rolle „Mitarbeit“.",
-        "danach": "Hinzugefügte Personen sehen den Arbeitsbereich und werden bei Zuweisungen benachrichtigt."
+        "danach": "Hinzugefügte Personen sehen den Arbeitsbereich und werden bei Zuweisungen benachrichtigt.",
+        "id": "PROJ-03",
+        "vorher": "Du bist Projektleitung oder in der Verwaltung. Du weißt, wer mitarbeitet und wer nur lesen soll.",
+        "erwartet": [
+          "Der Reiter „Team“ zeigt die Teammitglieder mit Rolle. Ohne Berechtigung steht dort: „Nur die Projektleitung und die Verwaltung können das Team ändern.“",
+          "Das gesuchte Mitglied erscheint in der Auswahl „Mitglied suchen…“.",
+          "Die Person steht mit ihrer Rolle (Projektleitung, Mitarbeit oder Beobachter) im Team und sieht den Arbeitsbereich."
+        ],
+        "fehler": [
+          {
+            "problem": "„Mitglied hinzufügen“ fehlt.",
+            "loesung": "Nur die Projektleitung und die Verwaltung dürfen das Team ändern."
+          },
+          {
+            "problem": "Du hast die falsche Rolle gewählt.",
+            "loesung": "Ändere die Rolle in der Zeile der Person („Rolle von …“) oder entferne sie mit „Entfernen“."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Füge dem Projekt „[ÜBUNG] Testprojekt“ das Testkonto „[ÜBUNG] Test Konto“ als Beobachter hinzu, ändere die Rolle auf Mitarbeit und entferne die Person wieder."
       },
       {
         "titre": "Kosten planen und Ausgaben erfassen",
@@ -908,7 +1232,60 @@
           "Plan/Ist/Offen ansehen."
         ],
         "beispiel": "Plan „Druck“ 150 €, tatsächliche Rechnung 168 € mit Beleg. Nach Freigabe steht Ist bei 168 €; der Plan/Ist-Vergleich zeigt +18 €.",
-        "danach": "Freigegebene Kosten fließen in Jahresbilanz („Ergebnis je Projekt“) und KPIs."
+        "danach": "Freigegebene Kosten fließen in Jahresbilanz („Ergebnis je Projekt“) und KPIs.",
+        "id": "PROJ-04",
+        "vorher": "Du bist Projektleitung (Plan) oder im Team (Ist-Kosten). Für Ausgaben hast du den Beleg.",
+        "erwartet": [
+          "Die Tabelle „Plan / Ist je Kostenart“ zeigt den Plan in der Zeile der Kostenart.",
+          "Die Ausgabe steht unter „Ist-Kosten“ mit dem Status „Wartet auf Freigabe“. Sie fragt Datum, Betrag, Lieferant / Zweck, Kostenart und Beleg ab.",
+          "Die Position steht auf „Freigegeben“ oder auf „Abgelehnt“ mit Grund.",
+          "Die Kacheln „Plankosten“, „Ist (freigegeben)“, „Offen zur Freigabe“ und „Restbudget“ passen zu den Positionen."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Position wurde abgelehnt.",
+            "loesung": "Lies den Grund („Abgelehnt: …“), korrigiere sie mit „Bearbeiten“ und sende sie erneut."
+          },
+          {
+            "problem": "Du willst eine Position löschen.",
+            "loesung": "Nur noch nicht freigegebene Positionen lassen sich löschen."
+          },
+          {
+            "problem": "Das Ist ist niedriger als erwartet.",
+            "loesung": "Nur freigegebene Kosten zählen. Das Finanzteam gibt frei."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Plane im Projekt „[ÜBUNG] Testprojekt“ 10 € für eine Kostenart, erfasse Kosten über 1,00 € und lösche die Position wieder, solange sie nicht freigegeben ist. Gib sie nicht frei."
+      },
+      {
+        "id": "PROJ-05",
+        "titre": "Offene Stellen ausschreiben",
+        "wann": "Das Projekt braucht weitere Helferinnen und Helfer mit bestimmten Fähigkeiten.",
+        "schritte": [
+          "Im Arbeitsbereich den Reiter „Stellen“ öffnen (nur Projektleitung).",
+          "„Neue Stelle“: Titel, gesuchte Fähigkeit, Anzahl Personen und Beschreibung eintragen und „Stelle anlegen“ klicken.",
+          "Meldungen ansehen und mit „Annehmen“ oder „Ablehnen“ entscheiden. „Passende Mitglieder anzeigen“ schlägt Personen vor.",
+          "Ist die Stelle besetzt oder nicht mehr nötig, „Schließen“ klicken."
+        ],
+        "danach": "Mitglieder sehen die Stelle mit „Ich möchte helfen“ und können sich mit einer Nachricht melden. Mit „Wieder öffnen“ ist die Stelle wieder offen.",
+        "vorher": "Du bist Projektleitung. Du weißt, welche Fähigkeit und wie viele Personen du suchst.",
+        "erwartet": [
+          "Der Reiter zeigt die Stellen oder „Noch keine Stellen.“ Ohne Berechtigung steht dort: „Nur die Projektleitung kann Stellen verwalten.“",
+          "Die Stelle steht mit dem Status „Offen“ und „0 von … besetzt“ in der Liste.",
+          "Die Meldung steht auf „Angenommen“ oder „Abgelehnt“. Die Person erhält die Nachricht, dass sie angenommen wurde bzw. nicht berücksichtigt wurde.",
+          "Die Stelle steht auf „Geschlossen“."
+        ],
+        "fehler": [
+          {
+            "problem": "Niemand meldet sich.",
+            "loesung": "Wähle eine passende gesuchte Fähigkeit und nutze „Passende Mitglieder anzeigen“."
+          },
+          {
+            "problem": "Du hast die Stelle versehentlich gelöscht.",
+            "loesung": "Lege sie neu an. Das Löschen fragt vorher nach."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Schreibe im Projekt „[ÜBUNG] Testprojekt“ die Stelle „[ÜBUNG] Testrolle“ für eine Person aus, schließe sie und lösche sie danach."
       }
     ],
     "tipps": [
@@ -1339,7 +1716,31 @@
           "Optional das Logo hochladen."
         ],
         "beispiel": "Catering Schmidt: Vertrag bis 31.12.2027. Am 01.11.2027 und am 17.12.2027 erhalten Ersteller und Bureau Admins eine Erinnerung.",
-        "danach": "Der Partner ist in Ausgaben auswählbar und in der Liste über Name, Kategorie und Ansprechperson auffindbar."
+        "danach": "Der Partner ist in Ausgaben auswählbar und in der Liste über Name, Kategorie und Ansprechperson auffindbar.",
+        "id": "PART-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Du kennst Name, Kategorie, Ansprechperson und Vertragsende des Dienstleisters.",
+        "erwartet": [
+          "Der Partner steht in der Liste mit dem Typ „Lieferant“.",
+          "Im Detail steht die Person unter „Ansprechpersonen“ mit dem Zusatz „Hauptkontakt“ und erscheint auch in der Liste.",
+          "Der Vertrag steht unter „Verträge & Dokumente“ mit „gültig bis …“ oder „noch … Tage“.",
+          "Das Logo steht im Detail des Partners."
+        ],
+        "fehler": [
+          {
+            "problem": "Du willst einen Partner löschen.",
+            "loesung": "Partner werden nie gelöscht, nur archiviert („Archivieren“). Mit „Reaktivieren“ kommt er zurück."
+          },
+          {
+            "problem": "Es kommt keine Erinnerung zum Vertragsende.",
+            "loesung": "Trage das Vertragsende ein. Erinnert wird 60 und 14 Tage vorher."
+          },
+          {
+            "problem": "Das Logo soll nicht öffentlich erscheinen.",
+            "loesung": "Logos erscheinen nur bei gesetztem „Logo zeigen“ oder im Startseiten-Banner. Setze den Haken nur mit Einverständnis des Partners."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege den Partner „[ÜBUNG] Testfirma“ mit einer erfundenen Ansprechperson an und archiviere ihn danach. Berühre keine bestehenden Partner."
       },
       {
         "titre": "Angebote für ein Projekt vergleichen",
@@ -1351,7 +1752,27 @@
           "Beim gewählten Angebot „Zuschlag“ klicken; die übrigen werden als abgelehnt markiert."
         ],
         "beispiel": "Drei Druckereien bieten für die Festschrift 480 €, 520 € und 610 € an. Der Zuschlag geht an die mittlere, weil sie die beste Note hat.",
-        "danach": "Der Gewinner ist als Lieferant mit dem Projekt verknüpft. Eine Buchung oder Kostenposition entsteht nicht automatisch. „Zurücksetzen“ macht den Zuschlag rückgängig."
+        "danach": "Der Gewinner ist als Lieferant mit dem Projekt verknüpft. Eine Buchung oder Kostenposition entsteht nicht automatisch. „Zurücksetzen“ macht den Zuschlag rückgängig.",
+        "id": "PART-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Für ein Projekt liegen mehrere Angebote vor und der Partner ist angelegt.",
+        "erwartet": [
+          "Die Seite „Angebotsvergleich“ zeigt das gewählte Projekt.",
+          "Jedes Angebot steht mit Betrag und Status „Offen“ in der Tabelle.",
+          "Die Beträge stehen aufsteigend. Das günstigste Angebot ist als „günstigstes“ markiert, daneben steht die „Differenz zum günstigsten“.",
+          "Das gewählte Angebot hat den Status „Zuschlag“, die übrigen „Abgelehnt“. Der Partner ist als Lieferant mit dem Projekt verknüpft."
+        ],
+        "fehler": [
+          {
+            "problem": "Der Zuschlag war falsch.",
+            "loesung": "Klicke „Zurücksetzen“ und vergib den Zuschlag neu."
+          },
+          {
+            "problem": "Nach dem Zuschlag gibt es keine Buchung.",
+            "loesung": "Eine Buchung oder Kostenposition entsteht nicht automatisch. Erfasse sie selbst (Karte FIN-01 oder PROJ-04)."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Erfasse im Projekt „[ÜBUNG] Testprojekt“ zwei Angebote von „[ÜBUNG] Testfirma“ (10 € und 12 €) und vergib den Zuschlag an das günstigere. Setze ihn danach mit „Zurücksetzen“ zurück."
       },
       {
         "titre": "Lieferanten aus bisherigen Ausgaben übernehmen",
@@ -1362,7 +1783,26 @@
           "Bestätigen – neue Partner werden angelegt und die Ausgaben verknüpft."
         ],
         "beispiel": "„Druckerei Meier“ und „druckerei meier“ werden zu einem Partner mit allen zugehörigen Ausgaben.",
-        "danach": "Ausgaben je Partner und der Pivot „Business Partner“ funktionieren ab sofort für die importierten Buchungen."
+        "danach": "Ausgaben je Partner und der Pivot „Business Partner“ funktionieren ab sofort für die importierten Buchungen.",
+        "id": "PART-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Es gibt Ausgaben mit Lieferantennamen, die noch keinem Partner zugeordnet sind.",
+        "erwartet": [
+          "Das Fenster „Lieferanten aus Ausgaben importieren“ ist offen.",
+          "Die Vorschau zeigt je Lieferant Ausgaben und Summe und ob er „wird neu angelegt“ oder „Partner vorhanden“ ist. Sind alle verknüpft, steht dort „Alle Ausgaben mit Lieferant sind bereits mit einem Partner verknüpft.“",
+          "„Fertig: … Partner angelegt, … Ausgaben verknüpft.“ erscheint."
+        ],
+        "fehler": [
+          {
+            "problem": "Zwei ähnliche Namen wurden nicht zusammengefasst.",
+            "loesung": "Zusammengefasst werden nur Namen, die sich in Groß- und Kleinschreibung oder Leerzeichen unterscheiden. Prüfe die Vorschau, bevor du importierst."
+          },
+          {
+            "problem": "Der Import soll nicht laufen.",
+            "loesung": "Schließe das Fenster nach der Vorschau. Geschrieben wird erst mit „Jetzt importieren“."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne „Aus Ausgaben importieren“ und lies nur die Vorschau. Importiere nicht."
       },
       {
         "titre": "Sponsor auf der Startseite zeigen",
@@ -1373,7 +1813,26 @@
           "Sponsoring-Betrag unter „Einnahmen“ erfassen."
         ],
         "beispiel": "Sponsor AG zahlt 500 € Sponsoring: Logo im Banner, 500 € Einnahmen im Reporting.",
-        "danach": "Das Logo erscheint sofort auf der Startseite. Zum Ausblenden den Haken entfernen oder den Partner archivieren."
+        "danach": "Das Logo erscheint sofort auf der Startseite. Zum Ausblenden den Haken entfernen oder den Partner archivieren.",
+        "id": "PART-04",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Der Sponsor hat dem Logo auf der Startseite zugestimmt.",
+        "erwartet": [
+          "Logo und Website stehen im Detail des Partners.",
+          "Der Haken „Im Startseiten-Banner anzeigen“ ist gesetzt. Das Logo erscheint im Banner „Unsere Sponsoren und Business Partner“ auf der Startseite.",
+          "Der Betrag steht unter „Einnahmen“ und im Reporting als Umsatz des Partners."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Logo fehlt im Banner.",
+            "loesung": "Es erscheint nur bei einem aktiven Partner mit gesetztem Haken. Archivierte Partner werden nicht angezeigt."
+          },
+          {
+            "problem": "Das Logo soll wieder weg.",
+            "loesung": "Entferne den Haken oder archiviere den Partner."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Setze bei „[ÜBUNG] Testfirma“ den Haken „Im Startseiten-Banner anzeigen“ nur mit einem erfundenen Logo, prüfe die Startseite der Testumgebung und entferne den Haken wieder. Das Logo ist dort öffentlich sichtbar."
       }
     ],
     "tipps": [
@@ -1396,13 +1855,37 @@
         "titre": "Treffen anlegen und veröffentlichen",
         "wann": "Du bist Verantwortliche/r eines Sektors.",
         "schritte": [
-          "Auf der Sektorseite „Neues Treffen“ wählen und Titel, Datum, Ort sowie optional Plätze eintragen.",
-          "Als Entwurf speichern und „Einreichen“ klicken.",
+          "Auf der Sektorseite „Treffen vorschlagen“ wählen und Titel, Datum, Ort sowie optional Plätze eintragen.",
+          "Mit „Als Entwurf speichern“ sichern und dann „Zur Freigabe einreichen“ klicken.",
           "Das Büro prüft und gibt frei oder weist mit Begründung zurück. Du bekommst eine Nachricht in der App und per E-Mail.",
           "Nach der Freigabe können sich Mitglieder und Fans anmelden."
         ],
         "beispiel": "Grillabend Nord am 14. Juni, 30 Plätze.",
-        "danach": "Nach dem Treffen die Anwesenheit abhaken und „Abschließen“ wählen; erst dann zählen die Punkte."
+        "danach": "Nach dem Treffen die Anwesenheit abhaken. Anschließend wird das Treffen mit „Treffen abschließen“ abgeschlossen (laut App durch das Büro); erst dann zählen die Punkte.",
+        "id": "SEKT-01",
+        "rollen": ["region", "bureau_admin", "super_admin"],
+        "vorher": "Du bist Verantwortliche/r des Sektors. Du kennst Titel, Datum, Ort und Plätze.",
+        "erwartet": [
+          "Das Formular „Treffen vorschlagen“ zeigt Titel, Datum, Uhrzeit, Treffpunkt / Ort, Maximale Teilnehmerzahl und Beschreibung.",
+          "Das Treffen steht als „Entwurf“, nach „Zur Freigabe einreichen“ als „Wartet auf Freigabe“.",
+          "Nach der Freigabe steht „Veröffentlicht“. Bei einer Zurückweisung steht „Zurückgewiesen: …“ mit dem Grund.",
+          "Mitglieder und Fans sehen die Schaltfläche „Ich komme“. Die Zahl der Anmeldungen steigt."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Treffen wurde zurückgewiesen.",
+            "loesung": "Lies den Grund („Zurückgewiesen: …“), bearbeite das Treffen und reiche es erneut ein."
+          },
+          {
+            "problem": "Das Treffen ist nicht sichtbar.",
+            "loesung": "Entwürfe und eingereichte Treffen sieht nur das Büro. Erst „Veröffentlicht“ ist für alle sichtbar."
+          },
+          {
+            "problem": "Das Treffen findet nicht statt.",
+            "loesung": "Wähle „Absagen“ und bestätige mit „Ja, absagen“. Alle Angemeldeten werden benachrichtigt."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Schlage in einem Sektor das Treffen „[ÜBUNG] Probetreffen“ vor und lass es im Entwurf. Reiche es nicht ein, sonst bekommt das Büro eine Benachrichtigung."
       },
       {
         "titre": "Fans meines Sektors ansehen",
@@ -1413,7 +1896,84 @@
           "Auf einen Namen klicken: Du siehst, an welchen Treffen die Person teilgenommen hat."
         ],
         "beispiel": "Eine Person ist dreimal angemeldet und war zweimal da.",
-        "danach": "Kontaktdaten siehst du bewusst nicht. Möchtest du Fans ansprechen, nutze Beiträge oder wende dich ans Büro."
+        "danach": "Kontaktdaten siehst du bewusst nicht. Möchtest du Fans ansprechen, nutze Beiträge oder wende dich ans Büro.",
+        "id": "SEKT-02",
+        "rollen": ["region", "bureau_admin", "super_admin"],
+        "vorher": "Du bist Verantwortliche/r des Sektors oder im Büro.",
+        "erwartet": [
+          "Der Abschnitt „Fans & Aktivitäten“ zeigt oben die Zusammenfassung: „… Personen: … Mitglieder, … Fans ohne Mitgliedschaft“.",
+          "Die Liste zeigt nur den gesuchten Namen bzw. die gewählte Art (Alle, Mitglieder, Fans) mit Anmeldungen, Teilgenommen, Reaktionen und Zuletzt aktiv.",
+          "Beim Klick auf einen Namen siehst du die Treffen mit „angemeldet“, „anwesend“ oder „nicht erschienen“."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Liste ist leer.",
+            "loesung": "Noch hat sich niemand für ein Treffen angemeldet. Fans entstehen mit der Anmeldung zu einem veröffentlichten Treffen."
+          },
+          {
+            "problem": "Du brauchst Kontaktdaten.",
+            "loesung": "Die siehst du bewusst nicht. Nutze Beiträge oder wende dich ans Büro."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne einen Sektor, suche im Abschnitt „Fans & Aktivitäten“ nach einem Namen und klicke ihn an. Das ändert nichts."
+      },
+      {
+        "id": "SEKT-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Treffen prüfen, freigeben oder zurückweisen",
+        "wann": "Verantwortliche eines Sektors haben ein Treffen zur Freigabe eingereicht.",
+        "schritte": [
+          "Beim Sektor den Hinweis „… Treffen warten auf Freigabe“ suchen und das Treffen öffnen.",
+          "Titel, Datum, Ort und Plätze prüfen.",
+          "„Freigeben“ klicken, oder „Zurückweisen“, den Grund eintragen und „Zurückweisen“ bestätigen."
+        ],
+        "danach": "Die Verantwortlichen erhalten eine Nachricht in der App und per E-Mail. Nach der Freigabe können sich Mitglieder und Fans anmelden.",
+        "vorher": "Ein Treffen hat den Status „Wartet auf Freigabe“.",
+        "erwartet": [
+          "Der Hinweis nennt die Zahl der Treffen, die auf Freigabe warten.",
+          "Das Treffen zeigt den Status „Wartet auf Freigabe“.",
+          "Nach „Freigeben“ steht „Veröffentlicht“. Nach „Zurückweisen“ steht „Zurückgewiesen: …“ mit deinem Grund."
+        ],
+        "fehler": [
+          {
+            "problem": "„Zurückweisen“ ist nicht möglich.",
+            "loesung": "Der Grund der Zurückweisung ist erforderlich. Trage ihn ein."
+          },
+          {
+            "problem": "Du hast zu früh freigegeben.",
+            "loesung": "Bearbeite das Treffen. Ist es bereits veröffentlicht, kannst du es absagen; die Angemeldeten werden benachrichtigt."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Reiche mit einem Testkonto das Treffen „[ÜBUNG] Probetreffen“ ein und weise es mit dem Grund „[ÜBUNG]“ zurück. Gib es nicht frei."
+      },
+      {
+        "id": "SEKT-04",
+        "rollen": ["region", "bureau_admin", "super_admin"],
+        "titre": "Treffen durchführen und abschließen",
+        "wann": "Das Treffen hat stattgefunden und die Punkte sollen gebucht werden.",
+        "schritte": [
+          "Beim Treffen die Teilnehmerliste („Teilnehmer“) öffnen.",
+          "Die anwesenden Personen abhaken.",
+          "Das Büro wählt „Treffen abschließen“."
+        ],
+        "danach": "Erst nach dem Abschluss zählen die Punkte im Wettbewerb (Karte SEKT-05). Hat das Treffen Tickets, trägt der Einlass die Anwesenheit ein (EINL-01).",
+        "vorher": "Das Treffen ist vorbei und hat den Status „Veröffentlicht“.",
+        "erwartet": [
+          "Die Liste zeigt alle Angemeldeten. Ohne Anmeldungen steht dort „Noch keine Anmeldungen.“",
+          "Bei den Anwesenden steht der Haken „anwesend“.",
+          "Das Treffen hat den Status „Abgeschlossen“ und zeigt, wie viele Personen anwesend waren."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Treffen fand nicht statt.",
+            "loesung": "Wähle „Absagen“ und bestätige mit „Ja, absagen“. Alle Angemeldeten werden benachrichtigt."
+          },
+          {
+            "problem": "Du kannst das Treffen nicht abschließen.",
+            "loesung": "Das Büro schließt Treffen ab. Bitte es darum, wenn du die Anwesenheit abgehakt hast."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Hake bei dem Treffen „[ÜBUNG] Probetreffen“ nur das Testkonto als anwesend ab und lass das Büro es abschließen. Der Abschluss bucht Punkte; korrigiere sie danach mit SEKT-05."
       }
     ],
     "tipps": [
@@ -1430,7 +1990,39 @@
       "Abzeichen, Verlauf, Monatssieger und der Preis stehen weiter unten; die Regeln erklären die Punktevergabe.",
       "Das Büro sieht zusätzlich das Journal und kann Punkte korrigieren; der App-Admin verwaltet Saisons und Regeln."
     ],
-    "workflows": [],
+    "workflows": [
+      {
+        "id": "SEKT-05",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Wettbewerbspunkte korrigieren",
+        "wann": "Ein Sektor hat zu viele oder zu wenige Punkte, weil ein Treffen falsch gebucht oder vergessen wurde.",
+        "schritte": [
+          "Beim Wettbewerb den Bereich „Büro : Korrektur und Journal“ öffnen.",
+          "Sektor wählen, Punkte (+/−) und Begründung eintragen.",
+          "„Korrektur buchen“ klicken.",
+          "Im „Punkte-Journal“ prüfen, dass die Buchung steht."
+        ],
+        "danach": "Korrekturen sind eigene Buchungen mit Begründung im Journal. Ist die Saison abgeschlossen, sind keine Korrekturen mehr möglich.",
+        "vorher": "Du kennst Sektor, Punktedifferenz und den Grund.",
+        "erwartet": [
+          "Der Bereich zeigt den Hinweis, dass Korrekturen als eigene Buchung mit Begründung im Journal sichtbar werden.",
+          "Sektor, Punkte und Begründung sind ausgefüllt.",
+          "Die Meldung „Die Korrektur wurde gebucht.“ erscheint.",
+          "Das Journal zeigt die Buchung mit dem Grund „Korrektur“, den Punkten und deiner Begründung."
+        ],
+        "fehler": [
+          {
+            "problem": "„Diese Saison ist abgeschlossen; Korrekturen sind nicht mehr möglich.“",
+            "loesung": "Eingefrorene Saisons lassen sich nicht ändern."
+          },
+          {
+            "problem": "Die Korrektur war falsch.",
+            "loesung": "Buche eine Gegenbuchung mit umgekehrtem Vorzeichen und einer Begründung. Gebuchte Einträge bleiben im Journal."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Buche +1 Punkt mit der Begründung „[ÜBUNG]“ und danach −1 Punkt für denselben Sektor. Die Rangliste ist danach unverändert."
+      }
+    ],
     "tipps": [
       "Punkte pro Mitglied sorgen dafür, dass kleine und große Sektoren fair verglichen werden."
     ]
@@ -1453,7 +2045,26 @@
           "In Excel öffnen und weiterverarbeiten."
         ],
         "beispiel": "Bericht 2026 mit allen Sektoren und Gesamtspalte.",
-        "danach": "Die Spalte „Gesamt“ zählt Personen nur einmal."
+        "danach": "Die Spalte „Gesamt“ zählt Personen nur einmal.",
+        "id": "SEKT-06",
+        "rollen": ["bureau_admin", "super_admin"],
+        "vorher": "Du brauchst die Zahlen für Vorstand oder Mitgliederversammlung.",
+        "erwartet": [
+          "„Von“ und „Bis“ zeigen den Zeitraum. Ist er ungültig, steht dort: „Bitte einen gültigen Zeitraum wählen (Beginn vor Ende).“",
+          "Die Tabelle zeigt je Sektor und gesamt z. B. Treffen abgeschlossen, Anmeldungen, Anwesenheitsquote, Fans und Wettbewerbspunkte.",
+          "Die CSV-Datei wird heruntergeladen. Sie enthält nur Zahlen, keine Namen."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Spalte „Gesamt“ ist kleiner als die Summe der Sektoren.",
+            "loesung": "Das ist gewollt: „Gesamt“ zählt Personen nur einmal."
+          },
+          {
+            "problem": "Die Datei zeigt falsche Zahlen.",
+            "loesung": "Prüfe den Zeitraum (Von = 1. Januar, Bis = 31. Dezember)."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Wähle das Vorjahr, sieh dir die Tabelle an und lade die CSV-Datei. Lösche die Datei danach wieder. Das ändert nichts."
       }
     ],
     "tipps": [
@@ -1647,6 +2258,140 @@
       "Am Veranstaltungstag funktioniert die Kamera nur, wenn der Browser den Zugriff erlaubt. Andernfalls hilft die Liste oder die Code-Eingabe.",
       "Das Ticket der Gäste kommt zusätzlich als PDF per E-Mail, damit sie es auch ohne Netz am Einlass zeigen können.",
       "Die Zugriffe prüft der Server je Veranstaltung: Büro, Verantwortliche der Region und benannte Helfer."
+    ]
+  },
+  "kalender": {
+    "titre": "Kalender",
+    "intro": "Der Kalender zeigt Termine des Vereins, des Büros und deine eigenen Termine und Aufgaben. Das Büro pflegt Termine und prüft Vorschläge von Mitgliedern.",
+    "schritte": [
+      "Wähle oben den Kalender: „Vereinskalender“, „Büro-Kalender“ oder „Meine Termine & Aufgaben“. Die Darstellung wechselst du zwischen „Monat“ und „Liste“.",
+      "Mit „Kategorie filtern“ zeigst du nur eine Art von Terminen (Sitzung, Veranstaltung, Frist, Projekt, Spieltag, Abwesenheit, Dienst, Vereinsdatum, Sonstiges).",
+      "Im Büro legt „Neuer Termin“ einen Termin an. Mitglieder schlagen Termine mit „Termin vorschlagen“ vor.",
+      "Bei Terminen mit Helfern gibt es „Dienste“: Mitglieder tragen sich ein, das Büro teilt Personen ein."
+    ],
+    "workflows": [
+      {
+        "id": "KAL-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Termin anlegen",
+        "wann": "Ein Termin (z. B. Sitzung, Frist, Vereinsdatum) soll im Kalender erscheinen.",
+        "schritte": [
+          "Im Kalender „Neuer Termin“ klicken.",
+          "Titel, Kategorie, Beginn (und optional Ende), Ort und Beschreibung eintragen. „Ganztägig“ setzen, wenn keine Uhrzeit nötig ist.",
+          "Bei „Wer sieht den Termin?“ festlegen, ob nur ein Kreis, alle Aufgabenträger, alle Mitglieder oder Öffentlich.",
+          "Optional Wiederholung, Erinnerung und „Personen einladen“ einstellen und „Speichern“ klicken."
+        ],
+        "danach": "Mit „In Neuigkeiten ankündigen“ weist du Mitglieder auf den Termin hin. Mit „Bearbeiten“ oder „Löschen“ änderst du ihn später (Löschen entfernt ihn für alle).",
+        "vorher": "Du kennst Titel, Zeit und wer den Termin sehen soll.",
+        "erwartet": [
+          "Das Formular „Neuer Termin“ ist offen.",
+          "Titel, Kategorie, Beginn und Ort sind ausgefüllt.",
+          "Die Auswahl zeigt „Nur ein Kreis“, „Alle Aufgabenträger“, „Alle Mitglieder“ oder „Öffentlich (ohne Anmeldung)“. Bei „Privat“ sehen nur du und die Eingeladenen den Termin – auch das Bureau nicht.",
+          "Der Termin steht im Kalender, bei Wiederholung an allen Tagen."
+        ],
+        "fehler": [
+          {
+            "problem": "„Der Termin konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe Titel und Beginn. Ein Ende muss nach dem Beginn liegen."
+          },
+          {
+            "problem": "Mitglieder sehen den Termin nicht.",
+            "loesung": "Prüfe „Wer sieht den Termin?“. Ein Termin für einen Kreis ist nur für diesen Kreis sichtbar."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege den Termin „[ÜBUNG] Probetermin“ in 30 Tagen an, sichtbar nur für das Bureau, und lösche ihn danach."
+      },
+      {
+        "id": "KAL-02",
+        "titre": "Einen Termin vorschlagen",
+        "wann": "Du möchtest, dass ein Termin im Vereinskalender erscheint, darfst ihn aber nicht selbst anlegen.",
+        "schritte": [
+          "Im Kalender „Termin vorschlagen“ klicken.",
+          "Titel, Kategorie, Beginn, Ort und Beschreibung eintragen.",
+          "„Vorschlag senden“ klicken."
+        ],
+        "danach": "Dein Vorschlag erscheint erst, wenn das Bureau ihn freigibt (Karte KAL-03).",
+        "vorher": "Du kennst Titel, Zeit und Ort des Termins.",
+        "erwartet": [
+          "Das Formular „Termin vorschlagen“ zeigt den Hinweis „Dein Vorschlag erscheint erst, wenn das Bureau ihn freigibt.“",
+          "Alle Pflichtangaben sind ausgefüllt.",
+          "Der Vorschlag steht mit dem Hinweis „Vorschlag – wartet auf Freigabe durch das Bureau.“ im Kalender."
+        ],
+        "fehler": [
+          {
+            "problem": "Der Vorschlag erscheint nicht für andere.",
+            "loesung": "Das ist gewollt. Er wird erst nach der Freigabe durch das Bureau sichtbar."
+          },
+          {
+            "problem": "„Der Termin konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe Titel und Beginn."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Schlage den Termin „[ÜBUNG] Probevorschlag“ vor. Das Bureau lehnt ihn danach mit KAL-03 ab."
+      },
+      {
+        "id": "KAL-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Terminvorschlag freigeben oder ablehnen",
+        "wann": "Ein Mitglied hat einen Termin vorgeschlagen.",
+        "schritte": [
+          "Im Kalender den Vorschlag öffnen (er trägt den Hinweis „Vorschlag“).",
+          "Titel, Zeit, Ort und Sichtbarkeit prüfen.",
+          "„Freigeben“ klicken, oder „Ablehnen“."
+        ],
+        "danach": "Freigegebene Termine erscheinen im Kalender. Mit „In Neuigkeiten ankündigen“ weist du Mitglieder darauf hin.",
+        "vorher": "Es liegt ein Vorschlag vor.",
+        "erwartet": [
+          "Der Vorschlag trägt den Hinweis „Vorschlag – wartet auf Freigabe durch das Bureau.“",
+          "Die Angaben sind vollständig und stimmig.",
+          "Nach „Freigeben“ ist der Termin im Kalender sichtbar. Nach „Ablehnen“ erscheint er nicht."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Aktion ist fehlgeschlagen.",
+            "loesung": "Lade die Seite neu und versuche es erneut. Bleibt der Fehler, melde ihn über den Support."
+          },
+          {
+            "problem": "Der Termin soll vor der Freigabe geändert werden.",
+            "loesung": "Öffne ihn mit „Bearbeiten“, ändere die Angaben und gib dann frei."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lehne den Vorschlag „[ÜBUNG] Probevorschlag“ (KAL-02) ab. Berühre keine anderen Vorschläge."
+      },
+      {
+        "id": "KAL-04",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Dienste für Helfer einrichten",
+        "wann": "Zu einem Termin werden Helferinnen und Helfer gebraucht (z. B. Aufbau).",
+        "schritte": [
+          "Den Termin öffnen und im Bereich „Dienste (Helfer gesucht)“ auf „Dienst hinzufügen“ klicken.",
+          "Dienst (z. B. Aufbau), Beginn, Ende und „Personen benötigt“ eintragen. Optional eine benötigte Fähigkeit wählen.",
+          "Mitglieder tragen sich mit „Eintragen“ selbst ein. Fehlen Personen, unter „Vorschläge“ passende Mitglieder mit „Anschreiben“ ansprechen oder mit „Einteilen“ zuweisen."
+        ],
+        "danach": "Der Dienst zeigt, wie viele Personen eingetragen sind (z. B. „2 von 4 besetzt“). Im Dienst kann sich jede Person mit „Austragen“ wieder entfernen (bis zur gesetzten Frist).",
+        "vorher": "Du kennst Dienst, Zeit und Personenzahl.",
+        "erwartet": [
+          "Der Termin zeigt den Bereich „Dienste (Helfer gesucht)“ oder „Noch keine Dienste.“",
+          "Der Dienst steht mit Zeit und „0 von … besetzt“ im Termin.",
+          "Die Besetzung steigt. Angeschriebene Mitglieder erscheinen als „Angeschrieben“."
+        ],
+        "fehler": [
+          {
+            "problem": "Niemand trägt sich ein.",
+            "loesung": "Wähle eine passende Fähigkeit, damit die App Vorschläge macht, und nutze „Anschreiben“."
+          },
+          {
+            "problem": "Ein Dienst ist falsch angelegt.",
+            "loesung": "Lösche ihn mit „Dienst löschen“ und lege ihn neu an."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege am Termin „[ÜBUNG] Probetermin“ den Dienst „[ÜBUNG] Aufbau“ mit 2 Personen an, trage dich ein und lösche den Dienst wieder."
+      }
+    ],
+    "tipps": [
+      "„Privat“ heißt wirklich privat: Nur du und die Eingeladenen sehen den Termin, auch das Bureau nicht.",
+      "Mit „Zum Kalender hinzufügen (.ics)“ übernimmst du Termine in deinen eigenen Kalender.",
+      "Die Wochenübersicht montags per E-Mail lässt sich jederzeit abschalten."
     ]
   }
 }
