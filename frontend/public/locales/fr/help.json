@@ -10,6 +10,72 @@
       "Fixez prix, places et éventuels accompagnants. « Visible pour les non-membres » affiche aussi l'événement sur la page d'accueil publique.",
       "L'événement n'est visible des membres qu'après « Publier » (un email d'invitation est envoyé). « Annuler » prévient tous les inscrits.",
       "Si une date limite de paiement est fixée, les inscrits qui n'ont pas payé reçoivent automatiquement un rappel par email avant l'échéance."
+    ],
+    "workflows": [
+      {
+        "id": "VERA-01",
+        "rollen": ["bureau_admin", "super_admin", "region"],
+        "titre": "Créer et publier un événement",
+        "wann": "Une fête, un déplacement, une conférence, un tournoi ou une assemblée doit être proposé aux membres.",
+        "schritte": [
+          "Ouvrir « Gestion des évènements » et choisir « Créer un évènement ».",
+          "Remplir titre, type, description, date, heure et lieu. Point de RDV, lien Google Maps, date de fin, heure de fin et date limite de paiement sont optionnels.",
+          "Fixer places max., coût (ou « Gratuit »), éventuellement le tarif non-membre et les accompagnants payants.",
+          "Cocher au besoin « Visible pour les non-membres » et « Émettre un billet d'entrée (QR code) » puis cliquer sur « Enregistrer ».",
+          "Cliquer sur « Publier »."
+        ],
+        "danach": "Les membres ne voient l'événement qu'après « Publier » ; un e-mail d'invitation est alors envoyé. Avec « Modifier », vous changez les informations plus tard.",
+        "vorher": "Vous connaissez titre, date, lieu, places et prix.",
+        "erwartet": [
+          "Le formulaire est ouvert.",
+          "Toutes les informations obligatoires sont remplies. Pour un événement réservé aux membres, les non-membres ne voient ni le point de RDV ni le lien de la carte.",
+          "Places et prix sont fixés. Si le tarif non-membre est vide, le même prix s'applique.",
+          "L'événement figure dans la liste avec le statut « Brouillon ». Les membres ne le voient pas encore.",
+          "Le statut est « Publié ». Les membres voient l'événement et reçoivent un e-mail d'invitation."
+        ],
+        "fehler": [
+          {
+            "problem": "« Impossible d'enregistrer l'évènement. »",
+            "loesung": "Vérifiez titre, date, heure et lieu ainsi que le format des nombres."
+          },
+          {
+            "problem": "Les membres ne voient pas l'événement.",
+            "loesung": "Il est encore en brouillon. Seul « Publié » est visible des membres."
+          },
+          {
+            "problem": "Une information était fausse alors que l'événement est déjà publié.",
+            "loesung": "Corrigez-la avec « Modifier »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez l'événement « [ÜBUNG] Probefest » et laissez-le en brouillon. Ne le publiez que si l'environnement de test ne contient pas de vraies adresses e-mail, car un e-mail d'invitation part aux membres."
+      },
+      {
+        "id": "VERA-02",
+        "rollen": ["bureau_admin", "super_admin", "region"],
+        "titre": "Annuler un événement",
+        "wann": "Un événement publié n'aura pas lieu.",
+        "schritte": [
+          "Retrouver l'événement dans la gestion des évènements.",
+          "Cliquer sur « Annuler l'évènement »."
+        ],
+        "danach": "Tous les inscrits sont informés. Pour un simple changement de date, utilisez « Modifier ».",
+        "vorher": "L'annulation est certaine. Pour un simple changement de date ou de lieu, vous n'annulez pas, vous modifiez.",
+        "erwartet": [
+          "L'événement figure dans la liste avec le statut « Publié ».",
+          "Le statut est « Annulé ». Les inscrits sont informés ; leurs billets sont invalides."
+        ],
+        "fehler": [
+          {
+            "problem": "« Impossible d'annuler l'évènement. »",
+            "loesung": "Rechargez la page et réessayez. Si l'erreur persiste, signalez-la via le support."
+          },
+          {
+            "problem": "Vous avez annulé le mauvais événement.",
+            "loesung": "Adressez-vous immédiatement à l'administration de l'app. Les inscrits sont déjà informés."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : annulez uniquement votre propre événement « [ÜBUNG] Probefest ». Ne touchez à aucun autre événement."
+      }
     ]
   },
   "boutique": {
@@ -95,6 +161,37 @@
       "Consultez les inscriptions en attente et vérifiez les informations.",
       "Validez ou refusez une inscription.",
       "Les personnes validées sont enregistrées comme membres et peuvent se connecter."
+    ],
+    "workflows": [
+      {
+        "id": "REG-01",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "titre": "Vérifier une nouvelle inscription et l'accepter ou la refuser",
+        "wann": "Une personne s'est inscrite et son compte attend une décision.",
+        "schritte": [
+          "Ouvrir « Inscriptions ». Avec la recherche, le statut (« En attente », « Acceptée », « Refusée ») et la période, vous retrouvez les entrées.",
+          "Vérifier nom, e-mail, ville, langue et date.",
+          "Cliquer sur « Accepter » ou « Refuser » et confirmer la demande."
+        ],
+        "danach": "Avec « Accepter », le compte est activé et la fiche membre passe à Actif. Avec « Refuser », le compte reste désactivé et la fiche passe à Inactif.",
+        "vorher": "Une nouvelle inscription attend. Vous savez si la personne fait partie de l'association.",
+        "erwartet": [
+          "La liste affiche les entrées avec statut et date. « Aucune inscription en attente. » signifie qu'il n'y a rien à faire.",
+          "Nom et adresse e-mail semblent cohérents et correspondent à une vraie personne.",
+          "La demande « Accepter cette inscription ? » ou « Refuser cette inscription ? » nomme le compte. Après « Accepter », l'app indique que le compte a été activé et apparaît dans la liste des membres."
+        ],
+        "fehler": [
+          {
+            "problem": "Une erreur s'affiche et demande de réessayer.",
+            "loesung": "Rechargez la page et réessayez. Si l'erreur persiste, signalez-la via le support."
+          },
+          {
+            "problem": "Vous avez refusé par erreur.",
+            "loesung": "Il n'y a pas de bouton pour cela dans la liste. Adressez-vous à l'administration de l'app."
+          }
+        ],
+        "uebung": "Accepter et refuser ne s'exercent qu'après la fin de la phase de tests et seulement avec un compte personnel « [ÜBUNG] Test Konto ». D'ici là : réglez le filtre de statut sur « Acceptée » et lisez date et décision. Cela ne modifie rien."
+      }
     ]
   },
   "justificatifs": {
@@ -104,6 +201,41 @@
       "Ouvrez le justificatif dans la liste.",
       "Acceptez-le ou refusez-le en indiquant un motif.",
       "La personne est informée de la décision."
+    ],
+    "workflows": [
+      {
+        "id": "NACH-01",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "titre": "Vérifier un justificatif pour un rabais",
+        "wann": "Un membre a demandé un rabais et a envoyé un document.",
+        "schritte": [
+          "Ouvrir « Justificatifs ». Chaque ligne affiche la date, le membre, l'offre, le rabais demandé et le document.",
+          "Cliquer sur « Voir le document » et vérifier qu'il justifie le rabais.",
+          "Cliquer sur « Approuver », ou sur « Rejeter », saisir le motif (obligatoire) et cliquer sur « Confirmer le rejet »."
+        ],
+        "danach": "La personne est informée de la décision. Les cas décidés figurent en bas dans l'historique des justificatifs.",
+        "vorher": "Une demande attend. Vous savez quel justificatif correspond au rabais (p. ex. carte d'étudiant).",
+        "erwartet": [
+          "La liste n'affiche que les demandes qui attendent un justificatif. « Pas encore envoyé » signifie que le membre n'a encore rien téléversé.",
+          "Le document s'ouvre.",
+          "La ligne disparaît de la liste. L'historique en bas montre la décision (Approuvé ou Rejeté), la date et le motif."
+        ],
+        "fehler": [
+          {
+            "problem": "« Impossible d'ouvrir le document. »",
+            "loesung": "Réessayez. Si cela ne marche pas, demandez au membre de renvoyer le fichier."
+          },
+          {
+            "problem": "La ligne indique « Pas encore envoyé ».",
+            "loesung": "Le membre n'a pas encore envoyé de document. S'il vous en a remis un, téléversez-le via « Uploader le document pour ce membre »."
+          },
+          {
+            "problem": "« Confirmer le rejet » est impossible.",
+            "loesung": "Le motif du rejet est obligatoire. Saisissez-le."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : inscrivez un compte test « [ÜBUNG] Test Mitglied » à une offre avec rabais, téléversez un fichier de test et rejetez le justificatif avec le motif « [ÜBUNG] ». Ne touchez à aucune autre demande."
+      }
     ]
   },
   "campagnes": {
@@ -115,6 +247,80 @@
       "Au besoin, configurez une offre comme « forfait famille » : définissez quelles offres existantes reçoivent la personne principale, les adultes supplémentaires et les enfants, avec une remise famille en pourcentage et des plafonds. L'âge maximum d'un enfant se règle par campagne. Le passage au forfait ne vaut qu'à partir de la prochaine campagne.",
       "Dans la section « Forfaits famille », tu vois les forfaits avec les personnes et l'état des invitations, puis un rapport chiffré par campagne (tranches d'âge, remise) exportable en CSV. Après le délai de conservation, les données personnelles sont anonymisées automatiquement – le rapport reste complet.",
       "Publiez la campagne pour qu'elle apparaisse sur la page d'accueil et dans « Mon adhésion »."
+    ],
+    "workflows": [
+      {
+        "id": "KAMP-01",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "titre": "Créer et publier une campagne d'adhésion",
+        "wann": "Le tour d'adhésion d'une nouvelle année doit démarrer.",
+        "schritte": [
+          "Ouvrir « Campagnes d'adhésion » et choisir « Nouvelle campagne ».",
+          "Saisir nom, année, date de début, date de fin et description puis cliquer sur « Créer la campagne ».",
+          "Au besoin, régler le délai pour les membres existants et l'âge maximum d'un enfant (forfait famille).",
+          "Avec « Gérer les offres », créer les offres (fiche KAMP-02).",
+          "Cliquer sur « Publier »."
+        ],
+        "danach": "Avec « Clôturer », la campagne n'accepte plus de nouvelles inscriptions ; l'app demande confirmation.",
+        "vorher": "Vous connaissez l'année, la période, les offres et les prix de la campagne.",
+        "erwartet": [
+          "Le formulaire « Nouvelle campagne » est ouvert.",
+          "La campagne figure dans la liste avec le statut « Brouillon ».",
+          "Le délai et l'âge maximum figurent dans la ligne de la campagne.",
+          "Les offres figurent sous la campagne (voir KAMP-02).",
+          "Le statut est « Publiée ». La campagne apparaît sur la page d'accueil et dans « Mon adhésion »."
+        ],
+        "fehler": [
+          {
+            "problem": "« La campagne n'a pas pu être créée. »",
+            "loesung": "Vérifiez que tous les champs sont remplis et que la date de fin suit la date de début."
+          },
+          {
+            "problem": "Vous avez publié trop tôt.",
+            "loesung": "Créez les offres avec leurs prix avant de publier. Les personnes intéressées voient la campagne tout de suite."
+          },
+          {
+            "problem": "Vous ne voulez plus de nouvelles inscriptions.",
+            "loesung": "Utilisez « Clôturer » et confirmez la demande."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez la campagne « [ÜBUNG] Kampagne » et laissez-la en brouillon. Ne la publiez pas, sinon elle apparaîtrait sur la page d'accueil de l'environnement de test."
+      },
+      {
+        "id": "KAMP-02",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "titre": "Ajouter une offre avec rabais à une campagne",
+        "wann": "Une campagne a besoin d'un niveau d'adhésion, éventuellement avec réduction.",
+        "schritte": [
+          "Dans la campagne, cliquer sur « Gérer les offres ».",
+          "Saisir nom de l'offre, prix plein (€), description et avantages (un par ligne). Laisser « Visible » coché si l'offre doit être affichée. Cliquer sur « Ajouter cette offre ».",
+          "Sur l'offre, cliquer sur « Gérer les rabais ».",
+          "Choisir le type (Étudiant, Famille, Senior, Autre), la réduction (montant fixe ou pourcentage) et la valeur. Cocher « Justificatif requis » si un document est nécessaire puis cliquer sur « Ajouter ce rabais »."
+        ],
+        "danach": "Pour les rabais avec justificatif, le membre téléverse un document ; vous le vérifiez avec la fiche NACH-01. Les forfaits famille se règlent sur l'offre, sous « Forfait famille ».",
+        "vorher": "La campagne existe. Vous connaissez nom, prix et rabais possibles de l'offre.",
+        "erwartet": [
+          "La zone « Offres de cette campagne » s'ouvre.",
+          "L'offre figure avec son prix dans la liste.",
+          "La zone « Rabais de cette offre » s'ouvre.",
+          "Le rabais figure sur l'offre. Avec justificatif obligatoire, le membre doit téléverser un document lors de l'adhésion."
+        ],
+        "fehler": [
+          {
+            "problem": "L'offre n'est pas affichée aux membres.",
+            "loesung": "Vérifiez que « Visible » est coché et que la campagne est publiée."
+          },
+          {
+            "problem": "L'offre ne vaut que pour certains âges.",
+            "loesung": "Renseignez âge minimum et âge maximum. L'offre indique alors p. ex. « De 18 à 26 ans »."
+          },
+          {
+            "problem": "« L'offre n'a pas pu être enregistrée. »",
+            "loesung": "Vérifiez nom et prix et réessayez."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : dans la campagne en brouillon « [ÜBUNG] Kampagne », créez l'offre « [ÜBUNG] Angebot » à 10 € et ajoutez le rabais « Étudiant » avec justificatif. Ne modifiez aucune offre existante."
+      }
     ]
   },
   "paiements": {
@@ -359,6 +565,37 @@
     "schritte": [
       "Réglez les jours de relance avant et après l'échéance.",
       "Enregistrez : les relances partent ensuite automatiquement par email."
+    ],
+    "workflows": [
+      {
+        "id": "FRIST-01",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "titre": "Fixer l'échéance d'une année de cotisation",
+        "wann": "À partir d'une date précise, une cotisation impayée doit être considérée en retard et déclencher des relances.",
+        "schritte": [
+          "Ouvrir « Échéances ».",
+          "Saisir l'année de cotisation et la date d'échéance puis cliquer sur « Ajouter ».",
+          "Pour une année existante, modifier la date et cliquer sur « Enregistrer », ou retirer l'échéance avec « Supprimer »."
+        ],
+        "danach": "Les trois relances (30 jours avant, 7 jours avant, 1 jour après l'échéance) sont recalculées automatiquement. Sans entrée, c'est le 1er janvier qui s'applique.",
+        "vorher": "Vous connaissez l'année de cotisation et la date à partir de laquelle la cotisation est en retard.",
+        "erwartet": [
+          "Le tableau affiche l'année, la date d'échéance et la dernière modification. Sans entrée, il indique que toutes les années utilisent le 1er janvier.",
+          "L'année figure dans le tableau avec sa date.",
+          "La nouvelle date figure dans la ligne. Après « Supprimer » et confirmation, l'année utilise de nouveau le 1er janvier."
+        ],
+        "fehler": [
+          {
+            "problem": "Les relances partent au mauvais moment.",
+            "loesung": "Vérifiez la date d'échéance de l'année. Sans entrée, c'est le 1er janvier."
+          },
+          {
+            "problem": "« L'échéance n'a pas pu être enregistrée. »",
+            "loesung": "Vérifiez que l'année et la date sont renseignées et modifiez l'année existante au lieu de la créer une seconde fois."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez comme exercice (« [ÜBUNG] ») une échéance pour une année lointaine (p. ex. 2099) et supprimez-la ensuite. Ne modifiez aucune échéance des années en cours."
+      }
     ]
   },
   "roles": {
@@ -368,6 +605,107 @@
       "Sélectionnez une personne ou un rôle.",
       "Attribuez par page « aucun accès », « lecture » ou « lecture et écriture ».",
       "Les changements s'appliquent au prochain chargement de la page."
+    ],
+    "workflows": [
+      {
+        "id": "ROLL-01",
+        "rollen": ["super_admin"],
+        "titre": "Attribuer ou retirer des rôles à une personne",
+        "wann": "Quelqu'un prend une mission dans l'association ou la quitte.",
+        "schritte": [
+          "Ouvrir « Gestion des rôles », onglet « Attribution ». Avec « Recherche » (nom, prénom, email) et « Rechercher », retrouver la personne.",
+          "Dans la ligne, cliquer sur « Gérer les rôles ».",
+          "Cocher ou décocher les rôles voulus. Plusieurs rôles sont possibles ; « Membre Normal » reste toujours attribué.",
+          "Cliquer sur « Enregistrer »."
+        ],
+        "danach": "Les droits s'appliquent dès que la personne recharge la page.",
+        "vorher": "Vous savez quelle personne reçoit ou perd quel rôle, et qui l'a demandé.",
+        "erwartet": [
+          "La ligne affiche nom, e-mail, rôle actuel, statut et rôles attribués.",
+          "Les rôles de la personne sont chargés et affichés sous forme de sélection.",
+          "Vos modifications figurent dans la sélection. « Membre Normal » est verrouillé car c'est le rôle de base technique de chaque compte.",
+          "Le message « Les rôles de … ont été mis à jour. » s'affiche."
+        ],
+        "fehler": [
+          {
+            "problem": "« Membre Normal » ne peut pas être décoché.",
+            "loesung": "C'est voulu. Ce rôle ne donne à lui seul aucun droit de membre ; ils dépendent du statut d'adhésion."
+          },
+          {
+            "problem": "La personne ne voit pas la nouvelle page.",
+            "loesung": "Elle doit recharger la page. Vérifiez aussi que le rôle a des droits sur cette page dans l'onglet « Accès »."
+          },
+          {
+            "problem": "Vous modifiez votre propre ligne (marquée « vous »).",
+            "loesung": "Ne modifiez vos propres rôles que si une deuxième personne est Administrateur App."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : attribuez à un compte test personnel « [ÜBUNG] Test Konto » le rôle Ressources Humaines, vérifiez avec ce compte que la liste des membres apparaît, puis retirez le rôle. Ne modifiez pas les rôles de vraies personnes."
+      },
+      {
+        "id": "ROLL-02",
+        "rollen": ["super_admin"],
+        "titre": "Créer un rôle et définir ses accès",
+        "wann": "Aucun rôle existant ne convient à une mission, p. ex. pour une région ou une équipe.",
+        "schritte": [
+          "Ouvrir l'onglet « Accès ». La matrice d'accès affiche tous les rôles et modules.",
+          "Sous « Créer un nouveau rôle », saisir nom, identifiant (slug) et éventuellement une description puis cliquer sur « Créer le rôle ».",
+          "Dans la matrice, régler pour le nouveau rôle et chaque module « Aucun accès », « Lecture » ou « Lecture et écriture ». Les pages d'administration figurent dans la section « Pages d'administration ».",
+          "Attribuer le rôle à une personne avec la fiche ROLL-01."
+        ],
+        "danach": "Les nouveaux modules apparaissent automatiquement dans la matrice. Vous ne supprimez un rôle que s'il n'est plus attribué à personne.",
+        "vorher": "Vous savez quelles pages le rôle peut voir et modifier, et qui le reçoit.",
+        "erwartet": [
+          "La matrice affiche les rôles. Les rôles système sont marqués « Système », les vôtres « Personnalisé ».",
+          "Le message « Le rôle « … » a été créé. » s'affiche ; le rôle figure dans la matrice.",
+          "Les accès du nouveau rôle sont définis. Pour l'Administrateur App, l'accès reste toujours complet et verrouillé.",
+          "La personne a les droits du rôle dès qu'elle recharge la page."
+        ],
+        "fehler": [
+          {
+            "problem": "« Un rôle système ne peut pas être supprimé. »",
+            "loesung": "Seuls vos propres rôles peuvent être supprimés."
+          },
+          {
+            "problem": "« Ce rôle est encore attribué à au moins un utilisateur. »",
+            "loesung": "Retirez d'abord le rôle à toutes les personnes (fiche ROLL-01) puis supprimez-le."
+          },
+          {
+            "problem": "Le rôle a trop de droits.",
+            "loesung": "Partez de « Aucun accès » et n'accordez que ce que la mission demande."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez le rôle « [ÜBUNG] Testrolle » avec l'identifiant uebung-testrolle, donnez-lui seulement « Lecture » sur un module et supprimez-le avec « Supprimer » tant qu'il n'est attribué à personne."
+      },
+      {
+        "id": "ROLL-03",
+        "rollen": ["super_admin"],
+        "titre": "Contrôler la visibilité des entrées de menu",
+        "wann": "Vous voulez savoir ou modifier quelles entrées voient les membres actifs et les non-membres.",
+        "schritte": [
+          "Ouvrir l'onglet « Visibilité ».",
+          "Dans la ligne du module, lire les cases « Membre » et « Non-membre ».",
+          "Seulement si nécessaire, cocher ou décocher une case."
+        ],
+        "danach": "Pour les non-membres, la colonne est contraignante : sans case cochée, la page et les données sont bloquées, pas seulement le menu.",
+        "vorher": "Vous connaissez le module et le groupe (membre ou non-membre) concernés.",
+        "erwartet": [
+          "Le tableau affiche les modules par groupes (Général, Communauté, Contenus) avec une case par colonne.",
+          "Vous voyez quelles entrées chaque groupe voit.",
+          "La case est modifiée et enregistrée. En cas d'échec : « Impossible de charger/enregistrer la visibilité. »"
+        ],
+        "fehler": [
+          {
+            "problem": "Une page d'administration manque dans le tableau.",
+            "loesung": "Les pages d'administration se règlent dans la matrice d'accès (onglet « Accès »)."
+          },
+          {
+            "problem": "Un rôle supplémentaire n'élargit pas la visibilité.",
+            "loesung": "C'est voulu : la colonne « Non-membre » n'est pas élargie par des rôles supplémentaires."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Visibilité » et décrivez avec vos mots quelles entrées voit un non-membre. Ne modifiez rien."
+      }
     ]
   },
   "articles": {
@@ -376,6 +714,43 @@
     "schritte": [
       "Créez un article avec nom et montant.",
       "Désactivez les articles devenus inutiles plutôt que de les supprimer, pour garder l'historique des paiements lisible."
+    ],
+    "workflows": [
+      {
+        "id": "BEIT-01",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "titre": "Créer, modifier ou désactiver un article de cotisation",
+        "wann": "Les membres doivent pouvoir choisir un article de paiement supplémentaire dans le formulaire de cotisation, ou un article n'est plus nécessaire.",
+        "schritte": [
+          "Ouvrir « Articles de cotisation ». Cotisation annuelle et frais d'adhésion sont des tarifs fixes : seuls leur montant et leur activation changent.",
+          "Pour un nouvel article, saisir libellé et montant (€) puis cliquer sur « Ajouter ».",
+          "Pour changer un montant, saisir le nouveau montant et cliquer sur « Enregistrer ».",
+          "Masquer les articles devenus inutiles avec « Désactiver ». Avec « Réactiver », ils reviennent."
+        ],
+        "danach": "Un article désactivé n'est plus proposé aux membres, mais reste visible dans le tableau et dans l'historique des paiements.",
+        "vorher": "Vous connaissez le libellé et le montant de l'article.",
+        "erwartet": [
+          "Le tableau affiche libellé, montant, statut (Actif ou Désactivé) et actions. Les tarifs fixes portent l'indication d'un tarif fixe.",
+          "L'article figure avec son montant et le statut « Actif » dans le tableau. Les membres peuvent le choisir dans le formulaire de cotisation.",
+          "Le nouveau montant figure dans la ligne.",
+          "Le statut est « Désactivé ». Les membres ne voient plus l'article."
+        ],
+        "fehler": [
+          {
+            "problem": "« L'article n'a pas pu être enregistré. »",
+            "loesung": "Vérifiez que libellé et montant sont renseignés."
+          },
+          {
+            "problem": "Vous voulez supprimer un article.",
+            "loesung": "La suppression n'est pas prévue. Désactivez-le pour que les paiements passés restent lisibles."
+          },
+          {
+            "problem": "Le libellé de la cotisation annuelle ou des frais d'adhésion ne peut pas être modifié.",
+            "loesung": "C'est voulu. Pour les tarifs fixes, seuls montant et activation sont modifiables."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez « [ÜBUNG] Testartikel » à 1,00 €, désactivez-le puis réactivez-le. Ne touchez pas aux tarifs fixes."
+      }
     ]
   },
   "notifications": {
@@ -562,7 +937,27 @@
           "Cliquer sur « Filtrer ». « Réinitialiser » vide tous les filtres.",
           "Cliquer sur une ligne pour ouvrir la fiche."
         ],
-        "danach": "Les filtres s'appliquent aussi à l'export Excel : seule la liste filtrée est exportée."
+        "danach": "Les filtres s'appliquent aussi à l'export Excel : seule la liste filtrée est exportée.",
+        "id": "MITG-01",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Vous connaissez le nom, l'e-mail ou au moins la ville ou le statut de la personne.",
+        "erwartet": [
+          "Le champ « Recherche » contient votre terme. La liste ne change qu'après « Filtrer ».",
+          "Les filtres choisis sont affichés au-dessus de la liste.",
+          "La liste n'affiche plus que les membres concernés, avec numéro, nom, ville et statut. Après « Réinitialiser », tous les membres sont de retour.",
+          "La fiche membre s'ouvre avec les informations personnelles, l'adresse et les informations associatives."
+        ],
+        "fehler": [
+          {
+            "problem": "« Aucun membre ne correspond à ces critères. »",
+            "loesung": "Cliquez sur « Réinitialiser » et cherchez seulement avec le nom de famille. Vérifiez l'orthographe (accents, traits d'union)."
+          },
+          {
+            "problem": "Vous ne voyez que votre propre fiche, pas de liste.",
+            "loesung": "La liste de tous les membres est disponible à partir du rôle Ressources Humaines."
+          }
+        ],
+        "uebung": "Cherchez « ÜBUNG » et ouvrez la fiche d'un résultat s'il y en a un. Réinitialisez ensuite tous les filtres. Cela ne modifie aucune donnée."
       },
       {
         "titre": "Créer un membre à la main (RH)",
@@ -573,7 +968,31 @@
           "Vérifier statut, date d'adhésion et adresse puis cliquer sur « Enregistrer ».",
           "Le numéro de membre (format CA-année-numéro) est attribué automatiquement."
         ],
-        "danach": "La personne n'a pas encore de compte. Si elle s'inscrit plus tard avec le même email, elle est automatiquement rattachée à cette fiche."
+        "danach": "La personne n'a pas encore de compte. Si elle s'inscrit plus tard avec le même email, elle est automatiquement rattachée à cette fiche.",
+        "id": "MITG-02",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Les champs obligatoires de la personne et son numéro de CIN ou de passeport.",
+        "erwartet": [
+          "Le formulaire « Ajouter un membre » est ouvert.",
+          "Tous les champs obligatoires sont remplis. Sans CIN ni passeport, le message « Le n° CIN ou le n° de passeport est requis. » apparaît.",
+          "La personne est enregistrée et retrouvable dans la liste.",
+          "La fiche affiche un numéro de membre au format CA-année-numéro."
+        ],
+        "fehler": [
+          {
+            "problem": "« Ce champ est requis. »",
+            "loesung": "Remplissez le champ nommé par le message."
+          },
+          {
+            "problem": "« Adresse email invalide. »",
+            "loesung": "Vérifiez les fautes de frappe, le @ et la terminaison."
+          },
+          {
+            "problem": "La personne existe peut-être déjà.",
+            "loesung": "Cherchez d'abord avec la fiche MITG-01 par nom et e-mail afin que personne ne soit enregistré en double."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez le membre « [ÜBUNG] Test Mitglied » avec une adresse fictive (…@example.org). Ne modifiez aucune fiche existante. Le niveau Bureau peut supprimer la fiche d'exercice ensuite ; cela est irréversible."
       },
       {
         "titre": "Changer le statut (RH)",
@@ -583,7 +1002,26 @@
           "Dans « Changer le statut », choisir le nouveau statut.",
           "Cliquer sur « Appliquer »."
         ],
-        "danach": "Le statut courant s'applique immédiatement (vote, communauté, inscription aux événements). L'historique par année est visible dans l'historique de statut."
+        "danach": "Le statut courant s'applique immédiatement (vote, communauté, inscription aux événements). L'historique par année est visible dans l'historique de statut.",
+        "id": "MITG-03",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Vous savez quel membre reçoit quel nouveau statut et pourquoi.",
+        "erwartet": [
+          "La fiche membre est ouverte. Dans « Changer le statut » figure la liste « Choisir un nouveau statut… ».",
+          "Le nouveau statut est affiché dans le champ ; rien n'est encore enregistré.",
+          "Le statut est modifié et s'applique immédiatement au vote, à la communauté et à l'inscription aux événements. L'historique figure dans l'historique de statut."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous avez modifié le mauvais membre.",
+            "loesung": "Remettez l'ancien statut sur la même fiche. L'historique de statut montre les deux modifications."
+          },
+          {
+            "problem": "Le bloc « Changer le statut » est absent.",
+            "loesung": "Il faut au minimum le rôle Ressources Humaines."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : passez « [ÜBUNG] Test Mitglied » (de MITG-02) à « Non-membre (ancien) » puis de nouveau à « Membre (actif) ». Le statut compte dans les indicateurs ; rétablissez-le à la fin."
       },
       {
         "titre": "Exporter la liste en Excel (RH)",
@@ -594,7 +1032,27 @@
           "Sélectionner les colonnes à inclure (au moins une).",
           "Confirmer avec « Exporter » : le fichier est téléchargé."
         ],
-        "beispiel": "Tous les membres actifs de Berlin, triés par nom, avec les colonnes nom, email et téléphone."
+        "beispiel": "Tous les membres actifs de Berlin, triés par nom, avec les colonnes nom, email et téléphone.",
+        "id": "MITG-04",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Vous savez quels membres et quelles informations doivent figurer dans le fichier.",
+        "erwartet": [
+          "La liste affiche exactement les membres à inclure dans le fichier.",
+          "La boîte de dialogue « Choisir les colonnes à exporter » est ouverte.",
+          "Les colonnes choisies sont cochées. Sans sélection : « Sélectionnez au moins une colonne. »",
+          "Le fichier Excel est téléchargé et ne contient que les membres filtrés."
+        ],
+        "fehler": [
+          {
+            "problem": "Le fichier contient trop de personnes ou les mauvaises.",
+            "loesung": "L'export suit toujours la liste. Réglez bien les filtres avant d'exporter."
+          },
+          {
+            "problem": "Le fichier contient des données personnelles.",
+            "loesung": "Rangez-le uniquement là où il doit être, ne l'envoyez pas sans protection et supprimez-le après usage."
+          }
+        ],
+        "uebung": "Cherchez « ÜBUNG », exportez seulement les colonnes nom et ville et ouvrez le fichier. Supprimez-le ensuite. Cela ne modifie aucune donnée."
       }
     ],
     "tipps": [
@@ -628,7 +1086,29 @@
           "Cliquer sur « Confirmer l'import » puis télécharger le rapport."
         ],
         "beispiel": "Sur 300 lignes, 250 sont nouvelles, 40 sont des doublons et 10 sont en erreur. Vous cochez 12 doublons dont le téléphone a changé. À la confirmation : 250 membres créés, 12 mis à jour, 28 doublons ignorés ; les 10 erreurs figurent dans le rapport avec leur motif.",
-        "danach": "Les membres importés n'ont pas encore de login. S'ils s'inscrivent plus tard avec le même email et confirment le code, ils sont rattachés automatiquement."
+        "danach": "Les membres importés n'ont pas encore de login. S'ils s'inscrivent plus tard avec le même email et confirment le code, ils sont rattachés automatiquement.",
+        "id": "MITG-05",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Un fichier Excel avec les membres. Lors de la première reprise, essayez d'abord avec 5 à 10 lignes sur l'environnement de test.",
+        "erwartet": [
+          "Le modèle vide est téléchargé.",
+          "Chaque ligne contient toutes les colonnes obligatoires. Les dates et les noms de colonnes correspondent au modèle.",
+          "Le nom du fichier apparaît dans le formulaire. Rien n'est encore importé.",
+          "La liste de contrôle « Liste de contrôle — rien n'a encore été importé » sépare Nouveau, Doublon, Inchangé et Erreur.",
+          "Les doublons choisis sont cochés. Le résumé indique combien de lignes seront créées et écrasées.",
+          "« Import terminé » s'affiche avec les chiffres ; le rapport est téléchargé en Excel."
+        ],
+        "fehler": [
+          {
+            "problem": "La liste de contrôle affiche des lignes en erreur.",
+            "loesung": "Corrigez les lignes dans le fichier Excel et vérifiez à nouveau. « Vérifier » n'enregistre rien ; vous pouvez le faire autant de fois que nécessaire."
+          },
+          {
+            "problem": "Vous hésitez à écraser un doublon.",
+            "loesung": "Lisez les différences sous la ligne (ancienne valeur barrée → nouvelle) et ne cochez que les doublons à écraser vraiment."
+          }
+        ],
+        "uebung": "Jusqu'à la fin de la phase de tests, seulement « Vérifier », pas « Confirmer l'import » : créez un fichier de trois lignes « [ÜBUNG] Test 1 » à « [ÜBUNG] Test 3 » avec des adresses fictives (…@example.org) et regardez la liste de contrôle. Vérifier n'enregistre rien."
       },
       {
         "titre": "2. Colonnes et formats du fichier membres",
@@ -653,7 +1133,28 @@
           "Erreur : la ligne ne sera pas importée. Le motif est indiqué (champ obligatoire manquant, email invalide, doublon dans le fichier, email et CIN de membres différents…).",
           "Les boutons de filtre au-dessus de la liste n'affichent qu'un statut. « Sélectionner tous les doublons » et « Désélectionner tout » facilitent la sélection en masse."
         ],
-        "danach": "CIN et passeport n'apparaissent que masqués (••••1234)."
+        "danach": "CIN et passeport n'apparaissent que masqués (••••1234).",
+        "id": "MITG-06",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Vous avez cliqué sur « Vérifier » et la liste de contrôle s'affiche.",
+        "erwartet": [
+          "Les lignes « Nouveau » n'ont pas de case à cocher ; elles seront créées à la confirmation.",
+          "Les doublons ont une case et affichent les différences sous la ligne.",
+          "Les lignes « Inchangé » n'ont rien à écraser.",
+          "Les lignes en erreur indiquent le motif et ne sont pas importées.",
+          "Le filtre n'affiche que le statut choisi. « Sélectionner tous les doublons » coche tous les doublons, « Désélectionner tout » retire la sélection."
+        ],
+        "fehler": [
+          {
+            "problem": "Presque toutes les lignes sont en erreur.",
+            "loesung": "En général, les noms de colonnes ou le format des dates ne correspondent pas. Retéléchargez le modèle et copiez-y vos données."
+          },
+          {
+            "problem": "CIN et passeport ne sont que partiellement visibles.",
+            "loesung": "C'est voulu : les deux apparaissent masqués dans la liste (••••1234)."
+          }
+        ],
+        "uebung": "Utilisez le fichier d'exercice de MITG-05 et ajoutez volontairement une ligne « [ÜBUNG] Erreur » sans adresse e-mail. Elle apparaît en erreur. Seulement « Vérifier », pas « Confirmer l'import »."
       },
       {
         "titre": "4. Écraser les doublons : que se passe-t-il exactement ?",
@@ -767,7 +1268,27 @@
           "Confirmer avec « Oui, relier ».",
           "Si aucune fiche ne convient, choisir « Aucune correspondance »."
         ],
-        "danach": "Après le rattachement, numéro de membre, statut, date d'adhésion et historique de la fiche importée sont conservés. Les données saisies par le membre à l'inscription écrasent les données de base importées (champs renseignés seulement)."
+        "danach": "Après le rattachement, numéro de membre, statut, date d'adhésion et historique de la fiche importée sont conservés. Les données saisies par le membre à l'inscription écrasent les données de base importées (champs renseignés seulement).",
+        "id": "MITG-07",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Un compte récemment inscrit figure dans la liste.",
+        "erwartet": [
+          "Chaque suggestion indique la probabilité (« très probable », « probable », « possible ») et les raisons (e-mail, CIN, nom, date de naissance).",
+          "La demande de confirmation avec « Oui, lier » s'affiche.",
+          "Le compte est lié à la fiche importée. Numéro de membre, statut, date d'adhésion et historique de la fiche sont conservés.",
+          "Le compte disparaît de la liste sans être lié."
+        ],
+        "fehler": [
+          {
+            "problem": "Plusieurs suggestions se ressemblent.",
+            "loesung": "Comparez date de naissance et e-mail. En cas de doute, ne rapprochez pas : le lien ne peut pas être annulé automatiquement."
+          },
+          {
+            "problem": "Vous avez lié le mauvais compte.",
+            "loesung": "Adressez-vous à l'administration de l'app. Ce n'est pas annulable d'ici."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez par un import (MITG-05) la fiche « [ÜBUNG] Test Import », inscrivez un compte « [ÜBUNG] Test Konto » avec une adresse de test personnelle et rapprochez uniquement ce compte. Ne touchez à aucune autre suggestion."
       }
     ],
     "tipps": [
@@ -1009,5 +1530,123 @@
     "super_admin": "Administrateur de l'app",
     "region": "Responsables de région",
     "einlass": "Aides à l'entrée"
+  },
+  "einlass": {
+    "titre": "Entrée et présence",
+    "intro": "Le jour de l'événement, vous faites entrer les inscrits, voyez qui est présent et exportez la liste. Vous accédez à la page via « Mes billets » ou via « Présence » dans la gestion des évènements.",
+    "schritte": [
+      "En haut, « Personnes entrées » compte adultes et enfants.",
+      "Scannez le QR code du billet avec la caméra ou saisissez le code à la main. Sans billets, vous marquez les présents dans la liste.",
+      "La liste « Inscrits et présence » montre le statut de chaque personne (en attente, en partie présents, complet).",
+      "Les responsables peuvent nommer des aides à l'entrée. Les aides ne peuvent scanner que le jour de l'événement."
+    ],
+    "workflows": [
+      {
+        "id": "EINL-01",
+        "rollen": ["einlass", "bureau_admin", "region", "super_admin"],
+        "titre": "Scanner les billets à l'entrée",
+        "wann": "Des invités arrivent avec un billet (QR code) à l'événement.",
+        "schritte": [
+          "Dans « Mes billets », section « Entrée et présence », cliquer sur « Ouvrir » (ou, dans la gestion des évènements, sur « Présence »).",
+          "Cliquer sur « Démarrer la caméra et scanner » et présenter le QR code. Sinon, saisir le code sous « Saisir le code à la main » et cliquer sur « Vérifier ».",
+          "Vérifier le nom et les chiffres, choisir les adultes et enfants qui entrent maintenant et cliquer sur « Faire entrer ».",
+          "Lire la confirmation. En cas d'erreur de manipulation, cliquer sur « Annuler l'entrée ».",
+          "Si un message d'erreur s'affiche, le lire et cliquer sur « Continuer ». Scanner ensuite le billet suivant."
+        ],
+        "danach": "Les chiffres en haut et la liste en bas sont immédiatement à jour. La présence est enregistrée automatiquement lors du scan.",
+        "vorher": "Vous avez accès à l'entrée de cet événement. Les aides ne peuvent scanner que le jour de l'événement.",
+        "erwartet": [
+          "La page affiche en haut le compteur « Personnes entrées » avec adultes et enfants.",
+          "Après le scan, le nom s'affiche avec « Réservé » et « Déjà entrés » ; pour une personne avec plusieurs places, vous choisissez adultes et enfants séparément.",
+          "Le message « [Nom] est entré(e) » s'affiche avec le total et « encore … attendues » ou « tous présents ». Le compteur en haut augmente.",
+          "Après « Annuler l'entrée », le compteur redescend.",
+          "Le message indique la raison : « Déjà entièrement entrés », « Billet invalide (annulé ou événement annulé) », « Code inconnu ou billet renouvelé » ou « Ce billet appartient à un autre événement »."
+        ],
+        "fehler": [
+          {
+            "problem": "La caméra ne démarre pas.",
+            "loesung": "Autorisez l'accès à la caméra dans les paramètres du navigateur ou utilisez la liste en bas ou la saisie du code."
+          },
+          {
+            "problem": "« Code inconnu ou billet renouvelé ».",
+            "loesung": "La personne a reçu un nouveau billet ; l'ancien QR code n'est plus valable. Demandez-lui de montrer le nouveau billet depuis l'app ou l'e-mail."
+          },
+          {
+            "problem": "« Ce billet appartient à un autre événement ».",
+            "loesung": "Vérifiez que vous êtes à la bonne entrée."
+          },
+          {
+            "problem": "« Tu n'as pas accès à ce contrôle d'entrée. »",
+            "loesung": "Les aides ne peuvent scanner que le jour de l'événement. Adressez-vous au bureau ou aux responsables de la région."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : créez l'événement « [ÜBUNG] Probefest » avec billets pour aujourd'hui (VERA-01), inscrivez un compte test « [ÜBUNG] Test Mitglied », scannez son billet et annulez l'entrée avec « Annuler l'entrée ». Pour la répétition, vous devez publier ; un e-mail d'invitation part alors, donc seulement sur l'environnement de test."
+      },
+      {
+        "id": "EINL-02",
+        "rollen": ["einlass", "bureau_admin", "region", "super_admin"],
+        "titre": "Marquer la présence dans la liste et exporter",
+        "wann": "Un événement n'a pas de billets, un billet manque ou vous voulez la présence sous forme de fichier.",
+        "schritte": [
+          "Ouvrir l'entrée de l'événement (voir EINL-01, étape 1).",
+          "Dans « Inscrits et présence », saisir le nom sous « Rechercher un nom ».",
+          "Cliquer sur « Marquer présent » pour la personne, choisir le nombre et cliquer sur « Faire entrer ».",
+          "Au besoin, cliquer sur « Exporter en Excel »."
+        ],
+        "danach": "La liste et l'export concordent avec le scan : les deux utilisent les mêmes chiffres.",
+        "vorher": "La personne est inscrite à l'événement.",
+        "erwartet": [
+          "La liste affiche tous les inscrits avec leur statut (en attente, en partie présents, complet) et le nombre entrés/réservés.",
+          "La liste n'affiche que les noms correspondants. Sans résultat : « Aucun inscrit trouvé. »",
+          "Le statut de la personne change (si tous sont présents : « complet ») et l'heure de présence s'affiche. Le compteur en haut augmente.",
+          "Un fichier Excel avec la liste est téléchargé."
+        ],
+        "fehler": [
+          {
+            "problem": "« Cet événement n'a pas de billets. Enregistre les personnes présentes dans la liste. »",
+            "loesung": "C'est normal si « Émettre un billet d'entrée (QR code) » n'était pas coché. Utilisez la liste."
+          },
+          {
+            "problem": "La personne ne figure pas dans la liste.",
+            "loesung": "Vérifiez l'orthographe et l'inscription de la personne. Sans inscription, elle ne peut pas être enregistrée."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : marquez dans « [ÜBUNG] Probefest » uniquement le compte test « [ÜBUNG] Test Mitglied » comme présent et exportez la liste. Supprimez ensuite le fichier."
+      },
+      {
+        "id": "EINL-03",
+        "rollen": ["bureau_admin", "region", "super_admin"],
+        "titre": "Nommer des aides à l'entrée",
+        "wann": "D'autres personnes doivent scanner à l'entrée le jour de l'événement.",
+        "schritte": [
+          "Ouvrir l'entrée de l'événement et aller à la section « Aides à l'entrée ».",
+          "Saisir l'e-mail du compte et cliquer sur « Nommer ».",
+          "Après l'intervention, cliquer sur « Retirer » pour la personne."
+        ],
+        "danach": "Les aides ne voient que le nom, le nombre de personnes et le statut, et ne peuvent scanner que le jour de l'événement.",
+        "vorher": "L'aide a un compte dans l'app. Vous connaissez l'e-mail du compte.",
+        "erwartet": [
+          "La section affiche les aides actuelles ou « Aucune aide nommée. »",
+          "La personne figure dans la liste. Elle voit l'événement dans « Mes billets », section « Entrée et présence », avec la mention « aide ».",
+          "La personne ne figure plus dans la liste et n'a plus accès."
+        ],
+        "fehler": [
+          {
+            "problem": "Le compte est introuvable.",
+            "loesung": "Vérifiez l'adresse e-mail. La personne a besoin d'un compte dans l'app."
+          },
+          {
+            "problem": "L'aide ne peut pas scanner.",
+            "loesung": "Les aides ne peuvent scanner que le jour de l'événement."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : nommez le compte test « [ÜBUNG] Test Konto » comme aide de « [ÜBUNG] Probefest » puis retirez-le. Ne modifiez pas les aides d'événements réels."
+      }
+    ],
+    "tipps": [
+      "Le jour de l'événement, la caméra ne fonctionne que si le navigateur autorise l'accès. Sinon, la liste ou la saisie du code aident.",
+      "Le billet des invités leur est aussi envoyé en PDF par e-mail, pour pouvoir le montrer à l'entrée même sans réseau.",
+      "Les accès sont vérifiés par le serveur pour chaque événement : bureau, responsables de la région et aides nommées."
+    ]
   }
 }

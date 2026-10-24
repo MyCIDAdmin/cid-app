@@ -10,6 +10,72 @@
       "Preis, Plätze und ggf. Begleitpersonen festlegen. Mit „Für Nicht-Mitglieder sichtbar“ erscheint die Veranstaltung auch auf der öffentlichen Startseite.",
       "Erst mit „Veröffentlichen“ ist die Veranstaltung für Mitglieder sichtbar; dabei geht eine Einladungs-Mail raus. Mit „Absagen“ werden alle Angemeldeten informiert.",
       "Ist eine Zahlungsfrist gesetzt, erhalten Angemeldete ohne Zahlung kurz vor Ablauf automatisch eine Erinnerung per E-Mail."
+    ],
+    "workflows": [
+      {
+        "id": "VERA-01",
+        "rollen": ["bureau_admin", "super_admin", "region"],
+        "titre": "Veranstaltung anlegen und veröffentlichen",
+        "wann": "Ein Fest, eine Fahrt, ein Vortrag, ein Turnier oder eine Versammlung soll Mitgliedern angeboten werden.",
+        "schritte": [
+          "„Veranstaltungsverwaltung“ öffnen und „Veranstaltung erstellen“ wählen.",
+          "Titel, Typ, Beschreibung, Datum, Uhrzeit und Ort ausfüllen. Treffpunkt, Google-Maps-Link, Enddatum, Endzeit und Zahlungsfrist sind optional.",
+          "Max. Plätze, Kosten (oder „Kostenlos“), ggf. den Preis für Nicht-Mitglieder und kostenpflichtige Begleitpersonen festlegen.",
+          "Optional „Für Nicht-Mitglieder sichtbar“ und „Eintrittsticket (QR-Code) ausstellen“ setzen und „Speichern“ klicken.",
+          "„Veröffentlichen“ klicken."
+        ],
+        "danach": "Erst mit „Veröffentlichen“ sehen Mitglieder die Veranstaltung; dabei geht eine Einladungs-Mail raus. Mit „Bearbeiten“ änderst du Angaben später.",
+        "vorher": "Du kennst Titel, Datum, Ort, Plätze und Preise.",
+        "erwartet": [
+          "Das Formular ist offen.",
+          "Alle Pflichtangaben sind ausgefüllt. Bei „nur für Mitglieder“-Veranstaltungen sehen Nicht-Mitglieder weder Treffpunkt noch Karten-Link.",
+          "Plätze und Preise sind gesetzt. Ist der Preis für Nicht-Mitglieder leer, gilt der gleiche Preis.",
+          "Die Veranstaltung steht mit dem Status „Entwurf“ in der Liste. Mitglieder sehen sie noch nicht.",
+          "Der Status ist „Veröffentlicht“. Mitglieder sehen die Veranstaltung und erhalten eine Einladungs-Mail."
+        ],
+        "fehler": [
+          {
+            "problem": "„Veranstaltung konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe Titel, Datum, Uhrzeit und Ort sowie das Format der Zahlen."
+          },
+          {
+            "problem": "Mitglieder sehen die Veranstaltung nicht.",
+            "loesung": "Sie steht noch im Entwurf. Erst „Veröffentlicht“ ist für Mitglieder sichtbar."
+          },
+          {
+            "problem": "Eine Angabe war falsch, obwohl die Veranstaltung schon veröffentlicht ist.",
+            "loesung": "Korrigiere sie mit „Bearbeiten“."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege die Veranstaltung „[ÜBUNG] Probefest“ an und lass sie im Entwurf. Veröffentliche sie nur, wenn die Testumgebung keine echten E-Mail-Adressen enthält, denn dabei geht eine Einladungs-Mail an Mitglieder."
+      },
+      {
+        "id": "VERA-02",
+        "rollen": ["bureau_admin", "super_admin", "region"],
+        "titre": "Veranstaltung absagen",
+        "wann": "Eine veröffentlichte Veranstaltung findet nicht statt.",
+        "schritte": [
+          "In der Veranstaltungsverwaltung die Veranstaltung suchen.",
+          "„Veranstaltung absagen“ klicken."
+        ],
+        "danach": "Alle Angemeldeten werden informiert. Bei einer Terminänderung nutze stattdessen „Bearbeiten“.",
+        "vorher": "Die Absage ist sicher. Bei einer bloßen Änderung von Datum oder Ort sagst du nicht ab, sondern bearbeitest.",
+        "erwartet": [
+          "Die Veranstaltung steht in der Liste mit dem Status „Veröffentlicht“.",
+          "Der Status ist „Abgesagt“. Die Angemeldeten sind informiert; ihre Tickets sind ungültig."
+        ],
+        "fehler": [
+          {
+            "problem": "„Veranstaltung konnte nicht abgesagt werden.“",
+            "loesung": "Lade die Seite neu und versuche es erneut. Bleibt der Fehler, melde ihn über den Support."
+          },
+          {
+            "problem": "Du hast die falsche Veranstaltung abgesagt.",
+            "loesung": "Wende dich sofort an die App-Administration. Die Angemeldeten sind bereits informiert."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Sage nur deine eigene Veranstaltung „[ÜBUNG] Probefest“ ab. Berühre keine anderen Veranstaltungen."
+      }
     ]
   },
   "boutique": {
@@ -95,6 +161,37 @@
       "Offene Registrierungen in der Liste ansehen und die Angaben prüfen.",
       "Eine Registrierung freigeben oder ablehnen.",
       "Freigegebene Personen werden als Mitglieder geführt und können sich anmelden."
+    ],
+    "workflows": [
+      {
+        "id": "REG-01",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "titre": "Neue Registrierung prüfen und annehmen oder ablehnen",
+        "wann": "Eine Person hat sich registriert und ihr Konto wartet auf eine Entscheidung.",
+        "schritte": [
+          "„Registrierungen“ öffnen. Mit Suche, Status („Ausstehend“, „Angenommen“, „Abgelehnt“) und Zeitraum findest du die Einträge.",
+          "Name, E-Mail, Stadt, Sprache und Datum prüfen.",
+          "„Annehmen“ oder „Ablehnen“ klicken und die Rückfrage bestätigen."
+        ],
+        "danach": "Bei „Annehmen“ wird das Konto aktiviert und die Mitgliederkarte auf Aktiv gesetzt. Bei „Ablehnen“ bleibt das Konto deaktiviert und die Karte steht auf Inaktiv.",
+        "vorher": "Eine neue Registrierung wartet. Du weißt, ob die Person zum Verein gehört.",
+        "erwartet": [
+          "Die Liste zeigt die Einträge mit Status und Datum. „Keine ausstehenden Registrierungen.“ heißt: Es gibt nichts zu tun.",
+          "Name und E-Mail-Adresse wirken stimmig und passen zu einer echten Person.",
+          "Die Rückfrage „Diese Registrierung annehmen?“ oder „…ablehnen?“ nennt das Konto. Nach „Annehmen“ meldet die App, dass das Konto aktiviert wurde und in der Mitgliederliste erscheint."
+        ],
+        "fehler": [
+          {
+            "problem": "„Ein Fehler ist aufgetreten, bitte versuchen Sie es erneut.“",
+            "loesung": "Lade die Seite neu und versuche es erneut. Bleibt der Fehler, melde ihn über den Support."
+          },
+          {
+            "problem": "Du hast aus Versehen abgelehnt.",
+            "loesung": "In der Liste gibt es dafür keine Schaltfläche. Wende dich an die App-Administration."
+          }
+        ],
+        "uebung": "Annehmen und Ablehnen übst du erst nach Abschluss der Testrunde und nur mit einem eigenen Konto „[ÜBUNG] Test Konto“. Bis dahin: Setze den Statusfilter auf „Angenommen“ und lies Datum und Entscheidung. Das ändert nichts."
+      }
     ]
   },
   "justificatifs": {
@@ -104,6 +201,41 @@
       "Den Nachweis in der Liste öffnen und ansehen.",
       "Annehmen oder mit Begründung ablehnen.",
       "Die Person wird über die Entscheidung benachrichtigt."
+    ],
+    "workflows": [
+      {
+        "id": "NACH-01",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "titre": "Nachweis für eine Ermäßigung prüfen",
+        "wann": "Ein Mitglied hat einen Rabatt beantragt und ein Dokument eingereicht.",
+        "schritte": [
+          "„Nachweise“ öffnen. Jede Zeile zeigt Datum, Mitglied, Angebot, beantragten Rabatt und Dokument.",
+          "„Dokument ansehen“ klicken und prüfen, ob es den Rabatt belegt.",
+          "„Genehmigen“ klicken oder „Ablehnen“, den Grund eintragen (Pflicht) und „Ablehnung bestätigen“ klicken."
+        ],
+        "danach": "Die Person wird über die Entscheidung benachrichtigt. Entschiedene Fälle stehen unten in der Historie der Nachweise.",
+        "vorher": "Ein Antrag wartet auf Prüfung. Du weißt, welcher Nachweis zum Rabatt gehört (z. B. Studentenausweis).",
+        "erwartet": [
+          "Die Liste zeigt nur Anträge, die auf einen Nachweis warten. Steht dort „Noch nicht gesendet“, hat das Mitglied noch nichts hochgeladen.",
+          "Das Dokument öffnet sich.",
+          "Die Zeile verschwindet aus der Liste. Die Historie unten zeigt Entscheidung (Genehmigt oder Abgelehnt), Datum und Begründung."
+        ],
+        "fehler": [
+          {
+            "problem": "„Das Dokument konnte nicht geöffnet werden.“",
+            "loesung": "Versuche es erneut. Hilft das nicht, bitte das Mitglied, die Datei neu hochzuladen."
+          },
+          {
+            "problem": "Die Zeile zeigt „Noch nicht gesendet“.",
+            "loesung": "Das Mitglied hat noch kein Dokument eingereicht. Hat es dir eines gegeben, lade es über „Dokument für dieses Mitglied hochladen“ hoch."
+          },
+          {
+            "problem": "„Ablehnung bestätigen“ ist nicht möglich.",
+            "loesung": "Der Ablehnungsgrund ist Pflicht. Trage ihn ein."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Melde ein Testkonto „[ÜBUNG] Test Mitglied“ zu einem Angebot mit Rabatt an, lade eine Testdatei hoch und lehne den Nachweis mit dem Grund „[ÜBUNG]“ ab. Berühre keine anderen Anträge."
+      }
     ]
   },
   "campagnes": {
@@ -115,6 +247,80 @@
       "Bei Bedarf ein Angebot als „Familienpaket“ einrichten: festlegen, welche bestehenden Angebote Hauptperson, weitere Erwachsene und Kinder erhalten, dazu Familienrabatt in Prozent und Obergrenzen. Das Höchstalter eines Kindes stellst du je Kampagne ein. Ein Wechsel auf das Paket gilt erst ab der nächsten Kampagne.",
       "Im Abschnitt „Familienpakete“ siehst du Pakete mit Personen und Einladungsstatus und darunter einen Bericht mit Zahlen je Kampagne (Altersgruppen, Rabatt), der sich als CSV exportieren lässt. Nach Ablauf der Aufbewahrungsfrist werden Personendaten automatisch anonymisiert – der Bericht bleibt vollständig.",
       "Kampagne veröffentlichen, damit Interessierte sie auf der Startseite und unter „Meine Mitgliedschaft“ sehen."
+    ],
+    "workflows": [
+      {
+        "id": "KAMP-01",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "titre": "Mitgliedschaftskampagne anlegen und veröffentlichen",
+        "wann": "Die Beitrittsrunde für ein neues Jahr soll starten.",
+        "schritte": [
+          "„Mitgliedschaftskampagnen“ öffnen und „Neue Kampagne“ wählen.",
+          "Name, Jahr, Startdatum, Enddatum und Beschreibung eintragen und „Kampagne erstellen“ klicken.",
+          "Optional die Frist für Bestandsmitglieder und das Höchstalter eines Kindes (Familienpaket) einstellen.",
+          "Mit „Angebote verwalten“ die Angebote anlegen (Karte KAMP-02).",
+          "„Veröffentlichen“ klicken."
+        ],
+        "danach": "Mit „Schließen“ nimmt die Kampagne keine neuen Anmeldungen mehr an; die App fragt vorher nach.",
+        "vorher": "Du kennst Jahr, Zeitraum, Angebote und Preise der Kampagne.",
+        "erwartet": [
+          "Das Formular „Neue Kampagne“ ist offen.",
+          "Die Kampagne steht in der Liste mit dem Status „Entwurf“.",
+          "Frist und Höchstalter stehen in der Zeile der Kampagne.",
+          "Die Angebote stehen unter der Kampagne (siehe KAMP-02).",
+          "Der Status ist „Veröffentlicht“. Die Kampagne erscheint auf der Startseite und unter „Meine Mitgliedschaft“."
+        ],
+        "fehler": [
+          {
+            "problem": "„Die Kampagne konnte nicht erstellt werden.“",
+            "loesung": "Prüfe, ob alle Felder gefüllt sind und das Enddatum nach dem Startdatum liegt."
+          },
+          {
+            "problem": "Du hast zu früh veröffentlicht.",
+            "loesung": "Lege Angebote mit Preisen an, bevor du veröffentlichst. Interessierte sehen die Kampagne sofort."
+          },
+          {
+            "problem": "Du willst keine neuen Anmeldungen mehr.",
+            "loesung": "Nutze „Schließen“ und bestätige die Rückfrage."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege die Kampagne „[ÜBUNG] Kampagne“ an und lass sie im Entwurf. Veröffentliche sie nicht, sonst erscheint sie auf der Startseite der Testumgebung."
+      },
+      {
+        "id": "KAMP-02",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "titre": "Angebot mit Rabatt zu einer Kampagne hinzufügen",
+        "wann": "Eine Kampagne braucht eine Mitgliedschaftsstufe, ggf. mit Ermäßigung.",
+        "schritte": [
+          "Bei der Kampagne „Angebote verwalten“ klicken.",
+          "Name des Angebots, Vollpreis (€), Beschreibung und Vorteile (eine Zeile pro Vorteil) eintragen. „Sichtbar“ gesetzt lassen, wenn das Angebot angezeigt werden soll. „Angebot hinzufügen“ klicken.",
+          "Beim Angebot „Rabatte verwalten“ klicken.",
+          "Typ (Student, Familie, Senior, Sonstiges), Reduktion (fester Betrag oder Prozentsatz) und Wert wählen. „Nachweis erforderlich“ anhaken, wenn ein Dokument nötig ist, und „Rabatt hinzufügen“ klicken."
+        ],
+        "danach": "Bei Rabatten mit Nachweis lädt das Mitglied ein Dokument hoch; du prüfst es mit der Karte NACH-01. Familienpakete richtest du am Angebot unter „Familienpaket“ ein.",
+        "vorher": "Die Kampagne existiert. Du kennst Name, Preis und mögliche Rabatte des Angebots.",
+        "erwartet": [
+          "Der Bereich „Angebote dieser Kampagne“ öffnet sich.",
+          "Das Angebot steht mit seinem Preis in der Liste.",
+          "Der Bereich „Rabatte dieses Angebots“ öffnet sich.",
+          "Der Rabatt steht beim Angebot. Mit Nachweis-Pflicht muss das Mitglied beim Beitritt ein Dokument hochladen."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Angebot wird Mitgliedern nicht angezeigt.",
+            "loesung": "Prüfe, ob „Sichtbar“ gesetzt und die Kampagne veröffentlicht ist."
+          },
+          {
+            "problem": "Das Angebot gilt nur für bestimmte Alter.",
+            "loesung": "Trage Mindestalter und Höchstalter ein. Das Angebot zeigt dann z. B. „Ab 18 bis 26 Jahren“."
+          },
+          {
+            "problem": "„Das Angebot konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe Name und Preis und versuche es erneut."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege in der Entwurfskampagne „[ÜBUNG] Kampagne“ das Angebot „[ÜBUNG] Angebot“ mit 10 € an und füge den Rabatt „Student“ mit Nachweis hinzu. Ändere keine bestehenden Angebote."
+      }
     ]
   },
   "paiements": {
@@ -359,6 +565,37 @@
     "schritte": [
       "Die Erinnerungstage vor und nach der Fälligkeit einstellen.",
       "Speichern – die Erinnerungen laufen danach automatisch per E-Mail."
+    ],
+    "workflows": [
+      {
+        "id": "FRIST-01",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "titre": "Fälligkeitstermin für ein Beitragsjahr festlegen",
+        "wann": "Ab einem bestimmten Datum soll ein unbezahlter Beitrag als überfällig gelten und Erinnerungen auslösen.",
+        "schritte": [
+          "„Fälligkeitstermine“ öffnen.",
+          "Beitragsjahr und Fälligkeitsdatum eintragen und „Hinzufügen“ klicken.",
+          "Für ein vorhandenes Jahr das Datum ändern und „Speichern“ klicken, oder den Termin mit „Löschen“ entfernen."
+        ],
+        "danach": "Die drei Erinnerungen (30 Tage vor, 7 Tage vor, 1 Tag nach der Fälligkeit) werden automatisch neu berechnet. Ohne Eintrag gilt der 1. Januar.",
+        "vorher": "Du kennst das Beitragsjahr und das Datum, ab dem der Beitrag überfällig sein soll.",
+        "erwartet": [
+          "Die Tabelle zeigt Jahr, Fälligkeitsdatum und die letzte Änderung. Ohne Eintrag steht dort, dass alle Jahre den 1. Januar verwenden.",
+          "Das Jahr steht mit seinem Datum in der Tabelle.",
+          "Das neue Datum steht in der Zeile. Nach „Löschen“ und der Rückfrage gilt für das Jahr wieder der 1. Januar."
+        ],
+        "fehler": [
+          {
+            "problem": "Erinnerungen kommen zur falschen Zeit.",
+            "loesung": "Prüfe das Fälligkeitsdatum des Jahres. Ohne Eintrag gilt der 1. Januar."
+          },
+          {
+            "problem": "„Der Fälligkeitstermin konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe, ob Jahr und Datum ausgefüllt sind, und ändere ein vorhandenes Jahr statt es ein zweites Mal anzulegen."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege als Übung („[ÜBUNG]“) für ein weit entferntes Jahr (z. B. 2099) einen Termin an und lösche ihn wieder. Ändere keine Termine der laufenden Jahre."
+      }
     ]
   },
   "roles": {
@@ -368,6 +605,107 @@
       "Eine Person oder Rolle auswählen.",
       "Pro Seite „kein Zugriff“, „Lesen“ oder „Lesen und Schreiben“ vergeben.",
       "Änderungen gelten sofort beim nächsten Laden der Seite."
+    ],
+    "workflows": [
+      {
+        "id": "ROLL-01",
+        "rollen": ["super_admin"],
+        "titre": "Einer Person Rollen zuweisen oder entziehen",
+        "wann": "Jemand übernimmt eine Aufgabe im Verein oder gibt sie ab.",
+        "schritte": [
+          "„Rollenverwaltung“ öffnen, Tab „Zuweisung“. Mit „Suche“ (Name, Vorname, E-Mail) und „Suchen“ die Person finden.",
+          "In der Zeile „Rollen verwalten“ klicken.",
+          "Die gewünschten Rollen anhaken oder abwählen. Mehrere Rollen sind möglich; „Normales Mitglied“ bleibt immer gesetzt.",
+          "„Speichern“ klicken."
+        ],
+        "danach": "Die Rechte gelten, sobald die Person die Seite neu lädt.",
+        "vorher": "Du weißt, welche Person welche Rolle bekommt oder verliert, und wer das verlangt hat.",
+        "erwartet": [
+          "Die Zeile zeigt Name, E-Mail, aktuelle Rolle, Status und zugewiesene Rollen.",
+          "Die Rollen der Person werden geladen und als Auswahl angezeigt.",
+          "Deine Änderungen stehen in der Auswahl. „Normales Mitglied“ ist gesperrt, weil es die technische Basisrolle jedes Kontos ist.",
+          "Die Meldung „Die Rollen von … wurden aktualisiert.“ erscheint."
+        ],
+        "fehler": [
+          {
+            "problem": "„Normales Mitglied“ lässt sich nicht abwählen.",
+            "loesung": "Das ist gewollt. Die Rolle gibt allein keine Mitglieder-Rechte; die hängen vom Status der Mitgliedschaft ab."
+          },
+          {
+            "problem": "Die Person sieht die neue Seite nicht.",
+            "loesung": "Sie muss die Seite neu laden. Prüfe außerdem, ob die Rolle im Tab „Zugriff“ Rechte auf diese Seite hat."
+          },
+          {
+            "problem": "Du änderst deine eigene Zeile (mit „(Sie)“ markiert).",
+            "loesung": "Ändere deine eigenen Rollen nur, wenn eine zweite Person App-Administrator ist."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Weise einem eigenen Testkonto „[ÜBUNG] Test Konto“ die Rolle Personalabteilung zu, prüfe mit dem Konto, dass die Mitgliederliste erscheint, und nimm die Rolle wieder weg. Ändere keine Rollen echter Personen."
+      },
+      {
+        "id": "ROLL-02",
+        "rollen": ["super_admin"],
+        "titre": "Neue Rolle anlegen und Zugriffe festlegen",
+        "wann": "Für eine Aufgabe passt keine vorhandene Rolle, z. B. für eine Region oder ein Team.",
+        "schritte": [
+          "Tab „Zugriff“ öffnen. Die Zugriffsmatrix zeigt alle Rollen und Module.",
+          "Unter „Neue Rolle anlegen“ Name, Kennung (slug) und optional eine Beschreibung eintragen und „Rolle anlegen“ klicken.",
+          "In der Matrix für die neue Rolle je Modul „Kein Zugriff“, „Lesen“ oder „Lesen & Schreiben“ einstellen. Die Verwaltungsseiten stehen im Abschnitt „Verwaltungsseiten“.",
+          "Die Rolle über die Karte ROLL-01 einer Person zuweisen."
+        ],
+        "danach": "Neue Module erscheinen in der Matrix automatisch. Eine Rolle löschst du nur, wenn sie niemandem mehr zugewiesen ist.",
+        "vorher": "Du weißt, welche Seiten die Rolle sehen und ändern darf, und wer sie bekommt.",
+        "erwartet": [
+          "Die Matrix zeigt die Rollen. Systemrollen sind als „System“ markiert, eigene als „Benutzerdefiniert“.",
+          "Die Meldung „Die Rolle … wurde angelegt.“ erscheint; die Rolle steht in der Matrix.",
+          "Die Zugriffe der neuen Rolle sind gesetzt. Für den App-Administrator bleibt der Zugriff immer voll und ist gesperrt.",
+          "Die Person hat die Rechte der Rolle, sobald sie die Seite neu lädt."
+        ],
+        "fehler": [
+          {
+            "problem": "„Eine Systemrolle kann nicht gelöscht werden.“",
+            "loesung": "Nur eigene Rollen lassen sich löschen."
+          },
+          {
+            "problem": "„Diese Rolle ist noch mindestens einem Benutzer zugewiesen.“",
+            "loesung": "Entferne die Rolle zuerst bei allen Personen (Karte ROLL-01) und lösche sie dann."
+          },
+          {
+            "problem": "Die Rolle hat zu viele Rechte.",
+            "loesung": "Starte mit „Kein Zugriff“ und vergib nur, was die Aufgabe braucht."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege die Rolle „[ÜBUNG] Testrolle“ mit der Kennung uebung-testrolle an, gib ihr nur „Lesen“ auf ein Modul und lösche sie danach mit „Löschen“, solange sie niemandem zugewiesen ist."
+      },
+      {
+        "id": "ROLL-03",
+        "rollen": ["super_admin"],
+        "titre": "Sichtbarkeit der Menüeinträge prüfen",
+        "wann": "Du willst wissen oder ändern, welche Einträge aktive Mitglieder und Nicht-Mitglieder sehen.",
+        "schritte": [
+          "Tab „Sichtbarkeit“ öffnen.",
+          "In der Zeile des Moduls die Haken bei „Mitglied“ und „Nicht-Mitglied“ lesen.",
+          "Nur wenn nötig einen Haken setzen oder entfernen."
+        ],
+        "danach": "Für Nicht-Mitglieder gilt die Spalte verbindlich: Ohne Haken sind Seite und Daten gesperrt, nicht nur das Menü.",
+        "vorher": "Du kennst das Modul und die Gruppe (Mitglied oder Nicht-Mitglied), um die es geht.",
+        "erwartet": [
+          "Die Tabelle zeigt die Module nach Gruppen (Allgemein, Gemeinschaft, Inhalte) mit je einem Haken pro Spalte.",
+          "Du erkennst, welche Einträge welche Gruppe sieht.",
+          "Der Haken ist geändert und gespeichert. Gelingt das nicht, erscheint „Sichtbarkeit konnte nicht gespeichert/geladen werden.“"
+        ],
+        "fehler": [
+          {
+            "problem": "Eine Verwaltungsseite fehlt in der Tabelle.",
+            "loesung": "Verwaltungsseiten werden in der Zugriffsmatrix (Tab „Zugriff“) gesteuert."
+          },
+          {
+            "problem": "Eine zusätzliche Rolle erweitert die Sichtbarkeit nicht.",
+            "loesung": "Das ist gewollt: Die Spalte „Nicht-Mitglied“ wird durch zusätzliche Rollen nicht erweitert."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne den Tab „Sichtbarkeit“ und beschreibe in eigenen Worten, welche Einträge ein Nicht-Mitglied sieht. Ändere nichts."
+      }
     ]
   },
   "articles": {
@@ -376,6 +714,43 @@
     "schritte": [
       "Einen Artikel mit Name und Betrag anlegen.",
       "Nicht mehr benötigte Artikel deaktivieren statt zu löschen, damit bisherige Zahlungen nachvollziehbar bleiben."
+    ],
+    "workflows": [
+      {
+        "id": "BEIT-01",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "titre": "Beitragsartikel anlegen, ändern oder deaktivieren",
+        "wann": "Mitglieder sollen im Beitragsformular einen zusätzlichen Zahlungsartikel wählen können, oder ein Artikel wird nicht mehr gebraucht.",
+        "schritte": [
+          "„Beitragsartikel“ öffnen. Jahresbeitrag und Beitrittsgebühr sind feste Tarife: Dort änderst du nur Betrag und Aktivierung.",
+          "Für einen neuen Artikel Bezeichnung und Betrag (€) eintragen und „Hinzufügen“ klicken.",
+          "Einen Betrag ändern: neuen Betrag eintragen und „Speichern“ klicken.",
+          "Nicht mehr benötigte Artikel mit „Deaktivieren“ ausblenden. Mit „Reaktivieren“ kommen sie zurück."
+        ],
+        "danach": "Ein deaktivierter Artikel wird Mitgliedern nicht mehr angeboten, bleibt aber in der Tabelle und im Zahlungsverlauf sichtbar.",
+        "vorher": "Du kennst Bezeichnung und Betrag des Artikels.",
+        "erwartet": [
+          "Die Tabelle zeigt Bezeichnung, Betrag, Status (Aktiv oder Deaktiviert) und Aktionen. Feste Tarife tragen den Hinweis „Fest hinterlegter Tarif“.",
+          "Der Artikel steht mit Betrag und Status „Aktiv“ in der Tabelle. Mitglieder können ihn im Beitragsformular wählen.",
+          "Der neue Betrag steht in der Zeile.",
+          "Der Status ist „Deaktiviert“. Mitglieder sehen den Artikel nicht mehr."
+        ],
+        "fehler": [
+          {
+            "problem": "„Der Artikel konnte nicht gespeichert werden.“",
+            "loesung": "Prüfe, ob Bezeichnung und Betrag ausgefüllt sind."
+          },
+          {
+            "problem": "Du willst einen Artikel löschen.",
+            "loesung": "Löschen ist nicht vorgesehen. Deaktiviere ihn, damit bisherige Zahlungen nachvollziehbar bleiben."
+          },
+          {
+            "problem": "Die Bezeichnung von Jahresbeitrag oder Beitrittsgebühr lässt sich nicht ändern.",
+            "loesung": "Das ist gewollt. Bei festen Tarifen sind nur Betrag und Aktivierung änderbar."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege „[ÜBUNG] Testartikel“ mit 1,00 € an, deaktiviere und reaktiviere ihn. Berühre die festen Tarife nicht."
+      }
     ]
   },
   "notifications": {
@@ -562,7 +937,27 @@
           "„Filtern“ klicken. Mit „Zurücksetzen“ werden alle Filter geleert.",
           "Eine Zeile anklicken, um die Mitgliederkarte zu öffnen."
         ],
-        "danach": "Die Filter wirken auch auf den Excel-Export: Exportiert wird genau die gefilterte Liste."
+        "danach": "Die Filter wirken auch auf den Excel-Export: Exportiert wird genau die gefilterte Liste.",
+        "id": "MITG-01",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Du kennst Name, E-Mail oder wenigstens Stadt oder Status der Person.",
+        "erwartet": [
+          "Das Suchfeld enthält deinen Begriff. Die Liste ändert sich erst nach „Filtern“.",
+          "Die gewählten Filter stehen über der Liste.",
+          "Die Liste zeigt nur noch passende Mitglieder mit Nummer, Name, Stadt und Status. Nach „Zurücksetzen“ sind wieder alle da.",
+          "Die Mitgliederkarte öffnet sich mit persönlichen Daten, Adresse und Vereinsdaten."
+        ],
+        "fehler": [
+          {
+            "problem": "„Kein Mitglied entspricht diesen Kriterien.“",
+            "loesung": "Klicke „Zurücksetzen“ und suche nur mit dem Nachnamen. Prüfe die Schreibweise (Umlaute, Bindestriche)."
+          },
+          {
+            "problem": "Du siehst nur deine eigene Karte, keine Liste.",
+            "loesung": "Die Liste aller Mitglieder gibt es ab der Rolle Personalabteilung."
+          }
+        ],
+        "uebung": "Suche nach „ÜBUNG“ und öffne die Karte eines Treffers, falls es einen gibt. Setze danach alle Filter zurück. Das ändert keine Daten."
       },
       {
         "titre": "Mitglied von Hand anlegen (RH)",
@@ -573,7 +968,31 @@
           "Status, Beitrittsdatum und Adresse prüfen und „Speichern“ klicken.",
           "Die Mitgliedsnummer (Format CA-Jahr-Nummer) wird automatisch vergeben."
         ],
-        "danach": "Die Person hat noch kein Konto. Registriert sie sich später mit derselben E-Mail-Adresse, wird sie automatisch mit dieser Karte verknüpft."
+        "danach": "Die Person hat noch kein Konto. Registriert sie sich später mit derselben E-Mail-Adresse, wird sie automatisch mit dieser Karte verknüpft.",
+        "id": "MITG-02",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Die Pflichtangaben der Person und ihre Ausweisnummer (CIN) oder Reisepassnummer.",
+        "erwartet": [
+          "Das Formular „Mitglied hinzufügen“ ist offen.",
+          "Alle Pflichtfelder sind gefüllt. Fehlen CIN und Reisepass, erscheint „Ausweisnummer (CIN) oder Passnummer ist erforderlich.“",
+          "Die Person ist gespeichert und in der Liste auffindbar.",
+          "Auf der Karte steht eine Mitgliedsnummer im Format CA-Jahr-Nummer."
+        ],
+        "fehler": [
+          {
+            "problem": "„Dieses Feld ist erforderlich.“",
+            "loesung": "Fülle das Feld aus, das die Meldung nennt."
+          },
+          {
+            "problem": "„Ungültige E-Mail-Adresse.“",
+            "loesung": "Prüfe Tippfehler, das @-Zeichen und die Endung."
+          },
+          {
+            "problem": "Die Person gibt es vielleicht schon.",
+            "loesung": "Suche zuerst mit der Karte MITG-01 nach Name und E-Mail, damit niemand doppelt geführt wird."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege das Mitglied „[ÜBUNG] Test Mitglied“ mit einer erfundenen Adresse (…@example.org) an. Ändere keine bestehende Karte. Die Bureau-Ebene kann die Übungskarte danach löschen; das lässt sich nicht rückgängig machen."
       },
       {
         "titre": "Status ändern (RH)",
@@ -583,7 +1002,26 @@
           "Im Bereich „Status ändern“ den neuen Status wählen.",
           "„Anwenden“ klicken."
         ],
-        "danach": "Der aktuelle Status gilt sofort für Rechte wie Abstimmung, Community und Veranstaltungsanmeldung. Der Verlauf pro Jahr steht in der Statushistorie."
+        "danach": "Der aktuelle Status gilt sofort für Rechte wie Abstimmung, Community und Veranstaltungsanmeldung. Der Verlauf pro Jahr steht in der Statushistorie.",
+        "id": "MITG-03",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Du weißt, welches Mitglied welchen neuen Status bekommt und warum.",
+        "erwartet": [
+          "Die Mitgliederkarte ist offen. Im Bereich „Status ändern“ steht die Auswahl „Neuen Status wählen…“.",
+          "Der neue Status steht im Auswahlfeld; gespeichert ist noch nichts.",
+          "Der Status ist geändert und gilt sofort für Abstimmung, Community und Veranstaltungsanmeldung. Der Verlauf steht in der Statushistorie."
+        ],
+        "fehler": [
+          {
+            "problem": "Du hast das falsche Mitglied geändert.",
+            "loesung": "Setze auf derselben Karte den vorherigen Status wieder. Die Statushistorie zeigt beide Änderungen."
+          },
+          {
+            "problem": "Die Auswahl „Status ändern“ fehlt.",
+            "loesung": "Dafür brauchst du mindestens die Rolle Personalabteilung."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Setze „[ÜBUNG] Test Mitglied“ (aus MITG-02) auf „Nicht-Mitglied (ehemalig)“ und danach wieder auf „Mitglied (aktiv)“. Der Status zählt in die Kennzahlen; stelle ihn am Ende wieder her."
       },
       {
         "titre": "Mitgliederliste als Excel exportieren (RH)",
@@ -594,7 +1032,27 @@
           "Die Spalten auswählen, die in die Datei sollen (mindestens eine).",
           "„Exportieren“ bestätigen. Die Datei wird heruntergeladen."
         ],
-        "beispiel": "Alle aktiven Mitglieder in Berlin, sortiert nach Name, mit Spalten Name, E-Mail und Telefon."
+        "beispiel": "Alle aktiven Mitglieder in Berlin, sortiert nach Name, mit Spalten Name, E-Mail und Telefon.",
+        "id": "MITG-04",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Du weißt, welche Mitglieder und welche Angaben in die Datei sollen.",
+        "erwartet": [
+          "Die Liste zeigt genau die Mitglieder, die in die Datei sollen.",
+          "Der Dialog „Zu exportierende Spalten wählen“ ist offen.",
+          "Die gewählten Spalten sind angehakt. Ohne Auswahl erscheint „Wählen Sie mindestens eine Spalte aus.“",
+          "Die Excel-Datei wird heruntergeladen und enthält nur die gefilterten Mitglieder."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Datei enthält zu viele oder die falschen Personen.",
+            "loesung": "Der Export folgt immer der Liste. Setze vor dem Export die Filter richtig."
+          },
+          {
+            "problem": "Die Datei enthält personenbezogene Daten.",
+            "loesung": "Speichere sie nur dort, wo sie hingehört, verschicke sie nicht unverschlüsselt und lösche sie nach Gebrauch."
+          }
+        ],
+        "uebung": "Suche nach „ÜBUNG“, exportiere nur die Spalten Name und Stadt und öffne die Datei. Lösche sie danach wieder. Das ändert keine Daten."
       }
     ],
     "tipps": [
@@ -628,7 +1086,29 @@
           "„Import bestätigen“ klicken und danach den Bericht herunterladen."
         ],
         "beispiel": "Aus 300 Zeilen sind 250 neu, 40 Dubletten und 10 fehlerhaft. Du kreuzt 12 Dubletten an, bei denen sich die Telefonnummer geändert hat. Beim Bestätigen werden 250 Mitglieder angelegt, 12 aktualisiert, 28 Dubletten übersprungen; die 10 Fehler stehen im Bericht mit Grund.",
-        "danach": "Importierte Mitglieder haben noch kein Login. Registrieren sie sich später mit derselben E-Mail-Adresse und bestätigen den Code, werden sie automatisch verknüpft."
+        "danach": "Importierte Mitglieder haben noch kein Login. Registrieren sie sich später mit derselben E-Mail-Adresse und bestätigen den Code, werden sie automatisch verknüpft.",
+        "id": "MITG-05",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Eine Excel-Datei mit den Mitgliedern. Bei der ersten Übernahme probierst du zuerst mit 5 bis 10 Zeilen auf der Testumgebung.",
+        "erwartet": [
+          "Die leere Vorlage ist heruntergeladen.",
+          "Jede Zeile hat alle Pflichtspalten. Datum und Spaltennamen entsprechen der Vorlage.",
+          "Der Dateiname steht im Formular. Es ist noch nichts importiert.",
+          "Die Prüfliste „Prüfliste — es wurde noch nichts importiert“ zeigt Neu, Dublette, Unverändert und Fehler getrennt.",
+          "Gewählte Dubletten sind angekreuzt. Die Zusammenfassung nennt, wie viele Zeilen neu angelegt und überschrieben werden.",
+          "„Import abgeschlossen“ erscheint mit den Zahlen; der Bericht ist als Excel heruntergeladen."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Prüfliste zeigt Fehlerzeilen.",
+            "loesung": "Korrigiere die Zeilen in der Excel-Datei und prüfe erneut. „Prüfen“ speichert nichts; du kannst es beliebig oft tun."
+          },
+          {
+            "problem": "Du bist unsicher, ob eine Dublette überschrieben werden soll.",
+            "loesung": "Lies die Abweichungen unter der Zeile (alt durchgestrichen → neu) und wähle nur Dubletten, die wirklich überschrieben werden sollen."
+          }
+        ],
+        "uebung": "Bis zum Ende der Testrunde nur „Prüfen“, nicht „Import bestätigen“: Lege eine Datei mit drei Zeilen „[ÜBUNG] Test 1“ bis „[ÜBUNG] Test 3“ mit erfundenen Adressen (…@example.org) an und sieh dir die Prüfliste an. Prüfen speichert nichts."
       },
       {
         "titre": "2. Spalten und Formate der Mitglieder-Datei",
@@ -653,7 +1133,28 @@
           "Fehler: Die Zeile wird nicht importiert. Der Grund steht in der Zeile (z. B. Pflichtfeld fehlt, E-Mail ungültig, doppelt in der Datei, E-Mail und CIN gehören zu verschiedenen Mitgliedern).",
           "Mit den Filter-Knöpfen über der Liste zeigst du nur einen Status. „Alle Dubletten wählen“ und „Auswahl aufheben“ erleichtern die Massenauswahl."
         ],
-        "danach": "CIN und Reisepass erscheinen in der Liste nur maskiert (••••1234)."
+        "danach": "CIN und Reisepass erscheinen in der Liste nur maskiert (••••1234).",
+        "id": "MITG-06",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Du hast „Prüfen“ geklickt und die Prüfliste ist sichtbar.",
+        "erwartet": [
+          "Zeilen mit „Neu“ haben kein Auswahlkästchen; sie werden beim Bestätigen angelegt.",
+          "Dubletten haben ein Kästchen und zeigen die Abweichungen unter der Zeile.",
+          "Zeilen mit „Unverändert“ haben nichts zu überschreiben.",
+          "Fehlerzeilen nennen den Grund und werden nicht importiert.",
+          "Der Filter zeigt nur den gewählten Status. „Alle Dubletten wählen“ markiert alle Dubletten, „Auswahl aufheben“ entfernt die Markierung."
+        ],
+        "fehler": [
+          {
+            "problem": "Fast alle Zeilen sind Fehler.",
+            "loesung": "Meist stimmen Spaltennamen oder Datumsformat nicht. Lade die Vorlage neu und kopiere deine Daten hinein."
+          },
+          {
+            "problem": "CIN und Reisepass sind nur teilweise zu sehen.",
+            "loesung": "Das ist gewollt: Beide erscheinen in der Liste maskiert (••••1234)."
+          }
+        ],
+        "uebung": "Nutze die Übungsdatei aus MITG-05 und füge absichtlich eine Zeile „[ÜBUNG] Fehler“ ohne E-Mail-Adresse hinzu. Sie erscheint als Fehler. Nur „Prüfen“, nicht „Import bestätigen“."
       },
       {
         "titre": "4. Dubletten überschreiben: was passiert genau?",
@@ -767,7 +1268,27 @@
           "Mit „Ja, verknüpfen“ bestätigen.",
           "Passt keine Karte, „Kein Treffer“ wählen."
         ],
-        "danach": "Nach der Verknüpfung bleiben Mitgliedsnummer, Status, Beitrittsdatum und Historie der importierten Karte erhalten. Die Angaben, die das Mitglied bei der Registrierung selbst eingegeben hat, überschreiben die importierten Stammdaten (nur gefüllte Felder)."
+        "danach": "Nach der Verknüpfung bleiben Mitgliedsnummer, Status, Beitrittsdatum und Historie der importierten Karte erhalten. Die Angaben, die das Mitglied bei der Registrierung selbst eingegeben hat, überschreiben die importierten Stammdaten (nur gefüllte Felder).",
+        "id": "MITG-07",
+        "rollen": ["rh", "bureau_admin", "super_admin"],
+        "vorher": "Ein neu registriertes Konto steht in der Liste.",
+        "erwartet": [
+          "Bei jedem Vorschlag stehen die Wahrscheinlichkeit („sehr wahrscheinlich“, „wahrscheinlich“, „möglich“) und die Gründe (E-Mail, CIN, Name, Geburtsdatum).",
+          "Die Rückfrage mit „Ja, verknüpfen“ erscheint.",
+          "Das Konto ist mit der importierten Karte verknüpft. Mitgliedsnummer, Status, Beitrittsdatum und Historie der Karte bleiben erhalten.",
+          "Das Konto verschwindet aus der Liste, ohne verknüpft zu werden."
+        ],
+        "fehler": [
+          {
+            "problem": "Mehrere Vorschläge sehen ähnlich aus.",
+            "loesung": "Vergleiche Geburtsdatum und E-Mail. Bei Zweifel ordne nicht zu, die Verknüpfung lässt sich nicht automatisch rückgängig machen."
+          },
+          {
+            "problem": "Du hast das falsche Konto verknüpft.",
+            "loesung": "Wende dich an die App-Administration. Von hier aus lässt sich das nicht zurücknehmen."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege über einen Import (MITG-05) die Karte „[ÜBUNG] Test Import“ an, registriere ein Konto „[ÜBUNG] Test Konto“ mit einer eigenen Testadresse und ordne nur dieses Konto zu. Berühre keine anderen Vorschläge."
       }
     ],
     "tipps": [
@@ -1009,5 +1530,123 @@
     "super_admin": "App Admin",
     "region": "Verantwortliche der Region",
     "einlass": "Einlass-Helfer"
+  },
+  "einlass": {
+    "titre": "Einlass und Anwesenheit",
+    "intro": "Am Veranstaltungstag lässt du Angemeldete ein, siehst, wer da ist, und exportierst die Liste. Die Seite erreichst du über „Meine Tickets“ oder über „Anwesenheit“ in der Veranstaltungsverwaltung.",
+    "schritte": [
+      "Oben zählt „Eingelassene Personen“ Erwachsene und Kinder.",
+      "Mit der Kamera den QR-Code des Tickets scannen oder den Code von Hand eingeben. Ohne Tickets trägst du Anwesende in der Liste ein.",
+      "Die Liste „Angemeldete und Anwesenheit“ zeigt für jede Person den Status (offen, teilweise da, vollständig).",
+      "Die Verantwortlichen können Einlass-Helfer benennen. Helfer dürfen nur am Veranstaltungstag scannen."
+    ],
+    "workflows": [
+      {
+        "id": "EINL-01",
+        "rollen": ["einlass", "bureau_admin", "region", "super_admin"],
+        "titre": "Tickets am Einlass scannen",
+        "wann": "Gäste kommen mit einem Ticket (QR-Code) zur Veranstaltung.",
+        "schritte": [
+          "Über „Meine Tickets“ im Abschnitt „Einlass und Anwesenheit“ auf „Öffnen“ klicken (oder in der Veranstaltungsverwaltung auf „Anwesenheit“).",
+          "„Kamera starten und scannen“ klicken und den QR-Code ins Bild halten. Geht das nicht, den Code bei „Code von Hand eingeben“ tippen und „Prüfen“ klicken.",
+          "Name und Zahlen prüfen, Erwachsene und Kinder wählen, die jetzt hereinkommen, und „Einlassen“ klicken.",
+          "Die Bestätigung lesen. Bei einem Versehen „Rückgängig“ klicken.",
+          "Erscheint eine Fehlermeldung, sie lesen und „Weiter“ klicken. Dann das nächste Ticket scannen."
+        ],
+        "danach": "Die Zahlen oben und die Liste unten sind sofort aktuell. Anwesenheit wird mit dem Scannen automatisch erfasst.",
+        "vorher": "Du hast Zugriff auf den Einlass dieser Veranstaltung. Helfer dürfen nur am Veranstaltungstag scannen.",
+        "erwartet": [
+          "Die Seite zeigt oben den Zähler „Eingelassene Personen“ mit Erwachsenen und Kindern.",
+          "Nach dem Scan steht der Name mit „Gebucht“ und „Schon drin“ da; bei einer Person mit mehreren Plätzen kannst du Erwachsene und Kinder einzeln wählen.",
+          "Die Meldung „[Name] ist eingelassen“ erscheint mit der Summe und „noch … offen“ oder „alle da“. Der Zähler oben steigt.",
+          "Nach „Rückgängig“ sinkt der Zähler wieder.",
+          "Die Meldung nennt den Grund: „Bereits vollständig eingelassen“, „Ticket ungültig (storniert oder abgesagt)“, „Code unbekannt oder das Ticket wurde erneuert“ oder „Ticket gehört zu einer anderen Veranstaltung“."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Kamera startet nicht.",
+            "loesung": "Erlaube den Kamerazugriff in den Browsereinstellungen oder nutze die Liste unten bzw. die Code-Eingabe."
+          },
+          {
+            "problem": "„Code unbekannt oder das Ticket wurde erneuert“.",
+            "loesung": "Die Person hat ein neues Ticket bekommen, der alte QR-Code gilt nicht mehr. Bitte sie, das neue Ticket aus der App oder der E-Mail zu zeigen."
+          },
+          {
+            "problem": "„Ticket gehört zu einer anderen Veranstaltung“.",
+            "loesung": "Prüfe, ob du am richtigen Einlass bist."
+          },
+          {
+            "problem": "„Du hast für diesen Einlass keinen Zugriff.“",
+            "loesung": "Helfer dürfen nur am Veranstaltungstag scannen. Frage das Büro oder die Verantwortlichen der Region."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege die Veranstaltung „[ÜBUNG] Probefest“ mit Tickets für heute an (VERA-01), melde ein Testkonto „[ÜBUNG] Test Mitglied“ an, scanne dessen Ticket und mache den Einlass mit „Rückgängig“ wieder rückgängig. Für den Probe-Einlass musst du veröffentlichen; dabei geht eine Einladungs-Mail raus, also nur auf der Testumgebung."
+      },
+      {
+        "id": "EINL-02",
+        "rollen": ["einlass", "bureau_admin", "region", "super_admin"],
+        "titre": "Anwesenheit in der Liste eintragen und exportieren",
+        "wann": "Eine Veranstaltung hat keine Tickets, ein Ticket fehlt oder du willst die Anwesenheit als Datei.",
+        "schritte": [
+          "Den Einlass der Veranstaltung öffnen (siehe EINL-01, Schritt 1).",
+          "In „Angemeldete und Anwesenheit“ den Namen bei „Name suchen“ eingeben.",
+          "Bei der Person „Anwesend eintragen“ klicken, die Anzahl wählen und „Einlassen“ klicken.",
+          "Wenn nötig „Als Excel exportieren“ klicken."
+        ],
+        "danach": "Die Liste und der Export stimmen mit dem Scannen überein: Beides nutzt dieselben Zahlen.",
+        "vorher": "Die Person ist für die Veranstaltung angemeldet.",
+        "erwartet": [
+          "Die Liste zeigt alle Angemeldeten mit Status (offen, teilweise da, vollständig) und Anzahl drin/gebucht.",
+          "Die Liste zeigt nur passende Namen. Ohne Treffer steht dort „Keine Angemeldeten gefunden.“",
+          "Der Status der Person wechselt (bei allen anwesend: „vollständig“) und die Uhrzeit der Anwesenheit erscheint. Der Zähler oben steigt.",
+          "Eine Excel-Datei mit der Liste wird heruntergeladen."
+        ],
+        "fehler": [
+          {
+            "problem": "„Für diese Veranstaltung gibt es keine Tickets. Trage Anwesende in der Liste ein.“",
+            "loesung": "Das ist normal, wenn „Eintrittsticket (QR-Code) ausstellen“ nicht gesetzt war. Nutze die Liste."
+          },
+          {
+            "problem": "Die Person steht nicht in der Liste.",
+            "loesung": "Prüfe die Schreibweise und die Anmeldung der Person. Ohne Anmeldung kann sie nicht eingetragen werden."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Trage in „[ÜBUNG] Probefest“ nur das Testkonto „[ÜBUNG] Test Mitglied“ als anwesend ein und exportiere die Liste. Lösche die Datei danach wieder."
+      },
+      {
+        "id": "EINL-03",
+        "rollen": ["bureau_admin", "region", "super_admin"],
+        "titre": "Einlass-Helfer benennen",
+        "wann": "Weitere Personen sollen am Veranstaltungstag am Einlass scannen.",
+        "schritte": [
+          "Den Einlass der Veranstaltung öffnen und zum Abschnitt „Einlass-Helfer“ gehen.",
+          "Die E-Mail-Adresse des Kontos eintragen und „Benennen“ klicken.",
+          "Nach dem Einsatz bei der Person „Entfernen“ klicken."
+        ],
+        "danach": "Helfer sehen nur Name, Personenzahl und Status und dürfen nur am Veranstaltungstag scannen.",
+        "vorher": "Die Helferin oder der Helfer hat ein Konto in der App. Du kennst die E-Mail-Adresse des Kontos.",
+        "erwartet": [
+          "Der Abschnitt zeigt die bisherigen Helfer oder „Noch keine Helfer benannt.“",
+          "Die Person steht in der Liste. Sie sieht die Veranstaltung unter „Meine Tickets“ im Abschnitt „Einlass und Anwesenheit“ mit dem Zusatz „Helfer“.",
+          "Die Person steht nicht mehr in der Liste und hat keinen Zugriff mehr."
+        ],
+        "fehler": [
+          {
+            "problem": "Das Konto wird nicht gefunden.",
+            "loesung": "Prüfe die E-Mail-Adresse. Die Person braucht ein Konto in der App."
+          },
+          {
+            "problem": "Der Helfer kann nicht scannen.",
+            "loesung": "Helfer dürfen nur am Veranstaltungstag scannen."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Benenne das Testkonto „[ÜBUNG] Test Konto“ als Helfer von „[ÜBUNG] Probefest“ und entferne es wieder. Ändere keine Helfer echter Veranstaltungen."
+      }
+    ],
+    "tipps": [
+      "Am Veranstaltungstag funktioniert die Kamera nur, wenn der Browser den Zugriff erlaubt. Andernfalls hilft die Liste oder die Code-Eingabe.",
+      "Das Ticket der Gäste kommt zusätzlich als PDF per E-Mail, damit sie es auch ohne Netz am Einlass zeigen können.",
+      "Die Zugriffe prüft der Server je Veranstaltung: Büro, Verantwortliche der Region und benannte Helfer."
+    ]
   }
 }
