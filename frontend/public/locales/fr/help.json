@@ -298,6 +298,43 @@
       "Changez d'onglet pour voir les différents domaines.",
       "Ajustez la période et les filtres en haut, les graphiques se mettent à jour.",
       "Survolez un graphique pour voir les valeurs détaillées."
+    ],
+    "workflows": [
+      {
+        "id": "STAT-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Filtrer et exporter les indicateurs",
+        "wann": "Vous avez besoin de chiffres sur les membres, les finances, les évènements ou les projets, p. ex. pour le comité.",
+        "schritte": [
+          "Ouvrir « Statistiques & KPIs ».",
+          "En haut, régler l'année et les filtres : ville (DE), statut membre, Bundesland, pays ainsi que « Adhésion après le » et « Adhésion avant le ».",
+          "Passer d'un onglet à l'autre : « Financier », « Membres », « Évènements », « Données financières », « Bilan annuel », « Projets » et « Pivot ».",
+          "Avec « Exporter en PDF » ou « Exporter en Excel », télécharger la vue."
+        ],
+        "danach": "Les chiffres sont des analyses des données enregistrées. Les dépenses en attente ou rejetées ne comptent pas (carte FIN-01). L'export contient les chiffres des filtres choisis.",
+        "vorher": "Vous savez à quelle question les chiffres doivent répondre.",
+        "erwartet": [
+          "La page affiche les filtres et les onglets.",
+          "Les graphiques et tableaux se mettent à jour après la sélection.",
+          "Chaque onglet affiche ses indicateurs ; avec le pointeur, vous voyez les valeurs individuelles.",
+          "Le fichier est téléchargé. Pendant l'export, on lit « Export en cours… »."
+        ],
+        "fehler": [
+          {
+            "problem": "« L'export a échoué. »",
+            "loesung": "Réessayez avec moins de filtres. Si l'erreur persiste, signalez-la via le support."
+          },
+          {
+            "problem": "Les chiffres ne correspondent pas à vos attentes.",
+            "loesung": "Vérifiez l'année et les filtres, p. ex. un statut membre ou un filtre de ville réglé."
+          },
+          {
+            "problem": "Le Bundesland manque.",
+            "loesung": "Le choix « Bundesland » ne vaut que pour les membres en Allemagne."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : choisissez l'année précédente, parcourez tous les onglets et exportez la vue en Excel. Supprimez ensuite le fichier. Cela ne modifie rien."
+      }
     ]
   },
   "inscriptions": {
@@ -466,6 +503,78 @@
           }
         ],
         "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : dans la campagne en brouillon « [ÜBUNG] Kampagne », créez l'offre « [ÜBUNG] Angebot » à 10 € et ajoutez le rabais « Étudiant » avec justificatif. Ne modifiez aucune offre existante."
+      },
+      {
+        "id": "FAM-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Configurer le forfait famille d'une campagne",
+        "wann": "Une famille doit recevoir une offre commune dans une campagne.",
+        "schritte": [
+          "Dans la gestion des campagnes, définir pour la campagne l'« Âge maximum d'un enfant (forfait famille) » (année de la campagne moins année de naissance).",
+          "Dans l'offre, cocher « Forfait famille ».",
+          "Saisir « Remise famille (%) », « Adultes max. » et « Enfants max. ».",
+          "Choisir pour « Offre de la personne principale », « Offre des adultes supplémentaires » et « Offre des enfants » une offre existante de la campagne.",
+          "Cliquer sur « Enregistrer le forfait famille »."
+        ],
+        "danach": "Chaque personne reçoit l'offre attribuée, le prix est la somme moins la remise famille. Les forfaits déjà payés restent inchangés. Un changement en cours de campagne n'est pas possible.",
+        "vorher": "La campagne et les offres pour personne principale, adultes et enfants existent (cartes KAMP-01 et KAMP-02).",
+        "erwartet": [
+          "La campagne affiche « Âge max. enfant : … ».",
+          "Les champs de saisie du forfait famille apparaissent.",
+          "Remise et plafonds figurent dans le formulaire.",
+          "Les trois offres figurent dans les champs de sélection ; « — Choisir une offre — » est remplacé.",
+          "Le forfait est enregistré. Les membres voient dans l'offre « dès … » et l'indication de la remise."
+        ],
+        "fehler": [
+          {
+            "problem": "« Ce forfait famille n'est pas encore entièrement configuré. »",
+            "loesung": "Attribuez une offre aux trois rôles et enregistrez à nouveau."
+          },
+          {
+            "problem": "Le prix diffère.",
+            "loesung": "Prix = somme des trois offres moins la remise. Vérifiez les offres et la remise."
+          },
+          {
+            "problem": "Un enfant est trop âgé.",
+            "loesung": "L'âge maximum vaut par campagne. Les personnes plus âgées s'inscrivent comme adultes."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Configurez le forfait famille uniquement dans une campagne de test « [ÜBUNG] Campagne test » (KAMP-01) et ne la publiez pas. Les forfaits famille modifient prix et indicateurs de la campagne."
+      },
+      {
+        "id": "FAM-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Vérifier les forfaits famille et établir le rapport",
+        "wann": "Vous voulez savoir quelles familles sont inscrites et où en sont les invitations.",
+        "schritte": [
+          "Dans la gestion des campagnes, ouvrir la section « Forfaits famille » et choisir la campagne.",
+          "Consulter forfaits, personnes et statut d'invitation (« Invité », « En attente d'accord », « Membre », « Refusé », « A déjà sa propre adhésion »).",
+          "Si besoin, changer l'offre d'une personne (« Offre de … »).",
+          "Pour des chiffres sans noms, consulter le « Rapport sur les forfaits famille » et cliquer sur « Exporter en CSV »."
+        ],
+        "danach": "Une autre offre change la carte et les avantages, le prix payé reste. Pour « A déjà sa propre adhésion », le bureau règle la compensation. Après le délai de conservation, les données des enfants et des adultes supplémentaires sont anonymisées (« Personne (anonymisée) »).",
+        "vorher": "Vous avez le droit d'écriture sur la page Campagnes pour changer des offres ; pour lire, le droit de lecture suffit.",
+        "erwartet": [
+          "Le résumé indique les forfaits payés et l'état des invitations. Sans forfait : « Aucun forfait famille dans cette campagne. »",
+          "Chaque forfait affiche titulaire, personnes, prix et remise (« Catalogue … · −… % »).",
+          "L'indication « Une autre offre change la carte et les avantages. Le prix payé reste inchangé. » apparaît.",
+          "Le rapport affiche par campagne forfaits, adultes, enfants et prix – sans noms ni adresses e-mail."
+        ],
+        "fehler": [
+          {
+            "problem": "La liste est vide.",
+            "loesung": "Il n'y a pas encore de forfaits payés dans cette campagne. Choisissez une autre campagne."
+          },
+          {
+            "problem": "Un enfant dépasse l'âge maximum.",
+            "loesung": "L'application l'indique (« Au-dessus de l'âge maximum de la campagne »). Jusqu'à la fin de la campagne, rien ne change ; pour la suivante, la personne s'inscrit comme adulte."
+          },
+          {
+            "problem": "Un nom manque.",
+            "loesung": "La personne est anonymisée. C'est définitif et voulu."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez la vue « Forfaits famille » d'une campagne et lisez résumé et rapport. Ne changez aucune offre et n'exportez rien."
       }
     ]
   },
@@ -851,6 +960,103 @@
           }
         ],
         "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Visibilité » et décrivez avec vos mots quelles entrées voit un non-membre. Ne modifiez rien."
+      },
+      {
+        "id": "AKT-01",
+        "rollen": ["super_admin"],
+        "titre": "Examiner les anomalies du journal d'activité",
+        "wann": "L'application signale par la cloche et par e-mail une anomalie, p. ex. de nombreux échecs de connexion.",
+        "schritte": [
+          "Ouvrir la notification. Elle mène, dans la « Gestion des rôles », à l'onglet « Activité » et à la vue « Anomalies ».",
+          "Dans la liste « Ouvertes », lire l'entrée (importance « Avertissement » ou « Important ») et consulter dans la vue « Journal » les entrées correspondantes (filtres « Personne », « Adresse IP » et période).",
+          "Décider s'il faut agir (p. ex. bloquer un compte ou vérifier des droits).",
+          "Puis clôturer l'entrée avec « Marquer comme traitée »."
+        ],
+        "danach": "L'application analyse le journal toutes les 10 minutes et signale les nouvelles anomalies. Les entrées traitées figurent sous « Traitées » avec nom et heure.",
+        "vorher": "Vous êtes administrateur de l'application. Le journal n'est visible que pour les administrateurs de l'application.",
+        "erwartet": [
+          "La vue « Anomalies » est ouverte. Sans anomalie : « Aucune anomalie ouverte. »",
+          "Le journal affiche les entrées filtrées avec heure, action, personne et IP.",
+          "Vous savez s'il y a quelque chose à faire.",
+          "L'entrée figure sous « Traitées » avec « traitée par … »."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne comprenez pas une action.",
+            "loesung": "Le journal affiche sous « Nom technique » le nom exact. Demandez à l'équipe technique en cas de doute."
+          },
+          {
+            "problem": "L'alarme revient sans cesse.",
+            "loesung": "Vérifiez la cause, p. ex. une personne avec beaucoup de mots de passe erronés. Ne marquez comme traitée qu'ensuite."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Activité », passez à la vue « Anomalies » et lisez les entrées. Ne marquez rien comme traité."
+      },
+      {
+        "id": "AKT-02",
+        "rollen": ["super_admin"],
+        "titre": "Réaliser la revue des droits",
+        "wann": "Au début de chaque trimestre, vous vérifiez qui a des droits étendus.",
+        "schritte": [
+          "Dans la « Gestion des rôles », ouvrir l'onglet « Activité » et choisir la vue « Revue des droits ».",
+          "S'il n'y a pas encore de revue, en créer une avec « Créer maintenant la revue … ». Sinon sélectionner la revue en cours.",
+          "Pour chaque compte, choisir « Confirmer » ou marquer « Retirer les droits ». Ajouter éventuellement une « Note (facultatif) ».",
+          "Effectuer vraiment les retraits dans l'onglet « Attribution » (carte ROLL-01).",
+          "Quand tous les comptes sont décidés, cliquer sur « Terminer la revue »."
+        ],
+        "danach": "Le marquage seul ne modifie aucun droit. Il affiche « Marqué – le compte a encore des droits étendus » jusqu'au retrait. La revue est créée automatiquement au début de chaque trimestre.",
+        "vorher": "Vous connaissez les tâches des personnes avec des droits étendus (à partir de Bureau Admin).",
+        "erwartet": [
+          "La vue affiche la dernière revue avec le trimestre. Sans revue : « Aucune revue pour l'instant. »",
+          "La revue liste les comptes avec rôle et décision « Ouvert ».",
+          "La décision figure pour chaque compte, éventuellement avec note.",
+          "Pour les comptes marqués, on lit « Retrait déjà effectué. »",
+          "On lit « Terminée par … le … ». Avant, l'application indique « Encore … comptes sans décision. »"
+        ],
+        "fehler": [
+          {
+            "problem": "La revue ne peut pas être terminée.",
+            "loesung": "Des décisions manquent. L'application indique « Encore … comptes sans décision. »"
+          },
+          {
+            "problem": "« Retirer les droits » n'a rien changé.",
+            "loesung": "Le marquage ne retire aucun droit. Retirez-les dans l'onglet « Attribution »."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez la vue « Revue des droits » et lisez la dernière revue. Ne prenez aucune décision et ne terminez rien."
+      },
+      {
+        "id": "AKT-03",
+        "rollen": ["super_admin"],
+        "titre": "Nettoyer d'anciennes données techniques (entretien des données)",
+        "wann": "Journal, analyses et notifications lues doivent être supprimés après l'expiration des délais.",
+        "schritte": [
+          "Dans la « Gestion des rôles », ouvrir l'onglet « Activité » et choisir la vue « Entretien des données ».",
+          "Pour chaque type de données, vérifier le « Délai en jours » et, en cas de modification, cliquer sur « Enregistrer les délais ».",
+          "Décider si « Nettoyer automatiquement (chaque jour) » doit être activé.",
+          "Pour un nettoyage ponctuel, cocher les types de données concernés (ou « Sélectionner tous les types avec des données concernées »).",
+          "Cliquer sur « Nettoyer … types de données maintenant » et confirmer la question avec « Supprimer définitivement »."
+        ],
+        "danach": "Seules les données plus anciennes que le délai enregistré sont supprimées. Cela est irréversible. Le dernier passage figure sous « Dernier passage ».",
+        "vorher": "Vous avez convenu des délais de conservation avec l'association.",
+        "erwartet": [
+          "La vue affiche des groupes avec total, entrée la plus ancienne et « concernés maintenant ».",
+          "Les délais modifiés sont enregistrés. Des valeurs invalides affichent « Au moins un délai est en dehors de la plage autorisée. »",
+          "L'indication sur l'entretien automatique montre s'il est actif ou non.",
+          "Les types choisis sont cochés. Avant cela : « Enregistrez d'abord les délais modifiés ; l'aperçu porte sur les valeurs enregistrées. »",
+          "« Terminé : … enregistrements supprimés. » apparaît."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous voulez annuler la suppression.",
+            "loesung": "Ce n'est pas possible. Les enregistrements supprimés sont définitivement perdus. Lisez donc attentivement la question de confirmation."
+          },
+          {
+            "problem": "« Nettoyer maintenant » n'est pas possible.",
+            "loesung": "Aucun type de données n'est choisi ou il n'y a aucune donnée concernée."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez la vue « Entretien des données » et lisez total, entrée la plus ancienne et « concernés maintenant ». Ne nettoyez rien et n'enregistrez aucun délai."
       }
     ]
   },
@@ -905,6 +1111,77 @@
     "schritte": [
       "Pour chaque module (événements, boutique…), choisissez si des emails sont envoyés.",
       "Les notifications dans l'application (cloche) ne sont pas affectées."
+    ],
+    "workflows": [
+      {
+        "id": "BENA-01",
+        "rollen": ["super_admin"],
+        "titre": "Activer ou désactiver les e-mails de notification par module",
+        "wann": "Un domaine envoie trop ou trop peu d'e-mails aux membres.",
+        "schritte": [
+          "Ouvrir « Notifications par email ».",
+          "Pour le module (Membres, Cotisations, Adhésions, Évènements, Boutique, Vote & Élections, Communauté, Calendrier, Journal d'activité), basculer l'interrupteur.",
+          "Vérifier que la modification a été prise en compte."
+        ],
+        "danach": "Cela vaut pour tous les membres. Les notifications dans l'appli (cloche) restent actives. Les vœux d'anniversaire dépendent du module « Membres » ; les alarmes de sécurité de « Journal d'activité (alarmes de sécurité) ».",
+        "vorher": "Vous savez quel module est concerné et ce qui y est envoyé (voir la description sous le module).",
+        "erwartet": [
+          "La page liste chaque module avec une courte description et un interrupteur.",
+          "L'interrupteur est dans sa nouvelle position.",
+          "En cas d'erreur, « La modification a échoué. » apparaît. Sinon la position est conservée."
+        ],
+        "fehler": [
+          {
+            "problem": "« La modification a échoué. »",
+            "loesung": "Rechargez la page et réessayez."
+          },
+          {
+            "problem": "Des membres reçoivent des messages malgré le module désactivé.",
+            "loesung": "La cloche dans l'appli et Telegram restent actives ; seuls les e-mails sont coupés."
+          },
+          {
+            "problem": "Les alarmes de sécurité n'arrivent plus.",
+            "loesung": "Vérifiez que le module « Journal d'activité (alarmes de sécurité) » est activé."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Désactivez le module « Calendrier » puis réactivez-le aussitôt. Notez la position avant. Pendant ce temps, l'environnement de test n'envoie pas d'e-mails du calendrier."
+      },
+      {
+        "id": "BENA-02",
+        "titre": "Recevoir les notifications sur Telegram",
+        "wann": "Vous souhaitez recevoir en plus de l'appli et des e-mails de courts messages sur Telegram.",
+        "schritte": [
+          "Ouvrir vos paramètres et aller à la section « Telegram ».",
+          "Cliquer sur « Connecter Telegram » puis choisir « Ouvrir dans Telegram ».",
+          "Dans Telegram, dans la discussion avec le bot, appuyer sur « Démarrer ». Le lien est valable 15 minutes et une seule fois.",
+          "De retour dans l'appli, sous « Types à recevoir sur Telegram », cocher ou décocher les types.",
+          "Avec « Envoyer un message de test », vérifier que la connexion fonctionne."
+        ],
+        "danach": "Telegram ne reçoit que le titre avec un lien vers l'appli, jamais le contenu. Avec « Déconnecter » ou la commande /stop dans la discussion, vous coupez la connexion.",
+        "vorher": "Vous avez Telegram sur votre téléphone ou ordinateur. Cette fonction ne marche que si l'association a configuré Telegram.",
+        "erwartet": [
+          "La section « Telegram » explique que vous recevez le titre et le lien, pas le contenu.",
+          "Telegram s'ouvre avec le bot. La page indique d'appuyer sur « Démarrer » dans Telegram, que le lien est valable 15 minutes et une seule fois, et qu'elle se met à jour toute seule.",
+          "Le bot confirme la connexion.",
+          "La page affiche « Connecté. » et les types à choisir.",
+          "« Message de test envoyé. » apparaît et le message arrive dans Telegram."
+        ],
+        "fehler": [
+          {
+            "problem": "Le lien ne fonctionne plus.",
+            "loesung": "Il n'est valable que 15 minutes et une fois. Cliquez à nouveau sur « Connecter Telegram »."
+          },
+          {
+            "problem": "Vous ne recevez plus de messages.",
+            "loesung": "Vérifiez si vous avez bloqué le bot (la connexion est alors coupée) et reconnectez."
+          },
+          {
+            "problem": "Un type ne doit plus arriver.",
+            "loesung": "Décochez le type, p. ex. « Boutique ». Chaque type peut être désactivé séparément."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Connectez votre propre compte de test à votre Telegram, envoyez le message de test puis déconnectez-vous avec « Déconnecter ». Le message de test ne va qu'à vous."
+      }
     ]
   },
   "projets": {
@@ -961,8 +1238,74 @@
     "intro": "Créez les albums photo de la galerie.",
     "schritte": [
       "Créez un album avec un titre et téléversez des photos.",
-      "Publiez-le pour qu'il apparaisse dans la galerie.",
-      "Supprimez des photos ou des albums entiers si nécessaire."
+      "Avec « Publier » (ou la case « Afficher sur la page d'accueil publique »), l'album apparaît aussi pour les visiteurs. Sans cette case, seuls les membres connectés le voient.",
+      "Retirer chaque photo avec la croix ou supprimer tout l'album avec « Supprimer »."
+    ],
+    "workflows": [
+      {
+        "id": "ALB-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Créer un album et téléverser des photos",
+        "wann": "Après un évènement ou un projet, des photos doivent apparaître dans la galerie.",
+        "schritte": [
+          "Ouvrir « Gestion des albums photos » et choisir « Nouvel album ».",
+          "Saisir nom, description, date et lieu. Éventuellement relier un évènement ou un projet.",
+          "Sous « Photos de l'album », choisir les images (JPG, PNG ou WebP, plusieurs possibles).",
+          "Cliquer sur « Nouvel album » pour enregistrer l'album avec les photos."
+        ],
+        "danach": "Les membres voient l'album dans la galerie « Albums photos » et peuvent commenter les photos. Pour les visiteurs de la page d'accueil publique, il faut en plus la publication (carte ALB-02).",
+        "vorher": "Vous avez les photos (sans personnes qui ne souhaitent pas être photographiées) et vous connaissez nom, date et lieu.",
+        "erwartet": [
+          "Le formulaire « Nouvel album » est ouvert.",
+          "Tous les champs sont remplis. En cas de lien, l'évènement ou le projet figure dans le champ ; sinon on lit « – aucun lien – ».",
+          "Les fichiers choisis figurent dans le champ de sélection.",
+          "L'album figure dans la liste avec la mention « Membres uniquement ». Les photos apparaissent dans l'album."
+        ],
+        "fehler": [
+          {
+            "problem": "« Impossible d'enregistrer l'album. »",
+            "loesung": "Vérifiez le nom et que seuls des fichiers JPG, PNG ou WebP sont choisis."
+          },
+          {
+            "problem": "Une photo ne doit pas apparaître.",
+            "loesung": "Retirez-la avec la croix en haut à droite de la photo."
+          },
+          {
+            "problem": "Vous ne voyez pas de boutons pour modifier.",
+            "loesung": "Vous n'avez que le droit de lecture sur la page Albums photos. Demandez à l'administration de l'application."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez l'album « [ÜBUNG] Album test » avec une photo fictive sans personnes puis supprimez-le avec « Supprimer ». Ne le rendez pas public."
+      },
+      {
+        "id": "ALB-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Publier un album et des photos sur la page d'accueil publique",
+        "wann": "Des visiteurs sans compte doivent voir certaines photos sur la page d'accueil.",
+        "schritte": [
+          "Dans la liste des albums, cliquer sur « Publier » pour l'album, ou dans l'album choisir « Modifier » et cocher « Afficher sur la page d'accueil publique ».",
+          "Dans l'album, sous « Photos de l'album », vérifier pour chaque photo que « Public » est coché. Avec « Toutes publiques » ou « Toutes internes », vous réglez toutes les photos d'un coup.",
+          "Confirmer avec « Enregistrer »."
+        ],
+        "danach": "Les visiteurs ne voient que les photos, pas les commentaires. Avec « Masquer », vous retirez l'album de la page d'accueil publique.",
+        "vorher": "Toutes les personnes visibles ont accepté la publication.",
+        "erwartet": [
+          "L'album porte la mention « Public » au lieu de « Membres uniquement ». Le bouton s'appelle maintenant « Masquer ».",
+          "Les photos cochées « Public » sont affichées nettement, les photos « Interne » plus pâles.",
+          "La modification est enregistrée et la liste affiche l'album comme « Public »."
+        ],
+        "fehler": [
+          {
+            "problem": "Une photo manque sur la page d'accueil.",
+            "loesung": "Il faut les deux : l'album est « Public » et la photo est cochée « Public »."
+          },
+          {
+            "problem": "Une photo doit disparaître tout de suite.",
+            "loesung": "Décochez « Public » pour la photo ou retirez-la avec la croix."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Publiez l'album « [ÜBUNG] Album test » (ALB-01), vérifiez la page d'accueil de l'environnement de test puis annulez avec « Masquer ». Entre-temps, les photos sont visibles publiquement."
+      }
     ]
   },
   "hero": {
@@ -971,6 +1314,66 @@
     "schritte": [
       "Téléversez une nouvelle vidéo ou remplacez l'actuelle.",
       "Après enregistrement, elle s'affiche sur la page d'accueil."
+    ],
+    "workflows": [
+      {
+        "id": "HERO-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Remplacer la vidéo du hero de la page d'accueil",
+        "wann": "La vidéo de l'en-tête de la page d'accueil publique doit être changée.",
+        "schritte": [
+          "Ouvrir l'entrée de menu « Vidéo du hero ». En haut figure la zone « Vidéo du hero de la page d'accueil ».",
+          "Avec « Téléverser une vidéo », choisir le nouveau fichier vidéo.",
+          "Attendre que « Téléversement en cours… » disparaisse et vérifier la page d'accueil."
+        ],
+        "danach": "La vidéo démarre automatiquement et sans son sur la page d'accueil. Sans vidéo, l'en-tête affiche le fond par défaut.",
+        "vorher": "Vous avez un fichier vidéo adapté, dont l'association détient les droits.",
+        "erwartet": [
+          "La page affiche la vidéo actuelle ou « Aucune vidéo pour le moment — le hero affiche le fond par défaut. »",
+          "Le bouton affiche « Téléversement en cours… ».",
+          "La nouvelle vidéo tourne sur la page d'accueil publique."
+        ],
+        "fehler": [
+          {
+            "problem": "« Erreur lors du téléversement de la vidéo. »",
+            "loesung": "Vérifiez le format et la taille du fichier puis réessayez. Si l'erreur persiste, réduisez la vidéo."
+          },
+          {
+            "problem": "L'ancienne vidéo apparaît encore.",
+            "loesung": "Rechargez la page d'accueil (Ctrl+F5), le navigateur a gardé l'ancienne vidéo en cache."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Téléversez une courte vidéo de test faite par vous puis remettez la vidéo d'origine. La vidéo est publiquement visible sur la page d'accueil de l'environnement de test."
+      },
+      {
+        "id": "HERO-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Remplacer ou retirer l'image de fond d'un module",
+        "wann": "Les pages d'un module (p. ex. Boutique ou Évènements) doivent avoir une autre image de fond.",
+        "schritte": [
+          "Ouvrir l'entrée de menu « Vidéo du hero » et chercher plus bas la zone « Images de fond par module ».",
+          "Pour le module voulu, choisir « Téléverser une image » (ou « Remplacer l'image ») et sélectionner le fichier image.",
+          "Avec « Retirer », l'image peut être supprimée."
+        ],
+        "danach": "L'image vaut pour les pages du module, pas pour l'administration. Sans image, la page affiche le fond par défaut.",
+        "vorher": "Vous avez une image adaptée (fichiers image uniquement).",
+        "erwartet": [
+          "La liste affiche par module l'image ou « Aucune image pour le moment — la page affiche le fond par défaut. »",
+          "L'image figure dans la ligne du module, le bouton s'appelle maintenant « Remplacer l'image ».",
+          "Le module affiche de nouveau le fond par défaut."
+        ],
+        "fehler": [
+          {
+            "problem": "« Erreur lors du téléversement de l'image. »",
+            "loesung": "Vérifiez que c'est un fichier image et réduisez-le si besoin."
+          },
+          {
+            "problem": "L'image est difficile à lire derrière le texte.",
+            "loesung": "Choisissez une image plus calme et plus claire."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Téléversez pour un module une image de test neutre puis retirez-la avec « Retirer ». Notez avant si une image existait déjà."
+      }
     ]
   },
   "logos": {
@@ -980,6 +1383,39 @@
       "Choisissez le club dans la liste.",
       "Téléversez ou remplacez son logo.",
       "Les logos s'affichent ensuite dans le classement et le calendrier."
+    ],
+    "workflows": [
+      {
+        "id": "LOGO-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Téléverser ou retirer le logo d'un club",
+        "wann": "Un club doit apparaître avec son logo dans le classement, le calendrier et sur la tuile « Prochain match ».",
+        "schritte": [
+          "Ouvrir « Logos des clubs ».",
+          "Dans « Nom du club », saisir le nom exactement comme dans le classement et le calendrier.",
+          "Dans « Fichier du logo », choisir le fichier image et cliquer sur « Téléverser ».",
+          "Avec « Retirer », un logo peut être retiré."
+        ],
+        "danach": "Le logo apparaît à côté du nom du club dans le classement, le calendrier et sur la tuile « Prochain match ».",
+        "vorher": "Vous avez le fichier du logo et connaissez l'orthographe du club dans le classement.",
+        "erwartet": [
+          "La page affiche les logos existants ou « Aucun logo téléversé pour le moment. »",
+          "Le nom du club est dans le champ, sans faute de frappe.",
+          "Le logo figure dans la liste. Dans le classement et le calendrier, il apparaît à côté du nom.",
+          "Le logo a disparu de la liste."
+        ],
+        "fehler": [
+          {
+            "problem": "Le logo n'apparaît pas dans le classement.",
+            "loesung": "Le nom du club diffère de l'orthographe du classement et du calendrier. Saisissez-le exactement pareil."
+          },
+          {
+            "problem": "« Impossible d'enregistrer le logo. »",
+            "loesung": "Vérifiez le format et la taille du fichier et téléversez-le à nouveau."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Téléversez un logo neutre pour un club fictif « [ÜBUNG] Club test » puis retirez-le avec « Retirer ». Ne modifiez aucun logo existant."
+      }
     ]
   },
   "quiz": {
@@ -987,9 +1423,87 @@
     "intro": "Créez les questions de quiz pour la communauté.",
     "schritte": [
       "Créez un quiz ou une question avec ses réponses et marquez la bonne réponse.",
-      "Publiez pour que les membres puissent participer.",
+      "Avec « Activer », les membres peuvent participer. N'activez qu'un seul quiz à la fois.",
       "Consultez les résultats et le classement dans l'aperçu.",
       "Onglet « Sondages » : créer des sondages (réponse unique/multiple, texte libre) avec échéance, public et visibilité des résultats, les publier et les annoncer dans les actualités."
+    ],
+    "workflows": [
+      {
+        "id": "QUIZ-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Créer et activer un quiz",
+        "wann": "Les membres doivent jouer à un nouveau quiz.",
+        "schritte": [
+          "Ouvrir « Gestion quiz et sondages » et, dans l'onglet « Quiz », saisir un titre (et éventuellement une description).",
+          "Cliquer sur « Créer le quiz » et sélectionner le quiz à gauche dans la liste.",
+          "Avec « Ajouter la question », saisir une question.",
+          "Pour la question, saisir des réponses et les ajouter avec « Ajouter ». Marquer la bonne avec « Bonne réponse ».",
+          "Cliquer sur « Activer » pour que les membres voient le quiz."
+        ],
+        "danach": "Les membres démarrent le quiz sous « Quiz et sondages » et voient leur résultat et le classement. Avec « Désactiver », le quiz disparaît.",
+        "vorher": "Vous avez préparé questions, réponses et bonnes réponses.",
+        "erwartet": [
+          "La page affiche à gauche les quiz existants ou « Aucun quiz pour le moment. »",
+          "Le quiz figure dans la liste avec la mention « Inactif ». À droite on lit « Aucune question pour le moment. »",
+          "La question figure comme « Question 1 » avec « Aucune réponse pour le moment. »",
+          "Les réponses figurent sous la question, la bonne est marquée.",
+          "La mention passe à « Actif » et le bouton à « Désactiver »."
+        ],
+        "fehler": [
+          {
+            "problem": "Les membres ne voient pas le quiz.",
+            "loesung": "Il est encore « Inactif ». Cliquez sur « Activer »."
+          },
+          {
+            "problem": "« La création du quiz a échoué. »",
+            "loesung": "Le titre manque. Saisissez un titre."
+          },
+          {
+            "problem": "Deux quiz sont actifs en même temps.",
+            "loesung": "L'usage est d'avoir un seul quiz actif. Désactivez l'ancien avec « Désactiver »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez le quiz « [ÜBUNG] Quiz test » avec deux questions, ne l'activez pas et supprimez-le avec « Supprimer ». Un quiz activé est visible par tous les membres."
+      },
+      {
+        "id": "QUIZ-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Créer, publier et analyser un sondage",
+        "wann": "Les membres doivent être interrogés sur un sujet.",
+        "schritte": [
+          "Dans « Gestion quiz et sondages », ouvrir l'onglet « Sondages » et choisir « Nouveau sondage ».",
+          "Définir titre, description, public, « Résultats visibles pour » et échéance. Si besoin, cocher « Vote anonyme ».",
+          "Avec « Ajouter une question », créer des questions : type « Une réponse », « Plusieurs réponses » ou « Texte libre », ajouter des réponses, cocher « Question obligatoire » si besoin.",
+          "Cliquer sur « Enregistrer » et vérifier le sondage.",
+          "Cliquer sur « Publier » puis sur « Annoncer dans les actualités » pour avertir les membres.",
+          "Après l'échéance, consulter les « Résultats »."
+        ],
+        "danach": "Dès qu'il y a des participations, questions, public et anonymat sont verrouillés. Avec « Retirer », vous retirez le sondage.",
+        "vorher": "Vous connaissez le public, les questions et l'échéance.",
+        "erwartet": [
+          "Le formulaire « Nouveau sondage » est ouvert.",
+          "Le public (« Réservé aux membres » ou « Pour tous les comptes »), la visibilité des résultats et l'échéance figurent dans le formulaire.",
+          "Chaque question figure avec son type dans le formulaire.",
+          "Le sondage figure dans la liste avec le statut « Brouillon ».",
+          "Le statut est « Publié » et on lit « Annoncé dans les actualités ».",
+          "Les résultats montrent les réponses. Avec « Seule l'administration voit les résultats », seuls les responsables les voient."
+        ],
+        "fehler": [
+          {
+            "problem": "Les questions ne peuvent plus être modifiées.",
+            "loesung": "Il y a déjà des participations – questions, public et anonymat sont verrouillés. Créez au besoin un nouveau sondage."
+          },
+          {
+            "problem": "Le sondage est annoncé en double.",
+            "loesung": "L'annonce apparaît une fois (« Annoncé dans les actualités »). Ne cliquez pas à nouveau."
+          },
+          {
+            "problem": "Vous voulez supprimer un sondage.",
+            "loesung": "« Supprimer » demande confirmation et supprime le sondage définitivement."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez le sondage « [ÜBUNG] Sondage test » avec une question pour « Réservé aux membres », laissez-le en brouillon puis supprimez-le. Ne le publiez pas et ne l'annoncez pas, sinon les membres reçoivent une notification."
+      }
     ]
   },
   "finances": {
@@ -2091,7 +2605,103 @@
           "Remplis l'objet, la catégorie et la description, puis envoie."
         ],
         "beispiel": "Objet « Cotisation payée, statut ouvert », catégorie « Paiement et cotisation », date et montant dans la description.",
-        "danach": "Le bureau répond dans le ticket. Tu es notifié·e."
+        "danach": "Le bureau répond dans le ticket. Tu es notifié·e.",
+        "id": "SUPP-01",
+        "vorher": "Vous êtes connecté(e) (membre ou fan) et vous n'avez rien trouvé dans les questions fréquentes.",
+        "erwartet": [
+          "La page « Support » affiche les onglets « Aide et questions » et « Mes tickets ». La recherche filtre les questions fréquentes.",
+          "Le formulaire « Nouveau ticket » est ouvert.",
+          "Après « Envoyer le ticket », le ticket figure avec son numéro sous « Mes tickets ». Dans l'historique, vous voyez votre message."
+        ],
+        "fehler": [
+          {
+            "problem": "« Tu as déjà ouvert plusieurs tickets durant la dernière heure. »",
+            "loesung": "Il y a au plus 5 nouveaux tickets par heure. Attendez un peu ou complétez un ticket existant."
+          },
+          {
+            "problem": "« Tu as déjà beaucoup de tickets ouverts. »",
+            "loesung": "10 tickets au maximum peuvent être actifs en même temps. Clôturez les tickets réglés avec « Clore le ticket »."
+          },
+          {
+            "problem": "Vous ne pouvez plus répondre.",
+            "loesung": "Le ticket est clos. Pour une nouvelle demande, ouvrez un nouveau ticket."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Ouvrez le ticket « [ÜBUNG] Ticket test » avec la catégorie « Autre » puis clôturez-le avec « Clore le ticket ». Le bureau reçoit une notification et un e-mail."
+      },
+      {
+        "id": "SUPP-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Traiter et répondre à un ticket",
+        "wann": "Un membre a écrit un ticket de support.",
+        "schritte": [
+          "Ouvrir « Support » et choisir l'onglet « Tous les tickets ».",
+          "Filtrer avec « Tickets actifs » ou « Tous les tickets », chercher au besoin par numéro, objet ou nom. Ouvrir le ticket.",
+          "Avec « M'assigner », prendre le ticket en charge.",
+          "Sous « Écrire une réponse », saisir la réponse, choisir sous « Ensuite » le nouveau statut (« En attente de réponse », « En cours » ou « Résolu ») et cliquer sur « Envoyer ».",
+          "Pour des notes d'équipe, utiliser « Note interne » et cliquer sur « Enregistrer la note »."
+        ],
+        "danach": "La personne reçoit une notification et un e-mail avec numéro et objet du ticket, pas le texte. Une note interne n'est jamais visible pour la personne. Avec « Retirer l'assignation », vous libérez le ticket.",
+        "vorher": "Vous avez le droit d'écriture sur la page Support.",
+        "erwartet": [
+          "La liste affiche numéro, objet, personne, statut et « Mis à jour ». Sans résultat : « Aucun ticket trouvé. »",
+          "Le ticket affiche l'historique avec « Réponse de … » et « Traitement : personne ».",
+          "À « Traitement » figure votre nom.",
+          "La réponse figure dans l'historique comme « Réponse de … ». Le statut est celui choisi.",
+          "La note figure dans l'historique comme « Note interne de … »."
+        ],
+        "fehler": [
+          {
+            "problem": "La personne voit votre note.",
+            "loesung": "Les notes internes ne sont jamais visibles. Les réponses, si : n'utilisez « Écrire une réponse » que pour la personne."
+          },
+          {
+            "problem": "Vous ne pouvez pas répondre.",
+            "loesung": "Le ticket est clos. La personne doit ouvrir un nouveau ticket."
+          },
+          {
+            "problem": "Le ticket est chez la mauvaise personne.",
+            "loesung": "Retirez l'assignation avec « Retirer l'assignation » et assignez-le à nouveau."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Répondez au ticket « [ÜBUNG] Ticket test » (SUPP-01) avec « Résolu » et écrivez une note interne « [ÜBUNG] ». La personne reçoit une notification et un e-mail."
+      },
+      {
+        "id": "SUPP-03",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Gérer les questions fréquentes",
+        "wann": "Une question revient souvent ou une réponse est dépassée.",
+        "schritte": [
+          "Ouvrir « Support » et choisir l'onglet « Gérer les questions ».",
+          "Cliquer sur « Nouvelle question » et saisir « Question (allemand) » et « Réponse (allemand) ».",
+          "Éventuellement compléter « Question (français) » et « Réponse (français) » et fixer l'« Ordre ».",
+          "Cocher « Visible » et confirmer avec « Enregistrer ».",
+          "Gérer les questions existantes avec « Modifier », « Masquer » ou « Afficher »."
+        ],
+        "danach": "Sans texte français, les comptes réglés en français voient la question allemande. « Vraiment supprimer » retire une question définitivement ; pour la cacher, utilisez « Masquer ».",
+        "vorher": "Vous avez le droit d'écriture sur la page Support et connaissez la réponse.",
+        "erwartet": [
+          "L'onglet affiche les questions existantes, visibles et masquées.",
+          "Le formulaire affiche les champs pour l'allemand et le français.",
+          "Les champs français sont remplis ou vides, comme souhaité.",
+          "La question figure dans la liste comme « visible ». Les membres la trouvent dans l'onglet « Aide et questions ».",
+          "La question figure comme « masquée » ou de nouveau « visible »."
+        ],
+        "fehler": [
+          {
+            "problem": "Les membres ne voient pas la question.",
+            "loesung": "Elle est « masquée » ou « Visible » n'est pas coché. Affichez-la avec « Afficher »."
+          },
+          {
+            "problem": "Une réponse contient des informations fausses.",
+            "loesung": "Corrigez-la avec « Modifier ». Masquez les questions dépassées."
+          },
+          {
+            "problem": "Une question sur Telegram est visible alors que Telegram ne fonctionne pas encore.",
+            "loesung": "Masquez-la avec « Masquer » jusqu'à la mise en service de Telegram."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez la question « [ÜBUNG] Question test », masquez-la puis supprimez-la avec « Vraiment supprimer ». Ne modifiez aucune question existante."
       }
     ],
     "tipps": [
@@ -2392,6 +3002,233 @@
       "« Privé » signifie vraiment privé : seuls vous et les invités voient le rendez-vous, pas même le bureau.",
       "Avec « Ajouter à mon calendrier (.ics) », vous reprenez les rendez-vous dans votre propre calendrier.",
       "Le récapitulatif hebdomadaire par e-mail le lundi peut être désactivé à tout moment."
+    ]
+  },
+  "vote": {
+    "titre": "Votes & Élections",
+    "intro": "C'est ici que se tiennent les votes en direct et les élections. Le bureau crée des sessions, les membres éligibles votent, puis vient le résultat officiel.",
+    "schritte": [
+      "Dans l'onglet « Vote en cours », vous voyez une session ouverte avec le temps restant et les participants.",
+      "Sous « Votes passés », vous trouvez les sessions terminées avec leurs résultats.",
+      "Le bureau crée une nouvelle session avec « Créer une session de vote »."
+    ],
+    "workflows": [
+      {
+        "id": "VOTE-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Créer et lancer une session de vote",
+        "wann": "Les membres doivent voter sur un sujet ou élire quelqu'un.",
+        "schritte": [
+          "Ouvrir « Votes & Élections » et choisir « Créer une session de vote ».",
+          "Étape « Paramètres » : fixer titre, description, type de vote, durée, « Anonyme » ou « Nominatif » et les membres éligibles. Si besoin, saisir la « Quote de victoire requise ». Puis « Suivant ».",
+          "Étape « Options de vote » : saisir au moins deux options ou candidats (pour Oui / Non, elles sont prédéfinies). Puis « Suivant ».",
+          "Étape « Confirmer » : vérifier le récapitulatif et cliquer sur « Lancer le vote »."
+        ],
+        "danach": "Les membres éligibles sont prévenus au lancement par l'appli et par e-mail. Une fois lancée, la session ne peut plus être modifiée ; vous pouvez seulement la clôturer avant l'échéance (carte VOTE-02).",
+        "vorher": "Vous connaissez la question, les options, les membres éligibles et si le vote est anonyme ou nominatif. Les statuts disent si une quote est nécessaire.",
+        "erwartet": [
+          "La page « Créer une session de vote » affiche trois étapes : « Paramètres », « Options de vote », « Confirmer ».",
+          "Titre et description sont obligatoires ; sinon : « Le titre et la description sont obligatoires. » Pour une sélection manuelle, il faut au moins un membre.",
+          "Les options figurent avec nom et courte description facultative. Moins de deux options : « Un vote doit comporter au moins 2 options. »",
+          "La session est en cours. Elle affiche « Session ouverte », « Temps restant » et le nombre de participants."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous remarquez une erreur après le lancement.",
+            "loesung": "Après le lancement, rien ne peut être modifié. Clôturez la session avec « Clôturer le vote » et lancez-en une nouvelle."
+          },
+          {
+            "problem": "« La création de la session a échoué. »",
+            "loesung": "Vérifiez titre, options et membres éligibles et réessayez."
+          },
+          {
+            "problem": "Un membre ne peut pas voter.",
+            "loesung": "Il ne fait pas partie des membres éligibles. Vérifiez le choix « Membres éligibles »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez la session « [ÜBUNG] Vote test » avec « Sélection manuelle (un groupe précis) » et un seul compte de test, deux options et la durée la plus courte. Le lancement prévient les comptes choisis par e-mail. Ne choisissez jamais « Tous les membres actifs »."
+      },
+      {
+        "id": "VOTE-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Clôturer un vote et lire le résultat",
+        "wann": "Le temps est écoulé ou la session doit se terminer plus tôt.",
+        "schritte": [
+          "Dans l'onglet « Vote en cours », regarder la session : « Temps restant » et « Participants ».",
+          "Si la session doit se terminer avant l'échéance, cliquer sur « Clôturer le vote ».",
+          "Lire les « Résultats officiels » : participation, quote, nombre de voix et élu(e)s.",
+          "Les résultats plus anciens figurent sous « Votes passés »."
+        ],
+        "danach": "En cas d'égalité ou de quote non atteinte, le résultat l'indique clairement. Les votes anonymes n'affichent que des totaux ; pour les votes nominatifs, l'administration voit qui a voté, pas le choix.",
+        "vorher": "Il existe une session en cours.",
+        "erwartet": [
+          "La session affiche « Session ouverte » et « … / … membres ont voté ».",
+          "La session passe à « Session clôturée ». Pendant ce temps, on lit « Clôture en cours… ».",
+          "Les résultats affichent « …% de participation » et « quote requise de …% atteinte » ou « non atteinte », ainsi que « Élu(e) ».",
+          "La session figure dans la liste avec son résultat."
+        ],
+        "fehler": [
+          {
+            "problem": "« La clôture de cette session a échoué. »",
+            "loesung": "Rechargez la page et réessayez. Si l'erreur persiste, signalez-la via le support."
+          },
+          {
+            "problem": "« Résultat non décidé : aucune option n'a atteint la quote requise. »",
+            "loesung": "C'est un résultat valable. Un nouveau vote est une nouvelle procédure (voir les statuts)."
+          },
+          {
+            "problem": "Égalité.",
+            "loesung": "L'application affiche les options à égalité. La suite est réglée par les statuts."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Clôturez la session « [ÜBUNG] Vote test » (VOTE-01) avec « Clôturer le vote » et lisez le résultat. Ne touchez à aucune autre session."
+      }
+    ],
+    "tipps": [
+      "Pour des élections, utilisez le type « Choix multiple » ou des listes de candidats ; pour des décisions, « Oui / Non ».",
+      "Anonyme signifie : aucun lien entre la personne et son choix – même pour l'administration."
+    ]
+  },
+  "mitgliedschaft": {
+    "titre": "Mon adhésion",
+    "intro": "Ici vous voyez votre offre, payez votre cotisation et gérez votre carte. Les familles s'inscrivent ensemble avec un forfait famille.",
+    "schritte": [
+      "Choisissez l'offre qui convient dans la campagne en cours.",
+      "Payez la cotisation. Le bureau ou le système confirme le paiement.",
+      "Après le paiement, votre carte de membre apparaît."
+    ],
+    "workflows": [
+      {
+        "id": "FAM-03",
+        "titre": "S'inscrire avec un forfait famille",
+        "wann": "Vous souhaitez vous inscrire ensemble avec votre conjoint(e) et vos enfants.",
+        "schritte": [
+          "Ouvrir « Mon adhésion » et choisir l'offre « Forfait famille » (« dès … »).",
+          "Si disponible, préremplir les personnes connues avec « Reprendre la famille de l'an dernier » et les vérifier.",
+          "Avec « Ajouter un adulte », saisir prénom, nom, e-mail et lien.",
+          "Avec « Ajouter un enfant », saisir prénom, nom et année de naissance, et cocher le consentement.",
+          "Vérifier le prix total et cliquer sur « Continuer vers le paiement ».",
+          "Payer la cotisation."
+        ],
+        "danach": "Après la confirmation du paiement, les invitations partent aux adultes et les cartes Junior des enfants apparaissent. Sous « Mon forfait famille », vous voyez l'état.",
+        "vorher": "Vous connaissez les noms des personnes et les adresses e-mail des adultes supplémentaires. En tant que titulaire de l'autorité parentale, vous pouvez consentir pour les enfants.",
+        "erwartet": [
+          "La tuile « Forfait famille » affiche « dès … » et l'indication de remise et de plafonds.",
+          "Les personnes sont préremplies. On lit : « Merci de vérifier toutes les informations. »",
+          "La personne figure sous « Adultes supplémentaires ». L'invitation suit après le paiement (« Invitation après paiement »).",
+          "L'enfant figure sous « Enfants » avec son âge. L'application indique l'âge maximum (« Les enfants ne doivent pas avoir plus de … ans cette année. »).",
+          "Le prix total affiche « Prix catalogue …, moins … % de remise famille ». Vous payez une seule fois pour tous.",
+          "Le paiement est fait et le forfait apparaît sous « Mon forfait famille »."
+        ],
+        "fehler": [
+          {
+            "problem": "« Continuer vers le paiement » n'est pas possible.",
+            "loesung": "Des informations manquent. Les adultes ont besoin de prénom, nom et e-mail, les enfants de prénom, nom, année de naissance et du consentement."
+          },
+          {
+            "problem": "Un enfant est trop âgé.",
+            "loesung": "Les personnes au-dessus de l'âge maximum de la campagne s'inscrivent comme adultes."
+          },
+          {
+            "problem": "Une personne invitée a déjà sa propre adhésion.",
+            "loesung": "L'application indique « A déjà sa propre adhésion ». Le bureau règle la compensation."
+          },
+          {
+            "problem": "Vous avez mal saisi un enfant.",
+            "loesung": "Retirez-le avec « Retirer » et confirmez la question. Les données sont supprimées."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Inscrivez-vous avec un compte de test et des personnes fictives (« [ÜBUNG] … ») à une campagne de test. Le paiement modifie taux de cotisation et indicateurs ; ne payez que la plus petite variante et ne saisissez aucun vrai enfant."
+      }
+    ],
+    "tipps": [
+      "Les enfants n'ont pas de compte. Seuls nom, année de naissance et consentement sont enregistrés.",
+      "Les adultes du forfait sont des membres à part entière et sont invités par e-mail après le paiement."
+    ]
+  },
+  "fanclub": {
+    "titre": "Fan-Club : calendrier des matchs",
+    "intro": "Dans le Fan-Club, le calendrier affiche matchs, résultats et classement. Les données viennent d'une interface (API) ; le bureau peut les corriger et ajouter ses propres matchs.",
+    "schritte": [
+      "Passez entre les onglets « Classement » et « Calendrier ».",
+      "Le calendrier affiche « Matchs à venir » et « Résultats ».",
+      "Le bureau voit « Modifier » sur chaque match et « Ajouter un match » en haut."
+    ],
+    "workflows": [
+      {
+        "id": "SPIEL-01",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Corriger un match du calendrier",
+        "wann": "La date, l'heure, le résultat ou le statut d'un match sont faux.",
+        "schritte": [
+          "Dans le Fan-Club, ouvrir l'onglet « Calendrier » et cliquer sur « Modifier » pour le match.",
+          "Corriger « Date et heure », le résultat (« Buts équipe à domicile », « Buts équipe visiteuse ») et le « Statut ».",
+          "Cliquer sur « Enregistrer ».",
+          "Si la correction était fausse, choisir dans le match « Revenir à l'état de l'API »."
+        ],
+        "danach": "La correction vaut jusqu'à ce que l'interface livre un état différent (toutes les 3 heures). Elle l'écrase alors. Après chaque modification, les points du jeu de pronostics sont recalculés.",
+        "vorher": "Vous connaissez la bonne date ou le bon résultat grâce à une source fiable.",
+        "erwartet": [
+          "La fenêtre « Modifier le match » est ouverte. Elle indique : « La correction reste valable jusqu'à ce que l'API livre un état différent – elle est alors écrasée automatiquement. »",
+          "Date, buts et statut sont saisis. Le résultat est soit complet, soit vide.",
+          "Le match porte la mention « corrigé manuellement ».",
+          "La mention a disparu, le match affiche de nouveau l'état de l'API."
+        ],
+        "fehler": [
+          {
+            "problem": "« Veuillez indiquer la date et l'heure. »",
+            "loesung": "Saisissez les deux."
+          },
+          {
+            "problem": "« Veuillez saisir le résultat des deux équipes (ou laisser les deux champs vides). »",
+            "loesung": "Un résultat demande les deux scores. Sans résultat, laissez les deux champs vides."
+          },
+          {
+            "problem": "Votre correction a disparu.",
+            "loesung": "L'interface a livré un nouvel état et écrasé la correction. Vérifiez la source."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Ne corrigez pas un match de la vraie ligue, mais seulement le match créé par vous « [ÜBUNG] Match test » (SPIEL-02). Les corrections de matchs de la ligue modifient les points du jeu de pronostics."
+      },
+      {
+        "id": "SPIEL-02",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Ajouter ou supprimer un match",
+        "wann": "Un match manque dans les données de l'interface, p. ex. un match amical.",
+        "schritte": [
+          "Dans l'onglet « Calendrier », cliquer sur « Ajouter un match ».",
+          "Saisir « Compétition », « Équipe à domicile », « Équipe visiteuse » et « Date et heure ». Pour la Ligue 1, saisir la compétition exactement comme « Ligue 1 ».",
+          "Éventuellement saisir le résultat et le statut, puis cliquer sur « Enregistrer ».",
+          "Un match créé par vous, sans pronostics, peut être retiré avec « Supprimer le match »."
+        ],
+        "danach": "Les matchs créés portent la mention « ajouté manuellement » et ne sont jamais modifiés ni supprimés par la synchronisation. Si l'interface livre le match plus tard, un doublon apparaît : supprimez alors votre match manuel.",
+        "vorher": "Vous connaissez compétition, équipes et date. Pour la Ligue 1, le match compte dans le jeu de pronostics.",
+        "erwartet": [
+          "La fenêtre « Ajouter un match » est ouverte.",
+          "Les champs sont remplis. Pour « Ligue 1 », la compétition est préremplie.",
+          "Le match figure dans le calendrier avec « ajouté manuellement ».",
+          "Le match a disparu du calendrier."
+        ],
+        "fehler": [
+          {
+            "problem": "Le match ne compte pas dans le jeu de pronostics.",
+            "loesung": "La compétition doit s'appeler exactement « Ligue 1 » et le match doit avoir le statut terminé avec un résultat."
+          },
+          {
+            "problem": "« Le match n'a pas pu être enregistré. »",
+            "loesung": "Vérifiez équipes, date et heure."
+          },
+          {
+            "problem": "Vous ne pouvez pas supprimer un match.",
+            "loesung": "Seuls les matchs manuels sans pronostics peuvent être supprimés. Les matchs de l'interface restent."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez le match « [ÜBUNG] Club test A – [ÜBUNG] Club test B » avec la compétition « [ÜBUNG] » (pas « Ligue 1 ») puis supprimez-le avec « Supprimer le match ». Ainsi il ne compte pas dans le jeu de pronostics."
+      }
+    ],
+    "tipps": [
+      "Visiteurs et membres ne voient que les données ; les mentions « corrigé manuellement » et « ajouté manuellement » ne sont visibles que pour le bureau.",
+      "Les logos des clubs se gèrent sous « Logos des clubs » (carte LOGO-01)."
     ]
   }
 }
