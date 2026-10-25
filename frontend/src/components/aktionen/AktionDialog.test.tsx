@@ -29,6 +29,7 @@ const vorhandene: ArticleCatalogue = {
   zielbetrag: "500.00",
   oeffentlich: true,
   erinnerungen: false,
+  betrag_erhoehbar: false,
   gesammelt: "0.00",
   beitragende: 0,
   fortschritt: 0,
@@ -83,6 +84,7 @@ describe("AktionDialog", () => {
       zielbetrag: "300",
       oeffentlich: false,
       erinnerungen: true,
+      betrag_erhoehbar: false,
     });
   });
 
@@ -126,5 +128,24 @@ describe("AktionDialog", () => {
     renderWithProviders(<AktionDialog onClose={onClose} />);
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("sendet den Schalter für den Mindestbetrag und benennt das Betragsfeld um", () => {
+    const { creer } = mutationen();
+    renderWithProviders(<AktionDialog onClose={vi.fn()} />);
+
+    expect(screen.getByLabelText("catalogue_articles.champ_montant")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/^aktion\.dialog\.betrag_erhoehbar(?!_)/));
+    expect(screen.getByLabelText("aktion.dialog.mindestbetrag")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("catalogue_articles.champ_libelle"), {
+      target: { value: "Spendenaktion" },
+    });
+    fireEvent.change(screen.getByLabelText("aktion.dialog.mindestbetrag"), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByText("catalogue_articles.enregistrer"));
+
+    expect(creer.mock.calls[0][0]).toMatchObject({ betrag_erhoehbar: true, montant: "10" });
   });
 });

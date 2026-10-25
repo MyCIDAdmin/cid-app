@@ -22,7 +22,10 @@
     "don_montant_label": "Spendenbetrag (€)",
     "don_montant_erreur": "Geben Sie einen Betrag größer als 0 an.",
     "catalogue_chargement": "Weitere Artikel werden geladen…",
-    "catalogue_erreur": "Die zusätzlichen Artikel konnten nicht geladen werden."
+    "catalogue_erreur": "Die zusätzlichen Artikel konnten nicht geladen werden.",
+    "aktion_ab": "ab {{betrag}}",
+    "aktion_betrag_label": "Ihr Betrag (mindestens {{minimum}})",
+    "aktion_betrag_erreur": "Der Betrag muss mindestens {{minimum}} betragen."
   },
   "recap": {
     "titre": "Zusammenfassung",
@@ -356,7 +359,10 @@
       "oeffentlich_hinweis": "Die Aktion kann in sozialen Medien geteilt werden. Die Seite zeigt nie Namen von Beitragenden.",
       "erinnerungen": "Erinnerungen senden",
       "erinnerungen_hinweis": "Aktive Mitglieder ohne Beitrag erhalten 3 Tage vor Fristende und bei 80 % des Ziels eine E-Mail und einen Hinweis in der App. Telegram nach Einstellung des Mitglieds.",
-      "fehler_erinnerung_ohne_ziel": "Für Erinnerungen braucht die Aktion eine Frist oder einen Zielbetrag."
+      "fehler_erinnerung_ohne_ziel": "Für Erinnerungen braucht die Aktion eine Frist oder einen Zielbetrag.",
+      "mindestbetrag": "Mindestbetrag (€)",
+      "betrag_erhoehbar": "Betrag darf erhöht werden",
+      "betrag_erhoehbar_hinweis": "Der Betrag oben gilt als Mindestbetrag. Mitglieder dürfen mehr zahlen, wie bei der Spende."
     },
     "hinweis": {
       "titel": "Dringende Beitragsaktionen",
@@ -371,7 +377,9 @@
       "nicht_gefunden": "Diese Aktion gibt es nicht oder sie ist nicht öffentlich.",
       "beendet": "Diese Aktion ist beendet. Vielen Dank an alle, die mitgemacht haben.",
       "beitragen": "Jetzt beitragen ({{betrag}})",
-      "login_hinweis": "Zum Bezahlen melden Sie sich zuerst an."
-    }
+      "login_hinweis": "Zum Bezahlen melden Sie sich zuerst an.",
+      "beitragen_ab": "Jetzt beitragen (ab {{betrag}})"
+    },
+    "mindestbetrag_hinweis": "Mindestbetrag – Mitglieder dürfen mehr zahlen"
   }
 }

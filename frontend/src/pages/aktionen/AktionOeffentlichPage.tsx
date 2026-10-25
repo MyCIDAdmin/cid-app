@@ -76,7 +76,9 @@ export default function AktionOeffentlichPage() {
                 to={`/cotisation?aktion=${aktion.data.id}`}
                 className="rounded-cid bg-ca px-4 py-2 text-sm font-medium text-white hover:opacity-90"
               >
-                {t("aktion.oeffentlich.beitragen", { betrag })}
+                {aktion.data.betrag_erhoehbar
+                  ? t("aktion.oeffentlich.beitragen_ab", { betrag })
+                  : t("aktion.oeffentlich.beitragen", { betrag })}
               </Link>
               {!angemeldet && (
                 <span className="text-xs text-text-tertiary">

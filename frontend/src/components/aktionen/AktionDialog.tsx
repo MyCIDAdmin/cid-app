@@ -36,6 +36,7 @@ export default function AktionDialog({ article, onClose }: Props) {
   const [zielbetrag, setZielbetrag] = useState(article?.zielbetrag ?? "");
   const [oeffentlich, setOeffentlich] = useState(article?.oeffentlich ?? false);
   const [erinnerungen, setErinnerungen] = useState(article?.erinnerungen ?? false);
+  const [betragErhoehbar, setBetragErhoehbar] = useState(article?.betrag_erhoehbar ?? false);
   const [fehler, setFehler] = useState<string | null>(null);
 
   const laeuft = creer.isPending || modifier.isPending;
@@ -56,6 +57,7 @@ export default function AktionDialog({ article, onClose }: Props) {
       zielbetrag: zielbetrag || null,
       oeffentlich,
       erinnerungen,
+      betrag_erhoehbar: betragErhoehbar,
     };
     const optionen = {
       onSuccess: onClose,
@@ -108,7 +110,9 @@ export default function AktionDialog({ article, onClose }: Props) {
           </div>
           <div>
             <label htmlFor="aktion-montant" className={LABEL}>
-              {t("catalogue_articles.champ_montant")}
+              {betragErhoehbar
+                ? t("aktion.dialog.mindestbetrag")
+                : t("catalogue_articles.champ_montant")}
             </label>
             <input
               id="aktion-montant"
@@ -169,6 +173,7 @@ export default function AktionDialog({ article, onClose }: Props) {
         <fieldset className="mt-4 space-y-2">
           {(
             [
+              ["betrag_erhoehbar", betragErhoehbar, setBetragErhoehbar],
               ["dringend", dringend, setDringend],
               ["oeffentlich", oeffentlich, setOeffentlich],
               ["erinnerungen", erinnerungen, setErinnerungen],

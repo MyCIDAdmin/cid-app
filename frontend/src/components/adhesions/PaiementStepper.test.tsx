@@ -393,6 +393,7 @@ describe("PaiementStepper", () => {
         zielbetrag: null,
         oeffentlich: false,
         erinnerungen: false,
+        betrag_erhoehbar: false,
         gesammelt: "0.00",
         beitragende: 0,
         fortschritt: null,
@@ -457,6 +458,7 @@ describe("PaiementStepper", () => {
       zielbetrag: null,
       oeffentlich: false,
       erinnerungen: false,
+      betrag_erhoehbar: false,
       gesammelt: "0.00",
       beitragende: 0,
       fortschritt: null,
@@ -685,6 +687,7 @@ describe("PaiementStepper", () => {
         zielbetrag: null,
         oeffentlich: false,
         erinnerungen: false,
+        betrag_erhoehbar: false,
         gesammelt: "0.00",
         beitragende: 0,
         fortschritt: null,
@@ -757,6 +760,70 @@ describe("PaiementStepper", () => {
         type_article: "autre",
         article_catalogue: "akt-2",
       });
+    });
+
+    it("Mindestbetrag: Mitglied erhöht den Betrag, dieser wird mitgesendet", () => {
+      katalog([aktion({ betrag_erhoehbar: true, montant: "15.00" })]);
+      const mutate = vi.fn();
+      vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+        mutate,
+        isPending: false,
+        isError: false,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+      renderWithProviders(<PaiementStepper />);
+
+      fireEvent.click(screen.getByText("Busfahrt"));
+      const feld = screen.getByLabelText(/article.aktion_betrag_label/);
+      expect(feld).toHaveValue(15);
+      fireEvent.change(feld, { target: { value: "40" } });
+      fireEvent.click(screen.getByText("continuer"));
+      fireEvent.click(screen.getByText(/paiement\.payer/));
+
+      expect(mutate.mock.calls[0][0]).toMatchObject({
+        type_article: "autre",
+        article_catalogue: "akt-1",
+        montant: "40.00",
+      });
+    });
+
+    it("Mindestbetrag: ein Betrag darunter blockiert den Weiter-Schritt", () => {
+      katalog([aktion({ betrag_erhoehbar: true, montant: "15.00" })]);
+      const mutate = vi.fn();
+      vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+        mutate,
+        isPending: false,
+        isError: false,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+      renderWithProviders(<PaiementStepper />);
+
+      fireEvent.click(screen.getByText("Busfahrt"));
+      fireEvent.change(screen.getByLabelText(/article.aktion_betrag_label/), {
+        target: { value: "10" },
+      });
+      fireEvent.click(screen.getByText("continuer"));
+
+      expect(screen.getByText("article.aktion_betrag_erreur")).toBeInTheDocument();
+      expect(screen.queryByText(/paiement\.payer/)).not.toBeInTheDocument();
+    });
+
+    it("fester Preis: kein Betragsfeld und kein montant im Request", () => {
+      katalog([aktion()]);
+      const mutate = vi.fn();
+      vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+        mutate,
+        isPending: false,
+        isError: false,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+      renderWithProviders(<PaiementStepper />);
+
+      fireEvent.click(screen.getByText("Busfahrt"));
+      expect(screen.queryByLabelText(/article.aktion_betrag_label/)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText("continuer"));
+      fireEvent.click(screen.getByText(/paiement\.payer/));
+      expect(mutate.mock.calls[0][0]).not.toHaveProperty("montant");
     });
 
     it("ignoriert ?aktion=<id> einer abgelaufenen Aktion", () => {

@@ -14,6 +14,7 @@ const aktion: AktionOeffentlich = {
   titel: "Busfahrt zum Finale",
   beschreibung: "<p>Wir brauchen <strong>Unterstützung</strong>.</p>",
   betrag: "15.00",
+  betrag_erhoehbar: false,
   frist: "2099-06-01",
   abgelaufen: false,
   dringend: true,
@@ -75,5 +76,11 @@ describe("AktionOeffentlichPage", () => {
     zeige({ data: undefined, isLoading: false, isError: true });
     rendern();
     expect(screen.getByTestId("aktion-nicht-gefunden")).toBeInTheDocument();
+  });
+
+  it("nennt bei Mindestbetrag die Variante „ab“", () => {
+    zeige({ data: { ...aktion, betrag_erhoehbar: true }, isLoading: false, isError: false });
+    rendern();
+    expect(screen.getByText(/aktion.oeffentlich.beitragen_ab/)).toBeInTheDocument();
   });
 });
