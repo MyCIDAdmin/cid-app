@@ -166,11 +166,10 @@ describe("PaiementStepper", () => {
     // AHM-53 : le serveur ne renvoie jamais statut=payee pour un paiement en libre-service, quel
     // que soit le mode choisi — voir docstring de PaiementStepper et perform_create côté
     // backend. Le mock reflète donc la réalité de l'API : en_attente, pas de référence.
-    const mutate = vi.fn(
-      (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
-        opts?.onSuccess?.(
-          cotisation({ statut: "en_attente", reference_transaction: null, date_paiement: null }),
-        ),
+    const mutate = vi.fn((_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
+      opts?.onSuccess?.(
+        cotisation({ statut: "en_attente", reference_transaction: null, date_paiement: null }),
+      ),
     );
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
       mutate,
@@ -195,9 +194,7 @@ describe("PaiementStepper", () => {
       mode_paiement: "virement_sepa",
     });
 
-    await waitFor(() =>
-      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument());
     // Pas de référence de transaction ni de bouton de reçu tant que ce n'est pas confirmé.
     expect(screen.queryByText(/TXN-/)).not.toBeInTheDocument();
     expect(screen.queryByText("recu.telecharger")).not.toBeInTheDocument();
@@ -210,16 +207,15 @@ describe("PaiementStepper", () => {
   // "redirige vers la passerelle..."/"affiche une erreur...(AHM-46)", qui exerçaient un chemin
   // UI qui n'existe plus (choix "carte" par défaut, initiation automatique).
   it("affiche les coordonnées bancaires par défaut sans jamais appeler la passerelle réelle (paiement en ligne en pause)", async () => {
-    const mutateCreer = vi.fn(
-      (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
-        opts?.onSuccess?.(
-          cotisation({
-            id: "c-sepa",
-            statut: "en_attente",
-            mode_paiement: "virement_sepa",
-            reference_transaction: null,
-          }),
-        ),
+    const mutateCreer = vi.fn((_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
+      opts?.onSuccess?.(
+        cotisation({
+          id: "c-sepa",
+          statut: "en_attente",
+          mode_paiement: "virement_sepa",
+          reference_transaction: null,
+        }),
+      ),
     );
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
       mutate: mutateCreer,
@@ -241,9 +237,7 @@ describe("PaiementStepper", () => {
 
     fireEvent.click(screen.getByText(/paiement\.payer/));
 
-    await waitFor(() =>
-      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument());
     expect(mutateInitier).not.toHaveBeenCalled();
     expect(window.location.href).toBe("");
     // Coordonnées bancaires de l'association (components/ui/PaymentInstructions).
@@ -252,16 +246,15 @@ describe("PaiementStepper", () => {
   });
 
   it("affiche les coordonnées PayPal manuelles pour un règlement PayPal sans appeler la passerelle réelle (paiement en ligne en pause)", async () => {
-    const mutateCreer = vi.fn(
-      (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
-        opts?.onSuccess?.(
-          cotisation({
-            id: "c-paypal",
-            statut: "en_attente",
-            mode_paiement: "paypal",
-            reference_transaction: null,
-          }),
-        ),
+    const mutateCreer = vi.fn((_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
+      opts?.onSuccess?.(
+        cotisation({
+          id: "c-paypal",
+          statut: "en_attente",
+          mode_paiement: "paypal",
+          reference_transaction: null,
+        }),
+      ),
     );
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
       mutate: mutateCreer,
@@ -281,20 +274,15 @@ describe("PaiementStepper", () => {
     fireEvent.click(screen.getByText("paiement.paypal_titre"));
     fireEvent.click(screen.getByText(/paiement\.payer/));
 
-    await waitFor(() =>
-      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument());
     expect(mutateInitier).not.toHaveBeenCalled();
     expect(screen.getByText("paiement_instructions.paypal_titre")).toBeInTheDocument();
     expect(screen.getByText("info@clubistesindeutschland.org")).toBeInTheDocument();
   });
 
   it("n'appelle jamais la passerelle pour un virement SEPA (AHM-46)", async () => {
-    const mutateCreer = vi.fn(
-      (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
-        opts?.onSuccess?.(
-          cotisation({ statut: "en_attente", mode_paiement: "virement_sepa" }),
-        ),
+    const mutateCreer = vi.fn((_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
+      opts?.onSuccess?.(cotisation({ statut: "en_attente", mode_paiement: "virement_sepa" })),
     );
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
       mutate: mutateCreer,
@@ -314,9 +302,7 @@ describe("PaiementStepper", () => {
     fireEvent.click(screen.getByText("paiement.sepa_titre"));
     fireEvent.click(screen.getByText(/paiement\.payer/));
 
-    await waitFor(() =>
-      expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("confirmation.titre_attente")).toBeInTheDocument());
     expect(mutateInitier).not.toHaveBeenCalled();
   });
 
@@ -363,9 +349,10 @@ describe("PaiementStepper", () => {
     // Cas défensif : si le serveur renvoyait un jour statut=payee dès la création (ex. saisie
     // DF pour un autre membre, F-015 — hors scope du stepper libre-service mais même type de
     // réponse), l'écran de confirmation doit quand même proposer le reçu immédiatement.
-    const mutate = vi.fn(
-      (_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
-        opts?.onSuccess?.(cotisation({ id: "c-nouveau", reference_transaction: "TXN-2025-XYZ99999" })),
+    const mutate = vi.fn((_payload, opts?: { onSuccess?: (c: Cotisation) => void }) =>
+      opts?.onSuccess?.(
+        cotisation({ id: "c-nouveau", reference_transaction: "TXN-2025-XYZ99999" }),
+      ),
     );
     vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
       mutate,
@@ -400,6 +387,16 @@ describe("PaiementStepper", () => {
         montant: "20.00",
         actif: true,
         type_fixe: null,
+        beschreibung: "",
+        dringend: false,
+        frist: null,
+        zielbetrag: null,
+        oeffentlich: false,
+        erinnerungen: false,
+        gesammelt: "0.00",
+        beitragende: 0,
+        fortschritt: null,
+        abgelaufen: false,
         created_at: "2026-09-17T10:00:00Z",
         updated_at: "2026-09-17T10:00:00Z",
         ...overrides,
@@ -410,7 +407,10 @@ describe("PaiementStepper", () => {
       data: {
         next: null,
         previous: null,
-        results: [articleCatalogue(), articleCatalogue({ id: "art-2", actif: false, libelle: "Ancien article" })],
+        results: [
+          articleCatalogue(),
+          articleCatalogue({ id: "art-2", actif: false, libelle: "Ancien article" }),
+        ],
       },
       isLoading: false,
       isError: false,
@@ -451,6 +451,16 @@ describe("PaiementStepper", () => {
       montant: "45.00",
       actif: true,
       type_fixe: "cotisation",
+      beschreibung: "",
+      dringend: false,
+      frist: null,
+      zielbetrag: null,
+      oeffentlich: false,
+      erinnerungen: false,
+      gesammelt: "0.00",
+      beitragende: 0,
+      fortschritt: null,
+      abgelaufen: false,
       created_at: "2026-09-17T10:00:00Z",
       updated_at: "2026-09-17T10:00:00Z",
       ...overrides,
@@ -657,6 +667,105 @@ describe("PaiementStepper", () => {
       renderWithProviders(<PaiementStepper />, { route: "/?paiement=cot-404" });
 
       expect(screen.getByText("paiement.erreur_lien")).toBeInTheDocument();
+    });
+  });
+
+  // Beitragsaktionen : Beschreibung, Dringend-Reihenfolge, abgelaufene Aktionen, Direktlink.
+  describe("Beitragsaktionen", () => {
+    function aktion(overrides: Partial<ArticleCatalogue> = {}): ArticleCatalogue {
+      return {
+        id: "akt-1",
+        libelle: "Busfahrt",
+        montant: "15.00",
+        actif: true,
+        type_fixe: null,
+        beschreibung: "",
+        dringend: false,
+        frist: null,
+        zielbetrag: null,
+        oeffentlich: false,
+        erinnerungen: false,
+        gesammelt: "0.00",
+        beitragende: 0,
+        fortschritt: null,
+        abgelaufen: false,
+        created_at: "2026-10-01T10:00:00Z",
+        updated_at: "2026-10-01T10:00:00Z",
+        ...overrides,
+      };
+    }
+
+    function katalog(aktionen: ArticleCatalogue[]) {
+      vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+        data: {
+          next: null,
+          previous: null,
+          results: [
+            articleFixe(),
+            articleFixe({ id: "art-fixe-adhesion", type_fixe: "adhesion", montant: "15.00" }),
+            ...aktionen,
+          ],
+        },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+    }
+
+    it("zeigt dringende Aktionen zuerst und blendet abgelaufene aus", () => {
+      katalog([
+        aktion({ id: "a-normal", libelle: "Normale Aktion" }),
+        aktion({ id: "a-dringend", libelle: "Dringende Aktion", dringend: true }),
+        aktion({ id: "a-alt", libelle: "Vergangene Aktion", abgelaufen: true }),
+      ]);
+      renderWithProviders(<PaiementStepper />);
+
+      expect(screen.queryByText("Vergangene Aktion")).not.toBeInTheDocument();
+      const titel = screen
+        .getAllByText(/Dringende Aktion|Normale Aktion/)
+        .map((e) => e.textContent);
+      expect(titel).toEqual(["Dringende Aktion", "Normale Aktion"]);
+      expect(screen.getByText("aktion.badge_dringend")).toBeInTheDocument();
+    });
+
+    it("zeigt die Beschreibung erst bei gewählter Aktion", () => {
+      katalog([aktion({ beschreibung: "<p>Wir fahren gemeinsam.</p>" })]);
+      renderWithProviders(<PaiementStepper />);
+
+      expect(screen.queryByText("Wir fahren gemeinsam.")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText("Busfahrt"));
+      expect(screen.getByText("Wir fahren gemeinsam.")).toBeInTheDocument();
+    });
+
+    it("wählt die Aktion aus ?aktion=<id> vor und sendet sie beim Bezahlen", () => {
+      katalog([aktion(), aktion({ id: "akt-2", libelle: "Zweite Aktion" })]);
+      const mutate = vi.fn();
+      vi.mocked(useCotisationsHooks.useCreerCotisation).mockReturnValue({
+        mutate,
+        isPending: false,
+        isError: false,
+        reset: vi.fn(),
+      } as unknown as ReturnType<typeof useCotisationsHooks.useCreerCotisation>);
+
+      renderWithProviders(<PaiementStepper />, {
+        route: "/mon-adhesion?aktion=akt-2",
+        path: "/mon-adhesion",
+      });
+
+      fireEvent.click(screen.getByText("continuer"));
+      fireEvent.click(screen.getByText(/paiement\.payer/));
+      expect(mutate.mock.calls[0][0]).toMatchObject({
+        type_article: "autre",
+        article_catalogue: "akt-2",
+      });
+    });
+
+    it("ignoriert ?aktion=<id> einer abgelaufenen Aktion", () => {
+      katalog([aktion({ id: "akt-alt", libelle: "Alt", abgelaufen: true })]);
+      renderWithProviders(<PaiementStepper />, {
+        route: "/mon-adhesion?aktion=akt-alt",
+        path: "/mon-adhesion",
+      });
+      expect(screen.queryByText("Alt")).not.toBeInTheDocument();
     });
   });
 });

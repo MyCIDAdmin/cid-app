@@ -316,5 +316,62 @@
     "entfernen": "Entfernen",
     "leer": "Noch keine Werte.",
     "erreur": "Speichern fehlgeschlagen."
+  },
+  "aktion": {
+    "badge_dringend": "Dringend",
+    "badge_abgelaufen": "Beendet",
+    "frist_abgelaufen": "Frist war am {{datum}}",
+    "frist_heute": "Letzter Tag: heute",
+    "frist_tage_one": "Noch 1 Tag (bis {{datum}})",
+    "frist_tage_other": "Noch {{count}} Tage (bis {{datum}})",
+    "frist_bis": "Frist bis {{datum}}",
+    "gesammelt_von": "{{summe}} von {{ziel}} gesammelt",
+    "fast_geschafft": "Fast geschafft – jeder Beitrag zählt!",
+    "ziel_erreicht": "Ziel erreicht – weitere Beiträge sind weiterhin willkommen.",
+    "gesammelt_ohne_ziel_one": "{{summe}} von 1 Person gesammelt",
+    "gesammelt_ohne_ziel_other": "{{summe}} von {{count}} Personen gesammelt",
+    "zeile_gesammelt_one": "Bezahlt: {{summe}} (1 Person)",
+    "zeile_gesammelt_other": "Bezahlt: {{summe}} ({{count}} Personen)",
+    "oeffentliche_seite": "Öffentliche Seite",
+    "details": "Details bearbeiten",
+    "export_status": "Welche Beiträge exportieren",
+    "export_bezahlt": "Bezahlt",
+    "export_offen": "Offen",
+    "export_alle": "Alle",
+    "export_button": "Teilnehmende (Excel)",
+    "export_fehler": "Der Export konnte nicht erstellt werden.",
+    "neue_aktion": "Aktion mit Beschreibung anlegen",
+    "neue_aktion_hinweis": "Für kurzfristige Beitragsaufrufe mit Text, Frist und Zielbetrag.",
+    "dialog": {
+      "titel_neu": "Neue Beitragsaktion",
+      "titel_bearbeiten": "Beitragsaktion bearbeiten",
+      "beschreibung": "Beschreibung",
+      "beschreibung_platzhalter": "Wofür wird der Beitrag gebraucht?",
+      "frist": "Frist (optional)",
+      "zielbetrag": "Zielbetrag in € (optional)",
+      "zielbetrag_hinweis": "Der Fortschritt zählt nur bezahlte Beiträge.",
+      "dringend": "Als wichtig markieren",
+      "dringend_hinweis": "Die Aktion erscheint als dringend und steht in der Auswahl ganz oben.",
+      "oeffentlich": "Öffentliche Aktionsseite",
+      "oeffentlich_hinweis": "Die Aktion kann in sozialen Medien geteilt werden. Die Seite zeigt nie Namen von Beitragenden.",
+      "erinnerungen": "Erinnerungen senden",
+      "erinnerungen_hinweis": "Aktive Mitglieder ohne Beitrag erhalten 3 Tage vor Fristende und bei 80 % des Ziels eine E-Mail und einen Hinweis in der App. Telegram nach Einstellung des Mitglieds.",
+      "fehler_erinnerung_ohne_ziel": "Für Erinnerungen braucht die Aktion eine Frist oder einen Zielbetrag."
+    },
+    "hinweis": {
+      "titel": "Dringende Beitragsaktionen",
+      "frist_bald": "Beitragsaufruf „{{titel}}“ endet am {{datum}}.",
+      "dringend": "Dringender Beitragsaufruf: „{{titel}}“.",
+      "ziel_fast": "„{{titel}}“ hat {{prozent}} % des Ziels erreicht – helfen Sie mit, es zu schaffen.",
+      "aktion": "Beitragen"
+    },
+    "oeffentlich": {
+      "anmelden": "Anmelden",
+      "laden": "Wird geladen…",
+      "nicht_gefunden": "Diese Aktion gibt es nicht oder sie ist nicht öffentlich.",
+      "beendet": "Diese Aktion ist beendet. Vielen Dank an alle, die mitgemacht haben.",
+      "beitragen": "Jetzt beitragen ({{betrag}})",
+      "login_hinweis": "Zum Bezahlen melden Sie sich zuerst an."
+    }
   }
 }

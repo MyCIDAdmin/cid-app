@@ -37,6 +37,9 @@ import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 export interface ShareButtonProps {
   /** Chemin relatif de l'app, ex. "/evenements?evenement=abc-123". */
   path: string;
+  /** Vollständige Adresse, die geteilt wird (z. B. Vorschauseite einer Beitragsaktion). Ersetzt
+   * dann die aus `path` gebildete Adresse. */
+  url?: string;
   /** Titre de l'élément partagé (utilisé par navigator.share et comme sujet d'email). */
   titre: string;
   /** Texte court complémentaire, optionnel (ex. date/lieu d'un événement). */
@@ -49,6 +52,7 @@ export interface ShareButtonProps {
 
 export default function ShareButton({
   path,
+  url: absoluteUrl,
   titre,
   texte,
   variant = "default",
@@ -71,7 +75,7 @@ export default function ShareButton({
     return () => document.removeEventListener("mousedown", handleClicExterieur);
   }, [ouvert]);
 
-  const url = `${window.location.origin}${path}`;
+  const url = absoluteUrl ?? `${window.location.origin}${path}`;
   const texteMessage = texte ?? t("partage.texte_partage", { titre });
 
   async function handleClic(e: React.MouseEvent) {

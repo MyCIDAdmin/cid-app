@@ -44,4 +44,10 @@ describe("CotisationRedirect", () => {
 
     expect(screen.getByTestId("destination").textContent).toBe("/mon-adhesion");
   });
+
+  it("gibt ?aktion=<id> einer Beitragsaktion weiter", () => {
+    renderRedirect("/cotisation?aktion=akt-1");
+
+    expect(screen.getByTestId("destination").textContent).toBe("/mon-adhesion?aktion=akt-1");
+  });
 });

@@ -51,7 +51,11 @@ export type TypeNotification =
   | "kalender_sitzung"
   | "region_veranstaltung"
   // Ajouté le 2026-10-14 (Release 22) — alarmes du journal d'activité (App Admin).
-  | "aktivitaet_auffaelligkeit";
+  | "aktivitaet_auffaelligkeit"
+  // Beitragsaktionen : Erinnerungen (Frist bald, Ziel fast erreicht) — Titel/Text kommen fertig
+  // vom Backend (apps.cotisations.aktions_erinnerungen).
+  | "aktion_frist"
+  | "aktion_ziel";
 
 export interface Notification {
   id: string;

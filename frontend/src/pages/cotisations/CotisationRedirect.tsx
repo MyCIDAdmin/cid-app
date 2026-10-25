@@ -13,11 +13,12 @@ import { Navigate, useSearchParams } from "react-router-dom";
 export default function CotisationRedirect() {
   const [params] = useSearchParams();
   const paiement = params.get("paiement");
+  // Beitragsaktionen : Erinnerungen und Hinweise verlinken `/cotisation?aktion=<id>`.
+  const aktion = params.get("aktion");
 
-  return (
-    <Navigate
-      to={paiement ? `/mon-adhesion?paiement=${encodeURIComponent(paiement)}` : "/mon-adhesion"}
-      replace
-    />
-  );
+  let ziel = "/mon-adhesion";
+  if (paiement) ziel = `/mon-adhesion?paiement=${encodeURIComponent(paiement)}`;
+  else if (aktion) ziel = `/mon-adhesion?aktion=${encodeURIComponent(aktion)}`;
+
+  return <Navigate to={ziel} replace />;
 }

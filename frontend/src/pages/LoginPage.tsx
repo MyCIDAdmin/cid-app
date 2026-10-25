@@ -29,7 +29,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const loginSuccess = useAuthStore((s) => s.loginSuccess);
-  const destination = (location.state as LocationState | null)?.from?.pathname || "/";
+  // Auch die Suchparameter bleiben erhalten (z. B. `?aktion=<id>` einer geteilten Beitragsaktion).
+  const zielSeite = (location.state as LocationState | null)?.from;
+  const destination = zielSeite?.pathname ? `${zielSeite.pathname}${zielSeite.search ?? ""}` : "/";
 
   const [step, setStep] = useState<Step>("credentials");
   const [email, setEmail] = useState("");

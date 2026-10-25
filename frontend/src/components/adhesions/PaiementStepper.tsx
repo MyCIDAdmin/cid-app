@@ -104,6 +104,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
+import AktionStatus from "../aktionen/AktionStatus";
+import FormatierterText from "../regionen/FormatierterText";
 import PaymentInstructions from "../ui/PaymentInstructions";
 import { telechargerRecuCotisation } from "../../api/cotisations";
 import {
@@ -115,6 +117,7 @@ import {
 } from "../../hooks/useCotisations";
 import { MONTANTS_CATALOGUE } from "../../types/cotisation";
 import type { Cotisation, ModePaiement, TypeArticleStepper } from "../../types/cotisation";
+import { istDringlich, istWaehlbareAktion } from "../../utils/aktionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { leiteZuZahlungWeiter } from "../../utils/sicherUrl";
 
@@ -207,9 +210,12 @@ export default function PaiementStepper() {
   // Administrateur App consultant lui-même cette section ne doit pas se voir proposer un article
   // qu'il vient de désactiver. `type_fixe` exclu : ces 2 lignes techniques sont représentées par
   // les cartes cotisation/adhesion ci-dessous, jamais par une carte "autre" supplémentaire.
-  const articlesCatalogueActifs = (articlesCatalogue.data?.results ?? []).filter(
-    (a) => a.actif && a.type_fixe === null,
-  );
+  // Beitragsaktionen : abgelaufene Aktionen (Frist überschritten) sind nicht mehr wählbar, dringende
+  // stehen zuerst (stabile Sortierung, sonst bleibt die Reihenfolge des Servers).
+  const articlesCatalogueActifs = (articlesCatalogue.data?.results ?? [])
+    .filter(istWaehlbareAktion)
+    .sort((a, b) => Number(istDringlich(b)) - Number(istDringlich(a)));
+  const aktionVorgabe = searchParams.get("aktion");
 
   // Tarifs cotisation/adhésion pilotés par l'Administrateur App (2026-09-17, voir docstring de
   // module) — repli sur MONTANTS_CATALOGUE tant que la requête n'a pas encore répondu.
@@ -331,6 +337,21 @@ export default function PaiementStepper() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paiementId, cotisationLiee.data]);
+
+  // Direktlink `?aktion=<id>` (Erinnerung, Dashboard-Hinweis, öffentliche Aktionsseite) :
+  // wählt die Aktion vor, sobald der Katalog geladen ist — nur auf Schritt 1 und nur einmal.
+  const [vorgabeAngewendet, setVorgabeAngewendet] = useState(false);
+  useEffect(() => {
+    if (!aktionVorgabe || vorgabeAngewendet || paiementId || etape !== 1) return;
+    if (!articlesCatalogue.data) return;
+    const ziel = articlesCatalogueActifs.find((a) => a.id === aktionVorgabe);
+    if (ziel) {
+      setArticleChoisi("autre");
+      setArticleCatalogueId(ziel.id);
+    }
+    setVorgabeAngewendet(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aktionVorgabe, articlesCatalogue.data, etape]);
 
   const articleCatalogueChoisi = articlesCatalogueActifs.find((a) => a.id === articleCatalogueId);
 
@@ -496,26 +517,44 @@ export default function PaiementStepper() {
               {/* Articles supplémentaires gérés par l'Administrateur App (voir docstring de
                   module) — mêmes cartes que ci-dessus, sélection identifiée par l'id de
                   l'article plutôt que par son type (toujours "autre"). */}
-              {articlesCatalogueActifs.map((article) => (
-                <button
-                  key={article.id}
-                  type="button"
-                  onClick={() => {
-                    setArticleChoisi("autre");
-                    setArticleCatalogueId(article.id);
-                  }}
-                  className={`flex w-full items-center justify-between rounded-cid border px-3 py-2 text-left ${
-                    articleChoisi === "autre" && articleCatalogueId === article.id
-                      ? "border-ca bg-cal/20"
-                      : "border-text-tertiary/20 hover:bg-bg-tertiary"
-                  }`}
-                >
-                  <div className="text-sm font-semibold text-text-primary">{article.libelle}</div>
-                  <div className="text-sm font-bold text-ca">
-                    {formatMontant(Number(article.montant))}
+              {articlesCatalogueActifs.map((article) => {
+                const gewaehlt = articleChoisi === "autre" && articleCatalogueId === article.id;
+                return (
+                  <div key={article.id} data-testid={`aktion-karte-${article.id}`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setArticleChoisi("autre");
+                        setArticleCatalogueId(article.id);
+                      }}
+                      className={`flex w-full items-center justify-between gap-3 rounded-cid border px-3 py-2 text-left ${
+                        gewaehlt
+                          ? "border-ca bg-cal/20"
+                          : istDringlich(article)
+                            ? "border-status-dangerText/40 hover:bg-bg-tertiary"
+                            : "border-text-tertiary/20 hover:bg-bg-tertiary"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-text-primary">
+                          {article.libelle}
+                        </div>
+                        <div className="mt-1">
+                          <AktionStatus aktion={article} />
+                        </div>
+                      </div>
+                      <div className="text-sm font-bold text-ca">
+                        {formatMontant(Number(article.montant))}
+                      </div>
+                    </button>
+                    {gewaehlt && article.beschreibung && (
+                      <div className="mt-1 rounded-cid bg-bg-secondary p-3">
+                        <FormatierterText text={article.beschreibung} />
+                      </div>
+                    )}
                   </div>
-                </button>
-              ))}
+                );
+              })}
               {articlesCatalogue.isLoading && (
                 <p className="text-xs text-text-tertiary">{t("article.catalogue_chargement")}</p>
               )}

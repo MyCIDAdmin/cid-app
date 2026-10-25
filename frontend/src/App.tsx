@@ -56,6 +56,7 @@ import CotisationRedirect from "./pages/cotisations/CotisationRedirect";
 import CotisationRetourPage from "./pages/cotisations/CotisationRetourPage";
 import CotisationsEnAttentePage from "./pages/cotisations/CotisationsEnAttentePage";
 import DashboardPage from "./pages/DashboardPage";
+import AktionOeffentlichPage from "./pages/aktionen/AktionOeffentlichPage";
 import AdminEventsPage from "./pages/evenements/AdminEventsPage";
 import CovoituragePage from "./pages/evenements/CovoituragePage";
 import EvenementsPage from "./pages/evenements/EvenementsPage";
@@ -113,6 +114,8 @@ export default function App() {
           s'affiche aussi bien sur la Startseite publique que dans l'app connectée. */}
         {/* Öffentlicher Kalender (Release 15) : ohne Anmeldung, nur öffentliche Termine. */}
         <Route path="/kalender-oeffentlich" element={<OeffentlicherKalenderPage />} />
+        {/* Öffentliche Aktionsseite einer Beitragsaktion (geteilter Link, ohne Anmeldung). */}
+        <Route path="/aktion/:id" element={<AktionOeffentlichPage />} />
         <Route path="/impressum" element={<ImpressumPage />} />
         <Route path="/datenschutz" element={<DatenschutzPage />} />
         <Route path="/nutzungsbedingungen" element={<NutzungsbedingungenPage />} />

@@ -1137,6 +1137,45 @@
           }
         ],
         "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege „[ÜBUNG] Testartikel“ mit 1,00 € an, deaktiviere und reaktiviere ihn. Berühre die festen Tarife nicht."
+      },
+      {
+        "id": "BEIT-02",
+        "rollen": ["dir_financier", "bureau_admin", "super_admin"],
+        "titre": "Beitragsaktion mit Beschreibung, Frist und Teilen anlegen",
+        "wann": "Es gibt einen kurzfristigen Beitragsaufruf (z. B. Busfahrt, Spende für das Vereinsheim), der die Mitglieder schnell erreichen soll.",
+        "schritte": [
+          "„Beitragsartikel“ öffnen und „Aktion mit Beschreibung anlegen“ klicken.",
+          "Bezeichnung und Betrag eintragen und im Editor beschreiben, wofür der Beitrag gebraucht wird.",
+          "Optional eine Frist und einen Zielbetrag setzen. Der Fortschritt zählt nur bezahlte Beiträge.",
+          "Bei Bedarf „Als wichtig markieren“ (erscheint als dringend), „Öffentliche Aktionsseite“ (zum Teilen in sozialen Medien) und „Erinnerungen senden“ ankreuzen. Erinnerungen brauchen eine Frist oder einen Zielbetrag.",
+          "Speichern. In der Zeile erscheinen Fortschritt, Frist und bei öffentlichen Aktionen der Link zur Seite samt Teilen-Symbol.",
+          "Die Teilnehmenden jederzeit mit „Teilnehmende (Excel)“ exportieren, wahlweise nur bezahlte, nur offene oder alle Beiträge."
+        ],
+        "danach": "Mitglieder sehen die Aktion mit Beschreibung ganz oben im Bezahlvorgang und als Hinweis auf der Übersicht. Nach Fristende ist sie nicht mehr wählbar. Ist „Erinnerungen senden“ aktiv, erhalten aktive Mitglieder ohne Beitrag 3 Tage vor Fristende und bei 80 % des Ziels eine E-Mail und einen Hinweis in der App, bei verbundenem Telegram auch dort.",
+        "vorher": "Du kennst Betrag, Text und Frist des Aufrufs.",
+        "erwartet": [
+          "Der Dialog „Neue Beitragsaktion“ ist offen.",
+          "Die Felder sind ausgefüllt, der Text ist formatiert.",
+          "Frist und Zielbetrag stehen im Dialog.",
+          "Die gewählten Optionen sind angekreuzt.",
+          "Die Aktion steht in der Tabelle mit Dringend-Markierung, Frist und Fortschritt.",
+          "Eine Excel-Datei mit Name, Mitgliedsnummer, E-Mail, Betrag, Zahlungsart und Status wird heruntergeladen."
+        ],
+        "fehler": [
+          {
+            "problem": "„Für Erinnerungen braucht die Aktion eine Frist oder einen Zielbetrag.“",
+            "loesung": "Setze eine Frist oder einen Zielbetrag oder nimm das Häkchen bei „Erinnerungen senden“ heraus."
+          },
+          {
+            "problem": "Die Aktion wird Mitgliedern nicht mehr angeboten.",
+            "loesung": "Die Frist ist abgelaufen oder die Aktion ist deaktiviert. Verschiebe die Frist oder reaktiviere die Aktion."
+          },
+          {
+            "problem": "Die öffentliche Seite zeigt „nicht öffentlich“.",
+            "loesung": "Aktiviere „Öffentliche Aktionsseite“ und stelle sicher, dass die Aktion aktiv ist."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege „[ÜBUNG] Testaktion“ mit 1,00 € und einer Frist in sieben Tagen an, exportiere die Teilnehmenden und deaktiviere die Aktion wieder."
       }
     ]
   },
@@ -3963,7 +4002,7 @@
             },
             {
               "text": "Beitragsartikel prüfen.",
-              "karten": ["BEIT-01"]
+              "karten": ["BEIT-01", "BEIT-02"]
             }
           ]
         },

@@ -42,6 +42,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import AktionenHinweis from "../components/aktionen/AktionenHinweis";
 import UebersichtHinweise from "../components/dashboard/UebersichtHinweise";
 import NaechsteTermine from "../components/kalender/NaechsteTermine";
 import { useCountUp } from "../hooks/useCountUp";
@@ -193,6 +194,7 @@ export default function DashboardPage() {
       <h1 className="text-xl font-bold text-text-primary">{t("titre")}</h1>
       <p className="text-sm text-text-secondary">{t("bienvenue", { prenom: prenomAffiche })}</p>
 
+      <AktionenHinweis />
       <UebersichtHinweise />
 
       <div
