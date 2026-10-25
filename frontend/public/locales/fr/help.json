@@ -1148,7 +1148,7 @@
           "Saisir libellé et montant, puis décrire dans l'éditeur à quoi servira la contribution.",
           "Facultatif : définir une échéance et un objectif. La progression ne compte que les contributions payées.",
           "Au besoin, cocher « Le montant peut être augmenté » (le montant devient un minimum, les membres peuvent payer plus), « Marquer comme importante » (apparaît comme urgente), « Page d'action publique » (pour partager sur les réseaux sociaux) et « Envoyer des rappels ». Les rappels exigent une échéance ou un objectif.",
-          "Enregistrer. La ligne affiche progression, échéance et, pour les actions publiques, le lien vers la page avec l'icône de partage.",
+          "Enregistrer. La ligne affiche progression, échéance et, pour les actions publiques, le lien vers la page avec l'icône de partage. Au moment du partage, le texte peut être complété ou modifié.",
           "Exporter à tout moment les participants avec « Participants (Excel) », au choix : contributions payées, en attente ou toutes."
         ],
         "danach": "Les membres voient l'action avec sa description tout en haut du parcours de paiement et comme message sur l'accueil. Après l'échéance, elle n'est plus sélectionnable. Si « Envoyer des rappels » est actif, les membres actifs sans contribution reçoivent 3 jours avant l'échéance et à 80 % de l'objectif un e-mail et une notification dans l'app, ainsi que sur Telegram si le compte est relié.",

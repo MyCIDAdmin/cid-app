@@ -90,7 +90,13 @@
     "email": "E-Mail",
     "copier_lien": "Link kopieren",
     "lien_copie": "Link kopiert!",
-    "texte_partage": "Entdecke „{{titre}}“ auf Clubistes in Deutschland."
+    "texte_partage": "Entdecke „{{titre}}“ auf Clubistes in Deutschland.",
+    "dialog_titel": "Teilen",
+    "schliessen": "Schließen",
+    "text_label": "Text zum Beitrag",
+    "link_label": "Link",
+    "system_teilen": "Teilen …",
+    "copier_text": "Text und Link kopieren"
   },
   "editeur": {
     "barre_outils": "Formatierungsleiste",
