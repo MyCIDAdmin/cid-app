@@ -43,6 +43,7 @@ import {
 import { usePageAccess } from "../../hooks/useRbac";
 import type { ArticleCatalogue } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { apercuTexteDepuisHtml } from "../../utils/html";
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString();
@@ -151,6 +152,7 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
                   path={`/aktion/${article.id}`}
                   url={teilenUrlDerAktion(article.id)}
                   titre={article.libelle}
+                  texte={apercuTexteDepuisHtml(article.beschreibung) || undefined}
                 />
               </div>
             )}

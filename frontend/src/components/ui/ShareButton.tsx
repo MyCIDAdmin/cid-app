@@ -16,12 +16,21 @@
  * de partage interne à l'association (un événement, un produit, une actualité... que des membres
  * partagent entre eux ou avec des sympathisants déjà en possession d'un compte).
  *
+ * Mise à jour du 2026-10-25 (demande utilisateur : "Beim Teilen soll es überall wo es geteilt
+ * wird in der App möglich sein, den Text (Beschreibung) des Posts vor dem Teilen zu ergänzen") :
+ * le clic n'envoie plus rien directement, il ouvre une fenêtre avec le texte proposé dans un champ
+ * modifiable (`texte` ou texte par défaut), le lien partagé en lecture seule, puis les canaux
+ * (feuille native si disponible, WhatsApp, Facebook, X, e-mail, copie). Le texte saisi est
+ * transmis tel quel à chaque canal. Comme tous les partages externes de l'app passent par ce
+ * composant, la modification s'applique partout.
+ *
  * Web Share API (`navigator.share`) en priorité — ouvre la feuille de partage native du système
  * (mobile surtout) ; à défaut (desktop hors navigateurs compatibles), menu déroulant de secours
  * avec les réseaux les plus utilisés par l'association + copie du lien, même principe de
  * fermeture au clic extérieur que NotificationBell.tsx.
  */
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   IconBrandFacebook,
   IconBrandWhatsapp,
@@ -30,9 +39,10 @@ import {
   IconCopy,
   IconMail,
   IconShare3,
+  IconX,
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
-import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+import { hintergrundKlick, useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
 
 export interface ShareButtonProps {
   /** Chemin relatif de l'app, ex. "/evenements?evenement=abc-123". */
@@ -61,45 +71,40 @@ export default function ShareButton({
   const { t } = useTranslation("common");
   const [ouvert, setOuvert] = useState(false);
   const [lienCopie, setLienCopie] = useState(false);
-  const conteneurRef = useRef<HTMLDivElement>(null);
+  const [texteCopie, setTexteCopie] = useState(false);
+
+  const url = absoluteUrl ?? `${window.location.origin}${path}`;
+  const texteVorschlag = texte ?? t("partage.texte_partage", { titre });
+  const [texteMessage, setTexteMessage] = useState(texteVorschlag);
 
   useEscapeSchliessen(() => setOuvert(false), ouvert);
 
-  useEffect(() => {
-    function handleClicExterieur(e: MouseEvent) {
-      if (conteneurRef.current && !conteneurRef.current.contains(e.target as Node)) {
-        setOuvert(false);
-      }
-    }
-    if (ouvert) document.addEventListener("mousedown", handleClicExterieur);
-    return () => document.removeEventListener("mousedown", handleClicExterieur);
-  }, [ouvert]);
-
-  const url = absoluteUrl ?? `${window.location.origin}${path}`;
-  const texteMessage = texte ?? t("partage.texte_partage", { titre });
-
-  async function handleClic(e: React.MouseEvent) {
+  function oeffnen(e: React.MouseEvent) {
     e.stopPropagation();
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: titre, text: texteMessage, url });
-      } catch {
-        // AbortError si l'utilisateur annule la feuille de partage native — rien à faire.
-      }
-      return;
-    }
-    setOuvert((o) => !o);
+    // Bei jedem Öffnen wieder der aktuelle Vorschlag (der Beitrag kann sich geändert haben).
+    setTexteMessage(texteVorschlag);
+    setLienCopie(false);
+    setTexteCopie(false);
+    setOuvert(true);
   }
 
-  async function copierLien(e: React.MouseEvent) {
-    e.stopPropagation();
+  async function systemTeilen() {
     try {
-      await navigator.clipboard.writeText(url);
-      setLienCopie(true);
-      window.setTimeout(() => setLienCopie(false), 2000);
+      await navigator.share({ title: titre, text: texteMessage, url });
+      setOuvert(false);
+    } catch {
+      // AbortError si l'utilisateur annule la feuille de partage native — la fenêtre reste ouverte.
+    }
+  }
+
+  async function kopieren(inhalt: string, danach: (b: boolean) => void) {
+    try {
+      await navigator.clipboard.writeText(inhalt);
+      danach(true);
+      window.setTimeout(() => danach(false), 2000);
     } catch {
       // Presse-papier indisponible (contexte non sécurisé/permission refusée) — pas d'action de
-      // repli : le lien reste visible dans les autres options du menu (WhatsApp, email...).
+      // repli : les autres canaux de la fenêtre restent utilisables.
     }
   }
 
@@ -112,7 +117,7 @@ export default function ShareButton({
     {
       cle: "facebook",
       icone: IconBrandFacebook,
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(texteMessage)}`,
     },
     {
       cle: "x",
@@ -126,11 +131,107 @@ export default function ShareButton({
     },
   ];
 
+  const kanal =
+    "flex items-center gap-2 rounded-cid border border-text-tertiary/20 px-3 py-2 text-left text-xs text-text-secondary hover:bg-bg-tertiary";
+
+  const dialog = ouvert
+    ? createPortal(
+        // Das Fenster hängt an <body>, React-Ereignisse laufen aber durch den Komponentenbaum nach
+        // oben : Klicks dürfen keine umgebende Karte (Link, Auswahl) auslösen.
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            hintergrundKlick(() => setOuvert(false)).onMouseDown(e);
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            hintergrundKlick(() => setOuvert(false)).onClick(e);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("partage.dialog_titel")}
+            className="w-full max-w-md rounded-cid-lg bg-bg-primary p-4 shadow-lg"
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-bold text-text-primary">{t("partage.dialog_titel")}</h2>
+              <button
+                type="button"
+                onClick={() => setOuvert(false)}
+                aria-label={t("partage.schliessen")}
+                className="text-text-tertiary hover:text-text-primary"
+              >
+                <IconX size={18} />
+              </button>
+            </div>
+
+            <label
+              htmlFor="partage-text"
+              className="mb-1 block text-xs font-semibold uppercase text-text-tertiary"
+            >
+              {t("partage.text_label")}
+            </label>
+            <textarea
+              id="partage-text"
+              value={texteMessage}
+              onChange={(e) => setTexteMessage(e.target.value)}
+              rows={5}
+              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm text-text-primary"
+            />
+            <p className="mb-3 mt-1 break-all text-[11px] text-text-tertiary">
+              {t("partage.link_label")}: {url}
+            </p>
+
+            <div className="grid grid-cols-2 gap-2">
+              {typeof navigator.share === "function" && (
+                <button
+                  type="button"
+                  onClick={systemTeilen}
+                  className={`${kanal} col-span-2 font-semibold text-ca`}
+                >
+                  <IconShare3 size={15} />
+                  {t("partage.system_teilen")}
+                </button>
+              )}
+              {liens.map(({ cle, icone: Icone, href }) => (
+                <a
+                  key={cle}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setOuvert(false)}
+                  className={kanal}
+                >
+                  <Icone size={15} />
+                  {t(`partage.${cle}`)}
+                </a>
+              ))}
+              <button type="button" onClick={() => kopieren(url, setLienCopie)} className={kanal}>
+                {lienCopie ? <IconCheck size={15} /> : <IconCopy size={15} />}
+                {lienCopie ? t("partage.lien_copie") : t("partage.copier_lien")}
+              </button>
+              <button
+                type="button"
+                onClick={() => kopieren(`${texteMessage}\n${url}`, setTexteCopie)}
+                className={kanal}
+              >
+                {texteCopie ? <IconCheck size={15} /> : <IconCopy size={15} />}
+                {texteCopie ? t("partage.lien_copie") : t("partage.copier_text")}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
   return (
-    <div ref={conteneurRef} className={`relative inline-block ${className}`}>
+    <div className={`relative inline-block ${className}`}>
       <button
         type="button"
-        onClick={handleClic}
+        onClick={oeffnen}
         aria-label={t("partage.bouton_aria")}
         title={t("partage.bouton_aria")}
         className={`flex h-7 w-7 items-center justify-center rounded-full ${
@@ -141,32 +242,7 @@ export default function ShareButton({
       >
         <IconShare3 size={16} />
       </button>
-
-      {ouvert && (
-        <div className="absolute right-0 z-20 mt-1 w-44 rounded-cid-lg bg-bg-primary py-1 shadow-xl">
-          {liens.map(({ cle, icone: Icone, href }) => (
-            <a
-              key={cle}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setOuvert(false)}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary"
-            >
-              <Icone size={15} />
-              {t(`partage.${cle}`)}
-            </a>
-          ))}
-          <button
-            type="button"
-            onClick={copierLien}
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-bg-tertiary"
-          >
-            {lienCopie ? <IconCheck size={15} /> : <IconCopy size={15} />}
-            {lienCopie ? t("partage.lien_copie") : t("partage.copier_lien")}
-          </button>
-        </div>
-      )}
+      {dialog}
     </div>
   );
 }

@@ -90,7 +90,13 @@
     "email": "E-mail",
     "copier_lien": "Copier le lien",
     "lien_copie": "Lien copié !",
-    "texte_partage": "Découvrez « {{titre}} » sur Clubistes in Deutschland."
+    "texte_partage": "Découvrez « {{titre}} » sur Clubistes in Deutschland.",
+    "dialog_titel": "Partager",
+    "schliessen": "Fermer",
+    "text_label": "Texte du partage",
+    "link_label": "Lien",
+    "system_teilen": "Partager …",
+    "copier_text": "Copier le texte et le lien"
   },
   "editeur": {
     "barre_outils": "Barre de formatage",

@@ -1148,7 +1148,7 @@
           "Bezeichnung und Betrag eintragen und im Editor beschreiben, wofür der Beitrag gebraucht wird.",
           "Optional eine Frist und einen Zielbetrag setzen. Der Fortschritt zählt nur bezahlte Beiträge.",
           "Bei Bedarf „Betrag darf erhöht werden“ (der Betrag gilt dann als Mindestbetrag, Mitglieder dürfen mehr zahlen), „Als wichtig markieren“ (erscheint als dringend), „Öffentliche Aktionsseite“ (zum Teilen in sozialen Medien) und „Erinnerungen senden“ ankreuzen. Erinnerungen brauchen eine Frist oder einen Zielbetrag.",
-          "Speichern. In der Zeile erscheinen Fortschritt, Frist und bei öffentlichen Aktionen der Link zur Seite samt Teilen-Symbol.",
+          "Speichern. In der Zeile erscheinen Fortschritt, Frist und bei öffentlichen Aktionen der Link zur Seite samt Teilen-Symbol. Beim Teilen lässt sich der Text vorher ergänzen oder ändern.",
           "Die Teilnehmenden jederzeit mit „Teilnehmende (Excel)“ exportieren, wahlweise nur bezahlte, nur offene oder alle Beiträge."
         ],
         "danach": "Mitglieder sehen die Aktion mit Beschreibung ganz oben im Bezahlvorgang und als Hinweis auf der Übersicht. Nach Fristende ist sie nicht mehr wählbar. Ist „Erinnerungen senden“ aktiv, erhalten aktive Mitglieder ohne Beitrag 3 Tage vor Fristende und bei 80 % des Ziels eine E-Mail und einen Hinweis in der App, bei verbundenem Telegram auch dort.",

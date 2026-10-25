@@ -10,6 +10,7 @@ import { teilenUrlDerAktion } from "../../api/aktionen";
 import AktionStatus from "../../components/aktionen/AktionStatus";
 import FormatierterText from "../../components/regionen/FormatierterText";
 import ShareButton from "../../components/ui/ShareButton";
+import { apercuTexteDepuisHtml } from "../../utils/html";
 import { useAktionOeffentlich } from "../../hooks/useAktionen";
 import { useAuthStore } from "../../store/authStore";
 
@@ -59,6 +60,7 @@ export default function AktionOeffentlichPage() {
               path={`/aktion/${aktion.data.id}`}
               url={teilenUrlDerAktion(aktion.data.id)}
               titre={aktion.data.titel}
+              texte={apercuTexteDepuisHtml(aktion.data.beschreibung) || undefined}
             />
           </div>
 
