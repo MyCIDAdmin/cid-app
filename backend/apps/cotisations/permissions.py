@@ -64,3 +64,17 @@ class ArticleCataloguePermission(BasePermission):
         return has_admin_page_access(
             user, "page_articles_cotisation", required=NiveauAcces.LECTURE_ECRITURE
         )
+
+
+class ArticleVerwaltungPermission(BasePermission):
+    """Teilnehmerexport einer Beitragsaktion : enthält personenbezogene Daten, deshalb nie für
+    jede angemeldete Person (anders als Lesen der Artikelliste), sondern nur mit Schreibrecht auf
+    die Seite „Beitragsartikel“."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        return has_admin_page_access(
+            user, "page_articles_cotisation", required=NiveauAcces.LECTURE_ECRITURE
+        )

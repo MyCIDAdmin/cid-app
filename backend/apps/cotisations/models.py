@@ -179,6 +179,30 @@ class ArticleCatalogue(models.Model):
         unique=True,
     )
 
+    # Beitragsaktionen (2026-10-25, demande utilisateur : "Beschreibung (Word like editor)",
+    # "als wichtig markieren", "Frist", "Zielbetrag", Teilen in Social Media, Erinnerungen) —
+    # voir Konzept_Beitragsaktionen.md. Tous optionnels : un article existant se comporte
+    # exactement comme avant tant qu'aucun de ces champs n'est renseigné. Jamais renseignés pour
+    # les 2 lignes techniques `type_fixe`.
+    # HTML de l'éditeur riche, bereinigt côté serveur (apps.regionen.formattext.bereinige).
+    beschreibung = models.TextField(blank=True, default="")
+    dringend = models.BooleanField(default=False)
+    # Dernier jour où l'on peut encore contribuer (inclus). Passé ce jour, l'article n'est plus
+    # proposé pour un nouveau paiement (voir CotisationSerializer.validate).
+    frist = models.DateField(null=True, blank=True)
+    zielbetrag = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    # Page publique de l'action (sans connexion, jamais de noms) pour le partage sur les réseaux.
+    oeffentlich = models.BooleanField(default=False)
+    # Rappels automatiques aux membres (e-mail, Telegram, cloche) : désactivés par défaut, à
+    # activer action par action.
+    erinnerungen = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -186,10 +210,26 @@ class ArticleCatalogue(models.Model):
         db_table = "cotisations_articles_catalogue"
         verbose_name = _("Article du catalogue")
         verbose_name_plural = _("Articles du catalogue")
-        ordering = ["libelle"]
+        ordering = ["-dringend", "libelle"]
 
     def __str__(self):
         return f"{self.libelle} ({self.montant} €)"
+
+    @property
+    def abgelaufen(self) -> bool:
+        return self.frist is not None and self.frist < timezone.localdate()
+
+    def fortschritt(self) -> tuple[Decimal, int]:
+        """(Summe der BEZAHLTEN Beiträge, Anzahl der Beitragenden). Offene Überweisungen zählen
+        nicht mit. Nutzt die Annotationen des Viewsets, wenn vorhanden (keine Abfrage je Zeile)."""
+        if hasattr(self, "gesammelt_summe"):
+            return Decimal(self.gesammelt_summe or 0), int(self.beitragende_zahl or 0)
+        from django.db.models import Count, Sum
+
+        agg = self.cotisations.filter(statut=StatutCotisation.PAYEE).aggregate(
+            summe=Sum("montant"), anzahl=Count("membre", distinct=True)
+        )
+        return Decimal(agg["summe"] or 0), int(agg["anzahl"] or 0)
 
 
 def montant_catalogue(type_article: str) -> Decimal:
@@ -377,6 +417,39 @@ class RelanceCotisation(models.Model):
 
     def __str__(self):
         return f"{self.get_checkpoint_display()} {self.annee} — {self.membre}"
+
+
+class AktionsRegel(models.TextChoices):
+    FRIST_BALD = "frist_bald", _("Frist läuft bald ab")
+    ZIEL_FAST = "ziel_fast", _("Zielbetrag fast erreicht")
+
+
+class AktionsErinnerung(models.Model):
+    """Journal der Erinnerungen an eine Beitragsaktion. Dient zugleich als Sperre gegen
+    Doppelversand : je Aktion, Person und Regel höchstens eine Erinnerung, auch wenn die Aufgabe
+    erneut läuft."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    artikel = models.ForeignKey(
+        ArticleCatalogue, on_delete=models.CASCADE, related_name="erinnerungen_log"
+    )
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="aktions_erinnerungen"
+    )
+    regel = models.CharField(max_length=20, choices=AktionsRegel.choices)
+    gesendet_am = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "cotisations_aktions_erinnerungen"
+        ordering = ["-gesendet_am"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["artikel", "membre", "regel"], name="unique_aktions_erinnerung"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.get_regel_display()} — {self.artikel} — {self.membre}"
 
 
 class ConfigurationRelance(models.Model):

@@ -95,3 +95,61 @@ def construire_classeur_cotisations(queryset) -> Workbook:
     feuille.freeze_panes = "A2"
 
     return classeur
+
+
+_TEILNEHMER_SPALTEN = [
+    "Name",
+    "Mitgliedsnummer",
+    "E-Mail",
+    "Betrag (€)",
+    "Zahlungsart",
+    "Status",
+    "Referenz",
+    "Angelegt am",
+    "Bezahlt am",
+]
+
+
+def construire_classeur_teilnehmer(artikel, eintraege) -> Workbook:
+    """Excel mit den Beitragenden einer Aktion. `eintraege` ist bereits nach Status gefiltert.
+    Am Ende steht die Summe der bezahlten Beiträge der Auswahl."""
+    classeur = Workbook()
+    feuille = classeur.active
+    feuille.title = "Teilnehmende"
+    feuille.cell(row=1, column=1, value=safe_cell(artikel.libelle)).font = Font(bold=True)
+    for col_idx, libelle in enumerate(_TEILNEHMER_SPALTEN, start=1):
+        zelle = feuille.cell(row=3, column=col_idx, value=libelle)
+        zelle.font = _EN_TETE_STYLE
+        zelle.fill = _REMPLISSAGE
+
+    zeile = 4
+    summe = 0.0
+    for eintrag in eintraege.select_related("membre").order_by("created_at"):
+        membre = eintrag.membre
+        werte = [
+            f"{membre.prenom} {membre.nom}".strip() if membre else "",
+            membre.numero_membre if membre else "",
+            membre.email if membre else "",
+            float(eintrag.montant),
+            eintrag.get_mode_paiement_display() if eintrag.mode_paiement else "",
+            eintrag.get_statut_display(),
+            eintrag.reference_transaction or "",
+            _formater_date(eintrag.created_at),
+            _formater_date(eintrag.date_paiement),
+        ]
+        if eintrag.statut == "payee":
+            summe += float(eintrag.montant)
+        for col_idx, wert in enumerate(werte, start=1):
+            zelle = feuille.cell(row=zeile, column=col_idx, value=safe_cell(wert))
+            if col_idx in (2, 7):
+                zelle.number_format = "@"
+        zeile += 1
+
+    feuille.cell(row=zeile + 1, column=3, value="Summe bezahlt").font = Font(bold=True)
+    feuille.cell(row=zeile + 1, column=4, value=summe).font = Font(bold=True)
+    for col_idx, libelle in enumerate(_TEILNEHMER_SPALTEN, start=1):
+        feuille.column_dimensions[feuille.cell(row=3, column=col_idx).column_letter].width = max(
+            len(libelle) + 2, 14
+        )
+    feuille.freeze_panes = "A4"
+    return classeur

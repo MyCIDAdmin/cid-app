@@ -70,6 +70,8 @@ KATEGORIEN: dict[str, set[str]] = {
         T.FAMILIE_EINLADUNG,
         T.FAMILIE_ANTWORT,
         T.FAMILIE_ALTER,
+        T.AKTION_FRIST,
+        T.AKTION_ZIEL,
         T.MEMBRE_STATUT_ACTIF,
         T.MEMBRE_STATUT_INACTIF,
         T.VOTE_OUVERTURE,

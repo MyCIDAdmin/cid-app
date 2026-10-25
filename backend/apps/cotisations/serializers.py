@@ -34,9 +34,33 @@ def _valider_date_paiement_non_future(value):
 
 
 class ArticleCatalogueSerializer(serializers.ModelSerializer):
+    # Fortschritt einer Beitragsaktion : nur BEZAHLTE Beiträge zählen (offene Überweisungen nicht).
+    gesammelt = serializers.SerializerMethodField()
+    beitragende = serializers.SerializerMethodField()
+    fortschritt = serializers.SerializerMethodField()
+    abgelaufen = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = ArticleCatalogue
-        fields = ["id", "libelle", "montant", "actif", "type_fixe", "created_at", "updated_at"]
+        fields = [
+            "id",
+            "libelle",
+            "montant",
+            "actif",
+            "type_fixe",
+            "beschreibung",
+            "dringend",
+            "frist",
+            "zielbetrag",
+            "oeffentlich",
+            "erinnerungen",
+            "gesammelt",
+            "beitragende",
+            "fortschritt",
+            "abgelaufen",
+            "created_at",
+            "updated_at",
+        ]
         read_only_fields = ["id", "type_fixe", "created_at", "updated_at"]
         extra_kwargs = {
             # `default=True` explicite : sans lui, DRF.BooleanField.get_value() traite un payload
@@ -47,6 +71,36 @@ class ArticleCatalogueSerializer(serializers.ModelSerializer):
             "actif": {"default": True},
         }
 
+    def get_gesammelt(self, obj) -> str:
+        summe, _anzahl = obj.fortschritt()
+        return f"{summe:.2f}"
+
+    def get_beitragende(self, obj) -> int:
+        _summe, anzahl = obj.fortschritt()
+        return anzahl
+
+    def get_fortschritt(self, obj) -> int | None:
+        """Prozent des Zielbetrags (0 bis 100, gedeckelt) oder None ohne Zielbetrag."""
+        if not obj.zielbetrag:
+            return None
+        summe, _anzahl = obj.fortschritt()
+        return int(min(100, (summe / obj.zielbetrag) * 100))
+
+    def validate_beschreibung(self, value):
+        from apps.regionen import formattext
+
+        return formattext.bereinige(value or "")
+
+    def validate_frist(self, value):
+        # Nur eine NEU gesetzte oder geänderte Frist darf nicht in der Vergangenheit liegen ;
+        # ein unverändertes altes Datum bleibt beim Speichern anderer Felder gültig.
+        if value and value < timezone.localdate():
+            if self.instance is None or self.instance.frist != value:
+                raise serializers.ValidationError(
+                    "Die Frist darf nicht in der Vergangenheit liegen."
+                )
+        return value
+
     def update(self, instance, validated_data):
         # Ajouté le 2026-09-17 : pour les 2 lignes techniques `type_fixe` (cotisation/adhésion,
         # voir docstring de module ArticleCatalogue), le libellé affiché aux membres reste piloté
@@ -56,7 +110,35 @@ class ArticleCatalogueSerializer(serializers.ModelSerializer):
         # elles, voir ArticlesCatalogueCotisationPage).
         if instance.type_fixe:
             validated_data.pop("libelle", None)
+            # Beitragsaktions-Felder gibt es nur für eigene Artikel, nie für Mitgliedsbeitrag
+            # und Aufnahmegebühr.
+            for feld in AKTIONS_FELDER:
+                validated_data.pop(feld, None)
         return super().update(instance, validated_data)
+
+    def validate(self, attrs):
+        erinnerungen = attrs.get("erinnerungen", getattr(self.instance, "erinnerungen", False))
+        frist = attrs.get("frist", getattr(self.instance, "frist", None))
+        ziel = attrs.get("zielbetrag", getattr(self.instance, "zielbetrag", None))
+        if erinnerungen and not frist and not ziel:
+            raise serializers.ValidationError(
+                {
+                    "erinnerungen": (
+                        "Für Erinnerungen braucht die Aktion eine Frist oder einen Zielbetrag."
+                    )
+                }
+            )
+        return attrs
+
+
+AKTIONS_FELDER = (
+    "beschreibung",
+    "dringend",
+    "frist",
+    "zielbetrag",
+    "oeffentlich",
+    "erinnerungen",
+)
 
 
 class CotisationSerializer(serializers.ModelSerializer):
@@ -127,6 +209,9 @@ class CotisationSerializer(serializers.ModelSerializer):
                 erreurs["article_catalogue"] = "Ce champ est requis pour ce type d'article."
             elif not article.actif:
                 erreurs["article_catalogue"] = "Cet article n'est plus disponible."
+            elif article.abgelaufen:
+                # Beitragsaktion : nach dem Fristende (letzter Tag inklusive) keine neue Zahlung.
+                erreurs["article_catalogue"] = "Die Frist dieser Aktion ist abgelaufen."
             else:
                 attrs["libelle"] = article.libelle
                 attrs["montant"] = article.montant
