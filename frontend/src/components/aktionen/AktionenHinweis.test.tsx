@@ -24,6 +24,7 @@ function art(o: Partial<ArticleCatalogue> = {}): ArticleCatalogue {
     zielbetrag: null,
     oeffentlich: false,
     erinnerungen: false,
+    betrag_erhoehbar: false,
     gesammelt: "0.00",
     beitragende: 0,
     fortschritt: null,

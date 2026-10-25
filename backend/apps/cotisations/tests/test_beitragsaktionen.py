@@ -420,3 +420,77 @@ def test_aktion_mit_abgeschalteten_mails_erzeugt_trotzdem_hinweis(mailoutbox):
     erinnere_beitragsaktionen(HEUTE)
     assert len(mailoutbox) == 0
     assert Notification.objects.filter(destinataire=m.user).count() == 1
+
+
+# --- Mindestbetrag (Betrag darf vom Mitglied erhöht werden) ---
+
+
+def _bezahlen_mit_betrag(client, artikel, betrag):
+    return client.post(
+        reverse("cotisations:cotisation-list"),
+        {
+            "type_article": TypeArticle.AUTRE,
+            "article_catalogue": str(artikel.id),
+            "mode_paiement": "virement_sepa",
+            "montant": betrag,
+        },
+        format="json",
+    )
+
+
+def test_mindestbetrag_darf_erhoeht_werden():
+    artikel = _aktion(betrag_erhoehbar=True, montant="15.00")
+    resp = _bezahlen_mit_betrag(_client(_mitglied().user), artikel, "40.50")
+    assert resp.status_code == 201, resp.content
+    assert resp.data["montant"] == "40.50"
+
+
+def test_mindestbetrag_genau_erlaubt_und_ohne_angabe_gilt_der_mindestbetrag():
+    artikel = _aktion(betrag_erhoehbar=True, montant="15.00")
+    assert (
+        _bezahlen_mit_betrag(_client(_mitglied("a@x.de").user), artikel, "15.00").status_code == 201
+    )
+    resp = _bezahlen(_client(_mitglied("b@x.de").user), artikel)
+    assert resp.status_code == 201
+    assert resp.data["montant"] == "15.00"
+
+
+def test_unter_dem_mindestbetrag_wird_abgelehnt():
+    artikel = _aktion(betrag_erhoehbar=True, montant="15.00")
+    resp = _bezahlen_mit_betrag(_client(_mitglied().user), artikel, "14.99")
+    assert resp.status_code == 400
+    assert "montant" in resp.data["details"]
+
+
+def test_fester_preis_ignoriert_einen_gesendeten_betrag():
+    artikel = _aktion(montant="25.00")
+    resp = _bezahlen_mit_betrag(_client(_mitglied().user), artikel, "99.00")
+    assert resp.status_code == 201
+    assert resp.data["montant"] == "25.00"
+
+
+def test_betrag_erhoehbar_wird_verwaltet_und_oeffentlich_angezeigt():
+    client = _admin()
+    resp = client.post(
+        reverse(LIST_URL),
+        {
+            "libelle": "Spendenaktion",
+            "montant": "10.00",
+            "betrag_erhoehbar": True,
+            "oeffentlich": True,
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.content
+    assert resp.data["betrag_erhoehbar"] is True
+    seite = APIClient().get(f"/api/v1/aktionen/{resp.data['id']}/")
+    assert seite.status_code == 200
+    assert seite.data["betrag_erhoehbar"] is True
+
+
+def test_erhoehter_betrag_zaehlt_im_fortschritt():
+    artikel = _aktion(betrag_erhoehbar=True, montant="15.00", zielbetrag=Decimal("100.00"))
+    _zahlung(artikel, _mitglied(), "60.00")
+    gesammelt, anzahl = ArticleCatalogue.objects.get(pk=artikel.pk).fortschritt()
+    assert gesammelt == Decimal("60.00")
+    assert anzahl == 1

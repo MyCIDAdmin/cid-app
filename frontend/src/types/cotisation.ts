@@ -130,6 +130,8 @@ export interface ArticleCatalogue {
   zielbetrag: string | null;
   oeffentlich: boolean;
   erinnerungen: boolean;
+  /** Mindestbetrag : `montant` ist die Untergrenze, das Mitglied darf mehr zahlen. */
+  betrag_erhoehbar: boolean;
   /** Summe der BEZAHLTEN Beiträge (Dezimal als Text). */
   gesammelt: string;
   beitragende: number;
@@ -149,6 +151,7 @@ export interface ArticleCataloguePayload {
   zielbetrag?: string | null;
   oeffentlich?: boolean;
   erinnerungen?: boolean;
+  betrag_erhoehbar?: boolean;
 }
 
 /** Öffentliche Sicht einer Aktion (ohne Anmeldung, nie Namen) — apps.cotisations.aktionen_oeffentlich. */
@@ -157,6 +160,7 @@ export interface AktionOeffentlich {
   titel: string;
   beschreibung: string;
   betrag: string;
+  betrag_erhoehbar: boolean;
   frist: string | null;
   abgelaufen: boolean;
   dringend: boolean;

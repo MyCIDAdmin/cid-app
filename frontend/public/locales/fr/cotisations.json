@@ -22,7 +22,10 @@
     "don_montant_label": "Montant du don (€)",
     "don_montant_erreur": "Indiquez un montant supérieur à 0.",
     "catalogue_chargement": "Chargement des autres articles…",
-    "catalogue_erreur": "Impossible de charger les articles supplémentaires."
+    "catalogue_erreur": "Impossible de charger les articles supplémentaires.",
+    "aktion_ab": "dès {{betrag}}",
+    "aktion_betrag_label": "Votre montant (minimum {{minimum}})",
+    "aktion_betrag_erreur": "Le montant doit être d'au moins {{minimum}}."
   },
   "recap": {
     "titre": "Récapitulatif",
@@ -356,7 +359,10 @@
       "oeffentlich_hinweis": "L'action peut être partagée sur les réseaux sociaux. La page n'affiche jamais le nom des contributeurs.",
       "erinnerungen": "Envoyer des rappels",
       "erinnerungen_hinweis": "Les membres actifs sans contribution reçoivent un e-mail et une notification dans l'app 3 jours avant l'échéance et à 80 % de l'objectif. Telegram selon le réglage du membre.",
-      "fehler_erinnerung_ohne_ziel": "Pour les rappels, l'action a besoin d'une échéance ou d'un objectif."
+      "fehler_erinnerung_ohne_ziel": "Pour les rappels, l'action a besoin d'une échéance ou d'un objectif.",
+      "mindestbetrag": "Montant minimum (€)",
+      "betrag_erhoehbar": "Le montant peut être augmenté",
+      "betrag_erhoehbar_hinweis": "Le montant ci-dessus est un minimum. Les membres peuvent payer davantage, comme pour le don."
     },
     "hinweis": {
       "titel": "Actions de contribution urgentes",
@@ -371,7 +377,9 @@
       "nicht_gefunden": "Cette action n'existe pas ou n'est pas publique.",
       "beendet": "Cette action est terminée. Merci à toutes celles et ceux qui ont participé.",
       "beitragen": "Contribuer maintenant ({{betrag}})",
-      "login_hinweis": "Connectez-vous d'abord pour payer."
-    }
+      "login_hinweis": "Connectez-vous d'abord pour payer.",
+      "beitragen_ab": "Contribuer maintenant (dès {{betrag}})"
+    },
+    "mindestbetrag_hinweis": "Montant minimum – les membres peuvent payer plus"
   }
 }

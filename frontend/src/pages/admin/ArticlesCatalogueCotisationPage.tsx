@@ -169,6 +169,9 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
           title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="w-24 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
         />
+        {article.betrag_erhoehbar && (
+          <p className="mt-1 text-[11px] text-text-tertiary">{t("aktion.mindestbetrag_hinweis")}</p>
+        )}
       </td>
       <td className="px-4 py-2">
         <span

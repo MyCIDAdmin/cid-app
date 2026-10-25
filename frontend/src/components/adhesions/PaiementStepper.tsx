@@ -194,6 +194,8 @@ export default function PaiementStepper() {
   const [articleCatalogueId, setArticleCatalogueId] = useState<string | null>(null);
   const [donMontant, setDonMontant] = useState("10");
   const [donErreur, setDonErreur] = useState<string | null>(null);
+  // Aktion mit Mindestbetrag : Betrag, den das Mitglied zahlen möchte (mindestens `montant`).
+  const [aktionBetrag, setAktionBetrag] = useState("");
   const [modePaiement, setModePaiement] = useState<ModePaiement>("virement_sepa");
   const [resultat, setResultat] = useState<Cotisation | null>(null);
   const [recuEnCours, setRecuEnCours] = useState<string | null>(null);
@@ -348,6 +350,7 @@ export default function PaiementStepper() {
     if (ziel) {
       setArticleChoisi("autre");
       setArticleCatalogueId(ziel.id);
+      setAktionBetrag(ziel.montant);
     }
     setVorgabeAngewendet(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -356,6 +359,12 @@ export default function PaiementStepper() {
   const articleCatalogueChoisi = articlesCatalogueActifs.find((a) => a.id === articleCatalogueId);
 
   const donMontantNombre = Number(donMontant.replace(",", "."));
+  const aktionBetragNombre = Number(aktionBetrag.replace(",", "."));
+  const aktionMindestbetrag = Number(articleCatalogueChoisi?.montant ?? 0);
+  const aktionHatFreienBetrag =
+    articleChoisi === "autre" && Boolean(articleCatalogueChoisi?.betrag_erhoehbar);
+  const aktionBetragGueltig =
+    Number.isFinite(aktionBetragNombre) && aktionBetragNombre >= aktionMindestbetrag;
   const montantAffiche = paiementId
     ? Number(cotisationLiee.data?.montant ?? 0)
     : articleChoisi === "don"
@@ -363,7 +372,9 @@ export default function PaiementStepper() {
         ? donMontantNombre
         : 0
       : articleChoisi === "autre"
-        ? Number(articleCatalogueChoisi?.montant ?? 0)
+        ? aktionHatFreienBetrag && aktionBetragGueltig
+          ? aktionBetragNombre
+          : aktionMindestbetrag
         : (ARTICLES.find((a) => a.type === articleChoisi)?.montant ?? 0);
   const libelleAffiche = paiementId
     ? (cotisationLiee.data?.libelle ?? "")
@@ -379,6 +390,12 @@ export default function PaiementStepper() {
         setDonErreur(t("article.don_montant_erreur"));
         return;
       }
+    }
+    if (aktionHatFreienBetrag && !aktionBetragGueltig) {
+      setDonErreur(
+        t("article.aktion_betrag_erreur", { minimum: formatMontant(aktionMindestbetrag) }),
+      );
+      return;
     }
     setDonErreur(null);
     setEtape(2);
@@ -407,6 +424,7 @@ export default function PaiementStepper() {
               type_article: "autre" as const,
               mode_paiement: modePaiement,
               article_catalogue: articleCatalogueId ?? undefined,
+              ...(aktionHatFreienBetrag ? { montant: aktionBetragNombre.toFixed(2) } : {}),
             }
           : {
               type_article: articleChoisi,
@@ -526,6 +544,8 @@ export default function PaiementStepper() {
                       onClick={() => {
                         setArticleChoisi("autre");
                         setArticleCatalogueId(article.id);
+                        setAktionBetrag(article.montant);
+                        setDonErreur(null);
                       }}
                       className={`flex w-full items-center justify-between gap-3 rounded-cid border px-3 py-2 text-left ${
                         gewaehlt
@@ -544,7 +564,11 @@ export default function PaiementStepper() {
                         </div>
                       </div>
                       <div className="text-sm font-bold text-ca">
-                        {formatMontant(Number(article.montant))}
+                        {article.betrag_erhoehbar
+                          ? t("article.aktion_ab", {
+                              betrag: formatMontant(Number(article.montant)),
+                            })
+                          : formatMontant(Number(article.montant))}
                       </div>
                     </button>
                     {gewaehlt && article.beschreibung && (
@@ -562,6 +586,32 @@ export default function PaiementStepper() {
                 <p className="text-xs text-status-dangerText">{t("article.catalogue_erreur")}</p>
               )}
             </div>
+
+            {aktionHatFreienBetrag && (
+              <div className="mt-3">
+                <label
+                  htmlFor="aktion-betrag"
+                  className="mb-1 block text-xs font-medium text-text-secondary"
+                >
+                  {t("article.aktion_betrag_label", {
+                    minimum: formatMontant(aktionMindestbetrag),
+                  })}
+                </label>
+                <input
+                  id="aktion-betrag"
+                  type="number"
+                  min={aktionMindestbetrag}
+                  step="0.01"
+                  value={aktionBetrag}
+                  onChange={(e) => {
+                    setAktionBetrag(e.target.value);
+                    setDonErreur(null);
+                  }}
+                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+                {donErreur && <p className="mt-1 text-xs text-status-dangerText">{donErreur}</p>}
+              </div>
+            )}
 
             {articleChoisi === "don" && (
               <div className="mt-3">
