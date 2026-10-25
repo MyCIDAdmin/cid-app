@@ -54,6 +54,7 @@ class ArticleCatalogueSerializer(serializers.ModelSerializer):
             "zielbetrag",
             "oeffentlich",
             "erinnerungen",
+            "betrag_erhoehbar",
             "gesammelt",
             "beitragende",
             "fortschritt",
@@ -138,6 +139,7 @@ AKTIONS_FELDER = (
     "zielbetrag",
     "oeffentlich",
     "erinnerungen",
+    "betrag_erhoehbar",
 )
 
 
@@ -214,7 +216,15 @@ class CotisationSerializer(serializers.ModelSerializer):
                 erreurs["article_catalogue"] = "Die Frist dieser Aktion ist abgelaufen."
             else:
                 attrs["libelle"] = article.libelle
-                attrs["montant"] = article.montant
+                gewuenscht = attrs.get("montant")
+                if article.betrag_erhoehbar and gewuenscht is not None:
+                    # Mindestbetrag : das Mitglied darf erhöhen, nie unterschreiten.
+                    if gewuenscht < article.montant:
+                        erreurs["montant"] = (
+                            f"Der Betrag muss mindestens {article.montant:.2f} € betragen."
+                        )
+                else:
+                    attrs["montant"] = article.montant
         elif type_article == TypeArticle.PROJET:
             # Ajouté le 2026-09-22 (module Projets & Actions, demande utilisateur point 2) —
             # montant/libellé libres comme DON, mais avec 3 règles serveur supplémentaires

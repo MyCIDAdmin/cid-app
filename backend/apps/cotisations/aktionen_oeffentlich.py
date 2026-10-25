@@ -43,6 +43,7 @@ def _daten(artikel: ArticleCatalogue) -> dict:
         "titel": artikel.libelle,
         "beschreibung": formattext.bereinige(artikel.beschreibung),
         "betrag": f"{artikel.montant:.2f}",
+        "betrag_erhoehbar": artikel.betrag_erhoehbar,
         "frist": artikel.frist.isoformat() if artikel.frist else None,
         "abgelaufen": artikel.abgelaufen,
         "dringend": artikel.dringend,

@@ -202,6 +202,9 @@ class ArticleCatalogue(models.Model):
     # Rappels automatiques aux membres (e-mail, Telegram, cloche) : désactivés par défaut, à
     # activer action par action.
     erinnerungen = models.BooleanField(default=False)
+    # Mindestbetrag : `montant` ist dann nur die Untergrenze, das Mitglied darf mehr zahlen
+    # (wie bei der freien Spende). Ohne Schalter gilt `montant` als fester Preis.
+    betrag_erhoehbar = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
