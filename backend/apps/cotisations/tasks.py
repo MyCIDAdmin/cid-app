@@ -316,3 +316,12 @@ def envoyer_relances_cotisation(today: date | None = None):
         )
 
     return {"details": details, "envoyes": sum(d["envoyes"] for d in details)}
+
+
+@shared_task
+def erinnere_beitragsaktionen_task(heute: date | None = None):
+    """Täglich : Erinnerungen an Beitragsaktionen (Frist bald, Ziel fast erreicht) — siehe
+    aktions_erinnerungen. Nur Aktionen mit eingeschalteten Erinnerungen werden berücksichtigt."""
+    from .aktions_erinnerungen import erinnere_beitragsaktionen
+
+    return erinnere_beitragsaktionen(heute)

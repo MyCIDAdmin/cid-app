@@ -27,6 +27,13 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+
+import { telechargerTeilnehmerAktion } from "../../api/cotisations";
+import { teilenUrlDerAktion } from "../../api/aktionen";
+import AktionDialog from "../../components/aktionen/AktionDialog";
+import AktionStatus from "../../components/aktionen/AktionStatus";
+import ShareButton from "../../components/ui/ShareButton";
 
 import {
   useArticlesCatalogue,
@@ -51,6 +58,30 @@ interface ArticleCatalogueRowProps {
 function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) {
   const { t } = useTranslation(["cotisations", "common"]);
   const modifierMutation = useModifierArticleCatalogue();
+  const [dialogOffen, setDialogOffen] = useState(false);
+  const [exportStatus, setExportStatus] = useState<"bezahlt" | "offen" | "alle">("bezahlt");
+  const [exportLaeuft, setExportLaeuft] = useState(false);
+  const [exportFehler, setExportFehler] = useState<string | null>(null);
+
+  async function exportieren() {
+    setExportFehler(null);
+    setExportLaeuft(true);
+    try {
+      const blob = await telechargerTeilnehmerAktion(article.id, exportStatus);
+      const url = window.URL.createObjectURL(blob);
+      const lien = document.createElement("a");
+      lien.href = url;
+      lien.download = `teilnehmende-${article.id}.xlsx`;
+      document.body.appendChild(lien);
+      lien.click();
+      lien.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportFehler(extractApiErrorMessage(err, t("aktion.export_fehler")));
+    } finally {
+      setExportLaeuft(false);
+    }
+  }
 
   // Libellé fixe (2026-09-17) : pour une ligne type_fixe, l'API ignore toute écriture sur
   // `libelle` (voir ArticleCatalogueSerializer.update côté backend) — l'intitulé affiché reste
@@ -78,7 +109,10 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
       <td className="px-4 py-2">
         {estTypeFixe ? (
           <div>
-            <span data-testid={`article-catalogue-libelle-fixe-${article.id}`} className="text-xs font-medium text-text-primary">
+            <span
+              data-testid={`article-catalogue-libelle-fixe-${article.id}`}
+              className="text-xs font-medium text-text-primary"
+            >
               {libelleAffiche}
             </span>
             <span className="ml-2 inline-block rounded-full bg-bg-tertiary px-2 py-0.5 text-[10px] font-medium text-text-secondary">
@@ -92,9 +126,35 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
             value={libelle}
             onChange={(e) => setLibelle(e.target.value)}
             disabled={!modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             className="w-full min-w-[10rem] rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
           />
+        )}
+        {!estTypeFixe && (
+          <div className="mt-1.5">
+            <AktionStatus aktion={article} />
+            <p className="mt-1 text-[11px] text-text-tertiary">
+              {t("aktion.zeile_gesammelt", {
+                count: article.beitragende,
+                summe: Number(article.gesammelt).toLocaleString(undefined, {
+                  style: "currency",
+                  currency: "EUR",
+                }),
+              })}
+            </p>
+            {article.oeffentlich && (
+              <div className="mt-1 flex items-center gap-2 text-[11px]">
+                <Link to={`/aktion/${article.id}`} className="text-ca underline">
+                  {t("aktion.oeffentliche_seite")}
+                </Link>
+                <ShareButton
+                  path={`/aktion/${article.id}`}
+                  url={teilenUrlDerAktion(article.id)}
+                  titre={article.libelle}
+                />
+              </div>
+            )}
+          </div>
         )}
       </td>
       <td className="px-4 py-2">
@@ -106,7 +166,7 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
           value={montant}
           onChange={(e) => setMontant(e.target.value)}
           disabled={!modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="w-24 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
         />
       </td>
@@ -118,7 +178,9 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
               : "bg-bg-tertiary text-text-secondary"
           }`}
         >
-          {article.actif ? t("catalogue_articles.statut_actif") : t("catalogue_articles.statut_inactif")}
+          {article.actif
+            ? t("catalogue_articles.statut_actif")
+            : t("catalogue_articles.statut_inactif")}
         </span>
         <div className="mt-1 text-xs text-text-tertiary">{formatDateTime(article.updated_at)}</div>
       </td>
@@ -128,7 +190,7 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
             type="button"
             onClick={enregistrer}
             disabled={!modifiee || modifierMutation.isPending || !modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
           >
             {modifierMutation.isPending
@@ -139,7 +201,7 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
             type="button"
             onClick={basculerActif}
             disabled={modifierMutation.isPending || !modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             className={`rounded-cid border px-2 py-1 text-xs font-medium disabled:opacity-40 ${
               article.actif
                 ? "border-status-dangerText text-status-dangerText hover:bg-status-dangerText/10"
@@ -149,11 +211,48 @@ function ArticleCatalogueRow({ article, modifiable }: ArticleCatalogueRowProps) 
             {article.actif ? t("catalogue_articles.desactiver") : t("catalogue_articles.activer")}
           </button>
         </div>
+        {!estTypeFixe && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDialogOffen(true)}
+              disabled={!modifiable}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+              className="rounded-cid border border-ca px-2 py-1 text-xs font-medium text-ca hover:bg-cal/20 disabled:opacity-40"
+            >
+              {t("aktion.details")}
+            </button>
+            {modifiable && (
+              <>
+                <select
+                  aria-label={t("aktion.export_status")}
+                  value={exportStatus}
+                  onChange={(e) => setExportStatus(e.target.value as "bezahlt" | "offen" | "alle")}
+                  className="rounded-cid border border-text-tertiary/30 px-1 py-1 text-xs"
+                >
+                  <option value="bezahlt">{t("aktion.export_bezahlt")}</option>
+                  <option value="offen">{t("aktion.export_offen")}</option>
+                  <option value="alle">{t("aktion.export_alle")}</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={exportieren}
+                  disabled={exportLaeuft}
+                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs font-medium text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
+                >
+                  {exportLaeuft ? t("catalogue_articles.en_cours") : t("aktion.export_button")}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+        {exportFehler && <p className="mt-1 text-xs text-status-dangerText">{exportFehler}</p>}
         {modifierMutation.isError && (
           <p className="mt-1 text-xs text-status-dangerText">
             {extractApiErrorMessage(modifierMutation.error, t("catalogue_articles.erreur_action"))}
           </p>
         )}
+        {dialogOffen && <AktionDialog article={article} onClose={() => setDialogOffen(false)} />}
       </td>
     </tr>
   );
@@ -201,7 +300,7 @@ function NouvelArticleForm({ modifiable }: NouvelArticleFormProps) {
           value={libelle}
           onChange={(e) => setLibelle(e.target.value)}
           disabled={!modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-30"
           required
         />
@@ -221,7 +320,7 @@ function NouvelArticleForm({ modifiable }: NouvelArticleFormProps) {
           value={montant}
           onChange={(e) => setMontant(e.target.value)}
           disabled={!modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="w-28 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-30"
           required
         />
@@ -229,10 +328,12 @@ function NouvelArticleForm({ modifiable }: NouvelArticleFormProps) {
       <button
         type="submit"
         disabled={creerMutation.isPending || !modifiable}
-        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+        title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
         className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
       >
-        {creerMutation.isPending ? t("catalogue_articles.en_cours") : t("catalogue_articles.ajouter")}
+        {creerMutation.isPending
+          ? t("catalogue_articles.en_cours")
+          : t("catalogue_articles.ajouter")}
       </button>
       {creerMutation.isError && (
         <p className="w-full text-xs text-status-dangerText">
@@ -247,6 +348,7 @@ export default function ArticlesCatalogueCotisationPage() {
   const { t } = useTranslation(["cotisations", "common"]);
   const { accessible, modifiable } = usePageAccess("page_articles_cotisation");
   const articles = useArticlesCatalogue();
+  const [neueAktion, setNeueAktion] = useState(false);
 
   // Les 2 lignes type_fixe (cotisation/adhésion) sont épinglées en tête de tableau (2026-09-17) —
   // plus lisible pour l'Administrateur App que mêlées aux articles personnalisés créés librement.
@@ -270,6 +372,20 @@ export default function ArticlesCatalogueCotisationPage() {
       )}
 
       <NouvelArticleForm modifiable={modifiable} />
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setNeueAktion(true)}
+          disabled={!modifiable}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+          className="rounded-cid border border-ca px-3 py-1.5 text-sm font-medium text-ca hover:bg-cal/20 disabled:opacity-40"
+        >
+          {t("aktion.neue_aktion")}
+        </button>
+        <span className="text-xs text-text-tertiary">{t("aktion.neue_aktion_hinweis")}</span>
+      </div>
+      {neueAktion && <AktionDialog onClose={() => setNeueAktion(false)} />}
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
@@ -304,7 +420,11 @@ export default function ArticlesCatalogueCotisationPage() {
               </tr>
             )}
             {articlesTries?.map((article) => (
-              <ArticleCatalogueRow key={article.id} article={article} modifiable={modifiable} />
+              <ArticleCatalogueRow
+                key={`${article.id}-${article.updated_at}`}
+                article={article}
+                modifiable={modifiable}
+              />
             ))}
           </tbody>
         </table>

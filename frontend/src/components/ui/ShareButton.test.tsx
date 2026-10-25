@@ -77,4 +77,23 @@ describe("ShareButton", () => {
     fireEvent.mouseDown(screen.getByText("ailleurs"));
     expect(screen.queryByText("partage.whatsapp")).not.toBeInTheDocument();
   });
+
+  it("teilt die übergebene Adresse statt des App-Pfads (Beitragsaktionen)", async () => {
+    const shareMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "share", { value: shareMock, configurable: true });
+
+    renderWithProviders(
+      <ShareButton
+        path="/aktion/a1"
+        url="https://api.example.org/api/v1/aktionen/a1/teilen/"
+        titre="Busfahrt"
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("partage.bouton_aria"));
+
+    await waitFor(() => expect(shareMock).toHaveBeenCalled());
+    expect(shareMock.mock.calls[0][0].url).toBe(
+      "https://api.example.org/api/v1/aktionen/a1/teilen/",
+    );
+  });
 });

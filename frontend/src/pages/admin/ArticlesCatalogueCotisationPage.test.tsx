@@ -1,11 +1,21 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
+import * as cotisationsApi from "../../api/cotisations";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
 import * as useRbacHooks from "../../hooks/useRbac";
 import type { ArticleCatalogue } from "../../types/cotisation";
 import ArticlesCatalogueCotisationPage from "./ArticlesCatalogueCotisationPage";
+
+vi.mock("../../api/cotisations", async () => {
+  const actual = await vi.importActual<typeof cotisationsApi>("../../api/cotisations");
+  return { ...actual, telechargerTeilnehmerAktion: vi.fn() };
+});
+
+vi.mock("../../components/ui/RichTextEditor", () => ({
+  default: () => <textarea aria-label="editor" />,
+}));
 
 // task #216 : usePageAccess mocké partout (accès complet par défaut) — describe dédié plus bas
 // pour le mode lecture seule.
@@ -31,6 +41,16 @@ function articleCatalogue(overrides: Partial<ArticleCatalogue> = {}): ArticleCat
     montant: "20.00",
     actif: true,
     type_fixe: null,
+    beschreibung: "",
+    dringend: false,
+    frist: null,
+    zielbetrag: null,
+    oeffentlich: false,
+    erinnerungen: false,
+    gesammelt: "0.00",
+    beitragende: 0,
+    fortschritt: null,
+    abgelaufen: false,
     created_at: "2026-09-17T10:00:00Z",
     updated_at: "2026-09-17T10:00:00Z",
     ...overrides,
@@ -197,6 +217,16 @@ describe("ArticlesCatalogueCotisationPage", () => {
         libelle: "Cotisation annuelle",
         montant: "45.00",
         type_fixe: "cotisation",
+        beschreibung: "",
+        dringend: false,
+        frist: null,
+        zielbetrag: null,
+        oeffentlich: false,
+        erinnerungen: false,
+        gesammelt: "0.00",
+        beitragende: 0,
+        fortschritt: null,
+        abgelaufen: false,
         ...overrides,
       });
     }
@@ -210,10 +240,12 @@ describe("ArticlesCatalogueCotisationPage", () => {
 
       renderWithProviders(<ArticlesCatalogueCotisationPage />);
 
-      expect(screen.getByTestId("article-catalogue-libelle-fixe-art-fixe-cotisation")).toHaveTextContent(
-        "catalogue_articles.type_fixe_cotisation",
-      );
-      expect(screen.queryByTestId("article-catalogue-libelle-art-fixe-cotisation")).not.toBeInTheDocument();
+      expect(
+        screen.getByTestId("article-catalogue-libelle-fixe-art-fixe-cotisation"),
+      ).toHaveTextContent("catalogue_articles.type_fixe_cotisation");
+      expect(
+        screen.queryByTestId("article-catalogue-libelle-art-fixe-cotisation"),
+      ).not.toBeInTheDocument();
       expect(screen.getByText("catalogue_articles.badge_type_fixe")).toBeInTheDocument();
     });
 
@@ -258,7 +290,11 @@ describe("ArticlesCatalogueCotisationPage", () => {
           previous: null,
           results: [
             articleCatalogue({ id: "art-custom", libelle: "T-shirt du club" }),
-            articleFixe({ id: "art-fixe-adhesion", libelle: "Frais d'adhésion", type_fixe: "adhesion" }),
+            articleFixe({
+              id: "art-fixe-adhesion",
+              libelle: "Frais d'adhésion",
+              type_fixe: "adhesion",
+            }),
             articleFixe(),
           ],
         },
@@ -318,6 +354,90 @@ describe("ArticlesCatalogueCotisationPage", () => {
       fireEvent.click(screen.getByText("catalogue_articles.desactiver"));
 
       expect(mutate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Beitragsaktionen", () => {
+    function zeigeArtikel(artikel: ArticleCatalogue[]) {
+      vi.mocked(useCotisationsHooks.useArticlesCatalogue).mockReturnValue({
+        data: { next: null, previous: null, results: artikel },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCotisationsHooks.useArticlesCatalogue>);
+    }
+
+    it("zeigt Fortschritt, Dringend-Badge und Link zur öffentlichen Seite", () => {
+      zeigeArtikel([
+        articleCatalogue({
+          dringend: true,
+          oeffentlich: true,
+          zielbetrag: "200.00",
+          gesammelt: "50.00",
+          beitragende: 2,
+          fortschritt: 25,
+        }),
+      ]);
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      expect(screen.getByText("aktion.badge_dringend")).toBeInTheDocument();
+      expect(screen.getByText("25 %")).toBeInTheDocument();
+      expect(screen.getByText("aktion.oeffentliche_seite").closest("a")).toHaveAttribute(
+        "href",
+        "/aktion/art-1",
+      );
+    });
+
+    it("zeigt für die technischen Zeilen weder Aktionsstatus noch Details-Button", () => {
+      zeigeArtikel([articleCatalogue({ id: "fix", type_fixe: "cotisation" })]);
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      expect(screen.queryByText("aktion.details")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("aktion-status")).not.toBeInTheDocument();
+    });
+
+    it("öffnet den Dialog zum Anlegen einer Aktion", () => {
+      zeigeArtikel([]);
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      fireEvent.click(screen.getByText("aktion.neue_aktion"));
+      expect(screen.getByText("aktion.dialog.titel_neu")).toBeInTheDocument();
+    });
+
+    it("öffnet den Dialog zum Bearbeiten einer bestehenden Aktion", () => {
+      zeigeArtikel([articleCatalogue()]);
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      fireEvent.click(screen.getByText("aktion.details"));
+      expect(screen.getByText("aktion.dialog.titel_bearbeiten")).toBeInTheDocument();
+    });
+
+    it("exportiert die Teilnehmenden mit dem gewählten Status", async () => {
+      zeigeArtikel([articleCatalogue()]);
+      vi.mocked(cotisationsApi.telechargerTeilnehmerAktion).mockResolvedValue(new Blob(["x"]));
+      window.URL.createObjectURL = vi.fn(() => "blob:x");
+      window.URL.revokeObjectURL = vi.fn();
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      fireEvent.change(screen.getByLabelText("aktion.export_status"), {
+        target: { value: "alle" },
+      });
+      fireEvent.click(screen.getByText("aktion.export_button"));
+
+      await waitFor(() =>
+        expect(cotisationsApi.telechargerTeilnehmerAktion).toHaveBeenCalledWith("art-1", "alle"),
+      );
+    });
+
+    it("blendet den Export ohne Schreibrecht aus", () => {
+      vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
+        accessible: true,
+        modifiable: false,
+        isLoading: false,
+      });
+      zeigeArtikel([articleCatalogue()]);
+      renderWithProviders(<ArticlesCatalogueCotisationPage />);
+
+      expect(screen.queryByText("aktion.export_button")).not.toBeInTheDocument();
     });
   });
 });

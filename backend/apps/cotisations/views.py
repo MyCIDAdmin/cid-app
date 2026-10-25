@@ -53,7 +53,8 @@ CLAUDE.md §8).
 from datetime import datetime, time
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Count, DecimalField, Q, Sum, Value
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -70,7 +71,7 @@ from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import has_admin_page_access, is_elevated_for_module
 
-from .exports import construire_classeur_cotisations
+from .exports import construire_classeur_cotisations, construire_classeur_teilnehmer
 from .filters import CotisationFilter
 from .gateways import GatewayError, creer_commande_paypal, creer_session_stripe
 from .models import (
@@ -89,6 +90,7 @@ from .permissions import (
     READ_ALL_MIN_LEVEL,
     SAISIE_POUR_AUTRUI_MIN_LEVEL,
     ArticleCataloguePermission,
+    ArticleVerwaltungPermission,
     CotisationPermission,
 )
 from .serializers import (
@@ -496,7 +498,8 @@ class ArticleCatalogueCursorPagination(CursorPagination):
     # Petit catalogue par nature (association de taille modeste) — même choix que
     # ConfigurationRelanceCursorPagination ci-dessus, la 1re page suffit en pratique.
     page_size = 20
-    ordering = ("libelle",)
+    # Dringende Aktionen zuerst (Beitragsaktionen, 2026-10-25), dann alphabetisch.
+    ordering = ("-dringend", "libelle", "id")
 
 
 class ArticleCatalogueViewSet(ModelViewSet):
@@ -536,7 +539,15 @@ class ArticleCatalogueViewSet(ModelViewSet):
     pagination_class = ArticleCatalogueCursorPagination
 
     def get_queryset(self):
-        queryset = ArticleCatalogue.objects.all()
+        bezahlt = Q(cotisations__statut=StatutCotisation.PAYEE)
+        queryset = ArticleCatalogue.objects.annotate(
+            gesammelt_summe=Coalesce(
+                Sum("cotisations__montant", filter=bezahlt),
+                Value(0),
+                output_field=DecimalField(max_digits=12, decimal_places=2),
+            ),
+            beitragende_zahl=Count("cotisations__membre", filter=bezahlt, distinct=True),
+        )
         user = self.request.user
         if (
             user
@@ -549,3 +560,29 @@ class ArticleCatalogueViewSet(ModelViewSet):
         # classe. Les 2 lignes type_fixe restent toujours visibles, actives ou non (Q séparé) :
         # voir le paragraphe "Bug corrigé le 2026-09-17" ci-dessus.
         return queryset.filter(Q(actif=True) | Q(type_fixe__isnull=False))
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="teilnehmer-export",
+        permission_classes=[ArticleVerwaltungPermission],
+    )
+    def teilnehmer_export(self, request, pk=None):
+        """
+        GET /cotisations/articles-catalogue/{id}/teilnehmer-export/?status=bezahlt|offen|alle —
+        Excel mit den Beitragenden einer Aktion (Wunsch Ghazi, 2026-10-25). Enthält Namen und
+        E-Mail-Adressen, daher nur mit Schreibrecht auf die Seite „Beitragsartikel“. Standard :
+        nur bezahlte Beiträge.
+        """
+        artikel = self.get_object()
+        status_param = request.query_params.get("status", "bezahlt")
+        if status_param not in ("bezahlt", "offen", "alle"):
+            raise ValidationError({"status": "Erlaubt sind bezahlt, offen oder alle."})
+        eintraege = artikel.cotisations.all()
+        if status_param == "bezahlt":
+            eintraege = eintraege.filter(statut=StatutCotisation.PAYEE)
+        elif status_param == "offen":
+            eintraege = eintraege.filter(statut=StatutCotisation.EN_ATTENTE)
+        classeur = construire_classeur_teilnehmer(artikel, eintraege)
+        name = "".join(c if c.isalnum() else "_" for c in artikel.libelle)[:40] or "aktion"
+        return xlsx_response(classeur, f"teilnehmer_{name}_{timezone.localtime():%Y%m%d}.xlsx")

@@ -316,5 +316,62 @@
     "entfernen": "Supprimer",
     "leer": "Aucune valeur.",
     "erreur": "Échec de l'enregistrement."
+  },
+  "aktion": {
+    "badge_dringend": "Urgent",
+    "badge_abgelaufen": "Terminée",
+    "frist_abgelaufen": "Échéance : {{datum}}",
+    "frist_heute": "Dernier jour : aujourd'hui",
+    "frist_tage_one": "Encore 1 jour (jusqu'au {{datum}})",
+    "frist_tage_other": "Encore {{count}} jours (jusqu'au {{datum}})",
+    "frist_bis": "Échéance le {{datum}}",
+    "gesammelt_von": "{{summe}} collectés sur {{ziel}}",
+    "fast_geschafft": "Presque atteint – chaque contribution compte !",
+    "ziel_erreicht": "Objectif atteint – les contributions restent les bienvenues.",
+    "gesammelt_ohne_ziel_one": "{{summe}} collectés auprès d'1 personne",
+    "gesammelt_ohne_ziel_other": "{{summe}} collectés auprès de {{count}} personnes",
+    "zeile_gesammelt_one": "Payé : {{summe}} (1 personne)",
+    "zeile_gesammelt_other": "Payé : {{summe}} ({{count}} personnes)",
+    "oeffentliche_seite": "Page publique",
+    "details": "Modifier les détails",
+    "export_status": "Quelles contributions exporter",
+    "export_bezahlt": "Payées",
+    "export_offen": "En attente",
+    "export_alle": "Toutes",
+    "export_button": "Participants (Excel)",
+    "export_fehler": "L'export n'a pas pu être créé.",
+    "neue_aktion": "Créer une action avec description",
+    "neue_aktion_hinweis": "Pour les appels à contribution urgents avec texte, échéance et objectif.",
+    "dialog": {
+      "titel_neu": "Nouvelle action de contribution",
+      "titel_bearbeiten": "Modifier l'action de contribution",
+      "beschreibung": "Description",
+      "beschreibung_platzhalter": "À quoi servira la contribution ?",
+      "frist": "Échéance (facultatif)",
+      "zielbetrag": "Objectif en € (facultatif)",
+      "zielbetrag_hinweis": "La progression ne compte que les contributions payées.",
+      "dringend": "Marquer comme importante",
+      "dringend_hinweis": "L'action apparaît comme urgente et figure tout en haut de la sélection.",
+      "oeffentlich": "Page d'action publique",
+      "oeffentlich_hinweis": "L'action peut être partagée sur les réseaux sociaux. La page n'affiche jamais le nom des contributeurs.",
+      "erinnerungen": "Envoyer des rappels",
+      "erinnerungen_hinweis": "Les membres actifs sans contribution reçoivent un e-mail et une notification dans l'app 3 jours avant l'échéance et à 80 % de l'objectif. Telegram selon le réglage du membre.",
+      "fehler_erinnerung_ohne_ziel": "Pour les rappels, l'action a besoin d'une échéance ou d'un objectif."
+    },
+    "hinweis": {
+      "titel": "Actions de contribution urgentes",
+      "frist_bald": "L'appel à contribution « {{titel}} » se termine le {{datum}}.",
+      "dringend": "Appel à contribution urgent : « {{titel}} ».",
+      "ziel_fast": "« {{titel}} » a atteint {{prozent}} % de l'objectif – aidez à y arriver.",
+      "aktion": "Contribuer"
+    },
+    "oeffentlich": {
+      "anmelden": "Se connecter",
+      "laden": "Chargement…",
+      "nicht_gefunden": "Cette action n'existe pas ou n'est pas publique.",
+      "beendet": "Cette action est terminée. Merci à toutes celles et ceux qui ont participé.",
+      "beitragen": "Contribuer maintenant ({{betrag}})",
+      "login_hinweis": "Connectez-vous d'abord pour payer."
+    }
   }
 }

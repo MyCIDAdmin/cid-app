@@ -132,6 +132,9 @@ class TypeNotification(models.TextChoices):
     FAMILIE_EINLADUNG = "familie_einladung", _("Invitation à un forfait famille")
     FAMILIE_ANTWORT = "familie_antwort", _("Réponse à une invitation de forfait famille")
     FAMILIE_ALTER = "familie_alter", _("Enfant au-dessus de l'âge maximum du forfait famille")
+    # Beitragsaktionen (2026-10-25)
+    AKTION_FRIST = "aktion_frist", _("Date limite d'une action de contribution proche")
+    AKTION_ZIEL = "aktion_ziel", _("Objectif d'une action de contribution presque atteint")
 
 
 class Notification(models.Model):

@@ -122,6 +122,20 @@ export interface ArticleCatalogue {
   montant: string;
   actif: boolean;
   type_fixe: "cotisation" | "adhesion" | null;
+  /** Beitragsaktion (2026-10-25) : HTML des Editors, vom Server bereinigt. */
+  beschreibung: string;
+  dringend: boolean;
+  /** Letzter Tag, an dem noch beigetragen werden kann (YYYY-MM-DD). */
+  frist: string | null;
+  zielbetrag: string | null;
+  oeffentlich: boolean;
+  erinnerungen: boolean;
+  /** Summe der BEZAHLTEN Beiträge (Dezimal als Text). */
+  gesammelt: string;
+  beitragende: number;
+  /** Prozent des Zielbetrags (0 bis 100) oder null ohne Zielbetrag. */
+  fortschritt: number | null;
+  abgelaufen: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -129,6 +143,27 @@ export interface ArticleCatalogue {
 export interface ArticleCataloguePayload {
   libelle: string;
   montant: string;
+  beschreibung?: string;
+  dringend?: boolean;
+  frist?: string | null;
+  zielbetrag?: string | null;
+  oeffentlich?: boolean;
+  erinnerungen?: boolean;
+}
+
+/** Öffentliche Sicht einer Aktion (ohne Anmeldung, nie Namen) — apps.cotisations.aktionen_oeffentlich. */
+export interface AktionOeffentlich {
+  id: string;
+  titel: string;
+  beschreibung: string;
+  betrag: string;
+  frist: string | null;
+  abgelaufen: boolean;
+  dringend: boolean;
+  zielbetrag: string | null;
+  gesammelt: string;
+  beitragende: number;
+  fortschritt: number | null;
 }
 
 /**

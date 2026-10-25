@@ -304,6 +304,22 @@ export async function modifierArticleCatalogue(
   return data;
 }
 
+/**
+ * GET /cotisations/articles-catalogue/{id}/teilnehmer-export/ — Excel mit den Beitragenden einer
+ * Aktion (nur mit Schreibrecht auf die Seite „Beitragsartikel“). `status` : bezahlt (Standard),
+ * offen oder alle.
+ */
+export async function telechargerTeilnehmerAktion(
+  id: string,
+  status: "bezahlt" | "offen" | "alle" = "bezahlt",
+): Promise<Blob> {
+  const { data } = await apiClient.get(`/cotisations/articles-catalogue/${id}/teilnehmer-export/`, {
+    params: { status },
+    responseType: "blob",
+  });
+  return data;
+}
+
 /** GET /cotisations/import-zahlungen/template/ — Excel-Vorlage für den Zahlungen-Import (R3). */
 export async function telechargerTemplateImportZahlungen(): Promise<Blob> {
   const { data } = await apiClient.get("/cotisations/import-zahlungen/template/", {
