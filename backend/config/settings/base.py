@@ -53,6 +53,7 @@ LOCAL_APPS = [
     "apps.cotisations",
     "apps.adhesions",
     "apps.evenements",
+    "apps.reisen",
     "apps.boutique",
     "apps.vote",
     "apps.communaute",

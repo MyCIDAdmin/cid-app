@@ -28,6 +28,14 @@ T = TypeNotification
 # Benachrichtigungsarten, die einzeln ein- und ausgeschaltet werden (Reihenfolge = Anzeige).
 KATEGORIEN: dict[str, set[str]] = {
     "regionen": {T.REGION_VERANSTALTUNG},
+    "reisen": {
+        T.REISE_EINLADUNG,
+        T.REISE_ANFRAGE,
+        T.REISE_ENTSCHEIDUNG,
+        T.REISE_FRIST,
+        T.REISE_INFO,
+        T.REISE_AUFGABE,
+    },
     "support": {T.SUPPORT_TICKET_NEU, T.SUPPORT_ANTWORT, T.SUPPORT_STATUS},
     "veranstaltungen": {
         T.EVENEMENT_INVITATION,
