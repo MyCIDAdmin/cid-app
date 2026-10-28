@@ -141,6 +141,8 @@
     "calendrier_statut_reportee": "Verschoben",
     "calendrier_statut_annulee": "Abgesagt",
     "calendrier_bearbeiten": "Bearbeiten",
+    "calendrier_reise_oeffnen": "Reise öffnen: {{titel}}",
+    "calendrier_reise_organisieren": "Reise dazu organisieren",
     "calendrier_hinzufuegen": "Spiel hinzufügen",
     "calendrier_badge_manuel": "manuell hinzugefügt",
     "calendrier_badge_korrigiert": "manuell korrigiert",

@@ -141,6 +141,8 @@
     "calendrier_statut_reportee": "Reporté",
     "calendrier_statut_annulee": "Annulé",
     "calendrier_bearbeiten": "Modifier",
+    "calendrier_reise_oeffnen": "Ouvrir le voyage : {{titel}}",
+    "calendrier_reise_organisieren": "Organiser un voyage pour ce match",
     "calendrier_hinzufuegen": "Ajouter un match",
     "calendrier_badge_manuel": "ajouté manuellement",
     "calendrier_badge_korrigiert": "corrigé manuellement",

@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
+import * as useReisenHooks from "../../hooks/useReisen";
+import { listItem } from "../../test/reisenDaten";
 import { useAuthStore } from "../../store/authStore";
 import type { RencontreCalendrier } from "../../types/communaute";
 import CalendrierTab from "./CalendrierTab";
@@ -19,6 +21,15 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useSupprimerRencontre: vi.fn(),
   };
 });
+
+// Reise-Modul : "Reise organisieren"/vorhandene Reisen am Spiel (Daten hier vorgegeben).
+vi.mock("../../hooks/useReisen", async () => {
+  const actual = await vi.importActual<typeof useReisenHooks>("../../hooks/useReisen");
+  return { ...actual, useReisenListe: vi.fn() };
+});
+vi.mocked(useReisenHooks.useReisenListe).mockReturnValue({
+  data: [],
+} as unknown as ReturnType<typeof useReisenHooks.useReisenListe>);
 
 // EquipeLogoImage (voir docstring de tête CalendrierTab.tsx, retour utilisateur du
 // 2026-09-28 "Fan-Club: Vereins-Logos anzeigen + Upload-Möglichkeit") appelle
@@ -424,6 +435,54 @@ describe("CalendrierTab", () => {
       fireEvent.click(screen.getByText("live.calendrier_bearbeiten"));
       expect(screen.getByText("live.calendrier_form_zuruecksetzen")).toBeInTheDocument();
       expect(screen.queryByText("live.calendrier_form_loeschen")).not.toBeInTheDocument();
+    });
+  });
+  describe("Reisen zum Spiel", () => {
+    const auswaerts = rencontre({
+      id: "m9",
+      equipe_domicile: "USM Alger",
+      equipe_exterieur: "Club Africain",
+    });
+
+    function zeigeSpiele(spiele: RencontreCalendrier[]) {
+      vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+        data: page(spiele),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+      renderWithProviders(<CalendrierTab />);
+    }
+
+    afterEach(() => {
+      useAuthStore.setState({ user: null });
+    });
+
+    it("bietet angemeldeten Mitgliedern bei Auswärtsspielen die Reise an", () => {
+      useAuthStore.setState({ user: { id: "u1", role: "membre" } as never });
+      zeigeSpiele([auswaerts, rencontre({ id: "m10" })]);
+      const links = screen.getAllByRole("link", { name: "live.calendrier_reise_organisieren" });
+      expect(links).toHaveLength(1);
+      expect(links[0]).toHaveAttribute("href", "/reisen/neu?rencontre=m9");
+    });
+
+    it("zeigt Besuchern ohne Anmeldung keine Reise-Links", () => {
+      useAuthStore.setState({ user: null });
+      zeigeSpiele([auswaerts]);
+      expect(
+        screen.queryByRole("link", { name: "live.calendrier_reise_organisieren" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("verlinkt vorhandene Reisen zum Spiel", () => {
+      useAuthStore.setState({ user: { id: "u1", role: "membre" } as never });
+      vi.mocked(useReisenHooks.useReisenListe).mockReturnValueOnce({
+        data: [listItem({ id: "rr1", rencontre: "m9" })],
+      } as unknown as ReturnType<typeof useReisenHooks.useReisenListe>);
+      zeigeSpiele([auswaerts]);
+      expect(screen.getByRole("link", { name: "live.calendrier_reise_oeffnen" })).toHaveAttribute(
+        "href",
+        "/reisen/rr1",
+      );
     });
   });
 });

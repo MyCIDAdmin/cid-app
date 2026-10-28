@@ -29,6 +29,7 @@ i18n
       "rbac",
       "adhesions",
       "evenements",
+      "reisen",
       "boutique",
       "stats",
       "notifications",
