@@ -363,3 +363,27 @@ export interface Laenderprofil {
 }
 
 export type LaenderprofilEingabe = Partial<Omit<Laenderprofil, "id">>;
+
+export type WetterArt =
+  "sonne" | "teilweise" | "wolken" | "nebel" | "regen" | "schnee" | "gewitter";
+
+export interface WetterTag {
+  datum: string;
+  code: number | null;
+  max: number | null;
+  min: number | null;
+}
+
+export interface Umfeld {
+  verfuegbar: boolean;
+  ort?: string;
+  land?: string;
+  zeitzone?: string | null;
+  wetter?: {
+    jetzt: { temp: number; code: number | null; tag: boolean } | null;
+    tage: WetterTag[];
+    vorhersage_ab: string | null;
+  } | null;
+  kurs?: { code: string; kurs: number; stand: string } | null;
+  sicherheit?: string;
+}

@@ -215,3 +215,10 @@ export const useLaenderprofilSpeichern = () =>
   );
 export const useLaenderprofilLoeschen = () =>
   useAendern((id: string) => api.deleteLaenderprofil(id));
+
+export const useUmfeld = (id: string) =>
+  useQuery({
+    queryKey: ["reisen", "umfeld", id],
+    queryFn: () => api.getUmfeld(id),
+    staleTime: 30 * 60 * 1000,
+  });

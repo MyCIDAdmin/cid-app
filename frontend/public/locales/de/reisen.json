@@ -134,7 +134,10 @@
     "infos": "Infos",
     "kosten": "Kosten",
     "einstellungen": "Einstellungen",
-    "checkliste": "Checkliste"
+    "checkliste": "Checkliste",
+    "planung": "Planung",
+    "menschen": "Menschen",
+    "infos_kosten": "Infos & Kosten"
   },
   "liste": {
     "datum_offen": "Datum offen",
@@ -439,7 +442,9 @@
   "saison": {
     "leer": "Keine kommenden Auswärtsspiele.",
     "reise_planen": "Reise planen",
-    "keine_reise": "Noch keine Reise dazu."
+    "keine_reise": "Noch keine Reise dazu.",
+    "titel": "Nächste Auswärtsspiele",
+    "alle_reisen": "Reisen"
   },
   "steckbrief": {
     "titel": "Steckbrief {{land}}",
@@ -459,5 +464,26 @@
     "speichern": "Speichern",
     "formular": "Steckbrief",
     "leer": "Noch keine Steckbriefe."
+  },
+  "umfeld": {
+    "titel": "Am Reiseziel: {{ort}}",
+    "berlin": "Berlin",
+    "gleiche_zeit": "gleiche Zeit",
+    "unterschied": "{{zahl}} Std.",
+    "jetzt": "jetzt",
+    "vorhersage": "Wetter an den Reisetagen",
+    "vorhersage_ab": "Die Vorhersage für die Reisetage gibt es ab dem {{datum}}.",
+    "sicherheit": "Reise- und Sicherheitshinweise (Auswärtiges Amt)",
+    "quellen": "Wetter: Open-Meteo.com (CC BY 4.0) · Kurse: ExchangeRate-API (open.er-api.com) · Ohne Gewähr."
+  },
+  "wetter": {
+    "sonne": "Sonnig",
+    "teilweise": "Teils bewölkt",
+    "wolken": "Bewölkt",
+    "nebel": "Nebel",
+    "regen": "Regen",
+    "schnee": "Schnee",
+    "gewitter": "Gewitter",
+    "klar_nacht": "Klare Nacht"
   }
 }

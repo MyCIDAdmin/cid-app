@@ -219,7 +219,7 @@ describe("Ländersteckbriefe", () => {
     useAuthStore.setState({ user: null });
     const { unmount } = renderWithProviders(<ReisenPage />);
     expect(screen.queryByRole("tab", { name: "tab_steckbriefe" })).not.toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "tab_saison" })).toBeInTheDocument();
+    expect(screen.getByText("saison.titel")).toBeInTheDocument();
     unmount();
   });
 });

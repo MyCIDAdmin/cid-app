@@ -1,5 +1,5 @@
 /** Der Reiseraum : Kopf mit Status, darunter die Reiter. „Auf einen Blick“ ist die erste Seite. */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
@@ -15,6 +15,17 @@ import TeilnehmendeTab from "../../components/reisen/TeilnehmendeTab";
 import TabLeiste from "../../components/ui/TabLeiste";
 import { useReise } from "../../hooks/useReisen";
 import { restzeit, zeitraum } from "../../utils/reisen";
+
+function Abschnitt({ titel, children }: { titel: string; children: ReactNode }) {
+  return (
+    <section aria-label={titel} className="space-y-2">
+      <h2 className="border-b border-text-tertiary/20 pb-1 text-base font-semibold text-text-primary">
+        {titel}
+      </h2>
+      {children}
+    </section>
+  );
+}
 
 export default function ReiseRaumPage() {
   const { t, i18n } = useTranslation("reisen");
@@ -37,24 +48,29 @@ export default function ReiseRaumPage() {
   const reise = q.data;
   const tage = reise.start ? restzeit(`${reise.start}T00:00:00`, jetzt) : null;
 
+  // Fünf Reiter statt neun : alte Adressen (?tab=aufgaben …) führen weiter an die richtige Stelle.
   const tabs = [
     { id: "blick", label: t("tabs.blick") },
-    { id: "entscheidungen", label: t("tabs.entscheidungen") },
-    { id: "teilnehmende", label: t("tabs.teilnehmende") },
+    { id: "planung", label: t("tabs.planung") },
+    { id: "menschen", label: t("tabs.menschen") },
     ...(reise.meine ? [{ id: "meine", label: t("tabs.meine") }] : []),
-    ...(reise.voll
-      ? [
-          { id: "aufgaben", label: t("tabs.aufgaben") },
-          { id: "checkliste", label: t("tabs.checkliste") },
-          { id: "infos", label: t("tabs.infos") },
-          { id: "kosten", label: t("tabs.kosten") },
-        ]
-      : []),
-    ...(reise.kann_verwalten ? [{ id: "einstellungen", label: t("tabs.einstellungen") }] : []),
+    ...(reise.voll ? [{ id: "infos", label: t("tabs.infos_kosten") }] : []),
   ];
-  const gewuenscht = params.get("tab") ?? "blick";
-  const aktiv = tabs.some((x) => x.id === gewuenscht) ? gewuenscht : "blick";
-  const waehle = (tab: string) => setParams({ tab }, { replace: true });
+  const ALT: Record<string, string> = {
+    entscheidungen: "planung",
+    aufgaben: "planung",
+    checkliste: "planung",
+    teilnehmende: "menschen",
+    kosten: "infos",
+  };
+  const gewuenscht = ALT[params.get("tab") ?? ""] ?? params.get("tab") ?? "blick";
+  const einstellungen = gewuenscht === "einstellungen" && reise.kann_verwalten;
+  const aktiv = einstellungen
+    ? "einstellungen"
+    : tabs.some((x) => x.id === gewuenscht)
+      ? gewuenscht
+      : "blick";
+  const waehle = (tab: string) => setParams({ tab: ALT[tab] ?? tab }, { replace: true });
 
   return (
     <div className="space-y-3">
@@ -79,15 +95,53 @@ export default function ReiseRaumPage() {
           {reise.mein_status && ` · ${t(`status.${reise.mein_status}`)}`}
         </p>
       </header>
-      <TabLeiste tabs={tabs} aktiv={aktiv} onChange={waehle} ariaLabel={reise.titel} />
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <TabLeiste tabs={tabs} aktiv={aktiv} onChange={waehle} ariaLabel={reise.titel} />
+        </div>
+        {reise.kann_verwalten && (
+          <button
+            type="button"
+            onClick={() => waehle(einstellungen ? "blick" : "einstellungen")}
+            aria-pressed={einstellungen}
+            aria-label={t("tabs.einstellungen")}
+            title={t("tabs.einstellungen")}
+            className={`rounded-cid px-3 py-2 text-sm ${einstellungen ? "bg-ca text-white" : "text-text-secondary hover:bg-bg-tertiary"}`}
+          >
+            ⚙
+          </button>
+        )}
+      </div>
       {aktiv === "blick" && <AufEinenBlick reise={reise} onTab={waehle} />}
-      {aktiv === "entscheidungen" && <EntscheidungenTab reise={reise} />}
-      {aktiv === "teilnehmende" && <TeilnehmendeTab reise={reise} />}
+      {aktiv === "planung" && (
+        <div className="space-y-6">
+          <Abschnitt titel={t("tabs.entscheidungen")}>
+            <EntscheidungenTab reise={reise} />
+          </Abschnitt>
+          {reise.voll && (
+            <>
+              <Abschnitt titel={t("tabs.aufgaben")}>
+                <AufgabenTab reise={reise} />
+              </Abschnitt>
+              <Abschnitt titel={t("tabs.checkliste")}>
+                <ChecklisteTab reise={reise} />
+              </Abschnitt>
+            </>
+          )}
+        </div>
+      )}
+      {aktiv === "menschen" && <TeilnehmendeTab reise={reise} />}
       {aktiv === "meine" && <MeineReiseTab reise={reise} />}
-      {aktiv === "aufgaben" && <AufgabenTab reise={reise} />}
-      {aktiv === "checkliste" && <ChecklisteTab reise={reise} />}
-      {aktiv === "infos" && <InfosTab reise={reise} />}
-      {aktiv === "kosten" && <KostenTab reise={reise} />}
+      {aktiv === "infos" && (
+        <div className="space-y-6">
+          <Abschnitt titel={t("tabs.infos")}>
+            <InfosTab reise={reise} />
+          </Abschnitt>
+          <Abschnitt titel={t("tabs.kosten")}>
+            <KostenTab reise={reise} />
+          </Abschnitt>
+        </div>
+      )}
       {aktiv === "einstellungen" && <EinstellungenTab key={reise.id} reise={reise} />}
       {reise.chat_gruppe && reise.voll && (
         <Link

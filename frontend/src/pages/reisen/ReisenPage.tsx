@@ -101,9 +101,7 @@ function ReisenListe() {
 export default function ReisenPage() {
   const { t } = useTranslation("reisen");
   const user = useAuthStore((s) => s.user);
-  const [tab, setTab] = useState<"reisen" | "saison" | "fahrgemeinschaften" | "steckbriefe">(
-    "reisen",
-  );
+  const [tab, setTab] = useState<"reisen" | "fahrgemeinschaften" | "steckbriefe">("reisen");
   const bureau = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
   return (
     <div>
@@ -114,13 +112,22 @@ export default function ReisenPage() {
         onChange={(id) => setTab(id as typeof tab)}
         tabs={[
           { id: "reisen", label: t("tab_reisen") },
-          { id: "saison", label: t("tab_saison") },
           { id: "fahrgemeinschaften", label: t("tab_fahrgemeinschaften") },
           ...(bureau ? [{ id: "steckbriefe", label: t("tab_steckbriefe") }] : []),
         ]}
       />
-      {tab === "reisen" && <ReisenListe />}
-      {tab === "saison" && <SaisonTab />}
+      {tab === "reisen" && (
+        <div className="space-y-6">
+          <section aria-label={t("tab_saison")}>
+            <h2 className="mb-2 text-sm font-semibold">{t("saison.titel")}</h2>
+            <SaisonTab />
+          </section>
+          <section aria-label={t("tab_reisen")}>
+            <h2 className="mb-2 text-sm font-semibold">{t("saison.alle_reisen")}</h2>
+            <ReisenListe />
+          </section>
+        </div>
+      )}
       {tab === "fahrgemeinschaften" && <CovoituragePage />}
       {tab === "steckbriefe" && bureau && <SteckbriefeAdmin />}
       <p className="mt-6 text-[11px] text-text-tertiary">{t("haftung")}</p>

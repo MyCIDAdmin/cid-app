@@ -5,6 +5,7 @@ import FormatierterText from "../regionen/FormatierterText";
 import { useBeitreten, useInfoGelesen, useRegelnBestaetigen } from "../../hooks/useReisen";
 import { datumKurz, preisText, zeitraum } from "../../utils/reisen";
 import type { Entscheidung, ReiseDetail } from "../../types/reisen";
+import AmZiel from "./AmZiel";
 import { Countdown, KARTE, KNOPF, KNOPF_LEISE } from "./ui";
 
 const PHASEN = ["interesse", "planung", "buchung", "reise", "rueckblick"] as const;
@@ -68,11 +69,11 @@ export default function AufEinenBlick({
   const phaseIndex = PHASEN.indexOf(reise.phase);
   const jetzt = reise.jetzt_dran ?? [];
   const tabFuer: Record<string, string> = {
-    abstimmen: "entscheidungen",
-    aufgabe_ueberfaellig: "aufgaben",
+    abstimmen: "planung",
+    aufgabe_ueberfaellig: "planung",
     info_lesen: "infos",
     hinreise: "meine",
-    anfragen: "teilnehmende",
+    anfragen: "menschen",
   };
 
   return (
@@ -196,6 +197,8 @@ export default function AufEinenBlick({
           </ul>
         </section>
       )}
+
+      <AmZiel reise={reise} />
 
       {(reise.infos ?? []).length > 0 && (
         <section aria-label={t("infos.wichtig")}>
