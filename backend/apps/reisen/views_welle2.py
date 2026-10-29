@@ -16,6 +16,7 @@ from apps.regionen import formattext
 
 from . import exporte, gruppen
 from . import services as sv
+from . import umfeld
 from .models import ChecklisteErledigt, ChecklistePunkt, Laenderprofil, Teilgruppe
 from .serializers import ChecklisteSerializer, LaenderprofilSerializer
 
@@ -223,6 +224,13 @@ class Welle2Mixin:
             exporte.namensliste_excel(ctx, unterkunft, teilgruppe),
             f"namensliste-{ctx.reise.id}.xlsx",
         )
+
+    # --- Am Reiseziel ------------------------------------------------------------------------
+
+    @action(detail=True, methods=["get"])
+    def umfeld(self, request, pk=None):
+        """Ortszeit, Wetter und Kurs am Ziel. Nichts Persönliches, darum für alle sichtbar."""
+        return Response(umfeld.zusammenstellen(self._ctx(pk).reise))
 
     # --- Saison ------------------------------------------------------------------------------
 
