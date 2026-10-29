@@ -5,6 +5,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import AufEinenBlick from "../../components/reisen/AufEinenBlick";
 import AufgabenTab from "../../components/reisen/AufgabenTab";
+import ChecklisteTab from "../../components/reisen/ChecklisteTab";
 import EinstellungenTab from "../../components/reisen/EinstellungenTab";
 import EntscheidungenTab from "../../components/reisen/EntscheidungenTab";
 import InfosTab from "../../components/reisen/InfosTab";
@@ -44,6 +45,7 @@ export default function ReiseRaumPage() {
     ...(reise.voll
       ? [
           { id: "aufgaben", label: t("tabs.aufgaben") },
+          { id: "checkliste", label: t("tabs.checkliste") },
           { id: "infos", label: t("tabs.infos") },
           { id: "kosten", label: t("tabs.kosten") },
         ]
@@ -83,6 +85,7 @@ export default function ReiseRaumPage() {
       {aktiv === "teilnehmende" && <TeilnehmendeTab reise={reise} />}
       {aktiv === "meine" && <MeineReiseTab reise={reise} />}
       {aktiv === "aufgaben" && <AufgabenTab reise={reise} />}
+      {aktiv === "checkliste" && <ChecklisteTab reise={reise} />}
       {aktiv === "infos" && <InfosTab reise={reise} />}
       {aktiv === "kosten" && <KostenTab reise={reise} />}
       {aktiv === "einstellungen" && <EinstellungenTab key={reise.id} reise={reise} />}

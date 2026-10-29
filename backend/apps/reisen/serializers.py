@@ -5,12 +5,15 @@ from rest_framework import serializers
 
 from .models import (
     Aufgabe,
+    ChecklistePunkt,
     Entscheidung,
     Etappe,
+    Laenderprofil,
     Option,
     Reise,
     ReiseInfo,
     ReiseTeilnehmer,
+    Teilgruppe,
     Unterkunft,
 )
 
@@ -69,6 +72,22 @@ class ReiseSerializer(serializers.ModelSerializer):
         return wert
 
 
+class TeilgruppeFeld(serializers.PrimaryKeyRelatedField):
+    """Teilgruppe der Reise (Kontext `reise`) oder leer = für alle."""
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            queryset=Teilgruppe.objects.all(), allow_null=True, required=False, **kwargs
+        )
+
+    def to_internal_value(self, data):
+        gruppe = super().to_internal_value(data)
+        reise = self.context.get("reise")
+        if reise is not None and gruppe.reise_id != reise.id:
+            raise serializers.ValidationError("Diese Teilgruppe gehört zu einer anderen Reise.")
+        return gruppe
+
+
 class EtappeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Etappe
@@ -118,6 +137,8 @@ class MeineAngabenSerializer(serializers.ModelSerializer):
             "stadionkarte",
             "dokument_gueltig",
             "notiz",
+            "geburtsdatum",
+            "offen_gemeinsame_anreise",
         ]
 
     def validate_unterkunft(self, wert):
@@ -149,6 +170,7 @@ class OptionSerializer(serializers.ModelSerializer):
 
 class EntscheidungSerializer(serializers.ModelSerializer):
     optionen = OptionSerializer(many=True, required=False)
+    teilgruppe = TeilgruppeFeld()
 
     class Meta:
         model = Entscheidung
@@ -159,6 +181,7 @@ class EntscheidungSerializer(serializers.ModelSerializer):
             "beschreibung",
             "mehrfach",
             "frist",
+            "teilgruppe",
             "optionen",
         ]
 
@@ -179,14 +202,40 @@ class EntscheidungSerializer(serializers.ModelSerializer):
 
 
 class InfoSerializer(serializers.ModelSerializer):
+    teilgruppe = TeilgruppeFeld()
+
     class Meta:
         model = ReiseInfo
-        fields = ["titel", "text", "wichtig", "gueltig_bis", "gelesen_pflicht"]
+        fields = ["titel", "text", "wichtig", "gueltig_bis", "gelesen_pflicht", "teilgruppe"]
 
 
 class AufgabeSerializer(serializers.ModelSerializer):
     verantwortlich = serializers.UUIDField(required=False, allow_null=True)
+    teilgruppe = TeilgruppeFeld()
 
     class Meta:
         model = Aufgabe
-        fields = ["titel", "beschreibung", "verantwortlich", "frist", "status"]
+        fields = ["titel", "beschreibung", "verantwortlich", "frist", "status", "teilgruppe"]
+
+
+class ChecklisteSerializer(serializers.ModelSerializer):
+    teilgruppe = TeilgruppeFeld()
+
+    class Meta:
+        model = ChecklistePunkt
+        fields = ["titel", "frist", "teilgruppe"]
+
+
+class LaenderprofilSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Laenderprofil
+        fields = [
+            "land",
+            "einreise",
+            "waehrung",
+            "zeitverschiebung",
+            "steckdose",
+            "amtliche_hinweise",
+            "weitere_infos",
+            "stand",
+        ]

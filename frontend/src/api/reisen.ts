@@ -1,17 +1,24 @@
 /** API des Moduls „Reisen & Fahrgemeinschaften“ (Backend: apps.reisen, Präfix /reisen/). */
 import { apiClient } from "./client";
 import type {
+  AnkunftGruppe,
   Aufgabe,
+  ChecklistePunkt,
   Entscheidung,
   Etappe,
+  GemeinsameAnkunft,
   Info,
   Kosten,
+  Laenderprofil,
+  LaenderprofilEingabe,
   MeineAngaben,
   ReiseDetail,
   ReiseEingabe,
   ReiseListItem,
   ReiseOeffentlich,
+  SaisonSpiel,
   StadionVorschlag,
+  TeilgruppenListe,
   Teilnehmer,
   Uebersicht,
   Unterkunft,
@@ -112,6 +119,7 @@ export interface EntscheidungEingabe {
   beschreibung?: string;
   mehrfach?: boolean;
   frist?: string | null;
+  teilgruppe?: string | null;
   optionen?: Record<string, unknown>[];
 }
 export async function createEntscheidung(id: string, daten: EntscheidungEingabe): Promise<void> {
@@ -197,4 +205,100 @@ export function teilenUrlDerReise(id: string): string {
   return basis.startsWith("http")
     ? `${basis}/reisen/oeffentlich/${id}/teilen/`
     : `${window.location.origin}/reise/${id}`;
+}
+
+// --- Welle 2 -----------------------------------------------------------------------------
+export async function listTeilgruppen(id: string): Promise<TeilgruppenListe> {
+  return (await apiClient.get<TeilgruppenListe>(`${b(id)}/teilgruppen/`)).data;
+}
+export async function createTeilgruppe(
+  id: string,
+  daten: { name: string; teilnehmer: string[] },
+): Promise<void> {
+  await apiClient.post(`${b(id)}/teilgruppen/`, daten);
+}
+export async function updateTeilgruppe(
+  id: string,
+  gid: string,
+  daten: { name?: string; teilnehmer?: string[] },
+): Promise<void> {
+  await apiClient.patch(`${b(id)}/teilgruppen/${gid}/`, daten);
+}
+export async function deleteTeilgruppe(id: string, gid: string): Promise<void> {
+  await apiClient.delete(`${b(id)}/teilgruppen/${gid}/`);
+}
+
+export async function getGemeinsameAnkunft(id: string): Promise<GemeinsameAnkunft> {
+  return (await apiClient.get<GemeinsameAnkunft>(`${b(id)}/gemeinsame-ankunft/`)).data;
+}
+export async function setzeAnkunftZustimmung(
+  id: string,
+  gruppe: Pick<AnkunftGruppe, "typ" | "ort" | "tag">,
+  zustimmen: boolean,
+): Promise<GemeinsameAnkunft> {
+  return (
+    await apiClient.post<GemeinsameAnkunft>(`${b(id)}/gemeinsame-ankunft/`, {
+      ...gruppe,
+      zustimmen,
+    })
+  ).data;
+}
+
+export async function listCheckliste(id: string): Promise<ChecklistePunkt[]> {
+  return (await apiClient.get<ChecklistePunkt[]>(`${b(id)}/checkliste/`)).data;
+}
+export async function createCheckliste(
+  id: string,
+  daten: {
+    titel: string;
+    frist?: string | null;
+    persoenlich?: boolean;
+    teilgruppe?: string | null;
+  },
+): Promise<ChecklistePunkt[]> {
+  return (await apiClient.post<ChecklistePunkt[]>(`${b(id)}/checkliste/`, daten)).data;
+}
+export async function deleteCheckliste(id: string, pid: string): Promise<void> {
+  await apiClient.delete(`${b(id)}/checkliste/${pid}/`);
+}
+export async function setzeChecklisteErledigt(
+  id: string,
+  pid: string,
+  erledigt: boolean,
+): Promise<ChecklistePunkt[]> {
+  return (
+    await apiClient.post<ChecklistePunkt[]>(`${b(id)}/checkliste/${pid}/erledigt/`, { erledigt })
+  ).data;
+}
+
+export async function exportiere(
+  id: string,
+  art: "excel" | "namensliste",
+  params: { unterkunft?: string; teilgruppe?: string } = {},
+): Promise<{ blob: Blob; nomFichier: string }> {
+  const { data, headers } = await apiClient.get(`${b(id)}/export-${art}/`, {
+    params,
+    responseType: "blob",
+  });
+  const treffer = /filename="?([^"]+)"?/.exec(String(headers["content-disposition"] ?? ""));
+  return { blob: data, nomFichier: treffer?.[1] ?? `${art}.xlsx` };
+}
+
+export async function getSaison(): Promise<SaisonSpiel[]> {
+  return (await apiClient.get<SaisonSpiel[]>("/reisen/saison/")).data;
+}
+
+export async function listLaenderprofile(): Promise<Laenderprofil[]> {
+  return (await apiClient.get<Laenderprofil[]>("/reisen/laenderprofile/")).data;
+}
+export async function saveLaenderprofil(
+  daten: LaenderprofilEingabe,
+  id?: string,
+): Promise<Laenderprofil> {
+  return id
+    ? (await apiClient.patch<Laenderprofil>(`/reisen/laenderprofile/${id}/`, daten)).data
+    : (await apiClient.post<Laenderprofil>("/reisen/laenderprofile/", daten)).data;
+}
+export async function deleteLaenderprofil(id: string): Promise<void> {
+  await apiClient.delete(`/reisen/laenderprofile/${id}/`);
 }

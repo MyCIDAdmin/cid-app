@@ -9,6 +9,8 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import { datumKurz } from "../../utils/reisen";
 import type { ReiseDetail } from "../../types/reisen";
 import { FELD, Fehler, KARTE, KNOPF, KNOPF_LEISE } from "./ui";
+import Steckbrief from "./Steckbrief";
+import ZielgruppeWahl, { GruppenChip } from "./ZielgruppeWahl";
 
 export default function InfosTab({ reise }: { reise: ReiseDetail }) {
   const { t, i18n } = useTranslation("reisen");
@@ -21,13 +23,21 @@ export default function InfosTab({ reise }: { reise: ReiseDetail }) {
   const [wichtig, setWichtig] = useState(false);
   const [pflicht, setPflicht] = useState(false);
   const [bis, setBis] = useState("");
+  const [teilgruppe, setTeilgruppe] = useState("");
   const [fehler, setFehler] = useState("");
 
   function neu(ev: React.FormEvent) {
     ev.preventDefault();
     if (!titel.trim()) return;
     anlegen.mutate(
-      { titel, text, wichtig, gelesen_pflicht: pflicht, gueltig_bis: bis || null },
+      {
+        titel,
+        text,
+        wichtig,
+        gelesen_pflicht: pflicht,
+        gueltig_bis: bis || null,
+        teilgruppe: teilgruppe || null,
+      },
       {
         onSuccess: () => {
           setTitel("");
@@ -35,6 +45,7 @@ export default function InfosTab({ reise }: { reise: ReiseDetail }) {
           setWichtig(false);
           setPflicht(false);
           setBis("");
+          setTeilgruppe("");
           setFehler("");
         },
         onError: (e) => setFehler(extractApiErrorMessage(e, t("fehler.allgemein"))),
@@ -44,6 +55,7 @@ export default function InfosTab({ reise }: { reise: ReiseDetail }) {
 
   return (
     <div className="space-y-3">
+      {reise.laenderprofil && <Steckbrief profil={reise.laenderprofil} />}
       {reise.kann_verwalten && (
         <form onSubmit={neu} className={`${KARTE} space-y-2`} aria-label={t("infos.neu")}>
           <input
@@ -86,6 +98,7 @@ export default function InfosTab({ reise }: { reise: ReiseDetail }) {
               />
             </label>
           </div>
+          <ZielgruppeWahl reiseId={reise.id} value={teilgruppe} onChange={setTeilgruppe} />
           <div className="flex items-center gap-2">
             <button type="submit" className={KNOPF} disabled={anlegen.isPending}>
               {t("infos.veroeffentlichen")}
@@ -103,7 +116,7 @@ export default function InfosTab({ reise }: { reise: ReiseDetail }) {
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-semibold">
                 {i.wichtig && <span className="mr-1 text-ca">★</span>}
-                {i.titel}
+                {i.titel} <GruppenChip name={i.teilgruppe_name} />
               </p>
               <span className="text-[11px] text-text-tertiary">
                 {datumKurz(i.erstellt, i18n.language)}

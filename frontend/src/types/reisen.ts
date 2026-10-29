@@ -6,7 +6,7 @@ export type Phase = "interesse" | "planung" | "buchung" | "reise" | "rueckblick"
 export type TeilnehmerStatus =
   "eingeladen" | "angefragt" | "interessiert" | "dabei" | "warteliste" | "abgelehnt" | "abgesagt";
 export type Rolle = "organisator" | "vertreter" | "teilnehmer";
-export type Freigabe = "privat" | "alle";
+export type Freigabe = "privat" | "teilgruppe" | "alle";
 export type Baustein = "flug" | "transport" | "unterkunft" | "tickets" | "programm" | "sonstiges";
 export type EntscheidungTyp = "auswahl" | "empfehlung" | "termin" | "stimmung";
 export type Wert = "ja" | "vielleicht" | "nein";
@@ -79,6 +79,8 @@ export interface Entscheidung {
   vorschlag: string | null;
   teilgenommen: number;
   ich_habe_abgestimmt: boolean;
+  teilgruppe: string | null;
+  teilgruppe_name: string | null;
 }
 
 export interface Etappe {
@@ -120,6 +122,8 @@ export interface MeineAngaben {
   dokument_gueltig: boolean;
   regeln_bestaetigt_am: string | null;
   notiz: string;
+  geburtsdatum: string | null;
+  offen_gemeinsame_anreise: boolean;
   etappen: Etappe[];
 }
 
@@ -140,6 +144,8 @@ export interface Info {
   gelesen: boolean;
   erstellt: string;
   ausstehend?: string[];
+  teilgruppe: string | null;
+  teilgruppe_name: string | null;
 }
 
 export interface ReiseDetail extends ReiseListItem {
@@ -164,6 +170,7 @@ export interface ReiseDetail extends ReiseListItem {
   neu?: { entscheidungen: number; infos: number; aufgaben: number } | null;
   regeln_bestaetigt?: boolean;
   einladungs_token?: string;
+  laenderprofil?: Laenderprofil | null;
   meine?: MeineAngaben;
 }
 
@@ -222,6 +229,8 @@ export interface Aufgabe {
   frist: string | null;
   status: "offen" | "in_arbeit" | "erledigt";
   ueberfaellig: boolean;
+  teilgruppe: string | null;
+  teilgruppe_name: string | null;
 }
 
 export interface Kosten {
@@ -282,3 +291,75 @@ export interface ReiseEingabe {
   rencontre?: string;
   vorlage?: string;
 }
+
+export interface Teilgruppe {
+  id: string;
+  name: string;
+  anzahl: number;
+  ich_bin_mitglied: boolean;
+  mitglieder?: { id: string; user: string; name: string }[];
+}
+
+export interface TeilgruppenVorschlag {
+  art: "abflug" | "unterkunft";
+  name: string;
+  teilnehmer: string[];
+  namen: string[];
+}
+
+export interface TeilgruppenListe {
+  gruppen: Teilgruppe[];
+  vorschlaege?: TeilgruppenVorschlag[];
+}
+
+export interface AnkunftGruppe {
+  typ: "ankunft" | "abfahrt";
+  ort: string;
+  tag: string;
+  von: string;
+  bis: string;
+  weitere: number;
+  ich_zugestimmt: boolean;
+  kontakte: string[];
+}
+
+export interface GemeinsameAnkunft {
+  offen: boolean;
+  gruppen: AnkunftGruppe[];
+}
+
+export interface ChecklistePunkt {
+  id: string;
+  titel: string;
+  frist: string | null;
+  persoenlich: boolean;
+  teilgruppe: string | null;
+  teilgruppe_name: string | null;
+  erledigt: boolean;
+  ueberfaellig: boolean;
+  kann_aendern: boolean;
+  erledigt_zahl?: number;
+  gesamt?: number;
+}
+
+export interface SaisonSpiel {
+  rencontre: string;
+  gegner: string;
+  competition: string;
+  datum: string;
+  reisen: ReiseListItem[];
+}
+
+export interface Laenderprofil {
+  id: string;
+  land: string;
+  einreise: string;
+  waehrung: string;
+  zeitverschiebung: string;
+  steckdose: string;
+  amtliche_hinweise: string;
+  weitere_infos: string;
+  stand: string;
+}
+
+export type LaenderprofilEingabe = Partial<Omit<Laenderprofil, "id">>;

@@ -20,6 +20,7 @@ from . import services as sv
 from .models import (
     Aufgabe,
     Beitritt,
+    ChecklistePunkt,
     Entscheidung,
     EntscheidungTyp,
     EntStatus,
@@ -46,6 +47,7 @@ from .serializers import (
     ReiseSerializer,
     UnterkunftSerializer,
 )
+from .views_welle2 import Welle2Mixin, laenderprofil_dict, profil_zu_land
 
 UID = r"(?P<{}>[0-9a-fA-F-]{{36}})"
 
@@ -57,6 +59,17 @@ VORLAGEN = {
         "Kontakt vor Ort finden",
     ],
     "wochenende": ["Treffpunkt festlegen"],
+}
+
+CHECKLISTEN = {
+    "auswaerts_ausland": [
+        "Reisepass oder Personalausweis gültig (Einreisebestimmungen prüfen)",
+        "Hin- und Rückreise gebucht",
+        "Unterkunft gebucht",
+        "Stadionkarte oder Fan-ID besorgt",
+        "Auslandskrankenversicherung geprüft",
+    ],
+    "wochenende": ["Anreise geklärt", "Unterkunft geklärt"],
 }
 
 
@@ -79,7 +92,7 @@ def _merke_stadion(reise):
         )
 
 
-class ReiseViewSet(viewsets.GenericViewSet):
+class ReiseViewSet(Welle2Mixin, viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = ReiseSerializer
     pagination_class = None
@@ -159,6 +172,8 @@ class ReiseViewSet(viewsets.GenericViewSet):
         )
         for titel in VORLAGEN.get(request.data.get("vorlage"), []):
             Aufgabe.objects.create(reise=reise, titel=titel)
+        for titel in CHECKLISTEN.get(request.data.get("vorlage"), []):
+            ChecklistePunkt.objects.create(reise=reise, titel=titel)
         sv.chat_anlegen(reise, request.user)
         _merke_stadion(reise)
         return Response({"id": str(reise.id)}, status=http.HTTP_201_CREATED)
@@ -180,9 +195,13 @@ class ReiseViewSet(viewsets.GenericViewSet):
             voll=ctx.voll,
             chat_gruppe=str(reise.chat_gruppe_id) if reise.chat_gruppe_id else None,
         )
-        entscheidungen = list(
-            reise.entscheidungen.prefetch_related("optionen__stimmen__user__membre")
-        )
+        entscheidungen = [
+            e
+            for e in reise.entscheidungen.select_related("teilgruppe").prefetch_related(
+                "optionen__stimmen__user__membre"
+            )
+            if ctx.im_kreis(e.teilgruppe_id)
+        ]
         daten["beschlossen"] = [
             out.entscheidung_dict(e, ctx)
             for e in entscheidungen
@@ -192,15 +211,20 @@ class ReiseViewSet(viewsets.GenericViewSet):
             heute = timezone.localdate()
             infos = [
                 i
-                for i in reise.infos.prefetch_related("gelesen")
-                if i.gueltig_bis is None or i.gueltig_bis >= heute
+                for i in reise.infos.select_related("teilgruppe").prefetch_related("gelesen")
+                if (i.gueltig_bis is None or i.gueltig_bis >= heute)
+                and ctx.im_kreis(i.teilgruppe_id)
             ]
             gelesen = set(
                 ReiseInfoGelesen.objects.filter(user=user, info__reise=reise).values_list(
                     "info_id", flat=True
                 )
             )
-            aufgaben = list(reise.aufgaben.select_related("verantwortlich"))
+            aufgaben = [
+                a
+                for a in reise.aufgaben.select_related("verantwortlich", "teilgruppe")
+                if ctx.im_kreis(a.teilgruppe_id)
+            ]
             seit = ctx.tn.zuletzt_gesehen if ctx.tn else None
             daten.update(
                 stadion_infos=reise.stadion_infos,
@@ -225,6 +249,9 @@ class ReiseViewSet(viewsets.GenericViewSet):
                     else None
                 ),
                 regeln_bestaetigt=bool(ctx.tn and ctx.tn.regeln_bestaetigt_am),
+                laenderprofil=(
+                    laenderprofil_dict(profil) if (profil := profil_zu_land(reise.land)) else None
+                ),
             )
             if ctx.tn:
                 ReiseTeilnehmer.objects.filter(pk=ctx.tn.pk).update(zuletzt_gesehen=timezone.now())
@@ -524,6 +551,8 @@ class ReiseViewSet(viewsets.GenericViewSet):
         ser = MeineAngabenSerializer(ctx.tn, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
         ser.save()
+        if request.data.get("offen_gemeinsame_anreise") is False:
+            ctx.tn.ankunft_zustimmungen.all().delete()
         return Response(out.meine_angaben(ReiseTeilnehmer.objects.get(pk=ctx.tn.pk)))
 
     @action(detail=True, methods=["post"])
@@ -594,7 +623,9 @@ class ReiseViewSet(viewsets.GenericViewSet):
     # --- Entscheidungen --------------------------------------------------------------------
 
     def _entscheidungen_qs(self, reise):
-        return reise.entscheidungen.prefetch_related("optionen__stimmen__user__membre")
+        return reise.entscheidungen.select_related("teilgruppe").prefetch_related(
+            "optionen__stimmen__user__membre"
+        )
 
     @action(detail=True, methods=["get", "post"])
     @transaction.atomic
@@ -604,9 +635,11 @@ class ReiseViewSet(viewsets.GenericViewSet):
             ents = self._entscheidungen_qs(ctx.reise)
             if not ctx.voll:
                 ents = ents.filter(status=EntStatus.BESCHLOSSEN)
-            return Response([out.entscheidung_dict(e, ctx) for e in ents])
+            return Response(
+                [out.entscheidung_dict(e, ctx) for e in ents if ctx.im_kreis(e.teilgruppe_id)]
+            )
         ctx = self._orga(pk)
-        ser = EntscheidungSerializer(data=request.data)
+        ser = EntscheidungSerializer(data=request.data, context={"reise": ctx.reise})
         ser.is_valid(raise_exception=True)
         daten = ser.validated_data
         optionen = daten.pop("optionen", [])
@@ -619,7 +652,7 @@ class ReiseViewSet(viewsets.GenericViewSet):
         if ent.typ == EntscheidungTyp.STIMMUNG:
             Option.objects.create(entscheidung=ent, titel="Hast du Lust?")
         sv.benachrichtige(
-            sv.teilnehmer_voll(ctx.reise),
+            sv.empfaenger(ctx.reise, ent.teilgruppe_id),
             T.REISE_ENTSCHEIDUNG,
             f"Neue Abstimmung: {ent.titel}",
             f"{ctx.reise.titel}: bitte abstimmen"
@@ -630,7 +663,10 @@ class ReiseViewSet(viewsets.GenericViewSet):
         return Response({"id": str(ent.id)}, status=http.HTTP_201_CREATED)
 
     def _ent(self, ctx, eid):
-        return get_object_or_404(self._entscheidungen_qs(ctx.reise), pk=eid)
+        ent = get_object_or_404(self._entscheidungen_qs(ctx.reise), pk=eid)
+        if not ctx.im_kreis(ent.teilgruppe_id):
+            raise Http404
+        return ent
 
     @action(
         detail=True,
@@ -679,6 +715,8 @@ class ReiseViewSet(viewsets.GenericViewSet):
     def option_loeschen(self, request, pk=None, oid=None):
         ctx = self._voll(pk)
         o = get_object_or_404(Option, pk=oid, entscheidung__reise=ctx.reise)
+        if not ctx.im_kreis(o.entscheidung.teilgruppe_id):
+            raise Http404
         if not (ctx.darf_verwalten or o.vorgeschlagen_von_id == request.user.pk):
             raise PermissionDenied("Nur eigene Vorschläge.")
         if o.entscheidung.status == EntStatus.BESCHLOSSEN or o.ist_selbst:
@@ -725,7 +763,7 @@ class ReiseViewSet(viewsets.GenericViewSet):
             self._fehler("Bitte begründe, warum nicht der Vorschlag mit den meisten Stimmen gilt.")
         sv.beschliessen(ent, request.user, option, begruendung)
         sv.benachrichtige(
-            sv.teilnehmer_voll(ctx.reise),
+            sv.empfaenger(ctx.reise, ent.teilgruppe_id),
             T.REISE_ENTSCHEIDUNG,
             f"Beschlossen: {ent.titel}",
             f"{ctx.reise.titel}: {option.titel if option else 'Abstimmung beendet'}",
@@ -768,19 +806,22 @@ class ReiseViewSet(viewsets.GenericViewSet):
             return Response(
                 [
                     out.info_dict(i, ctx, gelesen)
-                    for i in ctx.reise.infos.prefetch_related("gelesen")
-                    if ctx.darf_verwalten or i.gueltig_bis is None or i.gueltig_bis >= heute
+                    for i in ctx.reise.infos.select_related("teilgruppe").prefetch_related(
+                        "gelesen"
+                    )
+                    if ctx.im_kreis(i.teilgruppe_id)
+                    and (ctx.darf_verwalten or i.gueltig_bis is None or i.gueltig_bis >= heute)
                 ]
             )
         ctx = self._orga(pk)
-        ser = InfoSerializer(data=request.data)
+        ser = InfoSerializer(data=request.data, context={"reise": ctx.reise})
         ser.is_valid(raise_exception=True)
         daten = ser.validated_data
         daten["text"] = formattext.bereinige(daten.get("text", ""))
         info = ReiseInfo.objects.create(reise=ctx.reise, erstellt_von=request.user, **daten)
         if info.wichtig:
             sv.benachrichtige(
-                sv.teilnehmer_voll(ctx.reise),
+                sv.empfaenger(ctx.reise, info.teilgruppe_id),
                 T.REISE_INFO,
                 f"Wichtig: {info.titel}",
                 ctx.reise.titel,
@@ -796,7 +837,7 @@ class ReiseViewSet(viewsets.GenericViewSet):
         if request.method == "DELETE":
             info.delete()
             return Response(status=http.HTTP_204_NO_CONTENT)
-        ser = InfoSerializer(info, data=request.data, partial=True)
+        ser = InfoSerializer(info, data=request.data, partial=True, context={"reise": ctx.reise})
         ser.is_valid(raise_exception=True)
         info = ser.save()
         info.text = formattext.bereinige(info.text)
@@ -811,6 +852,8 @@ class ReiseViewSet(viewsets.GenericViewSet):
     def info_gelesen(self, request, pk=None, iid=None):
         ctx = self._voll(pk)
         info = get_object_or_404(ReiseInfo, pk=iid, reise=ctx.reise)
+        if not ctx.im_kreis(info.teilgruppe_id):
+            raise Http404
         ReiseInfoGelesen.objects.get_or_create(info=info, user=request.user)
         return Response(status=http.HTTP_204_NO_CONTENT)
 
@@ -823,7 +866,10 @@ class ReiseViewSet(viewsets.GenericViewSet):
             return Response(
                 [
                     out.aufgabe_dict(a)
-                    for a in ctx.reise.aufgaben.select_related("verantwortlich__membre")
+                    for a in ctx.reise.aufgaben.select_related(
+                        "verantwortlich__membre", "teilgruppe"
+                    )
+                    if ctx.im_kreis(a.teilgruppe_id)
                 ]
             )
         ctx = self._orga(pk)
@@ -831,7 +877,9 @@ class ReiseViewSet(viewsets.GenericViewSet):
         return Response(out.aufgabe_dict(a), status=http.HTTP_201_CREATED)
 
     def _aufgabe_speichern(self, ctx, aufgabe, request):
-        ser = AufgabeSerializer(aufgabe, data=request.data, partial=aufgabe is not None)
+        ser = AufgabeSerializer(
+            aufgabe, data=request.data, partial=aufgabe is not None, context={"reise": ctx.reise}
+        )
         ser.is_valid(raise_exception=True)
         daten = ser.validated_data
         uid = daten.pop("verantwortlich", "keine")
@@ -871,6 +919,8 @@ class ReiseViewSet(viewsets.GenericViewSet):
     def aufgabe(self, request, pk=None, aid=None):
         ctx = self._voll(pk)
         a = get_object_or_404(Aufgabe, pk=aid, reise=ctx.reise)
+        if not ctx.im_kreis(a.teilgruppe_id):
+            raise Http404
         if request.method == "DELETE":
             if not ctx.darf_verwalten:
                 raise PermissionDenied("Nur die Organisation darf löschen.")
@@ -880,7 +930,12 @@ class ReiseViewSet(viewsets.GenericViewSet):
             return Response(out.aufgabe_dict(self._aufgabe_speichern(ctx, a, request)))
         if a.verantwortlich_id != request.user.pk or set(request.data) - {"status"}:
             raise PermissionDenied("Du darfst nur den Status deiner Aufgabe ändern.")
-        ser = AufgabeSerializer(a, data={"status": request.data.get("status")}, partial=True)
+        ser = AufgabeSerializer(
+            a,
+            data={"status": request.data.get("status")},
+            partial=True,
+            context={"reise": ctx.reise},
+        )
         ser.is_valid(raise_exception=True)
         return Response(out.aufgabe_dict(ser.save()))
 

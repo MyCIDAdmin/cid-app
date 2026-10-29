@@ -67,6 +67,8 @@ class Reise(models.Model):
     stadion_infos = models.TextField(blank=True)
     laenderinfo = models.TextField(blank=True)
     regeln = models.TextField(blank=True)
+    # Persönliche Reisedaten sind nach der Reise gelöscht (siehe `bereinigung.py`).
+    daten_bereinigt_am = models.DateTimeField(null=True, blank=True)
 
     rencontre = models.ForeignKey(
         "communaute.RencontreCalendrier",
@@ -121,6 +123,7 @@ class TStatus(models.TextChoices):
 
 class Freigabe(models.TextChoices):
     PRIVAT = "privat", "Nur ich und Organisation"
+    TEILGRUPPE = "teilgruppe", "Meine Teilgruppe"
     ALLE = "alle", "Alle Teilnehmenden"
 
 
@@ -146,12 +149,14 @@ class ReiseTeilnehmer(models.Model):
     zuletzt_gesehen = models.DateTimeField(null=True, blank=True)
 
     # Freigabe je Block (Standard privat)
-    freigabe_hin = models.CharField(max_length=8, choices=Freigabe.choices, default=Freigabe.PRIVAT)
+    freigabe_hin = models.CharField(
+        max_length=10, choices=Freigabe.choices, default=Freigabe.PRIVAT
+    )
     freigabe_rueck = models.CharField(
-        max_length=8, choices=Freigabe.choices, default=Freigabe.PRIVAT
+        max_length=10, choices=Freigabe.choices, default=Freigabe.PRIVAT
     )
     freigabe_unterkunft = models.CharField(
-        max_length=8, choices=Freigabe.choices, default=Freigabe.PRIVAT
+        max_length=10, choices=Freigabe.choices, default=Freigabe.PRIVAT
     )
     # Auch vor Organisator und Vertreter nur grobe Angaben (Ziel, Tag, gebucht ja/nein).
     verbergen_vor_orga = models.BooleanField(default=False)
@@ -172,6 +177,10 @@ class ReiseTeilnehmer(models.Model):
     dokument_gueltig = models.BooleanField(default=False)
     regeln_bestaetigt_am = models.DateTimeField(null=True, blank=True)
     notiz = models.CharField(max_length=500, blank=True)
+    # Freiwillig für diese Reise (z. B. Hotel- oder Stadionliste), nur für die Organisation.
+    geburtsdatum = models.DateField(null=True, blank=True)
+    # Einwilligung in den Vergleich für gemeinsame Anreise/Abholung (sonst nie einbezogen).
+    offen_gemeinsame_anreise = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -273,6 +282,9 @@ class Entscheidung(models.Model):
     mehrfach = models.BooleanField(default=False)
     frist = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=12, choices=EntStatus.choices, default=EntStatus.OFFEN)
+    teilgruppe = models.ForeignKey(
+        "Teilgruppe", null=True, blank=True, on_delete=models.CASCADE, related_name="+"
+    )
     beschluss_option = models.ForeignKey(
         "Option", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -352,6 +364,9 @@ class ReiseInfo(models.Model):
     wichtig = models.BooleanField(default=False)
     gueltig_bis = models.DateField(null=True, blank=True)
     gelesen_pflicht = models.BooleanField(default=False)
+    teilgruppe = models.ForeignKey(
+        "Teilgruppe", null=True, blank=True, on_delete=models.CASCADE, related_name="+"
+    )
     erstellt_von = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -392,6 +407,9 @@ class Aufgabe(models.Model):
     )
     frist = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=AStatus.choices, default=AStatus.OFFEN)
+    teilgruppe = models.ForeignKey(
+        "Teilgruppe", null=True, blank=True, on_delete=models.CASCADE, related_name="+"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -457,3 +475,124 @@ class StadionVorschlag(models.Model):
 
     class Meta:
         db_table = "reisen_stadion_vorschlag"
+
+
+class Teilgruppe(models.Model):
+    """Teilgruppe einer Reise (z. B. „Abflug Hamburg“). Infos, Entscheidungen, Aufgaben und
+    Checklistenpunkte können nur an sie gehen ; Freigaben können auf sie beschränkt werden."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reise = models.ForeignKey(Reise, on_delete=models.CASCADE, related_name="teilgruppen")
+    name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "reisen_teilgruppe"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(fields=["reise", "name"], name="reisen_teilgruppe_name_uq")
+        ]
+
+
+class TeilgruppeMitglied(models.Model):
+    teilgruppe = models.ForeignKey(Teilgruppe, on_delete=models.CASCADE, related_name="mitglieder")
+    teilnehmer = models.ForeignKey(
+        ReiseTeilnehmer, on_delete=models.CASCADE, related_name="gruppen"
+    )
+
+    class Meta:
+        db_table = "reisen_teilgruppe_mitglied"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["teilgruppe", "teilnehmer"], name="reisen_teilgruppe_mitglied_uq"
+            )
+        ]
+
+
+class ChecklistePunkt(models.Model):
+    """Gemeinsamer Punkt (`besitzer` leer ; jede Person hakt für sich ab) oder persönlicher Punkt
+    (`besitzer` gesetzt ; nur für diese Person sichtbar)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reise = models.ForeignKey(Reise, on_delete=models.CASCADE, related_name="checkliste")
+    titel = models.CharField(max_length=200)
+    frist = models.DateField(null=True, blank=True)
+    besitzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    teilgruppe = models.ForeignKey(
+        Teilgruppe, null=True, blank=True, on_delete=models.CASCADE, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "reisen_checkliste_punkt"
+        ordering = ["frist", "created_at"]
+
+
+class ChecklisteErledigt(models.Model):
+    punkt = models.ForeignKey(ChecklistePunkt, on_delete=models.CASCADE, related_name="erledigt")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "reisen_checkliste_erledigt"
+        constraints = [
+            models.UniqueConstraint(fields=["punkt", "user"], name="reisen_checkliste_erledigt_uq")
+        ]
+
+
+class AnkunftsTyp(models.TextChoices):
+    ANKUNFT = "ankunft", "Ankunft"
+    ABFAHRT = "abfahrt", "Abfahrt"
+
+
+class AnkunftZustimmung(models.Model):
+    """„Ja, Kontakt austauschen“ für eine Gruppe mit gleichem Ort, Tag und Zeitfenster. Namen
+    werden erst gezeigt, wenn beide Seiten zugestimmt haben."""
+
+    teilnehmer = models.ForeignKey(
+        ReiseTeilnehmer, on_delete=models.CASCADE, related_name="ankunft_zustimmungen"
+    )
+    typ = models.CharField(max_length=8, choices=AnkunftsTyp.choices)
+    ort_schluessel = models.CharField(max_length=200)
+    tag = models.DateField()
+
+    class Meta:
+        db_table = "reisen_ankunft_zustimmung"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["teilnehmer", "typ", "ort_schluessel", "tag"],
+                name="reisen_ankunft_zustimmung_uq",
+            )
+        ]
+
+
+class Laenderprofil(models.Model):
+    """Ländersteckbrief (Vorlage je Land), gepflegt vom Bureau. Ohne Gewähr, mit Stand-Datum."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    land = models.CharField(max_length=100)
+    land_schluessel = models.CharField(max_length=100, unique=True, editable=False)
+    einreise = models.TextField(blank=True)
+    waehrung = models.CharField(max_length=100, blank=True)
+    zeitverschiebung = models.CharField(max_length=100, blank=True)
+    steckdose = models.CharField(max_length=100, blank=True)
+    amtliche_hinweise = models.URLField(max_length=500, blank=True)
+    weitere_infos = models.TextField(blank=True)
+    stand = models.DateField(default=timezone.localdate)
+    aktualisiert_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        db_table = "reisen_laenderprofil"
+        ordering = ["land"]
+
+    def save(self, *args, **kwargs):
+        self.land_schluessel = self.land.strip().lower()
+        super().save(*args, **kwargs)

@@ -3,6 +3,7 @@ Benachrichtigungen. Die Prüfungen gelten im Server (API), nicht nur in der Ober
 
 from collections import defaultdict
 from decimal import ROUND_DOWN, Decimal
+from functools import cached_property
 
 from django.conf import settings
 from django.db.models import Q
@@ -24,6 +25,7 @@ from .models import (
     Rolle,
     Sichtbarkeit,
     Stimme,
+    TeilgruppeMitglied,
     TStatus,
     Wert,
 )
@@ -74,6 +76,25 @@ class Kontext:
         self.darf_verwalten = self.orga or self.verwalter
         self.voll = bool(self.tn and self.tn.status == TStatus.DABEI) or self.darf_verwalten
 
+    @cached_property
+    def gruppen_map(self) -> dict:
+        """Teilnehmer-Id → Ids seiner Teilgruppen (einmal je Anfrage geladen)."""
+        karte = defaultdict(set)
+        for tid, gid in TeilgruppeMitglied.objects.filter(teilgruppe__reise=self.reise).values_list(
+            "teilnehmer_id", "teilgruppe_id"
+        ):
+            karte[tid].add(gid)
+        return karte
+
+    @cached_property
+    def gruppen_ids(self) -> set:
+        return self.gruppen_map.get(self.tn.pk, set()) if self.tn else set()
+
+    def im_kreis(self, teilgruppe_id) -> bool:
+        """Gilt ein Inhalt für diese Person ? Ohne Teilgruppe für alle, sonst nur für Mitglieder
+        der Teilgruppe sowie Organisation und Verwaltung."""
+        return teilgruppe_id is None or self.darf_verwalten or teilgruppe_id in self.gruppen_ids
+
 
 # --- Beitritt ---------------------------------------------------------------------------------
 
@@ -97,6 +118,20 @@ def organisatoren(reise):
 
 def teilnehmer_voll(reise):
     return [t.user for t in reise.teilnehmer.filter(status=TStatus.DABEI).select_related("user")]
+
+
+def empfaenger(reise, teilgruppe_id=None):
+    """Wer eine Mitteilung bekommt : alle Mitreisenden, bei einer Teilgruppe nur deren Mitglieder
+    und die Organisation."""
+    if teilgruppe_id is None:
+        return teilnehmer_voll(reise)
+    dabei = reise.teilnehmer.filter(status=TStatus.DABEI).select_related("user")
+    ids = set(
+        TeilgruppeMitglied.objects.filter(teilgruppe_id=teilgruppe_id).values_list(
+            "teilnehmer_id", flat=True
+        )
+    )
+    return [t.user for t in dabei if t.pk in ids or t.ist_orga]
 
 
 def benachrichtige(users, typ, titel, message, lien, ausser=None):
@@ -214,8 +249,12 @@ def sicht_auf(ctx: Kontext, besitzer: ReiseTeilnehmer, block: str) -> str | None
         return "voll"
     if ctx.tn is not None and ctx.tn.ist_orga and ctx.tn.status == TStatus.DABEI:
         return "grob" if besitzer.verbergen_vor_orga else "voll"
-    if ctx.voll and getattr(besitzer, f"freigabe_{block}") == Freigabe.ALLE:
+    freigabe = getattr(besitzer, f"freigabe_{block}")
+    if ctx.voll and freigabe == Freigabe.ALLE:
         return "voll"
+    if ctx.voll and freigabe == Freigabe.TEILGRUPPE:
+        if ctx.gruppen_map.get(besitzer.pk, set()) & ctx.gruppen_ids:
+            return "voll"
     return None
 
 

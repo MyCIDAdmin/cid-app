@@ -152,6 +152,12 @@ AKTIONEN = {
         "Protokoll exportiert (CSV)",
         "Journal exporté (CSV)",
     ),
+    "reisen_bereinigt": (
+        "audit",
+        "info",
+        "Reisen: persönliche Daten nach der Reise gelöscht",
+        "Voyages : données personnelles supprimées après le voyage",
+    ),
     "aktivitaet_bereinigt": (
         "audit",
         "info",
@@ -177,6 +183,7 @@ MODULE = {
     "partenaires": ("inhalte", "Partner", "Partenaires"),
     "regionen": ("inhalte", "Sektoren", "Secteurs"),
     "eintritt": ("inhalte", "Tickets & Einlass", "Billets et entrée"),
+    "reisen": ("inhalte", "Reisen", "Voyages"),
     "support": ("inhalte", "Support", "Support"),
     "uebersetzungen": ("einstellungen", "Übersetzungen", "Traductions"),
     "notifications": ("einstellungen", "Benachrichtigungen", "Notifications"),

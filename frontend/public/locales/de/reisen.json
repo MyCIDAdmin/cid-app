@@ -113,7 +113,8 @@
   },
   "freigabe": {
     "privat": "Nur ich und Organisation",
-    "alle": "Alle Teilnehmenden"
+    "alle": "Alle Teilnehmenden",
+    "teilgruppe": "Nur meine Teilgruppe"
   },
   "haken": {
     "stadionkarte": "Stadionkarte",
@@ -132,7 +133,8 @@
     "aufgaben": "Aufgaben",
     "infos": "Infos",
     "kosten": "Kosten",
-    "einstellungen": "Einstellungen"
+    "einstellungen": "Einstellungen",
+    "checkliste": "Checkliste"
   },
   "liste": {
     "datum_offen": "Datum offen",
@@ -257,7 +259,9 @@
     "sonstiges": "Sonstiges",
     "begleitpersonen": "Begleitpersonen",
     "notiz": "Notiz (z. B. Wünsche, nur für Organisation)",
-    "absagen": "Ich sage ab"
+    "absagen": "Ich sage ab",
+    "geburtsdatum": "Geburtsdatum (freiwillig)",
+    "geburtsdatum_hinweis": "Wird nur für Namenslisten an Dritte (z. B. Hotel, Veranstalter) verwendet, nie angezeigt."
   },
   "unterkuenfte": {
     "titel": "Unterkünfte der Reise",
@@ -379,5 +383,81 @@
     "nicht_gefunden": "Diese Reise wurde nicht gefunden oder ist nicht öffentlich.",
     "interessiert_one": "{{count}} Person ist interessiert oder dabei.",
     "interessiert_other": "{{count}} Personen sind interessiert oder dabei."
+  },
+  "tab_saison": "Saison",
+  "tab_steckbriefe": "Länder-Steckbriefe",
+  "gruppen": {
+    "titel": "Teilgruppen",
+    "neu": "Teilgruppe anlegen",
+    "leer": "Noch keine Teilgruppen.",
+    "personen": "{{count}} Personen",
+    "ich": "Du bist dabei",
+    "bearbeiten": "Bearbeiten",
+    "vorschlaege": "Vorschläge aus den Angaben (nur für die Organisation sichtbar)",
+    "uebernehmen": "Als Teilgruppe übernehmen",
+    "formular": "Teilgruppe",
+    "name": "Name der Teilgruppe",
+    "speichern": "Speichern",
+    "zielgruppe": "Für wen?",
+    "alle": "Alle Teilnehmenden",
+    "nur_fuer": "Nur für {{name}}"
+  },
+  "export": {
+    "titel": "Export für die Organisation",
+    "hinweis": "Enthält persönliche Angaben. Bitte nur für die Reiseplanung verwenden; jeder Export wird protokolliert.",
+    "excel": "Excel: Teilnehmende, Anreiseplan, Belegung",
+    "filter": "Namensliste für Dritte (z. B. Hotel)",
+    "alle": "Alle Teilnehmenden",
+    "eigene_unterkunft": "Eigene Unterkunft",
+    "namensliste": "Namensliste herunterladen"
+  },
+  "ankunft": {
+    "titel": "Gemeinsame Anreise",
+    "offen": "Ich bin offen für eine gemeinsame Anreise. Die Organisation und andere sehen davon nichts; es werden nur anonyme Treffer gezählt.",
+    "hinweis": "Treffer mit gleichem Ort und gleichem Tag (±2 Stunden). Namen erscheinen erst, wenn beide Seiten zugestimmt haben.",
+    "keine": "Aktuell keine passenden Ankünfte oder Abfahrten.",
+    "ankunft": "Ankunft",
+    "abfahrt": "Abfahrt",
+    "weitere": "+{{count}} weitere",
+    "kontakt": "Ja, Kontakt austauschen",
+    "kontakte": "Kontakt möglich mit"
+  },
+  "checkliste": {
+    "neu": "Neuer Punkt",
+    "titel": "Was ist zu erledigen?",
+    "frist": "Frist",
+    "nur_fuer_mich": "Nur für mich",
+    "hinzufuegen": "Hinzufügen",
+    "gemeinsam": "Gemeinsame Punkte",
+    "eigene": "Meine Punkte",
+    "eigene_hinweis": "Nur für dich sichtbar.",
+    "leer": "Noch keine Punkte.",
+    "bis": "bis {{datum}}",
+    "ueberfaellig": "Überfällig",
+    "zaehler": "{{zahl}} von {{gesamt}} erledigt"
+  },
+  "saison": {
+    "leer": "Keine kommenden Auswärtsspiele.",
+    "reise_planen": "Reise planen",
+    "keine_reise": "Noch keine Reise dazu."
+  },
+  "steckbrief": {
+    "titel": "Steckbrief {{land}}",
+    "land": "Land",
+    "waehrung": "Währung",
+    "zeitverschiebung": "Zeitverschiebung",
+    "steckdose": "Steckdose",
+    "einreise": "Einreise",
+    "amtliche_hinweise": "Amtliche Hinweise (Link oder Text)",
+    "amtlich": "Amtliche Hinweise",
+    "weitere_infos": "Weitere Infos",
+    "stand": "Stand {{datum}}",
+    "haftung": "Ohne Gewähr; bitte vor der Reise bei den offiziellen Stellen prüfen.",
+    "admin_hinweis": "Länder-Steckbriefe gelten für alle Reisen in das jeweilige Land. Das Land muss genau so geschrieben sein wie im Reiseziel.",
+    "neu": "Steckbrief anlegen",
+    "bearbeiten": "Bearbeiten",
+    "speichern": "Speichern",
+    "formular": "Steckbrief",
+    "leer": "Noch keine Steckbriefe."
   }
 }

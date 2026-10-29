@@ -4,8 +4,10 @@ import { useTranslation } from "react-i18next";
 
 import {
   useAbsagen,
+  useAnkunftZustimmung,
   useEtappeAnlegen,
   useEtappeLoeschen,
+  useGemeinsameAnkunft,
   useMeineAendern,
   useUnterkuenfte,
 } from "../../hooks/useReisen";
@@ -173,6 +175,56 @@ function EtappeForm({ reiseId, onFertig }: { reiseId: string; onFertig: () => vo
   );
 }
 
+function GemeinsameAnreise({ reise, offen }: { reise: ReiseDetail; offen: boolean }) {
+  const { t } = useTranslation("reisen");
+  const ankunft = useGemeinsameAnkunft(reise.id, offen);
+  const zustimmen = useAnkunftZustimmung(reise.id);
+  const gruppen = offen ? (ankunft.data?.gruppen ?? []) : [];
+  return (
+    <div className="space-y-2">
+      {offen && (
+        <>
+          <p className="text-xs text-text-secondary">{t("ankunft.hinweis")}</p>
+          {gruppen.length === 0 && (
+            <p className="text-xs text-text-tertiary">{t("ankunft.keine")}</p>
+          )}
+          <ul className="space-y-1.5">
+            {gruppen.map((g) => (
+              <li
+                key={`${g.typ}-${g.ort}-${g.tag}`}
+                className="rounded-cid bg-bg-tertiary p-2 text-xs"
+              >
+                <p>
+                  <b>{t(`ankunft.${g.typ}`)}</b> · {g.ort} · {g.tag} · {g.von}–{g.bis} ·{" "}
+                  {t("ankunft.weitere", { count: g.weitere })}
+                </p>
+                <label className="mt-1 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={g.ich_zugestimmt}
+                    onChange={(e) =>
+                      zustimmen.mutate({
+                        gruppe: { typ: g.typ, ort: g.ort, tag: g.tag },
+                        zustimmen: e.target.checked,
+                      })
+                    }
+                  />
+                  {t("ankunft.kontakt")}
+                </label>
+                {g.kontakte.length > 0 && (
+                  <p className="mt-1 text-text-secondary">
+                    {t("ankunft.kontakte")}: {g.kontakte.join(", ")}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function MeineReiseTab({ reise }: { reise: ReiseDetail }) {
   const { t, i18n } = useTranslation("reisen");
   const meine = reise.meine;
@@ -296,6 +348,7 @@ export default function MeineReiseTab({ reise }: { reise: ReiseDetail }) {
               onChange={(e) => speichern({ [feld]: e.target.value as Freigabe })}
             >
               <option value="privat">{t("freigabe.privat")}</option>
+              <option value="teilgruppe">{t("freigabe.teilgruppe")}</option>
               <option value="alle">{t("freigabe.alle")}</option>
             </select>
           </label>
@@ -308,6 +361,19 @@ export default function MeineReiseTab({ reise }: { reise: ReiseDetail }) {
           />
           <span>{t("meine.verbergen_vor_orga")}</span>
         </label>
+      </section>
+
+      <section className={`${KARTE} space-y-2`}>
+        <h2 className="text-sm font-semibold">{t("ankunft.titel")}</h2>
+        <label className="flex items-start gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={meine.offen_gemeinsame_anreise}
+            onChange={(e) => speichern({ offen_gemeinsame_anreise: e.target.checked })}
+          />
+          <span>{t("ankunft.offen")}</span>
+        </label>
+        <GemeinsameAnreise reise={reise} offen={meine.offen_gemeinsame_anreise} />
       </section>
 
       <section className={`${KARTE} space-y-2`}>
@@ -347,6 +413,16 @@ export default function MeineReiseTab({ reise }: { reise: ReiseDetail }) {
           maxLength={500}
           onBlur={(e) => speichern({ notiz: e.target.value })}
         />
+        <label className="flex items-center gap-2 text-xs">
+          {t("meine.geburtsdatum")}
+          <input
+            type="date"
+            className="rounded-cid border border-text-tertiary/30 px-2 py-1"
+            defaultValue={meine.geburtsdatum ?? ""}
+            onBlur={(e) => speichern({ geburtsdatum: e.target.value || null })}
+          />
+        </label>
+        <p className="text-[11px] text-text-tertiary">{t("meine.geburtsdatum_hinweis")}</p>
         <Fehler text={fehler} />
       </section>
 
