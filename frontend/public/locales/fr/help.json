@@ -3812,6 +3812,524 @@
     ],
     "tipps": ["Vous seul pouvez supprimer un message, avec « Supprimer »."]
   },
+  "reisen": {
+    "titre": "Voyages et covoiturage",
+    "intro": "Vous organisez ici ensemble des voyages pour des matchs à l'extérieur et d'autres occasions : rassembler les intéressés, voter, saisir trajets et hébergement et répartir les tâches. Chacun réserve et paie lui-même, il n'y a aucun paiement dans l'application.",
+    "schritte": [
+      "Dans l'onglet « Voyages », vous voyez en haut les prochains matchs à l'extérieur et dessous tous les voyages. Avec « Planifier un voyage » ou « Nouveau voyage », vous en créez un.",
+      "Ouvrir un voyage et s'inscrire avec « Je suis intéressé » ou « Je viens ».",
+      "Dans l'espace du voyage, cinq onglets guident : « En un coup d'œil », « Planification », « Personnes », « Mon voyage » et « Infos et coûts ». La roue ⚙ ouvre les paramètres (réservé à l'organisation).",
+      "L'onglet « Covoiturage » affiche comme avant les trajets partagés."
+    ],
+    "tipps": [
+      "Vos informations sur l'aller, le retour et l'hébergement sont privées par défaut. Sous « Qui voit quoi ? », vous décidez qui les voit.",
+      "Ce qui est décidé figure toujours en haut de « En un coup d'œil ». Le chat du voyage sert aux discussions, pas aux décisions.",
+      "L'« organisation » d'un voyage, ce sont l'organisateur et les suppléants. Eux seuls voient la roue ⚙ et les demandes.",
+      "Heure, météo et taux de change dans la carte « Sur place » sont des valeurs indicatives sans garantie. Avant la réservation, lisez les conseils de l'Auswärtiges Amt."
+    ],
+    "workflows": [
+      {
+        "id": "REIS-01",
+        "titre": "Trouver un voyage et s'inscrire",
+        "wann": "Vous voulez savoir quels voyages existent et vous inscrire à l'un d'eux.",
+        "schritte": [
+          "Ouvrir « Voyages et covoiturage » dans le menu. En haut figurent les prochains matchs à l'extérieur, dessous tous les voyages.",
+          "Avec « Mes voyages uniquement », vous n'affichez que les voyages auxquels vous participez. Toucher un voyage.",
+          "Sous « Souhaitez-vous venir ? », choisir « Je suis intéressé » ou « Je viens ». Pour les voyages avec validation, le bouton s'appelle « Demander à participer ».",
+          "Dans « En un coup d'œil », lire ce qui est décidé et ce qui vous attend sous « À faire maintenant »."
+        ],
+        "beispiel": "Pour le match à l'extérieur au Caire, il existe un voyage avec validation : vous demandez à participer et voyez ensuite « Votre demande attend la décision de l'organisation. »",
+        "danach": "Avec « Je viens », vous devenez participant : vous pouvez voter, remplir « Mon voyage » et utiliser le chat du voyage. Les intéressés ne voient que ce qui est décidé.",
+        "vorher": "Vous êtes connecté.",
+        "erwartet": [
+          "La page affiche « Prochains matchs à l'extérieur » et dessous « Voyages » avec destination, date, phase et compteur (« … participent, … intéressés »).",
+          "Le voyage s'ouvre dans son espace avec titre, destination, date et onglets.",
+          "Votre statut apparaît comme « Intéressé », « Participe » ou « Demande envoyée ».",
+          "La page affiche les sections « Décidé » et « À faire maintenant »."
+        ],
+        "fehler": [
+          {
+            "problem": "« Ce voyage n'existe pas, ou vous n'avez pas le droit de le voir. »",
+            "loesung": "Le voyage n'est visible que pour les invités ou a été supprimé. Demandez à l'organisation une invitation ou un lien d'invitation."
+          },
+          {
+            "problem": "Vous ne pouvez pas voter.",
+            "loesung": "En tant qu'intéressé, vous ne voyez que les décisions prises. Choisissez « Je viens » pour voter."
+          },
+          {
+            "problem": "Vous êtes sur la liste d'attente.",
+            "loesung": "Le nombre maximum du voyage est atteint. Demandez à l'organisation si une place se libère."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Ouvrez le voyage « [ÜBUNG] Voyage test » (REIS-02) et choisissez « Je suis intéressé ». Vérifiez que votre statut est « Intéressé »."
+      },
+      {
+        "id": "REIS-02",
+        "titre": "Créer un voyage",
+        "wann": "Vous voulez organiser un déplacement pour un match à l'extérieur ou une autre occasion.",
+        "schritte": [
+          "Dans l'onglet « Voyages », toucher « Nouveau voyage ». Pour un match à l'extérieur, « Planifier un voyage » dans la liste des prochains matchs reprend l'adversaire, la date et la compétition.",
+          "Étape « 1 Destination et date » : saisir le titre (laisser vide pour le titre du match), la ville, le pays, le stade, le début et la fin, ou cocher « Date encore ouverte ». Puis « Suivant ».",
+          "Étape « 2 Qui peut venir » : choisir « Qui voit le voyage ? » et « Comment participer ? », saisir nombre minimum, nombre maximum et date limite d'inscription. Puis « Suivant ».",
+          "Étape « 3 Modèle » : choisir « Match à l'extérieur à l'étranger », « Week-end » ou « Vide ».",
+          "Cliquer sur « Créer le voyage »."
+        ],
+        "beispiel": "Match à l'extérieur au Caire : ville « Le Caire », pays « Égypte », visible pour tous les membres, participation avec validation, minimum 12, modèle « Match à l'extérieur à l'étranger ».",
+        "danach": "Vous êtes organisateur du voyage. Invitez ensuite des participants (REIS-03) et lancez le premier vote (REIS-05). Tout peut être modifié plus tard dans la roue ⚙.",
+        "vorher": "Vous êtes membre actif et connaissez la destination, la date approximative et qui peut venir.",
+        "erwartet": [
+          "L'assistant « Nouveau voyage » avec les étapes 1 à 3 est ouvert.",
+          "Ville, pays et période sont remplis. Pour un voyage issu du calendrier, une remarque indique que l'adversaire, la date et la compétition sont repris.",
+          "Visibilité et mode de participation sont choisis.",
+          "Le modèle est marqué ; la remarque dessous indique ce qu'il crée (p. ex. billets, transfert, Fan-ID).",
+          "L'espace du voyage s'ouvre. La roue ⚙ est en haut à droite, vous êtes organisateur."
+        ],
+        "fehler": [
+          {
+            "problem": "« Seuls les membres actifs peuvent créer des voyages. »",
+            "loesung": "Votre compte n'est pas membre actif. Vérifiez votre statut sous « Mon adhésion » ou demandez de l'aide au bureau."
+          },
+          {
+            "problem": "Stade et ville sont vides.",
+            "loesung": "Le calendrier ne fournit ni l'un ni l'autre. Saisissez-les une fois, l'application s'en souvient pour cet adversaire."
+          },
+          {
+            "problem": "La carte « Sur place » manque ou affiche le mauvais lieu.",
+            "loesung": "L'application cherche le lieu avec la ville et le pays. Vérifiez l'orthographe dans la roue ⚙ sous « Modifier le voyage » et enregistrez à nouveau."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez le voyage « [ÜBUNG] Voyage test » dans 60 jours, visible pour « Invités uniquement », modèle « Vide ». Supprimez-le ensuite dans la roue ⚙ avec « Supprimer le voyage » et « Supprimer »."
+      },
+      {
+        "id": "REIS-03",
+        "titre": "Inviter des participants et répondre aux demandes",
+        "wann": "Vous organisez un voyage et voulez inviter des participants ou répondre à des demandes.",
+        "schritte": [
+          "Ouvrir le voyage et choisir en haut à droite la roue ⚙ (paramètres).",
+          "Sous « Inviter et partager », chercher un membre (2 lettres minimum), le sélectionner et cliquer sur « Envoyer l'invitation ». Sinon « Copier le lien » et transmettre le lien d'invitation.",
+          "Éventuellement, dans le formulaire « Modifier le voyage », cocher « Autoriser la page d'aperçu publique » et cliquer sur « Enregistrer ».",
+          "Passer à l'onglet « Personnes ». Sous « Demandes en attente », cliquer pour chaque personne sur « Accepter » ou « Refuser ».",
+          "Dans la liste « Qui participe », vous voyez le statut et si la personne a réservé. Avec « Retirer », vous retirez quelqu'un du voyage."
+        ],
+        "beispiel": "Vous invitez cinq membres de l'association via la recherche et envoyez en plus le lien par message à des amis qui n'ont pas encore de compte.",
+        "danach": "En tant qu'organisateur, vous pouvez nommer un suppléant dans la liste avec « Nommer suppléant ». En cas d'absence, il peut reprendre l'organisation.",
+        "vorher": "Vous êtes organisateur ou suppléant du voyage (seuls eux voient la roue ⚙).",
+        "erwartet": [
+          "Les paramètres s'ouvrent : d'abord « Inviter et partager » et « Hébergements du voyage », dessous le formulaire « Modifier le voyage ».",
+          "Après l'envoi, « … invitation(s) envoyée(s). » s'affiche. Le lien est copié.",
+          "« Enregistré. » apparaît sous le formulaire. La page d'aperçu n'affiche jamais de noms.",
+          "La demande disparaît de la liste ; les personnes acceptées figurent sous « Qui participe » avec le statut « Participe ».",
+          "La liste est à jour, les personnes retirées ont disparu."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne voyez pas la roue ⚙.",
+            "loesung": "Seuls l'organisateur et les suppléants la voient. Demandez à l'organisateur de vous nommer suppléant avec « Nommer suppléant »."
+          },
+          {
+            "problem": "« Ce lien d'invitation n'est pas valide. »",
+            "loesung": "Le lien est incorrect ou appartient à un autre voyage. Copiez-le à nouveau sous « Inviter et partager »."
+          },
+          {
+            "problem": "Un membre reste introuvable dans la recherche.",
+            "loesung": "Saisissez au moins 2 lettres du nom et vérifiez l'orthographe."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Invitez un compte de test dans le voyage « [ÜBUNG] Voyage test », puis retirez-le dans la liste « Qui participe » avec « Retirer »."
+      },
+      {
+        "id": "REIS-04",
+        "titre": "Voter et faire des propositions",
+        "wann": "Un vote est en cours dans le voyage et vous voulez participer à la décision.",
+        "schritte": [
+          "Ouvrir l'onglet « Planification ». Sous « Décisions » figurent les « Décisions en cours » avec le temps restant jusqu'à la date limite.",
+          "Comparer les propositions : prix, distance au stade et la mention « hors budget » aident.",
+          "Cliquer sur « Choisir » pour votre favori. Pour une recommandation, vous pouvez aussi choisir « J'organise moi-même ». Pour une recherche de date, marquer chaque période « Convient », « Peut-être » ou « Ne convient pas ».",
+          "S'il manque une possibilité : « Ajouter une proposition », saisir le titre et cliquer sur « Proposer ».",
+          "Après la décision, elle figure dans « En un coup d'œil » sous « Décidé »."
+        ],
+        "beispiel": "Pour « Quel hôtel ? », vous comparez trois propositions selon le prix et la distance au stade et choisissez celle du milieu.",
+        "vorher": "Vous êtes participant (« Participe ») du voyage.",
+        "erwartet": [
+          "Les décisions en cours affichent la date limite et, si vous n'avez pas encore voté, « Vous n'avez pas encore voté ».",
+          "Chaque proposition affiche prix et distance ; celles au-dessus du plafond portent la mention « hors budget ».",
+          "Votre choix est marqué, « … ont voté » vous compte et la remarque « Vous n'avez pas encore voté » disparaît.",
+          "Votre proposition figure dans la liste des propositions.",
+          "La décision prise figure comme carte sous « Décidé », avec la date."
+        ],
+        "fehler": [
+          {
+            "problem": "« En tant qu'intéressé, vous ne voyez que les décisions prises. Seuls les participants peuvent voter. »",
+            "loesung": "Vous n'êtes qu'intéressé. Dans « En un coup d'œil », choisissez « Je viens »."
+          },
+          {
+            "problem": "« Ajouter une proposition » manque.",
+            "loesung": "L'organisation a désactivé « Les participants peuvent faire des propositions ». Écrivez-lui votre idée dans le chat du voyage."
+          },
+          {
+            "problem": "La date limite est dépassée.",
+            "loesung": "Le vote est terminé et attend la décision. L'organisation peut prolonger la date limite."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Votez dans le voyage « [ÜBUNG] Voyage test » pour le vote « [ÜBUNG] Hôtel » (REIS-05) et vérifiez que « … ont voté » augmente de un."
+      },
+      {
+        "id": "REIS-05",
+        "titre": "Lancer un vote et décider",
+        "wann": "Le groupe doit décider de quelque chose, p. ex. hôtel, vol, point de rendez-vous ou date du voyage.",
+        "schritte": [
+          "Ouvrir l'onglet « Planification » et cliquer sur « Nouveau vote ».",
+          "Saisir le type (Choix, Recommandation, Recherche de date, Sondage d'envie), la rubrique, la date limite et la question. Éventuellement cocher « Plusieurs options possibles ».",
+          "Saisir les propositions (titre, prix en €, distance au stade ; pour une recherche de date « du » et « au »), avec « Ajouter une proposition » pour en ajouter. Puis cliquer sur « Lancer le vote ».",
+          "La date limite est passée : cliquer sur « Terminer le vote ». Si vous avez besoin de plus de temps : choisir « Nouvelle date limite » et cliquer sur « Prolonger ».",
+          "Cliquer sur « Retenir la proposition en tête ». Pour en retenir une autre : « Retenir : … » et saisir la justification."
+        ],
+        "beispiel": "Question « Quel hôtel ? », type « Recommandation », rubrique « Hébergement », trois hôtels avec prix et distance, date limite dans sept jours.",
+        "danach": "Ce qui est décidé figure pour tous en haut de « En un coup d'œil ». Pour une recommandation, chacun décide pour soi ; la carte montre combien la suivent.",
+        "vorher": "Vous êtes organisateur ou suppléant. Vous connaissez la question et au moins deux propositions.",
+        "erwartet": [
+          "Le formulaire « Nouveau vote » est ouvert.",
+          "Sous le type figure une courte remarque sur son effet (p. ex. « Tout le monde vote, une option vaut pour tous à la fin. »).",
+          "Le vote figure sous « Décisions en cours » avec le temps restant.",
+          "Le statut passe à « Terminé, en attente de décision » ; en cas de prolongation, le temps restant continue.",
+          "La décision figure sous « Décidé » avec la date."
+        ],
+        "fehler": [
+          {
+            "problem": "La justification manque.",
+            "loesung": "Si ce n'est pas la proposition avec le plus de voix qui est retenue, une justification est obligatoire."
+          },
+          {
+            "problem": "Vous ne voyez pas « Nouveau vote ».",
+            "loesung": "Seuls l'organisateur et les suppléants peuvent créer des votes, et pour un voyage annulé, le bouton n'existe pas."
+          },
+          {
+            "problem": "La date du voyage a changé.",
+            "loesung": "C'est voulu : une recherche de date fixe, avec son résultat, la date du voyage."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez dans le voyage « [ÜBUNG] Voyage test » le vote « [ÜBUNG] Hôtel » avec deux propositions et une date limite dans 7 jours, terminez-le et retenez la proposition en tête."
+      },
+      {
+        "id": "REIS-06",
+        "titre": "Saisir mes trajets et mon hébergement",
+        "wann": "Vous venez et voulez dire à l'organisation et, si vous le souhaitez, aux autres comment et quand vous voyagez.",
+        "schritte": [
+          "Ouvrir l'onglet « Mon voyage ». En haut, il est indiqué que vos informations sont privées par défaut.",
+          "Cliquer sur « Ajouter une étape ». Remplir le sens (Aller, Retour, Escale), le type, « De (lieu) », « Vers (lieu) », départ, arrivée et statut ; pour les vols, le code (p. ex. HAM) et le numéro de vol. Puis « Enregistrer ».",
+          "Saisir l'aller et le retour séparément, même si vous venez d'ailleurs. Seul vous voyez le numéro de réservation.",
+          "Sous « Hébergement », choisir un hébergement de la liste, « Hébergement personnel » ou « Non précisé » et cocher « L'hébergement est réservé ».",
+          "Sous « Qui voit quoi ? », choisir pour l'aller, le retour et l'hébergement : « Moi et l'organisation seulement », « Mon sous-groupe seulement » ou « Tous les participants »."
+        ],
+        "beispiel": "Aller : vol de HAM à CAI le 26/11 à 07:10, statut « Réservé ». Retour le 30/11, hébergement « Hébergement personnel ».",
+        "danach": "L'organisation voit vos informations, les autres seulement le nom et le statut « Participe », tant que vous ne partagez rien. Pour plus de discrétion, choisissez « Ne montrer que des informations grossières même à l'organisation et aux suppléants ». Avec « Je me désiste », vous annulez votre participation.",
+        "vorher": "Vous êtes participant (« Participe »). Vous connaissez vos liaisons ou les planifiez.",
+        "erwartet": [
+          "L'onglet affiche « Mes trajets », l'hébergement et « Qui voit quoi ? ».",
+          "L'étape figure sous « Mes trajets » avec sens, lieu et heure.",
+          "L'aller et le retour figurent séparément dans la liste. Dans « En un coup d'œil », « Saisir l'aller » disparaît de « À faire maintenant ».",
+          "Votre hébergement est choisi et marqué comme réservé.",
+          "Les partages sont réglés. Les autres ne voient que ce que vous partagez."
+        ],
+        "fehler": [
+          {
+            "problem": "L'onglet « Mon voyage » manque.",
+            "loesung": "Il n'apparaît que lorsque vous participez au voyage. Choisissez d'abord « Je suis intéressé » ou « Je viens »."
+          },
+          {
+            "problem": "Les autres ne voient pas vos données de voyage.",
+            "loesung": "C'est le réglage par défaut. Partagez les informations sous « Qui voit quoi ? »."
+          },
+          {
+            "problem": "« Saisir l'aller » reste sous « À faire maintenant ».",
+            "loesung": "Saisissez une étape avec le sens « Aller »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Saisissez dans le voyage « [ÜBUNG] Voyage test » un aller avec la compagnie « [ÜBUNG] », partagez-le avec « Tous les participants » et supprimez ensuite l'étape avec « Supprimer »."
+      },
+      {
+        "id": "REIS-07",
+        "titre": "Voyager en commun",
+        "wann": "Vous aimeriez aller à l'aéroport ou à la gare avec d'autres.",
+        "schritte": [
+          "Dans l'onglet « Mon voyage », aller à la section « Voyage en commun ».",
+          "Cocher « Je suis ouvert à un voyage en commun ». Vous n'entrez dans la comparaison qu'alors ; personne d'autre n'en voit rien.",
+          "L'application affiche des correspondances anonymes au même endroit le même jour (±2 heures), p. ex. « +2 autre(s) ».",
+          "Si une correspondance convient, cliquer sur « Oui, échanger les contacts ». Les noms n'apparaissent qu'après l'accord des deux côtés.",
+          "Sous « Contact possible avec », vous voyez alors les personnes et vous vous organisez, p. ex. dans le chat du voyage."
+        ],
+        "vorher": "Vous avez saisi au moins un aller ou un retour sous « Mon voyage ».",
+        "erwartet": [
+          "La section « Voyage en commun » avec la remarque sur les correspondances est visible.",
+          "La case est cochée.",
+          "Les correspondances affichent « Arrivée » ou « Départ » sans nom. S'il n'y en a pas : « Aucune arrivée ou aucun départ correspondant pour le moment. »",
+          "Votre accord est enregistré ; pas de noms tant que l'autre côté n'a pas accepté aussi.",
+          "Les personnes avec accord mutuel figurent sous « Contact possible avec »."
+        ],
+        "fehler": [
+          {
+            "problem": "« Aucune arrivée ou aucun départ correspondant pour le moment. »",
+            "loesung": "Il n'y a pas encore de correspondance. Saisissez l'aller et le retour avec lieu et heure ou attendez que d'autres participants saisissent leurs trajets."
+          },
+          {
+            "problem": "Vous ne voyez pas de noms.",
+            "loesung": "Les noms n'apparaissent que lorsque les deux côtés ont choisi « Oui, échanger les contacts »."
+          },
+          {
+            "problem": "L'organisation ne voit pas qui est ouvert.",
+            "loesung": "C'est voulu. L'organisation et les autres n'en voient rien ; seules des correspondances anonymes sont comptées."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Activez dans le voyage « [ÜBUNG] Voyage test » le voyage en commun, puis désactivez-le."
+      },
+      {
+        "id": "REIS-08",
+        "titre": "Former des sous-groupes et lire l'aperçu",
+        "wann": "Les participants voyagent différemment (p. ex. vol depuis Hambourg, autre hôtel) et vous voulez les contacter de façon ciblée.",
+        "schritte": [
+          "Ouvrir l'onglet « Personnes ». Sous « Aperçu », vous voyez combien ont réservé l'aller, le retour et l'hébergement, ainsi que « Arrivées », « Départs » et « Hébergements ».",
+          "Dans la section « Sous-groupes » figurent des « Suggestions issues des informations » (p. ex. même aéroport de départ). Avec « Créer comme sous-groupe », vous en créez un.",
+          "Un groupe à vous : « Créer un sous-groupe », saisir le nom, choisir les personnes, cliquer sur « Enregistrer ».",
+          "Pour les votes, tâches, check-list et infos, choisir sous « Pour qui ? » un sous-groupe au lieu de « Tous les participants »."
+        ],
+        "vorher": "Vous êtes organisateur ou suppléant, et quelques participants ont saisi des trajets ou des hébergements.",
+        "erwartet": [
+          "L'aperçu affiche des chiffres. Les noms n'apparaissent que pour les personnes qui ont partagé leurs informations.",
+          "Le sous-groupe figure dans la liste, avec le nombre de personnes.",
+          "Le nouveau sous-groupe figure dans la liste ; ses membres voient « Tu en fais partie ».",
+          "L'entrée affiche « Seulement pour … » et n'est visible que pour ce sous-groupe."
+        ],
+        "fehler": [
+          {
+            "problem": "L'aperçu n'affiche que des chiffres.",
+            "loesung": "Les noms n'apparaissent que si la personne a partagé ses informations. C'est voulu."
+          },
+          {
+            "problem": "Il n'y a pas de suggestions.",
+            "loesung": "Les suggestions n'apparaissent que lorsque plusieurs personnes ont indiqué p. ex. le même aéroport de départ ou le même hébergement."
+          },
+          {
+            "problem": "Une personne ne voit pas une info de sous-groupe.",
+            "loesung": "Vérifiez si elle appartient au sous-groupe et ajoutez-la avec « Modifier »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez dans le voyage « [ÜBUNG] Voyage test » le sous-groupe « [ÜBUNG] Hambourg » et supprimez-le ensuite avec « Supprimer »."
+      },
+      {
+        "id": "REIS-09",
+        "titre": "Répartir tâches, check-list et infos",
+        "wann": "Il y a des choses à faire ou à savoir (billets du stade, rendez-vous, Fan-ID) et tout le monde doit en être informé.",
+        "schritte": [
+          "Onglet « Planification », section « Tâches » : cliquer sur « Nouvelle tâche », saisir la tâche, « Responsable » et l'échéance, puis « Créer la tâche ».",
+          "Section « Check-list » : créer un « Nouveau point » avec texte et échéance. Sans coche sur « Seulement pour moi », c'est un point commun pour tous.",
+          "Onglet « Infos et coûts », section « Infos » : cliquer sur « Nouvelle info », écrire titre et texte.",
+          "Marquer l'essentiel avec « Important (épingler en haut) », au besoin « Exiger une confirmation de lecture » et « Valable jusqu'au », puis « Publier ».",
+          "Les participants passent les tâches à « En cours » ou « Terminée » et confirment les infos avec « Lu ». Sur l'info, vous voyez « En attente : … »."
+        ],
+        "beispiel": "Tâche « Se procurer les billets du stade » pour Karim jusqu'au 10/11, avec l'info épinglée « Rendez-vous au stade : 17 h » et confirmation de lecture.",
+        "danach": "Chaque personne a en plus ses propres points (« Seulement pour moi ») que personne d'autre ne voit.",
+        "vorher": "Vous êtes organisateur ou suppléant.",
+        "erwartet": [
+          "La tâche figure dans la liste avec responsable et échéance ; celles en retard portent la mention « en retard ».",
+          "Le point figure sous « Points communs » ; le compteur « … sur … faits » est correct.",
+          "Le formulaire « Nouvelle info » est ouvert.",
+          "L'info figure en haut sous « Infos importantes » ; les infos expirées disparaissent d'elles-mêmes.",
+          "Sur l'info figure qui ne l'a pas encore lue."
+        ],
+        "fehler": [
+          {
+            "problem": "Tâches et check-list manquent.",
+            "loesung": "Elles n'apparaissent que pour les participants du voyage."
+          },
+          {
+            "problem": "Personne ne se sent responsable de la tâche.",
+            "loesung": "Choisissez une personne sous « Responsable » ; avec « Personne », elle n'appartient à personne."
+          },
+          {
+            "problem": "Une info a disparu.",
+            "loesung": "La date de « Valable jusqu'au » est dépassée. Créez à nouveau l'info."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez dans le voyage « [ÜBUNG] Voyage test » la tâche « [ÜBUNG] Fixer le rendez-vous », passez-la à « Terminée » puis supprimez-la."
+      },
+      {
+        "id": "REIS-10",
+        "titre": "Répartir les frais",
+        "wann": "Quelqu'un a payé quelque chose pour tous (p. ex. taxi, voiture de location) et l'argent doit être réparti équitablement.",
+        "schritte": [
+          "Onglet « Infos et coûts », section « Frais ». La remarque rappelle : ici, on ne fait que calculer, il n'y a aucun paiement dans l'application.",
+          "Sous « Ajouter une dépense », saisir « Pour quoi ? », « Montant en € » et « Payé par » (Moi ou une autre personne).",
+          "Cliquer sur « Ajouter ». Le montant est réparti à parts égales entre les participants.",
+          "Sous « Qui reçoit, qui doit », figure la situation de chacun, sous « Remboursements » le remboursement le plus simple.",
+          "L'argent, vous vous le virez entre vous, en dehors de l'application."
+        ],
+        "beispiel": "Vous payez le taxi depuis l'aéroport 40 €, quatre personnes participent : vous recevez 30 €, les trois autres doivent chacune 10 €.",
+        "vorher": "Vous êtes participant (« Participe »).",
+        "erwartet": [
+          "La section affiche la remarque sur le simple calcul et la liste des dépenses.",
+          "Les champs sont remplis.",
+          "La dépense figure dans la liste : « payé par …, réparti sur … ».",
+          "Les soldes affichent « reçoit » et « doit », les remboursements des lignes comme « A à B : 10,00 € ».",
+          "Plus rien ne change dans l'application ; vous n'avez pas à signaler les virements effectués."
+        ],
+        "fehler": [
+          {
+            "problem": "Il n'y a pas de fonction de paiement.",
+            "loesung": "C'est voulu : chacun réserve et paie lui-même, l'association n'est pas partie au contrat."
+          },
+          {
+            "problem": "Quelqu'un manque dans la répartition.",
+            "loesung": "La répartition se fait entre toutes les personnes au statut « Participe ». Les intéressés ne comptent pas."
+          },
+          {
+            "problem": "Une dépense est incorrecte.",
+            "loesung": "Supprimez-la avec « Supprimer » (si le bouton est là) et saisissez-la à nouveau correctement."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Saisissez dans le voyage « [ÜBUNG] Voyage test » la dépense « [ÜBUNG] Taxi » de 40 € et vérifiez les soldes. Supprimez ensuite la dépense."
+      },
+      {
+        "id": "REIS-11",
+        "titre": "Sur place : heure, météo, taux de change et sécurité",
+        "wann": "Vous voulez savoir quelle heure il est à destination, quel temps il fera et ce qu'il faut respecter.",
+        "schritte": [
+          "Ouvrir l'onglet « En un coup d'œil » et aller à la carte « Sur place » sous « À faire maintenant ».",
+          "Les deux horloges affichent l'heure à Berlin et à destination, avec l'écart en heures.",
+          "La météo montre la situation actuelle et dessous « Météo pendant le voyage » avec symbole ainsi que températures maximale et minimale par jour.",
+          "Le taux de change indique combien de monnaie locale vaut un euro (seulement si la monnaie n'est pas l'euro).",
+          "Via « Conseils aux voyageurs (Auswärtiges Amt) », lire les conseils officiels, de préférence avant la réservation."
+        ],
+        "beispiel": "Pour un voyage au Caire, vous voyez l'heure, la météo et le taux de change de la livre égyptienne.",
+        "danach": "Toutes les indications sont indicatives et sans garantie (sources : Open-Meteo, ExchangeRate-API). Les conseils de l'Auswärtiges Amt et des prestataires font foi. D'autres infos figurent sous « Stade et supporters » et « Pays et entrée ».",
+        "vorher": "Le voyage a une ville et un pays comme destination.",
+        "erwartet": [
+          "La carte porte le titre « Sur place : <lieu> ».",
+          "Deux horloges avec « Berlin » et le lieu ; à heure égale figure « même heure ».",
+          "Des symboles météo (p. ex. « Ensoleillé », « Pluie ») et des températures par jour.",
+          "Une ligne « 1 € = … <monnaie> » avec la date du taux.",
+          "Le lien ouvre la page de l'Auswärtiges Amt sur le pays."
+        ],
+        "fehler": [
+          {
+            "problem": "La carte « Sur place » manque.",
+            "loesung": "L'application ne trouve pas le lieu. Vérifiez ville et pays dans la roue ⚙ sous « Modifier le voyage » et enregistrez à nouveau."
+          },
+          {
+            "problem": "« Les prévisions pour les jours du voyage sont disponibles à partir du … »",
+            "loesung": "Les services météo ne prévoient qu'environ 16 jours à l'avance. D'ici là, la carte montre la météo actuelle."
+          },
+          {
+            "problem": "Il n'y a pas de taux de change.",
+            "loesung": "Le taux n'apparaît que si le pays n'utilise pas l'euro."
+          }
+        ]
+      },
+      {
+        "id": "REIS-12",
+        "titre": "Exporter la liste de noms et Excel pour l'organisation",
+        "wann": "Un hôtel ou un organisateur a besoin d'une liste de noms, ou vous voulez voir la planification dans Excel.",
+        "schritte": [
+          "Ouvrir l'onglet « Personnes » et aller à la section « Export pour l'organisation ».",
+          "Lire la remarque : l'export contient des données personnelles, il est réservé à la planification du voyage et il est journalisé.",
+          "Pour la planification, cliquer sur « Excel : participants, plan d'arrivée, hébergement ».",
+          "Pour des tiers (p. ex. hôtel), choisir dans le champ « Liste de noms pour des tiers (p. ex. hôtel) » « Tous les participants », « Hébergement personnel », un hébergement ou un sous-groupe et cliquer sur « Télécharger la liste de noms »."
+        ],
+        "danach": "La date de naissance n'apparaît dans les listes de noms que si la personne l'a indiquée volontairement. Ne transmettez le fichier qu'à l'hôtel ou à l'organisateur et supprimez-le ensuite.",
+        "vorher": "Vous êtes organisateur ou suppléant.",
+        "erwartet": [
+          "La section avec la remarque sur la protection des données est visible.",
+          "La remarque mentionne la journalisation.",
+          "Le fichier Excel est téléchargé.",
+          "La liste de noms est téléchargée et ne contient que le groupe choisi."
+        ],
+        "fehler": [
+          {
+            "problem": "La liste de noms est vide.",
+            "loesung": "Vérifiez le filtre. Un hébergement ou un sous-groupe sans personnes ne donne rien."
+          },
+          {
+            "problem": "Pour une personne, seules des informations grossières figurent dans la liste.",
+            "loesung": "Elle a choisi de ne montrer que des informations grossières même à l'organisation et aux suppléants. Cela vaut aussi ici."
+          },
+          {
+            "problem": "Vous ne voyez pas la section.",
+            "loesung": "Elle n'est visible que pour l'organisateur et les suppléants."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Téléchargez dans le voyage « [ÜBUNG] Voyage test » la liste de noms pour « Tous les participants » et supprimez ensuite le fichier."
+      },
+      {
+        "id": "REIS-13",
+        "titre": "Modifier, annuler ou supprimer un voyage",
+        "wann": "Quelque chose change dans le voyage, il est annulé ou n'est plus nécessaire.",
+        "schritte": [
+          "Ouvrir la roue ⚙. Dans le formulaire « Modifier le voyage », modifier destination, période, visibilité, participation, nombre minimum et maximum, description, « Stade et supporters », « Pays et entrée » et règles du groupe, puis cliquer sur « Enregistrer ».",
+          "Avec « Phase », changer l'état du voyage (Intérêt, Planification, Réservation, Voyage, Bilan).",
+          "Sous « Plafonds en € par rubrique », fixer un budget ; les propositions plus chères sont signalées.",
+          "Si le voyage est annulé : cocher « Annuler le voyage (tout le monde est informé) ». Cela agit tout de suite.",
+          "Seulement l'organisateur : cliquer sur « Supprimer le voyage » et confirmer avec « Supprimer ». Cela retire le voyage pour tous."
+        ],
+        "vorher": "Vous êtes organisateur ou suppléant. Seul l'organisateur peut supprimer.",
+        "erwartet": [
+          "Le formulaire affiche les valeurs actuelles ; après « Enregistrer », « Enregistré. » apparaît.",
+          "La barre des phases dans « En un coup d'œil » affiche la nouvelle phase.",
+          "Les propositions au-dessus du plafond portent la mention « hors budget ».",
+          "Le voyage porte l'étiquette « Annulé » dans la liste et la remarque « Ce voyage a été annulé. » dans l'espace.",
+          "Le voyage a disparu de la liste."
+        ],
+        "fehler": [
+          {
+            "problem": "Le voyage a été annulé par erreur.",
+            "loesung": "Décochez de nouveau « Annuler le voyage »."
+          },
+          {
+            "problem": "Vous ne pouvez pas supprimer le voyage.",
+            "loesung": "Seul l'organisateur peut supprimer. Annulez plutôt le voyage."
+          },
+          {
+            "problem": "Les nouveaux votes sont bloqués.",
+            "loesung": "Pour un voyage annulé, « Nouveau vote » n'existe pas. Levez l'annulation."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Annulez le voyage « [ÜBUNG] Voyage test » et levez aussitôt l'annulation. Tous les participants reçoivent une notification."
+      },
+      {
+        "id": "REIS-14",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Tenir à jour les fiches pays",
+        "wann": "Un voyage mène dans un nouveau pays, ou les informations sur l'entrée, la monnaie ou les prises sont périmées.",
+        "schritte": [
+          "Ouvrir « Voyages et covoiturage » et choisir l'onglet « Fiches pays ».",
+          "Cliquer sur « Créer une fiche » et saisir le pays, orthographié exactement comme dans la destination des voyages.",
+          "Remplir monnaie, décalage horaire, prises, entrée, « Informations officielles (lien ou texte) » et « Autres informations », puis cliquer sur « Enregistrer ».",
+          "Tenir les fiches existantes à jour avec « Modifier »."
+        ],
+        "danach": "Une fiche vaut pour tous les voyages vers le pays et apparaît dans les voyages comme « Fiche <pays> ». Ne la modifiez qu'après vérification de la source officielle.",
+        "vorher": "Vous avez la fonction Bureau (Bureau Admin) ou App Admin.",
+        "erwartet": [
+          "L'onglet est visible et affiche les fiches existantes ou « Aucune fiche pour l'instant. ».",
+          "Le formulaire « Fiche » est ouvert.",
+          "La fiche figure dans la liste, avec la date « État au … ».",
+          "La modification figure dans la liste avec le nouvel état."
+        ],
+        "fehler": [
+          {
+            "problem": "L'onglet « Fiches pays » manque.",
+            "loesung": "Il n'est visible qu'avec une fonction au bureau."
+          },
+          {
+            "problem": "La fiche n'apparaît pas dans le voyage.",
+            "loesung": "Le pays est orthographié autrement que dans la destination. Écrivez-le exactement pareil."
+          },
+          {
+            "problem": "Une information est périmée.",
+            "loesung": "Vérifiez-la auprès des autorités officielles (Auswärtiges Amt) et adaptez la fiche. Les cartes portent la mention « Sans garantie »."
+          }
+        ],
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez la fiche pour le pays « [ÜBUNG] Pays test » et modifiez-la une fois."
+      }
+    ]
+  },
   "orientierung": {
     "glossar": {
       "titre": "Glossaire du vocabulaire du club",
@@ -3948,6 +4466,22 @@
         {
           "begriff": "Carte et identifiant",
           "text": "Une carte de tâche décrit une tâche en quelques étapes. L'identifiant (p. ex. ZAHL-01) reste le même même si le titre change."
+        },
+        {
+          "begriff": "Voyage",
+          "text": "Espace propre à une excursion ou à un match à l'extérieur, avec décisions, tâches, infos et frais. Chacun réserve et paie lui-même, il n'y a aucun paiement dans l'application."
+        },
+        {
+          "begriff": "Organisation d'un voyage",
+          "text": "L'organisateur et les suppléants du voyage. Ils voient la roue ⚙, répondent aux demandes, lancent des votes et exportent des listes de noms."
+        },
+        {
+          "begriff": "Étape",
+          "text": "Un tronçon de voyage d'une personne, p. ex. aller, retour ou escale. Chacun saisit ses propres étapes."
+        },
+        {
+          "begriff": "Sous-groupe",
+          "text": "Groupe partiel d'un voyage, p. ex. « Vol depuis Hambourg ». Il se forme à partir des informations ou à la main. Infos et tâches peuvent ne le concerner que lui."
         }
       ]
     },
@@ -4117,6 +4651,10 @@
             {
               "text": "Vérifier le calendrier des matchs et le corriger si besoin.",
               "karten": ["SPIEL-01"]
+            },
+            {
+              "text": "Vérifier et tenir à jour les fiches pays pour les destinations des matchs à l'extérieur.",
+              "karten": ["REIS-14"]
             }
           ]
         },

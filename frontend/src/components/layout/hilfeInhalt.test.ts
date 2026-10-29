@@ -93,6 +93,30 @@ describe("Aufgabenkarten: Inhalt", () => {
     });
   });
 
+  describe("Reisen (REIS-01 bis REIS-14)", () => {
+    const reisenDe = de.filter((k) => k.bereich === "reisen").map((k) => k.karte);
+
+    it("hat vierzehn Karten mit lückenlosen Kennungen", () => {
+      expect(reisenDe.map((k) => k.id)).toEqual(
+        Array.from({ length: 14 }, (_, n) => `REIS-${String(n + 1).padStart(2, "0")}`),
+      );
+    });
+
+    it("jede Karte hat erwartete Ergebnisse, Fehlerfälle und Voraussetzung; Steckbriefe nur fürs Büro", () => {
+      reisenDe.forEach((k) => {
+        expect(k.erwartet?.length, k.id).toBe(k.schritte.length);
+        expect((k.fehler ?? []).length, k.id).toBeGreaterThanOrEqual(2);
+        expect(k.vorher, k.id).toBeTruthy();
+      });
+      const steckbriefe = reisenDe.find((k) => k.id === "REIS-14");
+      expect(steckbriefe?.rollen).toEqual(["bureau_admin", "super_admin"]);
+      // Alle anderen Karten stehen jedem angemeldeten Konto offen (Mitglieder und Fans).
+      reisenDe
+        .filter((k) => k.id !== "REIS-14")
+        .forEach((k) => expect(k.rollen, k.id).toBeUndefined());
+    });
+  });
+
   describe("Orientierung (Einstieg, Rhythmus, Glossar)", () => {
     interface Orientierung {
       glossar: { begriffe: Glossarbegriff[] };

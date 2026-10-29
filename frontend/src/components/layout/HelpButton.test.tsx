@@ -48,6 +48,14 @@ describe("HelpButton", () => {
     expect(cleHilfe("/regionen/bericht")).toBe("regionen_bericht");
   });
 
+  it("ordnet alle Seiten des Moduls Reisen der Reisen-Hilfe zu", () => {
+    expect(cleHilfe("/reisen")).toBe("reisen");
+    expect(cleHilfe("/reisen/neu")).toBe("reisen");
+    expect(cleHilfe("/reisen/42", "?tab=planung")).toBe("reisen");
+    expect(cleHilfe("/reisen/einladung/abc")).toBe("reisen");
+    expect(cleHilfe("/regionen")).toBe("regionen");
+  });
+
   it("zeigt den Hilfe-Button auf der Import-Seite und öffnet das Panel", () => {
     renderWithProviders(
       <>
