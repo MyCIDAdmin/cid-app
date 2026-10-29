@@ -14,6 +14,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import { datumKurz, lokalZuIso, preisText } from "../../utils/reisen";
 import type { Entscheidung, Option, Wert } from "../../types/reisen";
 import { Countdown, FELD, Fehler, KARTE, KNOPF, KNOPF_LEISE } from "./ui";
+import { GruppenChip } from "./ZielgruppeWahl";
 
 interface Props {
   reiseId: string;
@@ -225,7 +226,9 @@ export default function EntscheidungKarte({
     <article className={KARTE} data-testid={`entscheidung-${e.id}`}>
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-text-primary">{e.titel}</h3>
+          <h3 className="text-sm font-semibold text-text-primary">
+            {e.titel} <GruppenChip name={e.teilgruppe_name} />
+          </h3>
           <p className="text-[11px] text-text-tertiary">
             {t(`typ.${e.typ}`)} · {t(`baustein.${e.baustein}`)} ·{" "}
             {t("entscheidung.teilgenommen", { n: e.teilgenommen })}

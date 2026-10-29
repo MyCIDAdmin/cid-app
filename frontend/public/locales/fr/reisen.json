@@ -113,7 +113,8 @@
   },
   "freigabe": {
     "privat": "Moi et l'organisation seulement",
-    "alle": "Tous les participants"
+    "alle": "Tous les participants",
+    "teilgruppe": "Mon sous-groupe seulement"
   },
   "haken": {
     "stadionkarte": "Billet du stade",
@@ -132,7 +133,8 @@
     "aufgaben": "Tâches",
     "infos": "Infos",
     "kosten": "Frais",
-    "einstellungen": "Paramètres"
+    "einstellungen": "Paramètres",
+    "checkliste": "Check-list"
   },
   "liste": {
     "datum_offen": "Date ouverte",
@@ -257,7 +259,9 @@
     "sonstiges": "Divers",
     "begleitpersonen": "Accompagnants",
     "notiz": "Note (ex. souhaits, pour l'organisation seulement)",
-    "absagen": "Je me désiste"
+    "absagen": "Je me désiste",
+    "geburtsdatum": "Date de naissance (facultatif)",
+    "geburtsdatum_hinweis": "Utilisée uniquement pour les listes de noms destinées à des tiers (hôtel, organisateur), jamais affichée."
   },
   "unterkuenfte": {
     "titel": "Hébergements du voyage",
@@ -379,5 +383,81 @@
     "nicht_gefunden": "Ce voyage est introuvable ou n'est pas public.",
     "interessiert_one": "{{count}} personne est intéressée ou participe.",
     "interessiert_other": "{{count}} personnes sont intéressées ou participent."
+  },
+  "tab_saison": "Saison",
+  "tab_steckbriefe": "Fiches pays",
+  "gruppen": {
+    "titel": "Sous-groupes",
+    "neu": "Créer un sous-groupe",
+    "leer": "Aucun sous-groupe pour l'instant.",
+    "personen": "{{count}} personnes",
+    "ich": "Tu en fais partie",
+    "bearbeiten": "Modifier",
+    "vorschlaege": "Suggestions issues des informations (visibles pour l'organisation seulement)",
+    "uebernehmen": "Créer comme sous-groupe",
+    "formular": "Sous-groupe",
+    "name": "Nom du sous-groupe",
+    "speichern": "Enregistrer",
+    "zielgruppe": "Pour qui ?",
+    "alle": "Tous les participants",
+    "nur_fuer": "Seulement pour {{name}}"
+  },
+  "export": {
+    "titel": "Export pour l'organisation",
+    "hinweis": "Contient des données personnelles. À utiliser uniquement pour la planification du voyage ; chaque export est journalisé.",
+    "excel": "Excel : participants, plan d'arrivée, hébergement",
+    "filter": "Liste de noms pour des tiers (p. ex. hôtel)",
+    "alle": "Tous les participants",
+    "eigene_unterkunft": "Hébergement personnel",
+    "namensliste": "Télécharger la liste de noms"
+  },
+  "ankunft": {
+    "titel": "Voyage en commun",
+    "offen": "Je suis ouvert à un voyage en commun. L'organisation et les autres n'en voient rien ; seules des correspondances anonymes sont comptées.",
+    "hinweis": "Correspondances au même endroit le même jour (±2 heures). Les noms n'apparaissent qu'après l'accord des deux côtés.",
+    "keine": "Aucune arrivée ou aucun départ correspondant pour le moment.",
+    "ankunft": "Arrivée",
+    "abfahrt": "Départ",
+    "weitere": "+{{count}} autre(s)",
+    "kontakt": "Oui, échanger les contacts",
+    "kontakte": "Contact possible avec"
+  },
+  "checkliste": {
+    "neu": "Nouveau point",
+    "titel": "Que faut-il faire ?",
+    "frist": "Échéance",
+    "nur_fuer_mich": "Seulement pour moi",
+    "hinzufuegen": "Ajouter",
+    "gemeinsam": "Points communs",
+    "eigene": "Mes points",
+    "eigene_hinweis": "Visibles pour toi seulement.",
+    "leer": "Aucun point pour l'instant.",
+    "bis": "jusqu'au {{datum}}",
+    "ueberfaellig": "En retard",
+    "zaehler": "{{zahl}} sur {{gesamt}} faits"
+  },
+  "saison": {
+    "leer": "Aucun match à l'extérieur à venir.",
+    "reise_planen": "Planifier un voyage",
+    "keine_reise": "Pas encore de voyage."
+  },
+  "steckbrief": {
+    "titel": "Fiche {{land}}",
+    "land": "Pays",
+    "waehrung": "Monnaie",
+    "zeitverschiebung": "Décalage horaire",
+    "steckdose": "Prises",
+    "einreise": "Entrée dans le pays",
+    "amtliche_hinweise": "Informations officielles (lien ou texte)",
+    "amtlich": "Informations officielles",
+    "weitere_infos": "Autres informations",
+    "stand": "État au {{datum}}",
+    "haftung": "Sans garantie ; à vérifier auprès des autorités officielles avant le départ.",
+    "admin_hinweis": "Les fiches pays valent pour tous les voyages vers le pays concerné. Le pays doit être écrit exactement comme dans la destination du voyage.",
+    "neu": "Créer une fiche",
+    "bearbeiten": "Modifier",
+    "speichern": "Enregistrer",
+    "formular": "Fiche",
+    "leer": "Aucune fiche pour l'instant."
   }
 }

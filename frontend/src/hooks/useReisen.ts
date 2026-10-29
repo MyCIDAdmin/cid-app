@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as api from "../api/reisen";
 import type { EntscheidungEingabe } from "../api/reisen";
-import type { ReiseEingabe, Wert } from "../types/reisen";
+import type { AnkunftGruppe, LaenderprofilEingabe, ReiseEingabe, Wert } from "../types/reisen";
 
 /** Nach jeder Änderung werden alle Reise-Abfragen neu geladen (kleine Datenmengen). */
 function useAendern<V, R = unknown>(fn: (v: V) => Promise<R>) {
@@ -152,3 +152,66 @@ export const useKostenAnlegen = (id: string) =>
   useAendern((d: Record<string, unknown>) => api.createKosten(id, d));
 export const useKostenLoeschen = (id: string) =>
   useAendern((kid: string) => api.deleteKosten(id, kid));
+
+// --- Welle 2 -----------------------------------------------------------------------------
+export const useTeilgruppen = (id: string, aktiv = true) =>
+  useQuery({
+    queryKey: ["reisen", "teilgruppen", id],
+    queryFn: () => api.listTeilgruppen(id),
+    enabled: aktiv,
+  });
+export const useTeilgruppeAnlegen = (id: string) =>
+  useAendern((v: { name: string; teilnehmer: string[] }) => api.createTeilgruppe(id, v));
+export const useTeilgruppeAendern = (id: string) =>
+  useAendern((v: { gid: string; name?: string; teilnehmer?: string[] }) =>
+    api.updateTeilgruppe(id, v.gid, { name: v.name, teilnehmer: v.teilnehmer }),
+  );
+export const useTeilgruppeLoeschen = (id: string) =>
+  useAendern((gid: string) => api.deleteTeilgruppe(id, gid));
+
+export const useGemeinsameAnkunft = (id: string, aktiv = true) =>
+  useQuery({
+    queryKey: ["reisen", "ankunft", id],
+    queryFn: () => api.getGemeinsameAnkunft(id),
+    enabled: aktiv,
+  });
+export const useAnkunftZustimmung = (id: string) =>
+  useAendern((v: { gruppe: Pick<AnkunftGruppe, "typ" | "ort" | "tag">; zustimmen: boolean }) =>
+    api.setzeAnkunftZustimmung(id, v.gruppe, v.zustimmen),
+  );
+
+export const useCheckliste = (id: string, aktiv = true) =>
+  useQuery({
+    queryKey: ["reisen", "checkliste", id],
+    queryFn: () => api.listCheckliste(id),
+    enabled: aktiv,
+  });
+export const useChecklisteAnlegen = (id: string) =>
+  useAendern(
+    (v: {
+      titel: string;
+      frist?: string | null;
+      persoenlich?: boolean;
+      teilgruppe?: string | null;
+    }) => api.createCheckliste(id, v),
+  );
+export const useChecklisteLoeschen = (id: string) =>
+  useAendern((pid: string) => api.deleteCheckliste(id, pid));
+export const useChecklisteErledigt = (id: string) =>
+  useAendern((v: { pid: string; erledigt: boolean }) =>
+    api.setzeChecklisteErledigt(id, v.pid, v.erledigt),
+  );
+
+export const useSaison = () => useQuery({ queryKey: ["reisen", "saison"], queryFn: api.getSaison });
+export const useLaenderprofile = (aktiv = true) =>
+  useQuery({
+    queryKey: ["reisen", "laenderprofile"],
+    queryFn: api.listLaenderprofile,
+    enabled: aktiv,
+  });
+export const useLaenderprofilSpeichern = () =>
+  useAendern((v: { id?: string; daten: LaenderprofilEingabe }) =>
+    api.saveLaenderprofil(v.daten, v.id),
+  );
+export const useLaenderprofilLoeschen = () =>
+  useAendern((id: string) => api.deleteLaenderprofil(id));

@@ -8,6 +8,7 @@ import { lokalZuIso } from "../../utils/reisen";
 import type { Baustein, EntscheidungTyp, ReiseDetail } from "../../types/reisen";
 import EntscheidungKarte from "./EntscheidungKarte";
 import { FELD, Fehler, KARTE, KNOPF, KNOPF_LEISE } from "./ui";
+import ZielgruppeWahl from "./ZielgruppeWahl";
 
 const TYPEN: EntscheidungTyp[] = ["auswahl", "empfehlung", "termin", "stimmung"];
 const BAUSTEINE: Baustein[] = [
@@ -37,6 +38,7 @@ function NeueEntscheidung({ reiseId, onFertig }: { reiseId: string; onFertig: ()
   const [frist, setFrist] = useState("");
   const [mehrfach, setMehrfach] = useState(false);
   const [optionen, setOptionen] = useState<OptionEntwurf[]>([{ ...LEER }, { ...LEER }]);
+  const [teilgruppe, setTeilgruppe] = useState("");
   const [fehler, setFehler] = useState("");
   const brauchtOptionen = typ !== "stimmung";
 
@@ -51,6 +53,7 @@ function NeueEntscheidung({ reiseId, onFertig }: { reiseId: string; onFertig: ()
         titel,
         mehrfach,
         frist: lokalZuIso(frist),
+        teilgruppe: teilgruppe || null,
         optionen: brauchtOptionen
           ? gefuellt.map((o) => ({
               titel: o.titel,
@@ -186,6 +189,7 @@ function NeueEntscheidung({ reiseId, onFertig }: { reiseId: string; onFertig: ()
           </button>
         </div>
       )}
+      <ZielgruppeWahl reiseId={reiseId} value={teilgruppe} onChange={setTeilgruppe} />
       <Fehler text={fehler} />
       <div className="flex gap-2">
         <button type="submit" className={KNOPF} disabled={anlegen.isPending}>

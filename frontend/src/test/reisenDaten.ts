@@ -1,5 +1,12 @@
 /** Testdaten für das Reisemodul (nur in Tests verwendet). */
-import type { Entscheidung, Option, ReiseDetail, ReiseListItem } from "../types/reisen";
+import type {
+  ChecklistePunkt,
+  Entscheidung,
+  MeineAngaben,
+  Option,
+  ReiseDetail,
+  ReiseListItem,
+} from "../types/reisen";
 
 export function listItem(o: Partial<ReiseListItem> = {}): ReiseListItem {
   return {
@@ -81,6 +88,47 @@ export function entscheidung(o: Partial<Entscheidung> = {}): Entscheidung {
     vorschlag: null,
     teilgenommen: 0,
     ich_habe_abgestimmt: false,
+    teilgruppe: null,
+    teilgruppe_name: null,
+    ...o,
+  };
+}
+
+export function meineAngaben(o: Partial<MeineAngaben> = {}): MeineAngaben {
+  return {
+    id: "t1",
+    status: "dabei",
+    rolle: "teilnehmer",
+    begleitpersonen: 0,
+    freigabe_hin: "privat",
+    freigabe_rueck: "privat",
+    freigabe_unterkunft: "privat",
+    verbergen_vor_orga: false,
+    unterkunft: null,
+    unterkunft_eigen: "",
+    unterkunft_gebucht: false,
+    stadionkarte: false,
+    dokument_gueltig: false,
+    regeln_bestaetigt_am: null,
+    notiz: "",
+    geburtsdatum: null,
+    offen_gemeinsame_anreise: false,
+    etappen: [],
+    ...o,
+  };
+}
+
+export function punkt(o: Partial<ChecklistePunkt> = {}): ChecklistePunkt {
+  return {
+    id: "c1",
+    titel: "Reisepass prüfen",
+    frist: null,
+    persoenlich: false,
+    teilgruppe: null,
+    teilgruppe_name: null,
+    erledigt: false,
+    ueberfaellig: false,
+    kann_aendern: false,
     ...o,
   };
 }

@@ -14,6 +14,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import { datumKurz } from "../../utils/reisen";
 import type { ReiseDetail } from "../../types/reisen";
 import { FELD, Fehler, KARTE, KNOPF, KNOPF_LEISE } from "./ui";
+import ZielgruppeWahl, { GruppenChip } from "./ZielgruppeWahl";
 
 export default function AufgabenTab({ reise }: { reise: ReiseDetail }) {
   const { t, i18n } = useTranslation("reisen");
@@ -26,6 +27,7 @@ export default function AufgabenTab({ reise }: { reise: ReiseDetail }) {
   const [titel, setTitel] = useState("");
   const [wer, setWer] = useState("");
   const [frist, setFrist] = useState("");
+  const [teilgruppe, setTeilgruppe] = useState("");
   const [fehler, setFehler] = useState("");
   const dabei = (teilnehmer.data ?? []).filter((x) => x.status === "dabei");
 
@@ -33,12 +35,13 @@ export default function AufgabenTab({ reise }: { reise: ReiseDetail }) {
     ev.preventDefault();
     if (!titel.trim()) return;
     anlegen.mutate(
-      { titel, verantwortlich: wer || null, frist: frist || null },
+      { titel, verantwortlich: wer || null, frist: frist || null, teilgruppe: teilgruppe || null },
       {
         onSuccess: () => {
           setTitel("");
           setWer("");
           setFrist("");
+          setTeilgruppe("");
           setFehler("");
         },
         onError: (e) => setFehler(extractApiErrorMessage(e, t("fehler.allgemein"))),
@@ -81,6 +84,9 @@ export default function AufgabenTab({ reise }: { reise: ReiseDetail }) {
             value={frist}
             onChange={(e) => setFrist(e.target.value)}
           />
+          <div className="sm:col-span-4">
+            <ZielgruppeWahl reiseId={reise.id} value={teilgruppe} onChange={setTeilgruppe} />
+          </div>
           <div className="sm:col-span-4 flex items-center gap-2">
             <button type="submit" className={KNOPF} disabled={anlegen.isPending}>
               {t("aufgaben.anlegen")}
@@ -106,7 +112,7 @@ export default function AufgabenTab({ reise }: { reise: ReiseDetail }) {
                 <p
                   className={`text-sm ${a.status === "erledigt" ? "line-through text-text-tertiary" : "font-medium"}`}
                 >
-                  {a.titel}
+                  {a.titel} <GruppenChip name={a.teilgruppe_name} />
                 </p>
                 <p className={`text-xs ${a.ueberfaellig ? "text-red-600" : "text-text-secondary"}`}>
                   {a.verantwortlich_name ?? t("aufgaben.niemand")}

@@ -17,6 +17,8 @@ import type {
   Teilnehmer,
   UebersichtZeile,
 } from "../../types/reisen";
+import ExportKnoepfe from "./ExportKnoepfe";
+import TeilgruppenAbschnitt from "./TeilgruppenAbschnitt";
 import { KARTE, KNOPF, KNOPF_LEISE } from "./ui";
 
 function istVoll(e: Etappe | EtappeGrob): e is Etappe {
@@ -237,6 +239,9 @@ export default function TeilnehmendeTab({ reise }: { reise: ReiseDetail }) {
           <p className="text-[11px] text-text-tertiary">{t("uebersicht.hinweis")}</p>
         </section>
       )}
+
+      <TeilgruppenAbschnitt reise={reise} teilnehmer={eintraege} />
+      {reise.kann_verwalten && <ExportKnoepfe reise={reise} />}
 
       <section>
         <h2 className="mb-1 text-sm font-semibold">{t("teilnehmer.liste")}</h2>

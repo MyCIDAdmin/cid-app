@@ -6,9 +6,12 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import SaisonTab from "../../components/reisen/SaisonTab";
+import SteckbriefeAdmin from "../../components/reisen/SteckbriefeAdmin";
 import TabLeiste from "../../components/ui/TabLeiste";
 import { KARTE, KNOPF } from "../../components/reisen/ui";
 import { useReisenListe } from "../../hooks/useReisen";
+import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import { zeitraum } from "../../utils/reisen";
 import CovoituragePage from "../evenements/CovoituragePage";
 import type { ReiseListItem } from "../../types/reisen";
@@ -97,7 +100,11 @@ function ReisenListe() {
 
 export default function ReisenPage() {
   const { t } = useTranslation("reisen");
-  const [tab, setTab] = useState<"reisen" | "fahrgemeinschaften">("reisen");
+  const user = useAuthStore((s) => s.user);
+  const [tab, setTab] = useState<"reisen" | "saison" | "fahrgemeinschaften" | "steckbriefe">(
+    "reisen",
+  );
+  const bureau = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
   return (
     <div>
       <h1 className="mb-3 text-xl font-bold text-text-primary">{t("titel")}</h1>
@@ -107,10 +114,15 @@ export default function ReisenPage() {
         onChange={(id) => setTab(id as typeof tab)}
         tabs={[
           { id: "reisen", label: t("tab_reisen") },
+          { id: "saison", label: t("tab_saison") },
           { id: "fahrgemeinschaften", label: t("tab_fahrgemeinschaften") },
+          ...(bureau ? [{ id: "steckbriefe", label: t("tab_steckbriefe") }] : []),
         ]}
       />
-      {tab === "reisen" ? <ReisenListe /> : <CovoituragePage />}
+      {tab === "reisen" && <ReisenListe />}
+      {tab === "saison" && <SaisonTab />}
+      {tab === "fahrgemeinschaften" && <CovoituragePage />}
+      {tab === "steckbriefe" && bureau && <SteckbriefeAdmin />}
       <p className="mt-6 text-[11px] text-text-tertiary">{t("haftung")}</p>
     </div>
   );
