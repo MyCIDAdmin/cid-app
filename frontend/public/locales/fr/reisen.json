@@ -134,7 +134,10 @@
     "infos": "Infos",
     "kosten": "Frais",
     "einstellungen": "Paramètres",
-    "checkliste": "Check-list"
+    "checkliste": "Check-list",
+    "planung": "Planification",
+    "menschen": "Personnes",
+    "infos_kosten": "Infos et coûts"
   },
   "liste": {
     "datum_offen": "Date ouverte",
@@ -439,7 +442,9 @@
   "saison": {
     "leer": "Aucun match à l'extérieur à venir.",
     "reise_planen": "Planifier un voyage",
-    "keine_reise": "Pas encore de voyage."
+    "keine_reise": "Pas encore de voyage.",
+    "titel": "Prochains matchs à l'extérieur",
+    "alle_reisen": "Voyages"
   },
   "steckbrief": {
     "titel": "Fiche {{land}}",
@@ -459,5 +464,26 @@
     "speichern": "Enregistrer",
     "formular": "Fiche",
     "leer": "Aucune fiche pour l'instant."
+  },
+  "umfeld": {
+    "titel": "Sur place : {{ort}}",
+    "berlin": "Berlin",
+    "gleiche_zeit": "même heure",
+    "unterschied": "{{zahl}} h",
+    "jetzt": "maintenant",
+    "vorhersage": "Météo pendant le voyage",
+    "vorhersage_ab": "Les prévisions pour les jours du voyage sont disponibles à partir du {{datum}}.",
+    "sicherheit": "Conseils aux voyageurs (Auswärtiges Amt)",
+    "quellen": "Météo : Open-Meteo.com (CC BY 4.0) · Taux : ExchangeRate-API (open.er-api.com) · Sans garantie."
+  },
+  "wetter": {
+    "sonne": "Ensoleillé",
+    "teilweise": "Partiellement nuageux",
+    "wolken": "Nuageux",
+    "nebel": "Brouillard",
+    "regen": "Pluie",
+    "schnee": "Neige",
+    "gewitter": "Orage",
+    "klar_nacht": "Nuit claire"
   }
 }

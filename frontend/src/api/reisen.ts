@@ -17,6 +17,7 @@ import type {
   ReiseListItem,
   ReiseOeffentlich,
   SaisonSpiel,
+  Umfeld,
   StadionVorschlag,
   TeilgruppenListe,
   Teilnehmer,
@@ -301,4 +302,8 @@ export async function saveLaenderprofil(
 }
 export async function deleteLaenderprofil(id: string): Promise<void> {
   await apiClient.delete(`/reisen/laenderprofile/${id}/`);
+}
+
+export async function getUmfeld(id: string): Promise<Umfeld> {
+  return (await apiClient.get<Umfeld>(`${b(id)}/umfeld/`)).data;
 }
