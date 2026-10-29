@@ -18,6 +18,7 @@ urlpatterns = [
     path("api/v1/aktionen/", include("apps.cotisations.urls_aktionen")),
     path("api/v1/adhesions/", include("apps.adhesions.urls")),
     path("api/v1/evenements/", include("apps.evenements.urls")),
+    path("api/v1/reisen/", include("apps.reisen.urls")),
     path("api/v1/boutique/", include("apps.boutique.urls")),
     path("api/v1/notifications/", include("apps.notifications.urls")),
     path("api/v1/stats/", include("apps.stats.urls")),

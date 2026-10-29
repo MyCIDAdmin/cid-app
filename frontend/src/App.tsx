@@ -59,6 +59,11 @@ import DashboardPage from "./pages/DashboardPage";
 import AktionOeffentlichPage from "./pages/aktionen/AktionOeffentlichPage";
 import AdminEventsPage from "./pages/evenements/AdminEventsPage";
 import CovoituragePage from "./pages/evenements/CovoituragePage";
+import ReiseEinladungPage from "./pages/reisen/ReiseEinladungPage";
+import ReiseNeuPage from "./pages/reisen/ReiseNeuPage";
+import ReiseOeffentlichPage from "./pages/reisen/ReiseOeffentlichPage";
+import ReiseRaumPage from "./pages/reisen/ReiseRaumPage";
+import ReisenPage from "./pages/reisen/ReisenPage";
 import EvenementsPage from "./pages/evenements/EvenementsPage";
 import LoginPage from "./pages/LoginPage";
 import MembreDetailPage from "./pages/membres/MembreDetailPage";
@@ -116,6 +121,8 @@ export default function App() {
         <Route path="/kalender-oeffentlich" element={<OeffentlicherKalenderPage />} />
         {/* Öffentliche Aktionsseite einer Beitragsaktion (geteilter Link, ohne Anmeldung). */}
         <Route path="/aktion/:id" element={<AktionOeffentlichPage />} />
+        {/* Öffentliche Vorschau einer Reise (geteilter Link, ohne Anmeldung, nie Namen). */}
+        <Route path="/reise/:id" element={<ReiseOeffentlichPage />} />
         <Route path="/impressum" element={<ImpressumPage />} />
         <Route path="/datenschutz" element={<DatenschutzPage />} />
         <Route path="/nutzungsbedingungen" element={<NutzungsbedingungenPage />} />
@@ -715,6 +722,22 @@ export default function App() {
               </RequireMenuModule>
             }
           />
+          {/* Reisen & Fahrgemeinschaften (Konzept 2026-10-29) : gleicher Modulschlüssel wie die
+            Fahrgemeinschaften ("covoiturage"), damit Menü- und Rechteeinstellungen erhalten bleiben. */}
+          {(
+            [
+              ["/reisen", <ReisenPage key="liste" />],
+              ["/reisen/neu", <ReiseNeuPage key="neu" />],
+              ["/reisen/einladung/:token", <ReiseEinladungPage key="einl" />],
+              ["/reisen/:id", <ReiseRaumPage key="raum" />],
+            ] as const
+          ).map(([pfad, seite]) => (
+            <Route
+              key={pfad}
+              path={pfad}
+              element={<RequireMenuModule cle="covoiturage">{seite}</RequireMenuModule>}
+            />
+          ))}
           {/* Phase D : piloté par la matrice (page_events), seuil de départ inchangé (Bureau
             Admin+) — voir note Phase D plus haut. */}
           <Route

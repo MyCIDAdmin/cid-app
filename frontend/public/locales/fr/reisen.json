@@ -1,0 +1,383 @@
+{
+  "titel": "Voyages et covoiturage",
+  "tab_reisen": "Voyages",
+  "tab_fahrgemeinschaften": "Covoiturage",
+  "laden": "Chargement…",
+  "zurueck": "Retour",
+  "abbrechen": "Annuler",
+  "loeschen": "Supprimer",
+  "nicht_gefunden": "Ce voyage n'existe pas, ou vous n'avez pas le droit de le voir.",
+  "haftung": "Chacun réserve et paie lui-même. L'association n'organise pas de voyage.",
+  "abgesagt_hinweis": "Ce voyage a été annulé.",
+  "zum_chat": "Vers le chat du voyage",
+  "nur_beschlossenes": "En tant qu'intéressé, vous ne voyez que les décisions prises. Seuls les participants peuvent voter.",
+  "neu_seit": "{{n}} nouveautés depuis votre dernière visite.",
+  "beschlossen_titel": "Décidé",
+  "beschlossen_leer": "Rien n'est encore décidé.",
+  "feste_infos": "Infos fixes",
+  "stadion_infos": "Stade et supporters",
+  "laenderinfo": "Pays et entrée",
+  "fehler": {
+    "allgemein": "Cela n'a pas fonctionné. Veuillez réessayer."
+  },
+  "countdown": {
+    "abgelaufen": "Délai écoulé",
+    "noch": "encore {{zeit}}",
+    "tage": "{{tage}} j {{stunden}} h",
+    "stunden": "{{stunden}} h {{minuten}} min"
+  },
+  "kopf": {
+    "abreise_in": "Départ dans {{tage}} jours"
+  },
+  "phase": {
+    "label": "Phases du voyage",
+    "interesse": "Intérêt",
+    "planung": "Planification",
+    "buchung": "Réservation",
+    "reise": "Voyage",
+    "rueckblick": "Bilan"
+  },
+  "status": {
+    "eingeladen": "Invité",
+    "angefragt": "Demande envoyée",
+    "interessiert": "Intéressé",
+    "dabei": "Participe",
+    "warteliste": "Liste d'attente",
+    "abgelehnt": "Refusé",
+    "abgesagt": "Désisté"
+  },
+  "rolle": {
+    "organisator": "Organisateur",
+    "vertreter": "Suppléant",
+    "teilnehmer": "Participant",
+    "entziehen": "Retirer la suppléance",
+    "vertreter_machen": "Nommer suppléant"
+  },
+  "sichtbarkeit": {
+    "eingeladen": "Invités uniquement",
+    "mitglieder": "Tous les membres",
+    "konto": "Tous les comptes"
+  },
+  "beitritt_modus": {
+    "offen": "Ouvert",
+    "genehmigung": "Avec validation",
+    "einladung": "Sur invitation uniquement"
+  },
+  "baustein": {
+    "flug": "Vol",
+    "transport": "Train, bus, voiture",
+    "unterkunft": "Hébergement",
+    "tickets": "Billets du stade",
+    "programm": "Programme",
+    "sonstiges": "Divers"
+  },
+  "typ": {
+    "auswahl": "Choix",
+    "empfehlung": "Recommandation",
+    "termin": "Recherche de date",
+    "stimmung": "Sondage d'envie"
+  },
+  "typ_hinweis": {
+    "auswahl": "Tout le monde vote, une option vaut pour tous à la fin.",
+    "empfehlung": "L'organisation recommande, chacun décide pour soi (y compris « J'organise moi-même »).",
+    "termin": "Chacun indique les périodes possibles. La meilleure période fixe la date du voyage.",
+    "stimmung": "Qui aurait envie ? Aucun engagement."
+  },
+  "einheit": {
+    "person": "par personne",
+    "nacht": "par nuit",
+    "gesamt": "au total"
+  },
+  "wert": {
+    "ja": "Convient",
+    "vielleicht": "Peut-être",
+    "nein": "Ne convient pas"
+  },
+  "richtung": {
+    "hin": "Aller",
+    "rueck": "Retour",
+    "zwischen": "Escale"
+  },
+  "art": {
+    "flug": "Vol",
+    "zug": "Train",
+    "bus": "Bus",
+    "auto": "Voiture",
+    "sonstiges": "Autre"
+  },
+  "etappe_status": {
+    "offen": "Ouvert",
+    "geplant": "Prévu",
+    "gebucht": "Réservé",
+    "selbst": "J'organise moi-même"
+  },
+  "freigabe": {
+    "privat": "Moi et l'organisation seulement",
+    "alle": "Tous les participants"
+  },
+  "haken": {
+    "stadionkarte": "Billet du stade",
+    "dokument": "Document de voyage valide",
+    "regeln": "Règles confirmées"
+  },
+  "regeln": {
+    "titel": "Règles du groupe",
+    "bestaetigen": "Confirmer"
+  },
+  "tabs": {
+    "blick": "En un coup d'œil",
+    "entscheidungen": "Décisions",
+    "teilnehmende": "Participants",
+    "meine": "Mon voyage",
+    "aufgaben": "Tâches",
+    "infos": "Infos",
+    "kosten": "Frais",
+    "einstellungen": "Paramètres"
+  },
+  "liste": {
+    "datum_offen": "Date ouverte",
+    "abgesagt": "Annulé",
+    "zaehler": "{{dabei}} participent, {{interessiert}} intéressés",
+    "findet_statt": "a lieu",
+    "ab_personen": "dès {{n}} personnes",
+    "leer": "Aucun voyage pour l'instant. Créez le premier.",
+    "neue_reise": "Nouveau voyage",
+    "nur_meine": "Mes voyages uniquement"
+  },
+  "beitritt": {
+    "frage": "Souhaitez-vous venir ?",
+    "interessiert": "Je suis intéressé",
+    "dabei": "Je viens",
+    "anfragen": "Demander à participer",
+    "eingeladen": "Vous êtes invité.",
+    "interessiert_status": "Vous avez signalé votre intérêt.",
+    "angefragt": "Votre demande attend la décision de l'organisation.",
+    "warteliste": "Vous êtes sur la liste d'attente."
+  },
+  "jetzt_dran": {
+    "titel": "À faire maintenant",
+    "oeffnen": "Ouvrir",
+    "abstimmen": "Voter : {{titel}}",
+    "aufgabe_ueberfaellig": "En retard : {{titel}}",
+    "info_lesen": "À lire : {{titel}}",
+    "regeln": "Confirmer les règles",
+    "hinreise": "Saisir l'aller",
+    "anfragen": "{{titel}}"
+  },
+  "entscheidung": {
+    "neu": "Nouveau vote",
+    "typ": "Type",
+    "baustein": "Rubrique",
+    "frist": "Date limite",
+    "titel": "Question",
+    "mehrfach": "Plusieurs options possibles",
+    "vorschlag_titel": "Proposition",
+    "preis": "Prix en €",
+    "entfernung": "Distance au stade",
+    "von": "du",
+    "bis": "au",
+    "weitere_option": "Ajouter une proposition",
+    "anlegen": "Lancer le vote",
+    "offen": "Décisions en cours",
+    "beschlossen_liste": "Décidé",
+    "leer": "Aucune décision pour l'instant.",
+    "teilgenommen": "{{n}} ont voté",
+    "noch_nicht_abgestimmt": "Vous n'avez pas encore voté",
+    "beschlossen": "Décidé",
+    "geschlossen": "Terminé, en attente de décision",
+    "vorn": "en tête",
+    "ueber_budget": "hors budget",
+    "link": "Vers l'offre",
+    "waehlen": "Choisir",
+    "selbst_waehlen": "J'organise moi-même",
+    "vorschlag_hinzufuegen": "Ajouter une proposition",
+    "vorschlagen": "Proposer",
+    "begruendung": "Justification (obligatoire si ce n'est pas la proposition en tête qui est retenue)",
+    "vorschlag_uebernehmen": "Retenir la proposition en tête",
+    "beenden": "Terminer le vote",
+    "neue_frist": "Nouvelle date limite",
+    "verlaengern": "Prolonger",
+    "beschliessen_mit": "Retenir : {{titel}}",
+    "ohne_option": "Vote terminé",
+    "folgen": "{{n}} personnes suivent la recommandation",
+    "empfehlung_folgen": "{{n}} suivent la recommandation",
+    "beschlossen_am": "Décidé le {{datum}}"
+  },
+  "teilnehmer": {
+    "nur_zaehler": "{{dabei}} participent, {{interessiert}} sont intéressés. Seuls les participants voient les noms.",
+    "anfragen": "Demandes en attente",
+    "zusagen": "Accepter",
+    "ablehnen": "Refuser",
+    "liste": "Qui participe",
+    "entfernen": "Retirer",
+    "gebucht": "réservé",
+    "nicht_gebucht": "pas encore réservé",
+    "uebernehmen": "Reprendre l'organisation"
+  },
+  "uebersicht": {
+    "titel": "Aperçu",
+    "ampel": "Aller réservé : {{hin}} sur {{gesamt}} · Retour : {{rueck}} · Hébergement : {{unterkunft}}",
+    "ankuenfte": "Arrivées",
+    "abreisen": "Départs",
+    "belegung": "Hébergements",
+    "leer": "Pas encore d'informations.",
+    "ohne_datum": "sans date",
+    "personen_one": "{{count}} personne",
+    "personen_other": "{{count}} personnes",
+    "hinweis": "Les noms n'apparaissent que si la personne a partagé ses informations. Sinon, l'aperçu n'affiche que des chiffres."
+  },
+  "meine": {
+    "privat_hinweis": "Vos informations sont privées par défaut : seuls vous et l'organisation les voyez. Vous décidez plus bas de ce que les autres voient.",
+    "nicht_beteiligt": "Vous ne participez pas encore à ce voyage.",
+    "etappen": "Mes trajets",
+    "etappe_neu": "Ajouter une étape",
+    "etappe_speichern": "Enregistrer",
+    "keine_etappen": "Pas encore d'étapes. Saisissez l'aller et le retour, même si vous venez d'ailleurs.",
+    "richtung": "Sens",
+    "art": "Type",
+    "von": "De (lieu)",
+    "nach": "Vers (lieu)",
+    "von_code": "Code départ",
+    "nach_code": "Code arrivée",
+    "code": "Code (ex. HAM)",
+    "abfahrt": "Départ",
+    "ankunft": "Arrivée",
+    "anbieter": "Compagnie ou numéro de vol",
+    "status": "Statut",
+    "referenz": "Numéro de réservation (pour vous seul)",
+    "unterkunft": "Hébergement",
+    "keine_angabe": "Non précisé",
+    "eigene_unterkunft": "Hébergement personnel",
+    "unterkunft_gebucht": "L'hébergement est réservé",
+    "freigaben": "Qui voit quoi ?",
+    "freigabe_hin": "Aller",
+    "freigabe_rueck": "Retour",
+    "freigabe_unterkunft": "Hébergement",
+    "verbergen_vor_orga": "Ne montrer que des informations grossières même à l'organisation et aux suppléants (lieu d'arrivée, jour, réservé oui ou non).",
+    "sonstiges": "Divers",
+    "begleitpersonen": "Accompagnants",
+    "notiz": "Note (ex. souhaits, pour l'organisation seulement)",
+    "absagen": "Je me désiste"
+  },
+  "unterkuenfte": {
+    "titel": "Hébergements du voyage",
+    "name": "Nom",
+    "entfernung": "Distance au stade",
+    "hinzufuegen": "Ajouter",
+    "belegt": "{{n}} occupés"
+  },
+  "aufgaben": {
+    "neu": "Nouvelle tâche",
+    "titel": "Tâche",
+    "verantwortlich": "Responsable",
+    "niemand": "Personne",
+    "frist": "Échéance",
+    "anlegen": "Créer la tâche",
+    "leer": "Aucune tâche pour l'instant.",
+    "status": "Statut",
+    "status_offen": "Ouverte",
+    "status_in_arbeit": "En cours",
+    "status_erledigt": "Terminée",
+    "ueberfaellig": "en retard"
+  },
+  "infos": {
+    "neu": "Nouvelle info",
+    "titel": "Titre",
+    "text": "Texte",
+    "wichtig": "Infos importantes",
+    "wichtig_markieren": "Important (épingler en haut)",
+    "gelesen_pflicht": "Exiger une confirmation de lecture",
+    "gueltig_bis": "Valable jusqu'au",
+    "veroeffentlichen": "Publier",
+    "leer": "Aucune info pour l'instant.",
+    "gelesen": "Lu",
+    "gelesen_ok": "Lu",
+    "ausstehend": "En attente : {{namen}}",
+    "bis": "jusqu'au {{datum}}"
+  },
+  "kosten": {
+    "hinweis": "Ici, on ne fait que calculer : aucun paiement dans l'application. Chacun réserve et paie lui-même, l'association n'est pas partie au contrat.",
+    "neu": "Ajouter une dépense",
+    "bezeichnung": "Pour quoi ?",
+    "betrag": "Montant en €",
+    "bezahlt_von": "Payé par",
+    "ich": "Moi",
+    "hinzufuegen": "Ajouter",
+    "gleich_verteilt": "Réparti à parts égales entre les participants.",
+    "bezahlt": "payé par {{name}}, réparti sur {{n}}",
+    "salden": "Qui reçoit, qui doit",
+    "bekommt": "reçoit",
+    "schuldet": "doit",
+    "ueberweisungen": "Remboursements",
+    "zeile": "{{von}} à {{an}} : {{betrag}}"
+  },
+  "einladen": {
+    "titel": "Inviter et partager",
+    "suche": "Chercher un membre (2 lettres minimum)",
+    "senden": "Envoyer l'invitation",
+    "gesendet": "{{n}} invitation(s) envoyée(s).",
+    "link": "Lien d'invitation",
+    "kopieren": "Copier le lien"
+  },
+  "einladung": {
+    "ungueltig": "Ce lien d'invitation n'est pas valide."
+  },
+  "einstellungen": {
+    "titel": "Modifier le voyage",
+    "phase": "Phase",
+    "vorschau": "Autoriser la page d'aperçu publique (n'affiche jamais de noms)",
+    "vorschlaege": "Les participants peuvent faire des propositions",
+    "budget": "Plafonds en € par rubrique (les propositions au-dessus sont signalées)",
+    "beschreibung": "Description",
+    "speichern": "Enregistrer",
+    "gespeichert": "Enregistré.",
+    "absagen": "Annuler le voyage (tout le monde est informé)",
+    "loeschen": "Supprimer le voyage",
+    "loeschen_frage": "Vraiment supprimer ?"
+  },
+  "neu": {
+    "titel_seite": "Nouveau voyage",
+    "schritte": "Étapes",
+    "schritt_1": "1 Destination et date",
+    "schritt_2": "2 Qui peut venir",
+    "schritt_3": "3 Modèle",
+    "aus_spielplan": "Ce voyage concerne un match du calendrier. L'adversaire, la date et la compétition sont repris.",
+    "titel": "Titre du voyage",
+    "titel_optional": "Titre (laisser vide pour le titre du match)",
+    "ziel_ort": "Ville",
+    "land": "Pays",
+    "stadion": "Stade",
+    "stadion_hinweis": "Le calendrier ne fournit ni le stade ni la ville. Saisissez-les une fois, l'application s'en souvient pour cet adversaire.",
+    "datum_offen": "Date encore ouverte (recherche de date plus tard)",
+    "termin_hinweis": "Après la création, lancez une recherche de date : la meilleure période fixera la date.",
+    "start": "Début",
+    "ende": "Fin",
+    "anmelde_frist": "Date limite d'inscription",
+    "sichtbarkeit": "Qui voit le voyage ?",
+    "beitritt": "Comment participer ?",
+    "min": "Nombre minimum",
+    "max": "Nombre maximum (puis liste d'attente)",
+    "vorlage": "Modèle",
+    "weiter": "Suivant",
+    "zurueck": "Retour",
+    "erstellen": "Créer le voyage"
+  },
+  "vorlage": {
+    "auswaerts_ausland": "Match à l'extérieur à l'étranger",
+    "wochenende": "Week-end",
+    "leer": "Vide"
+  },
+  "vorlage_hinweis": {
+    "auswaerts_ausland": "Crée les tâches types : billets, transfert, Fan-ID, contact sur place.",
+    "wochenende": "Crée une tâche pour le point de rendez-vous.",
+    "leer": "Vous démarrez sans consignes."
+  },
+  "oeffentlich": {
+    "anmelden": "Se connecter",
+    "anmelden_mitmachen": "Se connecter et participer",
+    "zur_reise": "Vers le voyage",
+    "nicht_gefunden": "Ce voyage est introuvable ou n'est pas public.",
+    "interessiert_one": "{{count}} personne est intéressée ou participe.",
+    "interessiert_other": "{{count}} personnes sont intéressées ou participent."
+  }
+}

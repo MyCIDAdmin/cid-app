@@ -135,6 +135,13 @@ class TypeNotification(models.TextChoices):
     # Beitragsaktionen (2026-10-25)
     AKTION_FRIST = "aktion_frist", _("Date limite d'une action de contribution proche")
     AKTION_ZIEL = "aktion_ziel", _("Objectif d'une action de contribution presque atteint")
+    # Reisen & Fahrgemeinschaften (2026-10-29)
+    REISE_EINLADUNG = "reise_einladung", _("Invitation à un voyage")
+    REISE_ANFRAGE = "reise_anfrage", _("Demande de participation à un voyage")
+    REISE_ENTSCHEIDUNG = "reise_entscheidung", _("Nouvelle décision ou décision prise (voyage)")
+    REISE_FRIST = "reise_frist", _("Date limite d'une décision de voyage proche")
+    REISE_INFO = "reise_info", _("Information importante d'un voyage")
+    REISE_AUFGABE = "reise_aufgabe", _("Tâche de voyage assignée")
 
 
 class Notification(models.Model):

@@ -229,7 +229,7 @@ export const NAV_ITEMS: NavItem[] = [
     module: "evenements",
   },
   {
-    to: "/covoiturage",
+    to: "/reisen",
     labelKey: "nav.covoiturage",
     icon: IconCar,
     group: "general",

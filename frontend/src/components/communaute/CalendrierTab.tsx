@@ -34,10 +34,13 @@
  */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import { useCalendrierRencontres } from "../../hooks/useCommunaute";
+import { useReisenListe } from "../../hooks/useReisen";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { RencontreCalendrier } from "../../types/communaute";
+import type { ReiseListItem } from "../../types/reisen";
 import EquipeLogoImage from "./EquipeLogoImage";
 import SpielplanEditForm from "./SpielplanEditForm";
 
@@ -85,9 +88,15 @@ function resultatClubAfricain(rencontre: RencontreCalendrier): Resultat | null {
 function RencontreLigne({
   rencontre,
   peutEditer,
+  reisen = [],
+  reisenMoeglich = false,
 }: {
   rencontre: RencontreCalendrier;
   peutEditer: boolean;
+  /** Reisen zu diesem Spiel, die der Nutzer sehen darf (Reise-Modul). */
+  reisen?: ReiseListItem[];
+  /** Angemeldet und Spiel steht noch aus: "Reise organisieren" anbieten. */
+  reisenMoeglich?: boolean;
 }) {
   const { t } = useTranslation("communaute");
   const [edition, setEdition] = useState(false);
@@ -149,6 +158,24 @@ function RencontreLigne({
           </button>
         )}
       </div>
+      {(reisen.length > 0 ||
+        (reisenMoeglich && rencontre.equipe_exterieur === "Club Africain")) && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          {reisen.map((r) => (
+            <Link key={r.id} to={`/reisen/${r.id}`} className="font-medium text-ca hover:underline">
+              {t("live.calendrier_reise_oeffnen", { titel: r.titel })}
+            </Link>
+          ))}
+          {reisenMoeglich && rencontre.equipe_exterieur === "Club Africain" && (
+            <Link
+              to={`/reisen/neu?rencontre=${rencontre.id}`}
+              className="font-medium text-ca hover:underline"
+            >
+              {t("live.calendrier_reise_organisieren")}
+            </Link>
+          )}
+        </div>
+      )}
       {edition && <SpielplanEditForm rencontre={rencontre} onClose={() => setEdition(false)} />}
     </div>
   );
@@ -160,6 +187,14 @@ export default function CalendrierTab() {
   const user = useAuthStore((state) => state.user);
   const peutEditer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
   const [ajoutOuvert, setAjoutOuvert] = useState(false);
+  const { data: reisenListe } = useReisenListe({}, Boolean(user));
+  const reisenProSpiel = useMemo(() => {
+    const m = new Map<string, ReiseListItem[]>();
+    for (const r of reisenListe ?? []) {
+      if (r.rencontre && !r.abgesagt) m.set(r.rencontre, [...(m.get(r.rencontre) ?? []), r]);
+    }
+    return m;
+  }, [reisenListe]);
   const rencontres = useMemo(() => data?.results ?? [], [data]);
 
   const { aVenir, resultats } = useMemo(() => {
@@ -214,7 +249,13 @@ export default function CalendrierTab() {
         </h2>
         <div className="space-y-2">
           {aVenir.map((rencontre) => (
-            <RencontreLigne key={rencontre.id} rencontre={rencontre} peutEditer={peutEditer} />
+            <RencontreLigne
+              key={rencontre.id}
+              rencontre={rencontre}
+              peutEditer={peutEditer}
+              reisen={reisenProSpiel.get(rencontre.id)}
+              reisenMoeglich={Boolean(user)}
+            />
           ))}
         </div>
       </div>

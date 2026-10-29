@@ -1,0 +1,383 @@
+{
+  "titel": "Reisen & Fahrgemeinschaften",
+  "tab_reisen": "Reisen",
+  "tab_fahrgemeinschaften": "Fahrgemeinschaften",
+  "laden": "Lädt …",
+  "zurueck": "Zurück",
+  "abbrechen": "Abbrechen",
+  "loeschen": "Löschen",
+  "nicht_gefunden": "Diese Reise gibt es nicht, oder du darfst sie nicht sehen.",
+  "haftung": "Jede Person bucht und bezahlt selbst. Der Verein vermittelt keine Reise.",
+  "abgesagt_hinweis": "Diese Reise wurde abgesagt.",
+  "zum_chat": "Zum Reisechat",
+  "nur_beschlossenes": "Als Interessent siehst du nur beschlossene Entscheidungen. Abstimmen können Teilnehmende.",
+  "neu_seit": "{{n}} Neuigkeiten seit deinem letzten Besuch.",
+  "beschlossen_titel": "Beschlossen",
+  "beschlossen_leer": "Noch nichts beschlossen.",
+  "feste_infos": "Feste Infos",
+  "stadion_infos": "Stadion und Fans",
+  "laenderinfo": "Land und Einreise",
+  "fehler": {
+    "allgemein": "Das hat nicht geklappt. Bitte versuche es noch einmal."
+  },
+  "countdown": {
+    "abgelaufen": "Frist abgelaufen",
+    "noch": "noch {{zeit}}",
+    "tage": "{{tage}} T {{stunden}} Std",
+    "stunden": "{{stunden}} Std {{minuten}} Min"
+  },
+  "kopf": {
+    "abreise_in": "Abreise in {{tage}} Tagen"
+  },
+  "phase": {
+    "label": "Phasen der Reise",
+    "interesse": "Interesse",
+    "planung": "Planung",
+    "buchung": "Buchung",
+    "reise": "Reise",
+    "rueckblick": "Rückblick"
+  },
+  "status": {
+    "eingeladen": "Eingeladen",
+    "angefragt": "Angefragt",
+    "interessiert": "Interessiert",
+    "dabei": "Dabei",
+    "warteliste": "Warteliste",
+    "abgelehnt": "Abgelehnt",
+    "abgesagt": "Abgesagt"
+  },
+  "rolle": {
+    "organisator": "Organisator",
+    "vertreter": "Vertreter",
+    "teilnehmer": "Teilnehmer",
+    "entziehen": "Vertretung entziehen",
+    "vertreter_machen": "Zum Vertreter machen"
+  },
+  "sichtbarkeit": {
+    "eingeladen": "Nur Eingeladene",
+    "mitglieder": "Alle Mitglieder",
+    "konto": "Alle mit Konto"
+  },
+  "beitritt_modus": {
+    "offen": "Offen",
+    "genehmigung": "Mit Genehmigung",
+    "einladung": "Nur Einladung"
+  },
+  "baustein": {
+    "flug": "Flug",
+    "transport": "Zug, Bus, Auto",
+    "unterkunft": "Unterkunft",
+    "tickets": "Stadionkarten",
+    "programm": "Programm",
+    "sonstiges": "Sonstiges"
+  },
+  "typ": {
+    "auswahl": "Auswahl",
+    "empfehlung": "Empfehlung",
+    "termin": "Terminfindung",
+    "stimmung": "Stimmungsbild"
+  },
+  "typ_hinweis": {
+    "auswahl": "Alle stimmen ab, am Ende gilt eine Option für alle.",
+    "empfehlung": "Die Organisation empfiehlt etwas, jede Person entscheidet selbst (auch „Ich organisiere selbst“).",
+    "termin": "Alle markieren, welche Zeiträume passen. Der beste Zeitraum setzt das Reisedatum.",
+    "stimmung": "Wer hätte Lust? Keine Verpflichtung."
+  },
+  "einheit": {
+    "person": "pro Person",
+    "nacht": "pro Nacht",
+    "gesamt": "gesamt"
+  },
+  "wert": {
+    "ja": "Passt",
+    "vielleicht": "Vielleicht",
+    "nein": "Passt nicht"
+  },
+  "richtung": {
+    "hin": "Hinreise",
+    "rueck": "Rückreise",
+    "zwischen": "Zwischenstopp"
+  },
+  "art": {
+    "flug": "Flug",
+    "zug": "Zug",
+    "bus": "Bus",
+    "auto": "Auto",
+    "sonstiges": "Sonstiges"
+  },
+  "etappe_status": {
+    "offen": "Offen",
+    "geplant": "Geplant",
+    "gebucht": "Gebucht",
+    "selbst": "Organisiere ich selbst"
+  },
+  "freigabe": {
+    "privat": "Nur ich und Organisation",
+    "alle": "Alle Teilnehmenden"
+  },
+  "haken": {
+    "stadionkarte": "Stadionkarte",
+    "dokument": "Reisedokument gültig",
+    "regeln": "Regeln bestätigt"
+  },
+  "regeln": {
+    "titel": "Gruppenregeln",
+    "bestaetigen": "Bestätigen"
+  },
+  "tabs": {
+    "blick": "Auf einen Blick",
+    "entscheidungen": "Entscheidungen",
+    "teilnehmende": "Teilnehmende",
+    "meine": "Meine Reise",
+    "aufgaben": "Aufgaben",
+    "infos": "Infos",
+    "kosten": "Kosten",
+    "einstellungen": "Einstellungen"
+  },
+  "liste": {
+    "datum_offen": "Datum offen",
+    "abgesagt": "Abgesagt",
+    "zaehler": "{{dabei}} dabei, {{interessiert}} interessiert",
+    "findet_statt": "findet statt",
+    "ab_personen": "ab {{n}} Personen",
+    "leer": "Noch keine Reisen. Lege die erste an.",
+    "neue_reise": "Neue Reise",
+    "nur_meine": "Nur meine Reisen"
+  },
+  "beitritt": {
+    "frage": "Möchtest du mitkommen?",
+    "interessiert": "Ich bin interessiert",
+    "dabei": "Ich fahre mit",
+    "anfragen": "Teilnahme anfragen",
+    "eingeladen": "Du bist eingeladen.",
+    "interessiert_status": "Du hast Interesse gemeldet.",
+    "angefragt": "Deine Anfrage wartet auf die Entscheidung der Organisation.",
+    "warteliste": "Du stehst auf der Warteliste."
+  },
+  "jetzt_dran": {
+    "titel": "Jetzt dran",
+    "oeffnen": "Öffnen",
+    "abstimmen": "Abstimmen: {{titel}}",
+    "aufgabe_ueberfaellig": "Überfällig: {{titel}}",
+    "info_lesen": "Bitte lesen: {{titel}}",
+    "regeln": "Regeln bestätigen",
+    "hinreise": "Hinreise eintragen",
+    "anfragen": "{{titel}}"
+  },
+  "entscheidung": {
+    "neu": "Neue Abstimmung",
+    "typ": "Art",
+    "baustein": "Baustein",
+    "frist": "Frist",
+    "titel": "Frage",
+    "mehrfach": "Mehrere Optionen wählbar",
+    "vorschlag_titel": "Vorschlag",
+    "preis": "Preis in €",
+    "entfernung": "Entfernung zum Stadion",
+    "von": "von",
+    "bis": "bis",
+    "weitere_option": "Weiteren Vorschlag hinzufügen",
+    "anlegen": "Abstimmung starten",
+    "offen": "Offene Entscheidungen",
+    "beschlossen_liste": "Beschlossen",
+    "leer": "Noch keine Entscheidungen.",
+    "teilgenommen": "{{n}} haben abgestimmt",
+    "noch_nicht_abgestimmt": "Du hast noch nicht abgestimmt",
+    "beschlossen": "Beschlossen",
+    "geschlossen": "Beendet, wartet auf Beschluss",
+    "vorn": "vorn",
+    "ueber_budget": "über Budget",
+    "link": "Zum Angebot",
+    "waehlen": "Wählen",
+    "selbst_waehlen": "Ich organisiere selbst",
+    "vorschlag_hinzufuegen": "Vorschlag hinzufügen",
+    "vorschlagen": "Vorschlagen",
+    "begruendung": "Begründung (nötig, wenn nicht der Vorschlag mit den meisten Stimmen gilt)",
+    "vorschlag_uebernehmen": "Vorn liegenden Vorschlag beschließen",
+    "beenden": "Abstimmung beenden",
+    "neue_frist": "Neue Frist",
+    "verlaengern": "Frist verlängern",
+    "beschliessen_mit": "Beschließen: {{titel}}",
+    "ohne_option": "Abstimmung beendet",
+    "folgen": "{{n}} Personen folgen der Empfehlung",
+    "empfehlung_folgen": "{{n}} folgen der Empfehlung",
+    "beschlossen_am": "Beschlossen am {{datum}}"
+  },
+  "teilnehmer": {
+    "nur_zaehler": "{{dabei}} sind dabei, {{interessiert}} sind interessiert. Namen sehen nur Teilnehmende.",
+    "anfragen": "Offene Anfragen",
+    "zusagen": "Zusagen",
+    "ablehnen": "Ablehnen",
+    "liste": "Wer ist dabei",
+    "entfernen": "Entfernen",
+    "gebucht": "gebucht",
+    "nicht_gebucht": "noch nicht gebucht",
+    "uebernehmen": "Organisation übernehmen"
+  },
+  "uebersicht": {
+    "titel": "Übersicht",
+    "ampel": "Hinreise gebucht: {{hin}} von {{gesamt}} · Rückreise: {{rueck}} · Unterkunft: {{unterkunft}}",
+    "ankuenfte": "Ankünfte",
+    "abreisen": "Abreisen",
+    "belegung": "Unterkünfte",
+    "leer": "Noch keine Angaben.",
+    "ohne_datum": "ohne Datum",
+    "personen_one": "{{count}} Person",
+    "personen_other": "{{count}} Personen",
+    "hinweis": "Namen erscheinen nur, wenn jemand seine Angaben freigegeben hat. Sonst zeigt die Übersicht nur Zahlen."
+  },
+  "meine": {
+    "privat_hinweis": "Deine Angaben sind standardmäßig privat: Nur du und die Organisation sehen sie. Du entscheidest unten, was andere sehen.",
+    "nicht_beteiligt": "Du bist noch nicht Teil dieser Reise.",
+    "etappen": "Meine Wege",
+    "etappe_neu": "Etappe hinzufügen",
+    "etappe_speichern": "Speichern",
+    "keine_etappen": "Noch keine Etappen. Trage Hin- und Rückreise ein, auch wenn du von woanders anreist.",
+    "richtung": "Richtung",
+    "art": "Art",
+    "von": "Von (Ort)",
+    "nach": "Nach (Ort)",
+    "von_code": "Code Start",
+    "nach_code": "Code Ziel",
+    "code": "Code (z. B. HAM)",
+    "abfahrt": "Abfahrt",
+    "ankunft": "Ankunft",
+    "anbieter": "Anbieter oder Flugnummer",
+    "status": "Status",
+    "referenz": "Buchungsnummer (nur für dich)",
+    "unterkunft": "Unterkunft",
+    "keine_angabe": "Keine Angabe",
+    "eigene_unterkunft": "Eigene Unterkunft",
+    "unterkunft_gebucht": "Unterkunft ist gebucht",
+    "freigaben": "Wer sieht was?",
+    "freigabe_hin": "Hinreise",
+    "freigabe_rueck": "Rückreise",
+    "freigabe_unterkunft": "Unterkunft",
+    "verbergen_vor_orga": "Auch vor Organisation und Vertretung nur grobe Angaben zeigen (Zielort, Tag, gebucht ja oder nein).",
+    "sonstiges": "Sonstiges",
+    "begleitpersonen": "Begleitpersonen",
+    "notiz": "Notiz (z. B. Wünsche, nur für Organisation)",
+    "absagen": "Ich sage ab"
+  },
+  "unterkuenfte": {
+    "titel": "Unterkünfte der Reise",
+    "name": "Name",
+    "entfernung": "Entfernung zum Stadion",
+    "hinzufuegen": "Hinzufügen",
+    "belegt": "{{n}} belegt"
+  },
+  "aufgaben": {
+    "neu": "Neue Aufgabe",
+    "titel": "Aufgabe",
+    "verantwortlich": "Verantwortlich",
+    "niemand": "Niemand",
+    "frist": "Frist",
+    "anlegen": "Aufgabe anlegen",
+    "leer": "Noch keine Aufgaben.",
+    "status": "Status",
+    "status_offen": "Offen",
+    "status_in_arbeit": "In Arbeit",
+    "status_erledigt": "Erledigt",
+    "ueberfaellig": "überfällig"
+  },
+  "infos": {
+    "neu": "Neue Info",
+    "titel": "Titel",
+    "text": "Text",
+    "wichtig": "Wichtige Infos",
+    "wichtig_markieren": "Wichtig (oben anheften)",
+    "gelesen_pflicht": "Gelesen-Bestätigung verlangen",
+    "gueltig_bis": "Gültig bis",
+    "veroeffentlichen": "Veröffentlichen",
+    "leer": "Noch keine Infos.",
+    "gelesen": "Gelesen",
+    "gelesen_ok": "Gelesen",
+    "ausstehend": "Ausstehend: {{namen}}",
+    "bis": "bis {{datum}}"
+  },
+  "kosten": {
+    "hinweis": "Hier wird nur gerechnet: Es gibt keine Zahlung in der App. Jede Person bucht und bezahlt selbst, der Verein tritt nicht als Vertragspartner auf.",
+    "neu": "Kostenposten hinzufügen",
+    "bezeichnung": "Wofür?",
+    "betrag": "Betrag in €",
+    "bezahlt_von": "Bezahlt von",
+    "ich": "Ich",
+    "hinzufuegen": "Hinzufügen",
+    "gleich_verteilt": "Wird gleich auf alle verteilt, die dabei sind.",
+    "bezahlt": "bezahlt von {{name}}, verteilt auf {{n}}",
+    "salden": "Wer bekommt, wer schuldet",
+    "bekommt": "bekommt",
+    "schuldet": "schuldet",
+    "ueberweisungen": "Ausgleich",
+    "zeile": "{{von}} an {{an}}: {{betrag}}"
+  },
+  "einladen": {
+    "titel": "Einladen und teilen",
+    "suche": "Mitglied suchen (mindestens 2 Buchstaben)",
+    "senden": "Einladung senden",
+    "gesendet": "{{n}} Einladung(en) gesendet.",
+    "link": "Einladungslink",
+    "kopieren": "Link kopieren"
+  },
+  "einladung": {
+    "ungueltig": "Dieser Einladungslink ist ungültig."
+  },
+  "einstellungen": {
+    "titel": "Reise bearbeiten",
+    "phase": "Phase",
+    "vorschau": "Öffentliche Vorschauseite erlauben (zeigt nie Namen)",
+    "vorschlaege": "Teilnehmende dürfen Vorschläge machen",
+    "budget": "Obergrenzen in € je Baustein (Vorschläge darüber werden markiert)",
+    "beschreibung": "Beschreibung",
+    "speichern": "Speichern",
+    "gespeichert": "Gespeichert.",
+    "absagen": "Reise absagen (alle werden benachrichtigt)",
+    "loeschen": "Reise löschen",
+    "loeschen_frage": "Wirklich löschen?"
+  },
+  "neu": {
+    "titel_seite": "Neue Reise",
+    "schritte": "Schritte",
+    "schritt_1": "1 Ziel und Datum",
+    "schritt_2": "2 Wer darf mit",
+    "schritt_3": "3 Vorlage",
+    "aus_spielplan": "Diese Reise gehört zu einem Spiel aus dem Spielplan. Gegner, Datum und Wettbewerb werden übernommen.",
+    "titel": "Titel der Reise",
+    "titel_optional": "Titel (leer lassen für den Spieltitel)",
+    "ziel_ort": "Stadt",
+    "land": "Land",
+    "stadion": "Stadion",
+    "stadion_hinweis": "Stadion und Stadt liefert der Spielplan nicht. Trage sie einmal ein, die App merkt sie sich für diesen Gegner.",
+    "datum_offen": "Datum noch offen (Terminfindung später)",
+    "termin_hinweis": "Lege nach dem Anlegen eine Terminfindung an, dann setzt der beste Zeitraum das Datum.",
+    "start": "Beginn",
+    "ende": "Ende",
+    "anmelde_frist": "Anmeldefrist",
+    "sichtbarkeit": "Wer sieht die Reise?",
+    "beitritt": "Wie tritt man bei?",
+    "min": "Mindestzahl",
+    "max": "Höchstzahl (danach Warteliste)",
+    "vorlage": "Vorlage",
+    "weiter": "Weiter",
+    "zurueck": "Zurück",
+    "erstellen": "Reise anlegen"
+  },
+  "vorlage": {
+    "auswaerts_ausland": "Auswärtsspiel im Ausland",
+    "wochenende": "Wochenendfahrt",
+    "leer": "Leer"
+  },
+  "vorlage_hinweis": {
+    "auswaerts_ausland": "Legt typische Aufgaben an: Stadionkarten, Transfer, Fan-ID, Kontakt vor Ort.",
+    "wochenende": "Legt eine Aufgabe für den Treffpunkt an.",
+    "leer": "Du startest ohne Vorgaben."
+  },
+  "oeffentlich": {
+    "anmelden": "Anmelden",
+    "anmelden_mitmachen": "Anmelden und mitmachen",
+    "zur_reise": "Zur Reise",
+    "nicht_gefunden": "Diese Reise wurde nicht gefunden oder ist nicht öffentlich.",
+    "interessiert_one": "{{count}} Person ist interessiert oder dabei.",
+    "interessiert_other": "{{count}} Personen sind interessiert oder dabei."
+  }
+}
