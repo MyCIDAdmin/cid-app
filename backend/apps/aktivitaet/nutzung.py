@@ -27,6 +27,7 @@ NUTZUNG_MODULE = {
     "adhesions": ("Beitritt & Angebote", "Adhésions et offres"),
     "cotisations": ("Beiträge & Zahlungen", "Cotisations et paiements"),
     "evenements": ("Veranstaltungen", "Événements"),
+    "reisen": ("Reisen", "Voyages"),
     "boutique": ("Shop", "Boutique"),
     "communaute": ("Community", "Communauté"),
     "kalender": ("Kalender", "Calendrier"),

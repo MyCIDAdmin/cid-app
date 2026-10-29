@@ -35,7 +35,7 @@ def erinnere_entscheidungen(jetzt=None) -> dict:
                 "user_id", flat=True
             )
         )
-        for user in sv.teilnehmer_voll(ent.reise):
+        for user in sv.empfaenger(ent.reise, ent.teilgruppe_id):
             if user.pk in habe_gestimmt or user.pk in bereits:
                 continue
             ReiseErinnerung.objects.create(entscheidung=ent, user=user, regel=regel)

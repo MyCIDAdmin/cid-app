@@ -10,6 +10,11 @@ def _zeit(wert):
     return wert.isoformat() if wert else None
 
 
+def _gruppe(obj) -> dict:
+    g = obj.teilgruppe if obj.teilgruppe_id else None
+    return {"teilgruppe": str(g.id) if g else None, "teilgruppe_name": g.name if g else None}
+
+
 def reise_liste(reise, user) -> dict:
     tn = sv.teilnehmer_von(reise, user)
     zaehler = {s: 0 for s in ("dabei", "interessiert", "warteliste")}
@@ -112,6 +117,7 @@ def entscheidung_dict(ent, ctx) -> dict:
         "vorschlag": str(vorschlag.id) if vorschlag else None,
         "teilgenommen": len(waehler),
         "ich_habe_abgestimmt": ctx.user.pk in waehler,
+        **_gruppe(ent),
     }
 
 
@@ -126,11 +132,14 @@ def info_dict(info, ctx, gelesen_ids=None) -> dict:
         "gelesen_pflicht": info.gelesen_pflicht,
         "gelesen": gelesen,
         "erstellt": _zeit(info.created_at),
+        **_gruppe(info),
     }
     if ctx.darf_verwalten and info.gelesen_pflicht:
         namen = {g.user_id for g in info.gelesen.all()}
         d["ausstehend"] = sorted(
-            sv.name_von(u) for u in sv.teilnehmer_voll(info.reise) if u.pk not in namen
+            sv.name_von(u)
+            for u in sv.empfaenger(info.reise, info.teilgruppe_id)
+            if u.pk not in namen
         )
     return d
 
@@ -148,6 +157,7 @@ def aufgabe_dict(a) -> dict:
         "frist": _zeit(a.frist),
         "status": a.status,
         "ueberfaellig": ueberfaellig,
+        **_gruppe(a),
     }
 
 
@@ -194,6 +204,8 @@ def meine_angaben(tn) -> dict:
         "dokument_gueltig": tn.dokument_gueltig,
         "regeln_bestaetigt_am": _zeit(tn.regeln_bestaetigt_am),
         "notiz": tn.notiz,
+        "geburtsdatum": _zeit(tn.geburtsdatum),
+        "offen_gemeinsame_anreise": tn.offen_gemeinsame_anreise,
         "etappen": [sv.etappe_dict(e, voll=True) for e in tn.etappen.all()],
     }
 
