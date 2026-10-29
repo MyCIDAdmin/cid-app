@@ -3812,6 +3812,524 @@
     ],
     "tipps": ["Eine Nachricht kannst du nur selbst mit „Löschen“ entfernen."]
   },
+  "reisen": {
+    "titre": "Reisen & Fahrgemeinschaften",
+    "intro": "Hier organisierst du Reisen zu Auswärtsspielen und anderen Anlässen gemeinsam: Interessierte sammeln, abstimmen, Wege und Unterkunft eintragen und Aufgaben verteilen. Jede Person bucht und bezahlt selbst, in der App gibt es keine Zahlung.",
+    "schritte": [
+      "Im Reiter „Reisen“ siehst du oben die nächsten Auswärtsspiele und darunter alle Reisen. Mit „Reise planen“ oder „Neue Reise“ legst du selbst eine an.",
+      "Eine Reise öffnen und mit „Ich bin interessiert“ oder „Ich fahre mit“ anmelden.",
+      "Im Reiseraum führen fünf Reiter durch die Reise: „Auf einen Blick“, „Planung“, „Menschen“, „Meine Reise“ und „Infos & Kosten“. Das Zahnrad ⚙ öffnet die Einstellungen (nur für die Organisation).",
+      "Der Reiter „Fahrgemeinschaften“ zeigt wie bisher die Mitfahrten."
+    ],
+    "tipps": [
+      "Deine Angaben zu Hinreise, Rückreise und Unterkunft sind standardmäßig privat. Unter „Wer sieht was?“ entscheidest du, wer sie sieht.",
+      "Beschlossenes steht immer oben auf „Auf einen Blick“. Der Reisechat ist für Gespräche, nicht für Beschlüsse.",
+      "Die „Organisation“ einer Reise sind Organisator und Vertreter. Nur sie sehen das Zahnrad ⚙ und die Anfragen.",
+      "Uhrzeit, Wetter und Kurs in der Karte „Am Reiseziel“ sind Richtwerte ohne Gewähr. Lies vor der Buchung die Hinweise des Auswärtigen Amts."
+    ],
+    "workflows": [
+      {
+        "id": "REIS-01",
+        "titre": "Reise finden und anmelden",
+        "wann": "Du möchtest wissen, welche Reisen es gibt, und dich für eine anmelden.",
+        "schritte": [
+          "„Reisen & Fahrgemeinschaften“ im Menü öffnen. Oben stehen die nächsten Auswärtsspiele, darunter alle Reisen.",
+          "Mit „Nur meine Reisen“ zeigst du nur Reisen, an denen du beteiligt bist. Eine Reise antippen.",
+          "Bei „Möchtest du mitkommen?“ „Ich bin interessiert“ oder „Ich fahre mit“ wählen. Bei Reisen mit Genehmigung heißt der Knopf „Teilnahme anfragen“.",
+          "Auf „Auf einen Blick“ lesen, was beschlossen ist und was bei „Jetzt dran“ auf dich wartet."
+        ],
+        "beispiel": "Zum Auswärtsspiel in Kairo gibt es eine Reise mit Genehmigung: Du fragst die Teilnahme an und siehst danach „Deine Anfrage wartet auf die Entscheidung der Organisation.“",
+        "danach": "Mit „Ich fahre mit“ wirst du Teilnehmer: Du kannst abstimmen, „Meine Reise“ ausfüllen und den Reisechat nutzen. Interessenten sehen nur Beschlossenes.",
+        "vorher": "Du bist angemeldet.",
+        "erwartet": [
+          "Die Seite zeigt „Nächste Auswärtsspiele“ und darunter „Reisen“ mit Ziel, Datum, Phase und Zähler („… dabei, … interessiert“).",
+          "Die Reise öffnet sich im Reiseraum mit Titel, Ziel, Datum und den Reitern.",
+          "Dein Status erscheint als „Interessiert“, „Dabei“ oder „Angefragt“.",
+          "Die Seite zeigt die Abschnitte „Beschlossen“ und „Jetzt dran“."
+        ],
+        "fehler": [
+          {
+            "problem": "„Diese Reise gibt es nicht, oder du darfst sie nicht sehen.“",
+            "loesung": "Die Reise ist nur für Eingeladene sichtbar oder wurde gelöscht. Bitte die Organisation um eine Einladung oder einen Einladungslink."
+          },
+          {
+            "problem": "Du kannst nicht abstimmen.",
+            "loesung": "Als Interessent siehst du nur Beschlossenes. Wähle „Ich fahre mit“, dann kannst du abstimmen."
+          },
+          {
+            "problem": "Du stehst auf der Warteliste.",
+            "loesung": "Die Höchstzahl der Reise ist erreicht. Frag die Organisation, ob ein Platz frei wird."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Öffne die Reise „[ÜBUNG] Testreise“ (REIS-02) und wähle „Ich bin interessiert“. Prüfe, dass dein Status „Interessiert“ lautet."
+      },
+      {
+        "id": "REIS-02",
+        "titre": "Reise anlegen",
+        "wann": "Du möchtest eine Fahrt zu einem Auswärtsspiel oder einem anderen Anlass organisieren.",
+        "schritte": [
+          "Im Reiter „Reisen“ auf „Neue Reise“ tippen. Zu einem Auswärtsspiel führt „Reise planen“ in der Liste der nächsten Auswärtsspiele; Gegner, Datum und Wettbewerb werden übernommen.",
+          "Schritt „1 Ziel und Datum“: Titel (leer lassen für den Spieltitel), Stadt, Land, Stadion, Beginn und Ende ausfüllen oder „Datum noch offen“ ankreuzen. Dann „Weiter“.",
+          "Schritt „2 Wer darf mit“: bei „Wer sieht die Reise?“ und „Wie tritt man bei?“ wählen, Mindest- und Höchstzahl sowie Anmeldefrist eintragen. Dann „Weiter“.",
+          "Schritt „3 Vorlage“: „Auswärtsspiel im Ausland“, „Wochenendfahrt“ oder „Leer“ wählen.",
+          "„Reise anlegen“ klicken."
+        ],
+        "beispiel": "Auswärtsspiel in Kairo: Stadt „Kairo“, Land „Ägypten“, sichtbar für alle Mitglieder, Beitritt mit Genehmigung, Mindestzahl 12, Vorlage „Auswärtsspiel im Ausland“.",
+        "danach": "Du bist Organisator der Reise. Lade als Nächstes Mitreisende ein (REIS-03) und starte die erste Abstimmung (REIS-05). Alles lässt sich später im Zahnrad ⚙ ändern.",
+        "vorher": "Du bist aktives Mitglied und kennst Ziel, ungefähres Datum und wer mitkommen darf.",
+        "erwartet": [
+          "Der Assistent „Neue Reise“ mit den Schritten 1 bis 3 ist offen.",
+          "Stadt, Land und Zeitraum sind gefüllt. Bei einer Reise aus dem Spielplan steht dort der Hinweis, dass Gegner, Datum und Wettbewerb übernommen werden.",
+          "Sichtbarkeit und Beitritt sind gewählt.",
+          "Die Vorlage ist markiert; der Hinweis darunter nennt, was sie anlegt (z. B. Stadionkarten, Transfer, Fan-ID).",
+          "Der Reiseraum öffnet sich. Oben rechts steht das Zahnrad ⚙, du bist Organisator."
+        ],
+        "fehler": [
+          {
+            "problem": "„Nur aktive Mitglieder dürfen Reisen anlegen.“",
+            "loesung": "Dein Konto ist kein aktives Mitglied. Prüfe unter „Meine Mitgliedschaft“ deinen Status oder bitte das Büro um Hilfe."
+          },
+          {
+            "problem": "Stadion und Stadt sind leer.",
+            "loesung": "Der Spielplan liefert beides nicht. Trage sie einmal ein; die App merkt sie sich für diesen Gegner."
+          },
+          {
+            "problem": "Die Karte „Am Reiseziel“ fehlt oder zeigt den falschen Ort.",
+            "loesung": "Die App sucht den Ort über Stadt und Land. Prüfe die Schreibweise im Zahnrad ⚙ unter „Reise bearbeiten“ und speichere neu."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege die Reise „[ÜBUNG] Testreise“ in 60 Tagen an, sichtbar für „Nur Eingeladene“, Vorlage „Leer“. Lösche sie danach im Zahnrad ⚙ mit „Reise löschen“ und „Löschen“."
+      },
+      {
+        "id": "REIS-03",
+        "titre": "Mitreisende einladen und Anfragen beantworten",
+        "wann": "Du organisierst eine Reise und willst Mitreisende einladen oder Anfragen beantworten.",
+        "schritte": [
+          "Die Reise öffnen und oben rechts das Zahnrad ⚙ (Einstellungen) wählen.",
+          "Unter „Einladen und teilen“ ein Mitglied suchen (mindestens 2 Buchstaben), auswählen und „Einladung senden“ klicken. Alternativ „Link kopieren“ und den Einladungslink weitergeben.",
+          "Optional im Formular „Reise bearbeiten“ „Öffentliche Vorschauseite erlauben“ ankreuzen und „Speichern“ klicken.",
+          "Zum Reiter „Menschen“ wechseln. Unter „Offene Anfragen“ bei jeder Person „Zusagen“ oder „Ablehnen“ klicken.",
+          "In der Liste „Wer ist dabei“ siehst du Status und ob die Person gebucht hat. Mit „Entfernen“ nimmst du jemanden aus der Reise."
+        ],
+        "beispiel": "Du lädst fünf Vereinsmitglieder über die Suche ein und schickst den Link zusätzlich per Nachricht an Freunde, die noch kein Konto haben.",
+        "danach": "Als Organisator kannst du in der Liste mit „Zum Vertreter machen“ eine Vertretung benennen. Bei Ausfall kann sie die Organisation übernehmen.",
+        "vorher": "Du bist Organisator oder Vertreter der Reise (nur dann siehst du das Zahnrad ⚙).",
+        "erwartet": [
+          "Die Einstellungen öffnen sich: zuerst „Einladen und teilen“ und „Unterkünfte der Reise“, darunter das Formular „Reise bearbeiten“.",
+          "Nach dem Senden steht „… Einladung(en) gesendet.“. Der Link ist kopiert.",
+          "Unter dem Formular erscheint „Gespeichert.“. Die Vorschauseite zeigt nie Namen.",
+          "Die Anfrage verschwindet aus der Liste; zugesagte Personen stehen unter „Wer ist dabei“ mit dem Status „Dabei“.",
+          "Die Liste ist aktuell, entfernte Personen sind weg."
+        ],
+        "fehler": [
+          {
+            "problem": "Du siehst kein Zahnrad ⚙.",
+            "loesung": "Nur Organisator und Vertreter sehen es. Bitte den Organisator, dich mit „Zum Vertreter machen“ zu benennen."
+          },
+          {
+            "problem": "„Dieser Einladungslink ist ungültig.“",
+            "loesung": "Der Link stimmt nicht oder gehört zu einer anderen Reise. Kopiere ihn unter „Einladen und teilen“ neu."
+          },
+          {
+            "problem": "Ein Mitglied wird bei der Suche nicht gefunden.",
+            "loesung": "Gib mindestens 2 Buchstaben des Namens ein und prüfe die Schreibweise."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lade in der Reise „[ÜBUNG] Testreise“ ein Testkonto ein und entferne es danach in der Liste „Wer ist dabei“ mit „Entfernen“."
+      },
+      {
+        "id": "REIS-04",
+        "titre": "Abstimmen und Vorschläge machen",
+        "wann": "In der Reise läuft eine Abstimmung und du willst mitentscheiden.",
+        "schritte": [
+          "Den Reiter „Planung“ öffnen. Unter „Entscheidungen“ stehen die „Offenen Entscheidungen“ mit der Restzeit bis zur Frist.",
+          "Die Vorschläge vergleichen: Preis, Entfernung zum Stadion und der Hinweis „über Budget“ helfen.",
+          "Bei deinem Favoriten auf „Wählen“ klicken. Bei einer Empfehlung kannst du auch „Ich organisiere selbst“ wählen. Bei einer Terminfindung für jeden Zeitraum „Passt“, „Vielleicht“ oder „Passt nicht“ markieren.",
+          "Fehlt eine Möglichkeit: „Vorschlag hinzufügen“, Titel eintragen und „Vorschlagen“ klicken.",
+          "Nach dem Beschluss steht die Entscheidung auf „Auf einen Blick“ unter „Beschlossen“."
+        ],
+        "beispiel": "Bei „Welches Hotel?“ vergleichst du drei Vorschläge nach Preis und Entfernung zum Stadion und wählst das mittlere.",
+        "vorher": "Du bist Teilnehmer („Dabei“) der Reise.",
+        "erwartet": [
+          "Die offenen Entscheidungen zeigen Frist und, falls du noch nicht gewählt hast, „Du hast noch nicht abgestimmt“.",
+          "Jeder Vorschlag zeigt Preis und Entfernung; Vorschläge über der Obergrenze sind als „über Budget“ markiert.",
+          "Deine Wahl ist markiert, „… haben abgestimmt“ zählt dich mit und der Hinweis „Du hast noch nicht abgestimmt“ verschwindet.",
+          "Dein Vorschlag steht in der Liste der Vorschläge.",
+          "Die beschlossene Entscheidung steht als Karte unter „Beschlossen“, mit Beschlussdatum."
+        ],
+        "fehler": [
+          {
+            "problem": "„Als Interessent siehst du nur beschlossene Entscheidungen. Abstimmen können Teilnehmende.“",
+            "loesung": "Du bist nur Interessent. Wähle auf „Auf einen Blick“ „Ich fahre mit“."
+          },
+          {
+            "problem": "„Vorschlag hinzufügen“ fehlt.",
+            "loesung": "Die Organisation hat „Teilnehmende dürfen Vorschläge machen“ ausgeschaltet. Schreib ihr deine Idee im Reisechat."
+          },
+          {
+            "problem": "Die Frist ist abgelaufen.",
+            "loesung": "Die Abstimmung ist beendet und wartet auf den Beschluss. Die Organisation kann die Frist verlängern."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Stimme in der Reise „[ÜBUNG] Testreise“ bei der Abstimmung „[ÜBUNG] Hotel“ (REIS-05) ab und prüfe, dass „… haben abgestimmt“ um eins steigt."
+      },
+      {
+        "id": "REIS-05",
+        "titre": "Abstimmung starten und beschließen",
+        "wann": "Die Gruppe soll etwas entscheiden, z. B. Hotel, Flug, Treffpunkt oder Reisedatum.",
+        "schritte": [
+          "Den Reiter „Planung“ öffnen und „Neue Abstimmung“ klicken.",
+          "Art (Auswahl, Empfehlung, Terminfindung, Stimmungsbild), Baustein, Frist und Frage eintragen. Optional „Mehrere Optionen wählbar“ ankreuzen.",
+          "Die Vorschläge eintragen (Titel, Preis in €, Entfernung zum Stadion; bei Terminfindung „von“ und „bis“), mit „Weiteren Vorschlag hinzufügen“ mehr. Dann „Abstimmung starten“ klicken.",
+          "Ist die Frist um: „Abstimmung beenden“ klicken. Brauchst du mehr Zeit: „Neue Frist“ wählen und „Frist verlängern“ klicken.",
+          "„Vorn liegenden Vorschlag beschließen“ klicken. Soll ein anderer gelten: „Beschließen: …“ wählen und die Begründung eintragen."
+        ],
+        "beispiel": "Frage „Welches Hotel?“, Art „Empfehlung“, Baustein „Unterkunft“, drei Hotels mit Preis und Entfernung, Frist in sieben Tagen.",
+        "danach": "Beschlossenes steht für alle oben auf „Auf einen Blick“. Bei einer Empfehlung entscheidet jede Person selbst; die Karte zeigt, wie viele ihr folgen.",
+        "vorher": "Du bist Organisator oder Vertreter. Du kennst die Frage und mindestens zwei Vorschläge.",
+        "erwartet": [
+          "Das Formular „Neue Abstimmung“ ist offen.",
+          "Unter der Art steht ein kurzer Hinweis, wie sie wirkt (z. B. „Alle stimmen ab, am Ende gilt eine Option für alle.“).",
+          "Die Abstimmung steht unter „Offene Entscheidungen“ mit Restzeit.",
+          "Der Status wechselt auf „Beendet, wartet auf Beschluss“; bei Verlängerung läuft die Restzeit weiter.",
+          "Die Entscheidung steht unter „Beschlossen“ mit dem Datum."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Begründung fehlt.",
+            "loesung": "Wenn nicht der Vorschlag mit den meisten Stimmen gilt, ist eine Begründung nötig."
+          },
+          {
+            "problem": "Du siehst „Neue Abstimmung“ nicht.",
+            "loesung": "Nur Organisator und Vertreter dürfen Abstimmungen anlegen, und bei einer abgesagten Reise gibt es den Knopf nicht."
+          },
+          {
+            "problem": "Das Reisedatum hat sich geändert.",
+            "loesung": "Das ist gewollt: Eine Terminfindung setzt mit ihrem Ergebnis das Reisedatum."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege in der Reise „[ÜBUNG] Testreise“ die Abstimmung „[ÜBUNG] Hotel“ mit zwei Vorschlägen und Frist in 7 Tagen an, beende sie und beschließe den vorn liegenden Vorschlag."
+      },
+      {
+        "id": "REIS-06",
+        "titre": "Meine Wege und Unterkunft eintragen",
+        "wann": "Du fährst mit und willst der Organisation und, wenn du magst, anderen sagen, wie und wann du reist.",
+        "schritte": [
+          "Den Reiter „Meine Reise“ öffnen. Oben steht, dass deine Angaben standardmäßig privat sind.",
+          "Auf „Etappe hinzufügen“ klicken. Richtung (Hinreise, Rückreise, Zwischenstopp), Art, „Von (Ort)“, „Nach (Ort)“, Abfahrt, Ankunft und Status ausfüllen; bei Flügen den Code (z. B. HAM) und die Flugnummer. Dann „Speichern“.",
+          "Hinreise und Rückreise getrennt eintragen, auch wenn du von woanders anreist. Die Buchungsnummer sieht nur du.",
+          "Bei „Unterkunft“ eine Unterkunft aus der Liste, „Eigene Unterkunft“ oder „Keine Angabe“ wählen und „Unterkunft ist gebucht“ ankreuzen.",
+          "Unter „Wer sieht was?“ für Hinreise, Rückreise und Unterkunft wählen: „Nur ich und Organisation“, „Nur meine Teilgruppe“ oder „Alle Teilnehmenden“."
+        ],
+        "beispiel": "Hinreise: Flug von HAM nach CAI am 26.11. um 07:10, Status „Gebucht“. Rückreise am 30.11., Unterkunft „Eigene Unterkunft“.",
+        "danach": "Die Organisation sieht deine Angaben, andere nur Name und Status „Dabei“, solange du nichts freigibst. Wer es noch genauer will, wählt „Auch vor Organisation und Vertretung nur grobe Angaben zeigen“. Mit „Ich sage ab“ meldest du dich ab.",
+        "vorher": "Du bist Teilnehmer („Dabei“). Du kennst deine Verbindungen oder planst sie.",
+        "erwartet": [
+          "Der Reiter zeigt „Meine Wege“, die Unterkunft und „Wer sieht was?“.",
+          "Die Etappe steht unter „Meine Wege“ mit Richtung, Ort und Zeit.",
+          "Hinreise und Rückreise stehen getrennt in der Liste. Auf „Auf einen Blick“ verschwindet „Hinreise eintragen“ aus „Jetzt dran“.",
+          "Deine Unterkunft ist gewählt und als gebucht markiert.",
+          "Die Freigaben sind gesetzt. Für andere sichtbar wird nur, was du freigibst."
+        ],
+        "fehler": [
+          {
+            "problem": "Der Reiter „Meine Reise“ fehlt.",
+            "loesung": "Er erscheint erst, wenn du an der Reise beteiligt bist. Wähle zuerst „Ich bin interessiert“ oder „Ich fahre mit“."
+          },
+          {
+            "problem": "Andere sehen deine Reisedaten nicht.",
+            "loesung": "Das ist die Voreinstellung. Gib die Angaben unter „Wer sieht was?“ frei."
+          },
+          {
+            "problem": "„Hinreise eintragen“ bleibt bei „Jetzt dran“ stehen.",
+            "loesung": "Trage eine Etappe mit der Richtung „Hinreise“ ein."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Trage in der Reise „[ÜBUNG] Testreise“ eine Hinreise mit dem Anbieter „[ÜBUNG]“ ein, gib sie für „Alle Teilnehmenden“ frei und lösche die Etappe danach mit „Löschen“."
+      },
+      {
+        "id": "REIS-07",
+        "titre": "Gemeinsam anreisen",
+        "wann": "Du würdest gern mit anderen zusammen vom Flughafen oder Bahnhof fahren.",
+        "schritte": [
+          "Im Reiter „Meine Reise“ zum Abschnitt „Gemeinsame Anreise“ gehen.",
+          "„Ich bin offen für eine gemeinsame Anreise“ ankreuzen. Erst dann wirst du in den Vergleich einbezogen; niemand sonst sieht davon etwas.",
+          "Die App zeigt anonyme Treffer mit gleichem Ort und gleichem Tag (±2 Stunden), z. B. „+2 weitere“.",
+          "Ist ein Treffer passend, „Ja, Kontakt austauschen“ klicken. Namen erscheinen erst, wenn beide Seiten zugestimmt haben.",
+          "Unter „Kontakt möglich mit“ siehst du dann die Personen und verabredest dich, z. B. im Reisechat."
+        ],
+        "vorher": "Du hast mindestens eine Hin- oder Rückreise unter „Meine Reise“ eingetragen.",
+        "erwartet": [
+          "Der Abschnitt „Gemeinsame Anreise“ mit dem Hinweis zu den Treffern ist sichtbar.",
+          "Das Häkchen ist gesetzt.",
+          "Die Treffer zeigen „Ankunft“ oder „Abfahrt“ ohne Namen. Gibt es keine, steht dort „Aktuell keine passenden Ankünfte oder Abfahrten.“",
+          "Deine Zustimmung ist gespeichert; noch keine Namen, bis die andere Seite ebenfalls zustimmt.",
+          "Die Personen mit gegenseitiger Zustimmung stehen unter „Kontakt möglich mit“."
+        ],
+        "fehler": [
+          {
+            "problem": "„Aktuell keine passenden Ankünfte oder Abfahrten.“",
+            "loesung": "Es gibt noch keine Treffer. Trage Hin- und Rückreise mit Ort und Zeit ein oder warte, bis weitere Teilnehmende ihre Wege eintragen."
+          },
+          {
+            "problem": "Du siehst keine Namen.",
+            "loesung": "Namen erscheinen erst, wenn beide Seiten „Ja, Kontakt austauschen“ gewählt haben."
+          },
+          {
+            "problem": "Die Organisation sieht nicht, wer offen ist.",
+            "loesung": "Das ist gewollt. Die Organisation und andere sehen davon nichts; es werden nur anonyme Treffer gezählt."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Schalte in der Reise „[ÜBUNG] Testreise“ die gemeinsame Anreise ein und danach wieder aus."
+      },
+      {
+        "id": "REIS-08",
+        "titre": "Teilgruppen bilden und Übersicht lesen",
+        "wann": "Die Teilnehmenden reisen unterschiedlich (z. B. Flug ab Hamburg, anderes Hotel) und du willst sie gezielt ansprechen.",
+        "schritte": [
+          "Den Reiter „Menschen“ öffnen. Unter „Übersicht“ siehst du, wie viele Hin- und Rückreise sowie Unterkunft gebucht haben, dazu „Ankünfte“, „Abreisen“ und „Unterkünfte“.",
+          "Im Abschnitt „Teilgruppen“ stehen „Vorschläge aus den Angaben“ (z. B. gleicher Abflugort). Mit „Als Teilgruppe übernehmen“ legst du eine daraus an.",
+          "Eine eigene Gruppe: „Teilgruppe anlegen“, Namen eingeben, Personen auswählen, „Speichern“ klicken.",
+          "Bei Abstimmungen, Aufgaben, Checkliste und Infos unter „Für wen?“ eine Teilgruppe statt „Alle Teilnehmenden“ wählen."
+        ],
+        "vorher": "Du bist Organisator oder Vertreter, und einige Teilnehmende haben Wege oder Unterkünfte eingetragen.",
+        "erwartet": [
+          "Die Übersicht zeigt Zahlen. Namen erscheinen nur bei Personen, die ihre Angaben freigegeben haben.",
+          "Die Teilgruppe steht in der Liste, mit der Zahl der Personen.",
+          "Die neue Teilgruppe steht in der Liste; ihre Mitglieder sehen „Du bist dabei“.",
+          "Der Eintrag zeigt „Nur für …“ und ist nur für diese Teilgruppe sichtbar."
+        ],
+        "fehler": [
+          {
+            "problem": "In der Übersicht stehen nur Zahlen.",
+            "loesung": "Namen erscheinen nur, wenn die Person ihre Angaben freigegeben hat. Das ist so gewollt."
+          },
+          {
+            "problem": "Es gibt keine Vorschläge.",
+            "loesung": "Vorschläge entstehen erst, wenn mehrere Personen z. B. denselben Abflugort oder dieselbe Unterkunft angegeben haben."
+          },
+          {
+            "problem": "Eine Person sieht eine Teilgruppen-Info nicht.",
+            "loesung": "Prüfe, ob sie zur Teilgruppe gehört, und nimm sie über „Bearbeiten“ auf."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege in der Reise „[ÜBUNG] Testreise“ die Teilgruppe „[ÜBUNG] Hamburg“ an und lösche sie danach mit „Löschen“."
+      },
+      {
+        "id": "REIS-09",
+        "titre": "Aufgaben, Checkliste und Infos verteilen",
+        "wann": "Es gibt Dinge zu erledigen oder zu wissen (Stadionkarten, Treffpunkt, Fan-ID), und alle sollen es mitbekommen.",
+        "schritte": [
+          "Reiter „Planung“, Abschnitt „Aufgaben“: „Neue Aufgabe“ klicken, Aufgabe, „Verantwortlich“ und Frist eintragen, dann „Aufgabe anlegen“.",
+          "Abschnitt „Checkliste“: „Neuer Punkt“ mit Text und Frist anlegen. Ohne Häkchen bei „Nur für mich“ ist es ein gemeinsamer Punkt für alle.",
+          "Reiter „Infos & Kosten“, Abschnitt „Infos“: „Neue Info“ klicken, Titel und Text schreiben.",
+          "Wichtiges mit „Wichtig (oben anheften)“ markieren, bei Bedarf „Gelesen-Bestätigung verlangen“ und „Gültig bis“ setzen, dann „Veröffentlichen“.",
+          "Teilnehmende setzen Aufgaben auf „In Arbeit“ oder „Erledigt“ und bestätigen Infos mit „Gelesen“. Bei der Info siehst du „Ausstehend: …“."
+        ],
+        "beispiel": "Aufgabe „Stadionkarten besorgen“ für Karim bis zum 10.11., dazu die angeheftete Info „Treffpunkt am Stadion: 17 Uhr“ mit Gelesen-Bestätigung.",
+        "danach": "Jede Person hat zusätzlich eigene Punkte („Nur für mich“), die sonst niemand sieht.",
+        "vorher": "Du bist Organisator oder Vertreter.",
+        "erwartet": [
+          "Die Aufgabe steht in der Liste mit Verantwortlichem und Frist; überfällige sind als „überfällig“ markiert.",
+          "Der Punkt steht unter „Gemeinsame Punkte“; der Zähler „… von … erledigt“ stimmt.",
+          "Das Formular „Neue Info“ ist offen.",
+          "Die Info steht oben unter „Wichtige Infos“; abgelaufene Infos verschwinden von selbst.",
+          "Bei der Info steht, wer sie noch nicht gelesen hat."
+        ],
+        "fehler": [
+          {
+            "problem": "Aufgaben und Checkliste fehlen.",
+            "loesung": "Sie erscheinen nur für Teilnehmende der Reise."
+          },
+          {
+            "problem": "Niemand fühlt sich für die Aufgabe zuständig.",
+            "loesung": "Wähle bei „Verantwortlich“ eine Person; bei „Niemand“ gehört sie keinem."
+          },
+          {
+            "problem": "Eine Info ist verschwunden.",
+            "loesung": "Das Datum bei „Gültig bis“ ist abgelaufen. Lege die Info neu an."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege in der Reise „[ÜBUNG] Testreise“ die Aufgabe „[ÜBUNG] Treffpunkt klären“ an, setze sie auf „Erledigt“ und lösche sie danach."
+      },
+      {
+        "id": "REIS-10",
+        "titre": "Kosten teilen",
+        "wann": "Jemand hat etwas für alle bezahlt (z. B. Taxi, Mietwagen) und das Geld soll gerecht verteilt werden.",
+        "schritte": [
+          "Reiter „Infos & Kosten“, Abschnitt „Kosten“. Der Hinweis erinnert: Hier wird nur gerechnet, es gibt keine Zahlung in der App.",
+          "Bei „Kostenposten hinzufügen“ „Wofür?“, „Betrag in €“ und „Bezahlt von“ (Ich oder eine andere Person) eintragen.",
+          "„Hinzufügen“ klicken. Der Betrag wird gleich auf alle verteilt, die dabei sind.",
+          "Unter „Wer bekommt, wer schuldet“ steht der Stand je Person, unter „Ausgleich“ die einfachste Rückzahlung.",
+          "Das Geld überweist ihr untereinander, außerhalb der App."
+        ],
+        "beispiel": "Du zahlst das Taxi vom Flughafen mit 40 €, vier Personen sind dabei: Du bekommst 30 €, die anderen drei schulden je 10 €.",
+        "vorher": "Du bist Teilnehmer („Dabei“).",
+        "erwartet": [
+          "Der Abschnitt zeigt den Hinweis zur reinen Rechnung und die Liste der Posten.",
+          "Die Felder sind ausgefüllt.",
+          "Der Posten steht in der Liste: „bezahlt von …, verteilt auf …“.",
+          "Die Salden zeigen „bekommt“ und „schuldet“, der Ausgleich Zeilen wie „A an B: 10,00 €“.",
+          "In der App ändert sich nichts mehr; erledigte Überweisungen musst du nicht melden."
+        ],
+        "fehler": [
+          {
+            "problem": "Es gibt keine Zahlungsfunktion.",
+            "loesung": "Das ist gewollt: Jede Person bucht und bezahlt selbst, der Verein ist kein Vertragspartner."
+          },
+          {
+            "problem": "Jemand fehlt in der Verteilung.",
+            "loesung": "Verteilt wird auf alle mit Status „Dabei“. Interessenten zählen nicht mit."
+          },
+          {
+            "problem": "Ein Posten stimmt nicht.",
+            "loesung": "Lösche ihn mit „Löschen“ (wenn der Knopf da ist) und lege ihn korrekt neu an."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Erfasse in der Reise „[ÜBUNG] Testreise“ den Posten „[ÜBUNG] Taxi“ mit 40 € und prüfe die Salden. Lösche den Posten danach."
+      },
+      {
+        "id": "REIS-11",
+        "titre": "Am Reiseziel: Uhrzeit, Wetter, Kurs und Sicherheit",
+        "wann": "Du willst wissen, wie spät es am Reiseziel ist, wie das Wetter wird und was du beachten musst.",
+        "schritte": [
+          "Den Reiter „Auf einen Blick“ öffnen und zur Karte „Am Reiseziel“ unter „Jetzt dran“ gehen.",
+          "Die zwei Uhren zeigen die Uhrzeit in Berlin und am Reiseziel, dazu den Unterschied in Stunden.",
+          "Das Wetter zeigt die Lage jetzt und darunter „Wetter an den Reisetagen“ mit Symbol sowie höchster und niedrigster Temperatur je Tag.",
+          "Der Kurs zeigt, wie viel Landeswährung ein Euro ist (nur bei anderer Währung als dem Euro).",
+          "Über „Reise- und Sicherheitshinweise (Auswärtiges Amt)“ die amtlichen Hinweise lesen, am besten vor der Buchung."
+        ],
+        "beispiel": "Bei einer Reise nach Kairo siehst du Uhrzeit, Wetter und den Kurs zum Ägyptischen Pfund.",
+        "danach": "Alle Angaben sind Richtwerte ohne Gewähr (Quellen: Open-Meteo, ExchangeRate-API). Verbindlich sind die Hinweise des Auswärtigen Amts und der Anbieter. Weitere Infos stehen unter „Stadion und Fans“ und „Land und Einreise“.",
+        "vorher": "Die Reise hat Stadt und Land als Ziel.",
+        "erwartet": [
+          "Die Karte trägt den Titel „Am Reiseziel: <Ort>“.",
+          "Zwei Uhren mit „Berlin“ und dem Ort; bei gleicher Zeit steht „gleiche Zeit“.",
+          "Wetter-Symbole (z. B. „Sonnig“, „Regen“) und Temperaturen je Tag.",
+          "Eine Zeile mit „1 € = … <Währung>“ und dem Stand des Kurses.",
+          "Der Link öffnet die Seite des Auswärtigen Amts zum Land."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Karte „Am Reiseziel“ fehlt.",
+            "loesung": "Die App findet den Ort nicht. Prüfe Stadt und Land im Zahnrad ⚙ unter „Reise bearbeiten“ und speichere neu."
+          },
+          {
+            "problem": "„Die Vorhersage für die Reisetage gibt es ab dem …“",
+            "loesung": "Wetterdienste sagen nur etwa 16 Tage voraus. Bis dahin zeigt die Karte das aktuelle Wetter."
+          },
+          {
+            "problem": "Es gibt keinen Kurs.",
+            "loesung": "Der Kurs erscheint nur, wenn das Land nicht den Euro nutzt."
+          }
+        ]
+      },
+      {
+        "id": "REIS-12",
+        "titre": "Namensliste und Excel für die Organisation exportieren",
+        "wann": "Ein Hotel oder Veranstalter braucht eine Namensliste, oder du willst die Planung in Excel sehen.",
+        "schritte": [
+          "Den Reiter „Menschen“ öffnen und zum Abschnitt „Export für die Organisation“ gehen.",
+          "Den Hinweis lesen: Der Export enthält persönliche Angaben, ist nur für die Reiseplanung gedacht und wird protokolliert.",
+          "Für die Planung „Excel: Teilnehmende, Anreiseplan, Belegung“ klicken.",
+          "Für Dritte (z. B. Hotel) im Feld „Namensliste für Dritte (z. B. Hotel)“ „Alle Teilnehmenden“, „Eigene Unterkunft“, eine Unterkunft oder eine Teilgruppe wählen und „Namensliste herunterladen“ klicken."
+        ],
+        "danach": "Das Geburtsdatum steht nur in Namenslisten, wenn die Person es freiwillig angegeben hat. Gib die Datei nur an Hotel oder Veranstalter weiter und lösche sie danach.",
+        "vorher": "Du bist Organisator oder Vertreter.",
+        "erwartet": [
+          "Der Abschnitt mit dem Hinweis zum Datenschutz ist sichtbar.",
+          "Der Hinweis nennt die Protokollierung.",
+          "Die Excel-Datei wird heruntergeladen.",
+          "Die Namensliste wird heruntergeladen und enthält nur die gewählte Gruppe."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Namensliste ist leer.",
+            "loesung": "Prüfe den Filter. Eine Unterkunft oder Teilgruppe ohne Personen liefert nichts."
+          },
+          {
+            "problem": "Von einer Person stehen nur grobe Angaben in der Liste.",
+            "loesung": "Sie hat gewählt, auch vor Organisation und Vertretung nur grobe Angaben zu zeigen. Das gilt auch hier."
+          },
+          {
+            "problem": "Du siehst den Abschnitt nicht.",
+            "loesung": "Er ist nur für Organisator und Vertreter sichtbar."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lade in der Reise „[ÜBUNG] Testreise“ die Namensliste für „Alle Teilnehmenden“ herunter und lösche die Datei danach."
+      },
+      {
+        "id": "REIS-13",
+        "titre": "Reise bearbeiten, absagen oder löschen",
+        "wann": "Etwas an der Reise ändert sich, sie fällt aus oder wird nicht mehr gebraucht.",
+        "schritte": [
+          "Das Zahnrad ⚙ öffnen. Im Formular „Reise bearbeiten“ Ziel, Zeitraum, Sichtbarkeit, Beitritt, Mindest- und Höchstzahl, Beschreibung, „Stadion und Fans“, „Land und Einreise“ und Gruppenregeln ändern, dann „Speichern“ klicken.",
+          "Mit „Phase“ den Stand der Reise umstellen (Interesse, Planung, Buchung, Reise, Rückblick).",
+          "Unter „Obergrenzen in € je Baustein“ ein Budget setzen; teurere Vorschläge werden markiert.",
+          "Fällt die Reise aus: „Reise absagen (alle werden benachrichtigt)“ ankreuzen. Das wirkt sofort.",
+          "Nur der Organisator: „Reise löschen“ klicken und mit „Löschen“ bestätigen. Das entfernt die Reise für alle."
+        ],
+        "vorher": "Du bist Organisator oder Vertreter. Löschen darf nur der Organisator.",
+        "erwartet": [
+          "Das Formular zeigt die aktuellen Werte; nach „Speichern“ steht „Gespeichert.“.",
+          "Die Phasenleiste auf „Auf einen Blick“ zeigt die neue Phase.",
+          "Vorschläge über der Grenze tragen den Hinweis „über Budget“.",
+          "Die Reise trägt das Etikett „Abgesagt“ in der Liste und den Hinweis „Diese Reise wurde abgesagt.“ im Raum.",
+          "Die Reise ist aus der Liste verschwunden."
+        ],
+        "fehler": [
+          {
+            "problem": "Die Reise wurde versehentlich abgesagt.",
+            "loesung": "Nimm das Häkchen bei „Reise absagen“ wieder heraus."
+          },
+          {
+            "problem": "Du kannst die Reise nicht löschen.",
+            "loesung": "Nur der Organisator darf löschen. Sage die Reise stattdessen ab."
+          },
+          {
+            "problem": "Neue Abstimmungen sind gesperrt.",
+            "loesung": "Bei einer abgesagten Reise gibt es „Neue Abstimmung“ nicht. Hebe die Absage auf."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Sage die Reise „[ÜBUNG] Testreise“ ab und hebe die Absage sofort wieder auf. Alle Beteiligten erhalten dazu eine Benachrichtigung."
+      },
+      {
+        "id": "REIS-14",
+        "rollen": ["bureau_admin", "super_admin"],
+        "titre": "Länder-Steckbriefe pflegen",
+        "wann": "Eine Reise führt in ein neues Land, oder Angaben zu Einreise, Währung oder Steckdose sind veraltet.",
+        "schritte": [
+          "„Reisen & Fahrgemeinschaften“ öffnen und den Reiter „Länder-Steckbriefe“ wählen.",
+          "„Steckbrief anlegen“ klicken und das Land eintragen, genau so geschrieben wie im Reiseziel der Reisen.",
+          "Währung, Zeitverschiebung, Steckdose, Einreise, „Amtliche Hinweise (Link oder Text)“ und „Weitere Infos“ ausfüllen und „Speichern“ klicken.",
+          "Bestehende Steckbriefe mit „Bearbeiten“ aktuell halten."
+        ],
+        "danach": "Ein Steckbrief gilt für alle Reisen in das Land und erscheint in den Reisen als „Steckbrief <Land>“. Ändere ihn nur nach Prüfung der amtlichen Quelle.",
+        "vorher": "Du hast die Funktion Büro (Bureau Admin) oder App Admin.",
+        "erwartet": [
+          "Der Reiter ist sichtbar und zeigt die vorhandenen Steckbriefe oder „Noch keine Steckbriefe.“.",
+          "Das Formular „Steckbrief“ ist offen.",
+          "Der Steckbrief steht in der Liste, mit dem Datum „Stand …“.",
+          "Die Änderung steht mit neuem Stand in der Liste."
+        ],
+        "fehler": [
+          {
+            "problem": "Der Reiter „Länder-Steckbriefe“ fehlt.",
+            "loesung": "Er ist nur mit Funktion im Büro sichtbar."
+          },
+          {
+            "problem": "Der Steckbrief erscheint nicht in der Reise.",
+            "loesung": "Das Land ist anders geschrieben als im Reiseziel. Schreibe es genau gleich."
+          },
+          {
+            "problem": "Eine Angabe ist veraltet.",
+            "loesung": "Prüfe sie bei den offiziellen Stellen (Auswärtiges Amt) und passe den Steckbrief an. Die Karten tragen den Hinweis „Ohne Gewähr“."
+          }
+        ],
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege den Steckbrief für das Land „[ÜBUNG] Testland“ an und bearbeite ihn einmal."
+      }
+    ]
+  },
   "orientierung": {
     "glossar": {
       "titre": "Glossar der Vereinssprache",
@@ -3948,6 +4466,22 @@
         {
           "begriff": "Karte und Kennung",
           "text": "Eine Aufgabenkarte beschreibt eine Aufgabe in wenigen Schritten. Die Kennung (z. B. ZAHL-01) bleibt gleich, auch wenn sich der Titel ändert."
+        },
+        {
+          "begriff": "Reise",
+          "text": "Eigener Raum für einen Ausflug oder ein Auswärtsspiel mit Entscheidungen, Aufgaben, Infos und Kosten. Jede Person bucht und bezahlt selbst, in der App gibt es keine Zahlung."
+        },
+        {
+          "begriff": "Organisation einer Reise",
+          "text": "Organisator und Vertreter der Reise. Sie sehen das Zahnrad ⚙, beantworten Anfragen, starten Abstimmungen und exportieren Namenslisten."
+        },
+        {
+          "begriff": "Etappe",
+          "text": "Ein Reiseabschnitt einer Person, z. B. Hinreise, Rückreise oder Zwischenstopp. Jede Person trägt ihre eigenen Etappen ein."
+        },
+        {
+          "begriff": "Teilgruppe",
+          "text": "Untergruppe einer Reise, z. B. „Flug ab Hamburg“. Sie entsteht aus den Angaben oder von Hand. Infos und Aufgaben können nur an sie gehen."
         }
       ]
     },
@@ -4117,6 +4651,10 @@
             {
               "text": "Spielplan prüfen und bei Bedarf korrigieren.",
               "karten": ["SPIEL-01"]
+            },
+            {
+              "text": "Länder-Steckbriefe für die Ziele der Auswärtsspiele prüfen und aktuell halten.",
+              "karten": ["REIS-14"]
             }
           ]
         },
