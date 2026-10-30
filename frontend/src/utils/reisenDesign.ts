@@ -1,5 +1,5 @@
 /** Darstellung der Reisen : Titelbild je Ziel, Fortschritt zur Mindestzahl, „meine nächste Reise“. */
-import type { ReiseListItem } from "../types/reisen";
+import type { ReiseDetail, ReiseListItem } from "../types/reisen";
 
 /** Verlauf für das Titelbild ; derselbe Ort bekommt immer denselben Verlauf. */
 const COVER = [
@@ -49,3 +49,28 @@ export const TAB_FUER_PUNKT: Record<string, string> = {
   hinreise: "meine",
   anfragen: "menschen",
 };
+
+/** Reiter, den der Hauptknopf je Phase öffnet. */
+const PHASEN_TAB: Record<(typeof PHASEN)[number], string> = {
+  interesse: "menschen",
+  planung: "planung",
+  buchung: "meine",
+  reise: "infos",
+  rueckblick: "infos",
+};
+
+export interface HauptZiel {
+  tab: string;
+  /** Der wichtigste offene Punkt („Jetzt dran“), falls es einen gibt ; sonst gilt der Phasenknopf. */
+  punkt?: NonNullable<ReiseDetail["jetzt_dran"]>[number];
+}
+
+/**
+ * Wohin führt der Hauptknopf einer Reise ? Zuerst der wichtigste offene Punkt, sonst der Reiter der
+ * Phase. Ohne den passenden Reiter (z. B. noch nicht dabei) gibt es keinen Knopf.
+ */
+export function hauptZiel(reise: ReiseDetail, verfuegbareTabs: string[]): HauptZiel | null {
+  const punkt = reise.jetzt_dran?.[0];
+  const tab = punkt ? (TAB_FUER_PUNKT[punkt.art] ?? "blick") : PHASEN_TAB[reise.phase];
+  return verfuegbareTabs.includes(tab) ? { tab, punkt } : null;
+}

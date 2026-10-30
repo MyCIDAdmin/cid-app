@@ -6,16 +6,19 @@ import { useBeitreten, useInfoGelesen, useRegelnBestaetigen } from "../../hooks/
 import { datumKurz, preisText, zeitraum } from "../../utils/reisen";
 import type { Entscheidung, ReiseDetail } from "../../types/reisen";
 import AmZiel from "./AmZiel";
+import EntscheidungKarte from "./EntscheidungKarte";
+import MeinReiseplan from "./MeinReiseplan";
 import { Countdown, KARTE, KNOPF, KNOPF_LEISE } from "./ui";
-
-const PHASEN = ["interesse", "planung", "buchung", "reise", "rueckblick"] as const;
 
 function BeschlossenKarte({ e }: { e: Entscheidung }) {
   const { t, i18n } = useTranslation("reisen");
   const b = e.beschluss;
   if (!b) return null;
   return (
-    <li className={KARTE} data-testid="beschlossen-karte">
+    <li
+      className={`${KARTE} min-w-[15rem] max-w-xs flex-1 shrink-0 snap-start border-t-4 border-ca`}
+      data-testid="beschlossen-karte"
+    >
       <p className="text-[11px] uppercase tracking-wide text-text-tertiary">
         {t(`baustein.${e.baustein}`)}
       </p>
@@ -66,7 +69,6 @@ export default function AufEinenBlick({
   const beitreten = useBeitreten(reise.id);
   const regeln = useRegelnBestaetigen(reise.id);
   const gelesen = useInfoGelesen(reise.id);
-  const phaseIndex = PHASEN.indexOf(reise.phase);
   const jetzt = reise.jetzt_dran ?? [];
   const tabFuer: Record<string, string> = {
     abstimmen: "planung",
@@ -78,17 +80,6 @@ export default function AufEinenBlick({
 
   return (
     <div className="space-y-4">
-      <ol className="flex gap-1 text-[11px]" aria-label={t("phase.label")}>
-        {PHASEN.map((p, i) => (
-          <li
-            key={p}
-            className={`flex-1 rounded-cid px-1 py-1 text-center ${i === phaseIndex ? "bg-ca text-white" : i < phaseIndex ? "bg-ca/10 text-ca" : "bg-bg-tertiary text-text-tertiary"}`}
-          >
-            {t(`phase.${p}`)}
-          </li>
-        ))}
-      </ol>
-
       {reise.abgesagt && (
         <p className="rounded-cid bg-red-50 p-2 text-sm text-red-800">{t("abgesagt_hinweis")}</p>
       )}
@@ -198,6 +189,21 @@ export default function AufEinenBlick({
         </section>
       )}
 
+      {reise.voll && (reise.offene_entscheidungen ?? []).length > 0 && (
+        <section aria-label={t("heute.abstimmung")} className="space-y-1">
+          <h2 className="text-sm font-semibold">{t("heute.abstimmung")}</h2>
+          <EntscheidungKarte
+            reiseId={reise.id}
+            e={(reise.offene_entscheidungen ?? [])[0]}
+            kannVerwalten={reise.kann_verwalten}
+            vorschlaegeErlaubt={reise.vorschlaege_erlaubt}
+            voll={reise.voll}
+          />
+        </section>
+      )}
+
+      <MeinReiseplan reise={reise} onTab={onTab} />
+
       <AmZiel reise={reise} />
 
       {(reise.infos ?? []).length > 0 && (
@@ -219,7 +225,7 @@ export default function AufEinenBlick({
         {reise.beschlossen.length === 0 ? (
           <p className="text-xs text-text-tertiary">{t("beschlossen_leer")}</p>
         ) : (
-          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <ul className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2">
             {reise.beschlossen.map((e) => (
               <BeschlossenKarte key={e.id} e={e} />
             ))}

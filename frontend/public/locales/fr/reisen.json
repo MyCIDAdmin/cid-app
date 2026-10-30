@@ -27,7 +27,27 @@
     "stunden": "{{stunden}} h {{minuten}} min"
   },
   "kopf": {
-    "abreise_in": "Départ dans {{tage}} jours"
+    "phase_titel": {
+      "interesse": "Qui vient ?",
+      "planung": "Planifier ensemble",
+      "buchung": "Réserver maintenant",
+      "reise": "Bon voyage !",
+      "rueckblick": "Retour sur le voyage"
+    },
+    "phase_zeile": {
+      "interesse": "Dis si tu participes. Le voyage a lieu dès le minimum atteint.",
+      "planung": "Votez pour le vol, l'hébergement et les dates.",
+      "buchung": "Réserve l'aller et le retour et note-les ici.",
+      "reise": "Tout pour la route : programme, point de rendez-vous, contacts.",
+      "rueckblick": "Photos, coûts et un merci au groupe."
+    },
+    "cta": {
+      "interesse": "Qui participe ?",
+      "planung": "Vers la planification",
+      "buchung": "Saisir mon voyage",
+      "reise": "Infos pour la route",
+      "rueckblick": "Voir les coûts"
+    }
   },
   "phase": {
     "label": "Phases du voyage",
@@ -537,5 +557,18 @@
     "vorbereitet": "Déjà préparé : sondage de dates, tâches et liste de contrôle du modèle. Le reste se règle dans l'espace voyage.",
     "zum_raum": "Vers l'espace voyage",
     "schliessen": "Fermer"
+  },
+  "heute": {
+    "reiseplan": "Mon plan de voyage",
+    "nur_fuer_dich": "Visible uniquement par toi et l'organisation",
+    "hinreise": "Aller",
+    "rueckreise": "Retour",
+    "unterkunft": "Hébergement",
+    "unterkunft_gewaehlt": "Hébergement choisi",
+    "fehlt_noch": "manque encore",
+    "eintragen": "Saisir",
+    "gebucht": "réservé",
+    "geplant": "prévu",
+    "abstimmung": "Vote en cours"
   }
 }

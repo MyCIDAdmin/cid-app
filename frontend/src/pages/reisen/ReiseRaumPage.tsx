@@ -1,5 +1,5 @@
 /** Der Reiseraum : Kopf mit Status, darunter die Reiter. „Auf einen Blick“ ist die erste Seite. */
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
@@ -11,11 +11,10 @@ import EntscheidungenTab from "../../components/reisen/EntscheidungenTab";
 import InfosTab from "../../components/reisen/InfosTab";
 import KostenTab from "../../components/reisen/KostenTab";
 import MeineReiseTab from "../../components/reisen/MeineReiseTab";
-import ReiseTeilen from "../../components/reisen/ReiseTeilen";
+import ReiseKopf, { ReiseDock } from "../../components/reisen/ReiseKopf";
 import TeilnehmendeTab from "../../components/reisen/TeilnehmendeTab";
 import TabLeiste from "../../components/ui/TabLeiste";
 import { useReise } from "../../hooks/useReisen";
-import { restzeit, zeitraum } from "../../utils/reisen";
 
 function Abschnitt({ titel, children }: { titel: string; children: ReactNode }) {
   return (
@@ -29,11 +28,10 @@ function Abschnitt({ titel, children }: { titel: string; children: ReactNode }) 
 }
 
 export default function ReiseRaumPage() {
-  const { t, i18n } = useTranslation("reisen");
+  const { t } = useTranslation("reisen");
   const { id } = useParams<{ id: string }>();
   const [params, setParams] = useSearchParams();
   const q = useReise(id);
-  const [jetzt] = useState(() => Date.now());
 
   if (q.isLoading) return <p className="text-sm text-text-tertiary">{t("laden")}</p>;
   if (q.isError || !q.data || !id) {
@@ -47,7 +45,6 @@ export default function ReiseRaumPage() {
     );
   }
   const reise = q.data;
-  const tage = reise.start ? restzeit(`${reise.start}T00:00:00`, jetzt) : null;
 
   // Fünf Reiter statt neun : alte Adressen (?tab=aufgaben …) führen weiter an die richtige Stelle.
   const tabs = [
@@ -78,27 +75,7 @@ export default function ReiseRaumPage() {
       <Link to="/reisen" className="text-xs text-ca underline">
         ← {t("titel")}
       </Link>
-      <header>
-        <div className="flex items-start justify-between gap-2">
-          <h1 className="text-xl font-bold text-text-primary">{reise.titel}</h1>
-          <ReiseTeilen reise={reise} />
-        </div>
-        <p className="text-sm text-text-secondary">
-          {[reise.ziel_ort, reise.land, reise.stadion].filter(Boolean).join(", ")}
-          {reise.start
-            ? ` · ${zeitraum(reise.start, reise.ende, i18n.language)}`
-            : ` · ${t("liste.datum_offen")}`}
-        </p>
-        <p className="mt-1 text-xs text-text-tertiary">
-          {tage && !tage.abgelaufen && t("kopf.abreise_in", { tage: tage.tage })}
-          {tage && !tage.abgelaufen && " · "}
-          {t("liste.zaehler", { dabei: reise.dabei, interessiert: reise.interessiert })}
-          {reise.min_teilnehmer
-            ? ` · ${reise.findet_statt ? t("liste.findet_statt") : t("liste.ab_personen", { n: reise.min_teilnehmer })}`
-            : ""}
-          {reise.mein_status && ` · ${t(`status.${reise.mein_status}`)}`}
-        </p>
-      </header>
+      <ReiseKopf reise={reise} verfuegbareTabs={tabs.map((x) => x.id)} onTab={waehle} />
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <TabLeiste tabs={tabs} aktiv={aktiv} onChange={waehle} ariaLabel={reise.titel} />
@@ -155,6 +132,7 @@ export default function ReiseRaumPage() {
           {t("zum_chat")}
         </Link>
       )}
+      <ReiseDock reise={reise} verfuegbareTabs={tabs.map((x) => x.id)} onTab={waehle} />
     </div>
   );
 }

@@ -27,7 +27,27 @@
     "stunden": "{{stunden}} Std {{minuten}} Min"
   },
   "kopf": {
-    "abreise_in": "Abreise in {{tage}} Tagen"
+    "phase_titel": {
+      "interesse": "Wer kommt mit?",
+      "planung": "Gemeinsam planen",
+      "buchung": "Jetzt buchen",
+      "reise": "Gute Reise!",
+      "rueckblick": "Rückblick"
+    },
+    "phase_zeile": {
+      "interesse": "Sag, ob du dabei bist. Ab der Mindestzahl findet die Reise statt.",
+      "planung": "Stimmt über Flug, Unterkunft und Termine ab.",
+      "buchung": "Buche Hin- und Rückreise und trage sie hier ein.",
+      "reise": "Alles für unterwegs: Plan, Treffpunkt und Kontakte.",
+      "rueckblick": "Fotos, Kosten und ein Danke an die Gruppe."
+    },
+    "cta": {
+      "interesse": "Wer ist dabei?",
+      "planung": "Zur Planung",
+      "buchung": "Meine Reise eintragen",
+      "reise": "Infos für unterwegs",
+      "rueckblick": "Kosten ansehen"
+    }
   },
   "phase": {
     "label": "Phasen der Reise",
@@ -537,5 +557,18 @@
     "vorbereitet": "Schon vorbereitet: Termin-Umfrage, Aufgaben und Checkliste aus der Vorlage. Alles Weitere stellst du im Reiseraum ein.",
     "zum_raum": "Zum Reiseraum",
     "schliessen": "Schließen"
+  },
+  "heute": {
+    "reiseplan": "Mein Reiseplan",
+    "nur_fuer_dich": "Nur für dich und die Organisation sichtbar",
+    "hinreise": "Hinreise",
+    "rueckreise": "Rückreise",
+    "unterkunft": "Unterkunft",
+    "unterkunft_gewaehlt": "Unterkunft gewählt",
+    "fehlt_noch": "fehlt noch",
+    "eintragen": "Eintragen",
+    "gebucht": "gebucht",
+    "geplant": "geplant",
+    "abstimmung": "Abstimmung läuft"
   }
 }
