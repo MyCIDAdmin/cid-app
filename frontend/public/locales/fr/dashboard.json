@@ -95,7 +95,18 @@
       "tipp": "Donner mon pronostic",
       "reise_ansehen": "Voir le voyage · {{dabei}} participent",
       "reise_planen": "Planifier un voyage",
-      "ticket": "Billet"
+      "ticket": "Billet",
+      "tipp_titel": "Ton pronostic",
+      "tipp_dein": "Ton pronostic",
+      "tipp_heim": "Buts {{equipe}}",
+      "tipp_gast": "Buts {{equipe}}",
+      "tipp_speichern": "Enregistrer",
+      "tipp_aendern": "Modifier",
+      "tipp_bis": "Modifiable jusqu'au {{frist}}",
+      "tipp_gespeichert": "Enregistré · modifiable jusqu'au {{frist}}",
+      "tipp_fehler": "Le pronostic n'a pas pu être enregistré.",
+      "tipp_freischalten": "Inscris-toi au jeu de pronostics pour tipper directement ici.",
+      "tipp_zum_tippspiel": "Vers les pronostics"
     },
     "schnell": {
       "titel": "Accès rapides",

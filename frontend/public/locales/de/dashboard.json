@@ -95,7 +95,18 @@
       "tipp": "Tipp abgeben",
       "reise_ansehen": "Reise ansehen · {{dabei}} dabei",
       "reise_planen": "Reise planen",
-      "ticket": "Ticket"
+      "ticket": "Ticket",
+      "tipp_titel": "Dein Tipp",
+      "tipp_dein": "Dein Tipp gilt",
+      "tipp_heim": "Tore {{equipe}}",
+      "tipp_gast": "Tore {{equipe}}",
+      "tipp_speichern": "Tipp speichern",
+      "tipp_aendern": "Tipp ändern",
+      "tipp_bis": "Änderbar bis {{frist}}",
+      "tipp_gespeichert": "Gespeichert · änderbar bis {{frist}}",
+      "tipp_fehler": "Der Tipp konnte nicht gespeichert werden.",
+      "tipp_freischalten": "Melde dich im Tippspiel an, dann kannst du hier direkt tippen.",
+      "tipp_zum_tippspiel": "Zum Tippspiel"
     },
     "schnell": {
       "titel": "Schnellzugriffe",
