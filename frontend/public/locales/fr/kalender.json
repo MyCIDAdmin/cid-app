@@ -25,6 +25,9 @@
     "kategorie": "Filtrer par catégorie",
     "alle": "Toutes les catégories"
   },
+  "legende": {
+    "titel": "Légende des types d'événements"
+  },
   "kategorie": {
     "sitzung": "Réunion",
     "veranstaltung": "Évènement",

@@ -30,6 +30,24 @@ describe("ReiseRaumPage", () => {
     expect(screen.queryByRole("button", { name: "tabs.einstellungen" })).not.toBeInTheDocument();
   });
 
+  it("zeigt im Kopf der Reise einen Teilen-Button, der den Dialog öffnet", async () => {
+    vi.mocked(api.getReise).mockResolvedValue(
+      reise({ mein_status: "dabei", meine_rolle: "teilnehmer", sichtbarkeit: "mitglieder" }),
+    );
+    zeige();
+    fireEvent.click(await screen.findByRole("button", { name: "partage.bouton_aria" }));
+    expect(screen.getByRole("dialog", { name: "partage.dialog_titel" })).toBeInTheDocument();
+  });
+
+  it("blendet den Teilen-Button bei Reisen nur für Eingeladene ohne Einladungslink aus", async () => {
+    vi.mocked(api.getReise).mockResolvedValue(
+      reise({ mein_status: "dabei", meine_rolle: "teilnehmer", sichtbarkeit: "eingeladen" }),
+    );
+    zeige();
+    await screen.findByRole("heading", { name: "Auswärts in Algier" });
+    expect(screen.queryByRole("button", { name: "partage.bouton_aria" })).not.toBeInTheDocument();
+  });
+
   it("zeigt Mitreisenden fünf Reiter und der Organisation zusätzlich das Zahnrad", async () => {
     vi.mocked(api.getReise).mockResolvedValue(
       reise({

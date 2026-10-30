@@ -23,6 +23,7 @@ import { uebersetzt } from "../../utils/uebersetzung";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import DiensteBereich from "./DiensteBereich";
 import SitzungsBereich from "./SitzungsBereich";
+import TerminIcon from "./TerminIcon";
 
 interface Props {
   eintrag: KalenderEintrag;
@@ -85,7 +86,8 @@ export default function TerminDialog({ eintrag, zugang, onSchliessen, onBearbeit
             ✕
           </button>
         </div>
-        <p className="mt-1 text-xs text-text-secondary">
+        <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-text-secondary">
+          <TerminIcon eintrag={eintrag} size={14} />
           {t(`kategorie.${eintrag.kategorie}`)} · {formatZeit(eintrag, i18n.language)}
           {eintrag.wiederholung !== "keine" && ` · ${t(`wiederholung.${eintrag.wiederholung}`)}`}
         </p>

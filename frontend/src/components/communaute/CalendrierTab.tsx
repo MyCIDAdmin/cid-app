@@ -1,7 +1,7 @@
 /**
  * Onglet "Spielplan"/"Calendrier" — module Fan-Club (2026-09-24, extension du Live Match).
  * Lecture seule, synchronisé depuis GOAL API (voir backend apps.communaute.services) —
- * distinct des matchs du Live-Ticker (onglet "Ticker", voir LiveMatchPage.tsx). Calendrier
+ * distinct des matchs du Live-Ticker (ancien onglet "Ticker", retiré le 2026-10-30, voir LiveMatchPage.tsx). Calendrier
  * désormais COMPLET (toutes compétitions confondues), contrairement à SerpApi qui ne
  * renvoyait qu'une poignée de matchs — voir docstring de tête services.py.
  *

@@ -5,8 +5,9 @@ import { Link } from "react-router-dom";
 
 import { useKalenderEintraege } from "../../hooks/useKalender";
 import type { Ansicht } from "../../types/kalender";
-import { formatZeit } from "../../utils/kalender";
+import { KATEGORIE_STIL, formatZeit } from "../../utils/kalender";
 import { uebersetzt } from "../../utils/uebersetzung";
+import TerminIcon from "./TerminIcon";
 
 const VEREIN: Ansicht[] = ["verein"];
 
@@ -34,12 +35,22 @@ export default function NaechsteTermine() {
       ) : (
         <ul className="space-y-2">
           {liste.map((e) => (
-            <li key={e.id} className="text-sm">
-              <div className="truncate font-medium text-text-primary">
-                {e.wichtig && "★ "}
-                {uebersetzt(e, "titel")}
+            <li key={e.id} className="flex items-start gap-2 text-sm">
+              <span
+                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded ${
+                  KATEGORIE_STIL[e.kategorie] ?? KATEGORIE_STIL.sonstiges
+                }`}
+                title={t(`kategorie.${e.kategorie}`)}
+              >
+                <TerminIcon eintrag={e} size={14} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium text-text-primary">
+                  {e.wichtig && "★ "}
+                  {uebersetzt(e, "titel")}
+                </div>
+                <div className="text-xs text-text-secondary">{formatZeit(e, i18n.language)}</div>
               </div>
-              <div className="text-xs text-text-secondary">{formatZeit(e, i18n.language)}</div>
             </li>
           ))}
         </ul>

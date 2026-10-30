@@ -11,6 +11,7 @@ import EntscheidungenTab from "../../components/reisen/EntscheidungenTab";
 import InfosTab from "../../components/reisen/InfosTab";
 import KostenTab from "../../components/reisen/KostenTab";
 import MeineReiseTab from "../../components/reisen/MeineReiseTab";
+import ReiseTeilen from "../../components/reisen/ReiseTeilen";
 import TeilnehmendeTab from "../../components/reisen/TeilnehmendeTab";
 import TabLeiste from "../../components/ui/TabLeiste";
 import { useReise } from "../../hooks/useReisen";
@@ -78,7 +79,10 @@ export default function ReiseRaumPage() {
         ← {t("titel")}
       </Link>
       <header>
-        <h1 className="text-xl font-bold text-text-primary">{reise.titel}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-xl font-bold text-text-primary">{reise.titel}</h1>
+          <ReiseTeilen reise={reise} />
+        </div>
         <p className="text-sm text-text-secondary">
           {[reise.ziel_ort, reise.land, reise.stadion].filter(Boolean).join(", ")}
           {reise.start

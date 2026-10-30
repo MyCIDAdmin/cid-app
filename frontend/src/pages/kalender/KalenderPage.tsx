@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 
 import AnsichtWaehler from "../../components/kalender/AnsichtWaehler";
 import KalenderAnsicht from "../../components/kalender/KalenderAnsicht";
+import KalenderLegende from "../../components/kalender/KalenderLegende";
 import OffeneDienste from "../../components/kalender/OffeneDienste";
 import TerminfindungFormular from "../../components/kalender/TerminfindungFormular";
 import TerminfindungListe from "../../components/kalender/TerminfindungListe";
@@ -162,6 +163,8 @@ export default function KalenderPage() {
       {!eintraege.isLoading && !eintraege.isError && (
         <KalenderAnsicht eintraege={gefiltert} monat={monat} modus={modus} onWaehle={setOffen} />
       )}
+
+      <KalenderLegende />
 
       {findung && <TerminfindungFormular onFertig={() => setFindung(false)} />}
 

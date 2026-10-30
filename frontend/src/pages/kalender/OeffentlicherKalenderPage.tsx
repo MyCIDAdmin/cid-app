@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import TerminIcon from "../../components/kalender/TerminIcon";
 import { useOeffentlicheEintraege } from "../../hooks/useKalender";
 import { KATEGORIE_STIL, formatZeit } from "../../utils/kalender";
 import { uebersetzt } from "../../utils/uebersetzung";
@@ -39,10 +40,11 @@ export default function OeffentlicherKalenderPage() {
           <li key={e.id} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold ${
                   KATEGORIE_STIL[e.kategorie] ?? KATEGORIE_STIL.sonstiges
                 }`}
               >
+                <TerminIcon eintrag={e} size={13} />
                 {t(`kategorie.${e.kategorie}`)}
               </span>
               <span className="text-sm font-semibold text-text-primary">
