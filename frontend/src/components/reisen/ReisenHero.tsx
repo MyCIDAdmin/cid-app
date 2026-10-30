@@ -7,21 +7,10 @@ import { Link } from "react-router-dom";
 
 import { useCountdown } from "../../hooks/useCountdown";
 import { useReise, useReisenListe } from "../../hooks/useReisen";
-import { coverFuer, naechsteReise } from "../../utils/reisenDesign";
+import { coverFuer, naechsteReise, PHASEN, TAB_FUER_PUNKT } from "../../utils/reisenDesign";
 import { zeitraum } from "../../utils/reisen";
 import ReiseTeilen from "./ReiseTeilen";
 import { Countdown } from "./ui";
-
-export const PHASEN = ["interesse", "planung", "buchung", "reise", "rueckblick"] as const;
-
-/** Zu welchem Reiter führt ein „Jetzt dran“-Punkt ? */
-export const TAB_FUER_PUNKT: Record<string, string> = {
-  abstimmen: "planung",
-  aufgabe_ueberfaellig: "planung",
-  info_lesen: "infos",
-  hinreise: "meine",
-  anfragen: "menschen",
-};
 
 function Ziffer({ wert, label }: { wert: string; label: string }) {
   return (

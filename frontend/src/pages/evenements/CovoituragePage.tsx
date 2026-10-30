@@ -208,7 +208,7 @@ function ModaleRejoindre({ trajet, onClose }: { trajet: Covoiturage; onClose: ()
 }
 
 export default function CovoituragePage() {
-  const { t } = useTranslation("evenements");
+  const { t, i18n } = useTranslation("evenements");
   const trajetsQuery = useCovoiturages();
   // Trajets liés à un événement à venir uniquement (mockup : le formulaire "Proposer un trajet"
   // permet de rattacher le trajet à un événement, voir Covoiturage.evenement côté backend).
@@ -411,27 +411,62 @@ export default function CovoituragePage() {
           const complet = trajet.places_restantes <= 0;
           return (
             <div key={trajet.id} className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="rounded-cid bg-gradient-to-br from-ca to-cad px-2.5 py-1.5 text-center leading-tight text-white">
+                  <b className="block text-lg tabular-nums">
+                    {new Date(trajet.date_trajet).toLocaleDateString(i18n.language, {
+                      day: "2-digit",
+                    })}
+                  </b>
+                  <small className="text-[10px] uppercase">
+                    {new Date(trajet.date_trajet).toLocaleDateString(i18n.language, {
+                      month: "short",
+                    })}
+                  </small>
+                </div>
+                <div className="min-w-0 flex-1 basis-56">
                   <div className="text-sm font-bold text-text-primary">
                     {trajet.conducteur_detail
                       ? `${trajet.conducteur_detail.prenom} ${trajet.conducteur_detail.nom}`
                       : "—"}
                   </div>
+                  <div
+                    className="mt-1 flex items-center gap-2 text-sm font-semibold text-text-primary"
+                    data-testid="trajet-route"
+                  >
+                    <span className="truncate">{trajet.depart}</span>
+                    <span
+                      aria-hidden="true"
+                      className="h-0 min-w-[1.5rem] flex-1 border-t-2 border-dashed border-ca/50"
+                    />
+                    <span className="truncate">{trajet.destination}</span>
+                  </div>
                   <div className="text-xs text-text-tertiary">
-                    {trajet.depart} → {trajet.destination} · {formatDate(trajet.date_trajet)} ·{" "}
-                    {trajet.heure_trajet}
+                    {formatDate(trajet.date_trajet)} · {trajet.heure_trajet}
+                  </div>
+                  <div
+                    className="mt-1.5 flex items-center gap-1"
+                    role="img"
+                    aria-label={t("covoiturage.places_count", { count: trajet.places_restantes })}
+                  >
+                    {Array.from({ length: Math.min(trajet.places_disponibles, 8) }).map((_, i) => (
+                      <span
+                        key={i}
+                        aria-hidden="true"
+                        className={`h-3 w-3 rounded-full border-2 ${i < trajet.places_reservees ? "border-ca bg-ca" : "border-ca/60"}`}
+                      />
+                    ))}
+                    <span className="ml-1 rounded bg-cal px-1.5 py-0.5 text-[10px] font-medium text-cad">
+                      {t("covoiturage.places_count", { count: trajet.places_restantes })}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded bg-cal px-1.5 py-0.5 text-[10px] font-medium text-cad">
-                    {t("covoiturage.places_count", { count: trajet.places_restantes })}
-                  </span>
                   <button
                     type="button"
                     onClick={() => setTrajetARejoindre(trajet)}
                     disabled={complet}
-                    className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
+                    className="min-h-[40px] rounded-cid bg-ca px-4 py-1 text-xs font-semibold text-white hover:bg-cad disabled:opacity-50"
                   >
                     {complet ? t("complet") : t("covoiturage.rejoindre")}
                   </button>

@@ -37,3 +37,15 @@ export function naechsteReise(
     .sort((a, b) => (a.start ?? "9999").localeCompare(b.start ?? "9999"));
   return kommend.find((r) => r.mein_status === "dabei") ?? kommend[0];
 }
+
+/** Die fünf Phasen einer Reise in ihrer Reihenfolge. */
+export const PHASEN = ["interesse", "planung", "buchung", "reise", "rueckblick"] as const;
+
+/** Zu welchem Reiter führt ein „Jetzt dran“-Punkt ? */
+export const TAB_FUER_PUNKT: Record<string, string> = {
+  abstimmen: "planung",
+  aufgabe_ueberfaellig: "planung",
+  info_lesen: "infos",
+  hinreise: "meine",
+  anfragen: "menschen",
+};
