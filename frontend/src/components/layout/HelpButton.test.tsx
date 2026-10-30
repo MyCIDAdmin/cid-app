@@ -39,7 +39,7 @@ describe("HelpButton", () => {
     expect(cleHilfe("/live")).toBe("fanclub");
     expect(cleHilfe("/fil")).toBe("fil");
     expect(cleHilfe("/forum/12")).toBe("forum");
-    expect(cleHilfe("/groupes/3")).toBe("groupes");
+    expect(cleHilfe("/chats/gruppe/3")).toBe("chats");
     expect(cleHilfe("/admin/einstellungen")).toBe("zentral");
     expect(cleHilfe("/admin/regionen")).toBe("regionen_struktur");
     expect(cleHilfe("/regionen")).toBe("regionen");

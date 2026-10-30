@@ -3764,53 +3764,52 @@
       "Im Zweifel ausblenden statt löschen: Ausblenden lässt sich zurücknehmen."
     ]
   },
-  "groupes": {
-    "titre": "Chatgruppen",
-    "intro": "Chatgruppen sind öffentlich oder privat. Öffentlichen Gruppen kann jedes Mitglied beitreten, in private Gruppen wird man eingeladen.",
+  "chats": {
+    "titre": "Chats",
+    "intro": "Alle Gespräche an einem Ort: Chats mit einer Person, Gruppen und die Chats deiner Reisen. Gruppen sind öffentlich oder privat. Öffentlichen Gruppen kann jedes Mitglied beitreten, in private Gruppen wird man eingeladen.",
     "schritte": [
-      "In der Liste eine öffentliche Gruppe mit „Beitreten“ betreten oder eine eigene mit „Öffnen“.",
-      "Im Chat Nachrichten schreiben und mit „Senden“ abschicken.",
-      "Mit „Gruppe verlassen“ trittst du wieder aus."
+      "Links einen Chat aus der Liste öffnen oder mit dem Plus-Knopf einen neuen starten.",
+      "Unten schreiben und senden. Über das Plus teilst du eine Umfrage oder einen Treffpunkt, dazu gibt es Emojis und GIFs.",
+      "Über die Info-Taste siehst du die Mitglieder und kannst den Chat stumm schalten oder anheften."
     ],
     "workflows": [
       {
-        "id": "GRUP-01",
-        "titre": "Chatgruppe anlegen und Mitglieder einladen",
-        "wann": "Du möchtest mit anderen Mitgliedern in einer eigenen Gruppe chatten, z. B. für ein Treffen.",
+        "id": "CHAT-01",
+        "titre": "Neuen Chat oder eine Gruppe anlegen",
+        "wann": "Du möchtest mit einer Person oder mit mehreren Mitgliedern schreiben, z. B. für ein Treffen.",
         "schritte": [
-          "Das Menü „Chatgruppen“ öffnen und auf „Neue Gruppe“ klicken.",
-          "„Gruppenname“ und optional die Beschreibung eintragen.",
-          "„Öffentlich“ oder „Privat“ wählen.",
-          "Bei „Mitglieder einladen…“ Namen eintippen und die Personen auswählen.",
-          "Auf „Gruppe erstellen“ klicken."
+          "Das Menü „Chats“ öffnen und auf das Plus oben in der Liste klicken.",
+          "Eine Person aus der Suche wählen: Das gibt einen Chat zu zweit. Wählst du mehrere, entsteht eine Gruppe.",
+          "Bei einer Gruppe den „Gruppennamen“ eintragen, optional eine Beschreibung.",
+          "„Nur Eingeladene“ angehakt lassen, wenn nicht jeder beitreten soll.",
+          "Auf „Chat starten“ oder „Gruppe anlegen“ klicken."
         ],
-        "danach": "Die Gruppe erscheint in der Liste. Öffentliche Gruppen sehen alle Mitglieder, private nur die Eingeladenen. Als Ersteller kannst du die Gruppe mit „Gruppe löschen“ wieder entfernen.",
-        "vorher": "Du hast ein Mitgliedskonto und weißt, wen du einladen willst. Wähle „Privat“, wenn nicht jeder beitreten soll.",
+        "danach": "Der Chat erscheint in der Liste und öffnet sich. Private Gruppen sehen nur die Eingeladenen. Als Ersteller kannst du die Gruppe über die Info-Taste wieder löschen.",
+        "vorher": "Du hast ein Mitgliedskonto und weißt, mit wem du schreiben willst. Für eine Reise gibt es den Chat schon, du findest ihn in der Liste mit der Marke „Reise“.",
         "erwartet": [
-          "Das Formular „Neue Gruppe“ ist offen.",
-          "Name und Beschreibung stehen im Formular.",
-          "Die Auswahl zeigt „Öffentlich“ oder „Privat“.",
-          "Beim Tippen schlägt die App passende Mitglieder vor. Die gewählten stehen als Liste da.",
-          "Die Gruppe steht in der Liste mit der Zahl der Mitglieder."
+          "Das Fenster „Neuer Chat“ ist offen.",
+          "Die gewählten Personen stehen oben als Kapseln.",
+          "Es erscheinen die Felder für Name und Beschreibung.",
+          "Das Häkchen „Nur Eingeladene“ ist gesetzt.",
+          "Der Chat steht in der Liste und der Verlauf ist offen."
         ],
         "fehler": [
           {
-            "problem": "„Die Gruppe konnte nicht erstellt werden.“",
-            "loesung": "Trage einen Gruppennamen ein und versuche es erneut."
-          },
-          {
-            "problem": "Eine Person fehlt in der Gruppe.",
-            "loesung": "Private Gruppen sieht nur, wer eingeladen wurde. Prüfe, ob du die Person ausgewählt hast."
+            "problem": "„Der Chat konnte nicht angelegt werden.“",
+            "loesung": "Prüfe, ob bei einer Gruppe ein Name eingetragen ist, und versuche es erneut."
           },
           {
             "problem": "Du findest die Schaltfläche „Gruppe löschen“ nicht.",
-            "loesung": "Sie erscheint im Chat nur für den Ersteller der Gruppe."
+            "loesung": "Sie erscheint in der Info-Spalte nur für den Ersteller der Gruppe."
           }
         ],
-        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege „[ÜBUNG] Testgruppe“ als „Privat“ mit nur deinem Testkonto an und lösche sie danach mit „Gruppe löschen“. Lade keine echten Mitglieder ein."
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Lege „[ÜBUNG] Testgruppe“ als privat mit nur deinem Testkonto an und lösche sie danach über die Info-Taste. Lade keine echten Mitglieder ein."
       }
     ],
-    "tipps": ["Eine Nachricht kannst du nur selbst mit „Löschen“ entfernen."]
+    "tipps": [
+      "Eine Nachricht kannst du nur selbst mit dem Papierkorb entfernen.",
+      "Mit dem Glockensymbol in der Info-Spalte schaltest du einen Chat stumm: Du siehst neue Nachrichten, bekommst aber keine Meldung."
+    ]
   },
   "reisen": {
     "titre": "Reisen & Fahrgemeinschaften",

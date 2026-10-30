@@ -70,7 +70,7 @@ import {
   IconIdBadge2,
   IconHome,
   IconLayoutDashboard,
-  IconMail,
+  IconMessages,
   IconMailCog,
   IconMapPin,
   IconMessageCircle2,
@@ -287,21 +287,15 @@ export const NAV_ITEMS: NavItem[] = [
     group: "communaute",
     module: "forum",
   },
-  // Messagerie privée + Groupes de chat (mockup #pg-messagerie/#pg-groupes, Release Plan
-  // §3.2, Phase 4A/4B) — ouverts à tout authentifié, même principe que /fil et /forum.
+  // Chats (Oktober 2026) : Nachrichten und Chatgruppen sind zu einem Modul zusammengeführt
+  // (Konzept_Chats_Zusammenfuehrung) — ein Menüpunkt, Schlüssel „messagerie“ ; die alten Adressen
+  // /messagerie und /groupes leiten weiter (siehe App.tsx).
   {
-    to: "/messagerie",
-    labelKey: "nav.messagerie",
-    icon: IconMail,
+    to: "/chats",
+    labelKey: "nav.chats",
+    icon: IconMessages,
     group: "communaute",
     module: "messagerie",
-  },
-  {
-    to: "/groupes",
-    labelKey: "nav.groupes",
-    icon: IconUsersGroup,
-    group: "communaute",
-    module: "groupes",
   },
   // Live Match (mockup #pg-live, Release Plan §3.2, troisième lot Phase 4B) — ouvert à tout
   // authentifié, même principe que /fil et /groupes.

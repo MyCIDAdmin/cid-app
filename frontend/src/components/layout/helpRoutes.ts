@@ -31,7 +31,7 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/live", "fanclub"],
   ["/fil", "fil"],
   ["/forum", "forum"],
-  ["/groupes", "groupes"],
+  ["/chats", "chats"],
   ["/regionen/wettbewerb", "regionen_wettbewerb"],
   ["/regionen/bericht", "regionen_bericht"],
   ["/regionen", "regionen"],

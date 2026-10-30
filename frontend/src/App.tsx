@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
 import RouteAnnouncer from "./components/layout/RouteAnnouncer";
@@ -25,6 +25,7 @@ import BoutiquePage from "./pages/boutique/BoutiquePage";
 import CommandeRetourPage from "./pages/boutique/CommandeRetourPage";
 import PanierCommandePage from "./pages/boutique/PanierCommandePage";
 import ProduitDetailPage from "./pages/boutique/ProduitDetailPage";
+import ChatsPage from "./pages/chats/ChatsPage";
 import AdminAlbumsPage from "./pages/communaute/AdminAlbumsPage";
 import AdminQuizPage from "./pages/communaute/AdminQuizPage";
 import AlbumDetailPage from "./pages/communaute/AlbumDetailPage";
@@ -32,12 +33,8 @@ import AlbumsPage from "./pages/communaute/AlbumsPage";
 import FilPage from "./pages/communaute/FilPage";
 import ForumPage from "./pages/communaute/ForumPage";
 import ForumSujetPage from "./pages/communaute/ForumSujetPage";
-import GroupeChatPage from "./pages/communaute/GroupeChatPage";
-import GroupesPage from "./pages/communaute/GroupesPage";
 import LiveMatchDetailPage from "./pages/communaute/LiveMatchDetailPage";
 import LiveMatchPage from "./pages/communaute/LiveMatchPage";
-import MessagerieConversationPage from "./pages/communaute/MessagerieConversationPage";
-import MessageriePage from "./pages/communaute/MessageriePage";
 import KalenderPage from "./pages/kalender/KalenderPage";
 import OeffentlicherKalenderPage from "./pages/kalender/OeffentlicherKalenderPage";
 import RegionDetailPage from "./pages/regionen/RegionDetailPage";
@@ -93,6 +90,12 @@ import StatsPage from "./pages/stats/StatsPage";
 import CreerVoteWizardPage from "./pages/vote/CreerVoteWizardPage";
 import VotePage from "./pages/vote/VotePage";
 import { ROLE_LEVELS } from "./store/authStore";
+
+/** Alte Chat-Adressen (/messagerie/:id, /groupes/:id) auf die neue Seite umleiten. */
+function ChatUmleitung({ kanal }: { kanal: "direkt" | "gruppe" }) {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/chats/${kanal}/${id}` : "/chats"} replace />;
+}
 
 export default function App() {
   usePraeferenzenSync();
@@ -505,45 +508,31 @@ export default function App() {
               </RequireMenuModule>
             }
           />
-          {/* Messagerie privée + Groupes de chat (mockup #pg-messagerie/#pg-groupes, Release
-            Plan §3.2, Phase 4A/4B) — ouverts à tout authentifié ; l'IDOR sur une conversation
-            (participants uniquement) et la visibilité des groupes privés sont imposés côté
-            backend (ConversationPermission/GroupeChatPermission), ces routes n'ajoutent donc
-            pas de RequireRole, même principe que /fil et /forum. L'envoi de messages ne passe
-            jamais par ces pages REST mais par les hooks WebSocket dédiés (voir
-            useMessagerieSocket/useGroupeChatSocket). */}
+          {/* Chats (Oktober 2026) : „Nachrichten“ und „Chatgruppen“ sind ein Modul
+            (Konzept_Chats_Zusammenfuehrung). Menü-Schlüssel „messagerie“ ; die IDOR-Prüfung
+            (Teilnehmer bzw. Gruppenmitglieder) liegt weiter im Backend. Nachrichten werden nie
+            per REST gesendet, sondern über den WebSocket (hooks/useChatSocket.ts). Die alten
+            Adressen leiten um, damit Lesezeichen und frühere Benachrichtigungen weiter gehen. */}
           <Route
-            path="/messagerie"
+            path="/chats"
             element={
               <RequireMenuModule cle="messagerie">
-                <MessageriePage />
+                <ChatsPage />
               </RequireMenuModule>
             }
           />
           <Route
-            path="/messagerie/:id"
+            path="/chats/:kanal/:id"
             element={
               <RequireMenuModule cle="messagerie">
-                <MessagerieConversationPage />
+                <ChatsPage />
               </RequireMenuModule>
             }
           />
-          <Route
-            path="/groupes"
-            element={
-              <RequireMenuModule cle="groupes">
-                <GroupesPage />
-              </RequireMenuModule>
-            }
-          />
-          <Route
-            path="/groupes/:id"
-            element={
-              <RequireMenuModule cle="groupes">
-                <GroupeChatPage />
-              </RequireMenuModule>
-            }
-          />
+          <Route path="/messagerie" element={<Navigate to="/chats" replace />} />
+          <Route path="/messagerie/:id" element={<ChatUmleitung kanal="direkt" />} />
+          <Route path="/groupes" element={<Navigate to="/chats" replace />} />
+          <Route path="/groupes/:id" element={<ChatUmleitung kanal="gruppe" />} />
           {/* Live Match, Albums photos, Quiz (mockup #pg-live/#pg-albums/#pg-quiz, Release Plan
             §3.2, troisième lot Phase 4B) — ouverts à tout authentifié, même principe que /fil
             et /groupes : le backend scope déjà la visibilité et réserve la gestion (piloter un

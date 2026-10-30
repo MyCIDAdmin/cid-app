@@ -446,8 +446,7 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
     expect(screen.queryByText("nav.forum")).not.toBeInTheDocument();
     expect(screen.queryByText("nav.quiz")).not.toBeInTheDocument();
     expect(screen.getByText("nav.fil")).toBeInTheDocument();
-    expect(screen.getByText("nav.messagerie")).toBeInTheDocument();
-    expect(screen.getByText("nav.groupes")).toBeInTheDocument();
+    expect(screen.getByText("nav.chats")).toBeInTheDocument();
     expect(screen.getByText("nav.live")).toBeInTheDocument();
   });
 

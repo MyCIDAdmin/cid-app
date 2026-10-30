@@ -126,7 +126,7 @@ export default function ReiseRaumPage() {
       {aktiv === "einstellungen" && <EinstellungenTab key={reise.id} reise={reise} />}
       {reise.chat_gruppe && reise.voll && (
         <Link
-          to={`/groupes/${reise.chat_gruppe}`}
+          to={`/chats/gruppe/${reise.chat_gruppe}`}
           className="inline-block text-sm text-ca underline"
         >
           {t("zum_chat")}

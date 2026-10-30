@@ -116,6 +116,42 @@ export interface Conversation {
   created_at: string;
 }
 
+export type NachrichtArt = "text" | "gif" | "umfrage" | "treffpunkt" | "system";
+
+export interface Reaktion {
+  emoji: string;
+  anzahl: number;
+  ich: boolean;
+}
+
+export interface UmfrageDaten {
+  frage: string;
+  optionen: string[];
+  frist: string;
+}
+
+export interface UmfrageErgebnis {
+  zaehler: number[];
+  gesamt: number;
+  meine: number | null;
+  beendet: boolean;
+}
+
+export interface GifDaten {
+  url: string;
+  vorschau: string;
+  titel: string;
+}
+
+export interface TreffpunktDaten {
+  ort: string;
+  zeit: string;
+  link: string;
+}
+
+/** Zusatzdaten je Nachrichtenart (siehe apps.communaute.chats.bereinige_daten). */
+export type NachrichtDaten = GifDaten | UmfrageDaten | TreffpunktDaten | null;
+
 /** Aperçu minimal du message cité par une réponse ("Antworten", demande utilisateur
  * 2026-09-25) — miroir de MessagePriveApercuSerializer / MessageGroupeApercuSerializer. */
 export interface MessageApercu {
@@ -138,6 +174,10 @@ export interface MessagePrive {
   jaime: boolean;
   repond_a: string | null;
   repond_a_detail: MessageApercu | null;
+  art: NachrichtArt;
+  daten: NachrichtDaten;
+  angeheftet: boolean;
+  reaktionen: Reaktion[];
 }
 
 export interface GroupeChat {
@@ -172,6 +212,11 @@ export interface MessageGroupe {
   jaime: boolean;
   repond_a: string | null;
   repond_a_detail: MessageApercu | null;
+  art: NachrichtArt;
+  daten: NachrichtDaten;
+  angeheftet: boolean;
+  reaktionen: Reaktion[];
+  umfrage: UmfrageErgebnis | null;
 }
 
 // --- Messages WebSocket (miroir de apps.communaute.consumers) ---
@@ -188,8 +233,22 @@ export type MessagerieSocketMessage =
       nombre_likes: number;
       repond_a: string | null;
       repond_a_detail: MessageApercu | null;
+      art: NachrichtArt;
+      daten: NachrichtDaten;
+      angeheftet: boolean;
+      reaktionen: Reaktion[];
     }
   | { type: "lu"; conversation: string; lu_par: string }
+  | { type: "tippt"; membre_id: string }
+  | {
+      type: "message_reaktion";
+      id: string;
+      emoji: string;
+      anzahl: number;
+      membre_id: string;
+      aktiv: boolean;
+    }
+  | { type: "message_angeheftet"; id: string; angeheftet: boolean }
   // Diffusé par MessagePriveViewSet (REST, expéditeur uniquement — demande utilisateur du
   // 2026-09-16) via MessagerieConsumer.message_supprime, voir hooks/useMessagerieSocket.ts.
   | { type: "message_supprime"; id: string }
@@ -211,7 +270,23 @@ export type GroupeChatSocketMessage =
       nombre_likes: number;
       repond_a: string | null;
       repond_a_detail: MessageApercu | null;
+      art: NachrichtArt;
+      daten: NachrichtDaten;
+      angeheftet: boolean;
+      reaktionen: Reaktion[];
+      umfrage: UmfrageErgebnis | null;
     }
+  | { type: "tippt"; membre_id: string }
+  | {
+      type: "message_reaktion";
+      id: string;
+      emoji: string;
+      anzahl: number;
+      membre_id: string;
+      aktiv: boolean;
+    }
+  | { type: "message_angeheftet"; id: string; angeheftet: boolean }
+  | { type: "umfrage_update"; id: string; zaehler: number[]; gesamt: number }
   // Diffusé par MessageGroupeViewSet (REST, auteur uniquement) via
   // GroupeChatConsumer.message_supprime, voir hooks/useGroupeChatSocket.ts.
   | { type: "message_supprime"; id: string }
