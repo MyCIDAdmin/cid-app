@@ -80,10 +80,23 @@ def _gegner(rencontre) -> str:
     return rencontre.equipe_exterieur
 
 
+def ist_heimspiel(rencontre) -> bool:
+    """Heimspiel aus Sicht von Club Africain (für die Fans in Deutschland trotzdem eine Reise)."""
+    return "africain" in rencontre.equipe_domicile.lower()
+
+
+HEIMSPIEL_SCHLUESSEL = "Heimspiel"
+
+
+def _vorschlag_schluessel(rencontre) -> str:
+    """Stadionvorschläge gelten pro Gegner; bei Heimspielen immer das Heimstadion."""
+    return HEIMSPIEL_SCHLUESSEL if ist_heimspiel(rencontre) else _gegner(rencontre)
+
+
 def _merke_stadion(reise):
     if reise.rencontre_id and (reise.stadion or reise.ziel_ort):
         StadionVorschlag.objects.update_or_create(
-            gegner=_gegner(reise.rencontre),
+            gegner=_vorschlag_schluessel(reise.rencontre),
             defaults={
                 "stadion": reise.stadion,
                 "stadt": reise.ziel_ort,
@@ -145,12 +158,14 @@ class ReiseViewSet(Welle2Mixin, viewsets.GenericViewSet):
             from apps.communaute.models import RencontreCalendrier
 
             rencontre = get_object_or_404(RencontreCalendrier, pk=request.data["rencontre"])
-            gegner = _gegner(rencontre)
-            vorschlag = StadionVorschlag.objects.filter(gegner=gegner).first()
+            vorschlag = StadionVorschlag.objects.filter(
+                gegner=_vorschlag_schluessel(rencontre)
+            ).first()
             tag = timezone.localtime(rencontre.date_heure).date().isoformat()
+            art = "Heimspiel" if ist_heimspiel(rencontre) else "Auswärtsspiel"
             daten.setdefault(
                 "titel",
-                f"Auswärtsspiel: {rencontre.equipe_domicile} – {rencontre.equipe_exterieur}",
+                f"{art}: {rencontre.equipe_domicile} – {rencontre.equipe_exterieur}",
             )
             daten.setdefault("start", tag)
             daten.setdefault("ende", tag)
@@ -324,7 +339,10 @@ class ReiseViewSet(Welle2Mixin, viewsets.GenericViewSet):
 
             r = get_object_or_404(RencontreCalendrier, pk=rid)
             gegner = _gegner(r)
-        v = StadionVorschlag.objects.filter(gegner=gegner).first()
+            schluessel = _vorschlag_schluessel(r)
+        else:
+            schluessel = gegner
+        v = StadionVorschlag.objects.filter(gegner=schluessel).first()
         return Response(
             {"gegner": gegner, "stadion": v.stadion, "stadt": v.stadt, "land": v.land}
             if v

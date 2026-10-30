@@ -440,11 +440,16 @@
     "zaehler": "{{zahl}} sur {{gesamt}} faits"
   },
   "saison": {
-    "leer": "Aucun match à l'extérieur à venir.",
+    "leer": "Aucun match à venir.",
     "reise_planen": "Planifier un voyage",
     "keine_reise": "Pas encore de voyage.",
-    "titel": "Prochains matchs à l'extérieur",
-    "alle_reisen": "Voyages"
+    "titel": "Prochains matchs",
+    "alle_reisen": "Voyages prévus",
+    "heim": "À domicile",
+    "auswaerts": "À l'extérieur",
+    "anzahl": "{{n}} matchs",
+    "zeigen": "Afficher les matchs",
+    "verbergen": "Masquer les matchs"
   },
   "steckbrief": {
     "titel": "Fiche {{land}}",

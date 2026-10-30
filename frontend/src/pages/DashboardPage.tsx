@@ -24,6 +24,13 @@
  * lecture seule R1/gestion R2. Remplacée par une tuile "Votes en cours" (apps.vote, déjà
  * implémenté) plutôt que de laisser une tuile vide ou d'inventer un module non demandé.
  *
+ * Refonte 2026-10-30 (maquette « Übersicht », demande utilisateur) : en haut le prochain match
+ * (Heim ou Auswärts) avec compte à rebours et, s'il existe un voyage, « Am Reiseziel » ; puis
+ * les accès rapides et « Heute für dich » (une seule liste au lieu de plusieurs bandeaux) ;
+ * « Dein Stand » et « Neu seit deinem letzten Besuch » à gauche, agenda/finances/aides à droite.
+ * Bureau Admin+ voit en plus « Zu erledigen » et les indicateurs club (composant
+ * BueroZuErledigen). Aucun endpoint nouveau : tout vient des hooks existants.
+ *
  * Animations (demande utilisateur 2026-09-25, "dynamischer und bewegender Kacheln und
  * Kennzahlen") : voir KpiTile ci-dessous pour le détail (count-up via useCountUp, icône,
  * survol) ; les listes (événements, ma situation, publications) gagnent une légère
@@ -31,39 +38,35 @@
  * montage. Pas de légende ajoutée : aucune couleur de cette page ne porte seule une
  * information — chaque badge de statut affiche déjà son texte (voir STATUT_STYLES).
  */
-import {
-  IconCalendarEvent,
-  IconChecklist,
-  IconClockHour4,
-  IconReceipt2,
-  IconUsers,
-} from "@tabler/icons-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import AktionenHinweis from "../components/aktionen/AktionenHinweis";
+import BueroZuErledigen from "../components/dashboard/BueroZuErledigen";
+import DeinStand from "../components/dashboard/DeinStand";
+import HeuteFuerDich from "../components/dashboard/HeuteFuerDich";
+import NaechstesSpielHero from "../components/dashboard/NaechstesSpielHero";
+import NeuSeitBesuch from "../components/dashboard/NeuSeitBesuch";
+import Schnellzugriffe from "../components/dashboard/Schnellzugriffe";
 import UebersichtHinweise from "../components/dashboard/UebersichtHinweise";
 import NaechsteTermine from "../components/kalender/NaechsteTermine";
-import { useCountUp } from "../hooks/useCountUp";
 import { useMesCotisations } from "../hooks/useCotisations";
 import { usePublications } from "../hooks/useCommunaute";
 import { useEvenements, useInscriptions } from "../hooks/useEvenements";
-import { useStatsFinancier, useStatsMembres } from "../hooks/useStats";
 import { useOffeneStellen } from "../hooks/useProjets";
 import { useModuleOuvert } from "../hooks/useRbac";
-import { useSessionVoteActive } from "../hooks/useVote";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../store/authStore";
 import type { Cotisation, StatutCotisation, TypeArticle } from "../types/cotisation";
 import type { Evenement } from "../types/evenements";
-import { apercuTexteDepuisHtml } from "../utils/html";
+import { tageszeit } from "../utils/uebersicht";
 
 function aujourdhuiISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function formatDateCourte(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { day: "2-digit", month: "long" });
+function formatDateCourte(iso: string, langue: string): string {
+  return new Date(iso).toLocaleDateString(langue, { day: "2-digit", month: "long" });
 }
 
 function formatMontant(montant: string | number): string {
@@ -89,51 +92,8 @@ const STATUT_STYLES: Record<StatutCotisation, string> = {
   annulee: "bg-bg-tertiary text-text-secondary",
 };
 
-// "dynamischer und bewegender" (demande utilisateur 2026-09-25) — chaque tuile anime sa valeur
-// numérique (useCountUp, l'ancienne -> la nouvelle valeur) plutôt que de se contenter d'un
-// remplacement instantané, gagne une légère élévation au survol, et porte une icône propre à sa
-// nature pour rester identifiable en un coup d'œil même sans lire le libellé. Pas de flèche de
-// tendance (hausse/baisse) : aucune donnée de période précédente n'existe côté API pour ces
-// indicateurs (voir apps.stats) — en ajouter une aurait exigé d'inventer une comparaison
-// fictive, ce qu'on évite plutôt que de l'implémenter à moitié.
-function KpiTile({
-  label,
-  value,
-  suffix,
-  delta,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  suffix?: string;
-  delta?: string;
-  icon: typeof IconUsers;
-}) {
-  const valeurNumerique = typeof value === "number" ? value : undefined;
-  const valeurAnimee = useCountUp(valeurNumerique);
-  const texteValeur =
-    typeof value === "number"
-      ? `${Math.round(valeurAnimee ?? value).toLocaleString("de-DE")}${suffix ?? ""}`
-      : value;
-
-  return (
-    <div className="group rounded-cid-lg bg-bg-primary p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-xs text-text-secondary">{label}</span>
-        <Icon
-          size={16}
-          className="shrink-0 text-cad/50 transition-transform duration-200 group-hover:scale-110 group-hover:text-cad"
-          aria-hidden="true"
-        />
-      </div>
-      <div className="text-xl font-bold tabular-nums text-text-primary">{texteValeur}</div>
-      {delta && <div className="mt-0.5 text-[11px] text-text-tertiary">{delta}</div>}
-    </div>
-  );
-}
-
 export default function DashboardPage() {
-  const { t } = useTranslation("dashboard");
+  const { t, i18n } = useTranslation("dashboard");
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
@@ -150,13 +110,9 @@ export default function DashboardPage() {
   // Un compte non-membre n'a accès ni au Fil ni aux Votes (apps.rbac.authentication, 403) — on
   // n'interroge pas ces API pour lui (2026-10-11), le tableau de bord n'affiche alors rien de plus.
   const filOuvert = useModuleOuvert("fil").ouvert;
-  const voteOuvertModule = useModuleOuvert("vote").ouvert;
-  const voteActifQuery = useSessionVoteActive({ enabled: voteOuvertModule });
   const projetsOuvert = useModuleOuvert("projets").ouvert;
   const stellenQuery = useOffeneStellen({ enabled: projetsOuvert });
   const publicationsQuery = usePublications({}, { enabled: filOuvert });
-  const statsMembresQuery = useStatsMembres({}, { enabled: estGestion });
-  const statsFinancierQuery = useStatsFinancier({}, { enabled: estGestion });
 
   const prochainsEvenements = useMemo<Evenement[]>(() => {
     const resultats = evenementsQuery.data?.results ?? [];
@@ -180,256 +136,162 @@ export default function DashboardPage() {
   const offeneStellen = [...(stellenQuery.data ?? [])]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 5);
-  const voteOuvert = (voteActifQuery.data?.results.length ?? 0) > 0;
-  const evenementsAVenirNombre = evenementsQuery.data?.results.length ?? 0;
 
-  const bandeauMembre = !cotisationAnnuelle
-    ? t("bandeau_membre_non_reglee", { annee: anneeCourante })
-    : cotisationAnnuelle.statut === "payee"
-      ? t("bandeau_membre_a_jour", { annee: anneeCourante })
-      : t("bandeau_membre_en_attente", { annee: anneeCourante });
+  const gruss = t(`uebersicht.gruss_${tageszeit()}`, { prenom: prenomAffiche });
+  const datum = new Date().toLocaleDateString(i18n.language, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-text-primary">{t("titre")}</h1>
-      <p className="text-sm text-text-secondary">{t("bienvenue", { prenom: prenomAffiche })}</p>
+      <header>
+        <h1 className="text-xl font-bold text-text-primary sm:text-2xl">{gruss}</h1>
+        <p className="text-sm text-text-secondary">
+          {t("titre")} · {datum}
+        </p>
+      </header>
 
+      <NaechstesSpielHero />
+      <Schnellzugriffe />
       <AktionenHinweis />
       <UebersichtHinweise />
+      {estGestion && <BueroZuErledigen />}
 
-      <div
-        className={`rounded-cid p-3 text-sm ${
-          estGestion
-            ? "bg-status-infoBg text-status-infoText"
-            : cotisationAnnuelle?.statut === "payee"
-              ? "bg-status-successBg text-status-successText"
-              : "bg-status-warningBg text-status-warningText"
-        }`}
-      >
-        {estGestion ? t("bandeau_admin") : bandeauMembre}
-      </div>
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="min-w-0 flex-[999_1_30rem] space-y-4">
+          <HeuteFuerDich />
+          <DeinStand />
+          <NeuSeitBesuch publikationen={publications} veranstaltungen={prochainsEvenements} />
+        </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {estGestion ? (
-          <>
-            <KpiTile
-              icon={IconUsers}
-              label={t("kpi.membres_actifs")}
-              value={statsMembresQuery.data?.actifs ?? "—"}
-            />
-            <KpiTile
-              icon={IconReceipt2}
-              label={t("kpi.taux_collecte")}
-              value={statsFinancierQuery.data?.taux_collecte ?? "—"}
-              suffix=" %"
-              delta={
-                statsFinancierQuery.data
-                  ? t("kpi.cotisations_en_attente", {
-                      montant: formatMontant(statsFinancierQuery.data.cotisations_en_attente),
-                    })
-                  : undefined
-              }
-            />
-            <KpiTile
-              icon={IconCalendarEvent}
-              label={t("kpi.evenements_a_venir")}
-              value={evenementsAVenirNombre}
-              delta={
-                prochainsEvenements[0]
-                  ? formatDateCourte(prochainsEvenements[0].date_evenement)
-                  : t("kpi.aucun_evenement_prevu")
-              }
-            />
-            <KpiTile
-              icon={IconChecklist}
-              label={t("kpi.votes_en_cours")}
-              value={voteOuvert ? 1 : 0}
-              delta={voteOuvert ? t("kpi.vote_ouvert") : t("kpi.aucun_vote")}
-            />
-          </>
-        ) : (
-          <>
-            <KpiTile
-              icon={IconCalendarEvent}
-              label={t("kpi.evenements_a_venir")}
-              value={evenementsAVenirNombre}
-              delta={
-                prochainsEvenements[0]
-                  ? formatDateCourte(prochainsEvenements[0].date_evenement)
-                  : t("kpi.aucun_evenement_prevu")
-              }
-            />
-            <KpiTile
-              icon={IconClockHour4}
-              label={t("kpi.mes_inscriptions_attente")}
-              value={inscriptionsEnAttente.length}
-            />
-            <KpiTile
-              icon={IconChecklist}
-              label={t("kpi.votes_en_cours")}
-              value={voteOuvert ? 1 : 0}
-              delta={voteOuvert ? t("kpi.vote_ouvert") : t("kpi.aucun_vote")}
-            />
-          </>
-        )}
-      </div>
+        <div className="min-w-0 flex-[1_1_20rem] space-y-4">
+          <NaechsteTermine />
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-semibold text-text-primary">
-              {t("prochains_evenements.titre")}
-            </span>
-            <Link to="/evenements" className="text-xs text-ca hover:underline">
-              {t("prochains_evenements.voir_tout")}
-            </Link>
-          </div>
-          {prochainsEvenements.length === 0 ? (
-            <p className="text-xs text-text-tertiary">{t("prochains_evenements.aucun")}</p>
-          ) : (
-            <ul className="space-y-2">
-              {prochainsEvenements.map((evenement) => (
-                <li
-                  key={evenement.id}
-                  className="flex animate-slide-in-fade items-center justify-between rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate font-medium text-text-primary">{evenement.titre}</div>
-                    <div className="text-xs text-text-secondary">
-                      {formatDateCourte(evenement.date_evenement)}
-                      {evenement.lieu ? ` · ${evenement.lieu}` : ""}
+          <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-semibold text-text-primary">
+                {t("prochains_evenements.titre")}
+              </span>
+              <Link to="/evenements" className="text-xs text-ca hover:underline">
+                {t("prochains_evenements.voir_tout")}
+              </Link>
+            </div>
+            {prochainsEvenements.length === 0 ? (
+              <p className="text-xs text-text-tertiary">{t("prochains_evenements.aucun")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {prochainsEvenements.map((evenement) => (
+                  <li
+                    key={evenement.id}
+                    className="flex animate-slide-in-fade items-center justify-between rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-text-primary">
+                        {evenement.titre}
+                      </div>
+                      <div className="text-xs text-text-secondary">
+                        {formatDateCourte(evenement.date_evenement, i18n.language)}
+                        {evenement.lieu ? ` · ${evenement.lieu}` : ""}
+                      </div>
                     </div>
-                  </div>
-                  {evenement.places_max != null && (
-                    <span className="ml-2 shrink-0 rounded-full bg-bg-tertiary px-2 py-0.5 text-[11px] font-medium text-text-secondary">
-                      {evenement.places_reservees}/{evenement.places_max}
+                    {evenement.places_max != null && (
+                      <span className="ml-2 shrink-0 rounded-full bg-bg-tertiary px-2 py-0.5 text-[11px] font-medium text-text-secondary">
+                        {evenement.places_reservees}/{evenement.places_max}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+            <div className="mb-2 text-sm font-semibold text-text-primary">
+              {t("ma_situation.titre")}
+            </div>
+            {!cotisationAnnuelle && !fraisAdhesion && inscriptionsEnAttente.length === 0 ? (
+              <p className="text-xs text-text-tertiary">{t("ma_situation.aucune_donnee")}</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {cotisationAnnuelle && (
+                  <li className="flex animate-slide-in-fade items-center justify-between">
+                    <span>{t("ma_situation.cotisation_annuelle", { annee: anneeCourante })}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_STYLES[cotisationAnnuelle.statut]}`}
+                    >
+                      {t(`ma_situation.statut_${cotisationAnnuelle.statut}`)}
                     </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <NaechsteTermine />
-
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="mb-2 text-sm font-semibold text-text-primary">
-            {t("ma_situation.titre")}
-          </div>
-          {!cotisationAnnuelle && !fraisAdhesion && inscriptionsEnAttente.length === 0 ? (
-            <p className="text-xs text-text-tertiary">{t("ma_situation.aucune_donnee")}</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {cotisationAnnuelle && (
-                <li className="flex animate-slide-in-fade items-center justify-between">
-                  <span>{t("ma_situation.cotisation_annuelle", { annee: anneeCourante })}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_STYLES[cotisationAnnuelle.statut]}`}
+                  </li>
+                )}
+                {fraisAdhesion && (
+                  <li className="flex animate-slide-in-fade items-center justify-between">
+                    <span>{t("ma_situation.frais_adhesion", { annee: anneeCourante })}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_STYLES[fraisAdhesion.statut]}`}
+                    >
+                      {t(`ma_situation.statut_${fraisAdhesion.statut}`)}
+                    </span>
+                  </li>
+                )}
+                {inscriptionsEnAttente.map((inscription) => (
+                  <li
+                    key={inscription.id}
+                    className="flex animate-slide-in-fade items-center justify-between"
                   >
-                    {t(`ma_situation.statut_${cotisationAnnuelle.statut}`)}
-                  </span>
-                </li>
-              )}
-              {fraisAdhesion && (
-                <li className="flex animate-slide-in-fade items-center justify-between">
-                  <span>{t("ma_situation.frais_adhesion", { annee: anneeCourante })}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUT_STYLES[fraisAdhesion.statut]}`}
-                  >
-                    {t(`ma_situation.statut_${fraisAdhesion.statut}`)}
-                  </span>
-                </li>
-              )}
-              {inscriptionsEnAttente.map((inscription) => (
-                <li
-                  key={inscription.id}
-                  className="flex animate-slide-in-fade items-center justify-between"
-                >
-                  <span className="truncate">
-                    {inscription.evenement_detail?.titre ?? inscription.evenement}
-                  </span>
-                  <span className="rounded-full bg-status-warningBg px-2 py-0.5 text-[11px] font-medium text-status-warningText">
-                    {formatMontant(inscription.montant_paye)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <button
-            type="button"
-            onClick={() => navigate("/mon-adhesion")}
-            className="mt-3 w-full rounded-cid bg-ca px-3 py-1.5 text-xs font-semibold text-white hover:bg-cad"
-          >
-            {t("ma_situation.gerer_paiements")}
-          </button>
-        </div>
-      </div>
-
-      {offeneStellen.length > 0 && (
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm" data-testid="dashboard-stellen">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-semibold text-text-primary">{t("stellen.titre")}</span>
-            <Link to="/projets" className="text-xs text-ca hover:underline">
-              {t("stellen.voir_tout")}
-            </Link>
+                    <span className="truncate">
+                      {inscription.evenement_detail?.titre ?? inscription.evenement}
+                    </span>
+                    <span className="rounded-full bg-status-warningBg px-2 py-0.5 text-[11px] font-medium text-status-warningText">
+                      {formatMontant(inscription.montant_paye)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              onClick={() => navigate("/mon-adhesion")}
+              className="mt-3 w-full rounded-cid bg-ca px-3 py-1.5 text-xs font-semibold text-white hover:bg-cad"
+            >
+              {t("ma_situation.gerer_paiements")}
+            </button>
           </div>
-          <ul className="space-y-2">
-            {offeneStellen.map((stelle) => (
-              <li
-                key={stelle.id}
-                className="animate-slide-in-fade rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
-              >
-                <Link to={`/projets/${stelle.projet}`} className="block">
-                  <span className="font-medium text-text-primary">🙋 {stelle.titel}</span>
-                  {stelle.projet_titre && (
-                    <span className="text-text-secondary"> — {stelle.projet_titre}</span>
-                  )}
-                  <span className="ml-2 text-xs text-ca">{t("stellen.mehr")}</span>
+
+          {offeneStellen.length > 0 && (
+            <div
+              className="rounded-cid-lg bg-bg-primary p-3 shadow-sm"
+              data-testid="dashboard-stellen"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-semibold text-text-primary">
+                  {t("stellen.titre")}
+                </span>
+                <Link to="/projets" className="text-xs text-ca hover:underline">
+                  {t("stellen.voir_tout")}
                 </Link>
-              </li>
-            ))}
-          </ul>
+              </div>
+              <ul className="space-y-2">
+                {offeneStellen.map((stelle) => (
+                  <li
+                    key={stelle.id}
+                    className="animate-slide-in-fade rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
+                  >
+                    <Link to={`/projets/${stelle.projet}`} className="block">
+                      <span className="font-medium text-text-primary">🙋 {stelle.titel}</span>
+                      {stelle.projet_titre && (
+                        <span className="text-text-secondary"> — {stelle.projet_titre}</span>
+                      )}
+                      <span className="ml-2 text-xs text-ca">{t("stellen.mehr")}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      )}
-
-      <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-semibold text-text-primary">
-            {t("dernieres_publications.titre")}
-          </span>
-          <Link to="/fil" className="text-xs text-ca hover:underline">
-            {t("dernieres_publications.voir_tout")}
-          </Link>
-        </div>
-        {publications.length === 0 ? (
-          <p className="text-xs text-text-tertiary">{t("dernieres_publications.aucune")}</p>
-        ) : (
-          <ul className="space-y-2">
-            {publications.map((publication) => (
-              <li
-                key={publication.id}
-                className="flex animate-slide-in-fade items-start gap-2 rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
-              >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cal text-[11px] font-bold text-cad">
-                  {publication.auteur.prenom.charAt(0)}
-                  {publication.auteur.nom.charAt(0)}
-                </div>
-                <div className="min-w-0">
-                  <span className="font-medium text-text-primary">
-                    {publication.auteur.prenom} {publication.auteur.nom}
-                  </span>{" "}
-                  {/* contenu est du HTML depuis le 2026-09-29 (retour utilisateur, éditeur type
-                      Word du module "Neuigkeiten") — aperçu compact en ligne, donc texte brut
-                      tronqué plutôt que le rendu HTML complet (voir utils/html.ts). */}
-                  <span className="text-text-secondary">
-                    {apercuTexteDepuisHtml(publication.contenu, 80)}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </div>
   );

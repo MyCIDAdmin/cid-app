@@ -75,5 +75,124 @@
       "artikel_frist": "„{{titel}}“ ist nur noch {{wann}} bestellbar – jetzt sichern!",
       "artikel_bestand_frist": "„{{titel}}“: nur noch {{bestand}} Stück, bestellbar nur noch bis {{wann}} – jetzt zugreifen!"
     }
+  },
+  "uebersicht": {
+    "gruss_morgen": "Guten Morgen, {{prenom}}",
+    "gruss_tag": "Guten Tag, {{prenom}}",
+    "gruss_abend": "Guten Abend, {{prenom}}",
+    "hero": {
+      "titel": "Nächstes Spiel",
+      "eyebrow": "Nächstes Spiel · {{art}} · {{wettbewerb}}",
+      "heim": "Heimspiel",
+      "auswaerts": "Auswärtsspiel",
+      "gegen": "gegen",
+      "countdown": "Countdown bis zum Anpfiff",
+      "tage": "Tage",
+      "std": "Std.",
+      "min": "Min.",
+      "sek": "Sek.",
+      "laeuft": "Das Spiel läuft oder ist vorbei.",
+      "tipp": "Tipp abgeben",
+      "reise_ansehen": "Reise ansehen · {{dabei}} dabei",
+      "reise_planen": "Reise planen",
+      "ticket": "Ticket"
+    },
+    "schnell": {
+      "titel": "Schnellzugriffe",
+      "tippen": "Tippen",
+      "reise": "Reise planen",
+      "tickets": "Meine Tickets",
+      "beitrag": "Beitrag bezahlen",
+      "hilfe": "Hilfe"
+    },
+    "heute": {
+      "titel": "Heute für dich",
+      "offen_one": "{{count}} offen",
+      "offen_other": "{{count}} offen",
+      "alles_erledigt": "Alles erledigt.",
+      "nichts_offen": "Schön, dass du dabei bist. Im Moment ist nichts offen.",
+      "spaeter": "Später"
+    },
+    "aufgaben": {
+      "abstimmung": {
+        "titel": "Abstimmung: {{titel}}",
+        "zeile": "Die Abstimmung läuft gerade. Deine Stimme zählt.",
+        "knopf": "Abstimmen"
+      },
+      "tipp": {
+        "titel": "Tipp für {{spiel}} fehlt",
+        "zeile": "Tippspiel · bis einen Tag vor dem Anpfiff möglich",
+        "knopf": "Tippen"
+      },
+      "reise": {
+        "titel": "Reise zum nächsten Spiel: {{titel}}",
+        "zeile": "Sag der Gruppe, ob du dabei bist.",
+        "knopf": "Ansehen"
+      },
+      "beitrag_offen": {
+        "titel": "Mitgliedsbeitrag ist noch nicht bezahlt",
+        "zeile": "Zahle per Lastschrift, PayPal oder Überweisung.",
+        "knopf": "Bezahlen"
+      },
+      "beitrag_wartet": {
+        "titel": "Mitgliedsbeitrag wartet auf die Zahlung",
+        "zeile": "{{betrag}} €",
+        "knopf": "Bezahlen"
+      },
+      "beitrag_fehlgeschlagen": {
+        "titel": "Zahlung des Mitgliedsbeitrags fehlgeschlagen",
+        "zeile": "{{betrag}} € · bitte erneut versuchen",
+        "knopf": "Erneut zahlen"
+      },
+      "anmeldung": {
+        "titel": "Anmeldung wartet auf Zahlung: {{titel}}",
+        "zeile": "{{betrag}} €",
+        "knopf": "Bezahlen"
+      }
+    },
+    "stand": {
+      "titel": "Dein Stand",
+      "tippspiel": "Tippspiel",
+      "platz": "{{platz}}. Platz",
+      "von_punkte": "von {{von}} · {{punkte}} Punkte",
+      "reisen": "Meine Reisen",
+      "reisen_zeile": "bei denen du dabei bist"
+    },
+    "neu": {
+      "titel": "Neu seit deinem letzten Besuch",
+      "art_beitrag": "Beitrag",
+      "art_termin": "Termin",
+      "neu": "neu"
+    },
+    "buero": {
+      "titel": "Zu erledigen",
+      "punkte_one": "{{count}} Punkt",
+      "punkte_other": "{{count}} Punkte",
+      "nichts": "Im Büro ist im Moment nichts offen.",
+      "kennzahlen": "Kennzahlen des Vereins",
+      "nachweise": {
+        "titel_one": "{{count}} Nachweis prüfen",
+        "titel_other": "{{count}} Nachweise prüfen",
+        "zeile": "Mitgliedschaften warten auf die Prüfung.",
+        "knopf": "Prüfen"
+      },
+      "zahlungen": {
+        "titel": "Offene Beiträge",
+        "zeile": "{{betrag}} stehen aus.",
+        "knopf": "Ansehen"
+      },
+      "tippzahlungen": {
+        "titel_one": "{{count}} Tippspiel-Zahlung offen",
+        "titel_other": "{{count}} Tippspiel-Zahlungen offen",
+        "zeile": "Teilnahmegebühr noch nicht bestätigt.",
+        "knopf": "Ansehen"
+      },
+      "support": {
+        "titel_one": "{{count}} Support-Anfrage",
+        "titel_other": "{{count}} Support-Anfragen",
+        "zeile": "Offene Fragen von Mitgliedern.",
+        "knopf": "Öffnen"
+      }
+    }
   }
 }

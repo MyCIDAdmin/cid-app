@@ -3816,7 +3816,7 @@
     "titre": "Voyages et covoiturage",
     "intro": "Vous organisez ici ensemble des voyages pour des matchs à l'extérieur et d'autres occasions : rassembler les intéressés, voter, saisir trajets et hébergement et répartir les tâches. Chacun réserve et paie lui-même, il n'y a aucun paiement dans l'application.",
     "schritte": [
-      "Dans l'onglet « Voyages », vous voyez en haut les prochains matchs à l'extérieur et dessous tous les voyages. Avec « Planifier un voyage » ou « Nouveau voyage », vous en créez un.",
+      "Dans l'onglet « Voyages », vous voyez en haut les voyages prévus. Dessous figurent les « Prochains matchs » (à domicile et à l'extérieur), d'abord repliés. Avec « Planifier un voyage » ou « Nouveau voyage », vous en créez un.",
       "Ouvrir un voyage et s'inscrire avec « Je suis intéressé » ou « Je viens ».",
       "Dans l'espace du voyage, cinq onglets guident : « En un coup d'œil », « Planification », « Personnes », « Mon voyage » et « Infos et coûts ». La roue ⚙ ouvre les paramètres (réservé à l'organisation).",
       "L'onglet « Covoiturage » affiche comme avant les trajets partagés."
@@ -3833,7 +3833,7 @@
         "titre": "Trouver un voyage et s'inscrire",
         "wann": "Vous voulez savoir quels voyages existent et vous inscrire à l'un d'eux.",
         "schritte": [
-          "Ouvrir « Voyages et covoiturage » dans le menu. En haut figurent les prochains matchs à l'extérieur, dessous tous les voyages.",
+          "Ouvrir « Voyages et covoiturage » dans le menu. En haut figurent les voyages prévus, dessous les « Prochains matchs » repliés.",
           "Avec « Mes voyages uniquement », vous n'affichez que les voyages auxquels vous participez. Toucher un voyage.",
           "Sous « Souhaitez-vous venir ? », choisir « Je suis intéressé » ou « Je viens ». Pour les voyages avec validation, le bouton s'appelle « Demander à participer ».",
           "Dans « En un coup d'œil », lire ce qui est décidé et ce qui vous attend sous « À faire maintenant »."
@@ -3842,7 +3842,7 @@
         "danach": "Avec « Je viens », vous devenez participant : vous pouvez voter, remplir « Mon voyage » et utiliser le chat du voyage. Les intéressés ne voient que ce qui est décidé.",
         "vorher": "Vous êtes connecté.",
         "erwartet": [
-          "La page affiche « Prochains matchs à l'extérieur » et dessous « Voyages » avec destination, date, phase et compteur (« … participent, … intéressés »).",
+          "La page affiche « Voyages prévus » avec destination, date, phase et compteur (« … participent, … intéressés ») et dessous la ligne repliée « Prochains matchs ».",
           "Le voyage s'ouvre dans son espace avec titre, destination, date et onglets.",
           "Votre statut apparaît comme « Intéressé », « Participe » ou « Demande envoyée ».",
           "La page affiche les sections « Décidé » et « À faire maintenant »."
@@ -3868,7 +3868,7 @@
         "titre": "Créer un voyage",
         "wann": "Vous voulez organiser un déplacement pour un match à l'extérieur ou une autre occasion.",
         "schritte": [
-          "Dans l'onglet « Voyages », toucher « Nouveau voyage ». Pour un match à l'extérieur, « Planifier un voyage » dans la liste des prochains matchs reprend l'adversaire, la date et la compétition.",
+          "Dans l'onglet « Voyages », toucher « Nouveau voyage ». Pour un match, « Planifier un voyage » dans la liste des prochains matchs (à déplier d'abord) reprend l'adversaire, la date et la compétition.",
           "Étape « 1 Destination et date » : saisir le titre (laisser vide pour le titre du match), la ville, le pays, le stade, le début et la fin, ou cocher « Date encore ouverte ». Puis « Suivant ».",
           "Étape « 2 Qui peut venir » : choisir « Qui voit le voyage ? » et « Comment participer ? », saisir nombre minimum, nombre maximum et date limite d'inscription. Puis « Suivant ».",
           "Étape « 3 Modèle » : choisir « Match à l'extérieur à l'étranger », « Week-end » ou « Vide ».",

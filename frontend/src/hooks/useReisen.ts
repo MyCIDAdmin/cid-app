@@ -202,7 +202,8 @@ export const useChecklisteErledigt = (id: string) =>
     api.setzeChecklisteErledigt(id, v.pid, v.erledigt),
   );
 
-export const useSaison = () => useQuery({ queryKey: ["reisen", "saison"], queryFn: api.getSaison });
+export const useSaison = (aktiv = true) =>
+  useQuery({ queryKey: ["reisen", "saison"], queryFn: api.getSaison, enabled: aktiv });
 export const useLaenderprofile = (aktiv = true) =>
   useQuery({
     queryKey: ["reisen", "laenderprofile"],

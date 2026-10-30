@@ -75,5 +75,124 @@
       "artikel_frist": "« {{titel}} » n'est commandable que {{wann}} encore – assurez-vous le vôtre !",
       "artikel_bestand_frist": "« {{titel}} » : plus que {{bestand}} exemplaires, commandable seulement jusqu'à {{wann}} – foncez !"
     }
+  },
+  "uebersicht": {
+    "gruss_morgen": "Bonjour, {{prenom}}",
+    "gruss_tag": "Bonjour, {{prenom}}",
+    "gruss_abend": "Bonsoir, {{prenom}}",
+    "hero": {
+      "titel": "Prochain match",
+      "eyebrow": "Prochain match · {{art}} · {{wettbewerb}}",
+      "heim": "À domicile",
+      "auswaerts": "À l'extérieur",
+      "gegen": "contre",
+      "countdown": "Compte à rebours avant le coup d'envoi",
+      "tage": "Jours",
+      "std": "H",
+      "min": "Min.",
+      "sek": "Sec.",
+      "laeuft": "Le match est en cours ou terminé.",
+      "tipp": "Donner mon pronostic",
+      "reise_ansehen": "Voir le voyage · {{dabei}} participent",
+      "reise_planen": "Planifier un voyage",
+      "ticket": "Billet"
+    },
+    "schnell": {
+      "titel": "Accès rapides",
+      "tippen": "Pronostiquer",
+      "reise": "Planifier un voyage",
+      "tickets": "Mes billets",
+      "beitrag": "Payer la cotisation",
+      "hilfe": "Aide"
+    },
+    "heute": {
+      "titel": "Pour toi aujourd'hui",
+      "offen_one": "{{count}} ouvert",
+      "offen_other": "{{count}} ouverts",
+      "alles_erledigt": "Tout est fait.",
+      "nichts_offen": "Content de t'avoir avec nous. Rien n'est ouvert pour le moment.",
+      "spaeter": "Plus tard"
+    },
+    "aufgaben": {
+      "abstimmung": {
+        "titel": "Vote : {{titel}}",
+        "zeile": "Le vote est en cours. Ta voix compte.",
+        "knopf": "Voter"
+      },
+      "tipp": {
+        "titel": "Pronostic manquant : {{spiel}}",
+        "zeile": "Tippspiel · possible jusqu'à un jour avant le coup d'envoi",
+        "knopf": "Pronostiquer"
+      },
+      "reise": {
+        "titel": "Voyage pour le prochain match : {{titel}}",
+        "zeile": "Dis au groupe si tu viens.",
+        "knopf": "Voir"
+      },
+      "beitrag_offen": {
+        "titel": "La cotisation n'est pas encore payée",
+        "zeile": "Paie par prélèvement, PayPal ou virement.",
+        "knopf": "Payer"
+      },
+      "beitrag_wartet": {
+        "titel": "La cotisation attend le paiement",
+        "zeile": "{{betrag}} €",
+        "knopf": "Payer"
+      },
+      "beitrag_fehlgeschlagen": {
+        "titel": "Le paiement de la cotisation a échoué",
+        "zeile": "{{betrag}} € · merci de réessayer",
+        "knopf": "Payer à nouveau"
+      },
+      "anmeldung": {
+        "titel": "Inscription en attente de paiement : {{titel}}",
+        "zeile": "{{betrag}} €",
+        "knopf": "Payer"
+      }
+    },
+    "stand": {
+      "titel": "Ta situation",
+      "tippspiel": "Tippspiel",
+      "platz": "{{platz}}ᵉ place",
+      "von_punkte": "sur {{von}} · {{punkte}} points",
+      "reisen": "Mes voyages",
+      "reisen_zeile": "auxquels tu participes"
+    },
+    "neu": {
+      "titel": "Nouveau depuis ta dernière visite",
+      "art_beitrag": "Publication",
+      "art_termin": "Date",
+      "neu": "nouveau"
+    },
+    "buero": {
+      "titel": "À traiter",
+      "punkte_one": "{{count}} point",
+      "punkte_other": "{{count}} points",
+      "nichts": "Rien n'est ouvert au bureau pour le moment.",
+      "kennzahlen": "Chiffres clés de l'association",
+      "nachweise": {
+        "titel_one": "{{count}} justificatif à vérifier",
+        "titel_other": "{{count}} justificatifs à vérifier",
+        "zeile": "Des adhésions attendent la vérification.",
+        "knopf": "Vérifier"
+      },
+      "zahlungen": {
+        "titel": "Cotisations ouvertes",
+        "zeile": "{{betrag}} restent à encaisser.",
+        "knopf": "Voir"
+      },
+      "tippzahlungen": {
+        "titel_one": "{{count}} paiement Tippspiel ouvert",
+        "titel_other": "{{count}} paiements Tippspiel ouverts",
+        "zeile": "Frais de participation pas encore confirmés.",
+        "knopf": "Voir"
+      },
+      "support": {
+        "titel_one": "{{count}} demande de support",
+        "titel_other": "{{count}} demandes de support",
+        "zeile": "Questions ouvertes de membres.",
+        "knopf": "Ouvrir"
+      }
+    }
   }
 }

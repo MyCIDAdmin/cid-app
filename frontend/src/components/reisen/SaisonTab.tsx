@@ -1,4 +1,4 @@
-/** Saisonübersicht : kommende Auswärtsspiele und die Reisen dazu. */
+/** Saisonübersicht : alle kommenden Spiele (Heim und Auswärts) und die Reisen dazu. */
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -25,7 +25,12 @@ export default function SaisonTab() {
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="text-sm font-semibold">{s.gegner}</p>
+                <p className="text-sm font-semibold">
+                  {s.gegner}{" "}
+                  <span className="ml-1 rounded-full bg-bg-tertiary px-2 py-0.5 align-middle text-[11px] font-normal text-text-secondary">
+                    {s.heim ? t("saison.heim") : t("saison.auswaerts")}
+                  </span>
+                </p>
                 <p className="text-xs text-text-secondary">
                   {s.competition} · {zeitKurz(s.datum, i18n.language)}
                 </p>

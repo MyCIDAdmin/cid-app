@@ -440,11 +440,16 @@
     "zaehler": "{{zahl}} von {{gesamt}} erledigt"
   },
   "saison": {
-    "leer": "Keine kommenden Auswärtsspiele.",
+    "leer": "Keine kommenden Spiele.",
     "reise_planen": "Reise planen",
     "keine_reise": "Noch keine Reise dazu.",
-    "titel": "Nächste Auswärtsspiele",
-    "alle_reisen": "Reisen"
+    "titel": "Nächste Spiele",
+    "alle_reisen": "Geplante Reisen",
+    "heim": "Heimspiel",
+    "auswaerts": "Auswärtsspiel",
+    "anzahl": "{{n}} Spiele",
+    "zeigen": "Spiele anzeigen",
+    "verbergen": "Spiele ausblenden"
   },
   "steckbrief": {
     "titel": "Steckbrief {{land}}",

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as api from "../../api/reisen";
 import ReisenPage from "../../pages/reisen/ReisenPage";
-import { meineAngaben, punkt, reise } from "../../test/reisenDaten";
+import { listItem, meineAngaben, punkt, reise } from "../../test/reisenDaten";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { useAuthStore } from "../../store/authStore";
 import type { Laenderprofil } from "../../types/reisen";
@@ -157,11 +157,12 @@ describe("Infos mit Ländersteckbrief", () => {
 });
 
 describe("Saison", () => {
-  it("listet Auswärtsspiele mit den Reisen dazu und dem Weg zur Planung", async () => {
+  it("listet Heim- und Auswärtsspiele mit den Reisen dazu und dem Weg zur Planung", async () => {
     vi.mocked(api.getSaison).mockResolvedValue([
       {
         rencontre: "m1",
         gegner: "ES Tunis",
+        heim: true,
         competition: "Ligue 1",
         datum: "2027-03-12T18:00:00Z",
         reisen: [],
@@ -170,6 +171,7 @@ describe("Saison", () => {
     renderWithProviders(<SaisonTab />);
     const karte = await screen.findByTestId("saison-m1");
     expect(karte).toHaveTextContent("ES Tunis");
+    expect(karte).toHaveTextContent("saison.heim");
     expect(screen.getByText("saison.keine_reise")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "saison.reise_planen" })).toHaveAttribute(
       "href",
@@ -221,5 +223,30 @@ describe("Ländersteckbriefe", () => {
     expect(screen.queryByRole("tab", { name: "tab_steckbriefe" })).not.toBeInTheDocument();
     expect(screen.getByText("saison.titel")).toBeInTheDocument();
     unmount();
+  });
+
+  it("zeigt die Reisen oben und die Spiele darunter, zunächst zugeklappt", async () => {
+    vi.mocked(api.listReisen).mockResolvedValue([listItem({ id: "r9", titel: "Algier" })]);
+    vi.mocked(api.getSaison).mockResolvedValue([
+      {
+        rencontre: "m2",
+        gegner: "CS Sfaxien",
+        heim: false,
+        competition: "Ligue 1",
+        datum: "2027-03-12T18:00:00Z",
+        reisen: [],
+      },
+    ]);
+    useAuthStore.setState({ user: null });
+    renderWithProviders(<ReisenPage />);
+    const reise = await screen.findByTestId("reise-r9");
+    const knopf = await screen.findByRole("button", { name: /saison.titel/ });
+    // Reisen stehen vor den Spielen.
+    expect(reise.compareDocumentPosition(knopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(knopf).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("saison-m2")).not.toBeInTheDocument();
+    fireEvent.click(knopf);
+    expect(knopf).toHaveAttribute("aria-expanded", "true");
+    expect(await screen.findByTestId("saison-m2")).toHaveTextContent("saison.auswaerts");
   });
 });
