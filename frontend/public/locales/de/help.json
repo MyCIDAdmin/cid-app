@@ -3816,7 +3816,7 @@
     "titre": "Reisen & Fahrgemeinschaften",
     "intro": "Hier organisierst du Reisen zu Auswärtsspielen und anderen Anlässen gemeinsam: Interessierte sammeln, abstimmen, Wege und Unterkunft eintragen und Aufgaben verteilen. Jede Person bucht und bezahlt selbst, in der App gibt es keine Zahlung.",
     "schritte": [
-      "Im Reiter „Reisen“ siehst du oben die nächsten Auswärtsspiele und darunter alle Reisen. Mit „Reise planen“ oder „Neue Reise“ legst du selbst eine an.",
+      "Im Reiter „Reisen“ siehst du oben die geplanten Reisen. Darunter stehen die „Nächsten Spiele“ (Heim und Auswärts), zunächst zugeklappt. Mit „Reise planen“ oder „Neue Reise“ legst du selbst eine an.",
       "Eine Reise öffnen und mit „Ich bin interessiert“ oder „Ich fahre mit“ anmelden.",
       "Im Reiseraum führen fünf Reiter durch die Reise: „Auf einen Blick“, „Planung“, „Menschen“, „Meine Reise“ und „Infos & Kosten“. Das Zahnrad ⚙ öffnet die Einstellungen (nur für die Organisation).",
       "Der Reiter „Fahrgemeinschaften“ zeigt wie bisher die Mitfahrten."
@@ -3833,7 +3833,7 @@
         "titre": "Reise finden und anmelden",
         "wann": "Du möchtest wissen, welche Reisen es gibt, und dich für eine anmelden.",
         "schritte": [
-          "„Reisen & Fahrgemeinschaften“ im Menü öffnen. Oben stehen die nächsten Auswärtsspiele, darunter alle Reisen.",
+          "„Reisen & Fahrgemeinschaften“ im Menü öffnen. Oben stehen die geplanten Reisen, darunter die zugeklappten „Nächsten Spiele“.",
           "Mit „Nur meine Reisen“ zeigst du nur Reisen, an denen du beteiligt bist. Eine Reise antippen.",
           "Bei „Möchtest du mitkommen?“ „Ich bin interessiert“ oder „Ich fahre mit“ wählen. Bei Reisen mit Genehmigung heißt der Knopf „Teilnahme anfragen“.",
           "Auf „Auf einen Blick“ lesen, was beschlossen ist und was bei „Jetzt dran“ auf dich wartet."
@@ -3842,7 +3842,7 @@
         "danach": "Mit „Ich fahre mit“ wirst du Teilnehmer: Du kannst abstimmen, „Meine Reise“ ausfüllen und den Reisechat nutzen. Interessenten sehen nur Beschlossenes.",
         "vorher": "Du bist angemeldet.",
         "erwartet": [
-          "Die Seite zeigt „Nächste Auswärtsspiele“ und darunter „Reisen“ mit Ziel, Datum, Phase und Zähler („… dabei, … interessiert“).",
+          "Die Seite zeigt „Geplante Reisen“ mit Ziel, Datum, Phase und Zähler („… dabei, … interessiert“) und darunter die zugeklappte Zeile „Nächste Spiele“.",
           "Die Reise öffnet sich im Reiseraum mit Titel, Ziel, Datum und den Reitern.",
           "Dein Status erscheint als „Interessiert“, „Dabei“ oder „Angefragt“.",
           "Die Seite zeigt die Abschnitte „Beschlossen“ und „Jetzt dran“."
@@ -3868,7 +3868,7 @@
         "titre": "Reise anlegen",
         "wann": "Du möchtest eine Fahrt zu einem Auswärtsspiel oder einem anderen Anlass organisieren.",
         "schritte": [
-          "Im Reiter „Reisen“ auf „Neue Reise“ tippen. Zu einem Auswärtsspiel führt „Reise planen“ in der Liste der nächsten Auswärtsspiele; Gegner, Datum und Wettbewerb werden übernommen.",
+          "Im Reiter „Reisen“ auf „Neue Reise“ tippen. Zu einem Spiel führt „Reise planen“ in der Liste „Nächste Spiele“ (erst aufklappen); Gegner, Datum und Wettbewerb werden übernommen.",
           "Schritt „1 Ziel und Datum“: Titel (leer lassen für den Spieltitel), Stadt, Land, Stadion, Beginn und Ende ausfüllen oder „Datum noch offen“ ankreuzen. Dann „Weiter“.",
           "Schritt „2 Wer darf mit“: bei „Wer sieht die Reise?“ und „Wie tritt man bei?“ wählen, Mindest- und Höchstzahl sowie Anmeldefrist eintragen. Dann „Weiter“.",
           "Schritt „3 Vorlage“: „Auswärtsspiel im Ausland“, „Wochenendfahrt“ oder „Leer“ wählen.",

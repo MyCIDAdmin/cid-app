@@ -345,6 +345,8 @@ export interface ChecklistePunkt {
 export interface SaisonSpiel {
   rencontre: string;
   gegner: string;
+  /** Heimspiel aus Sicht von Club Africain (für die Fans in Deutschland trotzdem eine Reise). */
+  heim: boolean;
   competition: string;
   datum: string;
   reisen: ReiseListItem[];

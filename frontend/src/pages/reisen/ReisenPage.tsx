@@ -10,7 +10,7 @@ import SaisonTab from "../../components/reisen/SaisonTab";
 import SteckbriefeAdmin from "../../components/reisen/SteckbriefeAdmin";
 import TabLeiste from "../../components/ui/TabLeiste";
 import { KARTE, KNOPF } from "../../components/reisen/ui";
-import { useReisenListe } from "../../hooks/useReisen";
+import { useReisenListe, useSaison } from "../../hooks/useReisen";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import { zeitraum } from "../../utils/reisen";
 import CovoituragePage from "../evenements/CovoituragePage";
@@ -98,6 +98,42 @@ function ReisenListe() {
   );
 }
 
+/** Alle kommenden Spiele; zugeklappt, damit die Seite kurz bleibt. */
+function SpieleAbschnitt() {
+  const { t } = useTranslation("reisen");
+  const [offen, setOffen] = useState(false);
+  const anzahl = useSaison().data?.length;
+  return (
+    <section aria-label={t("tab_saison")}>
+      <button
+        type="button"
+        aria-expanded={offen}
+        aria-controls="reisen-spiele"
+        onClick={() => setOffen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 rounded-cid-lg bg-bg-primary px-3 py-2 text-left shadow-sm hover:bg-bg-tertiary"
+      >
+        <span className="text-sm font-semibold">
+          {t("saison.titel")}
+          {anzahl !== undefined && (
+            <span className="ml-2 text-xs font-normal text-text-secondary">
+              {t("saison.anzahl", { n: anzahl })}
+            </span>
+          )}
+        </span>
+        <span className="text-xs text-text-secondary">
+          {offen ? t("saison.verbergen") : t("saison.zeigen")}
+          <span aria-hidden="true"> {offen ? "▴" : "▾"}</span>
+        </span>
+      </button>
+      {offen && (
+        <div id="reisen-spiele" className="mt-2">
+          <SaisonTab />
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function ReisenPage() {
   const { t } = useTranslation("reisen");
   const user = useAuthStore((s) => s.user);
@@ -118,14 +154,11 @@ export default function ReisenPage() {
       />
       {tab === "reisen" && (
         <div className="space-y-6">
-          <section aria-label={t("tab_saison")}>
-            <h2 className="mb-2 text-sm font-semibold">{t("saison.titel")}</h2>
-            <SaisonTab />
-          </section>
           <section aria-label={t("tab_reisen")}>
             <h2 className="mb-2 text-sm font-semibold">{t("saison.alle_reisen")}</h2>
             <ReisenListe />
           </section>
+          <SpieleAbschnitt />
         </div>
       )}
       {tab === "fahrgemeinschaften" && <CovoituragePage />}

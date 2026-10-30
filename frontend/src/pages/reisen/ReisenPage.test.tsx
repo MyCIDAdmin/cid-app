@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as api from "../../api/reisen";
 import { listItem } from "../../test/reisenDaten";
@@ -10,6 +10,10 @@ vi.mock("../../api/reisen");
 vi.mock("../evenements/CovoituragePage", () => ({
   default: () => <div data-testid="fahrgemeinschaften" />,
 }));
+
+beforeEach(() => {
+  vi.mocked(api.getSaison).mockResolvedValue([]);
+});
 
 afterEach(() => {
   cleanup();
