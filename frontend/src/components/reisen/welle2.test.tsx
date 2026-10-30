@@ -11,7 +11,7 @@ import ChecklisteTab from "./ChecklisteTab";
 import ExportKnoepfe from "./ExportKnoepfe";
 import InfosTab from "./InfosTab";
 import MeineReiseTab from "./MeineReiseTab";
-import SaisonTab from "./SaisonTab";
+import SpieleStreifen from "./SpieleStreifen";
 import SteckbriefeAdmin from "./SteckbriefeAdmin";
 
 vi.mock("../../api/reisen");
@@ -168,15 +168,16 @@ describe("Saison", () => {
         reisen: [],
       },
     ]);
-    renderWithProviders(<SaisonTab />);
+    vi.mocked(api.getStadionVorschlag).mockResolvedValue({ gegner: "ES Tunis", stadt: "Tunis" });
+    renderWithProviders(<SpieleStreifen />);
     const karte = await screen.findByTestId("saison-m1");
-    expect(karte).toHaveTextContent("ES Tunis");
+    expect(karte).toHaveTextContent("start.paarung_heim");
     expect(karte).toHaveTextContent("saison.heim");
     expect(screen.getByText("saison.keine_reise")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "saison.reise_planen" })).toHaveAttribute(
-      "href",
-      "/reisen/neu?rencontre=m1",
-    );
+    // „Reise planen“ öffnet das kurze Fenster, nicht die lange Seite.
+    fireEvent.click(screen.getByRole("button", { name: "saison.reise_planen" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("plan-spiel")).toBeInTheDocument();
   });
 });
 
@@ -225,7 +226,7 @@ describe("Ländersteckbriefe", () => {
     unmount();
   });
 
-  it("zeigt die Reisen oben und die Spiele darunter, zunächst zugeklappt", async () => {
+  it("zeigt die Reisen oben und die Spiele darunter, aufklappbar", async () => {
     vi.mocked(api.listReisen).mockResolvedValue([listItem({ id: "r9", titel: "Algier" })]);
     vi.mocked(api.getSaison).mockResolvedValue([
       {
@@ -243,10 +244,10 @@ describe("Ländersteckbriefe", () => {
     const knopf = await screen.findByRole("button", { name: /saison.titel/ });
     // Reisen stehen vor den Spielen.
     expect(reise.compareDocumentPosition(knopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(knopf).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByTestId("saison-m2")).not.toBeInTheDocument();
-    fireEvent.click(knopf);
     expect(knopf).toHaveAttribute("aria-expanded", "true");
     expect(await screen.findByTestId("saison-m2")).toHaveTextContent("saison.auswaerts");
+    fireEvent.click(knopf);
+    expect(knopf).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("saison-m2")).not.toBeInTheDocument();
   });
 });

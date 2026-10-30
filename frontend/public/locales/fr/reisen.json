@@ -490,5 +490,52 @@
     "schnee": "Neige",
     "gewitter": "Orage",
     "klar_nacht": "Nuit claire"
+  },
+  "start": {
+    "hero_eyebrow": "Ton prochain voyage",
+    "countdown": "Compte à rebours avant le départ",
+    "tage": "Jours",
+    "std": "H",
+    "min": "Min.",
+    "dabei_zaehler": "{{dabei}} participent · {{interessiert}} intéressés",
+    "reiseraum_oeffnen": "Ouvrir l'espace voyage",
+    "jetzt_dran": "À faire maintenant · {{n}}",
+    "filter_label": "Filtrer les matchs",
+    "filter": {
+      "alle": "Tous",
+      "meine": "Les miens",
+      "auswaerts": "Extérieur",
+      "heim": "Domicile",
+      "ohne": "Sans voyage"
+    },
+    "filter_leer": "Aucun match pour ce filtre.",
+    "paarung_heim": "Club Africain – {{gegner}}",
+    "paarung_auswaerts": "{{gegner}} – Club Africain",
+    "reise_label": "Voyage : {{ort}} · {{dabei}} participent",
+    "reise_oeffnen": "Ouvrir le voyage",
+    "interesse": "Intéressé",
+    "interessiert_haken": "Intéressé",
+    "dabei_haken": "Inscrit",
+    "ich_dabei": "Je participe",
+    "fortschritt_noch": "Encore {{n}} sur {{min}}",
+    "fortschritt_label": "Progression vers le minimum"
+  },
+  "planen": {
+    "titel": "Planifier un voyage à {{ort}}",
+    "uebernommen": "Repris du calendrier",
+    "wer": "Qui peut venir ?",
+    "wer_mitglieder": "Tous les membres",
+    "wer_eingeladen": "Invités seulement",
+    "beitritt": "Inscription",
+    "beitritt_offen": "Ouverte",
+    "beitritt_genehmigung": "Sur validation",
+    "vorlage": "Modèle",
+    "starten": "Lancer le voyage",
+    "angelegt": "Le voyage est créé",
+    "einladen_titel": "Invite tes amis",
+    "teilen_titel": "Voyage à {{ort}}",
+    "vorbereitet": "Déjà préparé : sondage de dates, tâches et liste de contrôle du modèle. Le reste se règle dans l'espace voyage.",
+    "zum_raum": "Vers l'espace voyage",
+    "schliessen": "Fermer"
   }
 }

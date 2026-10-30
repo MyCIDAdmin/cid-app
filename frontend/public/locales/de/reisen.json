@@ -490,5 +490,52 @@
     "schnee": "Schnee",
     "gewitter": "Gewitter",
     "klar_nacht": "Klare Nacht"
+  },
+  "start": {
+    "hero_eyebrow": "Deine nächste Reise",
+    "countdown": "Countdown bis zur Abreise",
+    "tage": "Tage",
+    "std": "Std.",
+    "min": "Min.",
+    "dabei_zaehler": "{{dabei}} dabei · {{interessiert}} interessiert",
+    "reiseraum_oeffnen": "Reiseraum öffnen",
+    "jetzt_dran": "Jetzt dran · {{n}}",
+    "filter_label": "Spiele filtern",
+    "filter": {
+      "alle": "Alle",
+      "meine": "Meine",
+      "auswaerts": "Auswärts",
+      "heim": "Heim",
+      "ohne": "Noch ohne Reise"
+    },
+    "filter_leer": "Keine Spiele für diesen Filter.",
+    "paarung_heim": "Club Africain – {{gegner}}",
+    "paarung_auswaerts": "{{gegner}} – Club Africain",
+    "reise_label": "Reise: {{ort}} · {{dabei}} dabei",
+    "reise_oeffnen": "Reise öffnen",
+    "interesse": "Interesse",
+    "interessiert_haken": "Interessiert",
+    "dabei_haken": "Dabei",
+    "ich_dabei": "Ich bin dabei",
+    "fortschritt_noch": "Noch {{n}} bis {{min}}",
+    "fortschritt_label": "Fortschritt bis zur Mindestzahl"
+  },
+  "planen": {
+    "titel": "Reise nach {{ort}} planen",
+    "uebernommen": "Aus dem Spielplan übernommen",
+    "wer": "Wer darf mit?",
+    "wer_mitglieder": "Alle Mitglieder",
+    "wer_eingeladen": "Nur Eingeladene",
+    "beitritt": "Beitritt",
+    "beitritt_offen": "Offen",
+    "beitritt_genehmigung": "Mit Genehmigung",
+    "vorlage": "Vorlage",
+    "starten": "Reise starten",
+    "angelegt": "Reise ist angelegt",
+    "einladen_titel": "Hol deine Leute dazu",
+    "teilen_titel": "Reise nach {{ort}}",
+    "vorbereitet": "Schon vorbereitet: Termin-Umfrage, Aufgaben und Checkliste aus der Vorlage. Alles Weitere stellst du im Reiseraum ein.",
+    "zum_raum": "Zum Reiseraum",
+    "schliessen": "Schließen"
   }
 }
