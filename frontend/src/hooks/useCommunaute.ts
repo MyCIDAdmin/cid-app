@@ -787,7 +787,7 @@ export function useSupprimerChoixQuestion() {
   });
 }
 
-// --- Tippspiel (pronostics Ligue 1, 2026-09-24) — onglet Ticker, voir
+// --- Tippspiel (pronostics Ligue 1, 2026-09-24) — onglet Tippspiel, voir
 // components/communaute/Tippspiel*.tsx ---
 
 function invalidateTippspiele(queryClient: ReturnType<typeof useQueryClient>) {

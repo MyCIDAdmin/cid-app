@@ -3377,7 +3377,7 @@
         "titre": "Créer et publier un jeu de pronostics (Tippspiel)",
         "wann": "Une nouvelle saison de pronostics doit démarrer.",
         "schritte": [
-          "Dans le Fan-Club, ouvrir l'onglet « Ticker » et cliquer, dans la section pronostics, sur « Créer un nouveau jeu de pronostics ».",
+          "Dans le Fan-Club, ouvrir l'onglet « Pronostics » et cliquer sur « Créer un nouveau jeu de pronostics ».",
           "Saisir « Titre », « Saison (ex. 2026-2027) » et les règles. Les membres voient les règles.",
           "Saisir éventuellement la « Participation (€, optionnel) », par exemple 10.00. Laisser vide signifie gratuit.",
           "Avec « Ajouter un lot », choisir pour chaque place le type : « Montant fixe », « Pourcentage de la cagnotte » ou « Article de la boutique », et saisir la valeur.",
@@ -3416,7 +3416,7 @@
         "titre": "Clôturer le jeu de pronostics et en lancer un nouveau",
         "wann": "La saison est terminée ou le jeu doit s'arrêter.",
         "schritte": [
-          "Dans le Fan-Club, ouvrir l'onglet « Ticker » et vérifier le « Classement » dans la section pronostics.",
+          "Dans le Fan-Club, ouvrir l'onglet « Pronostics » et vérifier le « Classement ».",
           "Cliquer sur « Clôturer le jeu ».",
           "Pour la manche suivante, cliquer sur « Créer un nouveau jeu de pronostics » et continuer comme dans TIPP-01."
         ],
@@ -3448,7 +3448,7 @@
         "titre": "Participer au jeu de pronostics et pronostiquer",
         "wann": "Vous voulez participer au jeu de pronostics du Fan-Club.",
         "schritte": [
-          "Dans le Fan-Club, ouvrir l'onglet « Ticker » et lire les règles et les lots dans la section pronostics.",
+          "Dans le Fan-Club, ouvrir l'onglet « Pronostics » et lire les règles et les lots.",
           "Cliquer sur « Participer ».",
           "Si une participation est demandée, la payer et attendre la confirmation du directeur financier.",
           "Sous « Mes pronostics », saisir pour chaque match les buts des deux équipes et cliquer sur « Enregistrer ».",

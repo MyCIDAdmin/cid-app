@@ -3377,7 +3377,7 @@
         "titre": "Tippspiel anlegen und veröffentlichen",
         "wann": "Eine neue Tippspiel-Saison soll starten.",
         "schritte": [
-          "Im Fan-Club den Reiter „Ticker“ öffnen und im Abschnitt Tippspiel auf „Neues Tippspiel erstellen“ klicken.",
+          "Im Fan-Club den Reiter „Tippspiel“ öffnen und auf „Neues Tippspiel erstellen“ klicken.",
           "„Titel“, „Saison (z. B. 2026-2027)“ und die Regeln eintragen. Die Regeln sehen die Mitglieder.",
           "Optional den „Teilnahmebeitrag (€, optional)“ eintragen, z. B. 10.00. Leer lassen heißt kostenlos.",
           "Mit „Gewinn hinzufügen“ für jeden Platz die Art wählen: „Fester Betrag“, „Prozentsatz der Kasse“ oder „Artikel aus der Boutique“, und den Wert eintragen.",
@@ -3416,7 +3416,7 @@
         "titre": "Tippspiel beenden und neues starten",
         "wann": "Die Saison ist vorbei oder das Tippspiel soll enden.",
         "schritte": [
-          "Im Fan-Club den Reiter „Ticker“ öffnen und im Abschnitt Tippspiel die „Rangliste“ prüfen.",
+          "Im Fan-Club den Reiter „Tippspiel“ öffnen und die „Rangliste“ prüfen.",
           "Auf „Spiel schließen“ klicken.",
           "Für die nächste Runde auf „Neues Tippspiel erstellen“ klicken und weiter wie in TIPP-01."
         ],
@@ -3448,7 +3448,7 @@
         "titre": "Beim Tippspiel mitmachen und tippen",
         "wann": "Du möchtest beim Tippspiel des Fan-Clubs mitspielen.",
         "schritte": [
-          "Im Fan-Club den Reiter „Ticker“ öffnen und im Abschnitt Tippspiel Regeln und Gewinne lesen.",
+          "Im Fan-Club den Reiter „Tippspiel“ öffnen und Regeln und Gewinne lesen.",
           "Auf „Teilnehmen“ klicken.",
           "Bei einem Beitrag zahlen und warten, bis der Finanzdirektor die Zahlung bestätigt hat.",
           "Unter „Meine Tipps“ bei jedem Spiel die Tore beider Mannschaften eintragen und auf „Speichern“ klicken.",

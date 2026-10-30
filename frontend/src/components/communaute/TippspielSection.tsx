@@ -1,6 +1,6 @@
 /**
- * Tippspiel — module Fan-Club, onglet Ticker (2026-09-24, retour utilisateur complet en
- * tête de apps.communaute.models.py côté backend). Placé dans l'onglet "Ticker" comme
+ * Tippspiel — module Fan-Club, onglet Tippspiel (2026-09-24, retour utilisateur complet en
+ * tête de apps.communaute.models.py côté backend). Placé dans l'onglet "Tippspiel" (ex-"Ticker") comme
  * demandé ("zum Modul Fan-Club hinzufügen im Tab 'Ticker'"), visible dès qu'un Tippspiel
  * est publié ("Anzeigbar nachdem es eingestellt und veröffentlicht wird" — un membre
  * standard ne reçoit d'ailleurs jamais un Tippspiel `brouillon`, voir
@@ -101,7 +101,7 @@ function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
             </span>
             {/* Social-Media-Teilen (2026-09-24, Bug-Report "Es muss möglich sein, Tippspiel
                 in Social Media zu teilen") — `path="/live"` reicht : le Tippspiel vit dans
-                l'onglet "Ticker" du module Fan-Club, qui est l'onglet par défaut de
+                l'onglet "Tippspiel" du module Fan-Club, qui est l'onglet par défaut de
                 LiveMatchPage (pas de synchronisation d'onglet via l'URL, voir
                 LiveMatchPage.tsx), donc atterrir sur /live suffit à voir le Tippspiel. */}
             <ShareButton path="/live" titre={tippspiel.titre} />
