@@ -10,11 +10,13 @@ import { Link } from "react-router-dom";
 
 import { useCalendrierRencontres } from "../../hooks/useCommunaute";
 import { useCountdown } from "../../hooks/useCountdown";
+import { useHeroTipp } from "../../hooks/useHeroTipp";
 import { useModuleOuvert } from "../../hooks/useRbac";
 import { useSaison, useUmfeld } from "../../hooks/useReisen";
 import type { ReiseListItem } from "../../types/reisen";
 import { gegnerName, istHeimspiel, naechstesSpiel } from "../../utils/uebersicht";
 import { HEIMAT_ZONE, ortszeit, wetterArt, zeitUnterschied } from "../../utils/umfeld";
+import HeroTippPanel from "./HeroTipp";
 
 const KNOPF_HELL =
   "inline-flex min-h-[44px] items-center justify-center rounded-cid px-4 text-sm font-semibold transition-colors";
@@ -94,6 +96,7 @@ export default function NaechstesSpielHero() {
   const saison = useSaison(reisenOffen);
   const spiel = useMemo(() => naechstesSpiel(spiele.data?.results), [spiele.data]);
   const rest = useCountdown(spiel?.date_heure);
+  const tipp = useHeroTipp(liveOffen);
   if (!spiel || !rest) return null;
 
   const reisen: ReiseListItem[] = saison.data?.find((s) => s.rencontre === spiel.id)?.reisen ?? [];
@@ -150,7 +153,7 @@ export default function NaechstesSpielHero() {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          {liveOffen && (
+          {liveOffen && tipp.status === "keins" && (
             <Link to="/live" className={`${KNOPF_HELL} bg-white text-cad hover:bg-cal`}>
               {t("uebersicht.hero.tipp")}
             </Link>
@@ -179,7 +182,12 @@ export default function NaechstesSpielHero() {
           </Link>
         </div>
       </div>
-      {reisenOffen && reise && <ZielPanel reiseId={reise.id} />}
+      {(tipp.status !== "keins" || (reisenOffen && reise)) && (
+        <div className="relative z-10 flex flex-col gap-3">
+          <HeroTippPanel tipp={tipp} />
+          {reisenOffen && reise && <ZielPanel reiseId={reise.id} />}
+        </div>
+      )}
     </section>
   );
 }

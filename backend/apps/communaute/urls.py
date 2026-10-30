@@ -1,6 +1,14 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .chats import (
+    ChatEinstellungView,
+    ChatListeView,
+    GifStatusView,
+    GifSucheView,
+    ReiseMitreisendeView,
+    UebersetzenView,
+)
 from .views import (
     AlbumViewSet,
     ArrierePlanModuleViewSet,
@@ -64,6 +72,12 @@ router.register("tippspiel-teilnahmen", TippspielTeilnahmeViewSet, basename="tip
 router.register("tippspiel-tipps", TippspielTipViewSet, basename="tippspiel-tip")
 
 urlpatterns = [
+    path("chats/", ChatListeView.as_view(), name="chat-liste"),
+    path("chats/einstellung/", ChatEinstellungView.as_view(), name="chat-einstellung"),
+    path("chats/mitreisende/", ReiseMitreisendeView.as_view(), name="chat-mitreisende"),
+    path("gifs/", GifSucheView.as_view(), name="gif-suche"),
+    path("gifs/status/", GifStatusView.as_view(), name="gif-status"),
+    path("uebersetzen/", UebersetzenView.as_view(), name="chat-uebersetzen"),
     # Singleton (voir ConfigurationSitePublic.get_solo) — pas un ViewSet routé, même
     # convention que apps.notifications.urls (ParametresNotificationView).
     path(

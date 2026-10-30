@@ -393,6 +393,8 @@ TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
 # ist die Übersetzung inaktiv und die Oberfläche zeigt die Originaltexte. Schlüssel mit der
 # Endung ":fx" = kostenlose API, sonst Pro-API.
 DEEPL_API_KEY = os.environ.get("DEEPL_API_KEY", "")
+# GIFs im Chat (GIPHY über unseren Server) — ohne Schlüssel bleibt die GIF-Auswahl ausgeblendet.
+GIPHY_API_KEY = os.environ.get("GIPHY_API_KEY", "")
 
 GOAL_API_KEY = os.environ.get("GOAL_API_KEY", "")
 # Identifiants GOAL API (CUID internes, pas des secrets) de la Ligue 1 tunisienne et de Club

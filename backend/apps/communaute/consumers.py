@@ -46,6 +46,7 @@ from django.db.models import Count
 
 from apps.rbac.services import acces_cle_menu
 
+from . import chats
 from .models import (
     Conversation,
     GroupeChat,
@@ -55,6 +56,7 @@ from .models import (
     MembreGroupe,
     MessageGroupe,
     MessagePrive,
+    NachrichtArt,
     TypeReactionMatch,
 )
 
@@ -109,16 +111,26 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content, **kwargs):
         type_message = content.get("type")
 
+        if type_message == "tippt":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "tippt", "payload": {"membre_id": str(self.membre_id)}},
+            )
+            return
+
         if type_message == "message":
-            contenu = (content.get("contenu") or "").strip()
-            if not contenu:
+            contenu = (content.get("contenu") or "").strip()[:4000]
+            art, daten = self._art_und_daten(content, erlaubt=(NachrichtArt.TEXT, NachrichtArt.GIF))
+            if art is None or (art == NachrichtArt.TEXT and not contenu):
                 return
+            if art != NachrichtArt.TEXT:
+                contenu = ""
             # "Antworten" (demande utilisateur 2026-09-25) — repond_a est optionnel et
             # entièrement revalidé côté serveur (_creer_message ne résout que dans la MÊME
             # conversation, voir sa docstring) : un id arbitraire envoyé par un client ne
             # permet donc jamais de citer un message d'une autre conversation.
             repond_a_id = content.get("repond_a")
-            message, repond_a_detail = await self._creer_message(contenu, repond_a_id)
+            message, repond_a_detail = await self._creer_message(contenu, repond_a_id, art, daten)
             if message is None:
                 await self.send_json({"type": "erreur", "message": "Conversation introuvable."})
                 return
@@ -127,6 +139,10 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
                 "conversation": str(self.conversation_id),
                 "expediteur": str(self.membre_id),
                 "contenu": contenu,
+                "art": art,
+                "daten": daten,
+                "angeheftet": False,
+                "reaktionen": [],
                 "est_lu": False,
                 "created_at": message.created_at.isoformat(),
                 "nombre_likes": 0,
@@ -161,6 +177,29 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
     async def lecture_update(self, event):
         await self.send_json({"type": "lu", **event["payload"]})
 
+    async def tippt(self, event):
+        if event["payload"]["membre_id"] != str(self.membre_id):
+            await self.send_json({"type": "tippt", **event["payload"]})
+
+    async def message_reaktion(self, event):
+        await self.send_json({"type": "message_reaktion", **event["payload"]})
+
+    async def message_angeheftet(self, event):
+        await self.send_json({"type": "message_angeheftet", **event["payload"]})
+
+    @staticmethod
+    def _art_und_daten(content, erlaubt):
+        """Art und geprüfte Zusatzdaten aus dem WebSocket-Inhalt ; (None, None) bei Fehler."""
+        from rest_framework.exceptions import ValidationError
+
+        art = content.get("art") or NachrichtArt.TEXT
+        if art not in erlaubt:
+            return None, None
+        try:
+            return art, chats.bereinige_daten(art, content.get("daten"))
+        except ValidationError:
+            return None, None
+
     async def message_supprime(self, event):
         # Diffusé depuis MessagePriveViewSet.perform_destroy (REST — suppression réservée à
         # l'expéditeur, voir apps.communaute.permissions.MessagePrivePermission), même
@@ -190,7 +229,7 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
         return self.membre_id in (conversation.membre_a_id, conversation.membre_b_id)
 
     @database_sync_to_async
-    def _creer_message(self, contenu, repond_a_id=None):
+    def _creer_message(self, contenu, repond_a_id=None, art=NachrichtArt.TEXT, daten=None):
         conversation = Conversation.objects.filter(id=self.conversation_id).first()
         if conversation is None:
             return None, None
@@ -208,6 +247,8 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
             conversation=conversation,
             expediteur_id=self.membre_id,
             contenu=contenu,
+            art=art,
+            daten=daten,
             repond_a=repond_a,
         )
         repond_a_detail = None
@@ -297,15 +338,32 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive_json(self, content, **kwargs):
+        if content.get("type") == "tippt":
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "tippt", "payload": {"membre_id": str(self.membre_id)}},
+            )
+            return
         if content.get("type") != "message":
             return
-        contenu = (content.get("contenu") or "").strip()
-        if not contenu:
+        contenu = (content.get("contenu") or "").strip()[:4000]
+        art, daten = MessagerieConsumer._art_und_daten(
+            content,
+            erlaubt=(
+                NachrichtArt.TEXT,
+                NachrichtArt.GIF,
+                NachrichtArt.UMFRAGE,
+                NachrichtArt.TREFFPUNKT,
+            ),
+        )
+        if art is None or (art == NachrichtArt.TEXT and not contenu):
             return
+        if art != NachrichtArt.TEXT:
+            contenu = ""
         # "Antworten" (demande utilisateur 2026-09-25) — même revalidation IDOR que
         # MessagerieConsumer._creer_message : repond_a n'est résolu que dans CE groupe.
         repond_a_id = content.get("repond_a")
-        message, repond_a_detail = await self._creer_message(contenu, repond_a_id)
+        message, repond_a_detail = await self._creer_message(contenu, repond_a_id, art, daten)
         if message is None:
             await self.send_json({"type": "erreur", "message": "Groupe introuvable."})
             return
@@ -315,6 +373,20 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
             "groupe": str(self.groupe_id),
             "auteur": auteur,
             "contenu": contenu,
+            "art": art,
+            "daten": daten,
+            "angeheftet": False,
+            "reaktionen": [],
+            "umfrage": (
+                {
+                    "zaehler": [0] * len(daten["optionen"]),
+                    "gesamt": 0,
+                    "meine": None,
+                    "beendet": False,
+                }
+                if art == NachrichtArt.UMFRAGE
+                else None
+            ),
             "created_at": message.created_at.isoformat(),
             "nombre_likes": 0,
             "repond_a": str(message.repond_a_id) if message.repond_a_id else None,
@@ -327,6 +399,19 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
         from .tasks import envoyer_notification_message_groupe
 
         envoyer_notification_message_groupe.delay(str(self.groupe_id), str(self.membre_id))
+
+    async def tippt(self, event):
+        if event["payload"]["membre_id"] != str(self.membre_id):
+            await self.send_json({"type": "tippt", **event["payload"]})
+
+    async def message_reaktion(self, event):
+        await self.send_json({"type": "message_reaktion", **event["payload"]})
+
+    async def message_angeheftet(self, event):
+        await self.send_json({"type": "message_angeheftet", **event["payload"]})
+
+    async def umfrage_update(self, event):
+        await self.send_json({"type": "umfrage_update", **event["payload"]})
 
     async def message_recu(self, event):
         await self.send_json({"type": "message", **event["payload"]})
@@ -354,7 +439,7 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
         ).exists()
 
     @database_sync_to_async
-    def _creer_message(self, contenu, repond_a_id=None):
+    def _creer_message(self, contenu, repond_a_id=None, art=NachrichtArt.TEXT, daten=None):
         groupe = GroupeChat.objects.filter(id=self.groupe_id).first()
         if groupe is None:
             return None, None
@@ -366,7 +451,12 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
                 .first()
             )
         message = MessageGroupe.objects.create(
-            groupe=groupe, auteur_id=self.membre_id, contenu=contenu, repond_a=repond_a
+            groupe=groupe,
+            auteur_id=self.membre_id,
+            contenu=contenu,
+            art=art,
+            daten=daten,
+            repond_a=repond_a,
         )
         repond_a_detail = None
         if repond_a is not None:

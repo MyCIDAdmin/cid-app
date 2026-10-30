@@ -376,6 +376,8 @@ class MessagePriveSerializer(serializers.ModelSerializer):
     nombre_likes = serializers.IntegerField(source="likes.count", read_only=True)
     jaime = serializers.SerializerMethodField()
     repond_a_detail = MessagePriveApercuSerializer(source="repond_a", read_only=True)
+    art = serializers.CharField(read_only=True)
+    reaktionen = serializers.SerializerMethodField()
 
     class Meta:
         model = MessagePrive
@@ -392,8 +394,19 @@ class MessagePriveSerializer(serializers.ModelSerializer):
             "jaime",
             "repond_a",
             "repond_a_detail",
+            "art",
+            "daten",
+            "angeheftet",
+            "reaktionen",
         ]
         read_only_fields = fields
+
+    def get_reaktionen(self, obj):
+        from .chats import reaktionen_liste
+
+        request = self.context.get("request")
+        membre = getattr(getattr(request, "user", None), "membre", None)
+        return reaktionen_liste(obj, membre.id if membre else None)
 
     def get_est_expediteur(self, obj) -> bool:
         request = self.context.get("request")
@@ -477,6 +490,9 @@ class GroupeChatSerializer(serializers.ModelSerializer):
         validated_data["createur"] = createur
         groupe = super().create(validated_data)
         MembreGroupe.objects.create(groupe=groupe, membre=createur)
+        from .chats import systemnachricht
+
+        systemnachricht(groupe, f"{createur.prenom} hat die Gruppe erstellt")
         if groupe.type_groupe == "prive":
             for membre in membres_invites:
                 if membre.id != createur.id:
@@ -503,6 +519,9 @@ class MessageGroupeSerializer(serializers.ModelSerializer):
     nombre_likes = serializers.IntegerField(source="likes.count", read_only=True)
     jaime = serializers.SerializerMethodField()
     repond_a_detail = MessageGroupeApercuSerializer(source="repond_a", read_only=True)
+    art = serializers.CharField(read_only=True)
+    reaktionen = serializers.SerializerMethodField()
+    umfrage = serializers.SerializerMethodField()
 
     class Meta:
         model = MessageGroupe
@@ -517,8 +536,27 @@ class MessageGroupeSerializer(serializers.ModelSerializer):
             "jaime",
             "repond_a",
             "repond_a_detail",
+            "art",
+            "daten",
+            "angeheftet",
+            "reaktionen",
+            "umfrage",
         ]
         read_only_fields = fields
+
+    def get_reaktionen(self, obj):
+        from .chats import reaktionen_liste
+
+        request = self.context.get("request")
+        membre = getattr(getattr(request, "user", None), "membre", None)
+        return reaktionen_liste(obj, membre.id if membre else None)
+
+    def get_umfrage(self, obj):
+        from .chats import umfrage_ergebnis
+
+        request = self.context.get("request")
+        membre = getattr(getattr(request, "user", None), "membre", None)
+        return umfrage_ergebnis(obj, membre.id if membre else None)
 
     def get_est_auteur(self, obj) -> bool:
         request = self.context.get("request")

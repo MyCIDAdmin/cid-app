@@ -57,7 +57,7 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 
-from . import services
+from . import chats, services
 from .filters import PublicationFilter, SujetFilter
 from .models import (
     Album,
@@ -573,7 +573,7 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
     pagination_class = MessagePriveCursorPagination
 
     def get_queryset(self):
-        if self.action in ("destroy", "liker"):
+        if self.action in ("destroy", "liker", "reagieren", "anheften"):
             # Pas de filtre par conversation ici (contrairement au `list` ci-dessous) — pour
             # "destroy" la permission objet (MessagePrivePermission, expéditeur uniquement)
             # est le seul contrôle nécessaire (même principe que ContenuCommunautePermission
@@ -581,7 +581,9 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
             # l'appartenance à la conversation est vérifiée explicitement dans l'action
             # elle-même (voir liker() ci-dessous), get_object() ne suffit pas seul ici car
             # has_object_permission renvoie True pour toute action autre que "destroy".
-            return MessagePrive.objects.select_related("expediteur", "conversation")
+            return MessagePrive.objects.select_related(
+                "expediteur", "conversation"
+            ).prefetch_related("reaktionen")
         conversation_id = self.request.query_params.get("conversation")
         if not conversation_id:
             raise ValidationError({"conversation": "Ce paramètre est requis."})
@@ -592,7 +594,11 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
             # permissions.MessagePrivePermission) — ne pas laisser un membre deviner
             # l'existence d'une conversation à laquelle il n'appartient pas.
             raise PermissionDenied("Vous n'êtes pas participant de cette conversation.")
-        return MessagePrive.objects.filter(conversation=conversation).select_related("expediteur")
+        return (
+            MessagePrive.objects.filter(conversation=conversation)
+            .select_related("expediteur")
+            .prefetch_related("reaktionen")
+        )
 
     def perform_destroy(self, instance):
         conversation_id = str(instance.conversation_id)
@@ -622,6 +628,28 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
         )
         return Response(self.get_serializer(message).data)
 
+    def _teilnehmer_pruefen(self, message, membre):
+        if not message.conversation.participant(membre):
+            raise PermissionDenied("Vous n'êtes pas participant de cette conversation.")
+
+    @action(detail=True, methods=["post"])
+    def reagieren(self, request, pk=None):
+        """Emoji-Reaktion umschalten (Herz bleibt unter `liker`)."""
+        message = self.get_object()
+        membre = request.user.membre
+        self._teilnehmer_pruefen(message, membre)
+        chats.reagieren(message, membre, request.data.get("emoji"))
+        message = self.get_queryset().get(pk=message.pk)
+        return Response(self.get_serializer(message).data)
+
+    @action(detail=True, methods=["post"])
+    def anheften(self, request, pk=None):
+        message = self.get_object()
+        membre = request.user.membre
+        self._teilnehmer_pruefen(message, membre)
+        chats.anheften_umschalten(message)
+        return Response(self.get_serializer(message).data)
+
 
 class GroupeChatViewSet(
     mixins.ListModelMixin,
@@ -649,6 +677,34 @@ class GroupeChatViewSet(
         membre = request.user.membre
         MembreGroupe.objects.get_or_create(groupe=groupe, membre=membre)
         return Response(self.get_serializer(groupe).data)
+
+    @action(detail=True, methods=["get"])
+    def mitglieder(self, request, pk=None):
+        """Mitgliederliste (nur für Mitglieder des Gruppen — Datenschutz, auch bei
+        öffentlichen Gruppen)."""
+        groupe = self.get_object()
+        membre = request.user.membre
+        if not groupe.membres_groupe.filter(membre=membre).exists():
+            raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
+        mitglieder = groupe.membres_groupe.select_related("membre").order_by("created_at")
+        return Response(
+            [
+                {
+                    **AuteurSerializer(mg.membre).data,
+                    "ist_ersteller": mg.membre_id == groupe.createur_id,
+                }
+                for mg in mitglieder
+            ]
+        )
+
+    @action(detail=True, methods=["post"])
+    def gelesen(self, request, pk=None):
+        """Lesemarke setzen (alles bis jetzt gilt als gelesen)."""
+        groupe = self.get_object()
+        MembreGroupe.objects.filter(groupe=groupe, membre=request.user.membre).update(
+            zuletzt_gelesen=timezone.now()
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post"])
     def quitter(self, request, pk=None):
@@ -689,11 +745,13 @@ class MessageGroupeViewSet(
     pagination_class = MessageGroupeCursorPagination
 
     def get_queryset(self):
-        if self.action in ("destroy", "liker"):
+        if self.action in ("destroy", "liker", "reagieren", "anheften", "abstimmen"):
             # Même raisonnement que MessagePriveViewSet.get_queryset : queryset large, IDOR
             # géré pour "destroy" par la permission objet (auteur uniquement) et pour
             # "liker" (demande utilisateur 2026-09-25) explicitement dans l'action.
-            return MessageGroupe.objects.select_related("auteur", "groupe")
+            return MessageGroupe.objects.select_related("auteur", "groupe").prefetch_related(
+                "reaktionen", "stimmen"
+            )
         groupe_id = self.request.query_params.get("groupe")
         if not groupe_id:
             raise ValidationError({"groupe": "Ce paramètre est requis."})
@@ -702,7 +760,11 @@ class MessageGroupeViewSet(
         if groupe.type_groupe != "public":
             if membre is None or not groupe.membres_groupe.filter(membre=membre).exists():
                 raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
-        return MessageGroupe.objects.filter(groupe=groupe).select_related("auteur")
+        return (
+            MessageGroupe.objects.filter(groupe=groupe)
+            .select_related("auteur")
+            .prefetch_related("reaktionen", "stimmen")
+        )
 
     def perform_destroy(self, instance):
         groupe_id = str(instance.groupe_id)
@@ -731,6 +793,40 @@ class MessageGroupeViewSet(
         _broadcast_message_like(
             f"groupe_{message.groupe_id}", str(message.id), message.likes.count(), membre.id, aime
         )
+        return Response(self.get_serializer(message).data)
+
+    def _mitglied_pruefen(self, message, membre):
+        if not chats.darf_in_gruppe(message.groupe, membre):
+            raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
+
+    @action(detail=True, methods=["post"])
+    def reagieren(self, request, pk=None):
+        message = self.get_object()
+        membre = request.user.membre
+        self._mitglied_pruefen(message, membre)
+        chats.reagieren(message, membre, request.data.get("emoji"))
+        message = self.get_queryset().get(pk=message.pk)
+        return Response(self.get_serializer(message).data)
+
+    @action(detail=True, methods=["post"])
+    def anheften(self, request, pk=None):
+        message = self.get_object()
+        membre = request.user.membre
+        self._mitglied_pruefen(message, membre)
+        if not chats.darf_anheften(request.user, membre, message):
+            raise PermissionDenied("Nur der Ersteller kann in diesem Chat anheften.")
+        chats.anheften_umschalten(message)
+        return Response(self.get_serializer(message).data)
+
+    @action(detail=True, methods=["post"])
+    def abstimmen(self, request, pk=None):
+        message = self.get_object()
+        membre = request.user.membre
+        self._mitglied_pruefen(message, membre)
+        if not message.groupe.membres_groupe.filter(membre=membre).exists():
+            raise PermissionDenied("Nur Mitglieder können abstimmen.")
+        chats.abstimmen(message, membre, request.data.get("option"))
+        message = self.get_queryset().get(pk=message.pk)
         return Response(self.get_serializer(message).data)
 
 

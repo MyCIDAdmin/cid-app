@@ -3764,53 +3764,52 @@
       "En cas de doute, masquez au lieu de supprimer : masquer peut s'annuler."
     ]
   },
-  "groupes": {
-    "titre": "Groupes de chat",
-    "intro": "Les groupes de chat sont publics ou privés. Tout membre peut rejoindre un groupe public, on est invité dans un groupe privé.",
+  "chats": {
+    "titre": "Chats",
+    "intro": "Toutes les conversations au même endroit : chats à deux, groupes et chats de vos voyages. Les groupes sont publics ou privés. Tout membre peut rejoindre un groupe public, on est invité dans un groupe privé.",
     "schritte": [
-      "Dans la liste, rejoindre un groupe public avec « Rejoindre » ou ouvrir le sien avec « Ouvrir ».",
-      "Dans le chat, écrire des messages et les envoyer avec « Envoyer ».",
-      "Avec « Quitter le groupe », vous sortez du groupe."
+      "À gauche, ouvrir un chat de la liste ou en démarrer un nouveau avec le bouton plus.",
+      "Écrire en bas puis envoyer. Avec le plus, vous partagez un sondage ou un lieu de rendez-vous ; il y a aussi des emojis et des GIF.",
+      "Avec la touche Info, vous voyez les membres et pouvez mettre le chat en sourdine ou l'épingler."
     ],
     "workflows": [
       {
-        "id": "GRUP-01",
-        "titre": "Créer un groupe de chat et inviter des membres",
-        "wann": "Vous voulez discuter avec d'autres membres dans votre propre groupe, par exemple pour une rencontre.",
+        "id": "CHAT-01",
+        "titre": "Créer un chat ou un groupe",
+        "wann": "Vous voulez écrire à une personne ou à plusieurs membres, par exemple pour une rencontre.",
         "schritte": [
-          "Ouvrir le menu « Groupes de chat » et cliquer sur « Nouveau groupe ».",
-          "Saisir le « Nom du groupe » et éventuellement la description.",
-          "Choisir « Public » ou « Privé ».",
-          "Sous « Inviter des membres… », taper des noms et choisir les personnes.",
-          "Cliquer sur « Créer le groupe »."
+          "Ouvrir le menu « Chats » et cliquer sur le plus en haut de la liste.",
+          "Choisir une personne dans la recherche : cela donne un chat à deux. Si vous en choisissez plusieurs, un groupe est créé.",
+          "Pour un groupe, saisir le « Nom du groupe » et, si besoin, une description.",
+          "Laisser « Invités seulement » coché si tout le monde ne doit pas pouvoir rejoindre.",
+          "Cliquer sur « Démarrer le chat » ou « Créer le groupe »."
         ],
-        "danach": "Le groupe apparaît dans la liste. Tous les membres voient les groupes publics, seuls les invités voient les groupes privés. En tant que créateur, vous pouvez supprimer le groupe avec « Supprimer le groupe ».",
-        "vorher": "Vous avez un compte de membre et savez qui inviter. Choisissez « Privé » si tout le monde ne doit pas pouvoir rejoindre.",
+        "danach": "Le chat apparaît dans la liste et s'ouvre. Seuls les invités voient un groupe privé. En tant que créateur, vous pouvez supprimer le groupe via la touche Info.",
+        "vorher": "Vous avez un compte membre et savez à qui écrire. Pour un voyage, le chat existe déjà : vous le trouvez dans la liste avec l'étiquette « Voyage ».",
         "erwartet": [
-          "Le formulaire « Nouveau groupe » est ouvert.",
-          "Le nom et la description figurent dans le formulaire.",
-          "Le choix affiche « Public » ou « Privé ».",
-          "En tapant, l'application propose des membres. Les personnes choisies figurent dans la liste.",
-          "Le groupe est dans la liste avec le nombre de membres."
+          "La fenêtre « Nouveau chat » est ouverte.",
+          "Les personnes choisies apparaissent en haut sous forme de pastilles.",
+          "Les champs nom et description apparaissent.",
+          "La case « Invités seulement » est cochée.",
+          "Le chat est dans la liste et l'historique est ouvert."
         ],
         "fehler": [
           {
-            "problem": "« La création du groupe a échoué. »",
-            "loesung": "Saisissez un nom de groupe et réessayez."
-          },
-          {
-            "problem": "Une personne manque dans le groupe.",
-            "loesung": "Seuls les invités voient un groupe privé. Vérifiez que vous avez bien choisi la personne."
+            "problem": "« Le chat n'a pas pu être créé. »",
+            "loesung": "Vérifiez qu'un nom est saisi pour un groupe, puis réessayez."
           },
           {
             "problem": "Vous ne trouvez pas le bouton « Supprimer le groupe ».",
-            "loesung": "Il n'apparaît dans le chat que pour le créateur du groupe."
+            "loesung": "Il n'apparaît dans la colonne Info que pour le créateur du groupe."
           }
         ],
-        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Créez « [ÜBUNG] Groupe test » en « Privé » avec uniquement votre compte de test, puis supprimez-le avec « Supprimer le groupe ». N'invitez aucun vrai membre."
+        "uebung": "Seulement après la fin de la phase de test et uniquement sur l'environnement de test : créez « [ÜBUNG] Groupe test » en privé avec votre seul compte de test, puis supprimez-le via la touche Info. N'invitez aucun vrai membre."
       }
     ],
-    "tipps": ["Vous seul pouvez supprimer un message, avec « Supprimer »."]
+    "tipps": [
+      "Seul l'auteur peut retirer son message avec la corbeille.",
+      "Avec la cloche de la colonne Info, vous mettez un chat en sourdine : vous voyez les nouveaux messages sans notification."
+    ]
   },
   "reisen": {
     "titre": "Voyages et covoiturage",

@@ -4,7 +4,13 @@ import { apercuTexteDepuisHtml } from "../../utils/html";
 import { teilenZiel } from "../../utils/reisenTeilen";
 import ShareButton from "../ui/ShareButton";
 
-export default function ReiseTeilen({ reise }: { reise: ReiseDetail }) {
+export default function ReiseTeilen({
+  reise,
+  variant,
+}: {
+  reise: ReiseDetail;
+  variant?: "default" | "inverse";
+}) {
   const ziel = teilenZiel(reise);
   if (!ziel) return null;
   return (
@@ -12,6 +18,7 @@ export default function ReiseTeilen({ reise }: { reise: ReiseDetail }) {
       path={ziel.path}
       url={ziel.url}
       titre={reise.titel}
+      variant={variant}
       texte={apercuTexteDepuisHtml(reise.beschreibung) || undefined}
     />
   );
