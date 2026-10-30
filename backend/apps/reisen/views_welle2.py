@@ -236,14 +236,23 @@ class Welle2Mixin:
 
     @action(detail=False, methods=["get"])
     def saison(self, request):
-        """Kommende Auswärtsspiele mit den Reisen dazu (nur Reisen, die man sehen darf)."""
+        """Alle kommenden Spiele von Club Africain (Heim und Auswärts) mit den Reisen dazu.
+
+        Für die Fans in Deutschland ist jedes Spiel eine Reise. Reisen erscheinen nur, wenn man
+        sie sehen darf.
+        """
+        from django.db.models import Q
+
         from apps.communaute.models import RencontreCalendrier, StatutRencontre
+
+        from .views import _gegner, ist_heimspiel
 
         spiele = list(
             RencontreCalendrier.objects.filter(
+                Q(equipe_domicile__iexact="Club Africain")
+                | Q(equipe_exterieur__iexact="Club Africain"),
                 statut=StatutRencontre.PROGRAMMEE,
                 date_heure__gte=timezone.now(),
-                equipe_exterieur__iexact="Club Africain",
             ).order_by("date_heure")[:60]
         )
         reisen = {}
@@ -260,7 +269,8 @@ class Welle2Mixin:
             [
                 {
                     "rencontre": str(s.id),
-                    "gegner": s.equipe_domicile,
+                    "gegner": _gegner(s),
+                    "heim": ist_heimspiel(s),
                     "competition": s.competition,
                     "datum": s.date_heure.isoformat(),
                     "reisen": reisen.get(s.id, []),

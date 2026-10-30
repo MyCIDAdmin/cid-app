@@ -328,7 +328,7 @@ def test_namensliste_nur_notwendiges_und_filter(orga, anna, ben):
 # --- Saison -----------------------------------------------------------------------------------
 
 
-def test_saison_zeigt_auswaertsspiele_mit_sichtbaren_reisen(orga, anna):
+def test_saison_zeigt_alle_spiele_mit_sichtbaren_reisen(orga, anna):
     heim = RencontreCalendrier.objects.create(
         evenement_externe_id="h1",
         competition="Ligue 1",
@@ -343,13 +343,50 @@ def test_saison_zeigt_auswaertsspiele_mit_sichtbaren_reisen(orga, anna):
         equipe_exterieur="Club Africain",
         date_heure=timezone.now() + timedelta(days=20),
     )
+    RencontreCalendrier.objects.create(
+        evenement_externe_id="x1",
+        competition="Ligue 1",
+        equipe_domicile="ES Sahel",
+        equipe_exterieur="US Monastir",
+        date_heure=timezone.now() + timedelta(days=15),
+    )
     sichtbar = (
         api(orga).post(BASE, {"rencontre": str(ausw.id), **offen()}, format="json").data["id"]
     )
     api(orga).post(BASE, {"rencontre": str(ausw.id), "titel": "Privat"}, format="json")
     daten = api(anna).get(f"{BASE}saison/").data
-    assert [s["rencontre"] for s in daten] == [str(ausw.id)] and str(heim.id) not in str(daten)
-    assert [r["id"] for r in daten[0]["reisen"]] == [sichtbar]
+    # Beide Spiele von Club Africain, nach Datum; fremde Paarungen fehlen.
+    assert [s["rencontre"] for s in daten] == [str(heim.id), str(ausw.id)]
+    assert [(s["gegner"], s["heim"]) for s in daten] == [("ES Tunis", True), ("Zamalek SC", False)]
+    assert daten[0]["reisen"] == []
+    assert [r["id"] for r in daten[1]["reisen"]] == [sichtbar]
+
+
+def test_heimspiel_reise_bekommt_titel_und_eigenes_stadion(orga):
+    heim = RencontreCalendrier.objects.create(
+        evenement_externe_id="h2",
+        competition="Ligue 1",
+        equipe_domicile="Club Africain",
+        equipe_exterieur="ES Tunis",
+        date_heure=timezone.now() + timedelta(days=10),
+    )
+    r = api(orga).post(
+        BASE,
+        {
+            "rencontre": str(heim.id),
+            **offen(ziel_ort="Radès", stadion="Stade Olympique", land="Tunesien"),
+        },
+        format="json",
+    )
+    assert r.status_code == 201
+    titel = api(orga).get(f"{BASE}{r.data['id']}/").data["titel"]
+    assert titel == "Heimspiel: Club Africain – ES Tunis"
+    # Der Vorschlag gilt für alle Heimspiele, nicht für den Gegner als Gastgeber.
+    v = api(orga).get(f"{BASE}stadion-vorschlag/", {"rencontre": str(heim.id)}).data
+    assert v["stadion"] == "Stade Olympique"
+    assert api(orga).get(f"{BASE}stadion-vorschlag/", {"gegner": "ES Tunis"}).data == {
+        "gegner": "ES Tunis"
+    }
 
 
 # --- Steckbriefe ------------------------------------------------------------------------------
