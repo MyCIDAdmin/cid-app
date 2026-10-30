@@ -25,6 +25,9 @@
     "kategorie": "Kategorie filtern",
     "alle": "Alle Kategorien"
   },
+  "legende": {
+    "titel": "Legende der Terminarten"
+  },
   "kategorie": {
     "sitzung": "Sitzung",
     "veranstaltung": "Veranstaltung",

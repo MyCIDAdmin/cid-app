@@ -13,6 +13,7 @@ import {
   tagSchluessel,
 } from "../../utils/kalender";
 import { uebersetzt } from "../../utils/uebersetzung";
+import TerminIcon from "./TerminIcon";
 
 interface Props {
   eintraege: KalenderEintrag[];
@@ -28,17 +29,20 @@ function Chip({ eintrag, onWaehle }: { eintrag: KalenderEintrag; onWaehle: Props
     <button
       type="button"
       onClick={() => onWaehle(eintrag)}
-      title={uebersetzt(eintrag, "titel")}
-      className={`block w-full truncate rounded px-1 py-0.5 text-start text-[11px] font-medium ${
+      title={`${t(`kategorie.${eintrag.kategorie}`)} · ${uebersetzt(eintrag, "titel")}`}
+      className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-start text-[11px] font-medium ${
         KATEGORIE_STIL[eintrag.kategorie] ?? KATEGORIE_STIL.sonstiges
       } ${vorschlag ? "border border-dashed border-text-tertiary" : ""} ${
         eintrag.ausgeblendet ? "line-through opacity-50" : ""
       }`}
     >
-      {eintrag.wichtig && "★ "}
-      {eintrag.ausgeblendet && `${t("ausgeblendet_kurz")} · `}
-      {vorschlag && `${t("status.vorgeschlagen_kurz")} · `}
-      {uebersetzt(eintrag, "titel")}
+      <TerminIcon eintrag={eintrag} size={12} />
+      <span className="min-w-0 flex-1 truncate">
+        {eintrag.wichtig && "★ "}
+        {eintrag.ausgeblendet && `${t("ausgeblendet_kurz")} · `}
+        {vorschlag && `${t("status.vorgeschlagen_kurz")} · `}
+        {uebersetzt(eintrag, "titel")}
+      </span>
     </button>
   );
 }
@@ -78,10 +82,11 @@ export default function KalenderAnsicht({ eintraege, monat, modus, onWaehle }: P
                     }`}
                   >
                     <span
-                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                      className={`inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold ${
                         KATEGORIE_STIL[e.kategorie] ?? KATEGORIE_STIL.sonstiges
                       }`}
                     >
+                      <TerminIcon eintrag={e} size={13} />
                       {t(`kategorie.${e.kategorie}`)}
                     </span>
                     <span className="min-w-0 flex-1">
