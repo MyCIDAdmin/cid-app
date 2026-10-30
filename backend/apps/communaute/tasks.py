@@ -43,8 +43,15 @@ def envoyer_notification_message_prive(destinataire_membre_id, expediteur_nom, c
     except Membre.DoesNotExist:
         return False
 
+    from .models import ChatEinstellung
+
+    if ChatEinstellung.objects.filter(
+        membre=membre, conversation_id=conversation_id, stumm=True
+    ).exists():
+        return False  # Chat ist stummgeschaltet — weder E-Mail noch Benachrichtigung
+
     user = membre.user
-    lien = f"/messagerie/{conversation_id}"
+    lien = f"/chats/direkt/{conversation_id}"
     envoye = False
 
     if user and user.email and email_module_actif("communaute"):
@@ -90,7 +97,7 @@ def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
     que `notifications.notifier_nouvelle_reponse_forum` (jamais l'auteur du message
     lui-même). Pas d'email — un chat de groupe est un flux temps réel à fort volume, l'email
     ferait plus de bruit que de service."""
-    from .models import GroupeChat, MembreGroupe
+    from .models import ChatEinstellung, GroupeChat, MembreGroupe
 
     try:
         groupe = GroupeChat.objects.get(id=groupe_id)
@@ -102,12 +109,17 @@ def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
     except Membre.DoesNotExist:
         return 0
 
-    lien = f"/groupes/{groupe_id}"
+    lien = f"/chats/gruppe/{groupe_id}"
     titre = f"Nouveau message — {groupe.nom}"
     envoyes = 0
     membres = (
         MembreGroupe.objects.filter(groupe_id=groupe_id)
         .exclude(membre_id=auteur_membre_id)
+        .exclude(
+            membre_id__in=ChatEinstellung.objects.filter(groupe_id=groupe_id, stumm=True).values(
+                "membre_id"
+            )
+        )
         .select_related("membre__user")
     )
     for membre_groupe in membres:

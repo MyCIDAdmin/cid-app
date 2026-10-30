@@ -35,7 +35,7 @@ def test_notifie_tous_les_autres_membres_du_groupe():
     for membre in (m1, m2):
         notification = Notification.objects.get(destinataire=membre.user)
         assert notification.type_notification == TypeNotification.COMMUNAUTE_MESSAGE_GROUPE
-        assert notification.lien == f"/groupes/{groupe.id}"
+        assert notification.lien == f"/chats/gruppe/{groupe.id}"
     # L'auteur du message ne se notifie jamais lui-même.
     assert not Notification.objects.filter(destinataire=auteur.user).exists()
 

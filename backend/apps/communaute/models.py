@@ -124,6 +124,7 @@ from decimal import Decimal
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from encrypted_model_fields.fields import EncryptedTextField
 
@@ -415,6 +416,14 @@ class ReponseForum(models.Model):
 # ---------------------------------------------------------------------------
 
 
+class NachrichtArt(models.TextChoices):
+    TEXT = "text", _("Text")
+    GIF = "gif", _("GIF")
+    UMFRAGE = "umfrage", _("Umfrage")
+    TREFFPUNKT = "treffpunkt", _("Treffpunkt")
+    SYSTEM = "system", _("Systemnachricht")
+
+
 class Conversation(models.Model):
     """Conversation 1-to-1 entre deux membres (Messagerie privée, Release Plan §3.2).
 
@@ -485,6 +494,12 @@ class MessagePrive(models.Model):
         "membres.Membre", on_delete=models.CASCADE, related_name="messages_prives_envoyes"
     )
     contenu = EncryptedTextField()
+
+    # Nachrichtenart (Chats-Zusammenführung 2026-10) : Text bleibt der Normalfall.
+    art = models.CharField(max_length=12, choices=NachrichtArt.choices, default=NachrichtArt.TEXT)
+    # Zusatzdaten je Art (gif/umfrage/treffpunkt) — serverseitig geprüft (services.py).
+    daten = models.JSONField(null=True, blank=True)
+    angeheftet = models.BooleanField(default=False)
 
     est_lu = models.BooleanField(default=False)
     lu_le = models.DateTimeField(null=True, blank=True)
@@ -579,6 +594,10 @@ class MembreGroupe(models.Model):
         "membres.Membre", on_delete=models.CASCADE, related_name="groupes_rejoints"
     )
 
+    # Lesemarke je Mitglied : alles bis hierhin gilt als gelesen. Leer = nichts ungelesen
+    # (Bestandsgruppen vor Einführung der Marke zeigen keine Altlast als „neu“).
+    zuletzt_gelesen = models.DateTimeField(null=True, blank=True, default=timezone.now)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -602,7 +621,13 @@ class MessageGroupe(models.Model):
     auteur = models.ForeignKey(
         "membres.Membre", on_delete=models.CASCADE, related_name="messages_groupe"
     )
-    contenu = models.TextField()
+    contenu = models.TextField(blank=True)
+
+    # Nachrichtenart (Chats-Zusammenführung 2026-10) : Text bleibt der Normalfall.
+    art = models.CharField(max_length=12, choices=NachrichtArt.choices, default=NachrichtArt.TEXT)
+    # Zusatzdaten je Art (gif/umfrage/treffpunkt) — serverseitig geprüft (services.py).
+    daten = models.JSONField(null=True, blank=True)
+    angeheftet = models.BooleanField(default=False)
 
     # "Antworten" — même principe que MessagePrive.repond_a ci-dessus (citation à un seul
     # niveau, jamais de fil imbriqué).
@@ -644,6 +669,110 @@ class MessageGroupeLike(models.Model):
 
     def __str__(self):
         return f"{self.membre} ♥ {self.message_id}"
+
+
+class ChatEinstellung(models.Model):
+    """Persönliche Einstellung je Chat (stumm, angeheftet). Genau eines von `conversation` /
+    `groupe` ist gesetzt."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="chat_einstellungen"
+    )
+    conversation = models.ForeignKey(
+        Conversation, null=True, blank=True, on_delete=models.CASCADE, related_name="einstellungen"
+    )
+    groupe = models.ForeignKey(
+        GroupeChat, null=True, blank=True, on_delete=models.CASCADE, related_name="einstellungen"
+    )
+    stumm = models.BooleanField(default=False)
+    angeheftet = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "communaute_chat_einstellungen"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["membre", "conversation"],
+                condition=models.Q(conversation__isnull=False),
+                name="chat_einstellung_conversation_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["membre", "groupe"],
+                condition=models.Q(groupe__isnull=False),
+                name="chat_einstellung_groupe_unique",
+            ),
+            models.CheckConstraint(
+                check=models.Q(conversation__isnull=False, groupe__isnull=True)
+                | models.Q(conversation__isnull=True, groupe__isnull=False),
+                name="chat_einstellung_genau_ein_chat",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.membre} ⚙ {self.conversation_id or self.groupe_id}"
+
+
+class ChatReaktion(models.Model):
+    """Emoji-Reaktion eines Mitglieds auf eine Nachricht (Direkt oder Gruppe). Das Herz
+    („Gefällt mir“) bleibt in den bestehenden Like-Tabellen."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="chat_reaktionen"
+    )
+    message_prive = models.ForeignKey(
+        MessagePrive, null=True, blank=True, on_delete=models.CASCADE, related_name="reaktionen"
+    )
+    message_groupe = models.ForeignKey(
+        MessageGroupe, null=True, blank=True, on_delete=models.CASCADE, related_name="reaktionen"
+    )
+    emoji = models.CharField(max_length=16)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_chat_reaktionen"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["membre", "message_prive", "emoji"],
+                condition=models.Q(message_prive__isnull=False),
+                name="chat_reaktion_prive_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["membre", "message_groupe", "emoji"],
+                condition=models.Q(message_groupe__isnull=False),
+                name="chat_reaktion_groupe_unique",
+            ),
+            models.CheckConstraint(
+                check=models.Q(message_prive__isnull=False, message_groupe__isnull=True)
+                | models.Q(message_prive__isnull=True, message_groupe__isnull=False),
+                name="chat_reaktion_genau_eine_nachricht",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.membre} {self.emoji}"
+
+
+class UmfrageStimme(models.Model):
+    """Eine Stimme in einer Chat-Umfrage (Nachrichtenart „umfrage“, nur in Gruppen)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message = models.ForeignKey(MessageGroupe, on_delete=models.CASCADE, related_name="stimmen")
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="umfrage_stimmen_chat"
+    )
+    option = models.PositiveSmallIntegerField()
+
+    class Meta:
+        db_table = "communaute_umfrage_stimmen"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["message", "membre"], name="eine_stimme_je_mitglied_und_umfrage"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.membre} → {self.option}"
 
 
 # ---------------------------------------------------------------------------

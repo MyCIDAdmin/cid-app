@@ -198,10 +198,16 @@ def chat_abgleich(tn: ReiseTeilnehmer):
     membre = getattr(tn.user, "membre", None)
     if gruppe is None or membre is None:
         return
+    from apps.communaute.chats import systemnachricht
+
     if tn.status == TStatus.DABEI:
-        MembreGroupe.objects.get_or_create(groupe=gruppe, membre=membre)
+        _m, neu = MembreGroupe.objects.get_or_create(groupe=gruppe, membre=membre)
+        if neu:
+            systemnachricht(gruppe, f"{membre.prenom} ist dabei")
     elif membre.pk != gruppe.createur_id:
-        MembreGroupe.objects.filter(groupe=gruppe, membre=membre).delete()
+        geloescht, _n = MembreGroupe.objects.filter(groupe=gruppe, membre=membre).delete()
+        if geloescht:
+            systemnachricht(gruppe, f"{membre.prenom} ist nicht mehr dabei")
 
 
 # --- Privatsphäre ------------------------------------------------------------------------------
