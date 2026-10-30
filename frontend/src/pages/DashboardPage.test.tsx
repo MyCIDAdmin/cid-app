@@ -1,10 +1,13 @@
-import { screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../test/renderWithProviders";
 import * as useCommunauteHooks from "../hooks/useCommunaute";
 import * as useCotisationsHooks from "../hooks/useCotisations";
+import * as useAdhesionsHooks from "../hooks/useAdhesions";
 import * as useEvenementsHooks from "../hooks/useEvenements";
+import * as useReisenHooks from "../hooks/useReisen";
+import * as useSupportHooks from "../hooks/useSupport";
 import * as useProjetsHooks from "../hooks/useProjets";
 import * as useStatsHooks from "../hooks/useStats";
 import * as useVoteHooks from "../hooks/useVote";
@@ -42,7 +45,30 @@ vi.mock("../hooks/useVote", async () => {
 });
 vi.mock("../hooks/useCommunaute", async () => {
   const actual = await vi.importActual<typeof useCommunauteHooks>("../hooks/useCommunaute");
-  return { ...actual, usePublications: vi.fn() };
+  return {
+    ...actual,
+    usePublications: vi.fn(),
+    useCalendrierRencontres: vi.fn(),
+    useTippspiele: vi.fn(),
+    useTippspielTeilnahmen: vi.fn(),
+    useTippspielTipps: vi.fn(),
+  };
+});
+vi.mock("../hooks/useRbac", async () => {
+  const actual = await vi.importActual<typeof import("../hooks/useRbac")>("../hooks/useRbac");
+  return { ...actual, useModuleOuvert: () => ({ ouvert: true, chargement: false }) };
+});
+vi.mock("../hooks/useReisen", async () => {
+  const actual = await vi.importActual<typeof useReisenHooks>("../hooks/useReisen");
+  return { ...actual, useSaison: vi.fn(), useReisenListe: vi.fn(), useUmfeld: vi.fn() };
+});
+vi.mock("../hooks/useAdhesions", async () => {
+  const actual = await vi.importActual<typeof useAdhesionsHooks>("../hooks/useAdhesions");
+  return { ...actual, useJustificatifsEnAttente: vi.fn() };
+});
+vi.mock("../hooks/useSupport", async () => {
+  const actual = await vi.importActual<typeof useSupportHooks>("../hooks/useSupport");
+  return { ...actual, useAlleTickets: vi.fn() };
 });
 vi.mock("../hooks/useProjets", async () => {
   const actual = await vi.importActual<typeof useProjetsHooks>("../hooks/useProjets");
@@ -200,6 +226,8 @@ function stubHooks({
   statsMembres,
   statsFinancier,
   stellen = [],
+  justificatifs = [],
+  tickets = [],
 }: {
   evenements?: Evenement[];
   cotisations?: Cotisation[];
@@ -209,6 +237,8 @@ function stubHooks({
   statsMembres?: { actifs: number };
   statsFinancier?: { taux_collecte: number; cotisations_en_attente: string };
   stellen?: unknown[];
+  justificatifs?: unknown[];
+  tickets?: unknown[];
 }) {
   vi.mocked(useProjetsHooks.useOffeneStellen).mockReturnValue({
     data: stellen,
@@ -245,6 +275,22 @@ function stubHooks({
   vi.mocked(useStatsHooks.useStatsFinancier).mockReturnValue(
     queryResult(statsFinancier) as unknown as ReturnType<typeof useStatsHooks.useStatsFinancier>,
   );
+  const leer = { data: undefined, isLoading: false } as never;
+  vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue(
+    queryResult(page([])) as never,
+  );
+  vi.mocked(useCommunauteHooks.useTippspiele).mockReturnValue(queryResult(page([])) as never);
+  vi.mocked(useCommunauteHooks.useTippspielTeilnahmen).mockReturnValue(
+    queryResult(page([])) as never,
+  );
+  vi.mocked(useCommunauteHooks.useTippspielTipps).mockReturnValue(queryResult(page([])) as never);
+  vi.mocked(useReisenHooks.useSaison).mockReturnValue(leer);
+  vi.mocked(useReisenHooks.useReisenListe).mockReturnValue(leer);
+  vi.mocked(useReisenHooks.useUmfeld).mockReturnValue(leer);
+  vi.mocked(useAdhesionsHooks.useJustificatifsEnAttente).mockReturnValue(
+    queryResult(page(justificatifs)) as never,
+  );
+  vi.mocked(useSupportHooks.useAlleTickets).mockReturnValue(queryResult(tickets) as never);
 }
 
 describe("DashboardPage", () => {
@@ -254,10 +300,11 @@ describe("DashboardPage", () => {
     stubHooks({});
   });
 
-  it("affiche le titre et le prénom (pas l'email) dans le message de bienvenue (AHM-52)", () => {
+  it("begrüßt mit dem Vornamen (nicht der E-Mail) je nach Tageszeit (AHM-52)", () => {
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByRole("heading")).toBeInTheDocument();
-    expect(screen.getByText("Bienvenue, Sami")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      /^(Bonjour|Bonsoir), Sami$/,
+    );
   });
 
   it("zeigt offene Projekt-Stellen mit Link zum Projekt (2026-10-13)", () => {
@@ -287,39 +334,99 @@ describe("DashboardPage", () => {
   it("retombe sur l'email si le compte n'a pas de fiche Membre liée", () => {
     useAuthStore.setState({ user: { ...admin, prenom: "", nom: "" } });
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByText("Bienvenue, admin@example.com")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      /^(Bonjour|Bonsoir), admin@example.com$/,
+    );
   });
 
-  it("bandeau membre : reflète le statut de la cotisation de l'année en cours", () => {
+  it("Heute für dich: offener Beitrag erscheint als Aufgabe, bezahlter nicht", () => {
+    renderWithProviders(<DashboardPage />);
+    const liste = screen.getByTestId("heute-fuer-dich");
+    expect(liste).toHaveTextContent("La cotisation n'est pas encore payée");
+    cleanup();
+
     stubHooks({ cotisations: [cotisation({ statut: "payee" })] });
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByText(`Cotisation ${anneeCourante} à jour ✓`)).toBeInTheDocument();
+    expect(screen.getByTestId("heute-fuer-dich")).toHaveTextContent("Tout est fait.");
   });
 
-  it("bandeau admin + tuiles club (membres actifs, taux de collecte) pour Bureau Admin+", () => {
+  it("Heute für dich: laufende Abstimmung und Anmeldung mit offener Zahlung", () => {
+    stubHooks({
+      cotisations: [cotisation({ statut: "payee" })],
+      inscriptions: [inscription()],
+      voteOuvert: true,
+    });
+    renderWithProviders(<DashboardPage />);
+    const liste = screen.getByTestId("heute-fuer-dich");
+    expect(liste).toHaveTextContent("Inscription en attente de paiement : Déplacement Stuttgart");
+    expect(liste).toHaveTextContent("Le vote est en cours");
+  });
+
+  it("„Später“ blendet eine Aufgabe bis morgen aus", () => {
+    window.localStorage.clear();
+    renderWithProviders(<DashboardPage />);
+    const liste = screen.getByTestId("heute-fuer-dich");
+    fireEvent.click(within(liste).getByRole("button", { name: "Plus tard" }));
+    expect(liste).not.toHaveTextContent("La cotisation n'est pas encore payée");
+  });
+
+  it("zeigt das nächste Spiel mit Countdown und Reise (Heim- und Auswärtsspiele)", () => {
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue(
+      queryResult(
+        page([
+          {
+            id: "m1",
+            competition: "Ligue 1",
+            equipe_domicile: "Club Africain",
+            equipe_exterieur: "ES Tunis",
+            date_heure: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+            statut: "SCHEDULED",
+            est_a_venir: true,
+          },
+        ]),
+      ) as never,
+    );
+    vi.mocked(useReisenHooks.useSaison).mockReturnValue({
+      data: [{ rencontre: "m1", gegner: "ES Tunis", heim: true, reisen: [{ id: "r1", dabei: 5 }] }],
+      isLoading: false,
+    } as never);
+    renderWithProviders(<DashboardPage />);
+    const hero = screen.getByTestId("hero");
+    expect(hero).toHaveTextContent("Club Africain");
+    expect(hero).toHaveTextContent("ES Tunis");
+    expect(within(hero).getByRole("timer")).toHaveTextContent(/2\s*Jours/);
+    expect(within(hero).getByRole("link", { name: /5 participent/ })).toHaveAttribute(
+      "href",
+      "/reisen/r1",
+    );
+  });
+
+  it("ohne kommendes Spiel gibt es keinen Kopfbereich", () => {
+    renderWithProviders(<DashboardPage />);
+    expect(screen.queryByTestId("hero")).not.toBeInTheDocument();
+  });
+
+  it("Büro: „À traiter“ und Kennzahlen des Vereins für Bureau Admin+", () => {
     useAuthStore.setState({ user: admin });
     stubHooks({
       statsMembres: { actifs: 312 },
       statsFinancier: { taux_collecte: 86, cotisations_en_attente: "120.00" },
+      justificatifs: [{ id: "s1" }, { id: "s2" }],
+      tickets: [{ id: 1 }],
     });
     renderWithProviders(<DashboardPage />);
-
-    expect(
-      screen.getByText("Vue Administrateur — accès complet à toutes les fonctionnalités"),
-    ).toBeInTheDocument();
+    const buero = screen.getByTestId("buero-zu-erledigen");
+    expect(buero).toHaveTextContent("2 justificatifs à vérifier");
+    expect(buero).toHaveTextContent("1 demande de support");
     expect(screen.getByText("312")).toBeInTheDocument();
     expect(screen.getByText("86 %")).toBeInTheDocument();
-    // Un rôle < Bureau Admin ne doit même pas déclencher ces requêtes (403 côté API sinon).
-    expect(useStatsHooks.useStatsMembres).toHaveBeenCalledWith({}, { enabled: true });
   });
 
-  it("un rôle Membre ne déclenche pas les requêtes stats réservées à Bureau Admin+", () => {
+  it("ein Mitglied sieht keine Büro-Ansicht und löst die Büro-Abfragen nicht aus", () => {
     renderWithProviders(<DashboardPage />);
-    expect(useStatsHooks.useStatsMembres).toHaveBeenCalledWith({}, { enabled: false });
-    expect(useStatsHooks.useStatsFinancier).toHaveBeenCalledWith({}, { enabled: false });
-    // Et les tuiles club ne s'affichent pas pour ce rôle.
-    expect(screen.queryByText("Membres actifs")).not.toBeInTheDocument();
-    expect(screen.getByText("Inscriptions en attente")).toBeInTheDocument();
+    expect(screen.queryByTestId("buero-zu-erledigen")).not.toBeInTheDocument();
+    expect(useStatsHooks.useStatsMembres).not.toHaveBeenCalled();
+    expect(useAdhesionsHooks.useJustificatifsEnAttente).not.toHaveBeenCalled();
   });
 
   it("trie les prochains événements par date et affiche le remplissage", () => {
@@ -360,7 +467,7 @@ describe("DashboardPage", () => {
     stubHooks({ publications: [publication()] });
     renderWithProviders(<DashboardPage />);
 
-    expect(screen.getByText("Dernières publications")).toBeInTheDocument();
+    expect(screen.getByText("Nouveau depuis ta dernière visite")).toBeInTheDocument();
     expect(screen.getByText(/Sana Werfelli/)).toBeInTheDocument();
     expect(screen.getByText(/Ambiance de folie hier soir/)).toBeInTheDocument();
   });
