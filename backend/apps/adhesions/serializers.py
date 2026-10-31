@@ -27,6 +27,7 @@ from .models import (
     StatutJustificatif,
     StatutSouscription,
 )
+from .vorteile import pruefe_vorteile
 
 # FDD §4.2/§9 : "PDF ou image, max 5 Mo" — validation MIME réelle (magic bytes, jamais
 # l'extension/Content-Type déclarés par le client), même principe que
@@ -103,6 +104,10 @@ class OffreAdhesionSerializer(serializers.ModelSerializer):
             "rabais",
         ]
         read_only_fields = ["id"]
+
+    def validate_avantages(self, wert):
+        """Vorteile mit optionalem Symbol und Ziel (siehe vorteile.py)."""
+        return pruefe_vorteile(wert)
 
     def validate(self, attrs):
         """Ein Familienpaket besteht aus zugewiesenen normalen Angeboten derselben Kampagne."""
