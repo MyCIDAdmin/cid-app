@@ -276,7 +276,21 @@ input:-webkit-autofill:focus {
   transform: translateY(-2px) scale(1.01);
 }
 
+/* Drehbare Karte (Release 2026.11) : Vorder- und Rückseite liegen übereinander. */
+.cid-flip {
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.cid-karte-seite {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .cid-flip {
+    transition: none;
+  }
+
   .cid-karte-glanz {
     animation: none;
   }

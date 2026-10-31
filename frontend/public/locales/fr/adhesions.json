@@ -165,7 +165,7 @@
     "aucune": "Aucune offre pour cette campagne.",
     "nom_label": "Nom de l'offre",
     "description_label": "Description",
-    "avantages_label": "Avantages (un par ligne)",
+    "avantages_label": "Avantages",
     "avantages_placeholder": "Adhésion socios Clubistes\nPetit cadeau de bienvenue",
     "age_min_label": "Âge minimum",
     "age_max_label": "Âge maximum",
@@ -200,7 +200,11 @@
     "familie_kein_angebot": "— Choisir une offre —",
     "familie_rabatt": "Remise famille (%)",
     "familie_speichern": "Enregistrer le forfait famille",
-    "familie_hinweis": "Chaque personne reçoit l'offre attribuée. Prix = somme des offres moins la remise famille."
+    "familie_hinweis": "Chaque personne reçoit l'offre attribuée. Prix = somme des offres moins la remise famille.",
+    "vorteile_bearbeiten": "Modifier les avantages",
+    "vorteile_ausblenden": "Masquer les avantages",
+    "vorteile_ansehen": "Voir les avantages",
+    "vorteile_speichern": "Enregistrer les avantages"
   },
   "admin_rabais": {
     "titre": "Rabais de cette offre",
@@ -236,7 +240,14 @@
     "aria": "Carte de membre numérique – {{angebot}}",
     "titel": "Carte de membre",
     "mitglied_seit": "Membre depuis",
-    "gueltig_bis": "Valable jusqu'au"
+    "gueltig_bis": "Valable jusqu'au",
+    "hinweis_umdrehen": "Touche la carte pour voir le verso avec tes avantages.",
+    "umdrehen": "Retourner la carte et afficher les avantages",
+    "umdrehen_zurueck": "Retourner la carte",
+    "rueckseite_titel": "Tes avantages",
+    "mehr_vorteile": "+ {{anzahl}} autres avantages",
+    "status_aktiv": "Actif",
+    "status_bald": "Expire bientôt"
   },
   "zahlung": {
     "titel": "Comment payer votre adhésion",
@@ -359,5 +370,84 @@
     "preise": "Payé",
     "erwachsene_zeile": "{{angenommen}} acceptés · {{offen}} en attente · {{abgelehnt}} refusés · {{konflikt}} conflit",
     "ueber_hoechstalter": "{{anzahl}} au-dessus de l'âge maximum"
+  },
+  "kennzahlen": {
+    "tage_one": "jour de validité",
+    "tage_other": "jours de validité",
+    "jahre_one": "an de présence",
+    "jahre_other": "ans de présence",
+    "seit": "Membre depuis"
+  },
+  "bereich": {
+    "vorteile": "Tes avantages",
+    "vorteile_anzahl_one": "{{count}} avantage",
+    "vorteile_anzahl_other": "{{count}} avantages",
+    "beitrag": "Cotisation et paiements",
+    "verlauf": "Historique"
+  },
+  "naechster": {
+    "kicker": "Ta prochaine étape",
+    "ok_titel": "Tout est en ordre",
+    "ok_text": "Ton adhésion est payée et valable – encore {{tage}} jours.",
+    "ok_shop": "Vers la boutique",
+    "ok_events": "Vers les événements",
+    "bald_titel": "Ton adhésion expire bientôt",
+    "bald_text": "Elle est valable encore {{tage}} jours. Tu pourras la renouveler dès le début de la prochaine campagne.",
+    "nachweis_titel": "Justificatif manquant",
+    "nachweis_text": "Pour ta réduction, il nous manque un justificatif. Envoie-le pour continuer.",
+    "nachweis_knopf": "Envoyer le justificatif",
+    "zahlung_titel": "Paiement en attente",
+    "zahlung_text": "Ton inscription est presque terminée. Finalise le paiement pour activer ton adhésion.",
+    "zahlung_knopf": "Payer maintenant",
+    "abgelehnt_titel": "Réduction refusée",
+    "abgelehnt_text": "Ta réduction n'a pas été reconnue. Tu peux choisir une autre offre.",
+    "abgelehnt_knopf": "Choisir une offre",
+    "beitreten_titel": "Deviens membre",
+    "beitreten_text": "Choisis une offre et profite des prix membres, du droit de vote et plus encore.",
+    "beitreten_knopf": "Voir les offres",
+    "wieder_titel": "Bon retour",
+    "wieder_text": "Ta dernière adhésion est terminée. Choisis une offre et rejoins-nous à nouveau.",
+    "wieder_knopf": "Voir les offres"
+  },
+  "vorteile": {
+    "oeffnen_aria": "{{vorteil}} – ouvrir {{ziel}}",
+    "symbol_label": "Symbole",
+    "text_label": "Avantage",
+    "ziel_label": "Lien",
+    "ziel_keines": "Aucun lien",
+    "hoch": "Monter",
+    "runter": "Descendre",
+    "entfernen": "Supprimer l'avantage",
+    "hinzufuegen": "Ajouter un avantage",
+    "vorschau": "Aperçu côté membre",
+    "leer": "Aucun avantage pour l'instant.",
+    "symbol": {
+      "check": "Coche",
+      "card": "Carte",
+      "vote": "Vote",
+      "bag": "Sac",
+      "ticket": "Billet",
+      "car": "Voiture",
+      "gift": "Cadeau",
+      "star": "Étoile",
+      "users": "Groupe",
+      "calendar": "Calendrier",
+      "heart": "Cœur",
+      "camera": "Appareil photo",
+      "chat": "Chat",
+      "trophy": "Trophée"
+    },
+    "ziel": {
+      "shop": "Boutique",
+      "veranstaltungen": "Événements",
+      "reisen": "Voyages",
+      "tickets": "Billets",
+      "fanclub": "Fan-club live",
+      "votes": "Votes",
+      "alben": "Albums",
+      "kalender": "Calendrier",
+      "chats": "Chats",
+      "projekte": "Projets"
+    }
   }
 }

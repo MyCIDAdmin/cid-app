@@ -4,10 +4,11 @@
  * apps/adhesions/admin.py). Remplace le renvoi vers Django Admin acté dans une itération
  * précédente (voir historique du docstring d'AdminCampagnesPage).
  *
- * "Avantages (un par ligne)" reprend l'interaction du mockup #m-newcamp étape 2 : chaque ligne
- * du textarea devient un avantage trilingue {ordre, texte_fr, texte_de: "", texte_ar: ""} —
- * seul le français est saisi ici, comme le reste de ce formulaire (label_de/ar restent éditables
- * via Django Admin si besoin, cf. RabaisManager).
+ * Vorteile (Release 2026.11) : statt des Textfelds „ein Vorteil pro Zeile“ gibt es den
+ * VorteileEditor (Text, Symbol, Ziel-Link, Reihenfolge, Vorschau). Er dient beim Anlegen eines
+ * Angebots und – neu – auch beim Bearbeiten eines bestehenden Angebots (vorher ging das nur über
+ * Django Admin). Wie bisher wird nur der Text in `texte_fr` eingetragen (texte_de/ar bleiben
+ * über Django Admin editierbar, cf. RabaisManager).
  *
  * Lecture seule (task #216, 2026-09-24) : `modifiable` (optionnel, défaut `true`, voir
  * AdminCampagnesPage) désactive l'ajout/modification/suppression d'offres et se propage à
@@ -24,6 +25,7 @@ import {
   useTeleverserIconeOffre,
 } from "../../hooks/useAdhesions";
 import type {
+  AvantageOffre,
   CampagneAdhesion,
   CouleurOffre,
   KartenStil,
@@ -33,6 +35,8 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import { KARTEN_STILE } from "./kartenstile";
 import FamilieKonfig from "./FamilieKonfig";
 import RabaisManager from "./RabaisManager";
+import VorteileEditor from "./VorteileEditor";
+import { vorteileFuerSpeichern } from "./vorteile";
 
 // Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" : "2. Färblich
 // highlighten") — reprend les 3 mêmes emplacements que ACCENTS_OFFRE côté MonAdhesionPage.tsx,
@@ -42,7 +46,9 @@ const OPTIONS_COULEUR: CouleurOffre[] = ["", "cat_1", "cat_2", "cat_3"];
 // Look der digitalen Mitgliedskarte (2026-10-06) — leer = Rubin (CID-Rot).
 const OPTIONS_KARTENSTIL: KartenStil[] = [...KARTEN_STILE];
 
-function formulaireInitial(campagneId: string): OffreCreatePayload & { avantages_texte: string } {
+function formulaireInitial(
+  campagneId: string,
+): OffreCreatePayload & { avantages: AvantageOffre[] } {
   return {
     campagne: campagneId,
     nom: "",
@@ -52,16 +58,8 @@ function formulaireInitial(campagneId: string): OffreCreatePayload & { avantages
     condition_age_max: null,
     visible: true,
     ordre: 0,
-    avantages_texte: "",
+    avantages: [],
   };
-}
-
-function avantagesDepuisTexte(texte: string) {
-  return texte
-    .split("\n")
-    .map((ligne) => ligne.trim())
-    .filter(Boolean)
-    .map((texte_fr, index) => ({ ordre: index + 1, texte_fr, texte_de: "", texte_ar: "" }));
 }
 
 export default function OffresManager({
@@ -79,12 +77,37 @@ export default function OffresManager({
 
   const [form, setForm] = useState(() => formulaireInitial(campagne.id));
   const [offreDepliee, setOffreDepliee] = useState<string | null>(null);
+  // Vorteile bestehender Angebote : je ein Entwurf, gespeichert erst per Knopf.
+  const [vorteileOffen, setVorteileOffen] = useState<string | null>(null);
+  const [vorteileEntwurf, setVorteileEntwurf] = useState<AvantageOffre[]>([]);
+
+  function vorteileOeffnen(offre: { id: string; avantages: AvantageOffre[] }) {
+    if (vorteileOffen === offre.id) {
+      setVorteileOffen(null);
+      return;
+    }
+    modifierMutation.reset();
+    setVorteileEntwurf(
+      offre.avantages
+        .slice()
+        .sort((a, b) => a.ordre - b.ordre)
+        .map((v) => ({ ...v, icone: v.icone ?? "", ziel: v.ziel ?? "" })),
+    );
+    setVorteileOffen(offre.id);
+  }
+
+  function vorteileSpeichern(offreId: string) {
+    if (!modifiable) return;
+    modifierMutation.mutate(
+      { id: offreId, payload: { avantages: vorteileFuerSpeichern(vorteileEntwurf) } },
+      { onSuccess: () => setVorteileOffen(null) },
+    );
+  }
 
   function handleAjouter(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const { avantages_texte, ...payload } = form;
     creerMutation.mutate(
-      { ...payload, avantages: avantagesDepuisTexte(avantages_texte) },
+      { ...form, avantages: vorteileFuerSpeichern(form.avantages) },
       { onSuccess: () => setForm(formulaireInitial(campagne.id)) },
     );
   }
@@ -188,6 +211,18 @@ export default function OffresManager({
               </button>
               <button
                 type="button"
+                onClick={() => vorteileOeffnen(offre)}
+                aria-expanded={vorteileOffen === offre.id}
+                className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+              >
+                {vorteileOffen === offre.id
+                  ? t("admin_offres.vorteile_ausblenden")
+                  : modifiable
+                    ? t("admin_offres.vorteile_bearbeiten")
+                    : t("admin_offres.vorteile_ansehen")}
+              </button>
+              <button
+                type="button"
                 onClick={() => supprimerMutation.mutate(offre.id)}
                 disabled={!modifiable}
                 title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
@@ -281,6 +316,42 @@ export default function OffresManager({
                 </p>
               )}
             </div>
+            {vorteileOffen === offre.id && (
+              <div className="mt-2 border-t border-text-tertiary/10 pt-2">
+                <h4 className="mb-1 text-[11px] font-bold text-text-primary">
+                  {t("admin_offres.avantages_label")}
+                </h4>
+                <VorteileEditor
+                  werte={vorteileEntwurf}
+                  onChange={setVorteileEntwurf}
+                  disabled={!modifiable}
+                />
+                {modifierMutation.isError && (
+                  <p className="mt-1 text-xs text-status-dangerText">
+                    {extractApiErrorMessage(modifierMutation.error, t("admin_offres.erreur"))}
+                  </p>
+                )}
+                {modifiable && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => vorteileSpeichern(offre.id)}
+                      disabled={modifierMutation.isPending}
+                      className="rounded-cid bg-ca px-3 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
+                    >
+                      {t("admin_offres.vorteile_speichern")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVorteileOffen(null)}
+                      className="rounded-cid border border-text-tertiary/30 px-3 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+                    >
+                      {t("offres.annuler_selection")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             {offreDepliee === offre.id && <RabaisManager offre={offre} modifiable={modifiable} />}
           </div>
         ))}
@@ -341,19 +412,13 @@ export default function OffresManager({
           />
         </div>
         <div className="md:col-span-2">
-          <label
-            htmlFor={`offre-avantages-${campagne.id}`}
-            className="mb-1 block text-[10px] text-text-tertiary"
-          >
+          <div className="mb-1 block text-[10px] text-text-tertiary">
             {t("admin_offres.avantages_label")}
-          </label>
-          <textarea
-            id={`offre-avantages-${campagne.id}`}
-            rows={2}
-            value={form.avantages_texte}
-            onChange={(e) => setForm({ ...form, avantages_texte: e.target.value })}
-            placeholder={t("admin_offres.avantages_placeholder")}
-            className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+          </div>
+          <VorteileEditor
+            werte={form.avantages}
+            onChange={(avantages) => setForm({ ...form, avantages })}
+            disabled={!modifiable}
           />
         </div>
         <div>

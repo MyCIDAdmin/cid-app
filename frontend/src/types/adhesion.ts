@@ -24,6 +24,10 @@ export interface AvantageOffre {
   texte_fr: string;
   texte_de?: string;
   texte_ar?: string;
+  /** Symbol-Schlüssel (siehe components/adhesions/vorteile.ts) ; leer = Häkchen. */
+  icone?: string;
+  /** Ziel-Schlüssel einer App-Seite (siehe vorteile.tsx) ; leer = Kachel ohne Link. */
+  ziel?: string;
 }
 
 export interface RabaisOffre {

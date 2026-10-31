@@ -151,7 +151,7 @@ describe("OffresManager", () => {
     expect(wahl).not.toHaveTextContent("Familie");
   });
 
-  it("crée une nouvelle offre avec les avantages saisis ligne par ligne", () => {
+  it("crée une nouvelle offre avec avantages, symbole et cible", () => {
     const creerMutate = vi.fn();
     vi.mocked(useAdhesionsHooks.useCreerOffre).mockReturnValue({
       mutate: creerMutate,
@@ -167,18 +167,77 @@ describe("OffresManager", () => {
     fireEvent.change(screen.getByLabelText("admin_offres.prix_label"), {
       target: { value: "35.00" },
     });
-    fireEvent.change(screen.getByLabelText("admin_offres.avantages_label"), {
-      target: { value: "Cadeau de bienvenue\nAdhésion jeune supporter" },
+    fireEvent.click(screen.getByText("vorteile.hinzufuegen"));
+    fireEvent.change(screen.getByLabelText("vorteile.text_label 1"), {
+      target: { value: "Cadeau de bienvenue" },
     });
+    fireEvent.change(screen.getByLabelText("vorteile.symbol_label 1"), {
+      target: { value: "gift" },
+    });
+    fireEvent.change(screen.getByLabelText("vorteile.ziel_label 1"), {
+      target: { value: "shop" },
+    });
+    fireEvent.click(screen.getByText("vorteile.hinzufuegen"));
+    fireEvent.change(screen.getByLabelText("vorteile.text_label 2"), {
+      target: { value: "Adhésion jeune supporter" },
+    });
+    // Eine leere dritte Zeile wird beim Speichern verworfen.
+    fireEvent.click(screen.getByText("vorteile.hinzufuegen"));
     fireEvent.click(screen.getByText("admin_offres.ajouter"));
 
     expect(creerMutate).toHaveBeenCalledTimes(1);
     const payload = creerMutate.mock.calls[0][0];
     expect(payload).toMatchObject({ campagne: "c1", nom: "CID Junior", prix_plein: "35.00" });
     expect(payload.avantages).toEqual([
-      { ordre: 1, texte_fr: "Cadeau de bienvenue", texte_de: "", texte_ar: "" },
-      { ordre: 2, texte_fr: "Adhésion jeune supporter", texte_de: "", texte_ar: "" },
+      { ordre: 1, texte_fr: "Cadeau de bienvenue", icone: "gift", ziel: "shop" },
+      { ordre: 2, texte_fr: "Adhésion jeune supporter", icone: "", ziel: "" },
     ]);
+  });
+
+  it("modifie et enregistre les avantages d'une offre existante", () => {
+    const modifierMutate = vi.fn();
+    vi.mocked(useAdhesionsHooks.useModifierOffre).mockReturnValue({
+      mutate: modifierMutate,
+      reset: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useModifierOffre>);
+    const mitVorteilen = offre({
+      avantages: [
+        { ordre: 2, texte_fr: "Stimmrecht", texte_de: "", texte_ar: "" },
+        { ordre: 1, texte_fr: "Mitgliederpreis", texte_de: "", texte_ar: "", icone: "bag" },
+      ],
+    });
+    renderWithProviders(<OffresManager campagne={campagne({ offres: [mitVorteilen] })} />);
+
+    fireEvent.click(screen.getByText("admin_offres.vorteile_bearbeiten"));
+    // Reihenfolge nach `ordre` : erst „Mitgliederpreis“.
+    expect(screen.getByLabelText("vorteile.text_label 1")).toHaveValue("Mitgliederpreis");
+    expect(screen.getByLabelText("vorteile.text_label 2")).toHaveValue("Stimmrecht");
+
+    fireEvent.change(screen.getByLabelText("vorteile.ziel_label 1"), {
+      target: { value: "shop" },
+    });
+    fireEvent.click(screen.getByLabelText("vorteile.runter 1"));
+    fireEvent.click(screen.getByText("admin_offres.vorteile_speichern"));
+
+    expect(modifierMutate).toHaveBeenCalledTimes(1);
+    expect(modifierMutate.mock.calls[0][0]).toEqual({
+      id: "o1",
+      payload: {
+        avantages: [
+          { ordre: 1, texte_fr: "Stimmrecht", texte_de: "", texte_ar: "", icone: "", ziel: "" },
+          {
+            ordre: 2,
+            texte_fr: "Mitgliederpreis",
+            texte_de: "",
+            texte_ar: "",
+            icone: "bag",
+            ziel: "shop",
+          },
+        ],
+      },
+    });
   });
 
   it("supprime une offre", () => {
