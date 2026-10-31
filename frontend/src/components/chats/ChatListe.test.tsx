@@ -17,6 +17,10 @@ function chat(o: Partial<ChatListItem>): ChatListItem {
     nicht_gelesen: 0,
     stumm: false,
     angeheftet: false,
+    nur_erwaehnung: false,
+    ich_admin: false,
+    pausiert: false,
+    pause_bis: null,
     letzte: {
       text: "Bis gleich",
       art: "text",

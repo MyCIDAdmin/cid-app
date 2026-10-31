@@ -27,6 +27,13 @@ export interface ChatListItem {
   nicht_gelesen: number;
   stumm: boolean;
   angeheftet: boolean;
+  /** Gruppen : nur bei @Erwähnung benachrichtigen. */
+  nur_erwaehnung: boolean;
+  /** Ich bin Chat-Admin (Ersteller oder ernannt) ; im Direktchat immer false. */
+  ich_admin: boolean;
+  /** Schreibpause : nur Chat-Admins schreiben. `pause_bis` = Ende (ISO) oder null. */
+  pausiert: boolean;
+  pause_bis: string | null;
   letzte: ChatLetzte | null;
   aktivitaet: string;
 }
@@ -34,10 +41,12 @@ export interface ChatListItem {
 export interface ChatFilter {
   stumm?: boolean;
   angeheftet?: boolean;
+  nur_erwaehnung?: boolean;
 }
 
 export interface GruppenMitglied extends Auteur {
   ist_ersteller: boolean;
+  ist_admin: boolean;
 }
 
 export interface MitreisendeReise {
@@ -76,4 +85,7 @@ export interface ChatNachricht {
   umfrage: UmfrageErgebnis | null;
   /** Nur Direktchat, nur eigene Nachrichten. */
   gelesen: boolean;
+  /** Zeitpunkt der letzten Bearbeitung (nur Text) und ob ein Chat-Admin sie vorgenommen hat. */
+  bearbeitetAm: string | null;
+  bearbeitetVonAdmin: boolean;
 }

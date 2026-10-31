@@ -27,6 +27,10 @@ function chat(o: Partial<ChatListItem>): ChatListItem {
     nicht_gelesen: 0,
     stumm: false,
     angeheftet: false,
+    nur_erwaehnung: false,
+    ich_admin: false,
+    pausiert: false,
+    pause_bis: null,
     letzte: null,
     aktivitaet: "2026-10-30T10:00:00Z",
     ...o,
@@ -50,6 +54,8 @@ function nachricht(o: Partial<ChatNachricht>): ChatNachricht {
     antwort: null,
     umfrage: null,
     gelesen: false,
+    bearbeitetAm: null,
+    bearbeitetVonAdmin: false,
     ...o,
   };
 }

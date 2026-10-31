@@ -25,12 +25,17 @@ export function useChatEinstellung() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (v: { art: ChatArt; id: string } & ChatFilter) =>
-      api.setzeEinstellung(v.art, v.id, { stumm: v.stumm, angeheftet: v.angeheftet }),
+      api.setzeEinstellung(v.art, v.id, {
+        stumm: v.stumm,
+        angeheftet: v.angeheftet,
+        nur_erwaehnung: v.nur_erwaehnung,
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.liste }),
   });
 }
 
-/** Welche optionalen Dienste sind aktiv (GIPHY, DeepL) ? Ohne sie bleibt die Taste ausgeblendet. */
+/** Welche optionalen Dienste sind aktiv (GIPHY, DeepL) ? Ohne sie zeigt die GIF-Taste einen
+ * Hinweis statt der Suche ; die Übersetzen-Taste bleibt ausgeblendet. */
 export function useChatDienste() {
   return useQuery({ queryKey: chatKeys.dienste, queryFn: api.getDienste, staleTime: 5 * 60_000 });
 }
@@ -83,5 +88,32 @@ export function useAbstimmen() {
 export function useUebersetzen() {
   return useMutation({
     mutationFn: (v: { text: string; ziel: "de" | "fr" }) => api.uebersetze(v.text, v.ziel),
+  });
+}
+
+export function useBearbeiten(kanal: "direkt" | "gruppe") {
+  return useMutation({
+    mutationFn: (v: { id: string; contenu: string }) =>
+      api.bearbeiteNachricht(kanal, v.id, v.contenu),
+  });
+}
+
+export function useChatAdmin(gruppeId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { membreId: string; aktiv: boolean }) =>
+      api.setzeChatAdmin(gruppeId, v.membreId, v.aktiv),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.mitglieder(gruppeId) });
+      queryClient.invalidateQueries({ queryKey: chatKeys.liste });
+    },
+  });
+}
+
+export function useChatPause(gruppeId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { aktiv: boolean; bis?: string }) => api.setzePause(gruppeId, v.aktiv, v.bis),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: chatKeys.liste }),
   });
 }

@@ -38,6 +38,8 @@ function ausPrive(m: MessagePrive, partnerName: string): ChatNachricht {
       : null,
     umfrage: null,
     gelesen: m.est_lu,
+    bearbeitetAm: m.bearbeitet_am ?? null,
+    bearbeitetVonAdmin: m.bearbeitet_von_admin ?? false,
   };
 }
 
@@ -64,6 +66,8 @@ function ausGruppe(m: MessageGroupe): ChatNachricht {
       : null,
     umfrage: m.umfrage ?? null,
     gelesen: false,
+    bearbeitetAm: m.bearbeitet_am ?? null,
+    bearbeitetVonAdmin: m.bearbeitet_von_admin ?? false,
   };
 }
 
@@ -94,6 +98,8 @@ function ausSocket(
       : null,
     umfrage: s.umfrage ?? null,
     gelesen: false,
+    bearbeitetAm: null,
+    bearbeitetVonAdmin: false,
   };
 }
 
@@ -153,6 +159,18 @@ export function useChatNachrichten(
     }
     for (const e of ereignisse.pins) {
       liste = liste.map((m) => (m.id === e.id ? { ...m, angeheftet: e.angeheftet } : m));
+    }
+    for (const e of ereignisse.bearbeitet) {
+      liste = liste.map((m) =>
+        m.id === e.id
+          ? {
+              ...m,
+              text: e.contenu,
+              bearbeitetAm: e.bearbeitet_am,
+              bearbeitetVonAdmin: e.von_admin,
+            }
+          : m,
+      );
     }
     for (const e of ereignisse.umfragen) {
       liste = liste.map((m) =>

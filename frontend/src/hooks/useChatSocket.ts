@@ -47,6 +47,9 @@ export interface SocketEreignisse {
   reaktionen: { id: string; emoji: string; anzahl: number; membre_id: string; aktiv: boolean }[];
   pins: { id: string; angeheftet: boolean }[];
   umfragen: { id: string; zaehler: number[]; gesamt: number }[];
+  bearbeitet: { id: string; contenu: string; bearbeitet_am: string; von_admin: boolean }[];
+  /** Zuletzt gemeldeter Stand der Schreibpause (null = nichts gemeldet seit dem Öffnen). */
+  pause: { pausiert: boolean; bis: string | null } | null;
   /** Direktchat : Gegenüber hat gelesen. */
   gelesenVon: string[];
 }
@@ -57,6 +60,8 @@ const LEER: SocketEreignisse = {
   reaktionen: [],
   pins: [],
   umfragen: [],
+  bearbeitet: [],
+  pause: null,
   gelesenVon: [],
 };
 
@@ -117,7 +122,7 @@ export function useChatSocket(
       } catch {
         return;
       }
-      const hinzu = <K extends keyof SocketEreignisse>(
+      const hinzu = <K extends Exclude<keyof SocketEreignisse, "pause">>(
         feld: K,
         wert: SocketEreignisse[K][number],
       ) =>
@@ -143,6 +148,15 @@ export function useChatSocket(
           break;
         case "umfrage_update":
           hinzu("umfragen", m as never);
+          break;
+        case "message_bearbeitet":
+          hinzu("bearbeitet", m as never);
+          break;
+        case "gruppe_pause":
+          setEreignisse((e) => ({
+            ...e,
+            pause: { pausiert: m.pausiert === true, bis: (m.bis as string | null) ?? null },
+          }));
           break;
         case "lu":
           hinzu("gelesenVon", m.lu_par as string);

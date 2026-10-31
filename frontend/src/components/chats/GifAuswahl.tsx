@@ -1,4 +1,5 @@
-/** GIF-Auswahl : Suche und Trends über unseren Server (GIPHY, ohne Kennung der Mitglieder). */
+/** GIF-Auswahl : Suche und Trends über unseren Server (GIPHY, ohne Kennung der Mitglieder).
+ * Ist der Dienst nicht eingerichtet (`verfuegbar` false), erscheint nur ein Hinweis. */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,7 +9,13 @@ import { FELD } from "./ui";
 
 const SCHLAGWORTE = ["tor", "jubel", "danke", "reise", "lachen"] as const;
 
-export default function GifAuswahl({ onWaehle }: { onWaehle: (gif: GifDaten) => void }) {
+export default function GifAuswahl({
+  onWaehle,
+  verfuegbar = true,
+}: {
+  onWaehle: (gif: GifDaten) => void;
+  verfuegbar?: boolean;
+}) {
   const { t } = useTranslation("communaute");
   const [eingabe, setEingabe] = useState("");
   const [q, setQ] = useState("");
@@ -16,7 +23,18 @@ export default function GifAuswahl({ onWaehle }: { onWaehle: (gif: GifDaten) => 
     const id = window.setTimeout(() => setQ(eingabe.trim()), 350);
     return () => window.clearTimeout(id);
   }, [eingabe]);
-  const abfrage = useGifSuche(q, true);
+  const abfrage = useGifSuche(q, verfuegbar);
+
+  if (!verfuegbar) {
+    return (
+      <div
+        data-testid="gif-nicht-eingerichtet"
+        className="border-t border-text-tertiary/15 bg-bg-primary p-3 text-sm text-text-secondary"
+      >
+        {t("chats.gif_nicht_eingerichtet")}
+      </div>
+    );
+  }
 
   return (
     <div data-testid="gif-auswahl" className="border-t border-text-tertiary/15 bg-bg-primary p-2">
