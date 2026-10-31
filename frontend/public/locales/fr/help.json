@@ -1255,6 +1255,40 @@
           }
         ],
         "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Connectez votre propre compte de test à votre Telegram, envoyez le message de test puis déconnectez-vous avec « Déconnecter ». Le message de test ne va qu'à vous."
+      },
+      {
+        "id": "BENA-03",
+        "titre": "Recevoir les notifications push sur le téléphone",
+        "wann": "Vous souhaitez recevoir les messages importants sur votre téléphone, même quand l'appli est fermée.",
+        "schritte": [
+          "Ouvrir vos paramètres et aller au bloc « Push sur cet appareil ».",
+          "Appuyer sur « Activer le push » et répondre « Autoriser » à la question du navigateur.",
+          "Sous « Recevoir ces types par push », cocher ou décocher les types.",
+          "Avec « Envoyer un message de test », vérifier que le message arrive sur l'appareil."
+        ],
+        "danach": "L'appareil ne reçoit que le titre et le lien, jamais le contenu. Avec « Désactiver », vous coupez l'inscription. Le choix des types vaut pour tous vos appareils.",
+        "vorher": "Vous êtes connecté dans le navigateur du téléphone (par exemple Chrome) ou dans l'appli installée. Sur iPhone et iPad, cela ne marche que si l'appli est installée via « Sur l'écran d'accueil ». Cette fonction ne marche que si l'association a configuré le push.",
+        "erwartet": [
+          "Le bloc explique que vous recevez le titre et le lien, pas le contenu.",
+          "Le navigateur demande l'autorisation. Ensuite le bloc affiche « Activé. Cet appareil reçoit les notifications choisies. »",
+          "Tous les types sont cochés et peuvent être décochés séparément.",
+          "« Message de test envoyé. » apparaît et le message arrive sur l'appareil. Un appui ouvre l'appli."
+        ],
+        "fehler": [
+          {
+            "problem": "Le navigateur ne demande pas l'autorisation.",
+            "loesung": "L'autorisation est bloquée pour ce site. Autorisez les notifications dans les réglages du navigateur (cadenas à côté de l'adresse) et rechargez la page."
+          },
+          {
+            "problem": "Sur iPhone, le bouton manque.",
+            "loesung": "Installez l'appli via « Partager » puis « Sur l'écran d'accueil » et ouvrez-la de là."
+          },
+          {
+            "problem": "Le message de test n'arrive pas.",
+            "loesung": "Désactivez puis réactivez le push. Vérifiez aussi le mode économie d'énergie du téléphone."
+          }
+        ],
+        "uebung": "ÜBUNG : Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Activez le push avec votre propre compte de test, envoyez le message de test puis désactivez le push. Le message de test ne va qu'à vous."
       }
     ]
   },

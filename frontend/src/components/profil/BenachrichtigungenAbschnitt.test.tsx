@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as authApi from "../../api/auth";
+import * as pushApi from "../../api/push";
 import * as api from "../../api/telegram";
 import { useAuthStore, type CidUser } from "../../store/authStore";
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -13,6 +14,13 @@ vi.mock("../../api/telegram", () => ({
   telegramKategorien: vi.fn(),
   telegramTrennen: vi.fn(),
   telegramTest: vi.fn(),
+}));
+vi.mock("../../api/push", () => ({
+  getPush: vi.fn(),
+  pushAnmelden: vi.fn(),
+  pushAbmelden: vi.fn(),
+  pushKategorien: vi.fn(),
+  pushTest: vi.fn(),
 }));
 vi.mock("../../api/auth", async () => {
   const actual = await vi.importActual<typeof import("../../api/auth")>("../../api/auth");
@@ -48,6 +56,13 @@ describe("BenachrichtigungenAbschnitt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({ user: user() });
+    vi.mocked(pushApi.getPush).mockResolvedValue({
+      aktiv: false,
+      schluessel: "",
+      geraete: [],
+      kategorien: [],
+      verfuegbar: [],
+    });
   });
 
   it("blendet Telegram aus, wenn der Bot nicht eingerichtet ist", async () => {

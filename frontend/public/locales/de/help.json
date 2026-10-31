@@ -1255,6 +1255,40 @@
           }
         ],
         "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Verbinde dein eigenes Testkonto mit deinem Telegram, sende die Testnachricht und trenne die Verbindung danach mit „Trennen“. Die Testnachricht geht nur an dich."
+      },
+      {
+        "id": "BENA-03",
+        "titre": "Push-Meldungen aufs Handy erhalten",
+        "wann": "Du möchtest wichtige Meldungen auf dem Handy bekommen, auch wenn die App geschlossen ist.",
+        "schritte": [
+          "Deine Einstellungen öffnen und zum Block „Push auf diesem Gerät“ gehen.",
+          "Auf „Push einschalten“ tippen und die Frage des Browsers mit „Zulassen“ beantworten.",
+          "Unter „Diese Arten per Push erhalten“ die Arten ankreuzen oder abwählen.",
+          "Mit „Testmeldung senden“ prüfen, ob die Meldung auf dem Gerät erscheint."
+        ],
+        "danach": "Das Gerät erhält nur Titel und Link, nie den Inhalt. Mit „Ausschalten“ löst du die Anmeldung wieder. Die Auswahl der Arten gilt für alle deine Geräte.",
+        "vorher": "Du bist im Handy-Browser (zum Beispiel Chrome) oder in der installierten App angemeldet. Auf dem iPhone und iPad klappt es nur, wenn die App über „Zum Home-Bildschirm“ installiert ist. Diese Funktion läuft nur, wenn der Verein Push eingerichtet hat.",
+        "erwartet": [
+          "Der Block erklärt, dass du Titel und Link erhältst und nicht den Inhalt.",
+          "Der Browser fragt nach der Erlaubnis. Danach steht dort „Eingeschaltet. Dieses Gerät erhält die gewählten Benachrichtigungen.“",
+          "Die Arten sind alle angekreuzt und lassen sich einzeln abwählen.",
+          "„Testmeldung gesendet.“ erscheint und die Meldung kommt auf dem Gerät an. Tippen öffnet die App."
+        ],
+        "fehler": [
+          {
+            "problem": "Der Browser fragt nicht nach der Erlaubnis.",
+            "loesung": "Die Erlaubnis ist für diese Seite gesperrt. Erlaube Benachrichtigungen in den Browser-Einstellungen (Schloss-Symbol neben der Adresse) und lade die Seite neu."
+          },
+          {
+            "problem": "Auf dem iPhone fehlt der Schalter.",
+            "loesung": "Installiere die App über „Teilen“ und „Zum Home-Bildschirm“ und öffne sie von dort."
+          },
+          {
+            "problem": "Die Testmeldung kommt nicht an.",
+            "loesung": "Schalte Push aus und wieder ein. Prüfe außerdem den Energiesparmodus des Handys."
+          }
+        ],
+        "uebung": "ÜBUNG: Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Schalte Push mit deinem eigenen Testkonto ein, sende die Testmeldung und schalte Push danach wieder aus. Die Testmeldung geht nur an dich."
       }
     ]
   },
