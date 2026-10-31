@@ -392,7 +392,7 @@ def test_envoi_dun_message_de_groupe_declenche_la_notification(monkeypatch):
 
     asyncio.run(run())
     assert len(appels) == 1
-    assert appels[0] == (str(groupe.id), str(m1.id))
+    assert appels[0] == (str(groupe.id), str(m1.id), "Salut le groupe !")
 
 
 def test_suppression_dun_message_de_groupe_par_lapi_rest_est_diffusee_au_websocket():

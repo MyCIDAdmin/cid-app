@@ -52,14 +52,27 @@ describe("Composer", () => {
     expect(p.onSenden).not.toHaveBeenCalled();
   });
 
-  it("GIF-Taste nur bei aktivem Dienst", () => {
+  it("GIF-Taste ist immer da ; ohne Dienst erscheint ein Hinweis statt der Suche", () => {
     zeige();
-    expect(screen.queryByRole("button", { name: "chats.gif" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "chats.gif" }));
+    expect(screen.getByTestId("gif-nicht-eingerichtet")).toHaveTextContent(
+      "chats.gif_nicht_eingerichtet",
+    );
+    expect(screen.queryByTestId("gif-auswahl")).not.toBeInTheDocument();
   });
 
-  it("GIF-Taste erscheint bei aktivem Dienst", () => {
+  it("GIF-Taste öffnet bei aktivem Dienst die Suche", () => {
     zeige({ dienste: { gif: true, uebersetzung: false } });
-    expect(screen.getByRole("button", { name: "chats.gif" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "chats.gif" }));
+    expect(screen.getByTestId("gif-auswahl")).toBeInTheDocument();
+  });
+
+  it("Schreibpause sperrt Eingabe, Anhang und GIF", () => {
+    zeige({ gesperrt: true });
+    expect(screen.getByPlaceholderText("chats.pause_platzhalter")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "chats.senden" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "chats.anhang" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "chats.gif" })).toBeDisabled();
   });
 
   it("Anhang-Menü : Umfrage nur in Gruppen, Treffpunkt überall", () => {

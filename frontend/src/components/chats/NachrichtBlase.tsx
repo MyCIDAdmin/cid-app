@@ -1,6 +1,7 @@
 /** Eine Nachricht im Verlauf : Text, GIF, Umfrage, Treffpunkt oder Systemzeile — mit Antwort-Zitat,
  * Reaktionen, Lesehäkchen, Uhrzeit und einer Leiste (Reaktion, Herz, Antworten, Übersetzen,
- * Anheften, Löschen), die beim Darüberfahren oder Antippen erscheint. */
+ * Anheften, Bearbeiten, Löschen), die beim Darüberfahren oder Antippen erscheint. Eigene Texte
+ * lassen sich bearbeiten und löschen ; Chat-Admins einer Gruppe auch fremde. */
 import { useState } from "react";
 import {
   IconArrowBackUp,
@@ -11,6 +12,7 @@ import {
   IconHeartFilled,
   IconLanguage,
   IconMapPin,
+  IconPencil,
   IconPin,
   IconPinnedOff,
   IconTrash,
@@ -28,6 +30,8 @@ export interface BlasenAktionen {
   onReagieren: (id: string, emoji: string) => void;
   onAnheften: (id: string) => void;
   onLoeschen: (id: string) => void;
+  /** Speichert den neuen Text ; gibt zurück, ob es geklappt hat. */
+  onBearbeiten: (id: string, text: string) => Promise<boolean>;
   onAbstimmen: (id: string, option: number) => void;
 }
 
@@ -36,6 +40,8 @@ interface Props extends BlasenAktionen {
   direkt: boolean;
   dienste: ChatDienste | undefined;
   hervorgehoben?: boolean;
+  /** Ich bin Chat-Admin dieser Gruppe : darf auch fremde Nachrichten bearbeiten und löschen. */
+  istAdmin?: boolean;
 }
 
 /** Mentions „@Name“ werden hervorgehoben (nur Darstellung, wie bisher). */
@@ -159,6 +165,9 @@ export default function NachrichtBlase(props: Props) {
   const [offen, setOffen] = useState(false);
   const [uebersetzt, setUebersetzt] = useState<string | null>(null);
   const uebersetzen = useUebersetzen();
+  const [bearbeite, setBearbeite] = useState<string | null>(null);
+  const [speichert, setSpeichert] = useState(false);
+  const [bearbeitenFehler, setBearbeitenFehler] = useState(false);
 
   if (n.art === "system") {
     return (
@@ -173,6 +182,7 @@ export default function NachrichtBlase(props: Props) {
 
   const ziel: "de" | "fr" = i18n.language.startsWith("fr") ? "fr" : "de";
   const eigen = n.ich;
+  const verwalten = eigen || (!direkt && props.istAdmin === true);
   const gif = n.art === "gif" ? (n.daten as GifDaten) : null;
   const farbig = n.art === "text";
 
@@ -182,6 +192,21 @@ export default function NachrichtBlase(props: Props) {
       return;
     }
     uebersetzen.mutate({ text: n.text, ziel }, { onSuccess: (txt) => setUebersetzt(txt) });
+  }
+
+  async function speichere() {
+    const neu = (bearbeite ?? "").trim();
+    if (!neu) return;
+    if (neu === n.text) {
+      setBearbeite(null);
+      return;
+    }
+    setSpeichert(true);
+    setBearbeitenFehler(false);
+    const ok = await props.onBearbeiten(n.id, neu);
+    setSpeichert(false);
+    if (ok) setBearbeite(null);
+    else setBearbeitenFehler(true);
   }
 
   const werkzeug =
@@ -258,7 +283,21 @@ export default function NachrichtBlase(props: Props) {
           >
             {n.angeheftet ? <IconPinnedOff size={16} /> : <IconPin size={16} />}
           </button>
-          {eigen && (
+          {verwalten && n.art === "text" && (
+            <button
+              type="button"
+              aria-label={t("chats.bearbeiten")}
+              onClick={() => {
+                setBearbeitenFehler(false);
+                setBearbeite(n.text);
+                setOffen(false);
+              }}
+              className={werkzeug}
+            >
+              <IconPencil size={16} />
+            </button>
+          )}
+          {verwalten && (
             <button
               type="button"
               aria-label={t("chats.loeschen")}
@@ -301,10 +340,51 @@ export default function NachrichtBlase(props: Props) {
             </button>
           )}
 
-          {n.art === "text" && (
+          {n.art === "text" && bearbeite === null && (
             <p className="whitespace-pre-wrap break-words">
               <MitErwaehnungen text={n.text} />
             </p>
+          )}
+          {n.art === "text" && bearbeite !== null && (
+            <form
+              onClick={(e) => e.stopPropagation()}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void speichere();
+              }}
+              className="space-y-1.5"
+            >
+              <textarea
+                value={bearbeite}
+                onChange={(e) => setBearbeite(e.target.value)}
+                aria-label={t("chats.bearbeiten")}
+                maxLength={4000}
+                rows={2}
+                autoFocus
+                className="block w-[min(320px,70vw)] resize-y rounded-cid border border-text-tertiary/30 bg-bg-primary p-2 text-sm text-text-primary focus:border-ca focus:outline-none"
+              />
+              {bearbeitenFehler && (
+                <p role="alert" className="text-[11px] text-status-dangerText">
+                  {t("chats.bearbeiten_fehler")}
+                </p>
+              )}
+              <div className="flex justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setBearbeite(null)}
+                  className="rounded-cid bg-bg-primary px-2.5 py-1 text-xs font-semibold text-text-secondary"
+                >
+                  {t("chats.abbrechen")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={speichert || !bearbeite.trim()}
+                  className="rounded-cid bg-ca px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {t("chats.speichern")}
+                </button>
+              </div>
+            </form>
           )}
           {gif && nurHttps(gif.url) && (
             <img
@@ -361,6 +441,11 @@ export default function NachrichtBlase(props: Props) {
           <span className="inline-flex items-center gap-0.5">
             <IconHeartFilled size={10} className="text-status-dangerText" aria-hidden="true" />
             {n.likes}
+          </span>
+        )}
+        {n.bearbeitetAm && (
+          <span data-testid="bearbeitet-marke" className="italic">
+            {n.bearbeitetVonAdmin ? t("chats.bearbeitet_admin") : t("chats.bearbeitet")}
           </span>
         )}
         <time dateTime={n.zeit} title={langDatum(n.zeit, i18n.language)}>

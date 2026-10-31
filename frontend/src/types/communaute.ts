@@ -178,6 +178,8 @@ export interface MessagePrive {
   daten: NachrichtDaten;
   angeheftet: boolean;
   reaktionen: Reaktion[];
+  bearbeitet_am?: string | null;
+  bearbeitet_von_admin?: boolean;
 }
 
 export interface GroupeChat {
@@ -217,6 +219,8 @@ export interface MessageGroupe {
   angeheftet: boolean;
   reaktionen: Reaktion[];
   umfrage: UmfrageErgebnis | null;
+  bearbeitet_am?: string | null;
+  bearbeitet_von_admin?: boolean;
 }
 
 // --- Messages WebSocket (miroir de apps.communaute.consumers) ---

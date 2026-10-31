@@ -147,7 +147,11 @@ def test_einstellung_stumm_und_angeheftet(api_client):
     resp = _auth(api_client, user).patch(
         url, {"art": "gruppe", "id": str(gruppe.id), "stumm": True}, format="json"
     )
-    assert resp.status_code == 200 and resp.data == {"stumm": True, "angeheftet": False}
+    assert resp.status_code == 200 and resp.data == {
+        "stumm": True,
+        "angeheftet": False,
+        "nur_erwaehnung": False,
+    }
     api_client.patch(
         url, {"art": "gruppe", "id": str(gruppe.id), "angeheftet": True}, format="json"
     )
@@ -582,3 +586,243 @@ def test_mitreisende_nur_aus_meinen_reisen_mit_status_dabei(api_client):
     assert resp.status_code == 200
     assert [r["titel"] for r in resp.data] == ["Kairo"]
     assert [m["prenom"] for m in resp.data[0]["mitglieder"]] == ["Anna"]
+
+
+# --- Verwaltung : Chat-Admins, Pause, Bearbeiten, Nur bei @Erwähnung -----------------------------
+
+
+def _drei():
+    u1, ersteller = user_membre_avec_fiche(email="vw1@example.de", prenom="Erika")
+    u2, anna = user_membre_avec_fiche(email="vw2@example.de", prenom="Anna")
+    u3, ben = user_membre_avec_fiche(email="vw3@example.de", prenom="Ben")
+    return (u1, ersteller), (u2, anna), (u3, ben), _gruppe_mit(ersteller, anna, ben)
+
+
+def test_admin_ernennen_und_entziehen(api_client):
+    (u1, ersteller), (u2, anna), (u3, ben), gruppe = _drei()
+    url = reverse("communaute:groupe-chat-admin", args=[gruppe.id])
+    # normales Mitglied darf nicht
+    assert (
+        _auth(api_client, u2).post(url, {"membre": str(ben.id)}, format="json").status_code == 403
+    )
+    resp = _auth(api_client, u1).post(url, {"membre": str(anna.id), "aktiv": True}, format="json")
+    assert resp.status_code == 200 and resp.data["ich_admin"] is True
+    assert MembreGroupe.objects.get(groupe=gruppe, membre=anna).ist_admin is True
+    assert MessageGroupe.objects.filter(groupe=gruppe, art=NachrichtArt.SYSTEM).count() == 1
+    # Anna darf jetzt selbst weitere Admins bestimmen
+    resp = _auth(api_client, u2).post(url, {"membre": str(ben.id)}, format="json")
+    assert resp.status_code == 200
+    # Entziehen
+    resp = _auth(api_client, u1).post(url, {"membre": str(ben.id), "aktiv": False}, format="json")
+    assert resp.status_code == 200
+    assert MembreGroupe.objects.get(groupe=gruppe, membre=ben).ist_admin is False
+
+
+def test_admin_ersteller_geschuetzt_und_nur_mitglieder(api_client):
+    (u1, ersteller), (u2, anna), (u3, ben), gruppe = _drei()
+    url = reverse("communaute:groupe-chat-admin", args=[gruppe.id])
+    MembreGroupe.objects.filter(groupe=gruppe, membre=anna).update(ist_admin=True)
+    resp = _auth(api_client, u2).post(
+        url, {"membre": str(ersteller.id), "aktiv": False}, format="json"
+    )
+    assert resp.status_code == 400
+    _, fremd = user_membre_avec_fiche(email="vw4@example.de")
+    resp = api_client.post(url, {"membre": str(fremd.id)}, format="json")
+    assert resp.status_code == 400
+
+
+def test_mitgliederliste_und_chatliste_zeigen_admin(api_client):
+    (u1, ersteller), (u2, anna), _, gruppe = _drei()
+    MembreGroupe.objects.filter(groupe=gruppe, membre=anna).update(ist_admin=True)
+    liste = _auth(api_client, u1).get(
+        reverse("communaute:groupe-chat-mitglieder", args=[gruppe.id])
+    )
+    admin = {m["prenom"]: m["ist_admin"] for m in liste.data}
+    assert admin == {"Erika": True, "Anna": True, "Ben": False}
+    item = api_client.get(reverse("communaute:chat-liste")).data[0]
+    assert item["ich_admin"] is True and item["pausiert"] is False and item["pause_bis"] is None
+    assert item["nur_erwaehnung"] is False
+
+
+def test_admin_darf_einladen_normales_mitglied_nicht(api_client):
+    (u1, _), (u2, anna), (u3, ben), gruppe = _drei()
+    _, neu = user_membre_avec_fiche(email="vw5@example.de")
+    url = reverse("communaute:groupe-chat-inviter", args=[gruppe.id])
+    assert (
+        _auth(api_client, u3).post(url, {"membres": [str(neu.id)]}, format="json").status_code
+        == 403
+    )
+    MembreGroupe.objects.filter(groupe=gruppe, membre=ben).update(ist_admin=True)
+    assert api_client.post(url, {"membres": [str(neu.id)]}, format="json").status_code in (200, 201)
+
+
+def test_pause_setzen_aufheben_und_ablauf(api_client):
+    (u1, ersteller), (u2, anna), _, gruppe = _drei()
+    url = reverse("communaute:groupe-chat-pause", args=[gruppe.id])
+    assert _auth(api_client, u2).post(url, {"aktiv": True}, format="json").status_code == 403
+    bis = (timezone.now() + timedelta(hours=1)).isoformat()
+    resp = _auth(api_client, u1).post(url, {"aktiv": True, "bis": bis}, format="json")
+    assert resp.status_code == 200 and resp.data["pausiert"] is True and resp.data["pause_bis"]
+    gruppe.refresh_from_db()
+    assert chats.darf_schreiben(gruppe, anna) is False
+    assert chats.darf_schreiben(gruppe, ersteller) is True
+    # Ablauf von selbst
+    gruppe.pause_bis = timezone.now() - timedelta(minutes=1)
+    gruppe.save(update_fields=["pause_bis"])
+    assert chats.pause_aktiv(gruppe) is False and chats.darf_schreiben(gruppe, anna) is True
+    # aufheben
+    resp = api_client.post(url, {"aktiv": False}, format="json")
+    assert resp.data["pausiert"] is False
+    gruppe.refresh_from_db()
+    assert gruppe.schreibpause is False and gruppe.pause_bis is None
+
+
+def test_pause_ende_in_der_vergangenheit_oder_ungueltig(api_client):
+    (u1, _), _, _, gruppe = _drei()
+    url = reverse("communaute:groupe-chat-pause", args=[gruppe.id])
+    alt = (timezone.now() - timedelta(hours=1)).isoformat()
+    assert (
+        _auth(api_client, u1).post(url, {"aktiv": True, "bis": alt}, format="json").status_code
+        == 400
+    )
+    assert api_client.post(url, {"aktiv": True, "bis": "morgen"}, format="json").status_code == 400
+    ohne_ende = api_client.post(url, {"aktiv": True}, format="json")
+    assert ohne_ende.status_code == 200 and ohne_ende.data["pause_bis"] is None
+
+
+@ws_transaktion
+def test_ws_pause_blockiert_mitglied_aber_nicht_admin(monkeypatch):
+    monkeypatch.setattr(
+        "apps.communaute.tasks.envoyer_notification_message_groupe.delay", lambda *a, **k: None
+    )
+    (u1, ersteller), (u2, anna), _, gruppe = _drei()
+    gruppe.schreibpause = True
+    gruppe.save(update_fields=["schreibpause"])
+
+    async def run():
+        c, ok = await _connect(f"/ws/groupes/{gruppe.id}/", u2)
+        assert ok
+        await c.send_json_to({"type": "message", "contenu": "hallo"})
+        antwort = await c.receive_json_from()
+        assert antwort["type"] == "erreur"
+        assert await c.receive_nothing(timeout=0.3)
+        await c.disconnect()
+        c2, ok2 = await _connect(f"/ws/groupes/{gruppe.id}/", u1)
+        assert ok2
+        await c2.send_json_to({"type": "message", "contenu": "Admin darf"})
+        gesendet = await c2.receive_json_from()
+        assert gesendet["contenu"] == "Admin darf"
+        await c2.disconnect()
+
+    asyncio.run(run())
+    assert list(MessageGroupe.objects.filter(groupe=gruppe).values_list("contenu", flat=True)) == [
+        "Admin darf"
+    ]
+
+
+@ws_transaktion
+def test_ws_direktchat_erlaubt_treffpunkt(monkeypatch):
+    monkeypatch.setattr(
+        "apps.communaute.tasks.envoyer_notification_message_prive.delay", lambda *a, **k: None
+    )
+    _, m1 = user_membre_avec_fiche(email="vw6@example.de")
+    _, m2 = user_membre_avec_fiche(email="vw7@example.de")
+    konv = Conversation.get_or_create_entre(m1, m2)
+
+    async def run():
+        c, ok = await _connect(f"/ws/messagerie/{konv.id}/", m1.user)
+        assert ok
+        await c.send_json_to(
+            {"type": "message", "art": "treffpunkt", "daten": {"ort": "Hbf", "zeit": "20:15"}}
+        )
+        recu = await c.receive_json_from()
+        assert recu["art"] == "treffpunkt"
+        await c.disconnect()
+
+    asyncio.run(run())
+
+
+def test_bearbeiten_autor_admin_und_fremde(api_client):
+    (u1, ersteller), (u2, anna), (u3, ben), gruppe = _drei()
+    msg = MessageGroupe.objects.create(groupe=gruppe, auteur=anna, contenu="Falsch")
+    url = reverse("communaute:message-groupe-bearbeiten", args=[msg.id])
+    # Fremdes Mitglied: verboten
+    assert _auth(api_client, u3).post(url, {"contenu": "x"}, format="json").status_code == 403
+    # Autor
+    resp = _auth(api_client, u2).post(url, {"contenu": "Richtig"}, format="json")
+    assert resp.status_code == 200 and resp.data["contenu"] == "Richtig"
+    assert resp.data["bearbeitet_am"] and resp.data["bearbeitet_von_admin"] is False
+    # Admin (Ersteller) bearbeitet fremde Nachricht
+    resp = _auth(api_client, u1).post(url, {"contenu": "Moderiert"}, format="json")
+    assert resp.status_code == 200 and resp.data["bearbeitet_von_admin"] is True
+    # leer / zu lang
+    assert api_client.post(url, {"contenu": "  "}, format="json").status_code == 400
+    assert api_client.post(url, {"contenu": "x" * 4001}, format="json").status_code == 400
+
+
+def test_bearbeiten_nur_text_und_direkt_nur_absender(api_client):
+    (u1, ersteller), (u2, anna), _, gruppe = _drei()
+    gif = MessageGroupe.objects.create(
+        groupe=gruppe, auteur=anna, art=NachrichtArt.GIF, daten={"url": "https://i.giphy.com/x.gif"}
+    )
+    url = reverse("communaute:message-groupe-bearbeiten", args=[gif.id])
+    assert _auth(api_client, u2).post(url, {"contenu": "x"}, format="json").status_code == 400
+    konv = Conversation.get_or_create_entre(ersteller, anna)
+    dm = MessagePrive.objects.create(conversation=konv, expediteur=ersteller, contenu="Hi")
+    url_dm = reverse("communaute:message-prive-bearbeiten", args=[dm.id])
+    assert api_client.post(url_dm, {"contenu": "Anna"}, format="json").status_code == 403
+    resp = _auth(api_client, u1).post(url_dm, {"contenu": "Hallo"}, format="json")
+    assert resp.status_code == 200 and resp.data["contenu"] == "Hallo"
+
+
+def test_admin_darf_fremde_nachricht_loeschen_mitglied_nicht(api_client):
+    (u1, ersteller), (u2, anna), (u3, ben), gruppe = _drei()
+    msg = MessageGroupe.objects.create(groupe=gruppe, auteur=anna, contenu="Quatsch")
+    url = reverse("communaute:message-groupe-detail", args=[msg.id])
+    assert _auth(api_client, u3).delete(url).status_code == 403
+    assert _auth(api_client, u1).delete(url).status_code == 204
+    assert not MessageGroupe.objects.filter(pk=msg.pk).exists()
+
+
+def test_einstellung_nur_erwaehnung_nur_in_gruppen(api_client):
+    user, ich = user_membre_avec_fiche(email="ne1@example.de")
+    _, anna = user_membre_avec_fiche(email="ne2@example.de")
+    gruppe = _gruppe_mit(ich, anna)
+    url = reverse("communaute:chat-einstellung")
+    resp = _auth(api_client, user).patch(
+        url, {"art": "gruppe", "id": str(gruppe.id), "nur_erwaehnung": True}, format="json"
+    )
+    assert resp.status_code == 200 and resp.data["nur_erwaehnung"] is True
+    item = api_client.get(reverse("communaute:chat-liste")).data[0]
+    assert item["nur_erwaehnung"] is True
+    konv = Conversation.get_or_create_entre(ich, anna)
+    resp = api_client.patch(
+        url, {"art": "direkt", "id": str(konv.id), "nur_erwaehnung": True}, format="json"
+    )
+    assert resp.status_code in (200, 400)
+    assert not ChatEinstellung.objects.filter(conversation=konv, nur_erwaehnung=True).exists()
+
+
+def test_erwaehnt_erkennt_vornamen_ganzes_wort():
+    assert chats.erwaehnt("Hallo @Anna, komm", "Anna")
+    assert chats.erwaehnt("@anna!", "Anna")
+    assert not chats.erwaehnt("Annas Auto", "Anna")
+    assert not chats.erwaehnt("mail@Annabel.de", "Anna")
+    assert not chats.erwaehnt("", "Anna") and not chats.erwaehnt("hi @Anna", "")
+
+
+def test_nur_erwaehnung_filtert_benachrichtigung(monkeypatch):
+    from apps.communaute import tasks
+
+    _, ich = user_membre_avec_fiche(email="ne3@example.de", prenom="Ida")
+    _, anna = user_membre_avec_fiche(email="ne4@example.de", prenom="Anna")
+    _, ben = user_membre_avec_fiche(email="ne5@example.de", prenom="Ben")
+    gruppe = _gruppe_mit(ich, anna, ben)
+    ChatEinstellung.objects.create(membre=ich, groupe=gruppe, nur_erwaehnung=True)
+    gesendet = []
+    monkeypatch.setattr(tasks, "notifier", lambda user, *a, **k: gesendet.append(user))
+    tasks.envoyer_notification_message_groupe(str(gruppe.id), str(anna.id), "Hallo zusammen")
+    assert gesendet == [ben.user]
+    gesendet.clear()
+    tasks.envoyer_notification_message_groupe(str(gruppe.id), str(anna.id), "Hallo @Ida und alle")
+    assert set(gesendet) == {ich.user, ben.user}

@@ -397,6 +397,8 @@ class MessagePriveSerializer(serializers.ModelSerializer):
             "art",
             "daten",
             "angeheftet",
+            "bearbeitet_am",
+            "bearbeitet_von_admin",
             "reaktionen",
         ]
         read_only_fields = fields
@@ -441,6 +443,8 @@ class GroupeChatSerializer(serializers.ModelSerializer):
     # principe de confort d'affichage que est_auteur/est_expediteur ailleurs dans ce module,
     # le backend reste seul juge (voir GroupeChatPermission.has_object_permission).
     est_createur = serializers.SerializerMethodField()
+    ich_admin = serializers.SerializerMethodField()
+    pausiert = serializers.SerializerMethodField()
     # Écriture seule, utilisé uniquement à la création d'un groupe privé (voir mockup
     # "Créer un groupe de chat" — cases "Membres à inviter") ; ignoré pour un groupe public.
     membres_invites = serializers.PrimaryKeyRelatedField(
@@ -459,6 +463,9 @@ class GroupeChatSerializer(serializers.ModelSerializer):
             "nombre_membres",
             "est_membre",
             "est_createur",
+            "ich_admin",
+            "pausiert",
+            "pause_bis",
             "membres_invites",
         ]
         read_only_fields = [
@@ -468,6 +475,9 @@ class GroupeChatSerializer(serializers.ModelSerializer):
             "nombre_membres",
             "est_membre",
             "est_createur",
+            "ich_admin",
+            "pausiert",
+            "pause_bis",
         ]
 
     def get_est_membre(self, obj) -> bool:
@@ -483,6 +493,19 @@ class GroupeChatSerializer(serializers.ModelSerializer):
             return False
         membre = getattr(request.user, "membre", None)
         return membre is not None and obj.createur_id == membre.id
+
+    def get_ich_admin(self, obj) -> bool:
+        from .chats import ist_chat_admin
+
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        return ist_chat_admin(obj, getattr(request.user, "membre", None))
+
+    def get_pausiert(self, obj) -> bool:
+        from .chats import pause_aktiv
+
+        return pause_aktiv(obj)
 
     def create(self, validated_data):
         membres_invites = validated_data.pop("membres_invites", [])
@@ -539,6 +562,8 @@ class MessageGroupeSerializer(serializers.ModelSerializer):
             "art",
             "daten",
             "angeheftet",
+            "bearbeitet_am",
+            "bearbeitet_von_admin",
             "reaktionen",
             "umfrage",
         ]

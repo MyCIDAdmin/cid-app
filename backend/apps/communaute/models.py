@@ -500,6 +500,9 @@ class MessagePrive(models.Model):
     # Zusatzdaten je Art (gif/umfrage/treffpunkt) — serverseitig geprüft (services.py).
     daten = models.JSONField(null=True, blank=True)
     angeheftet = models.BooleanField(default=False)
+    # Nachricht nachträglich geändert (nur Text) ; `bearbeitet_von_admin` : durch einen Chat-Admin.
+    bearbeitet_am = models.DateTimeField(null=True, blank=True)
+    bearbeitet_von_admin = models.BooleanField(default=False)
 
     est_lu = models.BooleanField(default=False)
     lu_le = models.DateTimeField(null=True, blank=True)
@@ -572,6 +575,12 @@ class GroupeChat(models.Model):
         "membres.Membre", on_delete=models.CASCADE, related_name="groupes_crees"
     )
 
+    # Schreibpause (Chats-Verwaltung 2026-10-30) : solange sie gilt, schreiben nur Chat-Admins.
+    # `pause_bis` leer = bis ein Admin sie aufhebt ; sonst endet sie von selbst (lazy geprüft,
+    # siehe chats.pause_aktiv).
+    schreibpause = models.BooleanField(default=False)
+    pause_bis = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -597,6 +606,10 @@ class MembreGroupe(models.Model):
     # Lesemarke je Mitglied : alles bis hierhin gilt als gelesen. Leer = nichts ungelesen
     # (Bestandsgruppen vor Einführung der Marke zeigen keine Altlast als „neu“).
     zuletzt_gelesen = models.DateTimeField(null=True, blank=True, default=timezone.now)
+
+    # Chat-Admin : darf Nachrichten bearbeiten/löschen, die Schreibpause setzen und weitere
+    # Admins bestimmen. Der Ersteller der Gruppe ist immer Admin (siehe chats.ist_chat_admin).
+    ist_admin = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -628,6 +641,9 @@ class MessageGroupe(models.Model):
     # Zusatzdaten je Art (gif/umfrage/treffpunkt) — serverseitig geprüft (services.py).
     daten = models.JSONField(null=True, blank=True)
     angeheftet = models.BooleanField(default=False)
+    # Nachricht nachträglich geändert (nur Text) ; `bearbeitet_von_admin` : durch einen Chat-Admin.
+    bearbeitet_am = models.DateTimeField(null=True, blank=True)
+    bearbeitet_von_admin = models.BooleanField(default=False)
 
     # "Antworten" — même principe que MessagePrive.repond_a ci-dessus (citation à un seul
     # niveau, jamais de fil imbriqué).
@@ -687,6 +703,8 @@ class ChatEinstellung(models.Model):
     )
     stumm = models.BooleanField(default=False)
     angeheftet = models.BooleanField(default=False)
+    # Nur Gruppen : Meldungen nur, wenn jemand „@Vorname“ von mir schreibt.
+    nur_erwaehnung = models.BooleanField(default=False)
 
     class Meta:
         db_table = "communaute_chat_einstellungen"

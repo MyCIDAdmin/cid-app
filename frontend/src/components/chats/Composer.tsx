@@ -46,11 +46,14 @@ interface Props {
   onAntwortAbbrechen: () => void;
   onSenden: (wunsch: SendeWunsch) => void;
   onTippt: () => void;
+  /** Schreibpause : Eingabe gesperrt (Chat-Admins sind davon ausgenommen). */
+  gesperrt?: boolean;
 }
 
 export default function Composer(props: Props) {
   const { t } = useTranslation("communaute");
-  const { verbunden, gruppe, dienste, antwort } = props;
+  const { gruppe, dienste, antwort } = props;
+  const verbunden = props.verbunden && !props.gesperrt;
   const [text, setText] = useState("");
   const [panel, setPanel] = useState<"emoji" | "gif" | null>(null);
   const [menue, setMenue] = useState(false);
@@ -118,8 +121,9 @@ export default function Composer(props: Props) {
           }}
         />
       )}
-      {panel === "gif" && dienste?.gif && (
+      {panel === "gif" && (
         <GifAuswahl
+          verfuegbar={dienste?.gif === true}
           onWaehle={(g: GifDaten) => {
             sende("gif", g);
             setPanel(null);
@@ -156,6 +160,7 @@ export default function Composer(props: Props) {
             className={ICON_KNOPF}
             aria-label={t("chats.anhang")}
             aria-expanded={menue}
+            disabled={props.gesperrt}
             onClick={() => {
               setPanel(null);
               setMenue((m) => !m);
@@ -207,17 +212,16 @@ export default function Composer(props: Props) {
         >
           <IconMoodSmile size={18} />
         </button>
-        {dienste?.gif && (
-          <button
-            type="button"
-            className={ICON_KNOPF}
-            aria-label={t("chats.gif")}
-            aria-pressed={panel === "gif"}
-            onClick={() => wechsle("gif")}
-          >
-            <IconPhoto size={18} />
-          </button>
-        )}
+        <button
+          type="button"
+          className={ICON_KNOPF}
+          aria-label={t("chats.gif")}
+          aria-pressed={panel === "gif"}
+          disabled={props.gesperrt}
+          onClick={() => wechsle("gif")}
+        >
+          <IconPhoto size={18} />
+        </button>
 
         <input
           ref={feld}
@@ -227,7 +231,9 @@ export default function Composer(props: Props) {
             setText(e.target.value);
             props.onTippt();
           }}
-          placeholder={t("chats.nachricht_schreiben")}
+          placeholder={
+            props.gesperrt ? t("chats.pause_platzhalter") : t("chats.nachricht_schreiben")
+          }
           aria-label={t("chats.nachricht_schreiben")}
           disabled={!verbunden}
           className="min-h-[40px] min-w-0 flex-1 rounded-full border border-text-tertiary/30 bg-bg-secondary px-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-ca focus:outline-none disabled:opacity-50"

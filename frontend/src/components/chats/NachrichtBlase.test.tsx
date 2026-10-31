@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
@@ -22,17 +22,23 @@ function nachricht(o: Partial<ChatNachricht> = {}): ChatNachricht {
     antwort: null,
     umfrage: null,
     gelesen: false,
+    bearbeitetAm: null,
+    bearbeitetVonAdmin: false,
     ...o,
   };
 }
 
-function zeige(n: ChatNachricht, opts: { direkt?: boolean; uebersetzung?: boolean } = {}) {
+function zeige(
+  n: ChatNachricht,
+  opts: { direkt?: boolean; uebersetzung?: boolean; istAdmin?: boolean } = {},
+) {
   const aktionen = {
     onAntworten: vi.fn(),
     onLike: vi.fn(),
     onReagieren: vi.fn(),
     onAnheften: vi.fn(),
     onLoeschen: vi.fn(),
+    onBearbeiten: vi.fn().mockResolvedValue(true),
     onAbstimmen: vi.fn(),
   };
   render(
@@ -40,6 +46,7 @@ function zeige(n: ChatNachricht, opts: { direkt?: boolean; uebersetzung?: boolea
       <NachrichtBlase
         nachricht={n}
         direkt={opts.direkt ?? false}
+        istAdmin={opts.istAdmin}
         dienste={{ gif: true, uebersetzung: opts.uebersetzung ?? false }}
         {...aktionen}
       />
@@ -151,6 +158,58 @@ describe("NachrichtBlase", () => {
     const a = zeige(nachricht({ ich: true }));
     fireEvent.click(screen.getByRole("button", { name: "chats.loeschen" }));
     expect(a.onLoeschen).toHaveBeenCalledWith("m1");
+  });
+
+  it("Eigener Text lässt sich bearbeiten und speichern", async () => {
+    const a = zeige(nachricht({ ich: true, text: "Falsch" }));
+    fireEvent.click(screen.getByRole("button", { name: "chats.bearbeiten" }));
+    const feld = screen.getByRole("textbox", { name: "chats.bearbeiten" });
+    fireEvent.change(feld, { target: { value: "Richtig" } });
+    fireEvent.click(screen.getByRole("button", { name: "chats.speichern" }));
+    await waitFor(() => expect(a.onBearbeiten).toHaveBeenCalledWith("m1", "Richtig"));
+    await waitFor(() =>
+      expect(screen.queryByRole("textbox", { name: "chats.bearbeiten" })).not.toBeInTheDocument(),
+    );
+  });
+
+  it("Bearbeiten: Fehler bleibt im Feld sichtbar", async () => {
+    const a = zeige(nachricht({ ich: true, text: "Falsch" }));
+    a.onBearbeiten.mockResolvedValue(false);
+    fireEvent.click(screen.getByRole("button", { name: "chats.bearbeiten" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "chats.bearbeiten" }), {
+      target: { value: "Neu" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "chats.speichern" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("chats.bearbeiten_fehler");
+  });
+
+  it("Fremde Nachricht: nur Chat-Admins in Gruppen dürfen bearbeiten und löschen", () => {
+    zeige(nachricht({ text: "Quatsch" }));
+    expect(screen.queryByRole("button", { name: "chats.bearbeiten" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "chats.loeschen" })).not.toBeInTheDocument();
+  });
+
+  it("Chat-Admin darf fremde Gruppennachrichten bearbeiten und löschen", () => {
+    const a = zeige(nachricht({ text: "Quatsch" }), { istAdmin: true });
+    expect(screen.getByRole("button", { name: "chats.bearbeiten" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "chats.loeschen" }));
+    expect(a.onLoeschen).toHaveBeenCalledWith("m1");
+  });
+
+  it("Im Direktchat hat der Admin-Status keine Wirkung auf fremde Nachrichten", () => {
+    zeige(nachricht(), { direkt: true, istAdmin: true });
+    expect(screen.queryByRole("button", { name: "chats.loeschen" })).not.toBeInTheDocument();
+  });
+
+  it("Zeigt die Marke „bearbeitet“, bei Admin-Änderung mit Hinweis", () => {
+    zeige(nachricht({ bearbeitetAm: "2026-10-30T11:00:00Z" }));
+    expect(screen.getByTestId("bearbeitet-marke")).toHaveTextContent("chats.bearbeitet");
+    expect(screen.getByTestId("bearbeitet-marke")).not.toHaveTextContent("admin");
+  });
+
+  it("Zeigt „bearbeitet vom Admin“", () => {
+    zeige(nachricht({ bearbeitetAm: "2026-10-30T11:00:00Z", bearbeitetVonAdmin: true }));
+    expect(screen.getByTestId("bearbeitet-marke")).toHaveTextContent("chats.bearbeitet_admin");
   });
 
   it("Reaktions-Kapsel schaltet die eigene Reaktion um", () => {

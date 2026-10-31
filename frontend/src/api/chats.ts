@@ -22,7 +22,7 @@ export async function setzeEinstellung(
   art: ChatArt,
   id: string,
   aenderung: ChatFilter,
-): Promise<{ stumm: boolean; angeheftet: boolean }> {
+): Promise<{ stumm: boolean; angeheftet: boolean; nur_erwaehnung: boolean }> {
   const { data } = await apiClient.patch("/communaute/chats/einstellung/", {
     art,
     id,
@@ -93,4 +93,30 @@ export async function stimmeAb(id: string, option: number): Promise<UmfrageErgeb
     { option },
   );
   return data.umfrage;
+}
+
+/** Eigene Textnachricht ändern ; in Gruppen auch Chat-Admins bei fremden Nachrichten. */
+export async function bearbeiteNachricht(
+  kanal: "direkt" | "gruppe",
+  id: string,
+  contenu: string,
+): Promise<void> {
+  await apiClient.post(`/communaute/${basis(kanal)}/${id}/bearbeiten/`, { contenu });
+}
+
+/** Chat-Admin ernennen (aktiv) oder zurücknehmen. Der Ersteller bleibt immer Admin. */
+export async function setzeChatAdmin(
+  gruppeId: string,
+  membreId: string,
+  aktiv: boolean,
+): Promise<void> {
+  await apiClient.post(`/communaute/groupes/${gruppeId}/admin/`, { membre: membreId, aktiv });
+}
+
+/** Schreibpause einschalten (optional mit Ende als ISO-Zeitpunkt) oder beenden. */
+export async function setzePause(gruppeId: string, aktiv: boolean, bis?: string): Promise<void> {
+  await apiClient.post(`/communaute/groupes/${gruppeId}/pause/`, {
+    aktiv,
+    ...(aktiv && bis ? { bis } : {}),
+  });
 }

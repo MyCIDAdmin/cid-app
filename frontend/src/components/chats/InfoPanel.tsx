@@ -1,9 +1,12 @@
 /** Rechte Spalte (Handy : Fenster) : Mitglieder, Stumm/Anheften, Geteiltes, Gruppe verlassen,
- * löschen, Personen hinzufügen, Link zum Reiseraum. */
+ * löschen, Personen hinzufügen, Link zum Reiseraum ; für Chat-Admins außerdem Admins bestimmen
+ * und das Schreiben pausieren. */
 import { useState } from "react";
 import {
   IconBell,
   IconBellOff,
+  IconLock,
+  IconLockOpen,
   IconPin,
   IconPinnedOff,
   IconPlane,
@@ -22,7 +25,14 @@ import {
   useRechercherMembres,
   useSupprimerGroupe,
 } from "../../hooks/useCommunaute";
-import { chatKeys, useChatEinstellung, useGruppenMitglieder } from "../../hooks/useChats";
+import {
+  chatKeys,
+  useChatAdmin,
+  useChatEinstellung,
+  useChatPause,
+  useGruppenMitglieder,
+} from "../../hooks/useChats";
+import { useAuthStore } from "../../store/authStore";
 import type { ChatListItem } from "../../types/chats";
 import ChatAvatar from "./ChatAvatar";
 import { FELD, KNOPF_LEISE } from "./ui";
@@ -61,6 +71,69 @@ function Schalter({
       {an ? onIcon : offIcon}
       {an ? onText : offText}
     </button>
+  );
+}
+
+const PAUSE_DAUER = [
+  { wert: "0", schluessel: "pause_offen" },
+  { wert: "1", schluessel: "pause_1h" },
+  { wert: "8", schluessel: "pause_8h" },
+  { wert: "24", schluessel: "pause_24h" },
+] as const;
+
+function Schreibpause({ chat }: { chat: ChatListItem }) {
+  const { t } = useTranslation("communaute");
+  const pause = useChatPause(chat.id);
+  const [dauer, setDauer] = useState<string>("0");
+  const abgelaufen = chat.pause_bis !== null && new Date(chat.pause_bis).getTime() <= Date.now();
+  const pausiert = chat.pausiert && !abgelaufen;
+  const umschalten = () => {
+    if (pausiert) {
+      pause.mutate({ aktiv: false });
+      return;
+    }
+    const stunden = Number(dauer);
+    pause.mutate({
+      aktiv: true,
+      bis: stunden > 0 ? new Date(Date.now() + stunden * 3_600_000).toISOString() : undefined,
+    });
+  };
+  return (
+    <section data-testid="pause-bereich" className="space-y-1.5">
+      <h3 className="text-[11px] font-bold uppercase tracking-widest text-text-tertiary">
+        {t("chats.pause_titel")}
+      </h3>
+      <p className="text-xs text-text-secondary">
+        {pausiert ? t("chats.pause_aktiv") : t("chats.pause_erklaerung")}
+      </p>
+      {!pausiert && (
+        <select
+          value={dauer}
+          onChange={(e) => setDauer(e.target.value)}
+          aria-label={t("chats.pause_dauer")}
+          className={FELD}
+        >
+          {PAUSE_DAUER.map((d) => (
+            <option key={d.wert} value={d.wert}>
+              {t(`chats.${d.schluessel}`)}
+            </option>
+          ))}
+        </select>
+      )}
+      <button
+        type="button"
+        data-testid="pause-umschalten"
+        disabled={pause.isPending}
+        onClick={umschalten}
+        className={`${KNOPF_LEISE} w-full`}
+      >
+        {pausiert ? <IconLockOpen size={16} /> : <IconLock size={16} />}
+        {pausiert ? t("chats.pause_beenden") : t("chats.pause_starten")}
+      </button>
+      {pause.isError && (
+        <p className="text-xs text-status-dangerText">{t("chats.fehler_aktion")}</p>
+      )}
+    </section>
   );
 }
 
@@ -114,6 +187,7 @@ export default function InfoPanel({ chat, onWeg }: Props) {
   const { t } = useTranslation("communaute");
   const istGruppe = chat.art === "gruppe";
   const hatMitglieder = chat.art !== "direkt";
+  const moiId = useAuthStore((s) => s.user?.id);
   const einstellung = useChatEinstellung();
   const mitglieder = useGruppenMitglieder(hatMitglieder ? chat.id : undefined);
   const gruppe = useGroupe(istGruppe ? chat.id : undefined);
@@ -133,8 +207,10 @@ export default function InfoPanel({ chat, onWeg }: Props) {
     umfrage: nachrichten.filter((n) => n.art === "umfrage").length,
     angeheftet: nachrichten.filter((n) => n.angeheftet).length,
   };
-  const stelle = (aenderung: { stumm?: boolean; angeheftet?: boolean }) =>
+  const stelle = (aenderung: { stumm?: boolean; angeheftet?: boolean; nur_erwaehnung?: boolean }) =>
     einstellung.mutate({ art: chat.art, id: chat.id, ...aenderung });
+  const adminSetzen = useChatAdmin(chat.id);
+  const istAdmin = hatMitglieder && chat.ich_admin;
 
   return (
     <div
@@ -183,6 +259,25 @@ export default function InfoPanel({ chat, onWeg }: Props) {
         />
       </div>
 
+      {hatMitglieder && (
+        <label className="flex min-h-[44px] items-center justify-between gap-3 rounded-cid bg-bg-secondary px-3 text-sm text-text-primary">
+          <span className="min-w-0">
+            <span className="block font-semibold">{t("chats.nur_erwaehnung")}</span>
+            <span className="block text-xs text-text-tertiary">
+              {t("chats.nur_erwaehnung_hinweis")}
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            data-testid="schalter-erwaehnung"
+            checked={chat.nur_erwaehnung}
+            onChange={() => stelle({ nur_erwaehnung: !chat.nur_erwaehnung })}
+            className="h-5 w-5 shrink-0 accent-ca"
+          />
+        </label>
+      )}
+
       {chat.reise && (
         <Link to={`/reisen/${chat.reise.id}`} className={`${KNOPF_LEISE} justify-start`}>
           <IconPlane size={16} aria-hidden="true" />
@@ -202,15 +297,35 @@ export default function InfoPanel({ chat, onWeg }: Props) {
                 <span className="min-w-0 flex-1 truncate text-sm text-text-primary">
                   {m.prenom} {m.nom}
                 </span>
-                {m.ist_ersteller && (
+                {m.ist_ersteller ? (
                   <span className="rounded-full bg-cal px-2 text-[10px] font-bold text-cad">
                     {t("chats.ersteller")}
                   </span>
+                ) : (
+                  m.ist_admin && (
+                    <span
+                      data-testid="admin-marke"
+                      className="rounded-full bg-cal px-2 text-[10px] font-bold text-cad"
+                    >
+                      {t("chats.admin")}
+                    </span>
+                  )
+                )}
+                {istAdmin && !m.ist_ersteller && m.id !== moiId && (
+                  <button
+                    type="button"
+                    data-testid={`admin-umschalten-${m.id}`}
+                    disabled={adminSetzen.isPending}
+                    onClick={() => adminSetzen.mutate({ membreId: m.id, aktiv: !m.ist_admin })}
+                    className="shrink-0 text-xs font-semibold text-ca hover:underline"
+                  >
+                    {m.ist_admin ? t("chats.admin_entziehen") : t("chats.admin_ernennen")}
+                  </button>
                 )}
               </li>
             ))}
           </ul>
-          {istGruppe && (
+          {istAdmin && (
             <>
               <button
                 type="button"
@@ -231,6 +346,8 @@ export default function InfoPanel({ chat, onWeg }: Props) {
           )}
         </section>
       )}
+
+      {istAdmin && <Schreibpause chat={chat} />}
 
       <section>
         <h3 className="mb-1 text-[11px] font-bold uppercase tracking-widest text-text-tertiary">

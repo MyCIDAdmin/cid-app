@@ -1,7 +1,7 @@
 /** Mittlere Spalte : Kopf, Reise-Leiste, angeheftete Nachricht, Verlauf mit Datumstrennern und
  * „Ab hier neu“, Eingabe. Eine Instanz je Chat (der Aufrufer setzt `key={chat.id}`). */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { IconArrowLeft, IconInfoCircle, IconPin } from "@tabler/icons-react";
+import { IconArrowLeft, IconInfoCircle, IconLock, IconPin } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -15,6 +15,7 @@ import {
   chatKeys,
   useAbstimmen,
   useAnheften,
+  useBearbeiten,
   useChatDienste,
   useGruppeGelesen,
   useGruppenMitglieder,
@@ -61,10 +62,12 @@ export default function Unterhaltung({ chat, onZurueck, onInfo }: Props) {
   const reagieren = useReagieren(kanal);
   const anheften = useAnheften(kanal);
   const abstimmen = useAbstimmen();
+  const bearbeiten = useBearbeiten(kanal);
   const gelesen = useGruppeGelesen();
 
   const [antwort, setAntwort] = useState<ChatNachricht | null>(null);
   const [hervor, setHervor] = useState<string | null>(null);
+  const [jetzt, setJetzt] = useState(() => Date.now());
   const ungelesenBeimOeffnen = useRef(chat.nicht_gelesen);
   const ende = useRef<HTMLDivElement>(null);
 
@@ -87,6 +90,27 @@ export default function Unterhaltung({ chat, onZurueck, onInfo }: Props) {
   useEffect(() => {
     ende.current?.scrollIntoView?.({ block: "end" });
   }, [nachrichten.length]);
+
+  // Schreibpause : das Ereignis aus dem Kanal gilt vor dem Stand der Liste ; mit Ende läuft sie von selbst ab.
+  const pauseEreignis = socket.ereignisse.pause;
+  const pauseBis = pauseEreignis ? pauseEreignis.bis : chat.pause_bis;
+  const pausiert =
+    !direkt &&
+    (pauseEreignis ? pauseEreignis.pausiert : chat.pausiert) &&
+    (!pauseBis || new Date(pauseBis).getTime() > jetzt);
+  const gesperrt = pausiert && !chat.ich_admin;
+
+  useEffect(() => {
+    if (pauseEreignis) queryClient.invalidateQueries({ queryKey: chatKeys.liste });
+  }, [pauseEreignis, queryClient]);
+
+  useEffect(() => {
+    if (!pauseBis) return undefined;
+    const rest = new Date(pauseBis).getTime() - Date.now();
+    if (rest <= 0) return undefined;
+    const id = window.setTimeout(() => setJetzt(Date.now()), Math.min(rest + 500, 2_147_000_000));
+    return () => window.clearTimeout(id);
+  }, [pauseBis]);
 
   const tage = useMemo(() => nachTagen(nachrichten), [nachrichten]);
   const neuId = neuAbId(nachrichten, ungelesenBeimOeffnen.current);
@@ -225,7 +249,14 @@ export default function Unterhaltung({ chat, onZurueck, onInfo }: Props) {
                     onLike={(id) => (direkt ? likePrive : likeGruppe).mutate(id)}
                     onReagieren={(id, emoji) => reagieren.mutate({ id, emoji })}
                     onAnheften={(id) => anheften.mutate(id)}
+                    istAdmin={chat.ich_admin}
                     onLoeschen={(id) => (direkt ? loeschePrive : loescheGruppe).mutate(id)}
+                    onBearbeiten={(id, text) =>
+                      bearbeiten.mutateAsync({ id, contenu: text }).then(
+                        () => true,
+                        () => false,
+                      )
+                    }
                     onAbstimmen={(id, option) =>
                       abstimmen.mutate(
                         { id, option },
@@ -245,7 +276,29 @@ export default function Unterhaltung({ chat, onZurueck, onInfo }: Props) {
         {tipptText || verbindungsHinweis}
       </p>
 
+      {pausiert && (
+        <p
+          data-testid="pause-banner"
+          role="status"
+          className="flex items-center gap-2 border-t border-text-tertiary/15 bg-status-warningBg px-3 py-1.5 text-xs font-semibold text-status-warningText"
+        >
+          <IconLock size={14} aria-hidden="true" />
+          {pauseBis
+            ? t("chats.pause_bis", {
+                zeit: new Date(pauseBis).toLocaleString(i18n.language, {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              })
+            : t("chats.pause_aktiv")}
+          {chat.ich_admin && ` ${t("chats.pause_admin_hinweis")}`}
+        </p>
+      )}
+
       <Composer
+        gesperrt={gesperrt}
         verbunden={socket.statut === "ouvert"}
         gruppe={!direkt}
         dienste={dienste}
