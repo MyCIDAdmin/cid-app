@@ -64,6 +64,18 @@ describe("AppLayout — footer applicatif", () => {
     expect(screen.queryByTestId("public-footer-stub")).not.toBeInTheDocument();
   });
 
+  it("n'affiche pas le footer sur la page Chats (hauteur fixe, sinon barre de défilement)", () => {
+    renderAvecRoute("/chats");
+    expect(screen.queryByTestId("public-footer-stub")).not.toBeInTheDocument();
+  });
+
+  it("place le footer à la fin du contenu défilant (pas comme barre fixe sous <main>)", () => {
+    renderAvecRoute("/dashboard");
+    const main = screen.getByRole("main");
+    expect(main).toContainElement(screen.getByTestId("public-footer-stub"));
+    expect(main).toContainElement(screen.getByTestId("page-content"));
+  });
+
   it("n'affiche pas le footer sur une page sans item Sidebar correspondant", () => {
     renderAvecRoute("/route-inconnue");
     expect(screen.queryByTestId("public-footer-stub")).not.toBeInTheDocument();

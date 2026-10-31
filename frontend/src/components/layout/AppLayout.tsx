@@ -20,6 +20,10 @@ import UserMenu from "./UserMenu";
 // pages qui ne correspondent à aucun NAV_ITEMS (getGroupForPath renvoie alors `null`).
 const GROUPES_AVEC_FOOTER = new Set(["general", "communaute", "contenu"]);
 
+// Seiten, die die ganze Höhe des Inhaltsbereichs ausfüllen (Messenger-Aufbau mit fester Höhe) :
+// ein Footer am Ende würde dort einen Scrollbalken erzeugen, deshalb ohne Footer.
+const PAGES_PLEINE_HAUTEUR = ["/chats"];
+
 export default function AppLayout() {
   const { t } = useTranslation("common");
   const location = useLocation();
@@ -31,7 +35,12 @@ export default function AppLayout() {
   const [tiroirMobileOuvert, setTiroirMobileOuvert] = useState(false);
 
   const groupe = getGroupForPath(location.pathname);
-  const afficherFooter = groupe !== null && GROUPES_AVEC_FOOTER.has(groupe);
+  const afficherFooter =
+    groupe !== null &&
+    GROUPES_AVEC_FOOTER.has(groupe) &&
+    !PAGES_PLEINE_HAUTEUR.some(
+      (p) => location.pathname === p || location.pathname.startsWith(`${p}/`),
+    );
 
   return (
     // h-screen (pas min-h-screen) + min-h-0 sur la colonne de droite (retour utilisateur du
@@ -91,11 +100,23 @@ export default function AppLayout() {
           </div>
         </header>
         <main id="contenu" tabIndex={-1} className="flex-1 overflow-y-auto p-3 outline-none sm:p-6">
-          <Outlet />
+          {afficherFooter ? (
+            // Footer am Ende des Inhalts statt als feste Leiste (Wunsch 2026-10-31) : er nimmt
+            // keinen festen Platz mehr weg und steht erst, wenn man bis ganz nach unten scrollt.
+            // min-h-full hält ihn auch bei kurzen Seiten am unteren Rand ; die negativen Ränder
+            // heben das Innenpolster von <main> für die Leiste auf.
+            <div className="flex min-h-full flex-col">
+              <div className="flex-1">
+                <Outlet />
+              </div>
+              <div className="-mx-3 -mb-3 mt-6 sm:-mx-6 sm:-mb-6">
+                <PublicFooter compact />
+              </div>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </main>
-        {/* Variante compact (retour utilisateur du 2026-09-27 : footer trop grand + scrollbar
-            ajoutée) : voir docstring PublicFooter.tsx. */}
-        {afficherFooter && <PublicFooter compact />}
       </div>
       <HelpPanel />
     </div>

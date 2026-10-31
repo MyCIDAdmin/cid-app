@@ -33,11 +33,16 @@ const LIEN_LOCALISATION = "https://share.google/2bOef3rWXOlAMprNM";
 
 // Routes internes (voir pages/public/legal/) depuis le 2026-09-28 — remplacent les anciens liens
 // externes vers mycid.org (voir docstring de tête).
-const LIENS_LEGAUX = [
+// `kurzKey` : kürzere Beschriftung für schmale Bildschirme (nur in der Compact-Variante genutzt).
+const LIENS_LEGAUX: { labelKey: string; kurzKey?: string; href: string }[] = [
   { labelKey: "footer.impressum", href: "/impressum" },
   { labelKey: "footer.datenschutz", href: "/datenschutz" },
-  { labelKey: "footer.agb", href: "/nutzungsbedingungen" },
-  { labelKey: "footer.erstattung", href: "/erstattungsrichtlinie" },
+  { labelKey: "footer.agb", kurzKey: "footer.agb_kurz", href: "/nutzungsbedingungen" },
+  {
+    labelKey: "footer.erstattung",
+    kurzKey: "footer.erstattung_kurz",
+    href: "/erstattungsrichtlinie",
+  },
 ];
 
 const LIENS_SOCIAUX = [
@@ -52,43 +57,38 @@ export default function PublicFooter({ compact = false }: { compact?: boolean })
   const { t } = useTranslation("public");
 
   if (compact) {
+    // Möglichst flach (Wunsch 2026-10-31 : "so kompakt wie möglich, in allen Versionen") : 11 px,
+    // Kontakt und Soziales nur als Symbole. Am Handy zwei Zeilen (Marke + Symbole, darunter die
+    // Rechtlich-Links mit Kurznamen), ab sm eine einzige Zeile. Erst ab lg erscheinen Adresse und
+    // Ortsname als Text ; darunter bleiben beide über das Symbol (aria-label) erreichbar.
     return (
       <footer className="glass-bar shrink-0 border-t border-text-tertiary/10 bg-bg-primary">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 text-xs sm:px-6">
-          <div className="flex items-center gap-1.5">
-            <BrandLogo className="h-5 w-5" />
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-0 px-4 py-1 text-[11px] leading-5 sm:px-6">
+          <span className="order-1 flex items-center gap-1">
+            <BrandLogo className="h-4 w-4" />
             <span className="font-display font-semibold uppercase tracking-wide text-text-primary">
               MyCID
             </span>
-            <span className="text-text-tertiary">{t("footer.depuis_2019")}</span>
-          </div>
+          </span>
 
-          <ul className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            {LIENS_LEGAUX.map((lien) => (
-              <li key={lien.labelKey}>
-                <Link to={lien.href} className="text-text-secondary hover:text-ca">
-                  {t(lien.labelKey)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <div className="order-2 ml-auto flex items-center gap-x-3 sm:order-3 sm:ml-0">
             <a
               href="mailto:info@clubistesindeutschland.org"
+              aria-label="info@clubistesindeutschland.org"
               className="flex items-center gap-1 text-text-secondary hover:text-ca"
             >
               <IconMail size={14} className="shrink-0" />
-              info@clubistesindeutschland.org
+              <span className="hidden lg:inline">info@clubistesindeutschland.org</span>
             </a>
             <a
               href={LIEN_LOCALISATION}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={t("footer.pays")}
               className="flex items-center gap-1 text-text-secondary hover:text-ca"
             >
               <IconMapPin size={14} className="shrink-0" />
-              {t("footer.pays")}
+              <span className="hidden lg:inline">{t("footer.pays")}</span>
             </a>
             {LIENS_SOCIAUX.map((lien) => (
               <a
@@ -100,13 +100,30 @@ export default function PublicFooter({ compact = false }: { compact?: boolean })
                 className="flex items-center text-text-secondary hover:text-ca"
               >
                 {lien.labelKey === "footer.facebook" ? (
-                  <IconBrandFacebook size={16} className="shrink-0" />
+                  <IconBrandFacebook size={14} className="shrink-0" />
                 ) : (
-                  <IconBrandInstagram size={16} className="shrink-0" />
+                  <IconBrandInstagram size={14} className="shrink-0" />
                 )}
               </a>
             ))}
           </div>
+
+          <ul className="order-3 flex basis-full flex-wrap items-center gap-x-3 gap-y-0 sm:order-2 sm:mr-auto sm:basis-auto">
+            {LIENS_LEGAUX.map((lien) => (
+              <li key={lien.labelKey}>
+                <Link to={lien.href} className="text-text-secondary hover:text-ca">
+                  {lien.kurzKey ? (
+                    <>
+                      <span className="sm:hidden">{t(lien.kurzKey)}</span>
+                      <span className="hidden sm:inline">{t(lien.labelKey)}</span>
+                    </>
+                  ) : (
+                    t(lien.labelKey)
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </footer>
     );
