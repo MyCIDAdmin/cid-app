@@ -128,3 +128,17 @@ def sende_geburtstagsgruesse(heute: str | None = None) -> int:
             Geburtstagsgruss.objects.filter(user=user, jahr=tag.year).delete()
             logger.exception("Geburtstagsgruß nicht gesendet")
     return gesendet
+
+
+@shared_task
+def sende_push(notification_id: str) -> None:
+    """Sendet eine Benachrichtigung als Push an alle Geräte des Empfängers (Titel und Link)."""
+    from . import push
+
+    notification = Notification.objects.select_related("destinataire").filter(pk=notification_id)
+    notification = notification.first()
+    if notification is None or not push.push_konfiguriert():
+        return
+    if not push.art_gewaehlt(notification.destinataire, notification.type_notification):
+        return
+    push.sende_an_konto(notification.destinataire, push.nutzlast_fuer(notification))

@@ -306,3 +306,48 @@ class Geburtstagsgruss(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["user", "jahr"], name="uniq_geburtstagsgruss_jahr")
         ]
+
+
+class PushAbo(models.Model):
+    """Ein Gerät, das Push-Benachrichtigungen empfangen will (Release 2026.11, Web-Push/VAPID).
+    Gespeichert werden nur die Push-Adresse des Browser-Dienstes, die zwei Schlüssel zur
+    Verschlüsselung und eine Gerätebezeichnung wie „Android · Chrome“ — keine Namen, keine
+    Telefonnummer, kein Standort."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_abos"
+    )
+    endpoint = models.CharField(max_length=1000, unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=64)
+    geraet = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    zuletzt_zugestellt = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "notifications_push_abo"
+        ordering = ["-created_at"]
+        verbose_name = _("Push-Gerät")
+        verbose_name_plural = _("Push-Geräte")
+
+    def __str__(self):
+        return f"Push {self.user_id} ({self.geraet or 'Gerät'})"
+
+
+class PushEinstellung(models.Model):
+    """Welche Arten von Benachrichtigungen per Push kommen — eine Auswahl je Konto, gilt für alle
+    Geräte (gleiche Arten wie bei Telegram, siehe `telegram.KATEGORIEN`)."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_einstellung"
+    )
+    kategorien = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        db_table = "notifications_push_einstellung"
+        verbose_name = _("Push-Einstellung")
+        verbose_name_plural = _("Push-Einstellungen")
+
+    def __str__(self):
+        return f"Push-Einstellung {self.user_id}"

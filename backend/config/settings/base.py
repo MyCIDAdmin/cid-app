@@ -373,6 +373,23 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "").lstrip("@")
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
 
+# Web-Push (Release 2026.11) : Schlüsselpaar aus `python manage.py vapid_schluessel`. Ohne beide
+# Schlüssel ist die Funktion abgeschaltet (Profil blendet den Abschnitt aus, es wird nichts
+# gesendet). VAPID_SUBJECT ist die Kontaktadresse für die Push-Dienste (mailto: oder https:).
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", f"mailto:{DEFAULT_FROM_EMAIL}")
+# Der Server ruft die vom Gerät gemeldete Push-Adresse selbst auf — nur diese Dienste sind erlaubt
+# (Schutz vor Server-Side Request Forgery, siehe notifications.push.endpoint_erlaubt).
+PUSH_ERLAUBTE_HOSTS = (
+    "fcm.googleapis.com",  # Chrome, Edge, Opera, Samsung Internet (Android und Computer)
+    "android.googleapis.com",
+    "updates.push.services.mozilla.com",  # Firefox
+    "push.services.mozilla.com",
+    "push.apple.com",  # Safari, iPhone, iPad, Mac
+    "notify.windows.com",  # ältere Edge-Versionen
+)
+
 # Ajouté le 2026-09-24 — module "Fan-Club" (voir apps.communaute.services) : synchronisation
 # périodique du classement/calendrier/statistiques joueurs de Club Africain depuis GOAL API
 # (goal-api.com, 1000 requêtes/jour sur le plan gratuit, compte gratuit sans carte bancaire
