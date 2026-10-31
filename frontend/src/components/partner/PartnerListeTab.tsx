@@ -249,7 +249,7 @@ export default function PartnerListeTab() {
       )}
       {partner.length > 0 && (
         <div className="overflow-x-auto rounded-cid border border-text-tertiary/20">
-          <table className="w-full text-sm">
+          <table className="cid-karten w-full text-sm">
             <thead>
               <tr className="bg-bg-tertiary text-left text-xs uppercase text-text-tertiary">
                 <th className="px-3 py-2">{t("feld_nom")}</th>
@@ -264,7 +264,7 @@ export default function PartnerListeTab() {
             <tbody>
               {partner.map((p) => (
                 <tr key={p.id} className="border-t border-text-tertiary/10 align-top">
-                  <td className="px-3 py-2">
+                  <td data-kopf className="px-3 py-2">
                     <Link
                       to={`/admin/partner/${p.id}`}
                       className="font-medium text-ca hover:underline"
@@ -290,16 +290,28 @@ export default function PartnerListeTab() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2">{t(`typ_${p.typ}`)}</td>
-                  <td className="px-3 py-2 text-xs text-text-secondary">
+                  <td data-label={t("feld_typ")} className="px-3 py-2">
+                    {t(`typ_${p.typ}`)}
+                  </td>
+                  <td
+                    data-label={t("feld_kategorien")}
+                    className="px-3 py-2 text-xs text-text-secondary"
+                  >
                     {p.kategorien
                       .map((id) => alleKategorien.find((k) => k.id === id))
                       .map((k, i) => (k ? kategorieName(k, i18n.language) : p.kategorien_namen[i]))
                       .join(", ")}
                   </td>
-                  <td className="px-3 py-2 text-xs text-text-secondary">{p.hauptkontakt_name}</td>
-                  <td className="px-3 py-2">{p.ville}</td>
-                  <td className="px-3 py-2">
+                  <td
+                    data-label={t("hauptkontakt")}
+                    className="px-3 py-2 text-xs text-text-secondary"
+                  >
+                    {p.hauptkontakt_name}
+                  </td>
+                  <td data-label={t("feld_ville")} className="px-3 py-2">
+                    {p.ville}
+                  </td>
+                  <td data-label={t("bewertung")} className="px-3 py-2">
                     <Sterne wert={p.bewertung_schnitt} />
                     {p.bewertung_anzahl > 0 && (
                       <span className="ml-1 text-[11px] text-text-tertiary">
@@ -307,7 +319,12 @@ export default function PartnerListeTab() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{p.verknuepfungen_anzahl}</td>
+                  <td
+                    data-label={t("verknuepfungen")}
+                    className="px-3 py-2 text-right tabular-nums"
+                  >
+                    {p.verknuepfungen_anzahl}
+                  </td>
                 </tr>
               ))}
             </tbody>

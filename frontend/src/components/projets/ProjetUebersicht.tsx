@@ -15,6 +15,7 @@ import AnimatedProgress from "../ui/AnimatedProgress";
 import MeilensteineListe from "./MeilensteineListe";
 import StatutProjetBadge from "./StatutProjetBadge";
 import Zeitachse from "./Zeitachse";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
@@ -134,7 +135,7 @@ export default function ProjetUebersicht({ projet }: { projet: Projet }) {
                     {(kind.date_debut || kind.date_limite) && (
                       <p className="text-xs text-text-tertiary">
                         {[kind.date_debut, kind.date_limite]
-                          .map((d) => (d ? new Date(d).toLocaleDateString() : "…"))
+                          .map((d) => (d ? new Date(d).toLocaleDateString(lokaleSprache()) : "…"))
                           .join(" – ")}
                       </p>
                     )}

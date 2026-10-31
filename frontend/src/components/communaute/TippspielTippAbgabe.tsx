@@ -22,11 +22,12 @@ import {
 import type { RencontreCalendrier, TippspielTip } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import EquipeLogoImage from "./EquipeLogoImage";
+import { lokaleSprache } from "../../utils/datum";
 
 const UN_JOUR_MS = 24 * 60 * 60 * 1000;
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 function rencontresPronostiquables(rencontres: RencontreCalendrier[]): RencontreCalendrier[] {

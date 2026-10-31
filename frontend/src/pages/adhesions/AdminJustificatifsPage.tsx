@@ -46,10 +46,11 @@ import {
 import { usePageAccess } from "../../hooks/useRbac";
 import type { CampagneAdhesion, Souscription } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 interface JustificatifQueueRowProps {
@@ -268,9 +269,13 @@ function JustificatifHistoriqueRow({
   if (!justificatif) return null;
   return (
     <tr className="border-b border-text-tertiary/10 last:border-0">
-      <td className="px-4 py-2">{new Date(justificatif.created_at).toLocaleString()}</td>
       <td className="px-4 py-2">
-        {justificatif.date_decision ? new Date(justificatif.date_decision).toLocaleString() : "—"}
+        {new Date(justificatif.created_at).toLocaleString(lokaleSprache())}
+      </td>
+      <td className="px-4 py-2">
+        {justificatif.date_decision
+          ? new Date(justificatif.date_decision).toLocaleString(lokaleSprache())
+          : "—"}
       </td>
       <td className="px-4 py-2">
         {membre.data ? `${membre.data.prenom} ${membre.data.nom}` : "—"}

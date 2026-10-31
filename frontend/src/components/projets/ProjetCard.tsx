@@ -11,6 +11,7 @@ import SichtbarkeitBadge from "./SichtbarkeitBadge";
 import StatutProjetBadge from "./StatutProjetBadge";
 import { uebersetzt } from "../../utils/uebersetzung";
 import { bereinigeHtml } from "../../utils/sicheresHtml";
+import { lokaleSprache } from "../../utils/datum";
 
 interface ProjetCardProps {
   projet: Projet;
@@ -31,7 +32,7 @@ function formatMontant(montant: string | number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 /** Icônes minimalistes maison (mêmes conventions que le SVG de repli d'ImageCarousel) — pas de

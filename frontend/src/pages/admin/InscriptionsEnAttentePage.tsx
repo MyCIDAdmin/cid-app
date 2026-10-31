@@ -22,6 +22,7 @@ import {
 import type { RegistrationsFiltres } from "../../types/inscription";
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 type Decision = { id: string; email: string; type: "approuver" | "refuser" };
 
@@ -150,7 +151,7 @@ export default function InscriptionsEnAttentePage() {
       </div>
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
-        <table className="w-full text-sm">
+        <table className="cid-karten w-full text-sm">
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
               <th className="px-4 py-2">{t("liste.col_nom")}</th>
@@ -187,30 +188,40 @@ export default function InscriptionsEnAttentePage() {
             )}
             {data?.results.map((inscription) => (
               <tr key={inscription.id} className="border-b border-text-tertiary/10 last:border-0">
-                <td className="px-4 py-2 font-medium text-text-primary">
+                <td data-kopf className="px-4 py-2 font-medium text-text-primary">
                   {inscription.prenom} {inscription.nom}
                 </td>
-                <td className="px-4 py-2 text-text-secondary">{inscription.email}</td>
-                <td className="px-4 py-2 text-text-secondary">{inscription.ville}</td>
-                <td className="px-4 py-2 uppercase text-text-secondary">
+                <td data-label={t("liste.col_email")} className="px-4 py-2 text-text-secondary">
+                  {inscription.email}
+                </td>
+                <td data-label={t("liste.col_ville")} className="px-4 py-2 text-text-secondary">
+                  {inscription.ville}
+                </td>
+                <td
+                  data-label={t("liste.col_langue")}
+                  className="px-4 py-2 uppercase text-text-secondary"
+                >
                   {inscription.langue_preferee}
                 </td>
-                <td className="px-4 py-2 text-text-secondary">
-                  {new Date(inscription.created_at).toLocaleDateString()}
+                <td data-label={t("liste.col_date")} className="px-4 py-2 text-text-secondary">
+                  {new Date(inscription.created_at).toLocaleDateString(lokaleSprache())}
                 </td>
-                <td className="px-4 py-2">
+                <td data-label={t("liste.col_statut")} className="px-4 py-2">
                   <span
                     className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${STATUT_CLASSES[inscription.registration_decision]}`}
                   >
                     {t(`liste.statut_${inscription.registration_decision}`)}
                   </span>
                 </td>
-                <td className="px-4 py-2 text-text-secondary">
+                <td
+                  data-label={t("liste.col_date_decision")}
+                  className="px-4 py-2 text-text-secondary"
+                >
                   {inscription.registration_decided_at
-                    ? new Date(inscription.registration_decided_at).toLocaleString()
+                    ? new Date(inscription.registration_decided_at).toLocaleString(lokaleSprache())
                     : "—"}
                 </td>
-                <td className="px-4 py-2">
+                <td data-aktionen className="px-4 py-2">
                   {inscription.registration_decision === "en_attente" && (
                     <div className="flex gap-1">
                       <button

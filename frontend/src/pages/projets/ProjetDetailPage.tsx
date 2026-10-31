@@ -28,13 +28,14 @@ import ShareButton from "../../components/ui/ShareButton";
 import { useMisesAJourProjet, useProjet } from "../../hooks/useProjets";
 import { uebersetzt } from "../../utils/uebersetzung";
 import { bereinigeHtml } from "../../utils/sicheresHtml";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatMontant(montant: string | number): string {
   return `${Number(montant).toFixed(2).replace(".", ",")} €`;
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function ProjetDetailPage() {

@@ -24,9 +24,10 @@ import {
 import { useMentionAutocomplete } from "../../hooks/useMentionAutocomplete";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 export default function ForumSujetPage() {

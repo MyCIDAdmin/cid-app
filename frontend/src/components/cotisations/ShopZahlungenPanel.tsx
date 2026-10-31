@@ -16,7 +16,7 @@ import BelegButton from "./BelegButton";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { ModePaiementCommande } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
-import { heuteIso } from "../../utils/datum";
+import { heuteIso, lokaleSprache } from "../../utils/datum";
 import InfoTip from "../ui/InfoTip";
 
 const MODES_CONFIRMATION: ModePaiementCommande[] = ["virement", "especes", "en_ligne"];
@@ -58,7 +58,7 @@ export default function ShopZahlungenPanel() {
 
       {lignes.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="cid-karten w-full text-sm">
             <thead>
               <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
                 <th className="px-3 py-2">{t("shop_zahlungen.commande")}</th>
@@ -74,18 +74,27 @@ export default function ShopZahlungenPanel() {
                 const aConfirmer = c.statut === "en_attente" && !c.date_paiement_confirme;
                 return (
                   <tr key={c.id} className="border-b border-text-tertiary/10 last:border-0">
-                    <td className="px-3 py-2 font-mono text-xs">{c.numero_commande}</td>
-                    <td className="px-3 py-2">{c.nom_destinataire}</td>
-                    <td className="px-3 py-2 font-semibold text-ca">
+                    <td data-kopf className="px-3 py-2 font-mono text-xs">
+                      {c.numero_commande}
+                    </td>
+                    <td data-label={t("shop_zahlungen.client")} className="px-3 py-2">
+                      {c.nom_destinataire}
+                    </td>
+                    <td
+                      data-label={t("shop_zahlungen.montant")}
+                      className="px-3 py-2 font-semibold text-ca"
+                    >
                       {formatMontant(c.montant_total)}
                     </td>
-                    <td className="px-3 py-2">{t(`boutique:statut_commande.${c.statut}`)}</td>
-                    <td className="px-3 py-2 text-xs">
+                    <td data-label={t("shop_zahlungen.statut")} className="px-3 py-2">
+                      {t(`boutique:statut_commande.${c.statut}`)}
+                    </td>
+                    <td data-label={t("shop_zahlungen.paiement")} className="px-3 py-2 text-xs">
                       {c.date_paiement_confirme
-                        ? `${c.mode_paiement ? t(`boutique:paiement.mode.${c.mode_paiement}`) : ""} · ${new Date(c.date_paiement_confirme).toLocaleDateString()}`
+                        ? `${c.mode_paiement ? t(`boutique:paiement.mode.${c.mode_paiement}`) : ""} · ${new Date(c.date_paiement_confirme).toLocaleDateString(lokaleSprache())}`
                         : t("shop_zahlungen.non_paye")}
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td data-aktionen className="px-3 py-2 text-right">
                       {c.date_paiement_confirme && (
                         <BelegButton
                           holen={() => telechargerFactureCommande(c.id)}

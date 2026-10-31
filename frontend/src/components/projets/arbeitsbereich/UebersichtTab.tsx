@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useArbeitsbereich } from "../../../hooks/useProjets";
 import type { Aufgabe } from "../../../types/projets";
 import { STATUS_REIHENFOLGE } from "./konstanten";
+import { lokaleSprache } from "../../../utils/datum";
 
 /** Vue d'ensemble (2026-10-06) : progression calculée côté serveur (tâches terminées / total),
  * répartition par statut, prochaines échéances. */
@@ -87,7 +88,7 @@ export default function UebersichtTab({
               <li key={a.id} className="flex justify-between gap-2">
                 <span className="truncate text-text-primary">{a.titel}</span>
                 <span className={a.ueberfaellig ? "text-status-dangerText" : "text-text-tertiary"}>
-                  {new Date(a.frist as string).toLocaleDateString()}
+                  {new Date(a.frist as string).toLocaleDateString(lokaleSprache())}
                 </span>
               </li>
             ))}

@@ -16,9 +16,10 @@ import {
 import type { Meilenstein } from "../../types/projets";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function MeilensteineListe({

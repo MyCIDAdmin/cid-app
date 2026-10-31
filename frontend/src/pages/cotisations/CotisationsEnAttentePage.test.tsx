@@ -13,6 +13,7 @@ import * as useMembresHooks from "../../hooks/useMembres";
 import * as useRbacHooks from "../../hooks/useRbac";
 import type { Cotisation } from "../../types/cotisation";
 import CotisationsEnAttentePage from "./CotisationsEnAttentePage";
+import { lokaleSprache } from "../../utils/datum";
 
 // task #216 : usePageAccess mocké partout (accès complet par défaut, comme avant l'introduction
 // de la distinction lecture/lecture_ecriture) — describe dédié plus bas pour le mode lecture seule.
@@ -292,7 +293,7 @@ describe("CotisationsEnAttentePage", () => {
 
     expect(screen.getByText("en_attente_paiement.col_transaktionsdatum")).toBeInTheDocument();
     expect(
-      screen.getByText(new Date("2026-03-15T12:00:00Z").toLocaleDateString()),
+      screen.getByText(new Date("2026-03-15T12:00:00Z").toLocaleDateString(lokaleSprache())),
     ).toBeInTheDocument();
     expect(screen.getByText("–")).toBeInTheDocument();
   });

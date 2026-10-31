@@ -37,9 +37,10 @@ import type { Commentaire, Publication } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { apercuTexteDepuisHtml, texteBrutDepuisHtml } from "../../utils/html";
 import { bereinigeHtml } from "../../utils/sicheresHtml";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 function initiales(auteur: { prenom: string; nom: string }): string {

@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { useBonsAchat } from "../../hooks/useBoutique";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import type { BonAchat, StatutBonAchat } from "../../types/boutique";
+import { lokaleSprache } from "../../utils/datum";
 
 const STATUT_STYLES: Record<StatutBonAchat, string> = {
   actif: "bg-status-successBg text-status-successText",
@@ -24,7 +25,7 @@ function formatMontant(montant: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 function BonAchatCarte({

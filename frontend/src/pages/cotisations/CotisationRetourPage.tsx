@@ -19,6 +19,7 @@ import { useCotisation, useInitierPaiementEnLigne } from "../../hooks/useCotisat
 import type { ModePaiement } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { leiteZuZahlungWeiter } from "../../utils/sicherUrl";
+import { lokaleSprache } from "../../utils/datum";
 
 const MODES_GATEWAY: ModePaiement[] = ["carte", "paypal"];
 
@@ -28,7 +29,7 @@ function formatMontant(montant: number): string {
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function CotisationRetourPage() {

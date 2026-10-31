@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import type { ProjetMiseAJour } from "../../types/projets";
 import ImageCarousel from "./ImageCarousel";
 import { bereinigeHtml } from "../../utils/sicheresHtml";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 interface RapportListeProps {

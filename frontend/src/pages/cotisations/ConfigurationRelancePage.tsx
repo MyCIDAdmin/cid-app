@@ -21,9 +21,10 @@ import { useMembre } from "../../hooks/useMembres";
 import { usePageAccess } from "../../hooks/useRbac";
 import type { ConfigurationRelance } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 interface ConfigurationRelanceRowProps {
@@ -62,7 +63,7 @@ function ConfigurationRelanceRow({ config, modifiable }: ConfigurationRelanceRow
           value={dateEcheance}
           onChange={(e) => setDateEcheance(e.target.value)}
           disabled={!modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs disabled:opacity-30"
         />
       </td>
@@ -80,7 +81,7 @@ function ConfigurationRelanceRow({ config, modifiable }: ConfigurationRelanceRow
             type="button"
             onClick={enregistrer}
             disabled={!modifiee || modifierMutation.isPending || !modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             className="rounded-cid bg-ca px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
           >
             {modifierMutation.isPending
@@ -91,7 +92,7 @@ function ConfigurationRelanceRow({ config, modifiable }: ConfigurationRelanceRow
             type="button"
             onClick={supprimer}
             disabled={supprimerMutation.isPending || !modifiable}
-            title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
             className="rounded-cid border border-status-dangerText px-2 py-1 text-xs font-medium text-status-dangerText hover:bg-status-dangerText/10 disabled:opacity-40"
           >
             {t("configuration_relance.supprimer")}
@@ -153,7 +154,7 @@ function NouvelleEcheanceForm({ modifiable }: NouvelleEcheanceFormProps) {
           value={annee}
           onChange={(e) => setAnnee(Number(e.target.value))}
           disabled={!modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="w-28 rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-30"
           required
         />
@@ -171,7 +172,7 @@ function NouvelleEcheanceForm({ modifiable }: NouvelleEcheanceFormProps) {
           value={dateEcheance}
           onChange={(e) => setDateEcheance(e.target.value)}
           disabled={!modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-30"
           required
         />
@@ -179,7 +180,7 @@ function NouvelleEcheanceForm({ modifiable }: NouvelleEcheanceFormProps) {
       <button
         type="submit"
         disabled={creerMutation.isPending || !modifiable}
-        title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+        title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
         className="rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
       >
         {creerMutation.isPending
@@ -202,7 +203,9 @@ export default function ConfigurationRelancePage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-bold text-text-primary">{t("configuration_relance.titre")}</h1>
+      <h1 className="mb-4 text-xl font-bold text-text-primary">
+        {t("configuration_relance.titre")}
+      </h1>
       <p className="mb-4 text-sm text-text-tertiary">{t("configuration_relance.sous_titre")}</p>
 
       {accessible && !modifiable && (

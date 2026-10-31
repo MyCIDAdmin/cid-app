@@ -120,6 +120,7 @@ import type { Cotisation, ModePaiement, TypeArticleStepper } from "../../types/c
 import { istDringlich, istWaehlbareAktion } from "../../utils/aktionen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { leiteZuZahlungWeiter } from "../../utils/sicherUrl";
+import { lokaleSprache } from "../../utils/datum";
 
 const DON_LIBELLE = "Don libre à l'association";
 
@@ -150,7 +151,7 @@ function formatMontant(montant: number): string {
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 interface EtapeIndicateurProps {

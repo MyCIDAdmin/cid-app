@@ -6,6 +6,7 @@ import { useAuthStore } from "../../store/authStore";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { heuteIso } from "../../utils/datum";
 import ShopZahlungenPanel from "./ShopZahlungenPanel";
+import { lokaleSprache } from "../../utils/datum";
 
 vi.mock("../../hooks/useBoutique", async () => {
   const actual = await vi.importActual<typeof useBoutiqueHooks>("../../hooks/useBoutique");
@@ -93,7 +94,9 @@ describe("ShopZahlungenPanel", () => {
     renderWithProviders(<ShopZahlungenPanel />);
 
     expect(
-      screen.getByText(new RegExp(new Date("2026-09-01T10:00:00Z").toLocaleDateString())),
+      screen.getByText(
+        new RegExp(new Date("2026-09-01T10:00:00Z").toLocaleDateString(lokaleSprache())),
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("shop_zahlungen.transaktionsdatum")).not.toBeInTheDocument();
   });

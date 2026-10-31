@@ -10,6 +10,8 @@ import { Link } from "react-router-dom";
 
 import ExportChampsDialog from "../../components/membres/ExportChampsDialog";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import FilterUmschalter from "../../components/ui/FilterUmschalter";
+import { filterBlockKlasse } from "../../utils/filter";
 import StatutBadge from "../../components/ui/StatutBadge";
 import { exporterMembres } from "../../api/membres";
 import type { MembresOrdering } from "../../api/membres";
@@ -46,6 +48,11 @@ export default function MembresListPage() {
   const [dateAdhesionApres, setDateAdhesionApres] = useState("");
   const [dateAdhesionAvant, setDateAdhesionAvant] = useState("");
   const [pageUrl, setPageUrl] = useState<string | null>(null);
+  // Handy : Filterblock eingeklappt (ab md immer sichtbar, siehe FilterUmschalter).
+  const [filterOffen, setFilterOffen] = useState(false);
+  const aktiveFilter = [statut, ville, q, land, pays, dateAdhesionApres, dateAdhesionAvant].filter(
+    (w) => w !== "",
+  ).length;
   const [aSupprimer, setASupprimer] = useState<{ id: string; nom: string } | null>(null);
   // Tri du tableau ET de l'export Excel (même sélecteur) — le backend (MembreOrderingFilter)
   // applique `ordering` à la pagination par curseur avec un départage (nom, prénom, id) stable ;
@@ -107,6 +114,7 @@ export default function MembresListPage() {
   function appliquerFiltres(e: React.FormEvent) {
     e.preventDefault();
     setPageUrl(null); // toute modification de filtre repart de la première page
+    setFilterOffen(false);
   }
 
   function reinitialiserFiltres() {
@@ -127,10 +135,10 @@ export default function MembresListPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-text-primary">{t("liste.titre")}</h1>
         {(peutGerer || importZugriff || zuordnungZugriff) && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {importZugriff && (
               <Link
                 to="/membres/import"
@@ -159,9 +167,16 @@ export default function MembresListPage() {
         )}
       </div>
 
+      <FilterUmschalter
+        offen={filterOffen}
+        onUmschalten={() => setFilterOffen((v) => !v)}
+        aktiv={aktiveFilter}
+        controls="membres-filter"
+      />
       <form
+        id="membres-filter"
         onSubmit={appliquerFiltres}
-        className="mb-4 flex flex-wrap items-end gap-3 rounded-cid-lg bg-bg-primary p-4 shadow-sm"
+        className={`mb-4 ${filterBlockKlasse(filterOffen)} flex-wrap items-end gap-3 rounded-cid-lg bg-bg-primary p-4 shadow-sm max-md:[&_input]:w-full max-md:[&_select]:w-full max-md:[&>div]:w-full`}
       >
         <div>
           <label
@@ -340,7 +355,7 @@ export default function MembresListPage() {
       {erreurExport && <p className="mb-4 -mt-2 text-sm text-status-dangerText">{erreurExport}</p>}
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
-        <table className="w-full text-sm">
+        <table className="cid-karten w-full text-sm">
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
               <th className="px-4 py-2">{t("liste.col_membre")}</th>
@@ -376,7 +391,7 @@ export default function MembresListPage() {
             )}
             {data?.results.map((membre) => (
               <tr key={membre.id} className="border-b border-text-tertiary/10 last:border-0">
-                <td className="px-4 py-2">
+                <td className="px-4 py-2" data-kopf>
                   <div className="flex items-center gap-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cal text-[10px] font-semibold text-ca">
                       {initiales(membre.prenom, membre.nom)}
@@ -389,20 +404,24 @@ export default function MembresListPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2" data-label={t("liste.col_ville")}>
                   {membre.pays === PAYS_ALLEMAGNE ? membre.ville_de : t(`pays.${membre.pays}`)}
                 </td>
-                <td className="px-4 py-2">{membre.cin_masque}</td>
-                <td className="px-4 py-2">{membre.email}</td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2" data-label={t("liste.col_cin")}>
+                  {membre.cin_masque}
+                </td>
+                <td className="px-4 py-2" data-label={t("liste.col_email")}>
+                  {membre.email}
+                </td>
+                <td className="px-4 py-2" data-label={t("liste.col_statut")}>
                   <StatutBadge statut={membre.statut} />
                 </td>
-                <td className="px-4 py-2 text-text-secondary">
+                <td className="px-4 py-2 text-text-secondary" data-label={t("liste.col_offre")}>
                   {membre.offre_actuelle
                     ? `${membre.offre_actuelle.nom} (${membre.offre_actuelle.annee})`
                     : "—"}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2" data-aktionen>
                   <div className="flex gap-1">
                     <Link
                       to={`/membres/${membre.id}`}

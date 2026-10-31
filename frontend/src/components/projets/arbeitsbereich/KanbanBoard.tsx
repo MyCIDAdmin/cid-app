@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAufgabeVerschieben } from "../../../hooks/useProjets";
 import type { Aufgabe, ProjetMitglied, StatutAufgabe } from "../../../types/projets";
 import { STATUS_REIHENFOLGE } from "./konstanten";
+import { lokaleSprache } from "../../../utils/datum";
 
 const PRIO_STIL: Record<string, string> = {
   hoch: "bg-status-dangerBg text-status-dangerText",
@@ -12,7 +13,7 @@ const PRIO_STIL: Record<string, string> = {
 };
 
 function datum(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 function name(m: { prenom: string; nom: string } | null): string {

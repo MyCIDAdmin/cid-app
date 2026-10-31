@@ -256,5 +256,9 @@
   "mitgliederpreis": {
     "hinweis": "👑 Les membres paient seulement {{preis}} — vous économisez {{ersparnis}}",
     "cta": "Devenir membre"
+  },
+  "filter": {
+    "oeffnen": "Afficher les filtres",
+    "schliessen": "Masquer les filtres"
   }
 }
