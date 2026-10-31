@@ -19,6 +19,7 @@ vi.mock("../../hooks/useAdhesions", async () => {
     useSouscrire: vi.fn(),
     useUploaderJustificatif: vi.fn(),
     useAnnulerSouscription: vi.fn(),
+    useMeineKarte: vi.fn(),
   };
 });
 
@@ -128,6 +129,9 @@ function souscription(overrides: Partial<Souscription> = {}): Souscription {
 
 describe("MonAdhesionPage", () => {
   beforeEach(() => {
+    vi.mocked(useAdhesionsHooks.useMeineKarte).mockReturnValue({
+      data: undefined,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMeineKarte>);
     vi.mocked(useAdhesionsHooks.useVorjahrFamilie).mockReturnValue({
       data: undefined,
     } as unknown as ReturnType<typeof useAdhesionsHooks.useVorjahrFamilie>);
@@ -854,5 +858,53 @@ describe("MonAdhesionPage", () => {
 
     expect(screen.getAllByText("Mitgliederpreis").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole("button", { name: "karte.umdrehen" })).toBeInTheDocument();
+  });
+
+  it("Karte: zeigt den QR auf der Rückseite und den Knopf zum Speichern als Bild", () => {
+    vi.mocked(useAdhesionsHooks.useMeineKarte).mockReturnValue({
+      data: { code: "abc", qr: "data:image/png;base64,AAAA" },
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMeineKarte>);
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription({ statut: "payee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(document.querySelector("[data-rueckseite] img[data-qr]")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "karte.speichern" })).toBeInTheDocument();
+  });
+
+  it("Karte: ohne geladenen QR kein Speichern-Knopf", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription({ statut: "payee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.queryByRole("button", { name: "karte.speichern" })).toBeNull();
   });
 });

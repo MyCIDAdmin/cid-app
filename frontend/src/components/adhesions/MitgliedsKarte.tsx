@@ -13,70 +13,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { AvantageOffre, KartenStil } from "../../types/adhesion";
+import type { AvantageOffre } from "../../types/adhesion";
+import { STILE } from "./kartendesign";
 import { kartenStilOderStandard } from "./kartenstile";
 import VorteilSymbol from "./VorteilSymbol";
-
-interface StilDefinition {
-  fond: string;
-  text: string;
-  gedaempft: string;
-  rahmen: string;
-  /** Zusätzlicher bewegter Glanz (Metall/Hologramm) */
-  glanz: boolean;
-}
-
-const STILE: Record<KartenStil, StilDefinition> = {
-  weiss: {
-    fond: "linear-gradient(135deg,#ffffff 0%,#f2f4f8 50%,#e3e7ee 100%)",
-    text: "#1b2230",
-    gedaempft: "#5b6575",
-    rahmen: "#d3d9e3",
-    glanz: false,
-  },
-  silber: {
-    fond: "linear-gradient(135deg,#f5f7f9 0%,#c5ccd5 38%,#eef1f4 55%,#98a1ad 100%)",
-    text: "#1c2430",
-    gedaempft: "#4a5562",
-    rahmen: "#aab2bd",
-    glanz: true,
-  },
-  gold: {
-    fond: "linear-gradient(135deg,#fbeaa8 0%,#d8a62e 38%,#f7de8c 55%,#a67713 100%)",
-    text: "#3a2904",
-    gedaempft: "#6b4d0c",
-    rahmen: "#c19523",
-    glanz: true,
-  },
-  diamant: {
-    fond: "linear-gradient(135deg,#eaf7ff 0%,#b7dbf4 28%,#f6fcff 48%,#a2c9ee 68%,#d9ccff 100%)",
-    text: "#0d2840",
-    gedaempft: "#37566f",
-    rahmen: "#9fc6e6",
-    glanz: true,
-  },
-  bronze: {
-    fond: "linear-gradient(135deg,#f1cba3 0%,#b8733a 44%,#e5a56e 60%,#87491f 100%)",
-    text: "#2a1507",
-    gedaempft: "#5e3414",
-    rahmen: "#a2602b",
-    glanz: true,
-  },
-  onyx: {
-    fond: "linear-gradient(135deg,#2c313b 0%,#0d0f13 60%,#1c2028 100%)",
-    text: "#f6f7f9",
-    gedaempft: "#aeb4bf",
-    rahmen: "#4b5260",
-    glanz: true,
-  },
-  rubin: {
-    fond: "linear-gradient(135deg,#e5192d 0%,#a50011 55%,#6c000c 100%)",
-    text: "#ffffff",
-    gedaempft: "rgba(255,255,255,0.78)",
-    rahmen: "#7d000d",
-    glanz: true,
-  },
-};
 
 export interface MitgliedsKarteProps {
   stil: string | null | undefined;
@@ -88,6 +28,8 @@ export interface MitgliedsKarteProps {
   kampagne?: string;
   /** Vorteile für die Rückseite ; ohne Angabe ist die Karte nicht drehbar. */
   vorteile?: AvantageOffre[];
+  /** QR-Bild der Karte (data:-URL) für die Rückseite ; ohne Angabe kein QR. */
+  qr?: string;
 }
 
 /** So viele Vorteile passen lesbar auf die Rückseite ; der Rest steht in „+ n weitere“. */
@@ -116,12 +58,14 @@ export default function MitgliedsKarte({
   gueltigBis,
   kampagne,
   vorteile,
+  qr,
 }: MitgliedsKarteProps) {
   const { t } = useTranslation("adhesions");
   const [gedreht, setGedreht] = useState(false);
   const key = kartenStilOderStandard(stil);
   const s = STILE[key];
-  const drehbar = !!vorteile && vorteile.length > 0;
+  const liste = vorteile ?? [];
+  const drehbar = liste.length > 0 || !!qr;
   const flaeche = {
     background: s.fond,
     color: s.text,
@@ -228,7 +172,7 @@ export default function MitgliedsKarte({
           </div>
         </div>
 
-        {drehbar && vorteile && (
+        {drehbar && (
           <div
             className="cid-karte-seite absolute inset-0 overflow-hidden rounded-[18px] p-5 shadow-lg"
             style={{ ...flaeche, transform: "rotateY(180deg)" }}
@@ -245,19 +189,29 @@ export default function MitgliedsKarte({
                   {t("karte.rueckseite_titel")}
                 </span>
               </div>
-              <ul className="space-y-1 text-xs sm:text-sm">
-                {vorteile.slice(0, MAX_RUECKSEITE).map((v) => (
-                  <li key={`${v.ordre}-${v.texte_fr}`} className="flex items-center gap-2">
-                    <VorteilSymbol name={v.icone} className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{v.texte_fr}</span>
-                  </li>
-                ))}
-                {vorteile.length > MAX_RUECKSEITE && (
-                  <li className="text-[11px]" style={{ color: s.gedaempft }}>
-                    {t("karte.mehr_vorteile", { anzahl: vorteile.length - MAX_RUECKSEITE })}
-                  </li>
+              <div className="flex min-h-0 items-center justify-between gap-3">
+                <ul className="min-w-0 flex-1 space-y-1 text-xs sm:text-sm">
+                  {liste.slice(0, MAX_RUECKSEITE).map((v) => (
+                    <li key={`${v.ordre}-${v.texte_fr}`} className="flex items-center gap-2">
+                      <VorteilSymbol name={v.icone} className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{v.texte_fr}</span>
+                    </li>
+                  ))}
+                  {liste.length > MAX_RUECKSEITE && (
+                    <li className="text-[11px]" style={{ color: s.gedaempft }}>
+                      {t("karte.mehr_vorteile", { anzahl: liste.length - MAX_RUECKSEITE })}
+                    </li>
+                  )}
+                </ul>
+                {qr && (
+                  <img
+                    src={qr}
+                    alt={t("karte.qr_alt")}
+                    data-qr
+                    className="h-24 w-24 shrink-0 rounded-lg bg-white p-1 shadow-sm sm:h-28 sm:w-28"
+                  />
                 )}
-              </ul>
+              </div>
               {mitgliedsnummer && (
                 <div
                   className="font-mono text-xs tabular-nums tracking-widest"

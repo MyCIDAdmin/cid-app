@@ -7,6 +7,7 @@ import type {
   CampagneAdhesion,
   CampagneCreatePayload,
   Einladung,
+  MeineKarte,
   ErwachsenerPayload,
   FamilienberichtZeile,
   FamilienpaketeUebersicht,
@@ -276,6 +277,12 @@ export async function einladungAnnehmen(token: string): Promise<Einladung> {
 
 export async function einladungAblehnen(token: string): Promise<Einladung> {
   const { data } = await apiClient.post<Einladung>(`/adhesions/einladungen/${token}/ablehnen/`);
+  return data;
+}
+
+/** Kennung und QR der eigenen Mitgliedskarte (wird beim ersten Aufruf angelegt). */
+export async function getMeineKarte(): Promise<MeineKarte> {
+  const { data } = await apiClient.get<MeineKarte>("/adhesions/karte/mein/");
   return data;
 }
 

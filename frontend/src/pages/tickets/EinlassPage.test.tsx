@@ -241,6 +241,39 @@ describe("EinlassPage", () => {
     expect(screen.queryByText("ergebnis_unbekannt")).not.toBeInTheDocument();
   });
 
+  it("zeigt eine gescannte gültige Mitgliedskarte grün, ohne etwas zu buchen", async () => {
+    vi.mocked(einlassApi.einlassPruefen).mockResolvedValue({
+      ergebnis: "karte_gueltig",
+      karte: { name: "Amel Bekir", angebot: "CID PLUS", gueltig_bis: "2027-12-31" },
+    });
+    rendern();
+    fireEvent.change(await screen.findByLabelText("scan_code_manuell"), {
+      target: { value: "CID-M:abc" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "scan_pruefen" }));
+    expect(await screen.findByText("Amel Bekir")).toBeInTheDocument();
+    expect(screen.getByText("karte_gueltig")).toBeInTheDocument();
+    expect(screen.getByText(/CID PLUS/)).toBeInTheDocument();
+    expect(document.querySelector("[data-karte='gueltig']")).not.toBeNull();
+    expect(einlassApi.einlassBuchen).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "einlass_weiter" }));
+    expect(screen.queryByText("Amel Bekir")).not.toBeInTheDocument();
+  });
+
+  it("zeigt eine Mitgliedskarte ohne laufende Mitgliedschaft rot", async () => {
+    vi.mocked(einlassApi.einlassPruefen).mockResolvedValue({
+      ergebnis: "karte_abgelaufen",
+      karte: { name: "Amel Bekir", angebot: "", gueltig_bis: null },
+    });
+    rendern();
+    fireEvent.change(await screen.findByLabelText("scan_code_manuell"), {
+      target: { value: "CID-M:abc" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "scan_pruefen" }));
+    expect(await screen.findByText("karte_abgelaufen")).toBeInTheDocument();
+    expect(document.querySelector("[data-karte='abgelaufen']")).not.toBeNull();
+  });
+
   it("öffnet aus der Liste ohne Scan das Einlass-Feld und filtert nach Namen", async () => {
     rendern();
     await screen.findByText("Sami Ben Ali");

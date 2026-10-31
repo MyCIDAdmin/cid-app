@@ -62,5 +62,10 @@
   "einlass_oeffnen": "Ouvrir",
   "einlass_ohne_tickets": "Cet événement n'a pas de billets. Enregistre les personnes présentes dans la liste.",
   "liste_eintragen": "Marquer présent",
-  "liste_export": "Exporter en Excel"
+  "liste_export": "Exporter en Excel",
+  "karte_titel": "Carte de membre",
+  "karte_gueltig": "Carte de membre valide",
+  "karte_abgelaufen": "Pas d'adhésion valide",
+  "karte_bis": "valable jusqu'au {{datum}}",
+  "karte_hinweis": "Simple vérification de la carte. Rien n'a été enregistré."
 }
