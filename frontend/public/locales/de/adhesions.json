@@ -241,13 +241,19 @@
     "titel": "Mitgliedskarte",
     "mitglied_seit": "Mitglied seit",
     "gueltig_bis": "Gültig bis",
-    "hinweis_umdrehen": "Tippe auf die Karte, um die Rückseite mit deinen Vorteilen zu sehen.",
+    "hinweis_umdrehen": "Tippe auf die Karte, um die Rückseite mit deinen Vorteilen und dem QR-Code zu sehen.",
     "umdrehen": "Karte umdrehen und Vorteile zeigen",
     "umdrehen_zurueck": "Karte zurückdrehen",
     "rueckseite_titel": "Deine Vorteile",
     "mehr_vorteile": "+ {{anzahl}} weitere Vorteile",
     "status_aktiv": "Aktiv",
-    "status_bald": "Läuft bald ab"
+    "status_bald": "Läuft bald ab",
+    "qr_alt": "QR-Code deiner Mitgliedskarte",
+    "speichern": "Karte als Bild speichern",
+    "speichern_laeuft": "Bild wird erstellt …",
+    "speichern_hinweis": "Das Bild enthält deinen QR-Code und funktioniert auch ohne Internet. Zeige es nur beim Einlass.",
+    "gespeichert": "Gespeichert. Du findest das Bild in deinen Downloads oder Fotos.",
+    "speichern_fehler": "Das Bild konnte nicht erstellt werden. Bitte versuche es noch einmal."
   },
   "zahlung": {
     "titel": "So bezahlen Sie Ihre Mitgliedschaft",

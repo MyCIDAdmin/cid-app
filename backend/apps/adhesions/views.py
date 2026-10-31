@@ -45,8 +45,10 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from apps.accounts.models import ROLE_LEVELS
@@ -57,6 +59,7 @@ from apps.rbac.permissions import module_access_permission
 from apps.rbac.services import is_elevated_for_module
 
 from . import familie
+from . import karte as karte_services
 from .filters import (
     CampagneAdhesionFilter,
     JustificatifRabaisFilter,
@@ -628,3 +631,16 @@ class JustificatifRabaisViewSet(ModelViewSet):
             notifier_justificatif_refuse(justificatif)
 
         return Response(JustificatifRabaisSerializer(justificatif).data)
+
+
+class MeineKarteView(APIView):
+    """Kennung und QR-Bild der eigenen Mitgliedskarte (nur für Mitglieder mit Konto)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        membre = getattr(request.user, "membre", None)
+        if membre is None:
+            raise NotFound()
+        karte = karte_services.karte_von(membre)
+        return Response({"code": karte.code, "qr": karte_services.qr_data_url(karte)})

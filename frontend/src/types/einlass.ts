@@ -40,10 +40,25 @@ export interface EinlassUebersicht {
   darf_exportieren: boolean;
 }
 
+/** Gescannte Mitgliedskarte : nur Name, Angebot und Gültigkeit, nie mehr. */
+export interface KartePruefung {
+  name: string;
+  angebot: string;
+  gueltig_bis: string | null;
+}
+
 export type PruefErgebnis = {
   ergebnis:
-    "gueltig" | "teilweise" | "vollstaendig" | "ungueltig" | "unbekannt" | "anderes_ereignis";
+    | "gueltig"
+    | "teilweise"
+    | "vollstaendig"
+    | "ungueltig"
+    | "unbekannt"
+    | "anderes_ereignis"
+    | "karte_gueltig"
+    | "karte_abgelaufen";
   ticket?: PersonStand;
+  karte?: KartePruefung;
 };
 
 export interface EinlassZiel {

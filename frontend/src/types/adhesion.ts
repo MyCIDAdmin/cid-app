@@ -414,3 +414,10 @@ export interface FamilienberichtZeile {
   rabatt: string;
   rabatt_pct: string;
 }
+
+/** Kennung und QR-Bild der eigenen Mitgliedskarte (GET /adhesions/karte/mein/). */
+export interface MeineKarte {
+  code: string;
+  /** PNG als data:-URL ; enthält nur „CID-M:<Kennung>“, keine Personendaten. */
+  qr: string;
+}

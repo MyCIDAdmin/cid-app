@@ -18,7 +18,7 @@ import {
   useEinlassPruefen,
   useEinlassRuecknahme,
 } from "../../hooks/useEinlass";
-import type { EinlassTyp, PruefErgebnis, PersonStand } from "../../types/einlass";
+import type { EinlassTyp, KartePruefung, PruefErgebnis, PersonStand } from "../../types/einlass";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { declencherTelechargement } from "../../utils/telechargement";
 
@@ -58,6 +58,7 @@ export default function EinlassPage() {
   const [manuell, setManuell] = useState("");
   const [suche, setSuche] = useState("");
   const [auswahl, setAuswahl] = useState<Auswahl | null>(null);
+  const [karte, setKarte] = useState<{ gueltig: boolean; daten: KartePruefung } | null>(null);
   const [meldung, setMeldung] = useState<{ art: FehlerErgebnis; name?: string } | null>(null);
   const [bestaetigung, setBestaetigung] = useState<Bestaetigung | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -76,6 +77,7 @@ export default function EinlassPage() {
   const weiter = () => {
     setAuswahl(null);
     setMeldung(null);
+    setKarte(null);
     setFehler(null);
     belegt.current = false;
   };
@@ -90,7 +92,9 @@ export default function EinlassPage() {
     setFehler(null);
     pruefen.mutate(text, {
       onSuccess: (r: PruefErgebnis) => {
-        if ((r.ergebnis === "gueltig" || r.ergebnis === "teilweise") && r.ticket) {
+        if ((r.ergebnis === "karte_gueltig" || r.ergebnis === "karte_abgelaufen") && r.karte) {
+          setKarte({ gueltig: r.ergebnis === "karte_gueltig", daten: r.karte });
+        } else if ((r.ergebnis === "gueltig" || r.ergebnis === "teilweise") && r.ticket) {
           auswahlAus(r.ticket);
         } else if ((FEHLER_ERGEBNISSE as readonly string[]).includes(r.ergebnis)) {
           setMeldung({ art: r.ergebnis as FehlerErgebnis, name: r.ticket?.name });
@@ -202,6 +206,43 @@ export default function EinlassPage() {
               {t("einlass_rueckgaengig")}
             </button>
           )}
+        </div>
+      )}
+
+      {karte && (
+        <div
+          role="status"
+          data-karte={karte.gueltig ? "gueltig" : "abgelaufen"}
+          className={`space-y-2 rounded-cid p-3 ${
+            karte.gueltig
+              ? "bg-status-successBg text-status-successText"
+              : "bg-status-dangerBg text-status-dangerText"
+          }`}
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide">{t("karte_titel")}</p>
+          <p className="text-lg font-semibold">{karte.daten.name}</p>
+          <p className="font-semibold">
+            {karte.gueltig ? t("karte_gueltig") : t("karte_abgelaufen")}
+          </p>
+          {karte.gueltig && (
+            <p className="text-sm">
+              {karte.daten.angebot}
+              {karte.daten.gueltig_bis &&
+                ` · ${t("karte_bis", {
+                  datum: new Date(karte.daten.gueltig_bis).toLocaleDateString(
+                    i18n.language === "fr" ? "fr-FR" : "de-DE",
+                  ),
+                })}`}
+            </p>
+          )}
+          <p className="text-xs">{t("karte_hinweis")}</p>
+          <button
+            type="button"
+            onClick={weiter}
+            className="rounded-cid border border-current px-3 py-1 text-sm"
+          >
+            {t("einlass_weiter")}
+          </button>
         </div>
       )}
 

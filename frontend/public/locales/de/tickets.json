@@ -62,5 +62,10 @@
   "einlass_oeffnen": "Öffnen",
   "einlass_ohne_tickets": "Für diese Veranstaltung gibt es keine Tickets. Trage Anwesende in der Liste ein.",
   "liste_eintragen": "Anwesend eintragen",
-  "liste_export": "Als Excel exportieren"
+  "liste_export": "Als Excel exportieren",
+  "karte_titel": "Mitgliedskarte",
+  "karte_gueltig": "Mitgliedskarte gültig",
+  "karte_abgelaufen": "Keine gültige Mitgliedschaft",
+  "karte_bis": "gültig bis {{datum}}",
+  "karte_hinweis": "Das ist nur eine Prüfung der Karte. Es wurde nichts eingetragen."
 }

@@ -6,9 +6,11 @@
  */
 import { useTranslation } from "react-i18next";
 
+import { useMeineKarte } from "../../hooks/useAdhesions";
 import { useMembreMoi, useMonHistoriqueStatut } from "../../hooks/useMembres";
 import { useAuthStore } from "../../store/authStore";
 import type { AvantageOffre } from "../../types/adhesion";
+import KarteSpeichern from "./KarteSpeichern";
 import Kennzahlen from "./Kennzahlen";
 import MitgliedsKarte from "./MitgliedsKarte";
 
@@ -32,6 +34,7 @@ export default function MitgliedsKarteAbschnitt({
   const user = useAuthStore((s) => s.user);
   const membre = useMembreMoi().data;
   const verlauf = useMonHistoriqueStatut().data;
+  const qr = useMeineKarte().data?.qr;
   const name = membre
     ? `${membre.prenom} ${membre.nom}`.trim()
     : [user?.prenom, user?.nom].filter(Boolean).join(" ") || (user?.email ?? "");
@@ -65,9 +68,10 @@ export default function MitgliedsKarteAbschnitt({
           gueltigBis={gueltigBis}
           kampagne={kampagne}
           vorteile={vorteile}
+          qr={qr}
         />
       </div>
-      {vorteile.length > 0 && (
+      {(vorteile.length > 0 || qr) && (
         <p className="flex items-center justify-center gap-1.5 text-xs text-text-tertiary">
           <svg
             viewBox="0 0 24 24"
@@ -83,6 +87,24 @@ export default function MitgliedsKarteAbschnitt({
           </svg>
           {t("karte.hinweis_umdrehen")}
         </p>
+      )}
+
+      {qr && (
+        <div className="flex justify-center">
+          <KarteSpeichern
+            daten={{
+              stil,
+              angebot,
+              name,
+              mitgliedsnummer: membre?.numero_membre,
+              mitgliedSeit: seit ? String(seit) : "",
+              gueltigBis,
+              kampagne,
+              vorteile,
+              qr,
+            }}
+          />
+        </div>
       )}
 
       <Kennzahlen tage={tage} jahre={jahre} seit={seit} />

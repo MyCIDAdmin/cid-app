@@ -310,6 +310,17 @@ export function useEinladungAblehnen(token: string) {
   });
 }
 
+/** Kennung und QR der eigenen Mitgliedskarte (nur laden, wenn die Karte angezeigt wird). */
+export function useMeineKarte(enabled = true) {
+  return useQuery({
+    queryKey: [...adhesionsKeys.all, "meine-karte"],
+    queryFn: () => adhesionsApi.getMeineKarte(),
+    enabled,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** Offene Einladungen an die Adresse des angemeldeten Kontos (Hinweis in der App). */
 export function useMeineEinladungen() {
   return useQuery({

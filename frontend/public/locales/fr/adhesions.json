@@ -241,13 +241,19 @@
     "titel": "Carte de membre",
     "mitglied_seit": "Membre depuis",
     "gueltig_bis": "Valable jusqu'au",
-    "hinweis_umdrehen": "Touche la carte pour voir le verso avec tes avantages.",
+    "hinweis_umdrehen": "Touche la carte pour voir le verso avec tes avantages et le code QR.",
     "umdrehen": "Retourner la carte et afficher les avantages",
     "umdrehen_zurueck": "Retourner la carte",
     "rueckseite_titel": "Tes avantages",
     "mehr_vorteile": "+ {{anzahl}} autres avantages",
     "status_aktiv": "Actif",
-    "status_bald": "Expire bientôt"
+    "status_bald": "Expire bientôt",
+    "qr_alt": "Code QR de ta carte de membre",
+    "speichern": "Enregistrer la carte en image",
+    "speichern_laeuft": "Création de l'image …",
+    "speichern_hinweis": "L'image contient ton code QR et fonctionne sans Internet. Montre-la seulement à l'entrée.",
+    "gespeichert": "Enregistré. Tu trouveras l'image dans tes téléchargements ou tes photos.",
+    "speichern_fehler": "L'image n'a pas pu être créée. Réessaie."
   },
   "zahlung": {
     "titel": "Comment payer votre adhésion",

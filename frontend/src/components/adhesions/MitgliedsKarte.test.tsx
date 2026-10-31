@@ -80,4 +80,32 @@ describe("MitgliedsKarte", () => {
       expect(screen.getByText("karte.mehr_vorteile")).toBeInTheDocument();
     });
   });
+
+  describe("QR-Code", () => {
+    const qr = "data:image/png;base64,AAAA";
+
+    it("zeigt den QR auf der Rückseite", () => {
+      renderWithProviders(<MitgliedsKarte stil="gold" angebot="CID PLUS" name="Amel" qr={qr} />);
+      const bild = document.querySelector("[data-rueckseite] img[data-qr]") as HTMLImageElement;
+      expect(bild).not.toBeNull();
+      expect(bild.getAttribute("src")).toBe(qr);
+      expect(bild).toHaveAttribute("alt", "karte.qr_alt");
+    });
+
+    it("ist mit QR auch ohne Vorteile drehbar", () => {
+      renderWithProviders(<MitgliedsKarte stil="gold" angebot="CID PLUS" name="Amel" qr={qr} />);
+      const knopf = screen.getByRole("button", { name: "karte.umdrehen" });
+      fireEvent.click(knopf);
+      expect(screen.getByRole("button", { name: "karte.umdrehen_zurueck" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    });
+
+    it("zeigt ohne QR und ohne Vorteile weder Knopf noch Rückseite", () => {
+      renderWithProviders(<MitgliedsKarte stil="gold" angebot="CID PLUS" name="Amel" />);
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(document.querySelector("img[data-qr]")).toBeNull();
+    });
+  });
 });
