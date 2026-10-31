@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import FilterUmschalter from "../../components/ui/FilterUmschalter";
 import {
   useApproveRegistration,
   usePendingRegistrations,
@@ -23,6 +24,7 @@ import type { RegistrationsFiltres } from "../../types/inscription";
 import { usePageAccess } from "../../hooks/useRbac";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { lokaleSprache } from "../../utils/datum";
+import { filterBlockKlasse } from "../../utils/filter";
 
 type Decision = { id: string; email: string; type: "approuver" | "refuser" };
 
@@ -46,6 +48,11 @@ export default function InscriptionsEnAttentePage() {
   // Historique + filtres/tri (point 5, 2026-10-06) — un changement de filtre repart de la 1re
   // page (pageUrl remis à null).
   const [filtres, setFiltres] = useState<RegistrationsFiltres>({ decision: "", tri: "-date" });
+  // Handy: Filterblock eingeklappt (ab md immer sichtbar, siehe FilterUmschalter).
+  const [filterOffen, setFilterOffen] = useState(false);
+  const aktiveFilter = [filtres.q, filtres.decision, filtres.date_apres, filtres.date_avant].filter(
+    (w) => w !== undefined && w !== "",
+  ).length;
   function changerFiltre(patch: Partial<RegistrationsFiltres>) {
     setFiltres((f) => ({ ...f, ...patch }));
     setPageUrl(null);
@@ -94,7 +101,16 @@ export default function InscriptionsEnAttentePage() {
         </p>
       )}
 
-      <div className="mb-3 flex flex-wrap items-end gap-2 text-xs">
+      <FilterUmschalter
+        offen={filterOffen}
+        onUmschalten={() => setFilterOffen((v) => !v)}
+        aktiv={aktiveFilter}
+        controls="inscriptions-filter"
+      />
+      <div
+        id="inscriptions-filter"
+        className={`mb-3 ${filterBlockKlasse(filterOffen)} flex-wrap items-end gap-2 text-xs max-md:[&_input]:w-full max-md:[&_select]:w-full`}
+      >
         <input
           type="search"
           value={filtres.q ?? ""}
