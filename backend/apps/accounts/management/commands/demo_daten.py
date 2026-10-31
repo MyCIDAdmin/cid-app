@@ -3,6 +3,8 @@ Demo-Daten und Testkonten je Rolle für die Testfälle der Verwaltung (nur DEV).
 
 Aufruf:  python manage.py demo_daten            # legt fehlende Demo-Daten an
          python manage.py demo_daten --reset    # löscht alle Demo-Daten und legt sie neu an
+         python manage.py demo_daten --passwort-setzen   # setzt nur das Passwort der Demo-Konten
+                                                         # (aus DEMO_PASSWORT), löscht nichts
 
 Schutz: läuft nur, wenn DEMO_DATEN_ERLAUBT=1 gesetzt ist (nur auf DEV setzen, nie auf PROD).
 Alle Demo-Objekte sind erkennbar: Konten/Mitglieder an der Domain @cid-demo.test, Ausgaben,
@@ -54,10 +56,21 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--reset", action="store_true", help="Demo-Daten erst löschen.")
+        parser.add_argument(
+            "--passwort-setzen",
+            action="store_true",
+            help="Nur das Passwort der vorhandenen Demo-Konten auf DEMO_PASSWORT setzen. "
+            "Löscht und legt nichts an.",
+        )
 
     def handle(self, *args, **options):
         if not getattr(settings, "DEMO_DATEN_ERLAUBT", False):
             raise CommandError("Demo-Daten sind hier nicht erlaubt (DEMO_DATEN_ERLAUBT=1 fehlt).")
+        if options["passwort_setzen"]:
+            if options["reset"]:
+                raise CommandError("--passwort-setzen und --reset nicht zusammen verwenden.")
+            self._passwort_setzen()
+            return
         if options["reset"]:
             self._loeschen()
         passwort = settings.DEMO_PASSWORT or secrets.token_urlsafe(12)
@@ -72,6 +85,32 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Demo-Daten bereit."))
         for kuerzel, rolle, _v, _n in KONTEN:
             self.stdout.write(f"  {rolle.label:<32} {_email(kuerzel)}")
+
+    # -- Passwort neu setzen -----------------------------------------------------------------
+    def _passwort_setzen(self):
+        """Setzt das Passwort der vorhandenen Demo-Konten auf DEMO_PASSWORT. Bestehende Daten und
+        Konten bleiben unverändert ; nur die fünf Konten aus KONTEN werden angefasst."""
+        passwort = settings.DEMO_PASSWORT
+        if not passwort:
+            raise CommandError("DEMO_PASSWORT ist nicht gesetzt (Variable im Backend anlegen).")
+        if len(passwort) < 8:
+            raise CommandError("DEMO_PASSWORT ist zu kurz (mindestens 8 Zeichen).")
+        geaendert = 0
+        for kuerzel, rolle, _v, _n in KONTEN:
+            user = User.objects.filter(email=_email(kuerzel)).first()
+            if user is None:
+                self.stdout.write(f"  {_email(kuerzel)}: nicht vorhanden, übersprungen")
+                continue
+            user.set_password(passwort)
+            user.save(update_fields=["password"])
+            geaendert += 1
+            self.stdout.write(f"  {rolle.label:<32} {_email(kuerzel)}: Passwort gesetzt")
+        if geaendert == 0:
+            self.stdout.write(
+                self.style.WARNING("Keine Demo-Konten gefunden (erst `demo_daten` ausführen).")
+            )
+        else:
+            self.stdout.write(self.style.SUCCESS(f"Passwort von {geaendert} Demo-Konten gesetzt."))
 
     # -- Löschen ---------------------------------------------------------------------------
     def _loeschen(self):
