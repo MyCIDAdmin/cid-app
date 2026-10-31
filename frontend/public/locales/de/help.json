@@ -476,7 +476,7 @@
         "wann": "Eine Kampagne braucht eine Mitgliedschaftsstufe, ggf. mit Ermäßigung.",
         "schritte": [
           "Bei der Kampagne „Angebote verwalten“ klicken.",
-          "Name des Angebots, Vollpreis (€), Beschreibung und Vorteile (eine Zeile pro Vorteil) eintragen. „Sichtbar“ gesetzt lassen, wenn das Angebot angezeigt werden soll. „Angebot hinzufügen“ klicken.",
+          "Name des Angebots, Vollpreis (€), Beschreibung eintragen. Unter „Vorteil hinzufügen“ jeden Vorteil mit Text, Symbol und, wenn gewünscht, einer Verlinkung (z. B. Shop) anlegen; die Vorschau zeigt, wie Mitglieder ihn sehen. „Sichtbar“ gesetzt lassen, wenn das Angebot angezeigt werden soll. „Angebot hinzufügen“ klicken.",
           "Beim Angebot „Rabatte verwalten“ klicken.",
           "Typ (Student, Familie, Senior, Sonstiges), Reduktion (fester Betrag oder Prozentsatz) und Wert wählen. „Nachweis erforderlich“ anhaken, wenn ein Dokument nötig ist, und „Rabatt hinzufügen“ klicken."
         ],

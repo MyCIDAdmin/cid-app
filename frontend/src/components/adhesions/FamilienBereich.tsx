@@ -167,10 +167,13 @@ export default function FamilienBereich({
   souscription,
   kampagne,
   gueltigBis,
+  eingebettet = false,
 }: {
   souscription: Souscription;
   kampagne?: string;
   gueltigBis?: string;
+  /** Innerhalb eines Akkordeons (der Titel steht dann schon dort, kein eigener Rahmen). */
+  eingebettet?: boolean;
 }) {
   const { t } = useTranslation("adhesions");
   const loeschen = useKindLoeschen();
@@ -191,8 +194,10 @@ export default function FamilienBereich({
   }
 
   return (
-    <section className="mb-5 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-      <h2 className="mb-1 text-xs font-bold text-text-primary">{t("familie.titel")}</h2>
+    <section className={eingebettet ? "" : "mb-5 rounded-cid-lg bg-bg-primary p-4 shadow-sm"}>
+      <h2 className={eingebettet ? "sr-only" : "mb-1 text-xs font-bold text-text-primary"}>
+        {t("familie.titel")}
+      </h2>
       {info && (
         <p className="text-sm text-text-secondary">
           {t("familie.gesamt_zeile", {

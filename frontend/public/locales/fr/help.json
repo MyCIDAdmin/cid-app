@@ -476,7 +476,7 @@
         "wann": "Une campagne a besoin d'un niveau d'adhésion, éventuellement avec réduction.",
         "schritte": [
           "Dans la campagne, cliquer sur « Gérer les offres ».",
-          "Saisir nom de l'offre, prix plein (€), description et avantages (un par ligne). Laisser « Visible » coché si l'offre doit être affichée. Cliquer sur « Ajouter cette offre ».",
+          "Saisir nom de l'offre, prix plein (€), description. Avec « Ajouter un avantage », créer chaque avantage avec texte, symbole et, si souhaité, un lien (p. ex. boutique) ; l'aperçu montre le rendu côté membre. Laisser « Visible » coché si l'offre doit être affichée. Cliquer sur « Ajouter cette offre ».",
           "Sur l'offre, cliquer sur « Gérer les rabais ».",
           "Choisir le type (Étudiant, Famille, Senior, Autre), la réduction (montant fixe ou pourcentage) et la valeur. Cocher « Justificatif requis » si un document est nécessaire puis cliquer sur « Ajouter ce rabais »."
         ],

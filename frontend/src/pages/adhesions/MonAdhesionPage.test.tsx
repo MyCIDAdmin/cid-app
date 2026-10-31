@@ -738,4 +738,82 @@ describe("MonAdhesionPage", () => {
     expect(screen.queryByText("hero.titre")).not.toBeInTheDocument();
     expect(document.querySelector("[data-kartenstil]")).not.toBeNull();
   });
+
+  // Release 2026.11 (Variante B) : "Nächster Schritt", drehbare Karte, Vorteile-Kacheln, Bereiche.
+  it("Variante B: ohne Mitgliedschaft lädt der Nächste Schritt zu den Angeboten ein", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(document.querySelector("[data-schritt='beitreten']")).not.toBeNull();
+    expect(document.getElementById("mitgliedschaft-angebote")).not.toBeNull();
+  });
+
+  it("Variante B: unbezahlt zeigt Schritt Zahlung, Angebote und geöffneten Beitragsbereich", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription()] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(document.querySelector("[data-schritt='zahlung']")).not.toBeNull();
+    expect(document.getElementById("mitgliedschaft-angebote")).not.toBeNull();
+  });
+
+  it("Variante B: bezahlt zeigt Karte mit Vorteilen auf der Rückseite, keine Angebote mehr", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription({ statut: "payee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(document.querySelector("[data-schritt]")).not.toBeNull();
+    expect(document.getElementById("mitgliedschaft-angebote")).toBeNull();
+    // Vorteil aus dem Schnappschuss der Mitgliedschaft : auf der Kartenrückseite und als Kachel.
+    expect(screen.getAllByText("Accès complet").length).toBeGreaterThanOrEqual(2);
+    const knopf = screen.getByRole("button", { name: "karte.umdrehen" });
+    fireEvent.click(knopf);
+    expect(screen.getByRole("button", { name: "karte.umdrehen_zurueck" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
 });

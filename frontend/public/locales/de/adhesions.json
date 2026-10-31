@@ -165,7 +165,7 @@
     "aucune": "Noch kein Angebot für diese Kampagne.",
     "nom_label": "Name des Angebots",
     "description_label": "Beschreibung",
-    "avantages_label": "Vorteile (eine Zeile pro Vorteil)",
+    "avantages_label": "Vorteile",
     "avantages_placeholder": "Socios-Mitgliedschaft\nKleines Willkommensgeschenk",
     "age_min_label": "Mindestalter",
     "age_max_label": "Höchstalter",
@@ -200,7 +200,11 @@
     "familie_kein_angebot": "— Angebot wählen —",
     "familie_rabatt": "Familienrabatt (%)",
     "familie_speichern": "Familienpaket speichern",
-    "familie_hinweis": "Jede Person erhält das zugewiesene Angebot. Preis = Summe der Angebote minus Familienrabatt."
+    "familie_hinweis": "Jede Person erhält das zugewiesene Angebot. Preis = Summe der Angebote minus Familienrabatt.",
+    "vorteile_bearbeiten": "Vorteile bearbeiten",
+    "vorteile_ausblenden": "Vorteile ausblenden",
+    "vorteile_ansehen": "Vorteile ansehen",
+    "vorteile_speichern": "Vorteile speichern"
   },
   "admin_rabais": {
     "titre": "Rabatte dieses Angebots",
@@ -236,7 +240,14 @@
     "aria": "Digitale Mitgliedskarte – {{angebot}}",
     "titel": "Mitgliedskarte",
     "mitglied_seit": "Mitglied seit",
-    "gueltig_bis": "Gültig bis"
+    "gueltig_bis": "Gültig bis",
+    "hinweis_umdrehen": "Tippe auf die Karte, um die Rückseite mit deinen Vorteilen zu sehen.",
+    "umdrehen": "Karte umdrehen und Vorteile zeigen",
+    "umdrehen_zurueck": "Karte zurückdrehen",
+    "rueckseite_titel": "Deine Vorteile",
+    "mehr_vorteile": "+ {{anzahl}} weitere Vorteile",
+    "status_aktiv": "Aktiv",
+    "status_bald": "Läuft bald ab"
   },
   "zahlung": {
     "titel": "So bezahlen Sie Ihre Mitgliedschaft",
@@ -359,5 +370,84 @@
     "preise": "Gezahlt",
     "erwachsene_zeile": "{{angenommen}} angenommen · {{offen}} offen · {{abgelehnt}} abgelehnt · {{konflikt}} Konflikt",
     "ueber_hoechstalter": "{{anzahl}} über dem Höchstalter"
+  },
+  "kennzahlen": {
+    "tage_one": "Tag gültig",
+    "tage_other": "Tage gültig",
+    "jahre_one": "Jahr dabei",
+    "jahre_other": "Jahre dabei",
+    "seit": "Mitglied seit"
+  },
+  "bereich": {
+    "vorteile": "Deine Vorteile",
+    "vorteile_anzahl_one": "{{count}} Vorteil",
+    "vorteile_anzahl_other": "{{count}} Vorteile",
+    "beitrag": "Beitrag & Zahlungen",
+    "verlauf": "Verlauf"
+  },
+  "naechster": {
+    "kicker": "Dein nächster Schritt",
+    "ok_titel": "Alles erledigt",
+    "ok_text": "Deine Mitgliedschaft ist bezahlt und gültig – noch {{tage}} Tage.",
+    "ok_shop": "Zum Shop",
+    "ok_events": "Zu den Veranstaltungen",
+    "bald_titel": "Deine Mitgliedschaft läuft bald ab",
+    "bald_text": "Sie gilt noch {{tage}} Tage. Sobald die nächste Kampagne startet, kannst du verlängern.",
+    "nachweis_titel": "Nachweis fehlt noch",
+    "nachweis_text": "Für deinen Rabatt brauchen wir noch einen Nachweis. Lade ihn hoch, dann geht es weiter.",
+    "nachweis_knopf": "Nachweis hochladen",
+    "zahlung_titel": "Zahlung ausstehend",
+    "zahlung_text": "Deine Anmeldung ist fast fertig. Schließe die Zahlung ab, dann ist deine Mitgliedschaft aktiv.",
+    "zahlung_knopf": "Jetzt bezahlen",
+    "abgelehnt_titel": "Rabatt abgelehnt",
+    "abgelehnt_text": "Dein Rabatt wurde nicht anerkannt. Du kannst ein anderes Angebot wählen.",
+    "abgelehnt_knopf": "Angebot wählen",
+    "beitreten_titel": "Werde Mitglied",
+    "beitreten_text": "Wähle ein Angebot und sichere dir Mitgliederpreise, Stimmrecht und mehr.",
+    "beitreten_knopf": "Angebote ansehen",
+    "wieder_titel": "Willkommen zurück",
+    "wieder_text": "Deine letzte Mitgliedschaft ist beendet. Wähle ein Angebot und sei wieder dabei.",
+    "wieder_knopf": "Angebote ansehen"
+  },
+  "vorteile": {
+    "oeffnen_aria": "{{vorteil}} – {{ziel}} öffnen",
+    "symbol_label": "Symbol",
+    "text_label": "Vorteil",
+    "ziel_label": "Verlinkung",
+    "ziel_keines": "Keine Verlinkung",
+    "hoch": "Nach oben",
+    "runter": "Nach unten",
+    "entfernen": "Vorteil entfernen",
+    "hinzufuegen": "Vorteil hinzufügen",
+    "vorschau": "So sehen Mitglieder die Vorteile",
+    "leer": "Noch kein Vorteil.",
+    "symbol": {
+      "check": "Häkchen",
+      "card": "Karte",
+      "vote": "Abstimmung",
+      "bag": "Einkaufstasche",
+      "ticket": "Ticket",
+      "car": "Auto",
+      "gift": "Geschenk",
+      "star": "Stern",
+      "users": "Gruppe",
+      "calendar": "Kalender",
+      "heart": "Herz",
+      "camera": "Kamera",
+      "chat": "Chat",
+      "trophy": "Pokal"
+    },
+    "ziel": {
+      "shop": "Shop",
+      "veranstaltungen": "Veranstaltungen",
+      "reisen": "Reisen",
+      "tickets": "Tickets",
+      "fanclub": "Fanclub live",
+      "votes": "Abstimmungen",
+      "alben": "Alben",
+      "kalender": "Kalender",
+      "chats": "Chats",
+      "projekte": "Projekte"
+    }
   }
 }

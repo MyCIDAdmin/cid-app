@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -30,5 +30,54 @@ describe("MitgliedsKarte", () => {
     expect(kartenStilOderStandard(undefined)).toBe("rubin");
     expect(kartenStilOderStandard("neon")).toBe("rubin");
     KARTEN_STILE.forEach((s) => expect(kartenStilOderStandard(s)).toBe(s));
+  });
+
+  describe("Rückseite mit Vorteilen", () => {
+    const vorteile = [
+      { ordre: 1, texte_fr: "Mitgliederpreis im Shop", texte_de: "", texte_ar: "", icone: "bag" },
+      { ordre: 2, texte_fr: "Stimmrecht", texte_de: "", texte_ar: "" },
+    ];
+
+    it("ist ohne Vorteile nicht drehbar", () => {
+      renderWithProviders(<MitgliedsKarte stil="gold" angebot="CID PLUS" name="Amel Bekir" />);
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(document.querySelector("[data-rueckseite]")).toBeNull();
+    });
+
+    it("dreht sich per Knopf um und zurück", () => {
+      renderWithProviders(
+        <MitgliedsKarte stil="gold" angebot="CID PLUS" name="Amel Bekir" vorteile={vorteile} />,
+      );
+      const knopf = screen.getByRole("button", { name: "karte.umdrehen" });
+      expect(knopf).toHaveAttribute("aria-pressed", "false");
+      const rueck = document.querySelector("[data-rueckseite]") as HTMLElement;
+      expect(rueck).toHaveAttribute("aria-hidden", "true");
+      expect(screen.getByText("Mitgliederpreis im Shop")).toBeInTheDocument();
+
+      fireEvent.click(knopf);
+      expect(screen.getByRole("button", { name: "karte.umdrehen_zurueck" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(rueck).toHaveAttribute("aria-hidden", "false");
+
+      fireEvent.click(screen.getByRole("button", { name: "karte.umdrehen_zurueck" }));
+      expect(rueck).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("zeigt höchstens fünf Vorteile und zählt den Rest", () => {
+      const viele = Array.from({ length: 8 }, (_, i) => ({
+        ordre: i + 1,
+        texte_fr: `Vorteil ${i + 1}`,
+        texte_de: "",
+        texte_ar: "",
+      }));
+      renderWithProviders(
+        <MitgliedsKarte stil="rubin" angebot="CID PLUS" name="Amel Bekir" vorteile={viele} />,
+      );
+      expect(screen.getByText("Vorteil 5")).toBeInTheDocument();
+      expect(screen.queryByText("Vorteil 6")).toBeNull();
+      expect(screen.getByText("karte.mehr_vorteile")).toBeInTheDocument();
+    });
   });
 });
