@@ -855,6 +855,8 @@ summary:focus-visible,
     display: none;
   }
   .cid-karten tr {
+    display: flex;
+    flex-direction: column;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid color-mix(in srgb, var(--color-text-tertiary) 20%, transparent);
   }
@@ -877,8 +879,10 @@ summary:focus-visible,
     text-align: left;
     font-size: 0.75rem;
     color: var(--color-text-tertiary);
+    text-transform: none;
   }
   .cid-karten td[data-kopf] {
+    order: -1;
     display: block;
     text-align: left;
     padding-bottom: 0.4rem;
@@ -887,6 +891,15 @@ summary:focus-visible,
     display: block;
     text-align: left !important;
     padding-top: 0.5rem;
+  }
+  /* Knopfreihen (Auswahl + Datum + Bestätigen) umbrechen statt Knöpfe zu quetschen. */
+  .cid-karten td[data-aktionen] div {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .cid-karten td[data-aktionen] button,
+  .cid-karten td[data-aktionen] a {
+    white-space: nowrap;
   }
   .cid-karten td[colspan] {
     display: block;

@@ -87,6 +87,18 @@ describe("InscriptionsEnAttentePage", () => {
     expect(screen.getByText("liste.aucune_inscription")).toBeInTheDocument();
   });
 
+  it("klappt die Filter auf dem Handy per Knopf auf und beschriftet die Kartenzellen", () => {
+    mockList();
+    const { container } = renderWithProviders(<InscriptionsEnAttentePage />);
+
+    expect(screen.getByRole("table")).toHaveClass("cid-karten");
+    const filter = container.querySelector("#inscriptions-filter") as HTMLElement;
+    expect(filter).toHaveClass("hidden", "md:flex");
+    fireEvent.click(screen.getByRole("button", { name: /filter\.oeffnen/ }));
+    expect(filter).toHaveClass("flex");
+    expect(filter).not.toHaveClass("hidden");
+  });
+
   it("accepte une inscription après confirmation", () => {
     mockList();
     approveMutate.mockImplementation((_id, { onSuccess }: { onSuccess: () => void }) =>
