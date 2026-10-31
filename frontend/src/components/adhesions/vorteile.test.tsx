@@ -37,6 +37,21 @@ describe("vorteile (Schlüssel und Darstellung)", () => {
     expect(vorteileMitDarstellung(schnappschuss, undefined)).toHaveLength(3);
   });
 
+  it("zeigt bei leerem Schnappschuss die aktuellen Vorteile des Angebots (sortiert)", () => {
+    const aktuell = [v(2, "Stimmrecht"), v(1, "Shop-Preis", { icone: "bag", ziel: "shop" })];
+    expect(vorteileMitDarstellung([], aktuell).map((x) => x.texte_fr)).toEqual([
+      "Shop-Preis",
+      "Stimmrecht",
+    ]);
+    expect(vorteileMitDarstellung(undefined, aktuell)).toHaveLength(2);
+    expect(vorteileMitDarstellung([], undefined)).toEqual([]);
+  });
+
+  it("ein nicht leerer Schnappschuss wird nie durch das aktuelle Angebot ergänzt", () => {
+    const ergebnis = vorteileMitDarstellung([v(1, "Alt")], [v(1, "Alt"), v(2, "Neu")]);
+    expect(ergebnis.map((x) => x.texte_fr)).toEqual(["Alt"]);
+  });
+
   it("hat dieselben Symbol- und Ziel-Schlüssel wie das Backend", () => {
     const quelle = backendQuelle;
     const liste = (name: string) => {
