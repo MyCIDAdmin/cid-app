@@ -120,7 +120,10 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
 
         if type_message == "message":
             contenu = (content.get("contenu") or "").strip()[:4000]
-            art, daten = self._art_und_daten(content, erlaubt=(NachrichtArt.TEXT, NachrichtArt.GIF))
+            art, daten = self._art_und_daten(
+                content,
+                erlaubt=(NachrichtArt.TEXT, NachrichtArt.GIF, NachrichtArt.TREFFPUNKT),
+            )
             if art is None or (art == NachrichtArt.TEXT and not contenu):
                 return
             if art != NachrichtArt.TEXT:
@@ -186,6 +189,9 @@ class MessagerieConsumer(AsyncJsonWebsocketConsumer):
 
     async def message_angeheftet(self, event):
         await self.send_json({"type": "message_angeheftet", **event["payload"]})
+
+    async def message_bearbeitet(self, event):
+        await self.send_json({"type": "message_bearbeitet", **event["payload"]})
 
     @staticmethod
     def _art_und_daten(content, erlaubt):
@@ -360,6 +366,11 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
             return
         if art != NachrichtArt.TEXT:
             contenu = ""
+        if not await self._darf_schreiben():
+            await self.send_json(
+                {"type": "erreur", "message": "Das Schreiben ist gerade pausiert."}
+            )
+            return
         # "Antworten" (demande utilisateur 2026-09-25) — même revalidation IDOR que
         # MessagerieConsumer._creer_message : repond_a n'est résolu que dans CE groupe.
         repond_a_id = content.get("repond_a")
@@ -398,7 +409,7 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
 
         from .tasks import envoyer_notification_message_groupe
 
-        envoyer_notification_message_groupe.delay(str(self.groupe_id), str(self.membre_id))
+        envoyer_notification_message_groupe.delay(str(self.groupe_id), str(self.membre_id), contenu)
 
     async def tippt(self, event):
         if event["payload"]["membre_id"] != str(self.membre_id):
@@ -413,6 +424,12 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
     async def umfrage_update(self, event):
         await self.send_json({"type": "umfrage_update", **event["payload"]})
 
+    async def message_bearbeitet(self, event):
+        await self.send_json({"type": "message_bearbeitet", **event["payload"]})
+
+    async def gruppe_pause(self, event):
+        await self.send_json({"type": "gruppe_pause", **event["payload"]})
+
     async def message_recu(self, event):
         await self.send_json({"type": "message", **event["payload"]})
 
@@ -425,6 +442,15 @@ class GroupeChatConsumer(AsyncJsonWebsocketConsumer):
         # Diffusé depuis MessageGroupeViewSet.liker — même mécanisme que
         # MessagerieConsumer.message_like ci-dessus.
         await self.send_json({"type": "message_like", **event["payload"]})
+
+    @database_sync_to_async
+    def _darf_schreiben(self) -> bool:
+        from apps.membres.models import Membre
+
+        groupe = GroupeChat.objects.filter(id=self.groupe_id).first()
+        if groupe is None:
+            return False
+        return chats.darf_schreiben(groupe, Membre.objects.filter(id=self.membre_id).first())
 
     @database_sync_to_async
     def _get_membre_id(self, user):

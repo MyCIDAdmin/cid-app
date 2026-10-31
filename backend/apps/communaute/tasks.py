@@ -87,7 +87,7 @@ def envoyer_notification_message_prive(destinataire_membre_id, expediteur_nom, c
 
 
 @shared_task
-def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
+def envoyer_notification_message_groupe(groupe_id, auteur_membre_id, text=""):
     """Ajoutée le 2026-09-16 (retour utilisateur : couverture "Messaging und Austausch
     Module") — déclenchée par `GroupeChatConsumer.receive_json` à chaque message envoyé dans un
     groupe de chat. Contrairement à `envoyer_notification_message_prive` ci-dessus, aucun
@@ -96,7 +96,11 @@ def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
     périmètre), donc notifie systématiquement tous les autres membres du groupe, même principe
     que `notifications.notifier_nouvelle_reponse_forum` (jamais l'auteur du message
     lui-même). Pas d'email — un chat de groupe est un flux temps réel à fort volume, l'email
-    ferait plus de bruit que de service."""
+    ferait plus de bruit que de service.
+
+    Schalter « Nur bei @Erwähnung » (`ChatEinstellung.nur_erwaehnung`) : ein Mitglied mit diesem
+    Schalter wird nur benachrichtigt, wenn `text` seinen Vornamen als @Erwähnung enthält."""
+    from . import chats
     from .models import ChatEinstellung, GroupeChat, MembreGroupe
 
     try:
@@ -122,9 +126,18 @@ def envoyer_notification_message_groupe(groupe_id, auteur_membre_id):
         )
         .select_related("membre__user")
     )
+    nur_erwaehnung = set(
+        ChatEinstellung.objects.filter(groupe_id=groupe_id, nur_erwaehnung=True).values_list(
+            "membre_id", flat=True
+        )
+    )
     for membre_groupe in membres:
         user = membre_groupe.membre.user
         if not user:
+            continue
+        if membre_groupe.membre_id in nur_erwaehnung and not chats.erwaehnt(
+            text, membre_groupe.membre.prenom
+        ):
             continue
         notifier(
             user,

@@ -42,6 +42,7 @@ from .permissions import MODERATION_MIN_LEVEL
 ONLINE_TTL = 90  # Sekunden — die Chat-Liste meldet sich alle 30 s, solange sie offen ist
 MAX_OPTIONEN = 6
 MAX_EMOJI_LAENGE = 16
+MAX_TEXT_LAENGE = 4000
 GIF_HOST = re.compile(r"^(media\d*|i)\.giphy\.com$")
 
 
@@ -159,13 +160,43 @@ def darf_in_gruppe(groupe: GroupeChat, membre) -> bool:
     return groupe.membres_groupe.filter(membre=membre).exists()
 
 
+def ist_chat_admin(groupe: GroupeChat, membre) -> bool:
+    """Chat-Admin = Mitglied der Gruppe und Ersteller oder zum Admin ernannt."""
+    if membre is None:
+        return False
+    eintrag = MembreGroupe.objects.filter(groupe=groupe, membre=membre).first()
+    if eintrag is None:
+        return False
+    return groupe.createur_id == membre.id or eintrag.ist_admin
+
+
+def pause_aktiv(groupe: GroupeChat) -> bool:
+    """Schreibpause gilt, solange sie gesetzt und nicht abgelaufen ist (lazy geprüft)."""
+    if not groupe.schreibpause:
+        return False
+    return groupe.pause_bis is None or groupe.pause_bis > timezone.now()
+
+
+def darf_schreiben(groupe: GroupeChat, membre) -> bool:
+    return not pause_aktiv(groupe) or ist_chat_admin(groupe, membre)
+
+
+def erwaehnt(text: str, vorname: str) -> bool:
+    """Steht „@Vorname“ im Text ? (ohne Rücksicht auf Groß-/Kleinschreibung, ganzes Wort)"""
+    if not text or not vorname:
+        return False
+    return re.search(rf"(?<!\w)@{re.escape(vorname)}(?!\w)", text, re.IGNORECASE) is not None
+
+
 def darf_anheften(user, membre, message) -> bool:
     if isinstance(message, MessagePrive):
         return message.conversation.participant(membre)
     groupe = message.groupe
     if groupe.type_groupe == "public":
         return (
-            groupe.createur_id == membre.id or ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            groupe.createur_id == membre.id
+            or ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            or ist_chat_admin(groupe, membre)
         )
     return groupe.membres_groupe.filter(membre=membre).exists()
 
@@ -217,6 +248,67 @@ def anheften_umschalten(message):
         "message_angeheftet",
         {"id": str(message.id), "angeheftet": message.angeheftet},
     )
+
+
+def bearbeiten(message, membre, text) -> None:
+    """Text einer Nachricht ändern : der Autor, in Gruppen auch ein Chat-Admin (z. B. wenn
+    etwas nicht stimmt). Nur Textnachrichten ; das Ergebnis geht an alle offenen Fenster."""
+    if message.art != NachrichtArt.TEXT:
+        raise ValidationError({"detail": "Nur Textnachrichten lassen sich bearbeiten."})
+    text = (text or "").strip()
+    if not text:
+        raise ValidationError({"contenu": "Der Text darf nicht leer sein."})
+    if len(text) > MAX_TEXT_LAENGE:
+        raise ValidationError({"contenu": "Der Text ist zu lang."})
+    von_admin = False
+    if isinstance(message, MessagePrive):
+        if message.expediteur_id != membre.id:
+            raise PermissionDenied("Nur der Absender kann die Nachricht bearbeiten.")
+    else:
+        if not darf_in_gruppe(message.groupe, membre):
+            raise PermissionDenied("Vous n'êtes pas membre de ce groupe.")
+        if message.auteur_id != membre.id:
+            if not ist_chat_admin(message.groupe, membre):
+                raise PermissionDenied("Nur der Autor oder ein Chat-Admin kann bearbeiten.")
+            von_admin = True
+    message.contenu = text
+    message.bearbeitet_am = timezone.now()
+    message.bearbeitet_von_admin = von_admin
+    message.save(update_fields=["contenu", "bearbeitet_am", "bearbeitet_von_admin"])
+    sende_an_gruppe(
+        kanal_von(message),
+        "message_bearbeitet",
+        {
+            "id": str(message.id),
+            "contenu": text,
+            "bearbeitet_am": message.bearbeitet_am.isoformat(),
+            "von_admin": von_admin,
+        },
+    )
+
+
+def setze_pause(groupe: GroupeChat, aktiv: bool, bis) -> None:
+    """Schreibpause ein- oder ausschalten ; `bis` (aware datetime) beendet sie von selbst."""
+    if aktiv and bis is not None and bis <= timezone.now():
+        raise ValidationError({"bis": "Das Ende muss in der Zukunft liegen."})
+    groupe.schreibpause = bool(aktiv)
+    groupe.pause_bis = bis if aktiv else None
+    groupe.save(update_fields=["schreibpause", "pause_bis"])
+    sende_an_gruppe(
+        f"groupe_{groupe.id}",
+        "gruppe_pause",
+        {
+            "pausiert": pause_aktiv(groupe),
+            "bis": groupe.pause_bis.isoformat() if aktiv and bis else None,
+        },
+    )
+    if aktiv:
+        zeit = ""
+        if bis is not None:
+            zeit = " bis " + timezone.localtime(bis).strftime("%d.%m. %H:%M") + " Uhr"
+        systemnachricht(groupe, f"Schreiben ist pausiert{zeit}. Nur Chat-Admins können schreiben.")
+    else:
+        systemnachricht(groupe, "Schreiben ist wieder freigegeben.")
 
 
 def abstimmen(message: MessageGroupe, membre, option) -> None:
@@ -334,6 +426,10 @@ class ChatListeView(APIView):
                     "nicht_gelesen": c.nicht_gelesen,
                     "stumm": bool(e and e.stumm),
                     "angeheftet": bool(e and e.angeheftet),
+                    "nur_erwaehnung": False,
+                    "ich_admin": False,
+                    "pausiert": False,
+                    "pause_bis": None,
                     "letzte": (
                         {
                             "text": _vorschau(letzte.art, letzte.contenu, letzte.daten),
@@ -388,6 +484,10 @@ class ChatListeView(APIView):
                     "nicht_gelesen": nicht_gelesen,
                     "stumm": bool(e and e.stumm),
                     "angeheftet": bool(e and e.angeheftet),
+                    "nur_erwaehnung": bool(e and e.nur_erwaehnung),
+                    "ich_admin": g.createur_id == membre.id or m.ist_admin,
+                    "pausiert": pause_aktiv(g),
+                    "pause_bis": g.pause_bis if pause_aktiv(g) else None,
                     "letzte": (
                         {
                             "text": _vorschau(letzte.art, letzte.contenu, letzte.daten),
@@ -408,7 +508,8 @@ class ChatListeView(APIView):
 
 
 class ChatEinstellungView(APIView):
-    """PATCH /communaute/chats/einstellung/ {art, id, stumm?, angeheftet?}"""
+    """PATCH /communaute/chats/einstellung/ {art, id, stumm?, angeheftet?, nur_erwaehnung?}
+    (`nur_erwaehnung` nur für Gruppen und Reisechats)."""
 
     permission_classes = [IsAuthenticated]
 
@@ -429,11 +530,14 @@ class ChatEinstellungView(APIView):
         else:
             raise ValidationError({"art": "Unbekannte Chatart."})
         e, _neu = ChatEinstellung.objects.get_or_create(membre=membre, **ziel)
-        for feld in ("stumm", "angeheftet"):
+        felder = ["stumm", "angeheftet"] + (["nur_erwaehnung"] if "groupe" in ziel else [])
+        for feld in felder:
             if feld in request.data:
                 setattr(e, feld, bool(request.data[feld]))
         e.save()
-        return Response({"stumm": e.stumm, "angeheftet": e.angeheftet})
+        return Response(
+            {"stumm": e.stumm, "angeheftet": e.angeheftet, "nur_erwaehnung": e.nur_erwaehnung}
+        )
 
 
 # --- GIFs und Übersetzung ---------------------------------------------------------------------

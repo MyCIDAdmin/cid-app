@@ -150,7 +150,11 @@ class GroupeChatPermission(BasePermission):
         action = getattr(view, "action", None)
         est_createur = membre is not None and obj.createur_id == membre.id
         est_admin = ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
-        if action in ("update", "partial_update", "destroy", "inviter"):
+        if action == "inviter":
+            from .chats import ist_chat_admin
+
+            return est_createur or est_admin or ist_chat_admin(obj, membre)
+        if action in ("update", "partial_update", "destroy"):
             return est_createur or est_admin
         if action == "retrieve":
             if obj.type_groupe == "public":
@@ -179,7 +183,14 @@ class MessageGroupePermission(BasePermission):
         if getattr(view, "action", None) != "destroy":
             return True
         membre = _membre_de(request.user)
-        return membre is not None and obj.auteur_id == membre.id
+        if membre is None:
+            return False
+        if obj.auteur_id == membre.id:
+            return True
+        # Chat-Admins dürfen Nachrichten anderer entfernen (Moderation, Chats-Verwaltung 2026-10).
+        from .chats import ist_chat_admin
+
+        return ist_chat_admin(obj.groupe, membre)
 
 
 # ---------------------------------------------------------------------------

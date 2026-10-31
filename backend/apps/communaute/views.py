@@ -43,6 +43,7 @@ from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -573,7 +574,7 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
     pagination_class = MessagePriveCursorPagination
 
     def get_queryset(self):
-        if self.action in ("destroy", "liker", "reagieren", "anheften"):
+        if self.action in ("destroy", "liker", "reagieren", "anheften", "bearbeiten"):
             # Pas de filtre par conversation ici (contrairement au `list` ci-dessous) — pour
             # "destroy" la permission objet (MessagePrivePermission, expéditeur uniquement)
             # est le seul contrôle nécessaire (même principe que ContenuCommunautePermission
@@ -650,6 +651,15 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
         chats.anheften_umschalten(message)
         return Response(self.get_serializer(message).data)
 
+    @action(detail=True, methods=["post"])
+    def bearbeiten(self, request, pk=None):
+        """Eigene Textnachricht ändern (POST {contenu}) ; nur der Absender."""
+        message = self.get_object()
+        membre = request.user.membre
+        self._teilnehmer_pruefen(message, membre)
+        chats.bearbeiten(message, membre, request.data.get("contenu"))
+        return Response(self.get_serializer(message).data)
+
 
 class GroupeChatViewSet(
     mixins.ListModelMixin,
@@ -692,10 +702,60 @@ class GroupeChatViewSet(
                 {
                     **AuteurSerializer(mg.membre).data,
                     "ist_ersteller": mg.membre_id == groupe.createur_id,
+                    "ist_admin": mg.membre_id == groupe.createur_id or mg.ist_admin,
                 }
                 for mg in mitglieder
             ]
         )
+
+    @action(detail=True, methods=["post"])
+    def admin(self, request, pk=None):
+        """Chat-Admin ernennen oder zurücknehmen (POST {membre, aktiv}) — nur Chat-Admins.
+        Der Ersteller bleibt immer Admin."""
+        groupe = self.get_object()
+        if not chats.ist_chat_admin(groupe, request.user.membre):
+            raise PermissionDenied("Nur Chat-Admins können Admins bestimmen.")
+        ziel = (
+            MembreGroupe.objects.filter(groupe=groupe, membre_id=request.data.get("membre"))
+            .select_related("membre")
+            .first()
+        )
+        if ziel is None:
+            raise ValidationError({"membre": "Kein Mitglied dieser Gruppe."})
+        if ziel.membre_id == groupe.createur_id:
+            raise ValidationError({"membre": "Der Ersteller bleibt immer Chat-Admin."})
+        aktiv = request.data.get("aktiv", True)
+        ziel.ist_admin = aktiv not in (False, "false", "False", "0", 0)
+        ziel.save(update_fields=["ist_admin"])
+        chats.systemnachricht(
+            groupe,
+            (
+                f"{ziel.membre.prenom} ist jetzt Chat-Admin"
+                if ziel.ist_admin
+                else f"{ziel.membre.prenom} ist kein Chat-Admin mehr"
+            ),
+        )
+        return Response(self.get_serializer(groupe).data)
+
+    @action(detail=True, methods=["post"])
+    def pause(self, request, pk=None):
+        """Schreibpause (POST {aktiv, bis?}) — nur Chat-Admins. Währenddessen schreiben nur
+        Chat-Admins ; mit `bis` (ISO-Zeitpunkt) endet sie von selbst."""
+        groupe = self.get_object()
+        if not chats.ist_chat_admin(groupe, request.user.membre):
+            raise PermissionDenied("Nur Chat-Admins können das Schreiben pausieren.")
+        aktiv = request.data.get("aktiv", True) not in (False, "false", "False", "0", 0)
+        bis = None
+        roh = request.data.get("bis")
+        if aktiv and roh:
+            bis = parse_datetime(str(roh))
+            if bis is None:
+                raise ValidationError({"bis": "Ungültiger Zeitpunkt."})
+            if timezone.is_naive(bis):
+                bis = timezone.make_aware(bis)
+        chats.setze_pause(groupe, aktiv, bis)
+        groupe.refresh_from_db()
+        return Response(self.get_serializer(groupe).data)
 
     @action(detail=True, methods=["post"])
     def gelesen(self, request, pk=None):
@@ -745,7 +805,7 @@ class MessageGroupeViewSet(
     pagination_class = MessageGroupeCursorPagination
 
     def get_queryset(self):
-        if self.action in ("destroy", "liker", "reagieren", "anheften", "abstimmen"):
+        if self.action in ("destroy", "liker", "reagieren", "anheften", "abstimmen", "bearbeiten"):
             # Même raisonnement que MessagePriveViewSet.get_queryset : queryset large, IDOR
             # géré pour "destroy" par la permission objet (auteur uniquement) et pour
             # "liker" (demande utilisateur 2026-09-25) explicitement dans l'action.
@@ -827,6 +887,13 @@ class MessageGroupeViewSet(
             raise PermissionDenied("Nur Mitglieder können abstimmen.")
         chats.abstimmen(message, membre, request.data.get("option"))
         message = self.get_queryset().get(pk=message.pk)
+        return Response(self.get_serializer(message).data)
+
+    @action(detail=True, methods=["post"])
+    def bearbeiten(self, request, pk=None):
+        """Textnachricht ändern (POST {contenu}) : der Autor oder ein Chat-Admin."""
+        message = self.get_object()
+        chats.bearbeiten(message, request.user.membre, request.data.get("contenu"))
         return Response(self.get_serializer(message).data)
 
 
