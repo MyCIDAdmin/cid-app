@@ -816,4 +816,43 @@ describe("MonAdhesionPage", () => {
       "true",
     );
   });
+
+  it("Variante B: bei leerem Schnappschuss erscheinen die aktuellen Vorteile des Angebots", () => {
+    const mitVorteilen = campagne({
+      offres: [
+        offre({
+          avantages: [
+            { ordre: 1, texte_fr: "Mitgliederpreis", texte_de: "", texte_ar: "", ziel: "shop" },
+          ],
+        }),
+      ],
+    });
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: mitVorteilen,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useCampagnes).mockReturnValue({
+      data: { next: null, previous: null, results: [mitVorteilen] },
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagnes>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [souscription({ statut: "payee", snapshot_avantages: [] })],
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.getAllByText("Mitgliederpreis").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("button", { name: "karte.umdrehen" })).toBeInTheDocument();
+  });
 });
