@@ -10,10 +10,7 @@ describe("PublicFooter", () => {
   // pages/public/legal/) — plus de liens externes vers mycid.org.
   it("affiche les liens légaux vers les pages internes", () => {
     renderWithProviders(<PublicFooter />);
-    expect(screen.getByText("footer.impressum").closest("a")).toHaveAttribute(
-      "href",
-      "/impressum",
-    );
+    expect(screen.getByText("footer.impressum").closest("a")).toHaveAttribute("href", "/impressum");
     expect(screen.getByText("footer.datenschutz").closest("a")).toHaveAttribute(
       "href",
       "/datenschutz",
@@ -61,9 +58,14 @@ describe("PublicFooter", () => {
   it("variante compact : garde tous les liens mais en une seule ligne dense", () => {
     renderWithProviders(<PublicFooter compact />);
     expect(screen.getByText("footer.impressum").closest("a")).toHaveAttribute("href", "/impressum");
-    expect(screen.getByText("info@clubistesindeutschland.org")).toHaveAttribute(
+    // Adresse und Ortsname sind nur ab lg als Text sichtbar, das Symbol trägt immer das Label.
+    expect(screen.getByLabelText("info@clubistesindeutschland.org")).toHaveAttribute(
       "href",
       "mailto:info@clubistesindeutschland.org",
+    );
+    expect(screen.getByLabelText("footer.pays")).toHaveAttribute(
+      "href",
+      "https://share.google/2bOef3rWXOlAMprNM",
     );
     expect(screen.getByText("footer.pays").closest("a")).toHaveAttribute(
       "href",
