@@ -11,6 +11,7 @@ import i18n from "../../../i18n";
 import DatenschutzPage from "./DatenschutzPage";
 import ErstattungsrichtliniePage from "./ErstattungsrichtliniePage";
 import ImpressumPage from "./ImpressumPage";
+import { DATENSCHUTZ } from "./legalContent";
 import NutzungsbedingungenPage from "./NutzungsbedingungenPage";
 
 describe("Pages légales", () => {
@@ -50,8 +51,21 @@ describe("Pages légales", () => {
     expect(screen.getByText("2. Mitgliedsbeiträge")).toBeInTheDocument();
   });
 
-  it("le lien de retour ramène vers la Startseite (\"/\")", () => {
+  it('le lien de retour ramène vers la Startseite ("/")', () => {
     renderWithProviders(<ImpressumPage />);
     expect(screen.getByText("legal.retour").closest("a")).toHaveAttribute("href", "/");
+  });
+
+  // Push-Absatz (2026-10-31) : in beiden Sprachen vorhanden, mit Rechtsgrundlage und dem Hinweis,
+  // dass nur Titel und Link (nie der Inhalt) gesendet werden.
+  it("Datenschutz enthält den Absatz zu Push-Benachrichtigungen in beiden Sprachen", () => {
+    const text = (l: "de" | "fr") =>
+      DATENSCHUTZ[l].sections.flatMap((sec) => sec.absaetze ?? []).join("\n");
+    expect(text("de")).toContain("Optionale Push-Benachrichtigungen");
+    expect(text("de")).toContain("nie den Inhalt");
+    expect(text("de")).toContain("Art. 6 Abs. 1 lit. a DSGVO");
+    expect(text("fr")).toContain("Notifications push facultatives");
+    expect(text("fr")).toContain("jamais son contenu");
+    expect(text("fr")).toContain("art. 6 §1 a) RGPD");
   });
 });

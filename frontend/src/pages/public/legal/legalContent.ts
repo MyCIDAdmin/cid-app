@@ -190,7 +190,7 @@ export const DATENSCHUTZ: ContenuBilingue = {
   de: {
     titre: "Datenschutzerklärung",
     untertitel: "Gemäß DSGVO (EU 2016/679) und BDSG",
-    stand: "Stand: März 2025",
+    stand: "Stand: Oktober 2026",
     sections: [
       {
         titre: "1. Verantwortlicher und Kontakt",
@@ -252,6 +252,7 @@ export const DATENSCHUTZ: ContenuBilingue = {
         absaetze: [
           "Im Rahmen unserer satzungsmäßigen Vereinszwecke leiten wir Mittel an Club Africain (Tunis, Tunesien) weiter. Dabei werden ausschließlich aggregierte, anonymisierte Informationen zur Mittelverwendung übermittelt — keine personenbezogenen Daten.",
           "Hinweis zu Drittlandtransfers: Eine Übermittlung personenbezogener Daten in Länder außerhalb der EU/des EWR erfolgt nur unter den Voraussetzungen der Art. 44 ff. DSGVO (Angemessenheitsbeschluss, Standardvertragsklauseln oder andere geeignete Garantien).",
+          "Optionale Push-Benachrichtigungen: Wenn Sie in Ihrem Profil Push-Benachrichtigungen einschalten, speichern wir je Gerät die vom Push-Dienst Ihres Browsers (Google, Apple oder Mozilla) vergebene technische Adresse, zwei Schlüssel zur Verschlüsselung, eine Gerätebezeichnung (z. B. „Android · Chrome“) und Zeitstempel. Über den Push-Dienst senden wir Ihnen verschlüsselt nur den Titel und einen Link der Benachrichtigung, nie den Inhalt. Der Push-Dienst kann den Inhalt nicht lesen, sieht aber, dass und wann eine Meldung an Ihr Gerät gesendet wurde. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Sie können sie jederzeit in Ihrem Profil oder in den Browser-Einstellungen widerrufen. Wir löschen die Daten, wenn Sie Push im Profil ausschalten, wenn der Push-Dienst das Gerät nicht mehr kennt und wenn Ihr Konto gelöscht wird.",
         ],
       },
       {
@@ -324,7 +325,7 @@ export const DATENSCHUTZ: ContenuBilingue = {
   fr: {
     titre: "Politique de confidentialité",
     untertitel: "Conformément au RGPD (UE 2016/679) et au BDSG",
-    stand: "Dernière mise à jour : mars 2025",
+    stand: "Dernière mise à jour : octobre 2026",
     sections: [
       {
         titre: "1. Responsable du traitement et contact",
@@ -380,6 +381,7 @@ export const DATENSCHUTZ: ContenuBilingue = {
         absaetze: [
           "Dans le cadre de nos statuts, nous transférons des fonds au Club Africain (Tunis, Tunisie). Seules des informations agrégées et anonymisées sur l'utilisation des fonds sont communiquées — aucune donnée à caractère personnel n'est transférée.",
           "Remarque sur les transferts vers des pays tiers : tout transfert de données personnelles hors UE/EEE n'a lieu que dans les conditions des art. 44 et suivants du RGPD (décision d'adéquation, clauses contractuelles types ou autres garanties appropriées).",
+          "Notifications push facultatives : si vous activez les notifications push dans votre profil, nous enregistrons pour chaque appareil l'adresse technique attribuée par le service push de votre navigateur (Google, Apple ou Mozilla), deux clés de chiffrement, un nom d'appareil (par ex. « Android · Chrome ») et des horodatages. Via le service push, nous vous envoyons, chiffrés, uniquement le titre et un lien de la notification, jamais son contenu. Le service push ne peut pas lire le contenu, mais voit qu'un message a été envoyé à votre appareil et quand. La base juridique est votre consentement (art. 6 §1 a) RGPD), que vous pouvez retirer à tout moment dans votre profil ou dans les réglages du navigateur. Nous supprimons ces données lorsque vous désactivez le push dans le profil, lorsque le service push ne reconnaît plus l'appareil et lorsque votre compte est supprimé.",
         ],
       },
       {
