@@ -17,6 +17,7 @@ from .familie_views import (
 from .views import (
     CampagneAdhesionViewSet,
     JustificatifRabaisViewSet,
+    MeineKarteView,
     OffreAdhesionViewSet,
     RabaisOffreViewSet,
     SouscriptionViewSet,
@@ -67,5 +68,6 @@ urlpatterns = [
         name="einladung-ablehnen",
     ),
     path("meine-einladungen/", MeineEinladungenView.as_view(), name="meine-einladungen"),
+    path("karte/mein/", MeineKarteView.as_view(), name="meine-karte"),
     *router.urls,
 ]

@@ -23,6 +23,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
+from apps.adhesions import karte as mitgliedskarte
 from apps.evenements.models import Evenement, Inscription, StatutEvenement, StatutInscription
 from apps.notifications.models import TypeNotification
 from apps.notifications.services import notifier
@@ -206,6 +207,8 @@ def code_aus_scan(text: str) -> str:
 
 def pruefen(ziel, text: str) -> dict:
     """Schlägt den gescannten Code nach, ohne etwas zu buchen."""
+    if mitgliedskarte.ist_kartencode(text):
+        return mitgliedskarte.pruefen(text)
     code = code_aus_scan(text)
     ticket = (
         Eintrittsticket.objects.select_related(

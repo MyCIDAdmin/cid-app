@@ -21,6 +21,7 @@ Périmètre de ce module (AHM-19) :
     ultérieurs (mêmes principes que la scission cotisations AHM-15 → AHM-17/AHM-18).
 """
 
+import secrets
 import uuid
 from decimal import Decimal
 
@@ -612,3 +613,31 @@ class JustificatifRabais(models.Model):
 
     def __str__(self):
         return f"Justificatif {self.souscription} — {self.get_statut_display()}"
+
+
+def neuer_kartencode() -> str:
+    """Zufälliger, nicht erratbarer Code (144 Bit) für den QR der Mitgliedskarte."""
+    return secrets.token_urlsafe(18)
+
+
+class Mitgliedskarte(models.Model):
+    """Zufällige Kennung der digitalen Mitgliedskarte (Release 2026.11).
+
+    Der QR-Code der Karte enthält nur diese Kennung (mit Präfix ``CID-M:``), nie Personendaten.
+    Wer den Einlass einer Veranstaltung betreut, schlägt sie beim Scannen nach und sieht Name,
+    Angebot und Gültigkeit (``apps.adhesions.karte``). Die Zeile entsteht beim ersten Aufruf der
+    eigenen Karte ; die Kennung bleibt gleich, damit ein gespeichertes Bild der Karte weiter gilt.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.OneToOneField(
+        "membres.Membre", on_delete=models.CASCADE, related_name="mitgliedskarte"
+    )
+    code = models.CharField(max_length=40, unique=True, default=neuer_kartencode)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "adhesions_mitgliedskarte"
+
+    def __str__(self):
+        return f"Mitgliedskarte {self.membre_id}"
