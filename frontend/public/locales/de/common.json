@@ -215,6 +215,25 @@
     "benachrichtigungen": {
       "titel": "Benachrichtigungen"
     },
+    "push": {
+      "titel": "Push auf diesem Gerät",
+      "hinweis": "Sie erhalten Titel und Link der Benachrichtigung auf dieses Gerät, auch wenn die App geschlossen ist. Der Inhalt bleibt in der App. Die Meldung läuft verschlüsselt über den Push-Dienst Ihres Browsers (Google, Apple oder Mozilla). Sie können Push hier jederzeit ausschalten.",
+      "einschalten": "Push einschalten",
+      "an": "Eingeschaltet. Dieses Gerät erhält die gewählten Benachrichtigungen.",
+      "arten": "Diese Arten per Push erhalten (für alle Ihre Geräte)",
+      "test": "Testmeldung senden",
+      "test_gesendet": "Testmeldung gesendet.",
+      "test_nicht_zugestellt": "Die Testmeldung konnte nicht zugestellt werden. Bitte Push aus- und wieder einschalten.",
+      "ausschalten": "Ausschalten",
+      "weitere_geraete": "Weitere Geräte mit Push",
+      "angemeldet_am": "seit {{datum}}",
+      "entfernen": "Entfernen",
+      "ios_installieren": "Auf dem iPhone und iPad funktioniert Push nur, wenn die App auf dem Home-Bildschirm liegt: In Safari auf „Teilen“ tippen, „Zum Home-Bildschirm“ wählen und die App von dort öffnen.",
+      "nicht_unterstuetzt": "Dieser Browser unterstützt keine Push-Benachrichtigungen. Auf dem Handy funktioniert es zum Beispiel mit Chrome, Firefox oder Samsung Internet.",
+      "abgelehnt": "Benachrichtigungen sind für diese Seite im Browser gesperrt. Erlauben Sie sie in den Browser-Einstellungen (beim Schloss-Symbol neben der Adresse) und laden Sie die Seite neu.",
+      "erlaubnis_fehlt": "Ohne Erlaubnis des Browsers kann Push nicht eingeschaltet werden.",
+      "fehler": "Das hat nicht geklappt. Bitte erneut versuchen."
+    },
     "telegram": {
       "titel": "Telegram",
       "hinweis": "Zusätzlich zur App und E-Mail kurze Hinweise (Titel und Link) in Telegram erhalten. Der Inhalt der Meldungen wird nicht übertragen. Sie können die Verbindung jederzeit hier oder mit /stop im Chat trennen.",

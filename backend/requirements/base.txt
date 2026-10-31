@@ -67,3 +67,8 @@ gunicorn==23.0.0
 # alternative au SMTP classique, qui reste bloqué par Railway sur les plans Free/Trial/Hobby.
 # 15.x exige Django>=5.0 (Umstieg auf Django 5.2 LTS am 2026-10-08).
 django-anymail==15.2
+
+# --- Web-Push (Release 2026.11) ---
+# Verschlüsselung (RFC 8291) und VAPID-Signatur für Push-Benachrichtigungen ; zieht py-vapid und
+# http-ece nach (beide ohne eigene Systemabhängigkeiten, cryptography ist schon vorhanden).
+pywebpush==2.0.3

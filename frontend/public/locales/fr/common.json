@@ -215,6 +215,25 @@
     "benachrichtigungen": {
       "titel": "Notifications"
     },
+    "push": {
+      "titel": "Push sur cet appareil",
+      "hinweis": "Tu reçois le titre et le lien de la notification sur cet appareil, même quand l’application est fermée. Le contenu reste dans l’application. Le message passe chiffré par le service push de ton navigateur (Google, Apple ou Mozilla). Tu peux désactiver le push ici à tout moment.",
+      "einschalten": "Activer le push",
+      "an": "Activé. Cet appareil reçoit les notifications choisies.",
+      "arten": "Recevoir ces types par push (pour tous tes appareils)",
+      "test": "Envoyer un message de test",
+      "test_gesendet": "Message de test envoyé.",
+      "test_nicht_zugestellt": "Le message de test n’a pas pu être livré. Désactive puis réactive le push.",
+      "ausschalten": "Désactiver",
+      "weitere_geraete": "Autres appareils avec push",
+      "angemeldet_am": "depuis le {{datum}}",
+      "entfernen": "Retirer",
+      "ios_installieren": "Sur iPhone et iPad, le push ne fonctionne que si l’application est sur l’écran d’accueil : dans Safari, touche « Partager », choisis « Sur l’écran d’accueil » puis ouvre l’application depuis là.",
+      "nicht_unterstuetzt": "Ce navigateur ne prend pas en charge les notifications push. Sur téléphone, cela fonctionne par exemple avec Chrome, Firefox ou Samsung Internet.",
+      "abgelehnt": "Les notifications sont bloquées pour ce site dans le navigateur. Autorise-les dans les réglages du navigateur (cadenas à côté de l’adresse) puis recharge la page.",
+      "erlaubnis_fehlt": "Sans l’autorisation du navigateur, le push ne peut pas être activé.",
+      "fehler": "Ça n’a pas fonctionné. Réessaie."
+    },
     "telegram": {
       "titel": "Telegram",
       "hinweis": "Recevoir en plus de l’application et des e-mails de courts messages (titre et lien) sur Telegram. Le contenu des notifications n’est pas transmis. Tu peux couper la connexion à tout moment ici ou avec /stop dans le chat.",

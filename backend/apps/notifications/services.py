@@ -62,7 +62,33 @@ def notifier(destinataire, type_notification, *, titre, message, lien=""):
     )
     if type_notification != TypeNotification.TICKET_BEREIT:
         _telegram_nachreichen(notification)
+    _push_nachreichen(notification)
     return notification
+
+
+def _push_nachreichen(notification) -> None:
+    """Schickt die Benachrichtigung zusätzlich als Push, falls der Server eingerichtet ist, das
+    Konto Geräte angemeldet hat und die Art gewählt ist (Web-Push). Stört nie die eigentliche
+    Aktion."""
+    from django.db import transaction
+
+    from . import push
+    from .models import PushAbo
+
+    try:
+        if not push.push_konfiguriert():
+            return
+        if not PushAbo.objects.filter(user=notification.destinataire).exists():
+            return
+        if not push.art_gewaehlt(notification.destinataire, notification.type_notification):
+            return
+        from .tasks import sende_push
+
+        transaction.on_commit(lambda: sende_push.delay(str(notification.pk)))
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception("Push-Versand nicht eingeplant")
 
 
 def _telegram_nachreichen(notification) -> None:

@@ -1,5 +1,6 @@
 /**
- * Abschnitt „Benachrichtigungen“ unter Mein Profil › Einstellungen (Release 32) :
+ * Abschnitt „Benachrichtigungen“ unter Mein Profil › Einstellungen (Release 32, Push ab 2026.11) :
+ * Push auf diesem Gerät (PushTeil),
  * Telegram verbinden (einmaliger Link in den Bot), Arten wählen, Testnachricht, Trennen, und der
  * Schalter für den Geburtstagsgruß per E-Mail. Der Telegram-Teil erscheint nur, wenn der Bot auf
  * dem Server eingerichtet ist.
@@ -18,6 +19,7 @@ import {
 } from "../../api/telegram";
 import { useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import PushTeil from "./PushTeil";
 
 const KEY = ["telegram"];
 const KARTE = "rounded-cid-lg bg-bg-primary p-4 shadow-sm";
@@ -214,6 +216,7 @@ export default function BenachrichtigungenAbschnitt() {
       <h2 className="text-sm font-bold text-text-primary">
         {t("einstellungen.benachrichtigungen.titel")}
       </h2>
+      <PushTeil />
       <TelegramTeil />
       <GeburtstagTeil />
     </section>
