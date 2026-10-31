@@ -48,3 +48,52 @@ def test_reset_ist_idempotent(settings):
     call_command("demo_daten", "--reset")
     assert Depense.objects.filter(fournisseur__startswith="[DEMO]").count() == 3
     assert User.objects.filter(email__endswith="@cid-demo.test").count() == 5
+
+
+def test_passwort_setzen_aendert_nur_das_passwort(settings):
+    settings.DEMO_DATEN_ERLAUBT = True
+    settings.DEMO_PASSWORT = "Altes-Passwort-1"
+    call_command("demo_daten")
+    fremd = User.objects.create_user(email="echt@example.org", password="Fremd-Passwort-1")
+    anzahl_ausgaben = Depense.objects.filter(fournisseur__startswith="[DEMO]").count()
+    anzahl_membres = Membre.objects.count()
+
+    settings.DEMO_PASSWORT = "Neues-Passwort-2"
+    call_command("demo_daten", "--passwort-setzen")
+
+    for user in User.objects.filter(email__endswith="@cid-demo.test"):
+        assert user.check_password("Neues-Passwort-2")
+        assert not user.check_password("Altes-Passwort-1")
+    fremd.refresh_from_db()
+    assert fremd.check_password("Fremd-Passwort-1")
+    assert Depense.objects.filter(fournisseur__startswith="[DEMO]").count() == anzahl_ausgaben
+    assert Membre.objects.count() == anzahl_membres
+    assert User.objects.filter(email__endswith="@cid-demo.test").count() == 5
+
+
+def test_passwort_setzen_braucht_freigabe_und_passwort(settings):
+    settings.DEMO_DATEN_ERLAUBT = False
+    settings.DEMO_PASSWORT = "Neues-Passwort-2"
+    with pytest.raises(CommandError):
+        call_command("demo_daten", "--passwort-setzen")
+    settings.DEMO_DATEN_ERLAUBT = True
+    settings.DEMO_PASSWORT = ""
+    with pytest.raises(CommandError):
+        call_command("demo_daten", "--passwort-setzen")
+    settings.DEMO_PASSWORT = "kurz"
+    with pytest.raises(CommandError):
+        call_command("demo_daten", "--passwort-setzen")
+
+
+def test_passwort_setzen_legt_keine_konten_an(settings):
+    settings.DEMO_DATEN_ERLAUBT = True
+    settings.DEMO_PASSWORT = "Neues-Passwort-2"
+    call_command("demo_daten", "--passwort-setzen")
+    assert not User.objects.filter(email__endswith="@cid-demo.test").exists()
+
+
+def test_passwort_setzen_nicht_mit_reset(settings):
+    settings.DEMO_DATEN_ERLAUBT = True
+    settings.DEMO_PASSWORT = "Neues-Passwort-2"
+    with pytest.raises(CommandError):
+        call_command("demo_daten", "--passwort-setzen", "--reset")
