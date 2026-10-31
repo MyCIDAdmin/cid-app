@@ -18,6 +18,7 @@ import { useProjets } from "../../hooks/useProjets";
 import type { Beschluss, Person, Tagesordnungspunkt } from "../../types/kalender";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import PersonenWahl from "./PersonenWahl";
+import { lokaleSprache } from "../../utils/datum";
 
 const FELD = "w-full rounded-cid border border-text-tertiary/30 bg-bg-primary px-2 py-1.5 text-sm";
 const KNOPF = "rounded-cid border border-text-tertiary/30 px-3 py-1 text-xs font-semibold";
@@ -319,7 +320,7 @@ export default function SitzungsBereich({ terminId }: { terminId: string }) {
               {daten.versendet_am && (
                 <span className="ms-2 text-xs text-text-tertiary">
                   {t("sitzung.zuletzt_versendet", {
-                    datum: new Date(daten.versendet_am).toLocaleString(),
+                    datum: new Date(daten.versendet_am).toLocaleString(lokaleSprache()),
                   })}
                 </span>
               )}

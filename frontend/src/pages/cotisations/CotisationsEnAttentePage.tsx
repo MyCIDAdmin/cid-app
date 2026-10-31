@@ -52,7 +52,7 @@ import { type FormEvent, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import { heuteIso } from "../../utils/datum";
+import { heuteIso, lokaleSprache } from "../../utils/datum";
 import { exporterCotisationsExcel, telechargerRecuCotisation } from "../../api/cotisations";
 import BelegButton from "../../components/cotisations/BelegButton";
 import { useMembre } from "../../hooks/useMembres";
@@ -82,6 +82,8 @@ import ZahlungsImportPage from "./ZahlungsImportPage";
 import ShopZahlungenPanel from "../../components/cotisations/ShopZahlungenPanel";
 import TippspielZahlungenPanel from "../../components/cotisations/TippspielZahlungenPanel";
 import InfoTip from "../../components/ui/InfoTip";
+import FilterUmschalter from "../../components/ui/FilterUmschalter";
+import { filterBlockKlasse } from "../../utils/filter";
 
 /**
  * Types proposés par le formulaire "Barzahlung eintragen" (PaiementEspecesForm ci-dessous) —
@@ -142,11 +144,11 @@ function formatMontant(montant: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 function formatDateHeure(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 /** Déclenche le téléchargement d'un blob côté navigateur — même pattern que
@@ -220,21 +222,32 @@ function CotisationGestionRow({ cotisation, modifiable }: CotisationGestionRowPr
   return (
     <>
       <tr className="border-b border-text-tertiary/10 last:border-0 align-top">
-        <td className="px-4 py-2">{formatDate(cotisation.created_at)}</td>
-        <td className="px-4 py-2">
+        <td className="px-4 py-2" data-label={t("en_attente_paiement.col_date")}>
+          {formatDate(cotisation.created_at)}
+        </td>
+        <td className="px-4 py-2" data-label={t("en_attente_paiement.col_transaktionsdatum")}>
           {cotisation.date_paiement ? formatDate(cotisation.date_paiement) : "–"}
         </td>
-        <td className="px-4 py-2">
+        <td className="px-4 py-2" data-kopf>
           {membre.isLoading
             ? t("en_attente_paiement.chargement")
             : membre.data
               ? `${membre.data.prenom} ${membre.data.nom} (${membre.data.numero_membre})`
               : "—"}
         </td>
-        <td className="px-4 py-2">{cotisation.libelle}</td>
-        <td className="px-4 py-2 font-semibold text-ca">{formatMontant(cotisation.montant)}</td>
-        <td className="px-4 py-2">{t(`statut.${cotisation.statut}`)}</td>
-        <td className="px-4 py-2">
+        <td className="px-4 py-2" data-label={t("en_attente_paiement.col_libelle")}>
+          {cotisation.libelle}
+        </td>
+        <td
+          className="px-4 py-2 font-semibold text-ca"
+          data-label={t("en_attente_paiement.col_montant")}
+        >
+          {formatMontant(cotisation.montant)}
+        </td>
+        <td className="px-4 py-2" data-label={t("en_attente_paiement.col_statut")}>
+          {t(`statut.${cotisation.statut}`)}
+        </td>
+        <td className="px-4 py-2" data-aktionen>
           {STATUTS_CONFIRMABLES.includes(cotisation.statut) && (
             <div className="mb-2 flex items-center gap-1">
               <select
@@ -1009,6 +1022,16 @@ function ZahlungenTab() {
     typeArticleFiltre || modePaiementFiltre || q || dateCreationApres || dateCreationAvant,
   );
 
+  // Handy : Filterblock eingeklappt (ab md immer sichtbar, siehe FilterUmschalter).
+  const [filterOffen, setFilterOffen] = useState(false);
+  const aktiveFilter = [
+    typeArticleFiltre,
+    modePaiementFiltre,
+    q,
+    dateCreationApres,
+    dateCreationAvant,
+  ].filter((w) => w !== "").length;
+
   function reinitialiserFiltres() {
     setTypeArticleFiltre("");
     setModePaiementFiltre("");
@@ -1091,7 +1114,16 @@ function ZahlungenTab() {
         ))}
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+      <FilterUmschalter
+        offen={filterOffen}
+        onUmschalten={() => setFilterOffen((v) => !v)}
+        aktiv={aktiveFilter}
+        controls="cotisations-filter"
+      />
+      <div
+        id="cotisations-filter"
+        className={`mb-4 ${filterBlockKlasse(filterOffen)} flex-wrap items-end gap-3 rounded-cid-lg bg-bg-primary p-3 shadow-sm max-md:[&_input]:w-full max-md:[&_select]:w-full max-md:[&>div]:w-full`}
+      >
         <div>
           <label
             htmlFor="cotisations-filtre-q"
@@ -1191,7 +1223,7 @@ function ZahlungenTab() {
       </div>
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
-        <table className="w-full text-sm">
+        <table className="cid-karten w-full text-sm">
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
               <th className="px-4 py-2">{t("en_attente_paiement.col_date")}</th>

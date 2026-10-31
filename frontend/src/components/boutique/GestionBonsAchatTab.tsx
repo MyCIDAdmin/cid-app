@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 
 import { useBonsAchat } from "../../hooks/useBoutique";
 import type { StatutBonAchat } from "../../types/boutique";
+import { lokaleSprache } from "../../utils/datum";
 
 const TOUS_STATUTS: StatutBonAchat[] = ["actif", "epuise"];
 
@@ -29,7 +30,7 @@ function formatMontant(montant: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function GestionBonsAchatTab() {
@@ -66,7 +67,7 @@ export default function GestionBonsAchatTab() {
       </div>
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
-        <table className="w-full text-xs">
+        <table className="cid-karten w-full text-xs">
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
               <th className="px-3 py-2">{t("bons_achat_admin.col_code")}</th>
@@ -78,8 +79,13 @@ export default function GestionBonsAchatTab() {
           <tbody>
             {bonsAchatQuery.data?.results.map((bon) => (
               <tr key={bon.id} className="border-b border-text-tertiary/10 last:border-0">
-                <td className="px-3 py-2 font-mono">{bon.code}</td>
-                <td className="px-3 py-2 font-bold text-ca">
+                <td data-kopf className="px-3 py-2 font-mono">
+                  {bon.code}
+                </td>
+                <td
+                  data-label={t("bons_achat_admin.col_solde")}
+                  className="px-3 py-2 font-bold text-ca"
+                >
                   {formatMontant(bon.solde)}
                   {bon.solde !== bon.montant_initial && (
                     <span className="ml-1 font-sans font-normal text-text-tertiary">
@@ -87,14 +93,16 @@ export default function GestionBonsAchatTab() {
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-2">
+                <td data-label={t("commandes_admin.col_statut")} className="px-3 py-2">
                   <span
                     className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[bon.statut]}`}
                   >
                     {t(`statut_bon_achat.${bon.statut}`)}
                   </span>
                 </td>
-                <td className="px-3 py-2">{formatDate(bon.created_at)}</td>
+                <td data-label={t("commandes_admin.col_date")} className="px-3 py-2">
+                  {formatDate(bon.created_at)}
+                </td>
               </tr>
             ))}
           </tbody>

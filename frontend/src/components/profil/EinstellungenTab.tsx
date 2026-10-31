@@ -24,6 +24,7 @@ import {
 import BenachrichtigungenAbschnitt from "./BenachrichtigungenAbschnitt";
 import { useUiStore } from "../../store/uiStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 const KARTE = "rounded-cid-lg bg-bg-primary p-4 shadow-sm";
 const FELD = "w-full rounded-cid border border-text-tertiary/30 bg-bg-primary px-3 py-2 text-sm";
@@ -349,7 +350,7 @@ function GeraeteAbschnitt() {
               </p>
               <p className="text-xs text-text-tertiary">
                 {t("einstellungen.geraete.zuletzt", {
-                  datum: new Date(g.last_seen_at).toLocaleString(),
+                  datum: new Date(g.last_seen_at).toLocaleString(lokaleSprache()),
                 })}
                 {g.ip_address ? ` · ${g.ip_address}` : ""}
               </p>

@@ -28,6 +28,7 @@ import { useTranslation } from "react-i18next";
 import { useConfirmerPaiementTeilnahme, useTippspielTeilnahmen } from "../../hooks/useCommunaute";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatMontant(montant: string | null): string {
   if (montant === null) return "—";
@@ -35,7 +36,7 @@ function formatMontant(montant: string | null): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function TippspielZahlungenPanel() {
@@ -68,7 +69,7 @@ export default function TippspielZahlungenPanel() {
 
       {lignes.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="cid-karten w-full text-sm">
             <thead>
               <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
                 <th className="px-3 py-2">{t("tippspiel.zahlungen_spalte_mitglied")}</th>
@@ -81,13 +82,22 @@ export default function TippspielZahlungenPanel() {
             <tbody>
               {lignes.map((ligne) => (
                 <tr key={ligne.id} className="border-b border-text-tertiary/10 last:border-0">
-                  <td className="px-3 py-2">{ligne.membre_nom}</td>
-                  <td className="px-3 py-2">{ligne.tippspiel_titre}</td>
-                  <td className="px-3 py-2 font-semibold text-ca">
+                  <td data-kopf className="px-3 py-2">
+                    {ligne.membre_nom}
+                  </td>
+                  <td data-label={t("tippspiel.zahlungen_spalte_spiel")} className="px-3 py-2">
+                    {ligne.tippspiel_titre}
+                  </td>
+                  <td
+                    data-label={t("tippspiel.zahlungen_spalte_betrag")}
+                    className="px-3 py-2 font-semibold text-ca"
+                  >
                     {formatMontant(ligne.montant_participation)}
                   </td>
-                  <td className="px-3 py-2">{formatDate(ligne.created_at)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td data-label={t("tippspiel.zahlungen_spalte_datum")} className="px-3 py-2">
+                    {formatDate(ligne.created_at)}
+                  </td>
+                  <td data-aktionen className="px-3 py-2 text-right">
                     <button
                       type="button"
                       disabled={confirmer.isPending}

@@ -9,6 +9,7 @@ import {
 } from "../../types/partner";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { Sterne, SterneEingabe } from "./Sterne";
+import { lokaleSprache } from "../../utils/datum";
 
 interface Props {
   partnerId: string;
@@ -133,7 +134,7 @@ export default function BewertungenPanel({ partnerId, verknuepfungen, schreibbar
                 <Sterne wert={b.schnitt} />
                 <span className="text-xs text-text-secondary">{b.bewerter_name}</span>
                 <span className="text-xs text-text-tertiary">
-                  {new Date(b.created_at).toLocaleDateString()}
+                  {new Date(b.created_at).toLocaleDateString(lokaleSprache())}
                 </span>
                 {b.verknuepfung_label && (
                   <span className="rounded-full bg-bg-tertiary px-2 py-0.5 text-[11px]">

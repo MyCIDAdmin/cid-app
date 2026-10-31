@@ -18,6 +18,7 @@ import {
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Angebot } from "../../types/partner";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 const FELD = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -173,7 +174,7 @@ function Tabelle({ angebote, schreibbar }: { angebote: Angebot[]; schreibbar: bo
   return (
     <>
       <div className="overflow-x-auto rounded-cid border border-text-tertiary/20">
-        <table className="w-full text-sm">
+        <table className="cid-karten w-full text-sm">
           <thead>
             <tr className="bg-bg-tertiary text-left text-xs uppercase text-text-tertiary">
               <th className="px-3 py-2">{t("angebot_partner")}</th>
@@ -195,7 +196,7 @@ function Tabelle({ angebote, schreibbar }: { angebote: Angebot[]; schreibbar: bo
                     a.status === "abgelehnt" ? "text-text-tertiary" : ""
                   }`}
                 >
-                  <td className="px-3 py-2">
+                  <td data-kopf className="px-3 py-2">
                     <Link
                       to={`/admin/partner/${a.partner}`}
                       className="font-medium text-ca hover:underline"
@@ -216,21 +217,27 @@ function Tabelle({ angebote, schreibbar }: { angebote: Angebot[]; schreibbar: bo
                       </a>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
+                  <td
+                    data-label={t("angebot_betrag")}
+                    className="px-3 py-2 text-right tabular-nums"
+                  >
                     {geld.format(Number(a.betrag))}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
+                  <td
+                    data-label={t("angebot_differenz")}
+                    className="px-3 py-2 text-right tabular-nums"
+                  >
                     {diff === 0 ? t("angebot_guenstigster") : `+${geld.format(diff)}`}
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t("bewertung")} className="px-3 py-2">
                     <Sterne wert={a.partner_note} />
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t("gueltig_bis")} className="px-3 py-2">
                     {a.gueltig_bis
-                      ? new Date(`${a.gueltig_bis}T00:00:00`).toLocaleDateString()
+                      ? new Date(`${a.gueltig_bis}T00:00:00`).toLocaleDateString(lokaleSprache())
                       : "–"}
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t("status")} className="px-3 py-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] ${
                         a.status === "zuschlag"
@@ -242,7 +249,10 @@ function Tabelle({ angebote, schreibbar }: { angebote: Angebot[]; schreibbar: bo
                     </span>
                   </td>
                   {schreibbar && (
-                    <td className="space-x-3 whitespace-nowrap px-3 py-2 text-right text-xs">
+                    <td
+                      data-aktionen
+                      className="space-x-3 px-3 py-2 text-xs max-md:whitespace-normal md:whitespace-nowrap md:text-right"
+                    >
                       {a.status === "zuschlag" ? (
                         <button
                           type="button"

@@ -20,10 +20,11 @@ import { Link } from "react-router-dom";
 import { useCampagneActive, useMesSouscriptions } from "../../hooks/useAdhesions";
 import { useAuthStore } from "../../store/authStore";
 import MembershipOffersPublic from "./MembershipOffersPublic";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function MembershipSection() {

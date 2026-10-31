@@ -110,6 +110,7 @@ import CompleterProfilIdentite, {
 } from "../../components/adhesions/CompleterProfilIdentite";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { uebersetzt } from "../../utils/uebersetzung";
+import { lokaleSprache } from "../../utils/datum";
 
 const STATUTS_RETIRABLES: StatutSouscription[] = [
   "brouillon",
@@ -164,7 +165,7 @@ function formatMontant(montant: string | number): string {
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function MonAdhesionPage() {

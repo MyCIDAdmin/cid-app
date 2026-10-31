@@ -7,6 +7,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { Meilenstein } from "../../types/projets";
+import { lokaleSprache } from "../../utils/datum";
 
 function prozent(datum: number, beginn: number, ende: number): number {
   if (ende <= beginn) return 0;
@@ -49,7 +50,7 @@ export default function Zeitachse({
         {punkte.map((m) => (
           <span
             key={m.id}
-            title={`${m.titel} · ${new Date(m.faellig_am as string).toLocaleDateString()}`}
+            title={`${m.titel} · ${new Date(m.faellig_am as string).toLocaleDateString(lokaleSprache())}`}
             data-erledigt={m.erledigt}
             className={`absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${
               m.erledigt ? "border-ca bg-ca" : "border-ca bg-bg-primary"
@@ -66,8 +67,8 @@ export default function Zeitachse({
         )}
       </div>
       <div className="mt-1 flex justify-between text-xs text-text-tertiary">
-        <span>{new Date(beginn).toLocaleDateString()}</span>
-        <span>{new Date(ende).toLocaleDateString()}</span>
+        <span>{new Date(beginn).toLocaleDateString(lokaleSprache())}</span>
+        <span>{new Date(ende).toLocaleDateString(lokaleSprache())}</span>
       </div>
     </div>
   );

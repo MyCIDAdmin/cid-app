@@ -55,6 +55,7 @@ import {
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
 import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
+import { lokaleSprache } from "../../utils/datum";
 
 /** Déclenche le téléchargement d'un blob côté navigateur — même pattern que
  * CotisationStepperPage.telechargerRecu/MembresListPage.exporter. */
@@ -103,7 +104,7 @@ function formatMontant(montant: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 interface ExpeditionModalState {
@@ -415,7 +416,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
       )}
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
-        <table className="w-full text-xs">
+        <table className="cid-karten w-full text-xs">
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
               <th className="px-3 py-2">{t("commandes_admin.col_numero")}</th>
@@ -433,7 +434,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
               const transitions = TRANSITIONS_STATUT_COMMANDE[commande.statut];
               return (
                 <tr key={commande.id} className="border-b border-text-tertiary/10 last:border-0">
-                  <td className="px-3 py-2 font-mono">
+                  <td data-kopf className="px-3 py-2 font-mono">
                     {commande.numero_commande}
                     {commande.numero_suivi && (
                       <div className="mt-0.5 font-sans text-[10px] font-normal text-text-tertiary">
@@ -444,19 +445,26 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2">{commande.nom_destinataire}</td>
-                  <td className="px-3 py-2 font-bold text-ca">
+                  <td data-label={t("commandes_admin.col_destinataire")} className="px-3 py-2">
+                    {commande.nom_destinataire}
+                  </td>
+                  <td
+                    data-label={t("commandes_admin.col_montant")}
+                    className="px-3 py-2 font-bold text-ca"
+                  >
                     {formatMontant(commande.montant_total)}
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t("commandes_admin.col_statut")} className="px-3 py-2">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[commande.statut]}`}
                     >
                       {t(`statut_commande.${commande.statut}`)}
                     </span>
                   </td>
-                  <td className="px-3 py-2">{formatDate(commande.created_at)}</td>
-                  <td className="px-3 py-2">
+                  <td data-label={t("commandes_admin.col_date")} className="px-3 py-2">
+                    {formatDate(commande.created_at)}
+                  </td>
+                  <td data-label={t("commandes_admin.col_confirmation")} className="px-3 py-2">
                     <button
                       type="button"
                       aria-label={t("commandes_admin.telecharger_confirmation_aria")}
@@ -467,7 +475,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
                       PDF
                     </button>
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t("commandes_admin.col_facture")} className="px-3 py-2">
                     {commande.date_paiement_confirme ? (
                       <button
                         type="button"
@@ -482,7 +490,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
                       <span className="text-text-tertiary">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-aktionen className="px-3 py-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       {transitions.length > 0 && (
                         <select

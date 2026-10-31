@@ -24,6 +24,7 @@ import {
 import { useVoteSocket } from "../../hooks/useVoteSocket";
 import { useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 // Gestion des sessions de vote (créer/clôturer) réservée à cet ensemble exact de rôles — PAS
 // un minRoleLevel : le Directeur Financier a un niveau numérique supérieur à Bureau Admin
@@ -33,7 +34,7 @@ const ROLES_GESTION_VOTE = ["super_admin", "bureau_admin"] as const;
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 export default function VotePage() {

@@ -47,7 +47,7 @@ export default function BueroTickets({ onOeffnen }: { onOeffnen: (id: number) =>
       )}
       {data && data.length > 0 && (
         <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
-          <table className="w-full min-w-[34rem] text-left text-sm">
+          <table className="cid-karten w-full max-md:min-w-0 min-w-[34rem] text-left text-sm">
             <thead className="text-xs uppercase tracking-wide text-text-tertiary">
               <tr>
                 <th scope="col" className="px-3 py-2">
@@ -73,8 +73,10 @@ export default function BueroTickets({ onOeffnen }: { onOeffnen: (id: number) =>
             <tbody>
               {data.map((tk) => (
                 <tr key={tk.id} className="border-t border-text-tertiary/10">
-                  <td className="px-3 py-2">{tk.id}</td>
-                  <td className="px-3 py-2">
+                  <td data-kopf className="px-3 py-2">
+                    {tk.id}
+                  </td>
+                  <td data-label={t("ticket.betreff")} className="px-3 py-2">
                     <button
                       type="button"
                       className="text-left font-medium text-ca hover:underline"
@@ -86,17 +88,21 @@ export default function BueroTickets({ onOeffnen }: { onOeffnen: (id: number) =>
                       {t(`kategorie.${tk.kategorie}`)}
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t("buero.von")} className="px-3 py-2">
                     {tk.name}
                     {tk.art ? (
                       <div className="text-xs text-text-tertiary">{t(`art.${tk.art}`)}</div>
                     ) : null}
                   </td>
-                  <td className="px-3 py-2">
+                  <td data-label={t("buero.status")} className="px-3 py-2">
                     <StatusMarke status={tk.status} />
                   </td>
-                  <td className="px-3 py-2">{tk.bearbeiter?.name ?? "–"}</td>
-                  <td className="px-3 py-2">{datumZeit(tk.updated_at, i18n.language)}</td>
+                  <td data-label={t("buero.bearbeiter")} className="px-3 py-2">
+                    {tk.bearbeiter?.name ?? "–"}
+                  </td>
+                  <td data-label={t("buero.aktualisiert")} className="px-3 py-2">
+                    {datumZeit(tk.updated_at, i18n.language)}
+                  </td>
                 </tr>
               ))}
             </tbody>

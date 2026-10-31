@@ -836,3 +836,63 @@ summary:focus-visible,
     display: none !important;
   }
 }
+
+/*
+ * Mobile Ansicht (Release 2026.10.31) : Tabellen mit der Klasse `cid-karten` werden auf dem Handy
+ * (unter 768 px, Tailwind-Breakpoint md) zu Karten — eine Zeile = eine Karte. Jede Zelle trägt
+ * `data-label` (Spaltenname) ; die Kopfzeile entfällt. Zelle mit `data-kopf` = Titel der Karte
+ * (ohne Beschriftung), `data-aktionen` = Knopfzeile unten. Ab md bleibt alles wie bisher.
+ */
+@media (max-width: 767px) {
+  .cid-karten,
+  .cid-karten tbody,
+  .cid-karten tr,
+  .cid-karten td {
+    display: block;
+    width: 100%;
+  }
+  .cid-karten thead {
+    display: none;
+  }
+  .cid-karten tr {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-text-tertiary) 20%, transparent);
+  }
+  .cid-karten tr:last-child {
+    border-bottom: 0;
+  }
+  .cid-karten td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.2rem 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .cid-karten td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    max-width: 45%;
+    text-align: left;
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+  }
+  .cid-karten td[data-kopf] {
+    display: block;
+    text-align: left;
+    padding-bottom: 0.4rem;
+  }
+  .cid-karten td[data-aktionen] {
+    display: block;
+    text-align: left !important;
+    padding-top: 0.5rem;
+  }
+  .cid-karten td[colspan] {
+    display: block;
+    text-align: center;
+  }
+  .cid-karten td:empty {
+    display: none;
+  }
+}

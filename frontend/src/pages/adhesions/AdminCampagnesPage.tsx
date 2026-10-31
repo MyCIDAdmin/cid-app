@@ -41,6 +41,7 @@ import {
 import { usePageAccess } from "../../hooks/useRbac";
 import type { CampagneAdhesion, CampagneCreatePayload, StatutCampagne } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 const STATUT_STYLES: Record<StatutCampagne, string> = {
   brouillon: "bg-bg-tertiary text-text-secondary",
@@ -61,7 +62,7 @@ function formulaireInitial(): CampagneCreatePayload {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function AdminCampagnesPage() {
@@ -239,7 +240,7 @@ export default function AdminCampagnesPage() {
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <h2 className="px-4 pt-4 text-xs font-bold text-text-primary">{t("admin.liste_titre")}</h2>
-        <table className="w-full text-sm">
+        <table className="cid-karten w-full text-sm">
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
               <th className="px-4 py-2">{t("admin.col_nom")}</th>
@@ -274,16 +275,20 @@ export default function AdminCampagnesPage() {
             {campagnes.data?.results.map((c) => (
               <Fragment key={c.id}>
                 <tr className="border-b border-text-tertiary/10 last:border-0">
-                  <td className="px-4 py-2 font-medium text-text-primary">{c.nom}</td>
-                  <td className="px-4 py-2 text-text-secondary">{c.annee}</td>
-                  <td className="px-4 py-2">
+                  <td data-kopf className="px-4 py-2 font-medium text-text-primary">
+                    {c.nom}
+                  </td>
+                  <td data-label={t("admin.col_annee")} className="px-4 py-2 text-text-secondary">
+                    {c.annee}
+                  </td>
+                  <td data-label={t("admin.col_statut")} className="px-4 py-2">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[c.statut]}`}
                     >
                       {t(`statut_campagne.${c.statut}`)}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-text-secondary">
+                  <td data-label={t("admin.col_periode")} className="px-4 py-2 text-text-secondary">
                     {formatDate(c.date_debut)} – {formatDate(c.date_fin)}
                     <label className="mt-1 flex items-center gap-1 text-[11px]">
                       {t("admin.frist_court")}
@@ -327,7 +332,7 @@ export default function AdminCampagnesPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2">
+                  <td data-aktionen className="px-4 py-2">
                     <div className="flex flex-wrap gap-1">
                       {c.statut === "brouillon" && (
                         <button

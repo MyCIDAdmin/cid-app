@@ -36,9 +36,10 @@ import type { Photo } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { albumPfad } from "../../utils/albumPfad";
 import { uebersetzt } from "../../utils/uebersetzung";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 function PhotoCarte({

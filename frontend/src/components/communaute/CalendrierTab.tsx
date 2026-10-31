@@ -43,9 +43,10 @@ import type { RencontreCalendrier } from "../../types/communaute";
 import type { ReiseListItem } from "../../types/reisen";
 import EquipeLogoImage from "./EquipeLogoImage";
 import SpielplanEditForm from "./SpielplanEditForm";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 type Resultat = "sieg" | "niederlage" | "unentschieden";

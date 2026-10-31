@@ -327,4 +327,48 @@ describe("MembresListPage", () => {
       expect(await screen.findByText("liste.export_erreur")).toBeInTheDocument();
     });
   });
+  describe("mobile Ansicht", () => {
+    beforeEach(() => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      mockList();
+    });
+
+    it("beschriftet die Tabellenzellen für die Kartenansicht auf dem Handy", () => {
+      renderWithProviders(<MembresListPage />);
+
+      expect(screen.getByRole("table")).toHaveClass("cid-karten");
+      const zelle = screen.getByRole("cell", { name: "Berlin" });
+      expect(zelle).toHaveAttribute("data-label", "liste.col_ville");
+      // Erste Zelle = Titel der Karte, letzte = Knopfzeile ; beide ohne Spaltenbeschriftung.
+      const zellen = screen.getAllByRole("cell");
+      expect(zellen[0]).toHaveAttribute("data-kopf");
+      expect(zellen[zellen.length - 1]).toHaveAttribute("data-aktionen");
+    });
+
+    it("klappt die Filter auf dem Handy per Knopf auf und zu", () => {
+      const { container } = renderWithProviders(<MembresListPage />);
+      const form = container.querySelector("#membres-filter") as HTMLElement;
+      const knopf = screen.getByRole("button", { name: /filter\.oeffnen/ });
+
+      // Eingeklappt : nur ab md sichtbar (Desktop unverändert).
+      expect(form).toHaveClass("hidden", "md:flex");
+      expect(knopf).toHaveAttribute("aria-expanded", "false");
+
+      fireEvent.click(knopf);
+      expect(form).toHaveClass("flex");
+      expect(form).not.toHaveClass("hidden");
+      expect(screen.getByRole("button", { name: /filter\.schliessen/ })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+    });
+
+    it("zeigt die Zahl aktiver Filter am Knopf", () => {
+      renderWithProviders(<MembresListPage />);
+      fireEvent.change(screen.getByLabelText("liste.recherche"), { target: { value: "Sami" } });
+      expect(screen.getByRole("button", { name: /filter\.oeffnen/ })).toHaveTextContent("1");
+    });
+  });
 });

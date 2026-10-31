@@ -19,6 +19,7 @@ import { extractApiErrorMessage } from "../../../utils/apiError";
 import { STATUS_REIHENFOLGE } from "./konstanten";
 import { hintergrundKlick } from "../../../hooks/useEscapeSchliessen";
 import { EscapeSchliessen } from "../../../components/ui/EscapeSchliessen";
+import { lokaleSprache } from "../../../utils/datum";
 
 const CHAMP = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -60,7 +61,7 @@ function Kommentare({
             <span>
               {k.autor_detail ? `${k.autor_detail.prenom} ${k.autor_detail.nom}` : ""}
               {" · "}
-              {new Date(k.created_at).toLocaleString()}
+              {new Date(k.created_at).toLocaleString(lokaleSprache())}
             </span>
             {kannLoeschen && (
               <button

@@ -30,6 +30,7 @@ import {
 } from "../../hooks/useBoutique";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
 import { STATUTS_ANNULABLES, type Commande, type StatutCommande } from "../../types/boutique";
+import { lokaleSprache } from "../../utils/datum";
 
 const STATUT_STYLES: Record<StatutCommande, string> = {
   en_attente: "bg-status-warningBg text-status-warningText",
@@ -46,7 +47,7 @@ function formatMontant(montant: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 function CommandeCarte({

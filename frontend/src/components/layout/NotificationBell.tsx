@@ -16,6 +16,7 @@ import {
 } from "../../hooks/useNotifications";
 import type { Notification } from "../../types/notification";
 import { useEscapeSchliessen } from "../../hooks/useEscapeSchliessen";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatRelatif(
   iso: string,
@@ -27,7 +28,7 @@ function formatRelatif(
   if (minutes < 60) return t("cloche.il_y_a_minutes", { count: minutes });
   const heures = Math.floor(minutes / 60);
   if (heures < 24) return t("cloche.il_y_a_heures", { count: heures });
-  return new Date(iso).toLocaleDateString();
+  return new Date(iso).toLocaleDateString(lokaleSprache());
 }
 
 export default function NotificationBell() {

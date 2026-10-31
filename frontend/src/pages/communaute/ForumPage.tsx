@@ -14,11 +14,12 @@ import { useCreerSujet, useSujets } from "../../hooks/useCommunaute";
 import { useMentionAutocomplete } from "../../hooks/useMentionAutocomplete";
 import type { CategorieForum } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { lokaleSprache } from "../../utils/datum";
 
 const CATEGORIES: CategorieForum[] = ["football_ca", "vie_en_allemagne", "emploi", "general"];
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 export default function ForumPage() {

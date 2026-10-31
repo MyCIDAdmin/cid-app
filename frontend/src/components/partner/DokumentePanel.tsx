@@ -7,6 +7,7 @@ import { useLadeDokumentHoch, useLoescheDokument } from "../../hooks/usePartner"
 import { DOKUMENT_TYPEN, type DokumentTyp, type PartnerDokument } from "../../types/partner";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { tageBis } from "../../utils/partner";
+import { lokaleSprache } from "../../utils/datum";
 
 const FELD = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm";
 const LABEL = "mb-1 block text-[10px] uppercase text-text-tertiary";
@@ -21,7 +22,7 @@ function Frist({ dokument }: { dokument: PartnerDokument }) {
   const { t } = useTranslation("partner");
   if (!dokument.gueltig_bis) return null;
   const tage = tageBis(dokument.gueltig_bis);
-  const datum = new Date(`${dokument.gueltig_bis}T00:00:00`).toLocaleDateString();
+  const datum = new Date(`${dokument.gueltig_bis}T00:00:00`).toLocaleDateString(lokaleSprache());
   const warnung = dokument.typ === "vertrag" && tage <= 60;
   return (
     <span

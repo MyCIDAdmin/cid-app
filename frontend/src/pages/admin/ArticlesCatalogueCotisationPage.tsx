@@ -44,9 +44,10 @@ import { usePageAccess } from "../../hooks/useRbac";
 import type { ArticleCatalogue } from "../../types/cotisation";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { apercuTexteDepuisHtml } from "../../utils/html";
+import { lokaleSprache } from "../../utils/datum";
 
 function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleString(lokaleSprache());
 }
 
 interface ArticleCatalogueRowProps {
