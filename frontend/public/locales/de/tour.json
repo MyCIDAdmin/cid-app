@@ -128,7 +128,131 @@
     "rollen": {
       "titel": "Rechte vergeben",
       "text": "Hier bestimmst du, wer welche Verwaltungsseiten sehen und ändern darf."
+    },
+    "start": {
+      "titel": "Deine Startseite",
+      "text": "Hier siehst du, was im Verein gerade passiert. Über das Menü links erreichst du alle Bereiche."
+    },
+    "dashboard": {
+      "titel": "Deine Übersicht",
+      "text": "Hier siehst du Zahlen und Hinweise zu deinem Konto, zum Beispiel Veranstaltungen mit wenigen freien Plätzen, Projekte mit Frist und Aufrufe zur Mithilfe."
+    },
+    "mitglieder": {
+      "titel": "Mitglieder",
+      "text": "Was du hier siehst und bearbeiten darfst, hängt von deiner Rolle ab. Ohne Verwaltungsrolle siehst du deine eigene Karte."
+    },
+    "veranstaltungen": {
+      "titel": "Veranstaltungen und Anmeldung",
+      "text": "Hier siehst du veröffentlichte Veranstaltungen und meldest dich an. Deine Tickets findest du unter „Meine Tickets“."
+    },
+    "kalender": {
+      "titel": "Termine an einem Ort",
+      "text": "Der Kalender zeigt Termine des Vereins, des Büros und deine eigenen Termine. Mit den Ansichten blendest du ein, was du sehen möchtest."
+    },
+    "projekte": {
+      "titel": "Projekte und Aktionen",
+      "text": "Verfolge die Projekte des Vereins und unterstütze sie. Projekte mit Frist erscheinen auch in deiner Übersicht."
+    },
+    "boutique": {
+      "titel": "Der Vereinsshop",
+      "text": "Offizielle Vereinsartikel, Karten und Gutscheine. Manche Artikel sind nur für aktive Mitglieder bestellbar. Deine Bestellungen und Gutscheine findest du auf derselben Seite."
+    },
+    "fil": {
+      "titel": "Neuigkeiten",
+      "text": "Büro und App Admin teilen hier Neuigkeiten mit dem Verein. Du kannst lesen, reagieren und kommentieren."
+    },
+    "forum": {
+      "titel": "Themen und Austausch",
+      "text": "Im Forum sprichst du mit anderen Mitgliedern in Themen nach Kategorien. Büro und App Admin moderieren."
+    },
+    "chats": {
+      "titel": "Alle Gespräche an einem Ort",
+      "text": "Chats mit einer Person, Gruppen und die Chats deiner Reisen. Öffentlichen Gruppen kannst du beitreten, in private Gruppen wirst du eingeladen."
+    },
+    "live": {
+      "titel": "Fan-Club",
+      "text": "Der Fan-Club hat fünf Reiter: Spieltag, Tippspiel, Tabelle, Spielplan und Statistiken. Die Daten kommen aus einer Schnittstelle, das Büro kann sie korrigieren."
+    },
+    "quiz": {
+      "titel": "Quiz und Umfragen",
+      "text": "Hier findest du die Quizfragen und Umfragen der Gemeinschaft. Neue Fragen legt das Büro an."
+    },
+    "abstimmungen": {
+      "titel": "Live-Abstimmungen und Wahlen",
+      "text": "Das Büro erstellt Sitzungen, die Wahlberechtigten stimmen ab. Das offizielle Ergebnis siehst du, sobald die Sitzung geschlossen ist."
+    },
+    "a_quiz": {
+      "titel": "Quizfragen pflegen",
+      "text": "Lege Fragen für die Gemeinschaft an und bearbeite sie."
+    },
+    "a_boutique": {
+      "titel": "Den Katalog pflegen",
+      "text": "Hier pflegst du den Katalog des Vereinsshops. Mitglieder sehen nur veröffentlichte Artikel."
+    },
+    "statistik": {
+      "titel": "Kennzahlen im Blick",
+      "text": "Zahlen zu Mitgliedern, Zahlungen und Aktivität auf einen Blick."
+    },
+    "finanzen": {
+      "titel": "Ausgaben und Budget",
+      "text": "Erfasse Ausgaben, plane das Budget und speise die Jahresbilanz."
+    },
+    "nachweise": {
+      "titel": "Nachweise prüfen",
+      "text": "Hier prüfst du eingereichte Nachweise, zum Beispiel für Ermäßigungen."
+    },
+    "kampagnen": {
+      "titel": "Mitgliedschaftskampagnen",
+      "text": "Hier verwaltest du die Kampagnen und ihre Angebote."
+    },
+    "erinnerungen": {
+      "titel": "Zahlungserinnerungen",
+      "text": "Lege fest, wann Mitglieder an offene Beiträge erinnert werden."
+    },
+    "einstellungen": {
+      "titel": "Zentrale Einstellungen",
+      "text": "Hier legt der App Admin Werte fest, zum Beispiel die Dauer der Warenkorb-Reservierung und die Zahlungsfrist bei Veranstaltungen."
+    },
+    "artikel": {
+      "titel": "Beitragsartikel",
+      "text": "Artikel, die bei Beiträgen und Zahlungen ausgewählt werden können."
+    },
+    "benachrichtigungen": {
+      "titel": "E-Mails je Bereich",
+      "text": "Schalte E-Mails je Bereich ein oder aus."
+    },
+    "a_projekte": {
+      "titel": "Projekte betreuen",
+      "text": "Lege Spendenprojekte und Aktionen an und betreue sie."
+    },
+    "a_albums": {
+      "titel": "Fotoalben anlegen",
+      "text": "Lege Alben für die Galerie an."
+    },
+    "startseite_video": {
+      "titel": "Video der Startseite",
+      "text": "Hier tauschst du das Video im Kopfbereich der Startseite aus."
+    },
+    "partner": {
+      "titel": "Partner und Lieferanten",
+      "text": "Lieferanten, Sponsoren und Kooperationspartner an einem Ort: Kontakte, Verträge, Bewertungen und Angebote."
+    },
+    "vereinslogos": {
+      "titel": "Vereinslogos",
+      "text": "Pflege die Logos der Vereine für Tabelle und Spielplan."
+    },
+    "a_regionen": {
+      "titel": "Struktur der Sektoren",
+      "text": "Lege fest, welche Sektoren es gibt und welche Bundesländer und Länder zu welchem Sektor gehören. Jedes gehört genau einem Sektor."
     }
+  },
+  "hinweise_zusatz": {
+    "nur_lesen": "Du hast hier nur Leserechte. Änderungen nimmt eine Rolle mit Schreibrecht vor.",
+    "fan_mitglied": "Als Fan kannst du hier Mitglied werden.",
+    "region_keine": "Dir ist noch kein Sektor zugeordnet. Du kannst trotzdem alle Sektoren ansehen.",
+    "region_meine": "Dein Sektor ist in der Liste markiert.",
+    "region_verantwortlich": "Du bist Verantwortliche oder Verantwortlicher: Deine Karte pflegst du selbst.",
+    "region_freigeben": "Du gibst Veranstaltungen der Sektoren frei."
   },
   "hilfe": {
     "titel": "Rundgang",
@@ -139,6 +263,17 @@
     "hinweise_an": "Die Tipps sind wieder eingeblendet. Sie erscheinen beim nächsten Besuch von Seiten wie Reisen, Fotoalben oder Meine Mitgliedschaft.",
     "hinweise_hier": "Die Tipps sind wieder eingeblendet. Der Tipp zu dieser Seite steht jetzt oben auf der Seite.",
     "hinweise_schon": "Alle Tipps sind bereits eingeblendet. Sie erscheinen auf Seiten wie Reisen, Fotoalben oder Meine Mitgliedschaft.",
-    "karten": "Aufgabenkarten öffnen"
+    "karten": "Aufgabenkarten öffnen",
+    "gruppen_titel": "Rundgang je Bereich",
+    "gruppen": {
+      "g_general": "Allgemein",
+      "g_communaute": "Community",
+      "g_contenu": "Inhalte",
+      "u_mitglieder": "Mitglieder & Zugang",
+      "u_finanzen": "Finanzen & Zahlungen",
+      "u_aktivitaeten": "Aktivitäten & Partner",
+      "u_community": "Community & Inhalte (Verwaltung)",
+      "u_system": "System"
+    }
   }
 }

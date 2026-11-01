@@ -128,7 +128,131 @@
     "rollen": {
       "titel": "Attribuer les droits",
       "text": "Tu définis ici qui peut voir et modifier quelles pages d'administration."
+    },
+    "start": {
+      "titel": "Ta page d'accueil",
+      "text": "Ici, tu vois ce qui se passe dans le club. Le menu à gauche te mène à tous les espaces."
+    },
+    "dashboard": {
+      "titel": "Ta vue d'ensemble",
+      "text": "Ici, tu vois des chiffres et des conseils liés à ton compte, par exemple des événements presque complets, des projets avec échéance et des appels à l'aide."
+    },
+    "mitglieder": {
+      "titel": "Membres",
+      "text": "Ce que tu vois et peux modifier ici dépend de ton rôle. Sans rôle d'administration, tu vois ta propre fiche."
+    },
+    "veranstaltungen": {
+      "titel": "Événements et inscription",
+      "text": "Ici, tu vois les événements publiés et tu t'inscris. Tes billets se trouvent sous « Mes billets »."
+    },
+    "kalender": {
+      "titel": "Les dates au même endroit",
+      "text": "Le calendrier montre les dates du club, du bureau et tes propres rendez-vous. Avec les vues, tu choisis ce que tu veux voir."
+    },
+    "projekte": {
+      "titel": "Projets et actions",
+      "text": "Suis les projets du club et soutiens-les. Les projets avec échéance apparaissent aussi dans ta vue d'ensemble."
+    },
+    "boutique": {
+      "titel": "La boutique du club",
+      "text": "Articles officiels du club, cartes et bons d'achat. Certains articles ne sont commandables que par les membres actifs. Tes commandes et tes bons se trouvent sur la même page."
+    },
+    "fil": {
+      "titel": "Actualités",
+      "text": "Le bureau et l'administrateur de l'application partagent ici les nouvelles du club. Tu peux lire, réagir et commenter."
+    },
+    "forum": {
+      "titel": "Sujets et échanges",
+      "text": "Dans le forum, tu échanges avec d'autres membres dans des sujets classés par catégorie. Le bureau et l'administrateur de l'application modèrent."
+    },
+    "chats": {
+      "titel": "Toutes les conversations au même endroit",
+      "text": "Discussions avec une personne, groupes et discussions de tes voyages. Tu peux rejoindre les groupes publics, les groupes privés se font sur invitation."
+    },
+    "live": {
+      "titel": "Fan-Club",
+      "text": "Le Fan-Club comporte cinq onglets : Journée, Pronostics, Classement, Calendrier et Statistiques. Les données viennent d'une interface (API), le bureau peut les corriger."
+    },
+    "quiz": {
+      "titel": "Quiz et sondages",
+      "text": "Tu trouves ici les questions de quiz et les sondages de la communauté. Le bureau crée les nouvelles questions."
+    },
+    "abstimmungen": {
+      "titel": "Votes en direct et élections",
+      "text": "Le bureau crée des sessions et les personnes ayant le droit de vote votent. Tu vois le résultat officiel dès que la session est clôturée."
+    },
+    "a_quiz": {
+      "titel": "Gérer les questions de quiz",
+      "text": "Crée des questions pour la communauté et modifie-les."
+    },
+    "a_boutique": {
+      "titel": "Gérer le catalogue",
+      "text": "Ici, tu gères le catalogue de la boutique du club. Les membres ne voient que les articles publiés."
+    },
+    "statistik": {
+      "titel": "Les chiffres en un coup d'œil",
+      "text": "Chiffres sur les membres, les paiements et l'activité en un coup d'œil."
+    },
+    "finanzen": {
+      "titel": "Dépenses et budget",
+      "text": "Saisis les dépenses, planifie le budget et alimente le bilan annuel."
+    },
+    "nachweise": {
+      "titel": "Vérifier les justificatifs",
+      "text": "Ici, tu vérifies les justificatifs envoyés, par exemple pour les réductions."
+    },
+    "kampagnen": {
+      "titel": "Campagnes d'adhésion",
+      "text": "Ici, tu gères les campagnes et leurs offres."
+    },
+    "erinnerungen": {
+      "titel": "Relances de paiement",
+      "text": "Fixe quand les membres sont relancés pour des cotisations ouvertes."
+    },
+    "einstellungen": {
+      "titel": "Réglages centraux",
+      "text": "Ici, l'administrateur de l'application fixe des valeurs, par exemple la durée de réservation du panier et le délai de paiement des événements."
+    },
+    "artikel": {
+      "titel": "Articles de cotisation",
+      "text": "Articles qui peuvent être choisis pour les cotisations et les paiements."
+    },
+    "benachrichtigungen": {
+      "titel": "E-mails par domaine",
+      "text": "Active ou désactive les e-mails par domaine."
+    },
+    "a_projekte": {
+      "titel": "Suivre les projets",
+      "text": "Crée des projets de dons et des actions et suis-les."
+    },
+    "a_albums": {
+      "titel": "Créer des albums photo",
+      "text": "Crée des albums pour la galerie."
+    },
+    "startseite_video": {
+      "titel": "Vidéo de la page d'accueil",
+      "text": "Ici, tu remplaces la vidéo de l'en-tête de la page d'accueil."
+    },
+    "partner": {
+      "titel": "Partenaires et fournisseurs",
+      "text": "Fournisseurs, sponsors et partenaires de coopération au même endroit : contacts, contrats, évaluations et offres."
+    },
+    "vereinslogos": {
+      "titel": "Logos des clubs",
+      "text": "Gère les logos des clubs pour le classement et le calendrier."
+    },
+    "a_regionen": {
+      "titel": "Structure des secteurs",
+      "text": "Fixe quels secteurs existent et quels Länder et pays appartiennent à quel secteur. Chacun appartient à un seul secteur."
     }
+  },
+  "hinweise_zusatz": {
+    "nur_lesen": "Ici, tu n'as qu'un droit de lecture. Les modifications sont faites par un rôle avec droit d'écriture.",
+    "fan_mitglied": "En tant que fan, tu peux devenir membre ici.",
+    "region_keine": "Aucun secteur ne t'est encore attribué. Tu peux quand même voir tous les secteurs.",
+    "region_meine": "Ton secteur est marqué dans la liste.",
+    "region_verantwortlich": "Tu es responsable : tu gères ta carte toi-même.",
+    "region_freigeben": "Tu valides les événements des secteurs."
   },
   "hilfe": {
     "titel": "Visite guidée",
@@ -139,6 +263,17 @@
     "hinweise_an": "Les conseils sont de nouveau affichés. Ils apparaîtront à la prochaine visite de pages comme Voyages, Albums photo ou Mon adhésion.",
     "hinweise_hier": "Les conseils sont de nouveau affichés. Le conseil de cette page apparaît maintenant en haut de la page.",
     "hinweise_schon": "Tous les conseils sont déjà affichés. Ils apparaissent sur des pages comme Voyages, Albums photo ou Mon adhésion.",
-    "karten": "Ouvrir les fiches pratiques"
+    "karten": "Ouvrir les fiches pratiques",
+    "gruppen_titel": "Visite par domaine",
+    "gruppen": {
+      "g_general": "Général",
+      "g_communaute": "Communauté",
+      "g_contenu": "Contenus",
+      "u_mitglieder": "Membres & accès",
+      "u_finanzen": "Finances & paiements",
+      "u_aktivitaeten": "Activités & partenaires",
+      "u_community": "Communauté & contenus (administration)",
+      "u_system": "Système"
+    }
   }
 }

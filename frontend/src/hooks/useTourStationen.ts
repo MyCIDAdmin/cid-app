@@ -8,7 +8,10 @@ import { useSidebarNav } from "../components/layout/Sidebar";
 import { useAuthStore } from "../store/authStore";
 import {
   appStationen,
+  gruppenStationen,
   verwaltungStationen,
+  type GruppenEintrag,
+  type GruppenRundgang,
   type TourArt,
   type TourStation,
   type VerwaltungUntergruppe,
@@ -18,6 +21,8 @@ import { useMesAcces } from "./useRbac";
 export interface TourStationen {
   app: TourStation[];
   verwaltung: TourStation[];
+  /** Kurze Rundgänge je Menügruppe (nur Gruppen, in denen das Konto Seiten sieht). */
+  gruppen: Partial<Record<GruppenRundgang, TourStation[]>>;
   /** Rundgänge, die das Konto überhaupt hat (Verwaltung nur mit sichtbaren Verwaltungs-Einträgen). */
   verfuegbar: TourArt[];
   /** Sichtbarkeit steht fest (Zugriffsrechte der Verwaltungsseiten sind geladen). */
@@ -48,8 +53,17 @@ export function useTourStationen(): TourStationen {
       st.gruppe || !gruppeVon.has(st.ziel) ? st : { ...st, gruppe: gruppeVon.get(st.ziel) };
     const app = appStationen(istFan, sichtbar).map(mitGruppe);
     const verwaltung = istFan ? [] : verwaltungStationen(untergruppen);
+    // Reihenfolge wie in der Seitenleiste (Verwaltung nach Untergruppen sortiert).
+    const eintraege: GruppenEintrag[] = groups.flatMap((g) =>
+      g.items.map((i) => ({
+        to: i.to,
+        group: g.key,
+        subgruppe: g.subgroups.find((sub) => sub.items.some((x) => x.to === i.to))?.key,
+      })),
+    );
+    const gruppen = gruppenStationen(eintraege);
     const verfuegbar: TourArt[] = verwaltung.length > 0 ? ["app", "verwaltung"] : ["app"];
-    return { app, verwaltung, verfuegbar, bereit: !(hatVerwaltungsrolle && isLoading) };
+    return { app, verwaltung, gruppen, verfuegbar, bereit: !(hatVerwaltungsrolle && isLoading) };
     // visibleItems/groups hängen an den Schlüsseln (stabile Zeichenketten statt neuer Arrays)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sichtbarKey, verwaltungKey, istFan, hatVerwaltungsrolle, isLoading]);

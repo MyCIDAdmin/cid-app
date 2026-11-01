@@ -5,13 +5,13 @@
  */
 import { create } from "zustand";
 
-import type { TourArt } from "../utils/tour";
+import type { RundgangArt } from "../utils/tour";
 
 interface TourState {
-  lauf: { art: TourArt; schritt: number } | null;
+  lauf: { art: RundgangArt; schritt: number } | null;
   /** Willkommensfenster in dieser Sitzung weggeklickt (verhindert Flackern bis das Speichern ankommt). */
   willkommenVerborgen: boolean;
-  starten: (art: TourArt) => void;
+  starten: (art: RundgangArt) => void;
   gehezu: (schritt: number) => void;
   beenden: () => void;
   verbergeWillkommen: () => void;

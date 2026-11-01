@@ -14,7 +14,13 @@ vi.mock("../../api/auth", async (importOriginal) => ({
   speicherePraeferenzen: hoch.speichern,
 }));
 vi.mock("../../hooks/useTourStationen", () => ({
-  useTourStationen: () => ({ app: [], verwaltung: [], verfuegbar: ["app"], bereit: true }),
+  useTourStationen: () => ({
+    app: [],
+    verwaltung: [],
+    gruppen: {},
+    verfuegbar: ["app"],
+    bereit: true,
+  }),
 }));
 
 function melde(tour?: TourPraeferenz) {
@@ -49,7 +55,19 @@ describe("HinweisLeiste", () => {
 
   it("bleibt auf Seiten ohne Hinweis weg", () => {
     melde();
-    rendern("/dashboard");
+    rendern("/boutique/panier");
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+  });
+
+  it("zeigt auch auf Übersicht, Boutique und Verwaltungsseiten einen Tipp", () => {
+    melde();
+    rendern("/boutique");
+    expect(screen.getByText("hinweise.boutique.titel")).toBeInTheDocument();
+  });
+
+  it("Chats haben keine Leiste (Seite mit fester Höhe)", () => {
+    melde();
+    rendern("/chats");
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
   });
 
