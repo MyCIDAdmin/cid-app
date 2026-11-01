@@ -18,6 +18,8 @@ UI_PRAEFERENZEN_SCHEMA = {
     "kalender_wochenmail": lambda v: isinstance(v, bool),
     # Geburtstagsgruß per E-Mail (Release 32) : an, solange nicht ausdrücklich abgeschaltet.
     "geburtstagsgruss": lambda v: isinstance(v, bool),
+    # „Neu dabei“ auf der Startseite (Vorschlag B) : nur nach ausdrücklicher Zustimmung, sonst aus.
+    "neu_dabei_zeigen": lambda v: isinstance(v, bool),
     "kalender_ansichten": lambda v: (
         isinstance(v, list)
         and 0 < len(v) <= 3
