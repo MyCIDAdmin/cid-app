@@ -11,6 +11,41 @@ from .models import Role
 User = get_user_model()
 
 
+TOUR_STATUS = ("offen", "abgeschlossen", "uebersprungen", "nie_mehr")
+TOUR_FELDER = {"status", "verwaltung_status", "spaeter_bis", "hinweise", "hinweise_aus", "version"}
+
+
+def _tour_gueltig(wert):
+    """Merker der Erste-Schritte-Tour (Willkommensfenster, Rundgänge, Seitenhinweise) : nur
+    technische Zustände, keine Inhalte — strikt begrenzt, damit das Feld nicht missbraucht wird."""
+    if not isinstance(wert, dict) or set(wert) - TOUR_FELDER:
+        return False
+    for feld in ("status", "verwaltung_status"):
+        if feld in wert and wert[feld] not in TOUR_STATUS:
+            return False
+    if "spaeter_bis" in wert:
+        datum = wert["spaeter_bis"]
+        if not (isinstance(datum, str) and len(datum) == 10 and datum[4] == "-" == datum[7]):
+            return False
+    if "hinweise" in wert:
+        hinweise = wert["hinweise"]
+        if not (
+            isinstance(hinweise, list)
+            and len(hinweise) <= 40
+            and all(isinstance(h, str) and 0 < len(h) <= 40 for h in hinweise)
+        ):
+            return False
+    if "hinweise_aus" in wert and not isinstance(wert["hinweise_aus"], bool):
+        return False
+    if "version" in wert and not (
+        isinstance(wert["version"], int)
+        and not isinstance(wert["version"], bool)
+        and 0 < wert["version"] < 1000
+    ):
+        return False
+    return True
+
+
 # Erlaubte Anzeige-Präferenzen (User.ui_praeferenzen) mit Wert-Validator.
 UI_PRAEFERENZEN_SCHEMA = {
     "theme": lambda v: v in ("light", "dark"),
@@ -20,6 +55,8 @@ UI_PRAEFERENZEN_SCHEMA = {
     "geburtstagsgruss": lambda v: isinstance(v, bool),
     # „Neu dabei“ auf der Startseite (Vorschlag B) : nur nach ausdrücklicher Zustimmung, sonst aus.
     "neu_dabei_zeigen": lambda v: isinstance(v, bool),
+    # Erste Schritte (Willkommensfenster, Rundgänge, Seitenhinweise) : siehe _tour_gueltig.
+    "tour": _tour_gueltig,
     "kalender_ansichten": lambda v: (
         isinstance(v, list)
         and 0 < len(v) <= 3
