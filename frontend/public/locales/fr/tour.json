@@ -136,6 +136,9 @@
     "app": "Visite de l'application",
     "verwaltung": "Visite de l'administration",
     "hinweise": "Réafficher les conseils",
+    "hinweise_an": "Les conseils sont de nouveau affichés. Ils apparaîtront à la prochaine visite de pages comme Voyages, Albums photo ou Mon adhésion.",
+    "hinweise_hier": "Les conseils sont de nouveau affichés. Le conseil de cette page apparaît maintenant en haut de la page.",
+    "hinweise_schon": "Tous les conseils sont déjà affichés. Ils apparaissent sur des pages comme Voyages, Albums photo ou Mon adhésion.",
     "karten": "Ouvrir les fiches pratiques"
   }
 }
