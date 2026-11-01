@@ -1197,6 +1197,21 @@ def test_tour_merker_wird_gespeichert_und_gemerged(api_client, membre_actif):
     assert membre_actif.ui_praeferenzen["theme"] == "dark"
 
 
+def test_tour_merker_erlaubt_tipps_fuer_alle_seiten(api_client, membre_actif):
+    """Seit dem Ausbau auf alle Seiten gibt es über 40 Tipps : bis 100 Schlüssel sind erlaubt."""
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+    tour = {"hinweise": [f"seite_{i}" for i in range(60)], "version": 1}
+
+    resp = api_client.patch(
+        reverse("accounts:me"), {"ui_praeferenzen": {"tour": tour}}, format="json"
+    )
+
+    assert resp.status_code == 200, resp.data
+    membre_actif.refresh_from_db()
+    assert len(membre_actif.ui_praeferenzen["tour"]["hinweise"]) == 60
+
+
 @pytest.mark.parametrize(
     "tour",
     [
@@ -1207,7 +1222,7 @@ def test_tour_merker_wird_gespeichert_und_gemerged(api_client, membre_actif):
         {"hinweise": "reisen"},
         {"hinweise": [""]},
         {"hinweise": ["x" * 41]},
-        {"hinweise": ["a"] * 41},
+        {"hinweise": ["a"] * 101},
         {"hinweise_aus": "ja"},
         {"version": True},
         {"version": 0},

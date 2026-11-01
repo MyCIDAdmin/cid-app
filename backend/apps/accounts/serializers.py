@@ -31,7 +31,7 @@ def _tour_gueltig(wert):
         hinweise = wert["hinweise"]
         if not (
             isinstance(hinweise, list)
-            and len(hinweise) <= 40
+            and len(hinweise) <= 100
             and all(isinstance(h, str) and 0 < len(h) <= 40 for h in hinweise)
         ):
             return False
