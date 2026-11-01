@@ -135,7 +135,7 @@ def test_listen_und_detail_liefern_reaktionen(api_client):
 # --- Datenübernahme der alten Herzen (Migration 0025) ---
 
 
-def test_migration_uebernimmt_herzen_und_letzte_aktivitaet(transactional_db):
+def test_migration_uebernimmt_herzen_und_letzte_aktivitaet():
     from importlib import import_module
 
     from django.apps import apps as django_apps
