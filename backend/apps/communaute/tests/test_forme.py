@@ -88,3 +88,55 @@ def test_est_ligue_1_erkennt_namensvarianten():
     assert not est_ligue_1("Coupe de Tunisie")
     assert not est_ligue_1("CAF Champions League")
     assert not est_ligue_1("")
+
+
+# --- Form aller Vereine aus den Ligaergebnissen (2026-11-01) ---
+
+
+def _liga(tage, heim, gast, tore_heim, tore_gast, competition="Ligue 1"):
+    from apps.communaute.models import LigaErgebnis
+
+    return LigaErgebnis.objects.create(
+        evenement_externe_id=f"liga-{tage}-{heim}-{gast}",
+        competition=competition,
+        equipe_domicile=heim,
+        equipe_exterieur=gast,
+        date_heure=datetime.datetime(2026, 7, 10, tzinfo=datetime.timezone.utc)
+        + datetime.timedelta(days=tage),
+        score_domicile=tore_heim,
+        score_exterieur=tore_gast,
+    )
+
+
+def test_form_anderer_vereine_aus_ligaergebnissen():
+    eintrag = ClassementLigueFactory(
+        saison="2026-2027", equipe="Stade Tunisien", joues=5, forme_recente=""
+    )
+    ergebnisse = [(1, 0), (0, 0), (0, 2), (3, 1), (1, 1)]
+    for i, (heim, gast) in enumerate(ergebnisse):
+        _liga(i, "Stade Tunisien", f"Gegner {i}", heim, gast)
+    assert ClassementLigueSerializer(eintrag).data["forme_recente"] == "VNDVN"
+
+
+def test_form_zaehlt_spiel_in_beiden_quellen_nur_einmal():
+    eintrag = ClassementLigueFactory(
+        saison="2026-2027", equipe="Club Africain", joues=1, forme_recente=""
+    )
+    kalender = _spiel(200, "Club Africain", "ES Tunis", 2, 0)
+    _liga(
+        (kalender.date_heure - datetime.datetime(2026, 7, 10, tzinfo=datetime.timezone.utc)).days,
+        "Club Africain",
+        "ES Tunis",
+        2,
+        0,
+    )
+    assert ClassementLigueSerializer(eintrag).data["forme_recente"] == "V"
+
+
+def test_form_ignoriert_ligaergebnisse_anderer_wettbewerbe():
+    eintrag = ClassementLigueFactory(
+        saison="2026-2027", equipe="Stade Tunisien", joues=2, forme_recente=""
+    )
+    _liga(0, "Stade Tunisien", "A", 1, 0)
+    _liga(1, "Stade Tunisien", "B", 0, 4, competition="Coupe de Tunisie")
+    assert ClassementLigueSerializer(eintrag).data["forme_recente"] == ""

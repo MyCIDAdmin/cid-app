@@ -78,6 +78,7 @@ from django.utils import timezone as django_timezone
 from .models import (
     ClassementLigue,
     EquipeInfo,
+    LigaErgebnis,
     RencontreCalendrier,
     StatistiqueJoueur,
     StatutRencontre,
@@ -593,6 +594,99 @@ def synchroniser_calendrier() -> int:
     return _synchroniser_calendrier_depuis(fixtures)
 
 
+LIGA_ERGEBNIS_SEITEN = 4  # Obergrenze Seiten je Sync (4 x 50 Ergebnisse, 4 Anfragen von 1000/Tag)
+_NICHT_GESPIELT = {"SCHEDULED", "POSTPONED", "CANCELLED", "CANCELED"}
+
+
+def _ergebnisseiten_der_liga():
+    """Ergebnisse der ganzen Liga (`GET /leagues/{id}/results`), neueste zuletzt gelesen.
+
+    ⚠️ NICHT AN ECHTEN DATEN GEPRÜFT: Sortierung und Saison-Filter des Endpunkts sind nicht
+    dokumentiert. Deshalb liest die Funktion die erste Seite, erkennt an den Datumsangaben, ob
+    aufsteigend oder absteigend sortiert wird, und holt dann höchstens `LIGA_ERGEBNIS_SEITEN`
+    Seiten vom NEUEN Ende her. Spiele außerhalb der laufenden Saison filtert der Aufrufer."""
+    pfad = f"/leagues/{settings.GOAL_API_LEAGUE_ID}/results"
+    saison = {"season": _annee_saison_debut()}
+    erste = _get(pfad, {**saison, "limit": LIMITE_PAGINATION, "offset": 0})
+    if erste is None:
+        return
+    liste, pagination = _extraire_liste(erste)
+    if not liste:
+        return
+    yield from liste
+    gesamt = _entier(pagination.get("total"), len(liste))
+    if not pagination.get("hasMore"):
+        return
+
+    daten = [d for d in (_parser_kickoff(x) for x in liste if isinstance(x, dict)) if d]
+    aufsteigend = len(daten) > 1 and daten[0] < daten[-1]
+    if aufsteigend:
+        # Neueste Spiele stehen hinten: die letzten Seiten holen (ohne die schon gelesene erste).
+        start = max(LIMITE_PAGINATION, gesamt - LIGA_ERGEBNIS_SEITEN * LIMITE_PAGINATION)
+        offsets = range(start, gesamt, LIMITE_PAGINATION)
+    else:
+        offsets = range(
+            LIMITE_PAGINATION, LIMITE_PAGINATION * LIGA_ERGEBNIS_SEITEN, LIMITE_PAGINATION
+        )
+    for offset in offsets:
+        korpus = _get(pfad, {**saison, "limit": LIMITE_PAGINATION, "offset": offset})
+        if korpus is None:
+            return
+        seite, seitenangaben = _extraire_liste(korpus)
+        if not seite:
+            return
+        yield from seite
+        if not seitenangaben.get("hasMore"):
+            return
+
+
+def _synchroniser_liga_ergebnisse_depuis(ergebnisse) -> int:
+    saison = _saison_actuelle()
+    beginn_jahr = int(saison.split("-")[0])
+    beginn = datetime(beginn_jahr, 7, 1, tzinfo=dt_timezone.utc)
+    ende = datetime(beginn_jahr + 1, 7, 1, tzinfo=dt_timezone.utc)
+
+    synchronisees = 0
+    for eintrag in ergebnisse:
+        try:
+            if str(eintrag.get("matchStatus") or "").upper() in _NICHT_GESPIELT:
+                continue
+            tore_heim = _score(eintrag.get("homeTeamScore"))
+            tore_gast = _score(eintrag.get("awayTeamScore"))
+            if tore_heim is None or tore_gast is None:
+                continue
+            datum = _parser_kickoff(eintrag)
+            if datum is None or not (beginn <= datum < ende):
+                continue
+            competition_brute = eintrag.get("league")
+            if isinstance(competition_brute, dict):
+                competition = competition_brute.get("name") or ""
+            else:
+                competition = eintrag.get("competition") or ""
+            LigaErgebnis.objects.update_or_create(
+                evenement_externe_id=str(eintrag["id"]),
+                defaults={
+                    "competition": competition or "Ligue 1",
+                    "equipe_domicile": _nom_equipe(eintrag, "homeTeam", "homeTeamName"),
+                    "equipe_exterieur": _nom_equipe(eintrag, "awayTeam", "awayTeamName"),
+                    "date_heure": datum,
+                    "score_domicile": tore_heim,
+                    "score_exterieur": tore_gast,
+                },
+            )
+            synchronisees += 1
+        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+            logger.warning("Liga-Ergebnis GOAL API ignoriert (unerwartetes Format) : %s", exc)
+    return synchronisees
+
+
+def synchroniser_liga_ergebnisse() -> int:
+    """Beendete Ligaspiele ALLER Vereine für die Spalte "Form" (siehe `LigaErgebnis`)."""
+    if not _api_key_configuree():
+        return 0
+    return _synchroniser_liga_ergebnisse_depuis(_ergebnisseiten_der_liga())
+
+
 def synchroniser_statistiques_joueurs() -> int:
     """Effectif complet de l'équipe suivie (`GOAL_API_TEAM_ID`) avec statistiques
     individuelles (buts/passes décisives/cartons) — alimente les listes Torschützen/
@@ -759,6 +853,7 @@ def synchroniser_donnees_football() -> dict:
     return {
         "classement": synchroniser_classement(),
         "calendrier": synchroniser_calendrier(),
+        "liga_ergebnisse": synchroniser_liga_ergebnisse(),
         "statistiques_joueurs": synchroniser_statistiques_joueurs(),
         "equipe_info": synchroniser_equipe_info(),
         "tippspiel_points_maj": recalculer_points_tippspiel(),

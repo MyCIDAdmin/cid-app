@@ -1174,6 +1174,38 @@ class RencontreCalendrier(models.Model):
         return self.statut == StatutRencontre.PROGRAMMEE and self.date_heure >= timezone.now()
 
 
+class LigaErgebnis(models.Model):
+    """Ein beendetes Spiel der Liga zwischen BELIEBIGEN Vereinen (2026-11-01), synchronisiert aus
+    GOAL API (`GET /leagues/{id}/results`, siehe services.synchroniser_liga_ergebnisse).
+
+    Nur Grundlage für die Spalte "Form" der Tabelle und den Formvergleich: der Kalender
+    (`RencontreCalendrier`) enthält ausschließlich Spiele von Club Africain, die Form der übrigen
+    Vereine ließ sich daraus nicht ableiten. Bewusst eine eigene Tabelle, damit Spielplan,
+    Reisen und Tippspiel unberührt bleiben. `evenement_externe_id` = GOAL-API-Id (Upsert-Schlüssel).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    evenement_externe_id = models.CharField(max_length=50, unique=True)
+    competition = models.CharField(max_length=200, blank=True)
+    equipe_domicile = models.CharField(max_length=200)
+    equipe_exterieur = models.CharField(max_length=200)
+    date_heure = models.DateTimeField()
+    score_domicile = models.PositiveSmallIntegerField()
+    score_exterieur = models.PositiveSmallIntegerField()
+    maj_le = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "communaute_liga_ergebnisse"
+        verbose_name = _("Liga-Ergebnis")
+        verbose_name_plural = _("Liga-Ergebnisse")
+        ordering = ["date_heure"]
+        indexes = [models.Index(fields=["date_heure"])]
+
+    def __str__(self):
+        spiel = f"{self.equipe_domicile} {self.score_domicile}:{self.score_exterieur}"
+        return f"{spiel} {self.equipe_exterieur}"
+
+
 class StatistiqueJoueur(models.Model):
     """Statistiques individuelles d'un joueur (saison en cours), synchronisées depuis GOAL
     API (`GET /v1/teams/{id}/players`, voir services.py) — alimente les listes Torschützen
