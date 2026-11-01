@@ -34,6 +34,8 @@ import type {
   PhotoUploadPayload,
   Publication,
   PublicationPayload,
+  Reaktion,
+  ReaktionsZiel,
   QuestionQuiz,
   QuestionQuizPayload,
   Quiz,
@@ -59,6 +61,9 @@ import type {
 export interface PublicationsFiltres {
   hashtag?: string;
   auteur?: string;
+  /** Filter-Chips „Wichtig“ / „Fotos“. */
+  wichtig?: boolean;
+  mit_bild?: boolean;
   cursor?: string;
 }
 
@@ -135,11 +140,31 @@ export async function masquerCommentaire(id: string): Promise<Commentaire> {
   return data;
 }
 
+/** Emoji-Reaktion setzen oder entfernen (Toggle) – gilt für Neuigkeit, Kommentar, Forumsthema
+ * und Forumsantwort ; die Antwort liefert die neuen Zähler. */
+export async function reagieren(
+  ziel: ReaktionsZiel,
+  id: string,
+  emoji: string,
+): Promise<Reaktion[]> {
+  const { data } = await apiClient.post<{ reaktionen: Reaktion[] }>(
+    `/communaute/${ziel}/${id}/reagieren/`,
+    { emoji },
+  );
+  return data.reaktionen;
+}
+
 // --- Forum ---
+
+export type SujetSortierung = "neu" | "aktiv" | "beliebt";
 
 export interface SujetsFiltres {
   categorie?: CategorieForum;
   auteur?: string;
+  /** Suche in Titel und Text. */
+  suche?: string;
+  sortierung?: SujetSortierung;
+  unbeantwortet?: boolean;
   cursor?: string;
 }
 
@@ -184,11 +209,25 @@ export async function repondreAuSujet(
   contenu: string,
   // Voir commenterPublication ci-dessus — même mécanisme.
   mentions?: string[],
+  // Zitat-Antwort : ID einer früheren Antwort desselben Themas.
+  repondA?: string,
 ): Promise<ReponseForum> {
   const { data } = await apiClient.post<ReponseForum>("/communaute/reponses-forum/", {
     sujet: sujetId,
     contenu,
     mentions,
+    repond_a: repondA,
+  });
+  return data;
+}
+
+/** Eine Antwort als „beste Antwort“ markieren (null = Markierung lösen). */
+export async function waehleBesteAntwort(
+  sujetId: string,
+  reponseId: string | null,
+): Promise<Sujet> {
+  const { data } = await apiClient.post<Sujet>(`/communaute/sujets/${sujetId}/beste-antwort/`, {
+    reponse: reponseId,
   });
   return data;
 }

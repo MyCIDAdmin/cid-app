@@ -15,6 +15,15 @@ export interface Auteur {
   photo: string | null;
 }
 
+/** Emoji-Reaktion eines Inhalts : nur Zähler und „ich“, keine Namen (wie im Chat). */
+export interface Reaktion {
+  emoji: string;
+  anzahl: number;
+  ich: boolean;
+}
+
+export type ReaktionsZiel = "publications" | "commentaires" | "sujets" | "reponses-forum";
+
 export interface Commentaire {
   id: string;
   publication: string;
@@ -26,6 +35,7 @@ export interface Commentaire {
   /** Un seul niveau (voir backend) — vide sur une réponse elle-même. */
   reponses: Commentaire[];
   est_auteur: boolean;
+  reaktionen: Reaktion[];
 }
 
 export interface Publication {
@@ -47,6 +57,8 @@ export interface Publication {
   jai_partage: boolean;
   est_auteur: boolean;
   commentaires: Commentaire[];
+  /** Emoji-Reaktionen (ersetzen das Herz) ; alte Herzen sind als ❤️ übernommen. */
+  reaktionen: Reaktion[];
 }
 
 export interface PublicationPayload {
@@ -65,6 +77,11 @@ export interface ReponseForum {
   est_masquee: boolean;
   created_at: string;
   est_auteur: boolean;
+  /** Zitat-Antwort : ID der zitierten Antwort und ein kurzer Auszug für den Zitatkasten. */
+  repond_a: string | null;
+  zitat: { id: string; auteur: { prenom: string; nom: string }; auszug: string } | null;
+  ist_beste: boolean;
+  reaktionen: Reaktion[];
 }
 
 export interface Sujet {
@@ -80,9 +97,16 @@ export interface Sujet {
   created_at: string;
   updated_at: string;
   nombre_reponses: number;
+  nombre_reaktionen: number;
   /** Uniquement rempli sur le détail (retrieve) — vide dans la liste, voir backend. */
   reponses: ReponseForum[];
   est_auteur: boolean;
+  reaktionen: Reaktion[];
+  /** Zeitpunkt der letzten Antwort (sonst Erstellung) ; Vorname der letzten Antwort (Liste). */
+  letzte_aktivitaet: string;
+  letzte_antwort_von: string | null;
+  /** ID der als „beste Antwort“ markierten Antwort. */
+  beste_antwort: string | null;
 }
 
 export interface SujetPayload {

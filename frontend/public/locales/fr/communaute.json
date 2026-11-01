@@ -29,7 +29,23 @@
     "envoyer": "Envoyer",
     "erreur_commentaire": "L'envoi du commentaire a échoué.",
     "important_badge": "Important",
-    "marquer_important": "Marquer comme important (notifier les membres)"
+    "marquer_important": "Marquer comme important (notifier les membres)",
+    "mehr": "Plus",
+    "nombre_commentaires_one": "{{count}} commentaire",
+    "nombre_commentaires_other": "{{count}} commentaires",
+    "alle_kommentare_one": "Voir le commentaire",
+    "alle_kommentare_other": "Voir les {{count}} commentaires",
+    "partager": "Partager",
+    "abbrechen": "Annuler",
+    "composer_zeile": "Quoi de neuf ?",
+    "filter_label": "Filtre",
+    "filter_alle": "Tout",
+    "filter_wichtig": "Important",
+    "filter_fotos": "Photos",
+    "aucune_publication_filtre": "Aucune publication pour ce filtre.",
+    "neu_seit_besuch_one": "Nouveau depuis ta visite · {{count}} publication",
+    "neu_seit_besuch_other": "Nouveau depuis ta visite · {{count}} publications",
+    "frueher": "Plus tôt"
   },
   "forum": {
     "titre": "Forum",
@@ -60,7 +76,28 @@
     "placeholder_reponse": "Écrire une réponse…",
     "repondre": "Répondre",
     "erreur_reponse": "L'envoi de la réponse a échoué.",
-    "sujet_verrouille_message": "Ce sujet est verrouillé — les nouvelles réponses ne sont plus acceptées."
+    "sujet_verrouille_message": "Ce sujet est verrouillé — les nouvelles réponses ne sont plus acceptées.",
+    "suche_placeholder": "Rechercher dans les sujets…",
+    "sortierung_label": "Tri",
+    "sort_aktiv": "Les plus actifs",
+    "sort_neu": "Les plus récents",
+    "sort_beliebt": "Les plus populaires",
+    "sort_unbeantwortet": "Sans réponse",
+    "neu_marke": "Nouveau pour toi",
+    "letzte_aktivitaet": "Dernière activité : {{wer}} · {{wann}}",
+    "letzte_aktivitaet_ohne": "Actif {{wann}}",
+    "nombre_reaktionen_one": "{{count}} réaction",
+    "nombre_reaktionen_other": "{{count}} réactions",
+    "geloest": "Résolu",
+    "beste_antwort_badge": "Meilleure réponse",
+    "beste_antwort_waehlen": "Meilleure réponse",
+    "beste_antwort_loesen": "Retirer la marque",
+    "zitieren": "Répondre",
+    "antwort_auf": "En réponse à {{name}}",
+    "zitat_abbrechen": "Retirer la citation",
+    "aucun_resultat": "Aucun sujet trouvé.",
+    "ersteller": "Auteur",
+    "antwort_aria": "Écrire une réponse"
   },
   "emoji": {
     "bouton_aria": "Insérer un emoji"
@@ -562,5 +599,11 @@
     "pause_24h": "24 heures",
     "pause_starten": "Mettre en pause",
     "pause_beenden": "Rouvrir l'écriture"
+  },
+  "reaktionen": {
+    "hinzufuegen": "Ajouter une réaction",
+    "waehlen": "Choisir une réaction",
+    "mehr": "Plus d'emojis",
+    "schliessen": "Fermer"
   }
 }

@@ -64,4 +64,29 @@ describe("RichTextEditor", () => {
       expect(screen.getByText(/Bravo/)).toBeInTheDocument();
     });
   });
+
+  // Fehler vom 01.11.2026 : der Platzhalter zeigte den Rohschlüssel „fil.placeholder_publication“,
+  // weil die Übersetzung erst NACH dem Erzeugen des Editors geladen war. Er muss sich nachführen.
+  it("führt den Platzhalter nach, wenn er sich nach dem Start ändert", async () => {
+    const { rerender, container } = render(
+      <RichTextEditor value="" onChange={vi.fn()} placeholder="fil.placeholder_publication" />,
+    );
+    await waitFor(() => {
+      expect(container.querySelector("p[data-placeholder]")).toHaveAttribute(
+        "data-placeholder",
+        "fil.placeholder_publication",
+      );
+    });
+
+    rerender(
+      <RichTextEditor value="" onChange={vi.fn()} placeholder="Teilen Sie eine Neuigkeit…" />,
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector("p[data-placeholder]")).toHaveAttribute(
+        "data-placeholder",
+        "Teilen Sie eine Neuigkeit…",
+      );
+    });
+  });
 });

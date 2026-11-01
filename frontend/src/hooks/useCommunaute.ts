@@ -16,6 +16,7 @@ import type {
   QuestionQuizPayload,
   QuizMiseAJourPayload,
   QuizPayload,
+  ReaktionsZiel,
   RencontreCalendrierPayload,
   SujetPayload,
   TippspielPayload,
@@ -74,6 +75,21 @@ function invalidatePublications(queryClient: ReturnType<typeof useQueryClient>) 
 
 function invalidateSujets(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "sujets"] });
+}
+
+/** Emoji-Reaktion auf Neuigkeit, Kommentar, Forumsthema oder -antwort. Danach werden die
+ * betroffene Liste bzw. das Thema neu geladen (die Antwort enthält schon den neuen Stand, aber
+ * eine einzige Quelle der Wahrheit hält die Chips überall gleich). */
+export function useReagieren(ziel: ReaktionsZiel) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, emoji }: { id: string; emoji: string }) =>
+      communauteApi.reagieren(ziel, id, emoji),
+    onSuccess: () => {
+      if (ziel === "publications" || ziel === "commentaires") invalidatePublications(queryClient);
+      else invalidateSujets(queryClient);
+    },
+  });
 }
 
 // --- Fil d'actualité ---
@@ -234,11 +250,23 @@ export function useRepondreAuSujet() {
       sujetId,
       contenu,
       mentions,
+      repondA,
     }: {
       sujetId: string;
       contenu: string;
       mentions?: string[];
-    }) => communauteApi.repondreAuSujet(sujetId, contenu, mentions),
+      repondA?: string;
+    }) => communauteApi.repondreAuSujet(sujetId, contenu, mentions, repondA),
+    onSuccess: (_data, variables) => invalidateSujet(queryClient, variables.sujetId),
+  });
+}
+
+/** „Beste Antwort“ wählen oder lösen (Themenersteller oder Bureau Admin+). */
+export function useBesteAntwort() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sujetId, reponseId }: { sujetId: string; reponseId: string | null }) =>
+      communauteApi.waehleBesteAntwort(sujetId, reponseId),
     onSuccess: (_data, variables) => invalidateSujet(queryClient, variables.sujetId),
   });
 }
