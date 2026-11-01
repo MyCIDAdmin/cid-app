@@ -164,7 +164,7 @@ export const SUBGROUP_LABEL_KEYS: Record<SidebarSubgroupKey, string> = {
 
 // Zuordnung + Reihenfolge der Verwaltungs-Einträge innerhalb ihrer Untergruppe.
 const ADMIN_SUBGROUPS: Record<SidebarSubgroupKey, string[]> = {
-  mitglieder: ["/inscriptions", "/admin/campagnes-adhesion", "/admin/justificatifs"],
+  mitglieder: ["/membres", "/inscriptions", "/admin/campagnes-adhesion", "/admin/justificatifs"],
   finanzen: [
     "/admin/finances",
     "/cotisations/en-attente",
@@ -199,9 +199,18 @@ export const NAV_ITEMS: NavItem[] = [
   // l'AppLayout, voir HomeRoute.tsx) — entrée de menu pour y revenir.
   { to: "/", labelKey: "nav.startseite", icon: IconHome, group: "general" },
   { to: "/dashboard", labelKey: "nav.dashboard", icon: IconLayoutDashboard, group: "general" },
-  // Pas de minRoleLevel : le backend scope déjà le queryset (un membre ne
-  // voit que sa propre fiche), inutile de dupliquer cette règle ici.
-  { to: "/membres", labelKey: "nav.membres", icon: IconUsers, group: "general", module: "membres" },
+  // Mitglieder (Oktober 2026) : zog aus „Allgemein“ in die Verwaltung, Untergruppe „Mitglieder &
+  // Zugang“ (siehe ADMIN_SUBGROUPS). Der Menüpunkt erscheint nur noch ab RH ; Mitglieder ohne
+  // Verwaltungsrolle erreichen ihre eigene Karte über Profil und „Meine Mitgliedschaft“ (die Route
+  // selbst bleibt offen, das Backend begrenzt sie weiter auf die eigene Karte). Wie alle Einträge
+  // der Verwaltung ohne `module` (kein Modul-Hintergrundbild, kein Sichtbarkeits-Schalter).
+  {
+    to: "/membres",
+    labelKey: "nav.membres",
+    icon: IconUsers,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.rh,
+  },
   // Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
   // utilisateur non negociable) : l'entree "Mitgliedsbeitrag" (/cotisation) a ete retiree — tout
   // son contenu vit desormais sous /mon-adhesion (voir PaiementStepper.tsx, rendu par

@@ -35,7 +35,7 @@ from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.services import is_elevated_for_module
 
 ADMIN_WRITE_ACTIONS = ("create", "changer_statut")
-DESTROY_ACTIONS = ("destroy",)
+DESTROY_ACTIONS = ("destroy", "supprimer_lot")
 
 
 class MembrePermission(BasePermission):

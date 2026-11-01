@@ -139,7 +139,7 @@
     },
     "mitglieder": {
       "titel": "Mitglieder",
-      "text": "Was du hier siehst und bearbeiten darfst, hängt von deiner Rolle ab. Ohne Verwaltungsrolle siehst du deine eigene Karte."
+      "text": "Mitglieder liegen in der Verwaltung unter „Mitglieder & Zugang“. Was du hier siehst und bearbeiten darfst, hängt von deiner Rolle ab; mit Auswahlkästchen löschen Bureau Admin und App Admin mehrere Karten auf einmal. Ohne Verwaltungsrolle siehst du nur deine eigene Karte."
     },
     "veranstaltungen": {
       "titel": "Veranstaltungen und Anmeldung",

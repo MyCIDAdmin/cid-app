@@ -102,6 +102,21 @@ export async function deleteMembre(id: string): Promise<void> {
   await apiClient.delete(`/membres/${id}/`);
 }
 
+export type SammelLoeschGrund = "geschuetzt" | "eigene_karte" | "nicht_gefunden";
+
+export interface SammelLoeschErgebnis {
+  geloescht: number;
+  uebersprungen: { id: string; name: string; grund: SammelLoeschGrund }[];
+}
+
+/** POST /membres/supprimer-lot/ (Bureau Admin+) — mehrere Karten auf einmal löschen. Geschützte
+ * Karten (Mitgliedschaften, Zahlungen, Bestellungen) und die eigene Karte werden vom Backend
+ * übersprungen und mit Grund gemeldet. */
+export async function supprimerMembresLot(ids: string[]): Promise<SammelLoeschErgebnis> {
+  const { data } = await apiClient.post<SammelLoeschErgebnis>("/membres/supprimer-lot/", { ids });
+  return data;
+}
+
 export async function changerStatutMembre(id: string, statut: StatutMembre): Promise<Membre> {
   const { data } = await apiClient.post<Membre>(`/membres/${id}/changer_statut/`, { statut });
   return data;
