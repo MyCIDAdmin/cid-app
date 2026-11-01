@@ -136,6 +136,9 @@
     "app": "Rundgang durch die App",
     "verwaltung": "Rundgang Verwaltung",
     "hinweise": "Tipps wieder einblenden",
+    "hinweise_an": "Die Tipps sind wieder eingeblendet. Sie erscheinen beim nächsten Besuch von Seiten wie Reisen, Fotoalben oder Meine Mitgliedschaft.",
+    "hinweise_hier": "Die Tipps sind wieder eingeblendet. Der Tipp zu dieser Seite steht jetzt oben auf der Seite.",
+    "hinweise_schon": "Alle Tipps sind bereits eingeblendet. Sie erscheinen auf Seiten wie Reisen, Fotoalben oder Meine Mitgliedschaft.",
     "karten": "Aufgabenkarten öffnen"
   }
 }
