@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -14,6 +14,7 @@ vi.mock("../../hooks/useMembres", async () => {
     ...actual,
     useMembresList: vi.fn(),
     useDeleteMembre: vi.fn(),
+    useSupprimerMembresLot: vi.fn(),
   };
 });
 
@@ -98,6 +99,99 @@ describe("MembresListPage", () => {
 
     fireEvent.click(screen.getByText("liste.supprimer"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  describe("Sammel-Löschen (Mehrfachauswahl)", () => {
+    const membre2: MembreListItem = { ...membre, id: "m2", prenom: "Leila", nom: "Trabelsi" };
+    const mutateLot = vi.fn();
+
+    beforeEach(() => {
+      mutateLot.mockReset();
+      vi.mocked(useMembresHooks.useSupprimerMembresLot).mockReturnValue({
+        mutate: mutateLot,
+        isPending: false,
+      } as unknown as ReturnType<typeof useMembresHooks.useSupprimerMembresLot>);
+      mockList({ data: { ...page, results: [membre, membre2] } });
+    });
+
+    it("zeigt keine Auswahl unterhalb von Bureau Admin", () => {
+      useAuthStore.setState({
+        user: { id: "u1", email: "rh@example.com", role: "rh", langue_preferee: "fr" },
+      });
+      renderWithProviders(<MembresListPage />);
+      expect(screen.queryByLabelText("liste.auswahl_alle_seite")).not.toBeInTheDocument();
+      expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    });
+
+    it("wählt die ganze Seite und löscht nach Bestätigung alle ausgewählten Karten", () => {
+      useAuthStore.setState({
+        user: { id: "u3", email: "admin@example.com", role: "bureau_admin", langue_preferee: "fr" },
+      });
+      renderWithProviders(<MembresListPage />);
+
+      expect(screen.queryByText("liste.auswahl_loeschen")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText("liste.auswahl_alle_seite"));
+      expect(screen.getByText("liste.auswahl_anzahl")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("liste.auswahl_loeschen"));
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("action.confirmer"));
+
+      expect(mutateLot).toHaveBeenCalledTimes(1);
+      expect(mutateLot.mock.calls[0][0]).toEqual(["m1", "m2"]);
+    });
+
+    it("lässt einzelne Karten abwählen und hebt die Auswahl auf", () => {
+      useAuthStore.setState({
+        user: { id: "u3", email: "admin@example.com", role: "bureau_admin", langue_preferee: "fr" },
+      });
+      renderWithProviders(<MembresListPage />);
+
+      fireEvent.click(screen.getAllByLabelText("liste.auswahl_zeile")[0]);
+      fireEvent.click(screen.getByText("liste.auswahl_loeschen"));
+      fireEvent.click(screen.getByText("action.confirmer"));
+      expect(mutateLot.mock.calls[0][0]).toEqual(["m1"]);
+
+      fireEvent.click(screen.getAllByLabelText("liste.auswahl_zeile")[1]);
+      fireEvent.click(screen.getByText("liste.auswahl_aufheben"));
+      expect(screen.queryByText("liste.auswahl_loeschen")).not.toBeInTheDocument();
+    });
+
+    it("meldet nicht gelöschte Karten mit Grund nach dem Löschen", () => {
+      mutateLot.mockImplementation((_ids, opts) =>
+        opts.onSuccess({
+          geloescht: 1,
+          uebersprungen: [{ id: "m2", name: "Leila Trabelsi", grund: "geschuetzt" }],
+        }),
+      );
+      useAuthStore.setState({
+        user: { id: "u3", email: "admin@example.com", role: "bureau_admin", langue_preferee: "fr" },
+      });
+      renderWithProviders(<MembresListPage />);
+
+      fireEvent.click(screen.getByLabelText("liste.auswahl_alle_seite"));
+      fireEvent.click(screen.getByText("liste.auswahl_loeschen"));
+      fireEvent.click(screen.getByText("action.confirmer"));
+
+      expect(screen.getByText("liste.sammel_erfolg")).toBeInTheDocument();
+      const meldung = within(screen.getByRole("status"));
+      expect(meldung.getByText("Leila Trabelsi")).toBeInTheDocument();
+      expect(meldung.getByText(/liste\.sammel_grund_geschuetzt/)).toBeInTheDocument();
+      // Auswahl ist nach dem Löschen leer
+      expect(screen.queryByText("liste.auswahl_loeschen")).not.toBeInTheDocument();
+    });
+
+    it("leert die Auswahl bei Filteränderung", () => {
+      useAuthStore.setState({
+        user: { id: "u3", email: "admin@example.com", role: "bureau_admin", langue_preferee: "fr" },
+      });
+      renderWithProviders(<MembresListPage />);
+
+      fireEvent.click(screen.getByLabelText("liste.auswahl_alle_seite"));
+      expect(screen.getByText("liste.auswahl_loeschen")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("liste.reinitialiser"));
+      expect(screen.queryByText("liste.auswahl_loeschen")).not.toBeInTheDocument();
+    });
   });
 
   it("affiche un état de chargement", () => {

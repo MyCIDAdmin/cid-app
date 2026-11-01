@@ -104,6 +104,14 @@ export function useDeleteMembre() {
   });
 }
 
+export function useSupprimerMembresLot() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => membresApi.supprimerMembresLot(ids),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membresKeys.all }),
+  });
+}
+
 export function useChangerStatutMembre(id: string) {
   const queryClient = useQueryClient();
   return useMutation({

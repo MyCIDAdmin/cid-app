@@ -14,13 +14,16 @@ import FilterUmschalter from "../../components/ui/FilterUmschalter";
 import { filterBlockKlasse } from "../../utils/filter";
 import StatutBadge from "../../components/ui/StatutBadge";
 import { exporterMembres } from "../../api/membres";
-import type { MembresOrdering } from "../../api/membres";
-import { useDeleteMembre, useMembresList } from "../../hooks/useMembres";
+import type { MembresOrdering, SammelLoeschErgebnis } from "../../api/membres";
+import { useDeleteMembre, useMembresList, useSupprimerMembresLot } from "../../hooks/useMembres";
 import { usePageAccess } from "../../hooks/useRbac";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { BUNDESLANDER, CHAMPS_EXPORT, PAYS_ALLEMAGNE, PAYS_MEMBRE } from "../../types/membre";
 import type { ChampExport, StatutMembre } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
+
+// Muss zur Obergrenze im Backend passen (apps.membres.views.MAX_SAMMELLOESCHUNG).
+const MAX_SAMMELLOESCHUNG = 200;
 
 const TOUS_LES_CHAMPS_EXPORT: ChampExport[] = CHAMPS_EXPORT.map((c) => c.value);
 
@@ -54,6 +57,13 @@ export default function MembresListPage() {
     (w) => w !== "",
   ).length;
   const [aSupprimer, setASupprimer] = useState<{ id: string; nom: string } | null>(null);
+  // Mehrfachauswahl (nur Bureau Admin+, wie das Einzel-Löschen) : id -> Anzeigename. Die Auswahl
+  // bleibt über Seiten hinweg erhalten, wird aber bei jeder Änderung von Filter oder Sortierung
+  // geleert, damit nichts Unsichtbares gelöscht wird.
+  const [auswahl, setAuswahl] = useState<Map<string, string>>(new Map());
+  const [sammelDialogOffen, setSammelDialogOffen] = useState(false);
+  const [sammelErgebnis, setSammelErgebnis] = useState<SammelLoeschErgebnis | null>(null);
+  const [sammelFehler, setSammelFehler] = useState<string | null>(null);
   // Tri du tableau ET de l'export Excel (même sélecteur) — le backend (MembreOrderingFilter)
   // applique `ordering` à la pagination par curseur avec un départage (nom, prénom, id) stable ;
   // le fichier exporté n'est pas paginé (voir apps.membres.exports).
@@ -76,6 +86,7 @@ export default function MembresListPage() {
   };
   const { data, isLoading, isError } = useMembresList({ ...filters, ordering }, pageUrl);
   const deleteMutation = useDeleteMembre();
+  const sammelMutation = useSupprimerMembresLot();
 
   async function exporter() {
     // La boîte de dialogue ne sert qu'à choisir les colonnes — une fois confirmée, elle se
@@ -114,6 +125,7 @@ export default function MembresListPage() {
   function appliquerFiltres(e: React.FormEvent) {
     e.preventDefault();
     setPageUrl(null); // toute modification de filtre repart de la première page
+    setAuswahl(new Map());
     setFilterOffen(false);
   }
 
@@ -126,6 +138,54 @@ export default function MembresListPage() {
     setDateAdhesionApres("");
     setDateAdhesionAvant("");
     setPageUrl(null);
+    setAuswahl(new Map());
+  }
+
+  const seitenMitglieder = data?.results ?? [];
+  const alleAufSeite =
+    seitenMitglieder.length > 0 && seitenMitglieder.every((m) => auswahl.has(m.id));
+  const teilweiseAufSeite = !alleAufSeite && seitenMitglieder.some((m) => auswahl.has(m.id));
+
+  function auswahlUmschalten(id: string, nom: string) {
+    setAuswahl((prev) => {
+      const neu = new Map(prev);
+      if (neu.has(id)) neu.delete(id);
+      else neu.set(id, nom);
+      return neu;
+    });
+  }
+
+  function seiteUmschalten() {
+    setAuswahl((prev) => {
+      const neu = new Map(prev);
+      if (alleAufSeite) seitenMitglieder.forEach((m) => neu.delete(m.id));
+      else seitenMitglieder.forEach((m) => neu.set(m.id, `${m.prenom} ${m.nom}`));
+      return neu;
+    });
+  }
+
+  function sammelLoeschenStarten() {
+    setSammelErgebnis(null);
+    if (auswahl.size > MAX_SAMMELLOESCHUNG) {
+      setSammelFehler(t("liste.sammel_max", { max: MAX_SAMMELLOESCHUNG }));
+      return;
+    }
+    setSammelFehler(null);
+    setSammelDialogOffen(true);
+  }
+
+  function sammelLoeschenBestaetigen() {
+    sammelMutation.mutate([...auswahl.keys()], {
+      onSuccess: (ergebnis) => {
+        setSammelDialogOffen(false);
+        setSammelErgebnis(ergebnis);
+        setAuswahl(new Map());
+      },
+      onError: (error) => {
+        setSammelDialogOffen(false);
+        setSammelFehler(extractApiErrorMessage(error, t("liste.sammel_erreur")));
+      },
+    });
   }
 
   function confirmerSuppression() {
@@ -329,6 +389,7 @@ export default function MembresListPage() {
                 onChange={(e) => {
                   setOrdering(e.target.value as MembresOrdering);
                   setPageUrl(null); // un autre tri repart de la première page
+                  setAuswahl(new Map());
                 }}
                 className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
               >
@@ -353,6 +414,85 @@ export default function MembresListPage() {
       </form>
 
       {erreurExport && <p className="mb-4 -mt-2 text-sm text-status-dangerText">{erreurExport}</p>}
+
+      {sammelFehler && (
+        <p role="alert" className="mb-3 text-sm text-status-dangerText">
+          {sammelFehler}
+        </p>
+      )}
+      {sammelErgebnis && (
+        <div
+          role="status"
+          className="mb-3 rounded-cid-lg border border-text-tertiary/20 bg-bg-primary p-3 text-sm"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <p className="font-medium text-text-primary">
+              {t("liste.sammel_erfolg", { count: sammelErgebnis.geloescht })}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSammelErgebnis(null)}
+              className="rounded-cid px-2 text-text-tertiary hover:bg-bg-tertiary"
+              aria-label={t("liste.meldung_schliessen")}
+            >
+              ×
+            </button>
+          </div>
+          {sammelErgebnis.uebersprungen.length > 0 && (
+            <div className="mt-2">
+              <p className="text-text-secondary">
+                {t("liste.sammel_uebersprungen", { count: sammelErgebnis.uebersprungen.length })}
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-text-secondary">
+                {sammelErgebnis.uebersprungen.map((z) => (
+                  <li key={z.id}>
+                    {z.name ? <span className="font-medium">{z.name}</span> : null}
+                    {z.name ? " — " : ""}
+                    {t(`liste.sammel_grund_${z.grund}`)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {peutSupprimer && seitenMitglieder.length > 0 && (
+        <div className="mb-2 flex flex-wrap items-center gap-3 text-sm">
+          <label className="flex items-center gap-2 text-text-secondary">
+            <input
+              type="checkbox"
+              checked={alleAufSeite}
+              ref={(el) => {
+                if (el) el.indeterminate = teilweiseAufSeite;
+              }}
+              onChange={seiteUmschalten}
+            />
+            {t("liste.auswahl_alle_seite")}
+          </label>
+          {auswahl.size > 0 && (
+            <>
+              <span className="font-medium text-text-primary">
+                {t("liste.auswahl_anzahl", { count: auswahl.size })}
+              </span>
+              <button
+                type="button"
+                onClick={() => setAuswahl(new Map())}
+                className="rounded-cid border border-text-tertiary/30 px-3 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
+              >
+                {t("liste.auswahl_aufheben")}
+              </button>
+              <button
+                type="button"
+                onClick={sammelLoeschenStarten}
+                className="rounded-cid bg-status-dangerText px-3 py-1 text-xs font-medium text-white hover:opacity-90"
+              >
+                {t("liste.auswahl_loeschen")}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="cid-karten w-full text-sm">
@@ -393,6 +533,18 @@ export default function MembresListPage() {
               <tr key={membre.id} className="border-b border-text-tertiary/10 last:border-0">
                 <td className="px-4 py-2" data-kopf>
                   <div className="flex items-center gap-2">
+                    {peutSupprimer && (
+                      <input
+                        type="checkbox"
+                        checked={auswahl.has(membre.id)}
+                        onChange={() =>
+                          auswahlUmschalten(membre.id, `${membre.prenom} ${membre.nom}`)
+                        }
+                        aria-label={t("liste.auswahl_zeile", {
+                          nom: `${membre.prenom} ${membre.nom}`,
+                        })}
+                      />
+                    )}
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cal text-[10px] font-semibold text-ca">
                       {initiales(membre.prenom, membre.nom)}
                     </div>
@@ -486,6 +638,15 @@ export default function MembresListPage() {
         danger
         onConfirm={confirmerSuppression}
         onCancel={() => setASupprimer(null)}
+      />
+
+      <ConfirmDialog
+        open={sammelDialogOffen}
+        title={t("liste.sammel_titel", { count: auswahl.size })}
+        message={t("liste.sammel_message")}
+        danger
+        onConfirm={sammelLoeschenBestaetigen}
+        onCancel={() => setSammelDialogOffen(false)}
       />
 
       <ExportChampsDialog
