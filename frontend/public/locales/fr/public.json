@@ -160,5 +160,49 @@
     "platzhalter": "Les logos de nos sponsors et partenaires apparaîtront ici. Activez pour cela « Afficher dans la bannière de la page d’accueil » sur un partenaire avec logo. (Visible uniquement par l’administration.)",
     "zur_verwaltung": "Vers la gestion des partenaires →"
   },
-  "kacheln_lien_standard": "En savoir plus"
+  "kacheln_lien_standard": "En savoir plus",
+  "startseite": {
+    "arena": {
+      "titel": "Arène des régions",
+      "untertitel": "Quelle région réunit le plus de Clubistes ? Saison {{saison}}",
+      "preis": "Prix : {{preis}}",
+      "sortierung": "Tri",
+      "pro_mitglied": "Par membre",
+      "gesamt": "Total",
+      "platz": "Place {{platz}}",
+      "punkte_je_mitglied": "Points par membre",
+      "punkte_gesamt": "Points au total",
+      "mitglieder_treffen": "{{mitglieder}} membres · {{treffen}} rencontres",
+      "fleissigste": "Région la plus active en {{monat}} :",
+      "zur_rangliste": "Voir le classement"
+    },
+    "zahlen": {
+      "titel": "Nous sommes les Clubistes",
+      "mitglieder": "Membres",
+      "bundeslaender": "Länder",
+      "staedte": "Villes",
+      "im_monat": "en {{monat}}",
+      "neu_dabei": "Nouveaux membres",
+      "niemand": "Personne ne s'affiche pour le moment – tu peux être le premier.",
+      "freiwillig": "Uniquement avec l'accord volontaire des membres (prénom et initiale).",
+      "einstellung": "Apparaître aussi ?"
+    },
+    "alben": {
+      "titel": "Albums photo",
+      "alle": "Tous les albums",
+      "fotos_one": "{{count}} photo",
+      "fotos_other": "{{count}} photos"
+    },
+    "projekte": {
+      "titel": "Projets à la une",
+      "alle": "Tous les projets",
+      "dach": "{{erledigt}} sur {{gesamt}} jalons · {{count}} sous-projets",
+      "teilprojekt": "Sous-projet de {{titel}}"
+    },
+    "shop": {
+      "titel": "Nouveautés de la boutique",
+      "zum_shop": "Vers la boutique",
+      "neu": "Nouveau"
+    }
+  }
 }
