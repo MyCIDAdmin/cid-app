@@ -70,9 +70,12 @@ describe("HelpButton", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("erscheint nicht auf Seiten ohne Hilfetext", () => {
+  it("öffnet auf Seiten ohne Hilfetext die Hilfe zu Rundgang und Erste Schritte", () => {
     renderWithProviders(<HelpButton />, { route: "/dashboard", path: "/dashboard" });
-    expect(screen.queryByLabelText("bouton")).not.toBeInTheDocument();
+    const knopf = screen.getByLabelText("bouton");
+    expect(knopf).toHaveAttribute("data-tour", "hilfe");
+    fireEvent.click(knopf);
+    expect(useHilfeStore.getState()).toMatchObject({ offen: true, cle: "rundgang" });
   });
 
   it("schaltet das Panel mit dem Button, dem Kreuz und Escape", () => {

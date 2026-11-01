@@ -699,6 +699,7 @@ function NavItemLink({
   return (
     <Link
       to={item.to}
+      data-tour={item.to}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={`flex items-center gap-3 rounded-cid px-3 py-2 text-sm transition ${
@@ -838,6 +839,7 @@ export function NavAccordionList({
             <button
               type="button"
               onClick={() => toggleGroup(group.key)}
+              data-tour={`gruppe-${group.key}`}
               className={`flex w-full items-center justify-between rounded-cid px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition hover:text-white/70 ${
                 // Repliée mais contenant la page active : en-tête mis en évidence plutôt que
                 // forcer l'ouverture (voir docstring) — reste un simple repère visuel.

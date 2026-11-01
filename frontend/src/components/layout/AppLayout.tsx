@@ -7,6 +7,8 @@ import { Outlet, useLocation } from "react-router-dom";
 
 import { usePanierReservierung } from "../../hooks/usePanierReservierung";
 import PublicFooter from "../public/PublicFooter";
+import HinweisLeiste from "../tour/HinweisLeiste";
+import TourHost from "../tour/TourHost";
 import LanguageSwitcher from "./LanguageSwitcher";
 import MobileNavDrawer from "./MobileNavDrawer";
 import ModuleBackground from "./ModuleBackground";
@@ -107,6 +109,7 @@ export default function AppLayout() {
             // heben das Innenpolster von <main> für die Leiste auf.
             <div className="flex min-h-full flex-col">
               <div className="flex-1">
+                <HinweisLeiste />
                 <Outlet />
               </div>
               <div className="-mx-3 -mb-3 mt-6 sm:-mx-6 sm:-mb-6">
@@ -114,11 +117,15 @@ export default function AppLayout() {
               </div>
             </div>
           ) : (
-            <Outlet />
+            <>
+              <HinweisLeiste />
+              <Outlet />
+            </>
           )}
         </main>
       </div>
       <HelpPanel />
+      <TourHost onTiroir={setTiroirMobileOuvert} />
     </div>
   );
 }

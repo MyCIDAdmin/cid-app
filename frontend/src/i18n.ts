@@ -47,6 +47,7 @@ i18n
       "support",
       "tickets",
       "zentral",
+      "tour",
     ],
     defaultNS: "common",
     backend: {

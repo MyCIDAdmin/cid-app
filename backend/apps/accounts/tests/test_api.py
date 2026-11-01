@@ -1178,6 +1178,53 @@ def test_praeferenzen_ungueltige_werte_abgelehnt(api_client, membre_actif):
     )
 
 
+def test_tour_merker_wird_gespeichert_und_gemerged(api_client, membre_actif):
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+    tour = {"status": "abgeschlossen", "hinweise": ["reisen"], "version": 1}
+
+    r1 = api_client.patch(
+        reverse("accounts:me"), {"ui_praeferenzen": {"theme": "dark", "tour": tour}}, format="json"
+    )
+    assert r1.status_code == 200, r1.data
+    r2 = api_client.patch(
+        reverse("accounts:me"), {"ui_praeferenzen": {"sidebar_collapsed": True}}, format="json"
+    )
+    assert r2.status_code == 200, r2.data
+
+    membre_actif.refresh_from_db()
+    assert membre_actif.ui_praeferenzen["tour"] == tour
+    assert membre_actif.ui_praeferenzen["theme"] == "dark"
+
+
+@pytest.mark.parametrize(
+    "tour",
+    [
+        {"status": "fertig"},
+        {"verwaltung_status": 1},
+        {"unbekannt": True},
+        {"spaeter_bis": "morgen"},
+        {"hinweise": "reisen"},
+        {"hinweise": [""]},
+        {"hinweise": ["x" * 41]},
+        {"hinweise": ["a"] * 41},
+        {"hinweise_aus": "ja"},
+        {"version": True},
+        {"version": 0},
+        "offen",
+    ],
+)
+def test_tour_merker_ungueltige_werte_abgelehnt(api_client, membre_actif, tour):
+    sitzung = _login_geraet(api_client, "geraet-a")
+    _auth(api_client, sitzung)
+
+    resp = api_client.patch(
+        reverse("accounts:me"), {"ui_praeferenzen": {"tour": tour}}, format="json"
+    )
+
+    assert resp.status_code == 400
+
+
 def test_me_email_ist_schreibgeschuetzt(api_client, membre_actif):
     """Sicherheitsprüfung 2026-10-07 : kein Kontoübernahme-Weg über PATCH /auth/me/."""
     sitzung = _login_geraet(api_client, "geraet-a")

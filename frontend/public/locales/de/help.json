@@ -1,6 +1,10 @@
 {
   "bouton": "Hilfe",
   "fermer": "Schließen",
+  "rundgang": {
+    "titre": "Hilfe und Rundgang",
+    "intro": "Für diese Seite gibt es keine eigene Anleitung. Hier findest du den Rundgang durch die App und die Aufgabenkarten."
+  },
   "events": {
     "titre": "Veranstaltungsverwaltung",
     "intro": "Hier legst du Veranstaltungen an, veröffentlichst sie und siehst die Anmeldungen.",
