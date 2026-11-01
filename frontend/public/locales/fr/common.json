@@ -263,6 +263,12 @@
       "titel": "Vœux d’anniversaire par e-mail",
       "hinweis": "Le jour de ton anniversaire, le club t’envoie un court e-mail de vœux. L’âge n’est pas mentionné.",
       "fehler": "Échec de l’enregistrement."
+    },
+    "sichtbarkeit": {
+      "titel": "Visibilité dans la communauté",
+      "neu_dabei": "M’afficher dans « Nouveaux membres » sur la page d’accueil",
+      "hinweis": "Les autres membres voient alors ton prénom, l’initiale de ton nom et ton secteur – seulement pendant les premières semaines après ton adhésion. Tu peux le désactiver à tout moment.",
+      "fehler": "Échec de l’enregistrement."
     }
   },
   "nav_untergruppe": {

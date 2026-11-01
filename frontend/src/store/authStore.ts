@@ -79,6 +79,8 @@ export interface UiPraeferenzen {
   kalender_wochenmail?: boolean;
   /** Geburtstagsgruß per E-Mail (Release 32) : an, solange nicht ausdrücklich false. */
   geburtstagsgruss?: boolean;
+  /** „Neu dabei“ auf der Startseite : nur nach ausdrücklicher Zustimmung (Standard aus). */
+  neu_dabei_zeigen?: boolean;
   /** Im Kalender kombinierte Sichten (Release 17) : verein | buero | meine. */
   kalender_ansichten?: ("verein" | "buero" | "meine")[];
 }

@@ -69,7 +69,7 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 
-from . import chats, fanclub, reaktionen, services
+from . import chats, fanclub, gemeinschaft, reaktionen, services
 from .filters import PublicationFilter, SujetFilter
 from .models import (
     Album,
@@ -1959,6 +1959,17 @@ class TippspielMatrixView(APIView):
             qs = qs.exclude(statut=StatutTippspiel.BROUILLON)
         tippspiel = get_object_or_404(qs, pk=tippspiel_id)
         return Response(fanclub.tippspiel_matrix(tippspiel, request.user, spalten))
+
+
+class GemeinschaftView(APIView):
+    """Startseite nach der Anmeldung : Zahlen zum Verein und „Neu dabei“ (siehe gemeinschaft.py).
+    Offen für jedes angemeldete Konto ; die Namensliste liefert der Server nur an aktive
+    Mitglieder und das Büro."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(gemeinschaft.uebersicht(request.user))
 
 
 class SpielerDesSpielsView(APIView):

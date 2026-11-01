@@ -64,8 +64,7 @@ import ReisenPage from "./pages/reisen/ReisenPage";
 import EvenementsPage from "./pages/evenements/EvenementsPage";
 import LoginPage from "./pages/LoginPage";
 import MembreDetailPage from "./pages/membres/MembreDetailPage";
-import AccueilTab from "./components/public/AccueilTab";
-import PublicEvenementsTab from "./components/public/PublicEvenementsTab";
+import StartseiteMitglieder from "./components/startseite/StartseiteMitglieder";
 import HomeRoute from "./pages/public/HomeRoute";
 import DatenschutzPage from "./pages/public/legal/DatenschutzPage";
 import ErstattungsrichtliniePage from "./pages/public/legal/ErstattungsrichtliniePage";
@@ -789,18 +788,10 @@ export default function App() {
           connecté, même URL "/" mais dans l'AppLayout, sans la barre horizontale publique
           (demande utilisateur du 2026-10-05, point 1.2). */}
         <Route path="/" element={<HomeRoute />}>
-          {/* Point 4 (2026-10-06) : la Startseite reste visible après connexion (membre ou
-            non) — contenu d'accueil + Veranstaltungen avec les mêmes règles (badge "Nur für
-            Mitglieder", bouton désactivé pour un non-membre). */}
-          <Route
-            index
-            element={
-              <>
-                <AccueilTab />
-                <PublicEvenementsTab />
-              </>
-            }
-          />
+          {/* Startseite nach der Anmeldung (membre ou non) : Vorschlag B „Gemeinschaft“ ohne die
+            „Veranstaltungen“ (Wunsch 2026-11-01) — siehe StartseiteMitglieder.tsx. Die öffentliche
+            Startseite (PublicHomePage) bleibt unverändert. */}
+          <Route index element={<StartseiteMitglieder />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

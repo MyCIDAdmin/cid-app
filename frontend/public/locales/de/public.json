@@ -160,5 +160,49 @@
     "platzhalter": "Hier erscheinen die Logos unserer Sponsoren und Partner. Aktivieren Sie dazu in der Partnerverwaltung bei einem Partner mit Logo „Im Startseiten-Banner anzeigen“. (Nur für die Verwaltung sichtbar.)",
     "zur_verwaltung": "Zur Partnerverwaltung →"
   },
-  "kacheln_lien_standard": "Mehr erfahren"
+  "kacheln_lien_standard": "Mehr erfahren",
+  "startseite": {
+    "arena": {
+      "titel": "Regionen-Arena",
+      "untertitel": "Wer bringt die meisten Clubistes zusammen? Saison {{saison}}",
+      "preis": "Preis: {{preis}}",
+      "sortierung": "Sortierung",
+      "pro_mitglied": "Pro Mitglied",
+      "gesamt": "Gesamt",
+      "platz": "Platz {{platz}}",
+      "punkte_je_mitglied": "Punkte je Mitglied",
+      "punkte_gesamt": "Punkte gesamt",
+      "mitglieder_treffen": "{{mitglieder}} Mitglieder · {{treffen}} Treffen",
+      "fleissigste": "Fleißigste Region im {{monat}}:",
+      "zur_rangliste": "Zur Rangliste"
+    },
+    "zahlen": {
+      "titel": "Wir sind Clubistes",
+      "mitglieder": "Mitglieder",
+      "bundeslaender": "Bundesländer",
+      "staedte": "Städte",
+      "im_monat": "im {{monat}}",
+      "neu_dabei": "Neu dabei",
+      "niemand": "Gerade zeigt sich niemand – du kannst der Erste sein.",
+      "freiwillig": "Nur mit freiwilliger Zustimmung der Mitglieder (Vorname und Initial).",
+      "einstellung": "Auch sichtbar sein?"
+    },
+    "alben": {
+      "titel": "Fotoalben",
+      "alle": "Alle Alben",
+      "fotos_one": "{{count}} Foto",
+      "fotos_other": "{{count}} Fotos"
+    },
+    "projekte": {
+      "titel": "Projekte im Fokus",
+      "alle": "Alle Projekte",
+      "dach": "{{erledigt}} von {{gesamt}} Meilensteinen · {{count}} Teilprojekte",
+      "teilprojekt": "Teilprojekt von {{titel}}"
+    },
+    "shop": {
+      "titel": "Neu im Shop",
+      "zum_shop": "Zum Shop",
+      "neu": "Neu"
+    }
+  }
 }

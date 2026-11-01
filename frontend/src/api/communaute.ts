@@ -6,6 +6,7 @@ import { apiClient } from "./client";
 import type { CursorPage } from "../types/membre";
 import type {
   Album,
+  Gemeinschaft,
   AlbumPayload,
   ArrierePlanModule,
   Auteur,
@@ -920,5 +921,11 @@ export async function modifierKachelHero(
     "/communaute/configuration-site/",
     formData,
   );
+  return data;
+}
+
+/** Zahlen zum Verein und „Neu dabei“ für die Startseite nach der Anmeldung. */
+export async function getGemeinschaft(): Promise<Gemeinschaft> {
+  const { data } = await apiClient.get<Gemeinschaft>("/communaute/gemeinschaft/");
   return data;
 }

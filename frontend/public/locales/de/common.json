@@ -263,6 +263,12 @@
       "titel": "Geburtstagsgruß per E-Mail",
       "hinweis": "Am Geburtstag schickt der Verein eine kurze Glückwunsch-Mail. Das Alter wird nicht genannt.",
       "fehler": "Speichern fehlgeschlagen."
+    },
+    "sichtbarkeit": {
+      "titel": "Sichtbarkeit in der Gemeinschaft",
+      "neu_dabei": "In „Neu dabei“ auf der Startseite zeigen",
+      "hinweis": "Andere Mitglieder sehen dann deinen Vornamen, den Anfangsbuchstaben deines Nachnamens und deinen Sektor – nur in den ersten Wochen nach deinem Beitritt. Du kannst das jederzeit wieder abschalten.",
+      "fehler": "Speichern fehlgeschlagen."
     }
   },
   "nav_untergruppe": {

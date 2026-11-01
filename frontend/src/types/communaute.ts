@@ -948,3 +948,21 @@ export const MODULES_AVEC_ARRIERE_PLAN = [
   "communaute",
   "vote",
 ] as const;
+
+/** Startseite nach der Anmeldung : Zahlen zum Verein und „Neu dabei“ (apps.communaute.gemeinschaft). */
+export interface NeuDabeiEintrag {
+  id: string;
+  vorname: string;
+  initial: string;
+  sektor: string;
+}
+
+export interface Gemeinschaft {
+  mitglieder: number;
+  bundeslaender: number;
+  staedte: number;
+  neu_im_monat: number;
+  /** Monat der Zahl „neu im Monat“, Format JJJJ-MM. */
+  monat: string;
+  neu_dabei: NeuDabeiEintrag[];
+}

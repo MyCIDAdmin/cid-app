@@ -22,6 +22,7 @@ import {
   type TotpSetup,
 } from "../../api/auth";
 import BenachrichtigungenAbschnitt from "./BenachrichtigungenAbschnitt";
+import SichtbarkeitAbschnitt from "./SichtbarkeitAbschnitt";
 import { useUiStore } from "../../store/uiStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { lokaleSprache } from "../../utils/datum";
@@ -387,6 +388,7 @@ export default function EinstellungenTab() {
     <div className="flex flex-col gap-4">
       <DarstellungAbschnitt />
       <BenachrichtigungenAbschnitt />
+      <SichtbarkeitAbschnitt />
       <PasswortAbschnitt />
       <ZweiFaktorAbschnitt />
       <GeraeteAbschnitt />
