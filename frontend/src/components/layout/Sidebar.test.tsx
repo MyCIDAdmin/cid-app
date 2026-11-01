@@ -402,13 +402,30 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
     mockMesAcces();
   });
 
-  it("masque '/membres' pour un Membre Normal quand le module 'membres' est masqué", () => {
-    mockVisibiliteEffective({ data: { membres: false } });
+  it("masque '/evenements' pour un Membre Normal quand le module 'evenements' est masqué", () => {
+    mockVisibiliteEffective({ data: { evenements: false } });
     renderWithProviders(<Sidebar />);
 
-    expect(screen.queryByText("nav.membres")).not.toBeInTheDocument();
+    expect(screen.queryByText("nav.evenements")).not.toBeInTheDocument();
     // Le reste du menu (module non concerné) reste inchangé.
-    expect(screen.getByText("nav.evenements")).toBeInTheDocument();
+    expect(screen.getByText("nav.mon_adhesion")).toBeInTheDocument();
+  });
+
+  // Oktober 2026 : „Mitglieder“ liegt in der Verwaltung (Mitglieder & Zugang) und erscheint erst
+  // ab RH — ein Membre Normal sieht den Eintrag nie, unabhängig vom Sichtbarkeits-Schalter.
+  it("zeigt '/membres' einem Membre Normal nicht, einem RH-Konto aber schon", () => {
+    mockVisibiliteEffective({ data: {} });
+    const { unmount } = renderWithProviders(<Sidebar />);
+    expect(screen.queryByText("nav.membres")).not.toBeInTheDocument();
+    unmount();
+
+    useAuthStore.setState({ user: { ...utilisateur, id: "u5", role: "rh" as const } });
+    useUiStore.setState({
+      collapsedGroups: { ...DEFAULT_COLLAPSED_GROUPS, administration: false },
+    });
+    mockMesAcces();
+    renderWithProviders(<Sidebar />);
+    expect(screen.getByText("nav.membres")).toBeInTheDocument();
   });
 
   it("masque aussi les autres modules quand ils sont désactivés un par un (pas seulement 'membres')", () => {
@@ -432,8 +449,7 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
     expect(screen.queryByText("nav.albums")).not.toBeInTheDocument();
     expect(screen.queryByText("nav.votes")).not.toBeInTheDocument();
     expect(screen.queryByText("nav.projets")).not.toBeInTheDocument();
-    // "membres" et "adhesions" ne sont pas dans la liste ci-dessus : toujours visibles.
-    expect(screen.getByText("nav.membres")).toBeInTheDocument();
+    // "adhesions" n'est pas dans la liste ci-dessus : toujours visible.
     expect(screen.getByText("nav.mon_adhesion")).toBeInTheDocument();
   });
 
@@ -454,22 +470,22 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
     mockVisibiliteEffective({ data: {} });
     renderWithProviders(<Sidebar />);
 
-    expect(screen.getByText("nav.membres")).toBeInTheDocument();
+    expect(screen.getByText("nav.evenements")).toBeInTheDocument();
   });
 
   it("n'affiche pas puis ne masque pas l'item pendant le chargement (reste visible, défaut sûr)", () => {
     mockVisibiliteEffective({ data: undefined, isLoading: true });
     renderWithProviders(<Sidebar />);
 
-    expect(screen.getByText("nav.membres")).toBeInTheDocument();
+    expect(screen.getByText("nav.evenements")).toBeInTheDocument();
   });
 
   it("un rôle supérieur au Membre Normal garde toujours l'accès, quel que soit ce réglage (spécifique au rôle 'membre', voir docstring backend)", () => {
     useAuthStore.setState({ user: { ...utilisateur, id: "u4", role: "bureau_admin" as const } });
-    mockVisibiliteEffective({ data: { membres: false } });
+    mockVisibiliteEffective({ data: { evenements: false } });
     renderWithProviders(<Sidebar />);
 
-    expect(screen.getByText("nav.membres")).toBeInTheDocument();
+    expect(screen.getByText("nav.evenements")).toBeInTheDocument();
   });
 });
 
@@ -507,6 +523,16 @@ describe("Sidebar — Untergruppen in der Verwaltung (Variante A, 2026-10-07)", 
     }
     expect(screen.getByText("nav.admin_events")).toBeInTheDocument();
     expect(screen.getByText("nav.admin_partner")).toBeInTheDocument();
+  });
+
+  it("führt „Mitglieder“ als ersten Eintrag der Untergruppe „Mitglieder & Zugang“", () => {
+    renderWithProviders(<Sidebar />);
+
+    const kopf = screen.getByRole("button", { name: /nav_untergruppe\.mitglieder/ });
+    const liste = kopf.parentElement as HTMLElement;
+    const eintraege = within(liste).getAllByRole("link");
+    expect(eintraege[0]).toHaveAttribute("href", "/membres");
+    expect(eintraege[1]).toHaveAttribute("href", "/inscriptions");
   });
 
   it("klappt eine Untergruppe per Klick zu und wieder auf (Zustand im uiStore)", () => {
@@ -574,7 +600,7 @@ describe("getGroupForPath", () => {
 
   it("retrouve le groupe d'une sous-page via le préfixe le plus spécifique", () => {
     expect(getGroupForPath("/boutique/panier")).toBe("general");
-    expect(getGroupForPath("/membres/123/modifier")).toBe("general");
+    expect(getGroupForPath("/membres/123/modifier")).toBe("administration");
     expect(getGroupForPath("/forum/42")).toBe("communaute");
   });
 

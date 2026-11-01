@@ -49,24 +49,29 @@ describe("ModuleBackground", () => {
     expect(screen.queryByTestId("module-background-image")).not.toBeInTheDocument();
   });
 
+  it("n'affiche aucune image sur /membres (Verwaltung seit Oktober 2026, aucun module renseigné)", () => {
+    renderSurRoute("/membres", [arrierePlan({ module: "membres" })]);
+    expect(screen.queryByTestId("module-background-image")).not.toBeInTheDocument();
+  });
+
   it("n'affiche aucune image sur une page du groupe administration (aucun module renseigné)", () => {
     renderSurRoute("/admin/boutique", [arrierePlan({ module: "boutique" })]);
     expect(screen.queryByTestId("module-background-image")).not.toBeInTheDocument();
   });
 
   it("n'affiche aucune image quand aucune n'est configurée pour le module courant", () => {
-    renderSurRoute("/membres", []);
+    renderSurRoute("/evenements", []);
     expect(screen.queryByTestId("module-background-image")).not.toBeInTheDocument();
   });
 
   it("affiche l'image de fond configurée pour le module de la page courante", () => {
-    renderSurRoute("/membres", [
-      arrierePlan({ module: "membres", image: "https://cid-media.example/fond-membres.jpg" }),
+    renderSurRoute("/evenements", [
+      arrierePlan({ module: "evenements", image: "https://cid-media.example/fond-events.jpg" }),
       arrierePlan({ id: 2, module: "boutique", image: "https://cid-media.example/fond-shop.jpg" }),
     ]);
     expect(screen.getByTestId("module-background-image")).toHaveAttribute(
       "src",
-      "https://cid-media.example/fond-membres.jpg",
+      "https://cid-media.example/fond-events.jpg",
     );
   });
 });

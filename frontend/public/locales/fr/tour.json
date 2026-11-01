@@ -139,7 +139,7 @@
     },
     "mitglieder": {
       "titel": "Membres",
-      "text": "Ce que tu vois et peux modifier ici dépend de ton rôle. Sans rôle d'administration, tu vois ta propre fiche."
+      "text": "Les membres se trouvent dans l'administration, sous « Membres & accès ». Ce que tu vois et peux modifier ici dépend de ton rôle ; avec les cases à cocher, Bureau Admin et Admin App suppriment plusieurs fiches à la fois. Sans rôle d'administration, tu ne vois que ta propre fiche."
     },
     "veranstaltungen": {
       "titel": "Événements et inscription",
