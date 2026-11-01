@@ -14,6 +14,10 @@ Vues API — app communaute, lot Fil d'actualité + Forum (Release Plan §3.2) :
                                                            frontend, voir FilPage.tsx)
   POST       /communaute/publications/{id}/liker/       — bascule like (toggle)
   POST       /communaute/publications/{id}/partager/    — bascule partage (toggle)
+  POST       /communaute/publications/{id}/reagieren/   — Emoji-Reaktion (Toggle), Antwort =
+                                                           {"reaktionen": [{emoji, anzahl, ich}]}
+                                                           ; ebenso bei commentaires, sujets,
+                                                           reponses-forum (2026-11, Neuigkeiten A)
   POST       /communaute/publications/{id}/masquer/     — modération (Bureau Admin+),
                                                            journalisée (log_audit_event)
   POST/DELETE /communaute/commentaires/                 — commenter une publication (ou
@@ -27,6 +31,9 @@ Vues API — app communaute, lot Fil d'actualité + Forum (Release Plan §3.2) :
                                                            visibilité que Publication)
   POST       /communaute/sujets/{id}/epingler/           — modération (bascule)
   POST       /communaute/sujets/{id}/verrouiller/        — modération (bascule)
+  POST       /communaute/sujets/{id}/beste-antwort/      — Themenersteller oder Bureau Admin+ :
+                                                           {"reponse": id} markiert, null löst
+                                                           die Markierung (Forum A)
   POST       /communaute/sujets/{id}/masquer/            — modération (soft-hide)
   POST/DELETE /communaute/reponses-forum/                — répondre à un sujet (bloqué si
                                                            `sujet.est_verrouille`)
@@ -39,7 +46,8 @@ normaux ne sont volontairement PAS audités (pas plus que pour la Boutique), pou
 journaliser l'activité sociale ordinaire des membres (minimisation RGPD, même doc §résumé).
 """
 
-from django.db.models import Q, Sum
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Count, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -47,7 +55,7 @@ from django.utils.dateparse import parse_datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.pagination import CursorPagination
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -58,7 +66,7 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 
-from . import chats, services
+from . import chats, reaktionen, services
 from .filters import PublicationFilter, SujetFilter
 from .models import (
     Album,
@@ -184,6 +192,18 @@ class SujetCursorPagination(CursorPagination):
     # apps.boutique.views.VarianteCursorPagination pour VarianteProduit).
     ordering = ("-est_epingle", "-created_at", "id")
 
+    # Forum A : ?sortierung=neu (Standard) | aktiv (letzte Aktivität) | beliebt (meiste
+    # Antworten). Angeheftete Themen stehen immer oben.
+    SORTIERUNGEN = {
+        "neu": ("-est_epingle", "-created_at", "id"),
+        "aktiv": ("-est_epingle", "-letzte_aktivitaet", "id"),
+        "beliebt": ("-est_epingle", "-anzahl_antworten", "-created_at", "id"),
+    }
+
+    def get_ordering(self, request, queryset, view):
+        wahl = request.query_params.get("sortierung", "neu")
+        return self.SORTIERUNGEN.get(wahl, self.ordering)
+
 
 class ConversationCursorPagination(CursorPagination):
     ordering = ("-created_at", "id")
@@ -226,6 +246,7 @@ class PublicationViewSet(viewsets.ModelViewSet):
             "hashtags",
             "likes",
             "partages",
+            "reaktionen",
             "commentaires__auteur",
             "commentaires__reponses__auteur",
         )
@@ -247,6 +268,18 @@ class PublicationViewSet(viewsets.ModelViewSet):
         # la réponse refléteraient l'état précédent la bascule au lieu de l'état à jour.
         publication.refresh_from_db()
         return Response(self.get_serializer(publication).data)
+
+    @action(detail=True, methods=["post"])
+    def reagieren(self, request, pk=None):
+        publication = self.get_object()
+        reaktionen.umschalten(publication, request.user.membre, request.data.get("emoji"))
+        return Response(
+            {
+                "reaktionen": reaktionen.reaktionen_liste(
+                    publication, request.user.membre.id, neu_laden=True
+                )
+            }
+        )
 
     @action(detail=True, methods=["post"])
     def partager(self, request, pk=None):
@@ -285,6 +318,21 @@ class CommentaireViewSet(
     permission_classes = [ContenuCommunautePermission]
     queryset = Commentaire.objects.select_related("auteur", "publication")
 
+    @action(detail=True, methods=["post"])
+    def reagieren(self, request, pk=None):
+        commentaire = self.get_object()
+        if commentaire.est_masque or commentaire.publication.est_masquee:
+            if ROLE_LEVELS.get(request.user.role, 0) < MODERATION_MIN_LEVEL:
+                raise NotFound()
+        reaktionen.umschalten(commentaire, request.user.membre, request.data.get("emoji"))
+        return Response(
+            {
+                "reaktionen": reaktionen.reaktionen_liste(
+                    commentaire, request.user.membre.id, neu_laden=True
+                )
+            }
+        )
+
     def perform_create(self, serializer):
         serializer.save()
         # Notification (ajoutée le 2026-09-16) — auteur de la publication + auteur du
@@ -320,7 +368,19 @@ class SujetViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
-        qs = Sujet.objects.select_related("auteur").prefetch_related("reponses__auteur")
+        letzte_antwort = (
+            ReponseForum.objects.filter(sujet=OuterRef("pk"), est_masquee=False)
+            .order_by("-created_at")
+            .values("auteur__prenom")[:1]
+        )
+        qs = (
+            Sujet.objects.select_related("auteur")
+            .prefetch_related("reaktionen")
+            .annotate(
+                anzahl_antworten=Count("reponses", filter=Q(reponses__est_masquee=False)),
+                letzte_antwort_prenom=Subquery(letzte_antwort),
+            )
+        )
         user = self.request.user
         if ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL:
             return qs
@@ -340,6 +400,47 @@ class SujetViewSet(viewsets.ModelViewSet):
         membres_mentionnes = serializer.validated_data.get("mentions") or []
         if membres_mentionnes:
             notifier_mentions(serializer.instance, membres_mentionnes)
+
+    @action(detail=True, methods=["post"])
+    def reagieren(self, request, pk=None):
+        sujet = self.get_object()
+        reaktionen.umschalten(sujet, request.user.membre, request.data.get("emoji"))
+        return Response(
+            {
+                "reaktionen": reaktionen.reaktionen_liste(
+                    sujet, request.user.membre.id, neu_laden=True
+                )
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="beste-antwort")
+    def beste_antwort(self, request, pk=None):
+        """Eine Antwort als hilfreichste markieren (oder die Markierung lösen). Nur der
+        Themenersteller oder Bureau Admin+ ; die Antwort muss zu diesem Thema gehören und
+        sichtbar sein."""
+        sujet = self.get_object()
+        membre = request.user.membre
+        darf = sujet.auteur_id == membre.id or (
+            ROLE_LEVELS.get(request.user.role, 0) >= MODERATION_MIN_LEVEL
+        )
+        if not darf:
+            raise PermissionDenied("Nur der Themenersteller kann die beste Antwort wählen.")
+        reponse_id = request.data.get("reponse")
+        if reponse_id in (None, ""):
+            sujet.beste_antwort = None
+        else:
+            try:
+                antwort = sujet.reponses.get(pk=reponse_id, est_masquee=False)
+            except (ReponseForum.DoesNotExist, ValueError, DjangoValidationError):
+                raise ValidationError({"reponse": "Antwort nicht gefunden."}) from None
+            sujet.beste_antwort = antwort
+        sujet.save(update_fields=["beste_antwort"])
+        return Response(
+            self.get_serializer(
+                self.get_queryset().get(pk=sujet.pk),
+                context={**self.get_serializer_context(), "vue": "detail"},
+            ).data
+        )
 
     @action(detail=True, methods=["post"])
     def epingler(self, request, pk=None):
@@ -402,7 +503,22 @@ class ReponseForumViewSet(
 ):
     serializer_class = ReponseForumSerializer
     permission_classes = [ContenuCommunautePermission]
-    queryset = ReponseForum.objects.select_related("auteur", "sujet")
+    queryset = ReponseForum.objects.select_related("auteur", "sujet", "repond_a__auteur")
+
+    @action(detail=True, methods=["post"])
+    def reagieren(self, request, pk=None):
+        reponse = self.get_object()
+        if reponse.est_masquee or reponse.sujet.est_masque:
+            if ROLE_LEVELS.get(request.user.role, 0) < MODERATION_MIN_LEVEL:
+                raise NotFound()
+        reaktionen.umschalten(reponse, request.user.membre, request.data.get("emoji"))
+        return Response(
+            {
+                "reaktionen": reaktionen.reaktionen_liste(
+                    reponse, request.user.membre.id, neu_laden=True
+                )
+            }
+        )
 
     def perform_create(self, serializer):
         sujet = get_object_or_404(Sujet, pk=self.request.data.get("sujet"))
@@ -411,6 +527,8 @@ class ReponseForumViewSet(
         if sujet.est_masque:
             raise ValidationError({"sujet": "Sujet introuvable."})
         serializer.save()
+        # Forum A : „letzte Aktivität“ fortschreiben (Sortierung „Aktivste“, Listenzeile).
+        Sujet.objects.filter(pk=sujet.pk).update(letzte_aktivitaet=timezone.now())
         # Notification (ajoutée le 2026-09-16) — auteur du sujet + précédents répondants
         # uniquement, voir notifications.notifier_nouvelle_reponse_forum.
         notifier_nouvelle_reponse_forum(serializer.instance)

@@ -22,6 +22,7 @@ from .models import (
     PublicationPartage,
     QuestionQuiz,
     Quiz,
+    Reaktion,
     ReponseForum,
     ReponseQuiz,
     Sujet,
@@ -49,6 +50,12 @@ class HashtagAdmin(admin.ModelAdmin):
 
 admin.site.register(PublicationLike)
 admin.site.register(PublicationPartage)
+
+
+@admin.register(Reaktion)
+class ReaktionAdmin(admin.ModelAdmin):
+    list_display = ["id", "membre", "emoji", "created_at"]
+    list_filter = ["emoji"]
 
 
 @admin.register(Sujet)
