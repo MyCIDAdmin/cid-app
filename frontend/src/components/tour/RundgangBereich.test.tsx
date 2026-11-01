@@ -63,6 +63,30 @@ describe("RundgangBereich", () => {
     });
   });
 
+  it("bestätigt das Einblenden mit einer Meldung", async () => {
+    renderWithProviders(<RundgangBereich />);
+    fireEvent.click(screen.getByText("hilfe.hinweise"));
+    expect(await screen.findByRole("status")).toHaveTextContent("hilfe.hinweise_an");
+  });
+
+  it("meldet, wenn der Tipp zur aktuellen Seite wieder oben erscheint", async () => {
+    renderWithProviders(<RundgangBereich />, { route: "/reisen", path: "*" });
+    fireEvent.click(screen.getByText("hilfe.hinweise"));
+    expect(await screen.findByRole("status")).toHaveTextContent("hilfe.hinweise_hier");
+  });
+
+  it("meldet, wenn bereits alle Tipps eingeblendet sind", async () => {
+    useAuthStore.setState({
+      user: {
+        ...(useAuthStore.getState().user as CidUser),
+        ui_praeferenzen: { tour: { status: "abgeschlossen", hinweise: [], hinweise_aus: false } },
+      },
+    });
+    renderWithProviders(<RundgangBereich />);
+    fireEvent.click(screen.getByText("hilfe.hinweise"));
+    expect(await screen.findByRole("status")).toHaveTextContent("hilfe.hinweise_schon");
+  });
+
   it("verweist auf die Aufgabenkarten", () => {
     renderWithProviders(<RundgangBereich />);
     expect(screen.getByText("hilfe.karten")).toHaveAttribute("href", "/hilfe/karten");
