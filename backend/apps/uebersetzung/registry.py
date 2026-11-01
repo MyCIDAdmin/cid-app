@@ -6,6 +6,7 @@ UEBERSETZBAR = {
     "boutique.produit": ["nom", "description"],
     "adhesions.campagneadhesion": ["nom", "description"],
     "adhesions.offreadhesion": ["nom", "description"],
+    "adhesions.rabaisoffre": ["label_fr", "instructions_fr"],
     "communaute.album": ["nom", "description"],
     "umfragen.umfrage": ["titel", "beschreibung"],
     "umfragen.umfragefrage": ["text", "thema"],

@@ -120,6 +120,7 @@ import type {
 } from "../../types/adhesion";
 import { useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { uebersetzt } from "../../utils/uebersetzung";
 import { lokaleSprache } from "../../utils/datum";
 
 const STATUTS_RETIRABLES: StatutSouscription[] = [
@@ -396,7 +397,9 @@ export default function MonAdhesionPage() {
           angebot={
             souscriptionActuelle.familien_info?.rolle === "hauptperson"
               ? souscriptionActuelle.familien_info.angebot
-              : (offreActuelle?.nom ?? "—")
+              : offreActuelle
+                ? uebersetzt(offreActuelle, "nom")
+                : "—"
           }
           kampagne={campagne?.nom}
           gueltigBis={campagne ? formatDate(campagne.date_fin) : undefined}
@@ -412,7 +415,7 @@ export default function MonAdhesionPage() {
           </h2>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="text-base font-bold text-text-primary">
-              {offreActuelle?.nom ?? "—"}
+              {offreActuelle ? uebersetzt(offreActuelle, "nom") : "—"}
             </span>
             <span
               className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[souscriptionActuelle.statut]}`}
@@ -434,7 +437,9 @@ export default function MonAdhesionPage() {
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/80">
             {t("hero.titre")}
           </h2>
-          <div className="mt-1 text-lg font-bold">{offreActuelle?.nom ?? "—"}</div>
+          <div className="mt-1 text-lg font-bold">
+            {offreActuelle ? uebersetzt(offreActuelle, "nom") : "—"}
+          </div>
           {campagne && (
             <div className="text-sm text-white/80">
               {t("hero.campagne", { nom: campagne.nom })} ·{" "}
@@ -505,7 +510,7 @@ export default function MonAdhesionPage() {
 
       {zahlungsInfoOffen && souscriptionActuelle && (
         <ZahlungsInfoDialog
-          angebot={offreActuelle?.nom ?? "—"}
+          angebot={offreActuelle ? uebersetzt(offreActuelle, "nom") : "—"}
           kampagne={campagne?.nom}
           betrag={souscriptionActuelle.prix_paye}
           nachweisOffen={souscriptionActuelle.statut === "en_attente_justificatif"}
@@ -520,7 +525,9 @@ export default function MonAdhesionPage() {
         >
           <h2 className="mb-1 text-sm font-bold text-text-primary">{t("justificatif.titre")}</h2>
           {rabaisActuel && (
-            <p className="mb-3 text-xs text-text-secondary">{rabaisActuel.instructions_fr}</p>
+            <p className="mb-3 text-xs text-text-secondary">
+              {uebersetzt(rabaisActuel, "instructions_fr")}
+            </p>
           )}
 
           {justificatifActuel && justificatifActuel.statut === "en_attente" ? (
@@ -667,7 +674,8 @@ export default function MonAdhesionPage() {
                 <tbody>
                   {mesSouscriptions.data.results.map((s) => {
                     const camp = campagnesById.get(s.campagne);
-                    const offreNom = camp?.offres.find((o) => o.id === s.offre)?.nom;
+                    const offreDaten = camp?.offres.find((o) => o.id === s.offre);
+                    const offreNom = offreDaten ? uebersetzt(offreDaten, "nom") : undefined;
                     return (
                       <tr key={s.id} className="border-b border-text-tertiary/10 last:border-0">
                         <td className="py-1">{camp?.nom ?? "—"}</td>

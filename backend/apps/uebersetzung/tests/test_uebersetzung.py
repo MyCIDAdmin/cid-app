@@ -114,3 +114,35 @@ def test_neu_uebersetzen_ohne_schluessel_400():
     client.force_authenticate(user=_admin())
     url = reverse("uebersetzung:neu", args=["evenements.evenement", str(ev.pk)])
     assert client.post(url).status_code == 400
+
+
+@override_settings(DEEPL_API_KEY="test:fx")
+def test_rabatt_bezeichnung_wird_uebersetzt_und_von_der_api_geliefert():
+    from apps.adhesions.serializers import RabaisOffreSerializer
+    from apps.adhesions.tests.factories import RabaisOffreFactory
+
+    rabais = RabaisOffreFactory(label_fr="Étudiant", instructions_fr="Carte étudiante")
+    with patch("apps.uebersetzung.services.deepl.uebersetzen", side_effect=_fake):
+        uebersetze_objekt(rabais)
+    daten = RabaisOffreSerializer(rabais).data
+    assert daten["uebersetzungen"]["label_fr"]["de"] == "[de] Étudiant"
+    assert daten["uebersetzungen"]["instructions_fr"]["ar"] == "[ar] Carte étudiante"
+
+
+@override_settings(DEEPL_API_KEY="test:fx")
+def test_nachholen_uebersetzt_bestehende_objekte():
+    from django.core.management import call_command
+
+    from apps.adhesions.tests.factories import OffreAdhesionFactory
+
+    offre = OffreAdhesionFactory(nom="Plus")
+    with patch("apps.uebersetzung.services.deepl.uebersetzen", side_effect=_fake):
+        call_command("uebersetzung_nachholen", "adhesions.offreadhesion")
+    assert uebersetzungen_von(offre)["nom"]["de"] == "[de] Plus"
+
+
+def test_nachholen_ohne_schluessel_bricht_ab():
+    from django.core.management import CommandError, call_command
+
+    with pytest.raises(CommandError):
+        call_command("uebersetzung_nachholen")

@@ -82,6 +82,14 @@ describe("RabaisManager", () => {
     expect(screen.getByText("-15.00 €")).toBeInTheDocument();
   });
 
+  it("bietet je Rabatt den Übersetzungen-Knopf, in der Lesansicht nicht", () => {
+    const { unmount } = renderWithProviders(<RabaisManager offre={offre()} />);
+    expect(screen.getAllByRole("button", { name: /uebersetzung\./ }).length).toBeGreaterThan(0);
+    unmount();
+    renderWithProviders(<RabaisManager offre={offre()} modifiable={false} />);
+    expect(screen.queryByRole("button", { name: /uebersetzung\./ })).toBeNull();
+  });
+
   it("crée un rabais en montant fixe avec justificatif requis", () => {
     const creerMutate = vi.fn();
     vi.mocked(useAdhesionsHooks.useCreerRabais).mockReturnValue({

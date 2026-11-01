@@ -21,6 +21,7 @@ import { useCampagneActive, useMesSouscriptions } from "../../hooks/useAdhesions
 import { useAuthStore } from "../../store/authStore";
 import MembershipOffersPublic from "./MembershipOffersPublic";
 import { lokaleSprache } from "../../utils/datum";
+import { uebersetzt } from "../../utils/uebersetzung";
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -55,7 +56,9 @@ export default function MembershipSection() {
       <h2 className="text-xs font-semibold uppercase tracking-wide text-white/80">
         {t("membership.deja_membre_titre")}
       </h2>
-      <div className="mt-1 text-xl font-bold">{offreActuelle?.nom ?? "—"}</div>
+      <div className="mt-1 text-xl font-bold">
+        {offreActuelle ? uebersetzt(offreActuelle, "nom") : "—"}
+      </div>
       <div className="text-sm text-white/80">
         {t("membership.deja_membre_expire_le", { date: formatDate(campagne.date_fin) })}
       </div>

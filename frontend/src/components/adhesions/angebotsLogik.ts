@@ -5,6 +5,7 @@
  * Alle Preise hier sind nur Anzeige. Der gespeicherte Preis wird beim Beitritt immer vom Server
  * berechnet (CLAUDE.md §8, SouscriptionViewSet.souscrire).
  */
+import { uebersetzt } from "../../utils/uebersetzung";
 import type { AvantageOffre, OffreAdhesion, RabaisOffre, TypeRabais } from "../../types/adhesion";
 
 export type ZielGruppe = "ich" | "familie" | "kind";
@@ -117,9 +118,12 @@ export function rabaisVomTyp(offre: OffreAdhesion, typ: TypeRabais | null): Raba
   return offre.rabais.find((r) => r.type_rabais === typ) ?? null;
 }
 
-/** Bezeichnung des Rabatts in der App-Sprache (Rückfall auf Französisch, die Pflichtsprache). */
+/** Bezeichnung des Rabatts in der App-Sprache : gespeicherte Übersetzung (DeepL oder manuell
+ * korrigiert), sonst das alte Sprachfeld (label_de, label_ar), sonst der Originaltext. */
 export function rabaisBezeichnung(r: RabaisOffre, sprache: string): string {
   const kurz = sprache.slice(0, 2);
+  const uebersetzung = uebersetzt(r, "label_fr", kurz);
+  if (uebersetzung !== r.label_fr) return uebersetzung;
   if (kurz === "de" && r.label_de) return r.label_de;
   if (kurz === "ar" && r.label_ar) return r.label_ar;
   return r.label_fr;
