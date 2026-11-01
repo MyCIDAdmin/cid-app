@@ -213,6 +213,7 @@ function publication(overrides: Partial<Publication> = {}): Publication {
     jai_partage: false,
     est_auteur: false,
     commentaires: [],
+    reaktionen: [],
     ...overrides,
   };
 }

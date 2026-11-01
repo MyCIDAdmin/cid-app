@@ -57,6 +57,7 @@ from .models import (
 )
 from .notifications import notifier_mentions
 from .permissions import MODERATION_MIN_LEVEL
+from .reaktionen import reaktionen_liste
 from .validators import (
     valider_document_pdf,
     valider_et_reencoder_photo,
@@ -75,7 +76,23 @@ class AuteurSerializer(serializers.ModelSerializer):
         fields = ["id", "prenom", "nom", "photo"]
 
 
-class CommentaireSerializer(serializers.ModelSerializer):
+class ReaktionenMixin(serializers.Serializer):
+    """Feld `reaktionen` = [{emoji, anzahl, ich}] – nur Zähler und „ich“, keine Namen (wie im
+    Chat). Wird von Neuigkeit, Kommentar, Forumsthema und -antwort gemeinsam genutzt."""
+
+    reaktionen = serializers.SerializerMethodField()
+
+    def get_reaktionen(self, obj) -> list:
+        request = self.context.get("request")
+        membre = (
+            getattr(request.user, "membre", None)
+            if request is not None and request.user.is_authenticated
+            else None
+        )
+        return reaktionen_liste(obj, membre.id if membre is not None else None)
+
+
+class CommentaireSerializer(ReaktionenMixin, serializers.ModelSerializer):
     auteur = AuteurSerializer(read_only=True)
     reponses = serializers.SerializerMethodField()
     est_auteur = serializers.SerializerMethodField()
@@ -107,6 +124,7 @@ class CommentaireSerializer(serializers.ModelSerializer):
             "reponses",
             "est_auteur",
             "mentions",
+            "reaktionen",
         ]
         read_only_fields = ["id", "est_masque", "created_at"]
 
@@ -125,7 +143,11 @@ class CommentaireSerializer(serializers.ModelSerializer):
         # profonde, les réponses elles-mêmes n'ont pas de champ "reponses" ici.
         if obj.parent_id is not None:
             return []
-        qs = obj.reponses.filter(est_masque=False).select_related("auteur")
+        qs = (
+            obj.reponses.filter(est_masque=False)
+            .select_related("auteur")
+            .prefetch_related("reaktionen")
+        )
         return CommentaireSerializer(qs, many=True, context=self.context).data
 
     def create(self, validated_data):
@@ -138,7 +160,7 @@ class CommentaireSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class PublicationSerializer(serializers.ModelSerializer):
+class PublicationSerializer(ReaktionenMixin, serializers.ModelSerializer):
     auteur = AuteurSerializer(read_only=True)
     hashtags = serializers.SlugRelatedField(slug_field="label", many=True, read_only=True)
     nombre_likes = serializers.IntegerField(source="likes.count", read_only=True)
@@ -170,6 +192,7 @@ class PublicationSerializer(serializers.ModelSerializer):
             "jai_partage",
             "est_auteur",
             "commentaires",
+            "reaktionen",
         ]
         read_only_fields = ["id", "est_masquee", "motif_masquage", "created_at", "updated_at"]
 
@@ -215,7 +238,11 @@ class PublicationSerializer(serializers.ModelSerializer):
     def get_commentaires(self, obj):
         # Seulement les commentaires racine (les réponses sont nichées dedans, voir
         # CommentaireSerializer.get_reponses) — évite de lister deux fois les réponses.
-        qs = obj.commentaires.filter(parent__isnull=True, est_masque=False).select_related("auteur")
+        qs = (
+            obj.commentaires.filter(parent__isnull=True, est_masque=False)
+            .select_related("auteur")
+            .prefetch_related("reaktionen")
+        )
         return CommentaireSerializer(qs, many=True, context=self.context).data
 
     def create(self, validated_data):
@@ -261,9 +288,16 @@ class PublicationPartageSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class ReponseForumSerializer(serializers.ModelSerializer):
+class ReponseForumSerializer(ReaktionenMixin, serializers.ModelSerializer):
     auteur = AuteurSerializer(read_only=True)
     est_auteur = serializers.SerializerMethodField()
+    # Zitat-Antwort : schreibbar als ID einer früheren Antwort desselben Themas (validate()),
+    # lesbar zusätzlich als kleiner Auszug (`zitat`) für den Zitatkasten in der Blase.
+    repond_a = serializers.PrimaryKeyRelatedField(
+        queryset=ReponseForum.objects.all(), required=False, allow_null=True
+    )
+    zitat = serializers.SerializerMethodField()
+    ist_beste = serializers.SerializerMethodField()
     # Voir CommentaireSerializer.mentions ci-dessus — même mécanisme (champ texte libre, pas
     # de TipTap).
     mentions = serializers.PrimaryKeyRelatedField(
@@ -284,8 +318,21 @@ class ReponseForumSerializer(serializers.ModelSerializer):
             "created_at",
             "est_auteur",
             "mentions",
+            "repond_a",
+            "zitat",
+            "ist_beste",
+            "reaktionen",
         ]
         read_only_fields = ["id", "est_masquee", "created_at"]
+
+    def validate(self, attrs):
+        zitiert = attrs.get("repond_a")
+        sujet = attrs.get("sujet")
+        if zitiert is not None and sujet is not None and zitiert.sujet_id != sujet.id:
+            raise serializers.ValidationError(
+                {"repond_a": "Die zitierte Antwort gehört zu einem anderen Thema."}
+            )
+        return attrs
 
     def get_est_auteur(self, obj) -> bool:
         request = self.context.get("request")
@@ -293,6 +340,20 @@ class ReponseForumSerializer(serializers.ModelSerializer):
             return False
         membre = getattr(request.user, "membre", None)
         return membre is not None and obj.auteur_id == membre.id
+
+    def get_zitat(self, obj):
+        zitiert = obj.repond_a
+        if zitiert is None or zitiert.est_masquee:
+            return None
+        text = " ".join((zitiert.contenu or "").split())
+        return {
+            "id": str(zitiert.id),
+            "auteur": {"prenom": zitiert.auteur.prenom, "nom": zitiert.auteur.nom},
+            "auszug": text[:140] + ("…" if len(text) > 140 else ""),
+        }
+
+    def get_ist_beste(self, obj) -> bool:
+        return obj.sujet.beste_antwort_id == obj.id
 
     def create(self, validated_data):
         membre = self.context["request"].user.membre
@@ -598,9 +659,11 @@ class MessageGroupeSerializer(serializers.ModelSerializer):
         return membre is not None and obj.likes.filter(membre=membre).exists()
 
 
-class SujetSerializer(serializers.ModelSerializer):
+class SujetSerializer(ReaktionenMixin, serializers.ModelSerializer):
     auteur = AuteurSerializer(read_only=True)
     nombre_reponses = serializers.IntegerField(read_only=True)
+    nombre_reaktionen = serializers.SerializerMethodField()
+    letzte_antwort_von = serializers.SerializerMethodField()
     reponses = serializers.SerializerMethodField()
     est_auteur = serializers.SerializerMethodField()
     # Voir CommentaireSerializer.mentions ci-dessus — même mécanisme (champ texte libre, pas
@@ -630,9 +693,16 @@ class SujetSerializer(serializers.ModelSerializer):
             "reponses",
             "est_auteur",
             "mentions",
+            "reaktionen",
+            "letzte_aktivitaet",
+            "letzte_antwort_von",
+            "beste_antwort",
+            "nombre_reaktionen",
         ]
         read_only_fields = [
             "id",
+            "letzte_aktivitaet",
+            "beste_antwort",
             "est_epingle",
             "est_verrouille",
             "est_masque",
@@ -648,12 +718,24 @@ class SujetSerializer(serializers.ModelSerializer):
         membre = getattr(request.user, "membre", None)
         return membre is not None and obj.auteur_id == membre.id
 
+    def get_nombre_reaktionen(self, obj) -> int:
+        return len(obj.reaktionen.all())
+
+    def get_letzte_antwort_von(self, obj):
+        """Vorname der letzten Antwort (Annotation der Listenabfrage) ; None, wenn es keine
+        Antwort gibt oder das Thema nicht aus der Liste stammt."""
+        return getattr(obj, "letzte_antwort_prenom", None)
+
     def get_reponses(self, obj):
         # Chargées uniquement sur le détail (retrieve) — voir views.SujetViewSet.get_serializer
         # qui n'inclut ce champ que pour l'action "retrieve" (liste = aperçu léger).
         if self.context.get("vue") != "detail":
             return []
-        qs = obj.reponses.filter(est_masquee=False).select_related("auteur")
+        qs = (
+            obj.reponses.filter(est_masquee=False)
+            .select_related("auteur", "repond_a__auteur")
+            .prefetch_related("reaktionen")
+        )
         return ReponseForumSerializer(qs, many=True, context=self.context).data
 
     def create(self, validated_data):

@@ -95,6 +95,18 @@ export default function RichTextEditor({
     }
   }, [editor, value]);
 
+  // Der Platzhalter wird von TipTap nur beim Erzeugen des Editors gelesen. Kommt die Übersetzung
+  // erst danach an (Namespace wird nachgeladen), blieb der Rohschlüssel „fil.placeholder_…“
+  // stehen : hier wird der aktuelle Text in die Erweiterung geschrieben und neu gezeichnet.
+  useEffect(() => {
+    if (!editor) return;
+    const erweiterung = editor.extensionManager.extensions.find((e) => e.name === "placeholder");
+    if (erweiterung && erweiterung.options.placeholder !== (placeholder ?? "")) {
+      erweiterung.options.placeholder = placeholder ?? "";
+      editor.view.dispatch(editor.state.tr);
+    }
+  }, [editor, placeholder]);
+
   if (!editor) return null;
 
   const boutonClasse = (actif: boolean) =>

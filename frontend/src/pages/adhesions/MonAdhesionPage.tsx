@@ -77,6 +77,13 @@
  * Mitgliedschaft die große drehbare Karte mit Kennzahlen (MitgliedsKarteAbschnitt.tsx), darunter
  * Vorteile, Familienpaket, Beitrag & Zahlungen und Verlauf als einklappbare Bereiche. Alle
  * bisherigen Inhalte und Abläufe bleiben erhalten ; nur ihre Anordnung ändert sich.
+ *
+ * Release 2026.11, Angebote A (Konzept_Angebote_Beitritt.md) : der Angebotsbereich ist die
+ * Komponente AngebotsAuswahl (Für wen?, Rabatt-Chips, Kacheln mit Kartenvorschau und sichtbaren
+ * Rabatten, feste Beitrittsleiste, Vergleich). Diese Seite behält Auswahl, Rabatt, Familie und
+ * den Beitritt (handleSouscrire, Profil ergänzen) ; die Kacheln sind Radio-Auswahl statt
+ * Aufklappen. Eine stornierte oder abgelaufene Mitgliedschaft erscheint als neutrale Karte
+ * „Deine letzte Mitgliedschaft“, der Beitragsbereich bleibt für Nicht-Mitglieder eingeklappt.
  */
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -84,19 +91,13 @@ import { Link } from "react-router-dom";
 
 import Akkordeon from "../../components/adhesions/Akkordeon";
 import FamilienBereich from "../../components/adhesions/FamilienBereich";
-import FamilienErfassung from "../../components/adhesions/FamilienErfassung";
-import {
-  LEERE_FAMILIE,
-  berechnePaket,
-  familieVollstaendig,
-  type FamilienEingabe,
-} from "../../components/adhesions/familienpreis";
+import AngebotsAuswahl from "../../components/adhesions/AngebotsAuswahl";
+import { LEERE_FAMILIE, type FamilienEingabe } from "../../components/adhesions/familienpreis";
 import MitgliedsKarteAbschnitt from "../../components/adhesions/MitgliedsKarteAbschnitt";
 import NaechsterSchritt from "../../components/adhesions/NaechsterSchritt";
 import { schrittArt, type SchrittZiel } from "../../components/adhesions/naechsterSchritt";
 import PaiementStepper from "../../components/adhesions/PaiementStepper";
 import VorteileKacheln from "../../components/adhesions/VorteileKacheln";
-import VorteilSymbol from "../../components/adhesions/VorteilSymbol";
 import { vorteileMitDarstellung } from "../../components/adhesions/vorteile";
 import ZahlungsInfoDialog from "../../components/adhesions/ZahlungsInfoDialog";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
@@ -117,11 +118,8 @@ import type {
   Souscription,
   StatutSouscription,
 } from "../../types/adhesion";
-import CompleterProfilIdentite, {
-  estErreurProfilIncomplet,
-} from "../../components/adhesions/CompleterProfilIdentite";
+import { useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
-import { uebersetzt } from "../../utils/uebersetzung";
 import { lokaleSprache } from "../../utils/datum";
 
 const STATUTS_RETIRABLES: StatutSouscription[] = [
@@ -130,36 +128,6 @@ const STATUTS_RETIRABLES: StatutSouscription[] = [
   "en_attente_paiement",
   "rabais_refuse",
 ];
-
-// Palette catégorielle fixe (jamais recyclée arbitrairement) — voir le docstring de tête pour
-// le choix des 3 slots. `puce` colore le repère "✓" devant chaque avantage listé ; `liseret_haut`
-// est la même palette en bordure haute (façon mycid.org/membership, voir docstring de tête).
-const ACCENTS_OFFRE = [
-  { liseret: "border-l-cat-1", liseret_haut: "border-t-cat-1", puce: "text-cat-1" },
-  { liseret: "border-l-cat-2", liseret_haut: "border-t-cat-2", puce: "text-cat-2" },
-  { liseret: "border-l-cat-3", liseret_haut: "border-t-cat-3", puce: "text-cat-3" },
-] as const;
-const ACCENT_NEUTRE = {
-  liseret: "border-l-text-tertiary/30",
-  liseret_haut: "border-t-text-tertiary/30",
-  puce: "text-ca",
-} as const;
-
-// Retour utilisateur du 2026-09-29 ("Verwaltung der Mitgliedschaftskampagnen" : "2. Färblich
-// highlighten") — reprend les mêmes 3 emplacements que ACCENTS_OFFRE (voir CouleurOffre côté
-// backend/types/adhesion.ts) : un choix explicite de l'admin (offre.couleur) l'emporte sur
-// l'attribution automatique par index, qui reste le repli historique quand `couleur` est vide.
-const COULEUR_OFFRE_INDEX: Record<string, number> = { cat_1: 0, cat_2: 1, cat_3: 2 };
-
-function accentOffre(
-  offre: Pick<OffreAdhesion, "couleur">,
-  index: number,
-): (typeof ACCENTS_OFFRE)[number] | typeof ACCENT_NEUTRE {
-  if (offre.couleur && offre.couleur in COULEUR_OFFRE_INDEX) {
-    return ACCENTS_OFFRE[COULEUR_OFFRE_INDEX[offre.couleur]];
-  }
-  return ACCENTS_OFFRE[index] ?? ACCENT_NEUTRE;
-}
 
 const STATUT_STYLES: Record<StatutSouscription, string> = {
   brouillon: "bg-bg-tertiary text-text-secondary",
@@ -222,6 +190,8 @@ export default function MonAdhesionPage() {
   const fichierInputRef = useRef<HTMLInputElement>(null);
 
   const campagne = campagneActive.data;
+  const user = useAuthStore((st) => st.user);
+  const kartenName = [user?.prenom, user?.nom].filter(Boolean).join(" ");
 
   const campagnesById = useMemo(() => {
     const map = new Map<string, CampagneAdhesion>();
@@ -234,6 +204,9 @@ export default function MonAdhesionPage() {
     (s) => campagne && s.campagne === campagne.id,
   );
   const dejaPayee = souscriptionActuelle?.statut === "payee";
+  // Storniert oder abgelaufen : keine laufende Mitgliedschaft, also neutrale Karte statt Statuskachel.
+  const beendet =
+    souscriptionActuelle?.statut === "annulee" || souscriptionActuelle?.statut === "expiree";
 
   // Tage bis zum letzten Tag der Kampagne (inklusive) ; null ohne Kampagne.
   const tage = campagne ? tageBis(campagne.date_fin) : null;
@@ -265,9 +238,11 @@ export default function MonAdhesionPage() {
     ? vorteileMitDarstellung(souscriptionActuelle.snapshot_avantages, offreActuelle?.avantages)
     : [];
 
-  function choisirOffre(offreId: string) {
-    setOffreSelectionneeId((cur) => (cur === offreId ? null : offreId));
-    setRabaisSelectionneId(null);
+  // Auswahl einer Kachel (Radio-Verhalten) ; `null` hebt sie auf. Ein Rabatt aus den Chips über den
+  // Kacheln (Studierende, Senioren) wird gleich mit übernommen.
+  function choisirOffre(offreId: string | null, rabaisId: string | null = null) {
+    setOffreSelectionneeId(offreId);
+    setRabaisSelectionneId(offreId ? rabaisId : null);
     // Bei erneuter Wahl desselben Angebots die bisher eingetragenen Personen vorbelegen (die
     // Einwilligung muss neu bestätigt werden).
     const gleich = souscriptionActuelle?.offre === offreId;
@@ -430,7 +405,31 @@ export default function MonAdhesionPage() {
         />
       )}
 
-      {souscriptionActuelle && !dejaPayee && (
+      {souscriptionActuelle && beendet && (
+        <div className="mb-5 rounded-cid-lg border border-text-tertiary/15 bg-bg-primary p-4 shadow-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
+            {t("angebote.letzte_mitgliedschaft")}
+          </h2>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-base font-bold text-text-primary">
+              {offreActuelle?.nom ?? "—"}
+            </span>
+            <span
+              className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[souscriptionActuelle.statut]}`}
+            >
+              {t(`statut.${souscriptionActuelle.statut}`)}
+            </span>
+          </div>
+          {campagne && (
+            <p className="mt-1 text-sm text-text-secondary">
+              {t("hero.campagne", { nom: campagne.nom })} ·{" "}
+              {formatMontant(souscriptionActuelle.prix_paye)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {souscriptionActuelle && !dejaPayee && !beendet && (
         <div className="mb-5 rounded-cid-lg bg-ca p-5 text-white shadow-sm">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/80">
             {t("hero.titre")}
@@ -614,201 +613,30 @@ export default function MonAdhesionPage() {
           )}
 
           {campagne && offresVisibles.length > 0 && (
-            <div className="mt-5 flex flex-wrap justify-center gap-4">
-              {offresVisibles.map((offre, index) => {
-                const accent = accentOffre(offre, index);
-                const avantagesOffre = offre.avantages.slice().sort((a, b) => a.ordre - b.ordre);
-                const texteConditionAge =
-                  offre.condition_age_min != null && offre.condition_age_max != null
-                    ? t("offres.condition_age_min_max", {
-                        min: offre.condition_age_min,
-                        max: offre.condition_age_max,
-                      })
-                    : offre.condition_age_min != null
-                      ? t("offres.condition_age_min", { min: offre.condition_age_min })
-                      : offre.condition_age_max != null
-                        ? t("offres.condition_age_max", { max: offre.condition_age_max })
-                        : null;
-                const selectionnee = offreSelectionneeId === offre.id;
-                // Repère "Beliebt" façon mycid.org/membership — depuis le 2026-09-29, un tag
-                // explicite côté admin (offre.populaire) l'emporte dès qu'au moins une offre de la
-                // campagne le porte ; sinon repli sur l'ancien heuristique purement décoratif
-                // (offre du milieu à partir de 3 offres visibles, voir MembershipOffersPublic.tsx
-                // pour la même convention côté page publique).
-                const populaire = uneOffrePopulaireExplicite
-                  ? offre.populaire
-                  : offresVisibles.length >= 3 && index === Math.floor(offresVisibles.length / 2);
-
-                return (
-                  <div
-                    key={offre.id}
-                    className={`relative flex flex-col rounded-cid-lg border-t-4 bg-bg-primary p-5 shadow-sm w-full sm:w-[calc(50%_-_0.5rem)] lg:w-[calc(33.333%_-_0.667rem)] ${
-                      accent.liseret_haut
-                    } ${selectionnee ? "ring-2 ring-ca" : ""}`}
-                  >
-                    {populaire && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-ca px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">
-                        {t("offres.badge_populaire")}
-                      </span>
-                    )}
-
-                    {/* Kopf : feste Höhe für das Symbol, damit Name und Preis in allen Kacheln einer
-                      Reihe auf gleicher Höhe stehen (auch ohne Symbol). */}
-                    <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center">
-                      {offre.icone && (
-                        <img
-                          src={offre.icone}
-                          alt=""
-                          aria-hidden="true"
-                          className="h-10 w-10 rounded-cid object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="text-center text-sm font-semibold uppercase tracking-wide text-text-tertiary">
-                      {uebersetzt(offre, "nom")}
-                    </div>
-                    <div className="mt-2 text-center font-display text-3xl font-bold text-text-primary">
-                      {offre.ist_familienpaket && (
-                        <span className="mr-1 text-sm font-medium text-text-tertiary">
-                          {t("familie.ab")}
-                        </span>
-                      )}
-                      {formatMontant(
-                        offre.ist_familienpaket
-                          ? (berechnePaket(offre, campagne.offres, 0, 0)?.gesamt ??
-                              offre.prix_plein)
-                          : offre.prix_plein,
-                      )}
-                    </div>
-
-                    {/* Mitte : füllt den freien Platz ; Hinweise zentriert unter dem Preis, die
-                      Vorteile linksbündig. So sitzt der Button in jeder Kachel unten. */}
-                    <div className="flex flex-1 flex-col">
-                      {offre.ist_familienpaket && (
-                        <p className="mt-1 text-center text-[11px] text-text-tertiary">
-                          {t("familie.kombination", {
-                            pct: Number(offre.familie_rabatt_pct),
-                            erwachsene: offre.max_erwachsene,
-                            kinder: offre.max_kinder,
-                          })}
-                        </p>
-                      )}
-                      {offre.description && (
-                        <p className="mt-2 text-center text-sm text-text-secondary">
-                          {uebersetzt(offre, "description")}
-                        </p>
-                      )}
-                      {texteConditionAge && (
-                        <p className="mt-1 text-center text-[11px] text-text-tertiary">
-                          {texteConditionAge}
-                        </p>
-                      )}
-
-                      {avantagesOffre.length > 0 && (
-                        <ul className="mt-4 space-y-1.5">
-                          {avantagesOffre.map((av) => (
-                            <li
-                              key={av.ordre}
-                              className="flex items-start gap-1.5 text-sm text-text-secondary"
-                            >
-                              <span className={`mt-0.5 shrink-0 ${accent.puce}`}>
-                                <VorteilSymbol name={av.icone} className="h-4 w-4" />
-                              </span>
-                              {av.texte_fr}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    {!selectionnee && (
-                      <button
-                        type="button"
-                        onClick={() => choisirOffre(offre.id)}
-                        className="mt-5 w-full rounded-cid bg-ca px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-cad"
-                      >
-                        {t("offres.rejoindre")}
-                      </button>
-                    )}
-
-                    {selectionnee && (
-                      <div className="mt-5 border-t border-text-tertiary/10 pt-4">
-                        {offre.ist_familienpaket && (
-                          <FamilienErfassung
-                            offre={offre}
-                            campagne={campagne}
-                            wert={familie}
-                            onChange={setFamilie}
-                          />
-                        )}
-                        {offre.rabais.length > 0 && (
-                          <div className="mb-2">
-                            <label
-                              htmlFor={`rabais-${offre.id}`}
-                              className="mb-1 block text-xs font-medium text-text-secondary"
-                            >
-                              {t("offres.rabais_label")}
-                            </label>
-                            <select
-                              id={`rabais-${offre.id}`}
-                              value={rabaisSelectionneId ?? ""}
-                              onChange={(e) => setRabaisSelectionneId(e.target.value || null)}
-                              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                            >
-                              <option value="">{t("offres.rabais_aucun")}</option>
-                              {offre.rabais.map((r) => (
-                                <option key={r.id} value={r.id}>
-                                  {r.label_fr}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
-                        {souscrireMutation.isError &&
-                          (estErreurProfilIncomplet(souscrireMutation.error) ? (
-                            <CompleterProfilIdentite onComplete={handleSouscrire} />
-                          ) : (
-                            <p className="mb-2 text-xs text-status-dangerText">
-                              {extractApiErrorMessage(souscrireMutation.error, t("offres.erreur"))}
-                            </p>
-                          ))}
-
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={handleSouscrire}
-                            disabled={
-                              souscrireMutation.isPending ||
-                              (offre.ist_familienpaket && !familieVollstaendig(familie))
-                            }
-                            className="flex-1 rounded-cid bg-ca px-3 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
-                          >
-                            {offre.ist_familienpaket
-                              ? t("familie.weiter_zur_zahlung")
-                              : souscriptionActuelle
-                                ? t("offres.changer")
-                                : t("offres.souscrire")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => choisirOffre(offre.id)}
-                            className="rounded-cid border border-text-tertiary/20 px-3 py-1.5 text-sm font-medium text-text-secondary hover:bg-bg-tertiary"
-                          >
-                            {t("offres.annuler_selection")}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <AngebotsAuswahl
+              campagne={campagne}
+              angebote={offresVisibles}
+              populaerExplizit={uneOffrePopulaireExplicite}
+              name={kartenName}
+              auswahlId={offreSelectionneeId}
+              rabaisId={rabaisSelectionneId}
+              familie={familie}
+              hatAnmeldung={!!souscriptionActuelle}
+              wirdGesendet={souscrireMutation.isPending}
+              fehler={souscrireMutation.isError ? souscrireMutation.error : null}
+              onWaehlen={choisirOffre}
+              onRabais={setRabaisSelectionneId}
+              onFamilie={setFamilie}
+              onAbsenden={handleSouscrire}
+            />
           )}
         </div>
       )}
 
-      <Akkordeon titel={t("bereich.beitrag")} offen={!dejaPayee}>
+      <Akkordeon
+        titel={t("bereich.beitrag")}
+        offen={!!souscriptionActuelle && !dejaPayee && !beendet}
+      >
         <PaiementStepper />
       </Akkordeon>
 

@@ -29,7 +29,23 @@
     "envoyer": "Senden",
     "erreur_commentaire": "Der Kommentar konnte nicht gesendet werden.",
     "important_badge": "Wichtig",
-    "marquer_important": "Als wichtig markieren (Mitglieder benachrichtigen)"
+    "marquer_important": "Als wichtig markieren (Mitglieder benachrichtigen)",
+    "mehr": "Mehr",
+    "nombre_commentaires_one": "{{count}} Kommentar",
+    "nombre_commentaires_other": "{{count}} Kommentare",
+    "alle_kommentare_one": "Den Kommentar ansehen",
+    "alle_kommentare_other": "Alle {{count}} Kommentare ansehen",
+    "partager": "Teilen",
+    "abbrechen": "Abbrechen",
+    "composer_zeile": "Was gibt es Neues?",
+    "filter_label": "Filter",
+    "filter_alle": "Alle",
+    "filter_wichtig": "Wichtig",
+    "filter_fotos": "Fotos",
+    "aucune_publication_filtre": "Keine Beiträge für diesen Filter.",
+    "neu_seit_besuch_one": "Neu seit deinem Besuch · {{count}} Beitrag",
+    "neu_seit_besuch_other": "Neu seit deinem Besuch · {{count}} Beiträge",
+    "frueher": "Früher"
   },
   "forum": {
     "titre": "Forum",
@@ -60,7 +76,28 @@
     "placeholder_reponse": "Antwort schreiben…",
     "repondre": "Antworten",
     "erreur_reponse": "Die Antwort konnte nicht gesendet werden.",
-    "sujet_verrouille_message": "Dieses Thema ist gesperrt — neue Antworten werden nicht mehr angenommen."
+    "sujet_verrouille_message": "Dieses Thema ist gesperrt — neue Antworten werden nicht mehr angenommen.",
+    "suche_placeholder": "Themen durchsuchen…",
+    "sortierung_label": "Sortierung",
+    "sort_aktiv": "Aktivste",
+    "sort_neu": "Neueste",
+    "sort_beliebt": "Beliebteste",
+    "sort_unbeantwortet": "Unbeantwortet",
+    "neu_marke": "Neu für dich",
+    "letzte_aktivitaet": "Letzte Aktivität: {{wer}} · {{wann}}",
+    "letzte_aktivitaet_ohne": "Aktiv {{wann}}",
+    "nombre_reaktionen_one": "{{count}} Reaktion",
+    "nombre_reaktionen_other": "{{count}} Reaktionen",
+    "geloest": "Gelöst",
+    "beste_antwort_badge": "Beste Antwort",
+    "beste_antwort_waehlen": "Als beste Antwort",
+    "beste_antwort_loesen": "Markierung entfernen",
+    "zitieren": "Antworten",
+    "antwort_auf": "Antwort an {{name}}",
+    "zitat_abbrechen": "Zitat entfernen",
+    "aucun_resultat": "Keine Themen gefunden.",
+    "ersteller": "Ersteller",
+    "antwort_aria": "Antwort schreiben"
   },
   "emoji": {
     "bouton_aria": "Emoji einfügen"
@@ -562,5 +599,11 @@
     "pause_24h": "24 Stunden",
     "pause_starten": "Schreiben pausieren",
     "pause_beenden": "Schreiben freigeben"
+  },
+  "reaktionen": {
+    "hinzufuegen": "Reaktion hinzufügen",
+    "waehlen": "Reaktion wählen",
+    "mehr": "Mehr Emojis",
+    "schliessen": "Schließen"
   }
 }

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useCommunauteHooks from "../../hooks/useCommunaute";
 import { useAuthStore } from "../../store/authStore";
-import type { Publication } from "../../types/communaute";
+import type { Commentaire, Publication } from "../../types/communaute";
 import FilPage from "./FilPage";
 
 vi.mock("../../hooks/useCommunaute", async () => {
@@ -14,7 +14,7 @@ vi.mock("../../hooks/useCommunaute", async () => {
     usePublications: vi.fn(),
     useCreerPublication: vi.fn(),
     useSupprimerPublication: vi.fn(),
-    useLikerPublication: vi.fn(),
+    useReagieren: vi.fn(),
     usePartagerPublication: vi.fn(),
     useMasquerPublication: vi.fn(),
     useCommenterPublication: vi.fn(),
@@ -84,6 +84,23 @@ function publication(overrides: Partial<Publication> = {}): Publication {
     jai_partage: false,
     est_auteur: false,
     commentaires: [],
+    reaktionen: [],
+    ...overrides,
+  };
+}
+
+function kommentar(overrides: Partial<Commentaire> = {}): Commentaire {
+  return {
+    id: "c1",
+    publication: "p1",
+    parent: null,
+    auteur: auteurA,
+    contenu: "Ein Kommentar",
+    est_masque: false,
+    created_at: "2026-01-01T11:00:00Z",
+    reponses: [],
+    est_auteur: false,
+    reaktionen: [],
     ...overrides,
   };
 }
@@ -106,8 +123,8 @@ describe("FilPage", () => {
     vi.mocked(useCommunauteHooks.useSupprimerPublication).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useSupprimerPublication>>(),
     );
-    vi.mocked(useCommunauteHooks.useLikerPublication).mockReturnValue(
-      mutationMock<ReturnType<typeof useCommunauteHooks.useLikerPublication>>(),
+    vi.mocked(useCommunauteHooks.useReagieren).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useReagieren>>(),
     );
     vi.mocked(useCommunauteHooks.usePartagerPublication).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.usePartagerPublication>>(),
@@ -215,9 +232,9 @@ describe("FilPage", () => {
     expect(screen.queryByText("fil.aucune_publication")).not.toBeInTheDocument();
   });
 
-  it("appelle liker au clic sur le bouton like", () => {
-    const liker = mutationMock<ReturnType<typeof useCommunauteHooks.useLikerPublication>>();
-    vi.mocked(useCommunauteHooks.useLikerPublication).mockReturnValue(liker);
+  it("setzt eine Emoji-Reaktion über die Schnell-Leiste", () => {
+    const reagieren = mutationMock<ReturnType<typeof useCommunauteHooks.useReagieren>>();
+    vi.mocked(useCommunauteHooks.useReagieren).mockReturnValue(reagieren);
     vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
       data: page([publication()]),
       isLoading: false,
@@ -226,8 +243,158 @@ describe("FilPage", () => {
 
     renderWithProviders(<FilPage />);
 
-    fireEvent.click(screen.getByText("♥ 0"));
-    expect(liker.mutate).toHaveBeenCalledWith("p1");
+    fireEvent.click(screen.getByLabelText("reaktionen.hinzufuegen"));
+    fireEvent.click(screen.getByText("🔥"));
+    expect(reagieren.mutate).toHaveBeenCalledWith({ id: "p1", emoji: "🔥" });
+  });
+
+  it("zeigt vorhandene Reaktionen als Chips ; Tippen auf die eigene entfernt sie", () => {
+    const reagieren = mutationMock<ReturnType<typeof useCommunauteHooks.useReagieren>>();
+    vi.mocked(useCommunauteHooks.useReagieren).mockReturnValue(reagieren);
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([
+        publication({
+          reaktionen: [
+            { emoji: "❤️", anzahl: 3, ich: true },
+            { emoji: "👍", anzahl: 1, ich: false },
+          ],
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    const herz = screen.getByText("3").closest("button") as HTMLButtonElement;
+    expect(herz).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("1").closest("button")).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(herz);
+    expect(reagieren.mutate).toHaveBeenCalledWith({ id: "p1", emoji: "❤️" });
+  });
+
+  it("filtert mit den Chips Wichtig und Fotos (Server-Filter)", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    fireEvent.click(screen.getByText("fil.filter_wichtig"));
+    expect(useCommunauteHooks.usePublications).toHaveBeenLastCalledWith(
+      expect.objectContaining({ wichtig: true, mit_bild: undefined }),
+    );
+    fireEvent.click(screen.getByText("fil.filter_fotos"));
+    expect(useCommunauteHooks.usePublications).toHaveBeenLastCalledWith(
+      expect.objectContaining({ wichtig: undefined, mit_bild: true }),
+    );
+    expect(screen.getByText("fil.filter_fotos")).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByText("fil.filter_alle"));
+    expect(useCommunauteHooks.usePublications).toHaveBeenLastCalledWith(
+      expect.objectContaining({ wichtig: undefined, mit_bild: undefined }),
+    );
+  });
+
+  it("leerer Filter zeigt die passende Meldung", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />, { route: "/?filter=wichtig" });
+
+    expect(screen.getByText("fil.aucune_publication_filtre")).toBeInTheDocument();
+  });
+
+  it("wichtige Beiträge tragen das Abzeichen", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication({ important: true })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    expect(screen.getByText("fil.important_badge")).toBeInTheDocument();
+  });
+
+  describe("Neu seit deinem Besuch", () => {
+    const frueh = "2026-01-01T10:00:00Z";
+    const spaet = "2026-01-03T10:00:00Z";
+
+    function zeigeFeed() {
+      vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+        data: page([
+          publication({ id: "neu1", contenu: "Neuer Beitrag", created_at: spaet }),
+          publication({ id: "alt1", contenu: "Alter Beitrag", created_at: frueh }),
+        ]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+      renderWithProviders(<FilPage />);
+    }
+
+    it("setzt eine Trennlinie zwischen neuen und älteren Beiträgen", () => {
+      window.localStorage.setItem(
+        "fil:besuch:u1",
+        String(new Date("2026-01-02T10:00:00Z").getTime()),
+      );
+      zeigeFeed();
+
+      expect(screen.getByTestId("neu-trenner")).toHaveTextContent("fil.neu_seit_besuch");
+      expect(screen.getByTestId("frueher-trenner")).toBeInTheDocument();
+    });
+
+    it("zeigt beim allerersten Besuch keine Trennlinie und merkt sich den Besuch", () => {
+      window.localStorage.clear();
+      zeigeFeed();
+
+      expect(screen.queryByTestId("neu-trenner")).not.toBeInTheDocument();
+      expect(Number(window.localStorage.getItem("fil:besuch:u1"))).toBeGreaterThan(0);
+    });
+  });
+
+  it("zeigt die letzte Kommentar-Vorschau und klappt alle Kommentare auf", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([
+        publication({
+          nombre_commentaires: 2,
+          commentaires: [
+            kommentar({ id: "c1", contenu: "Erster Kommentar" }),
+            kommentar({ id: "c2", contenu: "Zweiter Kommentar" }),
+          ],
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    const vorschau = screen.getByTestId("kommentar-vorschau");
+    expect(vorschau).toHaveTextContent("Zweiter Kommentar");
+    expect(screen.queryByText("Erster Kommentar")).not.toBeInTheDocument();
+    fireEvent.click(vorschau);
+    expect(screen.getByText("Erster Kommentar")).toBeInTheDocument();
+    expect(screen.queryByTestId("kommentar-vorschau")).not.toBeInTheDocument();
+  });
+
+  it("fügt ein Emoji in das Kommentarfeld ein", () => {
+    vi.mocked(useCommunauteHooks.usePublications).mockReturnValue({
+      data: page([publication()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
+
+    renderWithProviders(<FilPage />);
+
+    fireEvent.click(screen.getByText("💬 fil.nombre_commentaires"));
+    fireEvent.click(screen.getByLabelText("chats.emoji"));
+    fireEvent.click(screen.getAllByRole("button", { name: "😀" })[0]);
+    expect(screen.getByPlaceholderText("fil.placeholder_commentaire")).toHaveValue("😀");
   });
 
   it("commente une publication sans mention", () => {
@@ -241,7 +408,7 @@ describe("FilPage", () => {
 
     renderWithProviders(<FilPage />);
 
-    fireEvent.click(screen.getByText("💬 0"));
+    fireEvent.click(screen.getByText("💬 fil.nombre_commentaires"));
     fireEvent.change(screen.getByPlaceholderText("fil.placeholder_commentaire"), {
       target: { value: "Bravo !" },
     });
@@ -270,7 +437,7 @@ describe("FilPage", () => {
 
     renderWithProviders(<FilPage />);
 
-    fireEvent.click(screen.getByText("💬 0"));
+    fireEvent.click(screen.getByText("💬 fil.nombre_commentaires"));
     fireEvent.change(screen.getByPlaceholderText("fil.placeholder_commentaire"), {
       target: { value: "Salut @Ci" },
     });
@@ -294,6 +461,7 @@ describe("FilPage", () => {
 
     expect(screen.queryByText("fil.masquer")).not.toBeInTheDocument();
     expect(screen.queryByText("fil.supprimer")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("fil.mehr")).not.toBeInTheDocument();
   });
 
   it("un bureau admin voit le bouton masquer sur le contenu d'autrui", () => {
@@ -311,6 +479,7 @@ describe("FilPage", () => {
 
     renderWithProviders(<FilPage />);
 
+    fireEvent.click(screen.getByLabelText("fil.mehr"));
     expect(screen.getByText("fil.masquer")).toBeInTheDocument();
   });
 
@@ -332,6 +501,7 @@ describe("FilPage", () => {
 
     renderWithProviders(<FilPage />);
 
+    fireEvent.click(screen.getByLabelText("fil.mehr"));
     expect(screen.getAllByText("fil.supprimer")).toHaveLength(1);
     expect(screen.getByText("fil.masquer")).toBeInTheDocument();
   });
@@ -352,6 +522,7 @@ describe("FilPage", () => {
     } as unknown as ReturnType<typeof useCommunauteHooks.usePublications>);
 
     renderWithProviders(<FilPage />);
+    fireEvent.click(screen.getByLabelText("fil.mehr"));
     fireEvent.click(screen.getByText("fil.supprimer"));
     expect(supprimer.mutate).toHaveBeenCalledWith("p9");
   });
@@ -365,6 +536,7 @@ describe("FilPage", () => {
 
     renderWithProviders(<FilPage />);
 
+    fireEvent.click(screen.getByLabelText("fil.mehr"));
     expect(screen.getByText("fil.supprimer")).toBeInTheDocument();
   });
 
@@ -387,6 +559,7 @@ describe("FilPage", () => {
 
     renderWithProviders(<FilPage />);
 
+    fireEvent.click(screen.getByText("fil.composer_zeile"));
     fireEvent.change(screen.getByPlaceholderText("fil.placeholder_publication"), {
       target: { value: "Nouvelle actu" },
     });
@@ -430,8 +603,13 @@ describe("FilPage", () => {
 
     renderWithProviders(<FilPage />);
 
+    // Eingeklappt : nur die eine Zeile ; erst das Antippen öffnet den Editor.
+    expect(screen.queryByPlaceholderText("fil.placeholder_publication")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("fil.composer_zeile"));
     expect(screen.getByPlaceholderText("fil.placeholder_publication")).toBeInTheDocument();
     expect(screen.getByText("fil.publier")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("fil.abbrechen"));
+    expect(screen.queryByPlaceholderText("fil.placeholder_publication")).not.toBeInTheDocument();
   });
 
   it("affiche un lien vers le document joint à une publication", () => {

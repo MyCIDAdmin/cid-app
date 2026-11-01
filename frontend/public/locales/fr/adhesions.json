@@ -48,6 +48,41 @@
     "condition_age_min": "À partir de {{min}} ans",
     "condition_age_max": "Jusqu'à {{max}} ans"
   },
+  "angebote": {
+    "fuer_wen": "Pour qui ?",
+    "gruppe": {
+      "ich": "Pour moi",
+      "familie": "Pour ma famille",
+      "kind": "Pour un enfant"
+    },
+    "passt_zu_dir": "Fait pour toi",
+    "rabatt_frage": "As-tu droit à une réduction ?",
+    "rabatt_typ": {
+      "etudiant": "Étudiants",
+      "senior": "Seniors"
+    },
+    "gueltig_bis": "Valable jusqu'au {{datum}}.",
+    "dauer_one": "Si tu adhères aujourd'hui, tu es membre pendant {{count}} mois.",
+    "dauer_other": "Si tu adhères aujourd'hui, tu es membre pendant {{count}} mois.",
+    "liste_aria": "Offres d'adhésion",
+    "bis_rabatt": "jusqu'à {{wert}}",
+    "pro_jahr": "par an · env. {{monat}} par mois",
+    "eingerechnet": "déjà inclus",
+    "weitere_vorteile_one": "+ {{count}} autre avantage",
+    "weitere_vorteile_other": "+ {{count}} autres avantages",
+    "waehlen": "Choisir",
+    "ausgewaehlt": "Choisi",
+    "deine_auswahl": "Ton choix : {{name}}",
+    "zaehler_weniger": "{{label}} : une personne de moins",
+    "zaehler_mehr": "{{label}} : une personne de plus",
+    "familie_naechster_schritt": "Tu saisis les noms et années de naissance ici, juste après. Le paiement vient ensuite.",
+    "nachweis_hinweis": "Tu envoies le justificatif après l'inscription. Le bureau le vérifie avant le paiement.",
+    "vergleichen": "Comparer toutes les offres",
+    "enthalten": "inclus",
+    "nicht_enthalten": "non inclus",
+    "vorschau_name": "Ton nom",
+    "letzte_mitgliedschaft": "Ta dernière adhésion"
+  },
   "historique": {
     "titre": "Historique d'adhésion",
     "chargement": "Chargement…",

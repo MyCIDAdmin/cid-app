@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -44,6 +44,11 @@ function sujet(overrides: Partial<Sujet> = {}): Sujet {
     created_at: "2026-01-01T10:00:00Z",
     updated_at: "2026-01-01T10:00:00Z",
     nombre_reponses: 0,
+    nombre_reaktionen: 0,
+    reaktionen: [],
+    letzte_aktivitaet: "2026-01-01T10:00:00Z",
+    letzte_antwort_von: null,
+    beste_antwort: null,
     reponses: [],
     est_auteur: false,
     ...overrides,
@@ -60,6 +65,7 @@ describe("ForumPage", () => {
   const originalShare = navigator.share;
 
   beforeEach(() => {
+    window.localStorage.clear();
     useAuthStore.setState({
       accessToken: "t",
       refreshToken: "r",
@@ -202,6 +208,125 @@ describe("ForumPage", () => {
     expect(screen.getByText("Sujet épinglé")).toBeInTheDocument();
   });
 
+  it("zeigt Antwortzahl, letzte Aktivität mit Name, Reaktionen und Gelöst-Marke", () => {
+    vi.mocked(useCommunauteHooks.useSujets).mockReturnValue({
+      data: page([
+        sujet({
+          nombre_reponses: 4,
+          nombre_reaktionen: 2,
+          letzte_antwort_von: "Sami",
+          beste_antwort: "r1",
+        }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSujets>);
+
+    renderWithProviders(<ForumPage />);
+
+    expect(screen.getByText("forum.nombre_reponses")).toBeInTheDocument();
+    expect(screen.getByText(/forum.nombre_reaktionen/)).toBeInTheDocument();
+    expect(screen.getByText("forum.letzte_aktivitaet")).toBeInTheDocument();
+    expect(screen.getByText(/forum.geloest/)).toBeInTheDocument();
+  });
+
+  it("ohne letzten Antwortenden steht nur die Aktivitätszeit", () => {
+    vi.mocked(useCommunauteHooks.useSujets).mockReturnValue({
+      data: page([sujet({ letzte_antwort_von: null })]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSujets>);
+
+    renderWithProviders(<ForumPage />);
+
+    expect(screen.getByText("forum.letzte_aktivitaet_ohne")).toBeInTheDocument();
+  });
+
+  it("markiert neue Aktivität mit einem Punkt, aber nicht die eigenen oder gesehenen Themen", () => {
+    // Grundlinie : erster Besuch war am 1. Januar 2026, 12:00.
+    window.localStorage.setItem(
+      "forum:basis:u1",
+      JSON.stringify(new Date("2026-01-01T12:00:00Z").getTime()),
+    );
+    window.localStorage.setItem(
+      "forum:gesehen:u1",
+      JSON.stringify({ s4: new Date("2026-01-03T12:00:00Z").getTime() }),
+    );
+    vi.mocked(useCommunauteHooks.useSujets).mockReturnValue({
+      data: page([
+        sujet({ id: "s1", titre: "Neu", letzte_aktivitaet: "2026-01-02T10:00:00Z" }),
+        sujet({ id: "s2", titre: "Alt", letzte_aktivitaet: "2025-12-30T10:00:00Z" }),
+        sujet({
+          id: "s3",
+          titre: "Eigenes",
+          est_auteur: true,
+          letzte_aktivitaet: "2026-01-02T10:00:00Z",
+        }),
+        sujet({ id: "s4", titre: "Gesehen", letzte_aktivitaet: "2026-01-02T10:00:00Z" }),
+      ]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSujets>);
+
+    renderWithProviders(<ForumPage />);
+
+    expect(screen.getAllByRole("img", { name: "forum.neu_marke" })).toHaveLength(1);
+  });
+
+  it("sucht mit kurzer Verzögerung und reicht die Suche an den Server weiter", () => {
+    vi.useFakeTimers();
+    try {
+      const useSujetsMock = vi.mocked(useCommunauteHooks.useSujets);
+      useSujetsMock.mockReturnValue({
+        data: page([]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useSujets>);
+
+      renderWithProviders(<ForumPage />);
+
+      fireEvent.change(screen.getByPlaceholderText("forum.suche_placeholder"), {
+        target: { value: "  München " },
+      });
+      expect(useSujetsMock).not.toHaveBeenLastCalledWith(
+        expect.objectContaining({ suche: "München" }),
+      );
+      act(() => {
+        vi.advanceTimersByTime(350);
+      });
+      expect(useSujetsMock).toHaveBeenLastCalledWith(expect.objectContaining({ suche: "München" }));
+      expect(screen.getByText("forum.aucun_resultat")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("wechselt die Sortierung und den Chip Unbeantwortet", () => {
+    const useSujetsMock = vi.mocked(useCommunauteHooks.useSujets);
+    useSujetsMock.mockReturnValue({
+      data: page([sujet()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSujets>);
+
+    renderWithProviders(<ForumPage />);
+    expect(useSujetsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sortierung: "aktiv" }),
+    );
+
+    fireEvent.click(screen.getByText("forum.sort_neu"));
+    expect(useSujetsMock).toHaveBeenLastCalledWith(expect.objectContaining({ sortierung: "neu" }));
+    fireEvent.click(screen.getByText("forum.sort_beliebt"));
+    expect(useSujetsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sortierung: "beliebt" }),
+    );
+    fireEvent.click(screen.getByText("forum.sort_unbeantwortet"));
+    expect(useSujetsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sortierung: "aktiv", unbeantwortet: true }),
+    );
+    expect(screen.getByText("forum.sort_unbeantwortet")).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("filtre par catégorie", () => {
     const useSujetsMock = vi.mocked(useCommunauteHooks.useSujets);
     useSujetsMock.mockReturnValue({
@@ -214,6 +339,8 @@ describe("ForumPage", () => {
 
     fireEvent.click(screen.getByText("categorie.emploi"));
 
-    expect(useSujetsMock).toHaveBeenLastCalledWith({ categorie: "emploi" });
+    expect(useSujetsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ categorie: "emploi" }),
+    );
   });
 });

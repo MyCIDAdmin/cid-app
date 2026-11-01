@@ -367,6 +367,20 @@ class Sujet(models.Model):
     )
     motif_masquage = models.CharField(max_length=255, blank=True)
 
+    # Forum A (2026-11) : Sortierung „Aktivste“ + „Zuletzt aktiv“ in der Liste. Wird beim
+    # Anlegen auf created_at gesetzt (default) und bei jeder neuen Antwort fortgeschrieben
+    # (siehe ReponseForumViewSet.perform_create) – so braucht die Liste keine Aggregation.
+    letzte_aktivitaet = models.DateTimeField(default=timezone.now, db_index=True)
+    # „Beste Antwort“ : vom Themenersteller (oder Bureau Admin+) gewählt ; SET_NULL, damit das
+    # Löschen der Antwort das Thema nicht berührt. related_name="+" : keine Rückrichtung nötig.
+    beste_antwort = models.ForeignKey(
+        "ReponseForum",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -384,6 +398,11 @@ class Sujet(models.Model):
 
     @property
     def nombre_reponses(self) -> int:
+        # Die Listenabfrage (SujetViewSet.get_queryset) liefert die Zahl als Annotation mit –
+        # sonst wäre das eine Abfrage je Zeile.
+        angegeben = getattr(self, "anzahl_antworten", None)
+        if angegeben is not None:
+            return angegeben
         return self.reponses.filter(est_masquee=False).count()
 
 
@@ -395,6 +414,11 @@ class ReponseForum(models.Model):
         "membres.Membre", on_delete=models.CASCADE, related_name="reponses_forum"
     )
     contenu = models.TextField()
+    # Zitat-Antwort (Forum A) : „Antwort auf …“ – eine frühere Antwort DESSELBEN Themas
+    # (vom Serializer geprüft). SET_NULL : das Löschen der zitierten Antwort lässt die neue stehen.
+    repond_a = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="zitiert_von"
+    )
 
     est_masquee = models.BooleanField(default=False)
 
@@ -409,6 +433,90 @@ class ReponseForum(models.Model):
 
     def __str__(self):
         return f"{self.auteur} — {(self.contenu or '')[:30]}"
+
+
+class Reaktion(models.Model):
+    """Emoji-Reaktion eines Mitglieds auf Neuigkeit, Kommentar, Forumsthema oder -antwort
+    (Neuigkeiten A / Forum A, 2026-11) – gleiches Muster wie ChatReaktion : genau EIN Ziel,
+    pro Mitglied und Emoji höchstens eine Reaktion je Ziel. Die alten Herzen
+    (PublicationLike) bleiben unverändert bestehen ; die Datenmigration 0025 kopiert sie als
+    „❤️“ hierher, damit bestehende Zähler erhalten bleiben."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="reaktionen_inhalte"
+    )
+    publication = models.ForeignKey(
+        Publication, null=True, blank=True, on_delete=models.CASCADE, related_name="reaktionen"
+    )
+    commentaire = models.ForeignKey(
+        Commentaire, null=True, blank=True, on_delete=models.CASCADE, related_name="reaktionen"
+    )
+    sujet = models.ForeignKey(
+        Sujet, null=True, blank=True, on_delete=models.CASCADE, related_name="reaktionen"
+    )
+    reponse_forum = models.ForeignKey(
+        ReponseForum, null=True, blank=True, on_delete=models.CASCADE, related_name="reaktionen"
+    )
+    emoji = models.CharField(max_length=16)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_reaktionen"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["membre", "publication", "emoji"],
+                condition=models.Q(publication__isnull=False),
+                name="reaktion_publication_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["membre", "commentaire", "emoji"],
+                condition=models.Q(commentaire__isnull=False),
+                name="reaktion_commentaire_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["membre", "sujet", "emoji"],
+                condition=models.Q(sujet__isnull=False),
+                name="reaktion_sujet_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["membre", "reponse_forum", "emoji"],
+                condition=models.Q(reponse_forum__isnull=False),
+                name="reaktion_reponse_forum_unique",
+            ),
+            models.CheckConstraint(
+                check=(
+                    models.Q(
+                        publication__isnull=False,
+                        commentaire__isnull=True,
+                        sujet__isnull=True,
+                        reponse_forum__isnull=True,
+                    )
+                    | models.Q(
+                        publication__isnull=True,
+                        commentaire__isnull=False,
+                        sujet__isnull=True,
+                        reponse_forum__isnull=True,
+                    )
+                    | models.Q(
+                        publication__isnull=True,
+                        commentaire__isnull=True,
+                        sujet__isnull=False,
+                        reponse_forum__isnull=True,
+                    )
+                    | models.Q(
+                        publication__isnull=True,
+                        commentaire__isnull=True,
+                        sujet__isnull=True,
+                        reponse_forum__isnull=False,
+                    )
+                ),
+                name="reaktion_genau_ein_ziel",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.membre} {self.emoji}"
 
 
 # ---------------------------------------------------------------------------
