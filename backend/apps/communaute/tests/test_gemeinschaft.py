@@ -39,9 +39,7 @@ def test_zahlen_zaehlen_nur_aktive_mitglieder():
     MembreFactory(ville_de="Berlin", land_de=Bundesland.BERLIN)
     MembreFactory(ville_de=" berlin ", land_de=Bundesland.BERLIN)
     MembreFactory(ville_de="Köln", land_de=Bundesland.NORDRHEIN_WESTFALEN)
-    MembreFactory(
-        ville_de="Hamburg", land_de=Bundesland.HAMBURG, statut=StatutMembre.INACTIF
-    )
+    MembreFactory(ville_de="Hamburg", land_de=Bundesland.HAMBURG, statut=StatutMembre.INACTIF)
     MembreFactory(ville_de="Bremen", land_de="", statut=StatutMembre.EN_ATTENTE)
 
     z = gemeinschaft.zahlen(heute=date(2026, 11, 15))

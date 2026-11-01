@@ -82,10 +82,7 @@ def zahlen(heute=None) -> dict:
     }
     return {
         "mitglieder": aktive.count(),
-        "bundeslaender": aktive.exclude(land_de="")
-        .values("land_de")
-        .distinct()
-        .count(),
+        "bundeslaender": aktive.exclude(land_de="").values("land_de").distinct().count(),
         "staedte": len(staedte),
         "neu_im_monat": aktive.filter(date_adhesion__gte=monatsbeginn).count(),
         "monat": heute.strftime("%Y-%m"),
