@@ -285,12 +285,22 @@ def _synchroniser_classement_depuis(lignes: list) -> int:
                 _valeur(ligne, "overallLeagueGA", "overallLeagueGoalsAgainst", "goalsAgainst")
             )
 
+            rang = _entier(_valeur(ligne, "overallLeaguePosition", "position", "rang"))
+            joues = _entier(_valeur(ligne, "overallLeaguePlayed", "played"))
+            # Trend: Der Platz vor dem letzten Spieltag wird nur festgehalten, wenn sich die Zahl
+            # der Spiele der Mannschaft geändert hat (neuer Spieltag). Sonst bleibt er stehen.
+            bisher = ClassementLigue.objects.filter(saison=saison, equipe=equipe).first()
+            rang_vorher = None
+            if bisher is not None:
+                rang_vorher = bisher.rang if joues != bisher.joues else bisher.rang_vorher
+
             ClassementLigue.objects.update_or_create(
                 saison=saison,
                 equipe=equipe,
                 defaults={
-                    "rang": _entier(_valeur(ligne, "overallLeaguePosition", "position", "rang")),
-                    "joues": _entier(_valeur(ligne, "overallLeaguePlayed", "played")),
+                    "rang": rang,
+                    "rang_vorher": rang_vorher,
+                    "joues": joues,
                     "victoires": _entier(
                         _valeur(ligne, "overallLeagueW", "overallLeagueWon", "won")
                     ),

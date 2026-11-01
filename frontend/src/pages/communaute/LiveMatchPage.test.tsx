@@ -15,6 +15,9 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useStatistiquesJoueurs: vi.fn(),
     useEquipeInfo: vi.fn(),
     useTippspiele: vi.fn(),
+    useSpielerDesSpiels: vi.fn(),
+    useMeinTippstand: vi.fn(),
+    useTippspielMatrix: vi.fn(),
   };
 });
 
@@ -70,13 +73,28 @@ describe("LiveMatchPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useTippspiele>);
+    vi.mocked(useCommunauteHooks.useSpielerDesSpiels).mockReturnValue({
+      data: { rencontre: null },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useSpielerDesSpiels>);
+    vi.mocked(useCommunauteHooks.useMeinTippstand).mockReturnValue({
+      tippspiel: undefined,
+      teilnahme: undefined,
+      bestaetigt: false,
+      tippsProSpiel: new Map(),
+    });
+    vi.mocked(useCommunauteHooks.useTippspielMatrix).mockReturnValue({
+      data: undefined,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielMatrix>);
   });
 
   // --- Fan-Club — conteneur à onglets (Ticker retiré le 2026-10-30) ---
 
-  it("affiche l'onglet Tippspiel par défaut, sans onglet Ticker ni liste de matchs", () => {
+  it("öffnet standardmäßig den Reiter Spieltag, ohne Ticker und ohne Spielliste", () => {
     renderWithProviders(<LiveMatchPage />);
 
+    expect(screen.getByText("live.onglet_spieltag")).toBeInTheDocument();
+    expect(screen.getByText("spieltag.kein_naechstes")).toBeInTheDocument();
     expect(screen.getByText("live.onglet_tippspiel")).toBeInTheDocument();
     expect(screen.queryByText("live.onglet_ticker")).not.toBeInTheDocument();
     expect(screen.queryByText("live.nouveau_match")).not.toBeInTheDocument();
@@ -95,6 +113,19 @@ describe("LiveMatchPage", () => {
     renderWithProviders(<LiveMatchPage />);
 
     expect(screen.queryByText("live.nouveau_match")).not.toBeInTheDocument();
+  });
+
+  it("öffnet per ?tab= direkt den Reiter Tippspiel", () => {
+    renderWithProviders(<LiveMatchPage />, { route: "/live?tab=tippspiel", path: "/live" });
+
+    expect(screen.getByText("live.onglet_tippspiel")).toBeInTheDocument();
+    expect(screen.queryByText("spieltag.kein_naechstes")).not.toBeInTheDocument();
+  });
+
+  it("ignoriert einen unbekannten ?tab= und zeigt den Spieltag", () => {
+    renderWithProviders(<LiveMatchPage />, { route: "/live?tab=unsinn", path: "/live" });
+
+    expect(screen.getByText("spieltag.kein_naechstes")).toBeInTheDocument();
   });
 
   it("bascule vers l'onglet Tabelle", () => {

@@ -9,6 +9,10 @@
  * Les rencontres déjà couvertes par `useCalendrierRencontres()` (onglet Spielplan) sont
  * réutilisées telles quelles — même requête, même cache React Query, aucun appel réseau
  * supplémentaire côté backend.
+ *
+ * Fan-Club-Umbau (2026-11, Vorschlag B) : je Spiel eine Tipp-Karte mit −/+-Stepper, Schnelltasten
+ * (1:0, 2:0, 2:1, 1:1) und Hinweis „Tippschluss in …“. Die Zahlenfelder und ihre Beschriftungen
+ * bleiben bestehen (Tastatur, Screenreader), die Knöpfe ergänzen sie.
  */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,6 +29,75 @@ import EquipeLogoImage from "./EquipeLogoImage";
 import { lokaleSprache } from "../../utils/datum";
 
 const UN_JOUR_MS = 24 * 60 * 60 * 1000;
+const SCHNELL_TIPPS: [number, number][] = [
+  [1, 0],
+  [2, 0],
+  [2, 1],
+  [1, 1],
+];
+const MAX_TORE = 20;
+
+function weiter(wert: string, schritt: number): string {
+  const zahl = Number(wert === "" ? 0 : wert);
+  const basis = Number.isInteger(zahl) && zahl >= 0 ? zahl : 0;
+  return String(Math.min(MAX_TORE, Math.max(0, basis + schritt)));
+}
+
+/** „Tippschluss in 3 Tagen / 5 Std. / 20 Min.“ (Sperre = 1 Tag vor Anpfiff). */
+function sperreIn(iso: string, t: (k: string, o?: Record<string, unknown>) => string): string {
+  const rest = new Date(iso).getTime() - UN_JOUR_MS - Date.now();
+  const minuten = Math.max(1, Math.round(rest / 60000));
+  if (minuten >= 2 * 24 * 60)
+    return t("tippspiel.sperre_tage", { count: Math.floor(minuten / 1440) });
+  if (minuten >= 60) return t("tippspiel.sperre_stunden", { count: Math.floor(minuten / 60) });
+  return t("tippspiel.sperre_minuten", { count: minuten });
+}
+
+function Stepper({
+  wert,
+  onChange,
+  label,
+  minusLabel,
+  plusLabel,
+}: {
+  wert: string;
+  onChange: (neu: string) => void;
+  label: string;
+  minusLabel: string;
+  plusLabel: string;
+}) {
+  const knopf =
+    "flex h-8 w-8 items-center justify-center rounded-cid bg-bg-secondary text-base font-bold text-text-primary hover:bg-cal";
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        className={knopf}
+        aria-label={minusLabel}
+        onClick={() => onChange(weiter(wert, -1))}
+      >
+        −
+      </button>
+      <input
+        type="number"
+        min={0}
+        inputMode="numeric"
+        value={wert}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        className="w-12 rounded-cid border border-text-tertiary/30 px-1 py-1 text-center text-sm tabular-nums"
+      />
+      <button
+        type="button"
+        className={knopf}
+        aria-label={plusLabel}
+        onClick={() => onChange(weiter(wert, 1))}
+      >
+        +
+      </button>
+    </div>
+  );
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString(lokaleSprache());
@@ -118,25 +191,21 @@ function LigneTipp({ tippspielId, rencontre, tip }: LigneProps) {
         </div>
         <div className="text-xs text-text-tertiary">{formatDate(rencontre.date_heure)}</div>
       </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="number"
-          min={0}
-          inputMode="numeric"
-          value={scoreDomicile}
-          onChange={(e) => setScoreDomicile(e.target.value)}
-          aria-label={t("tippspiel.tipp_heim_label", { equipe: rencontre.equipe_domicile })}
-          className="w-14 rounded-cid border border-text-tertiary/30 px-2 py-1 text-center text-sm tabular-nums"
+      <div className="flex flex-wrap items-center gap-2">
+        <Stepper
+          wert={scoreDomicile}
+          onChange={setScoreDomicile}
+          label={t("tippspiel.tipp_heim_label", { equipe: rencontre.equipe_domicile })}
+          minusLabel={t("tippspiel.tipp_minus", { equipe: rencontre.equipe_domicile })}
+          plusLabel={t("tippspiel.tipp_plus", { equipe: rencontre.equipe_domicile })}
         />
         <span className="text-text-tertiary">:</span>
-        <input
-          type="number"
-          min={0}
-          inputMode="numeric"
-          value={scoreExterieur}
-          onChange={(e) => setScoreExterieur(e.target.value)}
-          aria-label={t("tippspiel.tipp_gast_label", { equipe: rencontre.equipe_exterieur })}
-          className="w-14 rounded-cid border border-text-tertiary/30 px-2 py-1 text-center text-sm tabular-nums"
+        <Stepper
+          wert={scoreExterieur}
+          onChange={setScoreExterieur}
+          label={t("tippspiel.tipp_gast_label", { equipe: rencontre.equipe_exterieur })}
+          minusLabel={t("tippspiel.tipp_minus", { equipe: rencontre.equipe_exterieur })}
+          plusLabel={t("tippspiel.tipp_plus", { equipe: rencontre.equipe_exterieur })}
         />
         <button
           type="submit"
@@ -145,6 +214,25 @@ function LigneTipp({ tippspielId, rencontre, tip }: LigneProps) {
         >
           {t("tippspiel.tipp_speichern")}
         </button>
+      </div>
+      <div className="flex w-full flex-wrap items-center gap-1.5" data-testid="schnelltipps">
+        <span className="text-[11px] text-text-tertiary">{t("tippspiel.schnelltipp")}</span>
+        {SCHNELL_TIPPS.map(([d, e]) => (
+          <button
+            key={`${d}:${e}`}
+            type="button"
+            onClick={() => {
+              setScoreDomicile(String(d));
+              setScoreExterieur(String(e));
+            }}
+            className="rounded-full border border-text-tertiary/20 px-2 py-0.5 text-[11px] font-bold tabular-nums text-text-secondary hover:bg-cal"
+          >
+            {d}:{e}
+          </button>
+        ))}
+        <span className="ml-auto text-[11px] text-text-tertiary">
+          {sperreIn(rencontre.date_heure, t)}
+        </span>
       </div>
       {enregistre && !erreur && (
         <p className="w-full text-xs text-status-successText">{t("tippspiel.tipp_gespeichert")}</p>

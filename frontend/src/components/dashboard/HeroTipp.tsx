@@ -85,7 +85,7 @@ export default function HeroTippPanel({ tipp }: { tipp: HeroTipp }) {
         {titel}
         <p className="text-sm opacity-90">{t("uebersicht.hero.tipp_freischalten")}</p>
         <Link
-          to="/live"
+          to="/live?tab=tippspiel"
           className="inline-flex min-h-[44px] items-center justify-center rounded-cid bg-white px-4 text-sm font-semibold text-cad hover:bg-cal"
         >
           {t("uebersicht.hero.tipp_zum_tippspiel")}

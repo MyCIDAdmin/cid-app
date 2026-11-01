@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -56,6 +56,7 @@ function ligne(overrides: Partial<ClassementLigue> = {}): ClassementLigue {
     buts_contre_exterieur: 5,
     points_exterieur: 10,
     zone_texte: "",
+    rang_vorher: null,
     maj_le: "2026-03-01T10:00:00Z",
     ...overrides,
   };
@@ -83,6 +84,7 @@ function rencontre(overrides: Partial<RencontreCalendrier> = {}): RencontreCalen
   return {
     id: "r1",
     competition: "Ligue 1",
+    art: "liga",
     equipe_domicile: "Club Africain",
     equipe_exterieur: "ES Tunis",
     date_heure: "2026-01-01T18:00:00Z",
@@ -207,9 +209,7 @@ describe("StatistiquesTab", () => {
     renderWithProviders(<StatistiquesTab />);
 
     expect(screen.getByText("Club Africain")).toBeInTheDocument();
-    expect(
-      screen.getByText("Stade Olympique de Radès · Radès · Tunisie"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Stade Olympique de Radès · Radès · Tunisie")).toBeInTheDocument();
     expect(screen.getByText(/live.equipe_entraineur/)).toBeInTheDocument();
   });
 
@@ -285,7 +285,9 @@ describe("StatistiquesTab", () => {
     mockClassement(ligne());
     mockJoueurs();
     mockEquipeInfo(undefined);
-    mockCalendrier([rencontre({ statut: "SCHEDULED", score_domicile: null, score_exterieur: null })]);
+    mockCalendrier([
+      rencontre({ statut: "SCHEDULED", score_domicile: null, score_exterieur: null }),
+    ]);
 
     renderWithProviders(<StatistiquesTab />);
 
@@ -317,9 +319,10 @@ describe("StatistiquesTab", () => {
 
     // Contrairement à l'ancien Torschützen (top 10, buts > 0 seulement), le kader complet
     // liste TOUS les joueurs, y compris ceux à 0 but.
-    expect(screen.getByText("Sadok Kadida")).toBeInTheDocument();
-    expect(screen.getByText("Taddeus Nkeng")).toBeInTheDocument();
-    expect(screen.getByText("Ismaila Simpara")).toBeInTheDocument();
+    const kader = within(screen.getByTestId("kader"));
+    expect(kader.getByText("Sadok Kadida")).toBeInTheDocument();
+    expect(kader.getByText("Taddeus Nkeng")).toBeInTheDocument();
+    expect(kader.getByText("Ismaila Simpara")).toBeInTheDocument();
     expect(screen.getByText("live.statistiques_poste_defenseur")).toBeInTheDocument();
   });
 
@@ -336,7 +339,7 @@ describe("StatistiquesTab", () => {
 
     renderWithProviders(<StatistiquesTab />);
 
-    expect(screen.getByText("Sadok Kadida")).toBeInTheDocument();
+    expect(within(screen.getByTestId("kader")).getByText("Sadok Kadida")).toBeInTheDocument();
     expect(screen.queryByText("S. Khalifa")).not.toBeInTheDocument();
   });
 
@@ -381,5 +384,89 @@ describe("StatistiquesTab", () => {
     renderWithProviders(<StatistiquesTab />);
 
     expect(screen.getAllByText("live.statistiques_vide").length).toBeGreaterThanOrEqual(1);
+  });
+  describe("Fan-Club-Umbau", () => {
+    function zeigeSaison() {
+      mockClassement(ligne({ equipe: "Club Africain", saison: "2025-2026" }));
+      mockEquipeInfo(undefined);
+      mockCalendrier([
+        rencontre({
+          id: "a",
+          date_heure: "2025-09-01T18:00:00Z",
+          score_domicile: 0,
+          score_exterieur: 1,
+        }),
+        rencontre({
+          id: "b",
+          date_heure: "2025-09-10T18:00:00Z",
+          score_domicile: 2,
+          score_exterieur: 0,
+        }),
+        rencontre({
+          id: "c",
+          date_heure: "2025-09-20T18:00:00Z",
+          equipe_domicile: "ES Tunis",
+          equipe_exterieur: "Club Africain",
+          score_domicile: 0,
+          score_exterieur: 3,
+        }),
+      ]);
+    }
+
+    it("zeigt die fünf besten Torschützen mit Balken", () => {
+      zeigeSaison();
+      mockJoueurs([
+        joueur({ id: "1", nom: "A", buts: 1 }),
+        joueur({ id: "2", nom: "B", buts: 6 }),
+        joueur({ id: "3", nom: "C", buts: 3 }),
+        joueur({ id: "4", nom: "D", buts: 0 }),
+        joueur({ id: "5", nom: "E", buts: 2 }),
+        joueur({ id: "6", nom: "F", buts: 4 }),
+        joueur({ id: "7", nom: "G", buts: 5 }),
+      ]);
+      renderWithProviders(<StatistiquesTab />);
+      const namen = within(screen.getByTestId("torschuetzen"))
+        .getAllByRole("listitem")
+        .map((li) => li.textContent);
+      expect(namen).toEqual(["B6", "G5", "F4", "C3", "E2"]);
+    });
+
+    it("meldet fehlende Tore", () => {
+      zeigeSaison();
+      mockJoueurs([joueur({ id: "1", buts: 0 })]);
+      renderWithProviders(<StatistiquesTab />);
+      expect(
+        within(screen.getByTestId("torschuetzen")).getByText("live.torschuetzen_leer"),
+      ).toBeInTheDocument();
+    });
+
+    it("rechnet Heim und Auswärts getrennt", () => {
+      zeigeSaison();
+      mockJoueurs([]);
+      renderWithProviders(<StatistiquesTab />);
+      const karte = within(screen.getByTestId("heim-auswaerts"));
+      const heim = karte.getByRole("row", { name: /live.classement_vue_domicile/ });
+      expect(heim).toHaveTextContent("1-0-1");
+      expect(heim).toHaveTextContent("2:1");
+      const gast = karte.getByRole("row", { name: /live.classement_vue_exterieur/ });
+      expect(gast).toHaveTextContent("1-0-0");
+      expect(gast).toHaveTextContent("3:0");
+    });
+
+    it("zeigt die laufende Serie und die längste Siegserie", () => {
+      zeigeSaison();
+      mockJoueurs([]);
+      renderWithProviders(<StatistiquesTab />);
+      const karte = within(screen.getByTestId("serien"));
+      expect(karte.getByText("live.serie_aktuell_sieg")).toBeInTheDocument();
+      expect(karte.getByText("live.serie_laengste_siege").nextSibling).toHaveTextContent("2");
+    });
+
+    it("blendet Tippspiel in Zahlen für Besucher aus", () => {
+      zeigeSaison();
+      mockJoueurs([]);
+      renderWithProviders(<StatistiquesTab />);
+      expect(screen.queryByTestId("tippspiel-in-zahlen")).not.toBeInTheDocument();
+    });
   });
 });

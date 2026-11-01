@@ -1,6 +1,7 @@
 /**
  * Hooks React Query — module communaute, lot Fil d'actualité + Forum.
  */
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as communauteApi from "../api/communaute";
@@ -20,6 +21,7 @@ import type {
   RencontreCalendrierPayload,
   SujetPayload,
   TippspielPayload,
+  TippspielTip,
   TippspielTipPayload,
 } from "../types/communaute";
 
@@ -65,6 +67,10 @@ const communauteKeys = {
     [...communauteKeys.all, "tippspiel-teilnahmen", filtres] as const,
   tippspielTipps: (filtres: communauteApi.TippspielTippsFiltres = {}) =>
     [...communauteKeys.all, "tippspiel-tipps", filtres] as const,
+  tippspielMatrix: (tippspiel: string, spalten: number) =>
+    [...communauteKeys.all, "tippspiel-matrix", tippspiel, spalten] as const,
+  spielerDesSpiels: (rencontre: string) =>
+    [...communauteKeys.all, "spieler-des-spiels", rencontre] as const,
   configurationSite: () => [...communauteKeys.all, "configuration-site"] as const,
   arrierePlansModules: () => [...communauteKeys.all, "arriere-plans-modules"] as const,
 };
@@ -826,10 +832,11 @@ function invalidateTippspielTeilnahmen(queryClient: ReturnType<typeof useQueryCl
   queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "tippspiel-teilnahmen"] });
 }
 
-export function useTippspiele(filtres: communauteApi.TippspieleFiltres = {}) {
+export function useTippspiele(filtres: communauteApi.TippspieleFiltres = {}, aktiv = true) {
   return useQuery({
     queryKey: communauteKeys.tippspiele(filtres),
     queryFn: () => communauteApi.listTippspiele(filtres),
+    enabled: aktiv,
   });
 }
 
@@ -1010,4 +1017,52 @@ export function useSupprimerArrierePlanModule() {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: communauteKeys.arrierePlansModules() }),
   });
+}
+
+// --- Fan-Club-Umbau (2026-11) ---
+
+/** Tipps aller Teilnehmer je gesperrtem Spiel + Rangliste (Backend entscheidet, was sichtbar ist). */
+export function useTippspielMatrix(tippspiel: string | undefined, spalten = 8, aktiv = true) {
+  return useQuery({
+    queryKey: communauteKeys.tippspielMatrix(tippspiel ?? "", spalten),
+    queryFn: () => communauteApi.getTippspielMatrix(tippspiel as string, spalten),
+    enabled: !!tippspiel && aktiv,
+  });
+}
+
+/** „Spieler des Spiels“ ; ohne `rencontre` liefert das Backend das jüngste beendete Spiel. */
+export function useSpielerDesSpiels(rencontre = "", aktiv = true) {
+  return useQuery({
+    queryKey: communauteKeys.spielerDesSpiels(rencontre),
+    queryFn: () => communauteApi.getSpielerDesSpiels(rencontre || undefined),
+    enabled: aktiv,
+  });
+}
+
+export function useStimmeFuerSpieler() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ rencontre, spieler }: { rencontre: string; spieler: string }) =>
+      communauteApi.stimmeFuerSpieler(rencontre, spieler),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [...communauteKeys.all, "spieler-des-spiels"] }),
+  });
+}
+
+/**
+ * Mein Stand im laufenden Tippspiel, für Hinweise im Spielplan und im Reiter Spieltag.
+ * `aktiv = false` (Besucher ohne Anmeldung) löst keine Abfrage aus.
+ */
+export function useMeinTippstand(aktiv: boolean) {
+  const tippspiel = useTippspiele({}, aktiv).data?.results.find((x) => x.statut === "publie");
+  const teilnahme = useTippspielTeilnahmen({ tippspiel: tippspiel?.id, mine: true }).data
+    ?.results[0];
+  const bestaetigt = !!teilnahme && teilnahme.statut_paiement !== "en_attente";
+  const tippsQuery = useTippspielTipps({ tippspiel: bestaetigt ? tippspiel?.id : undefined });
+  const tippsProSpiel = useMemo(() => {
+    const karte = new Map<string, TippspielTip>();
+    for (const tip of tippsQuery.data?.results ?? []) karte.set(tip.rencontre, tip);
+    return karte;
+  }, [tippsQuery.data]);
+  return { tippspiel, teilnahme, bestaetigt, tippsProSpiel };
 }

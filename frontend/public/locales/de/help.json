@@ -3327,12 +3327,13 @@
     ]
   },
   "fanclub": {
-    "titre": "Fan-Club: Spielplan",
-    "intro": "Im Fan-Club zeigt der Spielplan Spiele, Ergebnisse und Tabelle. Die Daten kommen aus einer Schnittstelle (API); das Büro kann sie korrigieren und eigene Spiele ergänzen.",
+    "titre": "Fan-Club: Reiter und Spielplan",
+    "intro": "Der Fan-Club hat fünf Reiter: Spieltag, Tippspiel, Tabelle, Spielplan und Statistiken. Die Daten kommen aus einer Schnittstelle (API); das Büro kann sie korrigieren und eigene Spiele ergänzen.",
     "schritte": [
-      "Wechsle zwischen den Reitern „Tabelle“ und „Spielplan“.",
-      "Der Spielplan zeigt „Bevorstehende Spiele“ und „Ergebnisse“.",
-      "Das Büro sieht bei jedem Spiel „Bearbeiten“ und oben „Spiel hinzufügen“."
+      "„Spieltag“ zeigt das nächste Spiel mit Countdown, deine Tipps und die Wahl zum Spieler des Spiels.",
+      "Im „Tippspiel“ gibst du Tipps ab. Nach dem Tippschluss (1 Tag vor Anpfiff) siehst du als Teilnehmer die Tipps aller anderen in der Rangliste, der Spieltags-Matrix und der Tipp-Wand.",
+      "„Tabelle“, „Spielplan“ (Filter: Alle, Ligue 1, Pokal, Kontinental, Heim, Auswärts) und „Statistiken“ zeigen Liga, Termine und Zahlen.",
+      "Das Büro sieht im Spielplan bei jedem Spiel „Bearbeiten“ und oben „Spiel hinzufügen“."
     ],
     "workflows": [
       {

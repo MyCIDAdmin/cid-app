@@ -15,6 +15,7 @@ function spiel(o: Partial<RencontreCalendrier> = {}): RencontreCalendrier {
   return {
     id: "m1",
     competition: "Ligue 1",
+    art: "liga",
     equipe_domicile: "Club Africain",
     equipe_exterieur: "ES Tunis",
     date_heure: "2026-11-29T17:00:00Z",

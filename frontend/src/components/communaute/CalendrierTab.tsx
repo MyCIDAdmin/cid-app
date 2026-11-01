@@ -31,15 +31,29 @@
  * die API die Korrektur, Backend services._appliquer_etat_api). Besucher und Mitglieder
  * sehen weiterhin nur die Daten (dieser Tab wird auch in der öffentlichen FanClubPreview
  * gerendert).
+ *
+ * Fan-Club-Umbau (2026-11, Vorschlag A + Filter aus B) : Filter Alle / Ligue 1 / Pokal /
+ * Kontinental (African Champions League – nur Anzeige, getippt wird weiter nur Ligue 1) /
+ * Heim / Auswärts, Umschalter Kommende / Ergebnisse, Monatsgruppen, Tipp-Hinweis je Spiel (nur
+ * für bestätigte Teilnehmer) und Kalender-Abo (.ics, öffentlich). Der Wettbewerb kommt als `art`
+ * vom Backend (fanclub.wettbewerb_art).
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import { useCalendrierRencontres } from "../../hooks/useCommunaute";
+import { spielplanIcsUrl } from "../../api/communaute";
+import { useCalendrierRencontres, useMeinTippstand } from "../../hooks/useCommunaute";
 import { useReisenListe } from "../../hooks/useReisen";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
-import type { RencontreCalendrier } from "../../types/communaute";
+import type { RencontreCalendrier, TippspielTip } from "../../types/communaute";
+import {
+  nachMonaten,
+  passtZumFilter,
+  SPIELPLAN_FILTER,
+  tippsOffen,
+  type SpielplanFilter,
+} from "../../utils/fanclub";
 import type { ReiseListItem } from "../../types/reisen";
 import EquipeLogoImage from "./EquipeLogoImage";
 import SpielplanEditForm from "./SpielplanEditForm";
@@ -86,12 +100,48 @@ function resultatClubAfricain(rencontre: RencontreCalendrier): Resultat | null {
   return "unentschieden";
 }
 
+/** Kleiner Hinweis „Dein Tipp“ / „Tipp fehlt“ – nur für bestätigte Teilnehmer und Ligue 1. */
+function TippHinweis({ rencontre, tipp }: { rencontre: RencontreCalendrier; tipp?: TippspielTip }) {
+  const { t } = useTranslation("communaute");
+  if (rencontre.competition !== "Ligue 1" || rencontre.statut === "CANCELLED") return null;
+  const wert = tipp ? `${tipp.score_domicile} : ${tipp.score_exterieur}` : null;
+  if (!rencontre.est_a_venir) {
+    if (!tipp) return null;
+    return (
+      <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-[10px] font-bold text-text-secondary">
+        {t("live.spielplan_tipp_punkte", { tipp: wert, punkte: tipp.points ?? "–" })}
+      </span>
+    );
+  }
+  if (tippsOffen(rencontre)) {
+    return wert ? (
+      <span className="rounded-full bg-status-successBg px-2 py-0.5 text-[10px] font-bold text-status-successText">
+        {t("live.spielplan_tipp_abgegeben", { tipp: wert })}
+      </span>
+    ) : (
+      <span className="rounded-full bg-status-warningBg px-2 py-0.5 text-[10px] font-bold text-status-warningText">
+        {t("live.spielplan_tipp_fehlt")}
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-[10px] font-bold text-text-tertiary">
+      {wert
+        ? t("live.spielplan_tipp_gesperrt_mit", { tipp: wert })
+        : t("live.spielplan_tipp_gesperrt")}
+    </span>
+  );
+}
+
 function RencontreLigne({
   rencontre,
   peutEditer,
   reisen = [],
   reisenMoeglich = false,
+  tippHinweis = null,
 }: {
+  /** Tipp-Hinweis (nur für bestätigte Teilnehmer). */
+  tippHinweis?: ReactNode;
   rencontre: RencontreCalendrier;
   peutEditer: boolean;
   /** Reisen zu diesem Spiel, die der Nutzer sehen darf (Reise-Modul). */
@@ -116,6 +166,7 @@ function RencontreLigne({
           <EquipeLogoImage equipe={rencontre.equipe_exterieur} />
         </span>
         <div className="flex shrink-0 items-center gap-2">
+          {tippHinweis}
           {labelStatut && (
             <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase text-text-tertiary">
               {t(labelStatut)}
@@ -182,13 +233,56 @@ function RencontreLigne({
   );
 }
 
+type Ansicht = "kommend" | "ergebnisse";
+
+function monatsName(schluessel: string): string {
+  const [jahr, monat] = schluessel.split("-").map(Number);
+  return new Date(jahr, monat - 1, 1).toLocaleDateString(lokaleSprache(), {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function KalenderAbo() {
+  const { t } = useTranslation("communaute");
+  const [kopiert, setKopiert] = useState(false);
+  const url = spielplanIcsUrl();
+  const abo = url.replace(/^https?:/, "webcal:");
+  function kopieren() {
+    navigator.clipboard
+      ?.writeText(url)
+      .then(() => setKopiert(true))
+      .catch(() => setKopiert(false));
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <a
+        href={abo}
+        className="rounded-cid bg-bg-secondary px-2.5 py-1 font-medium text-text-primary hover:bg-cal"
+      >
+        {t("live.spielplan_kalender_abo")}
+      </a>
+      <button
+        type="button"
+        onClick={kopieren}
+        className="rounded-cid px-2 py-1 font-medium text-ca hover:bg-cal"
+      >
+        {kopiert ? t("live.spielplan_link_kopiert") : t("live.spielplan_link_kopieren")}
+      </button>
+    </div>
+  );
+}
+
 export default function CalendrierTab() {
   const { t } = useTranslation("communaute");
   const { data, isLoading, isError } = useCalendrierRencontres();
   const user = useAuthStore((state) => state.user);
   const peutEditer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
   const [ajoutOuvert, setAjoutOuvert] = useState(false);
+  const [filter, setFilter] = useState<SpielplanFilter>("alle");
+  const [gewaehlteAnsicht, setAnsicht] = useState<Ansicht | null>(null);
   const { data: reisenListe } = useReisenListe({}, Boolean(user));
+  const { bestaetigt, tippsProSpiel } = useMeinTippstand(Boolean(user));
   const reisenProSpiel = useMemo(() => {
     const m = new Map<string, ReiseListItem[]>();
     for (const r of reisenListe ?? []) {
@@ -202,13 +296,14 @@ export default function CalendrierTab() {
     // La page vient triée décroissant (voir docstring de tête) : les rencontres à venir
     // en sortent classées de la plus lointaine à la plus proche — inversé ici pour un
     // affichage chronologique naturel (prochain match en premier).
-    const aVenirListe = rencontres
+    const gefiltert = rencontres.filter((r) => passtZumFilter(r, filter));
+    const aVenirListe = gefiltert
       .filter((r) => r.est_a_venir)
       .slice()
       .reverse();
-    const resultatsListe = rencontres.filter((r) => !r.est_a_venir);
+    const resultatsListe = gefiltert.filter((r) => !r.est_a_venir);
     return { aVenir: aVenirListe, resultats: resultatsListe };
-  }, [rencontres]);
+  }, [rencontres, filter]);
 
   if (isLoading) {
     return <p className="text-sm text-text-tertiary">{t("live.calendrier_chargement")}</p>;
@@ -241,35 +336,91 @@ export default function CalendrierTab() {
     );
   }
 
+  // Ohne Wahl: kommende Spiele, und wenn es keine mehr gibt (Saisonende), die Ergebnisse.
+  const hatKommende = rencontres.some((r) => r.est_a_venir);
+  const ansicht: Ansicht = gewaehlteAnsicht ?? (hatKommende ? "kommend" : "ergebnisse");
+  const liste = ansicht === "kommend" ? aVenir : resultats;
+  const gruppen = nachMonaten(liste);
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {ajout}
-      <div>
-        <h2 className="mb-2 text-xs font-bold uppercase text-text-tertiary">
-          {t("live.calendrier_a_venir")}
-        </h2>
-        <div className="space-y-2">
-          {aVenir.map((rencontre) => (
-            <RencontreLigne
-              key={rencontre.id}
-              rencontre={rencontre}
-              peutEditer={peutEditer}
-              reisen={reisenProSpiel.get(rencontre.id)}
-              reisenMoeglich={Boolean(user)}
-            />
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          className="flex gap-1 overflow-x-auto"
+          role="tablist"
+          aria-label={t("live.spielplan_ansicht_label")}
+        >
+          {(["kommend", "ergebnisse"] as const).map((wert) => (
+            <button
+              key={wert}
+              type="button"
+              role="tab"
+              aria-selected={ansicht === wert}
+              onClick={() => setAnsicht(wert)}
+              className={`rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                ansicht === wert
+                  ? "bg-ca text-white"
+                  : "bg-bg-secondary text-text-tertiary hover:text-text-primary"
+              }`}
+            >
+              {t(wert === "kommend" ? "live.calendrier_a_venir" : "live.calendrier_resultats")}
+            </button>
           ))}
         </div>
+        <KalenderAbo />
       </div>
-      <div>
-        <h2 className="mb-2 text-xs font-bold uppercase text-text-tertiary">
-          {t("live.calendrier_resultats")}
-        </h2>
-        <div className="space-y-2">
-          {resultats.map((rencontre) => (
-            <RencontreLigne key={rencontre.id} rencontre={rencontre} peutEditer={peutEditer} />
-          ))}
-        </div>
+
+      <div
+        className="flex flex-wrap gap-1.5"
+        role="group"
+        aria-label={t("live.spielplan_filter_label")}
+      >
+        {SPIELPLAN_FILTER.map((wert) => (
+          <button
+            key={wert}
+            type="button"
+            aria-pressed={filter === wert}
+            onClick={() => setFilter(wert)}
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${
+              filter === wert
+                ? "border-ca bg-cal text-cad"
+                : "border-text-tertiary/20 text-text-tertiary hover:text-text-primary"
+            }`}
+          >
+            {t(`live.spielplan_filter_${wert}`)}
+          </button>
+        ))}
       </div>
+
+      {liste.length === 0 ? (
+        <p className="text-sm text-text-tertiary">{t("live.spielplan_filter_leer")}</p>
+      ) : (
+        gruppen.map((gruppe) => (
+          <section key={gruppe.schluessel}>
+            <h2 className="mb-2 text-xs font-bold uppercase text-text-tertiary">
+              {monatsName(gruppe.schluessel)}
+            </h2>
+            <div className="space-y-2">
+              {gruppe.spiele.map((rencontre) => (
+                <RencontreLigne
+                  key={rencontre.id}
+                  rencontre={rencontre}
+                  peutEditer={peutEditer}
+                  reisen={rencontre.est_a_venir ? reisenProSpiel.get(rencontre.id) : undefined}
+                  reisenMoeglich={rencontre.est_a_venir && Boolean(user)}
+                  tippHinweis={
+                    bestaetigt ? (
+                      <TippHinweis rencontre={rencontre} tipp={tippsProSpiel.get(rencontre.id)} />
+                    ) : null
+                  }
+                />
+              ))}
+            </div>
+          </section>
+        ))
+      )}
     </div>
   );
 }

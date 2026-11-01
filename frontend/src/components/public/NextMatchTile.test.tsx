@@ -24,6 +24,7 @@ function rencontre(overrides: Partial<RencontreCalendrier>): RencontreCalendrier
   return {
     id: "r1",
     competition: "Ligue 1 Tunisie",
+    art: "liga",
     equipe_domicile: "Club Africain",
     equipe_exterieur: "EST",
     date_heure: "2099-01-01T18:00:00Z",

@@ -19,6 +19,7 @@ vi.mock("../../hooks/useCommunaute", async () => {
     useTippspielTipps: vi.fn(),
     useCreerTippspielTip: vi.fn(),
     useModifierTippspielTip: vi.fn(),
+    useTippspielMatrix: vi.fn(),
   };
 });
 
@@ -100,6 +101,10 @@ describe("TippspielSection", () => {
     vi.mocked(useCommunauteHooks.useModifierTippspielTip).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspielTip>>(),
     );
+    // Ohne Matrix-Daten fällt die Rangliste auf die bisherige Tabelle zurück.
+    vi.mocked(useCommunauteHooks.useTippspielMatrix).mockReturnValue({
+      data: undefined,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielMatrix>);
   });
 
   it("n'affiche rien à un membre standard quand aucun Tippspiel n'existe", () => {
