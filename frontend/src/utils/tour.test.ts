@@ -3,12 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   appStationen,
   datumIso,
+  gruppenStationen,
   hinweisFuerPfad,
+  hinweisTreffer,
   hinweisSichtbar,
   morgenIso,
   nachAbschluss,
   nachNieMehr,
   nachUeberspringen,
+  seitenSchluessel,
+  SEITEN,
   statusVon,
   verwaltungStationen,
   willkommenArten,
@@ -152,8 +156,32 @@ describe("Seitenhinweise", () => {
     expect(hinweisFuerPfad("/regionen/wettbewerb")).toBe("regionen");
     expect(hinweisFuerPfad("/cotisations/en-attente")).toBe("zahlungen");
     expect(hinweisFuerPfad("/admin/roles")).toBe("rollen");
-    expect(hinweisFuerPfad("/dashboard")).toBeNull();
+    expect(hinweisFuerPfad("/dashboard")).toBe("dashboard");
+    expect(hinweisFuerPfad("/")).toBe("start");
     expect(hinweisFuerPfad("/chats")).toBeNull();
+    expect(hinweisFuerPfad("/unbekannt")).toBeNull();
+  });
+
+  it("neue Seiten zeigen den Tipp nur auf der Listenseite, nicht auf Unterseiten", () => {
+    expect(hinweisFuerPfad("/boutique")).toBe("boutique");
+    expect(hinweisFuerPfad("/boutique/panier")).toBeNull();
+    expect(hinweisFuerPfad("/membres/import")).toBeNull();
+    expect(hinweisFuerPfad("/projets/12")).toBeNull();
+    expect(hinweisFuerPfad("/live/7")).toBeNull();
+  });
+
+  it("liefert den Menüpfad zum Tipp", () => {
+    expect(hinweisTreffer("/reisen/42")).toEqual({ key: "reisen", pfad: "/reisen" });
+    expect(hinweisTreffer("/admin/finances")).toEqual({ key: "finanzen", pfad: "/admin/finances" });
+  });
+
+  it("jeder Schlüssel kommt nur einmal vor und passt in die Merker-Grenze", () => {
+    const keys = SEITEN.map(([, key]) => key);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys.length).toBeLessThanOrEqual(100);
+    expect(keys.every((k) => k.length > 0 && k.length <= 40)).toBe(true);
+    expect(seitenSchluessel("/stats")).toBe("statistik");
+    expect(seitenSchluessel("/gibt-es-nicht")).toBeNull();
   });
 
   it("zeigt bestätigte oder abgeschaltete Hinweise nicht mehr", () => {
@@ -161,5 +189,47 @@ describe("Seitenhinweise", () => {
     expect(hinweisSichtbar({ hinweise: ["reisen"] }, "reisen")).toBe(false);
     expect(hinweisSichtbar({ hinweise: ["reisen"] }, "albums")).toBe(true);
     expect(hinweisSichtbar({ hinweise_aus: true }, "albums")).toBe(false);
+  });
+});
+
+describe("gruppenStationen", () => {
+  const EINTRAEGE = [
+    { to: "/", group: "general" as const },
+    { to: "/boutique", group: "general" as const },
+    { to: "/fil", group: "communaute" as const },
+    { to: "/chats", group: "communaute" as const },
+    { to: "/inscriptions", group: "administration" as const, subgruppe: "mitglieder" as const },
+    { to: "/admin/roles", group: "administration" as const, subgruppe: "system" as const },
+  ];
+
+  it("macht aus jedem sichtbaren Eintrag einen Schritt in Reihenfolge der Seitenleiste", () => {
+    const g = gruppenStationen(EINTRAEGE);
+    expect(g.g_general?.map((s) => s.id)).toEqual(["start", "boutique"]);
+    expect(g.g_communaute?.map((s) => s.id)).toEqual(["fil", "chats"]);
+    expect(g.g_general?.[1]).toMatchObject({
+      ziel: "/boutique",
+      gruppe: "general",
+      textWurzel: "hinweise",
+    });
+  });
+
+  it("Verwaltung : getrennt nach Untergruppe, mit Gruppe und Untergruppe für das Aufklappen", () => {
+    const g = gruppenStationen(EINTRAEGE);
+    expect(g.u_mitglieder).toEqual([
+      expect.objectContaining({
+        id: "registrierungen",
+        gruppe: "administration",
+        subgruppe: "mitglieder",
+      }),
+    ]);
+    expect(g.u_system?.[0].id).toBe("rollen");
+  });
+
+  it("Gruppen ohne sichtbaren Eintrag fehlen ganz", () => {
+    const g = gruppenStationen(EINTRAEGE);
+    expect(g.g_contenu).toBeUndefined();
+    expect(g.u_finanzen).toBeUndefined();
+    expect(g.u_aktivitaeten).toBeUndefined();
+    expect(gruppenStationen([])).toEqual({});
   });
 });

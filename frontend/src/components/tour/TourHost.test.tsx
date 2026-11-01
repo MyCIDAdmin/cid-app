@@ -13,6 +13,7 @@ const hoch = vi.hoisted(() => ({
   stationen: {
     app: [] as TourStation[],
     verwaltung: [] as TourStation[],
+    gruppen: {} as Record<string, TourStation[]>,
     verfuegbar: ["app"] as ("app" | "verwaltung")[],
     bereit: true,
   },
@@ -64,6 +65,7 @@ describe("TourHost", () => {
     hoch.speichern.mockImplementation(async (p) => ({ ...useAuthStore.getState().user, ...p }));
     hoch.stationen.app = APP;
     hoch.stationen.verwaltung = [];
+    hoch.stationen.gruppen = {};
     hoch.stationen.verfuegbar = ["app"];
     hoch.stationen.bereit = true;
     useTourStore.setState({ lauf: null, willkommenVerborgen: false });
@@ -151,6 +153,39 @@ describe("TourHost", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await waitFor(() => expect(hoch.speichern).toHaveBeenCalled());
     expect(gespeichert().status).toBe("abgeschlossen");
+  });
+
+  describe("Gruppen-Rundgang aus der Hilfe", () => {
+    const GRUPPE: TourStation[] = [
+      { id: "fil", ziel: "/fil", gruppe: "communaute", textWurzel: "hinweise" },
+      { id: "forum", ziel: "/forum", gruppe: "communaute", textWurzel: "hinweise" },
+    ];
+
+    it("zeigt die Texte der Seitentipps und merkt nach dem Ende nichts am Konto", async () => {
+      melde({ status: "abgeschlossen", verwaltung_status: "abgeschlossen" });
+      hoch.stationen.gruppen = { g_communaute: GRUPPE };
+      useTourStore.getState().starten("g_communaute");
+      rendern();
+      expect(screen.getByText("hinweise.fil.titel")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("karte.weiter"));
+      expect(screen.getByText("hinweise.forum.titel")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("karte.fertig"));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(useTourStore.getState().lauf).toBeNull();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(hoch.speichern).not.toHaveBeenCalled();
+    });
+
+    it("Überspringen beendet nur diesen Rundgang und lässt offene Haupt-Rundgänge offen", async () => {
+      melde({ status: "offen" });
+      hoch.stationen.gruppen = { g_communaute: GRUPPE };
+      useTourStore.getState().starten("g_communaute");
+      rendern();
+      fireEvent.click(screen.getByText("karte.ueberspringen"));
+      expect(useTourStore.getState().lauf).toBeNull();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(hoch.speichern).not.toHaveBeenCalled();
+    });
   });
 
   it("Pfeiltasten wechseln die Station", () => {

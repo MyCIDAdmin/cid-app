@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 
 import de from "../../public/locales/de/tour.json";
 import fr from "../../public/locales/fr/tour.json";
-import { HINWEISE, appStationen, verwaltungStationen } from "./tour";
+import { GRUPPEN_RUNDGAENGE, SEITEN, appStationen, verwaltungStationen } from "./tour";
+import { NAV_ITEMS } from "../components/layout/Sidebar";
 import type { SidebarSubgroupKey } from "../store/uiStore";
 
 function schluessel(obj: unknown, prefix = ""): string[] {
@@ -57,9 +58,32 @@ describe("Tour-Texte", () => {
   it("jeder Seitenhinweis hat Titel und Text in beiden Sprachen", () => {
     for (const lang of [de, fr]) {
       const hinweise = lang.hinweise as Record<string, { titel?: string; text?: string }>;
-      for (const [, key] of HINWEISE) {
+      for (const [, key] of SEITEN) {
         expect(hinweise[key]?.titel, key).toBeTruthy();
         expect(hinweise[key]?.text, key).toBeTruthy();
+      }
+    }
+  });
+
+  it("jede Seite der Seitenleiste hat einen Tipp bzw. Rundgang-Schritt", () => {
+    const pfade = new Set(SEITEN.map(([pfad]) => pfad));
+    for (const item of NAV_ITEMS) expect(pfade.has(item.to), item.to).toBe(true);
+  });
+
+  it("Gruppen-Rundgänge und Zusatzzeilen haben Texte in beiden Sprachen", () => {
+    for (const lang of [de, fr]) {
+      for (const g of GRUPPEN_RUNDGAENGE) {
+        expect((lang.hilfe.gruppen as Record<string, string>)[g], g).toBeTruthy();
+      }
+      for (const z of [
+        "nur_lesen",
+        "fan_mitglied",
+        "region_keine",
+        "region_meine",
+        "region_verantwortlich",
+        "region_freigeben",
+      ]) {
+        expect((lang.hinweise_zusatz as Record<string, string>)[z], z).toBeTruthy();
       }
     }
   });

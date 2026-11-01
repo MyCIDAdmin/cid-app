@@ -9,11 +9,11 @@ import { Link, useLocation } from "react-router-dom";
 
 import { speichereTour, startTour, useTourMerker } from "../../hooks/useTour";
 import { useTourStationen } from "../../hooks/useTourStationen";
-import { hinweisFuerPfad } from "../../utils/tour";
+import { GRUPPEN_RUNDGAENGE, hinweisFuerPfad } from "../../utils/tour";
 
 export default function RundgangBereich() {
   const { t } = useTranslation("tour");
-  const { verfuegbar } = useTourStationen();
+  const { verfuegbar, gruppen } = useTourStationen();
   const { pathname } = useLocation();
   const tour = useTourMerker();
   const [meldung, setMeldung] = useState<string | null>(null);
@@ -54,6 +54,18 @@ export default function RundgangBereich() {
       <p role="status" className="min-h-[1rem] text-xs font-medium text-text-primary">
         {meldung}
       </p>
+      {GRUPPEN_RUNDGAENGE.some((g) => gruppen[g]) && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-text-secondary">{t("hilfe.gruppen_titel")}</p>
+          <div className="flex flex-wrap gap-2">
+            {GRUPPEN_RUNDGAENGE.filter((g) => gruppen[g]).map((g) => (
+              <button key={g} type="button" onClick={() => startTour(g)} className={knopf}>
+                {t(`hilfe.gruppen.${g}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <Link to="/hilfe/karten" className="block text-xs font-medium text-text-secondary underline">
         {t("hilfe.karten")}
       </Link>

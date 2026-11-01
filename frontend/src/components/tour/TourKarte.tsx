@@ -129,9 +129,11 @@ export default function TourKarte({
           {t("karte.schritt", { n: schritt + 1, gesamt })}
         </p>
         <h3 className="pr-6 text-sm font-bold text-text-primary">
-          {t(`stationen.${station.id}.titel`)}
+          {t(`${station.textWurzel ?? "stationen"}.${station.id}.titel`)}
         </h3>
-        <p className="mt-1 text-sm text-text-secondary">{t(`stationen.${station.id}.text`)}</p>
+        <p className="mt-1 text-sm text-text-secondary">
+          {t(`${station.textWurzel ?? "stationen"}.${station.id}.text`)}
+        </p>
         <div className="mt-3 flex items-center gap-2">
           <button
             type="button"

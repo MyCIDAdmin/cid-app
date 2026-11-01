@@ -17,9 +17,10 @@ import {
   nachAbschluss,
   nachNieMehr,
   nachUeberspringen,
+  istGruppenRundgang,
   statusVon,
   willkommenArten,
-  type TourArt,
+  type RundgangArt,
   type TourStation,
 } from "../../utils/tour";
 import TourKarte from "./TourKarte";
@@ -45,11 +46,13 @@ export default function TourHost({ onTiroir }: { onTiroir: (offen: boolean) => v
   const verborgen = useTourStore((s) => s.willkommenVerborgen);
   const { starten, gehezu, beenden, verbergeWillkommen, zeigeWillkommen } = useTourStore.getState();
 
-  const liste: TourStation[] = lauf
-    ? lauf.art === "app"
-      ? stationen.app
-      : stationen.verwaltung
-    : [];
+  const liste: TourStation[] = !lauf
+    ? []
+    : istGruppenRundgang(lauf.art)
+      ? (stationen.gruppen[lauf.art] ?? [])
+      : lauf.art === "app"
+        ? stationen.app
+        : stationen.verwaltung;
   const station = lauf ? liste[lauf.schritt] : undefined;
 
   const arten =
@@ -107,13 +110,19 @@ export default function TourHost({ onTiroir }: { onTiroir: (offen: boolean) => v
 
   // --- Abläufe -------------------------------------------------------------------------------
   function ueberspringen() {
+    // Gruppen-Rundgänge aus der Hilfe merken nichts und berühren die Haupt-Rundgänge nicht.
+    if (lauf && istGruppenRundgang(lauf.art)) {
+      beenden();
+      return;
+    }
     const aenderung = nachUeberspringen(tour, stationen.verfuegbar);
     beenden();
     if (Object.keys(aenderung).length > 0) void speichereTour(aenderung);
   }
 
-  function fertig(art: TourArt) {
+  function fertig(art: RundgangArt) {
     beenden();
+    if (istGruppenRundgang(art)) return;
     void speichereTour(nachAbschluss(art));
     // Zweiter Rundgang noch offen (z. B. Verwaltung nach App) : Willkommensfenster erneut anbieten.
     const rest = stationen.verfuegbar.filter((a) => a !== art && statusVon(tour, a) === "offen");

@@ -8,10 +8,12 @@ import { IconBulb } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
+import { NAV_ITEMS } from "../layout/Sidebar";
 import { speichereTour, useTourMerker } from "../../hooks/useTour";
 import { useTourStationen } from "../../hooks/useTourStationen";
 import { useTourStore } from "../../store/tourStore";
-import { hinweisFuerPfad, hinweisSichtbar, willkommenArten } from "../../utils/tour";
+import { hinweisSichtbar, hinweisTreffer, willkommenArten } from "../../utils/tour";
+import HinweisZusatz from "./HinweisZusatz";
 
 export default function HinweisLeiste() {
   const { t } = useTranslation("tour");
@@ -21,8 +23,9 @@ export default function HinweisLeiste() {
   const lauf = useTourStore((s) => s.lauf);
   const willkommenVerborgen = useTourStore((s) => s.willkommenVerborgen);
 
-  const key = hinweisFuerPfad(pathname);
-  if (!key || !bereit || lauf) return null;
+  const treffer = hinweisTreffer(pathname);
+  if (!treffer || !bereit || lauf) return null;
+  const { key } = treffer;
   const willkommenSichtbar =
     !willkommenVerborgen && willkommenArten(tour, verfuegbar, new Date()).length > 0;
   if (willkommenSichtbar || !hinweisSichtbar(tour, key)) return null;
@@ -36,6 +39,10 @@ export default function HinweisLeiste() {
       <div className="min-w-[12rem] flex-1">
         <p className="font-semibold text-text-primary">{t(`hinweise.${key}.titel`)}</p>
         <p className="text-text-secondary">{t(`hinweise.${key}.text`)}</p>
+        <HinweisZusatz
+          hinweisKey={key}
+          pageSlug={NAV_ITEMS.find((i) => i.to === treffer.pfad)?.pageSlug}
+        />
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <button

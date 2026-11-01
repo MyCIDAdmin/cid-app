@@ -10,6 +10,7 @@ import RundgangBereich from "./RundgangBereich";
 const hoch = vi.hoisted(() => ({
   speichern: vi.fn(),
   verfuegbar: ["app"] as ("app" | "verwaltung")[],
+  gruppen: {} as Record<string, { id: string; ziel: string }[]>,
 }));
 
 vi.mock("../../api/auth", async (importOriginal) => ({
@@ -17,7 +18,13 @@ vi.mock("../../api/auth", async (importOriginal) => ({
   speicherePraeferenzen: hoch.speichern,
 }));
 vi.mock("../../hooks/useTourStationen", () => ({
-  useTourStationen: () => ({ app: [], verwaltung: [], verfuegbar: hoch.verfuegbar, bereit: true }),
+  useTourStationen: () => ({
+    app: [],
+    verwaltung: [],
+    gruppen: hoch.gruppen,
+    verfuegbar: hoch.verfuegbar,
+    bereit: true,
+  }),
 }));
 
 describe("RundgangBereich", () => {
@@ -25,6 +32,7 @@ describe("RundgangBereich", () => {
     hoch.speichern.mockReset();
     hoch.speichern.mockImplementation(async (p) => ({ ...useAuthStore.getState().user, ...p }));
     hoch.verfuegbar = ["app"];
+    hoch.gruppen = {};
     useTourStore.setState({ lauf: null, willkommenVerborgen: false });
     useHilfeStore.setState({ offen: true, cle: "rundgang", minimiert: false });
     const user: CidUser = {
@@ -64,7 +72,7 @@ describe("RundgangBereich", () => {
   });
 
   it("bestätigt das Einblenden mit einer Meldung", async () => {
-    renderWithProviders(<RundgangBereich />);
+    renderWithProviders(<RundgangBereich />, { route: "/boutique/panier", path: "*" });
     fireEvent.click(screen.getByText("hilfe.hinweise"));
     expect(await screen.findByRole("status")).toHaveTextContent("hilfe.hinweise_an");
   });
@@ -85,6 +93,31 @@ describe("RundgangBereich", () => {
     renderWithProviders(<RundgangBereich />);
     fireEvent.click(screen.getByText("hilfe.hinweise"));
     expect(await screen.findByRole("status")).toHaveTextContent("hilfe.hinweise_schon");
+  });
+
+  it("bietet Rundgänge nur für Gruppen an, in denen das Konto Seiten sieht", () => {
+    hoch.gruppen = {
+      g_general: [{ id: "start", ziel: "/" }],
+      u_finanzen: [{ id: "finanzen", ziel: "/admin/finances" }],
+    };
+    renderWithProviders(<RundgangBereich />);
+    expect(screen.getByText("hilfe.gruppen_titel")).toBeInTheDocument();
+    expect(screen.getByText("hilfe.gruppen.g_general")).toBeInTheDocument();
+    expect(screen.getByText("hilfe.gruppen.u_finanzen")).toBeInTheDocument();
+    expect(screen.queryByText("hilfe.gruppen.g_contenu")).not.toBeInTheDocument();
+  });
+
+  it("startet den Gruppen-Rundgang und schließt dabei die Hilfe", () => {
+    hoch.gruppen = { g_communaute: [{ id: "fil", ziel: "/fil" }] };
+    renderWithProviders(<RundgangBereich />);
+    fireEvent.click(screen.getByText("hilfe.gruppen.g_communaute"));
+    expect(useTourStore.getState().lauf).toEqual({ art: "g_communaute", schritt: 0 });
+    expect(useHilfeStore.getState().offen).toBe(false);
+  });
+
+  it("zeigt keinen Gruppen-Abschnitt, wenn es keine Gruppen gibt", () => {
+    renderWithProviders(<RundgangBereich />);
+    expect(screen.queryByText("hilfe.gruppen_titel")).not.toBeInTheDocument();
   });
 
   it("verweist auf die Aufgabenkarten", () => {

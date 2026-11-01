@@ -8,7 +8,7 @@ import { speicherePraeferenzen } from "../api/auth";
 import { useAuthStore } from "../store/authStore";
 import { useHilfeStore } from "../store/hilfeStore";
 import { useTourStore } from "../store/tourStore";
-import { TOUR_VERSION, type TourArt, type TourPraeferenz } from "../utils/tour";
+import { TOUR_VERSION, type RundgangArt, type TourPraeferenz } from "../utils/tour";
 
 export function useTourMerker(): TourPraeferenz | undefined {
   return useAuthStore((s) => s.user?.ui_praeferenzen?.tour);
@@ -37,8 +37,8 @@ export async function speichereTour(aenderung: Partial<TourPraeferenz>): Promise
   }
 }
 
-/** Startet einen Rundgang (auch aus der Hilfe, unabhängig vom gemerkten Stand). */
-export function startTour(art: TourArt): void {
+/** Startet einen Rundgang (auch aus der Hilfe, unabhängig vom gemerkten Stand ; Gruppen-Rundgänge merken nichts). */
+export function startTour(art: RundgangArt): void {
   useHilfeStore.getState().schliessen();
   useTourStore.getState().starten(art);
 }
