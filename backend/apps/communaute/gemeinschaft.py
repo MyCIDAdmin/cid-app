@@ -36,9 +36,8 @@ def _initial(nachname: str) -> str:
 
 
 def _sektor_name(membre: Membre) -> str:
-    from apps.regionen import (
-        services as regionen,  # lokal : regionen importiert membres
-    )
+    # lokal : regionen importiert membres
+    from apps.regionen import services as regionen
 
     region = regionen.region_von_gebiet(membre.pays, membre.land_de)
     return region.name if region else ""
