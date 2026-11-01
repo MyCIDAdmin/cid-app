@@ -10,7 +10,7 @@ export default function Schnellzugriffe() {
   const live = useModuleOuvert("live").ouvert;
   const reisen = useModuleOuvert("covoiturage").ouvert;
   const eintraege = [
-    live && { to: "/live", icon: IconTrophy, text: t("uebersicht.schnell.tippen") },
+    live && { to: "/live?tab=tippspiel", icon: IconTrophy, text: t("uebersicht.schnell.tippen") },
     reisen && { to: "/reisen", icon: IconPlane, text: t("uebersicht.schnell.reise") },
     { to: "/tickets", icon: IconTicket, text: t("uebersicht.schnell.tickets") },
     { to: "/mon-adhesion", icon: IconCreditCard, text: t("uebersicht.schnell.beitrag") },

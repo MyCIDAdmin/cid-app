@@ -44,6 +44,7 @@ import type {
   QuizPayload,
   RencontreCalendrier,
   RencontreCalendrierPayload,
+  SpielerDesSpiels,
   ReponseForum,
   ReponseQuiz,
   StatistiqueJoueur,
@@ -52,6 +53,7 @@ import type {
   Tippspiel,
   TippspielPayload,
   TippspielTeilnahme,
+  TippspielMatrix,
   TippspielTip,
   TippspielTipPayload,
 } from "../types/communaute";
@@ -606,6 +608,43 @@ export async function modifierTippspielTip(
     payload,
   );
   return data;
+}
+
+// Fan-Club-Umbau (2026-11) : Tipps aller Teilnehmer nach der Sperre, „Spieler des Spiels“, Kalender-Abo.
+
+export async function getTippspielMatrix(
+  tippspiel: string,
+  spalten = 8,
+): Promise<TippspielMatrix> {
+  const { data } = await apiClient.get<TippspielMatrix>("/communaute/tippspiel-matrix/", {
+    params: { tippspiel, spalten },
+  });
+  return data;
+}
+
+export async function getSpielerDesSpiels(rencontre?: string): Promise<SpielerDesSpiels> {
+  const { data } = await apiClient.get<SpielerDesSpiels>("/communaute/spieler-des-spiels/", {
+    params: rencontre ? { rencontre } : undefined,
+  });
+  return data;
+}
+
+export async function stimmeFuerSpieler(
+  rencontre: string,
+  spieler: string,
+): Promise<SpielerDesSpiels> {
+  const { data } = await apiClient.post<SpielerDesSpiels>("/communaute/spieler-des-spiels/", {
+    rencontre,
+    spieler,
+  });
+  return data;
+}
+
+/** Öffentliche Adresse des Spielplan-Kalenders (.ics) zum Abonnieren. */
+export function spielplanIcsUrl(): string {
+  const basis = String(apiClient.defaults.baseURL ?? "").replace(/\/$/, "");
+  const absolut = basis.startsWith("http") ? basis : `${window.location.origin}${basis}`;
+  return `${absolut}/communaute/spielplan.ics`;
 }
 
 // --- Albums photos (troisième lot, Phase 4B) ---

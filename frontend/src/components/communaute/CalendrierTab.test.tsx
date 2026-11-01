@@ -14,12 +14,21 @@ vi.mock("../../hooks/useCommunaute", async () => {
   return {
     ...actual,
     useCalendrierRencontres: vi.fn(),
+    useMeinTippstand: vi.fn(),
     useEquipesLogos: vi.fn(),
     useCreerRencontre: vi.fn(),
     useModifierRencontre: vi.fn(),
     useReinitialiserRencontre: vi.fn(),
     useSupprimerRencontre: vi.fn(),
   };
+});
+
+// Mein Tipp-Stand (Hinweise im Spielplan) : standardmäßig kein bestätigter Teilnehmer.
+vi.mocked(useCommunauteHooks.useMeinTippstand).mockReturnValue({
+  tippspiel: undefined,
+  teilnahme: undefined,
+  bestaetigt: false,
+  tippsProSpiel: new Map(),
 });
 
 // Reise-Modul : "Reise organisieren"/vorhandene Reisen am Spiel (Daten hier vorgegeben).
@@ -49,6 +58,7 @@ function rencontre(overrides: Partial<RencontreCalendrier> = {}): RencontreCalen
   return {
     id: "r1",
     competition: "Ligue 1",
+    art: "liga",
     equipe_domicile: "Club Africain",
     equipe_exterieur: "ES Tunis",
     date_heure: "2026-04-01T18:00:00Z",
@@ -118,7 +128,10 @@ describe("CalendrierTab", () => {
 
     renderWithProviders(<CalendrierTab />);
 
+    // Standard: kommende Spiele ; die Ergebnisse stehen hinter dem Umschalter.
     expect(screen.getByText(/ES Tunis/)).toBeInTheDocument();
+    expect(screen.queryByText(/CS Sfaxien/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "live.calendrier_resultats" }));
     expect(screen.getByText(/CS Sfaxien/)).toBeInTheDocument();
     expect(screen.getByText("2 : 1")).toBeInTheDocument();
   });
@@ -286,6 +299,137 @@ describe("CalendrierTab", () => {
     renderWithProviders(<CalendrierTab />);
 
     expect(screen.getByText("live.calendrier_statut_annulee")).toBeInTheDocument();
+  });
+
+  describe("Fan-Club-Umbau", () => {
+    function zeige(spiele: RencontreCalendrier[]) {
+      vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+        data: page(spiele),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+      return renderWithProviders(<CalendrierTab />);
+    }
+
+    const liga = rencontre({ id: "l", equipe_exterieur: "Liga-Gegner" });
+    const cl = rencontre({
+      id: "c",
+      competition: "CAF Champions League",
+      art: "kontinental",
+      equipe_exterieur: "Al Ahly",
+      date_heure: "2026-11-20T18:00:00Z",
+    });
+    const pokal = rencontre({
+      id: "p",
+      competition: "Coupe de Tunisie",
+      art: "pokal",
+      equipe_exterieur: "Pokal-Gegner",
+    });
+
+    it("zeigt kontinentale Spiele unter Alle und filtert sie mit Kontinental", () => {
+      zeige([cl, liga, pokal]);
+      expect(screen.getByText(/Al Ahly/)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "live.spielplan_filter_kontinental" }));
+      expect(screen.getByText(/Al Ahly/)).toBeInTheDocument();
+      expect(screen.queryByText(/Liga-Gegner/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Pokal-Gegner/)).not.toBeInTheDocument();
+    });
+
+    it("filtert nach Pokal und Ligue 1", () => {
+      zeige([cl, liga, pokal]);
+      fireEvent.click(screen.getByRole("button", { name: "live.spielplan_filter_pokal" }));
+      expect(screen.getByText(/Pokal-Gegner/)).toBeInTheDocument();
+      expect(screen.queryByText(/Liga-Gegner/)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "live.spielplan_filter_liga" }));
+      expect(screen.getByText(/Liga-Gegner/)).toBeInTheDocument();
+      expect(screen.queryByText(/Al Ahly/)).not.toBeInTheDocument();
+    });
+
+    it("filtert nach Heim und Auswärts und meldet leere Filter", () => {
+      const auswaerts = rencontre({
+        id: "a",
+        equipe_domicile: "USM Alger",
+        equipe_exterieur: "Club Africain",
+      });
+      zeige([auswaerts, liga]);
+      fireEvent.click(screen.getByRole("button", { name: "live.spielplan_filter_auswaerts" }));
+      expect(screen.getByText(/USM Alger/)).toBeInTheDocument();
+      expect(screen.queryByText(/Liga-Gegner/)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "live.spielplan_filter_kontinental" }));
+      expect(screen.getByText("live.spielplan_filter_leer")).toBeInTheDocument();
+    });
+
+    it("startet bei den Ergebnissen, wenn nichts mehr aussteht", () => {
+      zeige([
+        rencontre({
+          id: "z",
+          equipe_exterieur: "Gespielt",
+          est_a_venir: false,
+          score_domicile: 1,
+          score_exterieur: 0,
+        }),
+      ]);
+      expect(screen.getByText(/Gespielt/)).toBeInTheDocument();
+    });
+
+    it("gruppiert nach Monaten", () => {
+      zeige([
+        rencontre({ id: "1", date_heure: "2026-11-20T18:00:00" }),
+        rencontre({ id: "2", date_heure: "2026-12-05T18:00:00" }),
+      ]);
+      expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(2);
+    });
+
+    it("bietet das Kalender-Abo als webcal-Link an", () => {
+      zeige([liga]);
+      const link = screen.getByRole("link", { name: "live.spielplan_kalender_abo" });
+      expect(link.getAttribute("href")).toMatch(/^webcal:.*\/communaute\/spielplan\.ics$/);
+    });
+
+    it("zeigt bestätigten Teilnehmern den Tipp-Stand je Spiel", () => {
+      vi.mocked(useCommunauteHooks.useMeinTippstand).mockReturnValue({
+        tippspiel: undefined,
+        teilnahme: undefined,
+        bestaetigt: true,
+        tippsProSpiel: new Map([
+          [
+            "mit",
+            {
+              id: "t1",
+              rencontre: "mit",
+              score_domicile: 2,
+              score_exterieur: 1,
+            } as never,
+          ],
+        ]),
+      });
+      const weit = (id: string, extra = {}) =>
+        rencontre({
+          id,
+          equipe_exterieur: `Gegner ${id}`,
+          date_heure: new Date(Date.now() + 10 * 86400000).toISOString(),
+          ...extra,
+        });
+      zeige([
+        weit("mit"),
+        weit("ohne"),
+        weit("bald", { date_heure: new Date(Date.now() + 3600000).toISOString() }),
+      ]);
+      expect(screen.getByText("live.spielplan_tipp_abgegeben")).toBeInTheDocument();
+      expect(screen.getByText("live.spielplan_tipp_fehlt")).toBeInTheDocument();
+      expect(screen.getByText("live.spielplan_tipp_gesperrt")).toBeInTheDocument();
+      vi.mocked(useCommunauteHooks.useMeinTippstand).mockReturnValue({
+        tippspiel: undefined,
+        teilnahme: undefined,
+        bestaetigt: false,
+        tippsProSpiel: new Map(),
+      });
+    });
+
+    it("zeigt Nicht-Teilnehmern keine Tipp-Hinweise", () => {
+      zeige([liga]);
+      expect(screen.queryByText("live.spielplan_tipp_fehlt")).not.toBeInTheDocument();
+    });
   });
 
   describe("manuelle Korrekturen (Bureau Admin+)", () => {

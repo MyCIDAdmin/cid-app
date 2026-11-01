@@ -154,7 +154,10 @@ export default function NaechstesSpielHero() {
         </div>
         <div className="flex flex-wrap gap-2">
           {liveOffen && tipp.status === "keins" && (
-            <Link to="/live" className={`${KNOPF_HELL} bg-white text-cad hover:bg-cal`}>
+            <Link
+              to="/live?tab=tippspiel"
+              className={`${KNOPF_HELL} bg-white text-cad hover:bg-cal`}
+            >
               {t("uebersicht.hero.tipp")}
             </Link>
           )}

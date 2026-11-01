@@ -3327,12 +3327,13 @@
     ]
   },
   "fanclub": {
-    "titre": "Fan-Club : calendrier des matchs",
-    "intro": "Dans le Fan-Club, le calendrier affiche matchs, résultats et classement. Les données viennent d'une interface (API) ; le bureau peut les corriger et ajouter ses propres matchs.",
+    "titre": "Fan-Club : onglets et calendrier",
+    "intro": "Le Fan-Club comporte cinq onglets : Journée, Pronostics, Classement, Calendrier et Statistiques. Les données viennent d'une interface (API) ; le bureau peut les corriger et ajouter ses propres matchs.",
     "schritte": [
-      "Passez entre les onglets « Classement » et « Calendrier ».",
-      "Le calendrier affiche « Matchs à venir » et « Résultats ».",
-      "Le bureau voit « Modifier » sur chaque match et « Ajouter un match » en haut."
+      "« Journée » affiche le prochain match avec compte à rebours, vos pronostics et le vote du joueur du match.",
+      "Dans « Pronostics », vous saisissez vos pronostics. Après la clôture (1 jour avant le coup d'envoi), les participants voient ceux des autres dans le classement, la matrice des journées et le mur des pronostics.",
+      "« Classement », « Calendrier » (filtres : Tous, Ligue 1, Coupe, Continental, Domicile, Extérieur) et « Statistiques » montrent la ligue, les dates et les chiffres.",
+      "Dans le calendrier, le bureau voit « Modifier » sur chaque match et « Ajouter un match » en haut."
     ],
     "workflows": [
       {

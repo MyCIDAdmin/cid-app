@@ -28,6 +28,7 @@ import type { StatutTippspiel, Tippspiel } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import ShareButton from "../ui/ShareButton";
 import TippspielAdminForm from "./TippspielAdminForm";
+import TippspielAuswertung from "./TippspielAuswertung";
 import TippspielTippAbgabe from "./TippspielTippAbgabe";
 
 const BADGE_STATUT: Record<StatutTippspiel, string> = {
@@ -104,7 +105,7 @@ function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
                 l'onglet "Tippspiel" du module Fan-Club, qui est l'onglet par défaut de
                 LiveMatchPage (pas de synchronisation d'onglet via l'URL, voir
                 LiveMatchPage.tsx), donc atterrir sur /live suffit à voir le Tippspiel. */}
-            <ShareButton path="/live" titre={tippspiel.titre} />
+            <ShareButton path="/live?tab=tippspiel" titre={tippspiel.titre} />
           </div>
         </div>
 
@@ -231,39 +232,7 @@ function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
             </>
           )}
 
-          <div className="rounded-cid-lg bg-bg-primary shadow-sm">
-            <h3 className="px-3 pt-3 text-xs font-bold uppercase text-text-tertiary">
-              {t("tippspiel.klassement_titel")}
-            </h3>
-            {classement.length === 0 ? (
-              <p className="px-3 pb-3 pt-1 text-sm text-text-tertiary">
-                {t("tippspiel.klassement_leer")}
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-[10px] uppercase text-text-tertiary">
-                      <th className="px-3 py-2">{t("tippspiel.klassement_platz")}</th>
-                      <th className="px-3 py-2">{t("tippspiel.klassement_mitglied")}</th>
-                      <th className="px-3 py-2 text-right">{t("tippspiel.klassement_punkte")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {classement.map((ligne, index) => (
-                      <tr key={ligne.id} className="border-t border-text-tertiary/10">
-                        <td className="px-3 py-2 tabular-nums">{index + 1}</td>
-                        <td className="px-3 py-2">{ligne.membre_nom}</td>
-                        <td className="px-3 py-2 text-right font-bold tabular-nums">
-                          {ligne.total_points}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <TippspielAuswertung tippspielId={tippspiel.id} classement={classement} />
         </>
       )}
     </div>

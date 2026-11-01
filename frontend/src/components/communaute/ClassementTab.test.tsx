@@ -55,6 +55,7 @@ function ligne(overrides: Partial<ClassementLigue> = {}): ClassementLigue {
     buts_contre_exterieur: 6,
     points_exterieur: 7,
     zone_texte: "",
+    rang_vorher: null,
     maj_le: "2026-03-01T10:00:00Z",
     ...overrides,
   };
@@ -174,5 +175,79 @@ describe("ClassementTab", () => {
     renderWithProviders(<ClassementTab />);
 
     expect(screen.getByText("Promotion - CAF Champions League")).toBeInTheDocument();
+  });
+  describe("Fan-Club-Umbau", () => {
+    function tabelle() {
+      vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
+        data: page([
+          ligne({ id: "a", equipe: "ES Tunis", rang: 1, points: 30, rang_vorher: 1 }),
+          ligne({
+            id: "b",
+            equipe: "Club Africain",
+            rang: 2,
+            points: 27,
+            rang_vorher: 4,
+            zone_texte: "Promotion - CAF Champions League",
+          }),
+          ligne({
+            id: "c",
+            equipe: "Letzter",
+            rang: 3,
+            points: 8,
+            rang_vorher: 2,
+            zone_texte: "Relegation",
+          }),
+        ]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
+    }
+
+    it("zeigt Platz, Abstand zu Platz 1 und Polster zum Abstieg", () => {
+      tabelle();
+      renderWithProviders(<ClassementTab />);
+      const kpis = screen.getByTestId("tabelle-kennzahlen");
+      expect(kpis).toHaveTextContent("live.kpi_platz");
+      expect(kpis).toHaveTextContent("2.");
+      expect(kpis).toHaveTextContent("live.kpi_abstand_platz1");
+      expect(kpis).toHaveTextContent("−3");
+      expect(kpis).toHaveTextContent("live.kpi_polster_abstieg");
+      expect(kpis).toHaveTextContent("+19");
+    });
+
+    it("zeigt als Spitzenreiter den Vorsprung auf Platz 2", () => {
+      vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
+        data: page([
+          ligne({ id: "b", equipe: "Club Africain", rang: 1, points: 30 }),
+          ligne({ id: "a", equipe: "ES Tunis", rang: 2, points: 27 }),
+        ]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
+      renderWithProviders(<ClassementTab />);
+      const kpis = screen.getByTestId("tabelle-kennzahlen");
+      expect(kpis).toHaveTextContent("live.kpi_vorsprung_platz2");
+      expect(kpis).toHaveTextContent("+3");
+      expect(kpis).not.toHaveTextContent("live.kpi_polster_abstieg");
+    });
+
+    it("zeigt Trendpfeile und die Legende der Zonen", () => {
+      tabelle();
+      renderWithProviders(<ClassementTab />);
+      expect(screen.getByText("▲2")).toBeInTheDocument();
+      expect(screen.getByText("▼1")).toBeInTheDocument();
+      expect(screen.getByText("live.zone_oben")).toBeInTheDocument();
+      expect(screen.getByText("live.zone_abstieg")).toBeInTheDocument();
+    });
+
+    it("blendet die Legende aus, wenn die Liga keine Zonen meldet", () => {
+      vi.mocked(useCommunauteHooks.useClassementLigue).mockReturnValue({
+        data: page([ligne({ equipe: "Club Africain" })]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useCommunauteHooks.useClassementLigue>);
+      renderWithProviders(<ClassementTab />);
+      expect(screen.queryByText("live.zone_oben")).not.toBeInTheDocument();
+    });
   });
 });

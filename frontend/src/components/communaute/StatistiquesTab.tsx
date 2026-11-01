@@ -30,6 +30,10 @@
  *      2026-09-25, voir commentaire sur `joueurs` ci-dessous — retour utilisateur : des
  *      joueurs qui ne font plus partie de l'effectif actuel restaient listés).
  *
+ * Fan-Club-Umbau (2026-11, Vorschlag A) : zusätzlich Torschützen-Balken, Heim/Auswärts-Bilanz,
+ * Serien und — für bestätigte Tippspiel-Teilnehmer — „Tippspiel in Zahlen“ (TippspielInZahlen).
+ * Alles aus den schon geladenen Daten gerechnet (utils/fanclub.ts), keine neuen Abfragen.
+ *
  * Palette du Liniendiagramm validée via la skill dataviz (3 séries identitaires, pas un
  * accent + neutre) :
  *   node scripts/validate_palette.js "#CC0000,#2a78d6,#1baf7a" --mode light --pairs all
@@ -64,6 +68,8 @@ import {
   useStatistiquesJoueurs,
 } from "../../hooks/useCommunaute";
 import type { RencontreCalendrier, StatistiqueJoueur } from "../../types/communaute";
+import { heimAuswaertsBilanz, ligaSpieleDerSaison, serien } from "../../utils/fanclub";
+import TippspielInZahlen from "./TippspielInZahlen";
 
 const EQUIPE_SUIVIE = "Club Africain";
 
@@ -181,9 +187,7 @@ function trierJoueurs(
 function KpiCarte({ label, valeur }: { label: string; valeur: number }) {
   return (
     <div className="rounded-cid-lg bg-bg-primary p-3 text-center shadow-sm">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-text-tertiary">
-        {label}
-      </p>
+      <p className="text-[10px] font-medium uppercase tracking-wide text-text-tertiary">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">{valeur}</p>
     </div>
   );
@@ -220,6 +224,103 @@ function EnTeteTriable({
         <Icone size={12} />
       </button>
     </th>
+  );
+}
+
+function Torschuetzen({ joueurs }: { joueurs: StatistiqueJoueur[] }) {
+  const { t } = useTranslation("communaute");
+  const top = [...joueurs]
+    .filter((j) => j.buts > 0)
+    .sort((a, b) => b.buts - a.buts || a.nom.localeCompare(b.nom))
+    .slice(0, 5);
+  const maximum = top[0]?.buts ?? 0;
+  return (
+    <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm" data-testid="torschuetzen">
+      <h2 className="mb-3 text-xs font-bold text-text-primary">{t("live.torschuetzen_titel")}</h2>
+      {top.length === 0 ? (
+        <p className="text-sm text-text-tertiary">{t("live.torschuetzen_leer")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {top.map((j) => (
+            <li key={j.id} className="grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-2">
+              <span className="truncate text-sm font-medium text-text-primary">{j.nom}</span>
+              <span className="h-2 overflow-hidden rounded-full bg-bg-secondary" aria-hidden="true">
+                <span
+                  className="block h-full rounded-full bg-ca"
+                  style={{ width: `${(j.buts / maximum) * 100}%` }}
+                />
+              </span>
+              <span className="text-sm font-bold tabular-nums text-text-primary">{j.buts}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function HeimAuswaertsKarte({ spiele }: { spiele: RencontreCalendrier[] }) {
+  const { t } = useTranslation("communaute");
+  const { heim, auswaerts } = heimAuswaertsBilanz(spiele);
+  const zeile = (label: string, b: typeof heim) => (
+    <tr className="border-t border-text-tertiary/10">
+      <th scope="row" className="py-1.5 text-left font-medium text-text-primary">
+        {label}
+      </th>
+      <td className="py-1.5 text-center tabular-nums">{b.spiele}</td>
+      <td className="py-1.5 text-center tabular-nums">
+        {b.siege}-{b.unentschieden}-{b.niederlagen}
+      </td>
+      <td className="py-1.5 text-center tabular-nums">
+        {b.toreFuer}:{b.toreGegen}
+      </td>
+      <td className="py-1.5 text-center font-bold tabular-nums">{b.punkte}</td>
+    </tr>
+  );
+  return (
+    <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm" data-testid="heim-auswaerts">
+      <h2 className="mb-2 text-xs font-bold text-text-primary">{t("live.heim_auswaerts_titel")}</h2>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-[10px] uppercase text-text-tertiary">
+            <th />
+            <th className="text-center">{t("live.heim_auswaerts_spiele")}</th>
+            <th className="text-center">{t("live.heim_auswaerts_bilanz")}</th>
+            <th className="text-center">{t("live.heim_auswaerts_tore")}</th>
+            <th className="text-center">{t("live.heim_auswaerts_punkte")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {zeile(t("live.classement_vue_domicile"), heim)}
+          {zeile(t("live.classement_vue_exterieur"), auswaerts)}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SerienKarte({ spiele }: { spiele: RencontreCalendrier[] }) {
+  const { t } = useTranslation("communaute");
+  const s = serien(spiele);
+  const aktuell = s.aktuell
+    ? t(`live.serie_aktuell_${s.aktuell.art}`, { anzahl: s.aktuell.laenge })
+    : "–";
+  const zeile = (label: string, wert: string) => (
+    <div className="flex items-baseline justify-between gap-2 border-t border-text-tertiary/10 py-1.5 first:border-t-0">
+      <dt className="text-sm text-text-secondary">{label}</dt>
+      <dd className="text-sm font-bold tabular-nums text-text-primary">{wert}</dd>
+    </div>
+  );
+  return (
+    <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm" data-testid="serien">
+      <h2 className="mb-2 text-xs font-bold text-text-primary">{t("live.serien_titel")}</h2>
+      <dl>
+        {zeile(t("live.serie_aktuell"), aktuell)}
+        {zeile(t("live.serie_ungeschlagen"), String(s.ungeschlagenAktuell))}
+        {zeile(t("live.serie_laengste_siege"), String(s.laengsteSiegserie))}
+        {zeile(t("live.serie_ohne_gegentor"), String(s.spieleOhneGegentor))}
+      </dl>
+    </div>
   );
 }
 
@@ -271,6 +372,7 @@ export default function StatistiquesTab() {
     besteEquipe,
   }));
   const joueursTries = trierJoueurs(joueurs, triCle, triDirection);
+  const ligaSpiele = ligaSpieleDerSaison(rencontres, clubAfricain?.saison);
 
   if (classementQuery.isLoading) {
     return <p className="text-sm text-text-tertiary">{t("live.statistiques_chargement")}</p>;
@@ -395,7 +497,14 @@ export default function StatistiquesTab() {
         )}
       </div>
 
-      <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
+      <div className="grid gap-3 md:grid-cols-2">
+        <Torschuetzen joueurs={joueurs} />
+        <HeimAuswaertsKarte spiele={ligaSpiele} />
+        <SerienKarte spiele={ligaSpiele} />
+        <TippspielInZahlen />
+      </div>
+
+      <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm" data-testid="kader">
         <h2 className="mb-3 text-xs font-bold text-text-primary">{t("live.kader_titel")}</h2>
         {joueursQuery.isLoading ? (
           <p className="text-sm text-text-tertiary">{t("live.statistiques_chargement")}</p>
@@ -480,9 +589,7 @@ export default function StatistiquesTab() {
                         {joueur.buts}
                       </span>
                     </td>
-                    <td className="py-1.5 text-center tabular-nums">
-                      {joueur.passes_decisives}
-                    </td>
+                    <td className="py-1.5 text-center tabular-nums">{joueur.passes_decisives}</td>
                     <td className="py-1.5 text-center tabular-nums">
                       {joueur.cartons_jaunes > 0 && (
                         <span className="mr-1 inline-block h-4 w-3 rounded-sm bg-yellow-400" />

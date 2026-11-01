@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -42,6 +42,7 @@ function rencontre(overrides: Partial<RencontreCalendrier> = {}): RencontreCalen
   return {
     id: "r1",
     competition: "Ligue 1",
+    art: "liga",
     equipe_domicile: "Club Africain",
     equipe_exterieur: "ES Tunis",
     date_heure: "2099-04-10T18:00:00Z",
@@ -180,6 +181,53 @@ describe("TippspielTippAbgabe", () => {
 
     expect(creerMutation.mutate).toHaveBeenCalledWith(
       { tippspiel: "tp1", rencontre: "r1", score_domicile: 3, score_exterieur: 0 },
+      expect.anything(),
+    );
+  });
+
+  it("setzt den Tipp per Stepper und per Schnelltaste", () => {
+    const creerMutation =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useCreerTippspielTip>>();
+    vi.mocked(useCommunauteHooks.useCreerTippspielTip).mockReturnValue(creerMutation);
+    vi.mocked(useCommunauteHooks.useModifierTippspielTip).mockReturnValue(
+      mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspielTip>>(),
+    );
+    vi.mocked(useCommunauteHooks.useCalendrierRencontres).mockReturnValue({
+      data: page([rencontre()]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useCalendrierRencontres>);
+    vi.mocked(useCommunauteHooks.useTippspielTipps).mockReturnValue({
+      data: page([]),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useCommunauteHooks.useTippspielTipps>);
+
+    renderWithProviders(<TippspielTippAbgabe tippspielId="tp1" />);
+
+    const heim = screen.getByLabelText("tippspiel.tipp_heim_label");
+    const gast = screen.getByLabelText("tippspiel.tipp_gast_label");
+    const plus = screen.getAllByRole("button", { name: "tippspiel.tipp_plus" });
+    const minus = screen.getAllByRole("button", { name: "tippspiel.tipp_minus" });
+
+    fireEvent.click(plus[0]);
+    fireEvent.click(plus[0]);
+    fireEvent.click(plus[1]);
+    expect(heim).toHaveValue(2);
+    expect(gast).toHaveValue(1);
+
+    // unter 0 geht es nicht
+    fireEvent.click(minus[1]);
+    fireEvent.click(minus[1]);
+    expect(gast).toHaveValue(0);
+
+    fireEvent.click(within(screen.getByTestId("schnelltipps")).getByText("2:1"));
+    expect(heim).toHaveValue(2);
+    expect(gast).toHaveValue(1);
+
+    fireEvent.click(screen.getByText("tippspiel.tipp_speichern"));
+    expect(creerMutation.mutate).toHaveBeenCalledWith(
+      { tippspiel: "tp1", rencontre: "r1", score_domicile: 2, score_exterieur: 1 },
       expect.anything(),
     );
   });

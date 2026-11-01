@@ -84,7 +84,10 @@ describe("HeroTippPanel", () => {
   it("verweist bei offener Zahlung auf das Tippspiel", async () => {
     renderWithProviders(<HeroTippPanel tipp={tipp({ status: "zum_tippspiel" })} />);
     await waitFor(() =>
-      expect(screen.getByRole("link", { name: /pronostics/i })).toHaveAttribute("href", "/live"),
+      expect(screen.getByRole("link", { name: /pronostics/i })).toHaveAttribute(
+        "href",
+        "/live?tab=tippspiel",
+      ),
     );
     expect(screen.queryByRole("button", { name: /Enregistrer/ })).not.toBeInTheDocument();
   });

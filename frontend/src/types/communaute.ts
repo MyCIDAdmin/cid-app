@@ -408,6 +408,8 @@ export interface ClassementLigue {
   buts_contre_exterieur: number;
   points_exterieur: number;
   zone_texte: string;
+  /** Platz vor dem letzten Spieltag (Trend ▲▼) ; null = noch kein Vergleich möglich. */
+  rang_vorher: number | null;
   maj_le: string;
 }
 
@@ -420,9 +422,13 @@ export type StatutRencontre = "SCHEDULED" | "FINISHED" | "POSTPONED" | "CANCELLE
  * modérateur (Live-Ticker). `statut` ajouté lors de la bascule SerpApi → GOAL API
  * (2026-09-24) : calendrier désormais complet (GOAL API), le statut de chaque rencontre
  * est fiable plutôt qu'inféré depuis la seule date. */
+/** Art des Wettbewerbs, vom Backend aus dem Namen abgeleitet (fanclub.wettbewerb_art). */
+export type WettbewerbArt = "liga" | "kontinental" | "pokal" | "sonstige";
+
 export interface RencontreCalendrier {
   id: string;
   competition: string;
+  art: WettbewerbArt;
   equipe_domicile: string;
   equipe_exterieur: string;
   date_heure: string;
@@ -635,6 +641,66 @@ export interface TippspielTip {
   points: number | null;
   created_at: string;
   maj_le: string;
+}
+
+/** Eine Zeile der Tipp-Matrix : Rangliste + Tipps je gesperrtem Spiel (Backend fanclub.tippspiel_matrix).
+ * Namen nur als „Vorname I.“. `tipps` ist leer, wenn der Betrachter die Tipps nicht sehen darf. */
+export interface MatrixZeile {
+  rang: number;
+  rang_vorher: number | null;
+  name: string;
+  ist_ich: boolean;
+  punkte: number;
+  exakt: number;
+  letzte_punkte: number | null;
+  tipps: Record<string, { d: number; e: number; p: number | null }>;
+}
+
+export interface MatrixSpalte {
+  id: string;
+  competition: string;
+  equipe_domicile: string;
+  equipe_exterieur: string;
+  date_heure: string;
+  score_domicile: number | null;
+  score_exterieur: number | null;
+  statut: StatutRencontre;
+}
+
+export interface TippspielMatrix {
+  tippspiel: string;
+  /** false : Betrachter ist (noch) kein bestätigter Teilnehmer – nur die Rangliste kommt an. */
+  tipps_sichtbar: boolean;
+  teilnehmer: number;
+  letztes_spiel: string | null;
+  spalten: MatrixSpalte[];
+  zeilen: MatrixZeile[];
+}
+
+export interface SpielerKandidat {
+  id: string;
+  name: string;
+  numero: number | null;
+  poste: string;
+}
+
+export interface SpielerErgebnisZeile {
+  name: string;
+  stimmen: number;
+}
+
+/** „Spieler des Spiels“ : eine Stimme je Mitglied, offen 26 h nach Abpfiff. `ergebnis` kommt erst
+ * nach der eigenen Stimme oder nach Ende der Abstimmung (sonst beeinflussen sich die Stimmen). */
+export interface SpielerDesSpiels {
+  rencontre: string | null;
+  spiel?: Omit<MatrixSpalte, "id" | "statut">;
+  offen?: boolean;
+  bis?: string;
+  kandidaten?: SpielerKandidat[];
+  /** ID des gewählten Spielers, sonst null. */
+  meine_stimme?: string | null;
+  ergebnis?: SpielerErgebnisZeile[] | null;
+  stimmen_gesamt?: number | null;
 }
 
 export interface TippspielTipPayload {
