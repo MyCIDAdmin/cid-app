@@ -1622,14 +1622,15 @@
     "titre": "Finances",
     "intro": "Saisir les dépenses, planifier le budget et alimenter le bilan annuel.",
     "schritte": [
+      "L'onglet « Vue d'ensemble » montre ce qui attend : quatre tuiles-feux, les tâches par rôle et la prévision des dépenses jusqu'à la fin de l'année.",
       "Dans l'onglet « Dépenses », cliquez sur « Nouvelle dépense » : date, montant, catégorie, fournisseur, et si possible le justificatif.",
       "Une autre personne ayant le droit d'écriture vérifie, puis approuve ou rejette avec un motif. Seules les dépenses approuvées comptent dans le bilan et les KPI.",
       "Une dépense rejetée peut être corrigée ; elle repart alors en validation.",
       "Dans l'onglet « Budget », saisissez le budget annuel par catégorie ; le bilan compare ensuite le réalisé au budget.",
-      "Dans l'onglet « Catégories », créez vos catégories ou désactivez celles devenues inutiles.",
+      "Dans l'onglet « Types de dépenses », créez vos catégories ou désactivez celles devenues inutiles.",
       "L'onglet « Journal » montre, sans lacune, qui a modifié quoi et quand.",
-      "L'onglet « Contrôle » donne aux contrôleurs les chiffres clés, les dépenses sans justificatif et les gros montants, en lecture seule.",
-      "L'onglet « Clôture annuelle » verrouille une année une fois toutes les dépenses tranchées. Seul l'administrateur de l'application peut la rouvrir."
+      "L'onglet « Contrôle de caisse » donne aux contrôleurs les chiffres clés, les dépenses sans justificatif et les gros montants, en lecture seule.",
+      "L'onglet « Clôture annuelle » guide la clôture en quatre étapes (mettre en ordre, essai à blanc, évaluer, clôturer). Seul l'administrateur de l'application peut rouvrir."
     ],
     "workflows": [
       {
@@ -1707,36 +1708,40 @@
         "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Budget » de l'année en cours et lisez « Réparti par catégorie » et « Disponible ». Ne modifiez rien."
       },
       {
-        "titre": "Clôturer l'exercice",
-        "wann": "Toutes les dépenses de l'année sont tranchées.",
+        "titre": "Clôturer l'exercice avec un essai à blanc",
+        "wann": "L'exercice est terminé et doit être clôturé.",
         "schritte": [
-          "Onglet « Dépenses » : plus aucune dépense en attente de validation.",
-          "Onglet « Contrôle » : dépenses sans justificatif et montants élevés.",
-          "Onglet « Clôture annuelle » → « Clôturer l'année » et confirmer la question.",
-          "Éventuellement exporter le bilan (PDF/Excel) et la liste d'écritures (CSV) pour le comptable."
+          "Ouvrir l'onglet « Clôture annuelle » et choisir l'année. Le feu en haut indique si l'année est prête.",
+          "Étape « Mettre en ordre » : régler les points obligatoires (approbations ouvertes). Les points recommandés peuvent rester ouverts. « Voir » mène à la liste concernée.",
+          "Étape « Essai à blanc » : comparer recettes, dépenses et résultat à l'an dernier. Sous « Et si… ? », compter les points ouverts à titre d'essai – rien n'est enregistré.",
+          "Étape « Évaluer » : lire le feu et les phrases, regarder plan et réalité par type de dépense et, en cas de dépassement, saisir si souhaité une justification.",
+          "Étape « Clôturer » : lire les conséquences, saisir l'année pour confirmer et cliquer sur « Clôturer définitivement l'année … ».",
+          "Ensuite, télécharger si besoin les rapports (PDF, Excel, CSV) – par exemple pour le contrôle de caisse."
         ],
-        "beispiel": "Début janvier, vous verrouillez 2025. Plus aucune modification n'est possible ; seul l'administrateur de l'application peut rouvrir l'année.",
-        "danach": "Le journal enregistre le verrouillage avec la personne et l'heure.",
+        "beispiel": "Début février, vous examinez 2025 : l'essai à blanc montre un excédent, deux types de dépenses dépassent le budget. Vous saisissez de brèves justifications et clôturez. Seul l'administrateur de l'application peut rouvrir l'année.",
+        "danach": "Le journal enregistre la clôture avec la personne et l'heure. Les justifications figurent dans la vue de l'année clôturée.",
         "id": "FIN-03",
         "rollen": ["dir_financier", "bureau_admin", "super_admin"],
-        "vorher": "Toutes les dépenses de l'année sont tranchées.",
+        "vorher": "Toutes les dépenses de l'année sont saisies et vous avez le droit d'écriture sur la page Finances.",
         "erwartet": [
-          "Dans l'onglet « Dépenses », plus aucune dépense n'est « À approuver ». Sinon l'onglet « Clôture annuelle » indique : « … dépense(s) attendent encore une décision. Décidez d'abord, puis clôturez. »",
-          "L'onglet « Contrôle » affiche les chiffres clés, les dépenses approuvées sans justificatif et les montants élevés – ou « Aucune anomalie. »",
-          "Après « Clôturer l'année » et la question « Clôturer l'exercice ? », on lit « Clôturée le … par … ». Recettes, dépenses et résultat sont figés.",
-          "Les fichiers sont téléchargés (bilan Excel, rapport annuel PDF, écritures CSV)."
+          "En haut figure le feu avec le pourcentage « prêt à clôturer ». Au rouge, on lit « Clôture pas encore possible ».",
+          "À l'étape « Mettre en ordre », les points ouverts portent « Obligatoire » ou « Recommandé ». Les points réussis sont repliés.",
+          "À l'étape « Essai à blanc », on lit « Rien n'est enregistré ni verrouillé » et le résultat est comparé à l'an dernier.",
+          "À l'étape « Évaluer » figurent l'évaluation globale, une barre par type de dépense et, en cas de dépassement, le champ « Justification des dépassements ».",
+          "À l'étape « Clôturer », le bouton ne s'active que lorsqu'aucun point obligatoire n'est ouvert et que l'année est correctement saisie. Ensuite on lit « Cette année est clôturée » avec les chiffres figés.",
+          "Les rapports choisis (PDF, Excel, CSV) sont téléchargés."
         ],
         "fehler": [
           {
-            "problem": "L'année ne peut pas être clôturée.",
-            "loesung": "Tranchez d'abord toutes les dépenses encore « À approuver »."
+            "problem": "L'étape « Clôturer » est verrouillée.",
+            "loesung": "Un point obligatoire est encore ouvert, le plus souvent une dépense à approuver. Réglez-le à l'étape « Mettre en ordre »."
           },
           {
             "problem": "Vous voulez rouvrir une année clôturée.",
             "loesung": "Seul l'administrateur de l'application peut la rouvrir, avec un motif (obligatoire)."
           }
         ],
-        "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Contrôle » et lisez les chiffres clés et les anomalies. Ne clôturez aucune année."
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Clôture annuelle », allez jusqu'à l'étape « Évaluer » et comptez sous « Et si… ? » des dépenses ouvertes à titre d'essai. Ne clôturez aucune année."
       },
       {
         "id": "FIN-04",
@@ -1744,7 +1749,7 @@
         "titre": "Créer ou désactiver une catégorie de dépenses",
         "wann": "Un nouveau type de dépenses a besoin de sa propre catégorie, ou une catégorie n'est plus utilisée.",
         "schritte": [
-          "Ouvrir l'onglet « Catégories ».",
+          "Ouvrir l'onglet « Types de dépenses ».",
           "Sous « Nouvelle catégorie », saisir les noms en français, allemand et arabe et cliquer sur « Ajouter ».",
           "Masquer les catégories devenues inutiles avec « Désactiver ». Avec « Activer », elles reviennent."
         ],

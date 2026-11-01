@@ -130,9 +130,40 @@ export function usePruefung(annee: number) {
   });
 }
 
+export function useProbelauf(
+  annee: number,
+  annahmen: { offeneAusgaben?: boolean; offeneBeitraege?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: [
+      ...keys.all,
+      "probelauf",
+      annee,
+      !!annahmen.offeneAusgaben,
+      !!annahmen.offeneBeitraege,
+    ],
+    queryFn: () => api.getProbelauf(annee, annahmen),
+    // Beim Umschalten von „Was wäre wenn?“ bleiben die alten Zahlen stehen, bis die neuen da sind.
+    placeholderData: (vorher) => vorher,
+  });
+}
+
+export function useCockpit() {
+  return useQuery({ queryKey: [...keys.all, "cockpit"], queryFn: api.getCockpit });
+}
+
 export function useJahrAbschliessen() {
   const invalider = useInvalider();
-  return useMutation({ mutationFn: api.jahrAbschliessen, onSuccess: invalider });
+  return useMutation({
+    mutationFn: ({
+      annee,
+      begruendungen,
+    }: {
+      annee: number;
+      begruendungen?: Record<string, string>;
+    }) => api.jahrAbschliessen(annee, begruendungen),
+    onSuccess: invalider,
+  });
 }
 
 export function useJahrWiedereroeffnen() {

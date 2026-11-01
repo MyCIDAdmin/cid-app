@@ -10,7 +10,9 @@ import type {
   DepensePayload,
   DepensesFiltres,
   ProtokollEintrag,
+  Probelauf,
   Pruefung,
+  Cockpit,
 } from "../types/finances";
 
 export async function listCategories(): Promise<CategorieDepense[]> {
@@ -125,8 +127,34 @@ export async function getAbschluss(annee: number): Promise<Abschluss> {
   return data;
 }
 
-export async function jahrAbschliessen(annee: number): Promise<Abschluss> {
-  const { data } = await apiClient.post<Abschluss>("/finances/abschluss/", { annee });
+export async function jahrAbschliessen(
+  annee: number,
+  begruendungen: Record<string, string> = {},
+): Promise<Abschluss> {
+  const { data } = await apiClient.post<Abschluss>("/finances/abschluss/", {
+    annee,
+    begruendungen,
+  });
+  return data;
+}
+
+/** Vorschau auf den Abschluss — rein lesend. `offene_*` rechnet offene Posten probehalber ein. */
+export async function getProbelauf(
+  annee: number,
+  annahmen: { offeneAusgaben?: boolean; offeneBeitraege?: boolean } = {},
+): Promise<Probelauf> {
+  const { data } = await apiClient.get<Probelauf>("/finances/abschluss/probelauf/", {
+    params: {
+      annee,
+      offene_ausgaben: annahmen.offeneAusgaben ? 1 : undefined,
+      offene_beitraege: annahmen.offeneBeitraege ? 1 : undefined,
+    },
+  });
+  return data;
+}
+
+export async function getCockpit(): Promise<Cockpit> {
+  const { data } = await apiClient.get<Cockpit>("/finances/cockpit/");
   return data;
 }
 

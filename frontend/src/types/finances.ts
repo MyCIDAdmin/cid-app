@@ -109,7 +109,13 @@ export interface Abschluss {
   abgeschlossen: boolean;
   abgeschlossen_am?: string;
   abgeschlossen_durch?: string;
-  snapshot?: { recettes: string; depenses: string; resultat: string };
+  snapshot?: {
+    recettes: string;
+    depenses: string;
+    resultat: string;
+    /** Begründungen je Kostenart (ID → Text), optional beim Abschluss erfasst. */
+    begruendungen?: Record<string, string>;
+  };
   wiedergeoeffnet_am?: string | null;
   wiedereroeffnung_grund?: string;
   offene_ausgaben?: number;
@@ -125,4 +131,92 @@ export interface Pruefung {
   schwelle: number;
   ohne_beleg: Depense[];
   grosse_ausgaben: Depense[];
+}
+
+export type PruefStufe = "pflicht" | "empfohlen";
+export type PruefZiel = "depenses" | "pruefung" | "zahlungen" | "projekte" | "budget" | "abschluss";
+
+export interface PruefPunkt {
+  id: "freigaben" | "belege" | "beitraege" | "projekte" | "budget_gesetzt" | "budget_passt";
+  stufe: PruefStufe;
+  anzahl: number;
+  betrag: string;
+  ok: boolean;
+  ziel: PruefZiel;
+}
+
+export type KostenartStatus = "ok" | "attention" | "depasse" | "aucun";
+
+export interface ProbelaufKostenart {
+  categorie_id: string;
+  nom: string;
+  namen?: KategorieNamen;
+  montant: string;
+  montant_precedent: string;
+  budget: string;
+  prozent: number | null;
+  status: KostenartStatus;
+}
+
+export type HinweisStufe = "gut" | "achtung" | "kritisch";
+export type HinweisCode =
+  | "ergebnis"
+  | "gesamtbudget"
+  | "einnahmen_vorjahr"
+  | "ueber_budget"
+  | "fast_ausgeschoepft"
+  | "pruefliste";
+
+export interface Hinweis {
+  code: HinweisCode;
+  stufe: HinweisStufe;
+  params: Record<string, unknown>;
+}
+
+export interface Probelauf {
+  annee: number;
+  abgeschlossen: boolean;
+  schwelle_attention: number;
+  annahmen: { offene_ausgaben: boolean; offene_beitraege: boolean };
+  pruefliste: PruefPunkt[];
+  einnahmen: {
+    total: string;
+    total_vorjahr: string;
+    lignes: { cle: string; montant: string; montant_precedent: string }[];
+  };
+  ausgaben: { total: string; total_vorjahr: string; budget_total: string };
+  ergebnis: string;
+  ergebnis_vorjahr: string;
+  kostenarten: ProbelaufKostenart[];
+  bewertung: { ampel: "rot" | "orange" | "gruen"; bereit_prozent: number; hinweise: Hinweis[] };
+}
+
+export type CockpitRolle = "fin" | "buero" | "pruef";
+export type AufgabeCode =
+  "freigaben" | "belege" | "beitraege" | "projekte" | "abschluss" | "budget_planen";
+
+export interface CockpitAufgabe {
+  code: AufgabeCode;
+  rollen: CockpitRolle[];
+  params: Record<string, unknown>;
+  faellig: string;
+  ziel: PruefZiel;
+}
+
+export interface Cockpit {
+  annee: number;
+  stand: string;
+  freigaben: { anzahl: number; betrag: string };
+  belege: { anzahl: number; betrag: string };
+  beitraege: { anzahl: number; betrag: string };
+  budget: { gesamt: string; verbraucht: string; prozent: number | null; jahr_prozent: number };
+  vorjahr: { annee: number; abgeschlossen: boolean };
+  prognose: {
+    bisher: string;
+    kumuliert: string[];
+    monatsschnitt: string;
+    jahresende: string;
+    budget: string;
+  };
+  aufgaben: CockpitAufgabe[];
 }

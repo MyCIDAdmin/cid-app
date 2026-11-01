@@ -3,10 +3,11 @@
   "onglets": {
     "depenses": "Ausgaben",
     "budget": "Budget",
-    "categories": "Kategorien",
+    "categories": "Kostenarten",
     "protokoll": "Protokoll",
     "abschluss": "Jahresabschluss",
-    "pruefung": "Prüfung"
+    "pruefung": "Kassenprüfung",
+    "cockpit": "Überblick"
   },
   "annee": "Jahr",
   "statut": "Status",
@@ -136,5 +137,338 @@
     "export_pdf": "Jahresbericht (PDF)",
     "abgeschlossen": "Jahr abgeschlossen",
     "offen_jahr": "Jahr offen"
+  },
+  "glossar": {
+    "schalter": "Erklärungen anzeigen",
+    "einfach": "Einfach erklärt:",
+    "begriffe": {
+      "vier": {
+        "titel": "Vier-Augen-Prinzip",
+        "text": "Eine Ausgabe zählt erst, wenn eine zweite Person sie freigegeben hat. So bleibt jede Zahl kontrolliert."
+      },
+      "abschluss": {
+        "titel": "Jahresabschluss",
+        "text": "Der offizielle Schlusspunkt des Geschäftsjahres: Die Zahlen werden festgehalten und das Jahr wird gesperrt."
+      },
+      "probelauf": {
+        "titel": "Probelauf",
+        "text": "Eine Vorschau auf den Abschluss. Es wird nichts gespeichert und nichts gesperrt, du kannst so oft probieren, wie du willst."
+      },
+      "ergebnis": {
+        "titel": "Ergebnis",
+        "text": "Einnahmen minus Ausgaben. Plus bedeutet Überschuss, Minus bedeutet, dass mehr ausgegeben als eingenommen wurde."
+      },
+      "budget": {
+        "titel": "Budget",
+        "text": "Der geplante Betrag, den eine Kostenart im Jahr höchstens kosten soll."
+      },
+      "beleg": {
+        "titel": "Beleg",
+        "text": "Rechnung oder Quittung als Nachweis für eine Ausgabe. Ohne Beleg ist später schwer zu belegen, wofür das Geld ausgegeben wurde."
+      },
+      "pruefung": {
+        "titel": "Kassenprüfung",
+        "text": "Zwei unabhängige Mitglieder prüfen, ob die Kasse stimmt und die Belege vollständig sind."
+      },
+      "entlastung": {
+        "titel": "Entlastung",
+        "text": "Die Mitgliederversammlung bestätigt nach dem Prüfbericht, dass der Vorstand ordentlich gewirtschaftet hat."
+      },
+      "kosten": {
+        "titel": "Kostenart",
+        "text": "Eine Gruppe gleichartiger Ausgaben, zum Beispiel Raummiete oder Versicherung. Für jede Kostenart gibt es ein eigenes Budget."
+      }
+    }
+  },
+  "assistent": {
+    "reife_label": "Abschlussreif zu {{prozent}} Prozent",
+    "bereit": "abschlussreif",
+    "kopf": {
+      "gruen": "Das Jahr ist bereit zum Abschluss",
+      "gruen_text": "Alle Punkte sind erledigt. Du kannst in Ruhe den Probelauf ansehen und abschließen.",
+      "orange": "Fast bereit: ein paar Punkte sind noch offen",
+      "orange_text": "Offene Empfehlungen blockieren den Abschluss nicht. Schau sie dir an und entscheide, ob sie warten dürfen.",
+      "rot": "Noch nicht abschließbar",
+      "rot_text": "Es gibt Pflichtpunkte, die zuerst erledigt werden müssen.",
+      "abgeschlossen": "Dieses Jahr ist abgeschlossen",
+      "abgeschlossen_text": "Die Zahlen sind festgehalten und das Jahr ist gesperrt."
+    },
+    "schritte": {
+      "titel": "Schritte des Abschlusses",
+      "aufraeumen": "Aufräumen",
+      "probelauf": "Probelauf",
+      "bewerten": "Bewerten",
+      "abschliessen": "Abschließen"
+    },
+    "schritt_gesperrt": "Erst die Pflichtpunkte erledigen",
+    "schritt_x_von": "Schritt {{n}} von 4",
+    "banner": {
+      "letzter": "Letzter Schritt.",
+      "letzter_text": "Mit dem Abschluss wird das Jahr gesperrt. Prüfe die Folgen und bestätige zum Schluss.",
+      "probe_text": "Nichts wird gespeichert oder gesperrt. Du kannst alles in Ruhe ansehen."
+    },
+    "zurueck": "Zurück",
+    "weiter": "Weiter",
+    "weiter_abschluss": "Weiter zum Abschluss",
+    "fuss_hilfe": "Du musst nicht alles verstehen: Die Ampel oben zeigt, ob das Jahr bereit ist. Bei Fragen hilft die Kassenprüfung oder der Vorstand.",
+    "stufe": {
+      "pflicht": "Pflicht",
+      "empfohlen": "Empfohlen"
+    },
+    "pruef": {
+      "intro": "Die App prüft automatisch, was vor dem Abschluss noch zu tun ist. Pflichtpunkte müssen erledigt sein, empfohlene Punkte darfst du bewusst stehen lassen.",
+      "alles_ok": "Alles aufgeräumt, es gibt nichts Offenes.",
+      "ansehen": "Ansehen",
+      "bestanden": "Bestanden: {{n}} Punkte",
+      "freigaben": {
+        "titel": "{{anzahl}} Ausgaben warten auf Freigabe ({{betrag}})",
+        "text": "Eine zweite Person muss sie freigeben oder ablehnen, bevor das Jahr abgeschlossen wird.",
+        "hilfe": "Solange eine Ausgabe nicht freigegeben ist, zählt sie in keiner Zahl. Erst entscheiden, dann abschließen."
+      },
+      "belege": {
+        "titel": "{{anzahl}} Ausgaben ohne Beleg ({{betrag}})",
+        "text": "Für diese Ausgaben fehlt der Nachweis. Beleg nachreichen oder bewusst stehen lassen.",
+        "hilfe": "Ein Beleg ist die Rechnung oder Quittung. Die Kassenprüfung fragt danach."
+      },
+      "beitraege": {
+        "titel": "{{anzahl}} Mitgliedsbeiträge noch offen ({{betrag}})",
+        "text": "Diese Zahlungen sind noch nicht bestätigt und fehlen in den Einnahmen.",
+        "hilfe": "Bestätige eingegangene Zahlungen, damit die Einnahmen vollständig sind."
+      },
+      "projekte": {
+        "titel": "{{anzahl}} Projekte ohne Schlussabrechnung",
+        "text": "Beendete Projekte sollten abgerechnet sein, bevor das Jahr geschlossen wird.",
+        "hilfe": "Eine Schlussabrechnung zeigt, was ein Projekt am Ende gekostet und eingebracht hat."
+      },
+      "budget_gesetzt": {
+        "titel": "Für dieses Jahr ist noch kein Budget gesetzt",
+        "text": "Ohne Budget kann die App Ausgaben nicht mit dem Plan vergleichen.",
+        "hilfe": "Im Reiter Budget legst du fest, wie viel jede Kostenart kosten darf."
+      },
+      "budget_passt": {
+        "titel": "{{anzahl}} Kostenarten liegen über dem Budget",
+        "text": "Das ist erlaubt, sollte aber später kurz begründet werden.",
+        "hilfe": "Im Schritt Bewerten kannst du für jede Kostenart eine Begründung schreiben."
+      }
+    },
+    "pruef_ok": {
+      "freigaben": "Keine Ausgabe wartet auf Freigabe",
+      "belege": "Alle Ausgaben haben einen Beleg",
+      "beitraege": "Alle Mitgliedsbeiträge sind bestätigt",
+      "projekte": "Alle beendeten Projekte sind abgerechnet",
+      "budget_gesetzt": "Das Budget für dieses Jahr ist gesetzt",
+      "budget_passt": "Keine Kostenart liegt über dem Budget"
+    },
+    "probelauf": {
+      "wenn_titel": "Was wäre wenn?",
+      "wenn_intro": "Rechne Offenes probehalber ein und sieh, wie sich das Ergebnis ändert. Das ist reine Rechnung, es wird nichts verändert.",
+      "ausgaben_freigeben": "Wenn die {{anzahl}} offenen Ausgaben freigegeben würden",
+      "plus_ausgaben": "Ausgaben steigen um {{betrag}}",
+      "beitraege_annehmen": "Wenn die {{anzahl}} offenen Beiträge bestätigt würden",
+      "plus_einnahmen": "Einnahmen steigen um {{betrag}}",
+      "zum_vorjahr": "{{diff}} ({{prozent}} %) zum Vorjahr",
+      "vorjahr_ergebnis": "Vorjahr: {{betrag}}",
+      "ergebnis_hilfe": "Das Ergebnis ist das, was am Ende übrig bleibt: Einnahmen minus Ausgaben.",
+      "vergleich": "Vergleich mit dem Vorjahr",
+      "balken_label": "{{label}}: {{wert}}, Vorjahr {{vorjahr}}",
+      "balken_legende": "Farbiger Balken: dieses Jahr. Heller Balken: Vorjahr.",
+      "quellen": "Woher kommen die Einnahmen?",
+      "quelle": "Quelle",
+      "vorjahr": "Vorjahr",
+      "summe": "Summe"
+    },
+    "quellen": {
+      "cotisations": "Mitgliedsbeiträge",
+      "dons": "Spenden",
+      "projets": "Projekte",
+      "adhesions": "Beitritte",
+      "boutique": "Fanshop",
+      "evenements": "Veranstaltungen"
+    },
+    "ampel": {
+      "gruen": {
+        "titel": "Grün",
+        "text": "Alles im grünen Bereich."
+      },
+      "orange": {
+        "titel": "Orange",
+        "text": "Einiges verdient einen zweiten Blick."
+      },
+      "rot": {
+        "titel": "Rot",
+        "text": "Hier besteht Handlungsbedarf."
+      }
+    },
+    "bewertung": {
+      "titel": "Gesamtbewertung",
+      "hilfe_a": "Die Ampel fasst zusammen, wie das Jahr aussieht: grün ist unproblematisch, orange verdient einen Blick, rot muss zuerst geklärt werden.",
+      "hilfe_b": "Die Sätze unten sind automatisch erzeugt und nennen die wichtigsten Punkte.",
+      "plan_titel_a": "Plan gegen Wirklichkeit je Kostenart",
+      "balken_label": "{{name}}: {{ist}} von {{budget}}, {{prozent}} Prozent",
+      "legende": "Der Balken zeigt, wie viel vom Budget bereits ausgegeben ist. Ab 80 Prozent wird er orange, ab 100 Prozent rot.",
+      "plan_hilfe": "Plan ist das Budget, Wirklichkeit sind die tatsächlichen Ausgaben.",
+      "begruendung_titel": "Begründung für Überschreitungen",
+      "begruendung_label": "{{name}} ({{prozent}} % des Budgets)",
+      "begruendung_platzhalter": "Kurz erklären, warum es teurer wurde",
+      "begruendung_hinweis": "Die Begründungen werden mit dem Abschluss festgehalten und in der abgeschlossenen Ansicht des Jahres angezeigt. Sie sind freiwillig."
+    },
+    "hinweis": {
+      "ergebnis_gut": "Überschuss von {{betrag}} (Vorjahr: {{vorjahr}}).",
+      "ergebnis_kritisch": "Defizit von {{betrag}}: Es wurde mehr ausgegeben als eingenommen (Vorjahr: {{vorjahr}}).",
+      "gesamtbudget": "Insgesamt sind {{prozent}} % des Gesamtbudgets ausgegeben ({{ausgaben}} von {{budget}}).",
+      "einnahmen_plus": "Die Einnahmen liegen {{prozent}} % über dem Vorjahr.",
+      "einnahmen_minus": "Die Einnahmen liegen {{prozent}} % unter dem Vorjahr.",
+      "ueber_budget": "{{anzahl}} Kostenarten liegen über dem Budget: {{namen}}.",
+      "fast_ausgeschoepft": "Fast ausgeschöpft (über 80 %): {{namen}}.",
+      "pruefliste_gut": "Alle Punkte der Prüfliste sind erledigt.",
+      "pruefliste_offen": "In der Prüfliste sind noch {{offen}} Punkte offen."
+    },
+    "kostenart": {
+      "ok": "im Plan",
+      "attention": "fast voll",
+      "depasse": "über Budget",
+      "aucun": "ohne Budget"
+    },
+    "abschluss": {
+      "folgen_titel": "Das passiert beim Abschluss",
+      "folge_sperre": "Ausgaben und Budget {{annee}} werden gesperrt.",
+      "folge_zahlen": "Diese Zahlen werden festgehalten: Einnahmen {{einnahmen}}, Ausgaben {{ausgaben}}, Ergebnis {{ergebnis}}.",
+      "folge_begruendungen": "{{n}} Begründungen werden mit dem Abschluss festgehalten.",
+      "folge_protokoll": "Der Abschluss wird im Protokoll festgehalten.",
+      "folge_wiedereroeffnen": "Wiedereröffnen kann nur der Administrator App, mit Begründung.",
+      "hilfe_a": "Der Abschluss ist bewusst schwer rückgängig zu machen, damit die Zahlen verlässlich bleiben.",
+      "hilfe_b": "Wenn du unsicher bist: Nutze den Probelauf, so oft du willst, und lass die Kassenprüfung mitschauen.",
+      "pflicht_offen": "Es sind noch {{n}} Pflichtpunkte offen. Bitte zuerst im Schritt Aufräumen erledigen.",
+      "nur_lesen": "Du hast nur Leserechte und kannst das Jahr nicht abschließen.",
+      "bestaetigung_label": "Zur Bestätigung das Jahr eintippen",
+      "knopf": "Jahr {{annee}} endgültig abschließen",
+      "echte_zahlen": "Die Zahlen oben sind die echten Zahlen, ohne Annahmen aus dem Was-wäre-wenn."
+    },
+    "abgeschlossen": {
+      "begruendungen": "Begründungen zum Abschluss",
+      "berichte": "Berichte herunterladen",
+      "hilfe_a": "Das Jahr ist gesperrt, die festgehaltenen Zahlen ändern sich nicht mehr.",
+      "hilfe_b": "Die Berichte brauchst du für die Kassenprüfung und die Mitgliederversammlung."
+    }
+  },
+  "cockpit": {
+    "titel": "Finanzen {{annee}} im Überblick",
+    "untertitel": "Das steht für die Rolle {{rolle}} an.",
+    "rolle": "Rolle wählen",
+    "rollen": {
+      "fin": "Finanzen",
+      "buero": "Büro",
+      "pruef": "Kassenprüfung"
+    },
+    "kacheln": {
+      "freigaben": "Freigaben",
+      "freigaben_text": "Ausgaben warten auf eine zweite Person",
+      "nichts_offen": "Nichts offen",
+      "belege": "Ohne Beleg",
+      "belege_text": "{{betrag}} ohne Nachweis",
+      "belege_ok": "Alle Belege vorhanden",
+      "budget": "Budget {{annee}}",
+      "budget_text": "{{verbraucht}} von {{gesamt}}, das Jahr ist zu {{jahr}} % vorbei",
+      "budget_fehlt": "Noch kein Budget gesetzt",
+      "beitraege": "Offene Beiträge",
+      "beitraege_text": "{{betrag}} noch nicht bestätigt",
+      "beitraege_ok": "Alle Beiträge bestätigt"
+    },
+    "ampel": {
+      "gruen": "Grün",
+      "orange": "Orange",
+      "rot": "Rot"
+    },
+    "ampel_hilfe": "Grün heißt erledigt, Orange verdient einen Blick, Rot braucht bald eine Entscheidung. Ein Klick auf eine Kachel öffnet die passende Liste.",
+    "aufgaben_titel": "Das steht an",
+    "aufgaben_anzahl": "{{n}} offen",
+    "aufgaben_hinweis": "Die Aufgaben ergeben sich aus dem Stand der Daten und verschwinden von selbst, sobald sie erledigt sind. Fristen sind Vorschläge, Satzung und Vorstand gehen vor.",
+    "alles_erledigt": "Alles erledigt. Für diese Rolle steht nichts an.",
+    "so_gehts": "So geht's",
+    "frist": {
+      "ueberfaellig": "{{tage}} Tage überfällig",
+      "heute": "heute fällig",
+      "in_tagen": "in {{tage}} Tagen",
+      "bis": "bis {{datum}}"
+    },
+    "aufgaben": {
+      "freigaben": {
+        "titel": "{{anzahl}} Ausgaben freigeben ({{betrag}})",
+        "text": "Eine zweite Person entscheidet über jede Ausgabe.",
+        "knopf": "Ausgaben öffnen"
+      },
+      "belege": {
+        "titel": "{{anzahl}} fehlende Belege klären ({{betrag}})",
+        "text": "Belege nachreichen oder bewusst offen lassen.",
+        "knopf": "Kassenprüfung öffnen"
+      },
+      "beitraege": {
+        "titel": "{{anzahl}} offene Beiträge bestätigen ({{betrag}})",
+        "text": "Eingegangene Zahlungen bestätigen, damit die Einnahmen stimmen.",
+        "knopf": "Zahlungen öffnen"
+      },
+      "projekte": {
+        "titel": "{{anzahl}} Projekte abrechnen",
+        "text": "Beendete Projekte brauchen eine Schlussabrechnung.",
+        "knopf": "Projekte öffnen"
+      },
+      "abschluss": {
+        "titel": "Jahresabschluss {{annee}} vorbereiten",
+        "text": "Im Probelauf ansehen, bewerten und dann abschließen.",
+        "knopf": "Probelauf starten"
+      },
+      "budget_planen": {
+        "titel": "Budget {{annee}} planen",
+        "text": "Pro Kostenart festlegen, was im nächsten Jahr ausgegeben werden darf.",
+        "knopf": "Budget öffnen"
+      }
+    },
+    "prognose": {
+      "titel": "Wohin steuern die Ausgaben?",
+      "label": "Ausgaben bisher {{bisher}}, Prognose zum Jahresende {{ende}}, Budget {{budget}}",
+      "budget": "Budget {{betrag}}",
+      "ende": "Prognose {{betrag}}",
+      "satz": "Bisher sind {{bisher}} ausgegeben. Wenn es so weitergeht, sind es zum Jahresende etwa {{ende}}.",
+      "unter": "Das liegt etwa {{betrag}} unter dem Budget.",
+      "ueber": "Das läge etwa {{betrag}} über dem Budget.",
+      "hilfe": "Die Prognose ist eine Schätzung aus den letzten Monaten, keine Zusage.",
+      "tabelle": "Werte als Tabelle"
+    },
+    "rhythmus": {
+      "titel": "Der Jahresrhythmus",
+      "hinweis": "Die Zeitpunkte sind Vorschläge. Maßgeblich sind Satzung und Beschlüsse des Vorstands.",
+      "nov": {
+        "monat": "Nov",
+        "titel": "Budget planen",
+        "text": "Pro Kostenart festlegen, was im nächsten Jahr ausgegeben werden darf."
+      },
+      "dez": {
+        "monat": "Dez",
+        "titel": "Belege klären",
+        "text": "Offene Freigaben und fehlende Belege des Jahres erledigen."
+      },
+      "jan": {
+        "monat": "Jan",
+        "titel": "Probelauf",
+        "text": "Den Abschluss in Ruhe ansehen und bewerten."
+      },
+      "feb": {
+        "monat": "Feb",
+        "titel": "Abschluss",
+        "text": "Das Jahr abschließen und die Berichte erstellen."
+      },
+      "maer": {
+        "monat": "Mär",
+        "titel": "Kassenprüfung",
+        "text": "Die Kassenprüfung schaut sich Kasse und Belege an."
+      },
+      "apr": {
+        "monat": "Apr",
+        "titel": "Entlastung",
+        "text": "Die Mitgliederversammlung entlastet den Vorstand."
+      }
+    },
+    "hilfe_titel": "Neu hier?",
+    "hilfe_text": "Du musst kein Finanzprofi sein. Tippe auf unterstrichene Wörter, um sie zu erklären:"
   }
 }

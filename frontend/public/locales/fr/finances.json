@@ -3,10 +3,11 @@
   "onglets": {
     "depenses": "Dépenses",
     "budget": "Budget",
-    "categories": "Catégories",
+    "categories": "Types de dépenses",
     "protokoll": "Journal",
     "abschluss": "Clôture annuelle",
-    "pruefung": "Contrôle"
+    "pruefung": "Contrôle de caisse",
+    "cockpit": "Vue d'ensemble"
   },
   "annee": "Année",
   "statut": "Statut",
@@ -136,5 +137,338 @@
     "export_pdf": "Rapport annuel (PDF)",
     "abgeschlossen": "Année clôturée",
     "offen_jahr": "Année ouverte"
+  },
+  "glossar": {
+    "schalter": "Afficher les explications",
+    "einfach": "En clair :",
+    "begriffe": {
+      "vier": {
+        "titel": "Principe des quatre yeux",
+        "text": "Une dépense ne compte que si une deuxième personne l'a approuvée. Chaque chiffre reste ainsi contrôlé."
+      },
+      "abschluss": {
+        "titel": "Clôture annuelle",
+        "text": "Le point final officiel de l'exercice : les chiffres sont figés et l'année est verrouillée."
+      },
+      "probelauf": {
+        "titel": "Essai à blanc",
+        "text": "Un aperçu de la clôture. Rien n'est enregistré ni verrouillé, vous pouvez essayer autant de fois que vous voulez."
+      },
+      "ergebnis": {
+        "titel": "Résultat",
+        "text": "Recettes moins dépenses. Un plus signifie un excédent, un moins signifie qu'on a dépensé plus qu'encaissé."
+      },
+      "budget": {
+        "titel": "Budget",
+        "text": "Le montant prévu que ce type de dépense ne doit pas dépasser sur l'année."
+      },
+      "beleg": {
+        "titel": "Justificatif",
+        "text": "Facture ou reçu qui prouve une dépense. Sans justificatif, il est difficile de montrer plus tard à quoi l'argent a servi."
+      },
+      "pruefung": {
+        "titel": "Contrôle de caisse",
+        "text": "Deux membres indépendants vérifient que la caisse est juste et que les justificatifs sont complets."
+      },
+      "entlastung": {
+        "titel": "Quitus",
+        "text": "Après le rapport de contrôle, l'assemblée générale confirme que le comité a bien géré les comptes."
+      },
+      "kosten": {
+        "titel": "Type de dépense",
+        "text": "Un groupe de dépenses de même nature, par exemple la location de salle ou l'assurance. Chaque type a son propre budget."
+      }
+    }
+  },
+  "assistent": {
+    "reife_label": "Prêt à la clôture à {{prozent}} pour cent",
+    "bereit": "prêt à clôturer",
+    "kopf": {
+      "gruen": "L'année est prête à être clôturée",
+      "gruen_text": "Tous les points sont réglés. Vous pouvez regarder l'essai à blanc tranquillement puis clôturer.",
+      "orange": "Presque prêt : quelques points restent ouverts",
+      "orange_text": "Les recommandations ouvertes ne bloquent pas la clôture. Regardez-les et décidez si elles peuvent attendre.",
+      "rot": "Clôture pas encore possible",
+      "rot_text": "Des points obligatoires doivent d'abord être réglés.",
+      "abgeschlossen": "Cette année est clôturée",
+      "abgeschlossen_text": "Les chiffres sont figés et l'année est verrouillée."
+    },
+    "schritte": {
+      "titel": "Étapes de la clôture",
+      "aufraeumen": "Mettre en ordre",
+      "probelauf": "Essai à blanc",
+      "bewerten": "Évaluer",
+      "abschliessen": "Clôturer"
+    },
+    "schritt_gesperrt": "Régler d'abord les points obligatoires",
+    "schritt_x_von": "Étape {{n}} sur 4",
+    "banner": {
+      "letzter": "Dernière étape.",
+      "letzter_text": "La clôture verrouille l'année. Vérifiez les conséquences et confirmez à la fin.",
+      "probe_text": "Rien n'est enregistré ni verrouillé. Vous pouvez tout regarder tranquillement."
+    },
+    "zurueck": "Retour",
+    "weiter": "Suivant",
+    "weiter_abschluss": "Passer à la clôture",
+    "fuss_hilfe": "Vous n'avez pas besoin de tout comprendre : le feu en haut montre si l'année est prête. En cas de doute, demandez au contrôle de caisse ou au comité.",
+    "stufe": {
+      "pflicht": "Obligatoire",
+      "empfohlen": "Recommandé"
+    },
+    "pruef": {
+      "intro": "L'application vérifie automatiquement ce qu'il reste à faire avant la clôture. Les points obligatoires doivent être réglés, les points recommandés peuvent rester ouverts volontairement.",
+      "alles_ok": "Tout est en ordre, rien n'est ouvert.",
+      "ansehen": "Voir",
+      "bestanden": "Réussis : {{n}} points",
+      "freigaben": {
+        "titel": "{{anzahl}} dépenses attendent une approbation ({{betrag}})",
+        "text": "Une deuxième personne doit les approuver ou les rejeter avant la clôture.",
+        "hilfe": "Tant qu'une dépense n'est pas approuvée, elle ne compte dans aucun chiffre. Décider d'abord, clôturer ensuite."
+      },
+      "belege": {
+        "titel": "{{anzahl}} dépenses sans justificatif ({{betrag}})",
+        "text": "Le justificatif manque pour ces dépenses. Le fournir ou le laisser volontairement.",
+        "hilfe": "Un justificatif est la facture ou le reçu. Le contrôle de caisse le demandera."
+      },
+      "beitraege": {
+        "titel": "{{anzahl}} cotisations encore ouvertes ({{betrag}})",
+        "text": "Ces paiements ne sont pas encore confirmés et manquent dans les recettes.",
+        "hilfe": "Confirmez les paiements reçus pour que les recettes soient complètes."
+      },
+      "projekte": {
+        "titel": "{{anzahl}} projets sans décompte final",
+        "text": "Les projets terminés devraient être décomptés avant la clôture de l'année.",
+        "hilfe": "Un décompte final montre ce qu'un projet a coûté et rapporté au total."
+      },
+      "budget_gesetzt": {
+        "titel": "Aucun budget n'est encore défini pour cette année",
+        "text": "Sans budget, l'application ne peut pas comparer les dépenses au plan.",
+        "hilfe": "Dans l'onglet Budget, vous fixez combien chaque type de dépense peut coûter."
+      },
+      "budget_passt": {
+        "titel": "{{anzahl}} types de dépenses dépassent le budget",
+        "text": "C'est permis, mais il faudrait le justifier brièvement.",
+        "hilfe": "À l'étape Évaluer, vous pouvez écrire une justification pour chaque type de dépense."
+      }
+    },
+    "pruef_ok": {
+      "freigaben": "Aucune dépense n'attend d'approbation",
+      "belege": "Toutes les dépenses ont un justificatif",
+      "beitraege": "Toutes les cotisations sont confirmées",
+      "projekte": "Tous les projets terminés sont décomptés",
+      "budget_gesetzt": "Le budget de cette année est défini",
+      "budget_passt": "Aucun type de dépense ne dépasse le budget"
+    },
+    "probelauf": {
+      "wenn_titel": "Et si… ?",
+      "wenn_intro": "Comptez les points ouverts à titre d'essai et voyez comment le résultat change. C'est un simple calcul, rien n'est modifié.",
+      "ausgaben_freigeben": "Si les {{anzahl}} dépenses ouvertes étaient approuvées",
+      "plus_ausgaben": "Les dépenses augmentent de {{betrag}}",
+      "beitraege_annehmen": "Si les {{anzahl}} cotisations ouvertes étaient confirmées",
+      "plus_einnahmen": "Les recettes augmentent de {{betrag}}",
+      "zum_vorjahr": "{{diff}} ({{prozent}} %) par rapport à l'an dernier",
+      "vorjahr_ergebnis": "An dernier : {{betrag}}",
+      "ergebnis_hilfe": "Le résultat est ce qui reste à la fin : recettes moins dépenses.",
+      "vergleich": "Comparaison avec l'an dernier",
+      "balken_label": "{{label}} : {{wert}}, an dernier {{vorjahr}}",
+      "balken_legende": "Barre colorée : cette année. Barre claire : l'an dernier.",
+      "quellen": "D'où viennent les recettes ?",
+      "quelle": "Source",
+      "vorjahr": "An dernier",
+      "summe": "Total"
+    },
+    "quellen": {
+      "cotisations": "Cotisations",
+      "dons": "Dons",
+      "projets": "Projets",
+      "adhesions": "Adhésions",
+      "boutique": "Boutique",
+      "evenements": "Événements"
+    },
+    "ampel": {
+      "gruen": {
+        "titel": "Vert",
+        "text": "Tout est en ordre."
+      },
+      "orange": {
+        "titel": "Orange",
+        "text": "Certains points méritent un second regard."
+      },
+      "rot": {
+        "titel": "Rouge",
+        "text": "Une action est nécessaire."
+      }
+    },
+    "bewertung": {
+      "titel": "Évaluation globale",
+      "hilfe_a": "Le feu résume l'état de l'année : vert, aucun souci ; orange, à regarder ; rouge, à clarifier d'abord.",
+      "hilfe_b": "Les phrases ci-dessous sont générées automatiquement et citent les points principaux.",
+      "plan_titel_a": "Plan et réalité par type de dépense",
+      "balken_label": "{{name}} : {{ist}} sur {{budget}}, {{prozent}} pour cent",
+      "legende": "La barre montre quelle part du budget est déjà dépensée. À partir de 80 pour cent elle devient orange, à partir de 100 pour cent rouge.",
+      "plan_hilfe": "Le plan, c'est le budget ; la réalité, ce sont les dépenses effectives.",
+      "begruendung_titel": "Justification des dépassements",
+      "begruendung_label": "{{name}} ({{prozent}} % du budget)",
+      "begruendung_platzhalter": "Expliquer brièvement pourquoi c'est plus cher",
+      "begruendung_hinweis": "Les justifications sont conservées avec la clôture et affichées dans la vue de l'année clôturée. Elles sont facultatives."
+    },
+    "hinweis": {
+      "ergebnis_gut": "Excédent de {{betrag}} (an dernier : {{vorjahr}}).",
+      "ergebnis_kritisch": "Déficit de {{betrag}} : on a dépensé plus qu'encaissé (an dernier : {{vorjahr}}).",
+      "gesamtbudget": "Au total, {{prozent}} % du budget global est dépensé ({{ausgaben}} sur {{budget}}).",
+      "einnahmen_plus": "Les recettes sont {{prozent}} % au-dessus de l'an dernier.",
+      "einnahmen_minus": "Les recettes sont {{prozent}} % en dessous de l'an dernier.",
+      "ueber_budget": "{{anzahl}} types de dépenses dépassent le budget : {{namen}}.",
+      "fast_ausgeschoepft": "Presque épuisé (plus de 80 %) : {{namen}}.",
+      "pruefliste_gut": "Tous les points de la liste de contrôle sont réglés.",
+      "pruefliste_offen": "{{offen}} points de la liste de contrôle sont encore ouverts."
+    },
+    "kostenart": {
+      "ok": "dans le plan",
+      "attention": "presque plein",
+      "depasse": "hors budget",
+      "aucun": "sans budget"
+    },
+    "abschluss": {
+      "folgen_titel": "Ce qui se passe à la clôture",
+      "folge_sperre": "Les dépenses et le budget {{annee}} sont verrouillés.",
+      "folge_zahlen": "Ces chiffres sont figés : recettes {{einnahmen}}, dépenses {{ausgaben}}, résultat {{ergebnis}}.",
+      "folge_begruendungen": "{{n}} justifications sont conservées avec la clôture.",
+      "folge_protokoll": "La clôture est consignée dans le journal.",
+      "folge_wiedereroeffnen": "Seul l'administrateur de l'application peut rouvrir l'année, avec un motif.",
+      "hilfe_a": "La clôture est volontairement difficile à annuler, pour que les chiffres restent fiables.",
+      "hilfe_b": "En cas de doute : utilisez l'essai à blanc autant que vous voulez et faites relire par le contrôle de caisse.",
+      "pflicht_offen": "{{n}} points obligatoires sont encore ouverts. Merci de les régler d'abord à l'étape Mettre en ordre.",
+      "nur_lesen": "Vous avez seulement des droits de lecture et ne pouvez pas clôturer l'année.",
+      "bestaetigung_label": "Pour confirmer, saisissez l'année",
+      "knopf": "Clôturer définitivement l'année {{annee}}",
+      "echte_zahlen": "Les chiffres ci-dessus sont les chiffres réels, sans les hypothèses du « Et si »."
+    },
+    "abgeschlossen": {
+      "begruendungen": "Justifications de la clôture",
+      "berichte": "Télécharger les rapports",
+      "hilfe_a": "L'année est verrouillée, les chiffres figés ne changent plus.",
+      "hilfe_b": "Vous avez besoin des rapports pour le contrôle de caisse et l'assemblée générale."
+    }
+  },
+  "cockpit": {
+    "titel": "Finances {{annee}} en un coup d'œil",
+    "untertitel": "Voici ce qui attend le rôle {{rolle}}.",
+    "rolle": "Choisir le rôle",
+    "rollen": {
+      "fin": "Finances",
+      "buero": "Secrétariat",
+      "pruef": "Contrôle de caisse"
+    },
+    "kacheln": {
+      "freigaben": "Approbations",
+      "freigaben_text": "Dépenses en attente d'une deuxième personne",
+      "nichts_offen": "Rien d'ouvert",
+      "belege": "Sans justificatif",
+      "belege_text": "{{betrag}} sans preuve",
+      "belege_ok": "Tous les justificatifs sont là",
+      "budget": "Budget {{annee}}",
+      "budget_text": "{{verbraucht}} sur {{gesamt}}, l'année est écoulée à {{jahr}} %",
+      "budget_fehlt": "Aucun budget défini",
+      "beitraege": "Cotisations ouvertes",
+      "beitraege_text": "{{betrag}} pas encore confirmés",
+      "beitraege_ok": "Toutes les cotisations sont confirmées"
+    },
+    "ampel": {
+      "gruen": "Vert",
+      "orange": "Orange",
+      "rot": "Rouge"
+    },
+    "ampel_hilfe": "Vert : réglé. Orange : à regarder. Rouge : une décision est bientôt nécessaire. Un clic sur une tuile ouvre la liste correspondante.",
+    "aufgaben_titel": "À faire",
+    "aufgaben_anzahl": "{{n}} ouvertes",
+    "aufgaben_hinweis": "Les tâches découlent de l'état des données et disparaissent d'elles-mêmes une fois réglées. Les délais sont des propositions, les statuts et le comité prévalent.",
+    "alles_erledigt": "Tout est fait. Rien à faire pour ce rôle.",
+    "so_gehts": "Comment faire",
+    "frist": {
+      "ueberfaellig": "en retard de {{tage}} jours",
+      "heute": "à faire aujourd'hui",
+      "in_tagen": "dans {{tage}} jours",
+      "bis": "d'ici le {{datum}}"
+    },
+    "aufgaben": {
+      "freigaben": {
+        "titel": "Approuver {{anzahl}} dépenses ({{betrag}})",
+        "text": "Une deuxième personne décide pour chaque dépense.",
+        "knopf": "Ouvrir les dépenses"
+      },
+      "belege": {
+        "titel": "Clarifier {{anzahl}} justificatifs manquants ({{betrag}})",
+        "text": "Fournir les justificatifs ou les laisser volontairement ouverts.",
+        "knopf": "Ouvrir le contrôle de caisse"
+      },
+      "beitraege": {
+        "titel": "Confirmer {{anzahl}} cotisations ouvertes ({{betrag}})",
+        "text": "Confirmer les paiements reçus pour que les recettes soient justes.",
+        "knopf": "Ouvrir les paiements"
+      },
+      "projekte": {
+        "titel": "Décompter {{anzahl}} projets",
+        "text": "Les projets terminés ont besoin d'un décompte final.",
+        "knopf": "Ouvrir les projets"
+      },
+      "abschluss": {
+        "titel": "Préparer la clôture {{annee}}",
+        "text": "La regarder en essai à blanc, l'évaluer, puis la clôturer.",
+        "knopf": "Lancer l'essai à blanc"
+      },
+      "budget_planen": {
+        "titel": "Planifier le budget {{annee}}",
+        "text": "Fixer par type de dépense ce qui peut être dépensé l'an prochain.",
+        "knopf": "Ouvrir le budget"
+      }
+    },
+    "prognose": {
+      "titel": "Vers où vont les dépenses ?",
+      "label": "Dépenses jusqu'ici {{bisher}}, prévision fin d'année {{ende}}, budget {{budget}}",
+      "budget": "Budget {{betrag}}",
+      "ende": "Prévision {{betrag}}",
+      "satz": "{{bisher}} sont dépensés jusqu'ici. Si cela continue ainsi, on arrive à environ {{ende}} en fin d'année.",
+      "unter": "C'est environ {{betrag}} en dessous du budget.",
+      "ueber": "Ce serait environ {{betrag}} au-dessus du budget.",
+      "hilfe": "La prévision est une estimation à partir des derniers mois, pas un engagement.",
+      "tabelle": "Valeurs en tableau"
+    },
+    "rhythmus": {
+      "titel": "Le rythme de l'année",
+      "hinweis": "Les dates sont des propositions. Les statuts et les décisions du comité font foi.",
+      "nov": {
+        "monat": "Nov",
+        "titel": "Planifier le budget",
+        "text": "Fixer par type de dépense ce qui peut être dépensé l'an prochain."
+      },
+      "dez": {
+        "monat": "Déc",
+        "titel": "Clarifier les justificatifs",
+        "text": "Régler les approbations ouvertes et les justificatifs manquants de l'année."
+      },
+      "jan": {
+        "monat": "Janv",
+        "titel": "Essai à blanc",
+        "text": "Regarder et évaluer la clôture tranquillement."
+      },
+      "feb": {
+        "monat": "Févr",
+        "titel": "Clôture",
+        "text": "Clôturer l'année et produire les rapports."
+      },
+      "maer": {
+        "monat": "Mars",
+        "titel": "Contrôle de caisse",
+        "text": "Le contrôle de caisse examine la caisse et les justificatifs."
+      },
+      "apr": {
+        "monat": "Avr",
+        "titel": "Quitus",
+        "text": "L'assemblée générale donne quitus au comité."
+      }
+    },
+    "hilfe_titel": "Nouveau ici ?",
+    "hilfe_text": "Pas besoin d'être expert en finances. Touchez les mots soulignés pour les expliquer :"
   }
 }
