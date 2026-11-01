@@ -507,6 +507,72 @@ def test_destroy_membre_avec_souscription_409(api_client, bureau_admin_user):
     assert Membre.objects.filter(id=membre.id).exists()
 
 
+# --- Sammel-Löschen (Bureau Admin+) ---
+
+
+def test_supprimer_lot_comme_rh_refuse_403(api_client, rh_user):
+    membre = MembreFactory()
+    _auth(api_client, rh_user)
+    resp = api_client.post(
+        reverse("membres:membre-supprimer-lot"), {"ids": [str(membre.id)]}, format="json"
+    )
+    assert resp.status_code == 403
+    assert Membre.objects.filter(id=membre.id).exists()
+
+
+def test_supprimer_lot_loescht_freie_und_meldet_geschuetzte(api_client, bureau_admin_user):
+    frei_1, frei_2 = MembreFactory(), MembreFactory()
+    geschuetzt = SouscriptionFactory().membre
+    _auth(api_client, bureau_admin_user)
+    resp = api_client.post(
+        reverse("membres:membre-supprimer-lot"),
+        {"ids": [str(frei_1.id), str(frei_2.id), str(geschuetzt.id)]},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["geloescht"] == 2
+    assert [z["grund"] for z in resp.data["uebersprungen"]] == ["geschuetzt"]
+    assert resp.data["uebersprungen"][0]["id"] == str(geschuetzt.id)
+    assert not Membre.objects.filter(id__in=[frei_1.id, frei_2.id]).exists()
+    assert Membre.objects.filter(id=geschuetzt.id).exists()
+
+
+def test_supprimer_lot_ueberspringt_eigene_karte_und_unbekannte(api_client, bureau_admin_user):
+    eigene = MembreFactory(user=bureau_admin_user)
+    unbekannt = "00000000-0000-0000-0000-000000000000"
+    _auth(api_client, bureau_admin_user)
+    resp = api_client.post(
+        reverse("membres:membre-supprimer-lot"),
+        {"ids": [str(eigene.id), unbekannt, str(eigene.id)]},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert resp.data["geloescht"] == 0
+    gruende = {z["grund"] for z in resp.data["uebersprungen"]}
+    assert gruende == {"eigene_karte", "nicht_gefunden"}
+    assert len(resp.data["uebersprungen"]) == 2  # doppelte ID zählt nur einmal
+    assert Membre.objects.filter(id=eigene.id).exists()
+
+
+@pytest.mark.parametrize("ids", [[], ["kein-uuid"]])
+def test_supprimer_lot_ungueltige_eingabe_400(api_client, bureau_admin_user, ids):
+    _auth(api_client, bureau_admin_user)
+    resp = api_client.post(reverse("membres:membre-supprimer-lot"), {"ids": ids}, format="json")
+    assert resp.status_code == 400
+
+
+def test_supprimer_lot_begrenzt_auf_200(api_client, bureau_admin_user):
+    from uuid import uuid4
+
+    _auth(api_client, bureau_admin_user)
+    resp = api_client.post(
+        reverse("membres:membre-supprimer-lot"),
+        {"ids": [str(uuid4()) for _ in range(201)]},
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
 # --- Action changer_statut (RH+) ---
 
 

@@ -10,16 +10,18 @@ Vues API — app membres (TDD §2.4, complété AHM-51) :
                                                     MembrePermission /
                                                     MembreSerializer)
   DELETE         /membres/{id}/                 — supprimer (Bureau Admin+)
+  POST           /membres/supprimer-lot/        — supprimer plusieurs fiches (Bureau Admin+)
   POST           /membres/{id}/changer_statut/  — changer le statut (RH+)
   GET/PATCH      /membres/moi/                  — fiche du compte connecté (bouton "Mon profil",
                                                     ajouté le 2026-09-28), sans connaître son id
 """
 
+from django.db import transaction
 from django.db.models import Prefetch
 from django.db.models.deletion import ProtectedError
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters as drf_filters
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.decorators import action
 from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
@@ -34,6 +36,16 @@ from .filters import MembreFilter
 from .models import Membre, StatutMembre
 from .permissions import MembrePermission
 from .serializers import MembreListSerializer, MembreSerializer
+
+# Obergrenze pro Sammel-Löschung : eine Seite der Liste hat 20 Einträge, „alle Treffer“ bleibt
+# bewusst begrenzt, damit ein Fehlklick nicht Hunderte Karten auf einmal trifft.
+MAX_SAMMELLOESCHUNG = 200
+
+
+class SammelLoeschenSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.UUIDField(), allow_empty=False, max_length=MAX_SAMMELLOESCHUNG
+    )
 
 
 class MembreCursorPagination(CursorPagination):
@@ -115,6 +127,37 @@ class MembreViewSet(ModelViewSet):
                 "Ce membre a encore des données liées (souscriptions, cotisations, "
                 "commandes...) — impossible de le supprimer directement."
             ) from exc
+
+    @action(detail=False, methods=["post"], url_path="supprimer-lot")
+    def supprimer_lot(self, request):
+        """Sammel-Löschen (Bureau Admin+). Jede Karte läuft in einer eigenen Transaktion : eine
+        geschützte Karte (Mitgliedschaften, Zahlungen, Bestellungen → ProtectedError) oder die
+        eigene Karte des Anfragenden wird übersprungen und mit Grund gemeldet, die übrigen
+        werden gelöscht. Antwort : {"geloescht": n, "uebersprungen": [{id, name, grund}]}."""
+        eingabe = SammelLoeschenSerializer(data=request.data)
+        eingabe.is_valid(raise_exception=True)
+        ids = list(dict.fromkeys(eingabe.validated_data["ids"]))
+
+        gefunden = {m.id: m for m in self.get_queryset().filter(id__in=ids)}
+        geloescht = 0
+        uebersprungen = []
+        for membre_id in ids:
+            membre = gefunden.get(membre_id)
+            if membre is None:
+                uebersprungen.append({"id": str(membre_id), "name": "", "grund": "nicht_gefunden"})
+                continue
+            name = f"{membre.prenom} {membre.nom}".strip()
+            if membre.user_id is not None and membre.user_id == request.user.id:
+                uebersprungen.append({"id": str(membre_id), "name": name, "grund": "eigene_karte"})
+                continue
+            try:
+                with transaction.atomic():
+                    membre.delete()
+            except ProtectedError:
+                uebersprungen.append({"id": str(membre_id), "name": name, "grund": "geschuetzt"})
+                continue
+            geloescht += 1
+        return Response({"geloescht": geloescht, "uebersprungen": uebersprungen})
 
     @action(detail=False, methods=["get", "patch"], url_path="moi")
     def moi(self, request):
