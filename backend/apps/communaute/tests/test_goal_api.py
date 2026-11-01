@@ -33,6 +33,7 @@ from apps.communaute import services
 from apps.communaute.models import (
     ClassementLigue,
     EquipeInfo,
+    LigaErgebnis,
     RencontreCalendrier,
     StatistiqueJoueur,
 )
@@ -244,6 +245,7 @@ def test_synchroniser_donnees_football_sans_cle_api_ne_fait_rien(settings, monke
     assert services.synchroniser_donnees_football() == {
         "classement": 0,
         "calendrier": 0,
+        "liga_ergebnisse": 0,
         "statistiques_joueurs": 0,
         "equipe_info": 0,
         "tippspiel_points_maj": 0,
@@ -668,6 +670,7 @@ def test_synchroniser_donnees_football_combine_les_trois_synchronisations(settin
             {
                 "/standings": _page(_STANDINGS_COMPLET),
                 "/fixtures": [_page([_FIXTURE_JOUEE, _FIXTURE_A_VENIR])],
+                "/results": _page([]),
                 "/players": [_page([_JOUEUR_BUTEUR, _JOUEUR_SANS_NUMERO])],
                 f"/teams/{settings.GOAL_API_TEAM_ID}": _EQUIPE_INFO,
             }
@@ -682,6 +685,7 @@ def test_synchroniser_donnees_football_combine_les_trois_synchronisations(settin
     assert resultat == {
         "classement": 2,
         "calendrier": 2,
+        "liga_ergebnisse": 0,
         "statistiques_joueurs": 2,
         "equipe_info": 1,
         "tippspiel_points_maj": 0,
@@ -689,3 +693,91 @@ def test_synchroniser_donnees_football_combine_les_trois_synchronisations(settin
     assert ClassementLigue.objects.count() == 2
     assert RencontreCalendrier.objects.count() == 2
     assert StatistiqueJoueur.objects.count() == 2
+
+
+# --- Ligaergebnisse aller Vereine (2026-11-01) ---
+
+
+def _ergebnis(nr, heim, gast, tore_heim, tore_gast, datum="2026-09-20", status="FINISHED"):
+    return {
+        "id": f"res{nr}",
+        "homeTeam": {"name": heim},
+        "awayTeam": {"name": gast},
+        "homeTeamScore": tore_heim,
+        "awayTeamScore": tore_gast,
+        "matchStatus": status,
+        "kickoffUtc": f"{datum}T18:00:00.000Z",
+        "league": {"name": "Tunisian Ligue Professionnelle 1"},
+    }
+
+
+def test_liga_ergebnisse_ohne_cle_api_ohne_anfrage(settings, monkeypatch):
+    settings.GOAL_API_KEY = ""
+    appele = []
+    monkeypatch.setattr(requests, "get", lambda *a, **k: appele.append(1))
+    assert services.synchroniser_liga_ergebnisse() == 0
+    assert appele == []
+
+
+def test_liga_ergebnisse_werden_gespeichert_und_nicht_dupliziert(settings, monkeypatch):
+    _configurer_cle_api(settings)
+    _figer_aujourdhui(monkeypatch, 2026, 10, 5)
+    seite = _page(
+        [
+            _ergebnis(1, "Stade Tunisien", "ES Tunis", 2, 1),
+            _ergebnis(2, "CS Sfaxien", "Stade Tunisien", 0, 0, datum="2026-09-27"),
+        ]
+    )
+    monkeypatch.setattr(requests, "get", _dispatch({"/results": seite}))
+    assert services.synchroniser_liga_ergebnisse() == 2
+    assert services.synchroniser_liga_ergebnisse() == 2
+    assert LigaErgebnis.objects.count() == 2
+
+
+def test_liga_ergebnisse_filtern_unfertige_fremde_saison_und_ohne_tore(settings, monkeypatch):
+    _configurer_cle_api(settings)
+    _figer_aujourdhui(monkeypatch, 2026, 10, 5)
+    seite = _page(
+        [
+            _ergebnis(1, "A", "B", 1, 0),
+            _ergebnis(2, "C", "D", None, None, status="SCHEDULED", datum="2026-10-20"),
+            _ergebnis(3, "E", "F", 1, 1, datum="2025-09-01"),  # Vorsaison
+            _ergebnis(4, "G", "H", None, None),  # beendet, aber ohne Tore
+            {"id": "kaputt"},  # unerwartetes Format
+        ]
+    )
+    monkeypatch.setattr(requests, "get", _dispatch({"/results": seite}))
+    assert services.synchroniser_liga_ergebnisse() == 1
+    assert LigaErgebnis.objects.get().equipe_domicile == "A"
+
+
+def test_liga_ergebnisse_aufsteigende_sortierung_holt_die_letzten_seiten(settings, monkeypatch):
+    """Ist der Endpunkt aufsteigend sortiert, stehen die neuesten Spiele hinten."""
+    _configurer_cle_api(settings)
+    _figer_aujourdhui(monkeypatch, 2026, 10, 5)
+    alt = [_ergebnis(i, f"A{i}", f"B{i}", 1, 0, datum="2026-08-01") for i in range(50)]
+    neu = [_ergebnis(100 + i, f"N{i}", f"M{i}", 2, 0, datum="2026-09-30") for i in range(3)]
+    appels = []
+
+    def _antwort(url, params=None, headers=None, timeout=None):
+        appels.append(dict(params or {}))
+        offset = (params or {}).get("offset", 0)
+        daten = alt if offset == 0 else neu
+        return _ReponseFactice(
+            {"data": daten, "pagination": {"total": 53, "hasMore": offset == 0, "offset": offset}}
+        )
+
+    monkeypatch.setattr(requests, "get", _antwort)
+    services.synchroniser_liga_ergebnisse()
+    assert any(a["offset"] == 50 for a in appels)
+    assert LigaErgebnis.objects.filter(equipe_domicile="N0").exists()
+
+
+def test_liga_ergebnisse_netzwerkfehler_wirft_nicht(settings, monkeypatch):
+    _configurer_cle_api(settings)
+
+    def _get(*a, **k):
+        raise requests.ConnectionError("down")
+
+    monkeypatch.setattr(requests, "get", _get)
+    assert services.synchroniser_liga_ergebnisse() == 0

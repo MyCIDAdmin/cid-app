@@ -26,6 +26,7 @@ from .models import (
     EquipeInfo,
     EquipeLogo,
     GroupeChat,
+    LigaErgebnis,
     Match,
     MatchCommentaire,
     MatchEvenement,
@@ -815,10 +816,11 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
 
     `forme_recente` (2026-10-06, "Spalte Form ist leer") : GOAL API ne l'expose pas sur
     l'endpoint standings. Elle est donc DÉDUITE des rencontres terminées en base
-    (`RencontreCalendrier`, calendrier de l'équipe suivie) : cinq derniers résultats V/N/D, le
-    plus récent en dernier. Une équipe n'est renseignée que si la base couvre toutes ses
-    cinq dernières rencontres (sinon une forme partielle, p. ex. seulement les matchs contre
-    l'équipe suivie, serait trompeuse) — la colonne reste alors vide plutôt qu'inventée."""
+    (`RencontreCalendrier`, calendrier de l'équipe suivie, plus `LigaErgebnis`, résultats de
+    toute la ligue depuis 2026-11-01) : cinq derniers résultats V/N/D, le plus récent en
+    dernier. Une équipe n'est renseignée que si la base couvre toutes ses cinq dernières
+    rencontres (sinon une forme partielle, p. ex. seulement les matchs contre l'équipe
+    suivie, serait trompeuse) — la colonne reste alors vide plutôt qu'inventée."""
 
     forme_recente = serializers.SerializerMethodField()
 
@@ -845,14 +847,30 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
             return formen
         beginn = datetime.datetime(jahr, 7, 1, tzinfo=datetime.timezone.utc)
         ende = datetime.datetime(jahr + 1, 7, 1, tzinfo=datetime.timezone.utc)
-        termines = RencontreCalendrier.objects.filter(
-            statut=StatutRencontre.TERMINEE,
-            score_domicile__isnull=False,
-            score_exterieur__isnull=False,
-            date_heure__gte=beginn,
-            date_heure__lt=ende,
-        ).order_by("date_heure")
-        for r in (r for r in termines if est_ligue_1(r.competition)):
+        filtre = {
+            "score_domicile__isnull": False,
+            "score_exterieur__isnull": False,
+            "date_heure__gte": beginn,
+            "date_heure__lt": ende,
+        }
+        # Zwei Quellen: Kalender von Club Africain (inkl. manueller Korrekturen) und die
+        # Ligaergebnisse aller Vereine (2026-11-01, sonst fehlt die Form der übrigen Clubs).
+        # Doppelte Spiele (beide Quellen) zählen einmal; der Kalender hat Vorrang.
+        spiele: dict = {}
+        quellen = (
+            LigaErgebnis.objects.filter(**filtre),
+            RencontreCalendrier.objects.filter(statut=StatutRencontre.TERMINEE, **filtre),
+        )
+        for quelle in quellen:
+            for r in quelle:
+                if est_ligue_1(r.competition):
+                    schluessel = (
+                        r.date_heure.date(),
+                        r.equipe_domicile.strip().lower(),
+                        r.equipe_exterieur.strip().lower(),
+                    )
+                    spiele[schluessel] = r
+        for r in sorted(spiele.values(), key=lambda spiel: spiel.date_heure):
             for equipe, pour, contre in (
                 (r.equipe_domicile, r.score_domicile, r.score_exterieur),
                 (r.equipe_exterieur, r.score_exterieur, r.score_domicile),
