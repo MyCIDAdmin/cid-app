@@ -1,4 +1,4 @@
-"""Tests — Startseite nach der Anmeldung : Zahlen zum Verein und „Neu dabei“ (nur mit Zustimmung)."""
+"""Tests — Startseite nach der Anmeldung : Zahlen zum Verein und „Neu dabei“ (mit Zustimmung)."""
 
 from datetime import date, timedelta
 
