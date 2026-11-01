@@ -26,6 +26,9 @@ vi.mock("./NotificationBell", () => ({ default: () => <div data-testid="bell-stu
 vi.mock("./LanguageSwitcher", () => ({ default: () => <div data-testid="lang-stub" /> }));
 vi.mock("./ThemeToggle", () => ({ default: () => <div data-testid="theme-stub" /> }));
 vi.mock("./UserMenu", () => ({ default: () => <div data-testid="user-menu-stub" /> }));
+// Erste Schritte (Tour) : eigene Tests unter components/tour, hier nur Stubs (brauchen React Query).
+vi.mock("../tour/TourHost", () => ({ default: () => null }));
+vi.mock("../tour/HinweisLeiste", () => ({ default: () => null }));
 vi.mock("../public/PublicFooter", () => ({
   default: () => <div data-testid="public-footer-stub" />,
 }));

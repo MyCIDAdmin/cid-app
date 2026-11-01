@@ -1,0 +1,141 @@
+{
+  "willkommen": {
+    "titel": "Willkommen bei CID!",
+    "titel_name": "Willkommen bei CID, {{name}}!",
+    "titel_fan": "Schön, dass du da bist!",
+    "text": "In einer Minute zeigen wir dir die wichtigsten Bereiche der App, damit du dich schnell zurechtfindest.",
+    "text_fan": "Als Fan siehst du die Startseite, die Sektoren und die Fotoalben. In einer Minute zeigen wir dir, wo du was findest.",
+    "text_verwaltung": "Du hast Zugriff auf die Verwaltung. Was möchtest du dir ansehen?",
+    "start_kurz": "Kurze Tour starten (ca. 1 Minute)",
+    "start_app": "Rundgang durch die App (ca. 1 Minute)",
+    "start_verwaltung": "Rundgang Verwaltung (ca. {{minuten}} Min.)",
+    "spaeter": "Später erinnern",
+    "nie": "Nicht mehr anzeigen"
+  },
+  "karte": {
+    "dialog": "Rundgang",
+    "schritt": "Schritt {{n}} von {{gesamt}}",
+    "weiter": "Weiter",
+    "zurueck": "Zurück",
+    "fertig": "Fertig",
+    "ueberspringen": "Tour überspringen",
+    "schliessen": "Tour schließen"
+  },
+  "stationen": {
+    "start": {
+      "titel": "Deine Startseite",
+      "text": "Das Neueste aus dem Verein: nächstes Spiel, Sektoren-Wettbewerb, Fotoalben und neue Gesichter."
+    },
+    "dashboard": {
+      "titel": "Deine Übersicht",
+      "text": "Dein persönliches Cockpit mit Mitgliedschaft, Terminen und offenen Aufgaben."
+    },
+    "mitgliedschaft": {
+      "titel": "Meine Mitgliedschaft",
+      "text": "Beitrag zahlen, Mitgliedskarte mit QR-Code und Familienpaket verwalten."
+    },
+    "veranstaltungen": {
+      "titel": "Veranstaltungen und Reisen",
+      "text": "Spiele, Treffen und Fahrten: hier meldest du dich an und planst Reisen gemeinsam."
+    },
+    "community": {
+      "titel": "Community",
+      "text": "Neuigkeiten, Forum und Chats halten dich mit den anderen Clubistes in Verbindung."
+    },
+    "fan_start": {
+      "titel": "Deine Startseite",
+      "text": "Das Neueste aus dem Verein auf einen Blick."
+    },
+    "fan_regionen": {
+      "titel": "Sektoren",
+      "text": "Sieh, wo Clubistes in Deutschland aktiv sind, und melde dich für Treffen an."
+    },
+    "fan_alben": {
+      "titel": "Fotoalben",
+      "text": "Bilder von Spielen, Treffen und Aktionen."
+    },
+    "fan_mitglied": {
+      "titel": "Mitglied werden",
+      "text": "Hier siehst du die Angebote und kannst deine Mitgliedschaft beantragen."
+    },
+    "hilfe": {
+      "titel": "Hilfe ist immer da",
+      "text": "Hier öffnest du die Hilfe zur aktuellen Seite. Dort kannst du diese Tour jederzeit wiederholen."
+    },
+    "v_bereich": {
+      "titel": "Der Verwaltungsbereich",
+      "text": "Hier liegen die Werkzeuge der Verwaltungsrollen. Du siehst nur, was deine Rolle erlaubt."
+    },
+    "v_mitglieder": {
+      "titel": "Mitglieder und Zugang",
+      "text": "Neue Anträge prüfen, Nachweise kontrollieren und Mitgliedschaftskampagnen steuern."
+    },
+    "v_finanzen": {
+      "titel": "Finanzen und Zahlungen",
+      "text": "Zahlungen prüfen und importieren, Fälligkeiten steuern und Kennzahlen ansehen."
+    },
+    "v_aktivitaeten": {
+      "titel": "Aktivitäten und Partner",
+      "text": "Veranstaltungen, Projekte, Shop und Partner pflegen."
+    },
+    "v_community": {
+      "titel": "Community und Inhalte",
+      "text": "Fotoalben, Quiz, Sektoren und Inhalte der Startseite verwalten."
+    },
+    "v_system": {
+      "titel": "System",
+      "text": "Rollen, zentrale Einstellungen und E-Mail-Benachrichtigungen. Nur für Super Admin sichtbar."
+    },
+    "v_hilfe": {
+      "titel": "Aufgabenkarten in der Hilfe",
+      "text": "Für die häufigsten Abläufe gibt es Schritt-für-Schritt-Karten, zum Ansehen oder Drucken. Dort lässt sich auch dieser Rundgang wiederholen."
+    }
+  },
+  "hinweis": {
+    "label": "Tipp zu dieser Seite",
+    "verstanden": "Verstanden",
+    "alle_aus": "Alle Tipps ausblenden"
+  },
+  "hinweise": {
+    "reisen": {
+      "titel": "Reisen gemeinsam planen",
+      "text": "Sammle Interessierte, stimmt ab und verteilt Aufgaben. Jede Person bucht und bezahlt selbst, in der App gibt es keine Zahlung."
+    },
+    "regionen": {
+      "titel": "Deine Sektoren",
+      "text": "Hier findest du die Sektoren mit Verantwortlichen und Treffen. Du kannst dich für Treffen anmelden, auch ohne Mitgliedschaft."
+    },
+    "albums": {
+      "titel": "Bilder aus dem Vereinsleben",
+      "text": "Öffne ein Album, um alle Fotos zu sehen."
+    },
+    "mitgliedschaft": {
+      "titel": "Alles zur Mitgliedschaft",
+      "text": "Hier siehst du dein Angebot, zahlst deinen Beitrag und verwaltest deine Karte."
+    },
+    "zahlungen": {
+      "titel": "Zahlungen prüfen und importieren",
+      "text": "Prüfe offene Zahlungen und bestätige den Zahlungseingang. Viele Zahlungen auf einmal kannst du aus einer Excel-Datei importieren."
+    },
+    "registrierungen": {
+      "titel": "Neue Anträge prüfen",
+      "text": "Hier prüfst du neue Konten und Mitgliedschaftsanträge."
+    },
+    "veranstaltungsverwaltung": {
+      "titel": "Erst anlegen, dann veröffentlichen",
+      "text": "Mitglieder sehen eine Veranstaltung erst, wenn du sie veröffentlicht hast."
+    },
+    "rollen": {
+      "titel": "Rechte vergeben",
+      "text": "Hier bestimmst du, wer welche Verwaltungsseiten sehen und ändern darf."
+    }
+  },
+  "hilfe": {
+    "titel": "Rundgang",
+    "text": "Die kurze Tour noch einmal ansehen oder die kleinen Tipps beim ersten Besuch einer Seite wieder einblenden.",
+    "app": "Rundgang durch die App",
+    "verwaltung": "Rundgang Verwaltung",
+    "hinweise": "Tipps wieder einblenden",
+    "karten": "Aufgabenkarten öffnen"
+  }
+}

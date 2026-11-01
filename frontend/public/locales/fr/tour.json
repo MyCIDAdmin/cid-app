@@ -1,0 +1,141 @@
+{
+  "willkommen": {
+    "titel": "Bienvenue sur CID !",
+    "titel_name": "Bienvenue sur CID, {{name}} !",
+    "titel_fan": "Ravi de te voir !",
+    "text": "En une minute, nous te montrons les principaux espaces de l'application pour que tu t'y retrouves vite.",
+    "text_fan": "En tant que fan, tu vois la page d'accueil, les secteurs et les albums photo. En une minute, nous te montrons où trouver quoi.",
+    "text_verwaltung": "Tu as accès à l'administration. Que souhaites-tu découvrir ?",
+    "start_kurz": "Lancer la visite (env. 1 minute)",
+    "start_app": "Visite de l'application (env. 1 minute)",
+    "start_verwaltung": "Visite de l'administration (env. {{minuten}} min)",
+    "spaeter": "Me le rappeler plus tard",
+    "nie": "Ne plus afficher"
+  },
+  "karte": {
+    "dialog": "Visite guidée",
+    "schritt": "Étape {{n}} sur {{gesamt}}",
+    "weiter": "Suivant",
+    "zurueck": "Retour",
+    "fertig": "Terminer",
+    "ueberspringen": "Passer la visite",
+    "schliessen": "Fermer la visite"
+  },
+  "stationen": {
+    "start": {
+      "titel": "Ta page d'accueil",
+      "text": "Les dernières nouvelles du club : prochain match, concours des secteurs, albums photo et nouveaux visages."
+    },
+    "dashboard": {
+      "titel": "Ton aperçu",
+      "text": "Ton tableau de bord personnel avec adhésion, rendez-vous et tâches en cours."
+    },
+    "mitgliedschaft": {
+      "titel": "Mon adhésion",
+      "text": "Payer la cotisation, gérer la carte de membre avec QR code et le forfait famille."
+    },
+    "veranstaltungen": {
+      "titel": "Événements et voyages",
+      "text": "Matchs, rencontres et déplacements : inscris-toi ici et organise les voyages ensemble."
+    },
+    "community": {
+      "titel": "Communauté",
+      "text": "Actualités, forum et chats te gardent en contact avec les autres Clubistes."
+    },
+    "fan_start": {
+      "titel": "Ta page d'accueil",
+      "text": "Les dernières nouvelles du club en un coup d'œil."
+    },
+    "fan_regionen": {
+      "titel": "Secteurs",
+      "text": "Découvre où les Clubistes sont actifs en Allemagne et inscris-toi aux rencontres."
+    },
+    "fan_alben": {
+      "titel": "Albums photo",
+      "text": "Photos des matchs, rencontres et actions."
+    },
+    "fan_mitglied": {
+      "titel": "Devenir membre",
+      "text": "Tu y vois les offres et peux demander ton adhésion."
+    },
+    "hilfe": {
+      "titel": "L'aide est toujours là",
+      "text": "Ici, tu ouvres l'aide de la page actuelle. Tu peux y refaire cette visite à tout moment."
+    },
+    "v_bereich": {
+      "titel": "L'espace d'administration",
+      "text": "Ici se trouvent les outils des rôles d'administration. Tu ne vois que ce que ton rôle permet."
+    },
+    "v_mitglieder": {
+      "titel": "Membres et accès",
+      "text": "Examiner les nouvelles demandes, contrôler les justificatifs et piloter les campagnes d'adhésion."
+    },
+    "v_finanzen": {
+      "titel": "Finances et paiements",
+      "text": "Vérifier et importer les paiements, piloter les échéances et consulter les chiffres clés."
+    },
+    "v_aktivitaeten": {
+      "titel": "Activités et partenaires",
+      "text": "Gérer événements, projets, boutique et partenaires."
+    },
+    "v_community": {
+      "titel": "Communauté et contenus",
+      "text": "Gérer albums photo, quiz, secteurs et contenus de la page d'accueil."
+    },
+    "v_system": {
+      "titel": "Système",
+      "text": "Rôles, paramètres centraux et notifications par e-mail. Visible uniquement pour le Super Admin."
+    },
+    "v_hilfe": {
+      "titel": "Fiches pratiques dans l'aide",
+      "text": "Pour les procédures les plus courantes, il existe des fiches pas à pas, à consulter ou à imprimer. Tu peux aussi y refaire cette visite."
+    }
+  },
+  "hinweis": {
+    "label": "Conseil pour cette page",
+    "verstanden": "Compris",
+    "alle_aus": "Masquer tous les conseils"
+  },
+  "hinweise": {
+    "reisen": {
+      "titel": "Organiser les voyages ensemble",
+      "text": "Rassemble les intéressés, votez et répartissez les tâches. Chacun réserve et paie lui-même, l'application ne gère aucun paiement."
+    },
+    "regionen": {
+      "titel": "Tes secteurs",
+      "text": "Tu trouves ici les secteurs avec leurs responsables et rencontres. Tu peux t'inscrire aux rencontres, même sans adhésion."
+    },
+    "albums": {
+      "titel": "Images de la vie du club",
+      "text": "Ouvre un album pour voir toutes les photos."
+    },
+    "mitgliedschaft": {
+      "titel": "Tout sur l'adhésion",
+      "text": "Tu y vois ton offre, paies ta cotisation et gères ta carte."
+    },
+    "zahlungen": {
+      "titel": "Vérifier et importer les paiements",
+      "text": "Vérifie les paiements en attente et confirme leur réception. Tu peux importer beaucoup de paiements d'un coup depuis un fichier Excel."
+    },
+    "registrierungen": {
+      "titel": "Examiner les nouvelles demandes",
+      "text": "Tu examines ici les nouveaux comptes et les demandes d'adhésion."
+    },
+    "veranstaltungsverwaltung": {
+      "titel": "D'abord créer, puis publier",
+      "text": "Les membres ne voient un événement qu'une fois que tu l'as publié."
+    },
+    "rollen": {
+      "titel": "Attribuer les droits",
+      "text": "Tu définis ici qui peut voir et modifier quelles pages d'administration."
+    }
+  },
+  "hilfe": {
+    "titel": "Visite guidée",
+    "text": "Revoir la courte visite ou réafficher les petits conseils de la première visite d'une page.",
+    "app": "Visite de l'application",
+    "verwaltung": "Visite de l'administration",
+    "hinweise": "Réafficher les conseils",
+    "karten": "Ouvrir les fiches pratiques"
+  }
+}

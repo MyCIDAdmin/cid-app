@@ -11,6 +11,7 @@ import { createJSONStorage, persist, type StateStorage } from "zustand/middlewar
 
 import { queryClient } from "../queryClient";
 import type { StatutMembre } from "../types/membre";
+import type { TourPraeferenz } from "../utils/tour";
 
 const AUTH_STORAGE_KEY = "cid-auth";
 const REMEMBER_ME_KEY = "cid-remember-me";
@@ -81,6 +82,8 @@ export interface UiPraeferenzen {
   geburtstagsgruss?: boolean;
   /** „Neu dabei“ auf der Startseite : nur nach ausdrücklicher Zustimmung (Standard aus). */
   neu_dabei_zeigen?: boolean;
+  /** Erste Schritte (Willkommensfenster, Rundgänge, Seitenhinweise) : nur technischer Merker. */
+  tour?: TourPraeferenz;
   /** Im Kalender kombinierte Sichten (Release 17) : verein | buero | meine. */
   kalender_ansichten?: ("verein" | "buero" | "meine")[];
 }

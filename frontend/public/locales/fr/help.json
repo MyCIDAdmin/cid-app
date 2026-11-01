@@ -1,6 +1,10 @@
 {
   "bouton": "Aide",
   "fermer": "Fermer",
+  "rundgang": {
+    "titre": "Aide et visite guidée",
+    "intro": "Cette page n'a pas d'aide propre. Tu trouves ici la visite guidée de l'application et les fiches pratiques."
+  },
   "events": {
     "titre": "Gestion des événements",
     "intro": "Créez les événements, publiez-les et suivez les inscriptions.",

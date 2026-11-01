@@ -1,8 +1,8 @@
 /**
  * Hilfe-Schaltfläche der Verwaltungsmodule (Demande utilisateur du 2026-10-06, point 4) :
  * "Hilfe-Button in den Verwaltungsmodulen, um zu erklären, wie mit dem Modul umzugehen ist".
- * Wird zentral in der Kopfleiste (AppLayout) eingehängt und erscheint nur auf Seiten, für die
- * ein Hilfetext existiert (HILFE_ROUTEN) — der Text liegt in public/locales/<lng>/help.json und
+ * Wird zentral in der Kopfleiste (AppLayout) eingehängt und erscheint auf jeder App-Seite ; Seiten
+ * mit Hilfetext (HILFE_ROUTEN) öffnen ihre Anleitung, alle anderen „Hilfe & Rundgang“ — der Text liegt in public/locales/<lng>/help.json und
  * kann dort ohne Code-Änderung angepasst werden.
  *
  * Die Schaltfläche öffnet den Hilfe-Begleiter (HelpPanel.tsx) : ein Seitenpanel neben der App,
@@ -20,15 +20,15 @@ import { cleHilfe } from "./helpRoutes";
 export default function HelpButton() {
   const { t } = useTranslation("help");
   const { pathname, search } = useLocation();
-  const cle = cleHilfe(pathname, search);
+  // Auf Seiten ohne eigenen Hilfetext öffnet der Button „Hilfe & Rundgang“ (Erste Schritte).
+  const cle = cleHilfe(pathname, search) ?? "rundgang";
   const offen = useHilfeStore((s) => s.offen);
   const umschalten = useHilfeStore((s) => s.umschalten);
-
-  if (!cle) return null;
 
   return (
     <button
       type="button"
+      data-tour="hilfe"
       onClick={() => umschalten(cle)}
       aria-label={t("bouton")}
       aria-pressed={offen}

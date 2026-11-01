@@ -19,6 +19,7 @@ import { useHilfeStore } from "../../store/hilfeStore";
 import { ablaufSchluessel, fortschrittLesen, fortschrittSchreiben } from "./hilfeFortschritt";
 import { cleHilfe } from "./helpRoutes";
 import { liste, type Workflow } from "./hilfeKarten";
+import RundgangBereich from "../tour/RundgangBereich";
 
 export type { Workflow };
 
@@ -344,6 +345,8 @@ export default function HelpPanel() {
                 </ul>
               </section>
             )}
+
+            <RundgangBereich />
           </>
         )}
       </div>
