@@ -48,6 +48,41 @@
     "condition_age_min": "Ab {{min}} Jahren",
     "condition_age_max": "Bis {{max}} Jahren"
   },
+  "angebote": {
+    "fuer_wen": "Für wen?",
+    "gruppe": {
+      "ich": "Für mich",
+      "familie": "Für meine Familie",
+      "kind": "Für ein Kind"
+    },
+    "passt_zu_dir": "Passt zu dir",
+    "rabatt_frage": "Hast du Anspruch auf einen Rabatt?",
+    "rabatt_typ": {
+      "etudiant": "Studierende",
+      "senior": "Senioren"
+    },
+    "gueltig_bis": "Gültig bis {{datum}}.",
+    "dauer_one": "Wenn du heute beitrittst, bist du {{count}} Monat dabei.",
+    "dauer_other": "Wenn du heute beitrittst, bist du {{count}} Monate dabei.",
+    "liste_aria": "Mitgliedschaftsangebote",
+    "bis_rabatt": "bis {{wert}}",
+    "pro_jahr": "pro Jahr · ca. {{monat}} im Monat",
+    "eingerechnet": "schon eingerechnet",
+    "weitere_vorteile_one": "+ {{count}} weiterer Vorteil",
+    "weitere_vorteile_other": "+ {{count}} weitere Vorteile",
+    "waehlen": "Auswählen",
+    "ausgewaehlt": "Ausgewählt",
+    "deine_auswahl": "Deine Auswahl: {{name}}",
+    "zaehler_weniger": "{{label}}: eine Person weniger",
+    "zaehler_mehr": "{{label}}: eine Person mehr",
+    "familie_naechster_schritt": "Namen und Geburtsjahre trägst du gleich hier ein. Bezahlt wird erst danach.",
+    "nachweis_hinweis": "Den Nachweis lädst du nach der Anmeldung hoch. Das Büro prüft ihn vor der Zahlung.",
+    "vergleichen": "Alle Angebote vergleichen",
+    "enthalten": "enthalten",
+    "nicht_enthalten": "nicht enthalten",
+    "vorschau_name": "Dein Name",
+    "letzte_mitgliedschaft": "Deine letzte Mitgliedschaft"
+  },
   "historique": {
     "titre": "Mitgliedschaftsverlauf",
     "chargement": "Wird geladen…",

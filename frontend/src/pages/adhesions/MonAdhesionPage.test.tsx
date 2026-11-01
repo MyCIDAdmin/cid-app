@@ -82,6 +82,17 @@ function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
   };
 }
 
+/** Die Kachel eines Angebots (Radio-Auswahl) über ihren Namen. */
+function kachel(name: string) {
+  return screen.getAllByText(name)[0].closest("[data-angebot]");
+}
+
+function waehleKachel(id: string) {
+  const eingabe = document.querySelector(`[data-angebot="${id}"] input[type="radio"]`);
+  if (!eingabe) throw new Error(`Keine Kachel ${id}`);
+  fireEvent.click(eingabe);
+}
+
 function campagne(overrides: Partial<CampagneAdhesion> = {}): CampagneAdhesion {
   return {
     id: "c1",
@@ -249,10 +260,10 @@ describe("MonAdhesionPage", () => {
     renderWithProviders(<MonAdhesionPage />);
 
     expect(screen.getByText("hero.titre")).toBeInTheDocument();
-    // "Basic" apparaît trois fois : dans la carte d'adhésion active, dans la
-    // liste des offres disponibles (changement d'offre toujours permis tant
-    // que la souscription n'est pas payée) et dans la ligne d'historique.
-    expect(screen.getAllByText("Basic").length).toBe(3);
+    // "Basic" apparaît quatre fois : dans la carte d'adhésion active, dans la liste des offres
+    // disponibles (changement d'offre toujours permis tant que la souscription n'est pas payée ;
+    // une fois dans l'aperçu de carte, une fois dans le titre de la tuile) et dans l'historique.
+    expect(screen.getAllByText("Basic").length).toBe(4);
     // Idem : prix affiché à la fois dans la carte active et l'historique.
     expect(screen.getAllByText("96,00 €").length).toBe(2);
     expect(screen.getByText(/Accès complet/)).toBeInTheDocument();
@@ -278,10 +289,9 @@ describe("MonAdhesionPage", () => {
 
     renderWithProviders(<MonAdhesionPage />);
 
-    // Carte façon mycid.org/membership (retour utilisateur du 2026-09-27) : le bouton
-    // "offres.rejoindre" ("Jetzt beitreten") déplie la carte, comme cliquer sur la ligne le
-    // faisait avant — voir docstring MonAdhesionPage.tsx.
-    fireEvent.click(screen.getByText("offres.rejoindre"));
+    // Release 2026.11 (Angebote A) : die Kachel ist eine Radio-Auswahl, die feste Beitrittsleiste
+    // trägt den Knopf — voir docstring MonAdhesionPage.tsx.
+    waehleKachel("o1");
     fireEvent.change(screen.getByLabelText("offres.rabais_label"), { target: { value: "r1" } });
     fireEvent.click(screen.getByText("offres.souscrire"));
 
@@ -326,7 +336,7 @@ describe("MonAdhesionPage", () => {
     renderWithProviders(<MonAdhesionPage />);
 
     expect(screen.getByText("familie.ab")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByText("offres.rejoindre")[0]);
+    waehleKachel("o1");
     const weiter = screen.getByText("familie.weiter_zur_zahlung");
     // Ohne weitere Person gibt es keine Zahlung.
     expect(weiter).toBeDisabled();
@@ -590,8 +600,9 @@ describe("MonAdhesionPage", () => {
 
     renderWithProviders(<MonAdhesionPage />);
 
-    expect(screen.getByText("Accès au fil d'actualité")).toBeInTheDocument();
-    expect(screen.getByText("Jusqu'à 4 membres")).toBeInTheDocument();
+    // Jeder Vorteil steht auf der Kachel und noch einmal in der Vergleichstabelle.
+    expect(screen.getAllByText("Accès au fil d'actualité").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Jusqu'à 4 membres").length).toBeGreaterThan(0);
     expect(screen.getByText("offres.condition_age_min")).toBeInTheDocument();
     expect(screen.getByText("offres.condition_age_min_max")).toBeInTheDocument();
 
@@ -599,8 +610,8 @@ describe("MonAdhesionPage", () => {
     // recyclage arbitraire) — repéré ici via la carte englobant son nom. Bordure HAUTE depuis le
     // passage au style carte façon mycid.org/membership (retour utilisateur du 2026-09-27, voir
     // docstring MonAdhesionPage.tsx), auparavant une bordure gauche.
-    const carteBasic = screen.getByText("Basic").closest("div.rounded-cid-lg");
-    const carteFamille = screen.getByText("Famille").closest("div.rounded-cid-lg");
+    const carteBasic = kachel("Basic");
+    const carteFamille = kachel("Famille");
     expect(carteBasic).toHaveClass("border-t-cat-1");
     expect(carteFamille).toHaveClass("border-t-cat-2");
   });
@@ -632,8 +643,8 @@ describe("MonAdhesionPage", () => {
 
     renderWithProviders(<MonAdhesionPage />);
 
-    const carteBasic = screen.getByText("Basic").closest("div.rounded-cid-lg");
-    const carteFamille = screen.getByText("Famille").closest("div.rounded-cid-lg");
+    const carteBasic = kachel("Basic");
+    const carteFamille = kachel("Famille");
     // "Basic" force cat_3 malgré son index 0 (qui donnerait cat_1 par défaut) ; "Famille" n'a
     // pas de couleur explicite et retombe donc sur l'attribution automatique par index (1).
     expect(carteBasic).toHaveClass("border-t-cat-3");
@@ -693,9 +704,8 @@ describe("MonAdhesionPage", () => {
 
     renderWithProviders(<MonAdhesionPage />);
 
-    const carteBasic = screen.getByText("Basic").closest("div.rounded-cid-lg");
-    const icone = carteBasic?.querySelector("img");
-    expect(icone).toHaveAttribute("src", "https://cdn.example/icone.png");
+    const carteBasic = kachel("Basic");
+    expect(carteBasic?.querySelector('img[src="https://cdn.example/icone.png"]')).not.toBeNull();
   });
 
   it("ne propose pas de retirer une adhésion déjà payée", () => {
@@ -906,5 +916,32 @@ describe("MonAdhesionPage", () => {
     renderWithProviders(<MonAdhesionPage />);
 
     expect(screen.queryByRole("button", { name: "karte.speichern" })).toBeNull();
+  });
+
+  it("Angebote A: eine stornierte Mitgliedschaft erscheint als neutrale „letzte Mitgliedschaft“", () => {
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription({ statut: "annulee" })] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    expect(screen.getByText("angebote.letzte_mitgliedschaft")).toBeInTheDocument();
+    expect(screen.queryByText("hero.titre")).toBeNull();
+    // Die Angebote bleiben wählbar, der Beitragsbereich klappt für Nicht-Mitglieder nicht auf.
+    expect(document.querySelector('[data-angebot="o1"]')).not.toBeNull();
+    const beitrag = screen.getByText("bereich.beitrag").closest("details");
+    expect(beitrag).not.toHaveAttribute("open");
   });
 });
