@@ -33,8 +33,11 @@ from .views import (
     QuizViewSet,
     RencontreCalendrierViewSet,
     ReponseForumViewSet,
+    SpielerDesSpielsView,
+    SpielplanIcsView,
     StatistiqueJoueurViewSet,
     SujetViewSet,
+    TippspielMatrixView,
     TippspielTeilnahmeViewSet,
     TippspielTipViewSet,
     TippspielViewSet,
@@ -72,6 +75,9 @@ router.register("tippspiel-teilnahmen", TippspielTeilnahmeViewSet, basename="tip
 router.register("tippspiel-tipps", TippspielTipViewSet, basename="tippspiel-tip")
 
 urlpatterns = [
+    path("tippspiel-matrix/", TippspielMatrixView.as_view(), name="tippspiel-matrix"),
+    path("spieler-des-spiels/", SpielerDesSpielsView.as_view(), name="spieler-des-spiels"),
+    path("spielplan.ics", SpielplanIcsView.as_view(), name="spielplan-ics"),
     path("chats/", ChatListeView.as_view(), name="chat-liste"),
     path("chats/einstellung/", ChatEinstellungView.as_view(), name="chat-einstellung"),
     path("chats/mitreisende/", ReiseMitreisendeView.as_view(), name="chat-mitreisende"),

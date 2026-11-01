@@ -1076,6 +1076,12 @@ class ClassementLigue(models.Model):
     # tel quel, jamais traduit côté backend (contenu variable non couvert par i18n Django).
     zone_texte = models.CharField(max_length=200, blank=True)
 
+    # Platz vor dem letzten Spieltag (Trend ▲▼ in der Tabelle). Die Synchronisierung setzt ihn,
+    # sobald sich die Zahl der Spiele einer Mannschaft ändert
+    # (services._synchroniser_classement_depuis);
+    # solange kein Spieltag dazwischenliegt, bleibt er unverändert. Leer = noch kein Vergleich.
+    rang_vorher = models.PositiveSmallIntegerField(null=True, blank=True)
+
     maj_le = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -2115,3 +2121,38 @@ class ArrierePlanModule(models.Model):
 
     def __str__(self):
         return self.module
+
+
+class SpielerStimme(models.Model):
+    """„Spieler des Spiels“ (Reiter Spieltag, 2026-11): die Stimme eines Mitglieds für einen
+    Spieler des Kaders zu einem beendeten Spiel von Club Africain. Eine Stimme je Mitglied und
+    Spiel (unveränderlich nach Abgabe, siehe services.spieler_stimme_abgeben). `spieler_name` ist
+    eine Momentaufnahme, damit das Ergebnis lesbar bleibt, auch wenn der Kader später neu
+    synchronisiert wird."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    rencontre = models.ForeignKey(
+        RencontreCalendrier, on_delete=models.CASCADE, related_name="spieler_stimmen"
+    )
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="spieler_stimmen"
+    )
+    spieler = models.ForeignKey(
+        StatistiqueJoueur, on_delete=models.SET_NULL, null=True, related_name="stimmen"
+    )
+    spieler_name = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "communaute_spieler_stimmen"
+        verbose_name = _("Stimme Spieler des Spiels")
+        verbose_name_plural = _("Stimmen Spieler des Spiels")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["rencontre", "membre"], name="spieler_stimme_rencontre_membre_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.membre} → {self.spieler_name}"

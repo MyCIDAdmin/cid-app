@@ -892,6 +892,7 @@ class ClassementLigueSerializer(serializers.ModelSerializer):
             "buts_contre_exterieur",
             "points_exterieur",
             "zone_texte",
+            "rang_vorher",
             "maj_le",
         ]
         read_only_fields = fields
@@ -903,12 +904,21 @@ class RencontreCalendrierSerializer(serializers.ModelSerializer):
     RencontreCalendrierEcritureSerializer)."""
 
     est_a_venir = serializers.BooleanField(read_only=True)
+    # „liga“, „kontinental“ (African Champions League …), „pokal“ oder „sonstige“ :
+    # Filter im Spielplan.
+    art = serializers.SerializerMethodField()
+
+    def get_art(self, obj) -> str:
+        from .fanclub import wettbewerb_art
+
+        return wettbewerb_art(obj.competition)
 
     class Meta:
         model = RencontreCalendrier
         fields = [
             "id",
             "competition",
+            "art",
             "equipe_domicile",
             "equipe_exterieur",
             "date_heure",

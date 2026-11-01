@@ -46,9 +46,12 @@ normaux ne sont volontairement PAS audités (pas plus que pour la Boutique), pou
 journaliser l'activité sociale ordinaire des membres (minimisation RGPD, même doc §résumé).
 """
 
+import uuid
+
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Count, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -66,7 +69,7 @@ from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 
-from . import chats, reaktionen, services
+from . import chats, fanclub, reaktionen, services
 from .filters import PublicationFilter, SujetFilter
 from .models import (
     Album,
@@ -101,6 +104,7 @@ from .models import (
     ReponseQuiz,
     StatistiqueJoueur,
     StatutPaiementTeilnahme,
+    StatutRencontre,
     StatutTippspiel,
     Sujet,
     Tippspiel,
@@ -1923,3 +1927,105 @@ class ChoixQuestionViewSet(viewsets.ModelViewSet):
     queryset = ChoixQuestion.objects.select_related("question")
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["question"]
+
+
+# ---------------------------------------------------------------------------
+# Fan-Club-Umbau (2026-11) : Tipps aller Mitglieder nach der Sperre, Spieler des Spiels,
+# Kalender-Abo. Logik in `fanclub.py`.
+# ---------------------------------------------------------------------------
+
+
+class TippspielMatrixView(APIView):
+    """`GET /tippspiel-matrix/?tippspiel=<id>&spalten=8` : Rangliste mit Trend und die Tipps aller
+    bestätigten Teilnehmer für die letzten gesperrten Spiele. Offene Spiele erscheinen nie (Sperre
+    1 Tag vor Anpfiff, geprüft im Server) ; wer nicht selbst teilnimmt, sieht nur die Rangliste."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        tippspiel_id = request.query_params.get("tippspiel")
+        if not tippspiel_id:
+            raise ValidationError({"tippspiel": "Ce paramètre est requis."})
+        try:
+            uuid.UUID(str(tippspiel_id))
+        except ValueError:
+            raise ValidationError({"tippspiel": "Identifiant invalide."})
+        try:
+            spalten = max(1, min(20, int(request.query_params.get("spalten", 8))))
+        except ValueError:
+            raise ValidationError({"spalten": "Nombre entier attendu."})
+        qs = Tippspiel.objects.all()
+        if ROLE_LEVELS.get(request.user.role, 0) < SUPER_ADMIN_MIN_LEVEL:
+            qs = qs.exclude(statut=StatutTippspiel.BROUILLON)
+        tippspiel = get_object_or_404(qs, pk=tippspiel_id)
+        return Response(fanclub.tippspiel_matrix(tippspiel, request.user, spalten))
+
+
+class SpielerDesSpielsView(APIView):
+    """„Spieler des Spiels“. `GET ?rencontre=<id>` liefert den Stand (ohne Parameter : das letzte
+    beendete Spiel von Club Africain). `POST {rencontre, spieler}` gibt die Stimme ab."""
+
+    permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def _rencontre(rencontre_id):
+        if rencontre_id:
+            try:
+                uuid.UUID(str(rencontre_id))
+            except ValueError:
+                raise ValidationError({"rencontre": "Identifiant invalide."})
+            rencontre = get_object_or_404(RencontreCalendrier, pk=rencontre_id)
+            if not fanclub.ist_spiel_des_vereins(rencontre):
+                raise ValidationError({"rencontre": "Spiel gehört nicht zum Verein."})
+            return rencontre
+        return (
+            RencontreCalendrier.objects.filter(
+                statut=StatutRencontre.TERMINEE,
+                score_domicile__isnull=False,
+                date_heure__lte=timezone.now(),
+            )
+            .filter(
+                Q(equipe_domicile=fanclub.EQUIPE_SUIVIE) | Q(equipe_exterieur=fanclub.EQUIPE_SUIVIE)
+            )
+            .order_by("-date_heure")
+            .first()
+        )
+
+    def get(self, request):
+        rencontre = self._rencontre(request.query_params.get("rencontre"))
+        if rencontre is None:
+            return Response({"rencontre": None})
+        membre = getattr(request.user, "membre", None)
+        return Response(fanclub.spieler_des_spiels(rencontre, membre))
+
+    def post(self, request):
+        rencontre = self._rencontre(request.data.get("rencontre"))
+        if rencontre is None:
+            raise ValidationError({"rencontre": "Ce champ est requis."})
+        membre = getattr(request.user, "membre", None)
+        try:
+            fanclub.spieler_stimme_abgeben(rencontre, membre, request.data.get("spieler"))
+        except fanclub.StimmeFehler as exc:
+            raise ValidationError({"detail": str(exc)})
+        return Response(
+            fanclub.spieler_des_spiels(rencontre, membre), status=status.HTTP_201_CREATED
+        )
+
+
+class SpielplanIcsView(APIView):
+    """`GET /spielplan.ics` : Spielplan als Kalender-Abo für Handy und Outlook (öffentlich, wie der
+    Spielplan selbst). Zeitraum wie die Liste : aktuelles und nächstes Jahr."""
+
+    permission_classes = [AllowAny]
+    authentication_classes: list = []
+
+    def get(self, request):
+        jahr = timezone.localdate().year
+        rencontres = RencontreCalendrier.objects.filter(
+            date_heure__year__in=[jahr, jahr + 1]
+        ).order_by("date_heure")
+        antwort = HttpResponse(
+            fanclub.spielplan_ics(rencontres), content_type="text/calendar; charset=utf-8"
+        )
+        antwort["Content-Disposition"] = 'inline; filename="club-africain-spielplan.ics"'
+        return antwort
