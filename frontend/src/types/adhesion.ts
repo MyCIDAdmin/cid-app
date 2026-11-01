@@ -31,6 +31,8 @@ export interface AvantageOffre {
 }
 
 export interface RabaisOffre {
+  /** DeepL-Übersetzungen von label_fr und instructions_fr (apps.uebersetzung). */
+  uebersetzungen?: Uebersetzungen;
   id: string;
   offre: string;
   type_rabais: TypeRabais;

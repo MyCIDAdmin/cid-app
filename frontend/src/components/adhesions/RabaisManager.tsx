@@ -13,13 +13,10 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  useCreerRabais,
-  useModifierRabais,
-  useSupprimerRabais,
-} from "../../hooks/useAdhesions";
+import { useCreerRabais, useModifierRabais, useSupprimerRabais } from "../../hooks/useAdhesions";
 import type { OffreAdhesion, RabaisCreatePayload, TypeRabais } from "../../types/adhesion";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import UebersetzungenButton from "../ui/UebersetzungenButton";
 
 const TYPES_RABAIS: TypeRabais[] = ["etudiant", "famille", "senior", "autre"];
 
@@ -77,9 +74,7 @@ export default function RabaisManager({
 
   return (
     <div className="mt-2 rounded-cid border border-text-tertiary/20 bg-bg-tertiary/40 p-3">
-      <h4 className="mb-2 text-[11px] font-bold text-text-primary">
-        {t("admin_rabais.titre")}
-      </h4>
+      <h4 className="mb-2 text-[11px] font-bold text-text-primary">{t("admin_rabais.titre")}</h4>
       <div className="space-y-1.5">
         {offre.rabais.map((r) => (
           <div key={r.id} className="flex flex-wrap items-center gap-2 text-xs">
@@ -88,13 +83,20 @@ export default function RabaisManager({
             <span className="text-text-tertiary">
               {r.montant_reduction ? `-${r.montant_reduction} €` : `-${r.pct_reduction} %`}
             </span>
+            {modifiable && (
+              <UebersetzungenButton
+                modell="adhesions.rabaisoffre"
+                objektId={r.id}
+                className="rounded-cid border border-text-tertiary/30 px-1.5 py-0.5 text-[10px] text-text-secondary hover:bg-bg-tertiary"
+              />
+            )}
             <label className="flex items-center gap-1 text-[10px] text-text-secondary">
               <input
                 type="checkbox"
                 checked={r.justificatif_requis}
                 onChange={(e) => toggleJustificatifRequis(r.id, e.target.checked)}
                 disabled={!modifiable}
-                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               />
               {t("admin_rabais.justificatif_requis_label")}
             </label>
@@ -102,7 +104,7 @@ export default function RabaisManager({
               type="button"
               onClick={() => supprimerMutation.mutate(r.id)}
               disabled={!modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="text-text-tertiary hover:text-status-dangerText disabled:opacity-40"
               aria-label={`${t("admin_rabais.supprimer")} — ${r.label_fr}`}
             >
@@ -184,8 +186,8 @@ export default function RabaisManager({
               required
               value={
                 form.type_valeur === "montant"
-                  ? form.montant_reduction ?? ""
-                  : form.pct_reduction ?? ""
+                  ? (form.montant_reduction ?? "")
+                  : (form.pct_reduction ?? "")
               }
               onChange={(e) =>
                 setForm(
@@ -223,7 +225,7 @@ export default function RabaisManager({
         <button
           type="submit"
           disabled={creerMutation.isPending || !modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="self-start rounded-cid bg-ca px-2.5 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
         >
           {t("admin_rabais.ajouter")}

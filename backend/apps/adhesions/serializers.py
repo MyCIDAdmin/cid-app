@@ -42,9 +42,12 @@ MAX_JUSTIFICATIF_SIZE_BYTES = 5 * 1024 * 1024
 
 
 class RabaisOffreSerializer(serializers.ModelSerializer):
+    uebersetzungen = UebersetzungenField()
+
     class Meta:
         model = RabaisOffre
         fields = [
+            "uebersetzungen",
             "id",
             "offre",
             "type_rabais",

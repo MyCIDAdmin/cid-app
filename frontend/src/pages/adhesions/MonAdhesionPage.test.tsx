@@ -944,4 +944,31 @@ describe("MonAdhesionPage", () => {
     const beitrag = screen.getByText("bereich.beitrag").closest("details");
     expect(beitrag).not.toHaveAttribute("open");
   });
+
+  it("zeigt den übersetzten Angebotsnamen auch in Statuskachel und Verlauf", () => {
+    const uebersetzt = offre({
+      uebersetzungen: { nom: { fr: "Standard", de: "Standard", ar: "Standard" } },
+    });
+    vi.mocked(useAdhesionsHooks.useCampagneActive).mockReturnValue({
+      data: campagne({ offres: [uebersetzt] }),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useCampagneActive>);
+    vi.mocked(useAdhesionsHooks.useMesSouscriptions).mockReturnValue({
+      data: { next: null, previous: null, results: [souscription()] },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useMesSouscriptions>);
+    vi.mocked(useAdhesionsHooks.useSouscrire).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useAdhesionsHooks.useSouscrire>);
+
+    renderWithProviders(<MonAdhesionPage />);
+
+    // Hero, Kachel (Karte und Titel) und Verlauf zeigen die Übersetzung, nie das Original.
+    expect(screen.queryByText("Basic")).toBeNull();
+    expect(screen.getAllByText("Standard").length).toBe(4);
+  });
 });

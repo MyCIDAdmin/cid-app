@@ -142,6 +142,11 @@ describe("Rabatte", () => {
     expect(rabaisBezeichnung(rabais(), "de-DE")).toBe("Studierende");
     expect(rabaisBezeichnung(rabais(), "fr")).toBe("Étudiants");
     expect(rabaisBezeichnung(rabais({ label_de: "" }), "de")).toBe("Étudiants");
+    // Gespeicherte Übersetzung (DeepL oder manuell) geht dem alten Sprachfeld vor.
+    const uebersetzt = rabais({ uebersetzungen: { label_fr: { de: "Studenten", ar: "طلبة" } } });
+    expect(rabaisBezeichnung(uebersetzt, "de-DE")).toBe("Studenten");
+    expect(rabaisBezeichnung(uebersetzt, "ar")).toBe("طلبة");
+    expect(rabaisBezeichnung(uebersetzt, "fr")).toBe("Étudiants");
   });
 });
 
