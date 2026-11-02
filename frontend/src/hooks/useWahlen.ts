@@ -3,7 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "../api/wahlen";
 import type {
   Aufbewahrung,
+  EinspruchEntscheidung,
+  EinspruchPayload,
   EntscheidungArt,
+  FreigabeArt,
   KandidaturPayload,
   Pruefergebnis,
   Sprache,
@@ -15,6 +18,9 @@ const keys = {
   detail: (id: string) => ["wahlen", "detail", id] as const,
   kandidaturen: (wahl: string) => ["wahlen", "kandidaturen", wahl] as const,
   bekanntmachungen: (wahl: string) => ["wahlen", "bekanntmachungen", wahl] as const,
+  ergebnis: (wahl: string) => ["wahlen", "ergebnis", wahl] as const,
+  protokoll: (wahl: string) => ["wahlen", "protokoll", wahl] as const,
+  einsprueche: (wahl: string) => ["wahlen", "einsprueche", wahl] as const,
 };
 
 export function useWahlen() {
@@ -41,6 +47,31 @@ export function useBekanntmachungen(wahl: string | undefined, enabled = true) {
   return useQuery({
     queryKey: keys.bekanntmachungen(wahl ?? ""),
     queryFn: () => api.listBekanntmachungen(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+  });
+}
+
+export function useErgebnis(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.ergebnis(wahl ?? ""),
+    queryFn: () => api.getErgebnis(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+  });
+}
+
+export function useProtokoll(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.protokoll(wahl ?? ""),
+    queryFn: () => api.getProtokoll(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+    retry: false,
+  });
+}
+
+export function useEinsprueche(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.einsprueche(wahl ?? ""),
+    queryFn: () => api.listEinsprueche(wahl as string),
     enabled: Boolean(wahl) && enabled,
   });
 }
@@ -79,7 +110,7 @@ export function useWahlAktion(id: string) {
       onSuccess: neuLaden,
     }),
     freigabe: useMutation({
-      mutationFn: (art: "oeffnen" | "schliessen") => api.freigabeGeben(id, art),
+      mutationFn: (art: FreigabeArt) => api.freigabeGeben(id, art),
       onSuccess: neuLaden,
     }),
   };
@@ -152,6 +183,35 @@ export function useBekanntmachungAktionen(id: string) {
     geprueft: useMutation({
       mutationFn: ({ sprache, wert }: { sprache: Sprache; wert: boolean }) =>
         api.bekanntmachungGeprueft(id, sprache, wert),
+      ...optionen,
+    }),
+  };
+}
+
+export function useProtokollUnterschreiben(wahl: string) {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({ mutationFn: () => api.protokollUnterschreiben(wahl), onSuccess: neuLaden });
+}
+
+export function useEinspruchEinlegen() {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({
+    mutationFn: (payload: EinspruchPayload) => api.einspruchEinlegen(payload),
+    onSuccess: neuLaden,
+  });
+}
+
+export function useEinspruchAktionen(id: string) {
+  const neuLaden = useAlleNeuLaden();
+  const optionen = { onSuccess: neuLaden };
+  return {
+    aktion: useMutation({
+      mutationFn: (aktion: api.EinspruchAktion) => api.einspruchAktion(id, aktion),
+      ...optionen,
+    }),
+    entscheiden: useMutation({
+      mutationFn: ({ art, begruendung }: { art: EinspruchEntscheidung; begruendung: string }) =>
+        api.einspruchEntscheiden(id, art, begruendung),
       ...optionen,
     }),
   };

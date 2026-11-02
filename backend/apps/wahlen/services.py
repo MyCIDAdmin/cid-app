@@ -21,6 +21,11 @@ from .models import (
     Bekanntmachung,
     BekanntmachungFreigabe,
     BekanntmachungStatus,
+    Einspruch,
+    EinspruchArt,
+    EinspruchEntscheidung,
+    EinspruchStatus,
+    EinspruchZustimmung,
     Entscheidung,
     EntscheidungArt,
     EntscheidungZustimmung,
@@ -30,6 +35,8 @@ from .models import (
     Mehrheit,
     Nachweis,
     NachweisArt,
+    Protokoll,
+    ProtokollUnterschrift,
     PruefErgebnis,
     Pruefpunkt,
     Unterstuetzung,
@@ -501,6 +508,11 @@ def freigabe_geben(wahl: Wahl, user, art: str) -> dict:
     elif art == FreigabeArt.SCHLIESSEN:
         if not wahl.vote_session_id or wahl.vote_session.statut != "ouverte":
             raise ValidationError({"art": "Es läuft keine Wahl, die geschlossen werden könnte."})
+    elif art == FreigabeArt.ERGEBNIS:
+        if wahl.ergebnis_freigegeben_am:
+            raise ValidationError({"art": "Das Ergebnis ist schon veröffentlicht."})
+        if not wahl.vote_session_id or wahl.vote_session.statut != "cloturee":
+            raise ValidationError({"art": "Die Wahl ist noch nicht beendet."})
     else:
         raise ValidationError({"art": "Unbekannte Freigabe."})
     WahlFreigabe.objects.get_or_create(wahl=wahl, art=art, user=user)
@@ -509,8 +521,10 @@ def freigabe_geben(wahl: Wahl, user, art: str) -> dict:
     if anzahl >= wahl.zustimmungen_noetig:
         if art == FreigabeArt.OEFFNEN:
             oeffnen(wahl, user)
-        else:
+        elif art == FreigabeArt.SCHLIESSEN:
             schliessen(wahl)
+        else:
+            ergebnis_veroeffentlichen(wahl)
         ausgefuehrt = True
     return {
         "art": art,
@@ -837,3 +851,350 @@ def nachweise_loeschen(jetzt=None) -> int:
             nachweis.delete()
             geloescht += 1
     return geloescht
+
+
+# --------------------------------------------------------------------------- Ergebnis
+
+EINSPRUCH_TAGE = 5
+PROTOKOLL_UNTERSCHRIFTEN = 3
+
+
+def _tagesende(tag: date) -> datetime:
+    return timezone.make_aware(datetime.combine(tag, time(23, 59, 59)))
+
+
+def ergebnis_auswerten(wahl: Wahl) -> dict:
+    """Wertet die geschlossene Abstimmung der Wahl aus (Zählung stammt aus dem Modul `vote`).
+    Gibt immer alle Zahlen zurück; ob sie gezeigt werden dürfen, entscheidet die Ansicht.
+    """
+    from apps.vote.services import calculer_resultats
+
+    session = wahl.vote_session
+    roh = calculer_resultats(session)
+    optionen = [
+        {
+            "id": r["option_id"],
+            "label": r["label"],
+            "stimmen": r["nombre_voix"],
+            "prozent": r["pct"],
+            "personen": r["candidats"],
+        }
+        for r in roh["resultats"]
+    ]
+    gesamt = roh["total_participants"]
+    ausgang = "keine_stimmen" if gesamt == 0 else "manuell"
+    gewaehlt: list[str] = []
+    stichwahl: list[str] = []
+    schwelle = roh["seuil_victoire_requis"]
+
+    if gesamt and session.type_vote == "oui_non":
+        ja = next((o["stimmen"] for o in optionen if o["label"] == "Oui"), 0)
+        nein = next((o["stimmen"] for o in optionen if o["label"] == "Non"), 0)
+        angenommen = ja > nein and (schwelle is None or 100 * ja / gesamt > schwelle)
+        ausgang = "angenommen" if angenommen else "abgelehnt"
+        if angenommen and wahl.form == Wahlform.LISTE:
+            liste = wahl.kandidaturen.filter(status=KandidaturStatus.ZUGELASSEN).first()
+            gewaehlt = [liste.name] if liste else []
+    elif gesamt and session.type_vote == "unique":
+        spitze = [o for o in optionen if o["stimmen"] == optionen[0]["stimmen"]]
+        if len(spitze) > 1:
+            ausgang = "stichwahl"
+            stichwahl = [o["label"] for o in spitze]
+        elif roh["seuil_victoire_atteint"]:
+            ausgang = "gewaehlt"
+            gewaehlt = [optionen[0]["label"]]
+        else:
+            # Die beiden Bestplatzierten; bei Gleichstand um Platz zwei kommen alle Gleichen dazu.
+            zweiter = optionen[1]["stimmen"]
+            ausgang = "stichwahl"
+            stichwahl = [optionen[0]["label"]] + [
+                o["label"] for o in optionen[1:] if o["stimmen"] == zweiter
+            ]
+    elif gesamt and session.type_vote == "multiple":
+        n = session.nb_choix_max
+        if len(optionen) <= n:
+            ausgang, gewaehlt = "gewaehlt", [o["label"] for o in optionen if o["stimmen"]]
+        elif optionen[n - 1]["stimmen"] == optionen[n]["stimmen"]:
+            grenze = optionen[n - 1]["stimmen"]
+            ausgang = "gleichstand"
+            gewaehlt = [o["label"] for o in optionen if o["stimmen"] > grenze]
+            stichwahl = [o["label"] for o in optionen if o["stimmen"] == grenze]
+        else:
+            ausgang, gewaehlt = "gewaehlt", [o["label"] for o in optionen[:n]]
+    return {
+        "ausgang": ausgang,
+        "gewaehlt": gewaehlt,
+        "stichwahl_zwischen": stichwahl,
+        "beteiligung": {
+            "abgegeben": gesamt,
+            "berechtigt": roh["total_eligibles"],
+            "prozent": roh["taux_participation"],
+        },
+        "schwelle": schwelle,
+        "optionen": optionen,
+    }
+
+
+def beteiligung_laufend(wahl: Wahl) -> dict | None:
+    """Nur Zahlen, nie Inhalte: für den Ausschuss, solange das Ergebnis verschlossen ist."""
+    from apps.vote.services import membres_eligibles_qs, nombre_participants
+
+    session = wahl.vote_session
+    if session is None:
+        return None
+    berechtigt = membres_eligibles_qs(session).count()
+    abgegeben = nombre_participants(session)
+    return {
+        "abgegeben": abgegeben,
+        "berechtigt": berechtigt,
+        "prozent": round(100 * abgegeben / berechtigt, 1) if berechtigt else 0.0,
+    }
+
+
+def _namen_user(user) -> str:
+    membre = membre_von(user)
+    return f"{membre.prenom} {membre.nom}" if membre else user.email
+
+
+@transaction.atomic
+def ergebnis_veroeffentlichen(wahl: Wahl) -> Protokoll:
+    """Zweite Freigabe liegt vor: Ergebnis wird sichtbar, Protokoll wird festgehalten, die
+    Benachrichtigungen des Moduls `vote` gehen jetzt (nicht schon beim Schließen) hinaus."""
+    from apps.vote.tasks import envoyer_notification_resultats
+    from apps.vote.views import VoteSessionViewSet
+
+    wahl.ergebnis_freigegeben_am = timezone.now()
+    wahl.status = WahlStatus.ABGESCHLOSSEN
+    wahl.save(update_fields=["ergebnis_freigegeben_am", "status"])
+    session = wahl.vote_session
+    session.refresh_from_db()
+    protokoll = Protokoll.objects.create(wahl=wahl, daten=_protokoll_daten(wahl))
+    transaction.on_commit(lambda: envoyer_notification_resultats.delay(str(session.id)))
+    transaction.on_commit(lambda: VoteSessionViewSet._broadcast_resultats(session))
+    return protokoll
+
+
+def _protokoll_daten(wahl: Wahl) -> dict:
+    session = wahl.vote_session
+    freigaben = {}
+    for art in (FreigabeArt.OEFFNEN, FreigabeArt.SCHLIESSEN, FreigabeArt.ERGEBNIS):
+        freigaben[art] = [
+            {"name": _namen_user(f.user), "am": f.created_at.isoformat()}
+            for f in wahl.freigaben.filter(art=art).select_related("user")
+        ]
+    kandidaturen = [
+        {"name": k.name, "status": k.status}
+        for k in wahl.kandidaturen.exclude(status=KandidaturStatus.ENTWURF)
+    ]
+    return {
+        "titel": wahl.titel,
+        "form": wahl.form,
+        "mehrheit": wahl.mehrheit,
+        "posten": wahl.posten,
+        "geoeffnet_am": wahl.geoeffnet_am.isoformat() if wahl.geoeffnet_am else None,
+        "beendet_am": (session.date_cloture or session.date_fin).isoformat(),
+        "ausschuss": [
+            f"{a.membre.prenom} {a.membre.nom}" for a in wahl.ausschuss.select_related("membre")
+        ],
+        "freigaben": freigaben,
+        "kandidaturen": kandidaturen,
+        "ergebnis": ergebnis_auswerten(wahl),
+    }
+
+
+def protokoll_unterschreiben(wahl: Wahl, user) -> Protokoll:
+    if not ist_ausschuss(user, wahl):
+        raise PermissionDenied("Nur Mitglieder des Wahlausschusses.")
+    protokoll = getattr(wahl, "protokoll", None)
+    if protokoll is None:
+        raise ValidationError({"protokoll": "Es gibt noch kein Protokoll."})
+    ProtokollUnterschrift.objects.get_or_create(protokoll=protokoll, user=user)
+    return protokoll
+
+
+# --------------------------------------------------------------------------- Einsprüche
+
+
+def einspruch_fenster_ende(wahl: Wahl, art: str, kandidatur: Kandidatur | None) -> datetime | None:
+    """Ende der Einspruchsfrist, oder None, wenn (noch) kein Einspruch dieser Art möglich ist."""
+    if art == EinspruchArt.ERGEBNIS:
+        if not wahl.ergebnis_freigegeben_am:
+            return None
+        return max(
+            _tagesende(wahl.einspruch_bis),
+            wahl.ergebnis_freigegeben_am + timedelta(days=EINSPRUCH_TAGE),
+        )
+    if kandidatur is None or not kandidatur.entschieden_am:
+        return None
+    gewuenscht = (
+        KandidaturStatus.ZUGELASSEN
+        if art == EinspruchArt.WAEHLBARKEIT
+        else KandidaturStatus.ABGELEHNT
+    )
+    if kandidatur.status != gewuenscht:
+        return None
+    return kandidatur.entschieden_am + timedelta(days=EINSPRUCH_TAGE)
+
+
+def _ausschuss_user(wahl: Wahl):
+    return [a.membre.user for a in wahl.ausschuss.select_related("membre__user") if a.membre.user]
+
+
+def _mitteilen(users, titel: str, text: str, wahl: Wahl) -> None:
+    from apps.notifications.models import TypeNotification
+    from apps.notifications.services import notifier
+
+    for user in users:
+        notifier(
+            user,
+            TypeNotification.COMMUNAUTE_PUBLICATION_IMPORTANTE,
+            titre=titel,
+            message=text,
+            lien=f"/wahlen/{wahl.id}",
+        )
+
+
+@transaction.atomic
+def einspruch_einlegen(user, wahl: Wahl, art: str, text: str, kandidatur=None) -> Einspruch:
+    from apps.membres.models import StatutMembre
+
+    membre = pflicht_membre(user)
+    if membre.statut != StatutMembre.ACTIF:
+        raise PermissionDenied("Nur aktive Mitglieder können Einspruch einlegen.")
+    if art not in EinspruchArt.values:
+        raise ValidationError({"art": "Unbekannte Art des Einspruchs."})
+    if ist_ausschuss(user, wahl):
+        raise PermissionDenied(
+            "Ausschussmitglieder entscheiden über Einsprüche und legen keine ein."
+        )
+    text = text.strip()
+    if len(text) < 10:
+        raise ValidationError(
+            {"text": "Bitte beschreibe kurz, worum es geht (mindestens 10 Zeichen)."}
+        )
+    if len(text) > 2000:
+        raise ValidationError({"text": "Höchstens 2000 Zeichen."})
+    if art == EinspruchArt.ERGEBNIS:
+        kandidatur = None
+    else:
+        if kandidatur is None or kandidatur.wahl_id != wahl.id:
+            raise ValidationError({"kandidatur": "Bitte die betroffene Kandidatur angeben."})
+        beteiligt = (
+            kandidatur.einreicher_id == membre.id
+            or kandidatur.personen.filter(membre=membre).exists()
+        )
+        if art == EinspruchArt.ABLEHNUNG and not beteiligt:
+            raise PermissionDenied("Nur die Beteiligten dürfen die Ablehnung anfechten.")
+        if art == EinspruchArt.WAEHLBARKEIT and beteiligt:
+            raise PermissionDenied("Gegen die eigene Kandidatur gibt es keinen Einspruch.")
+    ende = einspruch_fenster_ende(wahl, art, kandidatur)
+    if ende is None:
+        raise ValidationError({"art": "Dafür läuft keine Einspruchsfrist."})
+    if timezone.now() > ende:
+        raise ValidationError({"art": "Die Einspruchsfrist ist abgelaufen."})
+    if Einspruch.objects.filter(
+        wahl=wahl, art=art, kandidatur=kandidatur, einreicher=membre, status=EinspruchStatus.OFFEN
+    ).exists():
+        raise ValidationError({"art": "Du hast dazu schon einen offenen Einspruch."})
+    einspruch = Einspruch.objects.create(
+        wahl=wahl,
+        art=art,
+        kandidatur=kandidatur,
+        einreicher=membre,
+        text=text,
+        entscheiden_bis=timezone.now() + timedelta(days=EINSPRUCH_TAGE),
+    )
+    _mitteilen(
+        _ausschuss_user(wahl),
+        "Neuer Einspruch",
+        f"{wahl.titel}: Bitte innerhalb von {EINSPRUCH_TAGE} Tagen entscheiden.",
+        wahl,
+    )
+    return einspruch
+
+
+def einspruch_zurueckziehen(einspruch: Einspruch, user) -> None:
+    membre = pflicht_membre(user)
+    if einspruch.einreicher_id != membre.id:
+        raise PermissionDenied("Nur die einreichende Person darf zurückziehen.")
+    if einspruch.status != EinspruchStatus.OFFEN:
+        raise ValidationError({"status": "Der Einspruch ist schon entschieden."})
+    einspruch.status = EinspruchStatus.ZURUECKGEZOGEN
+    einspruch.save(update_fields=["status"])
+
+
+@transaction.atomic
+def einspruch_vorschlagen(einspruch: Einspruch, user, art: str, begruendung: str) -> Einspruch:
+    if not ist_ausschuss(user, einspruch.wahl):
+        raise PermissionDenied("Nur Mitglieder des Wahlausschusses.")
+    if einspruch.status != EinspruchStatus.OFFEN:
+        raise ValidationError({"status": "Der Einspruch ist schon entschieden."})
+    if einspruch.vorschlag:
+        raise ValidationError({"art": "Es liegt schon ein Entscheidungsvorschlag vor."})
+    if art not in EinspruchEntscheidung.values:
+        raise ValidationError({"art": "Bitte stattgeben oder abweisen."})
+    if not begruendung.strip():
+        raise ValidationError({"begruendung": "Eine Begründung ist nötig."})
+    einspruch.vorschlag = art
+    einspruch.vorschlag_begruendung = begruendung.strip()
+    einspruch.vorgeschlagen_von = user
+    einspruch.save(update_fields=["vorschlag", "vorschlag_begruendung", "vorgeschlagen_von"])
+    EinspruchZustimmung.objects.create(einspruch=einspruch, user=user)
+    _einspruch_umsetzen(einspruch)
+    return einspruch
+
+
+@transaction.atomic
+def einspruch_zustimmen(einspruch: Einspruch, user) -> Einspruch:
+    if not ist_ausschuss(user, einspruch.wahl):
+        raise PermissionDenied("Nur Mitglieder des Wahlausschusses.")
+    if einspruch.status != EinspruchStatus.OFFEN or not einspruch.vorschlag:
+        raise ValidationError({"status": "Es gibt keinen offenen Vorschlag."})
+    if einspruch.zustimmungen.filter(user=user).exists():
+        raise ValidationError({"status": "Du hast schon zugestimmt."})
+    EinspruchZustimmung.objects.create(einspruch=einspruch, user=user)
+    _einspruch_umsetzen(einspruch)
+    return einspruch
+
+
+@transaction.atomic
+def einspruch_vorschlag_verwerfen(einspruch: Einspruch, user) -> None:
+    if not ist_ausschuss(user, einspruch.wahl):
+        raise PermissionDenied("Nur Mitglieder des Wahlausschusses.")
+    if einspruch.status != EinspruchStatus.OFFEN or not einspruch.vorschlag:
+        raise ValidationError({"status": "Es gibt keinen offenen Vorschlag."})
+    einspruch.zustimmungen.all().delete()
+    einspruch.vorschlag = ""
+    einspruch.vorschlag_begruendung = ""
+    einspruch.vorgeschlagen_von = None
+    einspruch.save(update_fields=["vorschlag", "vorschlag_begruendung", "vorgeschlagen_von"])
+
+
+def _einspruch_umsetzen(einspruch: Einspruch) -> None:
+    wahl = einspruch.wahl
+    # frisch zählen: `zustimmungen` kann in der Ansicht vorab geladen (veraltet) sein
+    if EinspruchZustimmung.objects.filter(einspruch=einspruch).count() < wahl.zustimmungen_noetig:
+        return
+    stattgegeben = einspruch.vorschlag == EinspruchEntscheidung.STATTGEBEN
+    einspruch.status = EinspruchStatus.STATTGEGEBEN if stattgegeben else EinspruchStatus.ABGEWIESEN
+    einspruch.begruendung = einspruch.vorschlag_begruendung
+    einspruch.entschieden_am = timezone.now()
+    einspruch.save(update_fields=["status", "begruendung", "entschieden_am"])
+    k = einspruch.kandidatur
+    folge = ""
+    # Vor dem Öffnen der Wahl wandert die Kandidatur zurück in die Prüfung, damit der Ausschuss
+    # neu entscheidet. Nach dem Öffnen ändert sich nichts automatisch; das Büro wird informiert.
+    if stattgegeben and k is not None and not wahl.vote_session_id:
+        k.status = KandidaturStatus.EINGEREICHT
+        k.save(update_fields=["status"])
+        folge = " Die Kandidatur wird erneut geprüft."
+    elif stattgegeben:
+        folge = " Der Ausschuss meldet sich zum weiteren Vorgehen."
+    titel = "Einspruch stattgegeben" if stattgegeben else "Einspruch abgewiesen"
+    text = f"{wahl.titel}: {einspruch.begruendung}{folge}"
+    _mitteilen([einspruch.einreicher.user], titel, text, wahl)
+    if stattgegeben and wahl.vote_session_id:
+        from apps.accounts.models import User
+
+        buero = User.objects.filter(role__in=ROLLEN_VERWALTUNG, is_active=True)
+        _mitteilen(buero, "Einspruch stattgegeben", f"{wahl.titel}: Bitte Vorgehen klären.", wahl)

@@ -1,6 +1,12 @@
 import type {
   Bekanntmachung,
+  Einspruch,
+  EinspruchEntscheidung,
+  EinspruchPayload,
+  Ergebnis,
   FreigabeAntwort,
+  FreigabeArt,
+  Protokoll,
   Kandidatur,
   KandidaturPayload,
   Wahl,
@@ -57,10 +63,7 @@ export async function aufbewahrungSetzen(id: string, aufbewahrung: Aufbewahrung)
   return data;
 }
 
-export async function freigabeGeben(
-  id: string,
-  art: "oeffnen" | "schliessen",
-): Promise<FreigabeAntwort> {
+export async function freigabeGeben(id: string, art: FreigabeArt): Promise<FreigabeAntwort> {
   const { data } = await apiClient.post<FreigabeAntwort>(`${BASIS}/${id}/freigabe/`, { art });
   return data;
 }
@@ -243,6 +246,59 @@ export async function bekanntmachungAushang(id: string, sprache: Sprache): Promi
   const { data } = await apiClient.get(`${BASIS}/bekanntmachungen/${id}/aushang/`, {
     params: { sprache },
     responseType: "blob",
+  });
+  return data;
+}
+
+// ---- Ergebnis und Protokoll
+
+export async function getErgebnis(id: string): Promise<Ergebnis> {
+  const { data } = await apiClient.get<Ergebnis>(`${BASIS}/${id}/ergebnis/`);
+  return data;
+}
+
+export async function getProtokoll(id: string): Promise<Protokoll> {
+  const { data } = await apiClient.get<Protokoll>(`${BASIS}/${id}/protokoll/`);
+  return data;
+}
+
+export async function protokollUnterschreiben(id: string): Promise<Protokoll> {
+  const { data } = await apiClient.post<Protokoll>(`${BASIS}/${id}/protokoll/unterschreiben/`);
+  return data;
+}
+
+export async function protokollPdf(id: string): Promise<Blob> {
+  const { data } = await apiClient.get(`${BASIS}/${id}/protokoll/pdf/`, { responseType: "blob" });
+  return data;
+}
+
+// ---- Einsprüche
+
+export async function listEinsprueche(wahl: string): Promise<Einspruch[]> {
+  const { data } = await apiClient.get<Einspruch[]>(`${BASIS}/einsprueche/`, { params: { wahl } });
+  return data;
+}
+
+export async function einspruchEinlegen(payload: EinspruchPayload): Promise<Einspruch> {
+  const { data } = await apiClient.post<Einspruch>(`${BASIS}/einsprueche/`, payload);
+  return data;
+}
+
+export type EinspruchAktion = "zurueckziehen" | "zustimmen" | "verwerfen";
+
+export async function einspruchAktion(id: string, aktion: EinspruchAktion): Promise<Einspruch> {
+  const { data } = await apiClient.post<Einspruch>(`${BASIS}/einsprueche/${id}/${aktion}/`);
+  return data;
+}
+
+export async function einspruchEntscheiden(
+  id: string,
+  art: EinspruchEntscheidung,
+  begruendung: string,
+): Promise<Einspruch> {
+  const { data } = await apiClient.post<Einspruch>(`${BASIS}/einsprueche/${id}/entscheidung/`, {
+    art,
+    begruendung,
   });
   return data;
 }

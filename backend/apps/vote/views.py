@@ -125,7 +125,7 @@ class VoteSessionViewSet(ModelViewSet):
         from channels.layers import get_channel_layer
 
         channel_layer = get_channel_layer()
-        if channel_layer is None:
+        if channel_layer is None or session.ergebnis_gesperrt:
             return
         async_to_sync(channel_layer.group_send)(
             f"vote_{session.id}",

@@ -8,13 +8,15 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import AusschussTab from "../../components/wahlen/AusschussTab";
 import BekanntmachungenTab from "../../components/wahlen/BekanntmachungenTab";
+import EinsprueceTab from "../../components/wahlen/EinsprueceTab";
+import ErgebnisTab from "../../components/wahlen/ErgebnisTab";
 import KandidatenTab from "../../components/wahlen/KandidatenTab";
 import KandidaturTab from "../../components/wahlen/KandidaturTab";
 import PhasenLeiste from "../../components/wahlen/PhasenLeiste";
 import PruefverfahrenTab from "../../components/wahlen/PruefverfahrenTab";
 import UnterstuetzenKarte from "../../components/wahlen/UnterstuetzenKarte";
 import TabLeiste from "../../components/ui/TabLeiste";
-import { useWahl } from "../../hooks/useWahlen";
+import { useEinsprueche, useWahl } from "../../hooks/useWahlen";
 import type { Wahl } from "../../types/wahlen";
 import { datum } from "../../utils/wahlen";
 
@@ -30,7 +32,7 @@ const TERMIN_REIHE = [
   "uebergabe_bis",
 ] as const;
 
-function Ueberblick({ wahl }: { wahl: Wahl }) {
+function Ueberblick({ wahl, zumErgebnis }: { wahl: Wahl; zumErgebnis: () => void }) {
   const { t } = useTranslation("wahlen");
   return (
     <div className="space-y-4">
@@ -65,13 +67,22 @@ function Ueberblick({ wahl }: { wahl: Wahl }) {
           {wahl.ausschuss.map((a) => a.name).join(", ") || t("ausschuss.noch_keine")}
         </p>
       </section>
-      {wahl.vote_session && (
+      {wahl.vote_session && wahl.vote_status === "ouverte" && (
         <Link
           to="/votes"
           className="inline-block rounded-cid bg-ca px-4 py-2 text-sm font-semibold text-white"
         >
-          {wahl.vote_status === "ouverte" ? t("zur_stimmabgabe") : t("zum_ergebnis")}
+          {t("zur_stimmabgabe")}
         </Link>
+      )}
+      {wahl.vote_session && wahl.vote_status !== "ouverte" && (
+        <button
+          type="button"
+          onClick={zumErgebnis}
+          className="inline-block rounded-cid bg-ca px-4 py-2 text-sm font-semibold text-white"
+        >
+          {t("zum_ergebnis")}
+        </button>
       )}
     </div>
   );
@@ -84,6 +95,8 @@ export default function WahlDetailPage() {
   const wahl = useWahl(id);
   const [tab, setTab] = useState("ueberblick");
   const stuetzeKandidatur = params.get("unterstuetzen");
+  const einsprueche = useEinsprueche(id, (wahl.data?.phase ?? 0) >= 3);
+  const hatEinsprueche = (einsprueche.data?.length ?? 0) > 0;
 
   const tabs = useMemo(() => {
     const w = wahl.data;
@@ -94,13 +107,19 @@ export default function WahlDetailPage() {
       liste.push({ id: "kandidatur", label: t("tab.kandidatur") });
     }
     if (w.phase >= 3) liste.push({ id: "kandidaten", label: t("tab.kandidaten") });
+    if (w.vote_session && (w.phase >= 4 || intern)) {
+      liste.push({ id: "ergebnis", label: t("tab.ergebnis") });
+    }
+    if (w.phase >= 3 && (intern || hatEinsprueche)) {
+      liste.push({ id: "einsprueche", label: t("tab.einsprueche") });
+    }
     if (intern) {
       liste.push({ id: "pruefung", label: t("tab.pruefung") });
       liste.push({ id: "bekanntmachungen", label: t("tab.bekanntmachungen") });
       liste.push({ id: "ausschuss", label: t("tab.ausschuss") });
     }
     return liste;
-  }, [wahl.data, t]);
+  }, [wahl.data, hatEinsprueche, t]);
 
   useEffect(() => {
     if (tabs.length > 0 && !tabs.some((x) => x.id === tab)) setTab("ueberblick");
@@ -134,9 +153,11 @@ export default function WahlDetailPage() {
       {stuetzeKandidatur && <UnterstuetzenKarte kandidaturId={stuetzeKandidatur} />}
 
       <TabLeiste tabs={tabs} aktiv={tab} onChange={setTab} ariaLabel={t("titel")} />
-      {tab === "ueberblick" && <Ueberblick wahl={w} />}
+      {tab === "ueberblick" && <Ueberblick wahl={w} zumErgebnis={() => setTab("ergebnis")} />}
       {tab === "kandidatur" && <KandidaturTab wahl={w} />}
       {tab === "kandidaten" && <KandidatenTab wahl={w} />}
+      {tab === "ergebnis" && <ErgebnisTab wahl={w} />}
+      {tab === "einsprueche" && <EinsprueceTab wahl={w} />}
       {tab === "pruefung" && <PruefverfahrenTab wahl={w} />}
       {tab === "bekanntmachungen" && <BekanntmachungenTab wahl={w} />}
       {tab === "ausschuss" && <AusschussTab wahl={w} />}

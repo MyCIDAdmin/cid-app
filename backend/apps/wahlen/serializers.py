@@ -7,6 +7,8 @@ from . import services
 from .models import (
     AmtPerson,
     Bekanntmachung,
+    Einspruch,
+    EinspruchArt,
     Entscheidung,
     KandidatPerson,
     Kandidatur,
@@ -82,8 +84,18 @@ def kandidatur_oeffentlich(k: Kandidatur) -> dict:
         "programm": k.programm,
         "sprache": k.sprache,
         "status": k.status,
+        "einspruch_bis": _einspruch_bis(k),
         "personen": [person_dict(p, k.wahl, False) for p in k.personen.all()],
     }
+
+
+def _einspruch_bis(k: Kandidatur):
+    art = (
+        EinspruchArt.ABLEHNUNG
+        if k.status == KandidaturStatus.ABGELEHNT
+        else (EinspruchArt.WAEHLBARKEIT)
+    )
+    return services.einspruch_fenster_ende(k.wahl, art, k)
 
 
 def kandidatur_dossier(k: Kandidatur, user) -> dict:
@@ -103,6 +115,7 @@ def kandidatur_dossier(k: Kandidatur, user) -> dict:
             "unterstuetzungen": k.unterstuetzungen.count(),
             "unterstuetzungen_noetig": wahl.unterstuetzungen_noetig,
             "eingereicht_am": k.eingereicht_am,
+            "einspruch_bis": _einspruch_bis(k),
             "nachbesserung_bis": k.nachbesserung_bis,
             "nachbesserungen": k.nachbesserungen,
             "begruendung": k.begruendung,
@@ -239,3 +252,66 @@ def _deepl_aktiv() -> bool:
     from apps.uebersetzung import deepl
 
     return deepl.ist_aktiv()
+
+
+class EinspruchEingabe(serializers.Serializer):
+    wahl = serializers.UUIDField()
+    art = serializers.ChoiceField(choices=EinspruchArt.choices)
+    kandidatur = serializers.UUIDField(required=False, allow_null=True)
+    text = serializers.CharField(max_length=2000, allow_blank=True)
+
+
+class EinspruchEntscheidungEingabe(serializers.Serializer):
+    art = serializers.ChoiceField(choices=["stattgeben", "abweisen"])
+    begruendung = serializers.CharField(max_length=1000, allow_blank=True)
+
+
+def einspruch_dict(e: Einspruch, user) -> dict:
+    ausschuss = services.ausschuss_oder_verwaltung(user, e.wahl)
+    daten = {
+        "id": str(e.id),
+        "wahl": str(e.wahl_id),
+        "art": e.art,
+        "kandidatur": str(e.kandidatur_id) if e.kandidatur_id else None,
+        "kandidatur_name": e.kandidatur.name if e.kandidatur_id else "",
+        "text": e.text,
+        "status": e.status,
+        "created_at": e.created_at,
+        "entscheiden_bis": e.entscheiden_bis,
+        "begruendung": e.begruendung,
+        "entschieden_am": e.entschieden_am,
+    }
+    if ausschuss:
+        daten.update(
+            {
+                "einreicher": f"{e.einreicher.prenom} {e.einreicher.nom}",
+                "vorschlag": e.vorschlag,
+                "vorschlag_begruendung": e.vorschlag_begruendung,
+                "vorgeschlagen_von": e.vorgeschlagen_von_id,
+                "zustimmungen": [z.user_id for z in e.zustimmungen.all()],
+                "zustimmungen_noetig": e.wahl.zustimmungen_noetig,
+            }
+        )
+    return daten
+
+
+def protokoll_dict(wahl) -> dict | None:
+    protokoll = getattr(wahl, "protokoll", None)
+    if protokoll is None:
+        return None
+    einsprueche = wahl.einsprueche.all()
+    unterschriften = list(protokoll.unterschriften.select_related("user"))
+    return {
+        **protokoll.daten,
+        "erzeugt_am": protokoll.erzeugt_am,
+        "unterschriften": [
+            {"name": services._namen_user(u.user), "user": u.user_id, "am": u.created_at}
+            for u in unterschriften
+        ],
+        "unterschriften_noetig": services.PROTOKOLL_UNTERSCHRIFTEN,
+        "unterschriften_fehlen": max(0, services.PROTOKOLL_UNTERSCHRIFTEN - len(unterschriften)),
+        "einsprueche": {
+            "gesamt": einsprueche.exclude(status="zurueckgezogen").count(),
+            "offen": einsprueche.filter(status="offen").count(),
+        },
+    }

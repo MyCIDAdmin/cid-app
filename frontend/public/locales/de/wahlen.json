@@ -53,7 +53,9 @@
     "kandidaten": "Kandidaturen",
     "pruefung": "Prüfverfahren",
     "bekanntmachungen": "Bekanntmachungen",
-    "ausschuss": "Wahlausschuss"
+    "ausschuss": "Wahlausschuss",
+    "ergebnis": "Ergebnis",
+    "einsprueche": "Einsprüche"
   },
   "anlegen": {
     "titel": "Neue Wahl",
@@ -229,7 +231,9 @@
     "freigaben_stand": "Freigaben: {{n}} von {{noetig}}",
     "du_hast_freigegeben": "Du hast freigegeben.",
     "zur_abstimmung": "Zur Abstimmung",
-    "fehler": "Das hat nicht geklappt."
+    "fehler": "Das hat nicht geklappt.",
+    "freigabe_ergebnis": "Ergebnis veröffentlichen",
+    "freigeben_ergebnis": "Veröffentlichung freigeben"
   },
   "aufbewahrung": {
     "30": "30 Tage",
@@ -276,5 +280,59 @@
     "freigeben": "Freigeben",
     "zurueck": "Zurück zum Entwurf",
     "aushang": "Aushang als PDF"
+  },
+  "ergebnis": {
+    "noch_nicht": "Die Abstimmung hat noch nicht begonnen.",
+    "laeuft": "Die Wahl läuft. Das Ergebnis wird erst nach dem Ende gezeigt.",
+    "verschlossen": "Die Wahl ist beendet. Das Ergebnis wird veröffentlicht, sobald zwei Mitglieder des Wahlausschusses es freigegeben haben.",
+    "beteiligung": "Beteiligung: {{a}} von {{b}} ({{p}} %).",
+    "schwelle": "Erforderlich: mehr als {{p}} % der abgegebenen Stimmen.",
+    "gewaehlt_marke": "gewählt",
+    "veroeffentlicht": "Veröffentlicht am {{datum}}.",
+    "ausgang_gewaehlt": "Gewählt: {{gewaehlt}}.",
+    "ausgang_angenommen": "Angenommen. {{gewaehlt}}",
+    "ausgang_abgelehnt": "Abgelehnt.",
+    "ausgang_stichwahl": "Keine Entscheidung im ersten Wahlgang. Zweiter Wahlgang zwischen: {{zwischen}}.",
+    "ausgang_gleichstand": "Gleichstand an der Grenze. Bereits gewählt: {{gewaehlt}}. Zweiter Wahlgang zwischen: {{zwischen}}.",
+    "ausgang_keine_stimmen": "Es wurden keine Stimmen abgegeben.",
+    "ausgang_manuell": "Die Auswertung der Rangfolge nimmt der Wahlausschuss vor."
+  },
+  "protokoll": {
+    "titel": "Wahlprotokoll",
+    "stand": "Festgehalten am {{datum}}.",
+    "fehlen": "Es fehlen noch {{n}} Unterschrift(en) von Ausschussmitgliedern.",
+    "vollstaendig": "Das Protokoll ist von drei Ausschussmitgliedern unterschrieben.",
+    "pdf": "Protokoll als PDF",
+    "unterschreiben": "Protokoll unterschreiben",
+    "fehler": "Das hat nicht geklappt. Bitte versuche es noch einmal."
+  },
+  "einspruch": {
+    "eingereicht": "Dein Einspruch ist eingegangen. Der Wahlausschuss entscheidet innerhalb von fünf Tagen.",
+    "fehler": "Der Einspruch konnte nicht gespeichert werden.",
+    "frage_waehlbarkeit": "Warum ist diese Kandidatur nicht wählbar?",
+    "frage_ablehnung": "Warum war die Ablehnung nicht richtig?",
+    "frage_ergebnis": "Was ist an Wahl oder Ergebnis nicht richtig gelaufen?",
+    "vertraulich": "Nur du und der Wahlausschuss sehen deinen Einspruch.",
+    "frist_bis": "Frist bis {{datum}}.",
+    "absenden": "Einspruch einreichen",
+    "einlegen_waehlbarkeit": "Einspruch gegen die Wählbarkeit",
+    "einlegen_ergebnis": "Einspruch gegen das Ergebnis",
+    "art_waehlbarkeit": "Einspruch gegen die Wählbarkeit",
+    "art_ablehnung": "Einspruch gegen die Ablehnung",
+    "art_ergebnis": "Einspruch gegen das Ergebnis",
+    "status_offen": "Offen",
+    "status_stattgegeben": "Stattgegeben",
+    "status_abgewiesen": "Abgewiesen",
+    "status_zurueckgezogen": "Zurückgezogen",
+    "entscheiden_bis": "Entscheidung bis {{datum}}",
+    "begruendung": "Begründung der Entscheidung",
+    "stattgeben": "Stattgeben",
+    "abweisen": "Abweisen",
+    "vorschlag_stattgeben": "Vorschlag: stattgeben",
+    "vorschlag_abweisen": "Vorschlag: abweisen",
+    "zustimmen": "Zustimmen",
+    "vorschlag_verwerfen": "Vorschlag verwerfen",
+    "zurueckziehen": "Einspruch zurückziehen",
+    "leer": "Es gibt keine Einsprüche."
   }
 }

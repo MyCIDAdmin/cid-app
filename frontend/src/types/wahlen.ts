@@ -57,9 +57,13 @@ export interface Wahl {
   kann_verwalten: boolean;
   meine_kandidatur: string | null;
   ausschuss: AusschussEintrag[];
-  freigaben: Partial<Record<"oeffnen" | "schliessen", Array<string | number>>>;
+  freigaben: Partial<Record<FreigabeArt, Array<string | number>>>;
   ids_zugelassen: string[];
+  ergebnis_freigegeben: boolean;
+  einspruch_ergebnis_bis: string | null;
 }
+
+export type FreigabeArt = "oeffnen" | "schliessen" | "ergebnis";
 
 export type WahlPayload = Pick<
   Wahl,
@@ -127,6 +131,7 @@ export interface Kandidatur {
   programm: string[];
   sprache: Sprache;
   status: KandidaturStatus;
+  einspruch_bis?: string | null;
   personen: KandidatPerson[];
   wahl?: string;
   eigene?: boolean;
@@ -181,9 +186,92 @@ export interface Bekanntmachung {
 }
 
 export interface FreigabeAntwort {
-  art: "oeffnen" | "schliessen";
+  art: FreigabeArt;
   freigaben: number;
   noetig: number;
   ausgefuehrt: boolean;
   wahl: Wahl;
+}
+
+// ---- Ergebnis, Protokoll, Einsprüche (Welle 2a)
+
+export type Ausgang =
+  | "gewaehlt"
+  | "angenommen"
+  | "abgelehnt"
+  | "stichwahl"
+  | "gleichstand"
+  | "keine_stimmen"
+  | "manuell";
+
+export interface Beteiligung {
+  abgegeben: number;
+  berechtigt: number;
+  prozent: number;
+}
+
+export interface ErgebnisOption {
+  id: string;
+  label: string;
+  stimmen: number;
+  prozent: number;
+  personen: string[];
+}
+
+export interface ErgebnisInhalt {
+  ausgang: Ausgang;
+  gewaehlt: string[];
+  stichwahl_zwischen: string[];
+  beteiligung: Beteiligung;
+  schwelle: number | null;
+  optionen: ErgebnisOption[];
+}
+
+export type Ergebnis =
+  | ({ freigegeben: true; freigegeben_am: string } & ErgebnisInhalt)
+  | { freigegeben: false; beendet: boolean; beteiligung?: Beteiligung | null };
+
+export interface Protokoll {
+  titel: string;
+  geoeffnet_am: string | null;
+  beendet_am: string;
+  ausschuss: string[];
+  ergebnis: ErgebnisInhalt;
+  erzeugt_am: string;
+  unterschriften: Array<{ name: string; user: string | number; am: string }>;
+  unterschriften_noetig: number;
+  unterschriften_fehlen: number;
+  einsprueche: { gesamt: number; offen: number };
+}
+
+export type EinspruchArt = "waehlbarkeit" | "ablehnung" | "ergebnis";
+export type EinspruchStatus = "offen" | "stattgegeben" | "abgewiesen" | "zurueckgezogen";
+export type EinspruchEntscheidung = "stattgeben" | "abweisen";
+
+export interface Einspruch {
+  id: string;
+  wahl: string;
+  art: EinspruchArt;
+  kandidatur: string | null;
+  kandidatur_name: string;
+  text: string;
+  status: EinspruchStatus;
+  created_at: string;
+  entscheiden_bis: string;
+  begruendung: string;
+  entschieden_am: string | null;
+  // nur für Ausschuss und Büro
+  einreicher?: string;
+  vorschlag?: EinspruchEntscheidung | "";
+  vorschlag_begruendung?: string;
+  vorgeschlagen_von?: string | number | null;
+  zustimmungen?: Array<string | number>;
+  zustimmungen_noetig?: number;
+}
+
+export interface EinspruchPayload {
+  wahl: string;
+  art: EinspruchArt;
+  kandidatur?: string;
+  text: string;
 }
