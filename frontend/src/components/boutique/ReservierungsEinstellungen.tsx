@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useModifierProduit } from "../../hooks/useBoutique";
+import { Fachwort, HilfeHinweis } from "../ui/Erklaerung";
 import type { Produit, ReservierungsModus } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
 
@@ -29,7 +30,7 @@ export default function ReservierungsEinstellungen({
   produit: Produit;
   modifiable: boolean;
 }) {
-  const { t } = useTranslation(["boutique", "common"]);
+  const { t, i18n } = useTranslation(["boutique", "common"]);
   const speichern = useModifierProduit();
   const [modus, setModus] = useState(produit.reservierung_modus);
   const [frist, setFrist] = useState(zuLokal(produit.reservierung_frist));
@@ -43,6 +44,31 @@ export default function ReservierungsEinstellungen({
   const [gespeichert, setGespeichert] = useState(false);
   const ohne = modus === "aus";
   const mitZahlung = modus === "reservieren_und_bezahlen";
+
+  /** Der Satz, den Mitglieder „erleben": ändert sich live mit jedem Feld. */
+  function satz(): string {
+    if (ohne) return t("boutique:reservierung_admin.satz.aus");
+    const teile: string[] = [];
+    teile.push(
+      frist
+        ? t("boutique:reservierung_admin.satz.bis", {
+            datum: new Date(frist).toLocaleString(i18n.language, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }),
+          })
+        : t("boutique:reservierung_admin.satz.ohne_frist"),
+    );
+    const pro = Number(maxMitglied);
+    const gesamt = Number(maxGesamt);
+    if (pro > 0) teile.push(t("boutique:reservierung_admin.satz.pro_mitglied", { count: pro }));
+    if (gesamt > 0) teile.push(t("boutique:reservierung_admin.satz.gesamt", { count: gesamt }));
+    if (!(pro > 0) && !(gesamt > 0)) teile.push(t("boutique:reservierung_admin.satz.ohne_grenze"));
+    const tage = Number(zahlungsfrist);
+    if (mitZahlung && tage > 0)
+      teile.push(t("boutique:reservierung_admin.satz.zahlungsfrist", { count: tage }));
+    return t(`boutique:reservierung_admin.satz.${modus}`, { teile: teile.join(", ") });
+  }
 
   function onSpeichern() {
     setGespeichert(false);
@@ -128,9 +154,22 @@ export default function ReservierungsEinstellungen({
           />
         </label>
       </div>
-      <p className="mt-2 text-[11px] text-text-tertiary">
-        {t(`boutique:reservierung_admin.hinweis_${modus}`)}
-      </p>
+      <div
+        data-testid="reservierung-satz"
+        className="mt-2 rounded-cid bg-bg-primary px-3 py-2 text-xs text-text-secondary"
+      >
+        <span className="font-semibold text-text-primary">
+          {t("boutique:reservierung_admin.satz_titel")}:{" "}
+        </span>
+        {satz()}
+      </div>
+      <HilfeHinweis ns="boutique">
+        <Fachwort ns="boutique" begriff="reservierung" />
+        {" · "}
+        <Fachwort ns="boutique" begriff="frist" />
+        {" · "}
+        <Fachwort ns="boutique" begriff="obergrenze" />
+      </HilfeHinweis>
       <div className="mt-2 flex items-center gap-3">
         <button
           type="button"

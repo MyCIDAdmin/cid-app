@@ -359,7 +359,20 @@
     "speichern": "Enregistrer",
     "gespeichert": "Enregistré.",
     "fehler": "Échec de l’enregistrement.",
-    "zahlungsfrist_tage": "Délai de paiement (jours)"
+    "zahlungsfrist_tage": "Délai de paiement (jours)",
+    "satz_titel": "Ce que voient les membres",
+    "satz": {
+      "aus": "L'article est vendu normalement. Il n'y a pas de réservation.",
+      "nur_reservieren": "Les membres peuvent réserver cet article, {{teile}}. Le paiement se fait plus tard ou sur place.",
+      "reservieren_und_bezahlen": "Les membres peuvent réserver cet article et le commander tout de suite, {{teile}}.",
+      "bis": "jusqu'au {{datum}}",
+      "ohne_frist": "sans date de fin",
+      "pro_mitglied": "au maximum {{count}} pièces par membre",
+      "gesamt": "au maximum {{count}} pièces au total",
+      "ohne_grenze": "sans limite de quantité",
+      "zahlungsfrist_one": "les commandes impayées expirent après {{count}} jour",
+      "zahlungsfrist_other": "les commandes impayées expirent après {{count}} jours"
+    }
   },
   "reservierungen_tab": {
     "alle_produkte": "Tous les produits",
@@ -445,6 +458,22 @@
       "reservierung": {
         "titel": "Réservation",
         "text": "Un membre s'assure une quantité sans payer en ligne. Le paiement se fait plus tard ou sur place."
+      },
+      "bestand": {
+        "titel": "Stock",
+        "text": "Nombre de pièces en réserve. Pour les tailles ou couleurs, chaque variante compte séparément."
+      },
+      "variante": {
+        "titel": "Variante",
+        "text": "Une taille ou une couleur d'un article avec son propre stock, par exemple « M, bleu ». Un article sans choix a une seule variante."
+      },
+      "mengenrabatt": {
+        "titel": "Remise par quantité",
+        "text": "À partir d'une certaine quantité dans le panier, il y a une remise ou un article offert."
+      },
+      "obergrenze": {
+        "titel": "Plafond",
+        "text": "La quantité maximale qui peut être réservée au total ou par membre. Laisser vide signifie : pas de limite."
       }
     }
   },
@@ -611,6 +640,114 @@
         "knopf": "Passer en préparation",
         "folge": "La commande est payée et en cours d'emballage. Vous saisirez ensuite le numéro de suivi."
       }
+    }
+  },
+  "katalog": {
+    "filter_label": "Filtrer les articles",
+    "filter": {
+      "alle": "Tous",
+      "publie": "Publiés",
+      "brouillon": "Brouillons",
+      "archive": "Archivés",
+      "hinweise": "À surveiller"
+    },
+    "neu": "Nouveau produit",
+    "ansicht_leer": "Aucun article dans cette vue.",
+    "hilfe": "Chaque vignette montre un article tel qu'il apparaît dans la boutique. Les indications orange et rouges disent ce qu'il reste à faire. Un clic ouvre l'article pour le modifier.",
+    "kachel": {
+      "bestand": "{{count}} en stock",
+      "ausverkauft": "Épuisé",
+      "ohne_bild": "Pas encore d'image",
+      "reservierung": "Réservation",
+      "reservierung_bis": "Réservation jusqu'au {{datum}}",
+      "nur_mitglieder": "Membres uniquement",
+      "neuheit": "Nouveau",
+      "gutschein": "Bon d'achat",
+      "bearbeiten": "Modifier"
+    },
+    "hinweis": {
+      "frist_vorbei": {
+        "kurz": "Délai dépassé",
+        "text": "Le délai de réservation est écoulé. L'article n'est plus commandable dans la boutique."
+      },
+      "ausverkauft": {
+        "kurz": "Épuisé",
+        "text": "Toutes les variantes sont épuisées. Saisis un nouveau stock ou archive l'article."
+      },
+      "bestand_knapp": {
+        "kurz": "Stock faible",
+        "text": "Il ne reste que quelques pièces : {{liste}}."
+      },
+      "preis_null": {
+        "kurz": "Prix manquant",
+        "text": "Le prix est à 0 €. Vérifie que c'est voulu."
+      },
+      "name_lang": {
+        "kurz": "Nom très long",
+        "text": "Le nom compte {{laenge}} caractères. Un nom plus court se lit mieux sur la vignette."
+      },
+      "bild_fehlt": {
+        "kurz": "Image manquante",
+        "text": "Les articles avec image sont plus souvent commandés. Charge une photo."
+      }
+    },
+    "editor": {
+      "titel": "Modifier l'article",
+      "schliessen": "Fermer",
+      "hinweise_titel": "À vérifier",
+      "speichern": "Enregistrer les modifications",
+      "gespeichert": "Enregistré.",
+      "fehler": "Les modifications n'ont pas pu être enregistrées.",
+      "nur_lesen": "Tu peux consulter l'article, mais pas le modifier.",
+      "abschnitt": {
+        "grunddaten": "Informations de base",
+        "preis": "Prix",
+        "bestand": "Stock et tailles",
+        "reservierung": "Réservation",
+        "fotos": "Photos",
+        "sichtbarkeit": "Visibilité",
+        "loeschen": "Supprimer l'article"
+      },
+      "preis_final": "Dans la boutique, les membres paient : {{preis}} €",
+      "preis_final_gast": "Tous les autres paient : {{preis}} €",
+      "status_text": {
+        "brouillon": "Seule l'administration voit cet article. Pas encore les membres.",
+        "publie": "Les membres voient l'article dans la boutique et peuvent le commander.",
+        "archive": "L'article n'est plus visible dans la boutique. Les anciennes commandes sont conservées."
+      },
+      "loeschen_hilfe": "La suppression n'est possible que tant qu'aucune commande ne contient l'article. Sinon, archive-le plutôt."
+    },
+    "assistent": {
+      "titel": "Créer un nouveau produit",
+      "schritt_von": "Étape {{nr}} sur 3",
+      "schritt": {
+        "art": "Quel type d'article ?",
+        "preis": "Prix et stock",
+        "fertig": "Vérifier et enregistrer"
+      },
+      "weiter": "Suivant",
+      "zurueck": "Retour",
+      "abbrechen": "Annuler",
+      "art_physisch": "Marchandise",
+      "art_physisch_text": "Quelque chose de concret, avec stock et éventuellement tailles ou couleurs.",
+      "art_gutschein": "Bon d'achat",
+      "art_gutschein_text": "Le membre choisit lui-même le montant. Il n'y a pas de stock.",
+      "gutschein_preis_hinweis": "Pour les bons d'achat, le membre choisit le montant. Le prix ici n'est qu'une valeur indicative.",
+      "checkliste": "Liste de contrôle",
+      "pflicht": "Obligatoire",
+      "empfohlen": "Recommandé",
+      "check": {
+        "name": "Nom saisi",
+        "preis": "Prix supérieur à 0 €",
+        "beschreibung": "Description rédigée",
+        "bestand": "Stock saisi",
+        "bild": "Image chargée"
+      },
+      "bild_spaeter": "Tu charges l'image juste après la création.",
+      "entwurf": "Enregistrer comme brouillon",
+      "veroeffentlichen": "Publier",
+      "entwurf_text": "Un brouillon n'est visible que de l'administration. Tu peux le publier à tout moment.",
+      "veroeffentlichen_gesperrt": "Il manque encore des informations obligatoires pour publier."
     }
   }
 }

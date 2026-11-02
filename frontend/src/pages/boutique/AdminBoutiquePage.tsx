@@ -127,7 +127,13 @@ export default function AdminBoutiquePage() {
           startStapel={ziel?.tab === "bestellungen" ? (ziel.stapel ?? "") : ""}
         />
       )}
-      {onglet === "catalogue" && <GestionCatalogueTab modifiable={modifiable} />}
+      {onglet === "catalogue" && (
+        <GestionCatalogueTab
+          key={tabKey("kat")}
+          modifiable={modifiable}
+          startFilter={ziel?.tab === "katalog" ? (ziel.filter ?? "") : ""}
+        />
+      )}
       {onglet === "bons_achat" && <GestionBonsAchatTab />}
       {onglet === "reservierungen" && <GestionReservierungenTab modifiable={modifiable} />}
     </div>

@@ -359,7 +359,20 @@
     "speichern": "Speichern",
     "gespeichert": "Gespeichert.",
     "fehler": "Speichern fehlgeschlagen.",
-    "zahlungsfrist_tage": "Zahlungsfrist (Tage)"
+    "zahlungsfrist_tage": "Zahlungsfrist (Tage)",
+    "satz_titel": "So sehen es die Mitglieder",
+    "satz": {
+      "aus": "Der Artikel wird ganz normal verkauft. Es gibt keine Reservierung.",
+      "nur_reservieren": "Mitglieder können diesen Artikel reservieren, {{teile}}. Bezahlt wird später oder vor Ort.",
+      "reservieren_und_bezahlen": "Mitglieder können diesen Artikel reservieren und gleich bestellen, {{teile}}.",
+      "bis": "bis {{datum}}",
+      "ohne_frist": "ohne festes Ende",
+      "pro_mitglied": "höchstens {{count}} Stück pro Mitglied",
+      "gesamt": "insgesamt höchstens {{count}} Stück",
+      "ohne_grenze": "ohne Mengengrenze",
+      "zahlungsfrist_one": "unbezahlte Bestellungen verfallen nach {{count}} Tag",
+      "zahlungsfrist_other": "unbezahlte Bestellungen verfallen nach {{count}} Tagen"
+    }
   },
   "reservierungen_tab": {
     "alle_produkte": "Alle Produkte",
@@ -445,6 +458,22 @@
       "reservierung": {
         "titel": "Reservierung",
         "text": "Ein Mitglied sichert sich eine Menge, ohne online zu zahlen. Bezahlt wird später oder vor Ort."
+      },
+      "bestand": {
+        "titel": "Bestand",
+        "text": "So viele Stück sind im Lager. Bei Größen oder Farben zählt jede Variante einzeln."
+      },
+      "variante": {
+        "titel": "Variante",
+        "text": "Eine Größe oder Farbe eines Artikels mit eigenem Bestand, zum Beispiel „M, blau“. Artikel ohne Auswahl haben eine einzige Variante."
+      },
+      "mengenrabatt": {
+        "titel": "Mengenrabatt",
+        "text": "Ab einer bestimmten Menge im Warenkorb gibt es einen Rabatt oder einen Artikel gratis dazu."
+      },
+      "obergrenze": {
+        "titel": "Obergrenze",
+        "text": "Die höchste Menge, die insgesamt oder pro Mitglied reserviert werden darf. Leer lassen heißt: keine Grenze."
       }
     }
   },
@@ -611,6 +640,114 @@
         "knopf": "In Vorbereitung setzen",
         "folge": "Die Bestellung ist bezahlt und wird gerade gepackt. Danach trägst du die Sendungsnummer ein."
       }
+    }
+  },
+  "katalog": {
+    "filter_label": "Artikel filtern",
+    "filter": {
+      "alle": "Alle",
+      "publie": "Veröffentlicht",
+      "brouillon": "Entwürfe",
+      "archive": "Archiviert",
+      "hinweise": "Braucht Aufmerksamkeit"
+    },
+    "neu": "Neues Produkt",
+    "ansicht_leer": "In dieser Ansicht gibt es keine Artikel.",
+    "hilfe": "Jede Kachel zeigt einen Artikel, wie er im Shop erscheint. Orange und rote Hinweise sagen dir, was noch zu tun ist. Ein Klick öffnet den Artikel zum Bearbeiten.",
+    "kachel": {
+      "bestand": "{{count}} auf Lager",
+      "ausverkauft": "Ausverkauft",
+      "ohne_bild": "Noch kein Bild",
+      "reservierung": "Reservierung",
+      "reservierung_bis": "Reservierung bis {{datum}}",
+      "nur_mitglieder": "Nur Mitglieder",
+      "neuheit": "Neu",
+      "gutschein": "Gutschein",
+      "bearbeiten": "Bearbeiten"
+    },
+    "hinweis": {
+      "frist_vorbei": {
+        "kurz": "Frist vorbei",
+        "text": "Die Reservierungsfrist ist abgelaufen. Der Artikel ist im Shop nicht mehr bestellbar."
+      },
+      "ausverkauft": {
+        "kurz": "Ausverkauft",
+        "text": "Alle Varianten sind ausverkauft. Trage neuen Bestand ein oder archiviere den Artikel."
+      },
+      "bestand_knapp": {
+        "kurz": "Bestand knapp",
+        "text": "Nur noch wenige Stück: {{liste}}."
+      },
+      "preis_null": {
+        "kurz": "Preis fehlt",
+        "text": "Der Preis steht auf 0 €. Prüfe, ob das so gewollt ist."
+      },
+      "name_lang": {
+        "kurz": "Name sehr lang",
+        "text": "Der Name hat {{laenge}} Zeichen. Kürzere Namen sind in der Kachel besser lesbar."
+      },
+      "bild_fehlt": {
+        "kurz": "Bild fehlt",
+        "text": "Artikel mit Bild werden öfter bestellt. Lade ein Foto hoch."
+      }
+    },
+    "editor": {
+      "titel": "Artikel bearbeiten",
+      "schliessen": "Schließen",
+      "hinweise_titel": "Das solltest du prüfen",
+      "speichern": "Änderungen speichern",
+      "gespeichert": "Gespeichert.",
+      "fehler": "Die Änderungen konnten nicht gespeichert werden.",
+      "nur_lesen": "Du kannst den Artikel ansehen, aber nicht ändern.",
+      "abschnitt": {
+        "grunddaten": "Grunddaten",
+        "preis": "Preis",
+        "bestand": "Bestand und Größen",
+        "reservierung": "Reservierung",
+        "fotos": "Fotos",
+        "sichtbarkeit": "Sichtbarkeit",
+        "loeschen": "Artikel löschen"
+      },
+      "preis_final": "Im Shop zahlen Mitglieder: {{preis}} €",
+      "preis_final_gast": "Alle anderen zahlen: {{preis}} €",
+      "status_text": {
+        "brouillon": "Nur die Verwaltung sieht diesen Artikel. Mitglieder noch nicht.",
+        "publie": "Mitglieder sehen den Artikel im Shop und können ihn bestellen.",
+        "archive": "Der Artikel ist im Shop nicht mehr sichtbar. Alte Bestellungen bleiben erhalten."
+      },
+      "loeschen_hilfe": "Löschen geht nur, solange noch keine Bestellung den Artikel enthält. Sonst archivierst du ihn besser."
+    },
+    "assistent": {
+      "titel": "Neues Produkt anlegen",
+      "schritt_von": "Schritt {{nr}} von 3",
+      "schritt": {
+        "art": "Was für ein Artikel?",
+        "preis": "Preis und Bestand",
+        "fertig": "Prüfen und speichern"
+      },
+      "weiter": "Weiter",
+      "zurueck": "Zurück",
+      "abbrechen": "Abbrechen",
+      "art_physisch": "Ware",
+      "art_physisch_text": "Etwas zum Anfassen, mit Bestand und gegebenenfalls Größen oder Farben.",
+      "art_gutschein": "Gutschein",
+      "art_gutschein_text": "Das Mitglied wählt den Betrag selbst. Es gibt keinen Bestand.",
+      "gutschein_preis_hinweis": "Bei Gutscheinen wählt das Mitglied den Betrag. Der Preis hier ist nur eine Vorgabe.",
+      "checkliste": "Checkliste",
+      "pflicht": "Pflicht",
+      "empfohlen": "Empfohlen",
+      "check": {
+        "name": "Name eingetragen",
+        "preis": "Preis größer als 0 €",
+        "beschreibung": "Beschreibung geschrieben",
+        "bestand": "Bestand eingetragen",
+        "bild": "Bild hochgeladen"
+      },
+      "bild_spaeter": "Das Bild lädst du direkt nach dem Anlegen hoch.",
+      "entwurf": "Als Entwurf speichern",
+      "veroeffentlichen": "Veröffentlichen",
+      "entwurf_text": "Ein Entwurf ist nur für die Verwaltung sichtbar. Du kannst ihn jederzeit veröffentlichen.",
+      "veroeffentlichen_gesperrt": "Zum Veröffentlichen fehlen noch Pflichtangaben."
     }
   }
 }
