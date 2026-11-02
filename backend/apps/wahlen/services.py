@@ -542,6 +542,15 @@ def freigabe_geben(wahl: Wahl, user, art: str) -> dict:
     }
 
 
+def option_label(wahl: Wahl, kandidatur: Kandidatur) -> str:
+    """Beschriftung der Kandidatur auf dem Stimmzettel (Listen und Anträge: Name; Einzelpersonen:
+    Name der Person)."""
+    if wahl.form in (Wahlform.LISTE, Wahlform.RANG, Wahlform.JA_NEIN):
+        return kandidatur.name
+    person = kandidatur.personen.first()
+    return f"{person.membre.prenom} {person.membre.nom}" if person else kandidatur.name
+
+
 def optionen_fuer(wahl: Wahl) -> tuple[str, int, list[dict], int | None]:
     """(Abstimmungstyp, Anzahl Stimmen, Optionen, Schwelle %) für die VoteSession."""
     zugelassen = list(_hat_zugelassene(wahl).prefetch_related("personen__membre"))
@@ -568,9 +577,7 @@ def optionen_fuer(wahl: Wahl) -> tuple[str, int, list[dict], int | None]:
         return "preferentiel", 1, optionen, None
     optionen = []
     for k in zugelassen:
-        person = k.personen.first()
-        label = f"{person.membre.prenom} {person.membre.nom}" if person else k.name
-        optionen.append({"label": label, "description": k.vorstellung})
+        optionen.append({"label": option_label(wahl, k), "description": k.vorstellung})
     if wahl.form == Wahlform.MEHRFACH:
         return "multiple", wahl.posten, optionen, None
     return "unique", 1, optionen, schwelle
@@ -633,7 +640,7 @@ def _zeitpunkt(tag: date, stunde: int = 9) -> datetime:
     return timezone.make_aware(datetime.combine(tag, time(stunde, 0)))
 
 
-def bekanntmachungen_anlegen(wahl: Wahl) -> None:
+def bekanntmachungen_anlegen(wahl: Wahl, schluessel_liste=None) -> None:
     termine = {
         "ankuendigung": _zeitpunkt(wahl.ankuendigung_am),
         "aufruf": _zeitpunkt(wahl.kandidatur_von),
@@ -641,7 +648,7 @@ def bekanntmachungen_anlegen(wahl: Wahl) -> None:
         "wahlbeginn": wahl.wahl_von,
         "ergebnis": wahl.wahl_bis + timedelta(hours=1),
     }
-    for schluessel in texte.SCHLUESSEL:
+    for schluessel in schluessel_liste or texte.SCHLUESSEL:
         betreff, html = texte.MUSTER[schluessel]["de"]
         Bekanntmachung.objects.get_or_create(
             wahl=wahl,
@@ -871,13 +878,14 @@ def _tagesende(tag: date) -> datetime:
     return timezone.make_aware(datetime.combine(tag, time(23, 59, 59)))
 
 
-def ergebnis_auswerten(wahl: Wahl) -> dict:
+def ergebnis_auswerten(wahl: Wahl, session=None) -> dict:
     """Wertet die geschlossene Abstimmung der Wahl aus (Zählung stammt aus dem Modul `vote`).
     Gibt immer alle Zahlen zurück; ob sie gezeigt werden dürfen, entscheidet die Ansicht.
+    Für den Trockenlauf der Probewahl kann eine eigene (nie gespeicherte) Sitzung übergeben werden.
     """
     from apps.vote.services import calculer_resultats
 
-    session = wahl.vote_session
+    session = session or wahl.vote_session
     roh = calculer_resultats(session)
     optionen = [
         {
@@ -980,6 +988,9 @@ def ergebnis_veroeffentlichen(wahl: Wahl) -> Protokoll:
     from . import mitteilungen
 
     mitteilungen.ergebnis_einspruch_planen(wahl)
+    from . import wahlgaenge
+
+    wahlgaenge.folgewahl_automatisch(wahl)
     transaction.on_commit(lambda: envoyer_notification_resultats.delay(str(session.id)))
     transaction.on_commit(lambda: VoteSessionViewSet._broadcast_resultats(session))
     return protokoll
