@@ -214,7 +214,7 @@
     "erreur": "La confirmation du paiement a échoué."
   },
   "expedition": {
-    "expedier": "Expédier",
+    "expedier": "Saisir l'expédition",
     "titre": "Expédier la commande",
     "numero_suivi_label": "Numéro de suivi",
     "transporteur_label": "Transporteur (optionnel)",
@@ -223,8 +223,8 @@
     "suivi_label": "Suivi : {{numero}} ({{transporteur}})"
   },
   "nacherfassung": {
-    "bouton": "Saisie rétroactive",
-    "titre": "Saisie rétroactive d'une expédition",
+    "bouton": "Traité hors de l'application",
+    "titre": "Saisir une commande traitée hors de l'application",
     "date_expedition_label": "Date d'expédition réelle (optionnel — sinon maintenant)",
     "confirmer": "Enregistrer l'expédition"
   },
@@ -233,7 +233,7 @@
     "titre": "Enregistrer un retour",
     "ligne_label": "Article",
     "lignes_titre": "Articles et quantités (par variante)",
-    "ligne_option": "{{quantite}} × {{prix}} € — {{retournable}} retournable(s)",
+    "ligne_option": "{{artikel}} : {{quantite}} × {{prix}} € — {{retournable}} retournable(s)",
     "quantite_label": "Quantité retournée",
     "motif_label": "Motif",
     "motif": {
@@ -245,7 +245,7 @@
     },
     "commentaire_label": "Commentaire (optionnel)",
     "confirmer": "Enregistrer le retour",
-    "erreur": "L'enregistrement du retour a échoué."
+    "erreur": "Le retour n'a pas pu être enregistré."
   },
   "catalogue_admin": {
     "nouveau_produit": "Nouveau produit",
@@ -546,6 +546,70 @@
         "titel": "Terminée",
         "text_vor": "Si besoin : enregistrer un",
         "text_nach": "."
+      }
+    }
+  },
+  "bestellung": {
+    "stapel_label": "Commandes par pile",
+    "stapel": {
+      "zahlung_offen": "Paiement en attente",
+      "zu_versenden": "À expédier",
+      "unterwegs": "En route",
+      "erledigt": "Terminées",
+      "abgebrochen": "Annulées / remboursées"
+    },
+    "stapel_hilfe": "Les sept statuts techniques sont regroupés en cinq piles pour voir ce qui est à faire maintenant. Chaque commande montre son avancement et un seul bouton principal pour l'étape suivante. Tout ce qui est rare se trouve sous « Plus ». En savoir plus sur la",
+    "suche_label": "Rechercher des commandes",
+    "weitere_filter": "Autres filtres",
+    "fortschritt": "Avancement de la commande",
+    "schritt": {
+      "bestellt": "Commandée",
+      "bezahlt": "Payée",
+      "versandt": "Expédiée",
+      "geliefert": "Livrée"
+    },
+    "mehr": "Plus",
+    "details": "Détails",
+    "details_aus": "Masquer les détails",
+    "nur_finanz": "Seul le Dir. Finances peut le faire.",
+    "als_geliefert": "Marquer comme livrée",
+    "in_vorbereitung": "Passer en préparation",
+    "erstattet_markieren": "Marquer comme remboursée",
+    "pdf_bestaetigung": "Confirmation de commande (PDF)",
+    "pdf_rechnung": "Facture (PDF)",
+    "artikel": "Articles",
+    "artikel_unbekannt": "Article",
+    "gutschein_abgezogen": "Dont payé par bon d'achat : {{betrag}}",
+    "lieferung": "Livraison",
+    "abholung": "Pas d'adresse de livraison (retrait)",
+    "verlauf": {
+      "titel": "Historique",
+      "bestellt": "{{datum}} : commandée",
+      "bezahlt": "{{datum}} : payée {{art}}",
+      "versandt": "{{datum}} : expédiée",
+      "ruecksendung_one": "1 retour enregistré",
+      "ruecksendung_other": "{{count}} retours enregistrés"
+    },
+    "blatt": {
+      "zahlung": {
+        "titel": "Confirmer le paiement",
+        "knopf": "Confirmer le paiement",
+        "folge": "Ensuite, la commande est considérée comme payée et peut être expédiée. Le membre ne reçoit pas de message automatique."
+      },
+      "geliefert": {
+        "titel": "Marquer comme livrée",
+        "knopf": "Marquer comme livrée",
+        "folge": "La marchandise est arrivée. La commande est ensuite terminée."
+      },
+      "erstattet": {
+        "titel": "Marquer comme remboursée",
+        "knopf": "Marquer comme remboursée",
+        "folge": "La commande est considérée comme remboursée. Vous remboursez l'argent vous-même ; l'application ne fait aucun mouvement d'argent."
+      },
+      "vorbereitung": {
+        "titel": "Passer en préparation",
+        "knopf": "Passer en préparation",
+        "folge": "La commande est payée et en cours d'emballage. Vous saisirez ensuite le numéro de suivi."
       }
     }
   }

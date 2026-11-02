@@ -335,12 +335,22 @@ class LigneCommandeSerializer(serializers.ModelSerializer):
     sous_total_net = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
     quantite_retournee = serializers.IntegerField(read_only=True)
     quantite_retournable = serializers.IntegerField(read_only=True)
+    # Lesbare Bezeichnung für die Shop-Verwaltung (2026-11-02): bisher kannte die Oberfläche nur
+    # die Varianten-ID und konnte nicht zeigen, WAS bestellt wurde.
+    produit_nom = serializers.CharField(source="variante.produit.nom", read_only=True)
+    variante_label = serializers.SerializerMethodField()
+
+    def get_variante_label(self, obj) -> str:
+        v = obj.variante
+        return " ".join(x for x in (v.taille, v.couleur) if x)
 
     class Meta:
         model = LigneCommande
         fields = [
             "id",
             "variante",
+            "produit_nom",
+            "variante_label",
             "quantite",
             "prix_unitaire",
             "sous_total",

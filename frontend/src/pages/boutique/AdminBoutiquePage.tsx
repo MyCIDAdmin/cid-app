@@ -13,7 +13,7 @@
  * fiables plutôt que d'agréger une seule page de commandes côté client) — laissé de côté plutôt
  * que fabriqué à partir d'un échantillon partiel.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import UeberblickTab, { type VerwaltungsZiel } from "../../components/boutique/UeberblickTab";
@@ -28,17 +28,24 @@ type Onglet = "ueberblick" | "commandes" | "catalogue" | "bons_achat" | "reservi
 export default function AdminBoutiquePage() {
   const { t } = useTranslation(["boutique", "common"]);
   const [onglet, setOnglet] = useState<Onglet>("ueberblick");
+  // Ziel des letzten Klicks im Überblick (Stapel, Filter, Artikel): wird an den Tab weitergereicht;
+  // `key` setzt den Tab bei jedem neuen Ziel zurück, damit der Filter sicher greift.
+  const [ziel, setZiel] = useState<VerwaltungsZiel | null>(null);
+  const zielNr = useRef(0);
+  const tabKey = (name: string) => `${name}-${zielNr.current}`;
   // Task #216 (2026-09-24) : "page_boutique" distingue désormais lecture/lecture_ecriture — les
   // onglets ci-dessous reçoivent `modifiable` pour désactiver leurs contrôles d'écriture
   // (l'onglet Bons d'achat est déjà purement lecture seule, rien à lui passer).
   const { accessible, modifiable } = usePageAccess("page_boutique");
 
   // Klick auf eine Kachel oder Aufgabe: passenden Tab öffnen (Filter folgen in den Tabs).
-  const gehZu = (ziel: VerwaltungsZiel) => {
+  const gehZu = (neuesZiel: VerwaltungsZiel) => {
+    zielNr.current += 1;
+    setZiel(neuesZiel);
     setOnglet(
-      ziel.tab === "bestellungen"
+      neuesZiel.tab === "bestellungen"
         ? "commandes"
-        : ziel.tab === "katalog"
+        : neuesZiel.tab === "katalog"
           ? "catalogue"
           : "reservierungen",
     );
@@ -113,7 +120,13 @@ export default function AdminBoutiquePage() {
       </div>
 
       {onglet === "ueberblick" && <UeberblickTab onZiel={gehZu} />}
-      {onglet === "commandes" && <GestionCommandesTab modifiable={modifiable} />}
+      {onglet === "commandes" && (
+        <GestionCommandesTab
+          key={tabKey("best")}
+          modifiable={modifiable}
+          startStapel={ziel?.tab === "bestellungen" ? (ziel.stapel ?? "") : ""}
+        />
+      )}
       {onglet === "catalogue" && <GestionCatalogueTab modifiable={modifiable} />}
       {onglet === "bons_achat" && <GestionBonsAchatTab />}
       {onglet === "reservierungen" && <GestionReservierungenTab modifiable={modifiable} />}

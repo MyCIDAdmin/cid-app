@@ -19,6 +19,7 @@ vi.mock("../../hooks/useBoutique", async () => {
     useExpedierCommande: vi.fn(),
     useCreerRetourLot: vi.fn(),
     useProduits: vi.fn(),
+    useVerwaltungUeberblick: vi.fn(),
   };
 });
 
@@ -81,6 +82,16 @@ function commande(overrides: Partial<Commande> = {}): Commande {
   };
 }
 
+/** „Mehr“-Menü der ersten Karte öffnen und einen Eintrag wählen. */
+function waehleMehr(label: string) {
+  fireEvent.click(screen.getByText("bestellung.mehr"));
+  fireEvent.click(screen.getByRole("menuitem", { name: label }));
+}
+
+function oeffneMehr() {
+  fireEvent.click(screen.getByText("bestellung.mehr"));
+}
+
 describe("GestionCommandesTab", () => {
   let changerStatutMock: ReturnType<typeof vi.fn>;
   let annulerMock: ReturnType<typeof vi.fn>;
@@ -96,6 +107,11 @@ describe("GestionCommandesTab", () => {
       isAuthenticated: true,
     });
 
+    vi.mocked(useBoutiqueHooks.useVerwaltungUeberblick).mockReturnValue({
+      data: {
+        stapel: { zahlung_offen: 4, zu_versenden: 3, unterwegs: 2, erledigt: 1, abgebrochen: 0 },
+      },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVerwaltungUeberblick>);
     changerStatutMock = vi.fn();
     annulerMock = vi.fn();
     confirmerPaiementMock = vi.fn();
@@ -149,76 +165,165 @@ describe("GestionCommandesTab", () => {
     expect(screen.getByText("45,00 €")).toBeInTheDocument();
   });
 
-  it("change le statut via le sélecteur de transition", () => {
-    // EN_ATTENTE -> CONFIRMEE ne passe plus par ce sélecteur (voir confirmer_paiement
-    // ci-dessous) : CONFIRMEE -> EN_PREPARATION reste une transition générale valide.
+  it("setzt eine bestätigte Bestellung über „Mehr“ in Vorbereitung", () => {
     vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
       data: { next: null, previous: null, results: [commande({ statut: "confirmee" })] },
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
 
     renderWithProviders(<GestionCommandesTab />);
-    fireEvent.change(screen.getByLabelText("commandes_admin.changer_statut"), {
-      target: { value: "en_preparation" },
-    });
-    expect(changerStatutMock).toHaveBeenCalledWith({
-      id: "c1",
-      payload: { statut: "en_preparation" },
-    });
+    waehleMehr("bestellung.in_vorbereitung");
+    expect(screen.getByText("bestellung.blatt.vorbereitung.folge")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("bestellung.blatt.vorbereitung.knopf"));
+    expect(changerStatutMock).toHaveBeenCalledWith(
+      { id: "c1", payload: { statut: "en_preparation" } },
+      expect.anything(),
+    );
+  });
+
+  it("markiert eine versandte Bestellung mit dem Hauptknopf als geliefert", () => {
+    vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+      data: { next: null, previous: null, results: [commande({ statut: "expediee" })] },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+
+    renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByText("bestellung.als_geliefert"));
+    fireEvent.click(screen.getByText("bestellung.blatt.geliefert.knopf"));
+    expect(changerStatutMock).toHaveBeenCalledWith(
+      { id: "c1", payload: { statut: "livree" } },
+      expect.anything(),
+    );
+  });
+
+  it("markiert eine versandte Bestellung über „Mehr“ als erstattet (mit Klartext-Folge)", () => {
+    vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+      data: { next: null, previous: null, results: [commande({ statut: "expediee" })] },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+
+    renderWithProviders(<GestionCommandesTab />);
+    waehleMehr("bestellung.erstattet_markieren");
+    expect(screen.getByText("bestellung.blatt.erstattet.folge")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("bestellung.blatt.erstattet.knopf"));
+    expect(changerStatutMock).toHaveBeenCalledWith(
+      { id: "c1", payload: { statut: "remboursee" } },
+      expect.anything(),
+    );
   });
 
   it("demande confirmation puis annule la commande", () => {
     renderWithProviders(<GestionCommandesTab />);
-    fireEvent.click(screen.getByText("commandes_admin.annuler"));
+    waehleMehr("commandes_admin.annuler");
     expect(screen.getByText("commandes_admin.confirmer_annulation_titre")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("action.confirmer"));
     expect(annulerMock).toHaveBeenCalledWith("c1", expect.anything());
   });
 
-  it("ne propose ni transition ni annulation pour une commande livrée", () => {
+  it("bietet bei einer gelieferten Bestellung weder Hauptknopf noch Abbrechen an", () => {
     vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
       data: { next: null, previous: null, results: [commande({ statut: "livree" })] },
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
 
     renderWithProviders(<GestionCommandesTab />);
+    expect(screen.queryByText("paiement.confirmer")).not.toBeInTheDocument();
+    expect(screen.queryByText("bestellung.als_geliefert")).not.toBeInTheDocument();
+    oeffneMehr();
     expect(screen.queryByText("commandes_admin.annuler")).not.toBeInTheDocument();
+  });
+
+  it("zeigt Stapel mit ihren Zahlen und filtert nach den zugehörigen Status", () => {
+    renderWithProviders(<GestionCommandesTab />);
+    expect(screen.getByText("bestellung.stapel.zu_versenden").parentElement).toHaveTextContent("3");
+    fireEvent.click(screen.getByText("bestellung.stapel.zu_versenden"));
+    expect(vi.mocked(useBoutiqueHooks.useCommandes)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ statuts: "confirmee,en_preparation" }),
+    );
+    fireEvent.click(screen.getByText("commandes_admin.tous"));
+    expect(vi.mocked(useBoutiqueHooks.useCommandes)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ statuts: undefined }),
+    );
+  });
+
+  it("startet mit dem vom Überblick gewählten Stapel", () => {
+    renderWithProviders(<GestionCommandesTab startStapel="unterwegs" />);
+    expect(vi.mocked(useBoutiqueHooks.useCommandes)).toHaveBeenCalledWith(
+      expect.objectContaining({ statuts: "expediee" }),
+    );
+  });
+
+  it("klappt die Details mit Artikeln und Lieferadresse auf", () => {
+    vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+      data: {
+        next: null,
+        previous: null,
+        results: [
+          commande({
+            lignes: [
+              {
+                id: "l1",
+                variante: "v1",
+                produit_nom: "Heimtrikot",
+                variante_label: "M",
+                quantite: 1,
+                prix_unitaire: "45.00",
+                sous_total: "45.00",
+                quantite_offerte: 0,
+                pourcentage_reduction_quantite: null,
+                reduction_quantite: "0.00",
+                sous_total_net: "45.00",
+                quantite_retournee: 0,
+                quantite_retournable: 1,
+              },
+            ],
+          }),
+        ],
+      },
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+    renderWithProviders(<GestionCommandesTab />);
+    expect(screen.queryByText("Musterstr. 1")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("bestellung.details"));
+    expect(screen.getByText(/Heimtrikot, M/)).toBeInTheDocument();
+    expect(screen.getByText("Musterstr. 1")).toBeInTheDocument();
   });
 
   // --- confirmer_paiement / expedier / retours (Directeur Financier+ pour paiement et
   // expédition, Bureau Admin+ pour les retours — voir le gating de rôle dans le composant) ---
 
-  it("confirme le paiement avec le mode sélectionné (Directeur Financier+)", () => {
+  it("bestätigt die Zahlung über das Blatt mit der gewählten Zahlart (Directeur Financier+)", () => {
     renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByText("paiement.confirmer"));
+    expect(screen.getByText("bestellung.blatt.zahlung.folge")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("paiement.mode_label"), {
       target: { value: "especes" },
     });
-    fireEvent.click(screen.getByText("paiement.confirmer"));
-    expect(confirmerPaiementMock).toHaveBeenCalledWith({
-      id: "c1",
-      payload: { mode_paiement: "especes" },
-    });
+    fireEvent.click(screen.getByText("bestellung.blatt.zahlung.knopf"));
+    expect(confirmerPaiementMock).toHaveBeenCalledWith(
+      { id: "c1", payload: { mode_paiement: "especes", date_paiement: undefined } },
+      expect.anything(),
+    );
   });
 
-  it("confirme le paiement avec une date de transaction backdatée (demande utilisateur du 2026-09-29)", () => {
+  it("bestätigt die Zahlung mit rückdatiertem Transaktionsdatum (Wunsch vom 29.09.2026)", () => {
     renderWithProviders(<GestionCommandesTab />);
+    fireEvent.click(screen.getByText("paiement.confirmer"));
     fireEvent.change(screen.getByLabelText("paiement.mode_label"), {
       target: { value: "especes" },
     });
     fireEvent.change(screen.getByLabelText("paiement.date_paiement_label"), {
       target: { value: "2026-06-10" },
     });
-    fireEvent.click(screen.getByText("paiement.confirmer"));
-    expect(confirmerPaiementMock).toHaveBeenCalledWith({
-      id: "c1",
-      payload: { mode_paiement: "especes", date_paiement: "2026-06-10" },
-    });
+    fireEvent.click(screen.getByText("bestellung.blatt.zahlung.knopf"));
+    expect(confirmerPaiementMock).toHaveBeenCalledWith(
+      { id: "c1", payload: { mode_paiement: "especes", date_paiement: "2026-06-10" } },
+      expect.anything(),
+    );
   });
 
-  it("masque la confirmation de paiement pour un rôle inférieur à Directeur Financier", () => {
+  it("sperrt Zahlung und Versand unterhalb von Directeur Financier und sagt, wer es darf", () => {
     useAuthStore.setState({ user: bureauAdmin });
     renderWithProviders(<GestionCommandesTab />);
-    expect(screen.queryByText("paiement.confirmer")).not.toBeInTheDocument();
-    expect(screen.queryByText("expedition.expedier")).not.toBeInTheDocument();
+    expect(screen.getByText("paiement.confirmer")).toBeDisabled();
+    expect(screen.getByText("bestellung.nur_finanz")).toBeInTheDocument();
+    oeffneMehr();
     expect(screen.queryByText("nacherfassung.bouton")).not.toBeInTheDocument();
   });
 
@@ -257,7 +362,7 @@ describe("GestionCommandesTab", () => {
 
   it("propose la nacherfassung pour une commande en attente et envoie le mode de paiement", () => {
     renderWithProviders(<GestionCommandesTab />);
-    fireEvent.click(screen.getByText("nacherfassung.bouton"));
+    waehleMehr("nacherfassung.bouton");
     expect(screen.getByText("nacherfassung.titre")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("expedition.numero_suivi_label"), {
@@ -309,7 +414,7 @@ describe("GestionCommandesTab", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
 
     renderWithProviders(<GestionCommandesTab />);
-    fireEvent.click(screen.getByText("retour.bouton"));
+    waehleMehr("retour.bouton");
     expect(screen.getByText("retour.titre")).toBeInTheDocument();
 
     fireEvent.change(screen.getAllByLabelText("retour.quantite_label")[0], {
@@ -377,7 +482,7 @@ describe("GestionCommandesTab", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
 
     renderWithProviders(<GestionCommandesTab />);
-    fireEvent.click(screen.getByText("retour.bouton"));
+    waehleMehr("retour.bouton");
 
     const inputs = screen.getAllByLabelText("retour.quantite_label");
     expect(inputs).toHaveLength(2);
@@ -428,6 +533,7 @@ describe("GestionCommandesTab", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
 
     renderWithProviders(<GestionCommandesTab />);
+    oeffneMehr();
     expect(screen.queryByText("retour.bouton")).not.toBeInTheDocument();
   });
 
@@ -464,7 +570,7 @@ describe("GestionCommandesTab", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
 
     renderWithProviders(<GestionCommandesTab />);
-    fireEvent.click(screen.getByText("retour.bouton"));
+    waehleMehr("retour.bouton");
 
     fireEvent.change(screen.getAllByLabelText("retour.quantite_label")[0], {
       target: { value: "5" },
@@ -512,23 +618,22 @@ describe("GestionCommandesTab", () => {
       } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
 
       const { unmount } = renderWithProviders(<GestionCommandesTab />);
+      oeffneMehr();
       expect(screen.queryByText("retour.bouton")).not.toBeInTheDocument();
       unmount();
     }
   });
 
   // Bug remonté par l'utilisateur (2026-09-24, task #216) — voir GestionCatalogueTab.test.tsx.
-  it("en lecture seule (modifiable=false), désactive le sélecteur de statut et n'appelle jamais changerStatutMutation", () => {
+  it("sperrt im Lesemodus die Änderungen und ruft nie die Statusänderung auf", () => {
     vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
-      data: { next: null, previous: null, results: [commande({ statut: "confirmee" })] },
+      data: { next: null, previous: null, results: [commande({ statut: "expediee" })] },
     } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
 
     renderWithProviders(<GestionCommandesTab modifiable={false} />);
-
-    const selectStatut = screen.getByLabelText("commandes_admin.changer_statut");
-    expect(selectStatut).toBeDisabled();
-    fireEvent.change(selectStatut, { target: { value: "en_preparation" } });
-
+    expect(screen.getByText("bestellung.als_geliefert")).toBeDisabled();
+    oeffneMehr();
+    expect(screen.getByRole("menuitem", { name: "bestellung.erstattet_markieren" })).toBeDisabled();
     expect(changerStatutMock).not.toHaveBeenCalled();
   });
 
@@ -540,7 +645,7 @@ describe("GestionCommandesTab", () => {
     vi.mocked(boutiqueApi.telechargerConfirmationCommande).mockResolvedValue(blob);
 
     renderWithProviders(<GestionCommandesTab />);
-    fireEvent.click(screen.getByLabelText("commandes_admin.telecharger_confirmation_aria"));
+    waehleMehr("bestellung.pdf_bestaetigung");
 
     await waitFor(() =>
       expect(boutiqueApi.telechargerConfirmationCommande).toHaveBeenCalledWith("c1"),
@@ -551,9 +656,8 @@ describe("GestionCommandesTab", () => {
   it("propose le téléchargement de la facture uniquement si le paiement est confirmé", () => {
     renderWithProviders(<GestionCommandesTab />);
     // commande() par défaut : date_paiement_confirme=null.
-    expect(
-      screen.queryByLabelText("commandes_admin.telecharger_facture_aria"),
-    ).not.toBeInTheDocument();
+    oeffneMehr();
+    expect(screen.queryByText("bestellung.pdf_rechnung")).not.toBeInTheDocument();
   });
 
   it("télécharge la facture quand le paiement est confirmé", async () => {
@@ -568,7 +672,7 @@ describe("GestionCommandesTab", () => {
     vi.mocked(boutiqueApi.telechargerFactureCommande).mockResolvedValue(blob);
 
     renderWithProviders(<GestionCommandesTab />);
-    fireEvent.click(screen.getByLabelText("commandes_admin.telecharger_facture_aria"));
+    waehleMehr("bestellung.pdf_rechnung");
 
     await waitFor(() => expect(boutiqueApi.telechargerFactureCommande).toHaveBeenCalledWith("c1"));
   });
@@ -576,12 +680,9 @@ describe("GestionCommandesTab", () => {
   it("filtre les commandes par destinataire et intervalle de dates", () => {
     renderWithProviders(<GestionCommandesTab />);
 
-    fireEvent.change(
-      screen.getByPlaceholderText("commandes_admin.filtre_destinataire_placeholder"),
-      {
-        target: { value: "Bchini" },
-      },
-    );
+    fireEvent.change(screen.getByLabelText("bestellung.suche_label"), {
+      target: { value: "Bchini" },
+    });
     fireEvent.change(screen.getByLabelText("commandes_admin.filtre_date_apres_label"), {
       target: { value: "2026-01-01" },
     });

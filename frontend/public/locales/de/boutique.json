@@ -214,7 +214,7 @@
     "erreur": "Die Zahlungsbestätigung ist fehlgeschlagen."
   },
   "expedition": {
-    "expedier": "Versenden",
+    "expedier": "Versand eintragen",
     "titre": "Bestellung versenden",
     "numero_suivi_label": "Sendungsnummer",
     "transporteur_label": "Transportunternehmen (optional)",
@@ -223,17 +223,17 @@
     "suivi_label": "Sendung: {{numero}} ({{transporteur}})"
   },
   "nacherfassung": {
-    "bouton": "Nacherfassung",
-    "titre": "Nacherfassung eines Versands",
+    "bouton": "Außerhalb der App erledigt",
+    "titre": "Außerhalb der App erledigte Bestellung eintragen",
     "date_expedition_label": "Tatsächliches Versanddatum (optional — sonst jetzt)",
     "confirmer": "Versand erfassen"
   },
   "retour": {
-    "bouton": "Retoure erfassen",
-    "titre": "Retoure erfassen",
+    "bouton": "Rücksendung erfassen",
+    "titre": "Rücksendung erfassen",
     "ligne_label": "Artikel",
     "lignes_titre": "Artikel & Mengen (pro Variante)",
-    "ligne_option": "{{quantite}} × {{prix}} € — {{retournable}} retournierbar",
+    "ligne_option": "{{artikel}}: {{quantite}} × {{prix}} € — {{retournable}} rücksendbar",
     "quantite_label": "Retournierte Menge",
     "motif_label": "Grund",
     "motif": {
@@ -244,8 +244,8 @@
       "autre": "Sonstiges"
     },
     "commentaire_label": "Kommentar (optional)",
-    "confirmer": "Retoure erfassen",
-    "erreur": "Die Retoure konnte nicht erfasst werden."
+    "confirmer": "Rücksendung erfassen",
+    "erreur": "Die Rücksendung konnte nicht erfasst werden."
   },
   "catalogue_admin": {
     "nouveau_produit": "Neues Produkt",
@@ -546,6 +546,70 @@
         "titel": "Fertig",
         "text_vor": "Falls nötig: eine",
         "text_nach": " buchen."
+      }
+    }
+  },
+  "bestellung": {
+    "stapel_label": "Bestellungen nach Stapel",
+    "stapel": {
+      "zahlung_offen": "Zahlung offen",
+      "zu_versenden": "Zu versenden",
+      "unterwegs": "Unterwegs",
+      "erledigt": "Erledigt",
+      "abgebrochen": "Abgebrochen / erstattet"
+    },
+    "stapel_hilfe": "Die sieben technischen Status sind zu fünf Stapeln zusammengefasst, damit du siehst, was jetzt dran ist. Jede Bestellung zeigt oben ihren Fortschritt und genau einen Hauptknopf für den nächsten Schritt. Alles Seltene steckt unter „Mehr“. Mehr zu",
+    "suche_label": "Bestellungen suchen",
+    "weitere_filter": "Weitere Filter",
+    "fortschritt": "Fortschritt der Bestellung",
+    "schritt": {
+      "bestellt": "Bestellt",
+      "bezahlt": "Bezahlt",
+      "versandt": "Versandt",
+      "geliefert": "Geliefert"
+    },
+    "mehr": "Mehr",
+    "details": "Details",
+    "details_aus": "Details ausblenden",
+    "nur_finanz": "Das darf nur die Dir. Finanzen.",
+    "als_geliefert": "Als geliefert markieren",
+    "in_vorbereitung": "In Vorbereitung setzen",
+    "erstattet_markieren": "Als erstattet markieren",
+    "pdf_bestaetigung": "Bestellbestätigung (PDF)",
+    "pdf_rechnung": "Rechnung (PDF)",
+    "artikel": "Artikel",
+    "artikel_unbekannt": "Artikel",
+    "gutschein_abgezogen": "Davon bezahlt mit Gutschein: {{betrag}}",
+    "lieferung": "Lieferung",
+    "abholung": "Keine Lieferadresse (Abholung)",
+    "verlauf": {
+      "titel": "Verlauf",
+      "bestellt": "{{datum}}: bestellt",
+      "bezahlt": "{{datum}}: bezahlt {{art}}",
+      "versandt": "{{datum}}: versandt",
+      "ruecksendung_one": "1 Rücksendung erfasst",
+      "ruecksendung_other": "{{count}} Rücksendungen erfasst"
+    },
+    "blatt": {
+      "zahlung": {
+        "titel": "Zahlung bestätigen",
+        "knopf": "Zahlung bestätigen",
+        "folge": "Danach gilt die Bestellung als bezahlt und kann versendet werden. Das Mitglied bekommt dazu keine automatische Nachricht."
+      },
+      "geliefert": {
+        "titel": "Als geliefert markieren",
+        "knopf": "Als geliefert markieren",
+        "folge": "Die Ware ist angekommen. Die Bestellung gilt danach als erledigt."
+      },
+      "erstattet": {
+        "titel": "Als erstattet markieren",
+        "knopf": "Als erstattet markieren",
+        "folge": "Die Bestellung gilt als erstattet. Das Geld überweist du selbst zurück; die App bucht kein Geld."
+      },
+      "vorbereitung": {
+        "titel": "In Vorbereitung setzen",
+        "knopf": "In Vorbereitung setzen",
+        "folge": "Die Bestellung ist bezahlt und wird gerade gepackt. Danach trägst du die Sendungsnummer ein."
       }
     }
   }

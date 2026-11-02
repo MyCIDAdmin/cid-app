@@ -210,3 +210,14 @@ def test_aufgaben_nach_dringlichkeit_sortiert():
 def test_nur_lesend():
     antwort = _client(Role.DIR_FINANCIER).post(reverse(URL), {})
     assert antwort.status_code == 405
+
+
+def test_bestellzeilen_nennen_artikel_und_variante():
+    p = ProduitFactory(nom="Heimtrikot")
+    v = VarianteProduitFactory(produit=p, taille="M", couleur="", stock=5)
+    c = CommandeFactory(statut=StatutCommande.CONFIRMEE)
+    LigneCommandeFactory(commande=c, variante=v)
+    liste = _client(Role.BUREAU_ADMIN).get(reverse("boutique:commande-list")).json()
+    zeile = liste["results"][0]["lignes"][0]
+    assert zeile["produit_nom"] == "Heimtrikot"
+    assert zeile["variante_label"] == "M"

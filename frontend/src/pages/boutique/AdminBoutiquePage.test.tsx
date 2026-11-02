@@ -254,12 +254,19 @@ describe("AdminBoutiquePage", () => {
   });
 
   describe("accès lecture seule (task #216)", () => {
+    beforeEach(() => {
+      // Versandte Bestellung: ihr Hauptknopf („Als geliefert markieren“) hängt am Schreibrecht.
+      vi.mocked(useBoutiqueHooks.useCommandes).mockReturnValue({
+        data: { next: null, previous: null, results: [commande({ statut: "expediee" })] },
+      } as unknown as ReturnType<typeof useBoutiqueHooks.useCommandes>);
+    });
+
     it("n'affiche pas de bandeau et laisse les contrôles d'écriture actifs quand modifiable=true", () => {
       renderWithProviders(<AdminBoutiquePage />);
       oeffne("commandes");
 
       expect(screen.queryByText("acces.lecture_seule_banniere")).not.toBeInTheDocument();
-      expect(screen.getByLabelText("commandes_admin.changer_statut")).not.toBeDisabled();
+      expect(screen.getByText("bestellung.als_geliefert")).not.toBeDisabled();
 
       fireEvent.click(screen.getByText("admin.onglet_catalogue"));
       expect(screen.getByText("catalogue_admin.creer")).not.toBeDisabled();
@@ -278,7 +285,7 @@ describe("AdminBoutiquePage", () => {
       expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
       // Lecture : la commande reste visible.
       expect(screen.getByText("CMD-A1B2C3D4")).toBeInTheDocument();
-      expect(screen.getByLabelText("commandes_admin.changer_statut")).toBeDisabled();
+      expect(screen.getByText("bestellung.als_geliefert")).toBeDisabled();
 
       fireEvent.click(screen.getByText("admin.onglet_catalogue"));
       expect(screen.getByText("catalogue_admin.creer")).toBeDisabled();

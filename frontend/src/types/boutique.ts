@@ -252,6 +252,9 @@ export interface VariantePayload {
 export interface LigneCommande {
   id: string;
   variante: string;
+  /** Lesbare Bezeichnung (2026-11-02): Artikelname und Variante (z. B. „M“ oder „M Rot“). */
+  produit_nom?: string;
+  variante_label?: string;
   quantite: number;
   prix_unitaire: string;
   sous_total: string;
@@ -564,19 +567,10 @@ export interface PanierReservierungAntwort {
 export type Ton = "gruen" | "orange" | "rot";
 export type Schwere = "rot" | "orange" | "info";
 export type StapelName =
-  | "zahlung_offen"
-  | "zu_versenden"
-  | "unterwegs"
-  | "erledigt"
-  | "abgebrochen";
+  "zahlung_offen" | "zu_versenden" | "unterwegs" | "erledigt" | "abgebrochen";
 export type AufgabeArt = "zahlung" | "versand" | "reservierung" | "katalog" | "unterwegs";
 export type HinweisCode =
-  | "frist_vorbei"
-  | "ausverkauft"
-  | "bestand_knapp"
-  | "preis_null"
-  | "name_lang"
-  | "bild_fehlt";
+  "frist_vorbei" | "ausverkauft" | "bestand_knapp" | "preis_null" | "name_lang" | "bild_fehlt";
 
 export interface Kachel {
   anzahl: number;
@@ -619,3 +613,20 @@ export interface VerwaltungUeberblick {
   /** Hinweise je Artikel-ID (nur Artikel mit mindestens einem Hinweis). */
   hinweise: Record<string, ArtikelHinweis[]>;
 }
+
+/** Welche technischen Bestell-Status zu welchem Stapel gehören (spiegelt
+ * apps.boutique.verwaltung.STAPEL; der Bestell-Filter `statuts` nimmt eine kommagetrennte Liste). */
+export const STAPEL_STATUTS: Record<StapelName, StatutCommande[]> = {
+  zahlung_offen: ["en_attente"],
+  zu_versenden: ["confirmee", "en_preparation"],
+  unterwegs: ["expediee"],
+  erledigt: ["livree"],
+  abgebrochen: ["annulee", "remboursee"],
+};
+export const STAPEL_REIHENFOLGE: StapelName[] = [
+  "zahlung_offen",
+  "zu_versenden",
+  "unterwegs",
+  "erledigt",
+  "abgebrochen",
+];
