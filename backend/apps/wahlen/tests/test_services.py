@@ -130,7 +130,11 @@ def test_beat_aufgaben_sind_geplant():
     namen = set(
         PeriodicTask.objects.filter(name__startswith="wahlen.").values_list("name", flat=True)
     )
-    assert namen == {"wahlen.bekanntmachungen_senden", "wahlen.nachweise_loeschen"}
+    assert namen == {
+        "wahlen.bekanntmachungen_senden",
+        "wahlen.mitteilungen_senden",
+        "wahlen.nachweise_loeschen",
+    }
 
 
 def test_uebersetzen_ohne_deepl_verweigert():

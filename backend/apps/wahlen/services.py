@@ -455,6 +455,10 @@ def _pruefen_umsetzen(entscheidung: Entscheidung) -> None:
         kandidatur.nachbesserung_bis = jetzt + timedelta(hours=72)
     kandidatur.save()
     _entscheidung_mitteilen(kandidatur, entscheidung)
+    if entscheidung.art == EntscheidungArt.RUECKFRAGE:
+        from . import mitteilungen
+
+        mitteilungen.rueckfrage_planen(kandidatur)
 
 
 def _entscheidung_mitteilen(kandidatur: Kandidatur, entscheidung: Entscheidung) -> None:
@@ -973,6 +977,9 @@ def ergebnis_veroeffentlichen(wahl: Wahl) -> Protokoll:
     session = wahl.vote_session
     session.refresh_from_db()
     protokoll = Protokoll.objects.create(wahl=wahl, daten=_protokoll_daten(wahl))
+    from . import mitteilungen
+
+    mitteilungen.ergebnis_einspruch_planen(wahl)
     transaction.on_commit(lambda: envoyer_notification_resultats.delay(str(session.id)))
     transaction.on_commit(lambda: VoteSessionViewSet._broadcast_resultats(session))
     return protokoll
