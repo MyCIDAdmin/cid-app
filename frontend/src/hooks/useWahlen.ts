@@ -9,6 +9,7 @@ import type {
   FreigabeArt,
   KandidaturPayload,
   Pruefergebnis,
+  ProbeSzenario,
   ReglementArt,
   Sprache,
   WahlPayload,
@@ -308,5 +309,21 @@ export function useMitteilungKanaele() {
     mutationFn: (p: { id: string; kanaele: Array<"app" | "mail"> }) =>
       api.mitteilungKanaeleSetzen(p.id, p.kanaele),
     onSuccess: neuLaden,
+  });
+}
+
+export function useFolgewahlAnlegen(wahl: string) {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({
+    mutationFn: () => api.folgewahlAnlegen(wahl),
+    onSuccess: neuLaden,
+  });
+}
+
+/** Trockenlauf: ändert nichts auf dem Server, daher nichts neu zu laden. */
+export function useProbewahl(wahl: string) {
+  return useMutation({
+    mutationFn: (p: { stimmen: number; szenario: ProbeSzenario }) =>
+      api.probewahlStarten(wahl, p.stimmen, p.szenario),
   });
 }

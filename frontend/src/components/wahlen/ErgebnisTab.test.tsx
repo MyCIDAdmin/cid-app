@@ -16,6 +16,7 @@ vi.mock("../../hooks/useWahlen", async () => {
     useProtokollUnterschreiben: vi.fn(),
     useWahlAktion: vi.fn(),
     useEinspruchEinlegen: vi.fn(),
+    useFolgewahlAnlegen: vi.fn(),
   };
 });
 
@@ -84,6 +85,9 @@ describe("ErgebnisTab", () => {
     vi.mocked(hooks.useWahlAktion).mockReturnValue({
       freigabe: mutation(),
     } as unknown as ReturnType<typeof hooks.useWahlAktion>);
+    vi.mocked(hooks.useFolgewahlAnlegen).mockReturnValue(
+      mutation() as unknown as ReturnType<typeof hooks.useFolgewahlAnlegen>,
+    );
     vi.mocked(hooks.useEinspruchEinlegen).mockReturnValue(
       mutation() as unknown as ReturnType<typeof hooks.useEinspruchEinlegen>,
     );
@@ -140,5 +144,35 @@ describe("ErgebnisTab", () => {
     );
     expect(screen.queryByText("einspruch.einlegen_ergebnis")).not.toBeInTheDocument();
     expect(screen.getByText("protokoll.unterschreiben")).toBeInTheDocument();
+  });
+  it("bei Stichwahl: Ausschuss kann den weiteren Wahlgang anlegen, Mitglieder sehen nur einen Hinweis", () => {
+    ergebnis({ ...FREI, ausgang: "stichwahl", weiterer_wahlgang: true } as Ergebnis);
+    const { unmount } = renderWithProviders(<ErgebnisTab wahl={wahl({ ist_ausschuss: true })} />);
+    expect(screen.getByTestId("weiterer-wahlgang")).toBeInTheDocument();
+    expect(screen.getByText("folge.anlegen")).toBeInTheDocument();
+    unmount();
+    renderWithProviders(<ErgebnisTab wahl={wahl()} />);
+    expect(screen.getByText("folge.bald")).toBeInTheDocument();
+    expect(screen.queryByText("folge.anlegen")).not.toBeInTheDocument();
+  });
+
+  it("bei Stichwahl mit vorbereitetem Entwurf: Link zum nächsten Wahlgang", () => {
+    ergebnis({ ...FREI, ausgang: "stichwahl", weiterer_wahlgang: true } as Ergebnis);
+    renderWithProviders(
+      <ErgebnisTab
+        wahl={wahl({
+          ist_ausschuss: true,
+          folgewahl: { id: "w2", titel: "Wahl – 2. Wahlgang", status: "entwurf" },
+        })}
+      />,
+    );
+    expect(screen.getByText("folge.entwurf")).toBeInTheDocument();
+    expect(screen.getByText("folge.oeffnen").closest("a")).toHaveAttribute("href", "/wahlen/w2");
+  });
+
+  it("ohne weiteren Wahlgang bleibt der Block weg", () => {
+    ergebnis(FREI);
+    renderWithProviders(<ErgebnisTab wahl={wahl({ ist_ausschuss: true })} />);
+    expect(screen.queryByTestId("weiterer-wahlgang")).not.toBeInTheDocument();
   });
 });

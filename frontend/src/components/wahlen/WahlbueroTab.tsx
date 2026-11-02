@@ -14,6 +14,7 @@ import {
 } from "../../hooks/useWahlen";
 import type { Wahl } from "../../types/wahlen";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import ProbewahlBlock from "./ProbewahlBlock";
 
 export function Wahlzettel({ wahl }: { wahl: Wahl }) {
   const { t } = useTranslation("wahlen");
@@ -155,6 +156,7 @@ function Uebergabe({ wahl }: { wahl: Wahl }) {
 export default function WahlbueroTab({ wahl }: { wahl: Wahl }) {
   return (
     <div className="space-y-4">
+      {wahl.vote_session === null && <ProbewahlBlock wahl={wahl} />}
       <Beteiligung wahl={wahl} />
       <Uebergabe wahl={wahl} />
     </div>

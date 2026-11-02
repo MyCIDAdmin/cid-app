@@ -61,6 +61,11 @@ export interface Wahl {
   ids_zugelassen: string[];
   ergebnis_freigegeben: boolean;
   einspruch_ergebnis_bis: string | null;
+  /** Nummer des Wahlgangs (1 = erster). */
+  runde: number;
+  vorgaenger: { id: string; titel: string } | null;
+  /** Für Mitglieder erst sichtbar, wenn der Entwurf veröffentlicht ist. */
+  folgewahl: { id: string; titel: string; status: WahlStatus } | null;
   /** Nur im Einzelabruf: darf ich abstimmen, habe ich abgestimmt? */
   teilnahme?: { wahlberechtigt: boolean; hat_gewaehlt: boolean } | null;
 }
@@ -230,7 +235,7 @@ export interface ErgebnisInhalt {
 }
 
 export type Ergebnis =
-  | ({ freigegeben: true; freigegeben_am: string } & ErgebnisInhalt)
+  | ({ freigegeben: true; freigegeben_am: string; weiterer_wahlgang?: boolean } & ErgebnisInhalt)
   | { freigegeben: false; beendet: boolean; beteiligung?: Beteiligung | null };
 
 export interface Protokoll {
@@ -347,4 +352,20 @@ export interface MitteilungsZeile {
   status: MitteilungsStatus;
   anzahl: number | null;
   kanaele_aenderbar: boolean;
+}
+
+export type ProbeSzenario = "zufall" | "gleichstand";
+
+export type ProbeBereitschaftSchluessel =
+  "ausschuss" | "kandidaturen" | "termine" | "bekanntmachungen" | "reglement" | "stimmberechtigte";
+
+export interface Probewahl {
+  stimmen: number;
+  szenario: ProbeSzenario;
+  typ: string;
+  /** Es gab noch keine zugelassenen Kandidaturen: der Lauf nutzt Beispielnamen. */
+  beispiel: boolean;
+  ergebnis: ErgebnisInhalt;
+  weiterer_wahlgang: boolean;
+  bereitschaft: Array<{ schluessel: ProbeBereitschaftSchluessel; ok: boolean; anzahl?: number }>;
 }

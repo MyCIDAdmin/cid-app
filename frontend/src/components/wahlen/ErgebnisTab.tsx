@@ -4,9 +4,15 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 import { protokollPdf } from "../../api/wahlen";
-import { useErgebnis, useProtokoll, useProtokollUnterschreiben } from "../../hooks/useWahlen";
+import {
+  useErgebnis,
+  useFolgewahlAnlegen,
+  useProtokoll,
+  useProtokollUnterschreiben,
+} from "../../hooks/useWahlen";
 import { useAuthStore } from "../../store/authStore";
 import type { ErgebnisInhalt, Wahl } from "../../types/wahlen";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -14,7 +20,7 @@ import { datum } from "../../utils/wahlen";
 import EinspruchFormular from "./EinspruchFormular";
 import FreigabeBlock from "./FreigabeBlock";
 
-function Zahlen({ e }: { e: ErgebnisInhalt }) {
+export function Zahlen({ e }: { e: ErgebnisInhalt }) {
   const { t } = useTranslation("wahlen");
   return (
     <div className="space-y-3">
@@ -54,6 +60,55 @@ function Zahlen({ e }: { e: ErgebnisInhalt }) {
         })}
       </p>
     </div>
+  );
+}
+
+function WeitererWahlgang({ wahl }: { wahl: Wahl }) {
+  const { t } = useTranslation("wahlen");
+  const anlegen = useFolgewahlAnlegen(wahl.id);
+  const [fehler, setFehler] = useState("");
+  const intern = wahl.ist_ausschuss || wahl.kann_verwalten;
+  const folge = wahl.folgewahl;
+  return (
+    <section
+      className="space-y-2 rounded-cid-lg bg-bg-primary p-4 shadow-sm"
+      data-testid="weiterer-wahlgang"
+    >
+      <h3 className="text-sm font-semibold">{t("folge.titel")}</h3>
+      {folge ? (
+        <>
+          <p className="text-sm text-text-secondary">
+            {folge.status === "entwurf" ? t("folge.entwurf") : t("folge.veroeffentlicht")}
+          </p>
+          <Link to={`/wahlen/${folge.id}`} className="text-sm text-ca underline">
+            {t("folge.oeffnen", { titel: folge.titel })}
+          </Link>
+        </>
+      ) : intern ? (
+        <>
+          <p className="text-sm text-text-secondary">{t("folge.fehlt")}</p>
+          <button
+            type="button"
+            disabled={anlegen.isPending}
+            onClick={() =>
+              anlegen.mutate(undefined, {
+                onError: (e) => setFehler(extractApiErrorMessage(e, t("folge.fehler"))),
+              })
+            }
+            className="rounded-cid bg-ca px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            {t("folge.anlegen")}
+          </button>
+        </>
+      ) : (
+        <p className="text-sm text-text-secondary">{t("folge.bald")}</p>
+      )}
+      {fehler && (
+        <p role="alert" className="text-xs text-status-dangerText">
+          {fehler}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -172,6 +227,7 @@ export default function ErgebnisTab({ wahl }: { wahl: Wahl }) {
           {t("ergebnis.veroeffentlicht", { datum: datum(daten.freigegeben_am, true) })}
         </p>
       </section>
+      {daten.weiterer_wahlgang && <WeitererWahlgang wahl={wahl} />}
       <ProtokollBlock wahl={wahl} />
       {kannEinspruch && (
         <section className="space-y-2">
