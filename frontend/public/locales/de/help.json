@@ -1622,14 +1622,15 @@
     "titre": "Finanzen",
     "intro": "Ausgaben erfassen, Budget planen und die Jahresbilanz speisen.",
     "schritte": [
+      "Der Reiter „Überblick“ zeigt, was ansteht: vier Ampel-Kacheln, Aufgaben je Rolle und die Prognose der Ausgaben bis Jahresende.",
       "Im Reiter „Ausgaben“ über „Neue Ausgabe“ Datum, Betrag, Kategorie und Lieferant eintragen und möglichst den Beleg hochladen.",
       "Eine andere Person mit Schreibrecht prüft die Ausgabe und gibt sie frei oder lehnt sie mit Begründung ab. Erst freigegebene Ausgaben zählen in Bilanz und KPIs.",
       "Abgelehnte Ausgaben lassen sich korrigieren und gehen dann erneut zur Freigabe.",
       "Im Reiter „Budget“ pro Kategorie das Jahresbudget eintragen; die Jahresbilanz zeigt dann Ist gegen Budget.",
-      "Im Reiter „Kategorien“ eigene Kategorien anlegen oder nicht mehr benötigte deaktivieren.",
+      "Im Reiter „Kostenarten“ eigene Kategorien anlegen oder nicht mehr benötigte deaktivieren.",
       "Im Reiter „Protokoll“ sehen Sie lückenlos, wer wann was geändert hat.",
-      "Im Reiter „Prüfung“ finden Kassenprüfende Eckzahlen, Ausgaben ohne Beleg und große Beträge, nur lesend.",
-      "Im Reiter „Jahresabschluss“ sperren Sie ein Jahr, sobald alle Ausgaben entschieden sind. Wiedereröffnen kann nur der Administrator App."
+      "Im Reiter „Kassenprüfung“ finden Kassenprüfende Eckzahlen, Ausgaben ohne Beleg und große Beträge, nur lesend.",
+      "Im Reiter „Jahresabschluss“ führt ein Assistent in vier Schritten (Aufräumen, Probelauf, Bewerten, Abschließen) durch den Abschluss. Wiedereröffnen kann nur der Administrator App."
     ],
     "workflows": [
       {
@@ -1707,36 +1708,40 @@
         "uebung": "Übung („ÜBUNG“): Öffne den Reiter „Budget“ für das laufende Jahr und lies „Auf Kategorien verteilt“ und „Verfügbar“. Ändere nichts."
       },
       {
-        "titre": "Jahresabschluss durchführen",
-        "wann": "Alle Ausgaben des Jahres sind entschieden.",
+        "titre": "Jahresabschluss mit Probelauf durchführen",
+        "wann": "Das Geschäftsjahr ist zu Ende und soll abgeschlossen werden.",
         "schritte": [
-          "Reiter „Ausgaben“: Es dürfen keine Ausgaben mehr auf Freigabe warten.",
-          "Reiter „Prüfung“: Ausgaben ohne Beleg und große Beträge ansehen.",
-          "Reiter „Jahresabschluss“ → „Jahr abschließen“ und die Rückfrage bestätigen.",
-          "Optional in Statistiken & KPIs die Jahresbilanz (PDF/Excel) und die Buchungsliste (CSV) für den Steuerberater exportieren."
+          "Reiter „Jahresabschluss“ öffnen und das Jahr wählen. Oben zeigt die Ampel, ob das Jahr abschlussreif ist.",
+          "Schritt „Aufräumen“: Pflichtpunkte (offene Freigaben) erledigen. Empfohlene Punkte dürfen bewusst offen bleiben. „Ansehen“ springt zur passenden Liste.",
+          "Schritt „Probelauf“: Einnahmen, Ausgaben und Ergebnis mit dem Vorjahr vergleichen. Unter „Was wäre wenn?“ Offenes probehalber einrechnen – es wird nichts gespeichert.",
+          "Schritt „Bewerten“: Ampel und Sätze lesen, Plan gegen Wirklichkeit je Kostenart ansehen und bei Überschreitungen optional eine Begründung eintragen.",
+          "Schritt „Abschließen“: Folgen lesen, das Jahr zur Bestätigung eintippen und „Jahr … endgültig abschließen“ klicken.",
+          "Danach optional Berichte herunterladen (PDF, Excel, CSV) – etwa für die Kassenprüfung."
         ],
-        "beispiel": "Anfang Januar sperrst du 2025. Danach sind Änderungen an Ausgaben von 2025 nicht mehr möglich; nur der Administrator App kann das Jahr wieder öffnen.",
-        "danach": "Das Protokoll hält die Sperrung mit Person und Zeitpunkt fest.",
+        "beispiel": "Anfang Februar prüfst du 2025: Der Probelauf zeigt einen Überschuss, zwei Kostenarten liegen über dem Budget. Du trägst kurze Begründungen ein und schließt ab. Nur der Administrator App kann das Jahr wieder öffnen.",
+        "danach": "Das Protokoll hält den Abschluss mit Person und Zeitpunkt fest. Die Begründungen stehen in der abgeschlossenen Ansicht des Jahres.",
         "id": "FIN-03",
         "rollen": ["dir_financier", "bureau_admin", "super_admin"],
-        "vorher": "Alle Ausgaben des Jahres sind entschieden.",
+        "vorher": "Alle Ausgaben des Jahres sind erfasst und du hast Schreibrecht auf die Seite Finanzen.",
         "erwartet": [
-          "Im Reiter „Ausgaben“ steht keine Ausgabe mehr auf „Zur Freigabe“. Andernfalls meldet der Reiter „Jahresabschluss“: „… Ausgabe(n) warten noch auf Freigabe. Erst entscheiden, dann abschließen.“",
-          "Der Reiter „Prüfung“ zeigt Eckzahlen, freigegebene Ausgaben ohne Beleg und große Beträge – oder „Keine Auffälligkeiten.“",
-          "Nach „Jahr abschließen“ und der Rückfrage „Geschäftsjahr abschließen?“ steht dort „Abgeschlossen am … von …“. Einnahmen, Ausgaben und Ergebnis sind festgehalten.",
-          "Die Dateien sind heruntergeladen (Bilanz als Excel, Jahresbericht als PDF, Buchungen als CSV)."
+          "Oben steht die Ampel mit dem Prozentwert „abschlussreif“. Bei Rot steht dort „Noch nicht abschließbar“.",
+          "Im Schritt „Aufräumen“ stehen offene Punkte mit „Pflicht“ oder „Empfohlen“. Bestandene Punkte sind eingeklappt.",
+          "Im Schritt „Probelauf“ steht „Nichts wird gespeichert oder gesperrt“ und das Ergebnis mit Vorjahresvergleich.",
+          "Im Schritt „Bewerten“ stehen die Gesamtbewertung, ein Balken je Kostenart und bei Überschreitungen das Feld „Begründung für Überschreitungen“.",
+          "Im Schritt „Abschließen“ wird der Knopf erst aktiv, wenn keine Pflicht offen ist und das Jahr richtig eingetippt ist. Danach steht „Dieses Jahr ist abgeschlossen“ mit den festgehaltenen Zahlen.",
+          "Die gewählten Berichte (PDF, Excel, CSV) sind heruntergeladen."
         ],
         "fehler": [
           {
-            "problem": "Das Jahr lässt sich nicht abschließen.",
-            "loesung": "Entscheide zuerst alle Ausgaben, die noch „Zur Freigabe“ stehen."
+            "problem": "Der Schritt „Abschließen“ ist gesperrt.",
+            "loesung": "Es ist noch ein Pflichtpunkt offen, meist eine Ausgabe zur Freigabe. Erledige ihn im Schritt „Aufräumen“."
           },
           {
             "problem": "Du willst ein abgeschlossenes Jahr wieder öffnen.",
             "loesung": "Das darf nur der Administrator App und nur mit einer Begründung (Pflicht)."
           }
         ],
-        "uebung": "Übung („ÜBUNG“): Öffne den Reiter „Prüfung“ und lies Eckzahlen und Auffälligkeiten. Schließe kein Jahr ab."
+        "uebung": "Übung („ÜBUNG“): Öffne den Reiter „Jahresabschluss“, gehe bis zum Schritt „Bewerten“ und rechne unter „Was wäre wenn?“ offene Ausgaben probehalber ein. Schließe kein Jahr ab."
       },
       {
         "id": "FIN-04",
@@ -1744,7 +1749,7 @@
         "titre": "Ausgabenkategorie anlegen oder deaktivieren",
         "wann": "Eine neue Art von Ausgaben braucht eine eigene Kategorie, oder eine Kategorie wird nicht mehr genutzt.",
         "schritte": [
-          "Reiter „Kategorien“ öffnen.",
+          "Reiter „Kostenarten“ öffnen.",
           "Unter „Neue Kategorie“ die Namen in Französisch, Deutsch und Arabisch eintragen und „Hinzufügen“ klicken.",
           "Nicht mehr benötigte Kategorien mit „Deaktivieren“ ausblenden. Mit „Aktivieren“ kommen sie zurück."
         ],

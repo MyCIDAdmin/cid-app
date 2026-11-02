@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from apps.accounts.models import Role
 
 from . import budget as budgetregeln
+from . import probelauf as probelauf_modul
 from .models import (
     AktionProtokoll,
     BudgetAnnuel,
@@ -363,6 +364,59 @@ def _abschluss_dict(annee):
     }
 
 
+MAX_BEGRUENDUNGEN = 30
+MAX_BEGRUENDUNG_LAENGE = 500
+
+
+def _begruendungen(daten) -> dict:
+    """Optionale Begründungen je Kostenart für den Jahresbericht: {Kostenart-ID: Text}."""
+    if daten in (None, ""):
+        return {}
+    if not isinstance(daten, dict) or len(daten) > MAX_BEGRUENDUNGEN:
+        raise ValidationError({"begruendungen": "Ungültige Begründungen."})
+    sauber = {}
+    for schluessel, text in daten.items():
+        if not isinstance(text, str) or len(str(schluessel)) > 64:
+            raise ValidationError({"begruendungen": "Ungültige Begründungen."})
+        text = text.strip()
+        if len(text) > MAX_BEGRUENDUNG_LAENGE:
+            raise ValidationError(
+                {"begruendungen": f"Höchstens {MAX_BEGRUENDUNG_LAENGE} Zeichen je Begründung."}
+            )
+        if text:
+            sauber[str(schluessel)] = text
+    return sauber
+
+
+def _wahr(wert) -> bool:
+    return str(wert).lower() in ("1", "true", "ja", "yes")
+
+
+class ProbelaufView(APIView):
+    """Vorschau auf den Jahresabschluss — rein lesend, sperrt und speichert nichts."""
+
+    permission_classes = [FinancesPermission]
+
+    def get(self, request):
+        annee = _annee(request, defaut=timezone.localdate().year - 1)
+        return Response(
+            probelauf_modul.probelauf(
+                annee,
+                offene_ausgaben=_wahr(request.query_params.get("offene_ausgaben")),
+                offene_beitraege=_wahr(request.query_params.get("offene_beitraege")),
+            )
+        )
+
+
+class CockpitView(APIView):
+    """Kennzahlen, Aufgaben und Prognose für den Reiter „Cockpit“ — rein lesend."""
+
+    permission_classes = [FinancesPermission]
+
+    def get(self, request):
+        return Response(probelauf_modul.cockpit())
+
+
 class AbschlussView(APIView):
     """Jahresabschluss : GET = Status + Vorab-Prüfung, POST = Jahr abschließen."""
 
@@ -396,12 +450,15 @@ class AbschlussView(APIView):
                 {"detail": f"{offen} Ausgabe(n) warten noch auf Freigabe — erst entscheiden."},
                 status=status.HTTP_409_CONFLICT,
             )
+        begruendungen = _begruendungen(request.data.get("begruendungen"))
         bilan = bilan_annuel(annee)
         snapshot = {
             "recettes": str(bilan["recettes"]["total"]),
             "depenses": str(bilan["depenses"]["total"]),
             "resultat": str(bilan["resultat"]),
         }
+        if begruendungen:
+            snapshot["begruendungen"] = begruendungen
         Jahresabschluss.objects.update_or_create(
             annee=annee,
             defaults={
