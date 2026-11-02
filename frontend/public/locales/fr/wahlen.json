@@ -55,7 +55,9 @@
     "bekanntmachungen": "Annonces",
     "ausschuss": "Commission électorale",
     "ergebnis": "Résultat",
-    "einsprueche": "Recours"
+    "einsprueche": "Recours",
+    "reglement": "Règlement",
+    "buero": "Bureau de l'élection"
   },
   "anlegen": {
     "titel": "Nouvelle élection",
@@ -334,5 +336,66 @@
     "vorschlag_verwerfen": "Retirer la proposition",
     "zurueckziehen": "Retirer le recours",
     "leer": "Il n'y a aucun recours."
+  },
+  "teilnahme": {
+    "hat_gewaehlt": "Tu as participé à cette élection.",
+    "noch_nicht": "Tu n'as pas encore voté.",
+    "nicht_berechtigt": "Tu n'as pas le droit de vote pour cette élection."
+  },
+  "reglement": {
+    "intro": "Les règles de cette élection. Chaque document a une version ; merci de confirmer que tu as lu la version actuelle.",
+    "leer": "Il n'y a pas encore de documents.",
+    "art": {
+      "wahlordnung": "Règlement électoral",
+      "satzung": "Statuts",
+      "fairness": "Règles d'équité",
+      "datenschutz": "Protection des données",
+      "geschaeftsordnung": "Règlement intérieur"
+    },
+    "version": "Version {{v}}",
+    "gueltig_ab": "valable dès le {{datum}}",
+    "kein_text": "Il n'y a pas encore de texte dans cette langue.",
+    "maschinell": "Traduction automatique – pas encore relue par une personne.",
+    "geprueft_hinweis": "Traduction relue par une personne.",
+    "gelesen_bestaetigen": "J'ai lu la version actuelle",
+    "gelesen_ja": "Lecture confirmée",
+    "gelesen_anzahl": "{{n}} confirmations",
+    "bearbeiten": "Modifier",
+    "speichern": "Enregistrer",
+    "abbrechen": "Annuler",
+    "text": "Texte du document",
+    "version_feld": "Nouvelle version (p. ex. 2.1)",
+    "uebersetzen": "Traduire avec DeepL",
+    "geprueft": "Traduction relue",
+    "hinzufuegen": "Ajouter un document :",
+    "fehler": "Cela n'a pas fonctionné."
+  },
+  "buero": {
+    "wahlzettel": "Bulletin de vote",
+    "wahlzettel_vorschau": "Aperçu – voici à quoi ressemble le bulletin.",
+    "wahlzettel_offen": "Voici à quoi ressemble le bulletin.",
+    "wahlzettel_leer": "Il n'y a pas encore d'options.",
+    "typ_unique": "Une voix.",
+    "typ_multiple": "Jusqu'à {{n}} voix.",
+    "typ_oui_non": "Oui ou non.",
+    "typ_preferentiel": "Indiquer l'ordre de préférence.",
+    "beteiligung": "Participation",
+    "beteiligung_hinweis": "Seul figure ici qui a voté – jamais quand ni pour quoi.",
+    "abgestimmt": "a voté",
+    "offen": "en attente",
+    "export": "Télécharger la liste en CSV",
+    "uebergabe": "Passation",
+    "uebergabe_stand": "{{n}} sur {{max}} terminés",
+    "automatisch": "automatique",
+    "punkt": {
+      "ergebnis_veroeffentlicht": "Résultat publié",
+      "protokoll_unterschrieben": "Procès-verbal signé par trois personnes",
+      "einsprueche_entschieden": "Toutes les contestations tranchées",
+      "nachweise_geloescht": "Justificatifs supprimés après le délai",
+      "zugaenge_uebergeben": "Accès remis à la nouvelle fonction",
+      "unterlagen_uebergeben": "Documents remis",
+      "uebergabeprotokoll": "Procès-verbal de passation archivé"
+    },
+    "fehler": "Cela n'a pas fonctionné."
   }
 }

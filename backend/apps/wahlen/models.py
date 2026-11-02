@@ -527,3 +527,71 @@ class ProtokollUnterschrift(models.Model):
                 fields=["protokoll", "user"], name="wahlen_protokoll_unterschrift_einmalig"
             )
         ]
+
+
+class ReglementArt(models.TextChoices):
+    WAHLORDNUNG = "wahlordnung", "Wahlordnung"
+    SATZUNG = "satzung", "Satzungsauszug"
+    FAIRNESS = "fairness", "Fairness-Kodex"
+    DATENSCHUTZ = "datenschutz", "Datenschutz und Bildrechte"
+    GESCHAEFTSORDNUNG = "geschaeftsordnung", "Geschäftsordnung des Ausschusses"
+
+
+class Reglement(models.Model):
+    """Dokument der Reglement-Bibliothek einer Wahl. Deutsch ist verbindlich; Französisch und
+    Arabisch sind maschinell übersetzt (DeepL), bis ein Mensch sie als geprüft markiert."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wahl = models.ForeignKey(Wahl, on_delete=models.CASCADE, related_name="reglemente")
+    schluessel = models.CharField(max_length=20, choices=ReglementArt.choices)
+    version = models.CharField(max_length=20, default="1")
+    gueltig_ab = models.DateField(null=True, blank=True)
+    texte = models.JSONField(default=dict)
+    geprueft = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "wahlen_reglement"
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["wahl", "schluessel"], name="wahlen_reglement_einmalig")
+        ]
+
+
+class ReglementGelesen(models.Model):
+    """Lesebestätigung eines Mitglieds für eine bestimmte Fassung (Version)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reglement = models.ForeignKey(Reglement, on_delete=models.CASCADE, related_name="gelesen")
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="wahl_reglement_gelesen"
+    )
+    version = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "wahlen_reglement_gelesen"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["reglement", "membre", "version"], name="wahlen_reglement_gelesen_einmalig"
+            )
+        ]
+
+
+class UebergabePunkt(models.Model):
+    """Von Hand abgehakter Punkt der Übergabe-Checkliste (Phase 7)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wahl = models.ForeignKey(Wahl, on_delete=models.CASCADE, related_name="uebergabe_punkte")
+    schluessel = models.CharField(max_length=30)
+    erledigt_am = models.DateTimeField(null=True, blank=True)
+    erledigt_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    notiz = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        db_table = "wahlen_uebergabe_punkt"
+        constraints = [
+            models.UniqueConstraint(fields=["wahl", "schluessel"], name="wahlen_uebergabe_einmalig")
+        ]

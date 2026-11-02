@@ -14,7 +14,9 @@ import KandidatenTab from "../../components/wahlen/KandidatenTab";
 import KandidaturTab from "../../components/wahlen/KandidaturTab";
 import PhasenLeiste from "../../components/wahlen/PhasenLeiste";
 import PruefverfahrenTab from "../../components/wahlen/PruefverfahrenTab";
+import ReglementTab from "../../components/wahlen/ReglementTab";
 import UnterstuetzenKarte from "../../components/wahlen/UnterstuetzenKarte";
+import WahlbueroTab, { Wahlzettel } from "../../components/wahlen/WahlbueroTab";
 import TabLeiste from "../../components/ui/TabLeiste";
 import { useEinsprueche, useWahl } from "../../hooks/useWahlen";
 import type { Wahl } from "../../types/wahlen";
@@ -67,7 +69,16 @@ function Ueberblick({ wahl, zumErgebnis }: { wahl: Wahl; zumErgebnis: () => void
           {wahl.ausschuss.map((a) => a.name).join(", ") || t("ausschuss.noch_keine")}
         </p>
       </section>
-      {wahl.vote_session && wahl.vote_status === "ouverte" && (
+      {wahl.teilnahme?.wahlberechtigt && wahl.vote_session && (
+        <p className="rounded-cid bg-bg-secondary p-3 text-sm" data-testid="meine-teilnahme">
+          {wahl.teilnahme.hat_gewaehlt ? t("teilnahme.hat_gewaehlt") : t("teilnahme.noch_nicht")}
+        </p>
+      )}
+      {wahl.teilnahme && !wahl.teilnahme.wahlberechtigt && wahl.vote_session && (
+        <p className="text-xs text-text-tertiary">{t("teilnahme.nicht_berechtigt")}</p>
+      )}
+      {(wahl.vote_session !== null || wahl.phase >= 3) && <Wahlzettel wahl={wahl} />}
+      {wahl.vote_session && wahl.vote_status === "ouverte" && !wahl.teilnahme?.hat_gewaehlt && (
         <Link
           to="/votes"
           className="inline-block rounded-cid bg-ca px-4 py-2 text-sm font-semibold text-white"
@@ -107,6 +118,8 @@ export default function WahlDetailPage() {
       liste.push({ id: "kandidatur", label: t("tab.kandidatur") });
     }
     if (w.phase >= 3) liste.push({ id: "kandidaten", label: t("tab.kandidaten") });
+    if (w.status !== "entwurf" || intern)
+      liste.push({ id: "reglement", label: t("tab.reglement") });
     if (w.vote_session && (w.phase >= 4 || intern)) {
       liste.push({ id: "ergebnis", label: t("tab.ergebnis") });
     }
@@ -116,6 +129,7 @@ export default function WahlDetailPage() {
     if (intern) {
       liste.push({ id: "pruefung", label: t("tab.pruefung") });
       liste.push({ id: "bekanntmachungen", label: t("tab.bekanntmachungen") });
+      liste.push({ id: "buero", label: t("tab.buero") });
       liste.push({ id: "ausschuss", label: t("tab.ausschuss") });
     }
     return liste;
@@ -160,6 +174,8 @@ export default function WahlDetailPage() {
       {tab === "einsprueche" && <EinsprueceTab wahl={w} />}
       {tab === "pruefung" && <PruefverfahrenTab wahl={w} />}
       {tab === "bekanntmachungen" && <BekanntmachungenTab wahl={w} />}
+      {tab === "reglement" && <ReglementTab wahl={w} />}
+      {tab === "buero" && <WahlbueroTab wahl={w} />}
       {tab === "ausschuss" && <AusschussTab wahl={w} />}
     </div>
   );

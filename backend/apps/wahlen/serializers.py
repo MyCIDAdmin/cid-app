@@ -315,3 +315,19 @@ def protokoll_dict(wahl) -> dict | None:
             "offen": einsprueche.filter(status="offen").count(),
         },
     }
+
+
+def reglement_dict(r, membre, ausschuss: bool) -> dict:
+    daten = {
+        "id": str(r.id),
+        "schluessel": r.schluessel,
+        "version": r.version,
+        "gueltig_ab": r.gueltig_ab,
+        "texte": {s: r.texte[s]["html"] for s in ("de", "fr", "ar") if s in r.texte},
+        "geprueft": {s: bool(r.geprueft.get(s)) for s in ("fr", "ar")},
+        "gelesen": bool(membre and r.gelesen.filter(membre=membre, version=r.version).exists()),
+    }
+    if ausschuss:
+        daten["gelesen_anzahl"] = r.gelesen.filter(version=r.version).count()
+        daten["uebersetzung_moeglich"] = _deepl_aktiv()
+    return daten

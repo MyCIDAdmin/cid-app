@@ -61,6 +61,8 @@ export interface Wahl {
   ids_zugelassen: string[];
   ergebnis_freigegeben: boolean;
   einspruch_ergebnis_bis: string | null;
+  /** Nur im Einzelabruf: darf ich abstimmen, habe ich abgestimmt? */
+  teilnahme?: { wahlberechtigt: boolean; hat_gewaehlt: boolean } | null;
 }
 
 export type FreigabeArt = "oeffnen" | "schliessen" | "ergebnis";
@@ -274,4 +276,50 @@ export interface EinspruchPayload {
   art: EinspruchArt;
   kandidatur?: string;
   text: string;
+}
+
+// ---- Wahlbüro und Reglement (Welle 2b)
+
+export interface BeteiligungEintrag {
+  membre: string;
+  name: string;
+  hat_gewaehlt: boolean;
+}
+
+export interface BeteiligungListe {
+  abgegeben: number;
+  berechtigt: number;
+  prozent: number;
+  eintraege: BeteiligungEintrag[];
+}
+
+export interface Wahlzettel {
+  typ: string;
+  stimmen_max: number;
+  schwelle: number | null;
+  geoeffnet: boolean;
+  optionen: Array<{ label: string; beschreibung: string; personen: string[] }>;
+}
+
+export interface UebergabePunkt {
+  schluessel: string;
+  automatisch: boolean;
+  erledigt: boolean;
+  erledigt_am: string | null;
+  notiz: string;
+}
+
+export type ReglementArt =
+  "wahlordnung" | "satzung" | "fairness" | "datenschutz" | "geschaeftsordnung";
+
+export interface Reglement {
+  id: string;
+  schluessel: ReglementArt;
+  version: string;
+  gueltig_ab: string | null;
+  texte: Partial<Record<Sprache, string>>;
+  geprueft: Record<"fr" | "ar", boolean>;
+  gelesen: boolean;
+  gelesen_anzahl?: number;
+  uebersetzung_moeglich?: boolean;
 }

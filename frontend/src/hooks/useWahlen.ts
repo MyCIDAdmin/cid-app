@@ -9,6 +9,7 @@ import type {
   FreigabeArt,
   KandidaturPayload,
   Pruefergebnis,
+  ReglementArt,
   Sprache,
   WahlPayload,
 } from "../types/wahlen";
@@ -21,6 +22,10 @@ const keys = {
   ergebnis: (wahl: string) => ["wahlen", "ergebnis", wahl] as const,
   protokoll: (wahl: string) => ["wahlen", "protokoll", wahl] as const,
   einsprueche: (wahl: string) => ["wahlen", "einsprueche", wahl] as const,
+  beteiligung: (wahl: string) => ["wahlen", "beteiligung", wahl] as const,
+  wahlzettel: (wahl: string) => ["wahlen", "wahlzettel", wahl] as const,
+  uebergabe: (wahl: string) => ["wahlen", "uebergabe", wahl] as const,
+  reglemente: (wahl: string) => ["wahlen", "reglemente", wahl] as const,
 };
 
 export function useWahlen() {
@@ -214,5 +219,76 @@ export function useEinspruchAktionen(id: string) {
         api.einspruchEntscheiden(id, art, begruendung),
       ...optionen,
     }),
+  };
+}
+
+export function useBeteiligung(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.beteiligung(wahl ?? ""),
+    queryFn: () => api.getBeteiligung(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+  });
+}
+
+export function useWahlzettel(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.wahlzettel(wahl ?? ""),
+    queryFn: () => api.getWahlzettel(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+    retry: false,
+  });
+}
+
+export function useUebergabe(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.uebergabe(wahl ?? ""),
+    queryFn: () => api.getUebergabe(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+  });
+}
+
+export function useUebergabeSetzen(wahl: string) {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({
+    mutationFn: (p: { schluessel: string; erledigt: boolean; notiz?: string }) =>
+      api.uebergabeSetzen(wahl, p.schluessel, p.erledigt, p.notiz),
+    onSuccess: neuLaden,
+  });
+}
+
+export function useReglemente(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.reglemente(wahl ?? ""),
+    queryFn: () => api.listReglemente(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+  });
+}
+
+export function useReglementAnlegen(wahl: string) {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({
+    mutationFn: (schluessel: ReglementArt) => api.reglementAnlegen(wahl, schluessel),
+    onSuccess: neuLaden,
+  });
+}
+
+export function useReglementAktionen(id: string) {
+  const neuLaden = useAlleNeuLaden();
+  const optionen = { onSuccess: neuLaden };
+  return {
+    aendern: useMutation({
+      mutationFn: (payload: api.ReglementAenderung) => api.reglementAendern(id, payload),
+      ...optionen,
+    }),
+    uebersetzen: useMutation({
+      mutationFn: (sprache: Sprache) => api.reglementUebersetzen(id, sprache),
+      ...optionen,
+    }),
+    geprueft: useMutation({
+      mutationFn: ({ sprache, wert }: { sprache: Sprache; wert: boolean }) =>
+        api.reglementGeprueft(id, sprache, wert),
+      ...optionen,
+    }),
+    gelesen: useMutation({ mutationFn: () => api.reglementGelesen(id), ...optionen }),
   };
 }
