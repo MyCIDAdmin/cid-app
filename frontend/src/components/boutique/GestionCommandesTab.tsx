@@ -25,7 +25,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import AktionsBlatt from "./AktionsBlatt";
+import BestellDetails from "./BestellDetails";
+import BestellFortschritt from "./BestellFortschritt";
 import ConfirmDialog from "../ui/ConfirmDialog";
+import { Fachwort, HilfeHinweis } from "../ui/Erklaerung";
 import {
   exporterCommandesExcel,
   telechargerConfirmationCommande,
@@ -39,17 +43,18 @@ import {
   useCreerRetourLot,
   useExpedierCommande,
   useProduits,
+  useVerwaltungUeberblick,
 } from "../../hooks/useBoutique";
 import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import {
+  STAPEL_REIHENFOLGE,
+  STAPEL_STATUTS,
   STATUTS_ANNULABLES,
-  STATUTS_CONFIRMABLES_PAIEMENT,
-  STATUTS_EXPEDIABLES_NORMAL,
   STATUTS_RETOURNABLES,
-  TRANSITIONS_STATUT_COMMANDE,
   type Commande,
   type ModePaiementCommande,
   type MotifRetour,
+  type StapelName,
   type StatutCommande,
 } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -79,16 +84,6 @@ const MOTIFS_RETOUR: MotifRetour[] = [
   "autre",
 ];
 
-const TOUS_STATUTS: StatutCommande[] = [
-  "en_attente",
-  "confirmee",
-  "en_preparation",
-  "expediee",
-  "livree",
-  "annulee",
-  "remboursee",
-];
-
 const STATUT_STYLES: Record<StatutCommande, string> = {
   en_attente: "bg-status-warningBg text-status-warningText",
   confirmee: "bg-status-successBg text-status-successText",
@@ -112,13 +107,34 @@ interface ExpeditionModalState {
   nacherfassement: boolean;
 }
 
-export default function GestionCommandesTab({ modifiable = true }: { modifiable?: boolean } = {}) {
+type BlattArt = "zahlung" | "geliefert" | "erstattet" | "vorbereitung";
+
+interface Aktion {
+  key: string;
+  label: string;
+  erlaubt: boolean;
+  hinweis?: string;
+  gefahr?: boolean;
+  run: () => void;
+}
+
+export default function GestionCommandesTab({
+  modifiable = true,
+  startStapel = "",
+}: { modifiable?: boolean; startStapel?: StapelName | "" } = {}) {
   const { t } = useTranslation(["boutique", "common"]);
   const user = useAuthStore((s) => s.user);
   const peutConfirmerPaiementEtExpedier = hasRoleAtLeast(user, ROLE_LEVELS.dir_financier);
   const peutGererRetours = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
 
-  const [filtreStatut, setFiltreStatut] = useState<StatutCommande | "">("");
+  // „Stapel“ statt sieben technischer Status (Shop-Verwaltung einfacher, 2026-11-02): die Chips
+  // fassen die Status zusammen; die Zahlen kommen vollständig vom Überblick-Endpunkt.
+  const [stapel, setStapel] = useState<StapelName | "">(startStapel);
+  const { data: ueberblick } = useVerwaltungUeberblick();
+  const [offen, setOffen] = useState<string | null>(null);
+  const [menu, setMenu] = useState<string | null>(null);
+  const [blatt, setBlatt] = useState<{ art: BlattArt; commande: Commande } | null>(null);
+  const statuts = stapel ? STAPEL_STATUTS[stapel].join(",") : undefined;
   // Filtres destinataire/intervalle de dates (demande utilisateur du 2026-09-25, module
   // "Shop-Verwaltung" : "Filtermöglichkeiten hinzufügen z.B. Datumsintervall, Empfänger") — même
   // convention (état contrôlé directement branché sur la query, sans debounce) que
@@ -166,7 +182,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
   const [commentaireRetour, setCommentaireRetour] = useState("");
 
   const commandesQuery = useCommandes({
-    statut: filtreStatut || undefined,
+    statuts,
     destinataire: filtreDestinataire || undefined,
     date_apres: filtreDateApres || undefined,
     date_avant: filtreDateAvant || undefined,
@@ -209,7 +225,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
     setExportEnCours(true);
     try {
       const { blob, nomFichier } = await exporterCommandesExcel({
-        statut: filtreStatut || undefined,
+        statuts,
         destinataire: filtreDestinataire || undefined,
         date_apres: filtreDateApres || undefined,
         date_avant: filtreDateAvant || undefined,
@@ -228,14 +244,139 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
     annulerMutation.mutate(commandeAAnnuler.id, { onSuccess: () => setCommandeAAnnuler(null) });
   }
 
-  function confirmerPaiement(commande: Commande) {
-    confirmerPaiementMutation.mutate({
-      id: commande.id,
-      payload: {
-        mode_paiement: modePaiementParCommande[commande.id] ?? "virement",
-        date_paiement: datePaiementParCommande[commande.id] || undefined,
-      },
+  const blattFehler =
+    blatt?.art === "zahlung"
+      ? confirmerPaiementMutation.isError
+        ? extractApiErrorMessage(confirmerPaiementMutation.error, t("paiement.erreur"))
+        : null
+      : changerStatutMutation.isError
+        ? extractApiErrorMessage(changerStatutMutation.error, t("commandes_admin.erreur_statut"))
+        : null;
+
+  function bestaetigeBlatt() {
+    if (!blatt) return;
+    const schliessen = { onSuccess: () => setBlatt(null) };
+    const { art, commande } = blatt;
+    if (art === "zahlung") {
+      confirmerPaiementMutation.mutate(
+        {
+          id: commande.id,
+          payload: {
+            mode_paiement: modePaiementParCommande[commande.id] ?? "virement",
+            date_paiement: datePaiementParCommande[commande.id] || undefined,
+          },
+        },
+        schliessen,
+      );
+      return;
+    }
+    if (!modifiable) return;
+    const ziel: StatutCommande =
+      art === "geliefert" ? "livree" : art === "erstattet" ? "remboursee" : "en_preparation";
+    changerStatutMutation.mutate({ id: commande.id, payload: { statut: ziel } }, schliessen);
+  }
+
+  /** Der eine Hauptknopf einer Bestellung: der nächste Schritt, falls es einen gibt. */
+  function hauptAktion(c: Commande): Aktion | null {
+    const nurFinanz = t("bestellung.nur_finanz") ?? "";
+    switch (c.statut) {
+      case "en_attente":
+        return {
+          key: "zahlung",
+          label: t("paiement.confirmer"),
+          erlaubt: peutConfirmerPaiementEtExpedier,
+          hinweis: nurFinanz,
+          run: () => setBlatt({ art: "zahlung", commande: c }),
+        };
+      case "confirmee":
+      case "en_preparation":
+        return {
+          key: "versand",
+          label: t("expedition.expedier"),
+          erlaubt: peutConfirmerPaiementEtExpedier,
+          hinweis: nurFinanz,
+          run: () => ouvrirExpedition(c, false),
+        };
+      case "expediee":
+        return {
+          key: "geliefert",
+          label: t("bestellung.als_geliefert"),
+          erlaubt: modifiable,
+          hinweis: t("common:acces.lecture_seule_tooltip") ?? "",
+          run: () => setBlatt({ art: "geliefert", commande: c }),
+        };
+      default:
+        return null;
+    }
+  }
+
+  /** Alles Seltene steckt hinter „Mehr“ — nur, was für diese Bestellung wirklich möglich ist. */
+  function mehrEintraege(c: Commande): Aktion[] {
+    const lesemodus = t("common:acces.lecture_seule_tooltip") ?? "";
+    const liste: Aktion[] = [];
+    if (c.statut === "confirmee") {
+      liste.push({
+        key: "vorbereitung",
+        label: t("bestellung.in_vorbereitung"),
+        erlaubt: modifiable,
+        hinweis: lesemodus,
+        run: () => setBlatt({ art: "vorbereitung", commande: c }),
+      });
+    }
+    if (peutConfirmerPaiementEtExpedier && c.statut === "en_attente") {
+      liste.push({
+        key: "ausserhalb",
+        label: t("nacherfassung.bouton"),
+        erlaubt: true,
+        run: () => ouvrirExpedition(c, true),
+      });
+    }
+    if (
+      peutGererRetours &&
+      STATUTS_RETOURNABLES.includes(c.statut) &&
+      c.lignes.some((l) => l.quantite_retournable > 0)
+    ) {
+      liste.push({
+        key: "ruecksendung",
+        label: t("retour.bouton"),
+        erlaubt: modifiable,
+        hinweis: lesemodus,
+        run: () => ouvrirRetour(c),
+      });
+    }
+    if (c.statut === "expediee" || c.statut === "livree") {
+      liste.push({
+        key: "erstattet",
+        label: t("bestellung.erstattet_markieren"),
+        erlaubt: modifiable,
+        hinweis: lesemodus,
+        run: () => setBlatt({ art: "erstattet", commande: c }),
+      });
+    }
+    liste.push({
+      key: "pdf_bestaetigung",
+      label: t("bestellung.pdf_bestaetigung"),
+      erlaubt: documentEnCours !== `${c.id}-confirmation`,
+      run: () => void telechargerConfirmation(c),
     });
+    if (c.date_paiement_confirme) {
+      liste.push({
+        key: "pdf_rechnung",
+        label: t("bestellung.pdf_rechnung"),
+        erlaubt: documentEnCours !== `${c.id}-facture`,
+        run: () => void telechargerFacture(c),
+      });
+    }
+    if (STATUTS_ANNULABLES.includes(c.statut)) {
+      liste.push({
+        key: "abbrechen",
+        label: t("commandes_admin.annuler"),
+        erlaubt: true,
+        gefahr: true,
+        run: () => setCommandeAAnnuler(c),
+      });
+    }
+    return liste;
   }
 
   function ouvrirExpedition(commande: Commande, nacherfassement: boolean) {
@@ -299,80 +440,100 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div
+        className="mb-1 flex flex-wrap gap-2"
+        role="group"
+        aria-label={t("bestellung.stapel_label")}
+      >
         <button
           type="button"
-          onClick={() => setFiltreStatut("")}
-          className={`rounded-cid px-3 py-1.5 text-xs font-medium ${
-            filtreStatut === "" ? "bg-ca text-white" : "bg-bg-primary text-text-secondary"
+          aria-pressed={stapel === ""}
+          onClick={() => setStapel("")}
+          className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+            stapel === "" ? "bg-ca text-white" : "bg-bg-primary text-text-secondary"
           }`}
         >
           {t("commandes_admin.tous")}
         </button>
-        {TOUS_STATUTS.map((s) => (
+        {STAPEL_REIHENFOLGE.map((s) => (
           <button
             key={s}
             type="button"
-            onClick={() => setFiltreStatut(s)}
-            className={`rounded-cid px-3 py-1.5 text-xs font-medium ${
-              filtreStatut === s ? "bg-ca text-white" : "bg-bg-primary text-text-secondary"
+            aria-pressed={stapel === s}
+            onClick={() => setStapel(s)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+              stapel === s ? "bg-ca text-white" : "bg-bg-primary text-text-secondary"
             }`}
           >
-            {t(`statut_commande.${s}`)}
+            {t(`bestellung.stapel.${s}`)}
+            {ueberblick?.stapel && (
+              <span className="ml-1.5 rounded-full bg-black/10 px-1.5 text-[10px]">
+                {ueberblick.stapel[s]}
+              </span>
+            )}
           </button>
         ))}
       </div>
+      <HilfeHinweis ns="boutique">
+        {t("bestellung.stapel_hilfe")} <Fachwort ns="boutique" begriff="stapel" />.
+      </HilfeHinweis>
 
-      <div className="mb-3 flex flex-wrap items-end gap-2">
+      <div className="mb-3 mt-3 flex flex-wrap items-end gap-2">
         <input
-          type="text"
+          type="search"
+          aria-label={t("bestellung.suche_label")}
           value={filtreDestinataire}
           onChange={(e) => setFiltreDestinataire(e.target.value)}
           placeholder={t("commandes_admin.filtre_destinataire_placeholder") ?? ""}
-          className="rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-xs"
+          className="min-w-[12rem] flex-1 rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-sm"
         />
-        <label className="flex flex-col text-[10px] font-medium text-text-secondary">
-          {t("commandes_admin.filtre_date_apres_label")}
-          <input
-            type="date"
-            value={filtreDateApres}
-            onChange={(e) => setFiltreDateApres(e.target.value)}
-            className="mt-0.5 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
-          />
-        </label>
-        <label className="flex flex-col text-[10px] font-medium text-text-secondary">
-          {t("commandes_admin.filtre_date_avant_label")}
-          <input
-            type="date"
-            value={filtreDateAvant}
-            onChange={(e) => setFiltreDateAvant(e.target.value)}
-            className="mt-0.5 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
-          />
-        </label>
         <details className="relative text-xs">
           <summary className="cursor-pointer rounded-cid border border-text-tertiary/30 px-3 py-1.5 font-medium text-text-secondary">
-            {t("commandes_admin.filtre_artikel", { count: filtreProduits.length })}
+            {t("bestellung.weitere_filter")}
           </summary>
-          <div className="absolute z-20 mt-1 max-h-60 w-64 overflow-y-auto rounded-cid border border-text-tertiary/30 bg-bg-primary p-2 shadow-md">
-            {(produitsQuery.data?.results ?? []).map((p) => (
-              <label key={p.id} className="flex items-center gap-2 py-0.5">
-                <input
-                  type="checkbox"
-                  checked={filtreProduits.includes(p.id)}
-                  onChange={(e) =>
-                    setFiltreProduits((alt) =>
-                      e.target.checked ? [...alt, p.id] : alt.filter((id) => id !== p.id),
-                    )
-                  }
-                />
-                <span className="truncate">{p.nom}</span>
-              </label>
-            ))}
+          <div className="absolute z-20 mt-1 flex w-72 flex-col gap-2 rounded-cid border border-text-tertiary/30 bg-bg-primary p-3 shadow-md">
+            <label className="flex flex-col text-[10px] font-medium text-text-secondary">
+              {t("commandes_admin.filtre_date_apres_label")}
+              <input
+                type="date"
+                value={filtreDateApres}
+                onChange={(e) => setFiltreDateApres(e.target.value)}
+                className="mt-0.5 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+              />
+            </label>
+            <label className="flex flex-col text-[10px] font-medium text-text-secondary">
+              {t("commandes_admin.filtre_date_avant_label")}
+              <input
+                type="date"
+                value={filtreDateAvant}
+                onChange={(e) => setFiltreDateAvant(e.target.value)}
+                className="mt-0.5 rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs"
+              />
+            </label>
+            <p className="text-[10px] font-medium text-text-secondary">
+              {t("commandes_admin.filtre_artikel", { count: filtreProduits.length })}
+            </p>
+            <div className="max-h-40 overflow-y-auto">
+              {(produitsQuery.data?.results ?? []).map((p) => (
+                <label key={p.id} className="flex items-center gap-2 py-0.5">
+                  <input
+                    type="checkbox"
+                    checked={filtreProduits.includes(p.id)}
+                    onChange={(e) =>
+                      setFiltreProduits((alt) =>
+                        e.target.checked ? [...alt, p.id] : alt.filter((id) => id !== p.id),
+                      )
+                    }
+                  />
+                  <span className="truncate">{p.nom}</span>
+                </label>
+              ))}
+            </div>
             {filtreProduits.length > 0 && (
               <button
                 type="button"
                 onClick={() => setFiltreProduits([])}
-                className="mt-1 text-ca hover:underline"
+                className="text-left text-ca hover:underline"
               >
                 {t("commandes_admin.filtre_artikel_zuruecksetzen")}
               </button>
@@ -393,17 +554,6 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
 
       {erreurExport && <p className="mb-2 text-xs text-status-dangerText">{erreurExport}</p>}
       {erreurDocument && <p className="mb-2 text-xs text-status-dangerText">{erreurDocument}</p>}
-
-      {changerStatutMutation.isError && (
-        <p className="mb-2 text-xs text-status-dangerText">
-          {extractApiErrorMessage(changerStatutMutation.error, t("commandes_admin.erreur_statut"))}
-        </p>
-      )}
-      {confirmerPaiementMutation.isError && (
-        <p className="mb-2 text-xs text-status-dangerText">
-          {extractApiErrorMessage(confirmerPaiementMutation.error, t("paiement.erreur"))}
-        </p>
-      )}
       {expedierMutation.isError && !expeditionModal && (
         <p className="mb-2 text-xs text-status-dangerText">
           {extractApiErrorMessage(expedierMutation.error, t("expedition.erreur"))}
@@ -415,214 +565,181 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-cid-lg bg-bg-primary shadow-sm">
-        <table className="cid-karten w-full text-xs">
-          <thead>
-            <tr className="border-b border-text-tertiary/20 text-left uppercase text-text-tertiary">
-              <th className="px-3 py-2">{t("commandes_admin.col_numero")}</th>
-              <th className="px-3 py-2">{t("commandes_admin.col_destinataire")}</th>
-              <th className="px-3 py-2">{t("commandes_admin.col_montant")}</th>
-              <th className="px-3 py-2">{t("commandes_admin.col_statut")}</th>
-              <th className="px-3 py-2">{t("commandes_admin.col_date")}</th>
-              <th className="px-3 py-2">{t("commandes_admin.col_confirmation")}</th>
-              <th className="px-3 py-2">{t("commandes_admin.col_facture")}</th>
-              <th className="px-3 py-2">{t("commandes_admin.col_actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {commandesQuery.data?.results.map((commande) => {
-              const transitions = TRANSITIONS_STATUT_COMMANDE[commande.statut];
-              return (
-                <tr key={commande.id} className="border-b border-text-tertiary/10 last:border-0">
-                  <td data-kopf className="px-3 py-2 font-mono">
-                    {commande.numero_commande}
-                    {commande.numero_suivi && (
-                      <div className="mt-0.5 font-sans text-[10px] font-normal text-text-tertiary">
-                        {t("expedition.suivi_label", {
-                          numero: commande.numero_suivi,
-                          transporteur: commande.transporteur || "—",
-                        })}
-                      </div>
-                    )}
-                  </td>
-                  <td data-label={t("commandes_admin.col_destinataire")} className="px-3 py-2">
-                    {commande.nom_destinataire}
-                  </td>
-                  <td
-                    data-label={t("commandes_admin.col_montant")}
-                    className="px-3 py-2 font-bold text-ca"
-                  >
-                    {formatMontant(commande.montant_total)}
-                  </td>
-                  <td data-label={t("commandes_admin.col_statut")} className="px-3 py-2">
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[commande.statut]}`}
-                    >
-                      {t(`statut_commande.${commande.statut}`)}
+      <ul className="space-y-3">
+        {commandesQuery.data?.results.map((commande) => {
+          const haupt = hauptAktion(commande);
+          const eintraege = mehrEintraege(commande);
+          const geoeffnet = offen === commande.id;
+          return (
+            <li
+              key={commande.id}
+              className="rounded-cid-lg bg-bg-primary p-3 shadow-sm"
+              data-commande={commande.numero_commande}
+            >
+              <div className="grid items-center gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto]">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-text-primary">
+                    {commande.nom_destinataire}{" "}
+                    <span className="font-mono text-[11px] font-normal text-text-tertiary">
+                      {commande.numero_commande}
                     </span>
-                  </td>
-                  <td data-label={t("commandes_admin.col_date")} className="px-3 py-2">
+                  </p>
+                  <p className="text-xs text-text-secondary">
                     {formatDate(commande.created_at)}
-                  </td>
-                  <td data-label={t("commandes_admin.col_confirmation")} className="px-3 py-2">
+                    {commande.mode_paiement && ` · ${t(`paiement.mode.${commande.mode_paiement}`)}`}
+                    {commande.numero_suivi &&
+                      ` · ${t("expedition.suivi_label", {
+                        numero: commande.numero_suivi,
+                        transporteur: commande.transporteur || "—",
+                      })}`}
+                  </p>
+                </div>
+                <BestellFortschritt statut={commande.statut} />
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <b className="text-base tabular-nums text-ca">
+                    {formatMontant(commande.montant_total)}
+                  </b>
+                  {haupt && (
                     <button
                       type="button"
-                      aria-label={t("commandes_admin.telecharger_confirmation_aria")}
-                      onClick={() => telechargerConfirmation(commande)}
-                      disabled={documentEnCours === `${commande.id}-confirmation`}
-                      className="font-medium text-ca hover:underline disabled:opacity-40"
+                      onClick={haupt.run}
+                      disabled={!haupt.erlaubt}
+                      title={haupt.erlaubt ? "" : (haupt.hinweis ?? "")}
+                      className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
                     >
-                      PDF
+                      {haupt.label}
                     </button>
-                  </td>
-                  <td data-label={t("commandes_admin.col_facture")} className="px-3 py-2">
-                    {commande.date_paiement_confirme ? (
-                      <button
-                        type="button"
-                        aria-label={t("commandes_admin.telecharger_facture_aria")}
-                        onClick={() => telechargerFacture(commande)}
-                        disabled={documentEnCours === `${commande.id}-facture`}
-                        className="font-medium text-ca hover:underline disabled:opacity-40"
-                      >
-                        PDF
-                      </button>
-                    ) : (
-                      <span className="text-text-tertiary">—</span>
-                    )}
-                  </td>
-                  <td data-aktionen className="px-3 py-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {transitions.length > 0 && (
-                        <select
-                          aria-label={t("commandes_admin.changer_statut")}
-                          defaultValue=""
-                          disabled={!modifiable}
-                          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
-                          onChange={(e) => {
-                            // Garde de défense en profondeur — voir
-                            // GestionCatalogueTab.toggleStatut pour le raisonnement (onChange,
-                            // pas un <button disabled>).
-                            if (!e.target.value || !modifiable) return;
-                            changerStatutMutation.mutate({
-                              id: commande.id,
-                              payload: { statut: e.target.value as StatutCommande },
-                            });
-                            e.target.value = "";
-                          }}
-                          className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-[11px] disabled:opacity-40"
+                  )}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      aria-haspopup="menu"
+                      aria-expanded={menu === commande.id}
+                      onClick={() => setMenu(menu === commande.id ? null : commande.id)}
+                      className="rounded-cid border border-text-tertiary/30 px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-bg-tertiary"
+                    >
+                      {t("bestellung.mehr")}
+                    </button>
+                    {menu === commande.id && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label={t("modal_annuler")}
+                          tabIndex={-1}
+                          onClick={() => setMenu(null)}
+                          className="fixed inset-0 z-10 cursor-default"
+                        />
+                        <div
+                          role="menu"
+                          className="absolute right-0 z-20 mt-1 flex w-60 flex-col rounded-cid border border-text-tertiary/30 bg-bg-primary py-1 shadow-md"
                         >
-                          <option value="">{t("commandes_admin.changer_statut")}</option>
-                          {transitions.map((s) => (
-                            <option key={s} value={s}>
-                              {t(`statut_commande.${s}`)}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-
-                      {peutConfirmerPaiementEtExpedier &&
-                        STATUTS_CONFIRMABLES_PAIEMENT.includes(commande.statut) && (
-                          <span className="flex items-center gap-1">
-                            <select
-                              aria-label={t("paiement.mode_label")}
-                              value={modePaiementParCommande[commande.id] ?? "virement"}
-                              onChange={(e) =>
-                                setModePaiementParCommande((prev) => ({
-                                  ...prev,
-                                  [commande.id]: e.target.value as ModePaiementCommande,
-                                }))
-                              }
-                              className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-[11px]"
-                            >
-                              {MODES_PAIEMENT.map((m) => (
-                                <option key={m} value={m}>
-                                  {t(`paiement.mode.${m}`)}
-                                </option>
-                              ))}
-                            </select>
-                            <input
-                              type="date"
-                              aria-label={t("paiement.date_paiement_label")}
-                              value={datePaiementParCommande[commande.id] ?? ""}
-                              onChange={(e) =>
-                                setDatePaiementParCommande((prev) => ({
-                                  ...prev,
-                                  [commande.id]: e.target.value,
-                                }))
-                              }
-                              max={new Date().toISOString().slice(0, 10)}
-                              className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-[11px]"
-                            />
+                          {eintraege.map((e) => (
                             <button
+                              key={e.key}
                               type="button"
-                              onClick={() => confirmerPaiement(commande)}
-                              disabled={confirmerPaiementMutation.isPending}
-                              className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-status-successText hover:bg-bg-tertiary disabled:opacity-50"
+                              role="menuitem"
+                              disabled={!e.erlaubt}
+                              title={e.erlaubt ? "" : (e.hinweis ?? "")}
+                              onClick={() => {
+                                setMenu(null);
+                                e.run();
+                              }}
+                              className={`px-3 py-2 text-left text-xs hover:bg-bg-tertiary disabled:opacity-40 ${
+                                e.gefahr ? "text-status-dangerText" : "text-text-secondary"
+                              }`}
                             >
-                              {t("paiement.confirmer")}
+                              {e.label}
                             </button>
-                          </span>
-                        )}
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span
+                  className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[commande.statut]}`}
+                >
+                  {t(`statut_commande.${commande.statut}`)}
+                </span>
+                {haupt && !haupt.erlaubt && haupt.hinweis && (
+                  <span className="text-[11px] text-text-tertiary">{haupt.hinweis}</span>
+                )}
+                <button
+                  type="button"
+                  aria-expanded={geoeffnet}
+                  onClick={() => setOffen(geoeffnet ? null : commande.id)}
+                  className="rounded-cid border border-text-tertiary/30 px-2 py-0.5 text-[11px] text-ca hover:bg-bg-tertiary"
+                >
+                  {geoeffnet ? t("bestellung.details_aus") : t("bestellung.details")}
+                </button>
+              </div>
+              {geoeffnet && <BestellDetails commande={commande} />}
+            </li>
+          );
+        })}
+      </ul>
+      {commandesQuery.data && commandesQuery.data.results.length === 0 && (
+        <p className="rounded-cid-lg bg-bg-primary p-4 text-center text-sm text-text-tertiary shadow-sm">
+          {t("commandes_admin.aucune_commande")}
+        </p>
+      )}
 
-                      {peutConfirmerPaiementEtExpedier &&
-                        STATUTS_EXPEDIABLES_NORMAL.includes(commande.statut) && (
-                          <button
-                            type="button"
-                            onClick={() => ouvrirExpedition(commande, false)}
-                            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary"
-                          >
-                            {t("expedition.expedier")}
-                          </button>
-                        )}
-
-                      {peutConfirmerPaiementEtExpedier && commande.statut === "en_attente" && (
-                        <button
-                          type="button"
-                          onClick={() => ouvrirExpedition(commande, true)}
-                          className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary"
-                        >
-                          {t("nacherfassung.bouton")}
-                        </button>
-                      )}
-
-                      {peutGererRetours &&
-                        STATUTS_RETOURNABLES.includes(commande.statut) &&
-                        commande.lignes.some((l) => l.quantite_retournable > 0) && (
-                          <button
-                            type="button"
-                            onClick={() => ouvrirRetour(commande)}
-                            disabled={!modifiable}
-                            title={
-                              !modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""
-                            }
-                            className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
-                          >
-                            {t("retour.bouton")}
-                          </button>
-                        )}
-
-                      {STATUTS_ANNULABLES.includes(commande.statut) && (
-                        <button
-                          type="button"
-                          onClick={() => setCommandeAAnnuler(commande)}
-                          className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-[11px] text-status-dangerText hover:bg-bg-tertiary"
-                        >
-                          {t("commandes_admin.annuler")}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {commandesQuery.data && commandesQuery.data.results.length === 0 && (
-          <p className="p-4 text-center text-sm text-text-tertiary">
-            {t("commandes_admin.aucune_commande")}
-          </p>
-        )}
-      </div>
+      {blatt && (
+        <AktionsBlatt
+          titel={t(`bestellung.blatt.${blatt.art}.titel`)}
+          nummer={`${blatt.commande.nom_destinataire} · ${blatt.commande.numero_commande}`}
+          folge={t(`bestellung.blatt.${blatt.art}.folge`)}
+          knopf={t(`bestellung.blatt.${blatt.art}.knopf`)}
+          onBestaetigen={bestaetigeBlatt}
+          onClose={() => setBlatt(null)}
+          laeuft={confirmerPaiementMutation.isPending || changerStatutMutation.isPending}
+          gefahr={blatt.art === "erstattet"}
+          fehler={blattFehler}
+        >
+          {blatt.art === "zahlung" && (
+            <>
+              <label className="text-xs font-medium text-text-secondary">
+                {t("paiement.mode_label")}
+                <select
+                  aria-label={t("paiement.mode_label")}
+                  value={modePaiementParCommande[blatt.commande.id] ?? "virement"}
+                  onChange={(e) =>
+                    setModePaiementParCommande((prev) => ({
+                      ...prev,
+                      [blatt.commande.id]: e.target.value as ModePaiementCommande,
+                    }))
+                  }
+                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                >
+                  {MODES_PAIEMENT.map((m) => (
+                    <option key={m} value={m}>
+                      {t(`paiement.mode.${m}`)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs font-medium text-text-secondary">
+                {t("paiement.date_paiement_label")}
+                <input
+                  type="date"
+                  aria-label={t("paiement.date_paiement_label")}
+                  value={datePaiementParCommande[blatt.commande.id] ?? ""}
+                  onChange={(e) =>
+                    setDatePaiementParCommande((prev) => ({
+                      ...prev,
+                      [blatt.commande.id]: e.target.value,
+                    }))
+                  }
+                  max={new Date().toISOString().slice(0, 10)}
+                  className="mt-1 w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
+                />
+              </label>
+            </>
+          )}
+        </AktionsBlatt>
+      )}
 
       <ConfirmDialog
         open={!!commandeAAnnuler}
@@ -757,6 +874,7 @@ export default function GestionCommandesTab({ modifiable = true }: { modifiable?
                   <div key={l.id} className="flex items-center justify-between gap-2">
                     <span className="text-xs text-text-secondary">
                       {t("retour.ligne_option", {
+                        artikel: [l.produit_nom, l.variante_label].filter(Boolean).join(", "),
                         quantite: l.quantite,
                         prix: l.prix_unitaire,
                         retournable: l.quantite_retournable,

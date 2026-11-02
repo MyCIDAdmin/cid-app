@@ -1,60 +1,30 @@
 /**
- * Onglet "Catalogue" de la page Admin — Boutique (mockup #pg-admin-boutique, tab-pane
- * btq-catalog) : création/édition de produits, panneau variantes dépliable par produit.
+ * Onglet „Katalog“ der Shop-Verwaltung: Artikel als Kacheln (Bild, Status, Preis, Bestand,
+ * Hinweise) statt als lange Zeile voller Knöpfe. Ein Klick öffnet den Editor (KatalogEditor), der
+ * die Einstellungen nach Themen ordnet; „Neues Produkt“ startet den Assistenten (ProduktAssistent).
  *
- * Stock initial : un champ "Stock initial" à la création crée automatiquement, côté backend,
- * une VarianteProduit "unique" (taille/couleur vides, voir ProduitSerializer.stock_initial) —
- * évite d'avoir à ouvrir le panneau "gérer les variantes" juste après création pour les
- * produits sans déclinaison réelle. La gestion fine (plusieurs tailles/couleurs) reste dans
- * VariantesManager, inchangée.
+ * Die orangen/roten Hinweise kommen aus dem Überblick-Endpunkt (`hinweise` je Artikel-ID, rein
+ * lesend berechnet, siehe apps.boutique.verwaltung). Der Filter „Braucht Aufmerksamkeit“ zeigt
+ * nur Artikel mit solchen Hinweisen — der Überblick springt direkt dorthin (`startFilter`).
  *
- * Rabais : `pourcentage_reduction` (1-90 %) est éditable en création et en modification
- * inline ; l'affichage du prix soldé (`prix_final`) se fait dans CataloguePage/CataloguePage
- * côté membre, jamais recalculé ici (CLAUDE.md §8 — le backend reste seul juge du prix final).
- *
- * Image produit : upload multipart (validation MIME côté backend, CLAUDE.md §8) une fois le
- * produit créé — voir useTeleverserImageProduit / storage.py (MinIO). Les produits sans image
- * continuent d'afficher un pictogramme de substitution (voir CataloguePage).
- *
- * Lecture seule (task #216, 2026-09-24) : `modifiable` (optionnel, défaut `true` pour les tests
- * existants qui rendent ce composant seul) vient de la matrice "page_boutique" via
- * AdminBoutiquePage/usePageAccess — désactive la création/modification de produits (statut,
- * rabais, image) et se propage à VariantesManager/RegleReductionManager, dont le CRUD fait
- * partie de la même gestion catalogue.
+ * Lesemodus: `modifiable` (optional, Standard `true`) kommt aus der Matrix „page_boutique“
+ * (AdminBoutiquePage/usePageAccess) und sperrt Anlegen, Speichern, Status und Löschen im Editor.
+ * Preise werden nie hier berechnet (CLAUDE.md §8): angezeigt wird `prix_final` vom Server.
  */
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  useCreerProduit,
-  useModifierProduit,
-  useSupprimerProduit,
-  useProduits,
-  useTeleverserImageProduit,
-} from "../../hooks/useBoutique";
-import type {
-  CategorieProduit,
-  Produit,
-  ProduitPayload,
-  StatutProduit,
-  TypeProduit,
-} from "../../types/boutique";
-import { extractApiErrorMessage } from "../../utils/apiError";
+import { useProduits, useVerwaltungUeberblick } from "../../hooks/useBoutique";
+import type { ArtikelHinweis, Produit, StatutProduit } from "../../types/boutique";
 import BildHinweis from "../ui/BildHinweis";
-import GalerieProduitManager from "./GalerieProduitManager";
-import RegleReductionManager from "./RegleReductionManager";
-import ReservierungsEinstellungen from "./ReservierungsEinstellungen";
-import VariantesManager from "./VariantesManager";
-import UebersetzungenButton from "../ui/UebersetzungenButton";
+import { EinfachSchalter, HilfeHinweis } from "../ui/Erklaerung";
+import KatalogEditor from "./KatalogEditor";
+import { euro } from "./katalogHilfen";
+import ProduktAssistent from "./ProduktAssistent";
 
-const CATEGORIES: CategorieProduit[] = [
-  "vetements",
-  "accessoires",
-  "articles_club",
-  "cartes_docs",
-  "divers",
-];
-const STATUTS: StatutProduit[] = ["brouillon", "publie", "archive"];
+type Filter = "alle" | StatutProduit | "hinweise";
+
+const FILTER: Filter[] = ["alle", "publie", "brouillon", "archive", "hinweise"];
 
 const STATUT_STYLES: Record<StatutProduit, string> = {
   brouillon: "bg-bg-tertiary text-text-secondary",
@@ -62,611 +32,213 @@ const STATUT_STYLES: Record<StatutProduit, string> = {
   archive: "bg-status-dangerBg text-status-dangerText",
 };
 
-function formulaireInitial(): ProduitPayload {
-  return {
-    nom: "",
-    categorie: "vetements",
-    description: "",
-    prix: "0.00",
-    pourcentage_reduction: null,
-    prix_membre: null,
-    statut: "brouillon",
-    type_produit: "physique",
-    nouveaute: false,
-    nur_mitglieder: false,
-    seuil_alerte_stock: 5,
-    stock_initial: 0,
-  };
+const CHIP: Record<ArtikelHinweis["schwere"], string> = {
+  rot: "bg-status-dangerBg text-status-dangerText",
+  orange: "bg-status-warningBg text-status-warningText",
+  info: "bg-bg-tertiary text-text-secondary",
+};
+
+const wichtig = (h: ArtikelHinweis) => h.schwere !== "info";
+
+function Kachel({
+  produit,
+  hinweise,
+  onOeffnen,
+}: {
+  produit: Produit;
+  hinweise: ArtikelHinweis[];
+  onOeffnen: () => void;
+}) {
+  const { t, i18n } = useTranslation("boutique");
+  const bon = produit.type_produit === "bon_achat";
+  const frist = produit.reservierung_frist
+    ? new Date(produit.reservierung_frist).toLocaleDateString(i18n.language, {
+        day: "2-digit",
+        month: "2-digit",
+      })
+    : null;
+  return (
+    <li className="flex flex-col overflow-hidden rounded-cid-lg border border-text-tertiary/20 bg-bg-primary">
+      <button
+        type="button"
+        onClick={onOeffnen}
+        aria-label={`${t("katalog.kachel.bearbeiten")} — ${produit.nom}`}
+        className="flex flex-1 flex-col text-left hover:bg-bg-secondary"
+      >
+        {produit.image ? (
+          <img src={produit.image} alt="" className="h-32 w-full object-cover" />
+        ) : (
+          <div className="flex h-32 w-full flex-col items-center justify-center gap-1 bg-bg-tertiary text-text-tertiary">
+            <span aria-hidden className="text-2xl">
+              🛍️
+            </span>
+            <span className="text-[11px]">{t("katalog.kachel.ohne_bild")}</span>
+          </div>
+        )}
+        <div className="flex flex-1 flex-col gap-1.5 p-3">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-sm font-semibold text-text-primary">{produit.nom}</span>
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[produit.statut]}`}
+            >
+              {t(`statut_produit.${produit.statut}`)}
+            </span>
+          </div>
+          <p className="text-[11px] text-text-tertiary">
+            {t(`categorie.${produit.categorie}`)}
+            {produit.nouveaute ? ` · ${t("katalog.kachel.neuheit")}` : ""}
+            {produit.nur_mitglieder ? ` · ${t("katalog.kachel.nur_mitglieder")}` : ""}
+          </p>
+          <div className="flex items-baseline gap-2">
+            {produit.pourcentage_reduction ? (
+              <>
+                <span className="text-xs text-text-tertiary line-through">
+                  {euro(produit.prix)} €
+                </span>
+                <span className="text-sm font-bold text-status-dangerText">
+                  {euro(produit.prix_final)} €
+                </span>
+              </>
+            ) : (
+              <span className="text-sm font-bold text-ca">{euro(produit.prix)} €</span>
+            )}
+            {produit.prix_membre && !bon && (
+              <span className="text-[11px] text-text-secondary">
+                {t("catalogue_admin.prix_membre_label")}: {euro(produit.prix_membre)} €
+              </span>
+            )}
+          </div>
+          {!bon && (
+            <p className="text-xs text-text-secondary">
+              {produit.en_rupture
+                ? t("katalog.kachel.ausverkauft")
+                : t("katalog.kachel.bestand", { count: produit.stock_total })}
+            </p>
+          )}
+          {bon && <p className="text-xs text-text-secondary">{t("katalog.kachel.gutschein")}</p>}
+          {produit.reservierung_modus !== "aus" && (
+            <p className="text-xs text-text-secondary">
+              {frist
+                ? t("katalog.kachel.reservierung_bis", { datum: frist })
+                : t("katalog.kachel.reservierung")}
+            </p>
+          )}
+          {hinweise.length > 0 && (
+            <ul className="mt-auto flex flex-wrap gap-1 pt-1">
+              {hinweise.map((h) => (
+                <li
+                  key={h.code}
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${CHIP[h.schwere]}`}
+                >
+                  {t(`katalog.hinweis.${h.code}.kurz`)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </button>
+    </li>
+  );
 }
 
-export default function GestionCatalogueTab({ modifiable = true }: { modifiable?: boolean } = {}) {
+export default function GestionCatalogueTab({
+  modifiable = true,
+  startFilter = "",
+}: { modifiable?: boolean; startFilter?: string } = {}) {
   const { t } = useTranslation(["boutique", "common"]);
   const produitsQuery = useProduits();
-  const creerMutation = useCreerProduit();
-  const modifierMutation = useModifierProduit();
-  const supprimerMutation = useSupprimerProduit();
-  const [produitASupprimer, setProduitASupprimer] = useState<string | null>(null);
-  const [suppressionErreur, setSuppressionErreur] = useState<{
-    produitId: string;
-    message: string;
-  } | null>(null);
-  const televerserImageMutation = useTeleverserImageProduit();
+  const ueberblick = useVerwaltungUeberblick();
+  const [filter, setFilter] = useState<Filter>(
+    (FILTER as string[]).includes(startFilter) ? (startFilter as Filter) : "alle",
+  );
+  const [offen, setOffen] = useState<string | null>(null);
+  const [assistent, setAssistent] = useState(false);
 
-  const [form, setForm] = useState<ProduitPayload>(formulaireInitial);
-  const [produitDeplie, setProduitDeplie] = useState<string | null>(null);
-  const [produitReductionDeplie, setProduitReductionDeplie] = useState<string | null>(null);
-  const [produitGalerieDeplie, setProduitGalerieDeplie] = useState<string | null>(null);
-  const [produitReservierungDeplie, setProduitReservierungDeplie] = useState<string | null>(null);
-  const [produitImageEnCours, setProduitImageEnCours] = useState<string | null>(null);
-  const [produitImageErreur, setProduitImageErreur] = useState<{
-    produitId: string;
-    message: string;
-  } | null>(null);
-  const inputsFichierImage = useRef<Record<string, HTMLInputElement | null>>({});
-
-  function handleCreer(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    // stock_initial n'a aucun sens pour un "bon_achat" (pas de stock réel, voir champ masqué
-    // ci-dessous) et ne doit jamais être envoyé pour ce type : le backend a sa propre garde
-    // (ProduitSerializer.create ignore stock_initial pour BON_ACHAT depuis le correctif du
-    // 2026-09-23 — bug réel constaté en production, IntegrityError sur la contrainte d'unicité
-    // de VarianteProduit car ce champ restait à sa valeur par défaut 0 même masqué côté UI) mais
-    // on ne s'y fie pas seul (CLAUDE.md §8, même principe que partout ailleurs dans ce fichier).
-    const payload: ProduitPayload =
-      form.type_produit === "bon_achat" ? { ...form, stock_initial: undefined } : form;
-    creerMutation.mutate(payload, { onSuccess: () => setForm(formulaireInitial()) });
+  const hinweise = ueberblick.data?.hinweise ?? {};
+  const alle = produitsQuery.data?.results ?? [];
+  const anzahl = (f: Filter) => alle.filter((p) => passt(p, f)).length;
+  function passt(p: Produit, f: Filter): boolean {
+    if (f === "alle") return true;
+    if (f === "hinweise") return (hinweise[p.id] ?? []).some(wichtig);
+    return p.statut === f;
   }
-
-  /**
-   * Bascule type "physique"/"bon_achat" (demande utilisateur du 2026-09-23, "Gutschein wird ein
-   * echtes Produkt im Katalog") — categorie="bon_achat" est imposée avec le type (voir
-   * CataloguePage/TypeProduit ci-dessus : les deux vont toujours ensemble dans cette UI, même si
-   * le backend ne les couple pas structurellement), et reste bloquée sur "vetements" par défaut
-   * si l'admin repasse en "physique" après avoir choisi "bon_achat" — une catégorie "Bons
-   * d'achat" n'aurait aucun sens pour un produit physique.
-   */
-  function handleChangerType(type: TypeProduit) {
-    setForm((f) => ({
-      ...f,
-      type_produit: type,
-      categorie:
-        type === "bon_achat"
-          ? "bon_achat"
-          : f.categorie === "bon_achat"
-            ? "vetements"
-            : f.categorie,
-    }));
-  }
-
-  // Garde de défense en profondeur (2026-09-24, retour utilisateur task #216) : le `disabled`
-  // sur les contrôles correspondants bloque déjà l'interaction utilisateur normale, mais ces
-  // handlers sont déclenchés par onChange (select/input file), pas par un <button disabled> —
-  // rien n'empêche donc un appel programmatique de les invoquer quand même. Le backend reste la
-  // seule source de vérité (rejette de toute façon en 403), ce garde évite un appel inutile.
-  function toggleStatut(produit: Produit, statut: StatutProduit) {
-    if (!modifiable) return;
-    modifierMutation.mutate({ id: produit.id, payload: { statut } });
-  }
-
-  function modifierRabais(produit: Produit, valeur: string) {
-    if (!modifiable) return;
-    const pourcentage = valeur === "" ? null : Number(valeur);
-    modifierMutation.mutate({ id: produit.id, payload: { pourcentage_reduction: pourcentage } });
-  }
-
-  function modifierPrixMembre(produit: Produit, valeur: string) {
-    if (!modifiable) return;
-    modifierMutation.mutate({
-      id: produit.id,
-      payload: { prix_membre: valeur === "" ? null : valeur },
-    });
-  }
-
-  function handleImageChoisie(produit: Produit, e: ChangeEvent<HTMLInputElement>) {
-    const fichier = e.target.files?.[0];
-    e.target.value = "";
-    if (!fichier || !modifiable) return;
-    setProduitImageEnCours(produit.id);
-    setProduitImageErreur(null);
-    televerserImageMutation.mutate(
-      { id: produit.id, fichier },
-      {
-        onError: (err) =>
-          setProduitImageErreur({
-            produitId: produit.id,
-            message: extractApiErrorMessage(err, t("catalogue_admin.image_erreur")),
-          }),
-        onSettled: () => setProduitImageEnCours(null),
-      },
-    );
-  }
+  const sichtbar = alle.filter((p) => passt(p, filter));
+  const offenesProdukt = offen ? alle.find((p) => p.id === offen) : undefined;
 
   return (
     <div>
       <BildHinweis variante="shop" className="mb-3" />
-      <div className="mb-5 rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-        <h2 className="mb-3 text-xs font-bold text-text-primary">
-          {t("catalogue_admin.nouveau_produit")}
-        </h2>
-        <form onSubmit={handleCreer} className="grid gap-3 md:grid-cols-2">
-          <div>
-            <label
-              htmlFor="prod-nom"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("catalogue_admin.nom_label")}
-            </label>
-            <input
-              id="prod-nom"
-              required
-              value={form.nom}
-              onChange={(e) => setForm({ ...form, nom: e.target.value })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="prod-type"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("catalogue_admin.type_label")}
-            </label>
-            <select
-              id="prod-type"
-              value={form.type_produit ?? "physique"}
-              onChange={(e) => handleChangerType(e.target.value as TypeProduit)}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            >
-              <option value="physique">{t("catalogue_admin.type_physique")}</option>
-              <option value="bon_achat">{t("catalogue_admin.type_bon_achat")}</option>
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor="prod-categorie"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("catalogue_admin.categorie_label")}
-            </label>
-            {form.type_produit === "bon_achat" ? (
-              // Imposée avec le type "bon_achat" (voir handleChangerType) — pas de choix
-              // pertinent à proposer ici, un produit "bon_achat" est toujours de cette catégorie.
-              <input
-                id="prod-categorie"
-                disabled
-                value={t("categorie.bon_achat")}
-                className="w-full rounded-cid border border-text-tertiary/30 bg-bg-tertiary px-2 py-1.5 text-sm text-text-tertiary"
-              />
-            ) : (
-              <select
-                id="prod-categorie"
-                value={form.categorie}
-                onChange={(e) =>
-                  setForm({ ...form, categorie: e.target.value as CategorieProduit })
-                }
-                className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {t(`categorie.${cat}`)}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          <div>
-            <label
-              htmlFor="prod-prix"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("catalogue_admin.prix_label")}
-            </label>
-            <input
-              id="prod-prix"
-              type="number"
-              min="0"
-              step="0.01"
-              required
-              value={form.prix}
-              onChange={(e) => setForm({ ...form, prix: e.target.value })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          {/* Stock, alerte et rabais n'ont pas de sens pour un "bon_achat" (montant choisi par
-              l'acheteur, jamais de stock/rabais catalogue — voir TypeProduit) — masqués plutôt
-              que désactivés, pour ne pas laisser croire qu'ils s'appliqueraient quand même. */}
-          {form.type_produit !== "bon_achat" && (
-            <>
-              <div>
-                <label
-                  htmlFor="prod-seuil"
-                  className="mb-1 block text-xs font-medium text-text-secondary"
-                >
-                  {t("catalogue_admin.seuil_label")}
-                </label>
-                <input
-                  id="prod-seuil"
-                  type="number"
-                  min="0"
-                  value={form.seuil_alerte_stock}
-                  onChange={(e) => setForm({ ...form, seuil_alerte_stock: Number(e.target.value) })}
-                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="prod-stock-initial"
-                  className="mb-1 block text-xs font-medium text-text-secondary"
-                >
-                  {t("catalogue_admin.stock_initial_label")}
-                </label>
-                <input
-                  id="prod-stock-initial"
-                  type="number"
-                  min="0"
-                  value={form.stock_initial ?? 0}
-                  onChange={(e) => setForm({ ...form, stock_initial: Number(e.target.value) })}
-                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="prod-rabais"
-                  className="mb-1 block text-xs font-medium text-text-secondary"
-                >
-                  {t("catalogue_admin.rabais_label")}
-                </label>
-                <input
-                  id="prod-rabais"
-                  type="number"
-                  min="1"
-                  max="90"
-                  placeholder={t("catalogue_admin.rabais_placeholder")}
-                  value={form.pourcentage_reduction ?? ""}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      pourcentage_reduction: e.target.value === "" ? null : Number(e.target.value),
-                    })
-                  }
-                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="prod-prix-membre"
-                  className="mb-1 block text-xs font-medium text-text-secondary"
-                >
-                  {t("catalogue_admin.prix_membre_label")}
-                </label>
-                <input
-                  id="prod-prix-membre"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder={t("catalogue_admin.prix_membre_placeholder")}
-                  value={form.prix_membre ?? ""}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      prix_membre: e.target.value === "" ? null : e.target.value,
-                    })
-                  }
-                  className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-                />
-              </div>
-            </>
-          )}
-          <div className="md:col-span-2">
-            <label
-              htmlFor="prod-desc"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              {t("catalogue_admin.description_label")}
-            </label>
-            <textarea
-              id="prod-desc"
-              rows={2}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm"
-            />
-          </div>
-          <label className="flex items-center gap-2 text-xs text-text-secondary">
-            <input
-              type="checkbox"
-              checked={form.nouveaute}
-              onChange={(e) => setForm({ ...form, nouveaute: e.target.checked })}
-            />
-            {t("catalogue_admin.nouveaute_label")}
-          </label>
-          <label className="flex items-center gap-2 text-xs text-text-secondary">
-            <input
-              type="checkbox"
-              checked={form.nur_mitglieder ?? false}
-              onChange={(e) => setForm({ ...form, nur_mitglieder: e.target.checked })}
-            />
-            {t("catalogue_admin.nur_mitglieder_label")}
-          </label>
-
-          {creerMutation.isError && (
-            <p className="text-xs text-status-dangerText md:col-span-2">
-              {extractApiErrorMessage(creerMutation.error, t("catalogue_admin.erreur_creation"))}
-            </p>
-          )}
-          <div className="md:col-span-2">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div role="group" aria-label={t("katalog.filter_label")} className="flex flex-wrap gap-1.5">
+          {FILTER.map((f) => (
             <button
-              type="submit"
-              disabled={creerMutation.isPending || !modifiable}
-              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
-              className="rounded-cid bg-ca px-4 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+              key={f}
+              type="button"
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                filter === f
+                  ? "border-ca bg-ca text-white"
+                  : "border-text-tertiary/30 text-text-secondary hover:bg-bg-tertiary"
+              }`}
             >
-              {t("catalogue_admin.creer")}
+              {t(`katalog.filter.${f}`)} <span className="opacity-70">{anzahl(f)}</span>
             </button>
-          </div>
-        </form>
-      </div>
-
-      <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-        <h2 className="mb-3 text-xs font-bold text-text-primary">
-          {t("catalogue_admin.produits_titre")}
-        </h2>
-        {produitsQuery.isLoading && (
-          <p className="text-sm text-text-tertiary">{t("catalogue.chargement")}</p>
-        )}
-        {produitsQuery.data && produitsQuery.data.results.length === 0 && (
-          <p className="text-sm text-text-tertiary">{t("catalogue_admin.aucun_produit")}</p>
-        )}
-        <div className="space-y-2">
-          {produitsQuery.data?.results.map((produit) => (
-            <div key={produit.id} className="rounded-cid border border-text-tertiary/20 p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {produit.image ? (
-                  <img src={produit.image} alt="" className="h-10 w-10 rounded-cid object-cover" />
-                ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-cid bg-bg-tertiary text-text-tertiary">
-                    🛍️
-                  </div>
-                )}
-                <span className="flex-1 text-sm font-semibold text-text-primary">
-                  {produit.nom}
-                </span>
-                <span className="text-xs text-text-tertiary">
-                  {t(`categorie.${produit.categorie}`)}
-                </span>
-                {produit.pourcentage_reduction ? (
-                  <span className="text-right text-xs">
-                    <span className="mr-1 text-text-tertiary line-through">
-                      {Number(produit.prix).toFixed(2).replace(".", ",")} €
-                    </span>
-                    <span className="font-bold text-status-dangerText">
-                      {Number(produit.prix_final).toFixed(2).replace(".", ",")} €
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-sm font-bold text-ca">
-                    {Number(produit.prix).toFixed(2).replace(".", ",")} €
-                  </span>
-                )}
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUT_STYLES[produit.statut]}`}
-                >
-                  {t(`statut_produit.${produit.statut}`)}
-                </span>
-                {produit.stock_faible && !produit.en_rupture && (
-                  <span className="text-[10px] font-medium text-status-warningText">
-                    ⚠ {t("catalogue_admin.stock_faible")}
-                  </span>
-                )}
-                {produit.en_rupture && (
-                  <span className="text-[10px] font-medium text-status-dangerText">
-                    {t("catalogue.rupture")}
-                  </span>
-                )}
-                <label className="flex items-center gap-1 text-[10px] text-text-secondary">
-                  {t("catalogue_admin.rabais_label")}
-                  <input
-                    type="number"
-                    min="1"
-                    max="90"
-                    aria-label={`${t("catalogue_admin.rabais_label")} — ${produit.nom}`}
-                    defaultValue={produit.pourcentage_reduction ?? ""}
-                    onBlur={(e) => modifierRabais(produit, e.target.value)}
-                    disabled={!modifiable}
-                    title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
-                    className="w-14 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
-                  />
-                </label>
-                {produit.type_produit !== "bon_achat" && (
-                  <label className="flex items-center gap-1 text-[10px] text-text-secondary">
-                    {t("catalogue_admin.prix_membre_label")}
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder={t("catalogue_admin.prix_membre_placeholder")}
-                      aria-label={`${t("catalogue_admin.prix_membre_label")} — ${produit.nom}`}
-                      defaultValue={produit.prix_membre ?? ""}
-                      onBlur={(e) => modifierPrixMembre(produit, e.target.value)}
-                      disabled={!modifiable}
-                      title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
-                      className="w-16 rounded-cid border border-text-tertiary/30 px-1 py-0.5 text-xs disabled:opacity-40"
-                    />
-                  </label>
-                )}
-                <select
-                  aria-label={t("catalogue_admin.changer_statut")}
-                  value={produit.statut}
-                  onChange={(e) => toggleStatut(produit, e.target.value as StatutProduit)}
-                  disabled={!modifiable}
-                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
-                  className="rounded-cid border border-text-tertiary/30 px-1.5 py-1 text-xs disabled:opacity-40"
-                >
-                  {STATUTS.map((s) => (
-                    <option key={s} value={s}>
-                      {t(`statut_produit.${s}`)}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={(el) => {
-                    inputsFichierImage.current[produit.id] = el;
-                  }}
-                  onChange={(e) => handleImageChoisie(produit, e)}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => inputsFichierImage.current[produit.id]?.click()}
-                  disabled={produitImageEnCours === produit.id || !modifiable}
-                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
-                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary disabled:opacity-40"
-                >
-                  {produitImageEnCours === produit.id
-                    ? t("catalogue_admin.image_en_cours")
-                    : t("catalogue_admin.image_televerser")}
-                </button>
-                {/* Retour utilisateur (2026-09-24, task #216) : même principe que le bouton
-                    "gérer les offres" de AdminCampagnesPage — dépli/repli d'affichage, pas une
-                    action d'écriture, mais le libellé en lecture seule doit refléter qu'aucune
-                    modification n'est possible derrière. */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setProduitDeplie((cur) => (cur === produit.id ? null : produit.id))
-                  }
-                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
-                >
-                  {produitDeplie === produit.id
-                    ? t("catalogue_admin.masquer_variantes")
-                    : modifiable
-                      ? t("catalogue_admin.gerer_variantes")
-                      : t("catalogue_admin.voir_variantes")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setProduitReductionDeplie((cur) => (cur === produit.id ? null : produit.id))
-                  }
-                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
-                >
-                  {produitReductionDeplie === produit.id
-                    ? t("catalogue_admin.masquer_regles_reduction")
-                    : modifiable
-                      ? t("catalogue_admin.gerer_regles_reduction")
-                      : t("catalogue_admin.voir_regles_reduction")}
-                </button>
-                {produit.type_produit !== "bon_achat" && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setProduitReservierungDeplie((cur) =>
-                        cur === produit.id ? null : produit.id,
-                      )
-                    }
-                    className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
-                  >
-                    {produit.reservierung_modus !== "aus" ? "● " : ""}
-                    {t("reservierung_admin.bouton")}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setProduitGalerieDeplie((cur) => (cur === produit.id ? null : produit.id))
-                  }
-                  className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
-                >
-                  {produitGalerieDeplie === produit.id
-                    ? t("catalogue_admin.masquer_galerie")
-                    : modifiable
-                      ? t("catalogue_admin.gerer_galerie")
-                      : t("catalogue_admin.voir_galerie")}
-                </button>
-                {modifiable && (
-                  <UebersetzungenButton
-                    modell="boutique.produit"
-                    objektId={produit.id}
-                    className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary"
-                  />
-                )}
-                {modifiable &&
-                  (produitASupprimer === produit.id ? (
-                    <span className="flex items-center gap-1 text-xs">
-                      <span className="text-status-dangerText">
-                        {t("catalogue_admin.supprimer_confirmer")}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={supprimerMutation.isPending}
-                        onClick={() =>
-                          supprimerMutation.mutate(produit.id, {
-                            onSuccess: () => {
-                              setProduitASupprimer(null);
-                              setSuppressionErreur(null);
-                            },
-                            onError: (err) => {
-                              setProduitASupprimer(null);
-                              setSuppressionErreur({
-                                produitId: produit.id,
-                                message: extractApiErrorMessage(
-                                  err,
-                                  t("catalogue_admin.supprimer_erreur"),
-                                ),
-                              });
-                            },
-                          })
-                        }
-                        className="rounded-cid bg-status-dangerText px-2 py-1 text-white disabled:opacity-50"
-                      >
-                        {t("catalogue_admin.supprimer_oui")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setProduitASupprimer(null)}
-                        className="rounded-cid border border-text-tertiary/30 px-2 py-1 text-text-secondary hover:bg-bg-tertiary"
-                      >
-                        {t("catalogue_admin.supprimer_non")}
-                      </button>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setProduitASupprimer(produit.id)}
-                      className="rounded-cid border border-status-dangerText/40 px-2 py-1 text-xs text-status-dangerText hover:bg-status-dangerBg"
-                    >
-                      {t("catalogue_admin.supprimer_produit")}
-                    </button>
-                  ))}
-              </div>
-              {suppressionErreur?.produitId === produit.id && (
-                <p className="mt-1 text-[11px] text-status-dangerText">
-                  {suppressionErreur.message}
-                </p>
-              )}
-              {produitImageErreur?.produitId === produit.id && (
-                <p className="mt-1 text-[11px] text-status-dangerText">
-                  {produitImageErreur.message}
-                </p>
-              )}
-              {produitDeplie === produit.id && (
-                <VariantesManager produit={produit} modifiable={modifiable} />
-              )}
-              {produitReservierungDeplie === produit.id && (
-                <ReservierungsEinstellungen produit={produit} modifiable={modifiable} />
-              )}
-              {produitReductionDeplie === produit.id && (
-                <RegleReductionManager produit={produit} modifiable={modifiable} />
-              )}
-              {produitGalerieDeplie === produit.id && (
-                <GalerieProduitManager produit={produit} modifiable={modifiable} />
-              )}
-            </div>
           ))}
         </div>
+        <div className="flex items-center gap-3">
+          <EinfachSchalter ns="boutique" />
+          <button
+            type="button"
+            onClick={() => setAssistent(true)}
+            disabled={!modifiable}
+            title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
+            className="rounded-cid bg-ca px-4 py-1.5 text-sm font-medium text-white hover:bg-cad disabled:opacity-40"
+          >
+            {t("katalog.neu")}
+          </button>
+        </div>
       </div>
+      <HilfeHinweis ns="boutique">{t("katalog.hilfe")}</HilfeHinweis>
+
+      {produitsQuery.isLoading && (
+        <p className="text-sm text-text-tertiary">{t("catalogue.chargement")}</p>
+      )}
+      {produitsQuery.data && alle.length === 0 && (
+        <p className="text-sm text-text-tertiary">{t("catalogue_admin.aucun_produit")}</p>
+      )}
+      {alle.length > 0 && sichtbar.length === 0 && (
+        <p className="mt-3 text-sm text-text-tertiary">{t("katalog.ansicht_leer")}</p>
+      )}
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {sichtbar.map((produit) => (
+          <Kachel
+            key={produit.id}
+            produit={produit}
+            hinweise={hinweise[produit.id] ?? []}
+            onOeffnen={() => setOffen(produit.id)}
+          />
+        ))}
+      </ul>
+
+      {offenesProdukt && (
+        <KatalogEditor
+          key={offenesProdukt.id}
+          produit={offenesProdukt}
+          hinweise={hinweise[offenesProdukt.id] ?? []}
+          modifiable={modifiable}
+          onClose={() => setOffen(null)}
+        />
+      )}
+      {assistent && (
+        <ProduktAssistent
+          onClose={() => setAssistent(false)}
+          onAngelegt={(neu) => {
+            setAssistent(false);
+            if (neu?.id) setOffen(neu.id);
+          }}
+        />
+      )}
     </div>
   );
 }

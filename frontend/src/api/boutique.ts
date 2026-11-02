@@ -32,6 +32,7 @@ import type {
   VariantePayload,
   VendreEspecesCommandePayload,
   VerifierBonAchatPayload,
+  VerwaltungUeberblick,
 } from "../types/boutique";
 
 export interface ProduitsFiltres {
@@ -198,6 +199,8 @@ export async function supprimerRegleReduction(id: string): Promise<void> {
 
 export interface CommandesFiltres {
   statut?: StatutCommande;
+  /** Mehrere Status auf einmal, kommagetrennt (ein „Stapel“ der Shop-Verwaltung). */
+  statuts?: string;
   /** Recherche libre sur le nom du destinataire (icontains côté backend) — ajouté le
    * 2026-09-25, demande utilisateur module "Shop-Verwaltung" ("Filtermöglichkeiten hinzufügen
    * z.B. Datumsintervall, Empfänger"). */
@@ -358,9 +361,9 @@ export async function exporterCommandesExcel(
 ): Promise<{ blob: Blob; nomFichier: string }> {
   // `cursor` n'a pas de sens pour un export (jamais paginé, voir CommandeViewSet.export) —
   // omis explicitement plutôt que transmis tel quel au cas où l'appelant le fournirait.
-  const { statut, destinataire, date_apres, date_avant, produit } = filtres;
+  const { statut, statuts, destinataire, date_apres, date_avant, produit } = filtres;
   const { data, headers } = await apiClient.get("/boutique/commandes/export/", {
-    params: { statut, destinataire, date_apres, date_avant, produit },
+    params: { statut, statuts, destinataire, date_apres, date_avant, produit },
     responseType: "blob",
   });
   return {
@@ -476,4 +479,11 @@ export async function reservierePanier(
 
 export async function gibPanierFrei(): Promise<void> {
   await apiClient.delete("/boutique/panier/reservierung/");
+}
+
+/** GET /boutique/verwaltung/ueberblick/ — Kacheln, Aufgaben, Bestell-Stapel und Artikel-Hinweise
+ * der Shop-Verwaltung (Seite page_boutique, nur lesend). */
+export async function getVerwaltungUeberblick(): Promise<VerwaltungUeberblick> {
+  const { data } = await apiClient.get<VerwaltungUeberblick>("/boutique/verwaltung/ueberblick/");
+  return data;
 }

@@ -98,7 +98,7 @@
         "titre": "Rendre un article réservable (p. ex. billets)",
         "wann": "Vous voulez répartir des places ou des articles à l’avance ; le paiement se fait plus tard ou sur place.",
         "schritte": [
-          "Dans l’onglet « Catalogue », cliquez sur « Réservation » pour l’article.",
+          "Dans l’onglet « Catalogue », cliquez sur l’article. L’éditeur s’ouvre à droite ; allez à la section « Réservation ».",
           "Choisissez le mode « Réserver uniquement (sans paiement) ».",
           "Saisissez la date limite, la quantité totale maximale et le maximum par membre (vide = illimité).",
           "Cliquez sur « Enregistrer » et vérifiez que l’article est « publié »."
@@ -109,10 +109,10 @@
         "rollen": ["bureau_admin", "super_admin"],
         "vorher": "L'article est créé. Vous connaissez la date limite et les quantités.",
         "erwartet": [
-          "La fenêtre « Réservation » est ouverte et affiche le mode.",
+          "L'éditeur de l'article est ouvert, la section « Réservation » affiche le mode.",
           "Le mode « Réserver uniquement (sans paiement) » est choisi.",
           "Date limite, quantité totale maximale et maximum par membre sont saisis. Vide = illimité.",
-          "« Enregistré. » apparaît et l'article est « Publié »."
+          "« Enregistré. » apparaît, une phrase « Ce que voient les membres » décrit la réservation et l'article est « Publié »."
         ],
         "fehler": [
           {
@@ -130,7 +130,7 @@
         "titre": "Réserver et payer en ligne",
         "wann": "Les membres doivent payer directement, mais seulement jusqu’à une date limite et avec des limites.",
         "schritte": [
-          "Cliquez sur « Réservation » pour l’article.",
+          "Dans l’onglet « Catalogue », cliquez sur l’article et travaillez dans la section « Réservation ».",
           "Choisissez le mode « Réserver et payer en ligne ».",
           "Saisissez la date limite et les limites de quantité, puis « Enregistrer »."
         ],
@@ -140,7 +140,7 @@
         "rollen": ["bureau_admin", "super_admin"],
         "vorher": "L'article est créé. Vous connaissez la date limite et les limites de quantité.",
         "erwartet": [
-          "La fenêtre « Réservation » est ouverte.",
+          "La section « Réservation » de l'éditeur de l'article est ouverte.",
           "Le mode « Réserver et payer en ligne » est choisi.",
           "« Enregistré. » apparaît. Dans la boutique, l'article affiche date limite, quantité restante et limite par membre."
         ],
@@ -160,9 +160,9 @@
         "titre": "Traiter les réservations",
         "wann": "La date limite est passée ou les articles sont remis.",
         "schritte": [
-          "Ouvrez l’onglet « Réservations » et filtrez par article et statut.",
-          "Pour les réservations terminées, cliquez sur « Retiré / terminé ».",
-          "Libérez les réservations inutiles avec « Annuler »."
+          "Ouvrez l’onglet « Réservations ». Les réservations sont regroupées par article ; filtrez par article et statut.",
+          "Pour les réservations terminées, cliquez sur « Retiré / terminé » (ou cochez-en plusieurs et « Marquer comme retiré ») et confirmez dans la fenêtre.",
+          "Libérez les réservations inutiles avec « Libérer » et confirmez dans la fenêtre."
         ],
         "beispiel": "Lors du match, vous remettez les billets et cochez chaque réservation comme retirée.",
         "danach": "Le statut change ; les quantités annulées sont à nouveau libres. Rien n’est supprimé.",
@@ -170,7 +170,7 @@
         "rollen": ["bureau_admin", "super_admin"],
         "vorher": "La date limite est passée ou les articles sont remis.",
         "erwartet": [
-          "L'onglet « Réservations » affiche produit, membre, quantité, statut et date. Sous la liste : « Total : … pièce(s) ».",
+          "L'onglet affiche un bloc par article avec date limite, progression et réservations (membre, quantité, statut, date). En haut : « Total : … pièce(s) ».",
           "La réservation a le statut « Retiré ».",
           "La réservation a le statut « Annulé » et la quantité est de nouveau libre."
         ],
@@ -184,13 +184,13 @@
             "loesung": "Rien n'est supprimé. Adressez-vous si besoin à l'administration de l'application."
           }
         ],
-        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Réservez « [ÜBUNG] Article test » avec un compte de test, marquez la réservation « Retiré / terminé » et annulez une seconde réservation de test."
+        "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Réservez « [ÜBUNG] Article test » avec un compte de test, marquez la réservation « Retiré / terminé » et libérez une seconde réservation de test."
       },
       {
         "titre": "Réservation avec paiement (billets, maillots)",
         "wann": "Les membres doivent réserver de façon ferme, mais ne gardent l'article que s'ils paient.",
         "schritte": [
-          "Sur l'article, sous « Réservation », choisir le mode « Réserver et payer en ligne ».",
+          "Dans l'éditeur de l'article, sous « Réservation », choisir le mode « Réserver et payer en ligne ».",
           "Saisir le délai de paiement en jours (p. ex. 7) et, si besoin, date limite, quantité totale et quantité par membre.",
           "Le membre commande sans adresse de livraison (retrait) et paie par virement ou PayPal.",
           "En cas de virement, confirmer le paiement sous « Commandes »."
@@ -201,7 +201,7 @@
         "rollen": ["bureau_admin", "super_admin"],
         "vorher": "Les membres doivent réserver de façon ferme et ne garder l'article qu'avec paiement.",
         "erwartet": [
-          "Le mode « Réserver et payer en ligne » est choisi dans la fenêtre « Réservation ».",
+          "Le mode « Réserver et payer en ligne » est choisi dans la section « Réservation ».",
           "Le délai de paiement (jours) est saisi ; date limite, quantité totale et quantité par membre sont facultatifs.",
           "La commande apparaît dans l'onglet « Commandes » avec le statut « En attente ». Il n'y a pas d'adresse de livraison (retrait).",
           "Après « Confirmer le paiement », la commande est « Confirmée »."
@@ -224,17 +224,17 @@
         "titre": "Créer et publier un article",
         "wann": "Un nouvel article doit être vendu dans la boutique de l'association.",
         "schritte": [
-          "Dans l'onglet « Catalogue », cliquer sur « Nouveau produit » et saisir nom, catégorie, prix (€), description, type de produit et stock initial. Éventuellement saisir le prix membre et cliquer sur « Créer le produit ».",
-          "Sur l'article, ouvrir « Gérer les variantes » et saisir taille, couleur et stock.",
-          "Ajouter d'autres photos avec « Gérer la galerie ».",
-          "Passer l'article sur « Publié » avec « Changer le statut »."
+          "Dans l'onglet « Catalogue », cliquer sur « Nouveau produit ». L'assistant guide en trois étapes : type (marchandise ou bon d'achat), nom, catégorie, description, prix et stock initial. Éventuellement saisir le prix membre.",
+          "À la dernière étape, vérifier la liste de contrôle et cliquer sur « Enregistrer comme brouillon ». L'éditeur de l'article s'ouvre ; sous « Stock et tailles », saisir taille, couleur et stock.",
+          "Sous « Informations de base », charger l'image principale et, dans la section « Photos », ajouter d'autres photos.",
+          "Sous « Visibilité », passer l'article sur « Publié » avec « Changer le statut »."
         ],
         "danach": "Seuls les articles publiés sont visibles pour les clients. Les articles avec commandes ne peuvent pas être supprimés ; mettez-les sur « Archivé ».",
         "vorher": "Vous avez le nom, le prix et une photo de l'article.",
         "erwartet": [
-          "L'article figure dans le catalogue avec le statut « Brouillon ».",
+          "L'article figure comme vignette dans le catalogue avec le statut « Brouillon ».",
           "Les variantes figurent avec leur stock dans la liste. Sans variante : « Aucune variante — le produit n'a pas encore de stock. »",
-          "Les photos supplémentaires figurent dans la galerie.",
+          "L'image et les photos supplémentaires sont visibles.",
           "Le statut est « Publié ». L'article est visible dans la boutique."
         ],
         "fehler": [
@@ -255,33 +255,33 @@
         "titre": "Traiter et expédier une commande",
         "wann": "Une commande est arrivée et doit être payée, préparée et expédiée.",
         "schritte": [
-          "Dans l'onglet « Commandes », chercher la commande par destinataire, date ou article.",
-          "Si elle est « En attente » et que l'argent est arrivé, choisir le mode de paiement et la date de la transaction, puis cliquer sur « Confirmer le paiement ».",
-          "Éventuellement passer sur « En préparation » avec « Changer le statut » dès que la préparation commence.",
-          "Cliquer sur « Expédier », saisir le numéro de suivi (et éventuellement le transporteur) puis cliquer sur « Confirmer l'expédition ».",
-          "Après la livraison, passer sur « Livrée » avec « Changer le statut »."
+          "Dans l'onglet « Commandes », choisir la pile (Paiement en attente, À expédier, En route …) ou chercher par destinataire, date ou article.",
+          "Si « Paiement en attente » et que l'argent est arrivé, cliquer sur « Confirmer le paiement », choisir le mode de paiement et la date de la transaction, puis confirmer dans la fenêtre.",
+          "Éventuellement, sous « Plus », « Passer en préparation » dès que la préparation commence.",
+          "Cliquer sur « Saisir l'expédition », saisir le numéro de suivi (et éventuellement le transporteur) puis cliquer sur « Confirmer l'expédition ».",
+          "Après la livraison, cliquer sur « Marquer comme livrée » et confirmer."
         ],
-        "danach": "En cas d'annulation, le stock est reversé. Les retours se saisissent avec « Enregistrer un retour » ; les colis déjà expédiés avec « Saisie rétroactive ».",
+        "danach": "En cas d'annulation, le stock est reversé. Les retours se saisissent sous « Plus » avec « Enregistrer un retour » ; les commandes déjà traitées avec « Traité hors de l'application ».",
         "vorher": "La commande est arrivée et l'argent est sur le compte (en cas de virement).",
         "erwartet": [
-          "La liste affiche numéro, destinataire, montant, statut et date.",
-          "Le statut passe à « Confirmée ». Dans la colonne « Facture » figure un lien PDF.",
-          "Le statut est « En préparation ».",
-          "Le statut est « Expédiée » ; le numéro de suivi figure sur la commande.",
-          "Le statut est « Livrée »."
+          "Les commandes apparaissent sous forme de cartes avec barre de progression, destinataire, montant et date.",
+          "La commande passe dans la pile « À expédier ». Sous « Plus », la facture est disponible en PDF.",
+          "La commande affiche « En préparation ».",
+          "La commande figure dans la pile « En route » ; le numéro de suivi figure sur la commande.",
+          "La commande figure dans la pile « Terminées »."
         ],
         "fehler": [
           {
-            "problem": "« Expédier » est absent.",
-            "loesung": "Le bouton apparaît pour « Confirmée » ou « En préparation ». Confirmez d'abord le paiement."
+            "problem": "« Saisir l'expédition » est absent.",
+            "loesung": "Le bouton apparaît dès que le paiement est confirmé (pile « À expédier »). Confirmez d'abord le paiement."
           },
           {
             "problem": "La commande doit être annulée.",
-            "loesung": "Avec « Annuler » (pour « En attente » ou « Confirmée ») et confirmer avec « Annuler la commande ». Le stock est reversé."
+            "loesung": "Sous « Plus », cliquer sur « Annuler » et confirmer la question. Le stock est reversé."
           },
           {
             "problem": "Un client renvoie la marchandise.",
-            "loesung": "Utilisez « Enregistrer un retour » avec article, quantité et motif."
+            "loesung": "Sous « Plus », utilisez « Enregistrer un retour » avec article, quantité et motif."
           }
         ],
         "uebung": "Seulement après la fin de la phase de tests et uniquement sur l'environnement de test : Commandez « [ÜBUNG] Article test » avec un compte de test, confirmez le paiement, expédiez avec un numéro de suivi fictif puis annulez les commandes d'exercice non expédiées. La commande compte dans les indicateurs."

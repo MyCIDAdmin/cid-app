@@ -1,13 +1,18 @@
-/** Schalter „Erklärungen“ der Finanzseiten: blendet „Einfach erklärt“-Hinweise ein oder aus.
- * Standard: an. Gemerkt wird nur im Browser (Komfort, kein Fachzustand). */
+/** Schalter „Erklärungen“ (gilt für alle Module mit Erklär-Ebene, z. B. Finanzen und Shop-
+ * Verwaltung): blendet „Einfach erklärt“-Hinweise ein oder aus. Standard: an. Gemerkt wird nur im
+ * Browser (Komfort, kein Fachzustand). Der frühere Schlüssel der Finanzseiten wird weiter
+ * gelesen, solange noch keine neue Wahl gespeichert ist. */
 import { useSyncExternalStore } from "react";
 
-const SCHLUESSEL = "cid.finanzen.einfach";
+const SCHLUESSEL = "cid.einfach";
+const ALTER_SCHLUESSEL = "cid.finanzen.einfach";
 const hoerer = new Set<() => void>();
 
 function lesen(): boolean {
   try {
-    return window.localStorage.getItem(SCHLUESSEL) !== "aus";
+    const wert =
+      window.localStorage.getItem(SCHLUESSEL) ?? window.localStorage.getItem(ALTER_SCHLUESSEL);
+    return wert !== "aus";
   } catch {
     return true;
   }

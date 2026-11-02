@@ -98,7 +98,7 @@
         "titre": "Artikel reservierbar machen (z. B. Tickets)",
         "wann": "Du willst Plätze oder Artikel vorab verteilen; bezahlt wird später oder vor Ort.",
         "schritte": [
-          "Im Tab „Katalog“ beim Artikel auf „Reservierung“ klicken.",
+          "Im Tab „Katalog“ den Artikel anklicken. Rechts öffnet sich der Editor; dort zum Abschnitt „Reservierung“ gehen.",
           "Modus „Nur reservieren (ohne Zahlung)“ wählen.",
           "Frist, maximale Gesamtmenge und Maximum pro Mitglied eintragen (leer = unbegrenzt).",
           "„Speichern“ klicken und prüfen, dass der Artikel „veröffentlicht“ ist."
@@ -109,10 +109,10 @@
         "rollen": ["bureau_admin", "super_admin"],
         "vorher": "Der Artikel ist angelegt. Du kennst Frist und Mengen.",
         "erwartet": [
-          "Das Fenster „Reservierung“ ist offen und zeigt den Modus.",
+          "Der Editor des Artikels ist offen, der Abschnitt „Reservierung“ zeigt den Modus.",
           "Der Modus „Nur reservieren (ohne Zahlung)“ ist gewählt.",
           "Frist, Maximale Gesamtmenge und Maximal pro Mitglied sind eingetragen. Leer heißt unbegrenzt.",
-          "„Gespeichert.“ erscheint und der Artikel hat den Status „Veröffentlicht“."
+          "„Gespeichert.“ erscheint, ein Satz „So sehen es die Mitglieder“ beschreibt die Reservierung, und der Artikel hat den Status „Veröffentlicht“."
         ],
         "fehler": [
           {
@@ -130,7 +130,7 @@
         "titre": "Reservieren und online bezahlen",
         "wann": "Mitglieder sollen die Menge direkt bezahlen, aber nur bis zu einer Frist und mit Limits.",
         "schritte": [
-          "Beim Artikel auf „Reservierung“ klicken.",
+          "Im Tab „Katalog“ den Artikel anklicken und im Abschnitt „Reservierung“ arbeiten.",
           "Modus „Reservieren und online bezahlen“ wählen.",
           "Frist und Mengenlimits eintragen und „Speichern“ klicken."
         ],
@@ -140,7 +140,7 @@
         "rollen": ["bureau_admin", "super_admin"],
         "vorher": "Der Artikel ist angelegt. Du kennst Frist und Mengenlimits.",
         "erwartet": [
-          "Das Fenster „Reservierung“ ist offen.",
+          "Der Abschnitt „Reservierung“ im Artikel-Editor ist offen.",
           "Der Modus „Reservieren und online bezahlen“ ist gewählt.",
           "„Gespeichert.“ erscheint. Im Shop zeigt der Artikel Frist, Restmenge und Limit pro Mitglied."
         ],
@@ -160,9 +160,9 @@
         "titre": "Reservierungen abarbeiten",
         "wann": "Die Frist ist vorbei oder die Ware wird ausgegeben.",
         "schritte": [
-          "Tab „Reservierungen“ öffnen und nach Artikel und Status filtern.",
-          "Bei erledigten Reservierungen auf „Abgeholt / erledigt“ klicken.",
-          "Nicht benötigte Reservierungen mit „Stornieren“ freigeben."
+          "Tab „Reservierungen“ öffnen. Die Reservierungen sind je Artikel gruppiert; nach Artikel und Status filtern.",
+          "Bei erledigten Reservierungen auf „Abgeholt / erledigt“ klicken (oder mehrere ankreuzen und „Als abgeholt markieren“) und im Fenster bestätigen.",
+          "Nicht benötigte Reservierungen mit „Freigeben“ freigeben und im Fenster bestätigen."
         ],
         "beispiel": "Beim Spiel gibst du die Tickets aus und hakst jede Reservierung als abgeholt ab.",
         "danach": "Der Status wechselt; stornierte Mengen werden wieder frei. Es wird nichts gelöscht.",
@@ -170,7 +170,7 @@
         "rollen": ["bureau_admin", "super_admin"],
         "vorher": "Die Frist ist vorbei oder die Ware wird ausgegeben.",
         "erwartet": [
-          "Der Tab „Reservierungen“ zeigt Produkt, Mitglied, Menge, Status und Datum. Unter der Liste steht „Summe: … Stück“.",
+          "Der Tab zeigt je Artikel einen Block mit Frist, Fortschritt und den Reservierungen mit Mitglied, Menge, Status und Datum. Oben steht „Summe: … Stück“.",
           "Die Reservierung hat den Status „Abgeholt“.",
           "Die Reservierung hat den Status „Storniert“ und die Menge ist wieder frei."
         ],
@@ -184,13 +184,13 @@
             "loesung": "Es wird nichts gelöscht. Wende dich bei Bedarf an die App-Administration."
           }
         ],
-        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Reserviere „[ÜBUNG] Testartikel“ mit einem Testkonto, markiere die Reservierung als „Abgeholt / erledigt“ und storniere eine zweite Test-Reservierung."
+        "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Reserviere „[ÜBUNG] Testartikel“ mit einem Testkonto, markiere die Reservierung als „Abgeholt / erledigt“ und gib eine zweite Test-Reservierung frei."
       },
       {
         "titre": "Reservierung mit Zahlung (Tickets, Trikots)",
         "wann": "Mitglieder sollen Ware verbindlich reservieren, aber nur mit Zahlung behalten dürfen.",
         "schritte": [
-          "Beim Artikel unter „Reservierung“ den Modus „Reservieren und online bezahlen“ wählen.",
+          "Im Artikel-Editor unter „Reservierung“ den Modus „Reservieren und online bezahlen“ wählen.",
           "Zahlungsfrist in Tagen eintragen (z. B. 7) sowie optional Frist, Gesamtmenge und Menge pro Mitglied.",
           "Das Mitglied bestellt ohne Lieferadresse (Abholung) und zahlt per Überweisung oder PayPal.",
           "Bei Überweisung die Zahlung unter „Bestellungen“ bestätigen."
@@ -201,7 +201,7 @@
         "rollen": ["bureau_admin", "super_admin"],
         "vorher": "Mitglieder sollen verbindlich reservieren und nur mit Zahlung behalten dürfen.",
         "erwartet": [
-          "Der Modus „Reservieren und online bezahlen“ ist im Fenster „Reservierung“ gewählt.",
+          "Der Modus „Reservieren und online bezahlen“ ist im Abschnitt „Reservierung“ gewählt.",
           "Die Zahlungsfrist (Tage) ist eingetragen; optional stehen Frist, Gesamtmenge und Menge pro Mitglied.",
           "Die Bestellung erscheint im Tab „Bestellungen“ mit dem Status „Ausstehend“. Eine Lieferadresse gibt es nicht (Abholung).",
           "Nach „Zahlung bestätigen“ steht die Bestellung auf „Bestätigt“."
@@ -224,17 +224,17 @@
         "titre": "Artikel anlegen und veröffentlichen",
         "wann": "Ein neuer Artikel soll im Vereinsshop verkauft werden.",
         "schritte": [
-          "Im Tab „Katalog“ auf „Neues Produkt“ klicken und Name, Kategorie, Preis (€), Beschreibung, Produkttyp und Anfangsbestand eintragen. Optional Mitgliederpreis eintragen und „Produkt erstellen“ klicken.",
-          "Beim Artikel „Varianten verwalten“ öffnen und Größe, Farbe und Bestand eintragen.",
-          "Über „Galerie verwalten“ weitere Fotos hinzufügen.",
-          "Über „Status ändern“ auf „Veröffentlicht“ stellen."
+          "Im Tab „Katalog“ auf „Neues Produkt“ klicken. Der Assistent führt in drei Schritten durch Art (Ware oder Gutschein), Name, Kategorie, Beschreibung, Preis und Anfangsbestand. Optional Mitgliederpreis eintragen.",
+          "Im letzten Schritt die Checkliste prüfen und „Als Entwurf speichern“ klicken. Der Artikel-Editor öffnet sich; unter „Bestand und Größen“ Größe, Farbe und Bestand eintragen.",
+          "Unter „Grunddaten“ das Hauptbild hochladen und im Abschnitt „Fotos“ weitere Fotos hinzufügen.",
+          "Unter „Sichtbarkeit“ über „Status ändern“ auf „Veröffentlicht“ stellen."
         ],
         "danach": "Nur veröffentlichte Artikel sehen Kundinnen und Kunden. Artikel mit Bestellungen lassen sich nicht löschen; setze sie auf „Archiviert“.",
         "vorher": "Du hast Name, Preis und ein Foto des Artikels.",
         "erwartet": [
-          "Der Artikel steht im Katalog mit dem Status „Entwurf“.",
+          "Der Artikel steht als Kachel im Katalog mit dem Status „Entwurf“.",
           "Die Varianten stehen mit Bestand in der Liste. Ohne Variante steht dort: „Keine Variante — das Produkt hat noch keinen Bestand.“",
-          "Die zusätzlichen Fotos stehen in der Galerie.",
+          "Das Bild und die zusätzlichen Fotos sind zu sehen.",
           "Der Status ist „Veröffentlicht“. Der Artikel ist im Shop sichtbar."
         ],
         "fehler": [
@@ -255,33 +255,33 @@
         "titre": "Bestellung bearbeiten und versenden",
         "wann": "Eine Bestellung ist eingegangen und muss bezahlt, gepackt und versendet werden.",
         "schritte": [
-          "Im Tab „Bestellungen“ die Bestellung über Empfänger, Datum oder Artikel suchen.",
-          "Bei „Ausstehend“ und eingegangenem Geld Zahlungsart und Transaktionsdatum wählen und „Zahlung bestätigen“ klicken.",
-          "Optional über „Status ändern“ auf „In Vorbereitung“ stellen, sobald gepackt wird.",
-          "„Versenden“ klicken, die Sendungsnummer (und optional das Transportunternehmen) eintragen und „Versand bestätigen“ klicken.",
-          "Nach der Zustellung über „Status ändern“ auf „Geliefert“ stellen."
+          "Im Tab „Bestellungen“ den Stapel wählen (Zahlung offen, Zu versenden, Unterwegs …) oder über Empfänger, Datum oder Artikel suchen.",
+          "Bei „Zahlung offen“ und eingegangenem Geld auf „Zahlung bestätigen“ klicken, Zahlungsart und Transaktionsdatum wählen und im Fenster bestätigen.",
+          "Optional unter „Mehr“ auf „In Vorbereitung setzen“, sobald gepackt wird.",
+          "„Versand eintragen“ klicken, die Sendungsnummer (und optional das Transportunternehmen) eintragen und „Versand bestätigen“ klicken.",
+          "Nach der Zustellung „Als geliefert markieren“ klicken und bestätigen."
         ],
-        "danach": "Bei Stornierungen wird der Bestand zurückgebucht. Rücksendungen erfasst du mit „Retoure erfassen“; bereits versendete Pakete mit „Nacherfassung“.",
+        "danach": "Bei Stornierungen wird der Bestand zurückgebucht. Rücksendungen erfasst du unter „Mehr“ mit „Rücksendung erfassen“; bereits erledigte Bestellungen mit „Außerhalb der App erledigt“.",
         "vorher": "Die Bestellung ist eingegangen und das Geld ist auf dem Konto (bei Überweisung).",
         "erwartet": [
-          "Die Liste zeigt Nummer, Empfänger, Betrag, Status und Datum.",
-          "Der Status wechselt auf „Bestätigt“. In der Spalte „Rechnung“ steht ein PDF-Link.",
-          "Der Status ist „In Vorbereitung“.",
-          "Der Status ist „Versandt“; die Sendungsnummer steht bei der Bestellung.",
-          "Der Status ist „Geliefert“."
+          "Die Bestellungen erscheinen als Karten mit Fortschrittsleiste, Empfänger, Betrag und Datum.",
+          "Die Bestellung wechselt in den Stapel „Zu versenden“. Unter „Mehr“ steht die Rechnung als PDF.",
+          "Die Bestellung zeigt „In Vorbereitung“.",
+          "Die Bestellung steht im Stapel „Unterwegs“; die Sendungsnummer steht bei der Bestellung.",
+          "Die Bestellung steht im Stapel „Erledigt“."
         ],
         "fehler": [
           {
-            "problem": "„Versenden“ fehlt.",
-            "loesung": "Die Schaltfläche erscheint bei „Bestätigt“ oder „In Vorbereitung“. Bestätige zuerst die Zahlung."
+            "problem": "„Versand eintragen“ fehlt.",
+            "loesung": "Der Knopf erscheint, sobald die Zahlung bestätigt ist (Stapel „Zu versenden“). Bestätige zuerst die Zahlung."
           },
           {
             "problem": "Die Bestellung muss storniert werden.",
-            "loesung": "Mit „Stornieren“ (bei „Ausstehend“ oder „Bestätigt“) und „Bestellung stornieren“ bestätigen. Der Bestand wird zurückgebucht."
+            "loesung": "Unter „Mehr“ auf „Abbrechen“ klicken und die Rückfrage bestätigen. Der Bestand wird zurückgebucht."
           },
           {
             "problem": "Ein Kunde schickt Ware zurück.",
-            "loesung": "Nutze „Retoure erfassen“ mit Artikel, Menge und Grund."
+            "loesung": "Nutze unter „Mehr“ „Rücksendung erfassen“ mit Artikel, Menge und Grund."
           }
         ],
         "uebung": "Erst nach Abschluss der Testrunde und nur auf der Testumgebung: Bestelle „[ÜBUNG] Testartikel“ mit einem Testkonto, bestätige die Zahlung, versende mit einer erfundenen Sendungsnummer und storniere danach nicht versendete Übungsbestellungen. Die Bestellung zählt in die Kennzahlen."

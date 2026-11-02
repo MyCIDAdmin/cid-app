@@ -1,6 +1,9 @@
 /**
  * Page "Boutique — Administration" (mockup #pg-admin-boutique, FDD §2.2, Bureau Admin+).
  *
+ * Überblick-Tab (2026-11-02, „Shop-Verwaltung einfacher"): Startseite mit Ampel-Kacheln und
+ * Aufgaben statt der früheren vier Zähl-Kacheln. (Altes Périmètre:)
+ *
  * Périmètre réduit, même logique que AdminCampagnesPage (adhésions) : 2 onglets — Commandes
  * (traitement/annulation) et Catalogue (produits + variantes/stock) — SANS le 3e onglet
  * "Statistiques ventes" du mockup (CA boutique, top produits). Ce dernier ferait doublon avec
@@ -10,34 +13,43 @@
  * fiables plutôt que d'agréger une seule page de commandes côté client) — laissé de côté plutôt
  * que fabriqué à partir d'un échantillon partiel.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import UeberblickTab, { type VerwaltungsZiel } from "../../components/boutique/UeberblickTab";
 import GestionBonsAchatTab from "../../components/boutique/GestionBonsAchatTab";
 import GestionCatalogueTab from "../../components/boutique/GestionCatalogueTab";
 import GestionCommandesTab from "../../components/boutique/GestionCommandesTab";
 import GestionReservierungenTab from "../../components/boutique/GestionReservierungenTab";
-import { useCommandes, useProduits } from "../../hooks/useBoutique";
 import { usePageAccess } from "../../hooks/useRbac";
 
-type Onglet = "commandes" | "catalogue" | "bons_achat" | "reservierungen";
+type Onglet = "ueberblick" | "commandes" | "catalogue" | "bons_achat" | "reservierungen";
 
 export default function AdminBoutiquePage() {
   const { t } = useTranslation(["boutique", "common"]);
-  const [onglet, setOnglet] = useState<Onglet>("commandes");
+  const [onglet, setOnglet] = useState<Onglet>("ueberblick");
+  // Ziel des letzten Klicks im Überblick (Stapel, Filter, Artikel): wird an den Tab weitergereicht;
+  // `key` setzt den Tab bei jedem neuen Ziel zurück, damit der Filter sicher greift.
+  const [ziel, setZiel] = useState<VerwaltungsZiel | null>(null);
+  const zielNr = useRef(0);
+  const tabKey = (name: string) => `${name}-${zielNr.current}`;
   // Task #216 (2026-09-24) : "page_boutique" distingue désormais lecture/lecture_ecriture — les
   // onglets ci-dessous reçoivent `modifiable` pour désactiver leurs contrôles d'écriture
   // (l'onglet Bons d'achat est déjà purement lecture seule, rien à lui passer).
   const { accessible, modifiable } = usePageAccess("page_boutique");
 
-  // Requêtes légères juste pour les tuiles KPI de tête de page (mockup kg4) — les onglets
-  // ci-dessous refont leur propre useCommandes/useProduits avec leurs filtres respectifs.
-  const commandesEnAttente = useCommandes({ statut: "en_attente" });
-  const produits = useProduits();
-
-  const produitsActifs = produits.data?.results.filter((p) => p.statut === "publie").length ?? 0;
-  const stocksEnAlerte =
-    produits.data?.results.filter((p) => p.stock_faible || p.en_rupture).length ?? 0;
+  // Klick auf eine Kachel oder Aufgabe: passenden Tab öffnen (Filter folgen in den Tabs).
+  const gehZu = (neuesZiel: VerwaltungsZiel) => {
+    zielNr.current += 1;
+    setZiel(neuesZiel);
+    setOnglet(
+      neuesZiel.tab === "bestellungen"
+        ? "commandes"
+        : neuesZiel.tab === "katalog"
+          ? "catalogue"
+          : "reservierungen",
+    );
+  };
 
   return (
     <div>
@@ -49,38 +61,18 @@ export default function AdminBoutiquePage() {
         </div>
       )}
 
-      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">
-            {t("admin.kpi_en_attente")}
-          </div>
-          <div className="text-lg font-bold text-text-primary">
-            {commandesEnAttente.data?.results.length ?? "—"}
-          </div>
-        </div>
-        <div className="rounded-cid-lg bg-ca p-3 text-white shadow-sm">
-          <div className="text-[10px] uppercase text-white/70">
-            {t("admin.kpi_produits_actifs")}
-          </div>
-          <div className="text-lg font-bold">{produitsActifs}</div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-text-tertiary">
-            {t("admin.kpi_total_produits")}
-          </div>
-          <div className="text-lg font-bold text-text-primary">
-            {produits.data?.results.length ?? "—"}
-          </div>
-        </div>
-        <div className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
-          <div className="text-[10px] uppercase text-status-warningText">
-            {t("admin.kpi_stocks_alerte")}
-          </div>
-          <div className="text-lg font-bold text-status-warningText">{stocksEnAlerte}</div>
-        </div>
-      </div>
-
       <div className="mb-4 flex gap-1 overflow-x-auto whitespace-nowrap border-b border-text-tertiary/20">
+        <button
+          type="button"
+          onClick={() => setOnglet("ueberblick")}
+          className={`px-3 py-2 text-sm font-medium ${
+            onglet === "ueberblick"
+              ? "border-b-2 border-ca text-ca"
+              : "text-text-tertiary hover:text-text-secondary"
+          }`}
+        >
+          {t("admin.onglet_ueberblick")}
+        </button>
         <button
           type="button"
           onClick={() => setOnglet("commandes")}
@@ -127,10 +119,29 @@ export default function AdminBoutiquePage() {
         </button>
       </div>
 
-      {onglet === "commandes" && <GestionCommandesTab modifiable={modifiable} />}
-      {onglet === "catalogue" && <GestionCatalogueTab modifiable={modifiable} />}
+      {onglet === "ueberblick" && <UeberblickTab onZiel={gehZu} />}
+      {onglet === "commandes" && (
+        <GestionCommandesTab
+          key={tabKey("best")}
+          modifiable={modifiable}
+          startStapel={ziel?.tab === "bestellungen" ? (ziel.stapel ?? "") : ""}
+        />
+      )}
+      {onglet === "catalogue" && (
+        <GestionCatalogueTab
+          key={tabKey("kat")}
+          modifiable={modifiable}
+          startFilter={ziel?.tab === "katalog" ? (ziel.filter ?? "") : ""}
+        />
+      )}
       {onglet === "bons_achat" && <GestionBonsAchatTab />}
-      {onglet === "reservierungen" && <GestionReservierungenTab modifiable={modifiable} />}
+      {onglet === "reservierungen" && (
+        <GestionReservierungenTab
+          key={tabKey("res")}
+          modifiable={modifiable}
+          startProdukt={ziel?.tab === "reservierungen" ? (ziel.produit ?? "") : ""}
+        />
+      )}
     </div>
   );
 }
