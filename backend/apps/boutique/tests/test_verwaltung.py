@@ -48,9 +48,7 @@ def _alt(commande, tage, feld="created_at"):
 
 
 def _bestellung(statut, tage=0, mode=ModePaiementCommande.VIREMENT, physisch=True):
-    c = CommandeFactory(
-        statut=statut, mode_paiement=mode, montant_total=Decimal("25.00")
-    )
+    c = CommandeFactory(statut=statut, mode_paiement=mode, montant_total=Decimal("25.00"))
     if physisch:
         LigneCommandeFactory(commande=c)
     else:
@@ -93,9 +91,7 @@ def test_zahlung_offen_zaehlt_nur_manuelle_und_alle_seiten():
     assert kachel["anzahl"] == 3
     assert kachel["aeltest_tage"] == 8
     assert kachel["ton"] == "rot"
-    assert (
-        daten["stapel"]["zahlung_offen"] == 4
-    )  # Stapel zählt alle offenen Bestellungen
+    assert daten["stapel"]["zahlung_offen"] == 4  # Stapel zählt alle offenen Bestellungen
     aufgabe = next(a for a in daten["aufgaben"] if a["art"] == "zahlung")
     assert aufgabe["darf"] is True
     assert aufgabe["rolle"] == "finanz"
@@ -146,9 +142,7 @@ def test_reservierungen_nach_frist_je_artikel():
     )
     VarianteProduitFactory(produit=p, stock=50)
     for menge, st in ((2, StatutReservierung.AKTIV), (3, StatutReservierung.AKTIV)):
-        Reservierung.objects.create(
-            produit=p, membre=MembreFactory(), quantite=menge, statut=st
-        )
+        Reservierung.objects.create(produit=p, membre=MembreFactory(), quantite=menge, statut=st)
     Reservierung.objects.create(
         produit=p,
         membre=MembreFactory(),
@@ -184,9 +178,7 @@ def test_artikel_hinweise():
     archiv = ProduitFactory(statut="archive", nom="Alt")
     daten = _get(_client(Role.BUREAU_ADMIN)).json()["hinweise"]
     knapp_h = {h["code"]: h for h in daten[str(knapp.id)]}
-    assert knapp_h["bestand_knapp"]["detail"]["varianten"] == [
-        {"variante": "S", "stock": 4}
-    ]
+    assert knapp_h["bestand_knapp"]["detail"]["varianten"] == [{"variante": "S", "stock": 4}]
     assert "ausverkauft" in {h["code"] for h in daten[str(leer.id)]}
     assert "preis_null" in {h["code"] for h in daten[str(gratis.id)]}
     assert "name_lang" in {h["code"] for h in daten[str(lang.id)]}

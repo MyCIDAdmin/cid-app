@@ -93,12 +93,9 @@ def _zu_versenden():
 
 def stapel_zaehlen() -> dict[str, int]:
     gruppen = {
-        s["statut"]: s["n"]
-        for s in Commande.objects.values("statut").annotate(n=Count("id"))
+        s["statut"]: s["n"] for s in Commande.objects.values("statut").annotate(n=Count("id"))
     }
-    return {
-        name: sum(gruppen.get(st, 0) for st in stati) for name, stati in STAPEL.items()
-    }
+    return {name: sum(gruppen.get(st, 0) for st in stati) for name, stati in STAPEL.items()}
 
 
 def _bestell_aufgaben(jetzt):
@@ -135,18 +132,11 @@ def artikel_hinweise(jetzt=None) -> dict[str, list[dict]]:
         hinweise: list[dict] = []
         veroeffentlicht = p.statut == StatutProduit.PUBLIE
         mit_frist = p.reservierung_modus != ReservierungsModus.AUS
-        if (
-            veroeffentlicht
-            and mit_frist
-            and p.reservierung_frist
-            and p.reservierung_frist < jetzt
-        ):
+        if veroeffentlicht and mit_frist and p.reservierung_frist and p.reservierung_frist < jetzt:
             hinweise.append({"code": "frist_vorbei", "schwere": ROT, "detail": {}})
         if veroeffentlicht and p.type_produit == TypeProduit.PHYSIQUE:
             if p.en_rupture:
-                hinweise.append(
-                    {"code": "ausverkauft", "schwere": ORANGE, "detail": {}}
-                )
+                hinweise.append({"code": "ausverkauft", "schwere": ORANGE, "detail": {}})
             else:
                 knapp = [
                     {"variante": _label(v), "stock": v.stock}
@@ -176,11 +166,7 @@ def artikel_hinweise(jetzt=None) -> dict[str, list[dict]]:
                     "detail": {"laenge": len(p.nom)},
                 }
             )
-        if (
-            not p.image
-            and not p._hat_galerie
-            and p.type_produit == TypeProduit.PHYSIQUE
-        ):
+        if not p.image and not p._hat_galerie and p.type_produit == TypeProduit.PHYSIQUE:
             hinweise.append(
                 {
                     "code": "bild_fehlt",
@@ -211,16 +197,12 @@ def _reservierungen_nach_frist(jetzt):
 def berechne_ueberblick(user, jetzt=None) -> dict:
     jetzt = jetzt or timezone.now()
     darf_finanz = ROLE_LEVELS.get(user.role, 0) >= PAIEMENT_EXPEDITION_MIN_LEVEL
-    darf_buero = has_admin_page_access(
-        user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE
-    )
+    darf_buero = has_admin_page_access(user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE)
 
     z_tage, v_tage, u_tage = _bestell_aufgaben(jetzt)
     res_offen = _reservierungen_nach_frist(jetzt)
     hinweise = artikel_hinweise(jetzt)
-    artikel_namen = dict(
-        Produit.objects.filter(id__in=hinweise.keys()).values_list("id", "nom")
-    )
+    artikel_namen = dict(Produit.objects.filter(id__in=hinweise.keys()).values_list("id", "nom"))
 
     z_alt = max(z_tage, default=None)
     v_alt = max(v_tage, default=None)
