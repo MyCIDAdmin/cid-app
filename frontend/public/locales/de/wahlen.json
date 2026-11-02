@@ -55,7 +55,9 @@
     "bekanntmachungen": "Bekanntmachungen",
     "ausschuss": "Wahlausschuss",
     "ergebnis": "Ergebnis",
-    "einsprueche": "Einsprüche"
+    "einsprueche": "Einsprüche",
+    "reglement": "Reglement",
+    "buero": "Wahlbüro"
   },
   "anlegen": {
     "titel": "Neue Wahl",
@@ -334,5 +336,66 @@
     "vorschlag_verwerfen": "Vorschlag verwerfen",
     "zurueckziehen": "Einspruch zurückziehen",
     "leer": "Es gibt keine Einsprüche."
+  },
+  "teilnahme": {
+    "hat_gewaehlt": "Du hast an dieser Wahl teilgenommen.",
+    "noch_nicht": "Du hast noch nicht abgestimmt.",
+    "nicht_berechtigt": "Du bist bei dieser Wahl nicht stimmberechtigt."
+  },
+  "reglement": {
+    "intro": "Die Regeln zu dieser Wahl. Jedes Dokument hat eine Version; bitte bestätige, dass du die aktuelle Fassung gelesen hast.",
+    "leer": "Es gibt noch keine Dokumente.",
+    "art": {
+      "wahlordnung": "Wahlordnung",
+      "satzung": "Satzung",
+      "fairness": "Fairnessregeln",
+      "datenschutz": "Datenschutz",
+      "geschaeftsordnung": "Geschäftsordnung"
+    },
+    "version": "Version {{v}}",
+    "gueltig_ab": "gültig ab {{datum}}",
+    "kein_text": "In dieser Sprache gibt es noch keinen Text.",
+    "maschinell": "Maschinelle Übersetzung – noch nicht von einer Person geprüft.",
+    "geprueft_hinweis": "Übersetzung von einer Person geprüft.",
+    "gelesen_bestaetigen": "Ich habe die aktuelle Fassung gelesen",
+    "gelesen_ja": "Gelesen bestätigt",
+    "gelesen_anzahl": "{{n}} Bestätigungen",
+    "bearbeiten": "Bearbeiten",
+    "speichern": "Speichern",
+    "abbrechen": "Abbrechen",
+    "text": "Text des Dokuments",
+    "version_feld": "Neue Version (z. B. 2.1)",
+    "uebersetzen": "Mit DeepL übersetzen",
+    "geprueft": "Übersetzung geprüft",
+    "hinzufuegen": "Dokument hinzufügen:",
+    "fehler": "Das hat nicht geklappt."
+  },
+  "buero": {
+    "wahlzettel": "Stimmzettel",
+    "wahlzettel_vorschau": "Vorschau – so sieht der Stimmzettel aus.",
+    "wahlzettel_offen": "So sieht der Stimmzettel aus.",
+    "wahlzettel_leer": "Es gibt noch keine Optionen.",
+    "typ_unique": "Eine Stimme.",
+    "typ_multiple": "Bis zu {{n}} Stimmen.",
+    "typ_oui_non": "Ja oder Nein.",
+    "typ_preferentiel": "Reihenfolge der Wahl angeben.",
+    "beteiligung": "Beteiligung",
+    "beteiligung_hinweis": "Hier steht nur, wer abgestimmt hat – nie wann und nie wofür.",
+    "abgestimmt": "abgestimmt",
+    "offen": "offen",
+    "export": "Liste als CSV herunterladen",
+    "uebergabe": "Übergabe",
+    "uebergabe_stand": "{{n}} von {{max}} erledigt",
+    "automatisch": "automatisch",
+    "punkt": {
+      "ergebnis_veroeffentlicht": "Ergebnis veröffentlicht",
+      "protokoll_unterschrieben": "Protokoll von drei Personen unterschrieben",
+      "einsprueche_entschieden": "Alle Einsprüche entschieden",
+      "nachweise_geloescht": "Nachweise nach Fristablauf gelöscht",
+      "zugaenge_uebergeben": "Zugänge an das neue Amt übergeben",
+      "unterlagen_uebergeben": "Unterlagen übergeben",
+      "uebergabeprotokoll": "Übergabeprotokoll abgelegt"
+    },
+    "fehler": "Das hat nicht geklappt."
   }
 }

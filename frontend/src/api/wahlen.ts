@@ -1,4 +1,5 @@
 import type {
+  BeteiligungListe,
   Bekanntmachung,
   Einspruch,
   EinspruchEntscheidung,
@@ -7,6 +8,10 @@ import type {
   FreigabeAntwort,
   FreigabeArt,
   Protokoll,
+  Reglement,
+  ReglementArt,
+  UebergabePunkt,
+  Wahlzettel,
   Kandidatur,
   KandidaturPayload,
   Wahl,
@@ -300,5 +305,93 @@ export async function einspruchEntscheiden(
     art,
     begruendung,
   });
+  return data;
+}
+
+// ---- Wahlbüro
+
+export async function getBeteiligung(id: string): Promise<BeteiligungListe> {
+  const { data } = await apiClient.get<BeteiligungListe>(`${BASIS}/${id}/beteiligung/`);
+  return data;
+}
+
+export async function beteiligungExport(id: string): Promise<Blob> {
+  const { data } = await apiClient.get(`${BASIS}/${id}/beteiligung/export/`, {
+    responseType: "blob",
+  });
+  return data;
+}
+
+export async function getWahlzettel(id: string): Promise<Wahlzettel> {
+  const { data } = await apiClient.get<Wahlzettel>(`${BASIS}/${id}/wahlzettel/`);
+  return data;
+}
+
+export async function getUebergabe(id: string): Promise<UebergabePunkt[]> {
+  const { data } = await apiClient.get<UebergabePunkt[]>(`${BASIS}/${id}/uebergabe/`);
+  return data;
+}
+
+export async function uebergabeSetzen(
+  id: string,
+  schluessel: string,
+  erledigt: boolean,
+  notiz = "",
+): Promise<UebergabePunkt[]> {
+  const { data } = await apiClient.post<UebergabePunkt[]>(
+    `${BASIS}/${id}/uebergabe/${schluessel}/`,
+    { erledigt, notiz },
+  );
+  return data;
+}
+
+// ---- Reglement
+
+export async function listReglemente(wahl: string): Promise<Reglement[]> {
+  const { data } = await apiClient.get<Reglement[]>(`${BASIS}/reglemente/`, { params: { wahl } });
+  return data;
+}
+
+export async function reglementAnlegen(wahl: string, schluessel: ReglementArt): Promise<Reglement> {
+  const { data } = await apiClient.post<Reglement>(`${BASIS}/reglemente/`, { wahl, schluessel });
+  return data;
+}
+
+export interface ReglementAenderung {
+  sprache?: Sprache;
+  html?: string;
+  version?: string;
+  gueltig_ab?: string;
+}
+
+export async function reglementAendern(
+  id: string,
+  payload: ReglementAenderung,
+): Promise<Reglement> {
+  const { data } = await apiClient.patch<Reglement>(`${BASIS}/reglemente/${id}/`, payload);
+  return data;
+}
+
+export async function reglementUebersetzen(id: string, sprache: Sprache): Promise<Reglement> {
+  const { data } = await apiClient.post<Reglement>(`${BASIS}/reglemente/${id}/uebersetzen/`, {
+    sprache,
+  });
+  return data;
+}
+
+export async function reglementGeprueft(
+  id: string,
+  sprache: Sprache,
+  wert: boolean,
+): Promise<Reglement> {
+  const { data } = await apiClient.post<Reglement>(`${BASIS}/reglemente/${id}/geprueft/`, {
+    sprache,
+    wert,
+  });
+  return data;
+}
+
+export async function reglementGelesen(id: string): Promise<Reglement> {
+  const { data } = await apiClient.post<Reglement>(`${BASIS}/reglemente/${id}/gelesen/`);
   return data;
 }
