@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .verwaltung import VerwaltungUeberblickView
 from .views import (
     BonAchatViewSet,
     CommandeViewSet,
@@ -12,7 +13,6 @@ from .views import (
     RetourViewSet,
     VarianteProduitViewSet,
 )
-from .verwaltung import VerwaltungUeberblickView
 from .webhooks import PayPalWebhookView, StripeWebhookView
 
 app_name = "boutique"
