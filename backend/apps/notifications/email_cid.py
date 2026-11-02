@@ -40,6 +40,7 @@ class Texte:
     paragraphes: list[str] = field(default_factory=list)
     details: list[tuple[str, str]] = field(default_factory=list)
     cta: str = ""
+    html: str = ""  # bereinigtes HTML (z. B. Bekanntmachungen); ersetzt dann die Absätze
 
 
 def _bloc(langue: str, texte: Texte) -> dict:
@@ -52,11 +53,12 @@ def _bloc(langue: str, texte: Texte) -> dict:
         "paragraphes": texte.paragraphes,
         "details": texte.details,
         "cta_label": texte.cta,
+        "html": texte.html,
     }
 
 
 def construire_email_cid(
-    *, sujet: str, textes: dict[str, Texte], lien: str = ""
+    *, sujet: str, textes: dict[str, Texte], lien: str = "", fusszeile: str = ""
 ) -> tuple[str, str]:
     """Retourne (corps texte brut, corps HTML)."""
     if "de" not in textes:
@@ -74,6 +76,7 @@ def construire_email_cid(
             "logo_url": f"{base}/brand/logo-cid-couleur.png",
             "site_url": base,
             "site_host": urlparse(base).netloc or base,
+            "fusszeile": fusszeile,
         },
     )
     parties = []
@@ -97,8 +100,11 @@ def envoyer_email_cid(
     lien: str = "",
     fail_silently: bool = False,
     anhaenge: list[tuple[str, bytes, str]] | None = None,
+    fusszeile: str = "",
 ) -> int:
-    corps_texte, corps_html = construire_email_cid(sujet=sujet, textes=textes, lien=lien)
+    corps_texte, corps_html = construire_email_cid(
+        sujet=sujet, textes=textes, lien=lien, fusszeile=fusszeile
+    )
     message = EmailMultiAlternatives(
         subject=sujet,
         body=corps_texte,

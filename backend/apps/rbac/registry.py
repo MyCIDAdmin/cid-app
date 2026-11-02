@@ -139,6 +139,7 @@ API_PREFIXES_MENU = [
     ("/api/v1/projets/", "projets"),
     ("/api/v1/boutique/", "boutique"),
     ("/api/v1/votes/", "vote"),
+    ("/api/v1/wahlen/", "vote"),
     ("/api/v1/communaute/publications/", "fil"),
     ("/api/v1/communaute/commentaires/", "fil"),
     ("/api/v1/communaute/sujets/", "forum"),
