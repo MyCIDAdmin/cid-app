@@ -21,6 +21,7 @@ import type {
 } from "../../types/wahlen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { datum, istAntrag, istListe, LISTEN_AEMTER } from "../../utils/wahlen";
+import EinspruchFormular from "./EinspruchFormular";
 import MitgliedAuswahl from "./MitgliedAuswahl";
 
 const FELD = "w-full rounded-cid border border-text-tertiary/30 p-2 text-sm";
@@ -155,6 +156,16 @@ function Formular({ wahl, kandidatur }: { wahl: Wahl; kandidatur: Kandidatur }) 
           {kandidatur.begruendung}
         </p>
       )}
+      {kandidatur.status === "abgelehnt" &&
+        kandidatur.einspruch_bis &&
+        new Date(kandidatur.einspruch_bis).getTime() > Date.now() && (
+          <EinspruchFormular
+            wahl={wahl.id}
+            art="ablehnung"
+            kandidatur={kandidatur.id}
+            bis={kandidatur.einspruch_bis}
+          />
+        )}
       {gesperrt && kandidatur.status === "eingereicht" && (
         <p className="rounded-cid bg-bg-secondary p-3 text-sm text-text-secondary">
           {t("kandidatur.eingereicht", { datum: datum(kandidatur.eingereicht_am, true) })}

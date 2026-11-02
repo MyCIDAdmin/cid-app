@@ -53,7 +53,9 @@
     "kandidaten": "Candidatures",
     "pruefung": "Vérification",
     "bekanntmachungen": "Annonces",
-    "ausschuss": "Commission électorale"
+    "ausschuss": "Commission électorale",
+    "ergebnis": "Résultat",
+    "einsprueche": "Recours"
   },
   "anlegen": {
     "titel": "Nouvelle élection",
@@ -229,7 +231,9 @@
     "freigaben_stand": "Approbations : {{n}} sur {{noetig}}",
     "du_hast_freigegeben": "Tu as approuvé.",
     "zur_abstimmung": "Vers le vote",
-    "fehler": "Cela n'a pas fonctionné."
+    "fehler": "Cela n'a pas fonctionné.",
+    "freigabe_ergebnis": "Publier le résultat",
+    "freigeben_ergebnis": "Approuver la publication"
   },
   "aufbewahrung": {
     "30": "30 jours",
@@ -276,5 +280,59 @@
     "freigeben": "Approuver",
     "zurueck": "Retour au brouillon",
     "aushang": "Affiche en PDF"
+  },
+  "ergebnis": {
+    "noch_nicht": "Le vote n'a pas encore commencé.",
+    "laeuft": "Le vote est en cours. Le résultat n'apparaît qu'à la fin.",
+    "verschlossen": "Le vote est terminé. Le résultat sera publié dès que deux membres de la commission électorale l'auront approuvé.",
+    "beteiligung": "Participation : {{a}} sur {{b}} ({{p}} %).",
+    "schwelle": "Requis : plus de {{p}} % des voix exprimées.",
+    "gewaehlt_marke": "élu·e",
+    "veroeffentlicht": "Publié le {{datum}}.",
+    "ausgang_gewaehlt": "Élu·e : {{gewaehlt}}.",
+    "ausgang_angenommen": "Adopté. {{gewaehlt}}",
+    "ausgang_abgelehnt": "Rejeté.",
+    "ausgang_stichwahl": "Pas de décision au premier tour. Second tour entre : {{zwischen}}.",
+    "ausgang_gleichstand": "Égalité à la limite. Déjà élu·e·s : {{gewaehlt}}. Second tour entre : {{zwischen}}.",
+    "ausgang_keine_stimmen": "Aucune voix n'a été exprimée.",
+    "ausgang_manuell": "Le dépouillement du classement est effectué par la commission électorale."
+  },
+  "protokoll": {
+    "titel": "Procès-verbal",
+    "stand": "Établi le {{datum}}.",
+    "fehlen": "Il manque encore {{n}} signature(s) de membres de la commission.",
+    "vollstaendig": "Le procès-verbal est signé par trois membres de la commission.",
+    "pdf": "Procès-verbal en PDF",
+    "unterschreiben": "Signer le procès-verbal",
+    "fehler": "Cela n'a pas fonctionné. Merci de réessayer."
+  },
+  "einspruch": {
+    "eingereicht": "Ton recours a bien été reçu. La commission électorale statue sous cinq jours.",
+    "fehler": "Le recours n'a pas pu être enregistré.",
+    "frage_waehlbarkeit": "Pourquoi cette candidature n'est-elle pas éligible ?",
+    "frage_ablehnung": "Pourquoi le refus n'était-il pas justifié ?",
+    "frage_ergebnis": "Qu'est-ce qui s'est mal passé dans le scrutin ou le résultat ?",
+    "vertraulich": "Seuls toi et la commission électorale voient ton recours.",
+    "frist_bis": "Délai jusqu'au {{datum}}.",
+    "absenden": "Déposer le recours",
+    "einlegen_waehlbarkeit": "Recours contre l'éligibilité",
+    "einlegen_ergebnis": "Recours contre le résultat",
+    "art_waehlbarkeit": "Recours contre l'éligibilité",
+    "art_ablehnung": "Recours contre le refus",
+    "art_ergebnis": "Recours contre le résultat",
+    "status_offen": "En cours",
+    "status_stattgegeben": "Accueilli",
+    "status_abgewiesen": "Rejeté",
+    "status_zurueckgezogen": "Retiré",
+    "entscheiden_bis": "Décision d'ici le {{datum}}",
+    "begruendung": "Motif de la décision",
+    "stattgeben": "Accueillir",
+    "abweisen": "Rejeter",
+    "vorschlag_stattgeben": "Proposition : accueillir",
+    "vorschlag_abweisen": "Proposition : rejeter",
+    "zustimmen": "Approuver",
+    "vorschlag_verwerfen": "Retirer la proposition",
+    "zurueckziehen": "Retirer le recours",
+    "leer": "Il n'y a aucun recours."
   }
 }

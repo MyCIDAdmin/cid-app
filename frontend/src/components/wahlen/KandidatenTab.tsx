@@ -1,7 +1,26 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useKandidaturen } from "../../hooks/useWahlen";
-import type { Wahl } from "../../types/wahlen";
+import type { Kandidatur, Wahl } from "../../types/wahlen";
+import EinspruchFormular from "./EinspruchFormular";
+
+function EinspruchKnopf({ wahl, k }: { wahl: Wahl; k: Kandidatur }) {
+  const { t } = useTranslation("wahlen");
+  const [offen, setOffen] = useState(false);
+  const imFenster = k.einspruch_bis && new Date(k.einspruch_bis).getTime() > Date.now();
+  if (!imFenster || wahl.ist_ausschuss || wahl.meine_kandidatur === k.id) return null;
+  if (!offen) {
+    return (
+      <button type="button" onClick={() => setOffen(true)} className="text-xs text-ca underline">
+        {t("einspruch.einlegen_waehlbarkeit")}
+      </button>
+    );
+  }
+  return (
+    <EinspruchFormular wahl={wahl.id} art="waehlbarkeit" kandidatur={k.id} bis={k.einspruch_bis} />
+  );
+}
 
 /** Zugelassene Kandidaturen, sichtbar ab der Kampagne (öffentliche Sicht des Servers). */
 export default function KandidatenTab({ wahl }: { wahl: Wahl }) {
@@ -47,6 +66,7 @@ export default function KandidatenTab({ wahl }: { wahl: Wahl }) {
                 ))}
             </ul>
           )}
+          <EinspruchKnopf wahl={wahl} k={k} />
         </li>
       ))}
     </ul>
