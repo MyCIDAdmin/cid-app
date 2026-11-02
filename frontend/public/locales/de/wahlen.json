@@ -1,0 +1,280 @@
+{
+  "titel": "Wahlen",
+  "intro": "Hier laufen die Wahlen des Vereins: von der Ankündigung über die Kandidatur und das Prüfverfahren bis zum Ergebnis.",
+  "zu_abstimmungen": "Zu den Abstimmungen",
+  "neu": "Neue Wahl anlegen",
+  "laden": "Wird geladen …",
+  "fehler_laden": "Die Wahlen konnten nicht geladen werden.",
+  "leer": "Zurzeit gibt es keine Wahl.",
+  "aktuelle_phase": "Phase",
+  "phasen_titel": "Phasen der Wahl",
+  "zur_stimmabgabe": "Zur Stimmabgabe",
+  "zum_ergebnis": "Zum Ergebnis",
+  "status": {
+    "entwurf": "Entwurf",
+    "aktiv": "Aktiv",
+    "abgeschlossen": "Abgeschlossen"
+  },
+  "form": {
+    "liste": "Liste (mehrere Ämter)",
+    "person": "Einzelkandidatur, ein Amt",
+    "mehrfach": "Einzelkandidaturen, mehrere Posten",
+    "ja_nein": "Ja/Nein-Antrag",
+    "rang": "Rangfolge"
+  },
+  "mehrheit": {
+    "relativ": "Relative Mehrheit",
+    "absolut": "Absolute Mehrheit (mehr als 50 %)",
+    "zwei_drittel": "Zwei Drittel"
+  },
+  "phase": {
+    "ankuendigung": "Ankündigung",
+    "kandidatur": "Kandidatur",
+    "pruefung": "Prüfung",
+    "kampagne": "Kampagne",
+    "wahl": "Wahl",
+    "ergebnis": "Ergebnis",
+    "uebergabe": "Übergabe"
+  },
+  "termine": {
+    "ankuendigung_am": "Ankündigung",
+    "kandidatur_von": "Kandidatur ab",
+    "kandidatur_bis": "Kandidatur bis",
+    "pruefung_bis": "Prüfung bis",
+    "kampagne_bis": "Kampagne bis",
+    "wahl_von": "Wahl von",
+    "wahl_bis": "Wahl bis",
+    "einspruch_bis": "Einspruch bis",
+    "uebergabe_bis": "Übergabe bis"
+  },
+  "tab": {
+    "ueberblick": "Überblick",
+    "kandidatur": "Meine Kandidatur",
+    "kandidaten": "Kandidaturen",
+    "pruefung": "Prüfverfahren",
+    "bekanntmachungen": "Bekanntmachungen",
+    "ausschuss": "Wahlausschuss"
+  },
+  "anlegen": {
+    "titel": "Neue Wahl",
+    "name": "Name der Wahl",
+    "beschreibung": "Beschreibung (optional)",
+    "form": "Art der Wahl",
+    "mehrheit": "Nötige Mehrheit",
+    "listen_groesse": "Ämter je Liste (1 bis 7)",
+    "posten": "Zu besetzende Posten",
+    "zeitplan": "Zeitplan",
+    "speichern": "Wahl anlegen",
+    "fehler": "Die Wahl konnte nicht angelegt werden."
+  },
+  "auswahl": {
+    "suchen": "Name suchen …",
+    "keine_treffer": "Keine Treffer."
+  },
+  "amt": {
+    "pres": "Präsident*in",
+    "vp": "Vizepräsident*in",
+    "fin": "Schatzmeister*in",
+    "more": "Weiteres Mitglied",
+    "cand": "Kandidat*in"
+  },
+  "sprache": {
+    "de": "Deutsch",
+    "fr": "Französisch",
+    "ar": "Arabisch"
+  },
+  "waehlbarkeit": {
+    "aktiv": "Aktiv, Beitrag bezahlt",
+    "dauer": "{{jahre}} von {{noetig}} Jahren Mitgliedschaft",
+    "ausschuss": "Nicht im Wahlausschuss"
+  },
+  "nachweis": {
+    "abschluss": "Hochschulabschluss",
+    "b2": "Deutsch B2",
+    "ehrenerklaerung": "Ehrenerklärung zum Leumund",
+    "verwandtschaft": "Erklärung: keine Verwandtschaft innerhalb der Liste"
+  },
+  "kandidatur_status": {
+    "entwurf": "Entwurf",
+    "eingereicht": "Eingereicht",
+    "rueckfrage": "Rückfrage",
+    "zugelassen": "Zugelassen",
+    "abgelehnt": "Abgelehnt",
+    "zurueckgezogen": "Zurückgezogen"
+  },
+  "fehlend": {
+    "name": "Name",
+    "personen": "Personen",
+    "foto": "Foto",
+    "rechte_foto": "Recht am Foto",
+    "programm": "Vorstellung und Programm",
+    "unterstuetzungen": "Unterstützungen",
+    "abschluss": "Hochschulabschluss",
+    "ehrenerklaerung": "Ehrenerklärung",
+    "b2": "Deutsch B2",
+    "verwandtschaft": "Erklärung zur Verwandtschaft",
+    "wortlaut": "Wortlaut",
+    "bestaetigungen": "Bestätigungen"
+  },
+  "kandidatur": {
+    "start_hinweis": "Die Kandidaturfrist läuft. Du kannst jetzt deine Kandidatur anlegen und in Ruhe ausfüllen.",
+    "nicht_moeglich": "Du hast hier keine Kandidatur. Anlegen ist nur während der Kandidaturfrist möglich.",
+    "starten": "Kandidatur anlegen",
+    "fehler": "Das hat nicht geklappt.",
+    "upload_fehler": "Die Datei konnte nicht hochgeladen werden (PDF, JPG oder PNG, höchstens 5 MB).",
+    "rueckfrage": "Rückfrage des Wahlausschusses. Bitte bessere bis {{frist}} nach.",
+    "abgelehnt": "Abgelehnt nach {{artikel}}. Einspruch ist innerhalb von 5 Tagen möglich.",
+    "eingereicht": "Eingereicht am {{datum}}. Der Wahlausschuss prüft jetzt.",
+    "zugelassen": "Deine Kandidatur ist zugelassen.",
+    "listenname": "Name der Liste",
+    "antragstitel": "Titel des Antrags",
+    "personen": "Personen der Liste",
+    "person": "Kandidat*in",
+    "amt": "Amt",
+    "entfernen": "Entfernen",
+    "foto": "Foto",
+    "hochgeladen": "Hochgeladen",
+    "fehlt": "Fehlt",
+    "person_hinzu": "Person hinzufügen ({{n}} von {{max}})",
+    "person_suchen": "Person suchen",
+    "erst_speichern": "Neue Personen erscheinen mit Foto und Nachweisen, nachdem du gespeichert hast.",
+    "noch_nicht_gespeichert": "noch nicht gespeichert",
+    "praesident_fehlt": "Eine Person der Liste muss Präsident*in sein.",
+    "leitsatz": "Leitsatz (höchstens 80 Zeichen)",
+    "vorstellung": "Vorstellung",
+    "wortlaut": "Wortlaut des Antrags",
+    "programm": "Programm in drei Punkten",
+    "programm_punkt": "Programmpunkt {{n}}",
+    "sprache": "Sprache des Textes",
+    "rechte_foto": "Ich habe die Rechte an den Fotos und erlaube die Veröffentlichung.",
+    "best_wahlordnung": "Ich habe die Wahlordnung gelesen.",
+    "best_fairness": "Ich verpflichte mich zu einer fairen Kampagne.",
+    "best_datenschutz": "Ich stimme der Verarbeitung der Daten für die Wahl zu.",
+    "unterstuetzung": "Unterstützungen: {{n}} von {{noetig}}",
+    "link_hinweis": "Schicke diesen Link an Mitglieder, die dich unterstützen. Jedes Mitglied kann in dieser Wahl nur eine Kandidatur unterstützen.",
+    "link": "Link zum Unterstützen",
+    "noch_offen": "Noch offen ({{n}}):",
+    "speichern": "Speichern",
+    "einreichen": "Einreichen",
+    "zurueckziehen": "Kandidatur zurückziehen"
+  },
+  "unterstuetzen": {
+    "titel": "Kandidatur unterstützen",
+    "text": "Du wurdest gebeten, eine Kandidatur zu unterstützen. Du kannst in dieser Wahl nur eine Kandidatur unterstützen.",
+    "button": "Ich unterstütze diese Kandidatur",
+    "danke": "Danke, deine Unterstützung ist gespeichert.",
+    "fehler": "Die Unterstützung ist nicht möglich."
+  },
+  "kandidaten": {
+    "noch_nicht": "Die zugelassenen Kandidaturen erscheinen hier ab der Kampagne.",
+    "leer": "Es gibt keine zugelassene Kandidatur."
+  },
+  "pruefung": {
+    "einleitung": "Der Wahlausschuss prüft jedes Dossier. Für eine Entscheidung braucht es {{n}} Zustimmungen verschiedener Mitglieder.",
+    "leer": "Es ist noch keine Kandidatur eingegangen.",
+    "fehler": "Das hat nicht geklappt.",
+    "eingereicht_von": "Eingereicht von {{name}} am {{datum}}",
+    "nachweise": "Nachweise (vertraulich)",
+    "pruefpunkte": "Prüfpunkte",
+    "automatisch": "Automatisch geprüft",
+    "ergebnis": {
+      "ok": "In Ordnung",
+      "nein": "Nicht in Ordnung",
+      "offen": "Offen"
+    },
+    "vorschlag": "Vorschlag: {{art}}",
+    "zustimmungen": "Zustimmungen: {{n}} von {{noetig}}",
+    "zustimmen": "Zustimmen",
+    "verwerfen": "Verwerfen",
+    "entscheiden": "Entscheidung vorschlagen",
+    "begruendung": "Begründung",
+    "artikel": "Artikel der Wahlordnung",
+    "vorschlagen": "Vorschlag abgeben"
+  },
+  "pruefpunkt": {
+    "liste_vollstaendig": "Liste vollständig",
+    "mitgliedschaft": "Aktive Mitgliedschaft, Beitrag bezahlt",
+    "mitgliedsdauer": "Mitgliedsdauer erfüllt",
+    "kein_ausschuss": "Nicht im Wahlausschuss",
+    "unterstuetzungen": "Genug Unterstützungen",
+    "abschluss": "Hochschulabschluss",
+    "deutsch_b2": "Deutsch B2 (Präsident*in)",
+    "ehrenerklaerung": "Ehrenerklärung",
+    "foto": "Foto in Ordnung",
+    "programm": "Programm in Ordnung",
+    "antragsteller_aktiv": "Antragsteller*in aktiv",
+    "wortlaut": "Wortlaut eindeutig",
+    "zustaendigkeit": "Zuständigkeit der Versammlung",
+    "sprachen": "Sprachfassungen"
+  },
+  "entscheidung": {
+    "zulassen": "Zulassen",
+    "rueckfrage": "Rückfrage (72 Stunden zur Nachbesserung)",
+    "ablehnen": "Ablehnen"
+  },
+  "ausschuss": {
+    "mitglieder": "Mitglieder des Wahlausschusses ({{n}})",
+    "noch_keine": "Noch keine Mitglieder.",
+    "hinzufuegen": "Mitglied hinzufügen",
+    "entfernen": "Entfernen",
+    "veroeffentlichen": "Wahl veröffentlichen",
+    "mindestens_drei": "Der Ausschuss braucht mindestens drei und höchstens fünf Mitglieder. Wer kandidiert, kann nicht Mitglied sein.",
+    "aufbewahrung": "Aufbewahrung der Nachweise",
+    "aufbewahrung_hinweis": "Nach dieser Frist werden Nachweise und Erklärungen gelöscht. Sie läuft ab dem Ende der Einspruchsfristen.",
+    "abstimmung": "Abstimmung",
+    "freigabe_oeffnen": "Wahl öffnen",
+    "freigabe_schliessen": "Wahl schließen",
+    "freigeben_oeffnen": "Öffnen freigeben",
+    "freigeben_schliessen": "Schließen freigeben",
+    "freigaben_stand": "Freigaben: {{n}} von {{noetig}}",
+    "du_hast_freigegeben": "Du hast freigegeben.",
+    "zur_abstimmung": "Zur Abstimmung",
+    "fehler": "Das hat nicht geklappt."
+  },
+  "aufbewahrung": {
+    "30": "30 Tage",
+    "90": "90 Tage",
+    "365": "1 Jahr",
+    "manuell": "Nur von Hand löschen"
+  },
+  "bekanntmachung_art": {
+    "ankuendigung": "Ankündigung",
+    "aufruf": "Aufruf zur Kandidatur",
+    "zugelassen": "Zugelassene Kandidaturen",
+    "wahlbeginn": "Wahlbeginn",
+    "ergebnis": "Ergebnis"
+  },
+  "bekanntmachung_status": {
+    "entwurf": "Entwurf",
+    "wartet": "Wartet auf Freigabe",
+    "freigegeben": "Freigegeben",
+    "gesendet": "Gesendet"
+  },
+  "kanal": {
+    "mail": "E-Mail",
+    "app": "App",
+    "print": "Aushang (PDF)"
+  },
+  "bekanntmachung": {
+    "einleitung": "Der Wahlausschuss schreibt die Mitteilungen selbst. Deutsch ist verbindlich; Französisch und Arabisch werden maschinell übersetzt und sollten vor der Freigabe geprüft werden.",
+    "liste": "Bekanntmachungen",
+    "betreff": "Betreff",
+    "text": "Text der Bekanntmachung",
+    "fehler": "Das hat nicht geklappt.",
+    "maschinell": "Maschinell übersetzt, nicht verbindlich. Bitte prüfen.",
+    "veraltet": "Der deutsche Text wurde seither geändert – neu übersetzen.",
+    "platzhalter": "Platzhalter: {Wahl}, {Datum} und {Frist} werden beim Versand ersetzt. Logo, Absender, Adresse und Abmeldelink ergänzt das System.",
+    "speichern": "Speichern",
+    "muster": "Mustertext einfügen",
+    "uebersetzen": "Mit DeepL übersetzen",
+    "geprueft": "Übersetzung geprüft",
+    "kanaele": "Kanäle",
+    "versand": "Versand: {{datum}}",
+    "vorschau": "Vorschau",
+    "fusszeile": "Fußzeile: Absender, Vereinsanschrift und Abmeldelink werden automatisch ergänzt.",
+    "vorlegen": "Zur Freigabe vorlegen",
+    "freigeben": "Freigeben",
+    "zurueck": "Zurück zum Entwurf",
+    "aushang": "Aushang als PDF"
+  }
+}

@@ -88,6 +88,8 @@ import FinancesPage from "./pages/finances/FinancesPage";
 import StatsPage from "./pages/stats/StatsPage";
 import CreerVoteWizardPage from "./pages/vote/CreerVoteWizardPage";
 import VotePage from "./pages/vote/VotePage";
+import WahlDetailPage from "./pages/wahlen/WahlDetailPage";
+import WahlenPage from "./pages/wahlen/WahlenPage";
 import { ROLE_LEVELS } from "./store/authStore";
 
 /** Alte Chat-Adressen (/messagerie/:id, /groupes/:id) auf die neue Seite umleiten. */
@@ -467,6 +469,24 @@ export default function App() {
             element={
               <RequireMenuModule cle="vote">
                 <VotePage />
+              </RequireMenuModule>
+            }
+          />
+          {/* Wahlen (Konzept_Abstimmungen_Wahlen.md) : gleiche Sichtbarkeit wie die Abstimmungen
+            (Menü-Schlüssel "vote") ; was wer sehen und tun darf, entscheidet der Server. */}
+          <Route
+            path="/wahlen"
+            element={
+              <RequireMenuModule cle="vote">
+                <WahlenPage />
+              </RequireMenuModule>
+            }
+          />
+          <Route
+            path="/wahlen/:id"
+            element={
+              <RequireMenuModule cle="vote">
+                <WahlDetailPage />
               </RequireMenuModule>
             }
           />

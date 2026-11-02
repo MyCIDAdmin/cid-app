@@ -4720,5 +4720,15 @@
         }
       ]
     }
+  },
+  "wahlen": {
+    "titre": "Wahlen",
+    "intro": "Hier laufen die Wahlen des Vereins. Das Büro legt eine Wahl an und bestimmt den Wahlausschuss. Mitglieder können kandidieren oder Kandidaturen unterstützen, der Ausschuss prüft die Dossiers und schreibt die Bekanntmachungen.",
+    "schritte": [
+      "Im Reiter „Überblick“ siehst du die Phasen und Termine der Wahl.",
+      "Während der Kandidaturfrist legst du unter „Meine Kandidatur“ deine Kandidatur an, lädst Foto und Nachweise hoch, sammelst Unterstützungen und reichst alles ein.",
+      "Der Wahlausschuss prüft die Dossiers im Reiter „Prüfverfahren“. Jede Entscheidung braucht zwei Zustimmungen.",
+      "Ab der Kampagne findest du die zugelassenen Kandidaturen unter „Kandidaturen“. Abgestimmt wird unter „Abstimmungen & Wahlen“."
+    ]
   }
 }

@@ -27,6 +27,7 @@ def test_html_wird_bereinigt():
     assert "<img" not in sauber and "style" not in sauber
     assert '<a href="https://example.de/x" rel="noopener noreferrer">gut</a>' in sauber
     assert "<b>Welt</b>" in sauber
+    assert services.reinige_html("<h2>Titel</h2>") == "<h2>Titel</h2>"
 
 
 def test_html_zu_text():

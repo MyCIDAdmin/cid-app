@@ -147,7 +147,7 @@ def waehlbarkeit(wahl: Wahl, membre, amt: str) -> dict:
 
 
 class _Reiniger(HTMLParser):
-    ERLAUBT = {"p", "br", "b", "strong", "i", "em", "u", "ul", "ol", "li", "h3", "a"}
+    ERLAUBT = {"p", "br", "b", "strong", "i", "em", "u", "ul", "ol", "li", "h2", "h3", "a"}
 
     def __init__(self):
         super().__init__(convert_charrefs=False)
@@ -193,7 +193,7 @@ def reinige_html(html: str) -> str:
 
 
 def html_zu_text(html: str) -> str:
-    text = re.sub(r"</(p|li|h3)>|<br\s*/?>", "\n", html)
+    text = re.sub(r"</(p|li|h2|h3)>|<br\s*/?>", "\n", html)
     text = re.sub(r"<[^>]+>", "", text)
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 

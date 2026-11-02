@@ -28,6 +28,7 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/support", "support"],
   ["/mon-adhesion", "mitgliedschaft"],
   ["/votes", "vote"],
+  ["/wahlen", "wahlen"],
   ["/live", "fanclub"],
   ["/fil", "fil"],
   ["/forum", "forum"],
