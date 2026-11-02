@@ -32,6 +32,7 @@ import type {
   VariantePayload,
   VendreEspecesCommandePayload,
   VerifierBonAchatPayload,
+  VerwaltungUeberblick,
 } from "../types/boutique";
 
 export interface ProduitsFiltres {
@@ -476,4 +477,11 @@ export async function reservierePanier(
 
 export async function gibPanierFrei(): Promise<void> {
   await apiClient.delete("/boutique/panier/reservierung/");
+}
+
+/** GET /boutique/verwaltung/ueberblick/ — Kacheln, Aufgaben, Bestell-Stapel und Artikel-Hinweise
+ * der Shop-Verwaltung (Seite page_boutique, nur lesend). */
+export async function getVerwaltungUeberblick(): Promise<VerwaltungUeberblick> {
+  const { data } = await apiClient.get<VerwaltungUeberblick>("/boutique/verwaltung/ueberblick/");
+  return data;
 }

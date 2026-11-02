@@ -155,7 +155,8 @@
     "onglet_commandes": "Commandes",
     "onglet_catalogue": "Catalogue",
     "onglet_bons_achat": "Bons d'achat",
-    "onglet_reservierungen": "Réservations"
+    "onglet_reservierungen": "Réservations",
+    "onglet_ueberblick": "Aperçu"
   },
   "commandes_admin": {
     "tous": "Toutes",
@@ -388,5 +389,164 @@
     "erneuerungen_rest": "Nouvelles réservations encore possibles : {{n}}.",
     "geleert_hinweis": "Votre panier a été vidé car la réservation a expiré plusieurs fois. Veuillez remettre les articles dans le panier.",
     "hinweis_schliessen": "OK"
+  },
+  "glossar": {
+    "schalter": "Afficher les explications",
+    "einfach": "En clair :",
+    "begriffe": {
+      "stapel": {
+        "titel": "Pile",
+        "text": "Les sept statuts techniques des commandes sont regroupés en cinq piles : paiement en attente, à expédier, en route, terminées et annulées/remboursées. Vous voyez ainsi d'un coup d'œil ce qui est à faire."
+      },
+      "zahlung_bestaetigen": {
+        "titel": "Confirmer le paiement",
+        "text": "Vous avez constaté que l'argent est arrivé (virement ou espèces). Ce n'est qu'ensuite que la commande peut être expédiée. Les paiements en ligne sont confirmés automatiquement par le prestataire."
+      },
+      "sendungsnummer": {
+        "titel": "Numéro de suivi",
+        "text": "Le numéro du transporteur. Il permet au membre de suivre son colis."
+      },
+      "ausserhalb": {
+        "titel": "Traité hors de l'application",
+        "text": "Pour les commandes déjà réglées par téléphone, en personne ou par virement avant l'application. Vous saisissez après coup le mode de paiement et le numéro de suivi."
+      },
+      "ruecksendung": {
+        "titel": "Retour de marchandise",
+        "text": "Le membre renvoie un article. Vous remettez la quantité en stock. L'argent n'est pas remboursé automatiquement."
+      },
+      "entwurf": {
+        "titel": "Brouillon",
+        "text": "Seule l'administration voit l'article. Les membres ne le voient pas encore."
+      },
+      "veroeffentlicht": {
+        "titel": "Publié",
+        "text": "Les membres voient l'article et peuvent le commander ou le réserver."
+      },
+      "archiviert": {
+        "titel": "Archivé",
+        "text": "L'article n'est plus visible. Les anciennes commandes sont conservées."
+      },
+      "frist": {
+        "titel": "Délai",
+        "text": "Jusqu'à cette date, les membres peuvent réserver ou commander. Ensuite l'article disparaît de la boutique."
+      },
+      "warnschwelle": {
+        "titel": "Alerte à partir de",
+        "text": "Si le stock d'une taille passe sous ce nombre, le catalogue affiche une remarque."
+      },
+      "mitgliederpreis": {
+        "titel": "Prix membre",
+        "text": "Prix plus bas pour les membres actifs. Laissez vide s'il n'y en a pas."
+      },
+      "gutschein": {
+        "titel": "Bon d'achat",
+        "text": "Un membre achète un bon dans la boutique, reçoit un code et l'utilise lors d'une commande ultérieure. Ici, vous voyez seulement le solde encore ouvert."
+      },
+      "reservierung": {
+        "titel": "Réservation",
+        "text": "Un membre s'assure une quantité sans payer en ligne. Le paiement se fait plus tard ou sur place."
+      }
+    }
+  },
+  "ueberblick": {
+    "titel": "Ce qui est à faire dans la boutique",
+    "untertitel": "Calculé à partir des commandes, des réservations et du catalogue. Les tâches disparaissent d'elles-mêmes une fois traitées.",
+    "laden": "Chargement…",
+    "fehler": "L'aperçu n'a pas pu être chargé.",
+    "aufgaben_titel": "Vos tâches",
+    "aufgaben_anzahl_one": "1 tâche vous attend",
+    "aufgaben_anzahl_other": "{{count}} tâches vous attendent",
+    "alles_erledigt": "Tout est fait. Rien n'est ouvert pour le moment.",
+    "ampel_hilfe": "En haut, quatre tuiles colorées : vert = « fait », orange = « à regarder bientôt », rouge = « attend depuis un moment ». Un clic ouvre la liste correspondante. En dessous, ce que vous pouvez faire.",
+    "aufgaben_hilfe": "Les tâches ne sont pas des messages à fermer. Elles apparaissent tant que quelque chose est ouvert et disparaissent dès que c'est fait.",
+    "ampel": {
+      "gruen": "fait",
+      "orange": "à voir bientôt",
+      "rot": "attend depuis un moment"
+    },
+    "heute": "d'aujourd'hui",
+    "seit_tagen_one": "depuis {{count}} jour",
+    "seit_tagen_other": "depuis {{count}} jours",
+    "aelteste_tage_one": "la plus ancienne depuis {{count}} jour",
+    "aelteste_tage_other": "la plus ancienne depuis {{count}} jours",
+    "aelteste_heute": "la plus ancienne d'aujourd'hui",
+    "nichts_offen": "Rien d'ouvert",
+    "hinweise": "Remarques",
+    "so_gehts": "Comment faire",
+    "rolle": {
+      "finanz": "Dir. Finances",
+      "buero": "Bureau"
+    },
+    "andere_an": "Afficher les tâches des autres rôles ({{count}})",
+    "andere_aus": "Masquer les tâches des autres rôles",
+    "kacheln": {
+      "zahlung_offen": "Paiement en attente",
+      "zu_versenden": "À expédier",
+      "reservierungen": "Réservations ouvertes",
+      "reservierungen_text": "Délai dépassé, pas encore retirées",
+      "katalog": "Remarques catalogue",
+      "katalog_text": "Articles à vérifier"
+    },
+    "aufgaben": {
+      "zahlung": {
+        "titel_one": "Confirmer {{count}} paiement",
+        "titel_other": "Confirmer {{count}} paiements",
+        "text_one": "Une commande attend l'arrivée du paiement (virement ou espèces).",
+        "text_other": "Des commandes attendent l'arrivée du paiement (virement ou espèces).",
+        "knopf": "Voir les paiements"
+      },
+      "versand": {
+        "titel_one": "Expédier {{count}} commande payée",
+        "titel_other": "Expédier {{count}} commandes payées",
+        "text_one": "Saisissez le numéro de suivi, la commande est alors en route.",
+        "text_other": "Saisissez le numéro de suivi, la commande est alors en route.",
+        "knopf": "Voir l'expédition"
+      },
+      "reservierung": {
+        "titel": "Traiter les réservations : {{produkt}}",
+        "text_one": "Le délai est dépassé, 1 pièce est encore ouverte. Notez le retrait ou libérez la réservation.",
+        "text_other": "Le délai est dépassé, {{count}} pièces sont encore ouvertes. Notez le retrait ou libérez la réservation.",
+        "knopf": "Ouvrir les réservations"
+      },
+      "katalog": {
+        "titel_one": "Vérifier {{count}} article",
+        "titel_other": "Vérifier {{count}} articles",
+        "text": "Par exemple : {{namen}}",
+        "knopf": "Ouvrir le catalogue"
+      },
+      "unterwegs": {
+        "titel_one": "{{count}} colis en route depuis longtemps",
+        "titel_other": "{{count}} colis en route depuis longtemps",
+        "text_one": "La marchandise est-elle arrivée ? Alors marquez-la « livrée ».",
+        "text_other": "La marchandise est-elle arrivée ? Alors marquez-la « livrée ».",
+        "knopf": "Voir les envois"
+      }
+    },
+    "ablauf": {
+      "titel": "Déroulement d'une commande",
+      "bestellt": {
+        "titel": "Commandée",
+        "text": "Un membre commande dans la boutique."
+      },
+      "bezahlt": {
+        "titel": "Payée",
+        "text_vor": "Vous voyez l'argent arriver et cliquez sur",
+        "text_nach": ". Les paiements en ligne sont automatiques."
+      },
+      "versandt": {
+        "titel": "Expédiée",
+        "text_vor": "Vous saisissez le",
+        "text_nach": "."
+      },
+      "geliefert": {
+        "titel": "Livrée",
+        "text": "Arrivée ? Alors marquez-la « livrée »."
+      },
+      "fertig": {
+        "titel": "Terminée",
+        "text_vor": "Si besoin : enregistrer un",
+        "text_nach": "."
+      }
+    }
   }
 }

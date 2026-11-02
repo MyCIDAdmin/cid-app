@@ -23,7 +23,7 @@ describe("Erklär-Modus", () => {
     expect(screen.getByRole("note")).toHaveTextContent("Ein Satz zur Hilfe");
     fireEvent.click(screen.getByRole("checkbox"));
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
-    expect(window.localStorage.getItem("cid.finanzen.einfach")).toBe("aus");
+    expect(window.localStorage.getItem("cid.einfach")).toBe("aus");
   });
 
   it("merkt sich die Wahl beim nächsten Öffnen", () => {
@@ -31,6 +31,12 @@ describe("Erklär-Modus", () => {
     render(<Beispiel />);
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox")).not.toBeChecked();
+  });
+
+  it("liest die Wahl auch unter dem früheren Schlüssel der Finanzseiten", () => {
+    window.localStorage.setItem("cid.finanzen.einfach", "aus");
+    render(<Beispiel />);
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 
   it("erklärt ein Fachwort per Klick", () => {

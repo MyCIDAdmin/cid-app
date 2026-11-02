@@ -155,7 +155,8 @@
     "onglet_commandes": "Bestellungen",
     "onglet_catalogue": "Katalog",
     "onglet_bons_achat": "Gutscheine",
-    "onglet_reservierungen": "Reservierungen"
+    "onglet_reservierungen": "Reservierungen",
+    "onglet_ueberblick": "Überblick"
   },
   "commandes_admin": {
     "tous": "Alle",
@@ -388,5 +389,164 @@
     "erneuerungen_rest": "Erneute Reservierungen noch möglich: {{n}}.",
     "geleert_hinweis": "Dein Warenkorb wurde geleert, weil die Reservierung mehrfach abgelaufen ist. Bitte lege die Artikel erneut hinein.",
     "hinweis_schliessen": "OK"
+  },
+  "glossar": {
+    "schalter": "Erklärungen anzeigen",
+    "einfach": "Einfach erklärt:",
+    "begriffe": {
+      "stapel": {
+        "titel": "Stapel",
+        "text": "Die sieben technischen Bestell-Status sind zu fünf Stapeln zusammengefasst: Zahlung offen, Zu versenden, Unterwegs, Erledigt und Abgebrochen/erstattet. So siehst du auf einen Blick, was jetzt dran ist."
+      },
+      "zahlung_bestaetigen": {
+        "titel": "Zahlung bestätigen",
+        "text": "Du hast gesehen, dass das Geld da ist (Überweisung oder bar). Erst danach darf die Bestellung versendet werden. Online-Zahlungen bestätigt der Zahlungsdienst von selbst."
+      },
+      "sendungsnummer": {
+        "titel": "Sendungsnummer",
+        "text": "Die Nummer des Paketdienstes. Mit ihr kann das Mitglied die Sendung verfolgen."
+      },
+      "ausserhalb": {
+        "titel": "Außerhalb der App erledigt",
+        "text": "Für Bestellungen, die schon telefonisch, persönlich oder per Überweisung erledigt wurden, bevor es die App gab. Du trägst Zahlart und Sendungsnummer nachträglich ein."
+      },
+      "ruecksendung": {
+        "titel": "Rücksendung",
+        "text": "Das Mitglied schickt Ware zurück. Du buchst die Menge wieder ins Lager. Geld wird dabei nicht automatisch erstattet."
+      },
+      "entwurf": {
+        "titel": "Entwurf",
+        "text": "Nur die Verwaltung sieht den Artikel. Mitglieder noch nicht."
+      },
+      "veroeffentlicht": {
+        "titel": "Veröffentlicht",
+        "text": "Mitglieder sehen den Artikel und können ihn bestellen oder reservieren."
+      },
+      "archiviert": {
+        "titel": "Archiviert",
+        "text": "Der Artikel ist nicht mehr sichtbar. Alte Bestellungen bleiben erhalten."
+      },
+      "frist": {
+        "titel": "Frist",
+        "text": "Bis zu diesem Zeitpunkt können Mitglieder reservieren oder bestellen. Danach verschwindet der Artikel aus dem Shop."
+      },
+      "warnschwelle": {
+        "titel": "Warnung ab",
+        "text": "Sinkt der Bestand einer Größe unter diese Zahl, zeigt der Katalog einen Hinweis."
+      },
+      "mitgliederpreis": {
+        "titel": "Mitgliederpreis",
+        "text": "Niedrigerer Preis für aktive Mitglieder. Leer lassen, wenn es keinen gibt."
+      },
+      "gutschein": {
+        "titel": "Gutschein",
+        "text": "Ein Mitglied kauft einen Gutschein im Shop, bekommt einen Code und löst ihn bei einer späteren Bestellung ein. Hier siehst du nur, wie viel Guthaben noch offen ist."
+      },
+      "reservierung": {
+        "titel": "Reservierung",
+        "text": "Ein Mitglied sichert sich eine Menge, ohne online zu zahlen. Bezahlt wird später oder vor Ort."
+      }
+    }
+  },
+  "ueberblick": {
+    "titel": "Das steht im Shop an",
+    "untertitel": "Aus den Bestellungen, Reservierungen und dem Katalog berechnet. Aufgaben verschwinden von selbst, sobald sie erledigt sind.",
+    "laden": "Laden…",
+    "fehler": "Der Überblick konnte nicht geladen werden.",
+    "aufgaben_titel": "Deine Aufgaben",
+    "aufgaben_anzahl_one": "1 Aufgabe wartet auf dich",
+    "aufgaben_anzahl_other": "{{count}} Aufgaben warten auf dich",
+    "alles_erledigt": "Alles erledigt. Im Moment ist nichts offen.",
+    "ampel_hilfe": "Oben siehst du vier Kacheln mit Farben: grün heißt „erledigt“, orange „bald ansehen“, rot „wartet schon länger“. Ein Klick öffnet die passende Liste. Darunter steht, was du tun kannst.",
+    "aufgaben_hilfe": "Aufgaben sind keine Mitteilungen, die man wegklicken muss. Sie erscheinen, solange etwas offen ist, und sind weg, sobald du es erledigt hast.",
+    "ampel": {
+      "gruen": "erledigt",
+      "orange": "bald ansehen",
+      "rot": "wartet länger"
+    },
+    "heute": "von heute",
+    "seit_tagen_one": "seit {{count}} Tag",
+    "seit_tagen_other": "seit {{count}} Tagen",
+    "aelteste_tage_one": "älteste seit {{count}} Tag",
+    "aelteste_tage_other": "älteste seit {{count}} Tagen",
+    "aelteste_heute": "älteste von heute",
+    "nichts_offen": "Nichts offen",
+    "hinweise": "Hinweise",
+    "so_gehts": "So geht’s",
+    "rolle": {
+      "finanz": "Dir. Finanzen",
+      "buero": "Büro"
+    },
+    "andere_an": "Aufgaben für andere Rollen anzeigen ({{count}})",
+    "andere_aus": "Aufgaben für andere Rollen ausblenden",
+    "kacheln": {
+      "zahlung_offen": "Zahlung offen",
+      "zu_versenden": "Zu versenden",
+      "reservierungen": "Reservierungen offen",
+      "reservierungen_text": "Frist vorbei, noch nicht abgeholt",
+      "katalog": "Katalog-Hinweise",
+      "katalog_text": "Artikel prüfen"
+    },
+    "aufgaben": {
+      "zahlung": {
+        "titel_one": "{{count}} Zahlung bestätigen",
+        "titel_other": "{{count}} Zahlungen bestätigen",
+        "text_one": "Eine Bestellung wartet auf den Zahlungseingang (Überweisung oder bar).",
+        "text_other": "Bestellungen warten auf den Zahlungseingang (Überweisung oder bar).",
+        "knopf": "Zahlungen ansehen"
+      },
+      "versand": {
+        "titel_one": "{{count}} bezahlte Bestellung versenden",
+        "titel_other": "{{count}} bezahlte Bestellungen versenden",
+        "text_one": "Sendungsnummer eintragen, dann ist die Bestellung unterwegs.",
+        "text_other": "Sendungsnummer eintragen, dann ist die Bestellung unterwegs.",
+        "knopf": "Versand ansehen"
+      },
+      "reservierung": {
+        "titel": "Reservierungen abarbeiten: {{produkt}}",
+        "text_one": "Die Frist ist vorbei, 1 Stück ist noch offen. Abholung vermerken oder die Reservierung freigeben.",
+        "text_other": "Die Frist ist vorbei, {{count}} Stück sind noch offen. Abholung vermerken oder die Reservierung freigeben.",
+        "knopf": "Reservierungen öffnen"
+      },
+      "katalog": {
+        "titel_one": "{{count}} Artikel prüfen",
+        "titel_other": "{{count}} Artikel prüfen",
+        "text": "Zum Beispiel: {{namen}}",
+        "knopf": "Katalog öffnen"
+      },
+      "unterwegs": {
+        "titel_one": "{{count}} Sendung seit Tagen unterwegs",
+        "titel_other": "{{count}} Sendungen seit Tagen unterwegs",
+        "text_one": "Ist die Ware angekommen? Dann als „geliefert“ markieren.",
+        "text_other": "Ist die Ware angekommen? Dann als „geliefert“ markieren.",
+        "knopf": "Sendungen ansehen"
+      }
+    },
+    "ablauf": {
+      "titel": "So läuft eine Bestellung",
+      "bestellt": {
+        "titel": "Bestellt",
+        "text": "Ein Mitglied bestellt im Shop."
+      },
+      "bezahlt": {
+        "titel": "Bezahlt",
+        "text_vor": "Du siehst den Geldeingang und klickst",
+        "text_nach": ". Online-Zahlungen laufen automatisch."
+      },
+      "versandt": {
+        "titel": "Versandt",
+        "text_vor": "Du trägst die",
+        "text_nach": " ein."
+      },
+      "geliefert": {
+        "titel": "Geliefert",
+        "text": "Angekommen? Dann als „geliefert“ markieren."
+      },
+      "fertig": {
+        "titel": "Fertig",
+        "text_vor": "Falls nötig: eine",
+        "text_nach": " buchen."
+      }
+    }
   }
 }

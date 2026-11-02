@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useBoutiqueHooks from "../../hooks/useBoutique";
 import * as useRbacHooks from "../../hooks/useRbac";
-import type { BonAchat, Commande, Produit } from "../../types/boutique";
+import type { BonAchat, Commande, Produit, VerwaltungUeberblick } from "../../types/boutique";
 import AdminBoutiquePage from "./AdminBoutiquePage";
 
 // Task #216 (2026-09-24) : "page_boutique" lecture/lecture_ecriture — plein accès par défaut
@@ -35,6 +35,7 @@ vi.mock("../../hooks/useBoutique", async () => {
     useModifierRegleReduction: vi.fn(),
     useSupprimerRegleReduction: vi.fn(),
     useBonsAchat: vi.fn(),
+    useVerwaltungUeberblick: vi.fn(),
   };
 });
 
@@ -126,8 +127,37 @@ function bonAchat(overrides: Partial<BonAchat> = {}): BonAchat {
   };
 }
 
+function ueberblick(overrides: Partial<VerwaltungUeberblick> = {}): VerwaltungUeberblick {
+  return {
+    stand: "2026-11-02T08:00:00Z",
+    kann_finanz: true,
+    kann_buero: true,
+    schwellen: { zahlung_tage: 7, versand_tage: 5, unterwegs_tage: 5 },
+    kacheln: {
+      zahlung_offen: { anzahl: 2, aeltest_tage: 8, ton: "rot" },
+      zu_versenden: { anzahl: 0, aeltest_tage: null, ton: "gruen" },
+      reservierungen_offen: { anzahl: 0, aeltest_tage: null, ton: "gruen" },
+      katalog_hinweise: { anzahl: 0, aeltest_tage: null, ton: "gruen" },
+    },
+    aufgaben: [],
+    stapel: { zahlung_offen: 2, zu_versenden: 0, unterwegs: 0, erledigt: 0, abgebrochen: 0 },
+    hinweise: {},
+    ...overrides,
+  };
+}
+
+/** Der Überblick ist der Startreiter; die älteren Tests arbeiten in den übrigen Reitern. */
+function oeffne(onglet: string) {
+  fireEvent.click(screen.getByText(`admin.onglet_${onglet}`));
+}
+
 describe("AdminBoutiquePage", () => {
   beforeEach(() => {
+    vi.mocked(useBoutiqueHooks.useVerwaltungUeberblick).mockReturnValue({
+      data: ueberblick(),
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useBoutiqueHooks.useVerwaltungUeberblick>);
     vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
       accessible: true,
       modifiable: true,
@@ -198,15 +228,18 @@ describe("AdminBoutiquePage", () => {
     } as unknown as ReturnType<typeof useBoutiqueHooks.useBonsAchat>);
   });
 
-  it("affiche les tuiles KPI calculées depuis les commandes/produits chargés", () => {
+  it("startet im Überblick und öffnet per Kachel die Bestellungen", () => {
     renderWithProviders(<AdminBoutiquePage />);
-    // 1 commande en_attente, 1 produit publié sur 2 au total
-    expect(screen.getAllByText("1")).toHaveLength(2);
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("ueberblick.titel")).toBeInTheDocument();
+    expect(screen.queryByText("CMD-A1B2C3D4")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("ueberblick.kacheln.zahlung_offen"));
+    expect(screen.getByText("CMD-A1B2C3D4")).toBeInTheDocument();
   });
 
   it("bascule entre l'onglet Commandes et l'onglet Catalogue", () => {
     renderWithProviders(<AdminBoutiquePage />);
+    oeffne("commandes");
     expect(screen.getByText("CMD-A1B2C3D4")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("admin.onglet_catalogue"));
@@ -223,6 +256,7 @@ describe("AdminBoutiquePage", () => {
   describe("accès lecture seule (task #216)", () => {
     it("n'affiche pas de bandeau et laisse les contrôles d'écriture actifs quand modifiable=true", () => {
       renderWithProviders(<AdminBoutiquePage />);
+      oeffne("commandes");
 
       expect(screen.queryByText("acces.lecture_seule_banniere")).not.toBeInTheDocument();
       expect(screen.getByLabelText("commandes_admin.changer_statut")).not.toBeDisabled();
@@ -239,6 +273,7 @@ describe("AdminBoutiquePage", () => {
       });
 
       renderWithProviders(<AdminBoutiquePage />);
+      oeffne("commandes");
 
       expect(screen.getByText("acces.lecture_seule_banniere")).toBeInTheDocument();
       // Lecture : la commande reste visible.

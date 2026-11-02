@@ -38,11 +38,14 @@ const boutiqueKeys = {
     [...boutiqueKeys.all, "regles-reduction", filtres] as const,
   bonsAchat: (filtres: boutiqueApi.BonsAchatFiltres = {}) =>
     [...boutiqueKeys.all, "bons-achat", filtres] as const,
+  ueberblick: () => [...boutiqueKeys.all, "ueberblick"] as const,
   reservierungen: (filtres: { produit?: string; statut?: string; meine?: string } = {}) =>
     [...boutiqueKeys.all, "reservierungen", filtres] as const,
 };
 
 function invalidateCommandes(queryClient: ReturnType<typeof useQueryClient>) {
+  // Der Überblick (Kacheln, Aufgaben, Stapel) hängt an Bestellungen und Reservierungen.
+  queryClient.invalidateQueries({ queryKey: boutiqueKeys.ueberblick() });
   queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "commandes"] });
 }
 
@@ -110,6 +113,7 @@ export function useCommande(id: string | undefined) {
 }
 
 function invalidateProduits(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: boutiqueKeys.ueberblick() });
   queryClient.invalidateQueries({ queryKey: [...boutiqueKeys.all, "produits"] });
 }
 
@@ -446,5 +450,16 @@ export function useReservierungAktion() {
     mutationFn: ({ id, aktion }: { id: string; aktion: "stornieren" | "abholen" }) =>
       boutiqueApi.reservierungAktion(id, aktion),
     onSuccess: () => invalidateReservierungen(queryClient),
+  });
+}
+
+/** Überblick der Shop-Verwaltung (Kacheln, Aufgaben, Stapel, Artikel-Hinweise). Wird nach jeder
+ * Änderung an Bestellungen, Reservierungen und Artikeln neu geladen (siehe invalidate*). */
+export function useVerwaltungUeberblick(enabled = true) {
+  return useQuery({
+    queryKey: boutiqueKeys.ueberblick(),
+    queryFn: boutiqueApi.getVerwaltungUeberblick,
+    enabled,
+    staleTime: 30_000,
   });
 }

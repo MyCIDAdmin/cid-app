@@ -558,3 +558,64 @@ export interface PanierReservierungAntwort {
   max_erneuerungen: number;
   zeilen: PanierReservierungZeile[];
 }
+
+// --- Shop-Verwaltung: Überblick (GET /boutique/verwaltung/ueberblick/, nur lesend) ---
+
+export type Ton = "gruen" | "orange" | "rot";
+export type Schwere = "rot" | "orange" | "info";
+export type StapelName =
+  | "zahlung_offen"
+  | "zu_versenden"
+  | "unterwegs"
+  | "erledigt"
+  | "abgebrochen";
+export type AufgabeArt = "zahlung" | "versand" | "reservierung" | "katalog" | "unterwegs";
+export type HinweisCode =
+  | "frist_vorbei"
+  | "ausverkauft"
+  | "bestand_knapp"
+  | "preis_null"
+  | "name_lang"
+  | "bild_fehlt";
+
+export interface Kachel {
+  anzahl: number;
+  aeltest_tage: number | null;
+  ton: Ton;
+}
+
+export interface Aufgabe {
+  id: string;
+  art: AufgabeArt;
+  anzahl: number;
+  tage: number | null;
+  schwere: Schwere;
+  rolle: "finanz" | "buero";
+  /** Darf der angemeldete Nutzer diese Aufgabe erledigen? */
+  darf: boolean;
+  ziel: { tab: string; stapel?: StapelName; produit?: string; filter?: string };
+  daten: { produkt?: string; namen?: string[] };
+}
+
+export interface ArtikelHinweis {
+  code: HinweisCode;
+  schwere: Schwere;
+  detail: { varianten?: { variante: string; stock: number }[]; laenge?: number };
+}
+
+export interface VerwaltungUeberblick {
+  stand: string;
+  kann_finanz: boolean;
+  kann_buero: boolean;
+  schwellen: { zahlung_tage: number; versand_tage: number; unterwegs_tage: number };
+  kacheln: {
+    zahlung_offen: Kachel;
+    zu_versenden: Kachel;
+    reservierungen_offen: Kachel;
+    katalog_hinweise: Kachel;
+  };
+  aufgaben: Aufgabe[];
+  stapel: Record<StapelName, number>;
+  /** Hinweise je Artikel-ID (nur Artikel mit mindestens einem Hinweis). */
+  hinweise: Record<string, ArtikelHinweis[]>;
+}
