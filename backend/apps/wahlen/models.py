@@ -595,3 +595,49 @@ class UebergabePunkt(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["wahl", "schluessel"], name="wahlen_uebergabe_einmalig")
         ]
+
+
+class MitteilungArt(models.TextChoices):
+    """Automatische Erinnerungen entlang des Ablaufs (Konzept 3.6). Die fünf Bekanntmachungen
+    schreibt der Ausschuss selbst, sie liegen in `Bekanntmachung`."""
+
+    KANDIDATUR_ENDET = "kandidatur_endet", "Kandidatur endet in 3 Tagen"
+    RUECKFRAGE_FRIST = "rueckfrage_frist", "Rückfrage: noch 24 Stunden"
+    EINSPRUCH_LISTEN = "einspruch_listen", "Einspruchsfrist (Zulassung) endet morgen"
+    NICHTWAEHLER = "nichtwaehler", "Erinnerung: noch nicht abgestimmt"
+    WAHL_ENDET = "wahl_endet", "Wahl endet in 2 Stunden"
+    EINSPRUCH_ERGEBNIS = "einspruch_ergebnis", "Einspruchsfrist (Ergebnis) endet in 2 Tagen"
+
+
+class MitteilungStatus(models.TextChoices):
+    GEPLANT = "geplant", "Geplant"
+    GESENDET = "gesendet", "Gesendet"
+    UEBERSPRUNGEN = "uebersprungen", "Nicht gesendet"
+
+
+class Mitteilung(models.Model):
+    """Eine geplante automatische Erinnerung. Der Ausschuss sieht den Plan und kann die Kanäle
+    abschalten, solange noch nichts gesendet wurde. Ein leerer Kanal-Satz heißt: nicht senden."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wahl = models.ForeignKey(Wahl, on_delete=models.CASCADE, related_name="mitteilungen")
+    art = models.CharField(max_length=24, choices=MitteilungArt.choices)
+    bezug = models.CharField(
+        max_length=40, blank=True, default="", help_text="z. B. die Kandidatur bei einer Rückfrage."
+    )
+    versand_am = models.DateTimeField()
+    kanaele = models.JSONField(default=list)
+    status = models.CharField(
+        max_length=14, choices=MitteilungStatus.choices, default=MitteilungStatus.GEPLANT
+    )
+    gesendet_am = models.DateTimeField(null=True, blank=True)
+    anzahl = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "wahlen_mitteilung"
+        ordering = ["versand_am"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["wahl", "art", "bezug"], name="wahlen_mitteilung_einmalig"
+            )
+        ]

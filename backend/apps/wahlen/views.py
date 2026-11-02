@@ -16,7 +16,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from apps.membres.models import Membre
 
-from . import pdf, services
+from . import mitteilungen, pdf, services
 from .models import (
     AmtPerson,
     Aufbewahrung,
@@ -28,6 +28,7 @@ from .models import (
     KandidatPerson,
     Kandidatur,
     KandidaturStatus,
+    Mitteilung,
     Nachweis,
     Pruefpunkt,
     Reglement,
@@ -163,6 +164,7 @@ class WahlViewSet(
         ser.is_valid(raise_exception=True)
         wahl = Wahl.objects.create(created_by=request.user, **ser.validated_data)
         services.bekanntmachungen_anlegen(wahl)
+        mitteilungen.planen(wahl)
         return Response(wahl_dict(wahl, request.user), status=201)
 
     def partial_update(self, request, *args, **kwargs):
@@ -171,7 +173,16 @@ class WahlViewSet(
         ser = self.get_serializer(wahl, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
         ser.save()
+        mitteilungen.planen(wahl)
         return Response(wahl_dict(wahl, request.user))
+
+    @action(detail=True, methods=["get"], url_path="mitteilungsplan")
+    def mitteilungsplan(self, request, pk=None):
+        """Alle Auslöser der Wahl mit Zeitpunkt, Zielgruppe, Kanälen und Stand (nur Ausschuss)."""
+        wahl = self.get_object()
+        if not services.ausschuss_oder_verwaltung(request.user, wahl):
+            raise PermissionDenied("Nur Wahlausschuss und Büro.")
+        return Response(mitteilungen.plan(wahl))
 
     @action(detail=True, methods=["post"])
     def veroeffentlichen(self, request, pk=None):
@@ -820,3 +831,18 @@ class ReglementViewSet(GenericViewSet):
         r = self._objekt(pk, request.user)
         services.reglement_gelesen(r, services.pflicht_membre(request.user))
         return self._antwort(r, request.user)
+
+
+class MitteilungViewSet(GenericViewSet):
+    """Kanäle einer automatischen Erinnerung ein- oder ausschalten (vor dem Versand)."""
+
+    permission_classes = [IsAuthenticated]
+    queryset = Mitteilung.objects.select_related("wahl")
+    parser_classes = [JSONParser]
+
+    def partial_update(self, request, pk=None):
+        m = get_object_or_404(self.queryset, pk=pk)
+        if not services.ausschuss_oder_verwaltung(request.user, m.wahl):
+            raise PermissionDenied("Nur Wahlausschuss und Büro.")
+        m = mitteilungen.kanaele_setzen(m, request.data.get("kanaele"))
+        return Response({"id": str(m.id), "kanaele": m.kanaele, "status": m.status})

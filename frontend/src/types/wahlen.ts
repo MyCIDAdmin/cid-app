@@ -323,3 +323,28 @@ export interface Reglement {
   gelesen_anzahl?: number;
   uebersetzung_moeglich?: boolean;
 }
+
+export type MitteilungsArt =
+  | "kandidatur_endet"
+  | "rueckfrage_frist"
+  | "einspruch_listen"
+  | "nichtwaehler"
+  | "wahl_endet"
+  | "einspruch_ergebnis";
+
+export type MitteilungsStatus = "geplant" | "gesendet" | "uebersprungen" | "ereignis";
+
+export type MitteilungsZielgruppe = "alle" | "kandidat" | "nichtwaehler" | "wahlberechtigte";
+
+export interface MitteilungsZeile {
+  typ: "bekanntmachung" | "erinnerung" | "ereignis";
+  id: string;
+  art: string;
+  bezug_name: string;
+  versand_am: string | null;
+  zielgruppe: MitteilungsZielgruppe;
+  kanaele: Array<"app" | "mail">;
+  status: MitteilungsStatus;
+  anzahl: number | null;
+  kanaele_aenderbar: boolean;
+}

@@ -3,7 +3,7 @@
 from celery import shared_task
 from django.utils import timezone
 
-from . import services
+from . import mitteilungen, services
 from .models import Bekanntmachung, BekanntmachungStatus
 
 
@@ -23,3 +23,9 @@ def bekanntmachungen_senden() -> int:
 def nachweise_loeschen() -> int:
     """Täglich: Nachweise nach der vom Ausschuss gewählten Aufbewahrungsfrist löschen."""
     return services.nachweise_loeschen()
+
+
+@shared_task
+def mitteilungen_senden() -> dict:
+    """Alle 10 Minuten: Plan der Erinnerungen nachziehen und Fälliges versenden."""
+    return mitteilungen.faellige_senden()
