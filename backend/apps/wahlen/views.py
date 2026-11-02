@@ -1,5 +1,7 @@
 """API der App wahlen (Präfix /api/v1/wahlen/)."""
 
+import csv
+
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -28,6 +30,7 @@ from .models import (
     KandidaturStatus,
     Nachweis,
     Pruefpunkt,
+    Reglement,
     Wahl,
     WahlStatus,
 )
@@ -45,7 +48,13 @@ from .serializers import (
     kandidatur_dossier,
     kandidatur_oeffentlich,
     protokoll_dict,
+    reglement_dict,
 )
+
+
+def _csv_sicher(text: str) -> str:
+    """Schutz vor Formel-Einschleusung beim Öffnen in Tabellenprogrammen."""
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
 
 
 def wahl_dict(wahl: Wahl, user) -> dict:
@@ -139,7 +148,10 @@ class WahlViewSet(
         return Response([wahl_dict(w, request.user) for w in self.get_queryset()])
 
     def retrieve(self, request, *args, **kwargs):
-        return Response(wahl_dict(self.get_object(), request.user))
+        wahl = self.get_object()
+        daten = wahl_dict(wahl, request.user)
+        daten["teilnahme"] = services.meine_teilnahme(wahl, services.membre_von(request.user))
+        return Response(daten)
 
     def _nur_verwaltung(self):
         if not services.verwaltet(self.request.user):
@@ -254,6 +266,58 @@ class WahlViewSet(
         antwort = HttpResponse(pdf.protokoll_pdf(wahl), content_type="application/pdf")
         antwort["Content-Disposition"] = 'inline; filename="wahlprotokoll.pdf"'
         return antwort
+
+    # ---- Wahlbüro (Ausschuss und Büro)
+    def _intern(self, wahl):
+        if not services.ausschuss_oder_verwaltung(self.request.user, wahl):
+            raise PermissionDenied("Nur Wahlausschuss und Büro.")
+
+    @action(detail=True, methods=["get"])
+    def beteiligung(self, request, pk=None):
+        wahl = self.get_object()
+        self._intern(wahl)
+        return Response(services.beteiligung_liste(wahl))
+
+    @action(detail=True, methods=["get"], url_path="beteiligung/export")
+    def beteiligung_export(self, request, pk=None):
+        wahl = self.get_object()
+        self._intern(wahl)
+        daten = services.beteiligung_liste(wahl)
+        antwort = HttpResponse(content_type="text/csv; charset=utf-8")
+        antwort["Content-Disposition"] = 'attachment; filename="beteiligung.csv"'
+        antwort.write("\ufeff")
+        schreiber = csv.writer(antwort, delimiter=";")
+        schreiber.writerow(["Name", "Hat abgestimmt"])
+        for e in daten["eintraege"]:
+            schreiber.writerow([_csv_sicher(e["name"]), "ja" if e["hat_gewaehlt"] else "nein"])
+        return antwort
+
+    @action(detail=True, methods=["get"])
+    def wahlzettel(self, request, pk=None):
+        wahl = self.get_object()
+        if not services.ausschuss_oder_verwaltung(request.user, wahl) and not (
+            wahl.vote_session_id or wahl.phase >= 3
+        ):
+            raise PermissionDenied("Der Stimmzettel ist noch nicht veröffentlicht.")
+        return Response(services.wahlzettel(wahl))
+
+    @action(detail=True, methods=["get"])
+    def uebergabe(self, request, pk=None):
+        wahl = self.get_object()
+        self._intern(wahl)
+        return Response(services.uebergabe_stand(wahl))
+
+    @action(detail=True, methods=["post"], url_path=r"uebergabe/(?P<schluessel>[a-z_]+)")
+    def uebergabe_punkt(self, request, pk=None, schluessel=None):
+        wahl = self.get_object()
+        services.uebergabe_setzen(
+            request.user,
+            wahl,
+            schluessel,
+            bool(request.data.get("erledigt", True)),
+            str(request.data.get("notiz", "")),
+        )
+        return Response(services.uebergabe_stand(wahl))
 
     @action(detail=True, methods=["get"])
     def waehlbarkeit(self, request, pk=None):
@@ -674,3 +738,85 @@ class EinspruchViewSet(GenericViewSet):
         e = self._objekt(pk, request.user)
         services.einspruch_vorschlag_verwerfen(e, request.user)
         return self._antwort(e, request.user)
+
+
+class ReglementViewSet(GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = Reglement.objects.select_related("wahl").prefetch_related("gelesen")
+    parser_classes = [JSONParser]
+
+    def _wahl_sichtbar(self, wahl: Wahl, user) -> bool:
+        intern = services.ausschuss_oder_verwaltung(user, wahl)
+        if not intern and wahl.status == WahlStatus.ENTWURF:
+            raise PermissionDenied("Kein Zugriff auf diese Wahl.")
+        return intern
+
+    def _objekt(self, pk, user, *, schreiben=False) -> Reglement:
+        r = get_object_or_404(self.queryset, pk=pk)
+        intern = self._wahl_sichtbar(r.wahl, user)
+        if schreiben and not intern:
+            raise PermissionDenied("Nur Wahlausschuss und Büro.")
+        return r
+
+    def _antwort(self, r: Reglement, user, code=200):
+        r = get_object_or_404(self.queryset, pk=r.pk)
+        intern = services.ausschuss_oder_verwaltung(user, r.wahl)
+        return Response(reglement_dict(r, services.membre_von(user), intern), status=code)
+
+    def list(self, request):
+        wahl = get_object_or_404(Wahl, pk=request.query_params.get("wahl"))
+        intern = self._wahl_sichtbar(wahl, request.user)
+        membre = services.membre_von(request.user)
+        liste = self.queryset.filter(wahl=wahl)
+        if not intern:
+            liste = [r for r in liste if (r.texte.get("de") or {}).get("html")]
+        return Response([reglement_dict(r, membre, intern) for r in liste])
+
+    def create(self, request):
+        wahl = get_object_or_404(Wahl, pk=request.data.get("wahl"))
+        r = services.reglement_anlegen(
+            request.user, wahl, request.data.get("schluessel", ""), request.data.get("version", "1")
+        )
+        return self._antwort(r, request.user, 201)
+
+    def partial_update(self, request, pk=None):
+        r = self._objekt(pk, request.user, schreiben=True)
+        sprache = request.data.get("sprache", "de")
+        gueltig = request.data.get("gueltig_ab", None)
+        if gueltig:
+            gueltig = serializers.DateField().run_validation(gueltig)
+        if "html" in request.data:
+            services.reglement_text_setzen(
+                r,
+                sprache,
+                request.data["html"],
+                version=request.data.get("version"),
+                gueltig_ab=gueltig,
+            )
+        elif "version" in request.data or "gueltig_ab" in request.data:
+            if request.data.get("version"):
+                r.version = str(request.data["version"]).strip()[:20]
+            if "gueltig_ab" in request.data:
+                r.gueltig_ab = gueltig or None
+            r.save(update_fields=["version", "gueltig_ab"])
+        return self._antwort(r, request.user)
+
+    @action(detail=True, methods=["post"])
+    def uebersetzen(self, request, pk=None):
+        r = self._objekt(pk, request.user, schreiben=True)
+        services.reglement_uebersetzen(r, request.data.get("sprache", ""))
+        return self._antwort(r, request.user)
+
+    @action(detail=True, methods=["post"])
+    def geprueft(self, request, pk=None):
+        r = self._objekt(pk, request.user, schreiben=True)
+        services.reglement_geprueft(
+            r, request.data.get("sprache", ""), request.data.get("wert", True)
+        )
+        return self._antwort(r, request.user)
+
+    @action(detail=True, methods=["post"])
+    def gelesen(self, request, pk=None):
+        r = self._objekt(pk, request.user)
+        services.reglement_gelesen(r, services.pflicht_membre(request.user))
+        return self._antwort(r, request.user)

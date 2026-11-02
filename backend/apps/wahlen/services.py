@@ -39,6 +39,10 @@ from .models import (
     ProtokollUnterschrift,
     PruefErgebnis,
     Pruefpunkt,
+    Reglement,
+    ReglementArt,
+    ReglementGelesen,
+    UebergabePunkt,
     Unterstuetzung,
     Wahl,
     Wahlform,
@@ -1198,3 +1202,212 @@ def _einspruch_umsetzen(einspruch: Einspruch) -> None:
 
         buero = User.objects.filter(role__in=ROLLEN_VERWALTUNG, is_active=True)
         _mitteilen(buero, "Einspruch stattgegeben", f"{wahl.titel}: Bitte Vorgehen klären.", wahl)
+
+
+# --------------------------------------------------------------------------- Wahlbüro
+
+
+def _eligible_ids(session) -> set:
+    from apps.vote.services import membres_eligibles_qs
+
+    return set(membres_eligibles_qs(session).values_list("id", flat=True))
+
+
+def beteiligung_liste(wahl: Wahl) -> dict:
+    """Wer abgestimmt hat, nie wofür und nie wann (Zeit und Stimmzettel sollen sich nicht
+    verknüpfen lassen). Nur für den Ausschuss; kein Zwischenstand der Stimmen."""
+    from apps.membres.models import Membre
+    from apps.vote.models import ParticipationVote
+
+    session = wahl.vote_session
+    if session is None:
+        raise ValidationError({"wahl": "Die Wahl wurde noch nicht geöffnet."})
+    gewaehlt = set(
+        ParticipationVote.objects.filter(session=session).values_list("membre_id", flat=True)
+    )
+    berechtigt = Membre.objects.filter(id__in=_eligible_ids(session)).order_by("nom", "prenom")
+    eintraege = [
+        {"membre": str(m.id), "name": f"{m.prenom} {m.nom}", "hat_gewaehlt": m.id in gewaehlt}
+        for m in berechtigt
+    ]
+    abgegeben = sum(1 for e in eintraege if e["hat_gewaehlt"])
+    return {
+        "abgegeben": abgegeben,
+        "berechtigt": len(eintraege),
+        "prozent": round(100 * abgegeben / len(eintraege), 1) if eintraege else 0.0,
+        "eintraege": eintraege,
+    }
+
+
+def meine_teilnahme(wahl: Wahl, membre) -> dict | None:
+    from apps.vote.models import ParticipationVote
+
+    session = wahl.vote_session
+    if session is None or membre is None:
+        return None
+    return {
+        "wahlberechtigt": membre.id in _eligible_ids(session),
+        "hat_gewaehlt": ParticipationVote.objects.filter(session=session, membre=membre).exists(),
+    }
+
+
+def wahlzettel(wahl: Wahl) -> dict:
+    """Der Stimmzettel, wie die Mitglieder ihn sehen werden (oder schon sehen)."""
+    session = wahl.vote_session
+    if session is not None:
+        typ, maximal, schwelle = session.type_vote, session.nb_choix_max, session.seuil_victoire_pct
+        optionen = [
+            {
+                "label": o.label,
+                "beschreibung": o.description,
+                "personen": [c.nom for c in o.candidats.all()],
+            }
+            for o in session.options.prefetch_related("candidats")
+        ]
+    else:
+        typ, maximal, optionen_roh, schwelle = optionen_fuer(wahl)
+        optionen = [
+            {
+                "label": o["label"],
+                "beschreibung": o.get("description", ""),
+                "personen": [c["nom"] for c in o.get("candidats", [])],
+            }
+            for o in optionen_roh
+        ]
+    return {
+        "typ": typ,
+        "stimmen_max": maximal,
+        "schwelle": schwelle,
+        "geoeffnet": session is not None,
+        "optionen": optionen,
+    }
+
+
+# --------------------------------------------------------------------------- Reglement
+
+
+def _reglement_pruefen(user, wahl: Wahl) -> None:
+    if not ausschuss_oder_verwaltung(user, wahl):
+        raise PermissionDenied("Nur Wahlausschuss und Büro.")
+
+
+def reglement_anlegen(user, wahl: Wahl, schluessel: str, version: str = "1") -> Reglement:
+    _reglement_pruefen(user, wahl)
+    if schluessel not in ReglementArt.values:
+        raise ValidationError({"schluessel": "Unbekanntes Dokument."})
+    if wahl.reglemente.filter(schluessel=schluessel).exists():
+        raise ValidationError({"schluessel": "Dieses Dokument gibt es schon."})
+    return Reglement.objects.create(
+        wahl=wahl, schluessel=schluessel, version=(version or "1").strip()[:20]
+    )
+
+
+def reglement_text_setzen(
+    reglement: Reglement, sprache: str, html: str, *, version: str | None, gueltig_ab
+) -> None:
+    if sprache not in ("de", "fr", "ar"):
+        raise ValidationError({"sprache": "Unbekannte Sprache."})
+    reglement.texte[sprache] = {"html": reinige_html(html)}
+    if sprache == "de":
+        # Eine neue deutsche Fassung macht die Übersetzungen ungeprüft.
+        reglement.geprueft = {s: False for s in ("fr", "ar") if s in reglement.texte}
+    else:
+        reglement.geprueft[sprache] = False
+    if version:
+        reglement.version = version.strip()[:20]
+    if gueltig_ab is not None:
+        reglement.gueltig_ab = gueltig_ab or None
+    reglement.save()
+
+
+def reglement_uebersetzen(reglement: Reglement, sprache: str) -> None:
+    from apps.uebersetzung import deepl
+
+    if sprache not in ("fr", "ar"):
+        raise ValidationError({"sprache": "Übersetzt wird nach Französisch oder Arabisch."})
+    de = (reglement.texte.get("de") or {}).get("html", "")
+    if not de.strip():
+        raise ValidationError({"sprache": "Zuerst den deutschen Text schreiben."})
+    if not deepl.ist_aktiv():
+        raise ValidationError({"sprache": "Die automatische Übersetzung ist nicht eingerichtet."})
+    ergebnis = deepl.uebersetzen(de, sprache, html=True)
+    if ergebnis is None:
+        raise ValidationError(
+            {"sprache": "Die Übersetzung ist fehlgeschlagen. Bitte später erneut."}
+        )
+    reglement.texte[sprache] = {"html": reinige_html(ergebnis[0])}
+    reglement.geprueft[sprache] = False
+    reglement.save(update_fields=["texte", "geprueft"])
+
+
+def reglement_geprueft(reglement: Reglement, sprache: str, wert: bool) -> None:
+    if sprache not in ("fr", "ar") or sprache not in reglement.texte:
+        raise ValidationError({"sprache": "Diese Fassung gibt es noch nicht."})
+    reglement.geprueft[sprache] = bool(wert)
+    reglement.save(update_fields=["geprueft"])
+
+
+def reglement_gelesen(reglement: Reglement, membre) -> None:
+    if not (reglement.texte.get("de") or {}).get("html"):
+        raise ValidationError({"reglement": "Das Dokument hat noch keinen Text."})
+    ReglementGelesen.objects.get_or_create(
+        reglement=reglement, membre=membre, version=reglement.version
+    )
+
+
+# --------------------------------------------------------------------------- Übergabe
+
+# (Schlüssel, automatisch). Automatische Punkte ergeben sich aus dem Stand der Wahl.
+UEBERGABE = [
+    ("ergebnis_veroeffentlicht", True),
+    ("protokoll_unterschrieben", True),
+    ("einsprueche_entschieden", True),
+    ("nachweise_geloescht", True),
+    ("zugaenge_uebergeben", False),
+    ("unterlagen_uebergeben", False),
+    ("uebergabeprotokoll", False),
+]
+
+
+def uebergabe_stand(wahl: Wahl) -> list[dict]:
+    manuell = {p.schluessel: p for p in wahl.uebergabe_punkte.select_related("erledigt_von")}
+    protokoll = getattr(wahl, "protokoll", None)
+    auto = {
+        "ergebnis_veroeffentlicht": wahl.ergebnis_freigegeben_am is not None,
+        "protokoll_unterschrieben": bool(
+            protokoll and protokoll.unterschriften.count() >= PROTOKOLL_UNTERSCHRIFTEN
+        ),
+        "einsprueche_entschieden": wahl.ergebnis_freigegeben_am is not None
+        and not wahl.einsprueche.filter(status=EinspruchStatus.OFFEN).exists(),
+        "nachweise_geloescht": not Nachweis.objects.filter(kandidatur__wahl=wahl).exists(),
+    }
+    liste = []
+    for schluessel, automatisch in UEBERGABE:
+        punkt = manuell.get(schluessel)
+        erledigt = auto[schluessel] if automatisch else bool(punkt and punkt.erledigt_am)
+        liste.append(
+            {
+                "schluessel": schluessel,
+                "automatisch": automatisch,
+                "erledigt": erledigt,
+                "erledigt_am": punkt.erledigt_am if punkt else None,
+                "notiz": punkt.notiz if punkt else "",
+            }
+        )
+    return liste
+
+
+def uebergabe_setzen(user, wahl: Wahl, schluessel: str, erledigt: bool, notiz: str = "") -> None:
+    if not ausschuss_oder_verwaltung(user, wahl):
+        raise PermissionDenied("Nur Wahlausschuss und Büro.")
+    if not wahl.ergebnis_freigegeben_am:
+        raise ValidationError(
+            {"schluessel": "Die Übergabe beginnt mit dem veröffentlichten Ergebnis."}
+        )
+    if schluessel not in {k for k, automatisch in UEBERGABE if not automatisch}:
+        raise ValidationError({"schluessel": "Dieser Punkt wird automatisch geprüft."})
+    punkt, _ = UebergabePunkt.objects.get_or_create(wahl=wahl, schluessel=schluessel)
+    punkt.erledigt_am = timezone.now() if erledigt else None
+    punkt.erledigt_von = user if erledigt else None
+    punkt.notiz = notiz.strip()[:300]
+    punkt.save()
