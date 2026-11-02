@@ -5,12 +5,13 @@
  * sa création (pas d'état planifié/brouillon côté modèle, voir StatutSession), il n'y a donc
  * rien à afficher dans un calendrier de sessions futures.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import ShareButton from "../../components/ui/ShareButton";
 import BulletinVote from "../../components/vote/BulletinVote";
+import AbstimmungenReiter from "../../components/vote/AbstimmungenReiter";
 import MinuteurVote from "../../components/vote/MinuteurVote";
 import ResultatsPodium from "../../components/vote/ResultatsPodium";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
@@ -48,10 +49,15 @@ export default function VotePage() {
   const [sessionAffichee, setSessionAffichee] = useState<string | undefined>();
   const [historiqueOuvert, setHistoriqueOuvert] = useState<string | null>(null);
 
+  const navigate = useNavigate();
+  // Wird per Deep-Link (?session=<id>) eine bestimmte Sitzung angezeigt, darf die Liste der
+  // laufenden Abstimmungen sie nicht wieder verdrängen (die Liste enthält keine Wahl-Sitzungen).
+  const cibleAffichee = useRef(false);
+
   const activeQuery = useSessionVoteActive();
   useEffect(() => {
     const active = activeQuery.data?.results[0];
-    if (active) setSessionAffichee(active.id);
+    if (active && !cibleAffichee.current) setSessionAffichee(active.id);
     // On ne réinitialise jamais sessionAffichee à undefined ici : une session qui vient d'être
     // clôturée (donc disparue du filtre statut=ouverte) doit rester affichée avec ses résultats
     // pour l'utilisateur en train de la consulter.
@@ -61,17 +67,37 @@ export default function VotePage() {
   const session = sessionQuery.data;
   const socket = useVoteSocket(sessionAffichee);
 
-  // Lien profond depuis une notification (?session=<id>, voir useDeepLinkCible) — corrige le
-  // clic sur "Wahlen offen" qui ne naviguait nulle part (l'ancien lien backend, "/vote", ne
-  // correspondait à aucune route). Si la session visée n'est pas la session active actuellement
-  // affichée, on bascule sur l'onglet "historique" et on ouvre directement son accordéon.
+  // Lien profond (?session=<id>) : depuis une notification, ou depuis une Wahl ("Zur Stimmabgabe").
+  // Session ouverte -> affichée directement (même si elle appartient à une Wahl, qui n'est pas dans
+  // la liste des votes rapides). Session close d'une Wahl -> on renvoie vers la Wahl (Welle 2e :
+  // ses résultats se consultent là-bas). Autre session close -> onglet "historique", accordéon
+  // ouvert. Si la session est introuvable, on retombe sur l'historique.
   const { cibleId: sessionCible, refCible } = useDeepLinkCible("session");
+  const cibleQuery = useVoteSession(sessionCible ?? undefined);
+  const cibleTraitee = useRef<string | null>(null);
   useEffect(() => {
-    if (!sessionCible || session?.id === sessionCible) return;
+    if (!sessionCible || cibleTraitee.current === sessionCible) return;
+    const cible = cibleQuery.data;
+    if (cible) {
+      cibleTraitee.current = sessionCible;
+      if (cible.statut === "ouverte") {
+        cibleAffichee.current = true;
+        setSessionAffichee(cible.id);
+        setOnglet("actif");
+        return;
+      }
+      if (cible.wahl) {
+        navigate(`/wahlen/${cible.wahl.id}`, { replace: true });
+        return;
+      }
+    } else if (!cibleQuery.isError) {
+      return;
+    }
+    cibleTraitee.current = sessionCible;
     setOnglet("historique");
     setHistoriqueOuvert(sessionCible);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionCible]);
+  }, [sessionCible, cibleQuery.data, cibleQuery.isError]);
 
   const cloturerMutation = useCloturerVoteSession();
   const historiqueQuery = useHistoriqueVote();
@@ -105,6 +131,7 @@ export default function VotePage() {
 
   return (
     <div>
+      <AbstimmungenReiter aktiv="abstimmungen" />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-text-primary">{t("page.titre")}</h1>
         {estAdmin && (
@@ -212,7 +239,16 @@ export default function VotePage() {
                 )}
               </div>
 
-              {estAdmin && !sessionCloturee && (
+              {session.wahl && (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-cid bg-status-infoBg px-3 py-2 text-xs text-status-infoText">
+                  <span>{t("session.wahl_schliessen_hinweis")}</span>
+                  <Link to={`/wahlen/${session.wahl.id}`} className="font-semibold underline">
+                    {t("session.zur_wahl", { titel: session.wahl.titel })}
+                  </Link>
+                </div>
+              )}
+
+              {estAdmin && !sessionCloturee && !session.wahl && (
                 <div className="flex justify-end">
                   <button
                     type="button"

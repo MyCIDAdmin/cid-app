@@ -14,6 +14,9 @@ import type {
 
 export interface VoteSessionsFiltres {
   statut?: StatutSession;
+  /** "schnell" = nur eigenständige Abstimmungen, "wahl" = nur Stimmabgaben einer Wahl. Der
+   * Abstimmungen-Reiter fragt immer „schnell“ ab: Wahlen laufen über ihren eigenen Reiter. */
+  art?: "schnell" | "wahl";
   page?: number;
 }
 

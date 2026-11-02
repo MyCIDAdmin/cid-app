@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
+import AbstimmungenReiter from "../../components/vote/AbstimmungenReiter";
 import WahlAnlegenFormular from "../../components/wahlen/WahlAnlegenFormular";
 import { useWahlen } from "../../hooks/useWahlen";
 import { useAuthStore } from "../../store/authStore";
@@ -23,14 +24,12 @@ export default function WahlenPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 p-4">
+      <AbstimmungenReiter aktiv="wahlen" />
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold text-text-primary">{t("titel")}</h1>
           <p className="text-sm text-text-secondary">{t("intro")}</p>
         </div>
-        <Link to="/votes" className="text-sm text-ca underline">
-          {t("zu_abstimmungen")}
-        </Link>
       </header>
 
       {kannVerwalten && !anlegen && (

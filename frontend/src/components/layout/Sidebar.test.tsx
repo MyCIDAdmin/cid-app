@@ -225,6 +225,21 @@ describe("Sidebar — repli/dépli, groupes et navigation", () => {
 
     expect(screen.getByText("nav.boutique").closest("a")).toHaveClass("bg-ca");
   });
+
+  // Welle 2e: „Abstimmungen & Wahlen“ ist ein Menüpunkt mit zwei Reitern — /wahlen gehört dazu.
+  it("hat nur einen Menüpunkt für Abstimmungen und Wahlen, auch auf /wahlen aktiv", () => {
+    renderWithProviders(<Sidebar />, { route: "/wahlen/abc", path: "/wahlen/:id" });
+
+    expect(screen.queryByText("nav.wahlen")).not.toBeInTheDocument();
+    const eintrag = screen.getByText("nav.votes").closest("a");
+    expect(eintrag).toHaveAttribute("href", "/votes");
+    expect(eintrag).toHaveClass("bg-ca");
+  });
+
+  it("ordnet /wahlen derselben Gruppe zu wie /votes", () => {
+    expect(getGroupForPath("/wahlen")).toBe(getGroupForPath("/votes"));
+    expect(getGroupForPath("/wahlen/abc")).not.toBeNull();
+  });
 });
 
 describe("Sidebar — point d'activité par module (demande utilisateur du 2026-09-16)", () => {

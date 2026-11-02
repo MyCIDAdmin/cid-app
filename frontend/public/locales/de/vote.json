@@ -1,6 +1,6 @@
 {
   "page": {
-    "titre": "Live-Abstimmungen & Wahlen",
+    "titre": "Live-Abstimmungen",
     "creer_session": "Abstimmungssitzung erstellen",
     "bandeau_admin": "Administratormodus — Sie können Abstimmungssitzungen erstellen, öffnen und schließen."
   },
@@ -26,7 +26,9 @@
     "membres": "Mitglieder",
     "cloturer": "Abstimmung schließen",
     "cloture_en_cours": "Wird geschlossen…",
-    "erreur_cloture": "Diese Sitzung konnte nicht geschlossen werden."
+    "erreur_cloture": "Diese Sitzung konnte nicht geschlossen werden.",
+    "zur_wahl": "Zur Wahl „{{titel}}“",
+    "wahl_schliessen_hinweis": "Diese Abstimmung gehört zu einer Wahl und wird über die Wahl geschlossen."
   },
   "bulletin": {
     "instructions_unique": "Wählen Sie 1 Kandidat(in) aus.",

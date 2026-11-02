@@ -28,6 +28,7 @@ function session(overrides: Partial<VoteSession> = {}): VoteSession {
     total_eligibles: 10,
     resultats_visibles: false,
     created_by: 1,
+    wahl: null,
     created_at: "2026-01-01T10:00:00Z",
     ...overrides,
   };
