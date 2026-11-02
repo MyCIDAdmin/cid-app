@@ -26,6 +26,7 @@ const keys = {
   wahlzettel: (wahl: string) => ["wahlen", "wahlzettel", wahl] as const,
   uebergabe: (wahl: string) => ["wahlen", "uebergabe", wahl] as const,
   reglemente: (wahl: string) => ["wahlen", "reglemente", wahl] as const,
+  mitteilungsplan: (wahl: string) => ["wahlen", "mitteilungsplan", wahl] as const,
 };
 
 export function useWahlen() {
@@ -291,4 +292,21 @@ export function useReglementAktionen(id: string) {
     }),
     gelesen: useMutation({ mutationFn: () => api.reglementGelesen(id), ...optionen }),
   };
+}
+
+export function useMitteilungsplan(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.mitteilungsplan(wahl ?? ""),
+    queryFn: () => api.getMitteilungsplan(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+  });
+}
+
+export function useMitteilungKanaele() {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({
+    mutationFn: (p: { id: string; kanaele: Array<"app" | "mail"> }) =>
+      api.mitteilungKanaeleSetzen(p.id, p.kanaele),
+    onSuccess: neuLaden,
+  });
 }

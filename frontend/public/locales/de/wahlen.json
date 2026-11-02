@@ -57,7 +57,8 @@
     "ergebnis": "Ergebnis",
     "einsprueche": "Einsprüche",
     "reglement": "Reglement",
-    "buero": "Wahlbüro"
+    "buero": "Wahlbüro",
+    "mitteilungen": "Mitteilungen"
   },
   "anlegen": {
     "titel": "Neue Wahl",
@@ -397,5 +398,38 @@
       "uebergabeprotokoll": "Übergabeprotokoll abgelegt"
     },
     "fehler": "Das hat nicht geklappt."
+  },
+  "mitteilungen": {
+    "einleitung": "Alle Nachrichten zu dieser Wahl in zeitlicher Reihenfolge. Die Texte der Bekanntmachungen schreibt der Ausschuss; die Erinnerungen werden automatisch geplant und verschoben, wenn sich die Fristen ändern. Bei Erinnerungen kannst du wählen, ob sie in der App und/oder per E-Mail kommen.",
+    "datenschutz": "Die Erinnerung an noch nicht abgegebene Stimmen erfährt nur, wer schon teilgenommen hat – nie, wofür jemand gestimmt hat. Alle bekommen denselben Text.",
+    "entwurf": "Solange die Wahl ein Entwurf ist, wird nichts versendet.",
+    "wann": "Versand: {{datum}}",
+    "sofort": "Zeitpunkt richtet sich nach der Entscheidung",
+    "an": "An: {{gruppe}}",
+    "anzahl": "{{n}} Empfänger*innen",
+    "text_bearbeiten": "Text bearbeiten (Bekanntmachungen)",
+    "ereignis_hinweis": "Wird sofort gesendet, sobald der Ausschuss ein Prüfergebnis festlegt.",
+    "fehler": "Das hat nicht geklappt.",
+    "status": {
+      "geplant": "Geplant",
+      "gesendet": "Gesendet",
+      "uebersprungen": "Nicht gesendet (zu spät)",
+      "ereignis": "Bei Ereignis"
+    },
+    "zielgruppe": {
+      "alle": "Alle Mitglieder",
+      "kandidat": "Betroffene Kandidat*innen",
+      "nichtwaehler": "Wahlberechtigte ohne Stimme",
+      "wahlberechtigte": "Alle Wahlberechtigten"
+    },
+    "art": {
+      "kandidatur_endet": "Erinnerung: Kandidatur endet bald",
+      "rueckfrage_frist": "Erinnerung: Rückfrage beantworten",
+      "einspruch_listen": "Hinweis: Einspruchsfrist zu den Listen",
+      "nichtwaehler": "Erinnerung: noch nicht gewählt",
+      "wahl_endet": "Erinnerung: Wahl endet bald",
+      "einspruch_ergebnis": "Hinweis: Einspruchsfrist zum Ergebnis",
+      "pruef_entscheidung": "Entscheidung zur Kandidatur"
+    }
   }
 }

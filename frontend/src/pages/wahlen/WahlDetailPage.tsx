@@ -13,6 +13,7 @@ import ErgebnisTab from "../../components/wahlen/ErgebnisTab";
 import KandidatenTab from "../../components/wahlen/KandidatenTab";
 import KandidaturTab from "../../components/wahlen/KandidaturTab";
 import PhasenLeiste from "../../components/wahlen/PhasenLeiste";
+import MitteilungenTab from "../../components/wahlen/MitteilungenTab";
 import PruefverfahrenTab from "../../components/wahlen/PruefverfahrenTab";
 import ReglementTab from "../../components/wahlen/ReglementTab";
 import UnterstuetzenKarte from "../../components/wahlen/UnterstuetzenKarte";
@@ -129,6 +130,7 @@ export default function WahlDetailPage() {
     if (intern) {
       liste.push({ id: "pruefung", label: t("tab.pruefung") });
       liste.push({ id: "bekanntmachungen", label: t("tab.bekanntmachungen") });
+      liste.push({ id: "mitteilungen", label: t("tab.mitteilungen") });
       liste.push({ id: "buero", label: t("tab.buero") });
       liste.push({ id: "ausschuss", label: t("tab.ausschuss") });
     }
@@ -174,6 +176,9 @@ export default function WahlDetailPage() {
       {tab === "einsprueche" && <EinsprueceTab wahl={w} />}
       {tab === "pruefung" && <PruefverfahrenTab wahl={w} />}
       {tab === "bekanntmachungen" && <BekanntmachungenTab wahl={w} />}
+      {tab === "mitteilungen" && (
+        <MitteilungenTab wahl={w} zuBekanntmachungen={() => setTab("bekanntmachungen")} />
+      )}
       {tab === "reglement" && <ReglementTab wahl={w} />}
       {tab === "buero" && <WahlbueroTab wahl={w} />}
       {tab === "ausschuss" && <AusschussTab wahl={w} />}

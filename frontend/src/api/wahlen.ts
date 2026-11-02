@@ -23,6 +23,7 @@ import type {
   Waehlbarkeit,
   Amt,
   Kanal,
+  MitteilungsZeile,
 } from "../types/wahlen";
 import { apiClient } from "./client";
 
@@ -305,6 +306,21 @@ export async function einspruchEntscheiden(
     art,
     begruendung,
   });
+  return data;
+}
+
+// ---- Mitteilungs-Plan
+
+export async function getMitteilungsplan(id: string): Promise<MitteilungsZeile[]> {
+  const { data } = await apiClient.get<MitteilungsZeile[]>(`${BASIS}/${id}/mitteilungsplan/`);
+  return data;
+}
+
+export async function mitteilungKanaeleSetzen(
+  id: string,
+  kanaele: Array<"app" | "mail">,
+): Promise<{ id: string; kanaele: Array<"app" | "mail">; status: string }> {
+  const { data } = await apiClient.patch(`${BASIS}/mitteilungen/${id}/`, { kanaele });
   return data;
 }
 

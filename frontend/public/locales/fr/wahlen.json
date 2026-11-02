@@ -57,7 +57,8 @@
     "ergebnis": "Résultat",
     "einsprueche": "Recours",
     "reglement": "Règlement",
-    "buero": "Bureau de l'élection"
+    "buero": "Bureau de l'élection",
+    "mitteilungen": "Messages"
   },
   "anlegen": {
     "titel": "Nouvelle élection",
@@ -397,5 +398,38 @@
       "uebergabeprotokoll": "Procès-verbal de passation archivé"
     },
     "fehler": "Cela n'a pas fonctionné."
+  },
+  "mitteilungen": {
+    "einleitung": "Tous les messages de cette élection dans l'ordre chronologique. Les textes des annonces sont rédigés par le comité ; les rappels sont planifiés automatiquement et décalés si les délais changent. Pour les rappels, tu peux choisir entre l'application et/ou l'e-mail.",
+    "datenschutz": "Le rappel pour les voix non encore exprimées ne concerne que les personnes qui n'ont pas encore participé – jamais le choix de vote. Le texte est le même pour tout le monde.",
+    "entwurf": "Tant que l'élection est un brouillon, rien n'est envoyé.",
+    "wann": "Envoi : {{datum}}",
+    "sofort": "Moment selon la décision",
+    "an": "À : {{gruppe}}",
+    "anzahl": "{{n}} destinataires",
+    "text_bearbeiten": "Modifier le texte (annonces)",
+    "ereignis_hinweis": "Envoyé tout de suite dès que le comité fixe un résultat de vérification.",
+    "fehler": "Cela n'a pas fonctionné.",
+    "status": {
+      "geplant": "Planifié",
+      "gesendet": "Envoyé",
+      "uebersprungen": "Non envoyé (trop tard)",
+      "ereignis": "Selon l'événement"
+    },
+    "zielgruppe": {
+      "alle": "Tous les membres",
+      "kandidat": "Candidat·es concerné·es",
+      "nichtwaehler": "Électeurs sans vote",
+      "wahlberechtigte": "Tous les électeurs"
+    },
+    "art": {
+      "kandidatur_endet": "Rappel : la candidature se termine bientôt",
+      "rueckfrage_frist": "Rappel : répondre à la question",
+      "einspruch_listen": "Info : délai de recours sur les listes",
+      "nichtwaehler": "Rappel : pas encore voté",
+      "wahl_endet": "Rappel : l'élection se termine bientôt",
+      "einspruch_ergebnis": "Info : délai de recours sur le résultat",
+      "pruef_entscheidung": "Décision sur la candidature"
+    }
   }
 }
