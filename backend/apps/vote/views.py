@@ -36,6 +36,9 @@ class VoteSessionPagination(PageNumberPagination):
     page_size = 20
 
 
+SCHLIESSEN_ÜBER_WAHL = "Diese Abstimmung gehört zu einer Wahl und wird über die Wahl geschlossen."
+
+
 class VoteSessionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
     permission_classes = [VoteSessionPermission]
@@ -43,7 +46,7 @@ class VoteSessionViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = VoteSessionFilter
     queryset = VoteSession.objects.prefetch_related("options", "options__candidats").select_related(
-        "created_by"
+        "created_by", "wahl"
     )
 
     def get_serializer_class(self):
@@ -97,6 +100,9 @@ class VoteSessionViewSet(ModelViewSet):
     @action(detail=True, methods=["post"])
     def cloturer(self, request, pk=None):
         session = self.get_object()
+        if getattr(session, "wahl", None) is not None:
+            # Die Abstimmung einer Wahl schließt der Wahlausschuss mit zwei Freigaben (App wahlen).
+            raise ValidationError({"statut": SCHLIESSEN_ÜBER_WAHL})
         if session.statut != StatutSession.OUVERTE:
             raise ValidationError({"statut": "Cette session est déjà clôturée."})
         session.statut = StatutSession.CLOTUREE
