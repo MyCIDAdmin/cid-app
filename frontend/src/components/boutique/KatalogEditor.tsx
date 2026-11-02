@@ -32,39 +32,13 @@ import GalerieProduitManager from "./GalerieProduitManager";
 import RegleReductionManager from "./RegleReductionManager";
 import ReservierungsEinstellungen from "./ReservierungsEinstellungen";
 import VariantesManager from "./VariantesManager";
+import { CATEGORIES, euro, useHinweisText } from "./katalogHilfen";
 
-export const CATEGORIES: CategorieProduit[] = [
-  "vetements",
-  "accessoires",
-  "articles_club",
-  "cartes_docs",
-  "divers",
-];
 const STATUTS: StatutProduit[] = ["brouillon", "publie", "archive"];
 const FELD =
   "w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm disabled:opacity-40";
 const KNOPF =
   "rounded-cid border border-text-tertiary/30 px-2 py-1 text-xs text-text-secondary hover:bg-bg-tertiary disabled:opacity-40";
-
-export function euro(wert: string | number): string {
-  return Number(wert).toFixed(2).replace(".", ",");
-}
-
-/** Text eines Hinweises (Kachel-Chip und Editor-Liste teilen ihn). */
-export function useHinweisText() {
-  const { t } = useTranslation("boutique");
-  return (h: ArtikelHinweis): string => {
-    if (h.code === "bestand_knapp") {
-      const liste = (h.detail.varianten ?? [])
-        .map((v) => `${v.variante || t("catalogue_admin.variante_unique")} (${v.stock})`)
-        .join(", ");
-      return t("katalog.hinweis.bestand_knapp.text", { liste });
-    }
-    if (h.code === "name_lang")
-      return t("katalog.hinweis.name_lang.text", { laenge: h.detail.laenge ?? 0 });
-    return t(`katalog.hinweis.${h.code}.text`);
-  };
-}
 
 function Abschnitt({ titel, children }: { titel: string; children: React.ReactNode }) {
   return (

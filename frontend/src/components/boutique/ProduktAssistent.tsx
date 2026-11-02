@@ -23,7 +23,7 @@ import type {
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { EscapeSchliessen } from "../ui/EscapeSchliessen";
 import { Fachwort, HilfeHinweis } from "../ui/Erklaerung";
-import { CATEGORIES } from "./KatalogEditor";
+import { CATEGORIES } from "./katalogHilfen";
 
 const FELD = "w-full rounded-cid border border-text-tertiary/30 px-2 py-1.5 text-sm";
 

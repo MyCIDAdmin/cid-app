@@ -18,7 +18,8 @@ import { useProduits, useVerwaltungUeberblick } from "../../hooks/useBoutique";
 import type { ArtikelHinweis, Produit, StatutProduit } from "../../types/boutique";
 import BildHinweis from "../ui/BildHinweis";
 import { EinfachSchalter, HilfeHinweis } from "../ui/Erklaerung";
-import KatalogEditor, { euro } from "./KatalogEditor";
+import KatalogEditor from "./KatalogEditor";
+import { euro } from "./katalogHilfen";
 import ProduktAssistent from "./ProduktAssistent";
 
 type Filter = "alle" | StatutProduit | "hinweise";

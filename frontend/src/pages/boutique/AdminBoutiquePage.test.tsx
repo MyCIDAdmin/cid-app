@@ -243,7 +243,7 @@ describe("AdminBoutiquePage", () => {
     expect(screen.getByText("CMD-A1B2C3D4")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("admin.onglet_catalogue"));
-    expect(screen.getByText("catalogue_admin.nouveau_produit")).toBeInTheDocument();
+    expect(screen.getByText("katalog.neu")).toBeInTheDocument();
   });
 
   it("bascule vers l'onglet Bons d'achat", () => {
@@ -269,7 +269,7 @@ describe("AdminBoutiquePage", () => {
       expect(screen.getByText("bestellung.als_geliefert")).not.toBeDisabled();
 
       fireEvent.click(screen.getByText("admin.onglet_catalogue"));
-      expect(screen.getByText("catalogue_admin.creer")).not.toBeDisabled();
+      expect(screen.getByText("katalog.neu")).not.toBeDisabled();
     });
 
     it("affiche un bandeau et désactive les contrôles d'écriture quand modifiable=false", () => {
@@ -288,7 +288,7 @@ describe("AdminBoutiquePage", () => {
       expect(screen.getByText("bestellung.als_geliefert")).toBeDisabled();
 
       fireEvent.click(screen.getByText("admin.onglet_catalogue"));
-      expect(screen.getByText("catalogue_admin.creer")).toBeDisabled();
+      expect(screen.getByText("katalog.neu")).toBeDisabled();
     });
   });
 });
