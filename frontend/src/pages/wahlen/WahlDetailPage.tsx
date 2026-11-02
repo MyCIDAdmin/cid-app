@@ -163,6 +163,14 @@ export default function WahlDetailPage() {
             {t(`status.${w.status}`)}
           </span>
         </div>
+        {w.vorgaenger && (
+          <p className="text-sm text-text-secondary" data-testid="runde-hinweis">
+            {t("folge.runde", { n: w.runde })}{" "}
+            <Link to={`/wahlen/${w.vorgaenger.id}`} className="text-ca underline">
+              {t("folge.zum_vorgaenger", { n: w.runde - 1 })}
+            </Link>
+          </p>
+        )}
         <PhasenLeiste phase={w.phase} />
       </header>
 

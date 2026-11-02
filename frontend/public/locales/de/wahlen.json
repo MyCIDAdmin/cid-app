@@ -431,5 +431,41 @@
       "einspruch_ergebnis": "Hinweis: Einspruchsfrist zum Ergebnis",
       "pruef_entscheidung": "Entscheidung zur Kandidatur"
     }
+  },
+  "folge": {
+    "titel": "Weiterer Wahlgang",
+    "entwurf": "Der nächste Wahlgang ist als Entwurf vorbereitet. Wahlausschuss und Büro prüfen die Termine und veröffentlichen ihn.",
+    "veroeffentlicht": "Der nächste Wahlgang ist veröffentlicht.",
+    "oeffnen": "Zu „{{titel}}“",
+    "fehlt": "Dieses Ergebnis braucht einen weiteren Wahlgang. Er wird sonst beim Veröffentlichen von selbst vorbereitet; hier kannst du ihn anlegen.",
+    "anlegen": "Weiteren Wahlgang vorbereiten",
+    "bald": "Der Wahlausschuss bereitet den nächsten Wahlgang vor. Du wirst benachrichtigt, sobald er feststeht.",
+    "fehler": "Das hat nicht geklappt.",
+    "runde": "Das ist der {{n}}. Wahlgang.",
+    "zum_vorgaenger": "Zum Ergebnis des {{n}}. Wahlgangs"
+  },
+  "probe": {
+    "titel": "Probewahl",
+    "einleitung": "Vor dem Start einmal alles durchspielen, mit erfundenen Stimmen. Es wird nichts gespeichert, niemand benachrichtigt und nichts davon zählt.",
+    "stimmen": "Erfundene Stimmen (4 bis 500)",
+    "szenario": "Szenario",
+    "szenario_zufall": "Zufällig verteilt",
+    "szenario_gleichstand": "Gleichstand (zeigt den weiteren Wahlgang)",
+    "starten": "Probewahl starten",
+    "fehler": "Das hat nicht geklappt.",
+    "erfunden": "Alle Stimmen in dieser Probe sind erfunden.",
+    "beispiel": "Es gibt noch keine zugelassenen Kandidaturen; die Probe nutzt Beispielnamen.",
+    "weiterer_wahlgang": "Bei einem solchen Ergebnis bereitet das System den weiteren Wahlgang als Entwurf vor, sobald das Ergebnis veröffentlicht ist.",
+    "bereitschaft": "Startbereitschaft",
+    "ok": "in Ordnung",
+    "offen": "noch offen",
+    "pruefung": {
+      "ausschuss": "Wahlausschuss mit mindestens drei Mitgliedern ({{n}})",
+      "kandidaturen": "Genug zugelassene Kandidaturen ({{n}})",
+      "termine": "Termine liegen in der Zukunft und stimmen",
+      "bekanntmachungen": "Alle Bekanntmachungen freigegeben (noch offen: {{n}})",
+      "reglement": "Wahlordnung in der Reglement-Bibliothek",
+      "stimmberechtigte": "Wahlberechtigte Mitglieder ({{n}})"
+    }
   }
 }

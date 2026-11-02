@@ -96,6 +96,15 @@ class Wahl(models.Model):
         blank=True,
         help_text="Erst mit zwei Freigaben des Ausschusses wird das Ergebnis veröffentlicht.",
     )
+    vorgaenger = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="folgewahlen",
+        help_text="Bei einem weiteren Wahlgang: die Wahl, aus deren Ergebnis er entstanden ist.",
+    )
+    runde = models.PositiveSmallIntegerField(default=1, help_text="Nummer des Wahlgangs.")
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="wahlen_angelegt"
     )

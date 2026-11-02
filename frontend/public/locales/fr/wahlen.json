@@ -431,5 +431,41 @@
       "einspruch_ergebnis": "Info : délai de recours sur le résultat",
       "pruef_entscheidung": "Décision sur la candidature"
     }
+  },
+  "folge": {
+    "titel": "Tour suivant",
+    "entwurf": "Le tour suivant est préparé en brouillon. La commission électorale et le bureau vérifient les dates et le publient.",
+    "veroeffentlicht": "Le tour suivant est publié.",
+    "oeffnen": "Vers « {{titel}} »",
+    "fehlt": "Ce résultat nécessite un tour suivant. Il est préparé automatiquement à la publication ; tu peux aussi le créer ici.",
+    "anlegen": "Préparer le tour suivant",
+    "bald": "La commission électorale prépare le tour suivant. Tu seras informé·e dès qu'il est fixé.",
+    "fehler": "Cela n'a pas fonctionné.",
+    "runde": "Ceci est le tour {{n}}.",
+    "zum_vorgaenger": "Vers le résultat du tour {{n}}"
+  },
+  "probe": {
+    "titel": "Vote d'essai",
+    "einleitung": "Tout tester une fois avant le début, avec de faux bulletins. Rien n'est enregistré, personne n'est notifié et rien ne compte.",
+    "stimmen": "Bulletins fictifs (4 à 500)",
+    "szenario": "Scénario",
+    "szenario_zufall": "Répartition aléatoire",
+    "szenario_gleichstand": "Égalité (montre le tour suivant)",
+    "starten": "Lancer l'essai",
+    "fehler": "Cela n'a pas fonctionné.",
+    "erfunden": "Tous les bulletins de cet essai sont fictifs.",
+    "beispiel": "Il n'y a pas encore de candidatures admises ; l'essai utilise des noms d'exemple.",
+    "weiterer_wahlgang": "Avec un tel résultat, le système prépare le tour suivant en brouillon dès que le résultat est publié.",
+    "bereitschaft": "Prêt à démarrer",
+    "ok": "en ordre",
+    "offen": "encore ouvert",
+    "pruefung": {
+      "ausschuss": "Commission électorale d'au moins trois membres ({{n}})",
+      "kandidaturen": "Assez de candidatures admises ({{n}})",
+      "termine": "Les dates sont à venir et cohérentes",
+      "bekanntmachungen": "Toutes les annonces validées (encore ouvertes : {{n}})",
+      "reglement": "Règlement électoral dans la bibliothèque",
+      "stimmberechtigte": "Membres électeurs ({{n}})"
+    }
   }
 }

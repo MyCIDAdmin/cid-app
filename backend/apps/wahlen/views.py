@@ -16,7 +16,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from apps.membres.models import Membre
 
-from . import mitteilungen, pdf, services
+from . import mitteilungen, pdf, services, wahlgaenge
 from .models import (
     AmtPerson,
     Aufbewahrung,
@@ -74,6 +74,12 @@ def wahl_dict(wahl: Wahl, user) -> dict:
     if ausschuss or verwaltung:
         for art in ("oeffnen", "schliessen", "ergebnis"):
             freigaben[art] = [f.user_id for f in wahl.freigaben.filter(art=art)]
+    folge = wahl.folgewahlen.order_by("created_at").first()
+    folgewahl = (
+        {"id": str(folge.id), "titel": folge.titel, "status": folge.status}
+        if folge and (ausschuss or verwaltung or folge.status != WahlStatus.ENTWURF)
+        else None
+    )
     return {
         "id": str(wahl.id),
         "titel": wahl.titel,
@@ -117,6 +123,13 @@ def wahl_dict(wahl: Wahl, user) -> dict:
             for a in wahl.ausschuss.select_related("membre")
         ],
         "freigaben": freigaben,
+        "runde": wahl.runde,
+        "vorgaenger": (
+            {"id": str(wahl.vorgaenger_id), "titel": wahl.vorgaenger.titel}
+            if wahl.vorgaenger_id
+            else None
+        ),
+        "folgewahl": folgewahl,
         "ids_zugelassen": (
             [str(k.id) for k in wahl.kandidaturen.filter(status=KandidaturStatus.ZUGELASSEN)]
             if (wahl.phase >= 3 or ausschuss or verwaltung)
@@ -175,6 +188,34 @@ class WahlViewSet(
         ser.save()
         mitteilungen.planen(wahl)
         return Response(wahl_dict(wahl, request.user))
+
+    @action(detail=True, methods=["post"])
+    def folgewahl(self, request, pk=None):
+        """Legt den weiteren Wahlgang als Entwurf an (geschieht beim Veröffentlichen des
+        Ergebnisses von selbst; hier für ältere Ergebnisse oder nach Löschen des Entwurfs)."""
+        wahl = self.get_object()
+        if not services.ausschuss_oder_verwaltung(request.user, wahl):
+            raise PermissionDenied("Nur Wahlausschuss und Büro.")
+        neu, angelegt = wahlgaenge.folgewahl_anlegen(wahl, request.user)
+        return Response(wahl_dict(neu, request.user), status=201 if angelegt else 200)
+
+    @action(detail=True, methods=["post"])
+    def probewahl(self, request, pk=None):
+        """Trockenlauf mit erfundenen Stimmen; nichts wird gespeichert oder versendet."""
+        wahl = self.get_object()
+        if not services.ausschuss_oder_verwaltung(request.user, wahl):
+            raise PermissionDenied("Nur Wahlausschuss und Büro.")
+        try:
+            stimmen = int(request.data.get("stimmen", 40))
+            seed = request.data.get("seed")
+            seed = int(seed) if seed not in (None, "") else None
+        except (TypeError, ValueError):
+            raise ValidationError({"stimmen": "Bitte Zahlen angeben."})
+        return Response(
+            wahlgaenge.probewahl(
+                wahl, request.user, stimmen, request.data.get("szenario", "zufall"), seed
+            )
+        )
 
     @action(detail=True, methods=["get"], url_path="mitteilungsplan")
     def mitteilungsplan(self, request, pk=None):
@@ -242,11 +283,13 @@ class WahlViewSet(
         ausschuss = services.ausschuss_oder_verwaltung(request.user, wahl)
         session = wahl.vote_session
         if wahl.ergebnis_freigegeben_am and session:
+            daten = services.ergebnis_auswerten(wahl)
             return Response(
                 {
                     "freigegeben": True,
                     "freigegeben_am": wahl.ergebnis_freigegeben_am,
-                    **services.ergebnis_auswerten(wahl),
+                    "weiterer_wahlgang": wahlgaenge.folgewahl_moeglich(wahl, daten),
+                    **daten,
                 }
             )
         antwort = {"freigegeben": False, "beendet": bool(session and session.statut == "cloturee")}

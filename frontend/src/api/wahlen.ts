@@ -24,6 +24,8 @@ import type {
   Amt,
   Kanal,
   MitteilungsZeile,
+  ProbeSzenario,
+  Probewahl,
 } from "../types/wahlen";
 import { apiClient } from "./client";
 
@@ -305,6 +307,25 @@ export async function einspruchEntscheiden(
   const { data } = await apiClient.post<Einspruch>(`${BASIS}/einsprueche/${id}/entscheidung/`, {
     art,
     begruendung,
+  });
+  return data;
+}
+
+// ---- Weiterer Wahlgang und Probewahl
+
+export async function folgewahlAnlegen(id: string): Promise<Wahl> {
+  const { data } = await apiClient.post<Wahl>(`${BASIS}/${id}/folgewahl/`);
+  return data;
+}
+
+export async function probewahlStarten(
+  id: string,
+  stimmen: number,
+  szenario: ProbeSzenario,
+): Promise<Probewahl> {
+  const { data } = await apiClient.post<Probewahl>(`${BASIS}/${id}/probewahl/`, {
+    stimmen,
+    szenario,
   });
   return data;
 }
