@@ -26,3 +26,17 @@ def aushang_pdf(bk, sprache: str) -> bytes | None:
         },
     )
     return HTML(string=html).write_pdf()
+
+
+def protokoll_pdf(wahl) -> bytes:
+    from .serializers import protokoll_dict
+
+    daten = protokoll_dict(wahl)
+    html = render_to_string(
+        "wahlen/protokoll.html",
+        {
+            "p": daten,
+            "anschrift": [z.strip() for z in settings.VEREIN_ANSCHRIFT.split("·") if z.strip()],
+        },
+    )
+    return HTML(string=html).write_pdf()

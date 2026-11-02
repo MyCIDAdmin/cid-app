@@ -93,7 +93,7 @@ def envoyer_notification_ouverture(session_id) -> int:
 @shared_task
 def envoyer_notification_resultats(session_id) -> int:
     session = _get_session(session_id)
-    if session is None:
+    if session is None or session.ergebnis_gesperrt:
         return 0
     resultats = calculer_resultats(session)
     detail = "\n".join(
@@ -133,7 +133,7 @@ def clore_sessions_expirees() -> int:
 
         envoyer_notification_resultats.delay(str(session.id))
 
-        if channel_layer is not None:
+        if channel_layer is not None and not session.ergebnis_gesperrt:
             async_to_sync(channel_layer.group_send)(
                 f"vote_{session.id}",
                 {"type": "resultats_disponibles", "payload": calculer_resultats(session)},

@@ -164,7 +164,14 @@ class VoteSession(models.Model):
     def resultats_visibles(self) -> bool:
         """SCD §7.5 — les résultats agrégés ne sont JAMAIS exposés avant la clôture,
         indépendamment de `resultats_visibles_avant_cloture` (voir son docstring)."""
-        return self.statut == StatutSession.CLOTUREE
+        return self.statut == StatutSession.CLOTUREE and not self.ergebnis_gesperrt
+
+    @property
+    def ergebnis_gesperrt(self) -> bool:
+        """Eine Wahl (App `wahlen`) veröffentlicht ihr Ergebnis erst nach zwei Freigaben des
+        Wahlausschusses; bis dahin bleiben Auswertung, Benachrichtigung und Livemeldung zu."""
+        wahl = getattr(self, "wahl", None)
+        return wahl is not None and wahl.ergebnis_freigegeben_am is None
 
 
 class VoteOption(models.Model):

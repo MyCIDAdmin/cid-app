@@ -91,6 +91,11 @@ class Wahl(models.Model):
         related_name="wahl",
     )
     geoeffnet_am = models.DateTimeField(null=True, blank=True)
+    ergebnis_freigegeben_am = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Erst mit zwei Freigaben des Ausschusses wird das Ergebnis veröffentlicht.",
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="wahlen_angelegt"
     )
@@ -359,6 +364,7 @@ class EntscheidungZustimmung(models.Model):
 class FreigabeArt(models.TextChoices):
     OEFFNEN = "oeffnen", "Wahl öffnen"
     SCHLIESSEN = "schliessen", "Wahl schließen"
+    ERGEBNIS = "ergebnis", "Ergebnis veröffentlichen"
 
 
 class WahlFreigabe(models.Model):
@@ -419,5 +425,105 @@ class BekanntmachungFreigabe(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["bekanntmachung", "user"], name="wahlen_bk_freigabe_einmalig"
+            )
+        ]
+
+
+class EinspruchArt(models.TextChoices):
+    WAEHLBARKEIT = "waehlbarkeit", "Einspruch gegen die Wählbarkeit einer zugelassenen Kandidatur"
+    ABLEHNUNG = "ablehnung", "Einspruch gegen die Ablehnung der eigenen Kandidatur"
+    ERGEBNIS = "ergebnis", "Einspruch gegen das Ergebnis"
+
+
+class EinspruchStatus(models.TextChoices):
+    OFFEN = "offen", "Offen"
+    STATTGEGEBEN = "stattgegeben", "Stattgegeben"
+    ABGEWIESEN = "abgewiesen", "Abgewiesen"
+    ZURUECKGEZOGEN = "zurueckgezogen", "Zurückgezogen"
+
+
+class EinspruchEntscheidung(models.TextChoices):
+    STATTGEBEN = "stattgeben", "Stattgeben"
+    ABWEISEN = "abweisen", "Abweisen"
+
+
+class Einspruch(models.Model):
+    """Einspruch eines Mitglieds. Sichtbar nur für die einreichende Person, den Wahlausschuss und
+    das Büro. Der Ausschuss entscheidet binnen fünf Tagen, ebenfalls mit zwei Freigaben."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wahl = models.ForeignKey(Wahl, on_delete=models.CASCADE, related_name="einsprueche")
+    art = models.CharField(max_length=14, choices=EinspruchArt.choices)
+    kandidatur = models.ForeignKey(
+        Kandidatur, null=True, blank=True, on_delete=models.CASCADE, related_name="einsprueche"
+    )
+    einreicher = models.ForeignKey(
+        "membres.Membre", on_delete=models.PROTECT, related_name="wahl_einsprueche"
+    )
+    text = models.TextField(max_length=2000)
+    status = models.CharField(
+        max_length=14, choices=EinspruchStatus.choices, default=EinspruchStatus.OFFEN
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    entscheiden_bis = models.DateTimeField()
+
+    # Vorschlag des Ausschusses (wirksam mit genug Zustimmungen)
+    vorschlag = models.CharField(max_length=12, choices=EinspruchEntscheidung.choices, blank=True)
+    vorschlag_begruendung = models.TextField(blank=True)
+    vorgeschlagen_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    # Endgültige Entscheidung
+    begruendung = models.TextField(blank=True)
+    entschieden_am = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "wahlen_einspruch"
+        ordering = ["-created_at"]
+
+
+class EinspruchZustimmung(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    einspruch = models.ForeignKey(Einspruch, on_delete=models.CASCADE, related_name="zustimmungen")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "wahlen_einspruch_zustimmung"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["einspruch", "user"], name="wahlen_einspruch_zustimmung_einmalig"
+            )
+        ]
+
+
+class Protokoll(models.Model):
+    """Wahlprotokoll: wird mit der Veröffentlichung des Ergebnisses als unveränderlicher Stand
+    festgehalten und von drei Ausschussmitgliedern unterschrieben."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wahl = models.OneToOneField(Wahl, on_delete=models.CASCADE, related_name="protokoll")
+    daten = models.JSONField(default=dict)
+    erzeugt_am = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "wahlen_protokoll"
+
+
+class ProtokollUnterschrift(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    protokoll = models.ForeignKey(
+        Protokoll, on_delete=models.CASCADE, related_name="unterschriften"
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "wahlen_protokoll_unterschrift"
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["protokoll", "user"], name="wahlen_protokoll_unterschrift_einmalig"
             )
         ]

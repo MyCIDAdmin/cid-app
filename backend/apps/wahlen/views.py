@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import mixins, serializers
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -20,6 +20,8 @@ from .models import (
     Aufbewahrung,
     AusschussMitglied,
     Bekanntmachung,
+    Einspruch,
+    EinspruchArt,
     Entscheidung,
     KandidatPerson,
     Kandidatur,
@@ -30,6 +32,8 @@ from .models import (
     WahlStatus,
 )
 from .serializers import (
+    EinspruchEingabe,
+    EinspruchEntscheidungEingabe,
     EntscheidungEingabe,
     FotoSerializer,
     KandidaturSchreibenSerializer,
@@ -37,8 +41,10 @@ from .serializers import (
     PruefpunktEingabe,
     WahlSchreibenSerializer,
     bekanntmachung_dict,
+    einspruch_dict,
     kandidatur_dossier,
     kandidatur_oeffentlich,
+    protokoll_dict,
 )
 
 
@@ -56,7 +62,7 @@ def wahl_dict(wahl: Wahl, user) -> dict:
     )
     freigaben = {}
     if ausschuss or verwaltung:
-        for art in ("oeffnen", "schliessen"):
+        for art in ("oeffnen", "schliessen", "ergebnis"):
             freigaben[art] = [f.user_id for f in wahl.freigaben.filter(art=art)]
     return {
         "id": str(wahl.id),
@@ -85,6 +91,10 @@ def wahl_dict(wahl: Wahl, user) -> dict:
         "aufbewahrung": wahl.aufbewahrung,
         "vote_session": str(session.id) if session else None,
         "vote_status": session.statut if session else None,
+        "ergebnis_freigegeben": wahl.ergebnis_freigegeben_am is not None,
+        "einspruch_ergebnis_bis": services.einspruch_fenster_ende(
+            wahl, EinspruchArt.ERGEBNIS, None
+        ),
         "ist_ausschuss": ausschuss,
         "kann_verwalten": verwaltung,
         "meine_kandidatur": str(eigene.id) if eigene else None,
@@ -202,6 +212,48 @@ class WahlViewSet(
         ergebnis = services.freigabe_geben(wahl, request.user, request.data.get("art", ""))
         wahl.refresh_from_db()
         return Response({**ergebnis, "wahl": wahl_dict(wahl, request.user)})
+
+    @action(detail=True, methods=["get"])
+    def ergebnis(self, request, pk=None):
+        wahl = self.get_object()
+        ausschuss = services.ausschuss_oder_verwaltung(request.user, wahl)
+        session = wahl.vote_session
+        if wahl.ergebnis_freigegeben_am and session:
+            return Response(
+                {
+                    "freigegeben": True,
+                    "freigegeben_am": wahl.ergebnis_freigegeben_am,
+                    **services.ergebnis_auswerten(wahl),
+                }
+            )
+        antwort = {"freigegeben": False, "beendet": bool(session and session.statut == "cloturee")}
+        if ausschuss:
+            antwort["beteiligung"] = services.beteiligung_laufend(wahl)
+        return Response(antwort)
+
+    @action(detail=True, methods=["get"])
+    def protokoll(self, request, pk=None):
+        wahl = self.get_object()
+        daten = protokoll_dict(wahl) if wahl.ergebnis_freigegeben_am else None
+        if daten is None:
+            raise NotFound("Es gibt noch kein Protokoll.")
+        return Response(daten)
+
+    @action(detail=True, methods=["post"], url_path="protokoll/unterschreiben")
+    def protokoll_unterschreiben(self, request, pk=None):
+        wahl = self.get_object()
+        services.protokoll_unterschreiben(wahl, request.user)
+        wahl.refresh_from_db()
+        return Response(protokoll_dict(wahl))
+
+    @action(detail=True, methods=["get"], url_path="protokoll/pdf")
+    def protokoll_pdf(self, request, pk=None):
+        wahl = self.get_object()
+        if not wahl.ergebnis_freigegeben_am or protokoll_dict(wahl) is None:
+            raise NotFound("Es gibt noch kein Protokoll.")
+        antwort = HttpResponse(pdf.protokoll_pdf(wahl), content_type="application/pdf")
+        antwort["Content-Disposition"] = 'inline; filename="wahlprotokoll.pdf"'
+        return antwort
 
     @action(detail=True, methods=["get"])
     def waehlbarkeit(self, request, pk=None):
@@ -547,3 +599,78 @@ class BekanntmachungViewSet(GenericViewSet):
         antwort = HttpResponse(inhalt, content_type="application/pdf")
         antwort["Content-Disposition"] = f'inline; filename="aushang-{bk.schluessel}-{sprache}.pdf"'
         return antwort
+
+
+class EinspruchViewSet(GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = Einspruch.objects.select_related(
+        "wahl", "kandidatur", "einreicher__user"
+    ).prefetch_related("zustimmungen")
+
+    def _objekt(self, pk, user) -> Einspruch:
+        e = get_object_or_404(self.queryset, pk=pk)
+        membre = services.membre_von(user)
+        if services.ausschuss_oder_verwaltung(user, e.wahl) or (
+            membre and e.einreicher_id == membre.id
+        ):
+            return e
+        raise PermissionDenied("Kein Zugriff auf diesen Einspruch.")
+
+    def _antwort(self, e: Einspruch, user, code=200):
+        e = get_object_or_404(self.queryset, pk=e.pk)
+        return Response(einspruch_dict(e, user), status=code)
+
+    def list(self, request):
+        wahl = get_object_or_404(Wahl, pk=request.query_params.get("wahl"))
+        if services.ausschuss_oder_verwaltung(request.user, wahl):
+            liste = self.queryset.filter(wahl=wahl)
+        else:
+            membre = services.membre_von(request.user)
+            liste = self.queryset.filter(wahl=wahl, einreicher=membre) if membre else []
+        return Response([einspruch_dict(e, request.user) for e in liste])
+
+    def retrieve(self, request, pk=None):
+        return Response(einspruch_dict(self._objekt(pk, request.user), request.user))
+
+    def create(self, request):
+        ser = EinspruchEingabe(data=request.data)
+        ser.is_valid(raise_exception=True)
+        daten = ser.validated_data
+        wahl = get_object_or_404(Wahl, pk=daten["wahl"])
+        if wahl.status == WahlStatus.ENTWURF:
+            raise PermissionDenied("Kein Zugriff auf diese Wahl.")
+        kandidatur = (
+            get_object_or_404(Kandidatur, pk=daten["kandidatur"], wahl=wahl)
+            if daten.get("kandidatur")
+            else None
+        )
+        e = services.einspruch_einlegen(request.user, wahl, daten["art"], daten["text"], kandidatur)
+        return self._antwort(e, request.user, 201)
+
+    @action(detail=True, methods=["post"])
+    def zurueckziehen(self, request, pk=None):
+        e = self._objekt(pk, request.user)
+        services.einspruch_zurueckziehen(e, request.user)
+        return self._antwort(e, request.user)
+
+    @action(detail=True, methods=["post"])
+    def entscheidung(self, request, pk=None):
+        e = self._objekt(pk, request.user)
+        ser = EinspruchEntscheidungEingabe(data=request.data)
+        ser.is_valid(raise_exception=True)
+        services.einspruch_vorschlagen(
+            e, request.user, ser.validated_data["art"], ser.validated_data["begruendung"]
+        )
+        return self._antwort(e, request.user)
+
+    @action(detail=True, methods=["post"])
+    def zustimmen(self, request, pk=None):
+        e = self._objekt(pk, request.user)
+        services.einspruch_zustimmen(e, request.user)
+        return self._antwort(e, request.user)
+
+    @action(detail=True, methods=["post"])
+    def verwerfen(self, request, pk=None):
+        e = self._objekt(pk, request.user)
+        services.einspruch_vorschlag_verwerfen(e, request.user)
+        return self._antwort(e, request.user)
