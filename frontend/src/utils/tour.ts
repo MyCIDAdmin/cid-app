@@ -211,6 +211,7 @@ export const SEITEN: ReadonlyArray<readonly [string, string, boolean]> = [
   ["/reisen", "reisen", true],
   ["/forum", "forum", false],
   ["/chats", "chats", false],
+  ["/wahlen", "wahlen", true],
   ["/votes", "abstimmungen", false],
   ["/stats", "statistik", false],
   ["/live", "live", false],

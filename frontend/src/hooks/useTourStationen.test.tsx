@@ -66,7 +66,7 @@ describe("useTourStationen : Gruppen-Rundgänge", () => {
     const { result } = renderHook(() => useTourStationen(), { wrapper });
     const g = result.current.gruppen;
     expect(g.g_communaute?.map((s) => s.id)).toEqual(["fil", "chats", "live"]);
-    expect(g.g_contenu?.map((s) => s.id)).toEqual(["albums", "abstimmungen"]);
+    expect(g.g_contenu?.map((s) => s.id)).toEqual(["albums", "abstimmungen", "wahlen"]);
     expect(Object.keys(g).some((k) => k.startsWith("u_"))).toBe(false);
   });
 

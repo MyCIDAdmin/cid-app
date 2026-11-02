@@ -181,6 +181,10 @@
       "titel": "Live-Abstimmungen und Wahlen",
       "text": "Das Büro erstellt Sitzungen, die Wahlberechtigten stimmen ab. Das offizielle Ergebnis siehst du, sobald die Sitzung geschlossen ist."
     },
+    "wahlen": {
+      "titel": "Wahlen des Vereins",
+      "text": "Hier siehst du die Phasen jeder Wahl, kannst kandidieren oder eine Kandidatur unterstützen. Der Wahlausschuss prüft die Dossiers und schreibt die Bekanntmachungen."
+    },
     "a_quiz": {
       "titel": "Quizfragen pflegen",
       "text": "Lege Fragen für die Gemeinschaft an und bearbeite sie."

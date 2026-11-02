@@ -64,6 +64,7 @@ import {
   IconClockDollar,
   IconFileCheck,
   IconFolderCog,
+  IconUserCheck,
   IconGavel,
   IconHelpCircle,
   IconIdBadge,
@@ -337,6 +338,7 @@ export const NAV_ITEMS: NavItem[] = [
     module: "quiz",
   },
   { to: "/votes", labelKey: "nav.votes", icon: IconGavel, group: "contenu", module: "vote" },
+  { to: "/wahlen", labelKey: "nav.wahlen", icon: IconUserCheck, group: "contenu", module: "vote" },
   // Gestion des quiz (mockup #pg-quiz) — Bureau Admin+ seulement, même niveau que
   // GestionQuizPermission côté API.
   // Phase D (ajoutée le 2026-09-23) : ces 13 items sont désormais pilotés par la matrice

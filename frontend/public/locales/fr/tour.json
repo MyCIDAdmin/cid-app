@@ -181,6 +181,10 @@
       "titel": "Votes en direct et élections",
       "text": "Le bureau crée des sessions et les personnes ayant le droit de vote votent. Tu vois le résultat officiel dès que la session est clôturée."
     },
+    "wahlen": {
+      "titel": "Élections de l'association",
+      "text": "Tu vois ici les phases de chaque élection, tu peux te porter candidat ou soutenir une candidature. La commission électorale examine les dossiers et rédige les annonces."
+    },
     "a_quiz": {
       "titel": "Gérer les questions de quiz",
       "text": "Crée des questions pour la communauté et modifie-les."

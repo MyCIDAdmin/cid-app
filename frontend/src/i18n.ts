@@ -34,6 +34,7 @@ i18n
       "stats",
       "notifications",
       "vote",
+      "wahlen",
       "communaute",
       "projets",
       "public",

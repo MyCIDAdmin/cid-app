@@ -1,0 +1,280 @@
+{
+  "titel": "Élections",
+  "intro": "Ici se déroulent les élections de l'association : de l'annonce au résultat, en passant par les candidatures et la vérification des dossiers.",
+  "zu_abstimmungen": "Vers les votes",
+  "neu": "Créer une élection",
+  "laden": "Chargement…",
+  "fehler_laden": "Impossible de charger les élections.",
+  "leer": "Aucune élection pour le moment.",
+  "aktuelle_phase": "Phase",
+  "phasen_titel": "Phases de l'élection",
+  "zur_stimmabgabe": "Voter",
+  "zum_ergebnis": "Voir le résultat",
+  "status": {
+    "entwurf": "Brouillon",
+    "aktiv": "Active",
+    "abgeschlossen": "Terminée"
+  },
+  "form": {
+    "liste": "Liste (plusieurs fonctions)",
+    "person": "Candidature individuelle, une fonction",
+    "mehrfach": "Candidatures individuelles, plusieurs postes",
+    "ja_nein": "Motion oui/non",
+    "rang": "Classement"
+  },
+  "mehrheit": {
+    "relativ": "Majorité relative",
+    "absolut": "Majorité absolue (plus de 50 %)",
+    "zwei_drittel": "Deux tiers"
+  },
+  "phase": {
+    "ankuendigung": "Annonce",
+    "kandidatur": "Candidature",
+    "pruefung": "Vérification",
+    "kampagne": "Campagne",
+    "wahl": "Vote",
+    "ergebnis": "Résultat",
+    "uebergabe": "Passation"
+  },
+  "termine": {
+    "ankuendigung_am": "Annonce",
+    "kandidatur_von": "Candidatures à partir du",
+    "kandidatur_bis": "Candidatures jusqu'au",
+    "pruefung_bis": "Vérification jusqu'au",
+    "kampagne_bis": "Campagne jusqu'au",
+    "wahl_von": "Vote à partir du",
+    "wahl_bis": "Vote jusqu'au",
+    "einspruch_bis": "Recours jusqu'au",
+    "uebergabe_bis": "Passation jusqu'au"
+  },
+  "tab": {
+    "ueberblick": "Aperçu",
+    "kandidatur": "Ma candidature",
+    "kandidaten": "Candidatures",
+    "pruefung": "Vérification",
+    "bekanntmachungen": "Annonces",
+    "ausschuss": "Commission électorale"
+  },
+  "anlegen": {
+    "titel": "Nouvelle élection",
+    "name": "Nom de l'élection",
+    "beschreibung": "Description (facultatif)",
+    "form": "Type d'élection",
+    "mehrheit": "Majorité requise",
+    "listen_groesse": "Fonctions par liste (1 à 7)",
+    "posten": "Postes à pourvoir",
+    "zeitplan": "Calendrier",
+    "speichern": "Créer l'élection",
+    "fehler": "Impossible de créer l'élection."
+  },
+  "auswahl": {
+    "suchen": "Rechercher un nom…",
+    "keine_treffer": "Aucun résultat."
+  },
+  "amt": {
+    "pres": "Président·e",
+    "vp": "Vice-président·e",
+    "fin": "Trésorier·ère",
+    "more": "Autre membre",
+    "cand": "Candidat·e"
+  },
+  "sprache": {
+    "de": "Allemand",
+    "fr": "Français",
+    "ar": "Arabe"
+  },
+  "waehlbarkeit": {
+    "aktiv": "Actif, cotisation payée",
+    "dauer": "{{jahre}} sur {{noetig}} ans d'adhésion",
+    "ausschuss": "Pas dans la commission électorale"
+  },
+  "nachweis": {
+    "abschluss": "Diplôme universitaire",
+    "b2": "Allemand B2",
+    "ehrenerklaerung": "Déclaration sur l'honneur (moralité)",
+    "verwandtschaft": "Déclaration : aucun lien de parenté dans la liste"
+  },
+  "kandidatur_status": {
+    "entwurf": "Brouillon",
+    "eingereicht": "Déposée",
+    "rueckfrage": "Demande de précisions",
+    "zugelassen": "Admise",
+    "abgelehnt": "Refusée",
+    "zurueckgezogen": "Retirée"
+  },
+  "fehlend": {
+    "name": "Nom",
+    "personen": "Personnes",
+    "foto": "Photo",
+    "rechte_foto": "Droit à l'image",
+    "programm": "Présentation et programme",
+    "unterstuetzungen": "Soutiens",
+    "abschluss": "Diplôme universitaire",
+    "ehrenerklaerung": "Déclaration sur l'honneur",
+    "b2": "Allemand B2",
+    "verwandtschaft": "Déclaration de non-parenté",
+    "wortlaut": "Texte de la motion",
+    "bestaetigungen": "Confirmations"
+  },
+  "kandidatur": {
+    "start_hinweis": "Le délai de candidature est ouvert. Tu peux créer ta candidature et la remplir à ton rythme.",
+    "nicht_moeglich": "Tu n'as pas de candidature ici. On ne peut en créer une que pendant le délai de candidature.",
+    "starten": "Créer ma candidature",
+    "fehler": "Cela n'a pas fonctionné.",
+    "upload_fehler": "Le fichier n'a pas pu être envoyé (PDF, JPG ou PNG, 5 Mo maximum).",
+    "rueckfrage": "Demande de la commission électorale. Merci de compléter avant le {{frist}}.",
+    "abgelehnt": "Refusée selon {{artikel}}. Un recours est possible dans les 5 jours.",
+    "eingereicht": "Déposée le {{datum}}. La commission électorale examine le dossier.",
+    "zugelassen": "Ta candidature est admise.",
+    "listenname": "Nom de la liste",
+    "antragstitel": "Titre de la motion",
+    "personen": "Personnes de la liste",
+    "person": "Candidat·e",
+    "amt": "Fonction",
+    "entfernen": "Retirer",
+    "foto": "Photo",
+    "hochgeladen": "Envoyé",
+    "fehlt": "Manquant",
+    "person_hinzu": "Ajouter une personne ({{n}} sur {{max}})",
+    "person_suchen": "Rechercher une personne",
+    "erst_speichern": "Les nouvelles personnes apparaissent avec photo et justificatifs après l'enregistrement.",
+    "noch_nicht_gespeichert": "pas encore enregistré",
+    "praesident_fehlt": "Une personne de la liste doit être président·e.",
+    "leitsatz": "Slogan (80 caractères maximum)",
+    "vorstellung": "Présentation",
+    "wortlaut": "Texte de la motion",
+    "programm": "Programme en trois points",
+    "programm_punkt": "Point {{n}} du programme",
+    "sprache": "Langue du texte",
+    "rechte_foto": "Je détiens les droits sur les photos et j'autorise leur publication.",
+    "best_wahlordnung": "J'ai lu le règlement électoral.",
+    "best_fairness": "Je m'engage à mener une campagne loyale.",
+    "best_datenschutz": "J'accepte le traitement des données pour l'élection.",
+    "unterstuetzung": "Soutiens : {{n}} sur {{noetig}}",
+    "link_hinweis": "Envoie ce lien aux membres qui te soutiennent. Chaque membre ne peut soutenir qu'une candidature par élection.",
+    "link": "Lien pour soutenir",
+    "noch_offen": "Reste à faire ({{n}}) :",
+    "speichern": "Enregistrer",
+    "einreichen": "Déposer",
+    "zurueckziehen": "Retirer la candidature"
+  },
+  "unterstuetzen": {
+    "titel": "Soutenir une candidature",
+    "text": "On t'a demandé de soutenir une candidature. Tu ne peux soutenir qu'une seule candidature par élection.",
+    "button": "Je soutiens cette candidature",
+    "danke": "Merci, ton soutien est enregistré.",
+    "fehler": "Le soutien n'est pas possible."
+  },
+  "kandidaten": {
+    "noch_nicht": "Les candidatures admises apparaissent ici à partir de la campagne.",
+    "leer": "Aucune candidature admise."
+  },
+  "pruefung": {
+    "einleitung": "La commission électorale examine chaque dossier. Une décision exige {{n}} approbations de membres différents.",
+    "leer": "Aucune candidature reçue pour l'instant.",
+    "fehler": "Cela n'a pas fonctionné.",
+    "eingereicht_von": "Déposée par {{name}} le {{datum}}",
+    "nachweise": "Justificatifs (confidentiels)",
+    "pruefpunkte": "Points de contrôle",
+    "automatisch": "Vérifié automatiquement",
+    "ergebnis": {
+      "ok": "Conforme",
+      "nein": "Non conforme",
+      "offen": "En attente"
+    },
+    "vorschlag": "Proposition : {{art}}",
+    "zustimmungen": "Approbations : {{n}} sur {{noetig}}",
+    "zustimmen": "Approuver",
+    "verwerfen": "Rejeter",
+    "entscheiden": "Proposer une décision",
+    "begruendung": "Motif",
+    "artikel": "Article du règlement électoral",
+    "vorschlagen": "Soumettre la proposition"
+  },
+  "pruefpunkt": {
+    "liste_vollstaendig": "Liste complète",
+    "mitgliedschaft": "Adhésion active, cotisation payée",
+    "mitgliedsdauer": "Ancienneté suffisante",
+    "kein_ausschuss": "Pas dans la commission électorale",
+    "unterstuetzungen": "Assez de soutiens",
+    "abschluss": "Diplôme universitaire",
+    "deutsch_b2": "Allemand B2 (président·e)",
+    "ehrenerklaerung": "Déclaration sur l'honneur",
+    "foto": "Photo conforme",
+    "programm": "Programme conforme",
+    "antragsteller_aktiv": "Auteur·e de la motion actif·ve",
+    "wortlaut": "Texte sans ambiguïté",
+    "zustaendigkeit": "Compétence de l'assemblée",
+    "sprachen": "Versions linguistiques"
+  },
+  "entscheidung": {
+    "zulassen": "Admettre",
+    "rueckfrage": "Demande de précisions (72 heures)",
+    "ablehnen": "Refuser"
+  },
+  "ausschuss": {
+    "mitglieder": "Membres de la commission électorale ({{n}})",
+    "noch_keine": "Aucun membre pour l'instant.",
+    "hinzufuegen": "Ajouter un membre",
+    "entfernen": "Retirer",
+    "veroeffentlichen": "Publier l'élection",
+    "mindestens_drei": "La commission compte au moins trois et au plus cinq membres. Une personne candidate ne peut pas en faire partie.",
+    "aufbewahrung": "Conservation des justificatifs",
+    "aufbewahrung_hinweis": "Passé ce délai, les justificatifs et déclarations sont supprimés. Il court à partir de la fin des délais de recours.",
+    "abstimmung": "Vote",
+    "freigabe_oeffnen": "Ouvrir l'élection",
+    "freigabe_schliessen": "Clore l'élection",
+    "freigeben_oeffnen": "Approuver l'ouverture",
+    "freigeben_schliessen": "Approuver la clôture",
+    "freigaben_stand": "Approbations : {{n}} sur {{noetig}}",
+    "du_hast_freigegeben": "Tu as approuvé.",
+    "zur_abstimmung": "Vers le vote",
+    "fehler": "Cela n'a pas fonctionné."
+  },
+  "aufbewahrung": {
+    "30": "30 jours",
+    "90": "90 jours",
+    "365": "1 an",
+    "manuell": "Suppression manuelle uniquement"
+  },
+  "bekanntmachung_art": {
+    "ankuendigung": "Annonce",
+    "aufruf": "Appel à candidatures",
+    "zugelassen": "Candidatures admises",
+    "wahlbeginn": "Début du vote",
+    "ergebnis": "Résultat"
+  },
+  "bekanntmachung_status": {
+    "entwurf": "Brouillon",
+    "wartet": "En attente d'approbation",
+    "freigegeben": "Approuvée",
+    "gesendet": "Envoyée"
+  },
+  "kanal": {
+    "mail": "E-mail",
+    "app": "Application",
+    "print": "Affichage (PDF)"
+  },
+  "bekanntmachung": {
+    "einleitung": "La commission électorale rédige elle-même les annonces. L'allemand fait foi ; le français et l'arabe sont traduits automatiquement et doivent être relus avant l'approbation.",
+    "liste": "Annonces",
+    "betreff": "Objet",
+    "text": "Texte de l'annonce",
+    "fehler": "Cela n'a pas fonctionné.",
+    "maschinell": "Traduit automatiquement, sans valeur officielle. Merci de relire.",
+    "veraltet": "Le texte allemand a été modifié depuis – traduire à nouveau.",
+    "platzhalter": "Variables : {Wahl}, {Datum} et {Frist} sont remplacées à l'envoi. Logo, expéditeur, adresse et lien de désabonnement sont ajoutés par le système.",
+    "speichern": "Enregistrer",
+    "muster": "Insérer le texte type",
+    "uebersetzen": "Traduire avec DeepL",
+    "geprueft": "Traduction relue",
+    "kanaele": "Canaux",
+    "versand": "Envoi : {{datum}}",
+    "vorschau": "Aperçu",
+    "fusszeile": "Pied de page : expéditeur, adresse de l'association et lien de désabonnement sont ajoutés automatiquement.",
+    "vorlegen": "Soumettre à l'approbation",
+    "freigeben": "Approuver",
+    "zurueck": "Retour au brouillon",
+    "aushang": "Affiche en PDF"
+  }
+}

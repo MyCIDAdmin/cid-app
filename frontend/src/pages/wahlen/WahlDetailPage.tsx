@@ -1,0 +1,145 @@
+/**
+ * Eine Wahl : Überblick mit Phasen und Terminen, dazu je nach Rolle die Reiter Kandidatur,
+ * Kandidat*innen, Prüfverfahren, Wahlausschuss und Bekanntmachungen.
+ */
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+
+import AusschussTab from "../../components/wahlen/AusschussTab";
+import BekanntmachungenTab from "../../components/wahlen/BekanntmachungenTab";
+import KandidatenTab from "../../components/wahlen/KandidatenTab";
+import KandidaturTab from "../../components/wahlen/KandidaturTab";
+import PhasenLeiste from "../../components/wahlen/PhasenLeiste";
+import PruefverfahrenTab from "../../components/wahlen/PruefverfahrenTab";
+import UnterstuetzenKarte from "../../components/wahlen/UnterstuetzenKarte";
+import TabLeiste from "../../components/ui/TabLeiste";
+import { useWahl } from "../../hooks/useWahlen";
+import type { Wahl } from "../../types/wahlen";
+import { datum } from "../../utils/wahlen";
+
+const TERMIN_REIHE = [
+  "ankuendigung_am",
+  "kandidatur_von",
+  "kandidatur_bis",
+  "pruefung_bis",
+  "kampagne_bis",
+  "wahl_von",
+  "wahl_bis",
+  "einspruch_bis",
+  "uebergabe_bis",
+] as const;
+
+function Ueberblick({ wahl }: { wahl: Wahl }) {
+  const { t } = useTranslation("wahlen");
+  return (
+    <div className="space-y-4">
+      {wahl.beschreibung && <p className="text-sm text-text-secondary">{wahl.beschreibung}</p>}
+      <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+        <div className="flex justify-between gap-2">
+          <dt className="text-text-secondary">{t("anlegen.form")}</dt>
+          <dd>{t(`form.${wahl.form}`)}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt className="text-text-secondary">{t("anlegen.mehrheit")}</dt>
+          <dd>{t(`mehrheit.${wahl.mehrheit}`)}</dd>
+        </div>
+        {wahl.form === "liste" && (
+          <div className="flex justify-between gap-2">
+            <dt className="text-text-secondary">{t("anlegen.listen_groesse")}</dt>
+            <dd>{wahl.listen_groesse}</dd>
+          </div>
+        )}
+        {TERMIN_REIHE.map((feld) => (
+          <div key={feld} className="flex justify-between gap-2">
+            <dt className="text-text-secondary">{t(`termine.${feld}`)}</dt>
+            <dd>{datum(wahl.termine[feld], feld === "wahl_von" || feld === "wahl_bis")}</dd>
+          </div>
+        ))}
+      </dl>
+      <section>
+        <h3 className="text-sm font-semibold">
+          {t("ausschuss.mitglieder", { n: wahl.ausschuss.length })}
+        </h3>
+        <p className="text-sm text-text-secondary">
+          {wahl.ausschuss.map((a) => a.name).join(", ") || t("ausschuss.noch_keine")}
+        </p>
+      </section>
+      {wahl.vote_session && (
+        <Link
+          to="/votes"
+          className="inline-block rounded-cid bg-ca px-4 py-2 text-sm font-semibold text-white"
+        >
+          {wahl.vote_status === "ouverte" ? t("zur_stimmabgabe") : t("zum_ergebnis")}
+        </Link>
+      )}
+    </div>
+  );
+}
+
+export default function WahlDetailPage() {
+  const { t } = useTranslation("wahlen");
+  const { id } = useParams<{ id: string }>();
+  const [params] = useSearchParams();
+  const wahl = useWahl(id);
+  const [tab, setTab] = useState("ueberblick");
+  const stuetzeKandidatur = params.get("unterstuetzen");
+
+  const tabs = useMemo(() => {
+    const w = wahl.data;
+    if (!w) return [];
+    const intern = w.ist_ausschuss || w.kann_verwalten;
+    const liste = [{ id: "ueberblick", label: t("tab.ueberblick") }];
+    if (w.meine_kandidatur || (w.status === "aktiv" && w.phase === 1 && !w.ist_ausschuss)) {
+      liste.push({ id: "kandidatur", label: t("tab.kandidatur") });
+    }
+    if (w.phase >= 3) liste.push({ id: "kandidaten", label: t("tab.kandidaten") });
+    if (intern) {
+      liste.push({ id: "pruefung", label: t("tab.pruefung") });
+      liste.push({ id: "bekanntmachungen", label: t("tab.bekanntmachungen") });
+      liste.push({ id: "ausschuss", label: t("tab.ausschuss") });
+    }
+    return liste;
+  }, [wahl.data, t]);
+
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((x) => x.id === tab)) setTab("ueberblick");
+  }, [tabs, tab]);
+
+  if (wahl.isLoading) return <p className="p-4 text-sm text-text-tertiary">{t("laden")}</p>;
+  if (wahl.isError || !wahl.data) {
+    return (
+      <p role="alert" className="p-4 text-sm text-status-dangerText">
+        {t("fehler_laden")}
+      </p>
+    );
+  }
+  const w = wahl.data;
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-4 p-4">
+      <Link to="/wahlen" className="text-xs text-ca underline">
+        ← {t("titel")}
+      </Link>
+      <header className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-bold text-text-primary">{w.titel}</h1>
+          <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-xs">
+            {t(`status.${w.status}`)}
+          </span>
+        </div>
+        <PhasenLeiste phase={w.phase} />
+      </header>
+
+      {stuetzeKandidatur && <UnterstuetzenKarte kandidaturId={stuetzeKandidatur} />}
+
+      <TabLeiste tabs={tabs} aktiv={tab} onChange={setTab} ariaLabel={t("titel")} />
+      {tab === "ueberblick" && <Ueberblick wahl={w} />}
+      {tab === "kandidatur" && <KandidaturTab wahl={w} />}
+      {tab === "kandidaten" && <KandidatenTab wahl={w} />}
+      {tab === "pruefung" && <PruefverfahrenTab wahl={w} />}
+      {tab === "bekanntmachungen" && <BekanntmachungenTab wahl={w} />}
+      {tab === "ausschuss" && <AusschussTab wahl={w} />}
+    </div>
+  );
+}

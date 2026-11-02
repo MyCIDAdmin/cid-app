@@ -4720,5 +4720,15 @@
         }
       ]
     }
+  },
+  "wahlen": {
+    "titre": "Élections",
+    "intro": "Ici se déroulent les élections de l'association. Le bureau crée une élection et désigne la commission électorale. Les membres peuvent se porter candidats ou soutenir des candidatures ; la commission examine les dossiers et rédige les annonces.",
+    "schritte": [
+      "Dans l'onglet « Aperçu », tu vois les phases et les dates de l'élection.",
+      "Pendant le délai de candidature, tu crées ta candidature sous « Ma candidature », envoies photo et justificatifs, rassembles des soutiens et dépose le dossier.",
+      "La commission électorale examine les dossiers dans l'onglet « Vérification ». Chaque décision exige deux approbations.",
+      "À partir de la campagne, les candidatures admises sont sous « Candidatures ». Le vote a lieu sous « Votes & Élections »."
+    ]
   }
 }

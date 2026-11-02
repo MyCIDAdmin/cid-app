@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/v1/stats/", include("apps.stats.urls")),
     path("api/v1/finances/", include("apps.finances.urls")),
     path("api/v1/votes/", include("apps.vote.urls")),
+    path("api/v1/wahlen/", include("apps.wahlen.urls")),
     path("api/v1/communaute/", include("apps.communaute.urls")),
     path("api/v1/projets/", include("apps.projets.urls")),
     path("api/v1/umfragen/", include("apps.umfragen.urls")),

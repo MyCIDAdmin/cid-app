@@ -56,6 +56,7 @@ LOCAL_APPS = [
     "apps.reisen",
     "apps.boutique",
     "apps.vote",
+    "apps.wahlen",
     "apps.communaute",
     "apps.stats",
     "apps.finances",
@@ -410,6 +411,10 @@ PUSH_ERLAUBTE_HOSTS = (
 # ist die Übersetzung inaktiv und die Oberfläche zeigt die Originaltexte. Schlüssel mit der
 # Endung ":fx" = kostenlose API, sonst Pro-API.
 DEEPL_API_KEY = os.environ.get("DEEPL_API_KEY", "")
+
+# Anschrift des Vereins (Fußzeile von Bekanntmachungen und Aushang), z. B. "Musterstraße 1 · 12345
+# Musterstadt". Nur über die Umgebung gesetzt, nie im Code.
+VEREIN_ANSCHRIFT = os.environ.get("VEREIN_ANSCHRIFT", "")
 # GIFs im Chat (GIPHY über unseren Server) — ohne Schlüssel bleibt die GIF-Auswahl ausgeblendet.
 GIPHY_API_KEY = os.environ.get("GIPHY_API_KEY", "")
 
