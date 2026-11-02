@@ -327,7 +327,8 @@
   "bons_achat_admin": {
     "col_code": "Code",
     "col_solde": "Guthaben",
-    "aucun_bon": "Kein Gutschein für diesen Filter."
+    "aucun_bon": "Kein Gutschein für diesen Filter.",
+    "erklaerung": "Hier siehst du alle Gutscheine, die Mitglieder im Shop gekauft haben, und wie viel Guthaben noch offen ist. Du musst hier nichts bestätigen: Ein Gutschein entsteht automatisch, sobald die Bestellung bezahlt ist."
   },
   "reservierung": {
     "info_frist": "Reservierung bis {{datum}}",
@@ -384,7 +385,7 @@
     "col_datum": "Datum",
     "col_aktionen": "Aktionen",
     "abholen": "Abgeholt / erledigt",
-    "stornieren": "Stornieren",
+    "stornieren": "Freigeben",
     "summe": "Summe: {{anzahl}} Stück",
     "leer": "Keine Reservierungen gefunden.",
     "fehler": "Die Aktion ist fehlgeschlagen.",
@@ -392,6 +393,32 @@
       "aktiv": "Reserviert",
       "abgeholt": "Abgeholt",
       "storniert": "Storniert"
+    },
+    "hilfe": "Hier siehst du je Artikel, wer was reserviert hat. „Abgeholt“ heißt: Die Ware ist übergeben. „Freigeben“ macht die Menge wieder frei; es wird nichts gelöscht.",
+    "frist_bis": "Frist bis {{datum}}",
+    "frist_vorbei": "Frist vorbei",
+    "offen_nach_frist": "Die Frist ist vorbei, {{count}} Stück sind noch nicht abgeholt. Prüfe, ob sie abgeholt wurden oder wieder frei werden sollen.",
+    "fortschritt_label": "Vergebene Menge",
+    "fortschritt": "{{vergeben}} von {{max}} Stück vergeben",
+    "auswaehlen": "{{name}} auswählen",
+    "alle_auswaehlen": "Alle offenen Reservierungen dieses Artikels auswählen",
+    "ausgewaehlt": "{{count}} ausgewählt",
+    "bulk_abholen": "Als abgeholt markieren",
+    "bulk_freigeben": "Freigeben",
+    "auswahl_aufheben": "Auswahl aufheben",
+    "blatt": {
+      "anzahl_one": "1 Reservierung",
+      "anzahl_other": "{{count}} Reservierungen",
+      "abholen": {
+        "titel": "Als abgeholt markieren",
+        "knopf": "Als abgeholt markieren",
+        "folge": "Die Ware gilt als übergeben. Die Reservierung bleibt als „Abgeholt“ sichtbar."
+      },
+      "stornieren": {
+        "titel": "Reservierung freigeben",
+        "knopf": "Freigeben",
+        "folge": "Die Menge wird wieder frei und kann von anderen reserviert werden. Die Reservierung bleibt als „Storniert“ sichtbar, nichts wird gelöscht."
+      }
     }
   },
   "panier": {

@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useBonsAchat } from "../../hooks/useBoutique";
 import type { StatutBonAchat } from "../../types/boutique";
 import { lokaleSprache } from "../../utils/datum";
+import { EinfachSchalter, Fachwort, HilfeHinweis } from "../ui/Erklaerung";
 
 const TOUS_STATUTS: StatutBonAchat[] = ["actif", "epuise"];
 
@@ -42,7 +43,14 @@ export default function GestionBonsAchatTab() {
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-2">
+      <p className="mb-2 text-sm text-text-secondary">{t("bons_achat_admin.erklaerung")}</p>
+      <div className="mb-2">
+        <EinfachSchalter ns="boutique" />
+      </div>
+      <HilfeHinweis ns="boutique">
+        <Fachwort ns="boutique" begriff="gutschein" />
+      </HilfeHinweis>
+      <div className="mb-3 mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setFiltreStatut("")}

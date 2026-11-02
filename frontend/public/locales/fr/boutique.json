@@ -327,7 +327,8 @@
   "bons_achat_admin": {
     "col_code": "Code",
     "col_solde": "Solde",
-    "aucun_bon": "Aucun bon d'achat pour ce filtre."
+    "aucun_bon": "Aucun bon d'achat pour ce filtre.",
+    "erklaerung": "Ici tu vois tous les bons d'achat achetés par des membres dans la boutique et le solde encore ouvert. Tu n'as rien à confirmer : un bon d'achat est créé automatiquement dès que la commande est payée."
   },
   "reservierung": {
     "info_frist": "Réservation jusqu’au {{datum}}",
@@ -384,7 +385,7 @@
     "col_datum": "Date",
     "col_aktionen": "Actions",
     "abholen": "Retiré / terminé",
-    "stornieren": "Annuler",
+    "stornieren": "Libérer",
     "summe": "Total : {{anzahl}} pièce(s)",
     "leer": "Aucune réservation trouvée.",
     "fehler": "L’action a échoué.",
@@ -392,6 +393,32 @@
       "aktiv": "Réservé",
       "abgeholt": "Retiré",
       "storniert": "Annulé"
+    },
+    "hilfe": "Ici tu vois, article par article, qui a réservé quoi. « Retiré » signifie : la marchandise a été remise. « Libérer » rend la quantité de nouveau disponible ; rien n'est supprimé.",
+    "frist_bis": "Délai jusqu'au {{datum}}",
+    "frist_vorbei": "Délai dépassé",
+    "offen_nach_frist": "Le délai est écoulé, {{count}} pièces n'ont pas encore été retirées. Vérifie si elles ont été retirées ou doivent être libérées.",
+    "fortschritt_label": "Quantité attribuée",
+    "fortschritt": "{{vergeben}} sur {{max}} pièces attribuées",
+    "auswaehlen": "Sélectionner {{name}}",
+    "alle_auswaehlen": "Sélectionner toutes les réservations ouvertes de cet article",
+    "ausgewaehlt": "{{count}} sélectionnée(s)",
+    "bulk_abholen": "Marquer comme retiré",
+    "bulk_freigeben": "Libérer",
+    "auswahl_aufheben": "Annuler la sélection",
+    "blatt": {
+      "anzahl_one": "1 réservation",
+      "anzahl_other": "{{count}} réservations",
+      "abholen": {
+        "titel": "Marquer comme retiré",
+        "knopf": "Marquer comme retiré",
+        "folge": "La marchandise est considérée comme remise. La réservation reste visible comme « Retiré »."
+      },
+      "stornieren": {
+        "titel": "Libérer la réservation",
+        "knopf": "Libérer",
+        "folge": "La quantité redevient disponible pour d'autres. La réservation reste visible comme « Annulé », rien n'est supprimé."
+      }
     }
   },
   "panier": {

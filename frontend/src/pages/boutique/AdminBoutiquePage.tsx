@@ -135,7 +135,13 @@ export default function AdminBoutiquePage() {
         />
       )}
       {onglet === "bons_achat" && <GestionBonsAchatTab />}
-      {onglet === "reservierungen" && <GestionReservierungenTab modifiable={modifiable} />}
+      {onglet === "reservierungen" && (
+        <GestionReservierungenTab
+          key={tabKey("res")}
+          modifiable={modifiable}
+          startProdukt={ziel?.tab === "reservierungen" ? (ziel.produit ?? "") : ""}
+        />
+      )}
     </div>
   );
 }
