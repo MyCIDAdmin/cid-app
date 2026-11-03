@@ -16,7 +16,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from apps.membres.models import Membre
 
-from . import mitteilungen, pdf, services, wahlgaenge
+from . import mitteilungen, pdf, services, wahlgaenge, wahltermine
 from .models import (
     AmtPerson,
     Aufbewahrung,
@@ -34,6 +34,7 @@ from .models import (
     Reglement,
     Wahl,
     WahlStatus,
+    WahlTermin,
 )
 from .serializers import (
     EinspruchEingabe,
@@ -235,6 +236,7 @@ class WahlViewSet(
             )
         wahl.status = WahlStatus.AKTIV
         wahl.save(update_fields=["status"])
+        wahltermine.wahl_veroeffentlicht(wahl)
         return Response(wahl_dict(wahl, request.user))
 
     @action(detail=True, methods=["post"], url_path="ausschuss")
@@ -889,3 +891,48 @@ class MitteilungViewSet(GenericViewSet):
             raise PermissionDenied("Nur Wahlausschuss und Büro.")
         m = mitteilungen.kanaele_setzen(m, request.data.get("kanaele"))
         return Response({"id": str(m.id), "kanaele": m.kanaele, "status": m.status})
+
+
+class WahlTerminViewSet(GenericViewSet):
+    """Live-Termine zur Wahl: Ausschuss und Büro pflegen sie, Mitglieder lassen sich erinnern."""
+
+    permission_classes = [IsAuthenticated]
+    queryset = WahlTermin.objects.select_related("wahl", "termin")
+    parser_classes = [JSONParser]
+
+    def _wahl_lesen(self, wahl: Wahl, user) -> None:
+        if wahl.status == WahlStatus.ENTWURF and not services.ausschuss_oder_verwaltung(user, wahl):
+            raise PermissionDenied("Kein Zugriff auf diese Wahl.")
+
+    def _objekt(self, pk, user) -> WahlTermin:
+        wt = get_object_or_404(self.queryset, pk=pk)
+        self._wahl_lesen(wt.wahl, user)
+        return wt
+
+    def list(self, request):
+        wahl = get_object_or_404(Wahl, pk=request.query_params.get("wahl"))
+        self._wahl_lesen(wahl, request.user)
+        return Response(
+            [wahltermine.termin_dict(wt, request.user) for wt in wahl.live_termine.all()]
+        )
+
+    def create(self, request):
+        wahl = get_object_or_404(Wahl, pk=request.data.get("wahl"))
+        wt = wahltermine.anlegen(request.user, wahl, request.data)
+        return Response(wahltermine.termin_dict(wt, request.user), status=201)
+
+    def partial_update(self, request, pk=None):
+        wt = self._objekt(pk, request.user)
+        wt = wahltermine.aendern(request.user, wt, request.data)
+        return Response(wahltermine.termin_dict(wt, request.user))
+
+    def destroy(self, request, pk=None):
+        wt = self._objekt(pk, request.user)
+        wahltermine.loeschen(request.user, wt)
+        return Response(status=204)
+
+    @action(detail=True, methods=["post"])
+    def erinnern(self, request, pk=None):
+        wt = self._objekt(pk, request.user)
+        wahltermine.erinnern(request.user, wt, bool(request.data.get("an", True)))
+        return Response(wahltermine.termin_dict(wt, request.user))
