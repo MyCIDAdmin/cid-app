@@ -26,6 +26,8 @@ import type {
   MitteilungsZeile,
   ProbeSzenario,
   Probewahl,
+  LiveTermin,
+  LiveTerminPayload,
 } from "../types/wahlen";
 import { apiClient } from "./client";
 
@@ -430,5 +432,32 @@ export async function reglementGeprueft(
 
 export async function reglementGelesen(id: string): Promise<Reglement> {
   const { data } = await apiClient.post<Reglement>(`${BASIS}/reglemente/${id}/gelesen/`);
+  return data;
+}
+
+export async function listTermine(wahl: string): Promise<LiveTermin[]> {
+  const { data } = await apiClient.get<LiveTermin[]>(`${BASIS}/termine/`, { params: { wahl } });
+  return data;
+}
+
+export async function terminAnlegen(wahl: string, payload: LiveTerminPayload): Promise<LiveTermin> {
+  const { data } = await apiClient.post<LiveTermin>(`${BASIS}/termine/`, { wahl, ...payload });
+  return data;
+}
+
+export async function terminAendern(
+  id: string,
+  payload: Partial<LiveTerminPayload>,
+): Promise<LiveTermin> {
+  const { data } = await apiClient.patch<LiveTermin>(`${BASIS}/termine/${id}/`, payload);
+  return data;
+}
+
+export async function terminLoeschen(id: string): Promise<void> {
+  await apiClient.delete(`${BASIS}/termine/${id}/`);
+}
+
+export async function terminErinnern(id: string, an: boolean): Promise<LiveTermin> {
+  const { data } = await apiClient.post<LiveTermin>(`${BASIS}/termine/${id}/erinnern/`, { an });
   return data;
 }

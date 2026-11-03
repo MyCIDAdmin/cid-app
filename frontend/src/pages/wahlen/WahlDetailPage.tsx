@@ -12,6 +12,7 @@ import EinsprueceTab from "../../components/wahlen/EinsprueceTab";
 import ErgebnisTab from "../../components/wahlen/ErgebnisTab";
 import KandidatenTab from "../../components/wahlen/KandidatenTab";
 import KandidaturTab from "../../components/wahlen/KandidaturTab";
+import LiveTermine from "../../components/wahlen/LiveTermine";
 import PhasenLeiste from "../../components/wahlen/PhasenLeiste";
 import MitteilungenTab from "../../components/wahlen/MitteilungenTab";
 import PruefverfahrenTab from "../../components/wahlen/PruefverfahrenTab";
@@ -62,6 +63,7 @@ function Ueberblick({ wahl, zumErgebnis }: { wahl: Wahl; zumErgebnis: () => void
           </div>
         ))}
       </dl>
+      <LiveTermine wahl={wahl} />
       <section>
         <h3 className="text-sm font-semibold">
           {t("ausschuss.mitglieder", { n: wahl.ausschuss.length })}

@@ -398,6 +398,38 @@
     },
     "fehler": "Cela n'a pas fonctionné."
   },
+  "live": {
+    "titel": "Rendez-vous en direct",
+    "keine": "Aucun rendez-vous en direct prévu pour l’instant.",
+    "neu": "Ajouter un rendez-vous",
+    "art": {
+      "vorstellung": "Présentation en direct",
+      "fragestunde": "Séance de questions avec la commission",
+      "sonstiges": "Autre rendez-vous"
+    },
+    "zum_treffen": "Vers la visioconférence",
+    "erinnere_mich": "Me rappeler",
+    "erinnerung_an": "Rappel activé",
+    "in_kalender": "Dans l’agenda",
+    "erst_nach_veroeffentlichung": "Rappel possible dès la publication de l’élection.",
+    "vorbei": "Ce rendez-vous est passé.",
+    "bearbeiten": "Modifier",
+    "loeschen": "Supprimer",
+    "loeschen_frage": "Vraiment supprimer ?",
+    "loeschen_ja": "Oui, supprimer",
+    "fehler": "L’opération a échoué.",
+    "form": {
+      "art": "Type",
+      "titel": "Titre",
+      "beginn": "Début",
+      "ende": "Fin (facultatif)",
+      "link": "Lien de la visioconférence (facultatif)",
+      "hinweis": "Remarque (facultatif)",
+      "anlegen": "Créer le rendez-vous",
+      "speichern": "Enregistrer",
+      "abbrechen": "Annuler"
+    }
+  },
   "mitteilungen": {
     "einleitung": "Tous les messages de cette élection dans l'ordre chronologique. Les textes des annonces sont rédigés par le comité ; les rappels sont planifiés automatiquement et décalés si les délais changent. Pour les rappels, tu peux choisir entre l'application et/ou l'e-mail.",
     "datenschutz": "Le rappel pour les voix non encore exprimées ne concerne que les personnes qui n'ont pas encore participé – jamais le choix de vote. Le texte est le même pour tout le monde.",
@@ -428,6 +460,7 @@
       "nichtwaehler": "Rappel : pas encore voté",
       "wahl_endet": "Rappel : l'élection se termine bientôt",
       "einspruch_ergebnis": "Info : délai de recours sur le résultat",
+      "termin_morgen": "Rappel : rendez-vous en direct demain",
       "pruef_entscheidung": "Décision sur la candidature"
     }
   },

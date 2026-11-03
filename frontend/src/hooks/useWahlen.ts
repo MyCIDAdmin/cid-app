@@ -8,6 +8,7 @@ import type {
   EntscheidungArt,
   FreigabeArt,
   KandidaturPayload,
+  LiveTerminPayload,
   Pruefergebnis,
   ProbeSzenario,
   ReglementArt,
@@ -28,6 +29,7 @@ const keys = {
   uebergabe: (wahl: string) => ["wahlen", "uebergabe", wahl] as const,
   reglemente: (wahl: string) => ["wahlen", "reglemente", wahl] as const,
   mitteilungsplan: (wahl: string) => ["wahlen", "mitteilungsplan", wahl] as const,
+  termine: (wahl: string) => ["wahlen", "termine", wahl] as const,
 };
 
 export function useWahlen() {
@@ -325,5 +327,43 @@ export function useProbewahl(wahl: string) {
   return useMutation({
     mutationFn: (p: { stimmen: number; szenario: ProbeSzenario }) =>
       api.probewahlStarten(wahl, p.stimmen, p.szenario),
+  });
+}
+
+export function useTermine(wahl: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: keys.termine(wahl ?? ""),
+    queryFn: () => api.listTermine(wahl as string),
+    enabled: Boolean(wahl) && enabled,
+  });
+}
+
+export function useTerminAnlegen(wahl: string) {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({
+    mutationFn: (payload: LiveTerminPayload) => api.terminAnlegen(wahl, payload),
+    onSuccess: neuLaden,
+  });
+}
+
+export function useTerminAendern() {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({
+    mutationFn: (p: { id: string; payload: Partial<LiveTerminPayload> }) =>
+      api.terminAendern(p.id, p.payload),
+    onSuccess: neuLaden,
+  });
+}
+
+export function useTerminLoeschen() {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({ mutationFn: (id: string) => api.terminLoeschen(id), onSuccess: neuLaden });
+}
+
+export function useTerminErinnern() {
+  const neuLaden = useAlleNeuLaden();
+  return useMutation({
+    mutationFn: (p: { id: string; an: boolean }) => api.terminErinnern(p.id, p.an),
+    onSuccess: neuLaden,
   });
 }
