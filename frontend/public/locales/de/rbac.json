@@ -2,17 +2,16 @@
   "onglets": {
     "attribution": "Zuweisung",
     "acces": "Zugriff",
-    "visibilite": "Sichtbarkeit",
-    "aktivitaet": "Aktivität"
+    "visibilite": "Sichtbarkeit"
   },
   "modules": {
     "membres": "Mitglieder",
-    "cotisations": "Beiträge",
+    "cotisations": "Beiträge & Zahlungen",
     "adhesions": "Meine Mitgliedschaft",
     "evenements": "Veranstaltungen",
     "boutique": "Shop",
-    "vote": "Abstimmungen",
-    "communaute": "Gemeinschaft",
+    "vote": "Abstimmungen & Wahlen",
+    "communaute": "Community",
     "stats": "Statistiken",
     "notifications": "Benachrichtigungen",
     "projets": "Aktionen & Projekte",
@@ -33,11 +32,11 @@
     "page_finances": "Finanzen (Ausgaben, Budget, Bilanz)",
     "fil": "Neuigkeiten",
     "forum": "Forum",
-    "messagerie": "Nachrichten",
+    "messagerie": "Chats",
     "groupes": "Gruppen",
     "live": "Fan-Club (Live, Tabelle, Tippspiel)",
     "quiz": "Quiz und Umfragen",
-    "covoiturage": "Fahrgemeinschaften",
+    "covoiturage": "Reisen & Fahrgemeinschaften",
     "page_partner": "Business Partner & Lieferanten",
     "page_membres_import": "Mitglieder-Import (Stammdaten & Historie)",
     "page_membres_zuordnung": "Konten Mitgliedern zuordnen",
@@ -105,6 +104,11 @@
     "groupes": {
       "donnees": "Module",
       "page_admin": "Verwaltungsseiten"
+    },
+    "ausserhalb": {
+      "titre": "Nicht in dieser Liste",
+      "app_admin": "Nur für App-Administratoren, fest eingestellt: Rollenverwaltung, Zentrale Einstellungen, Aktivität und Sektoren-Struktur.",
+      "alle": "Für jedes angemeldete Konto, nicht einstellbar: Startseite, Übersicht, Mein Profil, Meine Tickets und Hilfe. Beim Einlass prüft der Server die Rechte je Veranstaltung."
     }
   },
   "visibilite": {
@@ -116,8 +120,36 @@
     "non_membre": "Nicht-Mitglied",
     "groupes": {
       "general": "Allgemein",
-      "communaute": "Gemeinschaft",
+      "communaute": "Community",
       "contenu": "Inhalte"
+    },
+    "ausserhalb": {
+      "titre": "Nicht in dieser Liste",
+      "app_admin": "Nur für App-Administratoren, fest eingestellt: Rollenverwaltung, Zentrale Einstellungen, Aktivität und Sektoren-Struktur.",
+      "alle": "Für jedes angemeldete Konto, nicht einstellbar: Startseite, Übersicht, Mein Profil, Meine Tickets und Hilfe. Beim Einlass prüft der Server die Rechte je Veranstaltung."
     }
+  },
+  "modules_info": {
+    "membres": "Mitgliederliste, Mitgliederkarte, Profile",
+    "cotisations": "Beiträge, Zahlungen, Fälligkeiten",
+    "adhesions": "Angebote, Beitritt, Meine Mitgliedschaft, Familienpakete",
+    "evenements": "Veranstaltungen, Anmeldungen, Eintrittstickets, Einlass",
+    "boutique": "Shop, Warenkorb, Bestellungen, Reservierungen",
+    "vote": "Abstimmungen und Wahlen",
+    "communaute": "Neuigkeiten, Forum, Chats, Gruppen, Fan-Club, Fotoalben, Quiz",
+    "stats": "Statistiken und Kennzahlen",
+    "notifications": "Meldungen in der App und E-Mail-Benachrichtigungen",
+    "projets": "Aktionen, Projekte und Arbeitsbereiche",
+    "fil": "Beiträge und Kommentare",
+    "forum": "Themen und Antworten",
+    "messagerie": "Chats und persönliche Nachrichten",
+    "groupes": "Gruppen und Gruppenchats",
+    "live": "Spiele, Tabelle, Spielerstatistik, Tippspiel",
+    "albums": "Fotoalben und Fotos",
+    "quiz": "Quiz und Umfragen",
+    "covoiturage": "Reisen, Fahrgemeinschaften",
+    "kalender": "Vereins- und Büro-Kalender",
+    "regionen": "Sektoren, Fans je Sektor, Wettbewerb",
+    "support": "Anfragen (Tickets) und häufige Fragen"
   }
 }

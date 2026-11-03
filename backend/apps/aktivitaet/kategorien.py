@@ -164,6 +164,12 @@ AKTIONEN = {
         "Aufbewahrungsfristen angewendet",
         "Durées de conservation appliquées",
     ),
+    "totp_erinnerung": (
+        "audit",
+        "info",
+        "Erinnerung an die Authenticator-App gesendet",
+        "Rappel d'application d'authentification envoyé",
+    ),
 }
 
 # --- Release 21 : Datenänderungen (von der Middleware `AktivitaetMiddleware` erfasst) -----------

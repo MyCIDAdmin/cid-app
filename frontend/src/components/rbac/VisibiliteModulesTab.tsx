@@ -37,7 +37,7 @@ export default function VisibiliteModulesTab() {
     <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
       <p className="mb-3 text-xs text-text-tertiary">{t("visibilite.aide")}</p>
       <div className="overflow-x-auto">
-        <table className="w-full max-w-xl text-sm">
+        <table className="w-full max-w-2xl text-sm">
           <thead>
             <tr className="border-b border-text-tertiary/20 text-left text-xs font-semibold uppercase text-text-tertiary">
               <th className="px-3 py-2">{t("visibilite.module")}</th>
@@ -65,7 +65,14 @@ export default function VisibiliteModulesTab() {
                       key={ligne.module}
                       className="border-b border-text-tertiary/10 last:border-0"
                     >
-                      <td className="px-3 py-2">{t(`modules.${ligne.module}`, ligne.module)}</td>
+                      <td className="px-3 py-2">
+                        {t(`modules.${ligne.module}`, ligne.module)}
+                        {t(`modules_info.${ligne.module}`, { defaultValue: "" }) && (
+                          <span className="block text-[11px] text-text-tertiary">
+                            {t(`modules_info.${ligne.module}`, { defaultValue: "" })}
+                          </span>
+                        )}
+                      </td>
                       {COLONNES.map(({ groupe, champ }) => (
                         <td key={groupe} className="px-3 py-2 text-center">
                           <input
@@ -93,6 +100,11 @@ export default function VisibiliteModulesTab() {
             })}
           </tbody>
         </table>
+      </div>
+      <div className="mt-3 text-xs text-text-secondary">
+        <div className="mb-1 font-medium text-text-primary">{t("visibilite.ausserhalb.titre")}</div>
+        <p>{t("visibilite.ausserhalb.app_admin")}</p>
+        <p className="mt-1">{t("visibilite.ausserhalb.alle")}</p>
       </div>
       {erreur && <p className="mt-2 text-xs text-status-dangerText">{erreur}</p>}
     </div>

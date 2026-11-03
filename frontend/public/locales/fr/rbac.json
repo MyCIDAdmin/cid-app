@@ -2,16 +2,15 @@
   "onglets": {
     "attribution": "Attribution",
     "acces": "Accès",
-    "visibilite": "Visibilité",
-    "aktivitaet": "Activité"
+    "visibilite": "Visibilité"
   },
   "modules": {
     "membres": "Membres",
-    "cotisations": "Cotisations",
+    "cotisations": "Cotisations & paiements",
     "adhesions": "Mon adhésion",
     "evenements": "Événements",
     "boutique": "Boutique",
-    "vote": "Votes",
+    "vote": "Votes & élections",
     "communaute": "Communauté",
     "stats": "Statistiques",
     "notifications": "Notifications",
@@ -33,11 +32,11 @@
     "page_finances": "Finances (dépenses, budget, bilan)",
     "fil": "Actualités",
     "forum": "Forum",
-    "messagerie": "Messagerie",
+    "messagerie": "Chats",
     "groupes": "Groupes",
     "live": "Fan-Club (live, classement, Tippspiel)",
     "quiz": "Quiz et sondages",
-    "covoiturage": "Covoiturage",
+    "covoiturage": "Voyages & covoiturage",
     "page_partner": "Business Partner & fournisseurs",
     "page_membres_import": "Import de membres (base & historique)",
     "page_membres_zuordnung": "Rattacher les comptes aux membres",
@@ -105,6 +104,11 @@
     "groupes": {
       "donnees": "Modules",
       "page_admin": "Pages d'administration"
+    },
+    "ausserhalb": {
+      "titre": "Hors de cette liste",
+      "app_admin": "Réservé aux administrateurs de l'application, réglage fixe : Gestion des rôles, Paramètres centraux, Activité et Structure des secteurs.",
+      "alle": "Pour tout compte connecté, non réglable : Page d'accueil, Aperçu, Mon profil, Mes billets et Aide. Pour le contrôle d'entrée, le serveur vérifie les droits par événement."
     }
   },
   "visibilite": {
@@ -118,6 +122,34 @@
       "general": "Général",
       "communaute": "Communauté",
       "contenu": "Contenus"
+    },
+    "ausserhalb": {
+      "titre": "Hors de cette liste",
+      "app_admin": "Réservé aux administrateurs de l'application, réglage fixe : Gestion des rôles, Paramètres centraux, Activité et Structure des secteurs.",
+      "alle": "Pour tout compte connecté, non réglable : Page d'accueil, Aperçu, Mon profil, Mes billets et Aide. Pour le contrôle d'entrée, le serveur vérifie les droits par événement."
     }
+  },
+  "modules_info": {
+    "membres": "Liste des membres, carte des membres, profils",
+    "cotisations": "Cotisations, paiements, échéances",
+    "adhesions": "Offres, adhésion, Mon adhésion, forfaits famille",
+    "evenements": "Événements, inscriptions, billets d'entrée, contrôle d'entrée",
+    "boutique": "Boutique, panier, commandes, réservations",
+    "vote": "Votes et élections",
+    "communaute": "Actualités, forum, chats, groupes, Fan-Club, albums photo, quiz",
+    "stats": "Statistiques et indicateurs",
+    "notifications": "Notifications dans l'application et par e-mail",
+    "projets": "Actions, projets et espaces de travail",
+    "fil": "Publications et commentaires",
+    "forum": "Sujets et réponses",
+    "messagerie": "Chats et messages privés",
+    "groupes": "Groupes et chats de groupe",
+    "live": "Matchs, classement, statistiques des joueurs, Tippspiel",
+    "albums": "Albums photo et photos",
+    "quiz": "Quiz et sondages",
+    "covoiturage": "Voyages, covoiturage",
+    "kalender": "Calendrier de l'association et du bureau",
+    "regionen": "Secteurs, fans par secteur, compétition",
+    "support": "Demandes (tickets) et questions fréquentes"
   }
 }

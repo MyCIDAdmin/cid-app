@@ -39,7 +39,10 @@
     "zahlungen_import": "Zahlungen importieren",
     "kalender": "Kalender",
     "regionen": "Sektoren",
-    "admin_regionen": "Sektoren-Struktur"
+    "admin_regionen": "Sektoren-Struktur",
+    "aktivitaet": "Aktivität",
+    "offene_auffaelligkeiten_one": "{{count}} offene Auffälligkeit",
+    "offene_auffaelligkeiten_other": "{{count}} offene Auffälligkeiten"
   },
   "nav_groupe": {
     "general": "Allgemein",

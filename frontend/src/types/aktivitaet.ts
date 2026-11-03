@@ -29,9 +29,48 @@ export interface PrivilegiertesKonto {
   totp: boolean;
 }
 
+/** Kennzahlen des gleich langen Zeitraums davor (Vergleich im Cockpit). */
+export type Vorperiode = Pick<
+  Kacheln,
+  | "logins"
+  | "aktive_nutzer"
+  | "fehlversuche"
+  | "sperren"
+  | "registrierungen"
+  | "freigaben"
+  | "rollenaenderungen"
+  | "geraete_limit"
+  | "server_fehler"
+>;
+
+export type LageFaktor = "totp" | "auffaelligkeiten" | "review";
+
+export interface Lage {
+  wert: number;
+  stufe: "gut" | "achtung" | "kritisch";
+  faktoren: Record<LageFaktor, { ist: number; soll: number }>;
+  ohne_totp: number;
+  review: {
+    quartal: string;
+    status: "offen" | "abgeschlossen";
+    anzahl: number;
+    entschieden: number;
+    erstellt_am: string;
+  } | null;
+  bericht: { jahr: number; monat: number; erstellt: boolean; versendet: boolean };
+}
+
+export interface TotpErinnerungErgebnis {
+  gesendet: number;
+  uebersprungen: number;
+  mail_aus: boolean;
+}
+
 export interface Uebersicht {
   tage: number;
   kacheln: Kacheln;
+  vorperiode: Vorperiode;
+  lage: Lage;
   verlauf: { tag: string; logins: number; fehlversuche: number }[];
   heatmap: number[][];
   top_ips: { ip: string; anzahl: number; zuletzt: string }[];

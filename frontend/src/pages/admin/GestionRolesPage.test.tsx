@@ -10,11 +10,8 @@ vi.mock("../../components/rbac/AttributionRolesTab", () => ({
 vi.mock("../../components/rbac/MatriceAccesTab", () => ({
   default: () => <div data-testid="tab-acces" />,
 }));
-
-vi.mock("../../components/aktivitaet/AktivitaetTab", () => ({
-  default: ({ startAnsicht }: { startAnsicht?: string }) => (
-    <div data-testid="tab-aktivitaet" data-ansicht={startAnsicht} />
-  ),
+vi.mock("../../components/rbac/VisibiliteModulesTab", () => ({
+  default: () => <div data-testid="tab-visibilite" />,
 }));
 
 describe("GestionRolesPage", () => {
@@ -43,24 +40,20 @@ describe("GestionRolesPage", () => {
     expect(screen.getByTestId("tab-attribution")).toBeInTheDocument();
   });
 
-  it("öffnet den Reiter Aktivität", () => {
+  it("hat drei Reiter, die Aktivität ist eine eigene Seite", () => {
     renderWithProviders(<GestionRolesPage />);
 
-    fireEvent.click(screen.getByText("onglets.aktivitaet"));
-
-    expect(screen.getByTestId("tab-aktivitaet")).toBeInTheDocument();
-    expect(screen.queryByTestId("tab-attribution")).not.toBeInTheDocument();
+    expect(screen.getByText("onglets.visibilite")).toBeInTheDocument();
+    expect(screen.queryByText("onglets.aktivitaet")).not.toBeInTheDocument();
   });
 
-  it("öffnet über den Alarm-Link direkt die Auffälligkeiten", () => {
+  it("leitet ältere Alarm-Links auf die neue Seite Aktivität weiter", () => {
     renderWithProviders(<GestionRolesPage />, {
       route: "/admin/roles?tab=aktivitaet&ansicht=auffaelligkeiten",
       path: "/admin/roles",
     });
 
-    expect(screen.getByTestId("tab-aktivitaet")).toHaveAttribute(
-      "data-ansicht",
-      "auffaelligkeiten",
-    );
+    expect(screen.getByTestId("route-fallback")).toBeInTheDocument();
+    expect(screen.queryByTestId("tab-attribution")).not.toBeInTheDocument();
   });
 });

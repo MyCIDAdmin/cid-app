@@ -196,6 +196,7 @@ export const SEITEN: ReadonlyArray<readonly [string, string, boolean]> = [
   ["/admin/events", "veranstaltungsverwaltung", true],
   ["/admin/partner", "partner", true],
   ["/admin/roles", "rollen", true],
+  ["/admin/aktivitaet", "aktivitaet", true],
   ["/admin/quiz", "a_quiz", true],
   ["/admin/finances", "finanzen", true],
   ["/inscriptions", "registrierungen", true],

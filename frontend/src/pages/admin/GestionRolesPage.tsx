@@ -2,36 +2,36 @@
  * Gestion des rôles (SCD §4.2 : `GET /admin/rôles/`, réservée Admin App — route gated par
  * RequireRole au même niveau que UsersListView/ChangeUserRoleView côté backend). Depuis la
  * Phase C du module apps.rbac (2026-09-23, demande utilisateur : "das ganze zum Modul
- * Rollenverwaltung im Frontend bauen"), page à deux onglets, même structure que
+ * Rollenverwaltung im Frontend bauen"), page à onglets, même structure que
  * AdminBoutiquePage.tsx :
  *   - Zuweisung (components/rbac/AttributionRolesTab.tsx) — attribution multi-rôle par
  *     utilisateur, remplace l'ancien sélecteur mono-rôle.
  *   - Zugriff (components/rbac/MatriceAccesTab.tsx) — matrice Rôle × Module et gestion des
  *     rôles personnalisés (création/suppression).
- *   - Aktivität (components/aktivitaet/AktivitaetTab.tsx, Release 20) — Protokoll : Übersicht und
- *     Journal (Sicherheit und Nachvollziehbarkeit).
+ *   - Sichtbarkeit (components/rbac/VisibiliteModulesTab.tsx) — Menüeinträge je Mitglieds-Gruppe.
+ *   Das Aktivitätsprotokoll hat seit Release 36 eine eigene Seite (/admin/aktivitaet) ; ältere
+ *   Links `?tab=aktivitaet&ansicht=…` (Benachrichtigungen) werden dorthin weitergeleitet.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 
-import AktivitaetTab from "../../components/aktivitaet/AktivitaetTab";
 import AttributionRolesTab from "../../components/rbac/AttributionRolesTab";
 import MatriceAccesTab from "../../components/rbac/MatriceAccesTab";
 import VisibiliteModulesTab from "../../components/rbac/VisibiliteModulesTab";
-import { ANSICHTEN, type Ansicht } from "../../types/aktivitaet";
 
-type Onglet = "attribution" | "acces" | "visibilite" | "aktivitaet";
+type Onglet = "attribution" | "acces" | "visibilite";
 
 export default function GestionRolesPage() {
   const { t } = useTranslation("rbac");
-  // `?tab=aktivitaet&ansicht=auffaelligkeiten` : Ziel der Alarm-Benachrichtigung (Release 22).
   const [params] = useSearchParams();
-  const [onglet, setOnglet] = useState<Onglet>(
-    params.get("tab") === "aktivitaet" ? "aktivitaet" : "attribution",
-  );
-  const gewuenscht = params.get("ansicht");
-  const startAnsicht: Ansicht = ANSICHTEN.find((a) => a === gewuenscht) ?? "uebersicht";
+  const [onglet, setOnglet] = useState<Onglet>("attribution");
+
+  // Alte Links aus Benachrichtigungen: `?tab=aktivitaet&ansicht=auffaelligkeiten`.
+  if (params.get("tab") === "aktivitaet") {
+    const ansicht = params.get("ansicht");
+    return <Navigate to={`/admin/aktivitaet${ansicht ? `?ansicht=${ansicht}` : ""}`} replace />;
+  }
 
   return (
     <div>
@@ -69,23 +69,11 @@ export default function GestionRolesPage() {
         >
           {t("onglets.visibilite")}
         </button>
-        <button
-          type="button"
-          onClick={() => setOnglet("aktivitaet")}
-          className={`px-3 py-2 text-sm font-medium ${
-            onglet === "aktivitaet"
-              ? "border-b-2 border-ca text-ca"
-              : "text-text-tertiary hover:text-text-secondary"
-          }`}
-        >
-          {t("onglets.aktivitaet")}
-        </button>
       </div>
 
       {onglet === "attribution" && <AttributionRolesTab />}
       {onglet === "acces" && <MatriceAccesTab />}
       {onglet === "visibilite" && <VisibiliteModulesTab />}
-      {onglet === "aktivitaet" && <AktivitaetTab startAnsicht={startAnsicht} />}
     </div>
   );
 }

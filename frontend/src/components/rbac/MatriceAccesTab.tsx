@@ -219,6 +219,11 @@ export default function MatriceAccesTab() {
                     >
                       <td className="sticky left-0 z-10 bg-bg-primary px-4 py-2 font-medium text-text-primary">
                         {libelleModule(module)}
+                        {t(`modules_info.${module.slug}`, { defaultValue: "" }) && (
+                          <span className="block text-[11px] font-normal text-text-tertiary">
+                            {t(`modules_info.${module.slug}`, { defaultValue: "" })}
+                          </span>
+                        )}
                       </td>
                       {matrice.roles.map((role) => {
                         const verrouillee =
@@ -271,6 +276,12 @@ export default function MatriceAccesTab() {
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-3 rounded-cid-lg bg-bg-primary p-3 text-xs text-text-secondary shadow-sm">
+        <div className="mb-1 font-medium text-text-primary">{t("acces.ausserhalb.titre")}</div>
+        <p>{t("acces.ausserhalb.app_admin")}</p>
+        <p className="mt-1">{t("acces.ausserhalb.alle")}</p>
       </div>
 
       <form

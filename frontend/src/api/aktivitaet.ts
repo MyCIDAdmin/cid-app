@@ -17,6 +17,7 @@ import type {
   ReviewKopf,
   ReviewListe,
   ReviewPosition,
+  TotpErinnerungErgebnis,
   Uebersicht,
 } from "../types/aktivitaet";
 
@@ -151,5 +152,14 @@ export async function fuehrePflegeAus(arten: string[]): Promise<PflegeErgebnis> 
     bestaetigt: true,
     arten,
   });
+  return data;
+}
+
+/** Erinnerung an die Authenticator-App: an alle betroffenen Konten oder an eines (`user`). */
+export async function sendeTotpErinnerung(user?: string): Promise<TotpErinnerungErgebnis> {
+  const { data } = await apiClient.post<TotpErinnerungErgebnis>(
+    "/aktivitaet/totp-erinnerung/",
+    user ? { user } : {},
+  );
   return data;
 }

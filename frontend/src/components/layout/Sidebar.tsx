@@ -46,6 +46,7 @@
  * préférence de l'utilisateur passe toujours avant.
  */
 import {
+  IconActivityHeartbeat,
   IconAdjustments,
   IconBellRinging,
   IconBroadcast,
@@ -92,6 +93,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 
+import { useOffeneAuffaelligkeiten } from "../../hooks/useAktivitaet";
 import { useMarquerLuesPrefixe, useNotificationsNonLues } from "../../hooks/useNotifications";
 import { useMesAcces, useVisibiliteEffective } from "../../hooks/useRbac";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
@@ -184,7 +186,7 @@ const ADMIN_SUBGROUPS: Record<SidebarSubgroupKey, string[]> = {
     "/admin/fan-club-logos",
     "/admin/configuration-site",
   ],
-  system: ["/admin/roles", "/admin/einstellungen", "/admin/notifications"],
+  system: ["/admin/roles", "/admin/einstellungen", "/admin/notifications", "/admin/aktivitaet"],
 };
 
 // Icône représentative par groupe (mode rail replié uniquement, voir docstring de module) — un
@@ -435,6 +437,15 @@ export const NAV_ITEMS: NavItem[] = [
     to: "/admin/roles",
     labelKey: "nav.gestion_roles",
     icon: IconUserCog,
+    group: "administration",
+    minRoleLevel: ROLE_LEVELS.super_admin,
+  },
+  // Aktivität (Release 36) — eigene Seite statt Reiter der Rollenverwaltung ; App-Administrator,
+  // wie /admin/roles hors matrice. Zähler = offene Auffälligkeiten (siehe NavItemLink).
+  {
+    to: "/admin/aktivitaet",
+    labelKey: "nav.aktivitaet",
+    icon: IconActivityHeartbeat,
     group: "administration",
     minRoleLevel: ROLE_LEVELS.super_admin,
   },
@@ -738,6 +749,8 @@ function NavItemLink({
 }) {
   const { t } = useTranslation("common");
   const Icon = item.icon;
+  // Zähler „offene Auffälligkeiten“ nur am Eintrag „Aktivität“ (und nur für App-Admins).
+  const zaehler = useOffeneAuffaelligkeiten(item.to === "/admin/aktivitaet").data ?? 0;
   return (
     <Link
       to={item.to}
@@ -759,7 +772,17 @@ function NavItemLink({
         )}
       </span>
       {/* Lange Namen (z. B. „Mitgliedschaftskampagnen“) brechen um statt abgeschnitten zu werden. */}
-      <span className="min-w-0 break-words leading-snug [hyphens:auto]">{t(item.labelKey)}</span>
+      <span className="min-w-0 flex-1 break-words leading-snug [hyphens:auto]">
+        {t(item.labelKey)}
+      </span>
+      {zaehler > 0 && (
+        <span
+          className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-ca"
+          aria-label={t("nav.offene_auffaelligkeiten", { count: zaehler })}
+        >
+          {zaehler}
+        </span>
+      )}
     </Link>
   );
 }
