@@ -56,7 +56,7 @@ function Datei({
             if (datei) onDatei(datei);
             e.target.value = "";
           }}
-          className="text-xs"
+          className="min-w-0 max-w-full text-xs"
         />
       )}
     </label>
