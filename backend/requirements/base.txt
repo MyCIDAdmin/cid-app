@@ -30,6 +30,8 @@ pyOpenSSL==26.4.0
 
 # --- Async / tâches planifiées ---
 celery==5.4.0
+# kombu 5.7 verlangt redis-py >= 6.1; bis zum Update von redis bleibt kombu auf 5.6.2
+kombu==5.6.2
 redis==5.0.8
 django-celery-beat==2.9.0
 
