@@ -6,6 +6,7 @@ from .views import (
     KandidaturViewSet,
     MitteilungViewSet,
     ReglementViewSet,
+    WahlTerminViewSet,
     WahlViewSet,
 )
 
@@ -17,6 +18,7 @@ router.register("bekanntmachungen", BekanntmachungViewSet, basename="wahlen-beka
 router.register("einsprueche", EinspruchViewSet, basename="wahlen-einspruch")
 router.register("mitteilungen", MitteilungViewSet, basename="wahlen-mitteilung")
 router.register("reglemente", ReglementViewSet, basename="wahlen-reglement")
+router.register("termine", WahlTerminViewSet, basename="wahlen-termin")
 router.register("", WahlViewSet, basename="wahlen-wahl")
 
 urlpatterns = router.urls

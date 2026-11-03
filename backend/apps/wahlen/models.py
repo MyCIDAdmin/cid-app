@@ -12,6 +12,8 @@ import uuid
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 
 from apps.adhesions.storage import JustificatifsStorage
@@ -616,6 +618,7 @@ class MitteilungArt(models.TextChoices):
     NICHTWAEHLER = "nichtwaehler", "Erinnerung: noch nicht abgestimmt"
     WAHL_ENDET = "wahl_endet", "Wahl endet in 2 Stunden"
     EINSPRUCH_ERGEBNIS = "einspruch_ergebnis", "Einspruchsfrist (Ergebnis) endet in 2 Tagen"
+    TERMIN_MORGEN = "termin_morgen", "Live-Termin ist morgen"
 
 
 class MitteilungStatus(models.TextChoices):
@@ -650,3 +653,49 @@ class Mitteilung(models.Model):
                 fields=["wahl", "art", "bezug"], name="wahlen_mitteilung_einmalig"
             )
         ]
+
+
+class WahlTerminArt(models.TextChoices):
+    VORSTELLUNG = "vorstellung", "Live-Vorstellungsrunde"
+    FRAGESTUNDE = "fragestunde", "Fragestunde mit dem Wahlausschuss"
+    SONSTIGES = "sonstiges", "Sonstiger Termin"
+
+
+class WahlTermin(models.Model):
+    """Live-Termin zur Wahl (Vorstellungsrunde, Fragestunde). Sichtbar im Überblick der Wahl und,
+    sobald die Wahl veröffentlicht ist, im Vereinskalender (`termin`). Wer „Erinnere mich“ tippt,
+    erhält dort eine Zusage und damit die Erinnerung 1 Stunde vorher; alle Mitglieder bekommen
+    zusätzlich 1 Tag vorher eine Mitteilung (`MitteilungArt.TERMIN_MORGEN`)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    wahl = models.ForeignKey(Wahl, on_delete=models.CASCADE, related_name="live_termine")
+    art = models.CharField(max_length=14, choices=WahlTerminArt.choices)
+    titel = models.CharField(max_length=200)
+    beginn = models.DateTimeField()
+    ende = models.DateTimeField(null=True, blank=True)
+    link = models.URLField(max_length=500, blank=True)
+    hinweis = models.CharField(max_length=300, blank=True)
+    termin = models.OneToOneField(
+        "kalender.Termin",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="wahl_termin",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "wahlen_termin"
+        ordering = ["beginn"]
+
+
+@receiver(post_delete, sender=WahlTermin)
+def _kalendertermin_loeschen(sender, instance, **kwargs):
+    """Der gespiegelte Eintrag im Vereinskalender verschwindet mit dem Wahl-Termin."""
+    if instance.termin_id:
+        from apps.kalender.models import Termin
+
+        Termin.objects.filter(pk=instance.termin_id).delete()

@@ -38,6 +38,7 @@ STANDARD_KANAELE = {
     MitteilungArt.NICHTWAEHLER: ["app"],
     MitteilungArt.WAHL_ENDET: ["app"],
     MitteilungArt.EINSPRUCH_ERGEBNIS: ["app"],
+    MitteilungArt.TERMIN_MORGEN: ["app"],
 }
 
 ZIELGRUPPE = {
@@ -47,9 +48,10 @@ ZIELGRUPPE = {
     MitteilungArt.NICHTWAEHLER: "nichtwaehler",
     MitteilungArt.WAHL_ENDET: "wahlberechtigte",
     MitteilungArt.EINSPRUCH_ERGEBNIS: "alle",
+    MitteilungArt.TERMIN_MORGEN: "alle",
 }
 
-# (Titel, Text) je Sprache. Platzhalter: {wahl}, {datum}
+# (Titel, Text) je Sprache. Platzhalter: {wahl}, {datum}, {titel} (nur Live-Termine)
 TEXTE = {
     MitteilungArt.KANDIDATUR_ENDET: {
         "de": (
@@ -106,6 +108,20 @@ TEXTE = {
         "fr": ("Le vote se termine dans 2 heures", "Le vote « {wahl} » se termine le {datum}."),
         "ar": ("ينتهي التصويت بعد ساعتين", "ينتهي التصويت في «{wahl}» بتاريخ {datum}."),
     },
+    MitteilungArt.TERMIN_MORGEN: {
+        "de": (
+            "Morgen: {titel}",
+            "Zur Wahl „{wahl}“ findet morgen ein Live-Termin statt: {titel}, {datum}.",
+        ),
+        "fr": (
+            "Demain : {titel}",
+            "Pour « {wahl} », rendez-vous en direct demain : {titel}, {datum}.",
+        ),
+        "ar": (
+            "غدًا: {titel}",
+            "يُعقد غدًا لقاء مباشر بخصوص «{wahl}»: {titel}، {datum}.",
+        ),
+    },
     MitteilungArt.EINSPRUCH_ERGEBNIS: {
         "de": (
             "Einspruchsfrist gegen das Ergebnis endet in 2 Tagen",
@@ -148,7 +164,26 @@ def planen(wahl: Wahl) -> int:
     termine[MitteilungArt.WAHL_ENDET] = wahl.wahl_bis - timedelta(hours=2)
     for art, wann in termine.items():
         _eintragen(wahl, art, wann)
+    _termine_planen(wahl)
     return wahl.mitteilungen.count()
+
+
+def _termine_planen(wahl: Wahl) -> None:
+    """Eine Mitteilung 1 Tag vor jedem Live-Termin; verschobene Termine ziehen nach, gelöschte
+    Termine nehmen ihre noch nicht gesendete Mitteilung mit."""
+    jetzt = timezone.now()
+    ids = []
+    for wt in wahl.live_termine.all():
+        ids.append(str(wt.id))
+        wann = wt.beginn - timedelta(hours=24)
+        if (
+            wann > jetzt
+            or wahl.mitteilungen.filter(art=MitteilungArt.TERMIN_MORGEN, bezug=str(wt.id)).exists()
+        ):
+            _eintragen(wahl, MitteilungArt.TERMIN_MORGEN, wann, str(wt.id))
+    wahl.mitteilungen.filter(
+        art=MitteilungArt.TERMIN_MORGEN, status=MitteilungStatus.GEPLANT
+    ).exclude(bezug__in=ids).delete()
 
 
 def _eintragen(wahl: Wahl, art: str, wann: datetime, bezug: str = "") -> Mitteilung:
@@ -241,6 +276,9 @@ def _noch_sinnvoll(m: Mitteilung, jetzt: datetime) -> bool:
         )
     if m.art == MitteilungArt.EINSPRUCH_ERGEBNIS:
         return wahl.ergebnis_freigegeben_am is not None
+    if m.art == MitteilungArt.TERMIN_MORGEN:
+        wt = wahl.live_termine.filter(pk=m.bezug).first()
+        return bool(wt and wt.beginn > jetzt)
     return True
 
 
@@ -253,7 +291,15 @@ def _frist_text(m: Mitteilung) -> datetime | date:
         return k.nachbesserung_bis
     if m.art == MitteilungArt.EINSPRUCH_ERGEBNIS:
         return services.einspruch_fenster_ende(wahl, "ergebnis", None) or wahl.einspruch_bis
+    if m.art == MitteilungArt.TERMIN_MORGEN:
+        return wahl.live_termine.get(pk=m.bezug).beginn
     return wahl.wahl_bis
+
+
+def _termin_titel(m: Mitteilung) -> str:
+    if m.art != MitteilungArt.TERMIN_MORGEN:
+        return ""
+    return m.wahl.live_termine.get(pk=m.bezug).titel
 
 
 def senden(m: Mitteilung) -> int:
@@ -263,10 +309,12 @@ def senden(m: Mitteilung) -> int:
 
     wahl = m.wahl
     frist = _frist_text(m)
+    termin_titel = _termin_titel(m)
 
     def text(sprache: str) -> tuple[str, str]:
         titel, koerper = TEXTE[m.art][sprache]
-        return titel, koerper.format(wahl=wahl.titel, datum=_datum(frist, sprache))
+        angaben = {"wahl": wahl.titel, "datum": _datum(frist, sprache), "titel": termin_titel}
+        return titel.format(**angaben), koerper.format(**angaben)
 
     mail_texte = {s: Texte(titre=text(s)[0], paragraphes=[text(s)[1]]) for s in ("de", "fr", "ar")}
     anzahl = 0
@@ -358,6 +406,7 @@ def plan(wahl: Wahl) -> list[dict]:
     namen = {
         str(k.id): k.name for k in wahl.kandidaturen.filter(status=KandidaturStatus.RUECKFRAGE)
     }
+    namen.update({str(wt.id): wt.titel for wt in wahl.live_termine.all()})
     for m in wahl.mitteilungen.all():
         zeilen.append(
             {

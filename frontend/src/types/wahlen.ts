@@ -335,7 +335,8 @@ export type MitteilungsArt =
   | "einspruch_listen"
   | "nichtwaehler"
   | "wahl_endet"
-  | "einspruch_ergebnis";
+  | "einspruch_ergebnis"
+  | "termin_morgen";
 
 export type MitteilungsStatus = "geplant" | "gesendet" | "uebersprungen" | "ereignis";
 
@@ -368,4 +369,32 @@ export interface Probewahl {
   ergebnis: ErgebnisInhalt;
   weiterer_wahlgang: boolean;
   bereitschaft: Array<{ schluessel: ProbeBereitschaftSchluessel; ok: boolean; anzahl?: number }>;
+}
+
+export type LiveTerminArt = "vorstellung" | "fragestunde" | "sonstiges";
+
+/** Live-Termin zur Wahl (Vorstellungsrunde, Fragestunde). */
+export interface LiveTermin {
+  id: string;
+  wahl: string;
+  art: LiveTerminArt;
+  titel: string;
+  beginn: string;
+  ende: string | null;
+  link: string;
+  hinweis: string;
+  /** Erst nach der Veröffentlichung der Wahl im Vereinskalender. */
+  im_kalender: boolean;
+  /** Ich habe „Erinnere mich“ getippt (Zusage im Kalender). */
+  erinnert: boolean;
+  vorbei: boolean;
+}
+
+export interface LiveTerminPayload {
+  art: LiveTerminArt;
+  titel: string;
+  beginn: string;
+  ende?: string | null;
+  link?: string;
+  hinweis?: string;
 }

@@ -398,6 +398,38 @@
     },
     "fehler": "Das hat nicht geklappt."
   },
+  "live": {
+    "titel": "Live-Termine",
+    "keine": "Noch keine Live-Termine geplant.",
+    "neu": "Termin hinzufügen",
+    "art": {
+      "vorstellung": "Live-Vorstellungsrunde",
+      "fragestunde": "Fragestunde mit dem Wahlausschuss",
+      "sonstiges": "Sonstiger Termin"
+    },
+    "zum_treffen": "Zum Video-Treffen",
+    "erinnere_mich": "Erinnere mich",
+    "erinnerung_an": "Du wirst erinnert",
+    "in_kalender": "In Kalender",
+    "erst_nach_veroeffentlichung": "Erinnerung ab Veröffentlichung der Wahl möglich.",
+    "vorbei": "Dieser Termin ist vorbei.",
+    "bearbeiten": "Bearbeiten",
+    "loeschen": "Löschen",
+    "loeschen_frage": "Wirklich löschen?",
+    "loeschen_ja": "Ja, löschen",
+    "fehler": "Das hat nicht geklappt.",
+    "form": {
+      "art": "Art",
+      "titel": "Titel",
+      "beginn": "Beginn",
+      "ende": "Ende (optional)",
+      "link": "Link zum Video-Treffen (optional)",
+      "hinweis": "Hinweis (optional)",
+      "anlegen": "Termin anlegen",
+      "speichern": "Speichern",
+      "abbrechen": "Abbrechen"
+    }
+  },
   "mitteilungen": {
     "einleitung": "Alle Nachrichten zu dieser Wahl in zeitlicher Reihenfolge. Die Texte der Bekanntmachungen schreibt der Ausschuss; die Erinnerungen werden automatisch geplant und verschoben, wenn sich die Fristen ändern. Bei Erinnerungen kannst du wählen, ob sie in der App und/oder per E-Mail kommen.",
     "datenschutz": "Die Erinnerung an noch nicht abgegebene Stimmen erfährt nur, wer schon teilgenommen hat – nie, wofür jemand gestimmt hat. Alle bekommen denselben Text.",
@@ -428,6 +460,7 @@
       "nichtwaehler": "Erinnerung: noch nicht gewählt",
       "wahl_endet": "Erinnerung: Wahl endet bald",
       "einspruch_ergebnis": "Hinweis: Einspruchsfrist zum Ergebnis",
+      "termin_morgen": "Erinnerung: Live-Termin ist morgen",
       "pruef_entscheidung": "Entscheidung zur Kandidatur"
     }
   },
