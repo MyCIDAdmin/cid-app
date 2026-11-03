@@ -1,6 +1,7 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as aktivitaetApi from "../../api/aktivitaet";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useNotificationsHooks from "../../hooks/useNotifications";
 import * as useRbacHooks from "../../hooks/useRbac";
@@ -29,6 +30,11 @@ vi.mock("../../hooks/useNotifications", async () => {
 // ces tests — describe dédié plus bas pour la logique de visibilité elle-même. useVisibiliteEffective
 // (ajouté le 2026-09-28, bug "ModuleVisibiliteMembre" sans effet) mocké de la même façon, par
 // défaut "aucun module masqué" — describe dédié plus bas pour ce mécanisme.
+vi.mock("../../api/aktivitaet", async () => {
+  const actual = await vi.importActual<typeof aktivitaetApi>("../../api/aktivitaet");
+  return { ...actual, getAuffaelligkeiten: vi.fn() };
+});
+
 vi.mock("../../hooks/useRbac", async () => {
   const actual = await vi.importActual<typeof useRbacHooks>("../../hooks/useRbac");
   return { ...actual, useMesAcces: vi.fn(), useVisibiliteEffective: vi.fn() };
@@ -632,5 +638,45 @@ describe("getGroupForPath", () => {
   it("renvoie null pour une route sans item Sidebar correspondant", () => {
     expect(getGroupForPath("/login")).toBeNull();
     expect(getGroupForPath("/route-inconnue")).toBeNull();
+  });
+});
+
+describe("Sidebar — Zähler offener Auffälligkeiten", () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      accessToken: "access",
+      refreshToken: "refresh",
+      user: administrateur,
+      isAuthenticated: true,
+    });
+    useUiStore.setState({
+      sidebarCollapsed: false,
+      collapsedGroups: { ...DEFAULT_COLLAPSED_GROUPS, administration: false },
+      collapsedSubgroups: { ...DEFAULT_COLLAPSED_SUBGROUPS, system: false },
+    });
+    vi.mocked(useNotificationsHooks.useNotificationsNonLues).mockReturnValue({
+      data: { next: null, previous: null, results: [] },
+    } as unknown as ReturnType<typeof useNotificationsHooks.useNotificationsNonLues>);
+    vi.mocked(useNotificationsHooks.useMarquerLuesPrefixe).mockReturnValue({
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof useNotificationsHooks.useMarquerLuesPrefixe>);
+    mockMesAcces();
+    mockVisibiliteEffective();
+    vi.mocked(aktivitaetApi.getAuffaelligkeiten).mockResolvedValue({
+      offen: 2,
+      results: [],
+    } as unknown as Awaited<ReturnType<typeof aktivitaetApi.getAuffaelligkeiten>>);
+  });
+
+  it("zeigt den Zähler nur am Eintrag Aktivität, nicht an allen Menüpunkten", async () => {
+    renderWithProviders(<Sidebar />);
+
+    const link = (await screen.findByText("nav.aktivitaet")).closest("a") as HTMLElement;
+    expect(await within(link).findByText("2")).toBeInTheDocument();
+
+    const alleLinks = Array.from(document.querySelectorAll("aside a"));
+    const mitZaehler = alleLinks.filter((a) => a.querySelector("span.rounded-full.bg-white"));
+    expect(alleLinks.length).toBeGreaterThan(3);
+    expect(mitZaehler).toEqual([link]);
   });
 });
