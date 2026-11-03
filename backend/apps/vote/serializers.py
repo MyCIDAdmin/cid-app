@@ -44,6 +44,7 @@ class VoteSessionSerializer(serializers.ModelSerializer):
     total_participants = serializers.SerializerMethodField()
     total_eligibles = serializers.SerializerMethodField()
     resultats_visibles = serializers.BooleanField(read_only=True)
+    wahl = serializers.SerializerMethodField()
 
     class Meta:
         model = VoteSession
@@ -65,6 +66,7 @@ class VoteSessionSerializer(serializers.ModelSerializer):
             "total_participants",
             "total_eligibles",
             "resultats_visibles",
+            "wahl",
             "created_by",
             "created_at",
         ]
@@ -77,6 +79,11 @@ class VoteSessionSerializer(serializers.ModelSerializer):
             "created_by",
             "created_at",
         ]
+
+    def get_wahl(self, obj) -> dict | None:
+        """Gehört die Abstimmung zu einer Wahl (App wahlen)? Dann Id und Titel der Wahl."""
+        wahl = getattr(obj, "wahl", None)
+        return {"id": str(wahl.id), "titel": wahl.titel} if wahl is not None else None
 
     def get_total_participants(self, obj) -> int:
         return nombre_participants(obj)

@@ -72,6 +72,9 @@ export interface VoteSession {
   resultats_visibles: boolean;
   created_by: number;
   created_at: string;
+  /** Gehört die Sitzung zu einer Wahl (Welle 2e), nennt das Feld diese Wahl; sonst null. Eine
+   * solche Sitzung wird nur über die Wahl geschlossen (Freigaben des Ausschusses). */
+  wahl: { id: string; titel: string } | null;
 }
 
 /** Payload de création — mockup #m-create-vote, wizard 3 étapes soumis en un seul POST. */

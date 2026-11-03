@@ -29,7 +29,12 @@ const membre = {
   langue_preferee: "fr" as const,
 };
 
-const bureauAdmin = { ...membre, id: "u2", email: "admin@example.com", role: "bureau_admin" as const };
+const bureauAdmin = {
+  ...membre,
+  id: "u2",
+  email: "admin@example.com",
+  role: "bureau_admin" as const,
+};
 
 const sessionOuverte: VoteSession = {
   id: "s1",
@@ -53,6 +58,7 @@ const sessionOuverte: VoteSession = {
   total_eligibles: 10,
   resultats_visibles: false,
   created_by: 1,
+  wahl: null,
   created_at: "2026-01-01T10:00:00Z",
 };
 
@@ -60,7 +66,9 @@ function page<T>(results: T[]): VotePageType<T> {
   return { count: results.length, next: null, previous: null, results };
 }
 
-function socketDefaut(overrides: Partial<ReturnType<typeof useVoteSocketModule.useVoteSocket>> = {}) {
+function socketDefaut(
+  overrides: Partial<ReturnType<typeof useVoteSocketModule.useVoteSocket>> = {},
+) {
   return {
     statut: "ouvert" as const,
     participation: null,
@@ -74,7 +82,12 @@ function socketDefaut(overrides: Partial<ReturnType<typeof useVoteSocketModule.u
 
 describe("VotePage", () => {
   beforeEach(() => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: membre, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: membre,
+      isAuthenticated: true,
+    });
     vi.mocked(useVoteHooks.useCloturerVoteSession).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
@@ -162,7 +175,9 @@ describe("VotePage", () => {
       taux_participation: 50,
       seuil_victoire_requis: null,
       seuil_victoire_atteint: true,
-      resultats: [{ option_id: "o1", label: "Candidat A", nombre_voix: 5, pct: 100, candidats: [] }],
+      resultats: [
+        { option_id: "o1", label: "Candidat A", nombre_voix: 5, pct: 100, candidats: [] },
+      ],
     };
     vi.mocked(useVoteHooks.useSessionVoteActive).mockReturnValue({
       data: page([sessionOuverte]),
@@ -176,6 +191,52 @@ describe("VotePage", () => {
     renderWithProviders(<VotePage />);
     expect(screen.getByText("resultats.titre")).toBeInTheDocument();
     expect(screen.getByText("Candidat A")).toBeInTheDocument();
+  });
+
+  describe("Sessions appartenant à une Wahl (Welle 2e)", () => {
+    const sessionWahl: VoteSession = {
+      ...sessionOuverte,
+      wahl: { id: "w1", titel: "Vorstandswahl 2026" },
+    };
+
+    function mockSession(data: VoteSession | undefined, active: VoteSession[] = []) {
+      vi.mocked(useVoteHooks.useSessionVoteActive).mockReturnValue({
+        data: page(active),
+        isLoading: false,
+      } as unknown as ReturnType<typeof useVoteHooks.useSessionVoteActive>);
+      vi.mocked(useVoteHooks.useVoteSession).mockReturnValue({
+        data,
+      } as unknown as ReturnType<typeof useVoteHooks.useVoteSession>);
+      vi.mocked(useVoteSocketModule.useVoteSocket).mockReturnValue(socketDefaut());
+    }
+
+    it("zeigt einen Link zur Wahl und keinen Schließen-Knopf, auch für das Büro", () => {
+      useAuthStore.setState({ user: bureauAdmin });
+      mockSession(sessionWahl, [sessionWahl]);
+
+      renderWithProviders(<VotePage />);
+      expect(screen.getByText("session.zur_wahl")).toBeInTheDocument();
+      expect(screen.getByText("session.zur_wahl").closest("a")).toHaveAttribute(
+        "href",
+        "/wahlen/w1",
+      );
+      expect(screen.queryByText("session.cloturer")).not.toBeInTheDocument();
+    });
+
+    it("zeigt über den Deep-Link ?session= die offene Wahl-Sitzung an", () => {
+      mockSession(sessionWahl);
+
+      renderWithProviders(<VotePage />, { route: "/votes?session=s1", path: "/votes" });
+      expect(screen.getByText("Élection du Bureau")).toBeInTheDocument();
+      expect(screen.getByText("session.zur_wahl")).toBeInTheDocument();
+    });
+
+    it("leitet eine geschlossene Wahl-Sitzung auf die Wahl weiter", () => {
+      mockSession({ ...sessionWahl, statut: "cloturee" });
+
+      renderWithProviders(<VotePage />, { route: "/votes?session=s1", path: "/votes" });
+      expect(screen.getByTestId("route-fallback")).toBeInTheDocument();
+    });
   });
 
   it("ouvre les résultats d'une session passée au clic dans l'historique", () => {
@@ -201,7 +262,9 @@ describe("VotePage", () => {
         taux_participation: 20,
         seuil_victoire_requis: null,
         seuil_victoire_atteint: true,
-        resultats: [{ option_id: "o1", label: "Candidat A", nombre_voix: 2, pct: 100, candidats: [] }],
+        resultats: [
+          { option_id: "o1", label: "Candidat A", nombre_voix: 2, pct: 100, candidats: [] },
+        ],
       },
       isLoading: false,
     } as unknown as ReturnType<typeof useVoteHooks.useResultatsVote>);

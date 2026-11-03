@@ -64,7 +64,6 @@ import {
   IconClockDollar,
   IconFileCheck,
   IconFolderCog,
-  IconUserCheck,
   IconGavel,
   IconHelpCircle,
   IconIdBadge,
@@ -104,6 +103,10 @@ export type NavIcon = ComponentType<{ size?: number | string; className?: string
 
 export interface NavItem {
   to: string;
+  /** Weitere Pfad-Präfixe, die zu diesem Menüpunkt gehören (z. B. „/wahlen“ unter „Abstimmungen
+   * & Wahlen“ — ein Menüpunkt, zwei Reiter, Welle 2e). Wirkt auf Hervorhebung, Gruppe, Modul
+   * und Benachrichtigungspunkt, nicht auf das Link-Ziel. */
+  extraPrefixes?: string[];
   labelKey: string;
   icon: NavIcon;
   group: SidebarGroupKey;
@@ -337,8 +340,15 @@ export const NAV_ITEMS: NavItem[] = [
     group: "contenu",
     module: "quiz",
   },
-  { to: "/votes", labelKey: "nav.votes", icon: IconGavel, group: "contenu", module: "vote" },
-  { to: "/wahlen", labelKey: "nav.wahlen", icon: IconUserCheck, group: "contenu", module: "vote" },
+  // Ein Menüpunkt, zwei Reiter (Welle 2e): „/wahlen“ ist der zweite Reiter von „/votes“.
+  {
+    to: "/votes",
+    extraPrefixes: ["/wahlen"],
+    labelKey: "nav.votes",
+    icon: IconGavel,
+    group: "contenu",
+    module: "vote",
+  },
   // Gestion des quiz (mockup #pg-quiz) — Bureau Admin+ seulement, même niveau que
   // GestionQuizPermission côté API.
   // Phase D (ajoutée le 2026-09-23) : ces 13 items sont désormais pilotés par la matrice
@@ -525,6 +535,34 @@ export interface SidebarNavGroup {
   subgroups: SidebarNavSubgroup[];
 }
 
+/** Alle Pfad-Präfixe eines Menüpunkts (Hauptpfad plus `extraPrefixes`). */
+function praefixeVon(item: NavItem): string[] {
+  return [item.to, ...(item.extraPrefixes ?? [])];
+}
+
+/** Länge des längsten Präfixes von `item`, das auf `pathname` passt, sonst -1. */
+function treffer(item: NavItem, pathname: string): number {
+  return praefixeVon(item).reduce(
+    (best, p) =>
+      (pathname === p || pathname.startsWith(`${p}/`)) && p.length > best ? p.length : best,
+    -1,
+  );
+}
+
+/** Der Menüpunkt mit dem längsten (spezifischsten) passenden Präfix für `pathname`. */
+function besterItem(items: NavItem[], pathname: string): NavItem | null {
+  let bester: NavItem | null = null;
+  let laenge = -1;
+  for (const item of items) {
+    const l = treffer(item, pathname);
+    if (l > laenge) {
+      bester = item;
+      laenge = l;
+    }
+  }
+  return bester;
+}
+
 /**
  * Groupe (`SidebarGroupKey`) de la page correspondant à `pathname`, ou `null` si aucun item de
  * NAV_ITEMS ne correspond (ex. `/login`, `/register`, la nouvelle page d'accueil publique elle-
@@ -537,12 +575,7 @@ export interface SidebarNavGroup {
  */
 // eslint-disable-next-line react-refresh/only-export-components -- voir commentaire GROUP_ORDER
 export function getGroupForPath(pathname: string): SidebarGroupKey | null {
-  const meilleur = NAV_ITEMS.reduce<NavItem | null>((best, item) => {
-    const correspond = pathname === item.to || pathname.startsWith(`${item.to}/`);
-    if (!correspond) return best;
-    return best === null || item.to.length > best.to.length ? item : best;
-  }, null);
-  return meilleur?.group ?? null;
+  return besterItem(NAV_ITEMS, pathname)?.group ?? null;
 }
 
 /**
@@ -558,12 +591,7 @@ export function getGroupForPath(pathname: string): SidebarGroupKey | null {
  */
 // eslint-disable-next-line react-refresh/only-export-components -- voir commentaire GROUP_ORDER
 export function getModuleForPath(pathname: string): string | null {
-  const meilleur = NAV_ITEMS.reduce<NavItem | null>((best, item) => {
-    const correspond = pathname === item.to || pathname.startsWith(`${item.to}/`);
-    if (!correspond) return best;
-    return best === null || item.to.length > best.to.length ? item : best;
-  }, null);
-  return meilleur?.module ?? null;
+  return besterItem(NAV_ITEMS, pathname)?.module ?? null;
 }
 
 /**
@@ -629,25 +657,28 @@ export function useSidebarNav() {
   // spécifique : "/boutique/commandes" gagne sur "/boutique" quand les deux correspondent, mais
   // "/boutique" reste actif sur une sous-page sans item dédié (ex. "/boutique/panier"), puisqu'il
   // est alors seul candidat.
-  const activeTo = visibleItems.reduce<string | null>((best, item) => {
-    const correspond = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
-    if (!correspond) return best;
-    return best === null || item.to.length > best.length ? item.to : best;
-  }, null);
+  const activeTo = besterItem(visibleItems, location.pathname)?.to ?? null;
 
   function isItemActive(item: NavItem): boolean {
     return item.to === activeTo;
   }
 
+  /** Präfixe des Menüpunkts, zu denen es ungelesene Benachrichtigungen gibt. */
+  function praefixeMitSignal(item: NavItem): string[] {
+    return praefixeVon(item).filter((p) =>
+      notificationsNonLues.some((n) => n.lien === p || n.lien.startsWith(`${p}/`)),
+    );
+  }
+
   function itemALeSignal(item: NavItem): boolean {
-    return notificationsNonLues.some((n) => n.lien === item.to || n.lien.startsWith(`${item.to}/`));
+    return praefixeMitSignal(item).length > 0;
   }
 
   function handleClicItem(item: NavItem) {
     // Ne déclenche l'appel que si un point est effectivement affiché — inutile de solliciter
     // le backend à chaque clic de navigation ordinaire.
-    if (itemALeSignal(item)) {
-      marquerLuesPrefixeMutation.mutate(item.to);
+    for (const praefix of praefixeMitSignal(item)) {
+      marquerLuesPrefixeMutation.mutate(praefix);
     }
   }
 

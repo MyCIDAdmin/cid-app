@@ -17,8 +17,8 @@ const voteKeys = {
 /** Session active (`statut=ouverte`) — au plus une à la fois côté UI (mockup #vote-tab-actif). */
 export function useSessionVoteActive(options: { enabled?: boolean } = {}) {
   return useQuery({
-    queryKey: voteKeys.sessions({ statut: "ouverte" }),
-    queryFn: () => voteApi.listVoteSessions({ statut: "ouverte" }),
+    queryKey: voteKeys.sessions({ statut: "ouverte", art: "schnell" }),
+    queryFn: () => voteApi.listVoteSessions({ statut: "ouverte", art: "schnell" }),
     enabled: options.enabled ?? true,
     // Filet de sécurité si le WebSocket est momentanément indisponible : le compteur/timer
     // reste malgré tout à jour via un polling REST discret.
@@ -28,8 +28,8 @@ export function useSessionVoteActive(options: { enabled?: boolean } = {}) {
 
 export function useHistoriqueVote(page = 1) {
   return useQuery({
-    queryKey: voteKeys.sessions({ statut: "cloturee", page }),
-    queryFn: () => voteApi.listVoteSessions({ statut: "cloturee", page }),
+    queryKey: voteKeys.sessions({ statut: "cloturee", art: "schnell", page }),
+    queryFn: () => voteApi.listVoteSessions({ statut: "cloturee", art: "schnell", page }),
   });
 }
 

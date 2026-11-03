@@ -81,7 +81,7 @@ function Ueberblick({ wahl, zumErgebnis }: { wahl: Wahl; zumErgebnis: () => void
       {(wahl.vote_session !== null || wahl.phase >= 3) && <Wahlzettel wahl={wahl} />}
       {wahl.vote_session && wahl.vote_status === "ouverte" && !wahl.teilnahme?.hat_gewaehlt && (
         <Link
-          to="/votes"
+          to={`/votes?session=${wahl.vote_session}`}
           className="inline-block rounded-cid bg-ca px-4 py-2 text-sm font-semibold text-white"
         >
           {t("zur_stimmabgabe")}

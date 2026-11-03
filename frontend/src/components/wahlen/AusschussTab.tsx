@@ -92,7 +92,7 @@ export default function AusschussTab({ wahl }: { wahl: Wahl }) {
           <FreigabeBlock wahl={wahl} art="schliessen" />
         )}
         {geoeffnet && (
-          <Link to="/votes" className="text-sm text-ca underline">
+          <Link to={`/votes?session=${wahl.vote_session}`} className="text-sm text-ca underline">
             {t("ausschuss.zur_abstimmung")}
           </Link>
         )}

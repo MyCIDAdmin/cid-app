@@ -18,7 +18,6 @@
     "admin_boutique": "Shop-Verwaltung",
     "stats": "Statistiken & KPIs",
     "votes": "Abstimmungen & Wahlen",
-    "wahlen": "Wahlen",
     "fil": "Neuigkeiten",
     "forum": "Forum",
     "chats": "Chats",
@@ -286,5 +285,10 @@
   "filter": {
     "oeffnen": "Filter anzeigen",
     "schliessen": "Filter ausblenden"
+  },
+  "abstimmungen_reiter": {
+    "label": "Bereich",
+    "abstimmungen": "Abstimmungen",
+    "wahlen": "Wahlen"
   }
 }

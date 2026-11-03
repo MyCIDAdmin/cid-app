@@ -1,6 +1,6 @@
 {
   "page": {
-    "titre": "Votes & Élections en direct",
+    "titre": "Votes en direct",
     "creer_session": "Créer une session de vote",
     "bandeau_admin": "Mode Administrateur — vous pouvez créer, ouvrir et clôturer des sessions de vote."
   },
@@ -26,7 +26,9 @@
     "membres": "membres",
     "cloturer": "Clôturer le vote",
     "cloture_en_cours": "Clôture en cours…",
-    "erreur_cloture": "La clôture de cette session a échoué."
+    "erreur_cloture": "La clôture de cette session a échoué.",
+    "zur_wahl": "Vers l'élection « {{titel}} »",
+    "wahl_schliessen_hinweis": "Ce vote fait partie d'une élection et se clôture depuis l'élection."
   },
   "bulletin": {
     "instructions_unique": "Sélectionnez 1 candidat.",
