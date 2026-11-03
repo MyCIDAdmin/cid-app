@@ -31,9 +31,9 @@ from apps.accounts.models import AuditLogEntry
 from apps.accounts.permissions import IsSuperAdmin
 from apps.accounts.services import log_audit_event
 
-from . import bericht
+from . import bericht, erinnerung
 from . import kategorien as kat
-from . import erinnerung, nutzung, pflege, regeln, review
+from . import nutzung, pflege, regeln, review
 from .models import Auffaelligkeit, Monatsbericht, RechtePosition, RechteReview
 from .services import ERLAUBTE_TAGE, eintrag_dict, journal_filtern, name_von, person_dict
 
