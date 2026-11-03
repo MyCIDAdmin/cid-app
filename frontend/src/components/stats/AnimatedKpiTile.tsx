@@ -14,11 +14,16 @@ export default function AnimatedKpiTile({
   value,
   suffix,
   accent = false,
+  hint,
+  hintTone = "neutral",
 }: {
   label: string;
   value: string | number;
   suffix?: string;
   accent?: boolean;
+  /** Zusatzzeile unter dem Wert (z. B. Vergleich mit der Vorperiode). */
+  hint?: string;
+  hintTone?: "neutral" | "danger";
 }) {
   const valeurNumerique = typeof value === "number" ? value : undefined;
   const valeurAnimee = useCountUp(valeurNumerique);
@@ -41,6 +46,19 @@ export default function AnimatedKpiTile({
       >
         {texteValeur}
       </div>
+      {hint && (
+        <div
+          className={`mt-0.5 text-[11px] ${
+            accent
+              ? "text-white/80"
+              : hintTone === "danger"
+                ? "font-medium text-status-dangerText"
+                : "text-text-tertiary"
+          }`}
+        >
+          {hint}
+        </div>
+      )}
     </div>
   );
 }

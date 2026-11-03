@@ -892,13 +892,121 @@
       }
     ]
   },
+  "aktivitaet": {
+    "titre": "Aktivität",
+    "intro": "Sicherheit und Nutzung auf einen Blick: Sicherheitslage, offene Aufgaben, Anmeldungen, Auffälligkeiten, Journal, Rechteprüfung und Datenpflege. Nur für App-Admins.",
+    "schritte": [
+      "Im Menü unter „Verwaltung“ › „System“ die Seite „Aktivität“ öffnen.",
+      "Im „Cockpit“ die Sicherheitslage und die Liste „Jetzt zu tun“ lesen.",
+      "Über die Ansichten (Auffälligkeiten, Journal, Nutzung, Berichte, Rechteprüfung, Datenpflege) nachforschen oder Aufgaben erledigen."
+    ],
+    "workflows": [
+      {
+        "id": "AKT-01",
+        "rollen": ["super_admin"],
+        "titre": "Auffälligkeiten im Aktivitätsprotokoll prüfen",
+        "wann": "Die App meldet per Glocke und E-Mail eine Auffälligkeit, zum Beispiel viele Fehlversuche beim Anmelden.",
+        "schritte": [
+          "Die Meldung öffnen. Sie führt zur Seite „Aktivität“ (Menü „Verwaltung“, Untergruppe „System“) und zur Ansicht „Auffälligkeiten“.",
+          "In der Liste „Offen“ den Eintrag lesen (Gewicht „Warnung“ oder „Wichtig“) und in der Ansicht „Journal“ die zugehörigen Einträge nachsehen (Filter „Person“, „IP-Adresse“ und Zeitraum).",
+          "Entscheiden, ob Handlungsbedarf besteht (z. B. Konto sperren oder Rechte prüfen).",
+          "Danach den Eintrag mit „Als erledigt markieren“ abschließen."
+        ],
+        "danach": "Die App prüft das Protokoll alle 10 Minuten und meldet neue Funde. Erledigte Einträge stehen unter „Erledigt“ mit Name und Zeit.",
+        "vorher": "Du bist App-Administrator. Das Protokoll ist nur für App-Admins sichtbar.",
+        "erwartet": [
+          "Die Ansicht „Auffälligkeiten“ ist offen. Ohne Funde steht dort „Keine offenen Auffälligkeiten.“",
+          "Das Journal zeigt die gefilterten Einträge mit Zeit, Aktion, Person und IP.",
+          "Du weißt, ob etwas zu tun ist.",
+          "Der Eintrag steht unter „Erledigt“ mit „erledigt von …“."
+        ],
+        "fehler": [
+          {
+            "problem": "Du verstehst eine Aktion nicht.",
+            "loesung": "Das Journal zeigt unter „Technischer Name“ den genauen Namen. Frage die Technik, wenn du unsicher bist."
+          },
+          {
+            "problem": "Der Alarm kommt immer wieder.",
+            "loesung": "Prüfe die Ursache, z. B. eine Person mit vielen falschen Passwörtern. Markiere erst dann als erledigt."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne die Seite „Aktivität“, wechsle in die Ansicht „Auffälligkeiten“ und lies die Einträge. Markiere nichts als erledigt."
+      },
+      {
+        "id": "AKT-02",
+        "rollen": ["super_admin"],
+        "titre": "Rechteprüfung durchführen",
+        "wann": "Zu Beginn jedes Quartals prüfst du, wer erweiterte Rechte hat.",
+        "schritte": [
+          "Im Menü unter „Verwaltung“ › „System“ die Seite „Aktivität“ öffnen und die Ansicht „Rechteprüfung“ wählen.",
+          "Gibt es noch keine Prüfung, mit „Prüfung … jetzt anlegen“ eine anlegen. Sonst die aktuelle Prüfung auswählen.",
+          "Bei jedem Konto „Bestätigen“ wählen oder „Rechte entziehen“ markieren. Optional eine „Notiz (optional)“ ergänzen.",
+          "Die Entzüge in der „Rollenverwaltung“ im Reiter „Zuweisung“ wirklich durchführen (Karte ROLL-01).",
+          "Wenn alle Konten entschieden sind, „Prüfung abschließen“ klicken."
+        ],
+        "danach": "Das Markieren allein ändert keine Rechte. Es zeigt „Markiert – das Konto hat noch erweiterte Rechte“, bis der Entzug erfolgt ist. Die Prüfung wird automatisch zu Beginn jedes Quartals angelegt.",
+        "vorher": "Du kennst die Aufgaben der Personen mit erweiterten Rechten (ab Bureau Admin).",
+        "erwartet": [
+          "Die Ansicht zeigt die letzte Prüfung mit Quartal. Ohne Prüfung steht dort „Noch keine Rechteprüfung.“",
+          "Die Prüfung listet Konten mit Rolle und Entscheidung „Offen“.",
+          "Die Entscheidung steht bei jedem Konto, ggf. mit Notiz.",
+          "Bei markierten Konten steht „Entzug bereits erfolgt.“",
+          "Es steht „Abgeschlossen von … am …“. Vorher zeigt die App „Noch … Konten ohne Entscheidung.“"
+        ],
+        "fehler": [
+          {
+            "problem": "Die Prüfung lässt sich nicht abschließen.",
+            "loesung": "Es fehlen Entscheidungen. Die App zeigt „Noch … Konten ohne Entscheidung.“"
+          },
+          {
+            "problem": "„Rechte entziehen“ hat nichts geändert.",
+            "loesung": "Das Markieren entzieht keine Rechte. Entzieh sie im Reiter „Zuweisung“."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne die Ansicht „Rechteprüfung“ und lies die letzte Prüfung. Triff keine Entscheidung und schließe nichts ab."
+      },
+      {
+        "id": "AKT-03",
+        "rollen": ["super_admin"],
+        "titre": "Alte technische Daten bereinigen (Datenpflege)",
+        "wann": "Protokoll, Auswertungen und gelesene Hinweise sollen nach Ablauf der Fristen entfernt werden.",
+        "schritte": [
+          "Im Menü unter „Verwaltung“ › „System“ die Seite „Aktivität“ öffnen und die Ansicht „Datenpflege“ wählen.",
+          "Für jede Datenart die „Frist in Tagen“ prüfen und bei Änderungen „Fristen speichern“ klicken.",
+          "Entscheiden, ob „Automatisch bereinigen (täglich)“ eingeschaltet sein soll.",
+          "Für eine einmalige Bereinigung die Datenarten mit Treffern ankreuzen (oder „Alle Datenarten mit Treffern auswählen“).",
+          "Auf „… Datenarten jetzt bereinigen“ klicken und die Rückfrage mit „Endgültig löschen“ bestätigen."
+        ],
+        "danach": "Gelöscht werden nur Daten, die älter als die gespeicherte Frist sind. Das lässt sich nicht rückgängig machen. Die letzte Ausführung steht unter „Letzter Lauf“.",
+        "vorher": "Du hast die Aufbewahrungsfristen mit dem Verein abgestimmt.",
+        "erwartet": [
+          "Die Ansicht zeigt Gruppen mit Bestand, ältestem Eintrag und „jetzt betroffen“.",
+          "Bei geänderten Fristen werden sie gespeichert. Ungültige Werte zeigen „Mindestens eine Frist liegt außerhalb des erlaubten Bereichs.“",
+          "Der Hinweis zur automatischen Pflege zeigt, ob sie an oder aus ist.",
+          "Die gewählten Datenarten sind markiert. Vorher gilt: „Speichern Sie zuerst die geänderten Fristen; die Vorschau gilt für die gespeicherten Werte.“",
+          "„Fertig: … Datensätze gelöscht.“ erscheint."
+        ],
+        "fehler": [
+          {
+            "problem": "Du möchtest die Löschung zurücknehmen.",
+            "loesung": "Das geht nicht. Gelöschte Datensätze sind endgültig weg. Lies die Rückfrage deshalb genau."
+          },
+          {
+            "problem": "„Jetzt bereinigen“ ist nicht möglich.",
+            "loesung": "Es ist keine Datenart ausgewählt oder es gibt keine betroffenen Daten."
+          }
+        ],
+        "uebung": "Übung („ÜBUNG“): Öffne die Ansicht „Datenpflege“ und lies Bestand, ältesten Eintrag und „jetzt betroffen“. Bereinige nichts und speichere keine Fristen."
+      }
+    ]
+  },
   "roles": {
     "titre": "Rollenverwaltung",
-    "intro": "Bestimme, wer welche Verwaltungsseiten sehen und ändern darf.",
+    "intro": "Bestimme, wer welche Verwaltungsseiten sehen und ändern darf. Die Seite hat drei Reiter: „Zuweisung“ (Rollen an Personen), „Zugriff“ (Lesen und Schreiben je Rolle und Modul) und „Sichtbarkeit“ (Menüeinträge für Mitglieder und Nicht-Mitglieder).",
     "schritte": [
-      "Eine Person oder Rolle auswählen.",
-      "Pro Seite „kein Zugriff“, „Lesen“ oder „Lesen und Schreiben“ vergeben.",
-      "Änderungen gelten sofort beim nächsten Laden der Seite."
+      "Im Menü unter „Verwaltung“ › „System“ die „Rollenverwaltung“ öffnen.",
+      "Im Reiter „Zuweisung“ eine Person suchen und ihre Rollen ändern. Im Reiter „Zugriff“ pro Modul oder Seite „Lesen“ und „Schreiben“ je Rolle vergeben. Im Reiter „Sichtbarkeit“ festlegen, welche Menüeinträge Mitglieder und Nicht-Mitglieder sehen.",
+      "Änderungen gelten sofort beim nächsten Laden der Seite. Das Protokoll liegt auf der eigenen Seite „Aktivität“."
     ],
     "workflows": [
       {
@@ -999,103 +1107,6 @@
           }
         ],
         "uebung": "Übung („ÜBUNG“): Öffne den Tab „Sichtbarkeit“ und beschreibe in eigenen Worten, welche Einträge ein Nicht-Mitglied sieht. Ändere nichts."
-      },
-      {
-        "id": "AKT-01",
-        "rollen": ["super_admin"],
-        "titre": "Auffälligkeiten im Aktivitätsprotokoll prüfen",
-        "wann": "Die App meldet per Glocke und E-Mail eine Auffälligkeit, zum Beispiel viele Fehlversuche beim Anmelden.",
-        "schritte": [
-          "Die Meldung öffnen. Sie führt in der „Rollenverwaltung“ zum Reiter „Aktivität“ und zur Ansicht „Auffälligkeiten“.",
-          "In der Liste „Offen“ den Eintrag lesen (Gewicht „Warnung“ oder „Wichtig“) und in der Ansicht „Journal“ die zugehörigen Einträge nachsehen (Filter „Person“, „IP-Adresse“ und Zeitraum).",
-          "Entscheiden, ob Handlungsbedarf besteht (z. B. Konto sperren oder Rechte prüfen).",
-          "Danach den Eintrag mit „Als erledigt markieren“ abschließen."
-        ],
-        "danach": "Die App prüft das Protokoll alle 10 Minuten und meldet neue Funde. Erledigte Einträge stehen unter „Erledigt“ mit Name und Zeit.",
-        "vorher": "Du bist App-Administrator. Das Protokoll ist nur für App-Admins sichtbar.",
-        "erwartet": [
-          "Die Ansicht „Auffälligkeiten“ ist offen. Ohne Funde steht dort „Keine offenen Auffälligkeiten.“",
-          "Das Journal zeigt die gefilterten Einträge mit Zeit, Aktion, Person und IP.",
-          "Du weißt, ob etwas zu tun ist.",
-          "Der Eintrag steht unter „Erledigt“ mit „erledigt von …“."
-        ],
-        "fehler": [
-          {
-            "problem": "Du verstehst eine Aktion nicht.",
-            "loesung": "Das Journal zeigt unter „Technischer Name“ den genauen Namen. Frage die Technik, wenn du unsicher bist."
-          },
-          {
-            "problem": "Der Alarm kommt immer wieder.",
-            "loesung": "Prüfe die Ursache, z. B. eine Person mit vielen falschen Passwörtern. Markiere erst dann als erledigt."
-          }
-        ],
-        "uebung": "Übung („ÜBUNG“): Öffne den Reiter „Aktivität“, wechsle in die Ansicht „Auffälligkeiten“ und lies die Einträge. Markiere nichts als erledigt."
-      },
-      {
-        "id": "AKT-02",
-        "rollen": ["super_admin"],
-        "titre": "Rechteprüfung durchführen",
-        "wann": "Zu Beginn jedes Quartals prüfst du, wer erweiterte Rechte hat.",
-        "schritte": [
-          "In der „Rollenverwaltung“ den Reiter „Aktivität“ öffnen und die Ansicht „Rechteprüfung“ wählen.",
-          "Gibt es noch keine Prüfung, mit „Prüfung … jetzt anlegen“ eine anlegen. Sonst die aktuelle Prüfung auswählen.",
-          "Bei jedem Konto „Bestätigen“ wählen oder „Rechte entziehen“ markieren. Optional eine „Notiz (optional)“ ergänzen.",
-          "Die Entzüge im Reiter „Zuweisung“ wirklich durchführen (Karte ROLL-01).",
-          "Wenn alle Konten entschieden sind, „Prüfung abschließen“ klicken."
-        ],
-        "danach": "Das Markieren allein ändert keine Rechte. Es zeigt „Markiert – das Konto hat noch erweiterte Rechte“, bis der Entzug erfolgt ist. Die Prüfung wird automatisch zu Beginn jedes Quartals angelegt.",
-        "vorher": "Du kennst die Aufgaben der Personen mit erweiterten Rechten (ab Bureau Admin).",
-        "erwartet": [
-          "Die Ansicht zeigt die letzte Prüfung mit Quartal. Ohne Prüfung steht dort „Noch keine Rechteprüfung.“",
-          "Die Prüfung listet Konten mit Rolle und Entscheidung „Offen“.",
-          "Die Entscheidung steht bei jedem Konto, ggf. mit Notiz.",
-          "Bei markierten Konten steht „Entzug bereits erfolgt.“",
-          "Es steht „Abgeschlossen von … am …“. Vorher zeigt die App „Noch … Konten ohne Entscheidung.“"
-        ],
-        "fehler": [
-          {
-            "problem": "Die Prüfung lässt sich nicht abschließen.",
-            "loesung": "Es fehlen Entscheidungen. Die App zeigt „Noch … Konten ohne Entscheidung.“"
-          },
-          {
-            "problem": "„Rechte entziehen“ hat nichts geändert.",
-            "loesung": "Das Markieren entzieht keine Rechte. Entzieh sie im Reiter „Zuweisung“."
-          }
-        ],
-        "uebung": "Übung („ÜBUNG“): Öffne die Ansicht „Rechteprüfung“ und lies die letzte Prüfung. Triff keine Entscheidung und schließe nichts ab."
-      },
-      {
-        "id": "AKT-03",
-        "rollen": ["super_admin"],
-        "titre": "Alte technische Daten bereinigen (Datenpflege)",
-        "wann": "Protokoll, Auswertungen und gelesene Hinweise sollen nach Ablauf der Fristen entfernt werden.",
-        "schritte": [
-          "In der „Rollenverwaltung“ den Reiter „Aktivität“ öffnen und die Ansicht „Datenpflege“ wählen.",
-          "Für jede Datenart die „Frist in Tagen“ prüfen und bei Änderungen „Fristen speichern“ klicken.",
-          "Entscheiden, ob „Automatisch bereinigen (täglich)“ eingeschaltet sein soll.",
-          "Für eine einmalige Bereinigung die Datenarten mit Treffern ankreuzen (oder „Alle Datenarten mit Treffern auswählen“).",
-          "Auf „… Datenarten jetzt bereinigen“ klicken und die Rückfrage mit „Endgültig löschen“ bestätigen."
-        ],
-        "danach": "Gelöscht werden nur Daten, die älter als die gespeicherte Frist sind. Das lässt sich nicht rückgängig machen. Die letzte Ausführung steht unter „Letzter Lauf“.",
-        "vorher": "Du hast die Aufbewahrungsfristen mit dem Verein abgestimmt.",
-        "erwartet": [
-          "Die Ansicht zeigt Gruppen mit Bestand, ältestem Eintrag und „jetzt betroffen“.",
-          "Bei geänderten Fristen werden sie gespeichert. Ungültige Werte zeigen „Mindestens eine Frist liegt außerhalb des erlaubten Bereichs.“",
-          "Der Hinweis zur automatischen Pflege zeigt, ob sie an oder aus ist.",
-          "Die gewählten Datenarten sind markiert. Vorher gilt: „Speichern Sie zuerst die geänderten Fristen; die Vorschau gilt für die gespeicherten Werte.“",
-          "„Fertig: … Datensätze gelöscht.“ erscheint."
-        ],
-        "fehler": [
-          {
-            "problem": "Du möchtest die Löschung zurücknehmen.",
-            "loesung": "Das geht nicht. Gelöschte Datensätze sind endgültig weg. Lies die Rückfrage deshalb genau."
-          },
-          {
-            "problem": "„Jetzt bereinigen“ ist nicht möglich.",
-            "loesung": "Es ist keine Datenart ausgewählt oder es gibt keine betroffenen Daten."
-          }
-        ],
-        "uebung": "Übung („ÜBUNG“): Öffne die Ansicht „Datenpflege“ und lies Bestand, ältesten Eintrag und „jetzt betroffen“. Bereinige nichts und speichere keine Fristen."
       }
     ]
   },
@@ -3543,7 +3554,7 @@
         "titre": "Zentrale Einstellungen ändern",
         "wann": "Eine Frist oder Schwelle soll anders sein, z. B. eine längere Warenkorb-Reservierung.",
         "schritte": [
-          "Im Menü unter „Administration“ den Eintrag „Zentrale Einstellungen“ öffnen.",
+          "Im Menü unter „Verwaltung“ › „System“ den Eintrag „Zentrale Einstellungen“ öffnen.",
           "Aktuelle Werte notieren, bevor du etwas änderst.",
           "In der passenden Gruppe das Feld ändern und die Hilfe unter dem Feld lesen.",
           "Auf „Speichern“ klicken."
@@ -3594,7 +3605,7 @@
         "titre": "Sektor anlegen und Bundesländer zuordnen",
         "wann": "Ein neuer Sektor entsteht oder ein Bundesland wechselt den Sektor.",
         "schritte": [
-          "Im Menü unter „Administration“ „Sektoren-Struktur“ öffnen.",
+          "Im Menü unter „Verwaltung“ › „Community & Inhalte“ den Eintrag „Sektoren-Struktur“ öffnen.",
           "Unter „Neuer Sektor“ den Namen eintragen und auf „Anlegen“ klicken.",
           "In der neuen Karte „Farbe“ wählen und auf „Speichern“ klicken.",
           "Unter „Bundesländer“ die Häkchen setzen. Länder außerhalb Deutschlands stehen unter „Weitere Länder“.",
@@ -3755,7 +3766,7 @@
     ],
     "tipps": [
       "Im Zweifel ausblenden statt löschen: Ausblenden lässt sich zurücknehmen.",
-      "Das Aktivitätsprotokoll (Rollenverwaltung, Reiter „Aktivität“) zeigt, wer wann moderiert hat."
+      "Das Aktivitätsprotokoll (Verwaltung › System › Aktivität) zeigt, wer wann moderiert hat."
     ]
   },
   "forum": {
@@ -4496,7 +4507,7 @@
         },
         {
           "begriff": "Aktivitätsprotokoll",
-          "text": "Das Journal der App mit wichtigen Aktionen. Im Reiter „Aktivität“ der Rollenverwaltung prüft der App Admin Auffälligkeiten."
+          "text": "Das Journal der App mit wichtigen Aktionen. Auf der Seite „Aktivität“ (Verwaltung › System) prüft der App Admin Auffälligkeiten."
         },
         {
           "begriff": "Rollen",

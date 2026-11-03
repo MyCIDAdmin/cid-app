@@ -17,6 +17,7 @@ from .views import (
     PflegeView,
     ReviewDetailView,
     ReviewListeView,
+    TotpErinnerungView,
     UebersichtView,
 )
 
@@ -51,5 +52,6 @@ urlpatterns = [
     path("review/<uuid:pk>/abschliessen/", AbschliessenView.as_view(), name="review-abschliessen"),
     path("pflege/", PflegeView.as_view(), name="pflege"),
     path("pflege/ausfuehren/", PflegeAusfuehrenView.as_view(), name="pflege-ausfuehren"),
+    path("totp-erinnerung/", TotpErinnerungView.as_view(), name="totp-erinnerung"),
     path("aktionen/", AktionenView.as_view(), name="aktionen"),
 ]

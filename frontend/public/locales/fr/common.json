@@ -39,7 +39,10 @@
     "zahlungen_import": "Importer des paiements",
     "kalender": "Calendrier",
     "regionen": "Secteurs",
-    "admin_regionen": "Structure des secteurs"
+    "admin_regionen": "Structure des secteurs",
+    "aktivitaet": "Activité",
+    "offene_auffaelligkeiten_one": "{{count}} anomalie ouverte",
+    "offene_auffaelligkeiten_other": "{{count}} anomalies ouvertes"
   },
   "nav_groupe": {
     "general": "Général",

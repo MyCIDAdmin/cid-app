@@ -248,6 +248,10 @@
     "a_regionen": {
       "titel": "Structure des secteurs",
       "text": "Fixe quels secteurs existent et quels Länder et pays appartiennent à quel secteur. Chacun appartient à un seul secteur."
+    },
+    "aktivitaet": {
+      "titel": "La sécurité en un coup d'œil",
+      "text": "Tu vois ici si tout est en ordre et ce qu'il y a à faire ensuite."
     }
   },
   "hinweise_zusatz": {

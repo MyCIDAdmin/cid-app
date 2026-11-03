@@ -248,6 +248,10 @@
     "a_regionen": {
       "titel": "Struktur der Sektoren",
       "text": "Lege fest, welche Sektoren es gibt und welche Bundesländer und Länder zu welchem Sektor gehören. Jedes gehört genau einem Sektor."
+    },
+    "aktivitaet": {
+      "titel": "Sicherheit im Blick",
+      "text": "Hier siehst du, ob alles in Ordnung ist, und was als Nächstes zu tun ist."
     }
   },
   "hinweise_zusatz": {

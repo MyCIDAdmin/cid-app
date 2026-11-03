@@ -19,6 +19,8 @@ import AktivitaetTab from "./AktivitaetTab";
 vi.mock("../../hooks/useAktivitaet", () => ({
   useUebersicht: vi.fn(),
   useJournal: vi.fn(),
+  useJournalLive: vi.fn(),
+  useTotpErinnerung: vi.fn(),
   useAktionen: vi.fn(),
   useAuffaelligkeiten: vi.fn(),
   useAuffaelligkeitErledigen: vi.fn(),
@@ -57,6 +59,35 @@ const uebersicht: Uebersicht = {
     aktiv_7d: 5,
     aktiv_30d: 7,
   },
+  vorperiode: {
+    logins: 10,
+    aktive_nutzer: 7,
+    fehlversuche: 1,
+    sperren: 1,
+    registrierungen: 2,
+    freigaben: 1,
+    rollenaenderungen: 4,
+    geraete_limit: 0,
+    server_fehler: 2,
+  },
+  lage: {
+    wert: 55,
+    stufe: "kritisch",
+    faktoren: {
+      totp: { ist: 0, soll: 1 },
+      auffaelligkeiten: { ist: 2, soll: 3 },
+      review: { ist: 0, soll: 0 },
+    },
+    ohne_totp: 1,
+    review: {
+      quartal: "2026-Q4",
+      status: "offen",
+      anzahl: 4,
+      entschieden: 1,
+      erstellt_am: "2026-10-01T00:00:00Z",
+    },
+    bericht: { jahr: 2026, monat: 9, erstellt: true, versendet: false },
+  },
   verlauf: [
     { tag: "2026-10-13", logins: 2, fehlversuche: 1 },
     { tag: "2026-10-14", logins: 3, fehlversuche: 0 },
@@ -68,7 +99,7 @@ const uebersicht: Uebersicht = {
       id: "u1",
       name: "Alex Admin",
       email: "admin@example.de",
-      rolle: "App Admin",
+      rolle: "super_admin",
       letzte_anmeldung: null,
       totp: false,
     },
@@ -233,10 +264,15 @@ const pflegeSpeichern = vi.fn();
 const pflegeAusfuehren = vi.fn();
 const berichtErzeugen = vi.fn();
 const entscheiden = vi.fn();
+const erinnern = vi.fn();
 const abschliessen = vi.fn();
 
 function mutation<T>(fn: ReturnType<typeof vi.fn>) {
-  return { mutate: fn, isPending: false } as unknown as T;
+  return {
+    mutate: fn,
+    mutateAsync: vi.fn().mockResolvedValue({}),
+    isPending: false,
+  } as unknown as T;
 }
 
 function mocks() {
@@ -284,6 +320,12 @@ function mocks() {
   );
   vi.mocked(hooks.useReviewAbschliessen).mockReturnValue(
     mutation<ReturnType<typeof hooks.useReviewAbschliessen>>(abschliessen),
+  );
+  vi.mocked(hooks.useJournalLive).mockReturnValue({
+    data: { anzahl: 1, seite: 1, seiten: 1, ergebnisse: [eintrag] },
+  } as unknown as ReturnType<typeof hooks.useJournalLive>);
+  vi.mocked(hooks.useTotpErinnerung).mockReturnValue(
+    mutation<ReturnType<typeof hooks.useTotpErinnerung>>(erinnern),
   );
   vi.mocked(hooks.useNutzung).mockReturnValue({
     data: nutzung,
@@ -339,6 +381,34 @@ describe("AktivitaetTab", () => {
     expect(screen.getByText("Alex Admin")).toBeInTheDocument();
     expect(screen.getByText("uebersicht.totp_nein")).toBeInTheDocument();
     expect(screen.getByText("1.2.3.4")).toBeInTheDocument();
+  });
+
+  it("zeigt Sicherheitswert, Aufgaben und den Vergleich mit der Vorperiode", () => {
+    renderWithProviders(<AktivitaetTab />);
+
+    expect(screen.getByRole("img", { name: "cockpit.lage.wert_aria" })).toBeInTheDocument();
+    expect(screen.getByText("cockpit.aufgaben.auffaelligkeiten_titel")).toBeInTheDocument();
+    expect(screen.getByText("cockpit.aufgaben.review_titel")).toBeInTheDocument();
+    expect(screen.getByText("cockpit.aufgaben.bericht_titel")).toBeInTheDocument();
+    // Fehlversuche stiegen von 1 auf 3: Anstieg als Warnzeichen hervorgehoben.
+    expect(screen.getAllByText("cockpit.vergleich.plus").length).toBeGreaterThan(0);
+  });
+
+  it("erinnert alle oder ein einzelnes Konto an die Authenticator-App", () => {
+    renderWithProviders(<AktivitaetTab />);
+
+    fireEvent.click(screen.getByText("cockpit.aufgaben.alle_erinnern"));
+    expect(erinnern).toHaveBeenLastCalledWith(undefined, expect.anything());
+
+    fireEvent.click(screen.getByLabelText("cockpit.erinnerung.einzeln_aria"));
+    expect(erinnern).toHaveBeenLastCalledWith("u1", expect.anything());
+  });
+
+  it("die Aufgabe „Prüfen“ öffnet die Auffälligkeiten", () => {
+    renderWithProviders(<AktivitaetTab />);
+
+    fireEvent.click(screen.getByText("cockpit.aufgaben.pruefen"));
+    expect(screen.getByText("auffaelligkeiten.erledigen")).toBeInTheDocument();
   });
 
   it("öffnet das Journal mit dem Filter der angeklickten Kachel", () => {

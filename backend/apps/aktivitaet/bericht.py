@@ -21,7 +21,7 @@ from . import nutzung
 from .models import Auffaelligkeit, Monatsbericht, Nutzung, RechteReview
 from .services import BERLIN, INAKTIV_TAGE
 
-LINK = "/admin/roles?tab=aktivitaet&ansicht=berichte"
+LINK = "/admin/aktivitaet?ansicht=berichte"
 AENDERUNGS_KATEGORIEN = (
     "mitglieder",
     "zahlungen",

@@ -3,7 +3,7 @@
   "chargement": "Wird geladen…",
   "erreur_chargement": "Die Daten konnten nicht geladen werden.",
   "ansicht": {
-    "uebersicht": "Übersicht",
+    "uebersicht": "Cockpit",
     "auffaelligkeiten": "Auffälligkeiten",
     "journal": "Journal",
     "nutzung": "Nutzung",
@@ -257,5 +257,104 @@
     "endgueltig": "Endgültig löschen",
     "abbrechen": "Abbrechen",
     "erledigt": "Fertig: {{anzahl}} Datensätze gelöscht."
+  },
+  "seite": {
+    "titel": "Aktivität"
+  },
+  "cockpit": {
+    "lage": {
+      "titel": "Sicherheitslage",
+      "von_100": "von 100",
+      "wert_aria": "Sicherheitswert {{wert}} von 100",
+      "stufe": {
+        "gut": "Alles im grünen Bereich",
+        "achtung": "Aufmerksamkeit nötig",
+        "kritisch": "Handlungsbedarf"
+      },
+      "erklaerung": "Der Wert setzt sich aus drei Faktoren zusammen: Authenticator (40 %), bearbeitete Auffälligkeiten (30 %) und Rechteprüfung (30 %).",
+      "faktoren": {
+        "totp": "Authenticator bei erweiterten Rechten",
+        "auffaelligkeiten": "Auffälligkeiten bearbeitet",
+        "review": "Rechteprüfung entschieden"
+      },
+      "faktor_zahl": "{{ist}} von {{soll}}",
+      "leer": {
+        "totp": "keine Konten",
+        "auffaelligkeiten": "keine erkannt",
+        "review": "noch keine Prüfung"
+      }
+    },
+    "aufgaben": {
+      "titel": "Jetzt zu tun",
+      "anzahl_one": "{{count}} Aufgabe",
+      "anzahl_other": "{{count}} Aufgaben",
+      "keine": "Nichts offen. Alles erledigt.",
+      "auffaelligkeiten_titel_one": "{{count}} offene Auffälligkeit",
+      "auffaelligkeiten_titel_other": "{{count}} offene Auffälligkeiten",
+      "auffaelligkeiten_text": "Lesen, im Journal nachsehen und als erledigt markieren.",
+      "pruefen": "Prüfen",
+      "totp_titel_one": "{{count}} Konto ohne Authenticator",
+      "totp_titel_other": "{{count}} Konten ohne Authenticator",
+      "totp_text": "Alle haben erweiterte Rechte (ab Bureau Admin).",
+      "alle_erinnern": "Alle erinnern",
+      "review_titel": "Rechteprüfung {{quartal}}: {{offen}} Konten offen",
+      "review_text": "Noch nicht abgeschlossen.",
+      "fortsetzen": "Fortsetzen",
+      "bericht_titel": "Monatsbericht {{monat}} erstellt",
+      "bericht_text": "Noch nicht an die App-Admins versendet.",
+      "oeffnen": "Öffnen"
+    },
+    "vergleich": {
+      "gleich": "unverändert",
+      "plus": "+{{n}} zur Vorperiode",
+      "minus": "−{{n}} zur Vorperiode",
+      "stand_heute": "Stand heute"
+    },
+    "alarmregeln": {
+      "knopf": "Alarmregeln",
+      "titel": "Wann die App Alarm schlägt",
+      "hinweis": "Die Schwellen sind fest eingestellt. Eine Meldung erscheint in der Glocke und, wenn erlaubt, per E-Mail bei allen App-Admins.",
+      "mail_einstellung": "E-Mail-Benachrichtigungen öffnen",
+      "regeln": {
+        "bruteforce": "10 oder mehr Fehlversuche von einer IP-Adresse in 15 Minuten",
+        "angriff_erfolg": "Erfolgreiche Anmeldung nach 5 oder mehr Fehlversuchen in 30 Minuten",
+        "export_haeufung": "3 oder mehr Exporte derselben Person in 60 Minuten",
+        "massen_loeschung": "10 oder mehr gelöschte Datensätze derselben Person in 10 Minuten",
+        "neuer_app_admin": "Jemand wird zum App-Admin gemacht",
+        "abschluss_geoeffnet": "Ein Finanzabschluss wird wieder geöffnet",
+        "totp_deaktiviert": "Jemand schaltet die Authenticator-App aus",
+        "server_fehler": "5 oder mehr Serverfehler in 15 Minuten",
+        "review_offen": "Rechteprüfung ist seit 14 Tagen offen",
+        "task_fehler": "Ein Hintergrundjob schlägt fehl"
+      }
+    },
+    "bericht": {
+      "knopf": "Bericht an mich senden",
+      "gesendet": "Der Monatsbericht {{monat}} ist an Ihre Adresse unterwegs.",
+      "fehler": "Der Bericht konnte nicht gesendet werden."
+    },
+    "erinnerung": {
+      "einzeln": "Erinnern",
+      "einzeln_aria": "{{name}} an die Authenticator-App erinnern",
+      "gesendet_one": "{{count}} Erinnerung gesendet.",
+      "gesendet_other": "{{count}} Erinnerungen gesendet.",
+      "keine": "Niemand erinnert: Alle betroffenen Konten wurden in den letzten 24 Stunden schon erinnert.",
+      "mail_aus": "Es wurde nichts gesendet: E-Mails sind für das Modul „Aktivität“ ausgeschaltet.",
+      "fehler": "Die Erinnerung konnte nicht gesendet werden.",
+      "hinweis": "Die E-Mail enthält nur den Hinweis und den Link zu „Mein Profil“. Dieselbe Person wird höchstens einmal je 24 Stunden erinnert."
+    },
+    "module": {
+      "titel": "Nutzung je Modul",
+      "personen_one": "{{count}} Person",
+      "personen_other": "{{count}} Personen",
+      "ungenutzt": "Nicht genutzt im Zeitraum:",
+      "alle": "Alle Module ansehen"
+    },
+    "feed": {
+      "titel": "Gerade passiert",
+      "live": "Live",
+      "leer": "Noch keine Ereignisse.",
+      "alles": "Alles im Journal ansehen"
+    }
   }
 }

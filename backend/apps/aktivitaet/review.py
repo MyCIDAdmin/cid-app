@@ -17,9 +17,9 @@ from apps.notifications.services import email_module_actif, notifier
 from apps.rbac.models import UserRoleAssignment
 
 from .models import RechtePosition, RechteReview
-from .services import BERLIN, name_von
+from .services import BERLIN, name_von, rollen_text
 
-LINK = "/admin/roles?tab=aktivitaet&ansicht=review"
+LINK = "/admin/aktivitaet?ansicht=review"
 STUFE = ROLE_LEVELS[Role.BUREAU_ADMIN]
 TEXT_DE = (
     "Bitte jedes Konto mit erweiterten Rechten bestätigen " "oder „Rechte entziehen“ markieren."
@@ -45,17 +45,6 @@ def privilegierte_konten():
         .select_related("membre")
         .distinct()
     )
-
-
-def rollen_text(user) -> str:
-    teile = [user.get_role_display()]
-    teile += [
-        a.role.nom
-        for a in UserRoleAssignment.objects.filter(user=user, role__is_system=False).select_related(
-            "role"
-        )
-    ]
-    return ", ".join(dict.fromkeys(teile))[:300]
 
 
 def hat_erweiterte_rechte(user) -> bool:

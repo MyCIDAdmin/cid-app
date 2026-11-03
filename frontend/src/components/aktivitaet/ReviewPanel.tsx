@@ -13,10 +13,10 @@ import {
   useReviews,
 } from "../../hooks/useAktivitaet";
 import type { Entscheidung } from "../../types/aktivitaet";
-import { zeitpunkt } from "../../utils/aktivitaet";
+import { rollenText, zeitpunkt } from "../../utils/aktivitaet";
 
 function ReviewDetail({ id }: { id: string }) {
-  const { t, i18n } = useTranslation("aktivitaet");
+  const { t, i18n } = useTranslation(["aktivitaet", "utilisateurs"]);
   const { data, isLoading, isError } = useReview(id);
   const entscheiden = useKontoEntscheiden();
   const abschliessen = useReviewAbschliessen();
@@ -41,7 +41,8 @@ function ReviewDetail({ id }: { id: string }) {
                 <div className="text-sm text-text-primary">{p.name}</div>
                 <div className="text-text-tertiary">{p.email}</div>
                 <div className="mt-1 text-text-secondary">
-                  {p.rolle} · {t("uebersicht.spalten.totp")}:{" "}
+                  {rollenText(p.rolle, (key, opts) => t(key as never, opts as never))} ·{" "}
+                  {t("uebersicht.spalten.totp")}:{" "}
                   <span className={p.totp ? "text-status-successText" : "text-status-warningText"}>
                     {p.totp ? t("uebersicht.totp_ja") : t("uebersicht.totp_nein")}
                   </span>{" "}

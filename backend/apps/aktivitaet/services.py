@@ -14,7 +14,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 from apps.accounts.models import ROLE_LEVELS, AuditLogEntry, Role, User
 
 from . import kategorien as kat
-from .models import Auffaelligkeit
+from .models import Auffaelligkeit, Monatsbericht, RechtePosition, RechteReview
 
 BERLIN = ZoneInfo("Europe/Berlin")
 ERLAUBTE_TAGE = (7, 30, 90)
@@ -33,6 +33,22 @@ def _ip(wert):
         return str(ipaddress.ip_address((wert or "").strip()))
     except ValueError:
         return None
+
+
+def rollen_text(user) -> str:
+    """Rollen eines Kontos als sprachneutrale Kennung : Systemrolle (z. B. `super_admin`), gefolgt
+    von den Namen eigener Rollen. Die Anzeige übersetzt die Oberfläche in der Sprache des Admins ;
+    ältere Einträge mit ausgeschriebenem Namen erkennt sie ebenfalls."""
+    from apps.rbac.models import UserRoleAssignment
+
+    teile = [user.role]
+    teile += [
+        a.role.nom
+        for a in UserRoleAssignment.objects.filter(user=user, role__is_system=False).select_related(
+            "role"
+        )
+    ]
+    return ", ".join(dict.fromkeys(teile))[:300]
 
 
 def name_von(user) -> str:
@@ -191,13 +207,105 @@ def uebersicht(tage: int) -> dict:
         .order_by("-n")[:5]
     ]
 
+    sicht = konten_sicht(jetzt)
     return {
         "tage": tage,
         "kacheln": kacheln,
+        "vorperiode": vorperiode(jetzt, tage),
         "verlauf": verlauf,
         "heatmap": heatmap,
         "top_ips": top_ips,
-        **konten_sicht(jetzt),
+        "lage": lage(jetzt, tage, sicht),
+        **sicht,
+    }
+
+
+def vorperiode(jetzt, tage: int) -> dict:
+    """Dieselben Kennzahlen für den gleich langen Zeitraum davor (für den Vergleich im Cockpit)."""
+    bis = jetzt - timedelta(days=tage)
+    von = bis - timedelta(days=tage)
+    qs = AuditLogEntry.objects.filter(created_at__gte=von, created_at__lt=bis).exclude(
+        action__in=kat.aktionen_von("audit")
+    )
+    zaehler = {r["action"]: r["n"] for r in qs.values("action").annotate(n=Count("id"))}
+
+    def summe(*aktionen):
+        return sum(zaehler.get(a, 0) for a in aktionen)
+
+    return {
+        "logins": summe(*kat.LOGIN_ERFOLG),
+        "aktive_nutzer": (
+            qs.filter(action__in=kat.LOGIN_ERFOLG, user__isnull=False)
+            .values("user")
+            .distinct()
+            .count()
+        ),
+        "fehlversuche": summe(*kat.LOGIN_FEHLER),
+        "sperren": summe("login_locked_out"),
+        "registrierungen": summe("register"),
+        "freigaben": summe("registration_approved", "registration_refused"),
+        "rollenaenderungen": summe(*kat.ROLLEN_AENDERUNG),
+        "geraete_limit": summe("device_limit_reached"),
+        "server_fehler": summe("server_fehler"),
+    }
+
+
+# Gewichte des Sicherheitswerts (Summe 100) : Authenticator, Auffälligkeiten, Rechteprüfung.
+GEWICHTE = {"totp": 40, "auffaelligkeiten": 30, "review": 30}
+
+
+def lage(jetzt, tage: int, sicht: dict) -> dict:
+    """Sicherheitslage für das Cockpit : drei Faktoren, daraus der Wert 0 bis 100, dazu die Angaben
+    für die Liste „Jetzt zu tun“ (Rechteprüfung, Monatsbericht)."""
+    from . import bericht
+
+    seit = jetzt - timedelta(days=tage)
+    konten = sicht["privilegiert"]
+    mit_totp = sum(1 for k in konten if k["totp"])
+    offen = Auffaelligkeit.objects.filter(status=Auffaelligkeit.Status.OFFEN).count()
+    erledigt = Auffaelligkeit.objects.filter(
+        status=Auffaelligkeit.Status.ERLEDIGT, erkannt_am__gte=seit
+    ).count()
+
+    review = RechteReview.objects.order_by("-erstellt_am").first()
+    review_info = None
+    if review:
+        anzahl = review.positionen.count()
+        offene = review.positionen.filter(entscheidung=RechtePosition.Entscheidung.OFFEN).count()
+        if review.status == "abgeschlossen":
+            offene = 0
+        review_info = {
+            "quartal": review.quartal,
+            "status": review.status,
+            "anzahl": anzahl,
+            "entschieden": anzahl - offene,
+            "erstellt_am": review.erstellt_am,
+        }
+
+    jahr, monat = bericht.vormonat(jetzt)
+    b = Monatsbericht.objects.filter(jahr=jahr, monat=monat).first()
+    bericht_info = {
+        "jahr": jahr,
+        "monat": monat,
+        "erstellt": b is not None,
+        "versendet": bool(b and b.versendet_am),
+    }
+
+    faktoren = {
+        "totp": (mit_totp, len(konten)),
+        "auffaelligkeiten": (erledigt, erledigt + offen),
+        "review": ((review_info["entschieden"], review_info["anzahl"]) if review_info else (0, 0)),
+    }
+    wert = round(
+        sum(GEWICHTE[k] * (ist / soll if soll else 1) for k, (ist, soll) in faktoren.items())
+    )
+    return {
+        "wert": wert,
+        "stufe": "gut" if wert >= 90 else "achtung" if wert >= 70 else "kritisch",
+        "faktoren": {k: {"ist": ist, "soll": soll} for k, (ist, soll) in faktoren.items()},
+        "ohne_totp": len(konten) - mit_totp,
+        "review": review_info,
+        "bericht": bericht_info,
     }
 
 
@@ -222,7 +330,7 @@ def konten_sicht(jetzt) -> dict:
                 "id": str(u.pk),
                 "name": name_von(u),
                 "email": u.email,
-                "rolle": u.get_role_display(),
+                "rolle": rollen_text(u),
                 "letzte_anmeldung": u.last_successful_login,
                 "totp": u.pk in mit_totp,
             }

@@ -13,6 +13,7 @@ export const HILFE_ROUTEN: ReadonlyArray<readonly [string, string]> = [
   ["/admin/events", "events"],
   ["/admin/projets", "projets"],
   ["/admin/albums", "albums"],
+  ["/admin/aktivitaet", "aktivitaet"],
   ["/admin/roles", "roles"],
   ["/admin/quiz", "quiz"],
   ["/einlass", "einlass"],

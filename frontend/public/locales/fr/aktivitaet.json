@@ -3,7 +3,7 @@
   "chargement": "Chargement…",
   "erreur_chargement": "Les données n'ont pas pu être chargées.",
   "ansicht": {
-    "uebersicht": "Vue d'ensemble",
+    "uebersicht": "Cockpit",
     "auffaelligkeiten": "Anomalies",
     "journal": "Journal",
     "nutzung": "Utilisation",
@@ -257,5 +257,104 @@
     "endgueltig": "Supprimer définitivement",
     "abbrechen": "Annuler",
     "erledigt": "Terminé : {{anzahl}} enregistrements supprimés."
+  },
+  "seite": {
+    "titel": "Activité"
+  },
+  "cockpit": {
+    "lage": {
+      "titel": "Situation de sécurité",
+      "von_100": "sur 100",
+      "wert_aria": "Score de sécurité {{wert}} sur 100",
+      "stufe": {
+        "gut": "Tout est au vert",
+        "achtung": "Attention requise",
+        "kritisch": "Action nécessaire"
+      },
+      "erklaerung": "Le score combine trois facteurs : application d'authentification (40 %), anomalies traitées (30 %) et revue des droits (30 %).",
+      "faktoren": {
+        "totp": "Authentification à deux facteurs pour les droits étendus",
+        "auffaelligkeiten": "Anomalies traitées",
+        "review": "Revue des droits décidée"
+      },
+      "faktor_zahl": "{{ist}} sur {{soll}}",
+      "leer": {
+        "totp": "aucun compte",
+        "auffaelligkeiten": "aucune détectée",
+        "review": "pas encore de revue"
+      }
+    },
+    "aufgaben": {
+      "titel": "À faire maintenant",
+      "anzahl_one": "{{count}} tâche",
+      "anzahl_other": "{{count}} tâches",
+      "keine": "Rien d'ouvert. Tout est fait.",
+      "auffaelligkeiten_titel_one": "{{count}} anomalie ouverte",
+      "auffaelligkeiten_titel_other": "{{count}} anomalies ouvertes",
+      "auffaelligkeiten_text": "Lire, consulter le journal et marquer comme traitée.",
+      "pruefen": "Examiner",
+      "totp_titel_one": "{{count}} compte sans authentification",
+      "totp_titel_other": "{{count}} comptes sans authentification",
+      "totp_text": "Tous ont des droits étendus (à partir de Bureau Admin).",
+      "alle_erinnern": "Rappeler à tous",
+      "review_titel": "Revue des droits {{quartal}} : {{offen}} comptes ouverts",
+      "review_text": "Pas encore terminée.",
+      "fortsetzen": "Continuer",
+      "bericht_titel": "Rapport mensuel {{monat}} créé",
+      "bericht_text": "Pas encore envoyé aux administrateurs.",
+      "oeffnen": "Ouvrir"
+    },
+    "vergleich": {
+      "gleich": "inchangé",
+      "plus": "+{{n}} par rapport à la période précédente",
+      "minus": "−{{n}} par rapport à la période précédente",
+      "stand_heute": "État actuel"
+    },
+    "alarmregeln": {
+      "knopf": "Règles d'alerte",
+      "titel": "Quand l'application déclenche une alerte",
+      "hinweis": "Les seuils sont fixes. Une alerte apparaît dans la cloche et, si autorisé, par e-mail chez tous les administrateurs.",
+      "mail_einstellung": "Ouvrir les notifications par e-mail",
+      "regeln": {
+        "bruteforce": "10 échecs ou plus depuis une adresse IP en 15 minutes",
+        "angriff_erfolg": "Connexion réussie après 5 échecs ou plus en 30 minutes",
+        "export_haeufung": "3 exports ou plus de la même personne en 60 minutes",
+        "massen_loeschung": "10 enregistrements supprimés ou plus par la même personne en 10 minutes",
+        "neuer_app_admin": "Une personne devient administrateur de l'application",
+        "abschluss_geoeffnet": "Une clôture financière est rouverte",
+        "totp_deaktiviert": "Une personne désactive l'application d'authentification",
+        "server_fehler": "5 erreurs serveur ou plus en 15 minutes",
+        "review_offen": "La revue des droits est ouverte depuis 14 jours",
+        "task_fehler": "Une tâche de fond échoue"
+      }
+    },
+    "bericht": {
+      "knopf": "M'envoyer le rapport",
+      "gesendet": "Le rapport mensuel {{monat}} est en route vers votre adresse.",
+      "fehler": "Le rapport n'a pas pu être envoyé."
+    },
+    "erinnerung": {
+      "einzeln": "Rappeler",
+      "einzeln_aria": "Rappeler à {{name}} l'application d'authentification",
+      "gesendet_one": "{{count}} rappel envoyé.",
+      "gesendet_other": "{{count}} rappels envoyés.",
+      "keine": "Personne n'a été relancé : tous les comptes concernés ont déjà reçu un rappel ces dernières 24 heures.",
+      "mail_aus": "Rien n'a été envoyé : les e-mails sont désactivés pour le module « Activité ».",
+      "fehler": "Le rappel n'a pas pu être envoyé.",
+      "hinweis": "L'e-mail contient seulement l'indication et le lien vers « Mon profil ». Une même personne est relancée au plus une fois par 24 heures."
+    },
+    "module": {
+      "titel": "Utilisation par module",
+      "personen_one": "{{count}} personne",
+      "personen_other": "{{count}} personnes",
+      "ungenutzt": "Non utilisés sur la période :",
+      "alle": "Voir tous les modules"
+    },
+    "feed": {
+      "titel": "En ce moment",
+      "live": "En direct",
+      "leer": "Pas encore d'événements.",
+      "alles": "Tout voir dans le journal"
+    }
   }
 }

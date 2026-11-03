@@ -11,12 +11,14 @@
   GET/POST /aktivitaet/review/, review/<id>/[positionen/<id>/|abschliessen/]   Rechteprüfung (R24)
   GET/PUT /aktivitaet/pflege/                Datenpflege : Fristen, Vorschau, Schalter (R25)
   POST /aktivitaet/pflege/ausfuehren/        Datenpflege jetzt ausführen (bestaetigt=true)
+  POST /aktivitaet/totp-erinnerung/          Erinnerung an die Authenticator-App (alle oder `user`)
 """
 
 import csv
 import json
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -31,7 +33,7 @@ from apps.accounts.services import log_audit_event
 
 from . import bericht
 from . import kategorien as kat
-from . import nutzung, pflege, regeln, review
+from . import erinnerung, nutzung, pflege, regeln, review
 from .models import Auffaelligkeit, Monatsbericht, RechtePosition, RechteReview
 from .services import ERLAUBTE_TAGE, eintrag_dict, journal_filtern, name_von, person_dict
 
@@ -78,6 +80,20 @@ class UebersichtView(APIView):
         tage = tage if tage in ERLAUBTE_TAGE else 30
         _zugriff_protokollieren(request)
         return Response(uebersicht(tage))
+
+
+class TotpErinnerungView(APIView):
+    """Erinnerung an die Authenticator-App an alle betroffenen Konten oder an eines (`user`)."""
+
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request):
+        user_id = request.data.get("user") or None
+        try:
+            ergebnis = erinnerung.senden(request.user, user_id=user_id, ip=_ip(request))
+        except (ValueError, DjangoValidationError):
+            raise ValidationError("Ungültige Person.") from None
+        return Response(ergebnis)
 
 
 class JournalView(APIView):

@@ -892,13 +892,121 @@
       }
     ]
   },
+  "aktivitaet": {
+    "titre": "Activité",
+    "intro": "Sécurité et utilisation en un coup d'œil : situation de sécurité, tâches ouvertes, connexions, anomalies, journal, revue des droits et entretien des données. Réservé aux administrateurs de l'application.",
+    "schritte": [
+      "Dans le menu, sous « Administration » › « Système », ouvrir la page « Activité ».",
+      "Dans le « Cockpit », lire la situation de sécurité et la liste « À faire maintenant ».",
+      "Avec les vues (anomalies, journal, utilisation, rapports, revue des droits, entretien des données), enquêter ou traiter les tâches."
+    ],
+    "workflows": [
+      {
+        "id": "AKT-01",
+        "rollen": ["super_admin"],
+        "titre": "Examiner les anomalies du journal d'activité",
+        "wann": "L'application signale par la cloche et par e-mail une anomalie, p. ex. de nombreux échecs de connexion.",
+        "schritte": [
+          "Ouvrir la notification. Elle mène à la page « Activité » (menu « Administration », sous-groupe « Système ») et à la vue « Anomalies ».",
+          "Dans la liste « Ouvertes », lire l'entrée (importance « Avertissement » ou « Important ») et consulter dans la vue « Journal » les entrées correspondantes (filtres « Personne », « Adresse IP » et période).",
+          "Décider s'il faut agir (p. ex. bloquer un compte ou vérifier des droits).",
+          "Puis clôturer l'entrée avec « Marquer comme traitée »."
+        ],
+        "danach": "L'application analyse le journal toutes les 10 minutes et signale les nouvelles anomalies. Les entrées traitées figurent sous « Traitées » avec nom et heure.",
+        "vorher": "Vous êtes administrateur de l'application. Le journal n'est visible que pour les administrateurs de l'application.",
+        "erwartet": [
+          "La vue « Anomalies » est ouverte. Sans anomalie : « Aucune anomalie ouverte. »",
+          "Le journal affiche les entrées filtrées avec heure, action, personne et IP.",
+          "Vous savez s'il y a quelque chose à faire.",
+          "L'entrée figure sous « Traitées » avec « traitée par … »."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous ne comprenez pas une action.",
+            "loesung": "Le journal affiche sous « Nom technique » le nom exact. Demandez à l'équipe technique en cas de doute."
+          },
+          {
+            "problem": "L'alarme revient sans cesse.",
+            "loesung": "Vérifiez la cause, p. ex. une personne avec beaucoup de mots de passe erronés. Ne marquez comme traitée qu'ensuite."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez la page « Activité », passez à la vue « Anomalies » et lisez les entrées. Ne marquez rien comme traité."
+      },
+      {
+        "id": "AKT-02",
+        "rollen": ["super_admin"],
+        "titre": "Réaliser la revue des droits",
+        "wann": "Au début de chaque trimestre, vous vérifiez qui a des droits étendus.",
+        "schritte": [
+          "Dans le menu, sous « Administration » › « Système », ouvrir la page « Activité » et choisir la vue « Revue des droits ».",
+          "S'il n'y a pas encore de revue, en créer une avec « Créer maintenant la revue … ». Sinon sélectionner la revue en cours.",
+          "Pour chaque compte, choisir « Confirmer » ou marquer « Retirer les droits ». Ajouter éventuellement une « Note (facultatif) ».",
+          "Effectuer vraiment les retraits dans la « Gestion des rôles », onglet « Attribution » (carte ROLL-01).",
+          "Quand tous les comptes sont décidés, cliquer sur « Terminer la revue »."
+        ],
+        "danach": "Le marquage seul ne modifie aucun droit. Il affiche « Marqué – le compte a encore des droits étendus » jusqu'au retrait. La revue est créée automatiquement au début de chaque trimestre.",
+        "vorher": "Vous connaissez les tâches des personnes avec des droits étendus (à partir de Bureau Admin).",
+        "erwartet": [
+          "La vue affiche la dernière revue avec le trimestre. Sans revue : « Aucune revue pour l'instant. »",
+          "La revue liste les comptes avec rôle et décision « Ouvert ».",
+          "La décision figure pour chaque compte, éventuellement avec note.",
+          "Pour les comptes marqués, on lit « Retrait déjà effectué. »",
+          "On lit « Terminée par … le … ». Avant, l'application indique « Encore … comptes sans décision. »"
+        ],
+        "fehler": [
+          {
+            "problem": "La revue ne peut pas être terminée.",
+            "loesung": "Des décisions manquent. L'application indique « Encore … comptes sans décision. »"
+          },
+          {
+            "problem": "« Retirer les droits » n'a rien changé.",
+            "loesung": "Le marquage ne retire aucun droit. Retirez-les dans l'onglet « Attribution »."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez la vue « Revue des droits » et lisez la dernière revue. Ne prenez aucune décision et ne terminez rien."
+      },
+      {
+        "id": "AKT-03",
+        "rollen": ["super_admin"],
+        "titre": "Nettoyer d'anciennes données techniques (entretien des données)",
+        "wann": "Journal, analyses et notifications lues doivent être supprimés après l'expiration des délais.",
+        "schritte": [
+          "Dans le menu, sous « Administration » › « Système », ouvrir la page « Activité » et choisir la vue « Entretien des données ».",
+          "Pour chaque type de données, vérifier le « Délai en jours » et, en cas de modification, cliquer sur « Enregistrer les délais ».",
+          "Décider si « Nettoyer automatiquement (chaque jour) » doit être activé.",
+          "Pour un nettoyage ponctuel, cocher les types de données concernés (ou « Sélectionner tous les types avec des données concernées »).",
+          "Cliquer sur « Nettoyer … types de données maintenant » et confirmer la question avec « Supprimer définitivement »."
+        ],
+        "danach": "Seules les données plus anciennes que le délai enregistré sont supprimées. Cela est irréversible. Le dernier passage figure sous « Dernier passage ».",
+        "vorher": "Vous avez convenu des délais de conservation avec l'association.",
+        "erwartet": [
+          "La vue affiche des groupes avec total, entrée la plus ancienne et « concernés maintenant ».",
+          "Les délais modifiés sont enregistrés. Des valeurs invalides affichent « Au moins un délai est en dehors de la plage autorisée. »",
+          "L'indication sur l'entretien automatique montre s'il est actif ou non.",
+          "Les types choisis sont cochés. Avant cela : « Enregistrez d'abord les délais modifiés ; l'aperçu porte sur les valeurs enregistrées. »",
+          "« Terminé : … enregistrements supprimés. » apparaît."
+        ],
+        "fehler": [
+          {
+            "problem": "Vous voulez annuler la suppression.",
+            "loesung": "Ce n'est pas possible. Les enregistrements supprimés sont définitivement perdus. Lisez donc attentivement la question de confirmation."
+          },
+          {
+            "problem": "« Nettoyer maintenant » n'est pas possible.",
+            "loesung": "Aucun type de données n'est choisi ou il n'y a aucune donnée concernée."
+          }
+        ],
+        "uebung": "Exercice (« ÜBUNG ») : ouvrez la vue « Entretien des données » et lisez total, entrée la plus ancienne et « concernés maintenant ». Ne nettoyez rien et n'enregistrez aucun délai."
+      }
+    ]
+  },
   "roles": {
     "titre": "Gestion des rôles",
-    "intro": "Définissez qui peut voir et modifier quelles pages d'administration.",
+    "intro": "Définissez qui peut voir et modifier quelles pages d'administration. La page comporte trois onglets : « Attribution » (rôles des personnes), « Accès » (lecture et écriture par rôle et module) et « Visibilité » (entrées de menu pour membres et non-membres).",
     "schritte": [
-      "Sélectionnez une personne ou un rôle.",
-      "Attribuez par page « aucun accès », « lecture » ou « lecture et écriture ».",
-      "Les changements s'appliquent au prochain chargement de la page."
+      "Dans le menu, sous « Administration » › « Système », ouvrir la « Gestion des rôles ».",
+      "Dans l'onglet « Attribution », retrouver une personne et modifier ses rôles. Dans l'onglet « Accès », attribuer « lecture » et « écriture » par rôle et par module ou page. Dans l'onglet « Visibilité », définir les entrées de menu visibles pour membres et non-membres.",
+      "Les changements s'appliquent au prochain chargement de la page. Le journal se trouve sur la page « Activité »."
     ],
     "workflows": [
       {
@@ -999,103 +1107,6 @@
           }
         ],
         "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Visibilité » et décrivez avec vos mots quelles entrées voit un non-membre. Ne modifiez rien."
-      },
-      {
-        "id": "AKT-01",
-        "rollen": ["super_admin"],
-        "titre": "Examiner les anomalies du journal d'activité",
-        "wann": "L'application signale par la cloche et par e-mail une anomalie, p. ex. de nombreux échecs de connexion.",
-        "schritte": [
-          "Ouvrir la notification. Elle mène, dans la « Gestion des rôles », à l'onglet « Activité » et à la vue « Anomalies ».",
-          "Dans la liste « Ouvertes », lire l'entrée (importance « Avertissement » ou « Important ») et consulter dans la vue « Journal » les entrées correspondantes (filtres « Personne », « Adresse IP » et période).",
-          "Décider s'il faut agir (p. ex. bloquer un compte ou vérifier des droits).",
-          "Puis clôturer l'entrée avec « Marquer comme traitée »."
-        ],
-        "danach": "L'application analyse le journal toutes les 10 minutes et signale les nouvelles anomalies. Les entrées traitées figurent sous « Traitées » avec nom et heure.",
-        "vorher": "Vous êtes administrateur de l'application. Le journal n'est visible que pour les administrateurs de l'application.",
-        "erwartet": [
-          "La vue « Anomalies » est ouverte. Sans anomalie : « Aucune anomalie ouverte. »",
-          "Le journal affiche les entrées filtrées avec heure, action, personne et IP.",
-          "Vous savez s'il y a quelque chose à faire.",
-          "L'entrée figure sous « Traitées » avec « traitée par … »."
-        ],
-        "fehler": [
-          {
-            "problem": "Vous ne comprenez pas une action.",
-            "loesung": "Le journal affiche sous « Nom technique » le nom exact. Demandez à l'équipe technique en cas de doute."
-          },
-          {
-            "problem": "L'alarme revient sans cesse.",
-            "loesung": "Vérifiez la cause, p. ex. une personne avec beaucoup de mots de passe erronés. Ne marquez comme traitée qu'ensuite."
-          }
-        ],
-        "uebung": "Exercice (« ÜBUNG ») : ouvrez l'onglet « Activité », passez à la vue « Anomalies » et lisez les entrées. Ne marquez rien comme traité."
-      },
-      {
-        "id": "AKT-02",
-        "rollen": ["super_admin"],
-        "titre": "Réaliser la revue des droits",
-        "wann": "Au début de chaque trimestre, vous vérifiez qui a des droits étendus.",
-        "schritte": [
-          "Dans la « Gestion des rôles », ouvrir l'onglet « Activité » et choisir la vue « Revue des droits ».",
-          "S'il n'y a pas encore de revue, en créer une avec « Créer maintenant la revue … ». Sinon sélectionner la revue en cours.",
-          "Pour chaque compte, choisir « Confirmer » ou marquer « Retirer les droits ». Ajouter éventuellement une « Note (facultatif) ».",
-          "Effectuer vraiment les retraits dans l'onglet « Attribution » (carte ROLL-01).",
-          "Quand tous les comptes sont décidés, cliquer sur « Terminer la revue »."
-        ],
-        "danach": "Le marquage seul ne modifie aucun droit. Il affiche « Marqué – le compte a encore des droits étendus » jusqu'au retrait. La revue est créée automatiquement au début de chaque trimestre.",
-        "vorher": "Vous connaissez les tâches des personnes avec des droits étendus (à partir de Bureau Admin).",
-        "erwartet": [
-          "La vue affiche la dernière revue avec le trimestre. Sans revue : « Aucune revue pour l'instant. »",
-          "La revue liste les comptes avec rôle et décision « Ouvert ».",
-          "La décision figure pour chaque compte, éventuellement avec note.",
-          "Pour les comptes marqués, on lit « Retrait déjà effectué. »",
-          "On lit « Terminée par … le … ». Avant, l'application indique « Encore … comptes sans décision. »"
-        ],
-        "fehler": [
-          {
-            "problem": "La revue ne peut pas être terminée.",
-            "loesung": "Des décisions manquent. L'application indique « Encore … comptes sans décision. »"
-          },
-          {
-            "problem": "« Retirer les droits » n'a rien changé.",
-            "loesung": "Le marquage ne retire aucun droit. Retirez-les dans l'onglet « Attribution »."
-          }
-        ],
-        "uebung": "Exercice (« ÜBUNG ») : ouvrez la vue « Revue des droits » et lisez la dernière revue. Ne prenez aucune décision et ne terminez rien."
-      },
-      {
-        "id": "AKT-03",
-        "rollen": ["super_admin"],
-        "titre": "Nettoyer d'anciennes données techniques (entretien des données)",
-        "wann": "Journal, analyses et notifications lues doivent être supprimés après l'expiration des délais.",
-        "schritte": [
-          "Dans la « Gestion des rôles », ouvrir l'onglet « Activité » et choisir la vue « Entretien des données ».",
-          "Pour chaque type de données, vérifier le « Délai en jours » et, en cas de modification, cliquer sur « Enregistrer les délais ».",
-          "Décider si « Nettoyer automatiquement (chaque jour) » doit être activé.",
-          "Pour un nettoyage ponctuel, cocher les types de données concernés (ou « Sélectionner tous les types avec des données concernées »).",
-          "Cliquer sur « Nettoyer … types de données maintenant » et confirmer la question avec « Supprimer définitivement »."
-        ],
-        "danach": "Seules les données plus anciennes que le délai enregistré sont supprimées. Cela est irréversible. Le dernier passage figure sous « Dernier passage ».",
-        "vorher": "Vous avez convenu des délais de conservation avec l'association.",
-        "erwartet": [
-          "La vue affiche des groupes avec total, entrée la plus ancienne et « concernés maintenant ».",
-          "Les délais modifiés sont enregistrés. Des valeurs invalides affichent « Au moins un délai est en dehors de la plage autorisée. »",
-          "L'indication sur l'entretien automatique montre s'il est actif ou non.",
-          "Les types choisis sont cochés. Avant cela : « Enregistrez d'abord les délais modifiés ; l'aperçu porte sur les valeurs enregistrées. »",
-          "« Terminé : … enregistrements supprimés. » apparaît."
-        ],
-        "fehler": [
-          {
-            "problem": "Vous voulez annuler la suppression.",
-            "loesung": "Ce n'est pas possible. Les enregistrements supprimés sont définitivement perdus. Lisez donc attentivement la question de confirmation."
-          },
-          {
-            "problem": "« Nettoyer maintenant » n'est pas possible.",
-            "loesung": "Aucun type de données n'est choisi ou il n'y a aucune donnée concernée."
-          }
-        ],
-        "uebung": "Exercice (« ÜBUNG ») : ouvrez la vue « Entretien des données » et lisez total, entrée la plus ancienne et « concernés maintenant ». Ne nettoyez rien et n'enregistrez aucun délai."
       }
     ]
   },
@@ -3543,7 +3554,7 @@
         "titre": "Modifier les paramètres centraux",
         "wann": "Un délai ou un seuil doit changer, par exemple une réservation du panier plus longue.",
         "schritte": [
-          "Dans le menu, sous « Administration », ouvrir « Paramètres centraux ».",
+          "Dans le menu, sous « Administration » › « Système », ouvrir « Paramètres centraux ».",
           "Noter les valeurs actuelles avant de rien modifier.",
           "Dans le bon groupe, modifier le champ et lire l'aide sous le champ.",
           "Cliquer sur « Enregistrer »."
@@ -3594,7 +3605,7 @@
         "titre": "Créer un secteur et lui attribuer des Länder",
         "wann": "Un nouveau secteur est créé ou un Land change de secteur.",
         "schritte": [
-          "Dans le menu, sous « Administration », ouvrir « Structure des secteurs ».",
+          "Dans le menu, sous « Administration » › « Communauté & contenus », ouvrir « Structure des secteurs ».",
           "Sous « Nouveau secteur », saisir le nom et cliquer sur « Créer ».",
           "Dans la nouvelle carte, choisir la « Couleur » et cliquer sur « Enregistrer ».",
           "Sous « Länder », cocher les cases. Les pays hors d'Allemagne sont sous « Autres pays ».",
@@ -3755,7 +3766,7 @@
     ],
     "tipps": [
       "En cas de doute, masquez au lieu de supprimer : masquer peut s'annuler.",
-      "Le journal d'activité (gestion des rôles, onglet « Activité ») montre qui a modéré et quand."
+      "Le journal d'activité (Administration › Système › Activité) montre qui a modéré et quand."
     ]
   },
   "forum": {
@@ -4496,7 +4507,7 @@
         },
         {
           "begriff": "Journal d'activité",
-          "text": "Le journal de l'application avec les actions importantes. Dans l'onglet « Activité » de la gestion des rôles, l'administrateur de l'application contrôle les anomalies."
+          "text": "Le journal de l'application avec les actions importantes. Sur la page « Activité » (Administration › Système), l'administrateur de l'application contrôle les anomalies."
         },
         {
           "begriff": "Rôles",

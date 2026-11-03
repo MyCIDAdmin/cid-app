@@ -12,6 +12,7 @@ import AdminRegionenPage from "./pages/admin/AdminRegionenPage";
 import ArticlesCatalogueCotisationPage from "./pages/admin/ArticlesCatalogueCotisationPage";
 import AdminPartnerPage from "./pages/admin/AdminPartnerPage";
 import AngebotsvergleichPage from "./pages/admin/AngebotsvergleichPage";
+import AktivitaetPage from "./pages/admin/AktivitaetPage";
 import GestionRolesPage from "./pages/admin/GestionRolesPage";
 import PartnerDetailPage from "./pages/admin/PartnerDetailPage";
 import InscriptionsEnAttentePage from "./pages/admin/InscriptionsEnAttentePage";
@@ -283,6 +284,16 @@ export default function App() {
             element={
               <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
                 <GestionRolesPage />
+              </RequireRole>
+            }
+          />
+          {/* Aktivität (Release 36) — Sicherheit und Nutzung, eigene Seite unter „System“ ; App-Admin,
+            wie GestionRoles bewusst ohne Matrix (Backend: IsSuperAdmin). */}
+          <Route
+            path="/admin/aktivitaet"
+            element={
+              <RequireRole minRoleLevel={ROLE_LEVELS.super_admin}>
+                <AktivitaetPage />
               </RequireRole>
             }
           />

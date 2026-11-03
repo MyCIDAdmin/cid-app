@@ -1,7 +1,7 @@
 /**
- * Reiter „Aktivität“ der Rollenverwaltung (Release 20–24) : Übersicht, Auffälligkeiten, Nutzung,
- * Berichte, Rechteprüfung, Journal und Datenpflege.
- * Kacheln und IP-Adressen der Übersicht öffnen das Journal mit passendem Filter.
+ * Inhalt der Seite „Aktivität“ (Release 20–24, seit Release 36 eigene Seite unter „System“) :
+ * Cockpit, Auffälligkeiten, Nutzung, Berichte, Rechteprüfung, Journal und Datenpflege.
+ * Kacheln und IP-Adressen des Cockpits öffnen das Journal mit passendem Filter.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -44,10 +44,7 @@ export default function AktivitaetTab({ startAnsicht = "uebersicht" }: { startAn
         ))}
       </div>
       {ansicht === "uebersicht" && (
-        <UebersichtPanel
-          imJournalOeffnen={imJournalOeffnen}
-          auffaelligkeitenOeffnen={() => setAnsicht("auffaelligkeiten")}
-        />
+        <UebersichtPanel imJournalOeffnen={imJournalOeffnen} ansichtOeffnen={setAnsicht} />
       )}
       {ansicht === "auffaelligkeiten" && (
         <AuffaelligkeitenPanel imJournalOeffnen={imJournalOeffnen} />

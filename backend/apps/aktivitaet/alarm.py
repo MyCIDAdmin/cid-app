@@ -20,7 +20,7 @@ from .models import Auffaelligkeit
 
 logger = logging.getLogger("apps.aktivitaet")
 
-LINK = "/admin/roles?tab=aktivitaet&ansicht=auffaelligkeiten"
+LINK = "/admin/aktivitaet?ansicht=auffaelligkeiten"
 MAX_ZEILEN = 5
 
 

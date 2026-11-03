@@ -146,3 +146,31 @@ export function usePflegeAusfuehren() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });
 }
+
+export function useTotpErinnerung() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (user?: string) => aktivitaetApi.sendeTotpErinnerung(user),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
+  });
+}
+
+/** Zahl der offenen Auffälligkeiten für das Zähler-Zeichen im Menü (nur für App-Admins). */
+export function useOffeneAuffaelligkeiten(aktiv: boolean) {
+  return useQuery({
+    queryKey: [...keys.all, "offen-zaehler"] as const,
+    queryFn: async () => (await aktivitaetApi.getAuffaelligkeiten("offen")).offen,
+    enabled: aktiv,
+    staleTime: 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+  });
+}
+
+/** Die letzten Ereignisse für „Gerade passiert“; aktualisiert sich alle 30 Sekunden. */
+export function useJournalLive() {
+  return useQuery({
+    queryKey: [...keys.all, "live"] as const,
+    queryFn: () => aktivitaetApi.getJournal({ seite: 1 }),
+    refetchInterval: 30 * 1000,
+  });
+}
