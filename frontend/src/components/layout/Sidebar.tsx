@@ -750,7 +750,10 @@ function NavItemLink({
   const { t } = useTranslation("common");
   const Icon = item.icon;
   // Zähler „offene Auffälligkeiten“ nur am Eintrag „Aktivität“ (und nur für App-Admins).
-  const zaehler = useOffeneAuffaelligkeiten(item.to === "/admin/aktivitaet").data ?? 0;
+  // Die Abfrage teilt sich ihren Schlüssel mit allen Einträgen: Wert nur am Eintrag „Aktivität“ nutzen.
+  const istAktivitaet = item.to === "/admin/aktivitaet";
+  const offen = useOffeneAuffaelligkeiten(istAktivitaet).data ?? 0;
+  const zaehler = istAktivitaet ? offen : 0;
   return (
     <Link
       to={item.to}
