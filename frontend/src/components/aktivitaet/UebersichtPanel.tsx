@@ -5,7 +5,7 @@
  * (mit Erinnerung an die Authenticator-App), Nutzung je Modul und der Live-Verlauf „Gerade
  * passiert“. Nur für den App-Admin.
  */
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -52,12 +52,22 @@ const ANSTIEG_IST_SCHLECHT: ReadonlySet<keyof Vorperiode> = new Set([
 ]);
 const FAKTOREN: LageFaktor[] = ["totp", "auffaelligkeiten", "review"];
 
-function Verlauf({ daten }: { daten: Uebersicht["verlauf"] }) {
+/** Mindestanzahl Tage, die der Verlauf zeigt, auch wenn der Anfang des Zeitraums leer ist. */
+const MIN_TAGE_VERLAUF = 14;
+
+function Verlauf({ daten: alleTage }: { daten: Uebersicht["verlauf"] }) {
   const { t } = useTranslation("aktivitaet");
+  // Tage vor dem ersten Ereignis weglassen: sonst bleibt links ein leerer Streifen.
+  const ersterMitDaten = alleTage.findIndex((d) => d.logins + d.fehlversuche > 0);
+  const start =
+    ersterMitDaten < 0
+      ? 0
+      : Math.min(ersterMitDaten, Math.max(0, alleTage.length - MIN_TAGE_VERLAUF));
+  const daten = alleTage.slice(start);
   const maximum = Math.max(1, ...daten.map((d) => d.logins + d.fehlversuche));
   const breite = 100 / daten.length;
   return (
-    <figure className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+    <figure className="flex h-full flex-col rounded-cid-lg bg-bg-primary p-3 shadow-sm">
       <figcaption className="mb-2 flex flex-wrap items-center gap-3 text-xs text-text-secondary">
         <span className="font-medium text-text-primary">{t("uebersicht.verlauf")}</span>
         <span className="inline-flex items-center gap-1">
@@ -80,7 +90,7 @@ function Verlauf({ daten }: { daten: Uebersicht["verlauf"] }) {
         aria-label={t("uebersicht.verlauf")}
         viewBox="0 0 100 40"
         preserveAspectRatio="none"
-        className="h-32 w-full"
+        className="h-44 w-full"
       >
         {daten.map((d, i) => {
           const hoeheLogins = (d.logins / maximum) * 38;
@@ -106,7 +116,7 @@ function Verlauf({ daten }: { daten: Uebersicht["verlauf"] }) {
           );
         })}
       </svg>
-      <div className="flex justify-between text-[10px] text-text-tertiary">
+      <div className="mt-1 flex justify-between text-[10px] text-text-tertiary">
         <span>{daten[0]?.tag}</span>
         <span>{daten[daten.length - 1]?.tag}</span>
       </div>
@@ -118,41 +128,42 @@ function Heatmap({ daten }: { daten: number[][] }) {
   const { t } = useTranslation("aktivitaet");
   const maximum = Math.max(1, ...daten.flat());
   return (
-    <figure className="rounded-cid-lg bg-bg-primary p-3 shadow-sm">
+    <figure className="flex h-full flex-col rounded-cid-lg bg-bg-primary p-3 shadow-sm">
       <figcaption className="mb-2 text-xs font-medium text-text-primary">
         {t("uebersicht.heatmap")}
       </figcaption>
-      <div className="overflow-x-auto">
-        <table className="border-separate border-spacing-0.5 text-[10px] text-text-tertiary">
-          <tbody>
-            {daten.map((zeile, wochentag) => (
-              <tr key={WOCHENTAGE[wochentag]}>
-                <th scope="row" className="pr-1 text-right font-normal">
-                  {t(`uebersicht.tage_kurz.${WOCHENTAGE[wochentag]}`)}
-                </th>
-                {zeile.map((n, stunde) => (
-                  <td
-                    key={stunde}
-                    title={`${t(`uebersicht.tage_kurz.${WOCHENTAGE[wochentag]}`)} ${stunde}:00 – ${n}`}
-                    className="h-3 w-3 min-w-3 rounded-sm"
-                    style={{
-                      background: "var(--color-status-successText)",
-                      opacity: n === 0 ? 0.08 : 0.2 + 0.8 * (n / maximum),
-                    }}
-                  />
-                ))}
-              </tr>
+      {/* Spalten teilen die ganze Kachelbreite; die Zeilen wachsen mit der Kachelhöhe. */}
+      <div
+        className="grid h-44 gap-0.5 text-[10px] text-text-tertiary"
+        style={{
+          gridTemplateColumns: "1.5rem repeat(24, minmax(0, 1fr))",
+          gridTemplateRows: "repeat(7, minmax(0.75rem, 1fr)) auto",
+        }}
+      >
+        {daten.map((zeile, wochentag) => (
+          <Fragment key={WOCHENTAGE[wochentag]}>
+            <span className="flex items-center justify-end pr-1">
+              {t(`uebersicht.tage_kurz.${WOCHENTAGE[wochentag]}`)}
+            </span>
+            {zeile.map((n, stunde) => (
+              <span
+                key={stunde}
+                title={`${t(`uebersicht.tage_kurz.${WOCHENTAGE[wochentag]}`)} ${stunde}:00 – ${n}`}
+                className="rounded-sm"
+                style={{
+                  background: "var(--color-status-successText)",
+                  opacity: n === 0 ? 0.08 : 0.2 + 0.8 * (n / maximum),
+                }}
+              />
             ))}
-            <tr>
-              <td />
-              {Array.from({ length: 24 }, (_, stunde) => (
-                <td key={stunde} className="text-center">
-                  {stunde % 6 === 0 ? stunde : ""}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
+          </Fragment>
+        ))}
+        <span />
+        {Array.from({ length: 24 }, (_, stunde) => (
+          <span key={stunde} className="relative h-3">
+            {stunde % 6 === 0 && <span className="absolute left-0 top-0">{stunde}</span>}
+          </span>
+        ))}
       </div>
     </figure>
   );
