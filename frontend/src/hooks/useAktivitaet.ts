@@ -170,7 +170,7 @@ export function useOffeneAuffaelligkeiten(aktiv: boolean) {
 export function useJournalLive() {
   return useQuery({
     queryKey: [...keys.all, "live"] as const,
-    queryFn: () => aktivitaetApi.getJournal({ seite: 1 }),
+    queryFn: () => aktivitaetApi.getJournal({ seite: 1, live: "1" }),
     refetchInterval: 30 * 1000,
   });
 }

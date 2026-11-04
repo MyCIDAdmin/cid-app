@@ -101,3 +101,39 @@ class TestErinnerung:
             reverse("aktivitaet:totp-erinnerung"), {"user": "kein-uuid"}, format="json"
         )
         assert r.status_code == 400
+
+
+class TestLiveVerlauf:
+    """„Gerade passiert“ fragt dauernd nach und darf sich nicht selbst ins Journal schreiben."""
+
+    def test_live_abfrage_protokolliert_nichts_und_blendet_oeffnen_aus(self, admin):
+        client = _client(admin)
+        url = reverse("aktivitaet:journal")
+        AuditLogEntry.objects.create(user=admin, action="aktivitaet_geoeffnet")
+        AuditLogEntry.objects.create(user=admin, action="totp_erinnerung")
+        vorher = AuditLogEntry.objects.filter(action="aktivitaet_geoeffnet").count()
+
+        live = client.get(url, {"live": "1"}).json()
+        assert [e["aktion"] for e in live["ergebnisse"]] == ["totp_erinnerung"]
+        assert AuditLogEntry.objects.filter(action="aktivitaet_geoeffnet").count() == vorher
+
+    def test_normale_abfrage_bleibt_protokolliert(self, admin):
+        _client(admin).get(reverse("aktivitaet:journal"))
+        assert AuditLogEntry.objects.filter(action="aktivitaet_geoeffnet", user=admin).exists()
+
+
+def test_alle_protokollierten_aktionen_haben_einen_namen():
+    """Jede im Code protokollierte Aktion steht im Katalog, sonst erscheint im Journal der Rohtext."""
+    import re
+    from pathlib import Path
+
+    from apps.aktivitaet.kategorien import AKTIONEN
+
+    wurzel = Path(__file__).resolve().parents[2]
+    muster = re.compile(r'(?:log_audit_event|_journaliser)\(\s*(?:request,\s*)?"([a-z_0-9]+)"')
+    gefunden = set()
+    for datei in wurzel.rglob("*.py"):
+        if "tests" in datei.parts or datei.name.startswith("test_"):
+            continue
+        gefunden |= set(muster.findall(datei.read_text(encoding="utf-8")))
+    assert not sorted(a for a in gefunden if a not in AKTIONEN)

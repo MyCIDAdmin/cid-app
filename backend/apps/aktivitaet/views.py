@@ -100,8 +100,15 @@ class JournalView(APIView):
     permission_classes = [IsSuperAdmin]
 
     def get(self, request):
-        _zugriff_protokollieren(request)
+        # „Gerade passiert“ im Cockpit fragt alle 30 Sekunden nach: das Öffnen des Cockpits ist
+        # bereits protokolliert, die Abfrage selbst soll sich nicht endlos selbst ins Journal
+        # schreiben und den Live-Verlauf mit „Protokoll geöffnet“ füllen.
+        live = request.query_params.get("live") == "1"
+        if not live:
+            _zugriff_protokollieren(request)
         qs = journal_filtern(request.query_params)
+        if live:
+            qs = qs.exclude(action="aktivitaet_geoeffnet")
         try:
             seite = max(1, int(request.query_params.get("seite", 1)))
         except ValueError:

@@ -81,6 +81,43 @@ AKTIONEN = {
         "Tous les appareils déconnectés par l'utilisateur",
     ),
     "register": ("konto", "info", "Registrierung", "Inscription"),
+    "register_fan": ("konto", "info", "Registrierung als Fan", "Inscription comme supporter"),
+    "rencontre_ajoutee": (
+        "kalender",
+        "info",
+        "Spiel manuell hinzugefügt",
+        "Match ajouté manuellement",
+    ),
+    "rencontre_corrigee": (
+        "kalender",
+        "info",
+        "Spiel manuell korrigiert",
+        "Match corrigé manuellement",
+    ),
+    "fan_mitgliedsantrag": (
+        "mitglieder",
+        "info",
+        "Mitgliedsantrag aus dem Fan-Konto",
+        "Demande d'adhésion depuis le compte supporter",
+    ),
+    "rencontre_reinitialisee": (
+        "kalender",
+        "info",
+        "Spiel auf Originaldaten zurückgesetzt",
+        "Match rétabli aux données d'origine",
+    ),
+    "rencontre_supprimee": (
+        "kalender",
+        "info",
+        "Spiel manuell entfernt",
+        "Match retiré manuellement",
+    ),
+    "zentrale_einstellungen_geaendert": (
+        "einstellungen",
+        "wichtig",
+        "Zentrale Einstellungen geändert",
+        "Paramètres centraux modifiés",
+    ),
     "email_verified": ("konto", "info", "E-Mail bestätigt", "E-mail confirmé"),
     "password_reset_requested": (
         "konto",

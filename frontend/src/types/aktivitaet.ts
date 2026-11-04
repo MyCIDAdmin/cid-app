@@ -107,6 +107,8 @@ export interface JournalFilter {
   q?: string;
   ip?: string;
   seite?: number;
+  /** "1": Live-Verlauf im Cockpit (wird nicht selbst protokolliert, ohne „Protokoll geöffnet“). */
+  live?: string;
 }
 
 export interface AktionenListe {
