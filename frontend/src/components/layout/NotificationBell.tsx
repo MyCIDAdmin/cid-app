@@ -63,7 +63,7 @@ export default function NotificationBell() {
   const count = nonLuesCount.data?.count ?? 0;
 
   return (
-    <div ref={panneauRef} className="relative">
+    <div ref={panneauRef} className="sm:relative">
       <button
         type="button"
         onClick={() => setOuvert((o) => !o)}
@@ -78,8 +78,10 @@ export default function NotificationBell() {
         )}
       </button>
 
+      {/* Mobil: am Kopfbereich ausgerichtet und über die volle Breite (mit Rand), damit das Fenster
+          nicht über den Bildschirmrand ragt; ab sm unter der Glocke, 20 rem breit. */}
       {ouvert && (
-        <div className="absolute right-0 z-20 mt-2 w-80 rounded-cid-lg bg-bg-primary shadow-xl">
+        <div className="absolute inset-x-2 top-full z-20 mt-2 rounded-cid-lg bg-bg-primary shadow-xl sm:inset-x-auto sm:right-0 sm:w-80">
           <div className="flex items-center justify-between border-b border-text-tertiary/20 px-3 py-2">
             <span className="text-sm font-bold text-text-primary">{t("cloche.titre")}</span>
             <button
