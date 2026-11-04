@@ -123,7 +123,7 @@ class TestLiveVerlauf:
 
 
 def test_alle_protokollierten_aktionen_haben_einen_namen():
-    """Jede im Code protokollierte Aktion steht im Katalog, sonst erscheint im Journal der Rohtext."""
+    """Jede im Code protokollierte Aktion steht im Katalog, sonst erscheint der Rohtext."""
     import re
     from pathlib import Path
 
