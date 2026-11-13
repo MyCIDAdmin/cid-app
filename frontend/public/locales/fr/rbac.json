@@ -65,7 +65,7 @@
   },
   "acces": {
     "titre": "Matrice d'accès",
-    "description": "Définissez l'accès de chaque rôle à chaque module. Les nouveaux modules apparaissent ici automatiquement comme colonne.",
+    "description": "Définissez l'accès de chaque rôle à chaque module et à chaque page d'administration. Les nouveaux modules apparaissent ici automatiquement comme ligne.",
     "chargement": "Chargement…",
     "erreur_chargement": "Impossible de charger la matrice.",
     "col_role": "Rôle",
@@ -109,7 +109,10 @@
       "titre": "Hors de cette liste",
       "app_admin": "Réservé aux administrateurs de l'application, réglage fixe : Gestion des rôles, Paramètres centraux, Activité et Structure des secteurs.",
       "alle": "Pour tout compte connecté, non réglable : Page d'accueil, Aperçu, Mon profil, Mes billets et Aide. Pour le contrôle d'entrée, le serveur vérifie les droits par événement."
-    }
+    },
+    "legende": "Comment lire le tableau : pour les modules, Lecture signifie « voir » et Écriture « participer » (s'inscrire, commander, contribuer, réagir, voter). Pour les pages d'administration, Lecture signifie « voir l'administration » et Écriture « créer, modifier, supprimer ». Les droits liés à une affectation (par exemple l'équipe d'un projet) s'y ajoutent mais ne dépassent jamais ce tableau.",
+    "hilfe_verwaltung_lesen": "Voir l'administration, sans rien modifier.",
+    "hilfe_verwaltung_ecriture": "Créer, modifier, supprimer et valider."
   },
   "visibilite": {
     "chargement": "Chargement…",
@@ -151,5 +154,39 @@
     "kalender": "Calendrier de l'association et du bureau",
     "regionen": "Secteurs, fans par secteur, compétition",
     "support": "Demandes (tickets) et questions fréquentes"
+  },
+  "modules_hilfe": {
+    "membres": {
+      "lecture": "Voir sa propre carte de membre.",
+      "ecriture": "Modifier sa propre carte. Voir, créer et supprimer toutes les cartes se règle dans les pages d'administration Membres."
+    },
+    "cotisations": {
+      "lecture": "Voir ses propres paiements et échéances.",
+      "ecriture": "Payer et saisir un paiement. Voir tous les paiements se règle dans les pages Paiements et Finances."
+    },
+    "adhesions": {
+      "lecture": "Voir les offres et sa propre adhésion.",
+      "ecriture": "Adhérer, demander ou annuler l'adhésion, envoyer des justificatifs. Voir toutes les demandes se règle dans la page Campagnes d'adhésion."
+    },
+    "evenements": {
+      "lecture": "Voir les événements, voyages et covoiturages.",
+      "ecriture": "S'inscrire, se désinscrire, proposer ou réserver un covoiturage. Créer et voir toutes les inscriptions se règle dans la gestion des événements."
+    },
+    "boutique": {
+      "lecture": "Voir le catalogue.",
+      "ecriture": "Commander, réserver, acheter un bon. Ses propres commandes sont toujours visibles. Toutes les commandes et les produits se règlent dans la gestion de la boutique."
+    },
+    "vote": {
+      "lecture": "Voir les votes et les résultats.",
+      "ecriture": "Voter. Créer et clôturer se règle dans la page Votes."
+    },
+    "communaute": {
+      "lecture": "Lire actualités, forum, chats, groupes, Fan-Club, albums photo et quiz.",
+      "ecriture": "Écrire des publications et commentaires, envoyer des messages, réagir, pronostiquer. La modération se règle dans la page Modération communauté."
+    },
+    "projets": {
+      "lecture": "Voir les actions et projets.",
+      "ecriture": "Contribuer, postuler, commenter et réagir. Créer et modifier des projets se règle dans la gestion des projets. Les membres de l'équipe d'un projet ont en plus leurs droits d'équipe."
+    }
   }
 }

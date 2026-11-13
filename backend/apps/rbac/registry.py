@@ -17,6 +17,13 @@ comme colonne supplémentaire côté frontend, sans écriture DB ni action admin
 qui réalise l'exigence "la matrice doit s'étendre automatiquement".
 """
 
+# Seit dem Rechte-Umbau (Nov. 2026) hat jede Zelle der Matrix überall dieselbe Bedeutung :
+#   Modul, Lesen      = ansehen (veröffentlichte Inhalte, eigene Daten)
+#   Modul, Schreiben  = mitmachen (anmelden, bestellen, beitragen, reagieren, abstimmen ...)
+#   Verwaltungsseite  = verwalten : Lesen = Verwaltung ansehen, Schreiben = anlegen/ändern/löschen
+# "stats" und "notifications" waren reine Zeilen ohne Wirkung (Statistik und E-Mail-Einstellungen
+# laufen über `page_stats` bzw. `page_notifications_params`, eigene Hinweise sieht jedes Konto) und
+# sind entfallen ; bestehende Zeilen in der Datenbank bleiben unberührt und werden ignoriert.
 MODULES = [
     "membres",
     "cotisations",
@@ -25,8 +32,6 @@ MODULES = [
     "boutique",
     "vote",
     "communaute",
-    "stats",
-    "notifications",
     "projets",
 ]
 
@@ -40,8 +45,6 @@ MODULE_LABELS = {
     "boutique": "Boutique",
     "vote": "Vote",
     "communaute": "Communauté",
-    "stats": "Statistiques",
-    "notifications": "Notifications",
     "projets": "Projets",
 }
 

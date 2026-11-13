@@ -54,6 +54,16 @@ export default function MatriceAccesTab() {
   const libelleRole = (role: RoleDefinition) =>
     role.is_system ? t(`utilisateurs:role.${role.slug}`, role.nom) : role.nom;
   const libelleModule = (module: ModuleInfo) => t(`modules.${module.slug}`, module.label);
+  // Bedeutung von Lesen/Schreiben je Zeile : Module haben einen eigenen Text (modules_hilfe),
+  // alle Verwaltungsseiten denselben allgemeinen (acces.hilfe_verwaltung_*).
+  const hilfeModul = (module: ModuleInfo, champ: "lecture" | "ecriture"): string => {
+    if (module.categorie === "page_admin") return "";
+    return t(`modules_hilfe.${module.slug}.${champ}`, { defaultValue: "" });
+  };
+  const hilfeZelle = (module: ModuleInfo, champ: "lecture" | "ecriture"): string =>
+    module.categorie === "page_admin"
+      ? t(champ === "lecture" ? "acces.hilfe_verwaltung_lesen" : "acces.hilfe_verwaltung_ecriture")
+      : hilfeModul(module, champ);
 
   const { data: matrice, isLoading, isError } = useRbacMatrice();
   const setCelluleMutation = useSetMatriceCellule();
@@ -122,7 +132,10 @@ export default function MatriceAccesTab() {
   return (
     <div>
       <h2 className="mb-1 text-base font-semibold text-text-primary">{t("acces.titre")}</h2>
-      <p className="mb-4 text-sm text-text-secondary">{t("acces.description")}</p>
+      <p className="mb-2 text-sm text-text-secondary">{t("acces.description")}</p>
+      <p className="mb-4 rounded-cid bg-bg-tertiary px-3 py-2 text-xs text-text-secondary">
+        {t("acces.legende")}
+      </p>
 
       <div className="max-h-[75vh] overflow-auto rounded-cid-lg bg-bg-primary shadow-sm">
         <table className="w-full text-sm">
@@ -224,6 +237,15 @@ export default function MatriceAccesTab() {
                             {t(`modules_info.${module.slug}`, { defaultValue: "" })}
                           </span>
                         )}
+                        {hilfeModul(module, "lecture") && (
+                          <span className="mt-1 block max-w-md text-[11px] font-normal leading-snug text-text-secondary">
+                            <span className="font-semibold">{t("acces.col_lecture")}:</span>{" "}
+                            {hilfeModul(module, "lecture")}
+                            <br />
+                            <span className="font-semibold">{t("acces.col_ecriture")}:</span>{" "}
+                            {hilfeModul(module, "ecriture")}
+                          </span>
+                        )}
                       </td>
                       {matrice.roles.map((role) => {
                         const verrouillee =
@@ -248,7 +270,7 @@ export default function MatriceAccesTab() {
                                   aria-label={`${libelleRole(role)} — ${libelleModule(module)} (${t(
                                     `acces.col_${champ}`,
                                   )})`}
-                                  title={titre}
+                                  title={titre || hilfeZelle(module, champ)}
                                   checked={
                                     champ === "lecture"
                                       ? niveau !== "aucun"

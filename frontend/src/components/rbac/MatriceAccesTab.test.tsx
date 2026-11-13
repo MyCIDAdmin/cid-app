@@ -107,6 +107,23 @@ describe("MatriceAccesTab", () => {
     expect(screen.getByLabelText("Vertrieb — Mitglieder (acces.col_ecriture)")).not.toBeChecked();
   });
 
+  it("erklärt bei Verwaltungsseiten, was Lesen und Schreiben bedeuten, und zeigt die Legende", () => {
+    vi.mocked(useRbacHooks.useRbacMatrice).mockReturnValue({
+      data: matricePhaseD,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useRbacHooks.useRbacMatrice>);
+    renderWithProviders(<MatriceAccesTab />);
+
+    // Verwaltungsseite : ein allgemeiner Text
+    expect(screen.getByLabelText("Vertrieb — Quiz-Verwaltung (acces.col_lecture)")).toHaveAttribute(
+      "title",
+      "acces.hilfe_verwaltung_lesen",
+    );
+    // Legende über der Tabelle
+    expect(screen.getByText("acces.legende")).toBeInTheDocument();
+  });
+
   it("change une cellule de la matrice", () => {
     renderWithProviders(<MatriceAccesTab />);
 
