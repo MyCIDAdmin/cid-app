@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from apps.membres.models import Membre
+from apps.rbac.permissions import module_access_permission
 
 from . import mitteilungen, pdf, services, wahlgaenge, wahltermine
 from .models import (
@@ -143,7 +144,7 @@ class WahlViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin,
     mixins.UpdateModelMixin, GenericViewSet,
 ):  # fmt: skip
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("vote")]
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     serializer_class = WahlSchreibenSerializer
     parser_classes = [JSONParser, FormParser, MultiPartParser]
@@ -385,7 +386,7 @@ class WahlViewSet(
 
 
 class KandidaturViewSet(GenericViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("vote")]
     queryset = Kandidatur.objects.select_related("wahl", "einreicher__user").prefetch_related(
         "personen__membre", "personen__nachweise", "nachweise", "pruefpunkte", "unterstuetzungen"
     )
@@ -623,7 +624,7 @@ class KandidaturViewSet(GenericViewSet):
 
 
 class BekanntmachungViewSet(GenericViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("vote")]
     queryset = Bekanntmachung.objects.select_related("wahl").prefetch_related("freigaben")
     parser_classes = [JSONParser]
 
@@ -722,7 +723,7 @@ class BekanntmachungViewSet(GenericViewSet):
 
 
 class EinspruchViewSet(GenericViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("vote")]
     queryset = Einspruch.objects.select_related(
         "wahl", "kandidatur", "einreicher__user"
     ).prefetch_related("zustimmungen")
@@ -797,7 +798,7 @@ class EinspruchViewSet(GenericViewSet):
 
 
 class ReglementViewSet(GenericViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("vote")]
     queryset = Reglement.objects.select_related("wahl").prefetch_related("gelesen")
     parser_classes = [JSONParser]
 
@@ -881,7 +882,7 @@ class ReglementViewSet(GenericViewSet):
 class MitteilungViewSet(GenericViewSet):
     """Kanäle einer automatischen Erinnerung ein- oder ausschalten (vor dem Versand)."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("vote")]
     queryset = Mitteilung.objects.select_related("wahl")
     parser_classes = [JSONParser]
 
@@ -896,7 +897,7 @@ class MitteilungViewSet(GenericViewSet):
 class WahlTerminViewSet(GenericViewSet):
     """Live-Termine zur Wahl: Ausschuss und Büro pflegen sie, Mitglieder lassen sich erinnern."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("vote")]
     queryset = WahlTermin.objects.select_related("wahl", "termin")
     parser_classes = [JSONParser]
 

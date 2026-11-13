@@ -29,7 +29,8 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.rbac.services import acces_cle_menu
+from apps.rbac.models import NiveauAcces
+from apps.rbac.services import acces_cle_menu, user_has_module_access
 
 from .models import ChoixExprime, ModeAnonymat, ParticipationVote, StatutSession, VoteExprime
 from .security import compute_voter_token
@@ -69,6 +70,14 @@ class VoteConsumer(AsyncJsonWebsocketConsumer):
             return
 
         user = self.scope.get("user")
+        # Abstimmen = mitmachen : braucht Schreiben auf dem Modul (Lesen reicht nur zum Ansehen).
+        if not await database_sync_to_async(user_has_module_access)(
+            user, "vote", NiveauAcces.LECTURE_ECRITURE
+        ):
+            await self.send_json(
+                {"type": "erreur", "message": "Sie dürfen an Abstimmungen nicht teilnehmen."}
+            )
+            return
         choix_ids = content.get("choix") or []
 
         try:

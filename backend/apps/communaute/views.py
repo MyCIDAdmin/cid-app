@@ -68,6 +68,7 @@ from rest_framework.views import APIView
 from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
+from apps.rbac.permissions import module_access_permission
 
 from . import chats, fanclub, gemeinschaft, reaktionen, services
 from .filters import PublicationFilter, SujetFilter
@@ -227,7 +228,7 @@ class MessageGroupeCursorPagination(CursorPagination):
 
 class PublicationViewSet(viewsets.ModelViewSet):
     serializer_class = PublicationSerializer
-    permission_classes = [PublicationPermission]
+    permission_classes = [PublicationPermission, module_access_permission("communaute")]
     filterset_class = PublicationFilter
     filter_backends = [DjangoFilterBackend]
     pagination_class = PublicationCursorPagination
@@ -319,7 +320,7 @@ class CommentaireViewSet(
     mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet
 ):
     serializer_class = CommentaireSerializer
-    permission_classes = [ContenuCommunautePermission]
+    permission_classes = [ContenuCommunautePermission, module_access_permission("communaute")]
     queryset = Commentaire.objects.select_related("auteur", "publication")
 
     @action(detail=True, methods=["post"])
@@ -365,7 +366,7 @@ class CommentaireViewSet(
 
 class SujetViewSet(viewsets.ModelViewSet):
     serializer_class = SujetSerializer
-    permission_classes = [ContenuCommunautePermission]
+    permission_classes = [ContenuCommunautePermission, module_access_permission("communaute")]
     filterset_class = SujetFilter
     filter_backends = [DjangoFilterBackend]
     pagination_class = SujetCursorPagination
@@ -506,7 +507,7 @@ class ReponseForumViewSet(
     mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet
 ):
     serializer_class = ReponseForumSerializer
-    permission_classes = [ContenuCommunautePermission]
+    permission_classes = [ContenuCommunautePermission, module_access_permission("communaute")]
     queryset = ReponseForum.objects.select_related("auteur", "sujet", "repond_a__auteur")
 
     @action(detail=True, methods=["post"])
@@ -654,7 +655,7 @@ class ConversationViewSet(
     viewsets.GenericViewSet,
 ):
     serializer_class = ConversationSerializer
-    permission_classes = [ConversationPermission]
+    permission_classes = [ConversationPermission, module_access_permission("communaute")]
     pagination_class = ConversationCursorPagination
     http_method_names = ["get", "post", "head", "options"]
 
@@ -692,7 +693,7 @@ class MessagePriveViewSet(mixins.ListModelMixin, mixins.DestroyModelMixin, views
     conversation pour que la fenêtre de l'autre participant retire aussi le message."""
 
     serializer_class = MessagePriveSerializer
-    permission_classes = [MessagePrivePermission]
+    permission_classes = [MessagePrivePermission, module_access_permission("communaute")]
     pagination_class = MessagePriveCursorPagination
 
     def get_queryset(self):
@@ -792,7 +793,7 @@ class GroupeChatViewSet(
     viewsets.GenericViewSet,
 ):
     serializer_class = GroupeChatSerializer
-    permission_classes = [GroupeChatPermission]
+    permission_classes = [GroupeChatPermission, module_access_permission("communaute")]
     pagination_class = GroupeChatCursorPagination
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -923,7 +924,7 @@ class MessageGroupeViewSet(
     temps réel au WebSocket du groupe."""
 
     serializer_class = MessageGroupeSerializer
-    permission_classes = [MessageGroupePermission]
+    permission_classes = [MessageGroupePermission, module_access_permission("communaute")]
     pagination_class = MessageGroupeCursorPagination
 
     def get_queryset(self):
@@ -1045,7 +1046,7 @@ class MembreRechercheViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     test manuel Phase 4)."""
 
     serializer_class = AuteurSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("communaute")]
     pagination_class = MembreRechercheCursorPagination
 
     def get_queryset(self):
@@ -1127,7 +1128,7 @@ class QuizCursorPagination(CursorPagination):
 
 class MatchViewSet(viewsets.ModelViewSet):
     serializer_class = MatchSerializer
-    permission_classes = [MatchPermission]
+    permission_classes = [MatchPermission, module_access_permission("communaute")]
     pagination_class = MatchCursorPagination
     queryset = Match.objects.prefetch_related("reactions")
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
@@ -1170,7 +1171,7 @@ class MatchCommentaireViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """Liste seule — l'envoi passe exclusivement par `LiveMatchConsumer`."""
 
     serializer_class = MatchCommentaireSerializer
-    permission_classes = [MatchCommentairePermission]
+    permission_classes = [MatchCommentairePermission, module_access_permission("communaute")]
     pagination_class = MatchCommentaireCursorPagination
 
     def get_queryset(self):
@@ -1272,7 +1273,10 @@ class RencontreCalendrierViewSet(
     historique complet), même principe que `?saison=toutes`."""
 
     serializer_class = RencontreCalendrierSerializer
-    permission_classes = [SpielplanPermission]
+    permission_classes = [
+        SpielplanPermission,
+        module_access_permission("communaute", anonym_lesen=True),
+    ]
     pagination_class = CalendrierCursorPagination
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -1392,7 +1396,7 @@ class StatistiqueJoueurViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     `?saison=<valeur>`/`?saison=toutes` : mêmes règles que ClassementLigueViewSet."""
 
     serializer_class = StatistiqueJoueurSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("communaute")]
     pagination_class = StatistiqueJoueurCursorPagination
 
     def get_queryset(self):
@@ -1416,7 +1420,7 @@ class EquipeInfoViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     par un code HTTP 404 à gérer séparément."""
 
     serializer_class = EquipeInfoSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("communaute")]
 
     def list(self, request, *args, **kwargs):
         info, _cree = EquipeInfo.objects.get_or_create(pk=EquipeInfo.PK_UNIQUE)
@@ -1514,7 +1518,7 @@ class MatchEvenementViewSet(
     (même mécanisme REST -> WS que `MatchViewSet._broadcast_match_update` ci-dessus)."""
 
     serializer_class = MatchEvenementSerializer
-    permission_classes = [MatchEvenementPermission]
+    permission_classes = [MatchEvenementPermission, module_access_permission("communaute")]
     pagination_class = MatchEvenementCursorPagination
 
     def get_queryset(self):
@@ -1587,7 +1591,7 @@ class TippspielViewSet(viewsets.ModelViewSet):
     action d'écriture du jeu lui-même donc déjà ouverte à tous)."""
 
     serializer_class = TippspielSerializer
-    permission_classes = [TippspielPermission]
+    permission_classes = [TippspielPermission, module_access_permission("communaute")]
     pagination_class = TippspielCursorPagination
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -1636,7 +1640,7 @@ class TippspielTeilnahmeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     TippspielTeilnahmePermission."""
 
     serializer_class = TippspielTeilnahmeSerializer
-    permission_classes = [TippspielTeilnahmePermission]
+    permission_classes = [TippspielTeilnahmePermission, module_access_permission("communaute")]
     pagination_class = TippspielTeilnahmeCursorPagination
     http_method_names = ["get", "post", "head", "options"]
 
@@ -1718,7 +1722,7 @@ class TippspielTipViewSet(
     confiance au frontend."""
 
     serializer_class = TippspielTipSerializer
-    permission_classes = [TippspielTipPermission]
+    permission_classes = [TippspielTipPermission, module_access_permission("communaute")]
     pagination_class = TippspielTipCursorPagination
     http_method_names = ["get", "post", "patch", "head", "options"]
 
@@ -1735,7 +1739,10 @@ class TippspielTipViewSet(
 
 class AlbumViewSet(viewsets.ModelViewSet):
     serializer_class = AlbumSerializer
-    permission_classes = [AlbumPermission]
+    permission_classes = [
+        AlbumPermission,
+        module_access_permission("communaute", anonym_lesen=True),
+    ]
     pagination_class = AlbumCursorPagination
     queryset = Album.objects.select_related("createur", "evenement", "projet")
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
@@ -1762,7 +1769,10 @@ class AlbumViewSet(viewsets.ModelViewSet):
 
 class PhotoViewSet(viewsets.ModelViewSet):
     serializer_class = PhotoSerializer
-    permission_classes = [PhotoPermission]
+    permission_classes = [
+        PhotoPermission,
+        module_access_permission("communaute", anonym_lesen=True),
+    ]
     pagination_class = PhotoCursorPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["album"]
@@ -1826,13 +1836,13 @@ class PhotoCommentaireViewSet(
     mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet
 ):
     serializer_class = PhotoCommentaireSerializer
-    permission_classes = [PhotoCommentairePermission]
+    permission_classes = [PhotoCommentairePermission, module_access_permission("communaute")]
     queryset = PhotoCommentaire.objects.select_related("auteur", "photo")
 
 
 class QuizViewSet(viewsets.ModelViewSet):
     serializer_class = QuizSerializer
-    permission_classes = [QuizPermission]
+    permission_classes = [QuizPermission, module_access_permission("communaute")]
     pagination_class = QuizCursorPagination
     queryset = Quiz.objects.prefetch_related("questions__choix")
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
@@ -1940,7 +1950,7 @@ class TippspielMatrixView(APIView):
     bestätigten Teilnehmer für die letzten gesperrten Spiele. Offene Spiele erscheinen nie (Sperre
     1 Tag vor Anpfiff, geprüft im Server) ; wer nicht selbst teilnimmt, sieht nur die Rangliste."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("communaute")]
 
     def get(self, request):
         tippspiel_id = request.query_params.get("tippspiel")
@@ -1966,7 +1976,7 @@ class GemeinschaftView(APIView):
     Offen für jedes angemeldete Konto ; die Namensliste liefert der Server nur an aktive
     Mitglieder und das Büro."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("communaute")]
 
     def get(self, request):
         return Response(gemeinschaft.uebersicht(request.user))
@@ -1976,7 +1986,7 @@ class SpielerDesSpielsView(APIView):
     """„Spieler des Spiels“. `GET ?rencontre=<id>` liefert den Stand (ohne Parameter : das letzte
     beendete Spiel von Club Africain). `POST {rencontre, spieler}` gibt die Stimme ab."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("communaute")]
 
     @staticmethod
     def _rencontre(rencontre_id):

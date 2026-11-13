@@ -254,6 +254,27 @@ PAGE_ADMIN_LABELS = {
     "page_support": "Support (Tickets bearbeiten, FAQ pflegen)",
 }
 
+# Welche Verwaltungsseiten zu welchem Modul gehören. Wer auf einer dieser Seiten Lesen bzw.
+# Schreiben hat, passiert die grobe Modul-Sperre (services.verwaltet_modul) auch ohne eigene
+# Modulzelle : Verwalter müssen nicht zusätzlich "mitmachen" dürfen, um zu verwalten. Die
+# Verwaltungsaktion selbst prüft weiterhin die Seite.
+MODUL_SEITEN = {
+    "membres": ("page_membres_import", "page_membres_zuordnung"),
+    "cotisations": (
+        "page_cotisations_attente",
+        "page_cotisations_relances",
+        "page_articles_cotisation",
+        "page_zahlungen_import",
+        "page_finances",
+    ),
+    "adhesions": ("page_campagnes_adhesion", "page_justificatifs", "page_inscriptions"),
+    "evenements": ("page_events", "page_kalender", "page_kalender_vorschlag", "page_regionen"),
+    "boutique": ("page_boutique",),
+    "vote": (),
+    "communaute": ("page_quiz", "page_albums", "page_fan_club_logos"),
+    "projets": ("page_projets",),
+}
+
 # Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour
 # le frontend, qui n'a donc rien à changer pour afficher les nouvelles pages automatiquement.
 ALL_MODULES = MODULES + PAGES_ADMIN

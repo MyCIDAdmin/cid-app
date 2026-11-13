@@ -125,7 +125,10 @@ class CataloguePagination(CursorPagination):
 
 class CampagneAdhesionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "head", "options"]
-    permission_classes = [CataloguePermission]
+    permission_classes = [
+        CataloguePermission,
+        module_access_permission("adhesions", anonym_lesen=True),
+    ]
     serializer_class = CampagneAdhesionSerializer
     pagination_class = AdhesionsCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -202,7 +205,10 @@ class CampagneAdhesionViewSet(ModelViewSet):
 
 class OffreAdhesionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CataloguePermission]
+    permission_classes = [
+        CataloguePermission,
+        module_access_permission("adhesions", anonym_lesen=True),
+    ]
     serializer_class = OffreAdhesionSerializer
     pagination_class = CataloguePagination
     filter_backends = [DjangoFilterBackend]
@@ -223,7 +229,10 @@ class OffreAdhesionViewSet(ModelViewSet):
 
 class RabaisOffreViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CataloguePermission]
+    permission_classes = [
+        CataloguePermission,
+        module_access_permission("adhesions", anonym_lesen=True),
+    ]
     serializer_class = RabaisOffreSerializer
     pagination_class = CataloguePagination
     queryset = RabaisOffre.objects.select_related("offre").all()
@@ -504,7 +513,7 @@ class JustificatifRabaisViewSet(ModelViewSet):
     matrice d'accès détaillée par action."""
 
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [JustificatifPermission]
+    permission_classes = [JustificatifPermission, module_access_permission("adhesions")]
     serializer_class = (
         JustificatifRabaisSerializer  # list/retrieve — create/valider s'en écartent explicitement
     )

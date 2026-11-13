@@ -213,7 +213,10 @@ class VarianteCursorPagination(CursorPagination):
 
 class ProduitViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CatalogueBoutiquePermission]
+    permission_classes = [
+        CatalogueBoutiquePermission,
+        module_access_permission("boutique", anonym_lesen=True),
+    ]
     serializer_class = ProduitSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -268,7 +271,10 @@ class ProduitImageViewSet(ModelViewSet):
     par le rôle/la page RBAC, déjà entièrement vérifié par has_permission."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CatalogueBoutiquePermission]
+    permission_classes = [
+        CatalogueBoutiquePermission,
+        module_access_permission("boutique", anonym_lesen=True),
+    ]
     serializer_class = ProduitImageSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -285,7 +291,10 @@ class RegleReductionViewSet(ModelViewSet):
     d'accès que Produit/VarianteProduit, voir permissions.py."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CatalogueBoutiquePermission]
+    permission_classes = [
+        CatalogueBoutiquePermission,
+        module_access_permission("boutique", anonym_lesen=True),
+    ]
     serializer_class = RegleReductionSerializer
     pagination_class = BoutiqueCursorPagination
     filterset_fields = {"produit": ["exact", "in"], "actif": ["exact"]}
@@ -304,7 +313,10 @@ class RegleReductionViewSet(ModelViewSet):
 
 class VarianteProduitViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CatalogueBoutiquePermission]
+    permission_classes = [
+        CatalogueBoutiquePermission,
+        module_access_permission("boutique", anonym_lesen=True),
+    ]
     serializer_class = VarianteProduitSerializer
     pagination_class = VarianteCursorPagination
     # Forme dict pour exposer `?id__in=uuid1,uuid2,...` — utilisé par le panier frontend pour
@@ -1073,7 +1085,7 @@ class RetourViewSet(ModelViewSet):
     interblocage avec une commande passée ou annulée concurremment."""
 
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [RetourPermission]
+    permission_classes = [RetourPermission, module_access_permission("boutique")]
     serializer_class = RetourSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -1187,7 +1199,7 @@ class BonAchatViewSet(ModelViewSet):
     dédiée (aperçu d'un code au checkout, sans lien avec la création)."""
 
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [BonAchatPermission]
+    permission_classes = [BonAchatPermission, module_access_permission("boutique")]
     serializer_class = BonAchatSerializer
     pagination_class = BoutiqueCursorPagination
     filterset_fields = {"statut": ["exact"]}
@@ -1221,7 +1233,7 @@ class ReservierungViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin, 
     """Reservierungen (Release 4, 2026-10-12) — Modus NUR_RESERVIEREN, siehe reservierungen.py.
     Mitglieder sehen/stornieren nur ihre eigenen, die Shop-Verwaltung (page_boutique) alle."""
 
-    permission_classes = [ReservierungPermission]
+    permission_classes = [ReservierungPermission, module_access_permission("boutique")]
     serializer_class = ReservierungSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]

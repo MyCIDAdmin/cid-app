@@ -86,7 +86,10 @@ class EvenementsCursorPagination(CursorPagination):
 
 class EvenementViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "head", "options"]
-    permission_classes = [EvenementPermission]
+    permission_classes = [
+        EvenementPermission,
+        module_access_permission("evenements", anonym_lesen=True),
+    ]
     serializer_class = EvenementSerializer
     pagination_class = EvenementsCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -412,7 +415,7 @@ class InscriptionViewSet(ModelViewSet):
 
 class CovoiturageViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CovoiturageWritePermission]
+    permission_classes = [CovoiturageWritePermission, module_access_permission("evenements")]
     serializer_class = CovoiturageSerializer
     pagination_class = EvenementsCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -478,7 +481,7 @@ class CovoiturageViewSet(ModelViewSet):
 
 class ReservationCovoiturageViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [ReservationCovoituragePermission]
+    permission_classes = [ReservationCovoituragePermission, module_access_permission("evenements")]
     serializer_class = ReservationCovoiturageSerializer
     pagination_class = EvenementsCursorPagination
     filterset_fields = ["trajet"]

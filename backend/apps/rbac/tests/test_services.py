@@ -5,7 +5,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 
 from apps.accounts.models import Role
-from apps.rbac.models import NiveauAcces
+from apps.rbac.models import NiveauAcces, RoleModulePermission
 from apps.rbac.services import (
     get_admin_page_niveau,
     get_user_role_slugs,
@@ -88,6 +88,11 @@ def test_user_has_module_access_semantique_union_le_plus_permissif_gagne():
 
 
 def test_user_has_module_access_lecture_seule_insuffisante_pour_ecriture():
+    # Seit Migration 0012 steht "projets" bei Mitglied auf Lesen & Schreiben ; die Zelle wird
+    # hier auf Lesen gesenkt, wie es die Verwaltung in der Matrix tun kann.
+    RoleModulePermission.objects.filter(role__slug="membre", module="projets").update(
+        niveau_acces=NiveauAcces.LECTURE
+    )
     user = UserFactory(role=Role.MEMBRE)
     role_lecture = RoleDefinitionFactory(slug="lecteur-seul")
     RoleModulePermissionFactory(

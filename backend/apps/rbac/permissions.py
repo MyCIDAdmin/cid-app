@@ -23,25 +23,39 @@ from .models import NiveauAcces
 class ModuleAccessPermission(BasePermission):
     """Porte grossière : le user a-t-il, via l'UN de ses rôles, au moins l'accès requis
     (lecture pour un GET/HEAD/OPTIONS, lecture_ecriture sinon) sur `self.module` ? Ne remplace
-    jamais la classe de permission bespoke déjà en place sur la ViewSet — s'ajoute à elle."""
+    jamais la classe de permission bespoke déjà en place sur la ViewSet — s'ajoute à elle.
+
+    Bedeutung seit dem Rechte-Umbau (Nov. 2026) : Lesen = ansehen, Schreiben = mitmachen
+    (anmelden, bestellen, beitragen, reagieren, abstimmen). Wer eine Verwaltungsseite des Moduls
+    hat (registry.MODUL_SEITEN), passiert die Sperre ebenfalls. `anonym_lesen` lässt eine
+    anonyme LESENDE Anfrage zur eigenen Prüfung der View durch (öffentliche Startseite) ; jede
+    ändernde Anfrage braucht immer ein angemeldetes Konto."""
 
     module: str = ""  # défini par sous-classe, voir module_access_permission ci-dessous
+    anonym_lesen: bool = False
 
     def has_permission(self, request, view):
         user = request.user
+        lesend = request.method in SAFE_METHODS
         if not user or not user.is_authenticated:
-            return False
-        requis = (
-            NiveauAcces.LECTURE if request.method in SAFE_METHODS else NiveauAcces.LECTURE_ECRITURE
-        )
-        return services.user_has_module_access(user, self.module, requis)
+            return bool(self.anonym_lesen and lesend)
+        requis = NiveauAcces.LECTURE if lesend else NiveauAcces.LECTURE_ECRITURE
+        return services.user_has_module_access(
+            user, self.module, requis
+        ) or services.verwaltet_modul(user, self.module, requis)
 
 
-def module_access_permission(module: str) -> type[ModuleAccessPermission]:
+def module_access_permission(
+    module: str, anonym_lesen: bool = False
+) -> type[ModuleAccessPermission]:
     """Fabrique une sous-classe de `ModuleAccessPermission` liée à `module` — évite de répéter
-    une classe complète par app métier en Phase B. Usage :
+    une classe complète par app métier. Usage :
     `permission_classes = [MembrePermission, module_access_permission("membres")]`."""
-    return type(f"ModuleAccessPermission_{module}", (ModuleAccessPermission,), {"module": module})
+    return type(
+        f"ModuleAccessPermission_{module}",
+        (ModuleAccessPermission,),
+        {"module": module, "anonym_lesen": anonym_lesen},
+    )
 
 
 def page_admin_permission(page_slug: str, public_read: bool = False):

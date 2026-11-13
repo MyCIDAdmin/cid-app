@@ -74,6 +74,18 @@ def user_has_module_access(user, module: str, required: str) -> bool:
     return meilleur >= _NIVEAUX_ORDONNES[required]
 
 
+def verwaltet_modul(user, module: str, required: str) -> bool:
+    """True, wenn `user` eine der Verwaltungsseiten des Moduls (registry.MODUL_SEITEN) mit
+    mindestens `required` hat. Verwalter dürfen so die grobe Modul-Sperre passieren, ohne dass
+    ihre Rolle zusätzlich "mitmachen" (Schreiben auf dem Modul) dürfen muss."""
+    from .registry import MODUL_SEITEN
+
+    return any(
+        has_admin_page_access(user, seite, required=required)
+        for seite in MODUL_SEITEN.get(module, ())
+    )
+
+
 def is_elevated_for_module(user, module: str) -> bool:
     """True dès qu'un rôle ADDITIONNEL de l'utilisateur (au-delà de son rôle système actuel,
     `user.role`) accorde au moins la lecture sur ce module — voir docstring de module pour le
