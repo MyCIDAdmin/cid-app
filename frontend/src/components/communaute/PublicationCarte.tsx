@@ -16,7 +16,6 @@ import {
   useSupprimerPublication,
 } from "../../hooks/useCommunaute";
 import { useMentionAutocomplete } from "../../hooks/useMentionAutocomplete";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Commentaire, Publication } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { vorZeit } from "../../utils/datum";
@@ -26,6 +25,7 @@ import ChatAvatar from "../chats/ChatAvatar";
 import EmojiAuswahl from "../chats/EmojiAuswahl";
 import ShareButton from "../ui/ShareButton";
 import ReaktionsLeiste from "./ReaktionsLeiste";
+import { usePageAccess } from "../../hooks/useRbac";
 
 function vollerName(auteur: { prenom: string; nom: string }): string {
   return `${auteur.prenom} ${auteur.nom}`;
@@ -119,8 +119,7 @@ export default function PublicationCarte({
   onHashtagClick: (hashtag: string) => void;
 }) {
   const { t } = useTranslation("communaute");
-  const user = useAuthStore((s) => s.user);
-  const peutModerer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const peutModerer = usePageAccess("page_community").modifiable;
 
   const reagieren = useReagieren("publications");
   const partager = usePartagerPublication();

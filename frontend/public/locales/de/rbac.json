@@ -49,7 +49,16 @@
     "regionen": "Sektoren",
     "page_regionen": "Sektoren (Verantwortliche zuweisen, Seiten bearbeiten)",
     "support": "Support",
-    "page_support": "Support (Tickets bearbeiten, FAQ pflegen)"
+    "page_support": "Support (Tickets bearbeiten, FAQ pflegen)",
+    "page_membres": "Mitglieder (alle sehen, anlegen, Status ändern)",
+    "page_membres_loeschen": "Mitglieder löschen",
+    "page_beitraege_uebersicht": "Beiträge (alle sehen, für andere erfassen)",
+    "page_souscriptions": "Mitgliedschaften (alle sehen und bearbeiten)",
+    "page_abstimmungen": "Abstimmungen und Wahlen (anlegen, schließen)",
+    "page_community": "Community (moderieren, Redaktionsbeiträge, Spielplan)",
+    "page_tippspiel": "Tippspiel (anlegen und verwalten)",
+    "page_zahlung_versand": "Zahlungen bestätigen und Bestellungen versenden",
+    "page_erfassung_fuer_andere": "Für andere erfassen (Beiträge, Anmeldungen, Mitgliedschaften)"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",

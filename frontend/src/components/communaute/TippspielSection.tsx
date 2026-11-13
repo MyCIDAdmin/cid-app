@@ -23,13 +23,13 @@ import {
   useTippspielTeilnahmen,
   useTippspiele,
 } from "../../hooks/useCommunaute";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { StatutTippspiel, Tippspiel } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import ShareButton from "../ui/ShareButton";
 import TippspielAdminForm from "./TippspielAdminForm";
 import TippspielAuswertung from "./TippspielAuswertung";
 import TippspielTippAbgabe from "./TippspielTippAbgabe";
+import { usePageAccess } from "../../hooks/useRbac";
 
 const BADGE_STATUT: Record<StatutTippspiel, string> = {
   brouillon: "bg-bg-secondary text-text-tertiary",
@@ -59,8 +59,7 @@ function PreisLigne({ prix }: { prix: Tippspiel["prix"][number] }) {
 
 function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
   const { t } = useTranslation("communaute");
-  const user = useAuthStore((s) => s.user);
-  const peutGerer = hasRoleAtLeast(user, ROLE_LEVELS.super_admin);
+  const peutGerer = usePageAccess("page_tippspiel").modifiable;
   const estPayant = tippspiel.montant_participation !== null;
 
   const [modifierForm, setModifierForm] = useState(false);
@@ -241,8 +240,7 @@ function TippspielAffichage({ tippspiel }: { tippspiel: Tippspiel }) {
 
 export default function TippspielSection() {
   const { t } = useTranslation("communaute");
-  const user = useAuthStore((s) => s.user);
-  const peutGerer = hasRoleAtLeast(user, ROLE_LEVELS.super_admin);
+  const peutGerer = usePageAccess("page_tippspiel").modifiable;
   const [creerForm, setCreerForm] = useState(false);
 
   const tippspieleQuery = useTippspiele();

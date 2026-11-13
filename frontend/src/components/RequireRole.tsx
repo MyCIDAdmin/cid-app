@@ -4,13 +4,13 @@ import { Navigate } from "react-router-dom";
 
 import { useMesAcces } from "../hooks/useRbac";
 import { hasRoleAtLeast, useAuthStore } from "../store/authStore";
-import { pageEstAccessible } from "../types/rbac";
+import { pageEstAccessible, pageEstModifiable } from "../types/rbac";
 
 type RequireRoleProps = PropsWithChildren<
   {
     redirectTo?: string;
   } & (
-    | { minRoleLevel: number; pageSlug?: never }
+    | { minRoleLevel: number; pageSlug?: never; schreiben?: never }
     | {
         /**
          * Phase D (ajoutée le 2026-09-23) : gate piloté par la matrice (apps.rbac,
@@ -20,6 +20,8 @@ type RequireRoleProps = PropsWithChildren<
          * deux (`/admin/roles` reste volontairement sur `minRoleLevel`, hors matrice).
          */
         pageSlug: string;
+        /** Mit `schreiben` genügt Lesen nicht : die Route verlangt „Lesen & Schreiben“. */
+        schreiben?: boolean;
         minRoleLevel?: never;
       }
   )
@@ -40,6 +42,7 @@ type RequireRoleProps = PropsWithChildren<
 export default function RequireRole({
   minRoleLevel,
   pageSlug,
+  schreiben = false,
   redirectTo = "/membres",
   children,
 }: RequireRoleProps) {
@@ -55,7 +58,8 @@ export default function RequireRole({
     if (chargementAcces) {
       return <p className="p-6 text-sm text-text-tertiary">{t("chargement")}</p>;
     }
-    if (!pageEstAccessible(mesAcces?.[pageSlug])) {
+    const niveau = mesAcces?.[pageSlug];
+    if (!(schreiben ? pageEstModifiable(niveau) : pageEstAccessible(niveau))) {
       return <Navigate to={redirectTo} replace />;
     }
     return <>{children}</>;

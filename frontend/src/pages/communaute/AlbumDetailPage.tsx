@@ -31,7 +31,6 @@ import {
   useSupprimerPhoto,
 } from "../../hooks/useCommunaute";
 import { usePageAccess } from "../../hooks/useRbac";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { Photo } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { albumPfad } from "../../utils/albumPfad";
@@ -188,13 +187,12 @@ export default function AlbumDetailPage({
   const { t } = useTranslation("communaute");
   const params = useParams<{ id: string }>();
   const id = albumId ?? params.id;
-  const user = useAuthStore((s) => s.user);
-  const peutModerer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
-  // Teilen : réservé Bureau Admin+ (demande utilisateur du 2026-10-20), jamais sur la Startseite.
-  const darfTeilen = !publicModus && peutModerer;
-  // `masquer` exige page_albums en lecture_ecriture côté backend (PhotoPermission) depuis le
-  // 2026-09-24 — voir docstring de PhotoCarte.moderationModifiable ci-dessus.
-  const { modifiable: moderationModifiable } = usePageAccess("page_albums");
+  // Rechte-Umbau (Nov. 2026): Moderation hängt an der Seite page_albums. Mit „Lesen“ sieht man
+  // die Schaltfläche (ausgegraut), mit „Lesen & Schreiben“ ist sie bedienbar.
+  const { accessible: peutModerer, modifiable: moderationModifiable } =
+    usePageAccess("page_albums");
+  // Teilen : réservé à qui gère les albums (demande utilisateur du 2026-10-20), jamais sur la Startseite.
+  const darfTeilen = !publicModus && moderationModifiable;
 
   const albumQuery = useAlbum(id);
   const photosQuery = usePhotos({ album: id });

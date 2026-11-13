@@ -44,7 +44,8 @@
     "resultats_a_la_cloture": "Die detaillierten Ergebnisse werden erst nach Abschluss der Sitzung bekannt gegeben.",
     "connexion_en_cours": "Verbindung zur Live-Abstimmung wird hergestellt…",
     "connexion_indisponible": "Verbindung zur Abstimmung derzeit nicht möglich. Laden Sie die Seite neu, um es erneut zu versuchen.",
-    "composition_liste": "Kandidaten der Liste:"
+    "composition_liste": "Kandidaten der Liste:",
+    "nur_lesen": "Sie können diese Abstimmung ansehen, aber nicht daran teilnehmen."
   },
   "resultats": {
     "titre": "Offizielle Ergebnisse",

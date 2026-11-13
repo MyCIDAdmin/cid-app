@@ -35,10 +35,10 @@ import {
   useUpdateMembre,
   useUpdateMembreMoi,
 } from "../../hooks/useMembres";
-import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { BUNDESLANDER, PAYS_ALLEMAGNE, PAYS_MEMBRE, STATUTS_MEMBRE } from "../../types/membre";
 import type { Pays } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { usePageAccess } from "../../hooks/useRbac";
 
 function initialesProfil(prenom: string, nom: string): string {
   return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
@@ -153,10 +153,10 @@ export default function MembreFormPage() {
   // leur activation/utilisation varie selon modeProfil.
   const modeProfil = location.pathname === "/mon-profil";
   const modeEdition = Boolean(id) || modeProfil;
-  const utilisateur = useAuthStore((s) => s.user);
   // En mode profil, la section administrative reste masquée même pour un compte RH+ : on édite
   // ici "son" profil personnel, jamais une fiche de gestion (voir docstring de tête).
-  const gestionComplete = !modeProfil && hasRoleAtLeast(utilisateur, ROLE_LEVELS.rh);
+  const membresSchreiben = usePageAccess("page_membres").modifiable;
+  const gestionComplete = !modeProfil && membresSchreiben;
 
   const requeteMembreId = useMembre(modeProfil ? undefined : id);
   const requeteMembreMoi = useMembreMoi({ enabled: modeProfil });
@@ -173,9 +173,10 @@ export default function MembreFormPage() {
   // Téléversement de la photo de profil (mode profil uniquement) — même principe
   // "aperçu + confirmation/annulation" que AdminEventsPage.tsx (imageEnAttente), en plus simple
   // ici (une seule fiche éditée à la fois, pas de map par id nécessaire).
-  const [photoEnAttente, setPhotoEnAttente] = useState<{ fichier: File; previewUrl: string } | null>(
-    null,
-  );
+  const [photoEnAttente, setPhotoEnAttente] = useState<{
+    fichier: File;
+    previewUrl: string;
+  } | null>(null);
   const [photoEnCours, setPhotoEnCours] = useState(false);
   const [photoErreur, setPhotoErreur] = useState("");
   const inputFichierPhoto = useRef<HTMLInputElement>(null);
@@ -265,7 +266,9 @@ export default function MembreFormPage() {
         navigate(`/membres/${cree.id}`);
       }
     } catch (error) {
-      setError("root", { message: extractApiErrorMessage(error, t("formulaire.erreur_soumission")) });
+      setError("root", {
+        message: extractApiErrorMessage(error, t("formulaire.erreur_soumission")),
+      });
     }
   }
 
@@ -500,7 +503,11 @@ export default function MembreFormPage() {
               </>
             )}
             <Champ label={t("champ.ville_origine_tn")} htmlFor="ville_origine_tn">
-              <input id="ville_origine_tn" {...register("ville_origine_tn")} className={champClasses} />
+              <input
+                id="ville_origine_tn"
+                {...register("ville_origine_tn")}
+                className={champClasses}
+              />
             </Champ>
             <Champ label={t("champ.gouvernorat_tn")} htmlFor="gouvernorat_tn">
               <input id="gouvernorat_tn" {...register("gouvernorat_tn")} className={champClasses} />

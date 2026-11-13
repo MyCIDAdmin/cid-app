@@ -26,7 +26,6 @@ import {
   useModifierMatch,
 } from "../../hooks/useCommunaute";
 import { useLiveMatchSocket } from "../../hooks/useLiveMatchSocket";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type {
   EquipeEvenement,
   StatutMatch,
@@ -34,6 +33,7 @@ import type {
   TypeReactionMatch,
 } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { usePageAccess } from "../../hooks/useRbac";
 
 const EMOJIS: Record<TypeReactionMatch, string> = {
   coeur: "❤️",
@@ -71,8 +71,7 @@ function formatHeure(iso: string): string {
 export default function LiveMatchDetailPage() {
   const { t } = useTranslation("communaute");
   const { id } = useParams<{ id: string }>();
-  const user = useAuthStore((s) => s.user);
-  const peutPiloter = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const peutPiloter = usePageAccess("page_community").modifiable;
 
   const matchQuery = useMatch(id);
   const historiqueQuery = useMatchCommentaires(id);

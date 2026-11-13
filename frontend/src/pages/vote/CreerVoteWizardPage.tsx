@@ -15,16 +15,15 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import { useMembresList } from "../../hooks/useMembres";
 import { useCreerVoteSession } from "../../hooks/useVote";
-import { useAuthStore } from "../../store/authStore";
 import type { EligibiliteVote, ModeAnonymat, TypeVote, VoteOptionInput } from "../../types/vote";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { usePageAccess } from "../../hooks/useRbac";
 
 const DUREES_MINUTES = [10, 20, 30, 60, 360, 1440, 4320, 10080];
 
 // Ensemble de rôles exact autorisé à créer une session (voir même constante et son
 // commentaire dans VotePage.tsx — Dir. Financier explicitement exclu malgré un niveau
 // numérique supérieur à Bureau Admin, SCD §4.2 / apps.vote.permissions.ROLES_GESTION_VOTE).
-const ROLES_GESTION_VOTE = ["super_admin", "bureau_admin"] as const;
 
 // FDD §5.2 : "plusieurs listes de candidats peuvent se présenter" (ex. élection du bureau
 // directeur) — une VoteOption reste l'unité de vote, mais représente soit un candidat
@@ -50,10 +49,7 @@ export default function CreerVoteWizardPage() {
   const { t } = useTranslation("vote");
   const navigate = useNavigate();
   const creerMutation = useCreerVoteSession();
-  const user = useAuthStore((s) => s.user);
-  const autorise = Boolean(
-    user && ROLES_GESTION_VOTE.includes(user.role as (typeof ROLES_GESTION_VOTE)[number]),
-  );
+  const autorise = usePageAccess("page_abstimmungen").modifiable;
 
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
   const [erreurEtape, setErreurEtape] = useState<string | null>(null);

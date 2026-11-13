@@ -49,7 +49,16 @@
     "regionen": "Secteurs",
     "page_regionen": "Secteurs (attribuer les responsables, modifier les pages)",
     "support": "Support",
-    "page_support": "Support (traiter les tickets, gérer la FAQ)"
+    "page_support": "Support (traiter les tickets, gérer la FAQ)",
+    "page_membres": "Membres (voir tous, créer, changer le statut)",
+    "page_membres_loeschen": "Supprimer des membres",
+    "page_beitraege_uebersicht": "Cotisations (voir toutes, saisir pour autrui)",
+    "page_souscriptions": "Adhésions (voir toutes, traiter)",
+    "page_abstimmungen": "Votes et élections (créer, clôturer)",
+    "page_community": "Communauté (modérer, contributions de la rédaction, calendrier sportif)",
+    "page_tippspiel": "Concours de pronostics (créer et gérer)",
+    "page_zahlung_versand": "Confirmer les paiements et expédier les commandes",
+    "page_erfassung_fuer_andere": "Saisir pour autrui (cotisations, inscriptions, adhésions)"
   },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",

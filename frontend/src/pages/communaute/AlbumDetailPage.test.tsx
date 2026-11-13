@@ -110,10 +110,11 @@ describe("AlbumDetailPage", () => {
     vi.mocked(useCommunauteHooks.useCommenterPhoto).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useCommenterPhoto>>(),
     );
-    vi.mocked(useRbacHooks.usePageAccess).mockReturnValue({
-      accessible: true,
-      modifiable: true,
-      isLoading: false,
+    // Startwert der Matrix für page_albums: Büro und höher dürfen ändern.
+    vi.mocked(useRbacHooks.usePageAccess).mockImplementation(() => {
+      const rolle = useAuthStore.getState().user?.role ?? "";
+      const darf = ["bureau_admin", "dir_financier", "super_admin"].includes(rolle);
+      return { accessible: darf, modifiable: darf, isLoading: false };
     });
   });
 

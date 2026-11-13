@@ -26,12 +26,13 @@ import {
   useVerrouillerSujet,
 } from "../../hooks/useCommunaute";
 import { useMentionAutocomplete } from "../../hooks/useMentionAutocomplete";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
+import { useAuthStore } from "../../store/authStore";
 import type { ReponseForum } from "../../types/communaute";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { lokaleSprache, vorZeit } from "../../utils/datum";
 import { markiereForumThemaGesehen } from "../../utils/forumGesehen";
 import { KATEGORIE_FARBE } from "../../utils/forumKategorie";
+import { usePageAccess } from "../../hooks/useRbac";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString(lokaleSprache());
@@ -46,7 +47,7 @@ export default function ForumSujetPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const peutModerer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const peutModerer = usePageAccess("page_community").modifiable;
 
   const sujetQuery = useSujet(id ?? "");
   const epingler = useEpinglerSujet();

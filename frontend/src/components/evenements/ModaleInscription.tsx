@@ -18,6 +18,7 @@ import { useInscrire } from "../../hooks/useEvenements";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import MapsApercu from "../ui/MapsApercu";
 import type { Evenement, Inscription, RegimeAlimentaire } from "../../types/evenements";
+import { useModulZugriff } from "../../hooks/useRbac";
 
 // Fonctions utilitaires co-localisées avec le composant (réutilisées par EvenementsPage et
 // PublicEvenementsTab) plutôt que déplacées dans un fichier séparé — react-refresh/only-export-
@@ -60,6 +61,7 @@ export default function ModaleInscription({
   const titreId = useId();
   useEscapeSchliessen(onClose);
   const inscrire = useInscrire();
+  const darfMitmachen = useModulZugriff("evenements").mitmachen;
   const [places, setPlaces] = useState(1);
   const [accompagnantsAdultes, setAccompagnantsAdultes] = useState(0);
   const [accompagnantsEnfants, setAccompagnantsEnfants] = useState(0);
@@ -332,7 +334,7 @@ export default function ModaleInscription({
           <button
             type="button"
             onClick={confirmer}
-            disabled={inscrire.isPending}
+            disabled={inscrire.isPending || !darfMitmachen}
             className="rounded-cid bg-ca px-4 py-1.5 text-xs font-medium text-white hover:bg-cad disabled:opacity-50"
           >
             {ueberWarteliste

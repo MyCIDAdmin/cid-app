@@ -44,7 +44,8 @@
     "resultats_a_la_cloture": "Les résultats détaillés seront révélés uniquement à la clôture de la session.",
     "connexion_en_cours": "Connexion au vote en direct…",
     "connexion_indisponible": "Connexion au vote indisponible pour le moment. Rechargez la page pour réessayer.",
-    "composition_liste": "Candidats de la liste :"
+    "composition_liste": "Candidats de la liste :",
+    "nur_lesen": "Vous pouvez consulter ce vote, mais pas y participer."
   },
   "resultats": {
     "titre": "Résultats officiels",

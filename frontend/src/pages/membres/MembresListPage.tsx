@@ -17,7 +17,6 @@ import { exporterMembres } from "../../api/membres";
 import type { MembresOrdering, SammelLoeschErgebnis } from "../../api/membres";
 import { useDeleteMembre, useMembresList, useSupprimerMembresLot } from "../../hooks/useMembres";
 import { usePageAccess } from "../../hooks/useRbac";
-import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
 import { BUNDESLANDER, CHAMPS_EXPORT, PAYS_ALLEMAGNE, PAYS_MEMBRE } from "../../types/membre";
 import type { ChampExport, StatutMembre } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -33,12 +32,11 @@ function initiales(prenom: string, nom: string): string {
 
 export default function MembresListPage() {
   const { t } = useTranslation("membres");
-  const user = useAuthStore((s) => s.user);
-  const peutGerer = hasRoleAtLeast(user, ROLE_LEVELS.rh);
+  const peutGerer = usePageAccess("page_membres").modifiable;
   // Import und Zuordnung hängen seit 2026-10-12 an der Matrix der Rollenverwaltung.
   const importZugriff = usePageAccess("page_membres_import").accessible;
   const zuordnungZugriff = usePageAccess("page_membres_zuordnung").accessible;
-  const peutSupprimer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const peutSupprimer = usePageAccess("page_membres_loeschen").modifiable;
 
   const [statut, setStatut] = useState<StatutMembre | "">("");
   const [ville, setVille] = useState("");

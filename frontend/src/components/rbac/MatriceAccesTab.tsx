@@ -2,10 +2,11 @@
  * Onglet "Zugriff" — Modul Rollenverwaltung (Phase C, 2026-09-23). Matrice Rôle × Module :
  * colonnes dynamiques depuis `GET /rbac/matrix/` (`matrice.modules`, jamais une liste TS en dur —
  * l'ajout d'un module côté backend (registry.py) apparaît donc ici automatiquement, sans
- * changement frontend). Chaque cellule est un accès additionnel, complémentaire de la logique
- * ROLE_LEVELS existante (voir backend/apps/rbac/services.py::is_elevated_for_module) — modifier
- * la cellule d'un rôle système n'affecte jamais son propre comportement legacy (2FA, IsRHOrAbove…),
- * seulement les droits qu'un rôle ADDITIONNEL apporterait à un utilisateur qui le cumule.
+ * changement frontend). Seit dem Rechte-Umbau (Nov. 2026) steuert die Matrix alle
+ * Rechte der Fachbereiche: Modul „Lesen“ = ansehen, Modul „Schreiben“ = mitmachen, Zeilen der
+ * Verwaltungsseiten (`page_*`) = Daten sehen und verwalten. Es gibt keine festen Rollenstufen
+ * mehr in den Fachapps (Ausnahme: Rollenverwaltung bleibt beim App-Administrator, und die
+ * 2FA-/Konto-Regeln hängen weiter an der Systemrolle).
  *
  * Libellés (demande utilisateur du 2026-09-23 : "Die Rollennamen sollen der eingestellten
  * Sprache entsprechend") : `role.nom`/`module.label` viennent du backend dans une seule langue
