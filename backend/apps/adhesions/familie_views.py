@@ -37,9 +37,8 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.rbac.models import NiveauAcces
-from apps.rbac.services import has_admin_page_access, is_elevated_for_module
+from apps.rbac.services import has_admin_page_access
 
 from . import familie
 from .models import (
@@ -52,7 +51,6 @@ from .models import (
     StatutSouscription,
     neues_einladungs_token,
 )
-from .permissions import READ_ALL_SOUSCRIPTIONS_MIN_LEVEL
 
 _NICHT_AKTIV = (StatutSouscription.ANNULEE, StatutSouscription.EXPIREE)
 _OFFEN = (EinladungStatus.EINGELADEN, EinladungStatus.ZUSTIMMUNG_OFFEN)
@@ -176,9 +174,7 @@ def _erwachsener_json(e: FamilienErwachsener) -> dict:
 
 
 def _darf_buero_lesen(user) -> bool:
-    return ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL or (
-        is_elevated_for_module(user, "adhesions")
-    )
+    return has_admin_page_access(user, "page_souscriptions")
 
 
 class FamilienpaketeView(APIView):

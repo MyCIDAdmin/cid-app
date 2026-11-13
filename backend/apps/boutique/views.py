@@ -109,13 +109,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.gateways import GatewayError, creer_commande_paypal, creer_session_stripe
-from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 from apps.membres.utils_http import xlsx_response
 from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import has_admin_page_access, is_elevated_for_module
+from apps.rbac.services import has_admin_page_access
 
 from . import panier, reservierungen
 from .exports import construire_classeur_commandes
@@ -154,8 +152,6 @@ from .notifications import (
 )
 from .pdf import generate_confirmation_pdf, generate_facture_pdf
 from .permissions import (
-    GESTION_CATALOGUE_MIN_LEVEL,
-    ORDER_VISIBILITY_MIN_LEVEL,
     BonAchatPermission,
     CatalogueBoutiquePermission,
     CommandePermission,
@@ -227,11 +223,7 @@ class ProduitViewSet(ModelViewSet):
         # ProduitSerializer.get_regles_reduction_actives (ajouté le 2026-09-23).
         queryset = Produit.objects.prefetch_related("variantes", "regles_reduction").all()
         user = self.request.user
-        if (
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
-        ):
+        if user and user.is_authenticated and has_admin_page_access(user, "page_boutique"):
             return queryset
         # Reservierungsartikel verschwinden nach Ablauf ihrer Frist automatisch aus dem Shop
         # (Wunsch 2026-10-20); Verwalter sehen sie weiter (Verwaltung, Auswertung).
@@ -302,11 +294,7 @@ class RegleReductionViewSet(ModelViewSet):
     def get_queryset(self):
         queryset = RegleReduction.objects.select_related("produit").all()
         user = self.request.user
-        if (
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
-        ):
+        if user and user.is_authenticated and has_admin_page_access(user, "page_boutique"):
             return queryset
         return queryset.filter(actif=True, produit__statut=StatutProduit.PUBLIE)
 
@@ -327,11 +315,7 @@ class VarianteProduitViewSet(ModelViewSet):
     def get_queryset(self):
         queryset = VarianteProduit.objects.select_related("produit").all()
         user = self.request.user
-        if (
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
-        ):
+        if user and user.is_authenticated and has_admin_page_access(user, "page_boutique"):
             return queryset
         return queryset.filter(produit__statut=StatutProduit.PUBLIE)
 
@@ -507,9 +491,7 @@ class CommandeViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL or is_elevated_for_module(
-            user, "boutique"
-        ):
+        if has_admin_page_access(user, "page_boutique"):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(membre=membre) if membre else queryset.none()
@@ -696,7 +678,9 @@ class CommandeViewSet(ModelViewSet):
         `passer` + `confirmer_paiement`. Le stock reste décrémenté atomiquement (SELECT FOR
         UPDATE), même principe que `passer` ci-dessus (FDD §3.4)."""
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+        if not has_admin_page_access(
+            user, "page_erfassung_fuer_andere", required=NiveauAcces.LECTURE_ECRITURE
+        ):
             raise PermissionDenied(
                 "Seul le Directeur Financier ou l'Admin App peut saisir une vente en espèces "
                 "pour un autre membre."
@@ -1066,9 +1050,7 @@ class CommandeViewSet(ModelViewSet):
         # Blatt „Reservierungen“ sieht nur die Verwaltung (gleicher Scope wie get_queryset).
         produkt_ids = [p for p in (request.query_params.get("produit") or "").split(",") if p]
         user = request.user
-        sieht_alle = ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL or (
-            is_elevated_for_module(user, "boutique")
-        )
+        sieht_alle = has_admin_page_access(user, "page_boutique")
         classeur = construire_classeur_commandes(
             queryset, produkt_ids=produkt_ids, mit_reservierungen=sieht_alle
         )
@@ -1209,7 +1191,7 @@ class BonAchatViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL:
+        if has_admin_page_access(user, "page_boutique"):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(achete_par=membre) if membre else queryset.none()

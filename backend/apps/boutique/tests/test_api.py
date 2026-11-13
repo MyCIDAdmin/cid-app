@@ -633,7 +633,7 @@ def test_membre_ne_voit_que_ses_propres_commandes(api_client):
 
 def test_role_personnalise_eleve_voit_toutes_les_commandes(api_client):
     """apps.rbac Phase B : un rôle personnalisé avec au moins la lecture sur "boutique" voit
-    TOUTES les commandes, comme Bureau Admin+ — voir is_elevated_for_module."""
+    TOUTES les commandes, comme Bureau Admin+."""
     from apps.rbac.models import NiveauAcces
     from apps.rbac.tests.factories import (
         RoleDefinitionFactory,
@@ -644,7 +644,7 @@ def test_role_personnalise_eleve_voit_toutes_les_commandes(api_client):
     user, membre = _user_avec_membre(Role.MEMBRE, "vertrieb-idor@example.de")
     _, membre2 = _user_avec_membre(Role.MEMBRE, "m-idor-autre@example.de")
     role = RoleDefinitionFactory(slug="vertrieb-boutique-idor")
-    RoleModulePermissionFactory(role=role, module="boutique", niveau_acces=NiveauAcces.LECTURE)
+    RoleModulePermissionFactory(role=role, module="page_boutique", niveau_acces=NiveauAcces.LECTURE)
     UserRoleAssignmentFactory(user=user, role=role)
     CommandeFactory(membre=membre)
     CommandeFactory(membre=membre2)

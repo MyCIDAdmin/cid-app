@@ -34,13 +34,10 @@ demande utilisateur, voir docstring de module de models.py pour le détail des 8
 from django.db.models import Q
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.models import NiveauAcces
 from apps.rbac.services import has_admin_page_access
 
 from .models import Projet, ProjetMitglied, RolleProjet, SichtbarkeitProjet
-
-GESTION_PROJETS_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
 
 
 def est_gestionnaire_projet(user, projet) -> bool:
@@ -49,7 +46,7 @@ def est_gestionnaire_projet(user, projet) -> bool:
     (objet existant) et par les vues à la création (voir apps.projets.views)."""
     if not user or not user.is_authenticated:
         return False
-    if ROLE_LEVELS.get(user.role, 0) >= GESTION_PROJETS_MIN_LEVEL:
+    if has_admin_page_access(user, "page_projets", required=NiveauAcces.LECTURE_ECRITURE):
         return True
     membre = getattr(user, "membre", None)
     return (
@@ -121,8 +118,6 @@ def ist_verwalter(user) -> bool:
     """Gestionnaire (écriture) : Bureau Admin+ ou écriture sur la page de gestion des projets."""
     if not _est_connecte(user):
         return False
-    if ROLE_LEVELS.get(user.role, 0) >= GESTION_PROJETS_MIN_LEVEL:
-        return True
     return has_admin_page_access(user, "page_projets", required=NiveauAcces.LECTURE_ECRITURE)
 
 
@@ -130,8 +125,6 @@ def sieht_alle_projekte(user) -> bool:
     """Voit aussi les brouillons : gestionnaires, y compris en simple lecture sur la page."""
     if not _est_connecte(user):
         return False
-    if ROLE_LEVELS.get(user.role, 0) >= GESTION_PROJETS_MIN_LEVEL:
-        return True
     return has_admin_page_access(user, "page_projets", required=NiveauAcces.LECTURE)
 
 

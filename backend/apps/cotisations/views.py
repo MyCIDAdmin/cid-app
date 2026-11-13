@@ -65,11 +65,10 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.membres.utils_http import xlsx_response
 from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import has_admin_page_access, is_elevated_for_module
+from apps.rbac.services import has_admin_page_access
 
 from .exports import construire_classeur_cotisations, construire_classeur_teilnehmer
 from .filters import CotisationFilter
@@ -86,9 +85,6 @@ from .notifications import notifier_nouveau_paiement_attente_staff
 from .notifications import notifier_paiement_confirme as _notifier_paiement_confirme
 from .pdf import generate_receipt_pdf
 from .permissions import (
-    GESTION_ARTICLES_MIN_LEVEL,
-    READ_ALL_MIN_LEVEL,
-    SAISIE_POUR_AUTRUI_MIN_LEVEL,
     ArticleCataloguePermission,
     ArticleVerwaltungPermission,
     CotisationPermission,
@@ -143,9 +139,7 @@ class CotisationViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_MIN_LEVEL or is_elevated_for_module(
-            user, "cotisations"
-        ):
+        if has_admin_page_access(user, "page_beitraege_uebersicht"):
             return queryset
         # Protection IDOR (SCD §2.3 A01) : sous RH, uniquement les cotisations de sa propre
         # fiche membre (si elle existe et est liée à son compte).
@@ -158,7 +152,9 @@ class CotisationViewSet(ModelViewSet):
         membre_cible = serializer.validated_data.get("membre")
 
         if membre_cible and membre_cible != membre_self:
-            if ROLE_LEVELS.get(user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+            if not has_admin_page_access(
+                user, "page_erfassung_fuer_andere", required=NiveauAcces.LECTURE_ECRITURE
+            ):
                 raise PermissionDenied(
                     "Seuls le Directeur Financier ou l'Administrateur peuvent enregistrer une "
                     "transaction pour le compte d'un autre membre."
@@ -552,7 +548,7 @@ class ArticleCatalogueViewSet(ModelViewSet):
         if (
             user
             and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_ARTICLES_MIN_LEVEL
+            and has_admin_page_access(user, "page_articles_cotisation")
         ):
             return queryset
         # Un membre normal (ou tout rôle < Administrateur App) ne doit voir, pour choisir dans le

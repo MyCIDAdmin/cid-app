@@ -16,12 +16,9 @@ Règle commune aux deux sous-modules :
 
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import page_admin_permission
 from apps.rbac.services import has_admin_page_access
-
-MODERATION_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
 
 # Actions de modération exposées par les ViewSets (voir views.py) — jamais accessibles au
 # simple propriétaire du contenu, uniquement Bureau Admin+.
@@ -30,6 +27,26 @@ MODERATION_ACTIONS = ("masquer", "epingler", "verrouiller")
 
 def _membre_de(user):
     return getattr(user, "membre", None)
+
+
+def darf_moderieren(user) -> bool:
+    """Moderieren, Redaktionsbeiträge, Spielplan und Live-Ticker pflegen = Schreiben auf der
+    Seite page_community (Startwert Büro und höher). Ersetzt seit dem Rechte-Umbau (Nov. 2026)
+    den festen Schwellenwert MODERATION_MIN_LEVEL."""
+    return has_admin_page_access(user, "page_community", required=NiveauAcces.LECTURE_ECRITURE)
+
+
+def darf_tippspiel_verwalten(user) -> bool:
+    """Tippspiel anlegen, bearbeiten und Entwürfe sehen = Schreiben auf page_tippspiel
+    (Startwert nur App Admin)."""
+    return has_admin_page_access(user, "page_tippspiel", required=NiveauAcces.LECTURE_ECRITURE)
+
+
+def darf_zahlung_bestaetigen(user) -> bool:
+    """Teilnahmegebühr bestätigen = Schreiben auf page_zahlung_versand (Startwert Finanzen+)."""
+    return has_admin_page_access(
+        user, "page_zahlung_versand", required=NiveauAcces.LECTURE_ECRITURE
+    )
 
 
 class ContenuCommunautePermission(BasePermission):
@@ -42,18 +59,18 @@ class ContenuCommunautePermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in MODERATION_ACTIONS:
-            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return darf_moderieren(user)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         action = getattr(view, "action", None)
         if action in MODERATION_ACTIONS:
-            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return darf_moderieren(user)
         if action in ("update", "partial_update", "destroy"):
             membre = _membre_de(user)
             est_proprietaire = membre is not None and getattr(obj, "auteur_id", None) == membre.id
-            return est_proprietaire or ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return est_proprietaire or darf_moderieren(user)
         return True
 
 
@@ -61,7 +78,6 @@ class ContenuCommunautePermission(BasePermission):
 # valeur que MODERATION_MIN_LEVEL, nommé séparément pour que le sens de chaque usage reste clair
 # à la lecture (modération vs droit d'écrire une actualité), même si la valeur coïncide
 # aujourd'hui.
-PUBLICATION_CREATION_MIN_LEVEL = MODERATION_MIN_LEVEL
 
 
 class PublicationPermission(ContenuCommunautePermission):
@@ -83,7 +99,7 @@ class PublicationPermission(ContenuCommunautePermission):
         if not super().has_permission(request, view):
             return False
         if getattr(view, "action", None) == "create":
-            return ROLE_LEVELS.get(request.user.role, 0) >= PUBLICATION_CREATION_MIN_LEVEL
+            return darf_moderieren(request.user)
         return True
 
 
@@ -149,7 +165,7 @@ class GroupeChatPermission(BasePermission):
         membre = _membre_de(user)
         action = getattr(view, "action", None)
         est_createur = membre is not None and obj.createur_id == membre.id
-        est_admin = ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        est_admin = darf_moderieren(user)
         if action == "inviter":
             from .chats import ist_chat_admin
 
@@ -208,13 +224,13 @@ class MatchPermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         if view.action in ("create", "update", "partial_update", "destroy"):
-            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return darf_moderieren(user)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action in ("update", "partial_update", "destroy"):
-            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return darf_moderieren(user)
         return True
 
 
@@ -230,7 +246,7 @@ class SpielplanPermission(BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+        return darf_moderieren(user)
 
 
 class MatchEvenementPermission(BasePermission):
@@ -248,7 +264,7 @@ class MatchEvenementPermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         if view.action == "create":
-            return ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            return darf_moderieren(user)
         return True
 
 
@@ -407,9 +423,6 @@ class QuizPermission(BasePermission):
 # einstellen"), confirmation de paiement réservée au Directeur Financier+.
 # ---------------------------------------------------------------------------
 
-SUPER_ADMIN_MIN_LEVEL = ROLE_LEVELS[Role.SUPER_ADMIN]
-DIR_FINANCIER_MIN_LEVEL = ROLE_LEVELS[Role.DIR_FINANCIER]
-
 
 class TippspielPermission(BasePermission):
     """Lecture (list/retrieve) : tout authentifié — un Tippspiel `brouillon` n'est
@@ -427,13 +440,13 @@ class TippspielPermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         if view.action in ("create", "update", "partial_update", "destroy"):
-            return ROLE_LEVELS.get(user.role, 0) >= SUPER_ADMIN_MIN_LEVEL
+            return darf_tippspiel_verwalten(user)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action in ("update", "partial_update", "destroy"):
-            return ROLE_LEVELS.get(user.role, 0) >= SUPER_ADMIN_MIN_LEVEL
+            return darf_tippspiel_verwalten(user)
         return True
 
 
@@ -449,13 +462,13 @@ class TippspielTeilnahmePermission(BasePermission):
         if not user or not user.is_authenticated:
             return False
         if view.action == "confirmer_paiement":
-            return ROLE_LEVELS.get(user.role, 0) >= DIR_FINANCIER_MIN_LEVEL
+            return darf_zahlung_bestaetigen(user)
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
         if view.action == "confirmer_paiement":
-            return ROLE_LEVELS.get(user.role, 0) >= DIR_FINANCIER_MIN_LEVEL
+            return darf_zahlung_bestaetigen(user)
         return True
 
 
@@ -500,7 +513,7 @@ class ArrierePlanModulePermission(BasePermission):
             return False
         if request.method in SAFE_METHODS:
             return True
-        return ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
+        return darf_moderieren(user)
 
 
 EquipeLogoPermission = page_admin_permission("page_fan_club_logos", public_read=True)

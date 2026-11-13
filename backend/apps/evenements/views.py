@@ -35,14 +35,13 @@ from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.models import HistoriqueStatutCotisation, ModePaiement, StatutCotisation
 from apps.cotisations.notifications import notifier_paiement_confirme
-from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 from apps.membres.models import StatutMembre
 from apps.partenaires.services import logo_prefetch
+from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import est_membre_actif, is_elevated_for_module
+from apps.rbac.services import est_membre_actif, has_admin_page_access
 
 from .filters import CovoiturageFilter, EvenementFilter, InscriptionFilter
 from .models import (
@@ -55,7 +54,6 @@ from .models import (
     StatutReservationCovoiturage,
 )
 from .permissions import (
-    GESTION_EVENEMENTS_MIN_LEVEL,
     CovoiturageWritePermission,
     EvenementPermission,
     InscriptionPermission,
@@ -102,11 +100,7 @@ class EvenementViewSet(ModelViewSet):
             .all()
         )
         user = self.request.user
-        if (
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL
-        ):
+        if user and user.is_authenticated and has_admin_page_access(user, "page_events"):
             return queryset
         queryset = queryset.filter(statut=StatutEvenement.PUBLIE)
         # Demande utilisateur du 2026-10-05 (point 1.1) : un visiteur anonyme voit désormais
@@ -332,7 +326,9 @@ class EvenementViewSet(ModelViewSet):
         directement confirmée, sans paiement à enregistrer.
         """
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+        if not has_admin_page_access(
+            user, "page_erfassung_fuer_andere", required=NiveauAcces.LECTURE_ECRITURE
+        ):
             raise PermissionDenied(
                 "Seuls le Directeur Financier ou l'Administrateur peuvent inscrire un autre "
                 "membre avec paiement en espèces."
@@ -387,9 +383,7 @@ class InscriptionViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL or is_elevated_for_module(
-            user, "evenements"
-        ):
+        if has_admin_page_access(user, "page_events"):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(membre=membre) if membre else queryset.none()
@@ -491,7 +485,7 @@ class ReservationCovoiturageViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL:
+        if has_admin_page_access(user, "page_events"):
             return queryset
         membre = getattr(user, "membre", None)
         if membre is None:

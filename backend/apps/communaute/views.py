@@ -65,10 +65,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.accounts.services import log_audit_event
 from apps.membres.models import Membre, StatutMembre
 from apps.rbac.permissions import module_access_permission
+from apps.rbac.services import has_admin_page_access
 
 from . import chats, fanclub, gemeinschaft, reaktionen, services
 from .filters import PublicationFilter, SujetFilter
@@ -118,9 +118,6 @@ from .notifications import (
     notifier_nouvelle_reponse_forum,
 )
 from .permissions import (
-    DIR_FINANCIER_MIN_LEVEL,
-    MODERATION_MIN_LEVEL,
-    SUPER_ADMIN_MIN_LEVEL,
     AlbumPermission,
     ArrierePlanModulePermission,
     ConfigurationSitePublicPermission,
@@ -142,6 +139,9 @@ from .permissions import (
     TippspielPermission,
     TippspielTeilnahmePermission,
     TippspielTipPermission,
+    darf_moderieren,
+    darf_tippspiel_verwalten,
+    darf_zahlung_bestaetigen,
 )
 from .serializers import (
     AlbumSerializer,
@@ -256,7 +256,7 @@ class PublicationViewSet(viewsets.ModelViewSet):
             "commentaires__reponses__auteur",
         )
         user = self.request.user
-        if ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL:
+        if darf_moderieren(user):
             return qs
         return qs.filter(est_masquee=False)
 
@@ -327,7 +327,7 @@ class CommentaireViewSet(
     def reagieren(self, request, pk=None):
         commentaire = self.get_object()
         if commentaire.est_masque or commentaire.publication.est_masquee:
-            if ROLE_LEVELS.get(request.user.role, 0) < MODERATION_MIN_LEVEL:
+            if not darf_moderieren(request.user):
                 raise NotFound()
         reaktionen.umschalten(commentaire, request.user.membre, request.data.get("emoji"))
         return Response(
@@ -387,7 +387,7 @@ class SujetViewSet(viewsets.ModelViewSet):
             )
         )
         user = self.request.user
-        if ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL:
+        if darf_moderieren(user):
             return qs
         return qs.filter(est_masque=False)
 
@@ -425,9 +425,7 @@ class SujetViewSet(viewsets.ModelViewSet):
         sichtbar sein."""
         sujet = self.get_object()
         membre = request.user.membre
-        darf = sujet.auteur_id == membre.id or (
-            ROLE_LEVELS.get(request.user.role, 0) >= MODERATION_MIN_LEVEL
-        )
+        darf = sujet.auteur_id == membre.id or (darf_moderieren(request.user))
         if not darf:
             raise PermissionDenied("Nur der Themenersteller kann die beste Antwort wählen.")
         reponse_id = request.data.get("reponse")
@@ -514,7 +512,7 @@ class ReponseForumViewSet(
     def reagieren(self, request, pk=None):
         reponse = self.get_object()
         if reponse.est_masquee or reponse.sujet.est_masque:
-            if ROLE_LEVELS.get(request.user.role, 0) < MODERATION_MIN_LEVEL:
+            if not darf_moderieren(request.user):
                 raise NotFound()
         reaktionen.umschalten(reponse, request.user.membre, request.data.get("emoji"))
         return Response(
@@ -1598,7 +1596,7 @@ class TippspielViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Tippspiel.objects.prefetch_related("prix").select_related("created_by")
         user = self.request.user
-        if ROLE_LEVELS.get(user.role, 0) >= SUPER_ADMIN_MIN_LEVEL:
+        if darf_tippspiel_verwalten(user):
             return qs
         return qs.exclude(statut=StatutTippspiel.BROUILLON)
 
@@ -1664,7 +1662,7 @@ class TippspielTeilnahmeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         # optionnel plutôt qu'obligatoire.
         if self.request.query_params.get("statut_paiement") == "en_attente":
             user = self.request.user
-            if ROLE_LEVELS.get(user.role, 0) < DIR_FINANCIER_MIN_LEVEL:
+            if not darf_zahlung_bestaetigen(user):
                 raise PermissionDenied(
                     "Réservé au Directeur Financier pour la confirmation des paiements."
                 )
@@ -1789,7 +1787,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
         # Anonyme depuis le 2026-09-26 (onglet Galerie de la page d'accueil publique) : même
         # branche "non-modérateur" qu'un membre normal — `user.role` n'existe pas sur
         # AnonymousUser, d'où le garde-fou `user.is_authenticated` explicite.
-        if user.is_authenticated and ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL:
+        if has_admin_page_access(user, "page_albums"):
             return qs
         return qs.filter(est_masquee=False)
 
@@ -1965,7 +1963,7 @@ class TippspielMatrixView(APIView):
         except ValueError:
             raise ValidationError({"spalten": "Nombre entier attendu."})
         qs = Tippspiel.objects.all()
-        if ROLE_LEVELS.get(request.user.role, 0) < SUPER_ADMIN_MIN_LEVEL:
+        if not darf_tippspiel_verwalten(request.user):
             qs = qs.exclude(statut=StatutTippspiel.BROUILLON)
         tippspiel = get_object_or_404(qs, pk=tippspiel_id)
         return Response(fanclub.tippspiel_matrix(tippspiel, request.user, spalten))

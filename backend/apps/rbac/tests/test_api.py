@@ -438,8 +438,9 @@ def test_mes_acces_super_admin_toujours_lecture_ecriture(api_client):
     admin = _super_admin()
     resp = _auth(api_client, admin).get(reverse(MES_ACCES_URL))
     assert resp.status_code == 200
-    assert set(resp.data.keys()) == set(PAGES_ADMIN)
-    assert all(niveau == "lecture_ecriture" for niveau in resp.data.values())
+    seiten = {k: v for k, v in resp.data.items() if k.startswith("page_")}
+    assert set(seiten) == set(PAGES_ADMIN)
+    assert all(niveau == "lecture_ecriture" for niveau in seiten.values())
 
 
 def test_mes_acces_reflete_la_matrice_seedee_pour_un_role_systeme(api_client):
@@ -458,7 +459,7 @@ def test_mes_acces_membre_normal_naccede_a_aucune_page_par_defaut(api_client):
     membre = UserFactory(role=Role.MEMBRE)
     resp = _auth(api_client, membre).get(reverse(MES_ACCES_URL))
     assert resp.status_code == 200
-    assert all(niveau == "aucun" for niveau in resp.data.values())
+    assert all(niveau == "aucun" for k, niveau in resp.data.items() if k.startswith("page_"))
 
 
 def test_mes_acces_distingue_lecture_et_lecture_ecriture(api_client):

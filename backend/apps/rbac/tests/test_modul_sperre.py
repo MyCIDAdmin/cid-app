@@ -189,3 +189,115 @@ def test_seed_hebt_abstimmungen_und_projekte_fuer_systemrollen_auf_schreiben():
         for modul in ("vote", "projets"):
             zelle = RoleModulePermission.objects.get(role__slug=slug, module=modul)
             assert zelle.niveau_acces == NiveauAcces.LECTURE_ECRITURE
+
+
+# --- Etappe 3 : feste Rollenstufen sind jetzt Seiten der Matrix ------------------------------
+
+ROLLEN = ["membre", "rh", "bureau_admin", "dir_financier", "super_admin"]
+# Seite -> Rollen, die sie beim Deploy bekommen (= bisheriges Verhalten)
+SEED_SEITEN = {
+    "page_membres": ["rh", "bureau_admin", "dir_financier", "super_admin"],
+    "page_membres_loeschen": ["bureau_admin", "dir_financier", "super_admin"],
+    "page_beitraege_uebersicht": ["rh", "bureau_admin", "dir_financier", "super_admin"],
+    "page_souscriptions": ["rh", "bureau_admin", "dir_financier", "super_admin"],
+    "page_abstimmungen": ["bureau_admin", "super_admin"],
+    "page_community": ["bureau_admin", "dir_financier", "super_admin"],
+    "page_tippspiel": ["super_admin"],
+    "page_zahlung_versand": ["dir_financier", "super_admin"],
+    "page_erfassung_fuer_andere": ["dir_financier", "super_admin"],
+}
+
+
+@pytest.mark.parametrize("seite", sorted(SEED_SEITEN))
+def test_neue_seiten_starten_mit_dem_bisherigen_verhalten(seite):
+    assert seite in registry.PAGES_ADMIN
+    for slug in ROLLEN:
+        zelle = RoleModulePermission.objects.get(role__slug=slug, module=seite)
+        erwartet = NiveauAcces.LECTURE_ECRITURE if slug in SEED_SEITEN[seite] else NiveauAcces.AUCUN
+        assert zelle.niveau_acces == erwartet, (seite, slug)
+
+
+def test_abstimmungen_verwalten_nicht_fuer_rh_und_finanzen_wie_bisher():
+    from apps.wahlen.services import verwaltet
+
+    for rolle, erwartet in (
+        (Role.BUREAU_ADMIN, True),
+        (Role.SUPER_ADMIN, True),
+        (Role.RH, False),
+        (Role.DIR_FINANCIER, False),
+        (Role.MEMBRE, False),
+    ):
+        assert verwaltet(UserFactory(role=rolle)) is erwartet, rolle
+
+
+def test_matrix_kann_abstimmungen_fuer_eine_weitere_rolle_oeffnen():
+    """Ziel der Umstellung : was früher fest im Code stand, steuert jetzt die Matrix."""
+    from apps.wahlen.services import verwaltet
+
+    user = UserFactory(role=Role.MEMBRE)
+    assert verwaltet(user) is False
+    rolle = RoleDefinitionFactory()
+    RoleModulePermission.objects.create(
+        role=rolle, module="page_abstimmungen", niveau_acces=NiveauAcces.LECTURE_ECRITURE
+    )
+    UserRoleAssignmentFactory(user=user, role=rolle)
+    assert verwaltet(user) is True
+
+
+def test_keine_feste_rollenstufe_mehr_in_den_fachapps():
+    """Architektur-Ratsche : ROLE_LEVELS-Vergleiche für Rechte sind nur noch dort erlaubt, wo
+    es um Empfängerkreise (E-Mail/Benachrichtigung) oder Konto-Verwaltung geht."""
+    import pathlib
+    import re
+
+    erlaubt = {
+        "partenaires/tasks.py",
+        "adhesions/mails.py",
+        "adhesions/notifications.py",
+        "boutique/notifications.py",
+        "cotisations/notifications.py",
+        "communaute/gemeinschaft.py",
+        "stats/permissions.py",
+    }
+    wurzel = pathlib.Path(__file__).resolve().parents[2]
+    muster = re.compile(
+        r"ROLE_LEVELS\.get\([^)]*\)\s*(>=|<|>)"  # Vergleich im Code
+        r"|^\s*[A-Z_]+_MIN_LEVEL\s*="  # Konstante definieren
+        r"|import .*_MIN_LEVEL"  # Konstante importieren
+        r"|^\s+[A-Z_]+_MIN_LEVEL,$"  # Konstante in Importliste
+    )
+    treffer = []
+    for app in (
+        "membres",
+        "cotisations",
+        "adhesions",
+        "evenements",
+        "boutique",
+        "vote",
+        "wahlen",
+        "communaute",
+        "projets",
+    ):
+        for datei in (wurzel / app).glob("*.py"):
+            rel = f"{app}/{datei.name}"
+            if rel in erlaubt:
+                continue
+            for nr, zeile in enumerate(datei.read_text().splitlines(), 1):
+                if zeile.lstrip().startswith(("#", '"')):
+                    continue
+                if muster.search(zeile):
+                    treffer.append(f"{rel}:{nr}: {zeile.strip()}")
+    assert not treffer, "Feste Rollenstufe statt Matrix-Seite:\n" + "\n".join(treffer)
+
+
+def test_mes_acces_liefert_auch_die_modul_niveaus():
+    from django.urls import reverse
+
+    _zelle("membre", "projets", NiveauAcces.LECTURE)
+    _zelle("membre", "evenements", NiveauAcces.AUCUN)
+    antwort = _mitglied_client().get(reverse("rbac:mes-acces"))
+    assert antwort.status_code == 200
+    assert antwort.data["projets"] == NiveauAcces.LECTURE
+    assert antwort.data["evenements"] == NiveauAcces.AUCUN
+    assert antwort.data["communaute"] == NiveauAcces.LECTURE_ECRITURE
+    assert antwort.data["page_events"] == NiveauAcces.AUCUN

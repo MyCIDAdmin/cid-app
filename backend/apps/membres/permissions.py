@@ -31,8 +31,8 @@ sa propre fiche, pas seulement la consulter) :
 
 from rest_framework.permissions import BasePermission
 
-from apps.accounts.models import ROLE_LEVELS, Role
-from apps.rbac.services import is_elevated_for_module
+from apps.rbac.models import NiveauAcces
+from apps.rbac.services import has_admin_page_access
 
 ADMIN_WRITE_ACTIONS = ("create", "changer_statut")
 DESTROY_ACTIONS = ("destroy", "supprimer_lot")
@@ -46,9 +46,13 @@ class MembrePermission(BasePermission):
 
         action = getattr(view, "action", None)
         if action in ADMIN_WRITE_ACTIONS:
-            return ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.RH]
+            return has_admin_page_access(
+                user, "page_membres", required=NiveauAcces.LECTURE_ECRITURE
+            )
         if action in DESTROY_ACTIONS:
-            return ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.BUREAU_ADMIN]
+            return has_admin_page_access(
+                user, "page_membres_loeschen", required=NiveauAcces.LECTURE_ECRITURE
+            )
         # list, retrieve, update, partial_update : ouvert à tout authentifié —
         # le scope réel (quelle fiche, quels champs) est appliqué par
         # get_queryset, has_object_permission ci-dessous, et par le
@@ -57,13 +61,9 @@ class MembrePermission(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.RH]:
-            return True
-        # apps.rbac Phase B (ajouté le 2026-09-23) : un rôle personnalisé avec au moins la
-        # lecture sur le module "membres" voit TOUTES les fiches, comme RH/Admin — jamais
-        # remplacement de la condition ci-dessus, uniquement une porte OUVERTE EN PLUS (voir
-        # is_elevated_for_module, qui exclut explicitement le rôle système "membre").
-        if is_elevated_for_module(user, "membres"):
+        # Rechte-Umbau (Nov. 2026) : "alle Fiches sehen" = Lesen auf der Seite page_membres
+        # (Startwert : RH und höher). Ersetzt die feste Rollenstufe und is_elevated_for_module.
+        if has_admin_page_access(user, "page_membres"):
             return True
         # Rôle MEMBRE (ou non renseigné) : uniquement sa propre fiche.
         # create/changer_statut/destroy sont déjà bloqués pour ce rôle par

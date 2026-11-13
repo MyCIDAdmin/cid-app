@@ -13,6 +13,8 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.accounts.models import Role
+from apps.rbac.models import NiveauAcces
+from apps.rbac.services import has_admin_page_access
 
 from . import texte
 from .models import (
@@ -89,7 +91,14 @@ PRUEFPUNKTE = {
 
 
 def verwaltet(user) -> bool:
-    return bool(user and user.is_authenticated and user.role in ROLLEN_VERWALTUNG)
+    """Wahlen und Abstimmungen verwalten = Schreiben auf der Seite page_abstimmungen (Startwert
+    Büro und App Admin). Ersetzt seit dem Rechte-Umbau (Nov. 2026) die feste Rollenliste ;
+    ROLLEN_VERWALTUNG bleibt nur als Empfängerkreis für Benachrichtigungen."""
+    return bool(
+        user
+        and user.is_authenticated
+        and has_admin_page_access(user, "page_abstimmungen", required=NiveauAcces.LECTURE_ECRITURE)
+    )
 
 
 def ist_ausschuss(user, wahl: Wahl) -> bool:
