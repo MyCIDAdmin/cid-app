@@ -113,6 +113,56 @@ def test_login_bureau_admin_requires_2fa(api_client):
     assert "login_ticket" in resp.data
 
 
+@pytest.mark.parametrize(
+    "rolle", [Role.RH, Role.BUREAU_ADMIN, Role.DIR_FINANCIER, Role.SUPER_ADMIN]
+)
+def test_demo_konto_meldet_sich_auf_dev_ohne_code_an(api_client, settings, rolle):
+    settings.DEMO_DATEN_ERLAUBT = True
+    User.objects.create_user(
+        email="demo-x@cid-demo.test", password="Password123!", role=rolle, is_active=True
+    )
+    resp = api_client.post(
+        reverse("accounts:login"),
+        {"email": "demo-x@cid-demo.test", "password": "Password123!"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    assert "requires_2fa" not in resp.data
+    assert "access" in resp.data
+
+
+def test_demo_konto_braucht_code_wenn_demo_daten_nicht_erlaubt(api_client, settings):
+    settings.DEMO_DATEN_ERLAUBT = False
+    User.objects.create_user(
+        email="demo-x@cid-demo.test",
+        password="Password123!",
+        role=Role.BUREAU_ADMIN,
+        is_active=True,
+    )
+    resp = api_client.post(
+        reverse("accounts:login"),
+        {"email": "demo-x@cid-demo.test", "password": "Password123!"},
+        format="json",
+    )
+    assert resp.data["requires_2fa"] is True
+
+
+def test_normales_admin_konto_braucht_auch_auf_dev_den_code(api_client, settings):
+    settings.DEMO_DATEN_ERLAUBT = True
+    User.objects.create_user(
+        email="bureau@example.com",
+        password="Password123!",
+        role=Role.BUREAU_ADMIN,
+        is_active=True,
+    )
+    resp = api_client.post(
+        reverse("accounts:login"),
+        {"email": "bureau@example.com", "password": "Password123!"},
+        format="json",
+    )
+    assert resp.data["requires_2fa"] is True
+
+
 # --- task #218 (2026-09-24) : "wenn ein Benutzer sich einloggt und eine Session auf einem
 # Gerät aufmacht, müssen alle laufende Sessions im selben Gerät beendet werden" — une seule
 # session active par appareil (identifié par `device_fingerprint`, déjà utilisé pour la

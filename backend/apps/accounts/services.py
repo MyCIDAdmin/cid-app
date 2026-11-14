@@ -73,6 +73,21 @@ def log_failed_login(email: str, ip_address=None, user_agent="") -> None:
     )
 
 
+DEMO_KONTO_DOMAIN = "@cid-demo.test"
+
+
+def ist_demo_konto_ohne_2fa(user) -> bool:
+    """Demo-Testkonten (manage.py demo_daten) melden sich ohne Bestätigungscode an.
+
+    Gilt nur, wenn DEMO_DATEN_ERLAUBT=1 gesetzt ist (nur auf DEV). Auf PROD ist die Variable nicht
+    gesetzt, dort bleibt das 2FA für diese Konten wie für alle anderen unverändert.
+    """
+    return bool(
+        getattr(settings, "DEMO_DATEN_ERLAUBT", False)
+        and (user.email or "").lower().endswith(DEMO_KONTO_DOMAIN)
+    )
+
+
 def requires_2fa(user, request_ip: str, device_fingerprint_hash: str | None) -> bool:
     """
     Détermine si le 2FA doit être déclenché pour cette connexion
@@ -81,6 +96,9 @@ def requires_2fa(user, request_ip: str, device_fingerprint_hash: str | None) -> 
       - conditionnel pour un Membre Normal : nouvelle IP, nouveau device,
         ou > 30 jours depuis la dernière connexion réussie
     """
+    if ist_demo_konto_ohne_2fa(user):
+        return False
+
     if user.two_fa_mandatory:
         return True
 
