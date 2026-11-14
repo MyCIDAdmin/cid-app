@@ -17,6 +17,13 @@ comme colonne supplémentaire côté frontend, sans écriture DB ni action admin
 qui réalise l'exigence "la matrice doit s'étendre automatiquement".
 """
 
+# Seit dem Rechte-Umbau (Nov. 2026) hat jede Zelle der Matrix überall dieselbe Bedeutung :
+#   Modul, Lesen      = ansehen (veröffentlichte Inhalte, eigene Daten)
+#   Modul, Schreiben  = mitmachen (anmelden, bestellen, beitragen, reagieren, abstimmen ...)
+#   Verwaltungsseite  = verwalten : Lesen = Verwaltung ansehen, Schreiben = anlegen/ändern/löschen
+# "stats" und "notifications" waren reine Zeilen ohne Wirkung (Statistik und E-Mail-Einstellungen
+# laufen über `page_stats` bzw. `page_notifications_params`, eigene Hinweise sieht jedes Konto) und
+# sind entfallen ; bestehende Zeilen in der Datenbank bleiben unberührt und werden ignoriert.
 MODULES = [
     "membres",
     "cotisations",
@@ -25,8 +32,6 @@ MODULES = [
     "boutique",
     "vote",
     "communaute",
-    "stats",
-    "notifications",
     "projets",
 ]
 
@@ -40,8 +45,6 @@ MODULE_LABELS = {
     "boutique": "Boutique",
     "vote": "Vote",
     "communaute": "Communauté",
-    "stats": "Statistiques",
-    "notifications": "Notifications",
     "projets": "Projets",
 }
 
@@ -222,6 +225,18 @@ PAGES_ADMIN = [
     # Release 33 (2026-10-15): Support. `page_support` = Tickets bearbeiten und die häufigen Fragen
     # (FAQ) pflegen. Tickets eröffnen kann jedes angemeldete Konto.
     "page_support",
+    # Rechte-Umbau (Nov. 2026): die bisher fest im Code verdrahteten Rollenstufen sind jetzt
+    # Seiten der Matrix. Startwerte = bisheriges Verhalten, siehe Migration 0013.
+    # Lesen = Daten ansehen, Schreiben = ändern / ausführen.
+    "page_membres",  # alle Mitglieder sehen ; anlegen und Status ändern (bisher RH und höher)
+    "page_membres_loeschen",  # Mitglieder löschen (bisher Büro und höher)
+    "page_beitraege_uebersicht",  # alle Beiträge sehen, für andere erfassen (bisher RH und höher)
+    "page_souscriptions",  # alle Mitgliedschaften sehen und bearbeiten (bisher RH und höher)
+    "page_abstimmungen",  # Abstimmungen und Wahlen anlegen, schließen (bisher Büro/App Admin)
+    "page_community",  # Moderation, Beiträge der Redaktion, Spielplan (bisher Büro und höher)
+    "page_tippspiel",  # Tippspiel anlegen und verwalten (bisher nur App Admin)
+    "page_zahlung_versand",  # Zahlungen bestätigen, Bestellungen versenden (bisher Finanzen+)
+    "page_erfassung_fuer_andere",  # Beiträge, Anmeldungen, Mitgliedschaften für andere erfassen
 ]
 
 PAGE_ADMIN_LABELS = {
@@ -249,6 +264,62 @@ PAGE_ADMIN_LABELS = {
     "page_kalender_vorschlag": "Terminvorschläge einreichen",
     "page_regionen": "Sektoren (Verantwortliche zuweisen, Seiten bearbeiten)",
     "page_support": "Support (Tickets bearbeiten, FAQ pflegen)",
+    "page_membres": "Mitglieder (alle sehen, anlegen, Status ändern)",
+    "page_membres_loeschen": "Mitglieder löschen",
+    "page_beitraege_uebersicht": "Beiträge (alle sehen, für andere erfassen)",
+    "page_souscriptions": "Mitgliedschaften (alle sehen und bearbeiten)",
+    "page_abstimmungen": "Abstimmungen und Wahlen (anlegen, schließen)",
+    "page_community": "Community (moderieren, Redaktionsbeiträge, Spielplan)",
+    "page_tippspiel": "Tippspiel (anlegen und verwalten)",
+    "page_zahlung_versand": "Zahlungen bestätigen und Bestellungen versenden",
+    "page_erfassung_fuer_andere": "Für andere erfassen (Beiträge, Anmeldungen, Mitgliedschaften)",
+}
+
+# Welche Verwaltungsseiten zu welchem Modul gehören. Wer auf einer dieser Seiten Lesen bzw.
+# Schreiben hat, passiert die grobe Modul-Sperre (services.verwaltet_modul) auch ohne eigene
+# Modulzelle : Verwalter müssen nicht zusätzlich "mitmachen" dürfen, um zu verwalten. Die
+# Verwaltungsaktion selbst prüft weiterhin die Seite.
+MODUL_SEITEN = {
+    "membres": (
+        "page_membres",
+        "page_membres_loeschen",
+        "page_membres_import",
+        "page_membres_zuordnung",
+    ),
+    "cotisations": (
+        "page_cotisations_attente",
+        "page_cotisations_relances",
+        "page_articles_cotisation",
+        "page_zahlungen_import",
+        "page_finances",
+        "page_beitraege_uebersicht",
+        "page_erfassung_fuer_andere",
+    ),
+    "adhesions": (
+        "page_campagnes_adhesion",
+        "page_justificatifs",
+        "page_inscriptions",
+        "page_souscriptions",
+        "page_erfassung_fuer_andere",
+    ),
+    "evenements": (
+        "page_events",
+        "page_kalender",
+        "page_kalender_vorschlag",
+        "page_regionen",
+        "page_erfassung_fuer_andere",
+    ),
+    "boutique": ("page_boutique", "page_zahlung_versand"),
+    "vote": ("page_abstimmungen",),
+    "communaute": (
+        "page_quiz",
+        "page_albums",
+        "page_fan_club_logos",
+        "page_community",
+        "page_tippspiel",
+        "page_zahlung_versand",
+    ),
+    "projets": ("page_projets",),
 }
 
 # Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour

@@ -149,7 +149,7 @@ export default function App() {
           <Route
             path="/membres/nouveau"
             element={
-              <RequireRole minRoleLevel={ROLE_LEVELS.rh}>
+              <RequireRole pageSlug="page_membres" schreiben>
                 <MembreFormPage />
               </RequireRole>
             }

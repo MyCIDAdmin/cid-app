@@ -17,9 +17,8 @@ Permissions API — app vote (SCD §4.2 matrice, FDD §2.2) :
 
 from rest_framework.permissions import BasePermission
 
-from apps.accounts.models import Role
-
-ROLES_GESTION_VOTE = (Role.SUPER_ADMIN, Role.BUREAU_ADMIN)
+from apps.rbac.models import NiveauAcces
+from apps.rbac.services import has_admin_page_access
 
 VOTE_WRITE_ACTIONS = ("create", "cloturer")
 
@@ -31,5 +30,7 @@ class VoteSessionPermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in VOTE_WRITE_ACTIONS:
-            return user.role in ROLES_GESTION_VOTE
+            return has_admin_page_access(
+                user, "page_abstimmungen", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True

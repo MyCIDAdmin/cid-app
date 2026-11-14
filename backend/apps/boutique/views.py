@@ -109,13 +109,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.gateways import GatewayError, creer_commande_paypal, creer_session_stripe
-from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
 from apps.membres.utils_http import xlsx_response
 from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import has_admin_page_access, is_elevated_for_module
+from apps.rbac.services import has_admin_page_access
 
 from . import panier, reservierungen
 from .exports import construire_classeur_commandes
@@ -154,8 +152,6 @@ from .notifications import (
 )
 from .pdf import generate_confirmation_pdf, generate_facture_pdf
 from .permissions import (
-    GESTION_CATALOGUE_MIN_LEVEL,
-    ORDER_VISIBILITY_MIN_LEVEL,
     BonAchatPermission,
     CatalogueBoutiquePermission,
     CommandePermission,
@@ -213,7 +209,10 @@ class VarianteCursorPagination(CursorPagination):
 
 class ProduitViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CatalogueBoutiquePermission]
+    permission_classes = [
+        CatalogueBoutiquePermission,
+        module_access_permission("boutique", anonym_lesen=True),
+    ]
     serializer_class = ProduitSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -224,11 +223,7 @@ class ProduitViewSet(ModelViewSet):
         # ProduitSerializer.get_regles_reduction_actives (ajouté le 2026-09-23).
         queryset = Produit.objects.prefetch_related("variantes", "regles_reduction").all()
         user = self.request.user
-        if (
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
-        ):
+        if user and user.is_authenticated and has_admin_page_access(user, "page_boutique"):
             return queryset
         # Reservierungsartikel verschwinden nach Ablauf ihrer Frist automatisch aus dem Shop
         # (Wunsch 2026-10-20); Verwalter sehen sie weiter (Verwaltung, Auswertung).
@@ -268,7 +263,10 @@ class ProduitImageViewSet(ModelViewSet):
     par le rôle/la page RBAC, déjà entièrement vérifié par has_permission."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CatalogueBoutiquePermission]
+    permission_classes = [
+        CatalogueBoutiquePermission,
+        module_access_permission("boutique", anonym_lesen=True),
+    ]
     serializer_class = ProduitImageSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -285,7 +283,10 @@ class RegleReductionViewSet(ModelViewSet):
     d'accès que Produit/VarianteProduit, voir permissions.py."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CatalogueBoutiquePermission]
+    permission_classes = [
+        CatalogueBoutiquePermission,
+        module_access_permission("boutique", anonym_lesen=True),
+    ]
     serializer_class = RegleReductionSerializer
     pagination_class = BoutiqueCursorPagination
     filterset_fields = {"produit": ["exact", "in"], "actif": ["exact"]}
@@ -293,18 +294,17 @@ class RegleReductionViewSet(ModelViewSet):
     def get_queryset(self):
         queryset = RegleReduction.objects.select_related("produit").all()
         user = self.request.user
-        if (
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
-        ):
+        if user and user.is_authenticated and has_admin_page_access(user, "page_boutique"):
             return queryset
         return queryset.filter(actif=True, produit__statut=StatutProduit.PUBLIE)
 
 
 class VarianteProduitViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CatalogueBoutiquePermission]
+    permission_classes = [
+        CatalogueBoutiquePermission,
+        module_access_permission("boutique", anonym_lesen=True),
+    ]
     serializer_class = VarianteProduitSerializer
     pagination_class = VarianteCursorPagination
     # Forme dict pour exposer `?id__in=uuid1,uuid2,...` — utilisé par le panier frontend pour
@@ -315,11 +315,7 @@ class VarianteProduitViewSet(ModelViewSet):
     def get_queryset(self):
         queryset = VarianteProduit.objects.select_related("produit").all()
         user = self.request.user
-        if (
-            user
-            and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
-        ):
+        if user and user.is_authenticated and has_admin_page_access(user, "page_boutique"):
             return queryset
         return queryset.filter(produit__statut=StatutProduit.PUBLIE)
 
@@ -495,9 +491,7 @@ class CommandeViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL or is_elevated_for_module(
-            user, "boutique"
-        ):
+        if has_admin_page_access(user, "page_boutique"):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(membre=membre) if membre else queryset.none()
@@ -684,7 +678,9 @@ class CommandeViewSet(ModelViewSet):
         `passer` + `confirmer_paiement`. Le stock reste décrémenté atomiquement (SELECT FOR
         UPDATE), même principe que `passer` ci-dessus (FDD §3.4)."""
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+        if not has_admin_page_access(
+            user, "page_erfassung_fuer_andere", required=NiveauAcces.LECTURE_ECRITURE
+        ):
             raise PermissionDenied(
                 "Seul le Directeur Financier ou l'Admin App peut saisir une vente en espèces "
                 "pour un autre membre."
@@ -1054,9 +1050,7 @@ class CommandeViewSet(ModelViewSet):
         # Blatt „Reservierungen“ sieht nur die Verwaltung (gleicher Scope wie get_queryset).
         produkt_ids = [p for p in (request.query_params.get("produit") or "").split(",") if p]
         user = request.user
-        sieht_alle = ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL or (
-            is_elevated_for_module(user, "boutique")
-        )
+        sieht_alle = has_admin_page_access(user, "page_boutique")
         classeur = construire_classeur_commandes(
             queryset, produkt_ids=produkt_ids, mit_reservierungen=sieht_alle
         )
@@ -1073,7 +1067,7 @@ class RetourViewSet(ModelViewSet):
     interblocage avec une commande passée ou annulée concurremment."""
 
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [RetourPermission]
+    permission_classes = [RetourPermission, module_access_permission("boutique")]
     serializer_class = RetourSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -1187,7 +1181,7 @@ class BonAchatViewSet(ModelViewSet):
     dédiée (aperçu d'un code au checkout, sans lien avec la création)."""
 
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [BonAchatPermission]
+    permission_classes = [BonAchatPermission, module_access_permission("boutique")]
     serializer_class = BonAchatSerializer
     pagination_class = BoutiqueCursorPagination
     filterset_fields = {"statut": ["exact"]}
@@ -1197,7 +1191,7 @@ class BonAchatViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL:
+        if has_admin_page_access(user, "page_boutique"):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(achete_par=membre) if membre else queryset.none()
@@ -1221,7 +1215,7 @@ class ReservierungViewSet(CreateModelMixin, ListModelMixin, RetrieveModelMixin, 
     """Reservierungen (Release 4, 2026-10-12) — Modus NUR_RESERVIEREN, siehe reservierungen.py.
     Mitglieder sehen/stornieren nur ihre eigenen, die Shop-Verwaltung (page_boutique) alle."""
 
-    permission_classes = [ReservierungPermission]
+    permission_classes = [ReservierungPermission, module_access_permission("boutique")]
     serializer_class = ReservierungSerializer
     pagination_class = BoutiqueCursorPagination
     filter_backends = [DjangoFilterBackend]

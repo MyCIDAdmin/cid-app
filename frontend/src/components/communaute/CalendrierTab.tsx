@@ -45,7 +45,7 @@ import { Link } from "react-router-dom";
 import { spielplanIcsUrl } from "../../api/communaute";
 import { useCalendrierRencontres, useMeinTippstand } from "../../hooks/useCommunaute";
 import { useReisenListe } from "../../hooks/useReisen";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
+import { useAuthStore } from "../../store/authStore";
 import type { RencontreCalendrier, TippspielTip } from "../../types/communaute";
 import {
   nachMonaten,
@@ -58,6 +58,7 @@ import type { ReiseListItem } from "../../types/reisen";
 import EquipeLogoImage from "./EquipeLogoImage";
 import SpielplanEditForm from "./SpielplanEditForm";
 import { lokaleSprache } from "../../utils/datum";
+import { usePageAccess } from "../../hooks/useRbac";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString(lokaleSprache());
@@ -277,7 +278,7 @@ export default function CalendrierTab() {
   const { t } = useTranslation("communaute");
   const { data, isLoading, isError } = useCalendrierRencontres();
   const user = useAuthStore((state) => state.user);
-  const peutEditer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const peutEditer = usePageAccess("page_community").modifiable;
   const [ajoutOuvert, setAjoutOuvert] = useState(false);
   const [filter, setFilter] = useState<SpielplanFilter>("alle");
   const [gewaehlteAnsicht, setAnsicht] = useState<Ansicht | null>(null);

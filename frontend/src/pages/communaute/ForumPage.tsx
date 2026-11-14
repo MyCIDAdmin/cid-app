@@ -20,6 +20,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import { vorZeit } from "../../utils/datum";
 import { KATEGORIE_FARBE } from "../../utils/forumKategorie";
 import { forumGesehen, forumGrundlinie, istForumThemaNeu } from "../../utils/forumGesehen";
+import { useModulZugriff } from "../../hooks/useRbac";
 
 const CATEGORIES: CategorieForum[] = ["football_ca", "vie_en_allemagne", "emploi", "general"];
 
@@ -54,6 +55,7 @@ export default function ForumPage() {
     unbeantwortet: reiter === "unbeantwortet" ? true : undefined,
   });
   const creer = useCreerSujet();
+  const darfMitmachen = useModulZugriff("communaute").mitmachen;
   // Mentions "@" (ajoutées le 2026-09-29) — voir hooks/useMentionAutocomplete.ts.
   const mention = useMentionAutocomplete(contenu, setContenu);
 
@@ -89,13 +91,15 @@ export default function ForumPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-text-primary">{t("forum.titre")}</h1>
-        <button
-          type="button"
-          onClick={() => setAfficherForm((v) => !v)}
-          className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad"
-        >
-          {t("forum.nouveau_sujet")}
-        </button>
+        {darfMitmachen && (
+          <button
+            type="button"
+            onClick={() => setAfficherForm((v) => !v)}
+            className="rounded-cid bg-ca px-3 py-1.5 text-xs font-medium text-white hover:bg-cad"
+          >
+            {t("forum.nouveau_sujet")}
+          </button>
+        )}
       </div>
 
       {afficherForm && (

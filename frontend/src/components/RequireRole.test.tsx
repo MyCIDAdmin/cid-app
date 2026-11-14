@@ -14,9 +14,7 @@ vi.mock("../hooks/useRbac", async () => {
 function setUser(role: "membre" | "rh" | "super_admin" | null) {
   useAuthStore.setState({
     isAuthenticated: role !== null,
-    user: role
-      ? { id: "u1", email: "u@example.com", role, langue_preferee: "fr" }
-      : null,
+    user: role ? { id: "u1", email: "u@example.com", role, langue_preferee: "fr" } : null,
   });
 }
 
@@ -67,6 +65,32 @@ describe("RequireRole", () => {
       );
       expect(screen.queryByText("contenu protégé")).not.toBeInTheDocument();
       expect(screen.queryByTestId("route-fallback")).not.toBeInTheDocument();
+    });
+
+    it("mit `schreiben` genügt Lesen nicht, Lesen & Schreiben öffnet die Route", () => {
+      setUser("membre");
+      vi.mocked(useRbacHooks.useMesAcces).mockReturnValue({
+        data: { page_membres: "lecture" },
+        isLoading: false,
+      } as unknown as ReturnType<typeof useRbacHooks.useMesAcces>);
+      const { unmount } = renderWithProviders(
+        <RequireRole pageSlug="page_membres" schreiben>
+          <div>contenu protégé</div>
+        </RequireRole>,
+      );
+      expect(screen.queryByText("contenu protégé")).not.toBeInTheDocument();
+      unmount();
+
+      vi.mocked(useRbacHooks.useMesAcces).mockReturnValue({
+        data: { page_membres: "lecture_ecriture" },
+        isLoading: false,
+      } as unknown as ReturnType<typeof useRbacHooks.useMesAcces>);
+      renderWithProviders(
+        <RequireRole pageSlug="page_membres" schreiben>
+          <div>contenu protégé</div>
+        </RequireRole>,
+      );
+      expect(screen.getByText("contenu protégé")).toBeInTheDocument();
     });
 
     it("redirige quand la matrice refuse l'accès à cette page", async () => {

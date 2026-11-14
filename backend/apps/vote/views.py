@@ -1,3 +1,5 @@
+from apps.rbac.permissions import module_access_permission
+
 """
 Vues API — app vote (SCD §4.2, FDD F-008, RICEFW W-006) :
 
@@ -41,7 +43,7 @@ SCHLIESSEN_ÜBER_WAHL = "Diese Abstimmung gehört zu einer Wahl und wird über d
 
 class VoteSessionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [VoteSessionPermission]
+    permission_classes = [VoteSessionPermission, module_access_permission("vote")]
     pagination_class = VoteSessionPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = VoteSessionFilter

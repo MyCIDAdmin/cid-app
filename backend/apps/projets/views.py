@@ -50,6 +50,7 @@ from apps.finances.models import AktionProtokoll, CategorieDepense, Depense, Sta
 from apps.finances.services import diff, etat_depense, protokolliere, pruefe_jahr, resume_depense
 from apps.membres.models import Membre
 from apps.partenaires.services import logo_prefetch
+from apps.rbac.permissions import module_access_permission
 
 from .aktivitaet import logge
 from .budget import geplante_summe, pruefe_jahreswechsel, pruefe_plan
@@ -117,7 +118,7 @@ class MisesAJourCursorPagination(CursorPagination):
 
 class ProjetViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [ProjetPermission]
+    permission_classes = [ProjetPermission, module_access_permission("projets", anonym_lesen=True)]
     serializer_class = ProjetSerializer
     pagination_class = ProjetsCursorPagination
 
@@ -426,7 +427,10 @@ class ProjetImageViewSet(ModelViewSet):
     point 1.1) — voir docstring de module."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [GestionContenuProjetPermission]
+    permission_classes = [
+        GestionContenuProjetPermission,
+        module_access_permission("projets", anonym_lesen=True),
+    ]
     serializer_class = ProjetImageSerializer
     pagination_class = ProjetsCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -455,7 +459,10 @@ class ProjetMiseAJourViewSet(ModelViewSet):
     docstring de module."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [GestionContenuProjetPermission]
+    permission_classes = [
+        GestionContenuProjetPermission,
+        module_access_permission("projets", anonym_lesen=True),
+    ]
     serializer_class = ProjetMiseAJourSerializer
     pagination_class = MisesAJourCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -487,7 +494,10 @@ class ProjetMiseAJourImageViewSet(ModelViewSet):
     en continu)."""
 
     http_method_names = ["get", "post", "delete", "head", "options"]
-    permission_classes = [GestionContenuProjetPermission]
+    permission_classes = [
+        GestionContenuProjetPermission,
+        module_access_permission("projets", anonym_lesen=True),
+    ]
     serializer_class = ProjetMiseAJourImageSerializer
     pagination_class = ProjetsCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -542,7 +552,7 @@ class ProjetTeamViewSet(ModelViewSet):
     financier ; écriture : Direction du projet ou gestionnaire."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("projets")]
     serializer_class = ProjetMitgliedSerializer
     pagination_class = TeamCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -615,7 +625,7 @@ class AufgabeViewSet(ModelViewSet):
     Observateur) ; suppression : Direction et gestionnaires."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("projets")]
     serializer_class = AufgabeSerializer
     pagination_class = ArbeitsbereichCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -731,7 +741,7 @@ class AufgabeKommentarViewSet(ModelViewSet):
     gestionnaires ; suppression : son auteur·e, la Direction ou un gestionnaire."""
 
     http_method_names = ["get", "post", "delete", "head", "options"]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("projets")]
     serializer_class = AufgabeKommentarSerializer
     pagination_class = KommentarCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -767,7 +777,7 @@ class PlanKostenViewSet(ModelViewSet):
     Schreiben : Projektleitung und Verwaltung."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("projets")]
     serializer_class = PlanKostenSerializer
     pagination_class = None
     filter_backends = [DjangoFilterBackend]
@@ -828,7 +838,7 @@ class ProjetKostenViewSet(ModelViewSet):
     ein abgeschlossenes Geschäftsjahr sperrt (409). Änderungen landen im Finanz-Protokoll."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("projets")]
     serializer_class = ProjetKostenSerializer
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     pagination_class = None
@@ -921,7 +931,7 @@ class ProjetAktivitaetViewSet(ReadOnlyModelViewSet):
     dieselbe Sichtbarkeit wie der Arbeitsbereich. Geschrieben wird ausschließlich durch die Views
     über `aktivitaet.logge`."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, module_access_permission("projets")]
     serializer_class = ProjetAktivitaetSerializer
     pagination_class = AktivitaetCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -939,7 +949,10 @@ class MeilensteinViewSet(ModelViewSet):
     (`kann_team_verwalten`), geprüft am betroffenen Projekt."""
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+        module_access_permission("projets", anonym_lesen=True),
+    ]
     serializer_class = MeilensteinSerializer
     pagination_class = None
     filter_backends = [DjangoFilterBackend]

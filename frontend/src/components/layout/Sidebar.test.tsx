@@ -444,7 +444,7 @@ describe("Sidebar — visibilité de module pour le rôle Membre Normal (bug cor
     useUiStore.setState({
       collapsedGroups: { ...DEFAULT_COLLAPSED_GROUPS, administration: false },
     });
-    mockMesAcces();
+    mockMesAcces({ data: { page_membres: "lecture_ecriture" } });
     renderWithProviders(<Sidebar />);
     expect(screen.getByText("nav.membres")).toBeInTheDocument();
   });

@@ -16,7 +16,8 @@ import BeitragComposer from "../../components/communaute/BeitragComposer";
 import PublicationCarte from "../../components/communaute/PublicationCarte";
 import { usePublications } from "../../hooks/useCommunaute";
 import { useDeepLinkCible } from "../../hooks/useDeepLinkCible";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
+import { useAuthStore } from "../../store/authStore";
+import { usePageAccess } from "../../hooks/useRbac";
 
 type FilFilter = "alle" | "wichtig" | "fotos";
 const FILTER: FilFilter[] = ["alle", "wichtig", "fotos"];
@@ -34,7 +35,7 @@ export default function FilPage() {
   // Rôle requis pour PUBLIER une Neuigkeit (retour utilisateur du 2026-09-29, point 3.1) — même
   // seuil que la modération de ce module (apps.communaute.permissions.PublicationPermission).
   const user = useAuthStore((s) => s.user);
-  const peutPublier = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const peutPublier = usePageAccess("page_community").modifiable;
 
   const [searchParams, setSearchParams] = useSearchParams();
   const hashtagFiltre = searchParams.get("hashtag");

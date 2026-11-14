@@ -20,15 +20,15 @@ import { Link } from "react-router-dom";
 
 import ShareButton from "../../components/ui/ShareButton";
 import { useAlbums } from "../../hooks/useCommunaute";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import { albumPfad } from "../../utils/albumPfad";
 import { uebersetzt } from "../../utils/uebersetzung";
+import { usePageAccess } from "../../hooks/useRbac";
 
 export default function AlbumsPage({ publicModus = false }: { publicModus?: boolean }) {
   const { t } = useTranslation("communaute");
   const albumsQuery = useAlbums();
-  const user = useAuthStore((s) => s.user);
-  const darfTeilen = !publicModus && hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const albumSchreiben = usePageAccess("page_albums").modifiable;
+  const darfTeilen = !publicModus && albumSchreiben;
 
   return (
     <div>

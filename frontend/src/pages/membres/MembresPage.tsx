@@ -10,15 +10,12 @@ import { useSearchParams } from "react-router-dom";
 import FaehigkeitenReportingTab from "../../components/membres/FaehigkeitenReportingTab";
 import MembreReportingTab from "../../components/membres/MembreReportingTab";
 import TabLeiste from "../../components/ui/TabLeiste";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import MembresListPage from "./MembresListPage";
+import { usePageAccess } from "../../hooks/useRbac";
 
 export default function MembresPage() {
   const { t } = useTranslation("membres");
-  const peutBerichten = hasRoleAtLeast(
-    useAuthStore((s) => s.user),
-    ROLE_LEVELS.rh,
-  );
+  const peutBerichten = usePageAccess("page_membres").accessible;
   const [params, setParams] = useSearchParams();
   const roh = params.get("tab");
   const tab =

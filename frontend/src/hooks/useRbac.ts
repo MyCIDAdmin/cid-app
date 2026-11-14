@@ -145,6 +145,22 @@ export function useModuleOuvert(cle: string): { ouvert: boolean; chargement: boo
 }
 
 /**
+ * Modul-Niveau des Kontos (Rechte-Umbau Nov. 2026) : `sehen` = Lesen, `mitmachen` = Schreiben
+ * (anmelden, bestellen, beitragen, reagieren, abstimmen). Die Antwort von /rbac/mes-acces/ enthält
+ * neben den `page_*`-Slugs auch die Modul-Slugs ("projets", "vote", "communaute" ...). Der Server
+ * entscheidet immer ; dies blendet nur Bedienelemente aus, die ohnehin abgelehnt würden.
+ */
+export function useModulZugriff(modul: string) {
+  const { data: mesAcces, isLoading } = useMesAcces();
+  const niveau = mesAcces?.[modul];
+  return {
+    sehen: pageEstAccessible(niveau),
+    mitmachen: pageEstModifiable(niveau),
+    isLoading,
+  };
+}
+
+/**
  * Convenience hook (ajouté le 2026-09-24, task #216) au-dessus de useMesAcces() pour les 13
  * pages de gestion elles-mêmes : répond aux DEUX questions dont une page a besoin pour son
  * propre affichage — "puis-je voir cette page" (déjà tranché en amont par RequireRole/Sidebar au

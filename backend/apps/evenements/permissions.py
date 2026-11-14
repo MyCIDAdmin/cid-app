@@ -21,11 +21,8 @@ Permissions API — app evenements (FDD §2.2) :
 
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.models import NiveauAcces
-from apps.rbac.services import has_admin_page_access, is_elevated_for_module
-
-GESTION_EVENEMENTS_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
+from apps.rbac.services import has_admin_page_access
 
 EVENEMENT_WRITE_ACTIONS = (
     "create",
@@ -74,12 +71,9 @@ class InscriptionPermission(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL:
-            return True
-        # apps.rbac Phase B (ajouté le 2026-09-23) : un rôle personnalisé avec au moins la
-        # lecture sur le module "evenements" voit TOUTES les inscriptions, comme Bureau Admin+ —
-        # porte OUVERTE EN PLUS, jamais un remplacement de la condition ci-dessus.
-        if is_elevated_for_module(user, "evenements"):
+        # Rechte-Umbau (Nov. 2026) : "alle Anmeldungen sehen" = Lesen auf page_events (Startwert
+        # Büro und höher), nicht mehr eine feste Rollenstufe.
+        if has_admin_page_access(user, "page_events"):
             return True
         membre = getattr(user, "membre", None)
         return membre is not None and obj.membre_id == membre.id
@@ -99,7 +93,7 @@ class CovoiturageWritePermission(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL:
+        if has_admin_page_access(user, "page_events", required=NiveauAcces.LECTURE_ECRITURE):
             return True
         membre = getattr(user, "membre", None)
         return membre is not None and obj.conducteur_id == membre.id
@@ -112,7 +106,7 @@ class ReservationCovoituragePermission(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) >= GESTION_EVENEMENTS_MIN_LEVEL:
+        if has_admin_page_access(user, "page_events"):
             return True
         membre = getattr(user, "membre", None)
         if membre is None:

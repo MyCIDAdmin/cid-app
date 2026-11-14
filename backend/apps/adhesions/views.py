@@ -51,12 +51,11 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.cotisations.models import HistoriqueStatutCotisation, ModePaiement, StatutCotisation
 from apps.cotisations.notifications import notifier_paiement_confirme
-from apps.cotisations.permissions import SAISIE_POUR_AUTRUI_MIN_LEVEL
+from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import is_elevated_for_module
+from apps.rbac.services import has_admin_page_access
 
 from . import familie
 from . import karte as karte_services
@@ -82,13 +81,7 @@ from .notifications import (
     notifier_nouveau_justificatif_staff,
     notifier_souscription_annulee,
 )
-from .permissions import (
-    GESTION_CATALOGUE_MIN_LEVEL,
-    READ_ALL_SOUSCRIPTIONS_MIN_LEVEL,
-    CataloguePermission,
-    JustificatifPermission,
-    SouscriptionPermission,
-)
+from .permissions import CataloguePermission, JustificatifPermission, SouscriptionPermission
 from .serializers import (
     CampagneAdhesionSerializer,
     JustificatifRabaisSerializer,
@@ -125,7 +118,10 @@ class CataloguePagination(CursorPagination):
 
 class CampagneAdhesionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "head", "options"]
-    permission_classes = [CataloguePermission]
+    permission_classes = [
+        CataloguePermission,
+        module_access_permission("adhesions", anonym_lesen=True),
+    ]
     serializer_class = CampagneAdhesionSerializer
     pagination_class = AdhesionsCursorPagination
     filter_backends = [DjangoFilterBackend]
@@ -143,7 +139,7 @@ class CampagneAdhesionViewSet(ModelViewSet):
         if (
             user
             and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
+            and has_admin_page_access(user, "page_campagnes_adhesion")
         ):
             return queryset
         return queryset.filter(statut=StatutCampagne.PUBLIEE)
@@ -202,7 +198,10 @@ class CampagneAdhesionViewSet(ModelViewSet):
 
 class OffreAdhesionViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CataloguePermission]
+    permission_classes = [
+        CataloguePermission,
+        module_access_permission("adhesions", anonym_lesen=True),
+    ]
     serializer_class = OffreAdhesionSerializer
     pagination_class = CataloguePagination
     filter_backends = [DjangoFilterBackend]
@@ -214,7 +213,7 @@ class OffreAdhesionViewSet(ModelViewSet):
         if (
             user
             and user.is_authenticated
-            and ROLE_LEVELS.get(user.role, 0) >= GESTION_CATALOGUE_MIN_LEVEL
+            and has_admin_page_access(user, "page_campagnes_adhesion")
         ):
             return queryset
         # Un membre normal ne voit que les offres visibles de campagnes publiées.
@@ -223,7 +222,10 @@ class OffreAdhesionViewSet(ModelViewSet):
 
 class RabaisOffreViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
-    permission_classes = [CataloguePermission]
+    permission_classes = [
+        CataloguePermission,
+        module_access_permission("adhesions", anonym_lesen=True),
+    ]
     serializer_class = RabaisOffreSerializer
     pagination_class = CataloguePagination
     queryset = RabaisOffre.objects.select_related("offre").all()
@@ -282,9 +284,7 @@ class SouscriptionViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(
-            user.role, 0
-        ) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL or is_elevated_for_module(user, "adhesions"):
+        if has_admin_page_access(user, "page_souscriptions"):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(membre=membre) if membre else queryset.none()
@@ -374,7 +374,9 @@ class SouscriptionViewSet(ModelViewSet):
         (souscrire -> paiement en ligne/virement -> Directeur Financier confirme), simplement
         les deux étapes sont ici déclenchées dans le même appel."""
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) < SAISIE_POUR_AUTRUI_MIN_LEVEL:
+        if not has_admin_page_access(
+            user, "page_erfassung_fuer_andere", required=NiveauAcces.LECTURE_ECRITURE
+        ):
             raise PermissionDenied(
                 "Seul le Directeur Financier ou l'Admin App peut saisir une souscription "
                 "pour un autre membre."
@@ -504,7 +506,7 @@ class JustificatifRabaisViewSet(ModelViewSet):
     matrice d'accès détaillée par action."""
 
     http_method_names = ["get", "post", "head", "options"]
-    permission_classes = [JustificatifPermission]
+    permission_classes = [JustificatifPermission, module_access_permission("adhesions")]
     serializer_class = (
         JustificatifRabaisSerializer  # list/retrieve — create/valider s'en écartent explicitement
     )
@@ -520,7 +522,7 @@ class JustificatifRabaisViewSet(ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return queryset.none()
-        if ROLE_LEVELS.get(user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL:
+        if has_admin_page_access(user, "page_justificatifs"):
             return queryset
         membre = getattr(user, "membre", None)
         return queryset.filter(souscription__membre=membre) if membre else queryset.none()
@@ -541,7 +543,9 @@ class JustificatifRabaisViewSet(ModelViewSet):
         # éditable (voir admin.py). Dans ce cas, pas besoin que l'appelant ait lui-même une
         # fiche membre (un compte RH pur reste valide) — voir validate_souscription côté
         # serializer, qui n'exige alors plus que la souscription appartienne à `membre`.
-        est_rh_plus = ROLE_LEVELS.get(request.user.role, 0) >= READ_ALL_SOUSCRIPTIONS_MIN_LEVEL
+        est_rh_plus = has_admin_page_access(
+            request.user, "page_justificatifs", required=NiveauAcces.LECTURE_ECRITURE
+        )
         if membre is None and not est_rh_plus:
             raise ValidationError(
                 {"membre": "Aucune fiche membre associée à ce compte utilisateur."}

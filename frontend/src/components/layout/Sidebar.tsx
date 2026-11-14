@@ -215,7 +215,7 @@ export const NAV_ITEMS: NavItem[] = [
     labelKey: "nav.membres",
     icon: IconUsers,
     group: "administration",
-    minRoleLevel: ROLE_LEVELS.rh,
+    pageSlug: "page_membres", // Startwert: RH und höher (Rechte-Umbau Nov. 2026)
   },
   // Phase F (2026-09-26, fusion "Mitgliedsbeitrag" -> "Meine Mitgliedschaft", exigence
   // utilisateur non negociable) : l'entree "Mitgliedsbeitrag" (/cotisation) a ete retiree — tout

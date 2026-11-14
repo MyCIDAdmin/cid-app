@@ -51,13 +51,8 @@ Permissions API — app boutique (FDD §2.2 matrice des permissions) :
 
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.models import NiveauAcces
-from apps.rbac.services import has_admin_page_access, is_elevated_for_module
-
-GESTION_CATALOGUE_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
-ORDER_VISIBILITY_MIN_LEVEL = ROLE_LEVELS[Role.BUREAU_ADMIN]
-PAIEMENT_EXPEDITION_MIN_LEVEL = ROLE_LEVELS[Role.DIR_FINANCIER]
+from apps.rbac.services import has_admin_page_access
 
 CATALOGUE_WRITE_ACTIONS = ("create", "update", "partial_update", "destroy")
 
@@ -95,9 +90,11 @@ class CommandePermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in self.PAIEMENT_EXPEDITION_ACTIONS:
-            # Geste financier séparé (Phase D, décision confirmée avec l'utilisateur : reste
-            # hartcodé Directeur Financier+, PAS une des 13 pages de gestion de la matrice).
-            return ROLE_LEVELS.get(user.role, 0) >= PAIEMENT_EXPEDITION_MIN_LEVEL
+            # Rechte-Umbau (Nov. 2026) : Zahlung bestätigen / Versand = Seite page_zahlung_versand
+            # (Startwert Finanzen und höher), nicht mehr fest an eine Rolle gebunden.
+            return has_admin_page_access(
+                user, "page_zahlung_versand", required=NiveauAcces.LECTURE_ECRITURE
+            )
         if action in self.GESTION_ACTIONS:
             # `changer_statut` fait partie de la page "Shop-Verwaltung" (page_boutique) — voir
             # CatalogueBoutiquePermission ci-dessus. lecture_ecriture requise depuis le
@@ -109,12 +106,8 @@ class CommandePermission(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL:
-            return True
-        # apps.rbac Phase B (ajouté le 2026-09-23) : un rôle personnalisé avec au moins la
-        # lecture sur le module "boutique" voit TOUTES les commandes, comme Bureau Admin+ —
-        # porte OUVERTE EN PLUS, jamais un remplacement de la condition ci-dessus.
-        if is_elevated_for_module(user, "boutique"):
+        # Rechte-Umbau (Nov. 2026) : "alle Bestellungen sehen" = Lesen auf page_boutique.
+        if has_admin_page_access(user, "page_boutique"):
             return True
         membre = getattr(user, "membre", None)
         return membre is not None and obj.membre_id == membre.id
@@ -152,12 +145,14 @@ class BonAchatPermission(BasePermission):
             return False
         action = getattr(view, "action", None)
         if action in self.CONFIRMATION_ACTIONS:
-            return ROLE_LEVELS.get(user.role, 0) >= PAIEMENT_EXPEDITION_MIN_LEVEL
+            return has_admin_page_access(
+                user, "page_zahlung_versand", required=NiveauAcces.LECTURE_ECRITURE
+            )
         return True
 
     def has_object_permission(self, request, view, obj):
         user = request.user
-        if ROLE_LEVELS.get(user.role, 0) >= ORDER_VISIBILITY_MIN_LEVEL:
+        if has_admin_page_access(user, "page_boutique"):
             return True
         membre = getattr(user, "membre", None)
         return membre is not None and obj.achete_par_id == membre.id

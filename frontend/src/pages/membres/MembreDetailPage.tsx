@@ -14,10 +14,11 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import StatutBadge from "../../components/ui/StatutBadge";
 import { useChangerStatutMembre, useDeleteMembre, useMembre } from "../../hooks/useMembres";
-import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../../store/authStore";
+import { useAuthStore } from "../../store/authStore";
 import { PAYS_ALLEMAGNE, STATUTS_MEMBRE } from "../../types/membre";
 import type { StatutMembre } from "../../types/membre";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { usePageAccess } from "../../hooks/useRbac";
 
 function initiales(prenom: string, nom: string): string {
   return `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
@@ -37,8 +38,8 @@ export default function MembreDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const peutGerer = hasRoleAtLeast(user, ROLE_LEVELS.rh);
-  const peutSupprimer = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const peutGerer = usePageAccess("page_membres").modifiable;
+  const peutSupprimer = usePageAccess("page_membres_loeschen").modifiable;
 
   const { data: membre, isLoading, isError } = useMembre(id);
   const peutModifier = peutGerer || (Boolean(membre) && membre?.user === user?.id);
@@ -70,7 +71,7 @@ export default function MembreDetailPage() {
       },
     });
   }
-  
+
   if (isLoading) {
     return <p className="text-text-tertiary">{t("liste.chargement")}</p>;
   }
@@ -123,7 +124,7 @@ export default function MembreDetailPage() {
       {erreurSuppression && (
         <p className="mb-4 text-sm text-status-dangerText">{erreurSuppression}</p>
       )}
-      
+
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-cid-lg bg-bg-primary p-5 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-text-primary">

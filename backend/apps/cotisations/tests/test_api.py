@@ -505,7 +505,7 @@ def test_membre_ne_voit_que_ses_propres_cotisations(api_client):
 
 def test_role_personnalise_eleve_voit_toutes_les_cotisations(api_client):
     """apps.rbac Phase B : un rôle personnalisé avec au moins la lecture sur "cotisations" voit
-    TOUTES les cotisations, comme RH/Admin — voir is_elevated_for_module."""
+    TOUTES les cotisations, comme RH/Admin."""
     from apps.rbac.models import NiveauAcces
     from apps.rbac.tests.factories import (
         RoleDefinitionFactory,
@@ -515,7 +515,9 @@ def test_role_personnalise_eleve_voit_toutes_les_cotisations(api_client):
 
     user, membre = _user_avec_membre(Role.MEMBRE, "vertrieb-idor@example.de")
     role = RoleDefinitionFactory(slug="vertrieb-cotisations-idor")
-    RoleModulePermissionFactory(role=role, module="cotisations", niveau_acces=NiveauAcces.LECTURE)
+    RoleModulePermissionFactory(
+        role=role, module="page_beitraege_uebersicht", niveau_acces=NiveauAcces.LECTURE
+    )
     UserRoleAssignmentFactory(user=user, role=role)
     CotisationFactory(membre=membre)
     CotisationFactory()  # une autre fiche, sans lien avec `user`
@@ -1367,7 +1369,7 @@ def test_phase_d_directeur_financier_perd_lacces_a_changer_statut_si_matrice_le_
 def test_phase_d_role_personnalise_peut_marquer_payee_via_la_matrice(api_client):
     """Vérifie le gate de page apporté par has_admin_page_access("page_cotisations_attente").
     La visibilité au niveau du queryset (get_queryset de CotisationViewSet) reste pilotée par
-    is_elevated_for_module(user, "cotisations") — le module DATA "cotisations", pas la page
+    die Seite page_beitraege_uebersicht — das Modul "cotisations", pas la page
     admin "page_cotisations_attente" — donc explicitement hors scope de cette phase (voir plan).
     Comme pour les justificatifs, la cotisation ciblée appartient donc à la propre fiche membre
     du user pour rester dans le queryset filtré "mes cotisations"."""

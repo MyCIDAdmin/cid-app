@@ -17,7 +17,7 @@ from datetime import timezone as dt_timezone
 from django.db.models import Count
 from django.utils import timezone
 
-from apps.accounts.models import ROLE_LEVELS, Role
+from apps.rbac.services import has_admin_page_access
 
 from . import services
 from .models import (
@@ -107,7 +107,7 @@ def tippspiel_matrix(tippspiel, user, spalten: int = 8) -> dict:
         .order_by("created_at")
     )
     ist_teilnehmer = membre is not None and any(t.membre_id == membre.id for t in teilnahmen)
-    ist_admin = ROLE_LEVELS.get(getattr(user, "role", None), 0) >= ROLE_LEVELS[Role.SUPER_ADMIN]
+    ist_admin = has_admin_page_access(user, "page_tippspiel")
     sichtbar = ist_teilnehmer or ist_admin
 
     tipps = list(

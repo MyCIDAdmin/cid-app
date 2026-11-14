@@ -11,8 +11,9 @@ MembreAdmin.cin_masque).
 
 from rest_framework import serializers
 
-from apps.accounts.models import ROLE_LEVELS, Role
 from apps.communaute.validators import valider_et_reencoder_photo
+from apps.rbac.models import NiveauAcces
+from apps.rbac.services import has_admin_page_access
 
 from .models import Membre, Pays
 
@@ -26,7 +27,7 @@ def _mask(value):
 def _can_view_pii(user, membre) -> bool:
     if not user or not getattr(user, "is_authenticated", False):
         return False
-    if ROLE_LEVELS.get(user.role, 0) >= ROLE_LEVELS[Role.RH]:
+    if has_admin_page_access(user, "page_membres"):
         return True
     return membre.user_id == user.id
 
@@ -126,7 +127,9 @@ class MembreSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = getattr(request, "user", None) if request else None
         if user is not None and getattr(user, "is_authenticated", False):
-            if ROLE_LEVELS.get(user.role, 0) < ROLE_LEVELS[Role.RH]:
+            if not has_admin_page_access(
+                user, "page_membres", required=NiveauAcces.LECTURE_ECRITURE
+            ):
                 for champ in self._CHAMPS_ADMINISTRATIFS:
                     self.fields[champ].read_only = True
 

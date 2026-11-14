@@ -8,7 +8,6 @@ from django.db.models import Count
 from django.utils import timezone as django_timezone
 from rest_framework import serializers
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.evenements.models import Evenement
 from apps.membres.models import Membre, StatutMembre
 from apps.projets.models import Projet
@@ -57,7 +56,7 @@ from .models import (
     extraire_mentions,
 )
 from .notifications import notifier_mentions
-from .permissions import MODERATION_MIN_LEVEL
+from .permissions import darf_moderieren
 from .reaktionen import reaktionen_liste
 from .validators import (
     valider_document_pdf,
@@ -1273,9 +1272,7 @@ class ChoixQuestionSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         request = self.context.get("request")
         user = getattr(request, "user", None) if request else None
-        est_admin = bool(
-            user and user.is_authenticated and ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
-        )
+        est_admin = bool(user and user.is_authenticated and darf_moderieren(user))
         if not est_admin:
             data.pop("est_correct", None)
         return data

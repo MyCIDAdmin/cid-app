@@ -23,15 +23,14 @@ import {
   useVoteSession,
 } from "../../hooks/useVote";
 import { useVoteSocket } from "../../hooks/useVoteSocket";
-import { useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { lokaleSprache } from "../../utils/datum";
+import { useModulZugriff, usePageAccess } from "../../hooks/useRbac";
 
 // Gestion des sessions de vote (créer/clôturer) réservée à cet ensemble exact de rôles — PAS
 // un minRoleLevel : le Directeur Financier a un niveau numérique supérieur à Bureau Admin
 // mais en est explicitement exclu (SCD §4.2, voir ROLES_GESTION_VOTE côté backend,
 // apps.vote.permissions — même exception que côté App.tsx).
-const ROLES_GESTION_VOTE = ["super_admin", "bureau_admin"] as const;
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -40,10 +39,8 @@ function formatDate(iso: string | null): string {
 
 export default function VotePage() {
   const { t } = useTranslation("vote");
-  const user = useAuthStore((s) => s.user);
-  const estAdmin = Boolean(
-    user && ROLES_GESTION_VOTE.includes(user.role as (typeof ROLES_GESTION_VOTE)[number]),
-  );
+  const estAdmin = usePageAccess("page_abstimmungen").modifiable;
+  const darfAbstimmen = useModulZugriff("vote").mitmachen;
 
   const [onglet, setOnglet] = useState<"actif" | "historique">("actif");
   const [sessionAffichee, setSessionAffichee] = useState<string | undefined>();
@@ -275,7 +272,12 @@ export default function VotePage() {
                       {socket.erreur}
                     </p>
                   )}
-                  {socket.statut === "ouvert" && (
+                  {socket.statut === "ouvert" && !darfAbstimmen && (
+                    <p className="rounded-cid bg-bg-tertiary px-3 py-2 text-center text-xs text-text-secondary">
+                      {t("bulletin.nur_lesen")}
+                    </p>
+                  )}
+                  {socket.statut === "ouvert" && darfAbstimmen && (
                     <BulletinVote
                       session={session}
                       onSubmit={handleVoter}

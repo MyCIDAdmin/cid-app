@@ -26,9 +26,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useConfirmerPaiementTeilnahme, useTippspielTeilnahmen } from "../../hooks/useCommunaute";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { lokaleSprache } from "../../utils/datum";
+import { usePageAccess } from "../../hooks/useRbac";
 
 function formatMontant(montant: string | null): string {
   if (montant === null) return "—";
@@ -41,8 +41,7 @@ function formatDate(iso: string): string {
 
 export default function TippspielZahlungenPanel() {
   const { t } = useTranslation("communaute");
-  const user = useAuthStore((s) => s.user);
-  const peutBestaetigen = hasRoleAtLeast(user, ROLE_LEVELS.dir_financier);
+  const peutBestaetigen = usePageAccess("page_zahlung_versand").modifiable;
 
   const enAttenteQuery = useTippspielTeilnahmen({ statutPaiement: "en_attente" });
   const confirmer = useConfirmerPaiementTeilnahme();

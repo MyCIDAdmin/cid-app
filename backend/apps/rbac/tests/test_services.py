@@ -1,16 +1,14 @@
-"""Tests services — app rbac : get_user_role_slugs, user_has_module_access (union multi-rôle),
-is_elevated_for_module."""
+"""Tests services — app rbac : get_user_role_slugs, user_has_module_access (union multi-rôle)."""
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
 
 from apps.accounts.models import Role
-from apps.rbac.models import NiveauAcces
+from apps.rbac.models import NiveauAcces, RoleModulePermission
 from apps.rbac.services import (
     get_admin_page_niveau,
     get_user_role_slugs,
     has_admin_page_access,
-    is_elevated_for_module,
     user_has_module_access,
 )
 from apps.rbac.tests.factories import (
@@ -88,6 +86,11 @@ def test_user_has_module_access_semantique_union_le_plus_permissif_gagne():
 
 
 def test_user_has_module_access_lecture_seule_insuffisante_pour_ecriture():
+    # Seit Migration 0012 steht "projets" bei Mitglied auf Lesen & Schreiben ; die Zelle wird
+    # hier auf Lesen gesenkt, wie es die Verwaltung in der Matrix tun kann.
+    RoleModulePermission.objects.filter(role__slug="membre", module="projets").update(
+        niveau_acces=NiveauAcces.LECTURE
+    )
     user = UserFactory(role=Role.MEMBRE)
     role_lecture = RoleDefinitionFactory(slug="lecteur-seul")
     RoleModulePermissionFactory(
@@ -106,66 +109,6 @@ def test_user_has_module_access_role_legacy_membre_utilise_la_matrice_seedee():
     user = UserFactory(role=Role.MEMBRE)
     assert user_has_module_access(user, "membres", NiveauAcces.LECTURE_ECRITURE) is True
     assert user_has_module_access(user, "stats", NiveauAcces.LECTURE) is False
-
-
-# --- is_elevated_for_module ------------------------------------------------------------------
-
-
-def test_is_elevated_for_module_faux_pour_membre_seul():
-    user = UserFactory(role=Role.MEMBRE)
-    assert is_elevated_for_module(user, "membres") is False
-
-
-def test_is_elevated_for_module_vrai_des_quun_role_non_membre_donne_la_lecture():
-    user = UserFactory(role=Role.MEMBRE)
-    role_perso = RoleDefinitionFactory(slug="vertrieb-elevated")
-    RoleModulePermissionFactory(role=role_perso, module="membres", niveau_acces=NiveauAcces.LECTURE)
-    UserRoleAssignmentFactory(user=user, role=role_perso)
-
-    assert is_elevated_for_module(user, "membres") is True
-
-
-def test_is_elevated_for_module_faux_si_le_role_non_membre_na_aucun_acces_sur_ce_module():
-    user = UserFactory(role=Role.MEMBRE)
-    role_perso = RoleDefinitionFactory(slug="design-elevated")
-    RoleModulePermissionFactory(role=role_perso, module="membres", niveau_acces=NiveauAcces.LECTURE)
-    UserRoleAssignmentFactory(user=user, role=role_perso)
-
-    # Le rôle "design-elevated" n'a aucune ligne pour "cotisations" => défaut "aucun".
-    assert is_elevated_for_module(user, "cotisations") is False
-
-
-def test_is_elevated_for_module_ignore_le_role_membre_meme_avec_acces_matrice():
-    """Le rôle système actuel de l'utilisateur ("membre" ici) est explicitement exclu de la
-    question "élevé ou non", quel que soit son propre niveau d'accès dans la matrice (il a
-    lecture_ecriture sur "membres" via le seed, mais ça ne doit jamais suffire à rendre un
-    membre "élevé")."""
-    user = UserFactory(role=Role.MEMBRE)
-    assert is_elevated_for_module(user, "membres") is False
-
-
-def test_is_elevated_for_module_ignore_aussi_le_role_systeme_actuel_non_membre():
-    """Même principe que ci-dessus, mais pour un rôle système AUTRE que "membre" : un compte RH
-    nu (aucune UserRoleAssignment supplémentaire) n'est jamais "élevé" par son propre rôle, même
-    si le seed lui donne un accès large à un module dans la matrice — ce rôle a déjà sa propre
-    logique ROLE_LEVELS ailleurs dans le code (souvent plus fine, voir docstring de module :
-    apps.boutique.CommandePermission réserve la liste de toutes les commandes à Bureau Admin+,
-    pas à RH, alors même que RH a lecture_ecriture sur "boutique" dans la matrice seedée)."""
-    user = UserFactory(role=Role.RH)
-    assert is_elevated_for_module(user, "boutique") is False
-
-
-def test_is_elevated_for_module_vrai_pour_un_role_systeme_avec_un_role_additionnel():
-    """Un compte RH devient bien "élevé" dès qu'un rôle VRAIMENT additionnel (personnalisé, ici)
-    lui donne un accès sur le module — seul son propre rôle système actuel est exclu."""
-    user = UserFactory(role=Role.RH)
-    role_perso = RoleDefinitionFactory(slug="vertrieb-plus-rh")
-    RoleModulePermissionFactory(
-        role=role_perso, module="boutique", niveau_acces=NiveauAcces.LECTURE
-    )
-    UserRoleAssignmentFactory(user=user, role=role_perso)
-
-    assert is_elevated_for_module(user, "boutique") is True
 
 
 # --- has_admin_page_access (Phase D, ajoutée le 2026-09-23) ----------------------------------

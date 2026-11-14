@@ -1,5 +1,5 @@
 """
-Logique métier — app rbac (ajouté le 2026-09-23). Trois fonctions, chacune un point d'entrée
+Logique métier — app rbac (ajouté le 2026-09-23). Einstiegspunkte, jeweils un point d'entrée
 unique réutilisé partout (permissions.py de ce module ET, en Phase B, les 5 `permissions.py`
 bespoke des apps métier) :
 
@@ -11,22 +11,10 @@ bespoke des apps métier) :
   - `user_has_module_access` : la question que pose la matrice ("ce rôle a-t-il accès à ce
     module ?"), avec sémantique d'union multi-rôle — le plus permissif des rôles de l'utilisateur
     gagne.
-  - `is_elevated_for_module` : la question que pose la Phase B ("ce user doit-il voir TOUTES les
-    données du module, ou seulement les siennes ?") — vrai dès qu'un rôle ADDITIONNEL, au-delà du
-    rôle système ACTUEL de l'utilisateur (le CharField legacy `user.role`), donne au moins un
-    accès en lecture sur ce module. Exclut délibérément le rôle système actuel lui-même (pas
-    seulement "membre") : ce rôle a déjà sa propre logique ROLE_LEVELS, souvent plus fine que la
-    matrice (ex. apps.boutique : RH a un accès module large au catalogue, mais PAS à la liste de
-    toutes les commandes, seuil réservé à Bureau Admin+ — voir CommandePermission). Si
-    is_elevated_for_module se basait sur l'ensemble complet des rôles de l'utilisateur SANS
-    exclure son rôle système actuel, un compte RH nu (sans aucune UserRoleAssignment
-    supplémentaire) se retrouverait à tort "élevé" pour boutique — régression détectée par
-    test_rh_ne_voit_pas_toutes_les_commandes (apps.boutique) lors de l'écriture des tests Phase B
-    du 2026-09-23, corrigée ici. Cette fonction ne sert donc qu'à couvrir les rôles VRAIMENT
-    additionnels : un rôle personnalisé (Vertrieb, Design, ...), ou un second rôle système
-    obtenu via UserRoleAssignment (auquel cas UserRolesView recalcule de toute façon le rôle
-    "primaire" vers le plus élevé des deux — voir views.py — donc ce cas ne se présente en
-    pratique presque jamais après un passage par cette API)."""
+  - `verwaltet_modul` / `get_module_niveau` (Rechte-Umbau Nov. 2026) : Verwalter einer Seite des
+    Moduls passieren die grobe Modul-Sperre ; das effektive Modul-Niveau für die Oberfläche.
+    Die frühere Funktion `is_elevated_for_module` ("alle Daten sehen") ist entfallen — das ist
+    jetzt „Lesen“ auf der jeweiligen Verwaltungsseite (page_membres, page_souscriptions ...)."""
 
 from apps.accounts.models import Role
 
@@ -74,21 +62,33 @@ def user_has_module_access(user, module: str, required: str) -> bool:
     return meilleur >= _NIVEAUX_ORDONNES[required]
 
 
-def is_elevated_for_module(user, module: str) -> bool:
-    """True dès qu'un rôle ADDITIONNEL de l'utilisateur (au-delà de son rôle système actuel,
-    `user.role`) accorde au moins la lecture sur ce module — voir docstring de module pour le
-    raisonnement complet. Utilisé en Phase B par les `permissions.py` bespoke des apps métier
-    pour décider "toutes les données" vs "seulement les miennes", en plus (jamais à la place) de
-    leur logique ROLE_LEVELS existante."""
-    role_actuel = getattr(user, "role", None)
-    autres_roles = get_user_role_slugs(user) - {role_actuel}
-    if not autres_roles:
-        return False
+def verwaltet_modul(user, module: str, required: str) -> bool:
+    """True, wenn `user` eine der Verwaltungsseiten des Moduls (registry.MODUL_SEITEN) mit
+    mindestens `required` hat. Verwalter dürfen so die grobe Modul-Sperre passieren, ohne dass
+    ihre Rolle zusätzlich "mitmachen" (Schreiben auf dem Modul) dürfen muss."""
+    from .registry import MODUL_SEITEN
+
     return any(
-        _NIVEAUX_ORDONNES[_niveau_acces_pour(slug, module)]
-        >= _NIVEAUX_ORDONNES[NiveauAcces.LECTURE]
-        for slug in autres_roles
+        has_admin_page_access(user, seite, required=required)
+        for seite in MODUL_SEITEN.get(module, ())
     )
+
+
+def get_module_niveau(user, module: str) -> str:
+    """Effektives Niveau des Kontos auf einem Modul für die Oberfläche : das Beste aus der
+    Modulzelle (Union aller Rollen) und den Verwaltungsseiten des Moduls (Verwalter dürfen die
+    Modul-Sperre passieren, siehe verwaltet_modul). Lesen = ansehen, Schreiben = mitmachen."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return NiveauAcces.AUCUN
+    if user_has_module_access(user, module, NiveauAcces.LECTURE_ECRITURE) or verwaltet_modul(
+        user, module, NiveauAcces.LECTURE_ECRITURE
+    ):
+        return NiveauAcces.LECTURE_ECRITURE
+    if user_has_module_access(user, module, NiveauAcces.LECTURE) or verwaltet_modul(
+        user, module, NiveauAcces.LECTURE
+    ):
+        return NiveauAcces.LECTURE
+    return NiveauAcces.AUCUN
 
 
 def get_admin_page_niveau(user, page_slug: str) -> str:

@@ -49,7 +49,16 @@
     "regionen": "Sektoren",
     "page_regionen": "Sektoren (Verantwortliche zuweisen, Seiten bearbeiten)",
     "support": "Support",
-    "page_support": "Support (Tickets bearbeiten, FAQ pflegen)"
+    "page_support": "Support (Tickets bearbeiten, FAQ pflegen)",
+    "page_membres": "Mitglieder (alle sehen, anlegen, Status ändern)",
+    "page_membres_loeschen": "Mitglieder löschen",
+    "page_beitraege_uebersicht": "Beiträge (alle sehen, für andere erfassen)",
+    "page_souscriptions": "Mitgliedschaften (alle sehen und bearbeiten)",
+    "page_abstimmungen": "Abstimmungen und Wahlen (anlegen, schließen)",
+    "page_community": "Community (moderieren, Redaktionsbeiträge, Spielplan)",
+    "page_tippspiel": "Tippspiel (anlegen und verwalten)",
+    "page_zahlung_versand": "Zahlungen bestätigen und Bestellungen versenden",
+    "page_erfassung_fuer_andere": "Für andere erfassen (Beiträge, Anmeldungen, Mitgliedschaften)"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",
@@ -65,7 +74,7 @@
   },
   "acces": {
     "titre": "Zugriffsmatrix",
-    "description": "Legen Sie fest, welchen Zugriff jede Rolle auf jedes Modul hat. Neue Module erscheinen hier automatisch als Spalte.",
+    "description": "Legen Sie fest, welchen Zugriff jede Rolle auf jedes Modul und jede Verwaltungsseite hat. Neue Module erscheinen hier automatisch als Zeile.",
     "chargement": "Wird geladen…",
     "erreur_chargement": "Die Matrix konnte nicht geladen werden.",
     "col_role": "Rolle",
@@ -109,7 +118,10 @@
       "titre": "Nicht in dieser Liste",
       "app_admin": "Nur für App-Administratoren, fest eingestellt: Rollenverwaltung, Zentrale Einstellungen, Aktivität und Sektoren-Struktur.",
       "alle": "Für jedes angemeldete Konto, nicht einstellbar: Startseite, Übersicht, Mein Profil, Meine Tickets und Hilfe. Beim Einlass prüft der Server die Rechte je Veranstaltung."
-    }
+    },
+    "legende": "So lesen Sie die Tabelle: Bei Modulen heißt Lesen „ansehen“ und Schreiben „mitmachen“ (anmelden, bestellen, beitragen, reagieren, abstimmen). Bei Verwaltungsseiten heißt Lesen „Verwaltung ansehen“ und Schreiben „anlegen, ändern, löschen“. Rechte über die Zuordnung (zum Beispiel Projektteam) kommen dazu, überschreiten aber nie diese Tabelle.",
+    "hilfe_verwaltung_lesen": "Verwaltung ansehen, nichts ändern.",
+    "hilfe_verwaltung_ecriture": "Anlegen, ändern, löschen und freigeben."
   },
   "visibilite": {
     "chargement": "Wird geladen…",
@@ -151,5 +163,39 @@
     "kalender": "Vereins- und Büro-Kalender",
     "regionen": "Sektoren, Fans je Sektor, Wettbewerb",
     "support": "Anfragen (Tickets) und häufige Fragen"
+  },
+  "modules_hilfe": {
+    "membres": {
+      "lecture": "Eigene Mitgliederkarte ansehen.",
+      "ecriture": "Eigene Karte ändern. Alle Karten sehen, anlegen und löschen regeln die Verwaltungsseiten Mitglieder."
+    },
+    "cotisations": {
+      "lecture": "Eigene Zahlungen und Fälligkeiten ansehen.",
+      "ecriture": "Zahlen und Zahlung erfassen. Alle Zahlungen sehen regeln die Verwaltungsseiten Zahlungen und Finanzen."
+    },
+    "adhesions": {
+      "lecture": "Angebote und die eigene Mitgliedschaft ansehen.",
+      "ecriture": "Beitreten, Mitgliedschaft beantragen oder stornieren, Nachweise hochladen. Alle Anträge sehen regelt die Seite Mitgliedschaftskampagnen."
+    },
+    "evenements": {
+      "lecture": "Veranstaltungen, Reisen und Fahrgemeinschaften ansehen.",
+      "ecriture": "Anmelden, abmelden, Fahrgemeinschaft anbieten oder buchen. Anlegen und alle Anmeldungen sehen regelt die Veranstaltungsverwaltung."
+    },
+    "boutique": {
+      "lecture": "Katalog ansehen.",
+      "ecriture": "Bestellen, reservieren, Gutschein kaufen. Eigene Bestellungen sehen immer. Alle Bestellungen und Produkte regelt die Shop-Verwaltung."
+    },
+    "vote": {
+      "lecture": "Abstimmungen und Ergebnisse ansehen.",
+      "ecriture": "Abstimmen und wählen. Anlegen und schließen regelt die Seite Abstimmungen."
+    },
+    "communaute": {
+      "lecture": "Neuigkeiten, Forum, Chats, Gruppen, Fan-Club, Fotoalben und Quiz lesen.",
+      "ecriture": "Beiträge und Kommentare schreiben, Nachrichten senden, reagieren, tippen. Moderieren regelt die Seite Community-Moderation."
+    },
+    "projets": {
+      "lecture": "Aktionen und Projekte ansehen.",
+      "ecriture": "Beitragen, bewerben, kommentieren und reagieren. Projekte anlegen und ändern regelt die Projektverwaltung. Wer im Projektteam ist, hat zusätzlich seine Teamrechte."
+    }
   }
 }

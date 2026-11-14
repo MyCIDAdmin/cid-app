@@ -13,11 +13,11 @@ import { useTranslation } from "react-i18next";
 import { telechargerFactureCommande } from "../../api/boutique";
 import { useCommandes, useConfirmerPaiementCommande } from "../../hooks/useBoutique";
 import BelegButton from "./BelegButton";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import type { ModePaiementCommande } from "../../types/boutique";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { heuteIso, lokaleSprache } from "../../utils/datum";
 import InfoTip from "../ui/InfoTip";
+import { usePageAccess } from "../../hooks/useRbac";
 
 const MODES_CONFIRMATION: ModePaiementCommande[] = ["virement", "especes", "en_ligne"];
 
@@ -27,9 +27,8 @@ function formatMontant(montant: string): string {
 
 export default function ShopZahlungenPanel() {
   const { t } = useTranslation(["cotisations", "boutique"]);
-  const user = useAuthStore((s) => s.user);
-  const peutVoir = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
-  const peutConfirmer = hasRoleAtLeast(user, ROLE_LEVELS.dir_financier);
+  const peutVoir = usePageAccess("page_boutique").accessible;
+  const peutConfirmer = usePageAccess("page_zahlung_versand").modifiable;
 
   const commandesQuery = useCommandes({});
   const confirmer = useConfirmerPaiementCommande();

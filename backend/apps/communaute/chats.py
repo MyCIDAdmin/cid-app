@@ -22,7 +22,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.rbac.services import acces_cle_menu
 from apps.uebersetzung import deepl
 
@@ -37,7 +36,7 @@ from .models import (
     NachrichtArt,
     UmfrageStimme,
 )
-from .permissions import MODERATION_MIN_LEVEL
+from .permissions import darf_moderieren
 
 ONLINE_TTL = 90  # Sekunden — die Chat-Liste meldet sich alle 30 s, solange sie offen ist
 MAX_OPTIONEN = 6
@@ -195,7 +194,7 @@ def darf_anheften(user, membre, message) -> bool:
     if groupe.type_groupe == "public":
         return (
             groupe.createur_id == membre.id
-            or ROLE_LEVELS.get(user.role, 0) >= MODERATION_MIN_LEVEL
+            or darf_moderieren(user)
             or ist_chat_admin(groupe, membre)
         )
     return groupe.membres_groupe.filter(membre=membre).exists()

@@ -27,10 +27,9 @@ from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from apps.accounts.models import ROLE_LEVELS, Role
 from apps.rbac.exceptions import Conflict
 from apps.rbac.permissions import module_access_permission
-from apps.rbac.services import is_elevated_for_module
+from apps.rbac.services import has_admin_page_access
 
 from .filters import MembreFilter
 from .models import Membre, StatutMembre
@@ -104,11 +103,9 @@ class MembreViewSet(ModelViewSet):
         # Protection IDOR (SCD §2.3, A01) : sous le niveau RH, un membre ne
         # voit jamais la liste des autres — uniquement sa propre fiche, si
         # elle existe et est liée à son compte.
-        # apps.rbac Phase B : sauf si un rôle personnalisé lui donne un accès élevé sur ce
-        # module (voir is_elevated_for_module) — même logique que MembrePermission ci-dessus.
-        if ROLE_LEVELS.get(user.role, 0) < ROLE_LEVELS[Role.RH] and not is_elevated_for_module(
-            user, "membres"
-        ):
+        # Rechte-Umbau (Nov. 2026) : "alle sehen" = Lesen auf der Seite page_membres, wie in
+        # MembrePermission.
+        if not has_admin_page_access(user, "page_membres"):
             return queryset.filter(user=user)
         return queryset
 

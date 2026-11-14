@@ -45,7 +45,6 @@ import {
   useProduits,
   useVerwaltungUeberblick,
 } from "../../hooks/useBoutique";
-import { hasRoleAtLeast, ROLE_LEVELS, useAuthStore } from "../../store/authStore";
 import {
   STAPEL_REIHENFOLGE,
   STAPEL_STATUTS,
@@ -61,6 +60,7 @@ import { extractApiErrorMessage } from "../../utils/apiError";
 import { hintergrundKlick } from "../../hooks/useEscapeSchliessen";
 import { EscapeSchliessen } from "../../components/ui/EscapeSchliessen";
 import { lokaleSprache } from "../../utils/datum";
+import { usePageAccess } from "../../hooks/useRbac";
 
 /** Déclenche le téléchargement d'un blob côté navigateur — même pattern que
  * CotisationStepperPage.telechargerRecu/MembresListPage.exporter. */
@@ -123,9 +123,8 @@ export default function GestionCommandesTab({
   startStapel = "",
 }: { modifiable?: boolean; startStapel?: StapelName | "" } = {}) {
   const { t } = useTranslation(["boutique", "common"]);
-  const user = useAuthStore((s) => s.user);
-  const peutConfirmerPaiementEtExpedier = hasRoleAtLeast(user, ROLE_LEVELS.dir_financier);
-  const peutGererRetours = hasRoleAtLeast(user, ROLE_LEVELS.bureau_admin);
+  const peutConfirmerPaiementEtExpedier = usePageAccess("page_zahlung_versand").modifiable;
+  const peutGererRetours = usePageAccess("page_boutique").modifiable;
 
   // „Stapel“ statt sieben technischer Status (Shop-Verwaltung einfacher, 2026-11-02): die Chips
   // fassen die Status zusammen; die Zahlen kommen vollständig vom Überblick-Endpunkt.

@@ -359,6 +359,11 @@ class MesAccesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(
-            {slug: rbac_services.get_admin_page_niveau(request.user, slug) for slug in PAGES_ADMIN}
-        )
+        seiten = {
+            slug: rbac_services.get_admin_page_niveau(request.user, slug) for slug in PAGES_ADMIN
+        }
+        # Seit dem Rechte-Umbau (Nov. 2026) liefert dieselbe Antwort auch die Modul-Niveaus
+        # (Lesen = ansehen, Schreiben = mitmachen). Modul-Slugs und `page_*`-Slugs überschneiden
+        # sich nie.
+        module = {slug: rbac_services.get_module_niveau(request.user, slug) for slug in MODULES}
+        return Response({**seiten, **module})

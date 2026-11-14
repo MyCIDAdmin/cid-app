@@ -18,7 +18,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.models import ROLE_LEVELS
 from apps.rbac.models import NiveauAcces
 from apps.rbac.permissions import page_admin_permission
 from apps.rbac.services import has_admin_page_access
@@ -36,7 +35,6 @@ from .models import (
     StatutReservierung,
     TypeProduit,
 )
-from .permissions import PAIEMENT_EXPEDITION_MIN_LEVEL
 
 # Schwellen (Konzept 02.11.2026, Entscheidung 3): ab so vielen Tagen gilt etwas als „wartet
 # schon länger" (rote Kachel/Aufgabe).
@@ -196,7 +194,9 @@ def _reservierungen_nach_frist(jetzt):
 
 def berechne_ueberblick(user, jetzt=None) -> dict:
     jetzt = jetzt or timezone.now()
-    darf_finanz = ROLE_LEVELS.get(user.role, 0) >= PAIEMENT_EXPEDITION_MIN_LEVEL
+    darf_finanz = has_admin_page_access(
+        user, "page_zahlung_versand", required=NiveauAcces.LECTURE_ECRITURE
+    )
     darf_buero = has_admin_page_access(user, "page_boutique", required=NiveauAcces.LECTURE_ECRITURE)
 
     z_tage, v_tage, u_tage = _bestell_aufgaben(jetzt)
