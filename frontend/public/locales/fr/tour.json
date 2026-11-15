@@ -252,6 +252,10 @@
     "aktivitaet": {
       "titel": "La sécurité en un coup d'œil",
       "text": "Tu vois ici si tout est en ordre et ce qu'il y a à faire ensuite."
+    },
+    "hilfe_gesucht": {
+      "titel": "Aide recherchée",
+      "text": "Retrouve ici les demandes d'aide ouvertes de l'association, ponctuelles ou durables. Inscris-toi en un clic, le bureau confirme ta participation."
     }
   },
   "hinweise_zusatz": {

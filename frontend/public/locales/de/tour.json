@@ -252,6 +252,10 @@
     "aktivitaet": {
       "titel": "Sicherheit im Blick",
       "text": "Hier siehst du, ob alles in Ordnung ist, und was als Nächstes zu tun ist."
+    },
+    "hilfe_gesucht": {
+      "titel": "Hilfe gesucht",
+      "text": "Hier findest du offene Gesuche des Vereins, einmalige Hilfe und dauerhafte Aufgaben. Melde dich mit einem Klick, das Büro bestätigt deine Zusage."
     }
   },
   "hinweise_zusatz": {
