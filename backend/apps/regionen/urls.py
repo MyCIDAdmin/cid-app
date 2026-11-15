@@ -6,6 +6,7 @@ from .veranstaltungen import (
     AnmeldungView,
     AnwesenheitView,
     OeffentlichView,
+    SpieleView,
     TeilnehmerView,
     VeranstaltungAktionView,
     VeranstaltungBildView,
@@ -50,6 +51,7 @@ app_name = "regionen"
 urlpatterns = [
     path("", RegionListeView.as_view(), name="liste"),
     path("personen/", PersonenSucheView.as_view(), name="personen"),
+    path("spiele/", SpieleView.as_view(), name="spiele"),
     path("berichte/", BerichtView.as_view(), name="berichte"),
     path("berichte/export/", BerichtExportView.as_view(), name="berichte-export"),
     path("wettbewerb/", WettbewerbView.as_view(), name="wettbewerb"),
