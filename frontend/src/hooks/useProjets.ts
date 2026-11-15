@@ -473,6 +473,14 @@ export function useOffeneStellen(options: { enabled?: boolean } = {}) {
   });
 }
 
+/** Freie Gesuche „Hilfe gesucht“ (Seite /hilfe-gesucht). */
+export function useFreieStellen() {
+  return useQuery({
+    queryKey: [...projetsKeys.all, "stellen", "frei"] as const,
+    queryFn: projetsApi.listFreieStellen,
+  });
+}
+
 export function useStellen(projetId: string | undefined) {
   return useQuery({
     queryKey: projetsKeys.stellen(projetId ?? ""),
@@ -541,6 +549,14 @@ export function usePassendeMitglieder(stelleId: string | undefined, enabled: boo
     queryKey: projetsKeys.passende(stelleId ?? ""),
     queryFn: () => projetsApi.passendeMitglieder(stelleId as string),
     enabled: Boolean(stelleId) && enabled,
+  });
+}
+
+export function useBewerbungEmpfehlen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.bewerbungEmpfehlen(id),
+    onSuccess: () => invalidateProjets(queryClient),
   });
 }
 

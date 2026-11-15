@@ -334,7 +334,8 @@
       "offen": "En attente",
       "angenommen": "Accepté",
       "abgelehnt": "Refusé",
-      "zurueckgezogen": "Retiré"
+      "zurueckgezogen": "Retiré",
+      "empfohlen": "Recommandée"
     }
   },
   "dach": {
@@ -367,5 +368,60 @@
     "loeschen_titel": "Supprimer le jalon",
     "loeschen_frage": "Supprimer vraiment le jalon « {{titel}} » ?",
     "fehler": "Impossible d'enregistrer le jalon."
+  },
+  "hilfe": {
+    "seite_titel": "Aide recherchée",
+    "seite_einleitung": "Les projets et l'association cherchent ici du soutien – ponctuel pour une date ou permanent pour une tâche. Inscris-toi si tu veux aider.",
+    "oeffentlich_login": "Se connecter pour s'inscrire",
+    "neu": "Nouvelle demande",
+    "laedt": "Chargement …",
+    "leer": "Aucune aide n'est recherchée pour le moment. Repasse bientôt.",
+    "filter": {
+      "art": "Type d'aide",
+      "alle": "Toutes",
+      "herkunft_alle": "Partout",
+      "herkunft_frei": "De l'association",
+      "herkunft_projekt": "Des projets"
+    },
+    "art": {
+      "einmalig": "Ponctuelle",
+      "dauerhaft": "Permanente"
+    },
+    "art_mit_datum": "Ponctuelle le {{datum}}",
+    "sichtbarkeit": {
+      "mitglieder": "Membres uniquement",
+      "oeffentlich": "Publique"
+    },
+    "projekt": "Projet : {{titel}}",
+    "frist_bis": "Inscription jusqu'au {{datum}}",
+    "gemeldet": "Tu t'es inscrit·e – la personne de contact examine et le bureau confirme.",
+    "empfohlen_status": "Tu as été recommandé·e – la confirmation définitive est en attente.",
+    "angenommen": "Tu es des nôtres ! La personne de contact te contactera par chat.",
+    "nachricht_label": "Message à la personne de contact (facultatif)",
+    "zu_genehmigen": "{{count}} candidature recommandée attend ton approbation.",
+    "meldungen_one": "Voir {{count}} candidature",
+    "meldungen_other": "Voir {{count}} candidatures",
+    "keine_meldungen": "Aucune candidature pour le moment.",
+    "empfehlen": "Recommander",
+    "genehmigen": "Approuver",
+    "empfohlen_von": "recommandé·e par {{name}}",
+    "wartet_auf_freigabe": "En attente d'approbation",
+    "passende_hinweis": "Suggestions issues de la base de compétences. Personne n'est notifié automatiquement.",
+    "form": {
+      "titel": "Nouvelle demande d'aide",
+      "titel_platzhalter": "p. ex. Bénévoles pour le stand du match à domicile",
+      "art": "Type d'aide",
+      "art_hinweis_einmalig": "Aide ponctuelle un jour précis.",
+      "art_hinweis_dauerhaft": "Tâche permanente sans date de fin. Tu la clos quand elle n'est plus nécessaire.",
+      "termin": "Date",
+      "termin_noetig": "Indique une date pour une aide ponctuelle.",
+      "ort": "Lieu (facultatif)",
+      "frist": "Date limite d'inscription (facultatif)",
+      "region": "Secteur (facultatif)",
+      "ohne_region": "– aucun en particulier –",
+      "sichtbarkeit": "Qui voit la demande ?",
+      "sichtbarkeit_hinweis": "« Publique » est visible sans connexion. Seuls les membres connectés peuvent s'inscrire.",
+      "veroeffentlichen": "Publier"
+    }
   }
 }

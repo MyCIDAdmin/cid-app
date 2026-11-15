@@ -26,6 +26,8 @@ const SEITEN_AB_STUFE: Record<string, number> = {
   page_albums: 3,
   page_zahlung_versand: 4,
   page_tippspiel: 5,
+  page_hilfe_veroeffentlichen: 2,
+  page_hilfe_genehmigen: 3,
 };
 const ROLLE_STUFE: Record<string, number> = {
   membre: 1,

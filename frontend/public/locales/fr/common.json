@@ -42,7 +42,8 @@
     "admin_regionen": "Structure des secteurs",
     "aktivitaet": "Activité",
     "offene_auffaelligkeiten_one": "{{count}} anomalie ouverte",
-    "offene_auffaelligkeiten_other": "{{count}} anomalies ouvertes"
+    "offene_auffaelligkeiten_other": "{{count}} anomalies ouvertes",
+    "hilfe_gesucht": "Aide recherchée"
   },
   "nav_groupe": {
     "general": "Général",

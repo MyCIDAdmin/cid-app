@@ -373,12 +373,29 @@ export interface AktivitaetEintrag {
 // --- Projekt-Stellen (Release 10) --------------------------------------------------------------
 
 export type StatutStelle = "offen" | "besetzt" | "geschlossen";
-export type StatutBewerbung = "offen" | "angenommen" | "abgelehnt" | "zurueckgezogen";
+export type StatutBewerbung = "offen" | "empfohlen" | "angenommen" | "abgelehnt" | "zurueckgezogen";
+export type ArtStelle = "einmalig" | "dauerhaft";
+export type SichtbarkeitStelle = "mitglieder" | "oeffentlich";
 
 export interface ProjetStelle {
   id: string;
-  projet: string;
-  projet_titre?: string;
+  /** null = freies Gesuch „Hilfe gesucht“ ohne Projektbezug. */
+  projet: string | null;
+  projet_titre?: string | null;
+  frei: boolean;
+  art: ArtStelle;
+  /** Datum der einmaligen Hilfe (YYYY-MM-DD), sonst null. */
+  termin: string | null;
+  ort: string;
+  /** Bewerbungsfrist (YYYY-MM-DD). */
+  frist: string | null;
+  sichtbarkeit: SichtbarkeitStelle;
+  region: string | null;
+  region_name?: string | null;
+  /** Eigene Gesuche und Verwaltung: Anzahl wartender / empfohlener Meldungen (sonst null). */
+  bewerbungen_empfohlen: number | null;
+  kann_pflegen: boolean;
+  ist_meine: boolean;
   titel: string;
   beschreibung: string;
   faehigkeit: string | null;
@@ -395,7 +412,14 @@ export interface ProjetStelle {
 }
 
 export interface StellePayload {
-  projet: string;
+  /** Weglassen = freies Gesuch „Hilfe gesucht“. */
+  projet?: string | null;
+  art?: ArtStelle;
+  termin?: string | null;
+  ort?: string;
+  frist?: string | null;
+  sichtbarkeit?: SichtbarkeitStelle;
+  region?: string | null;
   titel: string;
   beschreibung?: string;
   faehigkeit?: string | null;
@@ -407,8 +431,9 @@ export interface ProjetBewerbung {
   id: string;
   stelle: string;
   stelle_titel: string;
-  projet: string;
-  projet_titre: string;
+  projet: string | null;
+  projet_titre: string | null;
+  empfohlen_von_name?: string;
   membre: string;
   membre_detail?: { id: string; prenom: string; nom: string } | null;
   nachricht: string;
