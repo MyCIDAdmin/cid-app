@@ -367,6 +367,17 @@ ANYMAIL = {"BREVO_API_KEY": BREVO_API_KEY}
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
+# Passkeys (WebAuthn). Die Relying-Party-ID ist die Domain der Web-App : ein Passkey gilt nur dort.
+# Ohne WEBAUTHN_RP_ID wird der Hostname von FRONTEND_URL genommen ; bei einem Domainwechsel
+# (z. B. my-cid.de -> mycid.org) müssen alle Passkeys neu eingerichtet werden.
+WEBAUTHN_RP_ID = os.environ.get("WEBAUTHN_RP_ID", "")
+WEBAUTHN_RP_NAME = os.environ.get("WEBAUTHN_RP_NAME", "MyCID")
+WEBAUTHN_EXTRA_ORIGINS = [
+    o.strip().rstrip("/")
+    for o in os.environ.get("WEBAUTHN_EXTRA_ORIGINS", "").split(",")
+    if o.strip()
+]
+
 # Telegram (Release 32) : Bot aus @BotFather. Ohne TELEGRAM_BOT_TOKEN ist die Funktion
 # abgeschaltet (Profil blendet den Abschnitt aus, es wird nichts gesendet). Der Webhook-Schlüssel
 # (nur A-Z a-z 0-9 _ -) schützt den Eingang : Telegram sendet ihn in jedem Aufruf mit.

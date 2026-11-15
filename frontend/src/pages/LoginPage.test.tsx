@@ -10,6 +10,7 @@ vi.mock("../api/auth", async () => {
   return {
     ...actual,
     login: vi.fn(),
+    loginMitPasskey: vi.fn(),
   };
 });
 
@@ -22,6 +23,8 @@ function soumettre(email: string, password: string) {
 describe("LoginPage", () => {
   beforeEach(() => {
     vi.mocked(authApi.login).mockReset();
+    vi.mocked(authApi.loginMitPasskey).mockReset();
+    vi.unstubAllGlobals();
   });
 
   it("affiche le message précis du backend pour un compte pas encore activé", async () => {
@@ -70,7 +73,9 @@ describe("LoginPage", () => {
     renderWithProviders(<LoginPage />);
     soumettre("membre@example.com", "Password123!");
 
-    await waitFor(() => expect(authApi.login).toHaveBeenCalledWith("membre@example.com", "Password123!"));
+    await waitFor(() =>
+      expect(authApi.login).toHaveBeenCalledWith("membre@example.com", "Password123!"),
+    );
   });
 
   // Retour utilisateur du 2026-09-27 ("wenn ich auf Mitglieder werden springe [...] dann direkt
@@ -95,5 +100,42 @@ describe("LoginPage", () => {
     soumettre("membre@example.com", "Password123!");
 
     expect(await screen.findByTestId("route-fallback")).toBeInTheDocument();
+  });
+  it("blendet den Passkey-Knopf aus, wenn das Gerät keine Passkeys kann", () => {
+    vi.stubGlobal("PublicKeyCredential", undefined);
+    renderWithProviders(<LoginPage />);
+    expect(screen.queryByText("login.passkey")).not.toBeInTheDocument();
+  });
+
+  it("meldet mit Passkey an, ohne Passwort", async () => {
+    vi.stubGlobal("PublicKeyCredential", class {});
+    Object.defineProperty(navigator, "credentials", {
+      value: { create: vi.fn(), get: vi.fn() },
+      configurable: true,
+    });
+    vi.mocked(authApi.loginMitPasskey).mockResolvedValue({
+      access: "a",
+      refresh: "r",
+      user: { id: "u1", email: "m@example.com", role: "membre" } as never,
+    });
+    renderWithProviders(<LoginPage />);
+    fireEvent.click(screen.getByText("login.passkey"));
+    await waitFor(() => expect(authApi.loginMitPasskey).toHaveBeenCalledTimes(1));
+    expect(authApi.login).not.toHaveBeenCalled();
+  });
+
+  it("zeigt keinen Fehler, wenn der Geräte-Dialog abgebrochen wird", async () => {
+    vi.stubGlobal("PublicKeyCredential", class {});
+    Object.defineProperty(navigator, "credentials", {
+      value: { create: vi.fn(), get: vi.fn() },
+      configurable: true,
+    });
+    vi.mocked(authApi.loginMitPasskey).mockRejectedValue(
+      new DOMException("abgebrochen", "NotAllowedError"),
+    );
+    renderWithProviders(<LoginPage />);
+    fireEvent.click(screen.getByText("login.passkey"));
+    await waitFor(() => expect(authApi.loginMitPasskey).toHaveBeenCalled());
+    expect(screen.queryByText("login.passkey_fehler")).not.toBeInTheDocument();
   });
 });

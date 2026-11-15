@@ -290,3 +290,30 @@ class EmailOTP(models.Model):
     @property
     def is_valid(self) -> bool:
         return self.consumed_at is None and timezone.now() < self.expires_at
+
+
+class Passkey(models.Model):
+    """
+    Passkey (WebAuthn) eines Benutzers : Anmeldung per Fingerabdruck, Gesicht oder
+    Geräte-PIN ohne Passwort und ohne E-Mail-Code. Die biometrischen Daten verlassen das
+    Gerät nie ; hier liegt nur der öffentliche Schlüssel. Ein Passkey mit erzwungener
+    Nutzer-Verifizierung (Besitz + Biometrie/PIN) gilt als vollwertige Anmeldung und ersetzt
+    deshalb auch die 2FA. Siehe apps.accounts.passkeys.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="passkeys")
+    credential_id = models.BinaryField(unique=True)
+    public_key = models.BinaryField()
+    sign_count = models.BigIntegerField(default=0)
+    name = models.CharField(max_length=80, default="Passkey")
+    transports = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "passkeys"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Passkey({self.user_id}, {self.name})"

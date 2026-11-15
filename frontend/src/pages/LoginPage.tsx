@@ -13,10 +13,11 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { Location } from "react-router-dom";
 
-import { login, verify2FA, sendOtp } from "../api/auth";
+import { login, loginMitPasskey, verify2FA, sendOtp } from "../api/auth";
 import BrandLogo from "../components/ui/BrandLogo";
 import { setRememberMe, useAuthStore } from "../store/authStore";
 import { extractApiErrorMessage } from "../utils/apiError";
+import { istAbbruch, passkeysUnterstuetzt } from "../utils/webauthn";
 
 type Step = "credentials" | "twofa";
 
@@ -72,6 +73,24 @@ export default function LoginPage() {
       // de toujours renvoyer le message générique, qui masquait la vraie
       // raison et laissait croire à un mot de passe incorrect.
       setError(extractApiErrorMessage(err, t("login.error_invalid")));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePasskey() {
+    setError(null);
+    setLoading(true);
+    try {
+      setRememberMe(rememberMe);
+      const res = await loginMitPasskey();
+      if (res.access && res.refresh && res.user) {
+        loginSuccess(res.access, res.refresh, res.user);
+        navigate(destination, { replace: true });
+      }
+    } catch (err) {
+      // Abbruch im Geräte-Dialog ist kein Fehler.
+      if (!istAbbruch(err)) setError(extractApiErrorMessage(err, t("login.passkey_fehler")));
     } finally {
       setLoading(false);
     }
@@ -153,6 +172,23 @@ export default function LoginPage() {
             >
               {loading ? t("login.loading") : t("login.submit")}
             </button>
+            {passkeysUnterstuetzt() && (
+              <>
+                <div className="flex items-center gap-2 text-xs text-text-tertiary">
+                  <span className="h-px flex-1 bg-text-tertiary/20" />
+                  {t("login.oder")}
+                  <span className="h-px flex-1 bg-text-tertiary/20" />
+                </div>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => void handlePasskey()}
+                  className="rounded-cid border border-ca py-2.5 text-sm font-semibold text-ca transition hover:bg-ca/10 disabled:opacity-60"
+                >
+                  {t("login.passkey")}
+                </button>
+              </>
+            )}
             <p className="text-center text-xs text-text-tertiary">
               {t("register.pas_de_compte")}{" "}
               <Link

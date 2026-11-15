@@ -22,6 +22,7 @@ vi.mock("../../api/auth", async () => {
     startTotpSetup: vi.fn(),
     confirmTotp: vi.fn(),
     disableTotp: vi.fn(),
+    fetchPasskeys: vi.fn().mockResolvedValue([]),
   };
 });
 
