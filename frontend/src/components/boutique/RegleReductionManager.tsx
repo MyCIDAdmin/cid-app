@@ -91,7 +91,7 @@ export default function RegleReductionManager({
                   modifierMutation.mutate({ id: r.id, payload: { actif: e.target.checked } });
                 }}
                 disabled={!modifiable}
-                title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               />
               {t("catalogue_admin.regle_active_label")}
             </label>
@@ -99,7 +99,7 @@ export default function RegleReductionManager({
               type="button"
               onClick={() => supprimerMutation.mutate(r.id)}
               disabled={!modifiable}
-              title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+              title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
               className="text-text-tertiary hover:text-status-dangerText disabled:opacity-40"
               aria-label={t("catalogue_admin.supprimer_regle")}
             >
@@ -171,7 +171,7 @@ export default function RegleReductionManager({
         <button
           type="submit"
           disabled={creerMutation.isPending || !modifiable}
-          title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+          title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
           className="rounded-cid bg-ca px-2.5 py-1 text-xs font-medium text-white hover:bg-cad disabled:opacity-40"
         >
           {t("catalogue_admin.ajouter_regle")}

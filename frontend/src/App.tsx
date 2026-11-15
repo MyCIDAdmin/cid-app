@@ -781,7 +781,7 @@ export default function App() {
             path="/projets"
             element={
               <RequireMenuModule cle="projets">
-                <ProjetsPage />
+                <ProjetsPage mitHilfeTab />
               </RequireMenuModule>
             }
           />
@@ -789,15 +789,9 @@ export default function App() {
             https://www.mycid.org/projects — "View Project" ouvre une page dédiée, jamais une
             modale) — même niveau d'accès que /projets ci-dessus, voir docstring
             ProjetDetailPage. */}
-          {/* Hilfe gesucht : eingeloggte Sicht mit Seitenleiste, gleiche Sichtbarkeit wie Projekte. */}
-          <Route
-            path="/hilfe-gesucht"
-            element={
-              <RequireMenuModule cle="projets">
-                <HilfeGesuchtPage />
-              </RequireMenuModule>
-            }
-          />
+          {/* Hilfe gesucht liegt als Tab auf der Projektseite ; alte Links und Benachrichtigungen
+            führen dorthin. */}
+          <Route path="/hilfe-gesucht" element={<Navigate to="/projets?tab=hilfe" replace />} />
           <Route
             path="/projets/:id"
             element={

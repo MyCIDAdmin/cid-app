@@ -145,7 +145,8 @@ export default function QuizDetailPage() {
                   }`}
                 >
                   {t(feedback.est_correct ? "quiz.bonne_reponse" : "quiz.mauvaise_reponse")}
-                  {feedback.est_correct && ` ${t("quiz.points_obtenus", { points: feedback.points_obtenus })}`}
+                  {feedback.est_correct &&
+                    ` ${t("quiz.points_obtenus", { points: feedback.points_obtenus })}`}
                 </p>
                 {index + 1 < questions.length && (
                   <button
@@ -179,7 +180,9 @@ export default function QuizDetailPage() {
               <div
                 key={ligne.id}
                 className={`flex items-center justify-between rounded-cid px-2 py-1 text-sm ${
-                  ligne.id === participation.id ? "bg-cal font-bold text-cad" : "text-text-secondary"
+                  ligne.id === participation.id
+                    ? "bg-cal font-bold text-cad"
+                    : "text-text-secondary"
                 }`}
               >
                 <span>

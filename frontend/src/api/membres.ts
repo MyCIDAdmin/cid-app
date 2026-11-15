@@ -90,10 +90,7 @@ export async function createMembre(values: MembreFormValues): Promise<Membre> {
   return data;
 }
 
-export async function updateMembre(
-  id: string,
-  values: Partial<MembreFormValues>,
-): Promise<Membre> {
+export async function updateMembre(id: string, values: Partial<MembreFormValues>): Promise<Membre> {
   const { data } = await apiClient.patch<Membre>(`/membres/${id}/`, values);
   return data;
 }
@@ -188,12 +185,7 @@ export async function getMonHistoriqueStatut(): Promise<HistoriqueStatutEntry[]>
  * (apps.membres.exports.ORDERING_FIELDS) — liste blanche côté backend, un champ inconnu retombe
  * silencieusement sur le tri par défaut nom/prénom plutôt que de faire échouer la requête. */
 export type MembresOrdering =
-  | "nom"
-  | "-nom"
-  | "date_adhesion"
-  | "-date_adhesion"
-  | "statut"
-  | "ville_de";
+  "nom" | "-nom" | "date_adhesion" | "-date_adhesion" | "statut" | "ville_de";
 
 export interface MembresExportParams extends MembresListFilters {
   /** Sous-ensemble de colonnes à exporter (voir apps.membres.exports.CHAMPS_EXPORT côté
@@ -229,7 +221,10 @@ export async function exporterMembres(
     params: filtres,
     responseType: "blob",
   });
-  return { blob: data, nomFichier: nomFichierDepuisContentDisposition(headers["content-disposition"]) };
+  return {
+    blob: data,
+    nomFichier: nomFichierDepuisContentDisposition(headers["content-disposition"]),
+  };
 }
 
 /** GET /membres/rapprochement/ (RH+) — Konten mit Vorschlägen importierter Karten (+ Score). */

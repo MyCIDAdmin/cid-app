@@ -15,6 +15,10 @@ import type {
   KostenUebersicht,
   PlanKostenEintrag,
   PassendesMitglied,
+  HilfeAngebot,
+  HilfeAngebotPayload,
+  HilfeKategorie,
+  HilfeKategoriePayload,
   ProjetBewerbung,
   ProjetMitglied,
   ProjetStelle,
@@ -478,6 +482,58 @@ export async function bewerbungEntscheiden(
 ): Promise<ProjetBewerbung> {
   const { data } = await apiClient.post<ProjetBewerbung>(
     `/projets/bewerbungen/${id}/${entscheidung}/`,
+  );
+  return data;
+}
+
+// --- Hilfe gesucht: Kategorien und Angebote (Nov. 2026) ---
+
+export async function listHilfeKategorien(alle = false): Promise<HilfeKategorie[]> {
+  const { data } = await apiClient.get<HilfeKategorie[]>("/projets/hilfe-kategorien/", {
+    params: alle ? { alle: 1 } : undefined,
+  });
+  return data;
+}
+
+export async function hilfeKategorieSpeichern(
+  id: string | undefined,
+  payload: HilfeKategoriePayload,
+): Promise<HilfeKategorie> {
+  const { data } = id
+    ? await apiClient.patch<HilfeKategorie>(`/projets/hilfe-kategorien/${id}/`, payload)
+    : await apiClient.post<HilfeKategorie>("/projets/hilfe-kategorien/", payload);
+  return data;
+}
+
+export async function hilfeKategorieLoeschen(id: string): Promise<void> {
+  await apiClient.delete(`/projets/hilfe-kategorien/${id}/`);
+}
+
+export async function listHilfeAngebote(): Promise<HilfeAngebot[]> {
+  const { data } = await apiClient.get<HilfeAngebot[]>("/projets/hilfe-angebote/");
+  return data;
+}
+
+export async function hilfeAngebotErstellen(payload: HilfeAngebotPayload): Promise<HilfeAngebot> {
+  const { data } = await apiClient.post<HilfeAngebot>("/projets/hilfe-angebote/", payload);
+  return data;
+}
+
+export async function hilfeAngebotZurueckziehen(id: string): Promise<HilfeAngebot> {
+  const { data } = await apiClient.post<HilfeAngebot>(
+    `/projets/hilfe-angebote/${id}/zurueckziehen/`,
+  );
+  return data;
+}
+
+export async function hilfeAngebotEntscheiden(
+  id: string,
+  entscheidung: "annehmen" | "ablehnen",
+  extra: { notiz?: string; stelle?: string } = {},
+): Promise<HilfeAngebot> {
+  const { data } = await apiClient.post<HilfeAngebot>(
+    `/projets/hilfe-angebote/${id}/${entscheidung}/`,
+    extra,
   );
   return data;
 }

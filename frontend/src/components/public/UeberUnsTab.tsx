@@ -45,8 +45,12 @@ export default function UeberUnsTab() {
 
       {/* Historique CID depuis 2019 */}
       <section className="mb-10">
-        <h2 className="mb-2 text-lg font-bold text-text-primary">{t("apropos.geschichte_titre")}</h2>
-        <p className="text-sm leading-relaxed text-text-secondary">{t("apropos.geschichte_text")}</p>
+        <h2 className="mb-2 text-lg font-bold text-text-primary">
+          {t("apropos.geschichte_titre")}
+        </h2>
+        <p className="text-sm leading-relaxed text-text-secondary">
+          {t("apropos.geschichte_text")}
+        </p>
       </section>
 
       {/* Historique Club Africain + 3 kacheln chiffrées */}
@@ -55,10 +59,7 @@ export default function UeberUnsTab() {
         <p className="mb-4 text-sm leading-relaxed text-text-secondary">{t("apropos.club_text")}</p>
         <div className="grid grid-cols-3 gap-3">
           {KENNZAHLEN.map((cle) => (
-            <div
-              key={cle}
-              className="rounded-cid-lg bg-bg-primary p-4 text-center shadow-sm"
-            >
+            <div key={cle} className="rounded-cid-lg bg-bg-primary p-4 text-center shadow-sm">
               <div className="text-2xl font-extrabold text-ca">
                 {t(`apropos.kennzahl_${cle}_valeur`)}
               </div>
@@ -76,9 +77,7 @@ export default function UeberUnsTab() {
         <div className="grid gap-3 sm:grid-cols-2">
           {VALEURS.map((cle) => (
             <div key={cle} className="rounded-cid-lg bg-bg-primary p-4 shadow-sm">
-              <div className="mb-1 text-sm font-bold text-ca">
-                {t(`apropos.wert_${cle}_titre`)}
-              </div>
+              <div className="mb-1 text-sm font-bold text-ca">{t(`apropos.wert_${cle}_titre`)}</div>
               <p className="text-xs leading-relaxed text-text-tertiary">
                 {t(`apropos.wert_${cle}_text`)}
               </p>

@@ -15,7 +15,11 @@ import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useUtilisateursList } from "../../hooks/useUtilisateurs";
-import { useAssignerRolesUtilisateur, useRbacMatrice, useRolesUtilisateur } from "../../hooks/useRbac";
+import {
+  useAssignerRolesUtilisateur,
+  useRbacMatrice,
+  useRolesUtilisateur,
+} from "../../hooks/useRbac";
 import { useAuthStore } from "../../store/authStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { RoleDefinition } from "../../types/rbac";

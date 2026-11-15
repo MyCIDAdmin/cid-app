@@ -58,7 +58,11 @@ export const IMPRESSUM: ContenuBilingue = {
       },
       {
         titre: "2. Kontakt",
-        liste: [`E-Mail: ${EMAIL}`, "Telefon: auf Anfrage per E-Mail", "Website: https://www.my-cid.de"],
+        liste: [
+          `E-Mail: ${EMAIL}`,
+          "Telefon: auf Anfrage per E-Mail",
+          "Website: https://www.my-cid.de",
+        ],
         absaetze: [
           "Für Mitgliedschaftsfragen, Spendenanfragen und allgemeine Korrespondenz nutzen Sie bitte die oben genannte E-Mail-Adresse.",
         ],
@@ -131,7 +135,11 @@ export const IMPRESSUM: ContenuBilingue = {
       },
       {
         titre: "2. Contact",
-        liste: [`E-mail : ${EMAIL}`, "Téléphone : sur demande par e-mail", "Site web : https://www.my-cid.de"],
+        liste: [
+          `E-mail : ${EMAIL}`,
+          "Téléphone : sur demande par e-mail",
+          "Site web : https://www.my-cid.de",
+        ],
         absaetze: [
           "Pour toute question relative à l'adhésion, aux dons ou à la correspondance générale, veuillez utiliser l'adresse e-mail ci-dessus.",
         ],
@@ -261,11 +269,17 @@ export const DATENSCHUTZ: ContenuBilingue = {
         absaetze: [
           "Wir setzen folgende Kategorien von Dienstleistern ein, mit denen wir Auftragsverarbeitungsverträge gemäß Art. 28 DSGVO abgeschlossen haben bzw. abschließen werden:",
         ],
-        liste: ["Webhosting-Anbieter (Betrieb der Website)", "E-Mail-Dienste (Vereinskommunikation)", "Zahlungsdienstleister (Online-Zahlungen und Spenden)"],
+        liste: [
+          "Webhosting-Anbieter (Betrieb der Website)",
+          "E-Mail-Dienste (Vereinskommunikation)",
+          "Zahlungsdienstleister (Online-Zahlungen und Spenden)",
+        ],
       },
       {
         titre: "6. Speicherdauer",
-        absaetze: ["Wir speichern personenbezogene Daten nur so lange, wie es für den jeweiligen Zweck erforderlich oder gesetzlich vorgeschrieben ist:"],
+        absaetze: [
+          "Wir speichern personenbezogene Daten nur so lange, wie es für den jeweiligen Zweck erforderlich oder gesetzlich vorgeschrieben ist:",
+        ],
         liste: [
           "Mitgliedsdaten (aktiv): für die Dauer der Mitgliedschaft",
           "Mitgliedsdaten (nach Austritt): 3 Jahre (Verjährungsfristen)",
@@ -300,7 +314,9 @@ export const DATENSCHUTZ: ContenuBilingue = {
       },
       {
         titre: "8. Datensicherheit",
-        absaetze: ["Wir setzen technische und organisatorische Sicherheitsmaßnahmen ein, um Ihre Daten vor Manipulation, Verlust, Zerstörung und unbefugtem Zugriff zu schützen, u. a.:"],
+        absaetze: [
+          "Wir setzen technische und organisatorische Sicherheitsmaßnahmen ein, um Ihre Daten vor Manipulation, Verlust, Zerstörung und unbefugtem Zugriff zu schützen, u. a.:",
+        ],
         liste: [
           "SSL/TLS-Verschlüsselung der Datenübertragung auf unserer Website",
           "Zugriffsbeschränkungen auf personenbezogene Daten (Need-to-know-Prinzip)",
@@ -347,7 +363,9 @@ export const DATENSCHUTZ: ContenuBilingue = {
       },
       {
         titre: "2. Principes du traitement des données",
-        absaetze: ["Nous traitons les données à caractère personnel exclusivement conformément au RGPD et au BDSG (loi fédérale allemande sur la protection des données). Nos principes directeurs sont :"],
+        absaetze: [
+          "Nous traitons les données à caractère personnel exclusivement conformément au RGPD et au BDSG (loi fédérale allemande sur la protection des données). Nos principes directeurs sont :",
+        ],
         liste: [
           "Licéité, loyauté et transparence",
           "Limitation des finalités : les données ne sont collectées que pour des finalités déterminées, explicites et légitimes",
@@ -388,12 +406,20 @@ export const DATENSCHUTZ: ContenuBilingue = {
       },
       {
         titre: "5. Sous-traitants",
-        absaetze: ["Nous faisons appel aux catégories de prestataires suivantes, avec lesquelles nous avons conclu ou conclurons des accords de sous-traitance conformément à l'art. 28 RGPD :"],
-        liste: ["Hébergeur du site web", "Services de messagerie (communication associative)", "Prestataires de paiement (paiements en ligne et dons)"],
+        absaetze: [
+          "Nous faisons appel aux catégories de prestataires suivantes, avec lesquelles nous avons conclu ou conclurons des accords de sous-traitance conformément à l'art. 28 RGPD :",
+        ],
+        liste: [
+          "Hébergeur du site web",
+          "Services de messagerie (communication associative)",
+          "Prestataires de paiement (paiements en ligne et dons)",
+        ],
       },
       {
         titre: "6. Durées de conservation",
-        absaetze: ["Nous ne conservons les données personnelles que pour la durée nécessaire à leur finalité ou exigée par la loi :"],
+        absaetze: [
+          "Nous ne conservons les données personnelles que pour la durée nécessaire à leur finalité ou exigée par la loi :",
+        ],
         liste: [
           "Données des membres (actifs) : pour la durée de l'adhésion",
           "Données des membres (après démission) : 3 ans (délais de prescription)",
@@ -428,7 +454,9 @@ export const DATENSCHUTZ: ContenuBilingue = {
       },
       {
         titre: "8. Sécurité des données",
-        absaetze: ["Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles pour protéger vos données contre la manipulation, la perte, la destruction et l'accès non autorisé, notamment :"],
+        absaetze: [
+          "Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles pour protéger vos données contre la manipulation, la perte, la destruction et l'accès non autorisé, notamment :",
+        ],
         liste: [
           "Chiffrement SSL/TLS de la transmission des données sur notre site",
           "Restrictions d'accès aux données personnelles (principe du besoin d'en connaître)",
@@ -462,7 +490,7 @@ export const AGB: ContenuBilingue = {
       {
         titre: "1. Geltungsbereich, Vertragspartner und Begriffe",
         absaetze: [
-          "Diese Nutzungsbedingungen (\"NB\") regeln die Nutzung der Website www.my-cid.de sowie alle Rechtsbeziehungen zwischen dem Verein Clubistes in Deutschland e.V. (\"Verein\") einerseits und Websitebesuchern, Mitgliedern und Spendern (\"Nutzer\") andererseits.",
+          'Diese Nutzungsbedingungen ("NB") regeln die Nutzung der Website www.my-cid.de sowie alle Rechtsbeziehungen zwischen dem Verein Clubistes in Deutschland e.V. ("Verein") einerseits und Websitebesuchern, Mitgliedern und Spendern ("Nutzer") andererseits.',
         ],
         liste: [
           "Vereinsname: Clubistes in Deutschland e.V.",
@@ -496,7 +524,9 @@ export const AGB: ContenuBilingue = {
       },
       {
         titre: "",
-        absaetze: ["Der Verein behält sich vor, Leistungen jederzeit im Rahmen des Vereinszwecks zu ändern, zu erweitern oder einzustellen."],
+        absaetze: [
+          "Der Verein behält sich vor, Leistungen jederzeit im Rahmen des Vereinszwecks zu ändern, zu erweitern oder einzustellen.",
+        ],
       },
       {
         titre: "3. Mitgliedschaft",
@@ -527,7 +557,8 @@ export const AGB: ContenuBilingue = {
         absaetze: [
           "6.1 Erlaubte Nutzung: Die Website www.my-cid.de darf nur für rechtmäßige Zwecke und im Einklang mit diesen NB genutzt werden.",
           "6.2 Untersagte Nutzung: Ausdrücklich untersagt sind: die Verbreitung rechtswidriger, verleumderischer oder beleidigender Inhalte; automatisierte Abfragen (Scraping, Crawling, Bots) ohne vorherige schriftliche Zustimmung; jede Handlung, die den technischen Betrieb der Website beeinträchtigt oder stört (z. B. DoS-Angriffe); das Umgehen von Sicherheitsmaßnahmen oder unbefugter Zugriff auf Vereinssysteme; die Nutzung der Website zu kommerziellen Werbezwecken; sowie Identitätsvortäuschung oder Angabe falscher Informationen.",
-          "6.3 Geistiges Eigentum: Alle Inhalte der Website — einschließlich Texte, Bilder, Grafiken, Logos und deren Anordnung — sind urheberrechtlich geschützt. Jede nicht ausdrücklich gestattete Nutzung ist untersagt. Ausnahmen gelten für die private, nicht kommerzielle Nutzung zu Informationszwecken. Für Nutzungsanfragen wenden Sie sich bitte an: " + EMAIL,
+          "6.3 Geistiges Eigentum: Alle Inhalte der Website — einschließlich Texte, Bilder, Grafiken, Logos und deren Anordnung — sind urheberrechtlich geschützt. Jede nicht ausdrücklich gestattete Nutzung ist untersagt. Ausnahmen gelten für die private, nicht kommerzielle Nutzung zu Informationszwecken. Für Nutzungsanfragen wenden Sie sich bitte an: " +
+            EMAIL,
           "6.4 Verfügbarkeit der Website: Der Verein bemüht sich um einen möglichst unterbrechungsfreien Betrieb der Website. Ein Anspruch auf ununterbrochene Verfügbarkeit besteht jedoch nicht. Wartungsarbeiten, technische Störungen oder höhere Gewalt können zu vorübergehenden Einschränkungen führen.",
         ],
       },
@@ -542,7 +573,9 @@ export const AGB: ContenuBilingue = {
       {
         titre: "8. Datenschutz",
         absaetze: [
-          "Personenbezogene Daten, die im Zusammenhang mit der Vereinsmitgliedschaft, der Spendenabwicklung und der Websitenutzung verarbeitet werden, werden gemäß unserer Datenschutzerklärung (www.my-cid.de/datenschutz) behandelt. Verantwortlicher im Sinne der DSGVO ist der Vorstand von Clubistes in Deutschland e.V. (" + EMAIL + "). Mitglieder stimmen der Verarbeitung ihrer Daten gemäß Satzung und geltendem Recht zu.",
+          "Personenbezogene Daten, die im Zusammenhang mit der Vereinsmitgliedschaft, der Spendenabwicklung und der Websitenutzung verarbeitet werden, werden gemäß unserer Datenschutzerklärung (www.my-cid.de/datenschutz) behandelt. Verantwortlicher im Sinne der DSGVO ist der Vorstand von Clubistes in Deutschland e.V. (" +
+            EMAIL +
+            "). Mitglieder stimmen der Verarbeitung ihrer Daten gemäß Satzung und geltendem Recht zu.",
         ],
       },
       {
@@ -607,7 +640,9 @@ export const AGB: ContenuBilingue = {
       },
       {
         titre: "",
-        absaetze: ["L'association se réserve le droit de modifier, étendre ou interrompre ses services à tout moment, dans la mesure justifiée par son objet statutaire."],
+        absaetze: [
+          "L'association se réserve le droit de modifier, étendre ou interrompre ses services à tout moment, dans la mesure justifiée par son objet statutaire.",
+        ],
       },
       {
         titre: "3. Adhésion",
@@ -693,8 +728,15 @@ export const ERSTATTUNG: ContenuBilingue = {
       },
       {
         titre: "1. Geltungsbereich",
-        absaetze: ["Diese Richtlinie gilt für alle über www.my-cid.de oder auf anderem Weg (Überweisung, Lastschrift) geleisteten Zahlungen an den Verein, insbesondere:"],
-        liste: ["Jährliche Mitgliedsbeiträge", "Monatliche Mitgliedsbeiträge", "Einmalige oder wiederkehrende freiwillige Spenden", "Sonstige Zuwendungen an den Verein"],
+        absaetze: [
+          "Diese Richtlinie gilt für alle über www.my-cid.de oder auf anderem Weg (Überweisung, Lastschrift) geleisteten Zahlungen an den Verein, insbesondere:",
+        ],
+        liste: [
+          "Jährliche Mitgliedsbeiträge",
+          "Monatliche Mitgliedsbeiträge",
+          "Einmalige oder wiederkehrende freiwillige Spenden",
+          "Sonstige Zuwendungen an den Verein",
+        ],
       },
       {
         titre: "2. Mitgliedsbeiträge",
@@ -706,7 +748,9 @@ export const ERSTATTUNG: ContenuBilingue = {
       },
       {
         titre: "2.4 Ausnahme- und Kulanzerstattungen",
-        absaetze: ["In folgenden Fällen kann auf schriftlichen Antrag eine vollständige oder teilweise Erstattung von Mitgliedsbeiträgen gewährt werden:"],
+        absaetze: [
+          "In folgenden Fällen kann auf schriftlichen Antrag eine vollständige oder teilweise Erstattung von Mitgliedsbeiträgen gewährt werden:",
+        ],
         liste: [
           "Nachgewiesener technischer Fehler bei der Zahlungsabwicklung (z. B. Doppelbelastung)",
           "Irrtümliche Zahlung aufgrund einer Verwechslung (vom Antragsteller glaubhaft zu machen)",
@@ -783,7 +827,11 @@ export const ERSTATTUNG: ContenuBilingue = {
       {
         titre: "6. Kontakt und Zuständigkeit",
         absaetze: ["Für alle Fragen zu Erstattungen und Rückzahlungen wenden Sie sich bitte an:"],
-        liste: [`E-Mail: ${EMAIL}`, `Postanschrift: ${ADRESSE}`, "Zuständig: Vorstand von Clubistes in Deutschland e.V."],
+        liste: [
+          `E-Mail: ${EMAIL}`,
+          `Postanschrift: ${ADRESSE}`,
+          "Zuständig: Vorstand von Clubistes in Deutschland e.V.",
+        ],
       },
       {
         titre: "7. Änderungen dieser Richtlinie",
@@ -806,8 +854,15 @@ export const ERSTATTUNG: ContenuBilingue = {
       },
       {
         titre: "1. Champ d'application",
-        absaetze: ["Cette politique s'applique à tous les paiements effectués via www.my-cid.de ou par un autre moyen (virement, prélèvement) à l'association, notamment :"],
-        liste: ["Les cotisations annuelles", "Les cotisations mensuelles", "Les dons ponctuels ou récurrents", "Les autres contributions à l'association"],
+        absaetze: [
+          "Cette politique s'applique à tous les paiements effectués via www.my-cid.de ou par un autre moyen (virement, prélèvement) à l'association, notamment :",
+        ],
+        liste: [
+          "Les cotisations annuelles",
+          "Les cotisations mensuelles",
+          "Les dons ponctuels ou récurrents",
+          "Les autres contributions à l'association",
+        ],
       },
       {
         titre: "2. Cotisations",
@@ -819,7 +874,9 @@ export const ERSTATTUNG: ContenuBilingue = {
       },
       {
         titre: "2.4 Remboursements exceptionnels et de courtoisie",
-        absaetze: ["Dans les cas suivants, un remboursement total ou partiel des cotisations peut être accordé sur demande écrite :"],
+        absaetze: [
+          "Dans les cas suivants, un remboursement total ou partiel des cotisations peut être accordé sur demande écrite :",
+        ],
         liste: [
           "Erreur technique avérée dans le traitement du paiement (par ex. double prélèvement)",
           "Paiement erroné dû à une confusion (à démontrer par le demandeur)",
@@ -863,7 +920,9 @@ export const ERSTATTUNG: ContenuBilingue = {
       },
       {
         titre: "4. Procédure de demande de remboursement",
-        absaetze: [`Pour demander un remboursement, veuillez envoyer un e-mail à ${EMAIL} avec les informations complètes suivantes :`],
+        absaetze: [
+          `Pour demander un remboursement, veuillez envoyer un e-mail à ${EMAIL} avec les informations complètes suivantes :`,
+        ],
         liste: [
           "Nom complet et numéro de membre (le cas échéant)",
           "Date du paiement et montant payé",
@@ -893,7 +952,11 @@ export const ERSTATTUNG: ContenuBilingue = {
       {
         titre: "6. Contact et responsabilité",
         absaetze: ["Pour toute question relative aux remboursements, veuillez contacter :"],
-        liste: [`E-mail : ${EMAIL}`, `Adresse postale : ${ADRESSE}`, "Responsable : Bureau de Clubistes in Deutschland e.V."],
+        liste: [
+          `E-mail : ${EMAIL}`,
+          `Adresse postale : ${ADRESSE}`,
+          "Responsable : Bureau de Clubistes in Deutschland e.V.",
+        ],
       },
       {
         titre: "7. Modifications de cette politique",

@@ -103,10 +103,7 @@ describe("GalerieProduitManager", () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [fichier] } });
 
-    expect(ajouterMock).toHaveBeenCalledWith(
-      { produit: "p1", image: fichier },
-      expect.anything(),
-    );
+    expect(ajouterMock).toHaveBeenCalledWith({ produit: "p1", image: fichier }, expect.anything());
   });
 
   it("supprime une photo au clic sur le bouton ×", () => {

@@ -41,8 +41,13 @@
   },
   "stellen": {
     "titre": "Bénévoles recherchés",
-    "voir_tout": "Tous les projets",
-    "mehr": "Vers le projet →"
+    "anzahl_one": "{{count}} demande ouverte",
+    "anzahl_other": "{{count}} demandes ouvertes",
+    "untertitel": "Participe – chaque coup de main compte, ponctuel ou durable.",
+    "alle": "Tout voir →",
+    "weitere_one": "… et {{count}} autre demande",
+    "weitere_other": "… et {{count}} autres demandes",
+    "vom_verein": "Du club"
   },
   "hinweise": {
     "titel": "Bon à savoir",

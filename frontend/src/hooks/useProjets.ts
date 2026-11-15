@@ -18,6 +18,8 @@ import type {
   ProjetMiseAJourImagePayload,
   ProjetMiseAJourPayload,
   ProjetPayload,
+  HilfeAngebotPayload,
+  HilfeKategoriePayload,
   StellePayload,
 } from "../types/projets";
 
@@ -565,6 +567,72 @@ export function useBewerbungEntscheiden() {
   return useMutation({
     mutationFn: ({ id, entscheidung }: { id: string; entscheidung: "annehmen" | "ablehnen" }) =>
       projetsApi.bewerbungEntscheiden(id, entscheidung),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+// --- Hilfe gesucht: Kategorien und Angebote (Nov. 2026) ---
+
+export function useHilfeKategorien(alle = false) {
+  return useQuery({
+    queryKey: [...projetsKeys.all, "hilfe-kategorien", alle] as const,
+    queryFn: () => projetsApi.listHilfeKategorien(alle),
+  });
+}
+
+export function useHilfeKategorieSpeichern() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, daten }: { id?: string; daten: HilfeKategoriePayload }) =>
+      projetsApi.hilfeKategorieSpeichern(id, daten),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useHilfeKategorieLoeschen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.hilfeKategorieLoeschen(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useHilfeAngebote(enabled = true) {
+  return useQuery({
+    queryKey: [...projetsKeys.all, "hilfe-angebote"] as const,
+    queryFn: projetsApi.listHilfeAngebote,
+    enabled,
+  });
+}
+
+export function useHilfeAngebotErstellen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: HilfeAngebotPayload) => projetsApi.hilfeAngebotErstellen(payload),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useHilfeAngebotZurueckziehen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => projetsApi.hilfeAngebotZurueckziehen(id),
+    onSuccess: () => invalidateProjets(queryClient),
+  });
+}
+
+export function useHilfeAngebotEntscheiden() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      entscheidung,
+      extra,
+    }: {
+      id: string;
+      entscheidung: "annehmen" | "ablehnen";
+      extra?: { notiz?: string; stelle?: string };
+    }) => projetsApi.hilfeAngebotEntscheiden(id, entscheidung, extra),
     onSuccess: () => invalidateProjets(queryClient),
   });
 }

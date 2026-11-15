@@ -16,9 +16,7 @@ export function useUtilisateursList(q: string, pageUrl: string | null) {
   return useQuery({
     queryKey: utilisateursKeys.list(q, pageUrl),
     queryFn: () =>
-      pageUrl
-        ? utilisateursApi.getUtilisateursPage(pageUrl)
-        : utilisateursApi.listUtilisateurs(q),
+      pageUrl ? utilisateursApi.getUtilisateursPage(pageUrl) : utilisateursApi.listUtilisateurs(q),
     placeholderData: keepPreviousData,
   });
 }

@@ -43,8 +43,20 @@ describe("EquipeLogoImage", () => {
 
   it("affiche le logo correspondant au nom EXACT de l'équipe", () => {
     mockLogos([
-      { id: 1, equipe: "Espérance de Tunis", logo: "https://cid-media.example/est.png", modifie_par: null, updated_at: "2026-01-01T00:00:00Z" },
-      { id: 2, equipe: "Club Africain", logo: "https://cid-media.example/ca.png", modifie_par: null, updated_at: "2026-01-01T00:00:00Z" },
+      {
+        id: 1,
+        equipe: "Espérance de Tunis",
+        logo: "https://cid-media.example/est.png",
+        modifie_par: null,
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: 2,
+        equipe: "Club Africain",
+        logo: "https://cid-media.example/ca.png",
+        modifie_par: null,
+        updated_at: "2026-01-01T00:00:00Z",
+      },
     ]);
     const { container } = renderLogo("Club Africain");
     const img = container.querySelector("img");
@@ -53,7 +65,13 @@ describe("EquipeLogoImage", () => {
 
   it("n'affiche rien si le nom ne correspond à aucun logo (correspondance non exacte)", () => {
     mockLogos([
-      { id: 1, equipe: "Club Africain", logo: "https://cid-media.example/ca.png", modifie_par: null, updated_at: "2026-01-01T00:00:00Z" },
+      {
+        id: 1,
+        equipe: "Club Africain",
+        logo: "https://cid-media.example/ca.png",
+        modifie_par: null,
+        updated_at: "2026-01-01T00:00:00Z",
+      },
     ]);
     const { container } = renderLogo("club africain");
     expect(container).toBeEmptyDOMElement();

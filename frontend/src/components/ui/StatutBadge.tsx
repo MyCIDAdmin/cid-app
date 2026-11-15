@@ -11,9 +11,7 @@ const STYLES: Record<StatutMembre, string> = {
 export default function StatutBadge({ statut }: { statut: StatutMembre }) {
   const { t } = useTranslation("membres");
   return (
-    <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STYLES[statut]}`}
-    >
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STYLES[statut]}`}>
       {t(`statut.${statut}`)}
     </span>
   );

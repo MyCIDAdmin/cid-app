@@ -10,8 +10,7 @@ import type { MatriceReponse } from "../../types/rbac";
 import AttributionRolesTab from "./AttributionRolesTab";
 
 vi.mock("../../hooks/useUtilisateurs", async () => {
-  const actual =
-    await vi.importActual<typeof useUtilisateursHooks>("../../hooks/useUtilisateurs");
+  const actual = await vi.importActual<typeof useUtilisateursHooks>("../../hooks/useUtilisateurs");
   return { ...actual, useUtilisateursList: vi.fn() };
 });
 

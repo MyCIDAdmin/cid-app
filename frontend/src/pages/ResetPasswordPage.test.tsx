@@ -26,7 +26,10 @@ describe("ResetPasswordPage", () => {
   });
 
   it("affiche une erreur si le lien n'a pas de jeton", () => {
-    renderWithProviders(<ResetPasswordPage />, { route: "/reset-password", path: "/reset-password" });
+    renderWithProviders(<ResetPasswordPage />, {
+      route: "/reset-password",
+      path: "/reset-password",
+    });
 
     expect(screen.getByText("reset_password.lien_invalide")).toBeInTheDocument();
   });

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import FormatierterText from "../regionen/FormatierterText";
 import { useStelleBewerben, useStelleZurueckziehen, useStellen } from "../../hooks/useProjets";
 import { useAuthStore } from "../../store/authStore";
 import type { ProjetStelle } from "../../types/projets";
@@ -54,9 +55,7 @@ function StelleKarte({ stelle }: { stelle: ProjetStelle }) {
           {t("stellen.freie_plaetze", { count: stelle.freie_plaetze })}
         </span>
       </div>
-      {stelle.beschreibung && (
-        <p className="whitespace-pre-line text-sm text-text-secondary">{stelle.beschreibung}</p>
-      )}
+      {stelle.beschreibung && <FormatierterText text={stelle.beschreibung} />}
 
       {meine === "offen" && (
         <div className="flex flex-wrap items-center gap-2">

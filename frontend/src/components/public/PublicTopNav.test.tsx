@@ -18,7 +18,7 @@ describe("PublicTopNav", () => {
     expect(onChangeOnglet).toHaveBeenCalledWith("shop");
   });
 
-  it("le bouton \"Anmelden / Registrieren\" pointe vers /login", () => {
+  it('le bouton "Anmelden / Registrieren" pointe vers /login', () => {
     renderWithProviders(<PublicTopNav onglet="accueil" onChangeOnglet={vi.fn()} />);
     const liens = screen.getAllByText("action.connexion");
     expect(liens[0].closest("a")).toHaveAttribute("href", "/login");

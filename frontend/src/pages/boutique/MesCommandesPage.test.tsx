@@ -102,7 +102,10 @@ describe("MesCommandesPage", () => {
       data: {
         next: null,
         previous: null,
-        results: [commande({ id: "c1", statut: "en_attente" }), commande({ id: "c2", statut: "livree" })],
+        results: [
+          commande({ id: "c1", statut: "en_attente" }),
+          commande({ id: "c2", statut: "livree" }),
+        ],
       },
       isLoading: false,
       isError: false,

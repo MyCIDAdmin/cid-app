@@ -69,9 +69,7 @@ export default function AdminFanClubLogosPage() {
       <h1 className="mb-1 text-xl font-bold text-text-primary">
         {t("admin_fan_club_logos.titre")}
       </h1>
-      <p className="mb-4 text-sm text-text-secondary">
-        {t("admin_fan_club_logos.description")}
-      </p>
+      <p className="mb-4 text-sm text-text-secondary">{t("admin_fan_club_logos.description")}</p>
 
       {erreur && <p className="mb-3 text-sm text-status-dangerText">{erreur}</p>}
 

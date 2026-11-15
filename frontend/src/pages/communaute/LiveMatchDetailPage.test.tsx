@@ -63,7 +63,12 @@ function renderDetail() {
 
 describe("LiveMatchDetailPage", () => {
   beforeEach(() => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: membre, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: membre,
+      isAuthenticated: true,
+    });
     vi.mocked(useCommunauteHooks.useMatch).mockReturnValue({
       data: match(),
       isLoading: false,
@@ -181,7 +186,12 @@ describe("LiveMatchDetailPage", () => {
   });
 
   it("permet à un Bureau Admin+ de mettre à jour le score", () => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: admin, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: admin,
+      isAuthenticated: true,
+    });
     const modifier = mutationMock<ReturnType<typeof useCommunauteHooks.useModifierMatch>>();
     vi.mocked(useCommunauteHooks.useModifierMatch).mockReturnValue(modifier);
 
@@ -273,8 +283,14 @@ describe("LiveMatchDetailPage", () => {
   });
 
   it("permet à un Bureau Admin+ d'ajouter un événement au Live-Ticker", () => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: admin, isAuthenticated: true });
-    const creerEvenement = mutationMock<ReturnType<typeof useCommunauteHooks.useCreerMatchEvenement>>();
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: admin,
+      isAuthenticated: true,
+    });
+    const creerEvenement =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useCreerMatchEvenement>>();
     vi.mocked(useCommunauteHooks.useCreerMatchEvenement).mockReturnValue(creerEvenement);
 
     renderDetail();

@@ -96,7 +96,9 @@ export default function DetailBoxTriable<T>({
                   <button
                     type="button"
                     onClick={() => trier(colonne.cle)}
-                    aria-sort={actif ? (triDirection === "asc" ? "ascending" : "descending") : "none"}
+                    aria-sort={
+                      actif ? (triDirection === "asc" ? "ascending" : "descending") : "none"
+                    }
                     className={`flex items-center gap-1 ${
                       colonne.align === "right"
                         ? "ml-auto"

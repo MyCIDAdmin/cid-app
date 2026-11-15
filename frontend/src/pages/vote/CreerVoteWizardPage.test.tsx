@@ -24,7 +24,12 @@ const bureauAdmin = {
   langue_preferee: "fr" as const,
 };
 
-const dirFinancier = { ...bureauAdmin, id: "u3", email: "df@example.com", role: "dir_financier" as const };
+const dirFinancier = {
+  ...bureauAdmin,
+  id: "u3",
+  email: "df@example.com",
+  role: "dir_financier" as const,
+};
 
 describe("CreerVoteWizardPage", () => {
   let mutate: ReturnType<typeof vi.fn>;

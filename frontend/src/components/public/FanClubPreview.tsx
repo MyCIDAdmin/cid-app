@@ -21,17 +21,13 @@ export default function FanClubPreview() {
   return (
     <div className="rounded-cid-lg bg-bg-primary p-4 shadow-sm sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-lg font-bold text-text-primary">
-          {t("fanclub.titre")}
-        </h2>
+        <h2 className="font-display text-lg font-bold text-text-primary">{t("fanclub.titre")}</h2>
         <div className="flex gap-1 rounded-full border border-text-tertiary/20 p-0.5 text-xs">
           <button
             type="button"
             onClick={() => setVue("classement")}
             className={`rounded-full px-3 py-1 font-medium transition ${
-              vue === "classement"
-                ? "bg-ca text-white"
-                : "text-text-secondary hover:bg-bg-tertiary"
+              vue === "classement" ? "bg-ca text-white" : "text-text-secondary hover:bg-bg-tertiary"
             }`}
           >
             {t("fanclub.onglet_classement")}
@@ -40,9 +36,7 @@ export default function FanClubPreview() {
             type="button"
             onClick={() => setVue("calendrier")}
             className={`rounded-full px-3 py-1 font-medium transition ${
-              vue === "calendrier"
-                ? "bg-ca text-white"
-                : "text-text-secondary hover:bg-bg-tertiary"
+              vue === "calendrier" ? "bg-ca text-white" : "text-text-secondary hover:bg-bg-tertiary"
             }`}
           >
             {t("fanclub.onglet_calendrier")}

@@ -521,6 +521,25 @@ class SichtbarkeitStelle(models.TextChoices):
     OEFFENTLICH = "oeffentlich", _("Public")
 
 
+class HilfeKategorie(models.Model):
+    """Kategorie für Hilfegesuche und Angebote (z. B. „Fest & Organisation“). Wird vom Bureau Admin
+    gepflegt (Seite „Meldungen genehmigen“) ; deaktivierte Kategorien erscheinen nicht mehr in der
+    Auswahl, bleiben aber an bestehenden Gesuchen sichtbar."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name_de = models.CharField(max_length=80, unique=True)
+    name_fr = models.CharField(max_length=80, blank=True)
+    reihenfolge = models.PositiveSmallIntegerField(default=100)
+    aktiv = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "projets_hilfekategorien"
+        ordering = ["reihenfolge", "name_de"]
+
+    def __str__(self):
+        return self.name_de
+
+
 class ProjetStelle(models.Model):
     """Offene Stelle eines Projekts (Release 10): die Projektleitung sucht Unterstützung für einen
     Bereich (z. B. Webdesign, Logistik) ; jedes aktive Mitglied kann sich melden. Optional an eine
@@ -553,6 +572,9 @@ class ProjetStelle(models.Model):
     )
     region = models.ForeignKey(
         "regionen.Region", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    kategorie = models.ForeignKey(
+        HilfeKategorie, on_delete=models.SET_NULL, null=True, blank=True, related_name="stellen"
     )
     created_by = models.ForeignKey(
         "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
@@ -646,3 +668,46 @@ class ProjetAktivitaet(models.Model):
 
     def __str__(self):
         return f"{self.projet} — {self.aktion}"
+
+
+class StatutAngebot(models.TextChoices):
+    OFFEN = "offen", _("En attente")
+    ANGENOMMEN = "angenommen", _("Accepté")
+    ABGELEHNT = "abgelehnt", _("Refusé")
+    ZURUECKGEZOGEN = "zurueckgezogen", _("Retiré")
+
+
+class HilfeAngebot(models.Model):
+    """Offene Meldung (Nov. 2026): ein Mitglied bietet von sich aus Hilfe an, ohne dass es ein
+    passendes Gesuch gibt („Ich helfe gern bei …“). Das Büro (Recht „Meldungen genehmigen“) sieht
+    die Angebote, nimmt sie an (optional mit Zuordnung zu einem offenen Gesuch) oder lehnt ab."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    membre = models.ForeignKey(
+        "membres.Membre", on_delete=models.CASCADE, related_name="hilfe_angebote"
+    )
+    kategorie = models.ForeignKey(
+        HilfeKategorie, on_delete=models.SET_NULL, null=True, blank=True, related_name="angebote"
+    )
+    titel = models.CharField(max_length=120)
+    beschreibung = models.TextField(blank=True)
+    verfuegbarkeit = models.CharField(max_length=200, blank=True)
+    status = models.CharField(
+        max_length=20, choices=StatutAngebot.choices, default=StatutAngebot.OFFEN
+    )
+    stelle = models.ForeignKey(
+        ProjetStelle, on_delete=models.SET_NULL, null=True, blank=True, related_name="angebote"
+    )
+    notiz = models.CharField(max_length=300, blank=True)
+    entschieden_von = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "projets_hilfeangebote"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.membre} — {self.titel}"

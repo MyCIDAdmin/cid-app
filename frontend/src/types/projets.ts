@@ -392,6 +392,8 @@ export interface ProjetStelle {
   sichtbarkeit: SichtbarkeitStelle;
   region: string | null;
   region_name?: string | null;
+  kategorie?: string | null;
+  kategorie_detail?: HilfeKategorieKurz | null;
   /** Eigene Gesuche und Verwaltung: Anzahl wartender / empfohlener Meldungen (sonst null). */
   bewerbungen_empfohlen: number | null;
   kann_pflegen: boolean;
@@ -411,7 +413,52 @@ export interface ProjetStelle {
   created_at: string;
 }
 
+export interface HilfeKategorieKurz {
+  id: string;
+  name_de: string;
+  name_fr: string;
+  aktiv: boolean;
+}
+
+export interface HilfeKategorie extends HilfeKategorieKurz {
+  reihenfolge: number;
+  /** Anzahl Gesuche, die die Kategorie nutzen. */
+  anzahl: number;
+}
+
+export type HilfeKategoriePayload = Partial<
+  Pick<HilfeKategorie, "name_de" | "name_fr" | "reihenfolge" | "aktiv">
+>;
+
+export type StatutAngebot = "offen" | "angenommen" | "abgelehnt" | "zurueckgezogen";
+
+/** Offene Meldung: ein Mitglied bietet von sich aus Hilfe an. */
+export interface HilfeAngebot {
+  id: string;
+  membre: string;
+  membre_detail?: { id: string; prenom: string; nom: string } | null;
+  kategorie: string | null;
+  kategorie_detail: HilfeKategorieKurz | null;
+  titel: string;
+  beschreibung: string;
+  verfuegbarkeit: string;
+  status: StatutAngebot;
+  stelle: string | null;
+  stelle_titel: string | null;
+  notiz: string;
+  ist_meins: boolean;
+  created_at: string;
+}
+
+export interface HilfeAngebotPayload {
+  titel: string;
+  kategorie?: string | null;
+  beschreibung?: string;
+  verfuegbarkeit?: string;
+}
+
 export interface StellePayload {
+  kategorie?: string | null;
   /** Weglassen = freies Gesuch „Hilfe gesucht“. */
   projet?: string | null;
   art?: ArtStelle;

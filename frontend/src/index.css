@@ -923,3 +923,72 @@ summary:focus-visible,
     display: none;
   }
 }
+
+/* Kachel „Gesucht: Helferinnen und Helfer“ (Übersicht) : ein sanft pulsierender Rand, eine
+ * winkende Hand und ein langsamer Glanz. Nur ohne prefers-reduced-motion ; die @keyframes stehen
+ * wie bei `.stagger-children` in CSS (kein Tailwind-JIT nötig). */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes helfer-puls {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ca) 45%, transparent);
+    }
+    70% {
+      box-shadow: 0 0 0 14px color-mix(in srgb, var(--color-ca) 0%, transparent);
+    }
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ca) 0%, transparent);
+    }
+  }
+
+  @keyframes helfer-winken {
+    0%,
+    60%,
+    100% {
+      transform: rotate(0deg);
+    }
+    10%,
+    30% {
+      transform: rotate(14deg);
+    }
+    20%,
+    40% {
+      transform: rotate(-8deg);
+    }
+    50% {
+      transform: rotate(10deg);
+    }
+  }
+
+  @keyframes helfer-glanz {
+    from {
+      transform: translateX(-120%) skewX(-20deg);
+    }
+    to {
+      transform: translateX(320%) skewX(-20deg);
+    }
+  }
+
+  .helfer-kachel {
+    animation: helfer-puls 2.8s ease-out infinite;
+  }
+
+  .helfer-kachel:hover {
+    animation-play-state: paused;
+  }
+
+  .helfer-hand {
+    display: inline-block;
+    transform-origin: 70% 80%;
+    animation: helfer-winken 3.2s ease-in-out infinite;
+  }
+
+  .helfer-glanz::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 28%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+    animation: helfer-glanz 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+}

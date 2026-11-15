@@ -151,7 +151,7 @@
     },
     "projekte": {
       "titel": "Projekte und Aktionen",
-      "text": "Verfolge die Projekte des Vereins und unterstütze sie. Projekte mit Frist erscheinen auch in deiner Übersicht."
+      "text": "Verfolge die Projekte des Vereins und unterstütze sie. Im Tab „Hilfe gesucht“ findest du, wo gerade Unterstützung gebraucht wird, oder du bietest selbst Hilfe an. Projekte mit Frist erscheinen auch in deiner Übersicht."
     },
     "boutique": {
       "titel": "Der Vereinsshop",
@@ -252,10 +252,6 @@
     "aktivitaet": {
       "titel": "Sicherheit im Blick",
       "text": "Hier siehst du, ob alles in Ordnung ist, und was als Nächstes zu tun ist."
-    },
-    "hilfe_gesucht": {
-      "titel": "Hilfe gesucht",
-      "text": "Hier findest du offene Gesuche des Vereins, einmalige Hilfe und dauerhafte Aufgaben. Melde dich mit einem Klick, das Büro bestätigt deine Zusage."
     }
   },
   "hinweise_zusatz": {

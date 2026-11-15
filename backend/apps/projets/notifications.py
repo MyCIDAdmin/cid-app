@@ -55,7 +55,7 @@ def notifier_aufgabe_faellig(aufgabe, heute: bool) -> None:
 
 def _stellen_lien(stelle) -> str:
     if stelle.projet_id is None:
-        return "/hilfe-gesucht"
+        return "/projets?tab=hilfe"
     return f"/projets/{stelle.projet_id}/arbeitsbereich?reiter=stellen"
 
 
@@ -120,7 +120,7 @@ def notifier_bewerbung_entschieden(bewerbung) -> None:
     angenommen = bewerbung.status == StatutBewerbung.ANGENOMMEN
     frei = stelle.projet_id is None
     if frei:
-        lien = "/hilfe-gesucht"
+        lien = "/projets?tab=hilfe"
         zeile = "Demande d'aide"
     else:
         lien = f"/projets/{stelle.projet_id}" + ("/arbeitsbereich" if angenommen else "")
@@ -153,3 +153,51 @@ def notifier_bewerbung_entschieden(bewerbung) -> None:
                 f"Hallo {bewerbung.membre.prenom},\n\nleider können wir deine Meldung für "
                 f"„{stelle.titel}“ diesmal nicht berücksichtigen. Danke für dein Angebot!",
             )
+
+
+def notifier_angebot_neu(angebot) -> None:
+    """An alle, die genehmigen dürfen: ein Mitglied bietet von sich aus Hilfe an."""
+    from .hilfe import genehmiger_nutzer
+
+    for user in genehmiger_nutzer(
+        ausser=getattr(getattr(angebot.membre, "user", None), "pk", None)
+    ):
+        notifier(
+            user,
+            TypeNotification.PROJEKT_BEWERBUNG,
+            titre=f"Offre d'aide : {angebot.titel}",
+            message=f"{_name(angebot.membre)} propose son aide — réponse attendue",
+            lien="/projets?tab=hilfe&ansicht=angebote",
+        )
+
+
+def notifier_angebot_entschieden(angebot) -> None:
+    """An das Mitglied: Angebot angenommen (mit Hinweis auf den Chat) oder abgelehnt. Glocke,
+    Telegram/Push nach den persönlichen Einstellungen, zusätzlich eine kurze Mail."""
+    from .hilfe import sende_mail
+    from .models import StatutAngebot
+
+    angenommen = angebot.status == StatutAngebot.ANGENOMMEN
+    notifier(
+        getattr(angebot.membre, "user", None),
+        TypeNotification.PROJEKT_BEWERBUNG_ENTSCHIEDEN,
+        titre=("Offre acceptée : " if angenommen else "Offre refusée : ") + angebot.titel,
+        message=angebot.notiz[:140] or "Offre d'aide",
+        lien="/projets?tab=hilfe&ansicht=meine",
+    )
+    zusatz = f"\n\nNachricht des Büros: {angebot.notiz}" if angebot.notiz else ""
+    if angenommen:
+        text = (
+            f"Hallo {angebot.membre.prenom},\n\ndein Hilfeangebot „{angebot.titel}“ wurde "
+            "angenommen. Danke! Das Büro meldet sich bei dir, du erreichst es auch direkt im "
+            "Chat der App." + zusatz
+        )
+        sende_mail(
+            angebot.membre, f"Hilfe gesucht: Dein Angebot wurde angenommen – {angebot.titel}", text
+        )
+    else:
+        text = (
+            f"Hallo {angebot.membre.prenom},\n\nleider können wir dein Angebot „{angebot.titel}“ "
+            "im Moment nicht einsetzen. Danke für dein Angebot!" + zusatz
+        )
+        sende_mail(angebot.membre, f"Hilfe gesucht: {angebot.titel}", text)

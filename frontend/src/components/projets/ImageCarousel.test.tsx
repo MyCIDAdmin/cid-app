@@ -24,7 +24,10 @@ describe("ImageCarousel", () => {
 
   it("affiche la première image et masque les contrôles quand il n'y en a qu'une seule", () => {
     render(<ImageCarousel images={[image()]} titre="Rénovation local" />);
-    expect(screen.getByRole("img")).toHaveAttribute("src", "https://cdn.example.de/kachel/img-1.jpg");
+    expect(screen.getByRole("img")).toHaveAttribute(
+      "src",
+      "https://cdn.example.de/kachel/img-1.jpg",
+    );
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
@@ -40,23 +43,35 @@ describe("ImageCarousel", () => {
     it("passe automatiquement d'une image à l'autre après l'intervalle configuré (point 1.1)", () => {
       render(
         <ImageCarousel
-          images={[image({ id: "img-1" }), image({ id: "img-2", image: "https://cdn.example.de/kachel/img-2.jpg" })]}
+          images={[
+            image({ id: "img-1" }),
+            image({ id: "img-2", image: "https://cdn.example.de/kachel/img-2.jpg" }),
+          ]}
           titre="Rénovation local"
           intervalMs={1000}
         />,
       );
-      expect(screen.getByRole("img")).toHaveAttribute("src", "https://cdn.example.de/kachel/img-1.jpg");
+      expect(screen.getByRole("img")).toHaveAttribute(
+        "src",
+        "https://cdn.example.de/kachel/img-1.jpg",
+      );
 
       act(() => {
         vi.advanceTimersByTime(1000);
       });
-      expect(screen.getByRole("img")).toHaveAttribute("src", "https://cdn.example.de/kachel/img-2.jpg");
+      expect(screen.getByRole("img")).toHaveAttribute(
+        "src",
+        "https://cdn.example.de/kachel/img-2.jpg",
+      );
 
       // Boucle : revient à la première image après la 2e.
       act(() => {
         vi.advanceTimersByTime(1000);
       });
-      expect(screen.getByRole("img")).toHaveAttribute("src", "https://cdn.example.de/kachel/img-1.jpg");
+      expect(screen.getByRole("img")).toHaveAttribute(
+        "src",
+        "https://cdn.example.de/kachel/img-1.jpg",
+      );
     });
 
     it("expose des flèches précédente/suivante et des puces de navigation", () => {

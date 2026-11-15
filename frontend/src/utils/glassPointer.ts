@@ -22,7 +22,9 @@ export function initGlassPointer(doc: Document = document): () => void {
   const traiter = () => {
     cadre = 0;
     if (!dernier) return;
-    const cible = (dernier.target as Element | null)?.closest?.(SELECTEUR_CARTES) as HTMLElement | null;
+    const cible = (dernier.target as Element | null)?.closest?.(
+      SELECTEUR_CARTES,
+    ) as HTMLElement | null;
     if (!cible) return;
     const rect = cible.getBoundingClientRect();
     cible.style.setProperty("--mx", `${dernier.clientX - rect.left}px`);

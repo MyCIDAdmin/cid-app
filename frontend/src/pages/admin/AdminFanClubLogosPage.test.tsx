@@ -75,7 +75,7 @@ describe("AdminFanClubLogosPage", () => {
     expect(screen.getByText("admin_fan_club_logos.erreur_chargement")).toBeInTheDocument();
   });
 
-  it("affiche \"aucun logo\" quand la liste est vide", () => {
+  it('affiche "aucun logo" quand la liste est vide', () => {
     mockHooks({ data: [] });
     renderWithProviders(<AdminFanClubLogosPage />);
     expect(screen.getByText("admin_fan_club_logos.aucun_logo")).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe("AdminFanClubLogosPage", () => {
     );
   });
 
-  it("affiche \"en cours\" et désactive le bouton pendant l'envoi", () => {
+  it('affiche "en cours" et désactive le bouton pendant l\'envoi', () => {
     mockHooks({ data: [], enregistrerIsPending: true });
     renderWithProviders(<AdminFanClubLogosPage />);
     expect(screen.getByText("admin_fan_club_logos.televersement_en_cours")).toBeInTheDocument();
@@ -155,8 +155,11 @@ describe("AdminFanClubLogosPage", () => {
 
     fireEvent.click(screen.getByText("admin_fan_club_logos.supprimer"));
 
-    expect(supprimerMutate).toHaveBeenCalledWith(42, expect.objectContaining({
-      onError: expect.any(Function),
-    }));
+    expect(supprimerMutate).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        onError: expect.any(Function),
+      }),
+    );
   });
 });

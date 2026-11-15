@@ -1,5 +1,6 @@
 from rest_framework.routers import DefaultRouter
 
+from .hilfe_views import AngebotViewSet, HilfeKategorieViewSet
 from .stellen_views import BewerbungViewSet, StelleViewSet
 from .views import (
     AufgabeKommentarViewSet,
@@ -27,6 +28,8 @@ router.register("plankosten", PlanKostenViewSet, basename="projet-plankosten")
 router.register("kosten", ProjetKostenViewSet, basename="projet-kosten")
 router.register("aktivitaeten", ProjetAktivitaetViewSet, basename="projet-aktivitaet")
 router.register("stellen", StelleViewSet, basename="projet-stelle")
+router.register("hilfe-kategorien", HilfeKategorieViewSet, basename="projet-hilfe-kategorie")
+router.register("hilfe-angebote", AngebotViewSet, basename="projet-hilfe-angebot")
 router.register("bewerbungen", BewerbungViewSet, basename="projet-bewerbung")
 router.register("images", ProjetImageViewSet, basename="projet-image")
 router.register("mises-a-jour", ProjetMiseAJourViewSet, basename="projet-mise-a-jour")

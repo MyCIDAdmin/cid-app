@@ -207,7 +207,6 @@ export const SEITEN: ReadonlyArray<readonly [string, string, boolean]> = [
   ["/membres", "mitglieder", false],
   ["/boutique", "boutique", false],
   ["/projets", "projekte", false],
-  ["/hilfe-gesucht", "hilfe_gesucht", false],
   ["/regionen", "regionen", true],
   ["/albums", "albums", true],
   ["/reisen", "reisen", true],

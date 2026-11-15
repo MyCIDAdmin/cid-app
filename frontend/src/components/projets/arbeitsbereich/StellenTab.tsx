@@ -7,6 +7,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import FormatierterText from "../../regionen/FormatierterText";
 import { useFaehigkeitenKatalog } from "../../../hooks/useFaehigkeiten";
 import {
   useBewerbungEntscheiden,
@@ -268,9 +269,7 @@ export default function StellenTab({
                 </div>
               )}
             </div>
-            {s.beschreibung && (
-              <p className="whitespace-pre-line text-sm text-text-secondary">{s.beschreibung}</p>
-            )}
+            {s.beschreibung && <FormatierterText text={s.beschreibung} />}
             {verwalten && (
               <>
                 <Bewerbungen stelle={s} />

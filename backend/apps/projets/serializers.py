@@ -17,12 +17,15 @@ from rest_framework import serializers
 from apps.communaute.validators import valider_et_reencoder_photo
 from apps.finances.serializers import DepenseSerializer
 from apps.membres.models import Membre
+from apps.regionen import formattext
 from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import (
     ArtStelle,
     Aufgabe,
     AufgabeKommentar,
+    HilfeAngebot,
+    HilfeKategorie,
     PlanKosten,
     Projet,
     ProjetAktivitaet,
@@ -488,6 +491,7 @@ class StelleSerializer(serializers.ModelSerializer):
     )
     projet_titre = serializers.CharField(source="projet.titre", read_only=True, allow_null=True)
     region_name = serializers.CharField(source="region.name", read_only=True, allow_null=True)
+    kategorie_detail = serializers.SerializerMethodField()
     projet = serializers.PrimaryKeyRelatedField(
         queryset=Projet.objects.all(), required=False, allow_null=True
     )
@@ -520,6 +524,8 @@ class StelleSerializer(serializers.ModelSerializer):
             "sichtbarkeit",
             "region",
             "region_name",
+            "kategorie",
+            "kategorie_detail",
             "angenommen",
             "freie_plaetze",
             "meine_bewerbung",
@@ -530,7 +536,19 @@ class StelleSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
-        extra_kwargs = {"beschreibung": {"max_length": 1000}}
+        extra_kwargs = {"beschreibung": {"max_length": 8000}}
+
+    def validate_beschreibung(self, value):
+        """Word-ähnlicher Editor: HTML wird serverseitig bereinigt, der reine Text bleibt kurz."""
+        sauber = formattext.bereinige(value or "")
+        if len(formattext.klartext(sauber)) > 2000:
+            raise serializers.ValidationError(
+                "Die Beschreibung ist zu lang (höchstens 2000 Zeichen)."
+            )
+        return sauber
+
+    def get_kategorie_detail(self, obj):
+        return kategorie_dict(obj.kategorie)
 
     def _membre(self):
         request = self.context.get("request")
@@ -601,6 +619,85 @@ class StelleSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data.pop("projet", None)  # nie auf ein anderes Projekt umhängen (IDOR)
         return super().update(instance, validated_data)
+
+
+def kategorie_dict(kategorie) -> dict | None:
+    if kategorie is None:
+        return None
+    return {
+        "id": str(kategorie.id),
+        "name_de": kategorie.name_de,
+        "name_fr": kategorie.name_fr or kategorie.name_de,
+        "aktiv": kategorie.aktiv,
+    }
+
+
+class HilfeKategorieSerializer(serializers.ModelSerializer):
+    """Kategorie für Gesuche und Angebote ; `anzahl` zählt die Gesuche, die sie nutzen."""
+
+    anzahl = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HilfeKategorie
+        fields = ["id", "name_de", "name_fr", "reihenfolge", "aktiv", "anzahl"]
+        read_only_fields = ["id", "anzahl"]
+
+    def get_anzahl(self, obj) -> int:
+        return obj.stellen.count()
+
+    def validate_name_de(self, value):
+        wert = value.strip()
+        if not wert:
+            raise serializers.ValidationError("Der Name darf nicht leer sein.")
+        return wert
+
+
+class HilfeAngebotSerializer(serializers.ModelSerializer):
+    """Offene Meldung eines Mitglieds. Status, Zuordnung und Notiz setzt nur das Büro."""
+
+    membre_detail = MembreResumeSerializer(source="membre", read_only=True)
+    kategorie_detail = serializers.SerializerMethodField()
+    stelle_titel = serializers.CharField(source="stelle.titel", read_only=True, allow_null=True)
+    ist_meins = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HilfeAngebot
+        fields = [
+            "id",
+            "membre",
+            "membre_detail",
+            "kategorie",
+            "kategorie_detail",
+            "titel",
+            "beschreibung",
+            "verfuegbarkeit",
+            "status",
+            "stelle",
+            "stelle_titel",
+            "notiz",
+            "ist_meins",
+            "created_at",
+        ]
+        read_only_fields = ["id", "membre", "status", "stelle", "notiz", "created_at"]
+
+    def validate_beschreibung(self, value):
+        sauber = formattext.bereinige(value or "")
+        if len(formattext.klartext(sauber)) > 2000:
+            raise serializers.ValidationError("Der Text ist zu lang (höchstens 2000 Zeichen).")
+        return sauber
+
+    def validate_kategorie(self, value):
+        if value is not None and not value.aktiv:
+            raise serializers.ValidationError("Diese Kategorie ist nicht mehr auswählbar.")
+        return value
+
+    def get_kategorie_detail(self, obj):
+        return kategorie_dict(obj.kategorie)
+
+    def get_ist_meins(self, obj) -> bool:
+        request = self.context.get("request")
+        membre = getattr(getattr(request, "user", None), "membre", None)
+        return membre is not None and obj.membre_id == membre.id
 
 
 class BewerbungSerializer(serializers.ModelSerializer):
