@@ -381,7 +381,9 @@
       "alle": "Toutes",
       "herkunft_alle": "Partout",
       "herkunft_frei": "De l'association",
-      "herkunft_projekt": "Des projets"
+      "herkunft_projekt": "Des projets",
+      "kategorie": "Catégorie",
+      "alle_kategorien": "Toutes les catégories"
     },
     "art": {
       "einmalig": "Ponctuelle",
@@ -421,7 +423,66 @@
       "ohne_region": "– aucun en particulier –",
       "sichtbarkeit": "Qui voit la demande ?",
       "sichtbarkeit_hinweis": "« Publique » est visible sans connexion. Seuls les membres connectés peuvent s'inscrire.",
-      "veroeffentlichen": "Publier"
+      "veroeffentlichen": "Publier",
+      "kategorie": "Catégorie (facultatif)",
+      "ohne_kategorie": "– aucune –"
+    },
+    "ansicht": {
+      "label": "Vue",
+      "gesuche": "Demandes",
+      "angebote": "Offres",
+      "meine_angebote": "Mes offres",
+      "kategorien": "Catégories"
+    },
+    "kat": {
+      "einleitung": "Les catégories classent les demandes et les offres. Une catégorie désactivée n'est plus proposée, mais reste visible sur les demandes existantes.",
+      "neu": "Nouvelle catégorie",
+      "name_de": "Nom (allemand)",
+      "name_fr": "Nom (français)",
+      "reihenfolge": "Ordre",
+      "hinzufuegen": "Ajouter",
+      "bearbeiten": "Modifier",
+      "speichern": "Enregistrer",
+      "deaktivieren": "Désactiver",
+      "aktivieren": "Activer",
+      "inaktiv": "désactivée",
+      "loeschen": "Supprimer",
+      "loeschen_bestaetigen": "Supprimer vraiment la catégorie « {{name}} » ? Les demandes gardent leur contenu mais perdent la catégorie.",
+      "anzahl_one": "{{count}} demande",
+      "anzahl_other": "{{count}} demandes"
+    },
+    "angebot": {
+      "neu": "Proposer mon aide",
+      "formular": "Je veux aider",
+      "einleitung": "Tu veux aider mais aucune demande ne correspond ? Dis-nous pour quoi tu aimerais donner un coup de main. Le bureau te recontacte.",
+      "einleitung_buero": "Les membres proposent ici leur aide spontanément. Accepte une offre (en l'associant si besoin à une demande ouverte) ou refuse-la. La personne est prévenue.",
+      "thema": "Pour quoi veux-tu aider ?",
+      "thema_platzhalter": "p. ex. gâteaux, covoiturage, traduction",
+      "beschreibung": "Précisions (facultatif)",
+      "beschreibung_platzhalter": "Ce que tu sais faire, ce que tu apportes",
+      "verfuegbarkeit": "Quand es-tu disponible ? (facultatif)",
+      "verfuegbarkeit_platzhalter": "p. ex. le samedi, le soir après 18 h",
+      "senden": "Envoyer l'offre",
+      "leer": "Aucune offre pour l'instant.",
+      "zurueckziehen": "Retirer l'offre",
+      "annehmen": "Accepter",
+      "ablehnen": "Refuser",
+      "zuordnen": "Associer à une demande ouverte",
+      "ohne_zuordnung": "– sans association –",
+      "notiz_label": "Court message à la personne (facultatif)",
+      "notiz_buero": "Message du bureau",
+      "zugeordnet": "Associée à : {{titel}}",
+      "status": {
+        "offen": "En attente de réponse",
+        "angenommen": "Acceptée",
+        "abgelehnt": "Refusée",
+        "zurueckgezogen": "Retirée"
+      }
     }
+  },
+  "tabs": {
+    "label": "Rubriques de la page projets",
+    "projekte": "Projets",
+    "hilfe": "Aide recherchée"
   }
 }
