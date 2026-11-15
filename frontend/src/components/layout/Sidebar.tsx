@@ -276,6 +276,15 @@ export const NAV_ITEMS: NavItem[] = [
     group: "general",
     module: "projets",
   },
+  // Hilfe gesucht (Nov. 2026) : freie Gesuche und Projekt-Stellen, gleiche Sichtbarkeit wie die
+  // Projekte (Modul "projets").
+  {
+    to: "/hilfe-gesucht",
+    labelKey: "nav.hilfe_gesucht",
+    icon: IconHeartHandshake,
+    group: "general",
+    module: "projets",
+  },
   // Catalogue boutique (mockup #pg-boutique) — ouvert à tout authentifié, même principe que
   // /mon-adhesion : le backend scope déjà le queryset (produits publiés uniquement en dessous
   // de Bureau Admin, voir ProduitViewSet.get_queryset).

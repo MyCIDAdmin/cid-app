@@ -205,6 +205,8 @@ SEED_SEITEN = {
     "page_tippspiel": ["super_admin"],
     "page_zahlung_versand": ["dir_financier", "super_admin"],
     "page_erfassung_fuer_andere": ["dir_financier", "super_admin"],
+    "page_hilfe_veroeffentlichen": ["rh", "bureau_admin", "dir_financier", "super_admin"],
+    "page_hilfe_genehmigen": ["bureau_admin", "dir_financier", "super_admin"],
 }
 
 

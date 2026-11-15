@@ -14,7 +14,7 @@ from rest_framework.response import Response
 
 from apps.regionen import formattext
 
-from . import exporte, gruppen
+from . import exporte, gruppen, laender_auto
 from . import services as sv
 from . import umfeld
 from .models import ChecklisteErledigt, ChecklistePunkt, Laenderprofil, Teilgruppe
@@ -23,10 +23,24 @@ from .serializers import ChecklisteSerializer, LaenderprofilSerializer
 UID = r"(?P<{}>[0-9a-fA-F-]{{36}})"
 
 
-def laenderprofil_dict(p: Laenderprofil) -> dict:
+def laenderprofil_dict(p: Laenderprofil, bezug=None) -> dict:
+    """Die Felder `einreise` … `weitere_infos` sind die Ergänzungen des Bureau (leer = automatisch).
+    `auto` ist der automatisch berechnete Teil (Währung, Zeitverschiebung zum Bezugstag, Steckdose,
+    Link zu den Hinweisen des Auswärtigen Amts)."""
+    ergaenzungen = (
+        p.einreise,
+        p.waehrung,
+        p.zeitverschiebung,
+        p.steckdose,
+        p.amtliche_hinweise,
+        p.weitere_infos,
+    )
     return {
         "id": str(p.id),
         "land": p.land,
+        "iso": p.iso_code,
+        "auto": laender_auto.auto_daten(p.iso_code, bezug) if p.iso_code else None,
+        "hat_ergaenzungen": any(str(w).strip() for w in ergaenzungen),
         "einreise": p.einreise,
         "waehrung": p.waehrung,
         "zeitverschiebung": p.zeitverschiebung,
@@ -38,8 +52,9 @@ def laenderprofil_dict(p: Laenderprofil) -> dict:
 
 
 def profil_zu_land(land: str):
-    schluessel = (land or "").strip().lower()
-    return Laenderprofil.objects.filter(land_schluessel=schluessel).first() if schluessel else None
+    """Steckbrief zum Reiseland ; fehlt er, entsteht er automatisch beim ersten Bedarf (bekannte
+    Länder). Das Bureau ergänzt ihn danach."""
+    return laender_auto.stelle_profil_sicher(land)
 
 
 class Welle2Mixin:
@@ -317,6 +332,7 @@ class Welle2Mixin:
             p.stand = timezone.localdate()
         p.einreise = formattext.bereinige(p.einreise)
         p.weitere_infos = formattext.bereinige(p.weitere_infos)
+        p.iso_code = p.iso_code or laender_auto.finde_iso(p.land) or ""
         p.save()
         return Response(
             laenderprofil_dict(p),

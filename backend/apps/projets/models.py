@@ -504,9 +504,21 @@ class StatutStelle(models.TextChoices):
 
 class StatutBewerbung(models.TextChoices):
     OFFEN = "offen", _("En attente")
+    # Nur bei freien Gesuchen: die Ersteller·in hat die Person empfohlen, die Genehmigung steht aus.
+    EMPFOHLEN = "empfohlen", _("Recommandée")
     ANGENOMMEN = "angenommen", _("Acceptée")
     ABGELEHNT = "abgelehnt", _("Refusée")
     ZURUECKGEZOGEN = "zurueckgezogen", _("Retirée")
+
+
+class ArtStelle(models.TextChoices):
+    EINMALIG = "einmalig", _("Ponctuel")
+    DAUERHAFT = "dauerhaft", _("Permanent")
+
+
+class SichtbarkeitStelle(models.TextChoices):
+    MITGLIEDER = "mitglieder", _("Membres")
+    OEFFENTLICH = "oeffentlich", _("Public")
 
 
 class ProjetStelle(models.Model):
@@ -515,7 +527,10 @@ class ProjetStelle(models.Model):
     Fähigkeit der Fähigkeiten-Datenbank gebunden, damit passende Mitglieder vorgeschlagen werden."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name="stellen")
+    # Leer = freies Gesuch „Hilfe gesucht“ ohne Projektbezug (Nov. 2026).
+    projet = models.ForeignKey(
+        Projet, on_delete=models.CASCADE, related_name="stellen", null=True, blank=True
+    )
     titel = models.CharField(max_length=120)
     beschreibung = models.TextField(blank=True, max_length=1000)
     faehigkeit = models.ForeignKey(
@@ -526,6 +541,18 @@ class ProjetStelle(models.Model):
     )
     status = models.CharField(
         max_length=20, choices=StatutStelle.choices, default=StatutStelle.OFFEN
+    )
+    # Hilfe gesucht: einmalig (mit Datum) oder dauerhafte Aufgabe, optionale Bewerbungsfrist,
+    # Sichtbarkeit (nur für freie Gesuche ; Stellen eines Projekts folgen dem Projekt).
+    art = models.CharField(max_length=12, choices=ArtStelle.choices, default=ArtStelle.DAUERHAFT)
+    termin = models.DateField(null=True, blank=True)
+    ort = models.CharField(max_length=120, blank=True)
+    frist = models.DateField(null=True, blank=True)
+    sichtbarkeit = models.CharField(
+        max_length=12, choices=SichtbarkeitStelle.choices, default=SichtbarkeitStelle.OEFFENTLICH
+    )
+    region = models.ForeignKey(
+        "regionen.Region", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     created_by = models.ForeignKey(
         "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
@@ -538,7 +565,7 @@ class ProjetStelle(models.Model):
         ordering = ["created_at"]
 
     def __str__(self):
-        return f"{self.projet} — {self.titel}"
+        return f"{self.projet} — {self.titel}" if self.projet_id else self.titel
 
 
 class ProjetBewerbung(models.Model):
@@ -554,6 +581,9 @@ class ProjetBewerbung(models.Model):
         max_length=20, choices=StatutBewerbung.choices, default=StatutBewerbung.OFFEN
     )
     entschieden_von = models.ForeignKey(
+        "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    empfohlen_von = models.ForeignKey(
         "membres.Membre", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     created_at = models.DateTimeField(auto_now_add=True)

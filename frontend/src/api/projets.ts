@@ -408,6 +408,14 @@ export async function listOffeneStellen(): Promise<ProjetStelle[]> {
   return data;
 }
 
+/** Freie Gesuche „Hilfe gesucht“ (ohne Projekt), die der Nutzer sehen darf – auch anonym. */
+export async function listFreieStellen(): Promise<ProjetStelle[]> {
+  const { data } = await apiClient.get<ProjetStelle[]>("/projets/stellen/", {
+    params: { frei: 1 },
+  });
+  return data;
+}
+
 export async function listStellen(projetId: string): Promise<ProjetStelle[]> {
   const { data } = await apiClient.get<ProjetStelle[]>("/projets/stellen/", {
     params: { projet: projetId },
@@ -456,6 +464,11 @@ export async function listBewerbungen(params: {
   stelle__projet?: string;
 }): Promise<ProjetBewerbung[]> {
   const { data } = await apiClient.get<ProjetBewerbung[]>("/projets/bewerbungen/", { params });
+  return data;
+}
+
+export async function bewerbungEmpfehlen(id: string): Promise<ProjetBewerbung> {
+  const { data } = await apiClient.post<ProjetBewerbung>(`/projets/bewerbungen/${id}/empfehlen/`);
   return data;
 }
 

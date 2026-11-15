@@ -30,7 +30,7 @@ from rest_framework.views import APIView
 
 from apps.notifications.models import TypeNotification
 
-from . import formattext, mails, services, wettbewerb
+from . import formattext, mails, services, spielverknuepfung, wettbewerb
 from .models import Teilnahme, Veranstaltung, VeranstaltungStatus
 from .permissions import IsAuthenticated
 from .views import _bearbeitbar, _bild, _html, _region, _standort, _text, _url
@@ -107,6 +107,7 @@ def veranstaltung_dict(request, v: Veranstaltung, *, bearbeiter: bool, verwalter
         "bild_url": _url(v.bild),
         "max_teilnehmer": v.max_teilnehmer,
         "ticket_aktiv": v.ticket_aktiv,
+        "spiel": spielverknuepfung.spiel_dict(v.spiel) if v.spiel_id else None,
         "status": v.status,
         "ablehngrund": v.ablehngrund if bearbeiter else "",
         "ersteller_name": v.ersteller_name,
@@ -164,20 +165,49 @@ def _maps_url(daten) -> str:
     return wert
 
 
+def _spiel(wert):
+    """Spiel aus dem Spielplan (Sektor-Treffen zu einem Spiel) ; nur künftige, nicht abgesagte."""
+    from apps.communaute.models import RencontreCalendrier, StatutRencontre
+
+    try:
+        spiel = RencontreCalendrier.objects.get(pk=wert)
+    except (RencontreCalendrier.DoesNotExist, DjangoValidationError, ValueError):
+        raise ValidationError({"spiel": "Dieses Spiel gibt es nicht."})
+    if spiel.statut == StatutRencontre.ANNULEE:
+        raise ValidationError({"spiel": "Das Spiel wurde abgesagt."})
+    return spiel
+
+
 def _felder(daten, region, v=None) -> dict:
     erg = {}
+    spiel = None
+    verknuepfen = "spiel" in daten and daten.get("spiel") not in (None, "")
+    if verknuepfen:
+        spiel = _spiel(daten.get("spiel"))
+    elif "spiel" in daten:
+        erg["spiel"] = None  # Verknüpfung lösen: Datum bleibt, wird wieder frei änderbar
+        erg["spiel_stand"] = ""
+    behaelt_spiel = spiel is not None or (v is not None and v.spiel_id and "spiel" not in daten)
     if v is None or "titel" in daten:
-        erg["titel"] = _text(daten, "titel", 150, pflicht=True)
-    if v is None or "datum" in daten:
-        erg["datum"] = _datum(daten.get("datum"))
+        if spiel is not None and not str(daten.get("titel") or "").strip():
+            erg["titel"] = spielverknuepfung.spiel_titel(spiel)[:150]
+        else:
+            erg["titel"] = _text(daten, "titel", 150, pflicht=True)
+    if spiel is not None:
+        erg["spiel"] = spiel
+        erg["spiel_stand"] = spiel.statut
+        erg["datum"], erg["uhrzeit"] = spielverknuepfung.anstoss(spiel)
+    elif not behaelt_spiel:
+        if v is None or "datum" in daten:
+            erg["datum"] = _datum(daten.get("datum"))
+        if "uhrzeit" in daten:
+            erg["uhrzeit"] = _uhrzeit(daten.get("uhrzeit"))
     if v is None or "ort" in daten:
         erg["ort"] = _text(daten, "ort", 200, pflicht=True)
     if "ort_maps_url" in daten:
         erg["ort_maps_url"] = _maps_url(daten)
     if "beschreibung" in daten:
         erg["beschreibung"] = _html(daten, "beschreibung", 4000)
-    if "uhrzeit" in daten:
-        erg["uhrzeit"] = _uhrzeit(daten.get("uhrzeit"))
     if "max_teilnehmer" in daten:
         erg["max_teilnehmer"] = _max(daten.get("max_teilnehmer"))
     if "ticket_aktiv" in daten:
@@ -187,6 +217,20 @@ def _felder(daten, region, v=None) -> dict:
     if "standort" in daten:
         erg["standort"] = _standort(region, daten.get("standort"))
     return erg
+
+
+class SpieleView(APIView):
+    """Kommende Spiele des Spielplans für die Auswahl „Treffen zu einem Spiel“."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from apps.communaute.models import RencontreCalendrier, StatutRencontre
+
+        spiele = RencontreCalendrier.objects.filter(
+            date_heure__gte=timezone.now(), statut__in=[StatutRencontre.PROGRAMMEE]
+        ).order_by("date_heure")[:60]
+        return Response({"ergebnisse": [spielverknuepfung.spiel_dict(s) for s in spiele]})
 
 
 class VeranstaltungenView(APIView):

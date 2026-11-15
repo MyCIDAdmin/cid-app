@@ -77,6 +77,7 @@ import MembreImportPage from "./pages/membres/MembreImportPage";
 import MembreRapprochementPage from "./pages/membres/MembreRapprochementPage";
 import MembresPage from "./pages/membres/MembresPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import HilfeGesuchtPage from "./pages/hilfe/HilfeGesuchtPage";
 import AdminProjetsPage from "./pages/projets/AdminProjetsPage";
 import ProjetArbeitsbereichPage from "./pages/projets/ProjetArbeitsbereichPage";
 import ProjetDetailPage from "./pages/projets/ProjetDetailPage";
@@ -124,6 +125,8 @@ export default function App() {
           s'affiche aussi bien sur la Startseite publique que dans l'app connectée. */}
         {/* Öffentlicher Kalender (Release 15) : ohne Anmeldung, nur öffentliche Termine. */}
         <Route path="/kalender-oeffentlich" element={<OeffentlicherKalenderPage />} />
+        {/* Hilfe gesucht (Nov. 2026) : öffentlich markierte Gesuche ohne Anmeldung. */}
+        <Route path="/hilfe-oeffentlich" element={<HilfeGesuchtPage oeffentlich />} />
         {/* Öffentliche Aktionsseite einer Beitragsaktion (geteilter Link, ohne Anmeldung). */}
         <Route path="/aktion/:id" element={<AktionOeffentlichPage />} />
         {/* Öffentliche Vorschau einer Reise (geteilter Link, ohne Anmeldung, nie Namen). */}
@@ -786,6 +789,15 @@ export default function App() {
             https://www.mycid.org/projects — "View Project" ouvre une page dédiée, jamais une
             modale) — même niveau d'accès que /projets ci-dessus, voir docstring
             ProjetDetailPage. */}
+          {/* Hilfe gesucht : eingeloggte Sicht mit Seitenleiste, gleiche Sichtbarkeit wie Projekte. */}
+          <Route
+            path="/hilfe-gesucht"
+            element={
+              <RequireMenuModule cle="projets">
+                <HilfeGesuchtPage />
+              </RequireMenuModule>
+            }
+          />
           <Route
             path="/projets/:id"
             element={

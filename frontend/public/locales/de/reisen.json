@@ -483,12 +483,21 @@
     "weitere_infos": "Weitere Infos",
     "stand": "Stand {{datum}}",
     "haftung": "Ohne Gewähr; bitte vor der Reise bei den offiziellen Stellen prüfen.",
-    "admin_hinweis": "Länder-Steckbriefe gelten für alle Reisen in das jeweilige Land. Das Land muss genau so geschrieben sein wie im Reiseziel.",
+    "admin_hinweis": "Länder-Steckbriefe entstehen automatisch, sobald eine Reise in ein bekanntes Land geplant wird. Hier ergänzt das Bureau zusätzliche Informationen (Einreise, Hinweise, eigene Werte). Das Land muss wie im Reiseziel geschrieben sein.",
     "neu": "Steckbrief anlegen",
     "bearbeiten": "Bearbeiten",
     "speichern": "Speichern",
     "formular": "Steckbrief",
-    "leer": "Noch keine Steckbriefe."
+    "leer": "Noch keine Steckbriefe.",
+    "zeit_gleich": "gleiche Zeit wie in Deutschland",
+    "zeit_stunden": "{{zahl}} Std. zur deutschen Zeit",
+    "zeit_mehrere": "mehrere Zeitzonen",
+    "steckdose_wert": "Typ {{typen}} · {{spannung}}, {{frequenz}}",
+    "amtlich_link": "Reise- und Sicherheitshinweise des Auswärtigen Amts",
+    "automatisch_wert": "Automatisch: {{wert}}",
+    "ergaenzen_hinweis": "Währung, Zeitverschiebung, Steckdose und der Link zu den amtlichen Hinweisen werden automatisch ergänzt. Ein ausgefülltes Feld ersetzt den automatischen Wert, leer lassen = automatisch.",
+    "ergaenzt": "mit Ergänzungen",
+    "nur_automatisch": "automatisch"
   },
   "umfeld": {
     "titel": "Am Reiseziel: {{ort}}",

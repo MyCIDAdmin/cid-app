@@ -226,6 +226,17 @@ class Veranstaltung(models.Model):
     # 2026-10-23 : Eintrittsticket mit QR-Code (apps.eintritt), wie bei Evenement.ticket_aktiv.
     ticket_aktiv = models.BooleanField(default=False)
     max_teilnehmer = models.PositiveIntegerField(null=True, blank=True)
+    # Nov. 2026: Treffen zu einem Spiel (z. B. gemeinsames Schauen). Datum und Uhrzeit folgen dem
+    # Spielplan, solange das Spiel verknüpft ist (siehe spielverknuepfung.py). `spiel_stand` merkt
+    # den zuletzt gemeldeten Spielstatus, damit eine Absage nur einmal gemeldet wird.
+    spiel = models.ForeignKey(
+        "communaute.RencontreCalendrier",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="sektor_veranstaltungen",
+    )
+    spiel_stand = models.CharField(max_length=20, blank=True)
     status = models.CharField(
         max_length=20, choices=VeranstaltungStatus.choices, default=VeranstaltungStatus.ENTWURF
     )

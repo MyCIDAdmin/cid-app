@@ -58,7 +58,9 @@
     "page_community": "Communauté (modérer, contributions de la rédaction, calendrier sportif)",
     "page_tippspiel": "Concours de pronostics (créer et gérer)",
     "page_zahlung_versand": "Confirmer les paiements et expédier les commandes",
-    "page_erfassung_fuer_andere": "Saisir pour autrui (cotisations, inscriptions, adhésions)"
+    "page_erfassung_fuer_andere": "Saisir pour autrui (cotisations, inscriptions, adhésions)",
+    "page_hilfe_veroeffentlichen": "Publier des appels à l'aide",
+    "page_hilfe_genehmigen": "Approuver les candidatures d'aide"
   },
   "attribution": {
     "col_roles_attribues": "Rôles attribués",

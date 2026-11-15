@@ -10,6 +10,7 @@ import {
 } from "../../hooks/useReisen";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import type { Laenderprofil, LaenderprofilEingabe } from "../../types/reisen";
+import { autoWerte } from "./steckbriefWerte";
 import { FELD, Fehler, KARTE, KNOPF, KNOPF_LEISE } from "./ui";
 
 const LEER: LaenderprofilEingabe = {
@@ -25,13 +26,21 @@ const LEER: LaenderprofilEingabe = {
 function Formular({
   start,
   id,
+  auto,
   onFertig,
 }: {
   start: LaenderprofilEingabe;
   id?: string;
+  auto?: Laenderprofil["auto"];
   onFertig: () => void;
 }) {
-  const { t } = useTranslation("reisen");
+  const { t, i18n } = useTranslation("reisen");
+  const werte = autoWerte(auto, i18n.language?.startsWith("fr") ? "fr" : "de", t);
+  const vorgabe: Partial<Record<keyof LaenderprofilEingabe, string>> = {
+    waehrung: werte.waehrung,
+    zeitverschiebung: werte.zeit,
+    steckdose: werte.steckdose,
+  };
   const speichern = useLaenderprofilSpeichern();
   const [f, setF] = useState<LaenderprofilEingabe>(start);
   const [fehler, setFehler] = useState("");
@@ -40,7 +49,9 @@ function Formular({
     <input
       className={FELD}
       aria-label={t(`steckbrief.${k}`)}
-      placeholder={t(`steckbrief.${k}`)}
+      placeholder={
+        vorgabe[k] ? t("steckbrief.automatisch_wert", { wert: vorgabe[k] }) : t(`steckbrief.${k}`)
+      }
       value={f[k] ?? ""}
       onChange={(e) => set(k, e.target.value)}
     />
@@ -58,6 +69,7 @@ function Formular({
   }
   return (
     <form onSubmit={senden} className={`${KARTE} space-y-2`} aria-label={t("steckbrief.formular")}>
+      <p className="text-[11px] text-text-tertiary">{t("steckbrief.ergaenzen_hinweis")}</p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {feld("land")}
         {feld("waehrung")}
@@ -103,6 +115,7 @@ export default function SteckbriefeAdmin() {
           key={bearbeite === "neu" ? "neu" : bearbeite.id}
           start={bearbeite === "neu" ? LEER : bearbeite}
           id={bearbeite === "neu" ? undefined : bearbeite.id}
+          auto={bearbeite === "neu" ? null : bearbeite.auto}
           onFertig={() => setBearbeite(null)}
         />
       ) : (
@@ -118,7 +131,9 @@ export default function SteckbriefeAdmin() {
           <li key={p.id} className={`${KARTE} flex items-center justify-between gap-2 text-sm`}>
             <span>
               <b>{p.land}</b>
-              <span className="ml-2 text-xs text-text-tertiary">{p.stand}</span>
+              <span className="ml-2 text-xs text-text-tertiary">
+                {p.hat_ergaenzungen ? t("steckbrief.ergaenzt") : t("steckbrief.nur_automatisch")}
+              </span>
             </span>
             <span className="flex gap-2">
               <button type="button" className={KNOPF_LEISE} onClick={() => setBearbeite(p)}>

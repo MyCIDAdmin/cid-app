@@ -22,3 +22,16 @@ def neumitglied_bonus(sender, instance, created, update_fields, **kwargs):
         wettbewerb.buche_neumitglied(instance.user)
     except Exception:  # noqa: BLE001 – die Mitgliedschaft darf nie am Wettbewerb scheitern
         logger.exception("Neumitglied-Bonus fehlgeschlagen für %s", instance.pk)
+
+
+@receiver(post_save, sender="communaute.RencontreCalendrier", dispatch_uid="regionen_spiel_folgen")
+def spiel_folgen(sender, instance, created, **kwargs):
+    """Treffen, die an dieses Spiel gebunden sind, folgen dem Spielplan (Datum, Absage)."""
+    if created:
+        return
+    try:
+        from .spielverknuepfung import spiel_geaendert
+
+        spiel_geaendert(instance)
+    except Exception:  # noqa: BLE001 – der Spielplan-Abgleich darf nie am Treffen scheitern
+        logger.exception("Treffen konnten dem Spiel %s nicht folgen", instance.pk)

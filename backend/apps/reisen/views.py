@@ -265,7 +265,9 @@ class ReiseViewSet(Welle2Mixin, viewsets.GenericViewSet):
                 ),
                 regeln_bestaetigt=bool(ctx.tn and ctx.tn.regeln_bestaetigt_am),
                 laenderprofil=(
-                    laenderprofil_dict(profil) if (profil := profil_zu_land(reise.land)) else None
+                    laenderprofil_dict(profil, reise.start)
+                    if (profil := profil_zu_land(reise.land))
+                    else None
                 ),
             )
             if ctx.tn:

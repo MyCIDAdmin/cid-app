@@ -334,7 +334,8 @@
       "offen": "Offen",
       "angenommen": "Angenommen",
       "abgelehnt": "Abgelehnt",
-      "zurueckgezogen": "Zurückgezogen"
+      "zurueckgezogen": "Zurückgezogen",
+      "empfohlen": "Empfohlen"
     }
   },
   "dach": {
@@ -367,5 +368,60 @@
     "loeschen_titel": "Meilenstein löschen",
     "loeschen_frage": "Meilenstein „{{titel}}“ wirklich löschen?",
     "fehler": "Der Meilenstein konnte nicht gespeichert werden."
+  },
+  "hilfe": {
+    "seite_titel": "Hilfe gesucht",
+    "seite_einleitung": "Hier suchen Projekte und der Verein Unterstützung – einmalig für einen Termin oder dauerhaft für eine Aufgabe. Melde dich, wenn du helfen möchtest.",
+    "oeffentlich_login": "Anmelden, um dich zu melden",
+    "neu": "Neues Gesuch",
+    "laedt": "Wird geladen …",
+    "leer": "Im Moment wird keine Hilfe gesucht. Schau bald wieder vorbei.",
+    "filter": {
+      "art": "Art der Hilfe",
+      "alle": "Alle",
+      "herkunft_alle": "Überall",
+      "herkunft_frei": "Vom Verein",
+      "herkunft_projekt": "Aus Projekten"
+    },
+    "art": {
+      "einmalig": "Einmalig",
+      "dauerhaft": "Dauerhaft"
+    },
+    "art_mit_datum": "Einmalig am {{datum}}",
+    "sichtbarkeit": {
+      "mitglieder": "Nur Mitglieder",
+      "oeffentlich": "Öffentlich"
+    },
+    "projekt": "Projekt: {{titel}}",
+    "frist_bis": "Meldung bis {{datum}}",
+    "gemeldet": "Du hast dich gemeldet – die Ansprechperson prüft und das Büro bestätigt.",
+    "empfohlen_status": "Du wurdest empfohlen – die endgültige Bestätigung steht noch aus.",
+    "angenommen": "Du bist dabei! Die Ansprechperson meldet sich per Chat bei dir.",
+    "nachricht_label": "Nachricht an die Ansprechperson (optional)",
+    "zu_genehmigen": "{{count}} empfohlene Meldung wartet auf deine Genehmigung.",
+    "meldungen_one": "{{count}} Meldung ansehen",
+    "meldungen_other": "{{count}} Meldungen ansehen",
+    "keine_meldungen": "Noch keine Meldungen.",
+    "empfehlen": "Empfehlen",
+    "genehmigen": "Genehmigen",
+    "empfohlen_von": "empfohlen von {{name}}",
+    "wartet_auf_freigabe": "Wartet auf Genehmigung",
+    "passende_hinweis": "Vorschläge aus der Fähigkeiten-Datenbank. Es wird niemand automatisch benachrichtigt.",
+    "form": {
+      "titel": "Neues Hilfegesuch",
+      "titel_platzhalter": "z. B. Helfer·innen für den Stand beim Heimspiel",
+      "art": "Art der Hilfe",
+      "art_hinweis_einmalig": "Einmalige Hilfe an einem bestimmten Tag.",
+      "art_hinweis_dauerhaft": "Dauerhafte Aufgabe ohne Enddatum. Du schließt sie, wenn sie nicht mehr gebraucht wird.",
+      "termin": "Datum",
+      "termin_noetig": "Bitte gib bei einmaliger Hilfe ein Datum an.",
+      "ort": "Ort (optional)",
+      "frist": "Meldefrist (optional)",
+      "region": "Sektor (optional)",
+      "ohne_region": "– kein bestimmter –",
+      "sichtbarkeit": "Wer sieht das Gesuch?",
+      "sichtbarkeit_hinweis": "„Öffentlich“ ist auch ohne Anmeldung sichtbar. Melden können sich immer nur angemeldete Mitglieder.",
+      "veroeffentlichen": "Veröffentlichen"
+    }
   }
 }

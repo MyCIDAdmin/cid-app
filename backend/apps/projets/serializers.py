@@ -20,6 +20,7 @@ from apps.membres.models import Membre
 from apps.uebersetzung.serializers import UebersetzungenField
 
 from .models import (
+    ArtStelle,
     Aufgabe,
     AufgabeKommentar,
     PlanKosten,
@@ -478,15 +479,26 @@ class ProjetAktivitaetSerializer(serializers.ModelSerializer):
 
 
 class StelleSerializer(serializers.ModelSerializer):
-    """Offene Stelle eines Projekts. `meine_bewerbung` (Status der eigenen Meldung) und die
-    Bewerberzahl werden aus dem Request-Nutzer berechnet — nie vom Client geliefert."""
+    """Offene Stelle eines Projekts oder freies Gesuch „Hilfe gesucht“ (ohne Projekt).
+    `meine_bewerbung` (Status der eigenen Meldung), die Bewerberzahlen und die Rechte-Flags werden
+    aus dem Request-Nutzer berechnet — nie vom Client geliefert."""
 
-    faehigkeit_name = serializers.CharField(source="faehigkeit.bezeichnung", read_only=True)
-    projet_titre = serializers.CharField(source="projet.titre", read_only=True)
+    faehigkeit_name = serializers.CharField(
+        source="faehigkeit.bezeichnung", read_only=True, allow_null=True
+    )
+    projet_titre = serializers.CharField(source="projet.titre", read_only=True, allow_null=True)
+    region_name = serializers.CharField(source="region.name", read_only=True, allow_null=True)
+    projet = serializers.PrimaryKeyRelatedField(
+        queryset=Projet.objects.all(), required=False, allow_null=True
+    )
+    frei = serializers.SerializerMethodField()
     angenommen = serializers.SerializerMethodField()
     freie_plaetze = serializers.SerializerMethodField()
     meine_bewerbung = serializers.SerializerMethodField()
     bewerbungen_offen = serializers.SerializerMethodField()
+    bewerbungen_empfohlen = serializers.SerializerMethodField()
+    kann_pflegen = serializers.SerializerMethodField()
+    ist_meine = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjetStelle
@@ -494,16 +506,27 @@ class StelleSerializer(serializers.ModelSerializer):
             "id",
             "projet",
             "projet_titre",
+            "frei",
             "titel",
             "beschreibung",
             "faehigkeit",
             "faehigkeit_name",
             "anzahl",
             "status",
+            "art",
+            "termin",
+            "ort",
+            "frist",
+            "sichtbarkeit",
+            "region",
+            "region_name",
             "angenommen",
             "freie_plaetze",
             "meine_bewerbung",
             "bewerbungen_offen",
+            "bewerbungen_empfohlen",
+            "kann_pflegen",
+            "ist_meine",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
@@ -516,6 +539,9 @@ class StelleSerializer(serializers.ModelSerializer):
 
     def _bewerbungen(self, obj):
         return list(obj.bewerbungen.all())
+
+    def get_frei(self, obj) -> bool:
+        return obj.projet_id is None
 
     def get_angenommen(self, obj) -> int:
         return sum(1 for b in self._bewerbungen(obj) if b.status == StatutBewerbung.ANGENOMMEN)
@@ -532,11 +558,45 @@ class StelleSerializer(serializers.ModelSerializer):
                 return b.status
         return None
 
+    def get_kann_pflegen(self, obj) -> bool:
+        pruefe = self.context.get("kann_pflegen")
+        return bool(pruefe and pruefe(obj))
+
+    def get_ist_meine(self, obj) -> bool:
+        membre = self._membre()
+        return membre is not None and obj.created_by_id == membre.id
+
+    def _sieht_meldungen(self, obj) -> bool:
+        pruefe = self.context.get("kann_pflegen")
+        return bool(pruefe and pruefe(obj))
+
     def get_bewerbungen_offen(self, obj):
-        kann_verwalten = self.context.get("kann_verwalten")
-        if kann_verwalten is None or not kann_verwalten(obj.projet_id):
+        if not self._sieht_meldungen(obj):
             return None
         return sum(1 for b in self._bewerbungen(obj) if b.status == StatutBewerbung.OFFEN)
+
+    def get_bewerbungen_empfohlen(self, obj):
+        if not self._sieht_meldungen(obj):
+            return None
+        return sum(1 for b in self._bewerbungen(obj) if b.status == StatutBewerbung.EMPFOHLEN)
+
+    def validate(self, attrs):
+        instanz = self.instance
+        art = attrs.get("art", instanz.art if instanz else ArtStelle.DAUERHAFT)
+        termin = attrs.get("termin", instanz.termin if instanz else None)
+        frist = attrs.get("frist", instanz.frist if instanz else None)
+        if art == ArtStelle.EINMALIG and termin is None:
+            raise serializers.ValidationError(
+                {"termin": "Bei einmaliger Hilfe ist ein Datum nötig."}
+            )
+        if art == ArtStelle.DAUERHAFT:
+            attrs["termin"] = None
+            termin = None
+        if frist and termin and frist > termin:
+            raise serializers.ValidationError(
+                {"frist": "Die Frist darf nicht nach dem Termin liegen."}
+            )
+        return attrs
 
     def update(self, instance, validated_data):
         validated_data.pop("projet", None)  # nie auf ein anderes Projekt umhängen (IDOR)
@@ -546,8 +606,15 @@ class StelleSerializer(serializers.ModelSerializer):
 class BewerbungSerializer(serializers.ModelSerializer):
     membre_detail = MembreResumeSerializer(source="membre", read_only=True)
     stelle_titel = serializers.CharField(source="stelle.titel", read_only=True)
-    projet = serializers.UUIDField(source="stelle.projet_id", read_only=True)
-    projet_titre = serializers.CharField(source="stelle.projet.titre", read_only=True)
+    projet = serializers.UUIDField(source="stelle.projet_id", read_only=True, allow_null=True)
+    projet_titre = serializers.CharField(
+        source="stelle.projet.titre", read_only=True, allow_null=True
+    )
+    empfohlen_von_name = serializers.SerializerMethodField()
+
+    def get_empfohlen_von_name(self, obj) -> str:
+        person = obj.empfohlen_von
+        return f"{person.prenom} {person.nom}".strip() if person else ""
 
     class Meta:
         model = ProjetBewerbung
@@ -561,6 +628,7 @@ class BewerbungSerializer(serializers.ModelSerializer):
             "membre_detail",
             "nachricht",
             "status",
+            "empfohlen_von_name",
             "created_at",
         ]
         read_only_fields = fields

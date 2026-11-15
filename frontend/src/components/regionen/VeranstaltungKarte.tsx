@@ -88,6 +88,11 @@ export default function VeranstaltungKarte({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-text-primary">{v.titel}</h3>
+          {v.spiel && (
+            <p className="mt-0.5 text-xs font-medium text-ca">
+              ⚽ {t("v_spiel_badge", { spiel: v.spiel.titel })}
+            </p>
+          )}
           <p className="text-sm text-text-secondary">
             {formatDatum(v.datum, i18n.language)}
             {v.uhrzeit ? `, ${v.uhrzeit}` : ""} · {v.ort}

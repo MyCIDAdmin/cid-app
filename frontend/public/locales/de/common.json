@@ -42,7 +42,8 @@
     "admin_regionen": "Sektoren-Struktur",
     "aktivitaet": "Aktivität",
     "offene_auffaelligkeiten_one": "{{count}} offene Auffälligkeit",
-    "offene_auffaelligkeiten_other": "{{count}} offene Auffälligkeiten"
+    "offene_auffaelligkeiten_other": "{{count}} offene Auffälligkeiten",
+    "hilfe_gesucht": "Hilfe gesucht"
   },
   "nav_groupe": {
     "general": "Allgemein",
