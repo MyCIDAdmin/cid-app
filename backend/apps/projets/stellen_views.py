@@ -82,7 +82,7 @@ class StelleViewSet(ModelViewSet):
     serializer_class = StelleSerializer
     pagination_class = None
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["projet", "status", "art", "region"]
+    filterset_fields = ["projet", "status", "art", "region", "kategorie"]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -108,7 +108,7 @@ class StelleViewSet(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = ProjetStelle.objects.select_related(
-            "faehigkeit", "projet", "region"
+            "faehigkeit", "projet", "region", "kategorie"
         ).prefetch_related("bewerbungen")
         # Stellen eines Projekts folgen der Sichtbarkeit des Projekts ; freie Gesuche der eigenen
         # Einstellung (nur Mitglieder = angemeldete Konten, sonst öffentlich ohne Anmeldung).
