@@ -1,17 +1,20 @@
-/** Ländersteckbrief : Einreise, Währung, Zeitverschiebung, Steckdose, amtliche Hinweise (mit Stand). */
+/** Ländersteckbrief : automatisch berechnete Angaben, ergänzt durch das Bureau (Ergänzung gewinnt). */
 import { useTranslation } from "react-i18next";
 
 import FormatierterText from "../regionen/FormatierterText";
 import { datumKurz } from "../../utils/reisen";
 import type { Laenderprofil } from "../../types/reisen";
+import { autoWerte, type Sprache } from "./steckbriefWerte";
 import { KARTE } from "./ui";
 
 export default function Steckbrief({ profil }: { profil: Laenderprofil }) {
   const { t, i18n } = useTranslation("reisen");
+  const sprache: Sprache = i18n.language?.startsWith("fr") ? "fr" : "de";
+  const auto = autoWerte(profil.auto, sprache, t);
   const zeilen: [string, string][] = [
-    [t("steckbrief.waehrung"), profil.waehrung],
-    [t("steckbrief.zeitverschiebung"), profil.zeitverschiebung],
-    [t("steckbrief.steckdose"), profil.steckdose],
+    [t("steckbrief.waehrung"), profil.waehrung || auto.waehrung],
+    [t("steckbrief.zeitverschiebung"), profil.zeitverschiebung || auto.zeit],
+    [t("steckbrief.steckdose"), profil.steckdose || auto.steckdose],
   ];
   return (
     <section
@@ -35,10 +38,23 @@ export default function Steckbrief({ profil }: { profil: Laenderprofil }) {
           <FormatierterText text={profil.einreise} />
         </div>
       )}
-      {profil.amtliche_hinweise && (
+      {profil.amtliche_hinweise ? (
         <p className="text-xs">
           <b>{t("steckbrief.amtlich")}:</b> {profil.amtliche_hinweise}
         </p>
+      ) : (
+        auto.link && (
+          <p className="text-xs">
+            <a
+              href={auto.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-primary underline"
+            >
+              {t("steckbrief.amtlich_link")}
+            </a>
+          </p>
+        )
       )}
       {profil.weitere_infos && <FormatierterText text={profil.weitere_infos} />}
       <p className="text-[11px] text-text-tertiary">

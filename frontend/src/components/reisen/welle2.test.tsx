@@ -156,6 +156,52 @@ describe("Infos mit Ländersteckbrief", () => {
   });
 });
 
+describe("Automatischer Steckbrief", () => {
+  const automatisch: Laenderprofil = {
+    ...profil,
+    land: "Tunesien",
+    iso: "TN",
+    einreise: "",
+    waehrung: "",
+    zeitverschiebung: "",
+    steckdose: "",
+    amtliche_hinweise: "",
+    hat_ergaenzungen: false,
+    auto: {
+      iso: "TN",
+      name: { de: "Tunesien", fr: "Tunisie" },
+      waehrung: { code: "TND", name: { de: "Tunesischer Dinar", fr: "dinar tunisien" } },
+      zeitverschiebung: { stunden: -1, mehrere: false },
+      steckdose: { typen: "C, E", spannung: "230 V", frequenz: "50 Hz" },
+      amtliche_hinweise_url: "https://www.auswaertiges-amt.de/de/tunesien-node",
+      stand: "2026-11-01",
+    },
+  };
+
+  it("zeigt die automatisch berechneten Angaben und den Link zu den amtlichen Hinweisen", async () => {
+    renderWithProviders(<InfosTab reise={reise({ voll: true, laenderprofil: automatisch })} />);
+    expect(
+      await screen.findByText(/Tunesischer Dinar \(TND\)|dinar tunisien \(TND\)/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("steckbrief.zeit_stunden")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "steckbrief.amtlich_link" });
+    expect(link).toHaveAttribute("href", "https://www.auswaertiges-amt.de/de/tunesien-node");
+  });
+
+  it("lässt eine Ergänzung des Bureau den automatischen Wert ersetzen", async () => {
+    renderWithProviders(
+      <InfosTab
+        reise={reise({
+          voll: true,
+          laenderprofil: { ...automatisch, steckdose: "Adapter nötig", hat_ergaenzungen: true },
+        })}
+      />,
+    );
+    expect(await screen.findByText("Adapter nötig")).toBeInTheDocument();
+    expect(screen.queryByText("steckbrief.steckdose_wert")).not.toBeInTheDocument();
+  });
+});
+
 describe("Saison", () => {
   it("listet Heim- und Auswärtsspiele mit den Reisen dazu und dem Weg zur Planung", async () => {
     vi.mocked(api.getSaison).mockResolvedValue([

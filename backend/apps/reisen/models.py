@@ -579,11 +579,15 @@ class AnkunftZustimmung(models.Model):
 
 
 class Laenderprofil(models.Model):
-    """Ländersteckbrief (Vorlage je Land), gepflegt vom Bureau. Ohne Gewähr, mit Stand-Datum."""
+    """Ländersteckbrief je Land. Der automatische Teil kommt aus `laender_auto` (nie gespeichert) ;
+    die Felder hier sind die Ergänzungen des Bureau. Ohne Gewähr, mit Stand-Datum."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     land = models.CharField(max_length=100)
     land_schluessel = models.CharField(max_length=100, unique=True, editable=False)
+    # ISO 3166-1 alpha-2 : verbindet den Steckbrief mit dem automatischen Teil (laender_auto.py).
+    # Die Felder darunter sind die Ergänzungen des Bureau ; leer = der automatische Wert gilt.
+    iso_code = models.CharField(max_length=2, blank=True, db_index=True)
     einreise = models.TextField(blank=True)
     waehrung = models.CharField(max_length=100, blank=True)
     zeitverschiebung = models.CharField(max_length=100, blank=True)

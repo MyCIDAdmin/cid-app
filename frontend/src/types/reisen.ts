@@ -352,9 +352,23 @@ export interface SaisonSpiel {
   reisen: ReiseListItem[];
 }
 
+/** Automatisch berechneter Teil eines Steckbriefs (nie gespeichert, immer aus der festen Tabelle). */
+export interface LaenderAuto {
+  iso: string;
+  name: { de: string; fr: string };
+  waehrung: { code: string; name: { de: string; fr: string } } | null;
+  zeitverschiebung: { stunden: number | null; mehrere: boolean } | null;
+  steckdose: { typen: string; spannung: string; frequenz: string } | null;
+  amtliche_hinweise_url: string;
+  stand: string;
+}
+
 export interface Laenderprofil {
   id: string;
   land: string;
+  iso?: string;
+  auto?: LaenderAuto | null;
+  hat_ergaenzungen?: boolean;
   einreise: string;
   waehrung: string;
   zeitverschiebung: string;
@@ -364,7 +378,9 @@ export interface Laenderprofil {
   stand: string;
 }
 
-export type LaenderprofilEingabe = Partial<Omit<Laenderprofil, "id">>;
+export type LaenderprofilEingabe = Partial<
+  Omit<Laenderprofil, "id" | "iso" | "auto" | "hat_ergaenzungen" | "stand">
+>;
 
 export type WetterArt =
   "sonne" | "teilweise" | "wolken" | "nebel" | "regen" | "schnee" | "gewitter";

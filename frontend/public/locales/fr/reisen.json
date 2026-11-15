@@ -483,12 +483,21 @@
     "weitere_infos": "Autres informations",
     "stand": "État au {{datum}}",
     "haftung": "Sans garantie ; à vérifier auprès des autorités officielles avant le départ.",
-    "admin_hinweis": "Les fiches pays valent pour tous les voyages vers le pays concerné. Le pays doit être écrit exactement comme dans la destination du voyage.",
+    "admin_hinweis": "Les fiches pays sont créées automatiquement dès qu'un voyage est prévu dans un pays connu. Le bureau y ajoute des informations complémentaires (entrée, conseils, valeurs propres). Le pays doit être écrit comme dans la destination du voyage.",
     "neu": "Créer une fiche",
     "bearbeiten": "Modifier",
     "speichern": "Enregistrer",
     "formular": "Fiche",
-    "leer": "Aucune fiche pour l'instant."
+    "leer": "Aucune fiche pour l'instant.",
+    "zeit_gleich": "même heure qu'en Allemagne",
+    "zeit_stunden": "{{zahl}} h par rapport à l'Allemagne",
+    "zeit_mehrere": "plusieurs fuseaux horaires",
+    "steckdose_wert": "Type {{typen}} · {{spannung}}, {{frequenz}}",
+    "amtlich_link": "Conseils aux voyageurs du ministère allemand des Affaires étrangères",
+    "automatisch_wert": "Automatique : {{wert}}",
+    "ergaenzen_hinweis": "La monnaie, le décalage horaire, les prises et le lien vers les informations officielles sont complétés automatiquement. Un champ rempli remplace la valeur automatique ; laisser vide = automatique.",
+    "ergaenzt": "avec compléments",
+    "nur_automatisch": "automatique"
   },
   "umfeld": {
     "titel": "Sur place : {{ort}}",
