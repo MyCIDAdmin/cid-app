@@ -330,6 +330,10 @@ class Souscription(models.Model):
     )
 
     date_souscription = models.DateTimeField(default=timezone.now)
+    # Zeitpunkt, an dem das Mitglied bei der Anmeldung bestätigt hat, dass seine persönlichen
+    # Daten (Name, Geburtsdatum, Kontakt, Adresse) stimmen. Leer bei Altdaten und bei Anmeldungen,
+    # die das Büro für das Mitglied erfasst.
+    daten_bestaetigt_am = models.DateTimeField(null=True, blank=True)
     prix_paye = models.DecimalField(
         max_digits=8, decimal_places=2, validators=[MinValueValidator(Decimal("0.00"))]
     )

@@ -490,5 +490,18 @@
       "chats": "Chats",
       "projekte": "Projekte"
     }
+  },
+  "daten": {
+    "titel": "Deine persönlichen Daten",
+    "aendern": "Daten ändern",
+    "laedt": "Deine Daten werden geladen…",
+    "name": "Name",
+    "geburtsdatum": "Geburtsdatum",
+    "email": "E-Mail",
+    "telefon": "Telefon",
+    "adresse": "Adresse",
+    "land": "Land",
+    "bestaetigen": "Meine persönlichen Daten sind korrekt und aktuell.",
+    "pflicht": "Bitte bestätige zuerst, dass deine Daten stimmen."
   }
 }

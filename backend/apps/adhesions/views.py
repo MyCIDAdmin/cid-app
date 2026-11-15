@@ -304,17 +304,34 @@ class SouscriptionViewSet(ModelViewSet):
         rabais = serializer.validated_data.get("rabais")
         erwachsene = serializer.validated_data["erwachsene"]
         kinder = serializer.validated_data["kinder"]
+        daten_bestaetigt = serializer.validated_data["daten_bestaetigt"]
         campagne = offre.campagne
 
-        with transaction.atomic():
-            return self._souscrire(request, membre, offre, rabais, campagne, erwachsene, kinder)
+        # Bei der ersten Anmeldung in einer Kampagne müssen die persönlichen Daten bestätigt sein.
+        # Wer in derselben Kampagne nur das Angebot wechselt, hat sie schon bestätigt.
+        schon_bestaetigt = Souscription.objects.filter(
+            membre=membre, campagne=campagne, daten_bestaetigt_am__isnull=False
+        ).exists()
+        if not daten_bestaetigt and not schon_bestaetigt:
+            raise ValidationError(
+                {"daten_bestaetigt": "Bitte bestätige, dass deine persönlichen Daten stimmen."}
+            )
 
-    def _souscrire(self, request, membre, offre, rabais, campagne, erwachsene, kinder):
+        with transaction.atomic():
+            return self._souscrire(
+                request, membre, offre, rabais, campagne, erwachsene, kinder, daten_bestaetigt
+            )
+
+    def _souscrire(
+        self, request, membre, offre, rabais, campagne, erwachsene, kinder, daten_bestaetigt=False
+    ):
         souscription, _created = Souscription.objects.get_or_create(
             membre=membre,
             campagne=campagne,
             defaults={"offre": offre, "prix_paye": 0},
         )
+        if daten_bestaetigt:
+            souscription.daten_bestaetigt_am = timezone.now()
         if souscription.statut == StatutSouscription.PAYEE:
             raise PermissionDenied(
                 "Cette souscription est déjà payée et ne peut plus être modifiée."

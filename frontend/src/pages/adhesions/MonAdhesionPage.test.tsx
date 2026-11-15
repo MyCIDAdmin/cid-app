@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useAdhesionsHooks from "../../hooks/useAdhesions";
 import * as useCotisationsHooks from "../../hooks/useCotisations";
+import * as useMembresHooks from "../../hooks/useMembres";
 import type { CampagneAdhesion, OffreAdhesion, Souscription } from "../../types/adhesion";
 import MonAdhesionPage from "./MonAdhesionPage";
 
@@ -38,6 +39,12 @@ vi.mock("../../hooks/useCotisations", async () => {
     useArticlesCatalogue: vi.fn(),
     useCotisation: vi.fn(),
   };
+});
+
+// Die Datenbestätigung bei der Anmeldung liest die eigene Mitgliedsfiche (useMembreMoi).
+vi.mock("../../hooks/useMembres", async () => {
+  const actual = await vi.importActual<typeof useMembresHooks>("../../hooks/useMembres");
+  return { ...actual, useMembreMoi: vi.fn() };
 });
 
 function offre(overrides: Partial<OffreAdhesion> = {}): OffreAdhesion {
@@ -140,6 +147,20 @@ function souscription(overrides: Partial<Souscription> = {}): Souscription {
 
 describe("MonAdhesionPage", () => {
   beforeEach(() => {
+    vi.mocked(useMembresHooks.useMembreMoi).mockReturnValue({
+      data: {
+        prenom: "Ahmed",
+        nom: "Test",
+        date_naissance: "1990-05-17",
+        email: "ahmed@example.de",
+        telephone: "+49 170 1234567",
+        pays: "DE",
+        adresse_de: "Musterstraße 5",
+        code_postal_de: "10115",
+        ville_de: "Berlin",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembreMoi>);
     vi.mocked(useAdhesionsHooks.useMeineKarte).mockReturnValue({
       data: undefined,
     } as unknown as ReturnType<typeof useAdhesionsHooks.useMeineKarte>);
@@ -293,10 +314,17 @@ describe("MonAdhesionPage", () => {
     // trägt den Knopf — voir docstring MonAdhesionPage.tsx.
     waehleKachel("o1");
     fireEvent.change(screen.getByLabelText("offres.rabais_label"), { target: { value: "r1" } });
+    // Ohne bestätigte Daten gibt es keinen Beitritt.
+    expect(screen.getByText("offres.souscrire")).toBeDisabled();
+    fireEvent.click(screen.getByLabelText("daten.bestaetigen"));
     fireEvent.click(screen.getByText("offres.souscrire"));
 
     expect(mutate).toHaveBeenCalledTimes(1);
-    expect(mutate.mock.calls[0][0]).toEqual({ offre: "o1", rabais: "r1" });
+    expect(mutate.mock.calls[0][0]).toEqual({
+      offre: "o1",
+      rabais: "r1",
+      daten_bestaetigt: true,
+    });
   });
 
   it("Familienpaket: sendet alle Personen in einem Schritt mit der Anmeldung", () => {
@@ -358,15 +386,18 @@ describe("MonAdhesionPage", () => {
     fireEvent.change(vornamen[1], { target: { value: "Lina" } });
     fireEvent.change(nachnamen[1], { target: { value: "Muster" } });
     fireEvent.change(screen.getByLabelText("familie.geburtsjahr"), { target: { value: "2018" } });
-    // Die Einwilligung für Kinder ist Pflicht.
+    // Die Einwilligung für Kinder und die Datenbestätigung sind Pflicht.
     expect(weiter).toBeDisabled();
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByLabelText("familie.einwilligung"));
+    expect(weiter).toBeDisabled();
+    fireEvent.click(screen.getByLabelText("daten.bestaetigen"));
     expect(weiter).toBeEnabled();
     fireEvent.click(weiter);
 
     expect(mutate.mock.calls[0][0]).toEqual({
       offre: "o1",
       rabais: undefined,
+      daten_bestaetigt: true,
       erwachsene: [
         { vorname: "Nora", nachname: "Muster", email: "nora@example.de", beziehung: "ehepartner" },
       ],

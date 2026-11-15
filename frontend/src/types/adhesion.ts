@@ -337,6 +337,8 @@ export interface Souscription {
   offre: string;
   campagne: string;
   date_souscription: string;
+  /** Zeitpunkt, an dem das Mitglied seine persönlichen Daten bestätigt hat (null bei Altdaten). */
+  daten_bestaetigt_am?: string | null;
   prix_paye: string;
   rabais: string | null;
   statut: StatutSouscription;
@@ -363,6 +365,8 @@ export interface Souscription {
 export interface SouscrirePayload {
   offre: string;
   rabais?: string;
+  /** Pflicht bei der ersten Anmeldung in einer Kampagne: die persönlichen Daten stimmen. */
+  daten_bestaetigt?: boolean;
   /** Nur bei Familienpaketen : alle weiteren Personen, in einem Schritt mit der Buchung. */
   erwachsene?: ErwachsenerPayload[];
   kinder?: KindPayload[];

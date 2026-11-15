@@ -490,5 +490,18 @@
       "chats": "Chats",
       "projekte": "Projets"
     }
+  },
+  "daten": {
+    "titel": "Vos données personnelles",
+    "aendern": "Modifier mes données",
+    "laedt": "Chargement de vos données…",
+    "name": "Nom",
+    "geburtsdatum": "Date de naissance",
+    "email": "E-mail",
+    "telefon": "Téléphone",
+    "adresse": "Adresse",
+    "land": "Pays",
+    "bestaetigen": "Mes données personnelles sont correctes et à jour.",
+    "pflicht": "Veuillez d'abord confirmer que vos données sont correctes."
   }
 }

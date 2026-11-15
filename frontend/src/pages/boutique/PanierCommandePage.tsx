@@ -11,11 +11,11 @@
  * purement indicatifs, recalculés à l'identique côté serveur sauf si le catalogue a changé entre
  * temps (auquel cas l'API répond avec le prix catalogue à jour, jamais celui du panier local).
  *
- * Adresse de livraison : pas de préremplissage depuis la fiche Membre (adresse_de/ville_de...)
- * dans cette itération — le formulaire de commande a ses propres champs dédiés côté modèle
- * (Commande.adresse_livraison etc., volontairement distincts de Membre pour permettre une
- * livraison à une adresse différente) ; seul le nom du destinataire est préremployé depuis le
- * compte connecté.
+ * Adresse de livraison : préremplie depuis la fiche Membre (adresse_de, code_postal_de, ville_de,
+ * pays, téléphone) quand elle existe (demande du 2026-11-15) ; le membre peut tout compléter ou
+ * modifier dans le formulaire. Les champs restent distincts de la fiche (Commande.adresse_livraison
+ * etc.) : une modification ne change pas le profil, seule la commande en tient compte. Le nom du
+ * destinataire est préremployé depuis le compte connecté.
  *
  * PAUSE DU PAIEMENT EN LIGNE (retour utilisateur du 2026-09-19, même principe que
  * CotisationStepperPage/MODES_GATEWAY) : PAIEMENT_EN_LIGNE_ACTIF=false ci-dessous masque les
@@ -27,7 +27,7 @@
  * payerEnLigne, erreurPaiement...) reste intact pour une réactivation future — il suffit de
  * repasser PAIEMENT_EN_LIGNE_ACTIF à true.
  */
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -46,6 +46,7 @@ import {
   totalPanierNet,
   usePanierStore,
 } from "../../store/panierStore";
+import { useMembreMoi } from "../../hooks/useMembres";
 import { useAuthStore } from "../../store/authStore";
 import type {
   BonAchatVerification,
@@ -88,20 +89,24 @@ function EtapeIndicateur({ numero, label, active, franchie }: EtapeIndicateurPro
   );
 }
 
+const PAYS_STANDARD = "Allemagne";
+
 function livraisonInitiale(nomDestinataire: string) {
   return {
     nom_destinataire: nomDestinataire,
     adresse_livraison: "",
     code_postal_livraison: "",
     ville_livraison: "",
-    pays_livraison: "Allemagne",
+    pays_livraison: PAYS_STANDARD,
     telephone_livraison: "",
   };
 }
 
 export default function PanierCommandePage() {
   const { t } = useTranslation("boutique");
+  const { t: tMitglieder } = useTranslation("membres");
   const user = useAuthStore((s) => s.user);
+  const membre = useMembreMoi();
 
   const articles = usePanierStore((s) => s.articles);
   const changerQuantite = usePanierStore((s) => s.changerQuantite);
@@ -116,6 +121,26 @@ export default function PanierCommandePage() {
   const [livraison, setLivraison] = useState(() =>
     livraisonInitiale(user ? `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() || user.email : ""),
   );
+  // Adresse du profil : einmal vorbelegen, sobald sie geladen ist, und nur leere Felder füllen —
+  // was das Mitglied schon eingetippt hat, bleibt unangetastet.
+  const adresseVorbelegt = useRef(false);
+  useEffect(() => {
+    const m = membre.data;
+    if (!m || adresseVorbelegt.current) return;
+    adresseVorbelegt.current = true;
+    setLivraison((alt) => ({
+      ...alt,
+      adresse_livraison: alt.adresse_livraison || m.adresse_de || "",
+      code_postal_livraison: alt.code_postal_livraison || m.code_postal_de || "",
+      ville_livraison: alt.ville_livraison || m.ville_de || "",
+      pays_livraison:
+        alt.pays_livraison === PAYS_STANDARD && m.pays
+          ? tMitglieder(`pays.${m.pays}`)
+          : alt.pays_livraison,
+      telephone_livraison: alt.telephone_livraison || m.telephone || "",
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [membre.data]);
   const [commandeConfirmee, setCommandeConfirmee] = useState<Commande | null>(null);
   const [erreurPaiement, setErreurPaiement] = useState<string | null>(null);
 

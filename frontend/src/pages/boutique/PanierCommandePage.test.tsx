@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import * as useBoutiqueHooks from "../../hooks/useBoutique";
+import * as useMembresHooks from "../../hooks/useMembres";
 import { useAuthStore } from "../../store/authStore";
 import { usePanierStore, type ArticlePanier } from "../../store/panierStore";
 import type { Commande } from "../../types/boutique";
@@ -17,6 +18,12 @@ vi.mock("../../hooks/useBoutique", async () => {
     useInitierPaiementEnLigneCommande: vi.fn(),
     useVerifierBonAchat: vi.fn(),
   };
+});
+
+// Die Lieferadresse wird aus der eigenen Mitgliedsfiche vorbelegt (useMembreMoi).
+vi.mock("../../hooks/useMembres", async () => {
+  const actual = await vi.importActual<typeof useMembresHooks>("../../hooks/useMembres");
+  return { ...actual, useMembreMoi: vi.fn() };
 });
 
 function articleTest(overrides: Partial<ArticlePanier> = {}): ArticlePanier {
@@ -80,6 +87,12 @@ describe("PanierCommandePage", () => {
       refreshToken: "r",
     });
 
+    // Standard: keine Mitgliedsfiche (z. B. Konto ohne Profil) -> Formular bleibt leer.
+    vi.mocked(useMembresHooks.useMembreMoi).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembreMoi>);
+
     passerCommandeMock = vi.fn();
     vi.mocked(useBoutiqueHooks.usePasserCommande).mockReturnValue({
       mutate: passerCommandeMock,
@@ -109,6 +122,45 @@ describe("PanierCommandePage", () => {
   it("affiche un message quand le panier est vide", () => {
     renderWithProviders(<PanierCommandePage />);
     expect(screen.getByText("commande.panier_vide")).toBeInTheDocument();
+  });
+
+  it("füllt die Lieferadresse aus dem Profil vor und lässt Ergänzungen zu", () => {
+    vi.mocked(useMembresHooks.useMembreMoi).mockReturnValue({
+      data: {
+        prenom: "Riadh",
+        nom: "Bchini",
+        pays: "DE",
+        adresse_de: "Profilstraße 7",
+        code_postal_de: "50667",
+        ville_de: "Köln",
+        telephone: "+49 170 1112223",
+      },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMembresHooks.useMembreMoi>);
+    usePanierStore.setState({ articles: [articleTest()] });
+    renderWithProviders(<PanierCommandePage />);
+    fireEvent.click(screen.getByText("commande.continuer_livraison"));
+
+    expect(screen.getByLabelText("commande.adresse_label")).toHaveValue("Profilstraße 7");
+    expect(screen.getByLabelText("commande.code_postal_label")).toHaveValue("50667");
+    expect(screen.getByLabelText("commande.ville_label")).toHaveValue("Köln");
+    expect(screen.getByLabelText("commande.telephone_label")).toHaveValue("+49 170 1112223");
+
+    // Ergänzen (z. B. c/o) bleibt möglich und geht in die Bestellung.
+    fireEvent.change(screen.getByLabelText("commande.adresse_label"), {
+      target: { value: "Profilstraße 7, c/o Muster" },
+    });
+    fireEvent.click(screen.getByText("commande.continuer_confirmation"));
+    fireEvent.click(screen.getByText("commande.confirmer_commande"));
+
+    expect(passerCommandeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adresse_livraison: "Profilstraße 7, c/o Muster",
+        code_postal_livraison: "50667",
+        ville_livraison: "Köln",
+      }),
+      expect.anything(),
+    );
   });
 
   it("parcourt les 3 étapes puis appelle passerCommande avec les lignes attendues", () => {

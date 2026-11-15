@@ -268,6 +268,11 @@ export default function MonAdhesionPage() {
     );
   }
 
+  // Bestätigung der persönlichen Daten bei der Anmeldung (siehe DatenBestaetigung) ; in einer
+  // Kampagne, in der schon bestätigt wurde, entfällt sie beim Angebotswechsel.
+  const [datenBestaetigt, setDatenBestaetigt] = useState(false);
+  const datenSchonBestaetigt = !!souscriptionActuelle?.daten_bestaetigt_am;
+
   function envoyerJustificatif() {
     if (!souscriptionActuelle || !fichierJustificatif) return;
     uploaderJustificatifMutation.mutate(
@@ -294,6 +299,7 @@ export default function MonAdhesionPage() {
       {
         offre: offreSelectionnee.id,
         rabais: rabaisSelectionne?.id,
+        daten_bestaetigt: datenBestaetigt,
         ...(offreSelectionnee.ist_familienpaket
           ? {
               erwachsene: familie.erwachsene.map((e) => ({
@@ -316,6 +322,7 @@ export default function MonAdhesionPage() {
         onSuccess: (souscription) => {
           setOffreSelectionneeId(null);
           setRabaisSelectionneId(null);
+          setDatenBestaetigt(false);
           // Wie beim Shop : direkt nach der Anmeldung die Zahlungsinfos zeigen.
           if (souscription.statut !== "payee") setZahlungsInfoOffen(true);
         },
@@ -629,8 +636,11 @@ export default function MonAdhesionPage() {
               rabaisId={rabaisSelectionneId}
               familie={familie}
               hatAnmeldung={!!souscriptionActuelle}
+              datenBestaetigt={datenBestaetigt}
+              datenSchonBestaetigt={datenSchonBestaetigt}
               wirdGesendet={souscrireMutation.isPending}
               fehler={souscrireMutation.isError ? souscrireMutation.error : null}
+              onDatenBestaetigt={setDatenBestaetigt}
               onWaehlen={choisirOffre}
               onRabais={setRabaisSelectionneId}
               onFamilie={setFamilie}

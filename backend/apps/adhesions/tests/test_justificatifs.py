@@ -633,7 +633,10 @@ def test_changer_de_rabais_supprime_lancien_justificatif(api_client):
     user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais1.id)})
+    api_client.post(
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais1.id)},
+    )
     souscription = membre.souscriptions.get()
     api_client.post(
         reverse(JUSTIFICATIF_LIST_URL),
@@ -643,7 +646,8 @@ def test_changer_de_rabais_supprime_lancien_justificatif(api_client):
     assert JustificatifRabais.objects.filter(souscription=souscription).exists()
 
     resp = api_client.post(
-        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais2.id)}
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais2.id)},
     )
 
     assert resp.status_code == 200, resp.data
@@ -656,11 +660,16 @@ def test_abandonner_le_rabais_supprime_lancien_justificatif_et_debloque_le_paiem
     user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)})
+    api_client.post(
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais.id)},
+    )
     souscription = membre.souscriptions.get()
     JustificatifRabaisFactory(souscription=souscription)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
 
     assert resp.status_code == 200, resp.data
     assert resp.data["statut"] == StatutSouscription.EN_ATTENTE_PAIEMENT
@@ -673,12 +682,16 @@ def test_resouscrire_au_meme_rabais_conserve_le_justificatif(api_client):
     user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)})
+    api_client.post(
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais.id)},
+    )
     souscription = membre.souscriptions.get()
     justificatif = JustificatifRabaisFactory(souscription=souscription)
 
     resp = api_client.post(
-        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)}
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais.id)},
     )
 
     assert resp.status_code == 200, resp.data

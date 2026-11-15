@@ -41,6 +41,7 @@ import {
   type ZielGruppe,
 } from "./angebotsLogik";
 import CompleterProfilIdentite, { estErreurProfilIncomplet } from "./CompleterProfilIdentite";
+import DatenBestaetigung from "./DatenBestaetigung";
 import FamilienErfassung from "./FamilienErfassung";
 import {
   berechnePaket,
@@ -82,8 +83,13 @@ export interface AngebotsAuswahlProps {
   familie: FamilienEingabe;
   /** Es gibt schon eine Anmeldung in dieser Kampagne (Knopf heißt dann „Wechseln“). */
   hatAnmeldung: boolean;
+  /** Die persönlichen Daten wurden bei dieser Anmeldung bestätigt (Häkchen). */
+  datenBestaetigt: boolean;
+  /** In dieser Kampagne wurde schon bestätigt (Angebotswechsel): das Häkchen entfällt. */
+  datenSchonBestaetigt: boolean;
   wirdGesendet: boolean;
   fehler: unknown | null;
+  onDatenBestaetigt: (bestaetigt: boolean) => void;
   onWaehlen: (offreId: string | null, rabaisId?: string | null) => void;
   onRabais: (rabaisId: string | null) => void;
   onFamilie: (f: FamilienEingabe) => void;
@@ -143,8 +149,11 @@ export default function AngebotsAuswahl({
   rabaisId,
   familie,
   hatAnmeldung,
+  datenBestaetigt,
+  datenSchonBestaetigt,
   wirdGesendet,
   fehler,
+  onDatenBestaetigt,
   onWaehlen,
   onRabais,
   onFamilie,
@@ -222,7 +231,9 @@ export default function AngebotsAuswahl({
     : 0;
   const auswahlPreis = auswahlRabatt ? preisNachRabatt(auswahlListe, auswahlRabatt) : auswahlListe;
   const kannAbsenden =
-    !wirdGesendet && (!auswahl?.ist_familienpaket || familieVollstaendig(familie));
+    !wirdGesendet &&
+    (datenSchonBestaetigt || datenBestaetigt) &&
+    (!auswahl?.ist_familienpaket || familieVollstaendig(familie));
 
   return (
     <div>
@@ -545,6 +556,10 @@ export default function AngebotsAuswahl({
                 <p className="mt-1 text-xs text-text-tertiary">{t("angebote.nachweis_hinweis")}</p>
               )}
             </div>
+          )}
+
+          {!datenSchonBestaetigt && (
+            <DatenBestaetigung bestaetigt={datenBestaetigt} onAendern={onDatenBestaetigt} />
           )}
 
           {fehler != null &&

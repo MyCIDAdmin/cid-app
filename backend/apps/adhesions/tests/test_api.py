@@ -13,7 +13,13 @@ from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role, User
-from apps.adhesions.models import OffreAdhesion, RabaisOffre, StatutCampagne, StatutSouscription
+from apps.adhesions.models import (
+    OffreAdhesion,
+    RabaisOffre,
+    Souscription,
+    StatutCampagne,
+    StatutSouscription,
+)
 from apps.adhesions.tests.factories import (
     CampagneAdhesionFactory,
     OffreAdhesionFactory,
@@ -429,7 +435,9 @@ def test_souscrire_sans_fiche_membre_refuse(api_client):
     offre = OffreAdhesionFactory()
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
 
     assert resp.status_code == 400
 
@@ -439,7 +447,9 @@ def test_souscrire_offre_masquee_refuse(api_client):
     user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
 
     assert resp.status_code == 400
 
@@ -450,7 +460,9 @@ def test_souscrire_campagne_non_publiee_refuse(api_client):
     user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
 
     assert resp.status_code == 400
 
@@ -460,7 +472,9 @@ def test_souscrire_sans_rabais(api_client):
     user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
 
     assert resp.status_code == 200, resp.data
     assert str(resp.data["membre"]) == str(membre.id)
@@ -475,7 +489,10 @@ def test_souscrire_prix_toujours_recalcule_cote_serveur(api_client):
     user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "prix_paye": "0.01"})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "prix_paye": "0.01"},
+    )
 
     assert resp.status_code == 200, resp.data
     assert str(resp.data["prix_paye"]) == "50.00"
@@ -493,7 +510,8 @@ def test_souscrire_avec_rabais_sans_justificatif(api_client):
     _auth(api_client, user)
 
     resp = api_client.post(
-        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)}
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais.id)},
     )
 
     assert resp.status_code == 200, resp.data
@@ -513,7 +531,8 @@ def test_souscrire_avec_rabais_necessitant_justificatif(api_client):
     _auth(api_client, user)
 
     resp = api_client.post(
-        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)}
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais.id)},
     )
 
     assert resp.status_code == 200, resp.data
@@ -527,7 +546,8 @@ def test_souscrire_rabais_d_une_autre_offre_refuse(api_client):
     _auth(api_client, user)
 
     resp = api_client.post(
-        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais_autre_offre.id)}
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais_autre_offre.id)},
     )
 
     assert resp.status_code == 400
@@ -539,7 +559,9 @@ def test_souscrire_hors_condition_age_refuse(api_client):
     user, _membre = _user_avec_membre(Role.MEMBRE, "membre@example.de", date_naissance=naissance)
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
 
     assert resp.status_code == 400
 
@@ -551,8 +573,12 @@ def test_souscrire_deux_fois_met_a_jour_la_meme_ligne_pas_une_nouvelle(api_clien
     user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    resp1 = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre1.id)})
-    resp2 = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre2.id)})
+    resp1 = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre1.id)}
+    )
+    resp2 = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre2.id)}
+    )
 
     assert resp1.status_code == 200
     assert resp2.status_code == 200, resp2.data
@@ -576,7 +602,9 @@ def test_souscrire_en_attente_paiement_cree_une_cotisation_liee(api_client):
     user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
 
     assert resp.status_code == 200, resp.data
     from apps.adhesions.models import Souscription
@@ -603,7 +631,8 @@ def test_souscrire_avec_justificatif_requis_ne_cree_pas_encore_de_cotisation(api
     _auth(api_client, user)
 
     resp = api_client.post(
-        reverse(SOUSCRIRE_URL), {"offre": str(offre.id), "rabais": str(rabais.id)}
+        reverse(SOUSCRIRE_URL),
+        {"daten_bestaetigt": True, "offre": str(offre.id), "rabais": str(rabais.id)},
     )
 
     assert resp.status_code == 200, resp.data
@@ -617,8 +646,12 @@ def test_souscrire_deux_fois_met_a_jour_la_meme_cotisation_pas_une_nouvelle(api_
     user, membre = _user_avec_membre(Role.MEMBRE, "membre@example.de")
     _auth(api_client, user)
 
-    resp1 = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre1.id)})
-    resp2 = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre2.id)})
+    resp1 = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre1.id)}
+    )
+    resp2 = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre2.id)}
+    )
 
     assert resp1.status_code == 200, resp1.data
     assert resp2.status_code == 200, resp2.data
@@ -640,7 +673,9 @@ def test_souscription_deja_payee_ne_peut_plus_etre_modifiee(api_client):
     )
     _auth(api_client, user)
 
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
 
     assert resp.status_code == 403
 
@@ -1207,7 +1242,9 @@ def test_souscrire_sans_piece_identite_demande_de_completer_le_profil(api_client
     offre = OffreAdhesionFactory(visible=True)
     user, _membre = _user_avec_membre(Role.MEMBRE, "sans-cin@example.de", cin="", passeport=None)
     _auth(api_client, user)
-    resp = api_client.post(reverse(SOUSCRIRE_URL), {"offre": str(offre.id)})
+    resp = api_client.post(
+        reverse(SOUSCRIRE_URL), {"daten_bestaetigt": True, "offre": str(offre.id)}
+    )
     assert resp.status_code == 400
     assert "profil_incomplet" in str(resp.data)
 
@@ -1247,3 +1284,44 @@ def test_bascule_non_renouveles_apres_la_frist(api_client):
         membre=parti, annee=2031, statut=StatutMembre.INACTIF, raison="non_renouvele"
     ).exists()
     assert basculer_membres_non_renouveles() == 0  # déjà traitée
+
+
+# --- Bestätigung der persönlichen Daten bei der Anmeldung ---
+
+
+def _anmelden(api_client, **extra):
+    offre = OffreAdhesionFactory()
+    user, membre = _user_avec_membre(Role.MEMBRE, "daten@example.de")
+    _auth(api_client, user)
+    return (
+        offre,
+        membre,
+        lambda **kw: api_client.post(
+            reverse(SOUSCRIRE_URL), {"offre": str(offre.id), **extra, **kw}
+        ),
+    )
+
+
+def test_souscrire_ohne_datenbestaetigung_abgelehnt(api_client):
+    offre, membre, senden = _anmelden(api_client)
+    resp = senden()
+    assert resp.status_code == 400
+    assert "daten_bestaetigt" in resp.data["details"]
+    assert not Souscription.objects.filter(membre=membre).exists()
+
+
+def test_souscrire_mit_datenbestaetigung_speichert_zeitpunkt(api_client):
+    offre, membre, senden = _anmelden(api_client)
+    resp = senden(daten_bestaetigt=True)
+    assert resp.status_code == 200
+    assert resp.data["daten_bestaetigt_am"] is not None
+    assert Souscription.objects.get(membre=membre).daten_bestaetigt_am is not None
+
+
+def test_angebotswechsel_in_derselben_kampagne_braucht_keine_neue_bestaetigung(api_client):
+    offre, membre, senden = _anmelden(api_client)
+    senden(daten_bestaetigt=True)
+    erste = Souscription.objects.get(membre=membre).daten_bestaetigt_am
+    resp = senden()
+    assert resp.status_code == 200
+    assert Souscription.objects.get(membre=membre).daten_bestaetigt_am == erste
