@@ -27,3 +27,12 @@ def erinnere_aufgaben_faellig(today: date | None = None) -> int:
         notifier_aufgabe_faellig(aufgabe, heute=aufgabe.frist == today)
         anzahl += 1
     return anzahl
+
+
+@shared_task
+def schliesse_abgelaufene_stellen(today: date | None = None) -> int:
+    """Schließt freie Hilfegesuche, deren Frist (bei einmaliger Hilfe ohne Frist: der Termin)
+    vorbei ist. Läuft täglich um 0:30 Uhr."""
+    from .hilfe import schliesse_abgelaufene
+
+    return schliesse_abgelaufene(today)

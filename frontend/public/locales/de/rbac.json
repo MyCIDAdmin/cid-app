@@ -58,7 +58,9 @@
     "page_community": "Community (moderieren, Redaktionsbeiträge, Spielplan)",
     "page_tippspiel": "Tippspiel (anlegen und verwalten)",
     "page_zahlung_versand": "Zahlungen bestätigen und Bestellungen versenden",
-    "page_erfassung_fuer_andere": "Für andere erfassen (Beiträge, Anmeldungen, Mitgliedschaften)"
+    "page_erfassung_fuer_andere": "Für andere erfassen (Beiträge, Anmeldungen, Mitgliedschaften)",
+    "page_hilfe_veroeffentlichen": "Hilfegesuche veröffentlichen",
+    "page_hilfe_genehmigen": "Hilfe-Meldungen genehmigen"
   },
   "attribution": {
     "col_roles_attribues": "Zugewiesene Rollen",

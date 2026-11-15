@@ -237,6 +237,9 @@ PAGES_ADMIN = [
     "page_tippspiel",  # Tippspiel anlegen und verwalten (bisher nur App Admin)
     "page_zahlung_versand",  # Zahlungen bestätigen, Bestellungen versenden (bisher Finanzen+)
     "page_erfassung_fuer_andere",  # Beiträge, Anmeldungen, Mitgliedschaften für andere erfassen
+    # Hilfe gesucht (Nov. 2026): Gesuche ohne Projektbezug, siehe apps.projets.hilfe.
+    "page_hilfe_veroeffentlichen",  # Gesuche anlegen (Standard ab RH, einzeln freigebbar)
+    "page_hilfe_genehmigen",  # Meldungen verbindlich annehmen/ablehnen (Standard ab Büro)
 ]
 
 PAGE_ADMIN_LABELS = {
@@ -273,6 +276,8 @@ PAGE_ADMIN_LABELS = {
     "page_tippspiel": "Tippspiel (anlegen und verwalten)",
     "page_zahlung_versand": "Zahlungen bestätigen und Bestellungen versenden",
     "page_erfassung_fuer_andere": "Für andere erfassen (Beiträge, Anmeldungen, Mitgliedschaften)",
+    "page_hilfe_veroeffentlichen": "Hilfegesuche veröffentlichen",
+    "page_hilfe_genehmigen": "Hilfe-Meldungen genehmigen",
 }
 
 # Welche Verwaltungsseiten zu welchem Modul gehören. Wer auf einer dieser Seiten Lesen bzw.
@@ -319,7 +324,7 @@ MODUL_SEITEN = {
         "page_tippspiel",
         "page_zahlung_versand",
     ),
-    "projets": ("page_projets",),
+    "projets": ("page_projets", "page_hilfe_veroeffentlichen", "page_hilfe_genehmigen"),
 }
 
 # Vue combinée utilisée par la matrice (`GET /rbac/matrix/`) : une seule liste de colonnes pour

@@ -53,43 +53,103 @@ def notifier_aufgabe_faellig(aufgabe, heute: bool) -> None:
     )
 
 
-def _stellen_lien(projet_id) -> str:
-    return f"/projets/{projet_id}/arbeitsbereich?reiter=stellen"
+def _stellen_lien(stelle) -> str:
+    if stelle.projet_id is None:
+        return "/hilfe-gesucht"
+    return f"/projets/{stelle.projet_id}/arbeitsbereich?reiter=stellen"
+
+
+def _name(membre) -> str:
+    return f"{membre.prenom} {membre.nom}".strip()
 
 
 def notifier_bewerbung(bewerbung) -> None:
-    """An die Projektleitung (und den/die Verantwortliche/n) : neue Meldung auf eine Stelle."""
+    """Projektstelle: an die Projektleitung. Freies Gesuch: an die Ersteller·in, die empfiehlt."""
     from .models import ProjetMitglied, RolleProjet
 
     stelle = bewerbung.stelle
-    ziele = {
-        m.membre_id: m.membre
-        for m in ProjetMitglied.objects.filter(
-            projet=stelle.projet, rolle=RolleProjet.LEITUNG
-        ).select_related("membre__user")
-        if m.membre_id != bewerbung.membre_id
-    }
+    if stelle.projet_id is None:
+        ziele = {}
+        if stelle.created_by is not None and stelle.created_by_id != bewerbung.membre_id:
+            ziele[stelle.created_by_id] = stelle.created_by
+        titel = f"Nouvelle candidature d'aide : {stelle.titel}"
+        zeile = f"{_name(bewerbung.membre)} — « {stelle.titel} »"
+    else:
+        ziele = {
+            m.membre_id: m.membre
+            for m in ProjetMitglied.objects.filter(
+                projet=stelle.projet, rolle=RolleProjet.LEITUNG
+            ).select_related("membre__user")
+            if m.membre_id != bewerbung.membre_id
+        }
+        titel = f"Nouvelle candidature : {stelle.titel}"
+        zeile = f"{_name(bewerbung.membre)} — « {stelle.projet.titre} »"
     for membre in ziele.values():
         notifier(
             getattr(membre, "user", None),
             TypeNotification.PROJEKT_BEWERBUNG,
-            titre=f"Nouvelle candidature : {stelle.titel}",
-            message=f"{bewerbung.membre.prenom} {bewerbung.membre.nom} — « {stelle.projet.titre} »",
-            lien=_stellen_lien(stelle.projet_id),
+            titre=titel,
+            message=zeile,
+            lien=_stellen_lien(stelle),
+        )
+
+
+def notifier_empfehlung(bewerbung, durch=None) -> None:
+    """An alle, die genehmigen dürfen: eine Meldung wurde empfohlen und wartet auf die Freigabe."""
+    from .hilfe import genehmiger_nutzer
+
+    stelle = bewerbung.stelle
+    for user in genehmiger_nutzer(ausser=getattr(durch, "pk", None)):
+        notifier(
+            user,
+            TypeNotification.PROJEKT_BEWERBUNG,
+            titre=f"À approuver : {stelle.titel}",
+            message=f"{_name(bewerbung.membre)} est recommandé·e — approbation requise",
+            lien=_stellen_lien(stelle),
         )
 
 
 def notifier_bewerbung_entschieden(bewerbung) -> None:
-    """An das Mitglied : Meldung angenommen oder abgelehnt."""
+    """An das Mitglied : Meldung angenommen oder abgelehnt (Glocke, Telegram/Push nach den
+    persönlichen Einstellungen) ; bei freien Gesuchen zusätzlich per E-Mail mit dem Hinweis, die
+    Kontaktperson im Chat zu erreichen. Kein automatisches Team."""
+    from .hilfe import sende_mail
     from .models import StatutBewerbung
 
     stelle = bewerbung.stelle
     angenommen = bewerbung.status == StatutBewerbung.ANGENOMMEN
+    frei = stelle.projet_id is None
+    if frei:
+        lien = "/hilfe-gesucht"
+        zeile = "Demande d'aide"
+    else:
+        lien = f"/projets/{stelle.projet_id}" + ("/arbeitsbereich" if angenommen else "")
+        zeile = f"Projet « {stelle.projet.titre} »"
     notifier(
         getattr(bewerbung.membre, "user", None),
         TypeNotification.PROJEKT_BEWERBUNG_ENTSCHIEDEN,
         titre=("Candidature acceptée : " if angenommen else "Candidature refusée : ")
         + stelle.titel,
-        message=f"Projet « {stelle.projet.titre} »",
-        lien=f"/projets/{stelle.projet_id}" + ("/arbeitsbereich" if angenommen else ""),
+        message=zeile,
+        lien=lien,
     )
+    if frei:
+        kontakt = stelle.created_by
+        if angenommen:
+            text = (
+                f"Hallo {bewerbung.membre.prenom},\n\nDeine Meldung für „{stelle.titel}“ wurde "
+                "genehmigt. Danke für deine Hilfe!"
+            )
+            if kontakt is not None:
+                text += (
+                    f"\n\nAnsprechperson: {_name(kontakt)}. Schreibe ihr/ihm direkt im Chat der "
+                    "App, um alles Weitere zu klären."
+                )
+            sende_mail(bewerbung.membre, f"Hilfe gesucht: Du bist dabei – {stelle.titel}", text)
+        else:
+            sende_mail(
+                bewerbung.membre,
+                f"Hilfe gesucht: {stelle.titel}",
+                f"Hallo {bewerbung.membre.prenom},\n\nleider können wir deine Meldung für "
+                f"„{stelle.titel}“ diesmal nicht berücksichtigen. Danke für dein Angebot!",
+            )
