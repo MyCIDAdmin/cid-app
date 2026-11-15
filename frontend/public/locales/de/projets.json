@@ -381,7 +381,9 @@
       "alle": "Alle",
       "herkunft_alle": "Überall",
       "herkunft_frei": "Vom Verein",
-      "herkunft_projekt": "Aus Projekten"
+      "herkunft_projekt": "Aus Projekten",
+      "kategorie": "Kategorie",
+      "alle_kategorien": "Alle Kategorien"
     },
     "art": {
       "einmalig": "Einmalig",
@@ -421,7 +423,66 @@
       "ohne_region": "– kein bestimmter –",
       "sichtbarkeit": "Wer sieht das Gesuch?",
       "sichtbarkeit_hinweis": "„Öffentlich“ ist auch ohne Anmeldung sichtbar. Melden können sich immer nur angemeldete Mitglieder.",
-      "veroeffentlichen": "Veröffentlichen"
+      "veroeffentlichen": "Veröffentlichen",
+      "kategorie": "Kategorie (optional)",
+      "ohne_kategorie": "– keine –"
+    },
+    "ansicht": {
+      "label": "Ansicht",
+      "gesuche": "Gesuche",
+      "angebote": "Angebote",
+      "meine_angebote": "Meine Angebote",
+      "kategorien": "Kategorien"
+    },
+    "kat": {
+      "einleitung": "Kategorien ordnen Gesuche und Angebote. Deaktivierte Kategorien erscheinen nicht mehr in der Auswahl, bleiben aber an bestehenden Gesuchen sichtbar.",
+      "neu": "Neue Kategorie",
+      "name_de": "Name (Deutsch)",
+      "name_fr": "Name (Französisch)",
+      "reihenfolge": "Reihenfolge",
+      "hinzufuegen": "Hinzufügen",
+      "bearbeiten": "Bearbeiten",
+      "speichern": "Speichern",
+      "deaktivieren": "Deaktivieren",
+      "aktivieren": "Aktivieren",
+      "inaktiv": "deaktiviert",
+      "loeschen": "Löschen",
+      "loeschen_bestaetigen": "Kategorie „{{name}}“ wirklich löschen? Gesuche behalten ihren Inhalt, verlieren aber die Kategorie.",
+      "anzahl_one": "{{count}} Gesuch",
+      "anzahl_other": "{{count}} Gesuche"
+    },
+    "angebot": {
+      "neu": "Hilfe anbieten",
+      "formular": "Ich möchte helfen",
+      "einleitung": "Du möchtest helfen, findest aber kein passendes Gesuch? Sag uns, wobei du gern unterstützt. Das Büro meldet sich bei dir.",
+      "einleitung_buero": "Mitglieder bieten hier von sich aus Hilfe an. Nimm ein Angebot an (auf Wunsch gleich einem offenen Gesuch zugeordnet) oder lehne es ab. Die Person wird benachrichtigt.",
+      "thema": "Wobei möchtest du helfen?",
+      "thema_platzhalter": "z. B. Kuchen backen, Fahrdienst, Übersetzen",
+      "beschreibung": "Mehr dazu (optional)",
+      "beschreibung_platzhalter": "Was kannst du gut, was bringst du mit?",
+      "verfuegbarkeit": "Wann hast du Zeit? (optional)",
+      "verfuegbarkeit_platzhalter": "z. B. samstags, abends ab 18 Uhr",
+      "senden": "Angebot senden",
+      "leer": "Noch keine Angebote.",
+      "zurueckziehen": "Angebot zurückziehen",
+      "annehmen": "Annehmen",
+      "ablehnen": "Ablehnen",
+      "zuordnen": "Einem offenen Gesuch zuordnen",
+      "ohne_zuordnung": "– ohne Zuordnung –",
+      "notiz_label": "Kurze Nachricht an die Person (optional)",
+      "notiz_buero": "Nachricht des Büros",
+      "zugeordnet": "Zugeordnet zu: {{titel}}",
+      "status": {
+        "offen": "Wartet auf Antwort",
+        "angenommen": "Angenommen",
+        "abgelehnt": "Abgelehnt",
+        "zurueckgezogen": "Zurückgezogen"
+      }
     }
+  },
+  "tabs": {
+    "label": "Bereiche der Projektseite",
+    "projekte": "Projekte",
+    "hilfe": "Hilfe gesucht"
   }
 }
