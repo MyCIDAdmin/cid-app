@@ -22,6 +22,7 @@ import {
   type TotpSetup,
 } from "../../api/auth";
 import BenachrichtigungenAbschnitt from "./BenachrichtigungenAbschnitt";
+import PasskeyAbschnitt from "./PasskeyAbschnitt";
 import SichtbarkeitAbschnitt from "./SichtbarkeitAbschnitt";
 import { useUiStore } from "../../store/uiStore";
 import { extractApiErrorMessage } from "../../utils/apiError";
@@ -390,6 +391,7 @@ export default function EinstellungenTab() {
       <BenachrichtigungenAbschnitt />
       <SichtbarkeitAbschnitt />
       <PasswortAbschnitt />
+      <PasskeyAbschnitt />
       <ZweiFaktorAbschnitt />
       <GeraeteAbschnitt />
     </div>

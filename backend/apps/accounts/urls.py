@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import passkeys, views
 
 app_name = "accounts"
 
@@ -58,5 +58,27 @@ urlpatterns = [
     path("2fa/send-otp/", views.SendOTPView.as_view(), name="2fa-send-otp"),
     path("2fa/verify/", views.Verify2FAView.as_view(), name="2fa-verify"),
     path("2fa/totp/", views.TOTPSetupView.as_view(), name="2fa-totp"),
+    path("passkeys/", passkeys.PasskeyListView.as_view(), name="passkeys"),
+    path(
+        "passkeys/register/options/",
+        passkeys.PasskeyRegisterOptionsView.as_view(),
+        name="passkey-register-options",
+    ),
+    path(
+        "passkeys/register/verify/",
+        passkeys.PasskeyRegisterVerifyView.as_view(),
+        name="passkey-register-verify",
+    ),
+    path(
+        "passkeys/login/options/",
+        passkeys.PasskeyLoginOptionsView.as_view(),
+        name="passkey-login-options",
+    ),
+    path(
+        "passkeys/login/verify/",
+        passkeys.PasskeyLoginVerifyView.as_view(),
+        name="passkey-login-verify",
+    ),
+    path("passkeys/<uuid:pk>/", passkeys.PasskeyDetailView.as_view(), name="passkey-detail"),
     path("2fa/totp/confirm/", views.TOTPConfirmView.as_view(), name="2fa-totp-confirm"),
 ]

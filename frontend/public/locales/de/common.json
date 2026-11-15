@@ -272,6 +272,20 @@
       "neu_dabei": "In „Neu dabei“ auf der Startseite zeigen",
       "hinweis": "Andere Mitglieder sehen dann deinen Vornamen, den Anfangsbuchstaben deines Nachnamens und deinen Sektor – nur in den ersten Wochen nach deinem Beitritt. Du kannst das jederzeit wieder abschalten.",
       "fehler": "Speichern fehlgeschlagen."
+    },
+    "passkey": {
+      "titel": "Anmeldung per Fingerabdruck oder Gesicht",
+      "hinweis": "Mit einem Passkey meldest du dich ohne Passwort und ohne E-Mail-Code an – per Fingerabdruck, Gesichtserkennung oder Geräte-PIN. Deine biometrischen Daten bleiben auf dem Gerät. Richte den Passkey auf jedem Gerät ein, das du nutzt.",
+      "nicht_unterstuetzt": "Dieser Browser oder dieses Gerät unterstützt keine Passkeys.",
+      "leer": "Noch kein Passkey eingerichtet.",
+      "eingerichtet": "Eingerichtet am {{datum}}",
+      "zuletzt": "zuletzt genutzt am {{datum}}",
+      "name": "Bezeichnung des Geräts",
+      "einrichten": "Passkey auf diesem Gerät einrichten",
+      "entfernen": "Entfernen",
+      "entfernen_label": "Passkey {{name}} entfernen",
+      "erfolg": "Passkey eingerichtet. Du kannst dich jetzt damit anmelden.",
+      "fehler": "Der Passkey konnte nicht eingerichtet werden."
     }
   },
   "nav_untergruppe": {

@@ -272,6 +272,20 @@
       "neu_dabei": "M’afficher dans « Nouveaux membres » sur la page d’accueil",
       "hinweis": "Les autres membres voient alors ton prénom, l’initiale de ton nom et ton secteur – seulement pendant les premières semaines après ton adhésion. Tu peux le désactiver à tout moment.",
       "fehler": "Échec de l’enregistrement."
+    },
+    "passkey": {
+      "titel": "Connexion par empreinte ou reconnaissance faciale",
+      "hinweis": "Avec une clé d'accès (passkey), tu te connectes sans mot de passe ni code par e-mail, par empreinte digitale, reconnaissance faciale ou code de l'appareil. Tes données biométriques restent sur l'appareil. Configure la clé d'accès sur chaque appareil que tu utilises.",
+      "nicht_unterstuetzt": "Ce navigateur ou cet appareil ne prend pas en charge les clés d'accès.",
+      "leer": "Aucune clé d'accès configurée.",
+      "eingerichtet": "Configurée le {{datum}}",
+      "zuletzt": "dernière utilisation le {{datum}}",
+      "name": "Nom de l'appareil",
+      "einrichten": "Configurer une clé d'accès sur cet appareil",
+      "entfernen": "Supprimer",
+      "entfernen_label": "Supprimer la clé d'accès {{name}}",
+      "erfolg": "Clé d'accès configurée. Tu peux désormais te connecter avec.",
+      "fehler": "La clé d'accès n'a pas pu être configurée."
     }
   },
   "nav_untergruppe": {

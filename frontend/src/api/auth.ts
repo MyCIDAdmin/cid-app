@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import type { CidUser, UiPraeferenzen } from "../store/authStore";
 import { getDeviceId } from "../utils/deviceId";
+import { passkeyAbfragen, passkeyErstellen, type PasskeyOptionen } from "../utils/webauthn";
 
 export interface LoginResponse {
   requires_2fa?: boolean;
@@ -198,4 +199,45 @@ export async function confirmTotp(code: string): Promise<void> {
 
 export async function disableTotp(): Promise<void> {
   await apiClient.delete("/auth/2fa/totp/");
+}
+
+// --- Passkeys (Fingerabdruck / Gesicht / Geräte-PIN), siehe utils/webauthn.ts ---
+
+export interface Passkey {
+  id: string;
+  name: string;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+export async function fetchPasskeys(): Promise<Passkey[]> {
+  const { data } = await apiClient.get<Passkey[]>("/auth/passkeys/");
+  return data;
+}
+
+/** Richtet auf diesem Gerät einen Passkey ein (zeigt den Biometrie-Dialog des Geräts). */
+export async function passkeyEinrichten(name: string): Promise<void> {
+  const { data: optionen } = await apiClient.post<PasskeyOptionen>(
+    "/auth/passkeys/register/options/",
+  );
+  const credential = await passkeyErstellen(optionen);
+  await apiClient.post("/auth/passkeys/register/verify/", { credential, name });
+}
+
+export async function passkeyEntfernen(id: string): Promise<void> {
+  await apiClient.delete(`/auth/passkeys/${id}/`);
+}
+
+/** Anmeldung per Passkey : kein Passwort, kein E-Mail-Code. */
+export async function loginMitPasskey(): Promise<LoginResponse> {
+  const { data } = await apiClient.post<{ challenge_id: string; options: PasskeyOptionen }>(
+    "/auth/passkeys/login/options/",
+  );
+  const credential = await passkeyAbfragen(data.options);
+  const { data: antwort } = await apiClient.post<LoginResponse>("/auth/passkeys/login/verify/", {
+    challenge_id: data.challenge_id,
+    credential,
+    device_id: getDeviceId(),
+  });
+  return antwort;
 }
