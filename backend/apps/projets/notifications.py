@@ -55,7 +55,7 @@ def notifier_aufgabe_faellig(aufgabe, heute: bool) -> None:
 
 def _stellen_lien(stelle) -> str:
     if stelle.projet_id is None:
-        return "/hilfe-gesucht"
+        return "/projets?tab=hilfe"
     return f"/projets/{stelle.projet_id}/arbeitsbereich?reiter=stellen"
 
 
@@ -120,7 +120,7 @@ def notifier_bewerbung_entschieden(bewerbung) -> None:
     angenommen = bewerbung.status == StatutBewerbung.ANGENOMMEN
     frei = stelle.projet_id is None
     if frei:
-        lien = "/hilfe-gesucht"
+        lien = "/projets?tab=hilfe"
         zeile = "Demande d'aide"
     else:
         lien = f"/projets/{stelle.projet_id}" + ("/arbeitsbereich" if angenommen else "")

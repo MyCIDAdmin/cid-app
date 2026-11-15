@@ -46,7 +46,8 @@ export default function Card3D({
 
   const onMouseLeave = () => {
     if (cardRef.current) {
-      cardRef.current.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)";
+      cardRef.current.style.transform =
+        "perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)";
     }
     setSurvole(false);
   };

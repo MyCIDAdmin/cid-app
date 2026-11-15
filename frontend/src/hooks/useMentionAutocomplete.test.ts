@@ -94,9 +94,7 @@ describe("useMentionAutocomplete", () => {
     });
 
     const texteFinal = `${result.current.texte} @Hamza`;
-    expect(result.current.mentionsPourEnvoi(texteFinal).sort()).toEqual(
-      [sana.id, hamza.id].sort(),
-    );
+    expect(result.current.mentionsPourEnvoi(texteFinal).sort()).toEqual([sana.id, hamza.id].sort());
   });
 
   it("reinitialiser vide les mentions mémorisées", () => {

@@ -74,7 +74,12 @@ function renderDetail() {
 
 describe("QuizDetailPage", () => {
   beforeEach(() => {
-    useAuthStore.setState({ accessToken: "t", refreshToken: "r", user: membre, isAuthenticated: true });
+    useAuthStore.setState({
+      accessToken: "t",
+      refreshToken: "r",
+      user: membre,
+      isAuthenticated: true,
+    });
     vi.mocked(useCommunauteHooks.useDemarrerQuiz).mockReturnValue(
       mutationMock<ReturnType<typeof useCommunauteHooks.useDemarrerQuiz>>(),
     );
@@ -154,7 +159,9 @@ describe("QuizDetailPage", () => {
 
   it("affiche le score final et le classement quand le quiz est terminé", () => {
     vi.mocked(useCommunauteHooks.useQuiz).mockReturnValue({
-      data: quiz({ ma_participation: participation({ terminee_le: "2026-01-01T10:10:00Z", score: 10 }) }),
+      data: quiz({
+        ma_participation: participation({ terminee_le: "2026-01-01T10:10:00Z", score: 10 }),
+      }),
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useQuiz>);

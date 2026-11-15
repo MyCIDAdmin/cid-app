@@ -151,7 +151,7 @@
     },
     "projekte": {
       "titel": "Projets et actions",
-      "text": "Suis les projets du club et soutiens-les. Les projets avec échéance apparaissent aussi dans ta vue d'ensemble."
+      "text": "Suis les projets du club et soutiens-les. Dans l'onglet « Aide recherchée », tu vois où l'on a besoin d'aide ou tu proposes la tienne. Les projets avec échéance apparaissent aussi dans ta vue d'ensemble."
     },
     "boutique": {
       "titel": "La boutique du club",
@@ -252,10 +252,6 @@
     "aktivitaet": {
       "titel": "La sécurité en un coup d'œil",
       "text": "Tu vois ici si tout est en ordre et ce qu'il y a à faire ensuite."
-    },
-    "hilfe_gesucht": {
-      "titel": "Aide recherchée",
-      "text": "Retrouve ici les demandes d'aide ouvertes de l'association, ponctuelles ou durables. Inscris-toi en un clic, le bureau confirme ta participation."
     }
   },
   "hinweise_zusatz": {

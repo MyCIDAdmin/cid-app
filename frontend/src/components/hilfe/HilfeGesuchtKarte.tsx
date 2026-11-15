@@ -15,9 +15,11 @@ import {
   useStelleLoeschen,
   useStelleZurueckziehen,
 } from "../../hooks/useProjets";
+import FormatierterText from "../regionen/FormatierterText";
 import { useAuthStore } from "../../store/authStore";
 import type { ProjetStelle } from "../../types/projets";
 import { extractApiErrorMessage } from "../../utils/apiError";
+import { kategorieName } from "../../utils/hilfe";
 import { lokaleSprache } from "../../utils/datum";
 import { useFaehigkeitLabel } from "../../utils/faehigkeitLabel";
 import MeldungenPanel from "./MeldungenPanel";
@@ -70,7 +72,7 @@ export default function HilfeGesuchtKarte({
   stelle: ProjetStelle;
   darfGenehmigen: boolean;
 }) {
-  const { t } = useTranslation("projets");
+  const { t, i18n } = useTranslation("projets");
   const faehigkeitLabel = useFaehigkeitLabel();
   const angemeldet = useAuthStore((s) => s.isAuthenticated);
   const bewerben = useStelleBewerben();
@@ -128,6 +130,11 @@ export default function HilfeGesuchtKarte({
                 ? t("hilfe.art_mit_datum", { datum: datum(stelle.termin) })
                 : t(`hilfe.art.${stelle.art}`)}
             </span>
+            {stelle.kategorie_detail && (
+              <span className="rounded-full bg-ca/10 px-2 py-0.5 text-ca">
+                {kategorieName(stelle.kategorie_detail, i18n.language)}
+              </span>
+            )}
             {stelle.ort && (
               <span className="rounded-full bg-bg-secondary px-2 py-0.5 text-text-secondary">
                 📍 {stelle.ort}
@@ -170,9 +177,7 @@ export default function HilfeGesuchtKarte({
         </div>
       </div>
 
-      {stelle.beschreibung && (
-        <p className="whitespace-pre-line text-sm text-text-secondary">{stelle.beschreibung}</p>
-      )}
+      {stelle.beschreibung && <FormatierterText text={stelle.beschreibung} />}
 
       {zuGenehmigen && (
         <p className="rounded-cid bg-status-warningBg px-2 py-1 text-xs font-medium text-status-warningText">

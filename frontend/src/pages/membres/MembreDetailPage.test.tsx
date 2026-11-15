@@ -127,7 +127,7 @@ describe("MembreDetailPage", () => {
     renderWithProviders(<MembreDetailPage />, { route: "/membres/m1", path: "/membres/:id" });
     expect(screen.getByText("fiche.erreur_chargement")).toBeInTheDocument();
   });
-  
+
   it("affiche l'erreur du backend et ferme le dialogue si la suppression échoue (409)", () => {
     useAuthStore.setState({
       user: { id: "u1", email: "admin@example.com", role: "bureau_admin", langue_preferee: "fr" },

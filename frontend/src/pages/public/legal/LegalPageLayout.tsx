@@ -24,9 +24,7 @@ import type { PageLegale } from "./legalContent";
 function Abschnitt({ titre, absaetze, liste }: PageLegale["sections"][number]) {
   return (
     <section>
-      {titre && (
-        <h2 className="mb-2 text-base font-bold text-text-primary">{titre}</h2>
-      )}
+      {titre && <h2 className="mb-2 text-base font-bold text-text-primary">{titre}</h2>}
       {absaetze?.map((p) => (
         <p key={p.slice(0, 40)} className="mb-2 text-sm leading-relaxed text-text-secondary">
           {p}

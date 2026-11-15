@@ -37,13 +37,13 @@ function joursAvant(iso: string): number {
   const debutAujourdhui = new Date(
     maintenant.getFullYear(),
     maintenant.getMonth(),
-    maintenant.getDate()
+    maintenant.getDate(),
   );
   const debutRencontre = new Date(iso);
   const debutJourRencontre = new Date(
     debutRencontre.getFullYear(),
     debutRencontre.getMonth(),
-    debutRencontre.getDate()
+    debutRencontre.getDate(),
   );
   return Math.round((debutJourRencontre.getTime() - debutAujourdhui.getTime()) / 86_400_000);
 }
@@ -91,7 +91,10 @@ export default function NextMatchTile() {
           />
         </div>
         <div className="mt-1 text-sm text-white/85">
-          {[prochaineRencontre.competition, formatDate(prochaineRencontre.date_heure, i18n.language)]
+          {[
+            prochaineRencontre.competition,
+            formatDate(prochaineRencontre.date_heure, i18n.language),
+          ]
             .filter(Boolean)
             .join(" · ")}
         </div>

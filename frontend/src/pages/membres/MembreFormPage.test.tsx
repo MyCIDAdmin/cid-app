@@ -87,7 +87,10 @@ describe("MembreFormPage (création)", () => {
       mutateAsync: vi.fn(),
     } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
 
-    renderWithProviders(<MembreFormPage />, { route: "/membres/nouveau", path: "/membres/nouveau" });
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/nouveau",
+      path: "/membres/nouveau",
+    });
 
     fireEvent.click(screen.getByText("formulaire.enregistrer"));
 
@@ -104,7 +107,10 @@ describe("MembreFormPage (création)", () => {
       mutateAsync: vi.fn(),
     } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
 
-    renderWithProviders(<MembreFormPage />, { route: "/membres/nouveau", path: "/membres/nouveau" });
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/nouveau",
+      path: "/membres/nouveau",
+    });
 
     fireEvent.click(screen.getByText("formulaire.enregistrer"));
 
@@ -119,7 +125,10 @@ describe("MembreFormPage (création)", () => {
       mutateAsync,
     } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
 
-    renderWithProviders(<MembreFormPage />, { route: "/membres/nouveau", path: "/membres/nouveau" });
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/nouveau",
+      path: "/membres/nouveau",
+    });
 
     fireEvent.change(screen.getByLabelText("champ.prenom", { exact: false }), {
       target: { value: "Ines" },
@@ -161,7 +170,10 @@ describe("MembreFormPage (création)", () => {
       mutateAsync,
     } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
 
-    renderWithProviders(<MembreFormPage />, { route: "/membres/nouveau", path: "/membres/nouveau" });
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/nouveau",
+      path: "/membres/nouveau",
+    });
 
     fireEvent.change(screen.getByLabelText("champ.prenom", { exact: false }), {
       target: { value: "Ines" },
@@ -210,7 +222,10 @@ describe("MembreFormPage (création)", () => {
       mutateAsync,
     } as unknown as ReturnType<typeof useMembresHooks.useCreateMembre>);
 
-    renderWithProviders(<MembreFormPage />, { route: "/membres/nouveau", path: "/membres/nouveau" });
+    renderWithProviders(<MembreFormPage />, {
+      route: "/membres/nouveau",
+      path: "/membres/nouveau",
+    });
 
     fireEvent.change(screen.getByLabelText("champ.pays", { exact: false }), {
       target: { value: "FR" },

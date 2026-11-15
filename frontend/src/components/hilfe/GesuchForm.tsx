@@ -5,9 +5,11 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import RichTextEditor from "../ui/RichTextEditor";
 import { useFaehigkeitenKatalog } from "../../hooks/useFaehigkeiten";
 import { useRegionen } from "../../hooks/useRegionen";
-import { useStelleErstellen } from "../../hooks/useProjets";
+import { useHilfeKategorien, useStelleErstellen } from "../../hooks/useProjets";
+import { kategorieName } from "../../utils/hilfe";
 import type { ArtStelle, SichtbarkeitStelle } from "../../types/projets";
 import { extractApiErrorMessage } from "../../utils/apiError";
 import { useFaehigkeitLabel } from "../../utils/faehigkeitLabel";
@@ -16,7 +18,9 @@ const FELD = "w-full rounded-cid border border-text-tertiary/30 bg-bg-primary px
 const LABEL = "block text-xs font-medium text-text-secondary";
 
 export default function GesuchForm({ onFertig }: { onFertig: () => void }) {
-  const { t } = useTranslation("projets");
+  const { t, i18n } = useTranslation("projets");
+  const kategorien = useHilfeKategorien();
+  const [kategorie, setKategorie] = useState("");
   const faehigkeitLabel = useFaehigkeitLabel();
   const katalog = useFaehigkeitenKatalog();
   const regionen = useRegionen();
@@ -44,7 +48,7 @@ export default function GesuchForm({ onFertig }: { onFertig: () => void }) {
     erstellen.mutate(
       {
         titel: titel.trim(),
-        beschreibung: beschreibung.trim(),
+        beschreibung: beschreibung,
         art,
         termin: art === "einmalig" ? termin : null,
         ort: ort.trim(),
@@ -52,6 +56,7 @@ export default function GesuchForm({ onFertig }: { onFertig: () => void }) {
         sichtbarkeit,
         region: region || null,
         faehigkeit: faehigkeit || null,
+        kategorie: kategorie || null,
         anzahl,
       },
       {
@@ -193,17 +198,33 @@ export default function GesuchForm({ onFertig }: { onFertig: () => void }) {
       </div>
 
       <div>
+        <label className={LABEL} htmlFor="hg-kategorie">
+          {t("hilfe.form.kategorie")}
+        </label>
+        <select
+          id="hg-kategorie"
+          value={kategorie}
+          onChange={(e) => setKategorie(e.target.value)}
+          className={FELD}
+        >
+          <option value="">{t("hilfe.form.ohne_kategorie")}</option>
+          {(kategorien.data ?? []).map((k) => (
+            <option key={k.id} value={k.id}>
+              {kategorieName(k, i18n.language)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
         <label className={LABEL} htmlFor="hg-beschreibung">
           {t("stellen.beschreibung_label")}
         </label>
-        <textarea
-          id="hg-beschreibung"
+        <RichTextEditor
           value={beschreibung}
-          onChange={(e) => setBeschreibung(e.target.value)}
-          maxLength={1000}
-          rows={4}
+          onChange={setBeschreibung}
           placeholder={t("stellen.beschreibung_platzhalter")}
-          className={FELD}
+          ariaLabel={t("stellen.beschreibung_label")}
         />
       </div>
 

@@ -181,7 +181,8 @@ describe("AdminQuizPage", () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useCommunauteHooks.useQuiz>);
-    const creerQuestion = mutationMock<ReturnType<typeof useCommunauteHooks.useCreerQuestionQuiz>>();
+    const creerQuestion =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useCreerQuestionQuiz>>();
     vi.mocked(useCommunauteHooks.useCreerQuestionQuiz).mockReturnValue(creerQuestion);
 
     renderWithProviders(<AdminQuizPage />);

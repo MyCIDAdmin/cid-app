@@ -613,10 +613,7 @@ export async function modifierTippspielTip(
 
 // Fan-Club-Umbau (2026-11) : Tipps aller Teilnehmer nach der Sperre, „Spieler des Spiels“, Kalender-Abo.
 
-export async function getTippspielMatrix(
-  tippspiel: string,
-  spalten = 8,
-): Promise<TippspielMatrix> {
+export async function getTippspielMatrix(tippspiel: string, spalten = 8): Promise<TippspielMatrix> {
   const { data } = await apiClient.get<TippspielMatrix>("/communaute/tippspiel-matrix/", {
     params: { tippspiel, spalten },
   });

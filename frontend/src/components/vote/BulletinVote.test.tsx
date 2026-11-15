@@ -37,13 +37,17 @@ function session(overrides: Partial<VoteSession> = {}): VoteSession {
 describe("BulletinVote", () => {
   it("désactive la soumission tant qu'aucune option n'est sélectionnée (type unique)", () => {
     const onSubmit = vi.fn();
-    renderWithProviders(<BulletinVote session={session()} onSubmit={onSubmit} envoiEnCours={false} />);
+    renderWithProviders(
+      <BulletinVote session={session()} onSubmit={onSubmit} envoiEnCours={false} />,
+    );
     expect(screen.getByText("bulletin.confirmer")).toBeDisabled();
   });
 
   it("soumet l'id de l'option choisie pour un vote à choix unique", () => {
     const onSubmit = vi.fn();
-    renderWithProviders(<BulletinVote session={session()} onSubmit={onSubmit} envoiEnCours={false} />);
+    renderWithProviders(
+      <BulletinVote session={session()} onSubmit={onSubmit} envoiEnCours={false} />,
+    );
     fireEvent.click(screen.getByText("Candidat B"));
     fireEvent.click(screen.getByText("bulletin.confirmer"));
     expect(onSubmit).toHaveBeenCalledWith(["o2"]);

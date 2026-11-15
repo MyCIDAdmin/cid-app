@@ -74,7 +74,7 @@ export default function ParametresNotificationPage() {
                   aria-checked={actif}
                   aria-label={t(`parametres.module.${module}`)}
                   disabled={modifierMutation.isPending || !modifiable}
-                  title={!modifiable ? t("common:acces.lecture_seule_tooltip") ?? "" : ""}
+                  title={!modifiable ? (t("common:acces.lecture_seule_tooltip") ?? "") : ""}
                   onClick={() => toggleModule(module, actif)}
                   className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:opacity-40 ${
                     actif ? "border-ca bg-ca" : "border-text-tertiary bg-bg-tertiary"

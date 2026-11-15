@@ -230,4 +230,47 @@ describe("ProjetsPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/login");
     expect(screen.queryByText("modal_contribution.confirmer")).not.toBeInTheDocument();
   });
+
+  describe("Tabs Projekte / Hilfe gesucht", () => {
+    function projektDaten() {
+      vi.mocked(useProjetsHooks.useProjets).mockReturnValue({
+        data: page([projet()]),
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useProjetsHooks.useProjets>);
+    }
+
+    it("zeigt ohne Tab-Schalter keine Leiste (öffentliche Startseite)", () => {
+      mockHooksParDefaut();
+      projektDaten();
+      renderWithProviders(<ProjetsPage />);
+      expect(screen.queryByRole("tablist")).toBeNull();
+    });
+
+    it("startet auf dem Tab Projekte und wechselt zu Hilfe gesucht", () => {
+      mockHooksParDefaut();
+      projektDaten();
+      renderWithProviders(<ProjetsPage mitHilfeTab />);
+      expect(screen.getByRole("tab", { name: "tabs.projekte" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+      fireEvent.click(screen.getByRole("tab", { name: "tabs.hilfe" }));
+      expect(screen.getByRole("tab", { name: "tabs.hilfe" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+      expect(screen.getByTestId("hilfe-gesucht-seite")).toBeInTheDocument();
+    });
+
+    it("öffnet über ?tab=hilfe direkt den Tab Hilfe gesucht", () => {
+      mockHooksParDefaut();
+      projektDaten();
+      renderWithProviders(<ProjetsPage mitHilfeTab />, {
+        route: "/projets?tab=hilfe",
+        path: "/projets",
+      });
+      expect(screen.getByTestId("hilfe-gesucht-seite")).toBeInTheDocument();
+    });
+  });
 });

@@ -45,6 +45,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AktionenHinweis from "../components/aktionen/AktionenHinweis";
 import BueroZuErledigen from "../components/dashboard/BueroZuErledigen";
 import DeinStand from "../components/dashboard/DeinStand";
+import HelferGesucht from "../components/dashboard/HelferGesucht";
 import HeuteFuerDich from "../components/dashboard/HeuteFuerDich";
 import NaechstesSpielHero from "../components/dashboard/NaechstesSpielHero";
 import NeuSeitBesuch from "../components/dashboard/NeuSeitBesuch";
@@ -54,7 +55,6 @@ import NaechsteTermine from "../components/kalender/NaechsteTermine";
 import { useMesCotisations } from "../hooks/useCotisations";
 import { usePublications } from "../hooks/useCommunaute";
 import { useEvenements, useInscriptions } from "../hooks/useEvenements";
-import { useOffeneStellen } from "../hooks/useProjets";
 import { useModuleOuvert } from "../hooks/useRbac";
 import { ROLE_LEVELS, hasRoleAtLeast, useAuthStore } from "../store/authStore";
 import type { Cotisation, StatutCotisation, TypeArticle } from "../types/cotisation";
@@ -111,7 +111,6 @@ export default function DashboardPage() {
   // n'interroge pas ces API pour lui (2026-10-11), le tableau de bord n'affiche alors rien de plus.
   const filOuvert = useModuleOuvert("fil").ouvert;
   const projetsOuvert = useModuleOuvert("projets").ouvert;
-  const stellenQuery = useOffeneStellen({ enabled: projetsOuvert });
   const publicationsQuery = usePublications({}, { enabled: filOuvert });
 
   const prochainsEvenements = useMemo<Evenement[]>(() => {
@@ -133,9 +132,6 @@ export default function DashboardPage() {
   );
   const inscriptionsEnAttente = inscriptionsAttenteQuery.data?.results ?? [];
   const publications = publicationsQuery.data?.results.slice(0, 3) ?? [];
-  const offeneStellen = [...(stellenQuery.data ?? [])]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 5);
 
   const gruss = t(`uebersicht.gruss_${tageszeit()}`, { prenom: prenomAffiche });
   const datum = new Date().toLocaleDateString(i18n.language, {
@@ -156,6 +152,7 @@ export default function DashboardPage() {
 
       <NaechstesSpielHero />
       <Schnellzugriffe />
+      <HelferGesucht aktiv={projetsOuvert} />
       <AktionenHinweis />
       <UebersichtHinweise />
       {estGestion && <BueroZuErledigen />}
@@ -259,38 +256,6 @@ export default function DashboardPage() {
               {t("ma_situation.gerer_paiements")}
             </button>
           </div>
-
-          {offeneStellen.length > 0 && (
-            <div
-              className="rounded-cid-lg bg-bg-primary p-3 shadow-sm"
-              data-testid="dashboard-stellen"
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-semibold text-text-primary">
-                  {t("stellen.titre")}
-                </span>
-                <Link to="/projets" className="text-xs text-ca hover:underline">
-                  {t("stellen.voir_tout")}
-                </Link>
-              </div>
-              <ul className="space-y-2">
-                {offeneStellen.map((stelle) => (
-                  <li
-                    key={stelle.id}
-                    className="animate-slide-in-fade rounded-cid border-b border-bg-tertiary px-1 pb-2 text-sm transition-colors last:border-0 last:pb-0 hover:bg-bg-secondary"
-                  >
-                    <Link to={`/projets/${stelle.projet}`} className="block">
-                      <span className="font-medium text-text-primary">🙋 {stelle.titel}</span>
-                      {stelle.projet_titre && (
-                        <span className="text-text-secondary"> — {stelle.projet_titre}</span>
-                      )}
-                      <span className="ml-2 text-xs text-ca">{t("stellen.mehr")}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       </div>
     </div>

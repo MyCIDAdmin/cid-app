@@ -20,13 +20,7 @@ import LanguageSwitcher from "../layout/LanguageSwitcher";
 
 /** Onglets de la page d'accueil publique (voir PublicHomePage.tsx, qui importe ce type d'ici
  * plutôt que l'inverse pour éviter tout import circulaire entre les deux fichiers). */
-export type OngletPublic =
-  | "accueil"
-  | "evenements"
-  | "projets"
-  | "shop"
-  | "galerie"
-  | "apropos";
+export type OngletPublic = "accueil" | "evenements" | "projets" | "shop" | "galerie" | "apropos";
 
 const ONGLETS: { value: OngletPublic; labelKey: string }[] = [
   { value: "accueil", labelKey: "nav.accueil" },

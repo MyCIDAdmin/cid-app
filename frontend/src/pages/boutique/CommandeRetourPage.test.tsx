@@ -98,10 +98,8 @@ describe("CommandeRetourPage", () => {
 
   it("permet de réessayer le paiement (Stripe/PayPal) pour une commande restée en attente", async () => {
     const mutateInitier = vi.fn(
-      (
-        _variables,
-        opts?: { onSuccess?: (r: { redirect_url: string }) => void },
-      ) => opts?.onSuccess?.({ redirect_url: "https://checkout.stripe.com/session/retry" }),
+      (_variables, opts?: { onSuccess?: (r: { redirect_url: string }) => void }) =>
+        opts?.onSuccess?.({ redirect_url: "https://checkout.stripe.com/session/retry" }),
     );
     vi.mocked(useBoutiqueHooks.useCommande).mockReturnValue({
       data: commande({ statut: "en_attente" }),

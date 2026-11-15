@@ -21,12 +21,14 @@
  */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
+import HilfeGesuchtInhalt from "../../components/hilfe/HilfeGesuchtInhalt";
 import ModaleContribution from "../../components/projets/ModaleContribution";
 import ProjetCard from "../../components/projets/ProjetCard";
 import ProjetsFiltreTabs, { type FiltreProjet } from "../../components/projets/ProjetsFiltreTabs";
 import ProjetsKpiTiles from "../../components/projets/ProjetsKpiTiles";
+import TabLeiste from "../../components/ui/TabLeiste";
 import { useProjets } from "../../hooks/useProjets";
 import { useAuthStore } from "../../store/authStore";
 import type { Projet } from "../../types/projets";
@@ -38,7 +40,7 @@ const STATUT_PAR_FILTRE: Record<Exclude<FiltreProjet, "tous">, Projet["statut"]>
   termines: "termine",
 };
 
-export default function ProjetsPage() {
+function ProjetsListe() {
   const { t } = useTranslation("projets");
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -123,6 +125,32 @@ export default function ProjetsPage() {
           onPayer={(cotisationId) => navigate(`/cotisation?paiement=${cotisationId}`)}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Projektseite. Mit `mitHilfeTab` (angemeldete Seite /projets, Nov. 2026) zwei Tabs: „Projekte“
+ * (Kacheln) und „Hilfe gesucht“ (Gesuche, Angebote, Kategorien). Der Tab steht in `?tab=hilfe`, die
+ * Ansicht darin in `?ansicht=…`. Auf der öffentlichen Startseite bleibt es bei den Kacheln.
+ */
+export default function ProjetsPage({ mitHilfeTab = false }: { mitHilfeTab?: boolean }) {
+  const { t } = useTranslation("projets");
+  const [params, setParams] = useSearchParams();
+  if (!mitHilfeTab) return <ProjetsListe />;
+  const tab = params.get("tab") === "hilfe" ? "hilfe" : "projekte";
+  return (
+    <div>
+      <TabLeiste
+        tabs={[
+          { id: "projekte", label: t("tabs.projekte") },
+          { id: "hilfe", label: t("tabs.hilfe") },
+        ]}
+        aktiv={tab}
+        onChange={(id) => setParams(id === "hilfe" ? { tab: "hilfe" } : {}, { replace: true })}
+        ariaLabel={t("tabs.label")}
+      />
+      {tab === "hilfe" ? <HilfeGesuchtInhalt /> : <ProjetsListe />}
     </div>
   );
 }

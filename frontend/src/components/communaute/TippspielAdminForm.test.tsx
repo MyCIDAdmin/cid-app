@@ -125,9 +125,7 @@ describe("TippspielAdminForm", () => {
         titre: "Tippspiel Ligue 1 2026-2027",
         saison: "2026-2027",
         montant_participation: "10.00",
-        prix: [
-          expect.objectContaining({ platz: 1, type_prix: "pourcentage", pourcentage: "50" }),
-        ],
+        prix: [expect.objectContaining({ platz: 1, type_prix: "pourcentage", pourcentage: "50" })],
       }),
       expect.anything(),
     );
@@ -143,9 +141,8 @@ describe("TippspielAdminForm", () => {
   });
 
   it("pré-remplit le formulaire en mode édition et enregistre les modifications", () => {
-    const modifierMutation = mutationMock<
-      ReturnType<typeof useCommunauteHooks.useModifierTippspiel>
-    >();
+    const modifierMutation =
+      mutationMock<ReturnType<typeof useCommunauteHooks.useModifierTippspiel>>();
     vi.mocked(useCommunauteHooks.useModifierTippspiel).mockReturnValue(modifierMutation);
 
     renderWithProviders(

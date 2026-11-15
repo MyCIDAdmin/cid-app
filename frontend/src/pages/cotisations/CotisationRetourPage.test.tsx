@@ -109,10 +109,8 @@ describe("CotisationRetourPage", () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useCotisationsHooks.useCotisation>);
     const mutateInitier = vi.fn(
-      (
-        _cotisationId,
-        opts?: { onSuccess?: (r: { redirect_url: string }) => void },
-      ) => opts?.onSuccess?.({ redirect_url: "https://checkout.stripe.com/session/retry" }),
+      (_cotisationId, opts?: { onSuccess?: (r: { redirect_url: string }) => void }) =>
+        opts?.onSuccess?.({ redirect_url: "https://checkout.stripe.com/session/retry" }),
     );
     vi.mocked(useCotisationsHooks.useInitierPaiementEnLigne).mockReturnValue({
       mutate: mutateInitier,
