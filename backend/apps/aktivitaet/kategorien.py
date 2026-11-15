@@ -55,6 +55,18 @@ AKTIONEN = {
         "Zweiter Faktor falsch",
         "Second facteur incorrect",
     ),
+    "login_passkey_success": (
+        "anmeldung",
+        "info",
+        "Anmeldung mit Passkey",
+        "Connexion avec clé d'accès",
+    ),
+    "login_passkey_failed": (
+        "anmeldung",
+        "warnung",
+        "Passkey-Anmeldung fehlgeschlagen",
+        "Échec de connexion par clé d'accès",
+    ),
     "logout": ("anmeldung", "info", "Abmeldung", "Déconnexion"),
     "device_limit_reached": (
         "anmeldung",
@@ -132,6 +144,18 @@ AKTIONEN = {
         "Mot de passe réinitialisé",
     ),
     "password_changed": ("konto", "wichtig", "Passwort geändert", "Mot de passe modifié"),
+    "passkey_added": (
+        "konto",
+        "info",
+        "Passkey eingerichtet",
+        "Clé d'accès configurée",
+    ),
+    "passkey_removed": (
+        "konto",
+        "info",
+        "Passkey entfernt",
+        "Clé d'accès supprimée",
+    ),
     "totp_enabled": ("konto", "info", "Authenticator-App aktiviert", "Application TOTP activée"),
     "totp_disabled": (
         "konto",
@@ -351,8 +375,8 @@ AKTIONEN.update(
     }
 )
 
-LOGIN_ERFOLG = ("login_success", "login_2fa_success")
-LOGIN_FEHLER = ("login_failed", "login_2fa_failed")
+LOGIN_ERFOLG = ("login_success", "login_2fa_success", "login_passkey_success")
+LOGIN_FEHLER = ("login_failed", "login_2fa_failed", "login_passkey_failed")
 ROLLEN_AENDERUNG = (
     "role_changed",
     "rbac_roles_changed",

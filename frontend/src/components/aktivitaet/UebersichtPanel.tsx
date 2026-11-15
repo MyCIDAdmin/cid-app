@@ -540,7 +540,7 @@ export default function UebersichtPanel({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {kachel("logins", { aktion: "login_success,login_2fa_success" })}
         {kachel("aktive_nutzer")}
-        {kachel("fehlversuche", { aktion: "login_failed,login_2fa_failed" })}
+        {kachel("fehlversuche", { aktion: "login_failed,login_2fa_failed,login_passkey_failed" })}
         {kachel("sperren", { aktion: "login_locked_out" })}
         {kachel("registrierungen", { aktion: "register" })}
         {kachel("freigaben", { aktion: "registration_approved,registration_refused" })}

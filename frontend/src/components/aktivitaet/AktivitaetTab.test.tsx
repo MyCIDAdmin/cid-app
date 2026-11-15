@@ -417,7 +417,7 @@ describe("AktivitaetTab", () => {
     fireEvent.click(screen.getByLabelText("uebersicht.kacheln.fehlversuche"));
 
     expect(hooks.useJournal).toHaveBeenLastCalledWith({
-      aktion: "login_failed,login_2fa_failed",
+      aktion: "login_failed,login_2fa_failed,login_passkey_failed",
       seite: 1,
     });
     expect(screen.getByText(LABEL, { selector: "span" })).toBeInTheDocument();
