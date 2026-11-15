@@ -15,6 +15,7 @@ Cache (5 Minuten) und wird beim Prüfen verbraucht.
 """
 
 import json
+import logging
 import secrets
 from urllib.parse import urlparse
 
@@ -49,16 +50,31 @@ from .models import Passkey
 from .serializers import UserSerializer
 from .views import _client_ip, _issue_tokens
 
+logger = logging.getLogger(__name__)
+
 CHALLENGE_TTL = 300  # 5 Minuten
 MAX_PASSKEYS = 10
 
 
+def _basis_host() -> str:
+    host = urlparse(settings.FRONTEND_URL).hostname or "localhost"
+    return host[4:] if host.startswith("www.") else host
+
+
 def rp_id() -> str:
-    return settings.WEBAUTHN_RP_ID or (urlparse(settings.FRONTEND_URL).hostname or "localhost")
+    """Domain ohne "www." : ein Passkey von my-cid.de gilt dann auch auf www.my-cid.de."""
+    return settings.WEBAUTHN_RP_ID or _basis_host()
 
 
 def erlaubte_origins() -> list[str]:
-    return [settings.FRONTEND_URL.rstrip("/"), *settings.WEBAUTHN_EXTRA_ORIGINS]
+    """Adresse der Web-App mit und ohne "www." (der Browser meldet die tatsächlich besuchte)."""
+    basis = urlparse(settings.FRONTEND_URL)
+    origins = {settings.FRONTEND_URL.rstrip("/")}
+    host = _basis_host()
+    if basis.scheme == "https" and not host.replace(".", "").isdigit() and "." in host:
+        port = f":{basis.port}" if basis.port else ""
+        origins |= {f"https://{host}{port}", f"https://www.{host}{port}"}
+    return [*sorted(origins), *settings.WEBAUTHN_EXTRA_ORIGINS]
 
 
 def _reg_key(user) -> str:
@@ -153,7 +169,8 @@ class PasskeyRegisterVerifyView(APIView):
                 expected_origin=erlaubte_origins(),
                 require_user_verification=True,
             )
-        except InvalidRegistrationResponse:
+        except InvalidRegistrationResponse as exc:
+            logger.warning("Passkey-Registrierung abgelehnt: %s", exc)
             raise ValidationError("Der Passkey konnte nicht bestätigt werden.")
         if Passkey.objects.filter(credential_id=verified.credential_id).exists():
             raise ValidationError("Dieser Passkey ist bereits eingerichtet.")
@@ -234,7 +251,8 @@ class PasskeyLoginVerifyView(APIView):
                 credential_current_sign_count=passkey.sign_count,
                 require_user_verification=True,
             )
-        except InvalidAuthenticationResponse:
+        except InvalidAuthenticationResponse as exc:
+            logger.warning("Passkey-Anmeldung abgelehnt: %s", exc)
             services.log_audit_event(
                 "login_passkey_failed",
                 user=user,

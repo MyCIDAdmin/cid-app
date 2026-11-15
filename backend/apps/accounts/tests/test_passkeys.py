@@ -23,7 +23,8 @@ pytestmark = pytest.mark.django_db
 class FakeAuthenticator:
     """Minimaler Software-Authenticator (ES256, Format "none", UV-Flag gesetzt)."""
 
-    def __init__(self, *, user_verified=True):
+    def __init__(self, *, user_verified=True, origin=None):
+        self.origin = origin
         self.key = ec.generate_private_key(ec.SECP256R1())
         self.credential_id = os.urandom(32)
         self.counter = 0
@@ -34,7 +35,7 @@ class FakeAuthenticator:
             {
                 "type": typ,
                 "challenge": challenge_b64,
-                "origin": settings.FRONTEND_URL.rstrip("/"),
+                "origin": self.origin or settings.FRONTEND_URL.rstrip("/"),
                 "crossOrigin": False,
             }
         ).encode()
@@ -264,4 +265,27 @@ def test_doppelter_passkey_wird_abgelehnt(auth_client):
     authenticator = FakeAuthenticator()
     _einrichten(auth_client, authenticator)
     _, resp = _einrichten(auth_client, authenticator, name="nochmal")
+    assert resp.status_code == 400
+
+
+@pytest.mark.parametrize("besuchte_adresse", ["https://my-cid.de", "https://www.my-cid.de"])
+def test_domain_mit_und_ohne_www_wird_akzeptiert(auth_client, settings, besuchte_adresse):
+    """Regression (DEV): Die Seite lief unter www.my-cid.de, FRONTEND_URL war my-cid.de."""
+    settings.FRONTEND_URL = "https://my-cid.de"
+    assert passkeys.rp_id() == "my-cid.de"
+    authenticator = FakeAuthenticator(origin=besuchte_adresse)
+    _, resp = _einrichten(auth_client, authenticator)
+    assert resp.status_code == 201
+    assert _anmelden(authenticator).status_code == 200
+
+
+def test_frontend_url_mit_www_nutzt_domain_ohne_www(settings):
+    settings.FRONTEND_URL = "https://www.my-cid.de"
+    assert passkeys.rp_id() == "my-cid.de"
+    assert "https://my-cid.de" in passkeys.erlaubte_origins()
+
+
+def test_fremde_adresse_wird_abgelehnt(auth_client, settings):
+    settings.FRONTEND_URL = "https://my-cid.de"
+    _, resp = _einrichten(auth_client, FakeAuthenticator(origin="https://evil.example"))
     assert resp.status_code == 400
